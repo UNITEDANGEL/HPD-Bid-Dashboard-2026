@@ -17,6 +17,9 @@ Samples/Merged Data/*
 node_modules/
 **/node_modules/
 
+.vercel/
+**/.vercel/
+
 .next/
 **/.next/
 render_build/
