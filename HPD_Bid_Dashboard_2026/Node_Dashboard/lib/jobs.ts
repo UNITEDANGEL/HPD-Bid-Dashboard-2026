@@ -21,6 +21,7 @@ function parseAmount(value: string) {
 
 function csvCandidates() {
   return [
+    path.resolve(process.cwd(), "data", "merged_job_data.csv"),
     path.resolve(process.cwd(), "..", "..", "Samples", "Merged Data", "merged_job_data.csv"),
     path.resolve(process.cwd(), "..", "..", "Fetcher_Output", "COA_Fetcher_2026.csv"),
   ];
