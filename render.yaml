@@ -1,0 +1,9 @@
+services:
+  - name: hpd-bid-dashboard-2026
+    type: web
+    runtime: node
+    plan: starter
+    buildCommand: cd HPD_Bid_Dashboard_2026/Node_Dashboard && npm install && npm run build
+    startCommand: cd HPD_Bid_Dashboard_2026/Node_Dashboard && npm start
+    healthCheckPath: /api/jobs
+    autoDeployTrigger: commit

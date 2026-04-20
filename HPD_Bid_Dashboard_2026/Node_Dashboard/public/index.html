@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HPD Work Order Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="page-glow page-glow-one"></div>
+    <div class="page-glow page-glow-two"></div>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <p class="eyebrow">HPD Bid Management</p>
+          <h1>2026 Command Dashboard</h1>
+          <p>Map every work order, confirmation of award, invitation to bid, and generated field document in one place.</p>
+        </div>
+
+        <div class="panel spotlight-panel">
+          <span class="spotlight-badge">Live Portfolio</span>
+          <h2>Visual command view for awards, map activity, and job paperwork.</h2>
+          <p>The map, list, and document tools stay connected so we can move from award review to field-ready PDFs without leaving the dashboard.</p>
+        </div>
+
+        <div class="panel">
+          <p class="panel-title">Controls</p>
+          <button id="refreshButton">Reload Data</button>
+          <button id="runFetcherButton" class="secondary">Run Fetcher</button>
+          <p id="statusText" class="status">Ready.</p>
+        </div>
+
+        <div class="panel">
+          <p class="panel-title">Filters</p>
+          <label for="searchInput">Search</label>
+          <input id="searchInput" type="text" placeholder="OMO, address, trade, description" />
+
+          <label for="boroughFilter">Borough</label>
+          <select id="boroughFilter">
+            <option value="">All boroughs</option>
+          </select>
+
+          <label for="statusFilter">Status</label>
+          <select id="statusFilter">
+            <option value="">All statuses</option>
+          </select>
+        </div>
+
+        <div class="panel metrics">
+          <div class="metric-card metric-card-rose"><span id="metricTotal">0</span><small>Total Jobs</small></div>
+          <div class="metric-card metric-card-gold"><span id="metricMapped">0</span><small>Mapped</small></div>
+          <div class="metric-card metric-card-cyan"><span id="metricAwarded">0</span><small>Awarded</small></div>
+          <div class="metric-card metric-card-green"><span id="metric2026">0</span><small>2026 Jobs</small></div>
+        </div>
+
+        <div class="panel list-panel">
+          <div class="panel-heading">
+            <h2>Work Orders</h2>
+            <span class="panel-chip">Selectable list</span>
+          </div>
+          <div id="workOrderList" class="work-order-list"></div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <section class="overview-band">
+          <div>
+            <p class="eyebrow">Operations View</p>
+            <h2>Work Order Intelligence</h2>
+          </div>
+          <p class="overview-note">Track awards, preview source PDFs, edit field data, and keep the map centered on the jobs that matter.</p>
+        </section>
+
+        <section class="map-panel">
+          <div class="section-header">
+            <h2>Map</h2>
+            <p>All work orders with coordinates and matched COA records.</p>
+          </div>
+          <div class="map-toolbar">
+            <button id="showAllMapButton" class="secondary">All Jobs</button>
+            <button id="showAwardedMapButton" class="secondary">Awarded</button>
+            <button id="showOpenMapButton" class="secondary">Open Work</button>
+            <button id="focusSelectedMapButton" class="secondary">Focus Selected</button>
+            <button id="resetMapButton" class="secondary">Reset View</button>
+          </div>
+          <div id="mapSummary" class="map-summary"></div>
+          <div id="map"></div>
+        </section>
+
+        <section class="details-panel">
+          <div class="section-header">
+            <h2 id="detailsTitle">Select a work order</h2>
+            <p id="detailsSubtitle">The selected job will show COA, ITB, and editable dashboard fields.</p>
+          </div>
+          <div id="detailsContent" class="details-grid empty">
+            <p>Choose a record from the left list or click a marker on the map.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="/app.js"></script>
+  </body>
+</html>
