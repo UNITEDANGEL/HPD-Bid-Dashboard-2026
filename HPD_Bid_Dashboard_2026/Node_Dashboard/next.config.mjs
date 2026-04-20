@@ -8,7 +8,6 @@ const __dirname = path.dirname(__filename);
 const nextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: path.join(__dirname, "..", ".."),
-  ...(process.env.NODE_ENV === "production" ? { distDir: "render_build" } : {}),
 };
 
 export default nextConfig;
