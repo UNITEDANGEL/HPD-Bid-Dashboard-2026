@@ -3,10 +3,13 @@ import React, { useState } from 'react';
 export function JobsMapBoard({ jobs }) {
   const [selectedJob, setSelectedJob] = useState(jobs?.[0]);
   if (!jobs?.length) return <div className="p-10 text-white">Scanning G: Drive for jobs...</div>;
+  // FIXED: Clean Google Maps Directions Link
   const openDirections = () => {
-    const url = `https://maps.google.com/?daddr=${encodeURIComponent(selectedJob.address)}`;
+    const url = `https://maps.google.com/maps?daddr=${encodeURIComponent(selectedJob.address)}`;
     window.open(url, '_blank');
   };
+  // FIXED: Clean Google Maps Embed Link
+  const mapUrl = `https://maps.google.com/maps?q=${selectedJob.lat},${selectedJob.lng}&t=m&z=15&output=embed`;
   return (
     <div className="flex flex-col h-screen w-full bg-black overflow-hidden">
       {/* TOP: NAVIGATION */}
@@ -20,7 +23,7 @@ export function JobsMapBoard({ jobs }) {
           </button>
         ))}
       </div>
-      {/* CENTER: BULLETPROOF GOOGLE MAPS EMBED */}
+      {/* CENTER: BULLETPROOF GOOGLE MAPS EMBED (FIXED URL) */}
       <div className="flex-1 w-full bg-slate-950">
         <iframe 
           width="100%" 
@@ -29,14 +32,14 @@ export function JobsMapBoard({ jobs }) {
           loading="lazy"
           allowFullScreen
           referrerPolicy="no-referrer-when-downgrade"
-          src={`https://maps.google.com/maps?q=${selectedJob.lat},${selectedJob.lng}&t=m&z=15&output=embed`}
+          src={mapUrl}
         ></iframe>
       </div>
       {/* BOTTOM: ACTION CONSOLE */}
       <div className="h-[42%] flex-shrink-0 bg-slate-900 border-t border-slate-800 p-6 flex flex-col shadow-2xl z-10">
         <div className="mb-4 flex justify-between items-start">
             <div className="max-w-[70%]">
-                <a href={`https://maps.google.com/?q=${encodeURIComponent(selectedJob.address)}`} target="_blank" rel="noreferrer" className="text-white text-xl font-black truncate block hover:text-blue-400 transition-colors">
+                <a href={`https://maps.google.com/maps?q=${encodeURIComponent(selectedJob.address)}`} target="_blank" rel="noreferrer" className="text-white text-xl font-black truncate block hover:text-blue-400 transition-colors">
                     {selectedJob?.address} ↗
                 </a>
                 <p className="text-slate-500 text-xs font-mono uppercase mt-1">{selectedJob?.borough} • {selectedJob?.type}</p>
