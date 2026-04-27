@@ -1,26 +1,59 @@
 ﻿"use client";
-import React, { useState, useEffect } from 'react';
-import Map, { Marker } from 'react-map-gl';
+import React, { useState, useEffect, useRef } from 'react';
+import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-// SECURED: Token is safely hidden from GitHub scanners
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+// SECURED: Native token assignment
+mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 export function JobsMapBoard({ jobs }) {
   const [selectedJob, setSelectedJob] = useState(jobs?.[0]);
-  const [viewState, setViewState] = useState({
-    longitude: jobs?.[0]?.lng || -73.85,
-    latitude: jobs?.[0]?.lat || 40.72,
-    zoom: 14
-  });
+  const mapContainer = useRef(null);
+  const map = useRef(null);
+  const markersRef = useRef([]);
+  // Initialize Map and Markers exactly once
   useEffect(() => {
-    if (selectedJob) {
-      setViewState({
-        longitude: selectedJob.lng,
-        latitude: selectedJob.lat,
-        zoom: 15
+    if (map.current || !mapContainer.current || !jobs?.length) return;
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/dark-v11',
+      center: [jobs[0].lng, jobs[0].lat],
+      zoom: 14
+    });
+    jobs.forEach((job) => {
+      const el = document.createElement('div');
+      el.style.backgroundColor = selectedJob?.id === job.id ? '#2563eb' : '#ef4444';
+      el.style.width = '20px';
+      el.style.height = '20px';
+      el.style.borderRadius = '50%';
+      el.style.border = '2px solid white';
+      el.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setSelectedJob(job);
       });
-    }
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([job.lng, job.lat])
+        .addTo(map.current);
+      markersRef.current.push({ id: job.id, marker, el });
+    });
+  }, [jobs]);
+  // Fly to job and update marker colors when selection changes
+  useEffect(() => {
+    if (!map.current || !selectedJob) return;
+    map.current.flyTo({
+      center: [selectedJob.lng, selectedJob.lat],
+      zoom: 15,
+      essential: true
+    });
+    markersRef.current.forEach(({ id, el }) => {
+      el.style.backgroundColor = id === selectedJob.id ? '#2563eb' : '#ef4444';
+      el.style.transform = id === selectedJob.id ? 'scale(1.2)' : 'scale(1)';
+      el.style.transition = 'all 0.2s ease';
+      el.style.zIndex = id === selectedJob.id ? '1' : '0';
+    });
   }, [selectedJob]);
   if (!jobs?.length) return <div className="p-10 text-white font-mono">Scanning G: Drive for jobs...</div>;
+  // OFFICIAL GOOGLE ROUTING LINKS
   const openDirections = () => {
     window.open(`https://www.google.com/maps/dir/?api=1&destination=${selectedJob.lat},${selectedJob.lng}`, '_blank');
   };
@@ -38,27 +71,9 @@ export function JobsMapBoard({ jobs }) {
           </button>
         ))}
       </div>
-      {/* CENTER: NATIVE MAPBOX GL */}
+      {/* CENTER: NATIVE MAPBOX GL (No Wrapper) */}
       <div className="flex-1 w-full bg-slate-950 relative">
-        <Map
-          {...viewState}
-          onMove={evt => setViewState(evt.viewState)}
-          mapStyle="mapbox://styles/mapbox/dark-v11"
-          mapboxAccessToken={MAPBOX_TOKEN}
-        >
-          {jobs.map(job => (
-            <Marker 
-              key={job.id} 
-              longitude={job.lng} 
-              latitude={job.lat} 
-              color={selectedJob?.id === job.id ? "#2563eb" : "#ef4444"} 
-              onClick={(e) => {
-                e.originalEvent.stopPropagation();
-                setSelectedJob(job);
-              }}
-            />
-          ))}
-        </Map>
+        <div ref={mapContainer} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
       </div>
       {/* BOTTOM: ACTION CONSOLE */}
       <div className="h-[42%] flex-shrink-0 bg-slate-900 border-t border-slate-800 p-6 flex flex-col shadow-2xl z-10">
