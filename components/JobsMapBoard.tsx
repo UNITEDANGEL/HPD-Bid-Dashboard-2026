@@ -1,17 +1,30 @@
 ﻿"use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import Map, { Marker } from 'react-map-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
+// SECURED: Token is safely hidden from GitHub scanners
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 export function JobsMapBoard({ jobs }) {
   const [selectedJob, setSelectedJob] = useState(jobs?.[0]);
-  if (!jobs?.length) return <div className="p-10 text-white">Scanning G: Drive for jobs...</div>;
-  // CONSTRUCTING UNCORRUPTED URLS LIVE
-  const googleBase = "https://" + "www.google.com" + "/maps";
-  const mapsBase = "https://" + "maps.google.com" + "/maps";
+  const [viewState, setViewState] = useState({
+    longitude: jobs?.[0]?.lng || -73.85,
+    latitude: jobs?.[0]?.lat || 40.72,
+    zoom: 14
+  });
+  useEffect(() => {
+    if (selectedJob) {
+      setViewState({
+        longitude: selectedJob.lng,
+        latitude: selectedJob.lat,
+        zoom: 15
+      });
+    }
+  }, [selectedJob]);
+  if (!jobs?.length) return <div className="p-10 text-white font-mono">Scanning G: Drive for jobs...</div>;
   const openDirections = () => {
-    const dest = selectedJob.lat + "," + selectedJob.lng;
-    window.open(googleBase + "/dir/?api=1&destination=" + dest, '_blank');
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${selectedJob.lat},${selectedJob.lng}`, '_blank');
   };
-  const mapUrl = mapsBase + "?q=" + selectedJob.lat + "," + selectedJob.lng + "&t=m&z=15&output=embed";
-  const searchUrl = googleBase + "/search/?api=1&query=" + encodeURIComponent(selectedJob.address);
+  const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedJob.address)}`;
   return (
     <div className="flex flex-col h-screen w-full bg-black overflow-hidden">
       {/* TOP: NAVIGATION */}
@@ -25,17 +38,27 @@ export function JobsMapBoard({ jobs }) {
           </button>
         ))}
       </div>
-      {/* CENTER: SECURE GOOGLE MAPS EMBED */}
+      {/* CENTER: NATIVE MAPBOX GL */}
       <div className="flex-1 w-full bg-slate-950 relative">
-        <iframe 
-          width="100%" 
-          height="100%" 
-          style={{ border: 0, position: 'absolute', top: 0, left: 0 }}
-          loading="lazy"
-          allowFullScreen
-          referrerPolicy="no-referrer-when-downgrade"
-          src={mapUrl}
-        ></iframe>
+        <Map
+          {...viewState}
+          onMove={evt => setViewState(evt.viewState)}
+          mapStyle="mapbox://styles/mapbox/dark-v11"
+          mapboxAccessToken={MAPBOX_TOKEN}
+        >
+          {jobs.map(job => (
+            <Marker 
+              key={job.id} 
+              longitude={job.lng} 
+              latitude={job.lat} 
+              color={selectedJob?.id === job.id ? "#2563eb" : "#ef4444"} 
+              onClick={(e) => {
+                e.originalEvent.stopPropagation();
+                setSelectedJob(job);
+              }}
+            />
+          ))}
+        </Map>
       </div>
       {/* BOTTOM: ACTION CONSOLE */}
       <div className="h-[42%] flex-shrink-0 bg-slate-900 border-t border-slate-800 p-6 flex flex-col shadow-2xl z-10">
