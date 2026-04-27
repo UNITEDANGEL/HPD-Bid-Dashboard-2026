@@ -1,0 +1,20 @@
+export type JobRecord = {
+  id: string;
+  borough: string;
+  status: string;
+  address: string;
+  trade: string;
+  awardDate: string;
+  bidAmount: string;
+  amountValue: number;
+  description: string;
+  tenantName: string;
+  tenantPhone: string;
+  location: string;
+  latitude: string;
+  longitude: string;
+  hasMap: boolean;
+  coaFile: string;
+  itbFile: string;
+  raw: Record<string, string>;
+};

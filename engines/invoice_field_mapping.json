@@ -1,0 +1,29 @@
+{
+  "text": {
+    "OMO  Invoice": "case.invoice_number",
+    "TAX _ID": "invoice.tax_id",
+    "INVOICE DATE": "dates.work_completed",
+    "TRADE": "invoice.trade",
+    "BORO": "case.borough",
+    "ADDRESS": "case.building_address",
+    "Work LocationApt": "invoice.work_location_or_apt",
+    "BOROUGH Date Work Started": "dates.work_started",
+    "Date Work Completed": "dates.work_completed",
+    "DESCRIPTION OF WORK DONE": "invoice.work_description",
+    "Bid Amout 1": "invoice.amounts.bid_amount",
+    "Bid AmouQt 2": "invoice.amounts.approved_increase_decrease",
+    "TOTAL CHARGE": "invoice.amounts.total_charge",
+    "NAME Please Print": "invoice.signature.name_print",
+    "TITLE": "invoice.signature.title",
+    "23": "invoice.line_items_multiline"
+  },
+  "checkboxes": {
+    "Check Box8": "invoice.checks.rc_mini_rc:yes",
+    "Check Box9": "invoice.checks.rc_mini_rc:no",
+    "Check Box5": "invoice.checks.permit_required:yes",
+    "Check Box4": "invoice.checks.permit_required:no",
+    "Check Box7": "invoice.checks.approved_increase_decrease:yes",
+    "Check Box6": "invoice.checks.approved_increase_decrease:no"
+  },
+  "quantity_fields_order": [6, 8, 10, 12, 14, 16, 18, 20, 22]
+}

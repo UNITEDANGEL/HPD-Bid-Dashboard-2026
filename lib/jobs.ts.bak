@@ -1,0 +1,100 @@
+import fs from "fs";
+import path from "path";
+import Papa from "papaparse";
+
+export type JobRow = {
+  id: string;
+  borough: string;
+  status: string;
+  address: string;
+  sourceFile: string;
+  raw: Record<string, string>;
+};
+
+function pick(obj: Record<string, string>, keys: string[]) {
+  for (const key of keys) {
+    const value = obj[key];
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return String(value).trim();
+    }
+  }
+  return "";
+}
+
+function normalizeRow(row: Record<string, string>, sourceFile: string, index: number): JobRow {
+  const id =
+    pick(row, ["Job ID", "job_id", "id", "OMO", "omo", "OMO#"]) || `JOB-${index + 1}`;
+
+  const borough = pick(row, ["Borough", "borough", "County", "county"]);
+  const status = pick(row, ["Status", "status", "job_status", "Job Status"]) || "Unknown";
+
+  const address = pick(row, [
+    "Address",
+    "address",
+    "Property Address",
+    "property_address",
+    "Location",
+    "location",
+    "Building Address",
+    "building_address",
+  ]);
+
+  return {
+    id,
+    borough,
+    status,
+    address,
+    sourceFile,
+    raw: row,
+  };
+}
+
+function existingDataFiles() {
+  const candidates = [
+    path.join(process.cwd(), "..", "Data", "Job_Log.csv"),
+    path.join(process.cwd(), "..", "Data", "Job_Log_working_100.csv"),
+    path.join(process.cwd(), "..", "Samples", "Merged Data", "merged_job_data.csv"),
+    path.join(process.cwd(), "..", "Samples", "merged_job_data.csv"),
+    path.join(process.cwd(), "..", "Fetcher_Output", "HPD_Bid_Fetcher_Master_2026.csv"),
+  ];
+
+  return candidates.filter((file) => fs.existsSync(file));
+}
+
+export function getJobs(): JobRow[] {
+  const files = existingDataFiles();
+
+  if (files.length === 0) {
+    throw new Error("No real project CSV files were found.");
+  }
+
+  const all: JobRow[] = [];
+  const seen = new Set<string>();
+
+  for (const file of files) {
+    const csvText = fs.readFileSync(file, "utf-8");
+
+    const parsed = Papa.parse<Record<string, string>>(csvText, {
+      header: true,
+      skipEmptyLines: true,
+    });
+
+    const rows = parsed.data ?? [];
+
+    rows.forEach((row, index) => {
+      const normalized = normalizeRow(row, file, index);
+      const dedupeKey = `${normalized.id}|${normalized.address}|${normalized.borough}`;
+
+      if (!seen.has(dedupeKey)) {
+        seen.add(dedupeKey);
+        all.push(normalized);
+      }
+    });
+  }
+
+  return all.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export function getJobById(id: string) {
+  return getJobs().find((job) => job.id.toLowerCase() === id.toLowerCase()) ?? null;
+}
