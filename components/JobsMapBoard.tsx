@@ -3,9 +3,15 @@ import React, { useState } from 'react';
 export function JobsMapBoard({ jobs }) {
   const [selectedJob, setSelectedJob] = useState(jobs?.[0]);
   if (!jobs?.length) return <div className="p-10 text-white">Scanning G: Drive for jobs...</div>;
+  // CONSTRUCTING UNCORRUPTED URLS LIVE
+  const googleBase = "https://" + "www.google.com" + "/maps";
+  const mapsBase = "https://" + "maps.google.com" + "/maps";
   const openDirections = () => {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedJob.address)}`, '_blank');
+    const dest = selectedJob.lat + "," + selectedJob.lng;
+    window.open(googleBase + "/dir/?api=1&destination=" + dest, '_blank');
   };
+  const mapUrl = mapsBase + "?q=" + selectedJob.lat + "," + selectedJob.lng + "&t=m&z=15&output=embed";
+  const searchUrl = googleBase + "/search/?api=1&query=" + encodeURIComponent(selectedJob.address);
   return (
     <div className="flex flex-col h-screen w-full bg-black overflow-hidden">
       {/* TOP: NAVIGATION */}
@@ -19,23 +25,23 @@ export function JobsMapBoard({ jobs }) {
           </button>
         ))}
       </div>
-      {/* CENTER: PURE GOOGLE MAPS EMBED */}
-      <div className="flex-1 w-full bg-slate-950">
+      {/* CENTER: SECURE GOOGLE MAPS EMBED */}
+      <div className="flex-1 w-full bg-slate-950 relative">
         <iframe 
           width="100%" 
           height="100%" 
-          style={{ border: 0 }}
+          style={{ border: 0, position: 'absolute', top: 0, left: 0 }}
           loading="lazy"
           allowFullScreen
           referrerPolicy="no-referrer-when-downgrade"
-          src={`https://maps.google.com/maps?q=${selectedJob.lat},${selectedJob.lng}&t=m&z=15&output=embed`}
+          src={mapUrl}
         ></iframe>
       </div>
       {/* BOTTOM: ACTION CONSOLE */}
       <div className="h-[42%] flex-shrink-0 bg-slate-900 border-t border-slate-800 p-6 flex flex-col shadow-2xl z-10">
         <div className="mb-4 flex justify-between items-start">
             <div className="max-w-[70%]">
-                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedJob.address)}`} target="_blank" rel="noreferrer" className="text-white text-xl font-black truncate block hover:text-blue-400 transition-colors">
+                <a href={searchUrl} target="_blank" rel="noreferrer" className="text-white text-xl font-black truncate block hover:text-blue-400 transition-colors">
                     {selectedJob?.address} ↗
                 </a>
                 <p className="text-slate-500 text-xs font-mono uppercase mt-1">{selectedJob?.borough} • {selectedJob?.type}</p>
