@@ -9,55 +9,80 @@ export function JobsMapBoard({ jobs }) {
   const mapContainer = useRef(null);
   const map = useRef(null);
   const markersRef = useRef([]);
-  // Initialize Map and Markers exactly once
+  // 1. Initialize Map and Job Cards
   useEffect(() => {
     if (map.current || !mapContainer.current || !jobs?.length) return;
+    // Force initial coordinates to strict numbers
+    const initLng = Number(jobs[0].lng);
+    const initLat = Number(jobs[0].lat);
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/dark-v11',
-      center: [jobs[0].lng, jobs[0].lat],
+      center: [initLng || -73.85, initLat || 40.72],
       zoom: 14
     });
+    // Create the Job Cards on the map
     jobs.forEach((job) => {
-      const el = document.createElement('div');
-      el.style.backgroundColor = selectedJob?.id === job.id ? '#2563eb' : '#ef4444';
-      el.style.width = '20px';
-      el.style.height = '20px';
-      el.style.borderRadius = '50%';
-      el.style.border = '2px solid white';
-      el.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
-      el.style.cursor = 'pointer';
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        setSelectedJob(job);
-      });
-      const marker = new mapboxgl.Marker(el)
-        .setLngLat([job.lng, job.lat])
-        .addTo(map.current);
-      markersRef.current.push({ id: job.id, marker, el });
+      const lng = Number(job.lng);
+      const lat = Number(job.lat);
+      // Only draw if coordinates are valid numbers
+      if (!isNaN(lng) && !isNaN(lat)) {
+        const el = document.createElement('div');
+        el.style.cursor = 'pointer';
+        // Build the physical card HTML
+        el.innerHTML = `
+          <div style="background-color: ${selectedJob?.id === job.id ? '#2563eb' : '#1e293b'}; 
+                      color: white; 
+                      padding: 4px 10px; 
+                      border-radius: 6px; 
+                      font-family: monospace; 
+                      font-size: 12px; 
+                      font-weight: bold; 
+                      border: 2px solid white; 
+                      box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+                      transition: all 0.2s ease;">
+            ${job.id || 'JOB'}
+          </div>
+        `;
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setSelectedJob(job);
+        });
+        const marker = new mapboxgl.Marker(el)
+          .setLngLat([lng, lat])
+          .addTo(map.current);
+        markersRef.current.push({ id: job.id, marker, el });
+      }
     });
   }, [jobs]);
-  // Fly to job and update marker colors when selection changes
+  // 2. Fly to job and highlight card when selected
   useEffect(() => {
     if (!map.current || !selectedJob) return;
-    map.current.flyTo({
-      center: [selectedJob.lng, selectedJob.lat],
-      zoom: 15,
-      essential: true
-    });
+    const destLng = Number(selectedJob.lng);
+    const destLat = Number(selectedJob.lat);
+    if (!isNaN(destLng) && !isNaN(destLat)) {
+        map.current.flyTo({
+        center: [destLng, destLat],
+        zoom: 15,
+        essential: true
+        });
+    }
+    // Update the colors of the cards on the map
     markersRef.current.forEach(({ id, el }) => {
-      el.style.backgroundColor = id === selectedJob.id ? '#2563eb' : '#ef4444';
-      el.style.transform = id === selectedJob.id ? 'scale(1.2)' : 'scale(1)';
-      el.style.transition = 'all 0.2s ease';
-      el.style.zIndex = id === selectedJob.id ? '1' : '0';
+      const card = el.firstElementChild;
+      if (card) {
+        card.style.backgroundColor = id === selectedJob.id ? '#2563eb' : '#1e293b';
+        card.style.transform = id === selectedJob.id ? 'scale(1.15)' : 'scale(1)';
+        el.style.zIndex = id === selectedJob.id ? '50' : '1';
+      }
     });
   }, [selectedJob]);
   if (!jobs?.length) return <div className="p-10 text-white font-mono">Scanning G: Drive for jobs...</div>;
   // OFFICIAL GOOGLE ROUTING LINKS
   const openDirections = () => {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${selectedJob.lat},${selectedJob.lng}`, '_blank');
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=$${selectedJob.lat},${selectedJob.lng}`, '_blank');
   };
-  const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedJob.address)}`;
+  const searchUrl = `https://www.google.com/maps/search/?api=1&query=$${encodeURIComponent(selectedJob.address)}`;
   return (
     <div className="flex flex-col h-screen w-full bg-black overflow-hidden">
       {/* TOP: NAVIGATION */}
@@ -71,7 +96,7 @@ export function JobsMapBoard({ jobs }) {
           </button>
         ))}
       </div>
-      {/* CENTER: NATIVE MAPBOX GL (No Wrapper) */}
+      {/* CENTER: NATIVE MAPBOX GL */}
       <div className="flex-1 w-full bg-slate-950 relative">
         <div ref={mapContainer} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
       </div>
