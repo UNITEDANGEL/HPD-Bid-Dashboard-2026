@@ -11,11 +11,47 @@ function text(value: unknown) {
   return String(value).trim();
 }
 
+function parseCsvLine(line: string) {
+  const out: string[] = [];
+  let cur = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    const next = line[i + 1];
+
+    if (ch === '"' && inQuotes && next === '"') {
+      cur += '"';
+      i++;
+    } else if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === "," && !inQuotes) {
+      out.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+
+  out.push(cur);
+  return out;
+}
+
 function normalizeJob(row: RawJob, index: number) {
-  const omo = text(row.OMO) || `JOB-${index + 1}`;
-  const buildingAddress = text(row.BuildingAddress);
-  const location = text(row.Location);
-  const description = text(row.JobDescription);
+  const get = (...keys: string[]) => {
+    for (const key of keys) {
+      const value = row[key];
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
+        return String(value).trim();
+      }
+    }
+    return "";
+  };
+
+  const omo = get("OMO", "omo", "Job_ID", "Job ID", "jobId", "id") || `JOB-${index + 1}`;
+  const buildingAddress = get("BuildingAddress", "Building_Address", "Building Address", "Address", "address");
+  const location = get("Location", "location");
+  const description = get("JobDescription", "Job_Description", "Job Description", "Description", "description");
 
   return {
     ...row,
@@ -29,62 +65,62 @@ function normalizeJob(row: RawJob, index: number) {
     location,
     Location: location,
 
-    apartment: text(row.ApartmentUnit),
-    ApartmentUnit: text(row.ApartmentUnit),
+    apartment: get("ApartmentUnit", "Apartment", "Apt", "APT", "Unit"),
+    ApartmentUnit: get("ApartmentUnit", "Apartment", "Apt", "APT", "Unit"),
 
-    tenantName: text(row.TenantName),
-    TenantName: text(row.TenantName),
+    tenantName: get("TenantName", "Tenant Name"),
+    TenantName: get("TenantName", "Tenant Name"),
 
-    tenantPhone: text(row.TenantPhone),
-    TenantPhone: text(row.TenantPhone),
+    tenantPhone: get("TenantPhone", "Tenant Phone", "Phone", "phone"),
+    TenantPhone: get("TenantPhone", "Tenant Phone", "Phone", "phone"),
 
-    workStartDate: text(row.WorkStartDate),
-    WorkStartDate: text(row.WorkStartDate),
+    workStartDate: get("WorkStartDate", "Work Start Date"),
+    WorkStartDate: get("WorkStartDate", "Work Start Date"),
 
-    workCompletionDate: text(row.WorkCompletionDate),
-    WorkCompletionDate: text(row.WorkCompletionDate),
+    workCompletionDate: get("WorkCompletionDate", "Work Completion Date"),
+    WorkCompletionDate: get("WorkCompletionDate", "Work Completion Date"),
 
-    awardDate: text(row.AwardDate),
-    AwardDate: text(row.AwardDate),
+    awardDate: get("AwardDate", "Award Date", "Award_Date"),
+    AwardDate: get("AwardDate", "Award Date", "Award_Date"),
 
-    bidAmount: text(row.AwardAmount),
-    AwardAmount: text(row.AwardAmount),
+    bidAmount: get("AwardAmount", "Award Amount", "Award_Amount", "Bid Amount", "Amount"),
+    AwardAmount: get("AwardAmount", "Award Amount", "Award_Amount", "Bid Amount", "Amount"),
 
-    awardedBy: text(row.AwardedBy),
-    AwardedBy: text(row.AwardedBy),
+    awardedBy: get("AwardedBy", "Awarded By"),
+    AwardedBy: get("AwardedBy", "Awarded By"),
 
-    totalSqFt: text(row.TotalSqFt),
-    TotalSqFt: text(row.TotalSqFt),
+    totalSqFt: get("TotalSqFt", "Total Sq Ft"),
+    TotalSqFt: get("TotalSqFt", "Total Sq Ft"),
 
     description,
     JobDescription: description,
     Job_Description: description,
 
-    geocode: text(row.Geocode),
-    Geocode: text(row.Geocode),
+    geocode: get("Geocode"),
+    Geocode: get("Geocode"),
 
-    latitude: text(row.Latitude),
-    Latitude: text(row.Latitude),
+    latitude: get("Latitude", "latitude", "lat"),
+    Latitude: get("Latitude", "latitude", "lat"),
 
-    longitude: text(row.Longitude),
-    Longitude: text(row.Longitude),
+    longitude: get("Longitude", "longitude", "lng", "lon"),
+    Longitude: get("Longitude", "longitude", "lng", "lon"),
 
-    coaFile: text(row.COAFile),
-    COAFile: text(row.COAFile),
+    coaFile: get("COAFile", "COA File", "COA_File", "coaFile"),
+    COAFile: get("COAFile", "COA File", "COA_File", "coaFile"),
 
-    itbFile: text(row.ITBFile),
-    ITBFile: text(row.ITBFile),
+    itbFile: get("ITBFile", "ITB File", "ITB_File", "itbFile"),
+    ITBFile: get("ITBFile", "ITB File", "ITB_File", "itbFile"),
 
-    missingITBReason: text(row.MissingITBReason),
-    MissingITBReason: text(row.MissingITBReason),
+    missingITBReason: get("MissingITBReason", "Missing ITB Reason"),
+    MissingITBReason: get("MissingITBReason", "Missing ITB Reason"),
 
-    coaParseStatus: text(row.COAParseStatus),
-    COAParseStatus: text(row.COAParseStatus),
+    coaParseStatus: get("COAParseStatus", "COA Parse Status"),
+    COAParseStatus: get("COAParseStatus", "COA Parse Status"),
 
-    itbMatchStatus: text(row.ITBMatchStatus),
-    ITBMatchStatus: text(row.ITBMatchStatus),
+    itbMatchStatus: get("ITBMatchStatus", "ITB Match Status"),
+    ITBMatchStatus: get("ITBMatchStatus", "ITB Match Status"),
 
-    status: text(row.ITBMatchStatus) || text(row.COAParseStatus) || "Loaded",
+    status: get("ITBMatchStatus", "ITB Match Status") || get("COAParseStatus", "COA Parse Status") || "Loaded",
 
     borough: extractBorough(description),
     trade: extractTrade(description),
@@ -107,24 +143,34 @@ function extractTrade(description: string) {
   return "";
 }
 
-function loadJobs() {
-  const jsonPath = path.join(process.cwd(), "data", "COA_Fetcher_2026.json");
+function loadCsv(filePath: string) {
+  const raw = fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
+  const lines = raw.split(/\r?\n/).filter((line) => line.trim().length > 0);
 
-  if (!fs.existsSync(jsonPath)) {
-    return {
-      jobs: [],
-      source: null,
-      error: "Missing data/COA_Fetcher_2026.json",
-    };
-  }
+  if (!lines.length) return [];
 
-  const raw = fs.readFileSync(jsonPath, "utf8").replace(/^\uFEFF/, "");
+  const headers = parseCsvLine(lines[0]).map((h) => h.trim());
+
+  return lines.slice(1).map((line, index) => {
+    const values = parseCsvLine(line);
+    const row: RawJob = {};
+
+    headers.forEach((header, i) => {
+      row[header] = values[i] ?? "";
+    });
+
+    return normalizeJob(row, index);
+  });
+}
+
+function loadJson(filePath: string) {
+  const raw = fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
   const parsed = JSON.parse(raw);
 
   let rows: RawJob[] = [];
 
   if (Array.isArray(parsed)) {
-    rows = parsed;
+    rows = parsed as RawJob[];
   } else if (parsed && typeof parsed === "object") {
     const obj = parsed as Record<string, unknown>;
     if (Array.isArray(obj.jobs)) rows = obj.jobs as RawJob[];
@@ -133,16 +179,39 @@ function loadJobs() {
     else if (Array.isArray(obj.rows)) rows = obj.rows as RawJob[];
   }
 
-  const jobs = rows.map((row, index) => normalizeJob(row, index));
-
-  return {
-    jobs,
-    source: "COA_Fetcher_2026.json",
-    count: jobs.length,
-    updatedAt: new Date().toISOString(),
-  };
+  return rows.map((row, index) => normalizeJob(row, index));
 }
 
 export async function GET() {
-  return NextResponse.json(loadJobs());
+  const csvPath = path.join(process.cwd(), "data", "COA_Fetcher_2026.csv");
+  const jsonPath = path.join(process.cwd(), "data", "COA_Fetcher_2026.json");
+
+  if (fs.existsSync(csvPath)) {
+    const jobs = loadCsv(csvPath);
+
+    return NextResponse.json({
+      jobs,
+      source: "COA_Fetcher_2026.csv",
+      count: jobs.length,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  if (fs.existsSync(jsonPath)) {
+    const jobs = loadJson(jsonPath);
+
+    return NextResponse.json({
+      jobs,
+      source: "COA_Fetcher_2026.json",
+      count: jobs.length,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  return NextResponse.json({
+    jobs: [],
+    source: null,
+    count: 0,
+    error: "No job source found. Expected data/COA_Fetcher_2026.csv",
+  });
 }
