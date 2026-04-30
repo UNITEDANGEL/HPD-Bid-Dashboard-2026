@@ -22,6 +22,15 @@ function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
 }
 
+function formatCurrency(amountValue: number, fallback: string) {
+  if (!amountValue) return fallback || "Not listed";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(amountValue);
+}
+
 function buildMapsHref(job: JobRecord) {
   const coords = job.latitude && job.longitude ? `${job.latitude},${job.longitude}` : "";
   const query = coords || job.address || job.location;
@@ -90,7 +99,7 @@ export function JobsMapBoard({ jobs }: Props) {
           <span className="section-chip">{filtered.length} mapped jobs</span>
         </div>
         <p className="hero-copy map-copy">
-          Use this focused map screen for fast borough scanning, marker review, and jumping into individual job packets.
+          Use this all-in-one field screen for borough scanning, map review, award packet checks, and job selection on one page.
         </p>
 
         <div className="filters-grid">
@@ -165,8 +174,25 @@ export function JobsMapBoard({ jobs }: Props) {
                     <strong>{selected.awardDate || "Not listed"}</strong>
                   </div>
                   <div className="map-kpi">
+                    <span>Bid Amount</span>
+                    <strong>{formatCurrency(selected.amountValue, selected.bidAmount)}</strong>
+                  </div>
+                  <div className="map-kpi">
                     <span>Tenant</span>
                     <strong>{selected.tenantName || "Not listed"}</strong>
+                  </div>
+                </div>
+
+                <div className="map-doc-grid">
+                  <div className="map-doc-card">
+                    <span>COA</span>
+                    <strong>{selected.coaFile ? "Matched" : "Missing"}</strong>
+                    <small>{selected.coaFile || "No confirmation of award file matched yet"}</small>
+                  </div>
+                  <div className="map-doc-card">
+                    <span>ITB</span>
+                    <strong>{selected.itbFile ? "Matched" : "Missing"}</strong>
+                    <small>{selected.itbFile || "No invitation to bid file matched yet"}</small>
                   </div>
                 </div>
 
@@ -178,9 +204,6 @@ export function JobsMapBoard({ jobs }: Props) {
                 <div className="detail-actions">
                   <Link href={buildJobHref(selected)} className="primary-link">
                     Open job profile
-                  </Link>
-                  <Link href="/jobs" className="secondary-link">
-                    Open jobs board
                   </Link>
                   {buildMapsHref(selected) ? (
                     <a href={buildMapsHref(selected)} target="_blank" rel="noreferrer" className="secondary-link">
