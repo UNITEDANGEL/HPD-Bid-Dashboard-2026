@@ -1,3 +1,4 @@
+import "leaflet/dist/leaflet.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
@@ -29,3 +30,4 @@ export default function RootLayout({
     </html>
   );
 }
+
