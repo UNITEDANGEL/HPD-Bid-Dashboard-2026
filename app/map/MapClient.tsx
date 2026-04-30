@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type JobRecord = {
+  coaFile?: string;
+  itbFile?: string;
+  tenantPhone?: string;
+  contractor?: string;
+  owner?: string;
+  dueDate?: string;
+  bidDueDate?: string;
   id?: string;
   address?: string;
   location?: string;
@@ -637,6 +644,25 @@ export default function MapClient() {
           font-size: 12px;
         }
 
+        .hpd-card-actions {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+          margin-top: 10px;
+        }
+
+        .hpd-card-actions a {
+          display: grid;
+          place-items: center;
+          min-height: 34px;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #42e8f3, #47a3ff);
+          color: #04111f;
+          font-size: 12px;
+          font-weight: 950;
+          text-decoration: none;
+        }
+
         .hpd-map-status {
           flex: 0 0 auto;
           max-width: 92px;
@@ -754,8 +780,15 @@ export default function MapClient() {
           <div className="hpd-selected-card">
             <strong>{selected.id || "Selected job"}</strong>
             <p>{selected.address || selected.location || "No address listed"}</p>
-            <p>{selected.borough || "Unknown borough"} Â· {selected.trade || "Trade not listed"}</p>
-            <p>{selected.status || "No status"} {money(selected) ? `Â· ${money(selected)}` : ""}</p>
+            <p>{selected.borough || "Unknown borough"} · {selected.trade || "Trade not listed"}</p>
+            <p>{selected.status || "No status"} {money(selected) ? `· ${money(selected)}` : ""}</p>
+            <p>{selected.awardDate ? `Award: ${selected.awardDate}` : ""} {selected.bidDueDate || selected.dueDate ? ` · Due: ${selected.bidDueDate || selected.dueDate}` : ""}</p>
+            <p>{selected.tenantPhone ? `Phone: ${selected.tenantPhone}` : ""}</p>
+            <div className="hpd-card-actions">
+              <a href={`/jobs/${encodeURIComponent(selected.id || "")}`}>Open Job</a>
+              <a href={`/invoice-generator?job=${encodeURIComponent(selected.id || "")}`}>Invoice</a>
+              <a target="_blank" rel="noreferrer" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selected.address || selected.location || "")}`}>Directions</a>
+            </div>
           </div>
         ) : null}
 
@@ -785,4 +818,5 @@ export default function MapClient() {
     </main>
   );
 }
+
 
