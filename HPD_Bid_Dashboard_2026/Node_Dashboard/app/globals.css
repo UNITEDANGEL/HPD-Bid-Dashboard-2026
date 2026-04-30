@@ -61,7 +61,7 @@ select {
   display: flex;
   justify-content: space-between;
   gap: 18px;
-  align-items: end;
+  align-items: flex-end;
   margin-bottom: 18px;
   padding: 18px 20px;
   border-radius: var(--radius-xl);
@@ -79,7 +79,8 @@ select {
 .insight-card h3,
 .detail-card h3,
 .job-profile-header h2,
-.raw-card h3 {
+.raw-card h3,
+.map-sidecard h3 {
   margin: 0;
   font-family: var(--font-display);
 }
@@ -96,12 +97,12 @@ select {
   line-height: 1.5;
 }
 
-.page-frame {
-  display: grid;
-  gap: 18px;
-}
-
-.dashboard-shell {
+.page-frame,
+.dashboard-shell,
+.page-stack,
+.map-stage,
+.board-main,
+.board-side {
   display: grid;
   gap: 18px;
 }
@@ -112,19 +113,27 @@ select {
 .detail-card,
 .job-card,
 .job-profile-card,
-.raw-card {
+.raw-card,
+.map-shell,
+.map-sidecard {
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
 
 .hero-card,
-.filters-card {
+.filters-card,
+.map-shell {
   padding: 22px;
   border-radius: var(--radius-xl);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
     var(--panel);
   backdrop-filter: blur(18px);
+}
+
+.filters-card {
+  display: grid;
+  gap: 16px;
 }
 
 .eyebrow {
@@ -149,6 +158,10 @@ select {
   max-width: 720px;
   line-height: 1.6;
   font-size: 1rem;
+}
+
+.map-copy {
+  margin-top: 0;
 }
 
 .hero-actions,
@@ -191,7 +204,9 @@ select {
 
 .hero-metrics,
 .insights-grid,
-.jobs-grid {
+.jobs-grid,
+.map-kpi-grid,
+.map-doc-grid {
   display: grid;
   gap: 12px;
 }
@@ -238,22 +253,18 @@ select {
   background: linear-gradient(135deg, #16a34a, #22c55e);
 }
 
-.filters-card {
-  display: grid;
-  gap: 16px;
-}
-
 .filter-header,
 .section-heading,
 .detail-head,
 .stack-row,
 .job-card-top,
 .job-card-bottom,
-.profile-top {
+.profile-top,
+.map-sidecard-header {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  align-items: start;
+  align-items: flex-start;
 }
 
 .filters-grid {
@@ -284,6 +295,140 @@ select {
   padding: 0 14px;
   color: var(--text-strong);
   background: rgba(255, 255, 255, 0.96);
+}
+
+.map-stage-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.75fr);
+  gap: 18px;
+}
+
+.map-shell {
+  min-height: 560px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.22), transparent 20%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+    var(--panel);
+}
+
+.map-shell-tall {
+  min-height: 680px;
+}
+
+.jobs-map,
+.jobs-map.leaflet-container {
+  width: calc(100% + 44px);
+  height: calc(100% + 44px);
+  min-height: 560px;
+  margin: -22px;
+}
+
+.map-shell-tall .jobs-map,
+.map-shell-tall .jobs-map.leaflet-container {
+  min-height: 680px;
+}
+
+.leaflet-container {
+  font-family: var(--font-body);
+}
+
+.map-skeleton,
+.map-empty {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  min-height: 560px;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.map-empty strong {
+  font-family: var(--font-display);
+}
+
+.map-sidecard {
+  display: grid;
+  gap: 18px;
+  align-content: flex-start;
+  padding: 20px;
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  color: var(--text-strong);
+}
+
+.map-sidecard-scroll {
+  max-height: 680px;
+  overflow: auto;
+}
+
+.map-side-address {
+  margin: -6px 0 0;
+  color: #5f7192;
+  line-height: 1.55;
+}
+
+.map-kpi-grid,
+.map-doc-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.map-kpi,
+.map-doc-card {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(16, 33, 58, 0.05);
+}
+
+.map-kpi span,
+.map-doc-card span {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #4c6284;
+}
+
+.map-kpi strong,
+.map-doc-card strong {
+  display: block;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+.map-doc-card small {
+  display: block;
+  margin-top: 8px;
+  color: #5f7192;
+  line-height: 1.45;
+}
+
+.map-description-card {
+  margin-top: 0;
+}
+
+.map-popup {
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.map-popup span {
+  color: #4c6284;
+  line-height: 1.4;
+}
+
+.map-popup-button {
+  margin-top: 8px;
+  min-height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #22d3ee);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .insights-grid {
@@ -342,12 +487,6 @@ select {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
   gap: 18px;
-}
-
-.board-main,
-.board-side {
-  display: grid;
-  gap: 16px;
 }
 
 .jobs-grid {
@@ -477,11 +616,6 @@ select {
   line-height: 1.6;
 }
 
-.page-stack {
-  display: grid;
-  gap: 18px;
-}
-
 .breadcrumbs {
   display: flex;
   flex-wrap: wrap;
@@ -517,6 +651,7 @@ select {
 
 @media (max-width: 1100px) {
   .hero-card,
+  .map-stage-grid,
   .board-grid,
   .insights-grid,
   .jobs-grid {
@@ -533,12 +668,15 @@ select {
   .filter-header,
   .section-heading,
   .detail-head,
-  .profile-top {
+  .profile-top,
+  .map-sidecard-header {
     display: grid;
   }
 
   .filters-grid,
   .hero-metrics,
+  .map-kpi-grid,
+  .map-doc-grid,
   .detail-grid,
   .job-profile-grid,
   .raw-row {
@@ -551,12 +689,35 @@ select {
   .detail-card,
   .job-card,
   .job-profile-card,
-  .raw-card {
+  .raw-card,
+  .map-shell,
+  .map-sidecard {
     padding: 16px;
+  }
+
+  .jobs-map,
+  .jobs-map.leaflet-container {
+    width: calc(100% + 32px);
+    height: calc(100% + 32px);
+    margin: -16px;
   }
 
   .job-card-bottom {
     display: grid;
     gap: 6px;
+  }
+
+  .map-shell,
+  .map-empty,
+  .map-skeleton,
+  .jobs-map,
+  .jobs-map.leaflet-container {
+    min-height: 420px;
+  }
+
+  .map-shell-tall,
+  .map-shell-tall .jobs-map,
+  .map-shell-tall .jobs-map.leaflet-container {
+    min-height: 480px;
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
 import { StatusBadge } from "./StatusBadge";
@@ -10,6 +11,14 @@ type Props = {
   title: string;
   subtitle: string;
 };
+
+const JobsMap = dynamic(
+  () => import("./JobsMap").then((mod) => mod.JobsMap),
+  {
+    ssr: false,
+    loading: () => <div className="map-skeleton">Loading live job map...</div>,
+  },
+);
 
 function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b));
@@ -59,10 +68,15 @@ export function DashboardClient({ jobs, title, subtitle }: Props) {
     return haystack.includes(query.trim().toLowerCase());
   });
 
-  const selected = filteredJobs.find((job) => job.id === selectedId) || filteredJobs[0] || jobs[0] || null;
+  const selected =
+    filteredJobs.find((job) => job.id === selectedId) ||
+    filteredJobs[0] ||
+    jobs[0] ||
+    null;
+  const mappedJobs = filteredJobs.filter((job) => job.hasMap && job.latitude && job.longitude);
   const totalJobs = filteredJobs.length;
   const awardedCount = filteredJobs.filter((job) => job.status.toLowerCase() === "awarded").length;
-  const mappedCount = filteredJobs.filter((job) => job.hasMap).length;
+  const mappedCount = mappedJobs.length;
   const jobs2026 = filteredJobs.filter((job) => job.awardDate.includes("2026")).length;
   const topTrades = unique(filteredJobs.map((job) => job.trade)).slice(0, 5);
   const topBoroughCards = boroughs
@@ -78,12 +92,15 @@ export function DashboardClient({ jobs, title, subtitle }: Props) {
     <div className="dashboard-shell">
       <section className="hero-card">
         <div>
-          <p className="eyebrow">Render Ready</p>
+          <p className="eyebrow">Vercel Live</p>
           <h1>{title}</h1>
           <p className="hero-copy">{subtitle}</p>
           <div className="hero-actions">
-            <Link href="/jobs" className="primary-link">
-              Open mobile jobs board
+            <Link href="/map" className="primary-link">
+              Open live map board
+            </Link>
+            <Link href="/jobs" className="secondary-link">
+              Open jobs board
             </Link>
             <Link href="/api/jobs" className="secondary-link">
               Jobs API
@@ -107,6 +124,97 @@ export function DashboardClient({ jobs, title, subtitle }: Props) {
             <span>{jobs2026}</span>
             <small>2026 awards</small>
           </div>
+        </div>
+      </section>
+
+      <section className="map-stage">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">Map Command</p>
+            <h2>Live work order map with award packet context</h2>
+          </div>
+          <span className="section-chip">{mappedCount} mapped addresses</span>
+        </div>
+
+        <div className="map-stage-grid">
+          <div className="map-shell">
+            {mappedJobs.length ? (
+              <JobsMap jobs={mappedJobs} selectedId={selected?.id || ""} onSelect={setSelectedId} />
+            ) : (
+              <div className="map-empty">
+                <strong>No map-ready jobs for the current filters.</strong>
+                <span>Try resetting borough, status, or search to bring the live map back into view.</span>
+              </div>
+            )}
+          </div>
+
+          <aside className="map-sidecard">
+            <div className="map-sidecard-header">
+              <div>
+                <p className="eyebrow">Selected Location</p>
+                <h3>{selected?.id || "No job selected"}</h3>
+              </div>
+              {selected ? <StatusBadge status={selected.status} /> : null}
+            </div>
+
+            {selected ? (
+              <>
+                <p className="map-side-address">{selected.address || "No address listed"}</p>
+
+                <div className="map-kpi-grid">
+                  <div className="map-kpi">
+                    <span>Trade</span>
+                    <strong>{selected.trade || "Not listed"}</strong>
+                  </div>
+                  <div className="map-kpi">
+                    <span>Borough</span>
+                    <strong>{selected.borough || "Not listed"}</strong>
+                  </div>
+                  <div className="map-kpi">
+                    <span>Award Date</span>
+                    <strong>{selected.awardDate || "Not listed"}</strong>
+                  </div>
+                  <div className="map-kpi">
+                    <span>Bid Amount</span>
+                    <strong>{formatCurrency(selected.amountValue, selected.bidAmount)}</strong>
+                  </div>
+                </div>
+
+                <div className="map-doc-grid">
+                  <div className="map-doc-card">
+                    <span>COA</span>
+                    <strong>{selected.coaFile ? "Matched" : "Missing"}</strong>
+                    <small>{selected.coaFile || "No confirmation of award match yet"}</small>
+                  </div>
+                  <div className="map-doc-card">
+                    <span>ITB</span>
+                    <strong>{selected.itbFile ? "Matched" : "Missing"}</strong>
+                    <small>{selected.itbFile || "No invitation to bid match yet"}</small>
+                  </div>
+                </div>
+
+                <div className="description-card map-description-card">
+                  <strong>Work Description</strong>
+                  <p>{selected.description || "No description listed for this record."}</p>
+                </div>
+
+                <div className="detail-actions">
+                  <Link href={`/jobs/${encodeURIComponent(selected.id)}`} className="primary-link">
+                    Open full job profile
+                  </Link>
+                  {buildMapsHref(selected) ? (
+                    <a href={buildMapsHref(selected)} target="_blank" rel="noreferrer" className="secondary-link">
+                      Open in Maps
+                    </a>
+                  ) : null}
+                </div>
+              </>
+            ) : (
+              <div className="detail-card">
+                <p>No jobs match the current filters.</p>
+              </div>
+            )}
+          </aside>
         </div>
       </section>
 
@@ -181,7 +289,15 @@ export function DashboardClient({ jobs, title, subtitle }: Props) {
           <p className="eyebrow">Trades</p>
           <h3>Most visible work types</h3>
           <div className="tag-grid">
-            {topTrades.length ? topTrades.map((trade) => <span key={trade} className="tag-pill">{trade}</span>) : <span className="tag-pill">No trade data</span>}
+            {topTrades.length ? (
+              topTrades.map((trade) => (
+                <span key={trade} className="tag-pill">
+                  {trade}
+                </span>
+              ))
+            ) : (
+              <span className="tag-pill">No trade data</span>
+            )}
           </div>
         </article>
 
