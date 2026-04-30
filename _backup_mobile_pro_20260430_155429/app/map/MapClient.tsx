@@ -58,17 +58,18 @@ function cleanAddress(job: JobRecord) {
   const raw = job.address || job.location || "";
   if (!raw.trim()) return "";
 
-  const parts = [raw];
+  const hasNY = /ny|new york/i.test(raw);
+  const hasBorough = Boolean(job.borough && raw.toLowerCase().includes(job.borough.toLowerCase()));
 
-  if (job.borough && !raw.toLowerCase().includes(job.borough.toLowerCase())) {
-    parts.push(job.borough);
-  }
-
-  if (!/ny|new york/i.test(raw)) {
-    parts.push("New York");
-  }
-
-  return parts.filter(Boolean).join(", ").replace(/\s+/g, " ").trim();
+  return [
+    raw,
+    hasBorough ? "" : job.borough || "",
+    hasNY ? "" : "New York",
+  ]
+    .filter(Boolean)
+    .join(", ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function cacheKey(job: JobRecord) {
@@ -115,7 +116,9 @@ async function geocodeJob(job: JobRecord) {
     }
   } catch {}
 
-  const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=" + encodeURIComponent(query);
+  const url =
+    "https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=us&q=" +
+    encodeURIComponent(query);
 
   const response = await fetch(url, {
     headers: {
@@ -157,11 +160,12 @@ export default function MapClient() {
 
   const filteredJobs = useMemo(() => {
     const needle = search.trim().toLowerCase();
+
     const rows = mappedJobs.length
       ? mappedJobs
       : jobs.map((job) => {
           const coords = getStoredCoords(job);
-          return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" as const } : { ...job };
+          return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" as const } : job;
         });
 
     if (!needle) return rows;
@@ -193,7 +197,8 @@ export default function MapClient() {
         const response = await fetch("/api/jobs", { cache: "no-store" });
         if (!response.ok) throw new Error(`/api/jobs returned ${response.status}`);
 
-        const rows = asArray(await response.json());
+        const data = await response.json();
+        const rows = asArray(data);
 
         if (cancelled) return;
 
@@ -215,14 +220,14 @@ export default function MapClient() {
         const toGeocode = initialMapped
           .filter((job) => !Number.isFinite(job._lat) || !Number.isFinite(job._lng))
           .filter((job) => cleanAddress(job))
-          .slice(0, 100);
+          .slice(0, 80);
 
         let geocoded = 0;
 
         for (const job of toGeocode) {
           if (cancelled) return;
 
-          await wait(1050);
+          await wait(1100);
 
           const coords = await geocodeJob(job).catch(() => null);
           if (!coords) continue;
@@ -342,18 +347,19 @@ export default function MapClient() {
         const lat = Number(job._lat);
         const lng = Number(job._lng);
 
-        const color = (job.status || "").toLowerCase().includes("award")
-          ? "#53e69c"
-          : job._source === "geocoded"
-            ? "#ffd166"
-            : "#42e8f3";
+        const color =
+          (job.status || "").toLowerCase().includes("award")
+            ? "#53e69c"
+            : job._source === "geocoded"
+              ? "#ffd166"
+              : "#42e8f3";
 
         const marker = L.circleMarker([lat, lng], {
           radius: 9,
           weight: 2,
           color,
           fillColor: color,
-          fillOpacity: 0.82,
+          fillOpacity: 0.8,
         });
 
         marker.on("click", () => {
@@ -395,7 +401,7 @@ export default function MapClient() {
   }, [mapReady, filteredJobs]);
 
   return (
-    <main className="hpd-map-shell">
+    <main className="map-shell">
       <style jsx global>{`
         html,
         body {
@@ -424,49 +430,49 @@ export default function MapClient() {
           z-index: 1;
         }
 
-        .hpd-map-shell {
+        .map-shell {
           height: 100dvh;
           width: 100%;
           display: grid;
-          grid-template-rows: auto minmax(0, 1fr) auto;
+          grid-template-rows: auto 1fr auto;
           background:
             radial-gradient(circle at top right, rgba(66, 232, 243, 0.14), transparent 24rem),
             linear-gradient(180deg, #07111f 0%, #050914 100%);
           overflow: hidden;
         }
 
-        .hpd-map-topbar {
+        .map-topbar {
           z-index: 5;
           padding: max(12px, env(safe-area-inset-top)) 12px 10px;
           display: grid;
           gap: 10px;
-          background: rgba(7, 17, 31, 0.94);
+          background: rgba(7, 17, 31, 0.92);
           border-bottom: 1px solid rgba(255, 255, 255, 0.12);
           backdrop-filter: blur(14px);
         }
 
-        .hpd-map-heading {
+        .map-heading {
           display: flex;
           align-items: center;
           justify-content: space-between;
           gap: 10px;
         }
 
-        .hpd-map-heading h1 {
+        .map-heading h1 {
           margin: 0;
           font-size: clamp(22px, 6vw, 36px);
           letter-spacing: -0.06em;
           line-height: 1;
         }
 
-        .hpd-map-heading p {
+        .map-heading p {
           margin: 4px 0 0;
           color: #aebbd0;
           font-size: 12px;
           line-height: 1.3;
         }
 
-        .hpd-home-button {
+        .home-button {
           flex: 0 0 auto;
           border: 1px solid rgba(255, 255, 255, 0.14);
           background: rgba(255, 255, 255, 0.08);
@@ -477,13 +483,13 @@ export default function MapClient() {
           font-size: 13px;
         }
 
-        .hpd-map-search-row {
+        .search-row {
           display: grid;
           grid-template-columns: 1fr auto;
           gap: 8px;
         }
 
-        .hpd-map-search-row input {
+        .search-row input {
           width: 100%;
           min-height: 46px;
           border: 1px solid rgba(255, 255, 255, 0.14);
@@ -495,7 +501,7 @@ export default function MapClient() {
           outline: none;
         }
 
-        .hpd-drawer-toggle {
+        .drawer-toggle {
           min-height: 46px;
           border: 1px solid rgba(255, 255, 255, 0.14);
           border-radius: 14px;
@@ -505,21 +511,21 @@ export default function MapClient() {
           padding: 0 12px;
         }
 
-        .hpd-map-stage {
+        .map-stage {
           position: relative;
-          min-height: 300px;
+          min-height: 0;
           height: 100%;
           width: 100%;
         }
 
-        .hpd-map-node {
+        .map-node {
           position: absolute;
           inset: 0;
           height: 100%;
           width: 100%;
         }
 
-        .hpd-map-stats {
+        .map-stats {
           position: absolute;
           z-index: 4;
           left: 10px;
@@ -531,48 +537,47 @@ export default function MapClient() {
           pointer-events: none;
         }
 
-        .hpd-map-stat {
+        .stat {
           border: 1px solid rgba(255, 255, 255, 0.14);
-          background: rgba(7, 17, 31, 0.86);
+          background: rgba(7, 17, 31, 0.85);
           backdrop-filter: blur(12px);
           border-radius: 16px;
           padding: 10px;
           box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
         }
 
-        .hpd-map-stat strong {
+        .stat strong {
           display: block;
           font-size: 18px;
           line-height: 1;
         }
 
-        .hpd-map-stat span {
+        .stat span {
           display: block;
           margin-top: 4px;
           color: #aebbd0;
           font-size: 11px;
-          font-weight: 850;
+          font-weight: 800;
         }
 
-        .hpd-job-drawer {
+        .job-drawer {
           z-index: 6;
-          max-height: 38dvh;
-          background: rgba(7, 17, 31, 0.97);
+          max-height: 45dvh;
+          background: rgba(7, 17, 31, 0.96);
           border-top: 1px solid rgba(255, 255, 255, 0.14);
           border-radius: 22px 22px 0 0;
           padding: 12px;
           padding-bottom: max(12px, env(safe-area-inset-bottom));
           overflow: auto;
           box-shadow: 0 -20px 70px rgba(0, 0, 0, 0.38);
-          transition: max-height 0.18s ease;
         }
 
-        .hpd-job-drawer.closed {
+        .job-drawer.closed {
           max-height: 64px;
           overflow: hidden;
         }
 
-        .hpd-drawer-head {
+        .drawer-head {
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -580,11 +585,11 @@ export default function MapClient() {
           margin-bottom: 10px;
         }
 
-        .hpd-drawer-head strong {
+        .drawer-head strong {
           font-size: 16px;
         }
 
-        .hpd-drawer-head button {
+        .drawer-head button {
           border: 1px solid rgba(255, 255, 255, 0.14);
           background: rgba(255, 255, 255, 0.08);
           color: #f8fbff;
@@ -593,8 +598,8 @@ export default function MapClient() {
           font-weight: 900;
         }
 
-        .hpd-selected-card,
-        .hpd-map-job-card {
+        .selected-card,
+        .job-card {
           border: 1px solid rgba(255, 255, 255, 0.14);
           background: rgba(255, 255, 255, 0.08);
           border-radius: 16px;
@@ -602,19 +607,19 @@ export default function MapClient() {
           margin-bottom: 8px;
         }
 
-        .hpd-selected-card {
+        .selected-card {
           background: rgba(66, 232, 243, 0.12);
           border-color: rgba(66, 232, 243, 0.35);
         }
 
-        .hpd-map-job-row {
+        .job-row {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
           gap: 10px;
         }
 
-        .hpd-map-job-card button {
+        .job-card button {
           width: 100%;
           border: 0;
           background: transparent;
@@ -623,21 +628,21 @@ export default function MapClient() {
           text-align: left;
         }
 
-        .hpd-map-job-card strong,
-        .hpd-selected-card strong {
+        .job-card strong,
+        .selected-card strong {
           display: block;
           font-size: 14px;
         }
 
-        .hpd-map-job-card p,
-        .hpd-selected-card p {
+        .job-card p,
+        .selected-card p {
           margin: 4px 0 0;
           color: #aebbd0;
           line-height: 1.35;
           font-size: 12px;
         }
 
-        .hpd-map-status {
+        .status {
           flex: 0 0 auto;
           max-width: 92px;
           border-radius: 999px;
@@ -649,37 +654,42 @@ export default function MapClient() {
           text-overflow: ellipsis;
         }
 
-        .hpd-map-status.good {
+        .status.good {
           background: rgba(83, 230, 156, 0.16);
           color: #baffd8;
         }
 
-        .hpd-map-status.hot {
+        .status.hot {
           background: rgba(66, 232, 243, 0.14);
           color: #c4fbff;
         }
 
-        .hpd-map-status.warn {
+        .status.warn {
           background: rgba(255, 209, 102, 0.14);
           color: #ffe7a3;
         }
 
-        .hpd-map-status.neutral {
+        .status.neutral {
           background: rgba(255, 255, 255, 0.09);
           color: #d7e4f8;
         }
 
-        @media (min-width: 900px) {
-          .hpd-map-shell {
-            grid-template-columns: 390px minmax(0, 1fr);
-            grid-template-rows: auto minmax(0, 1fr);
+        @media (min-width: 850px) {
+          .map-shell {
+            grid-template-columns: 380px 1fr;
+            grid-template-rows: auto 1fr;
           }
 
-          .hpd-map-topbar {
+          .map-topbar {
             grid-column: 1 / -1;
           }
 
-          .hpd-job-drawer {
+          .map-stage {
+            grid-column: 2;
+            grid-row: 2;
+          }
+
+          .job-drawer {
             grid-column: 1;
             grid-row: 2;
             max-height: none;
@@ -689,78 +699,71 @@ export default function MapClient() {
             border-right: 1px solid rgba(255, 255, 255, 0.14);
           }
 
-          .hpd-job-drawer.closed {
+          .job-drawer.closed {
             max-height: none;
-          }
-
-          .hpd-map-stage {
-            grid-column: 2;
-            grid-row: 2;
           }
         }
       `}</style>
 
-      <header className="hpd-map-topbar">
-        <div className="hpd-map-heading">
+      <header className="map-topbar">
+        <div className="map-heading">
           <div>
             <h1>Mobile Job Map</h1>
             <p>{message}</p>
           </div>
-          <a className="hpd-home-button" href="/">
-            Home
-          </a>
+          <a className="home-button" href="/">Home</a>
         </div>
 
-        <div className="hpd-map-search-row">
+        <div className="search-row">
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search OMO, address, borough, trade..."
           />
-          <button className="hpd-drawer-toggle" type="button" onClick={() => setDrawerOpen((value) => !value)}>
+          <button className="drawer-toggle" type="button" onClick={() => setDrawerOpen((v) => !v)}>
             Jobs
           </button>
         </div>
       </header>
 
-      <section className="hpd-map-stage">
-        <div ref={mapNode} className="hpd-map-node" />
+      <section className="map-stage">
+        <div ref={mapNode} className="map-node" />
 
-        <div className="hpd-map-stats">
-          <div className="hpd-map-stat">
+        <div className="map-stats">
+          <div className="stat">
             <strong>{jobs.length}</strong>
             <span>Total</span>
           </div>
-          <div className="hpd-map-stat">
+          <div className="stat">
             <strong>{plottedCount}</strong>
             <span>Mapped</span>
           </div>
-          <div className="hpd-map-stat">
+          <div className="stat">
             <strong>{Math.max(0, jobs.length - plottedCount)}</strong>
             <span>Unmapped</span>
           </div>
         </div>
       </section>
 
-      <aside className={`hpd-job-drawer ${drawerOpen ? "" : "closed"}`}>
-        <div className="hpd-drawer-head">
+      <aside className={`job-drawer ${drawerOpen ? "" : "closed"}`}>
+        <div className="drawer-head">
           <strong>{filteredJobs.length} jobs</strong>
-          <button type="button" onClick={() => setDrawerOpen((value) => !value)}>
+          <button type="button" onClick={() => setDrawerOpen((v) => !v)}>
             {drawerOpen ? "Hide" : "Show"}
           </button>
         </div>
 
         {selected ? (
-          <div className="hpd-selected-card">
+          <div className="selected-card">
             <strong>{selected.id || "Selected job"}</strong>
             <p>{selected.address || selected.location || "No address listed"}</p>
-            <p>{selected.borough || "Unknown borough"} Â· {selected.trade || "Trade not listed"}</p>
-            <p>{selected.status || "No status"} {money(selected) ? `Â· ${money(selected)}` : ""}</p>
+            <p>{selected.borough || "Unknown borough"} · {selected.trade || "Trade not listed"}</p>
+            <p>{selected.status || "No status"} {money(selected) ? `· ${money(selected)}` : ""}</p>
           </div>
         ) : null}
 
-        {filteredJobs.slice(0, 300).map((job, index) => (
-          <div className="hpd-map-job-card" key={`${job.id || "job"}-${index}`}>
+        {filteredJobs.slice(0, 250).map((job, index) => (
+          <div className="job-card" key={`${job.id || "job"}-${index}`}>
             <button
               type="button"
               onClick={() => {
@@ -770,13 +773,13 @@ export default function MapClient() {
                 }
               }}
             >
-              <div className="hpd-map-job-row">
+              <div className="job-row">
                 <div>
                   <strong>{job.id || "HPD Job"}</strong>
                   <p>{job.address || job.location || "No address listed"}</p>
-                  <p>{job.borough || "Unknown borough"} Â· {job.trade || "Trade not listed"}</p>
+                  <p>{job.borough || "Unknown borough"} · {job.trade || "Trade not listed"}</p>
                 </div>
-                <span className={`hpd-map-status ${statusClass(job.status)}`}>{job.status || "Status"}</span>
+                <span className={`status ${statusClass(job.status)}`}>{job.status || "Status"}</span>
               </div>
             </button>
           </div>
