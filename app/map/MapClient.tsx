@@ -155,7 +155,7 @@ export default function MapClient() {
   const [mapReady, setMapReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
 
-  const filteredJobs = useMemo(() => {
+  const filteredJobs = useMemo<MappedJob[]>(() => {
     const needle = search.trim().toLowerCase();
     const rows = mappedJobs.length
       ? mappedJobs
@@ -164,9 +164,9 @@ export default function MapClient() {
           return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" as const } : { ...job };
         });
 
-    if (!needle) return rows;
+    if (!needle) return rows as MappedJob[];
 
-    return rows.filter((job) =>
+    return (rows as MappedJob[]).filter((job) =>
       [
         job.id,
         job.address,
@@ -785,3 +785,4 @@ export default function MapClient() {
     </main>
   );
 }
+
