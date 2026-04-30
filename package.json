@@ -1,30 +1,30 @@
-{
-  "name": "hpd-bid-dashboard",
-  "version": "0.1.0",
-  "private": true,
-  "engines": {
-    "node": ">=20"
-  },
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "@react-google-maps/api": "^2.20.8",
-    "@types/leaflet": "^1.9.21",
-    "leaflet": "^1.9.4",
-    "mapbox-gl": "^3.22.0",
-    "next": "^15.0.0",
-    "papaparse": "^5.4.1",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
-  },
-  "devDependencies": {
-    "@types/node": "^22.7.4",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "typescript": "^5.6.2"
-  }
+﻿{
+    "name":  "hpd-bid-dashboard",
+    "version":  "0.1.0",
+    "private":  true,
+    "engines":  {
+                    "node":  "20.x"
+                },
+    "scripts":  {
+                    "dev":  "next dev",
+                    "build":  "next build",
+                    "start":  "next start",
+                    "lint":  "next lint"
+                },
+    "dependencies":  {
+                         "@react-google-maps/api":  "^2.20.8",
+                         "@types/leaflet":  "^1.9.21",
+                         "leaflet":  "^1.9.4",
+                         "mapbox-gl":  "^3.22.0",
+                         "next":  "^15.0.0",
+                         "papaparse":  "^5.4.1",
+                         "react":  "^18.3.1",
+                         "react-dom":  "^18.3.1"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^22.7.4",
+                            "@types/react":  "^18.3.3",
+                            "@types/react-dom":  "^18.3.0",
+                            "typescript":  "^5.6.2"
+                        }
 }
