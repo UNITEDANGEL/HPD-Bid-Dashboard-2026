@@ -882,7 +882,7 @@ export default function MapClient() {
               <div className="detail"><span>Phone</span><strong>{phone(selected) || "Not listed"}</strong></div>
               <div className="detail"><span>Contractor</span><strong>{selected.contractor || "Not listed"}</strong></div>
               <div className="detail"><span>Owner</span><strong>{selected.owner || "Not listed"}</strong></div>
-              <div className="detail"><span>Docs</span><strong>{selected.coaFile ? "COA ✓ " : ""}{selected.itbFile ? "ITB ✓ " : ""}{selected.pdfFile ? "PDF ✓" : "" || "Not listed"}</strong></div>
+              <div className="detail"><span>Docs</span><strong>{[selected.coaFile ? "COA ✓" : "", selected.itbFile ? "ITB ✓" : "", selected.pdfFile ? "PDF ✓" : ""].filter(Boolean).join(" ") || "Not listed"}</strong></div>
               <div className="detail"><span>Map Source</span><strong>{selected._source || "unmapped"}</strong></div>
             </div>
 
@@ -912,7 +912,7 @@ export default function MapClient() {
                 <div className="detail"><span>Amount</span><strong>{money(job) || "Not listed"}</strong></div>
                 <div className="detail"><span>Award</span><strong>{job.awardDate || "Not listed"}</strong></div>
                 <div className="detail"><span>Due</span><strong>{job.bidDueDate || job.dueDate || "Not listed"}</strong></div>
-                <div className="detail"><span>Docs</span><strong>{job.coaFile ? "COA ✓ " : ""}{job.itbFile ? "ITB ✓ " : ""}{job.pdfFile ? "PDF ✓" : "" || "Not listed"}</strong></div>
+                <div className="detail"><span>Docs</span><strong>{[job.coaFile ? "COA ✓" : "", job.itbFile ? "ITB ✓" : "", job.pdfFile ? "PDF ✓" : ""].filter(Boolean).join(" ") || "Not listed"}</strong></div>
               </div>
             </button>
 
@@ -927,3 +927,4 @@ export default function MapClient() {
     </main>
   );
 }
+
