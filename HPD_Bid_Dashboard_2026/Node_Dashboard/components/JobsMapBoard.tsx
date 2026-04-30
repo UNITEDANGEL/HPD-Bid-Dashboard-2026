@@ -34,6 +34,20 @@ function buildJobHref(job: JobRecord) {
   return `/jobs/${encodeURIComponent(job.id)}`;
 }
 
+function buildEmbedUrl(job: JobRecord) {
+  const lat = Number(job.latitude);
+  const lng = Number(job.longitude);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return "";
+
+  const delta = 0.012;
+  const left = lng - delta;
+  const right = lng + delta;
+  const top = lat + delta;
+  const bottom = lat - delta;
+
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${left}%2C${bottom}%2C${right}%2C${top}&layer=mapnik&marker=${lat}%2C${lng}`;
+}
+
 export function JobsMapBoard({ jobs }: Props) {
   const [query, setQuery] = useState("");
   const [borough, setBorough] = useState("");
@@ -63,13 +77,14 @@ export function JobsMapBoard({ jobs }: Props) {
     filtered[0] ||
     mappableJobs[0] ||
     null;
+  const fallbackEmbedUrl = selected ? buildEmbedUrl(selected) : "";
 
   return (
     <main className="page-stack">
       <section className="filters-card">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Map Only</p>
+            <p className="eyebrow">Live Map</p>
             <h2>HPD job map command board</h2>
           </div>
           <span className="section-chip">{filtered.length} mapped jobs</span>
@@ -164,6 +179,9 @@ export function JobsMapBoard({ jobs }: Props) {
                   <Link href={buildJobHref(selected)} className="primary-link">
                     Open job profile
                   </Link>
+                  <Link href="/jobs" className="secondary-link">
+                    Open jobs board
+                  </Link>
                   {buildMapsHref(selected) ? (
                     <a href={buildMapsHref(selected)} target="_blank" rel="noreferrer" className="secondary-link">
                       Open in Maps
@@ -178,6 +196,24 @@ export function JobsMapBoard({ jobs }: Props) {
             )}
           </div>
         </div>
+
+        {fallbackEmbedUrl ? (
+          <section className="map-fallback-card">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Backup Map Preview</p>
+                <h2>{selected?.id || "Selected job"} preview</h2>
+              </div>
+              <span className="section-chip">Always visible on mobile</span>
+            </div>
+            <iframe
+              title={`${selected?.id || "Selected job"} map preview`}
+              src={fallbackEmbedUrl}
+              className="map-fallback-frame"
+              loading="lazy"
+            />
+          </section>
+        ) : null}
 
         <div className="jobs-grid">
           {filtered.map((job) => (
