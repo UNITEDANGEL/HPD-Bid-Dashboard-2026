@@ -115,11 +115,43 @@ function normalizeJob(row: RawJob, index: number) {
     itbMatchStatus: get("ITBMatchStatus", "ITB Match Status"),
     ITBMatchStatus: get("ITBMatchStatus", "ITB Match Status"),
 
-    status: get("ITBMatchStatus", "ITB Match Status") || get("COAParseStatus", "COA Parse Status") || "Loaded",
+    status: get("StatusOverride", "Status Override") || get("ITBMatchStatus", "ITB Match Status") || get("COAParseStatus", "COA Parse Status") || "Loaded",
+    StatusOverride: get("StatusOverride", "Status Override"),
 
     borough: extractBorough(description),
     trade: extractTrade(description),
   };
+}
+
+function parseStatusOverrides() {
+  const overridePath = path.join(process.cwd(), "data", "status_overrides_2026.csv");
+
+  const map = new Map<string, Record<string, string>>();
+
+  if (!fs.existsSync(overridePath)) return map;
+
+  const raw = fs.readFileSync(overridePath, "utf8").replace(/^\uFEFF/, "");
+
+  const parsed = Papa.parse<Record<string, string>>(raw, {
+    header: true,
+    skipEmptyLines: true,
+    dynamicTyping: false,
+  });
+
+  parsed.data.forEach((row) => {
+    const rowId = text(row.RowID);
+    const omo = rowId.split("|")[0]?.trim();
+
+    if (!omo) return;
+
+    map.set(omo, {
+      StatusOverride: text(row.StatusOverride),
+      WorkStartDateOverride: text(row.WorkStartDateOverride),
+      WorkCompletionDateOverride: text(row.WorkCompletionDateOverride),
+    });
+  });
+
+  return map;
 }
 
 function loadCsv(filePath: string) {
@@ -130,6 +162,8 @@ function loadCsv(filePath: string) {
     skipEmptyLines: true,
     dynamicTyping: false,
   });
+
+  const overrides = parseStatusOverrides();
 
   if (parsed.errors.length) {
     console.warn("CSV parse warnings:", parsed.errors.slice(0, 5));
@@ -142,7 +176,30 @@ function loadCsv(filePath: string) {
       /\/26|2026/.test(text(row.WorkStartDate)) ||
       /\/26|2026/.test(text(row.WorkCompletionDate))
     )
-    .map((row, index) => normalizeJob(row, index));
+    .map((row, index) => {
+      const omo = text(row.OMO);
+      const override = overrides.get(omo);
+
+      if (override) {
+        if (override.StatusOverride) {
+          row.StatusOverride = override.StatusOverride;
+          row.status = override.StatusOverride;
+          row.ITBMatchStatus = override.StatusOverride;
+        }
+
+        if (override.WorkStartDateOverride) {
+          row.WorkStartDateOverride = override.WorkStartDateOverride;
+          row.WorkStartDate = override.WorkStartDateOverride;
+        }
+
+        if (override.WorkCompletionDateOverride) {
+          row.WorkCompletionDateOverride = override.WorkCompletionDateOverride;
+          row.WorkCompletionDate = override.WorkCompletionDateOverride;
+        }
+      }
+
+      return normalizeJob(row, index);
+    });
 }
 
 export async function GET() {
@@ -166,4 +223,5 @@ export async function GET() {
     updatedAt: new Date().toISOString(),
   });
 }
+
 
