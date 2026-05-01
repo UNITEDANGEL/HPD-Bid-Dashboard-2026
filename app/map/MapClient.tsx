@@ -672,6 +672,23 @@ function generateAffidavit(job: any, type: string) {
       .catch(() => alert("Failed to generate affidavit"));
   }
 
+async function openRealFullMap() {
+    const el = document.querySelector(".map-stage") as HTMLElement | null;
+
+    try {
+      if (!document.fullscreenElement && el?.requestFullscreen) {
+        await el.requestFullscreen();
+      } else if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      }
+    } catch {
+      // ignore fullscreen errors
+    }
+
+    setTimeout(() => mapRef.current?.invalidateSize(), 150);
+    setTimeout(() => mapRef.current?.invalidateSize(), 500);
+  }
+
 function focusJob(job: MappedJob) {
     setSelected(job);
     setDrawerOpen(true);
@@ -943,8 +960,28 @@ function focusJob(job: MappedJob) {
           padding-bottom: 8px;
         }
 
-        .map-shell.full-map-mode .map-stage {
+        .map-shell.full-map-mode .map-stage:fullscreen {
+          width: 100vw;
+          height: 100vh;
+          background: #050914;
+        }
+
+        .map-stage:fullscreen .leaflet-container {
+          height: 100vh !important;
+        }
+
+        .map-stage {
           min-height: 0;
+        }
+
+        .map-stage:fullscreen {
+          width: 100vw;
+          height: 100vh;
+          background: #050914;
+        }
+
+        .map-stage:fullscreen .leaflet-container {
+          height: 100vh !important;
         }
 
         .map-stage {
@@ -1511,8 +1548,28 @@ function focusJob(job: MappedJob) {
           padding-bottom: 8px;
         }
 
-        .map-shell.full-map-mode .map-stage {
+        .map-shell.full-map-mode .map-stage:fullscreen {
+          width: 100vw;
+          height: 100vh;
+          background: #050914;
+        }
+
+        .map-stage:fullscreen .leaflet-container {
+          height: 100vh !important;
+        }
+
+        .map-stage {
           min-height: 0;
+        }
+
+        .map-stage:fullscreen {
+          width: 100vw;
+          height: 100vh;
+          background: #050914;
+        }
+
+        .map-stage:fullscreen .leaflet-container {
+          height: 100vh !important;
         }
 
         .map-stage {
@@ -1691,11 +1748,7 @@ function focusJob(job: MappedJob) {
           <button className={maturityFilter === "od31_60" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od31_60")}>31-60 OD {bucketCounts.od31_60}</button>
           <button className={maturityFilter === "od61_90" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od61_90")}>61-90 OD {bucketCounts.od61_90}</button>
           <button className={maturityFilter === "od90plus" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od90plus")}>90+ OD {bucketCounts.od90plus}</button>
-          <button className="full-btn" type="button" onClick={() => {
-            setFullMap((value) => !value);
-            setTimeout(() => mapRef.current?.invalidateSize(), 250);
-            setTimeout(() => mapRef.current?.invalidateSize(), 700);
-          }}>
+          <button className="full-btn" type="button" onClick={openRealFullMap}>
             {fullMap ? "Exit Full" : "Full Map"}
           </button>
         </div>
@@ -1842,6 +1895,7 @@ function focusJob(job: MappedJob) {
     </main>
   );
 }
+
 
 
 
