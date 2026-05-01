@@ -1007,7 +1007,7 @@ function focusJob(job: MappedJob) {
           border: 1px solid rgba(255, 255, 255, 0.14);
           background: rgba(7, 17, 31, 0.82);
           backdrop-filter: blur(12px);
-          border-radius: 15px;
+          border-radius: 18px;
           padding: 9px;
         }
 
@@ -1025,6 +1025,98 @@ function focusJob(job: MappedJob) {
           font-weight: 900;
         }
 
+        .status-legend {
+          position: absolute;
+          z-index: 6;
+          left: 12px;
+          bottom: 12px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          max-width: calc(100% - 82px);
+          padding: 7px;
+          border: 1px solid rgba(255,255,255,.14);
+          border-radius: 999px;
+          background: rgba(7,17,31,.84);
+          backdrop-filter: blur(14px);
+          box-shadow: 0 14px 42px rgba(0,0,0,.36);
+        }
+
+        .status-legend span {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: #e9f3ff;
+          font-size: 10px;
+          font-weight: 950;
+          white-space: nowrap;
+        }
+
+        .dot {
+          width: 9px;
+          height: 9px;
+          border-radius: 999px;
+          display: inline-block;
+          box-shadow: 0 0 12px currentColor;
+        }
+
+        .dot.completed { background: #53e69c; color: #53e69c; }
+        .dot.refused { background: #ff4d5f; color: #ff4d5f; }
+        .dot.noaccess { background: #47a3ff; color: #47a3ff; }
+        .dot.second { background: #05070b; color: #ffffff; border: 1px solid #fff; }
+        .dot.pending { background: #ffd166; color: #ffd166; }
+
+        .map-shell.full-map-mode {
+          position: fixed !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100dvh !important;
+          z-index: 99999 !important;
+          background: #050914 !important;
+          display: grid !important;
+          grid-template-rows: auto 1fr !important;
+          grid-template-columns: 1fr !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+        }
+
+        .map-shell.full-map-mode .map-top {
+          grid-row: 1 !important;
+          grid-column: 1 !important;
+          border-radius: 0 !important;
+          padding: max(8px, env(safe-area-inset-top)) 10px 8px !important;
+        }
+
+        .map-shell.full-map-mode .map-stage {
+          grid-row: 2 !important;
+          grid-column: 1 !important;
+          height: 100% !important;
+          min-height: 0 !important;
+          border-radius: 0 !important;
+        }
+
+        .map-shell.full-map-mode .leaflet-container,
+        .map-shell.full-map-mode #map {
+          height: 100% !important;
+          min-height: 100% !important;
+        }
+
+        .map-shell.full-map-mode .job-drawer {
+          position: fixed !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          z-index: 100000 !important;
+          max-height: 46dvh !important;
+          display: block !important;
+        }
+
+        .map-shell.full-map-mode .job-drawer.closed {
+          transform: translateY(calc(100% - 58px)) !important;
+          max-height: 58px !important;
+          overflow: hidden !important;
+        }
+
         .zoom-panel {
           position: absolute;
           z-index: 5;
@@ -1035,10 +1127,9 @@ function focusJob(job: MappedJob) {
         }
 
         .zoom-panel button {
-          width: 48px;
-          min-height: 44px;
+          width: 54px; min-height: 50px;
           border: 1px solid rgba(255, 255, 255, 0.16);
-          border-radius: 15px;
+          border-radius: 18px;
           background: rgba(7, 17, 31, 0.9);
           color: #f8fbff;
           font-size: 20px;
@@ -1404,7 +1495,99 @@ function focusJob(job: MappedJob) {
             grid-column: 1 / -1;
           }
 
-          .zoom-panel {
+          .status-legend {
+          position: absolute;
+          z-index: 6;
+          left: 12px;
+          bottom: 12px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          max-width: calc(100% - 82px);
+          padding: 7px;
+          border: 1px solid rgba(255,255,255,.14);
+          border-radius: 999px;
+          background: rgba(7,17,31,.84);
+          backdrop-filter: blur(14px);
+          box-shadow: 0 14px 42px rgba(0,0,0,.36);
+        }
+
+        .status-legend span {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: #e9f3ff;
+          font-size: 10px;
+          font-weight: 950;
+          white-space: nowrap;
+        }
+
+        .dot {
+          width: 9px;
+          height: 9px;
+          border-radius: 999px;
+          display: inline-block;
+          box-shadow: 0 0 12px currentColor;
+        }
+
+        .dot.completed { background: #53e69c; color: #53e69c; }
+        .dot.refused { background: #ff4d5f; color: #ff4d5f; }
+        .dot.noaccess { background: #47a3ff; color: #47a3ff; }
+        .dot.second { background: #05070b; color: #ffffff; border: 1px solid #fff; }
+        .dot.pending { background: #ffd166; color: #ffd166; }
+
+        .map-shell.full-map-mode {
+          position: fixed !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100dvh !important;
+          z-index: 99999 !important;
+          background: #050914 !important;
+          display: grid !important;
+          grid-template-rows: auto 1fr !important;
+          grid-template-columns: 1fr !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+        }
+
+        .map-shell.full-map-mode .map-top {
+          grid-row: 1 !important;
+          grid-column: 1 !important;
+          border-radius: 0 !important;
+          padding: max(8px, env(safe-area-inset-top)) 10px 8px !important;
+        }
+
+        .map-shell.full-map-mode .map-stage {
+          grid-row: 2 !important;
+          grid-column: 1 !important;
+          height: 100% !important;
+          min-height: 0 !important;
+          border-radius: 0 !important;
+        }
+
+        .map-shell.full-map-mode .leaflet-container,
+        .map-shell.full-map-mode #map {
+          height: 100% !important;
+          min-height: 100% !important;
+        }
+
+        .map-shell.full-map-mode .job-drawer {
+          position: fixed !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          z-index: 100000 !important;
+          max-height: 46dvh !important;
+          display: block !important;
+        }
+
+        .map-shell.full-map-mode .job-drawer.closed {
+          transform: translateY(calc(100% - 58px)) !important;
+          max-height: 58px !important;
+          overflow: hidden !important;
+        }
+
+        .zoom-panel {
           position: absolute;
           z-index: 5;
           right: 12px;
@@ -1414,10 +1597,9 @@ function focusJob(job: MappedJob) {
         }
 
         .zoom-panel button {
-          width: 48px;
-          min-height: 44px;
+          width: 54px; min-height: 50px;
           border: 1px solid rgba(255, 255, 255, 0.16);
-          border-radius: 15px;
+          border-radius: 18px;
           background: rgba(7, 17, 31, 0.9);
           color: #f8fbff;
           font-size: 20px;
@@ -1657,7 +1839,99 @@ function focusJob(job: MappedJob) {
             grid-template-columns: 1fr;
           }
 
-          .zoom-panel {
+          .status-legend {
+          position: absolute;
+          z-index: 6;
+          left: 12px;
+          bottom: 12px;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          max-width: calc(100% - 82px);
+          padding: 7px;
+          border: 1px solid rgba(255,255,255,.14);
+          border-radius: 999px;
+          background: rgba(7,17,31,.84);
+          backdrop-filter: blur(14px);
+          box-shadow: 0 14px 42px rgba(0,0,0,.36);
+        }
+
+        .status-legend span {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: #e9f3ff;
+          font-size: 10px;
+          font-weight: 950;
+          white-space: nowrap;
+        }
+
+        .dot {
+          width: 9px;
+          height: 9px;
+          border-radius: 999px;
+          display: inline-block;
+          box-shadow: 0 0 12px currentColor;
+        }
+
+        .dot.completed { background: #53e69c; color: #53e69c; }
+        .dot.refused { background: #ff4d5f; color: #ff4d5f; }
+        .dot.noaccess { background: #47a3ff; color: #47a3ff; }
+        .dot.second { background: #05070b; color: #ffffff; border: 1px solid #fff; }
+        .dot.pending { background: #ffd166; color: #ffd166; }
+
+        .map-shell.full-map-mode {
+          position: fixed !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100dvh !important;
+          z-index: 99999 !important;
+          background: #050914 !important;
+          display: grid !important;
+          grid-template-rows: auto 1fr !important;
+          grid-template-columns: 1fr !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+        }
+
+        .map-shell.full-map-mode .map-top {
+          grid-row: 1 !important;
+          grid-column: 1 !important;
+          border-radius: 0 !important;
+          padding: max(8px, env(safe-area-inset-top)) 10px 8px !important;
+        }
+
+        .map-shell.full-map-mode .map-stage {
+          grid-row: 2 !important;
+          grid-column: 1 !important;
+          height: 100% !important;
+          min-height: 0 !important;
+          border-radius: 0 !important;
+        }
+
+        .map-shell.full-map-mode .leaflet-container,
+        .map-shell.full-map-mode #map {
+          height: 100% !important;
+          min-height: 100% !important;
+        }
+
+        .map-shell.full-map-mode .job-drawer {
+          position: fixed !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          z-index: 100000 !important;
+          max-height: 46dvh !important;
+          display: block !important;
+        }
+
+        .map-shell.full-map-mode .job-drawer.closed {
+          transform: translateY(calc(100% - 58px)) !important;
+          max-height: 58px !important;
+          overflow: hidden !important;
+        }
+
+        .zoom-panel {
           position: absolute;
           z-index: 5;
           right: 12px;
@@ -1667,10 +1941,9 @@ function focusJob(job: MappedJob) {
         }
 
         .zoom-panel button {
-          width: 48px;
-          min-height: 44px;
+          width: 54px; min-height: 50px;
           border: 1px solid rgba(255, 255, 255, 0.16);
-          border-radius: 15px;
+          border-radius: 18px;
           background: rgba(7, 17, 31, 0.9);
           color: #f8fbff;
           font-size: 20px;
@@ -1797,7 +2070,7 @@ function focusJob(job: MappedJob) {
             setTimeout(() => mapRef.current?.invalidateSize(), 100);
             setTimeout(() => mapRef.current?.invalidateSize(), 400);
           }}>
-            {fullMap ? "Exit Full" : "Full Map"}
+            {fullMap ? "Exit Focus" : "Map Focus"}
           </button>
         </div>
       </header>
@@ -1818,6 +2091,14 @@ function focusJob(job: MappedJob) {
             <strong>{Math.max(0, jobs.length - plottedCount)}</strong>
             <span>Need geo</span>
           </div>
+        </div>
+
+        <div className="status-legend">
+          <span><b className="dot completed"></b>Done</span>
+          <span><b className="dot refused"></b>Refused</span>
+          <span><b className="dot noaccess"></b>No Access</span>
+          <span><b className="dot second"></b>2nd</span>
+          <span><b className="dot pending"></b>Pending</span>
         </div>
 
         <div className="zoom-panel">
@@ -1943,6 +2224,7 @@ function focusJob(job: MappedJob) {
     </main>
   );
 }
+
 
 
 
