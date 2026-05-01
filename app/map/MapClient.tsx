@@ -193,6 +193,18 @@ function maturityPriorityClass(job: JobRecord) {
   return `maturity-${maturityInfo(job).priority}`;
 }
 
+function maturityMapLabel(job: JobRecord) {
+  const info = maturityInfo(job);
+
+  if (info.daysLeft === null) return "?";
+
+  if (info.daysLeft < 0) {
+    return `-${Math.abs(info.daysLeft)}d`;
+  }
+
+  return `${info.daysLeft}d`;
+}
+
 async function wait(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -451,12 +463,26 @@ export default function MapClient() {
             ? "#ffd166"
             : "#42e8f3";
 
-        const marker = L.circleMarker([lat, lng], {
-          radius: 10,
-          weight: 3,
-          color: "#06101f",
-          fillColor: color,
-          fillOpacity: 0.92,
+        const info = maturityInfo(job);
+        const markerColor =
+          info.priority === "overdue"
+            ? "#ff4d5f"
+            : info.priority === "urgent"
+              ? "#ff8a4c"
+              : info.priority === "warning"
+                ? "#ffd166"
+                : "#42e8f3";
+
+        const marker = L.marker([lat, lng], {
+          icon: L.divIcon({
+            className: "maturity-map-marker",
+            html: `<div class="maturity-marker-bubble maturity-${info.priority}" style="border-color:${markerColor}">
+                    <strong>${maturityMapLabel(job)}</strong>
+                  </div>`,
+            iconSize: [54, 34],
+            iconAnchor: [27, 17],
+            popupAnchor: [0, -18],
+          }),
         });
 
         marker.on("click", () => {
@@ -524,6 +550,57 @@ export default function MapClient() {
         a {
           color: inherit;
           text-decoration: none;
+        }
+
+        .maturity-map-marker {
+          background: transparent;
+          border: 0;
+        }
+
+        .maturity-marker-bubble {
+          min-width: 54px;
+          min-height: 34px;
+          padding: 4px 7px;
+          display: grid;
+          place-items: center;
+          border: 3px solid #42e8f3;
+          border-radius: 999px;
+          background: rgba(7, 17, 31, 0.94);
+          color: #f8fbff;
+          box-shadow: 0 10px 28px rgba(0, 0, 0, 0.36);
+          backdrop-filter: blur(8px);
+        }
+
+        .maturity-marker-bubble strong {
+          font-size: 13px;
+          line-height: 1;
+          font-weight: 1000;
+          letter-spacing: -0.04em;
+        }
+
+        .maturity-marker-bubble.maturity-overdue {
+          background: rgba(80, 8, 16, 0.95);
+          color: #ffe4e8;
+        }
+
+        .maturity-marker-bubble.maturity-urgent {
+          background: rgba(76, 35, 11, 0.95);
+          color: #ffe2cf;
+        }
+
+        .maturity-marker-bubble.maturity-warning {
+          background: rgba(73, 55, 8, 0.95);
+          color: #fff0b8;
+        }
+
+        .maturity-marker-bubble.maturity-normal {
+          background: rgba(7, 17, 31, 0.94);
+          color: #e8fbff;
+        }
+
+        .maturity-marker-bubble.maturity-nodate {
+          background: rgba(40, 46, 58, 0.95);
+          color: #d7e4f8;
         }
 
         .leaflet-container {
@@ -1155,6 +1232,7 @@ export default function MapClient() {
     </main>
   );
 }
+
 
 
 
