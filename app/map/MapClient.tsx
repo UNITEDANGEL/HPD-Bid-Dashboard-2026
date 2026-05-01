@@ -636,6 +636,25 @@ export default function MapClient() {
     .catch(() => alert("Failed to update status"));
 }
 
+function updateLocalStatus(job: MappedJob, nextStatus: string) {
+    const updated = {
+      ...job,
+      StatusOverride: nextStatus,
+      status: nextStatus || "Pending",
+      ITBMatchStatus: nextStatus || job.ITBMatchStatus,
+    };
+
+    setSelected(updated);
+
+    setMappedJobs((rows) =>
+      rows.map((row) => jobKey(row) === jobKey(job) ? { ...row, ...updated } : row)
+    );
+
+    setJobs((rows) =>
+      rows.map((row) => jobKey(row) === jobKey(job) ? { ...row, ...updated } : row)
+    );
+  }
+
 function focusJob(job: MappedJob) {
     setSelected(job);
     setDrawerOpen(true);
@@ -1255,6 +1274,43 @@ function focusJob(job: MappedJob) {
           overflow-wrap: anywhere;
         }
 
+        .status-actions {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+          margin: 12px 0;
+        }
+
+        .status-actions button {
+          min-height: 38px;
+          border: 1px solid rgba(255,255,255,0.14);
+          border-radius: 12px;
+          background: rgba(255,255,255,0.08);
+          color: #f8fbff;
+          font-size: 12px;
+          font-weight: 900;
+        }
+
+        .status-actions button:nth-child(1) {
+          border-color: rgba(127,147,170,.45);
+        }
+
+        .status-actions button:nth-child(2) {
+          border-color: rgba(0,0,0,.75);
+        }
+
+        .status-actions button:nth-child(3) {
+          border-color: rgba(255,77,95,.6);
+        }
+
+        .status-actions button:nth-child(4) {
+          border-color: rgba(83,230,156,.6);
+        }
+
+        .status-actions button:nth-child(5) {
+          border-color: rgba(184,117,255,.6);
+        }
+
         .card-actions {
           display: grid;
           grid-template-columns: repeat(3, 1fr);
@@ -1493,7 +1549,44 @@ function focusJob(job: MappedJob) {
             grid-template-columns: 1fr;
           }
 
-          .card-actions {
+          .status-actions {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+          margin: 12px 0;
+        }
+
+        .status-actions button {
+          min-height: 38px;
+          border: 1px solid rgba(255,255,255,0.14);
+          border-radius: 12px;
+          background: rgba(255,255,255,0.08);
+          color: #f8fbff;
+          font-size: 12px;
+          font-weight: 900;
+        }
+
+        .status-actions button:nth-child(1) {
+          border-color: rgba(127,147,170,.45);
+        }
+
+        .status-actions button:nth-child(2) {
+          border-color: rgba(0,0,0,.75);
+        }
+
+        .status-actions button:nth-child(3) {
+          border-color: rgba(255,77,95,.6);
+        }
+
+        .status-actions button:nth-child(4) {
+          border-color: rgba(83,230,156,.6);
+        }
+
+        .status-actions button:nth-child(5) {
+          border-color: rgba(184,117,255,.6);
+        }
+
+        .card-actions {
             grid-template-columns: 1fr;
           }
 
@@ -1659,6 +1752,15 @@ function focusJob(job: MappedJob) {
 
             {selected.description ? <p className="job-sub">{selected.description}</p> : null}
 
+            <div className="status-actions">
+              <button type="button" onClick={() => updateLocalStatus(selected, "No Access - 1st Attempt")}>No Access 1st</button>
+              <button type="button" onClick={() => updateLocalStatus(selected, "No Access - 2nd Attempt")}>No Access 2nd</button>
+              <button type="button" onClick={() => updateLocalStatus(selected, "Refused Access")}>Refused</button>
+              <button type="button" onClick={() => updateLocalStatus(selected, "Work Completed")}>Completed</button>
+              <button type="button" onClick={() => updateLocalStatus(selected, "Completed by Others")}>Other Done</button>
+              <button type="button" onClick={() => updateLocalStatus(selected, "")}>Clear</button>
+            </div>
+
             <div className="card-actions">
               <button type="button" className="secondary" onClick={() => setDrawerOpen(true)}>Details</button>
               <a href={`/invoice-generator?job=${encodeURIComponent(jobKey(selected))}`}>Invoice</a>
@@ -1690,6 +1792,15 @@ function focusJob(job: MappedJob) {
               </div>
             </button>
 
+            <div className="status-actions">
+              <button type="button" onClick={() => updateLocalStatus(selected, "No Access - 1st Attempt")}>No Access 1st</button>
+              <button type="button" onClick={() => updateLocalStatus(selected, "No Access - 2nd Attempt")}>No Access 2nd</button>
+              <button type="button" onClick={() => updateLocalStatus(selected, "Refused Access")}>Refused</button>
+              <button type="button" onClick={() => updateLocalStatus(selected, "Work Completed")}>Completed</button>
+              <button type="button" onClick={() => updateLocalStatus(selected, "Completed by Others")}>Other Done</button>
+              <button type="button" onClick={() => updateLocalStatus(selected, "")}>Clear</button>
+            </div>
+
             <div className="card-actions">
               <button className="secondary" type="button" onClick={() => focusJob(job)}>Details</button>
               <a className="secondary" href={`/invoice-generator?job=${encodeURIComponent(jobKey(job, index))}`}>Invoice</a>
@@ -1701,6 +1812,8 @@ function focusJob(job: MappedJob) {
     </main>
   );
 }
+
+
 
 
 
