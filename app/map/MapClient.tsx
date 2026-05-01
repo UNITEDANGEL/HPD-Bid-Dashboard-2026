@@ -579,13 +579,6 @@ export default function MapClient() {
         marker.on("click", () => {
           setSelected(job);
           setDrawerOpen(true);
-
-          setTimeout(() => {
-            document.querySelector(".job-drawer")?.scrollIntoView({
-              behavior: "smooth",
-              block: "end",
-            });
-          }, 100);
         });
 
         marker.bindPopup(`
@@ -1720,6 +1713,56 @@ function focusJob(job: MappedJob) {
             max-height: 44dvh;
           }
         }
+        .map-shell.full-map-mode {
+          position: fixed !important;
+          inset: 0 !important;
+          width: 100vw !important;
+          height: 100dvh !important;
+          z-index: 99999 !important;
+          background: #050914 !important;
+          display: grid !important;
+          grid-template-rows: auto 1fr !important;
+          grid-template-columns: 1fr !important;
+          padding: 0 !important;
+          overflow: hidden !important;
+        }
+
+        .map-shell.full-map-mode .map-top {
+          grid-row: 1 !important;
+          grid-column: 1 !important;
+          border-radius: 0 !important;
+          padding: max(8px, env(safe-area-inset-top)) 10px 8px !important;
+        }
+
+        .map-shell.full-map-mode .map-stage {
+          grid-row: 2 !important;
+          grid-column: 1 !important;
+          height: 100% !important;
+          min-height: 0 !important;
+          border-radius: 0 !important;
+        }
+
+        .map-shell.full-map-mode .leaflet-container,
+        .map-shell.full-map-mode #map {
+          height: 100% !important;
+          min-height: 100% !important;
+        }
+
+        .map-shell.full-map-mode .job-drawer {
+          position: fixed !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
+          z-index: 100000 !important;
+          max-height: 46dvh !important;
+          display: block !important;
+        }
+
+        .map-shell.full-map-mode .job-drawer.closed {
+          transform: translateY(calc(100% - 58px)) !important;
+          max-height: 58px !important;
+          overflow: hidden !important;
+        }
       `}</style>
 
       <header className="map-top">
@@ -1748,7 +1791,12 @@ function focusJob(job: MappedJob) {
           <button className={maturityFilter === "od31_60" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od31_60")}>31-60 OD {bucketCounts.od31_60}</button>
           <button className={maturityFilter === "od61_90" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od61_90")}>61-90 OD {bucketCounts.od61_90}</button>
           <button className={maturityFilter === "od90plus" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od90plus")}>90+ OD {bucketCounts.od90plus}</button>
-          <button className="full-btn" type="button" onClick={openRealFullMap}>
+          <button className="full-btn" type="button" onClick={() => {
+            setFullMap((v) => !v);
+            setDrawerOpen(false);
+            setTimeout(() => mapRef.current?.invalidateSize(), 100);
+            setTimeout(() => mapRef.current?.invalidateSize(), 400);
+          }}>
             {fullMap ? "Exit Full" : "Full Map"}
           </button>
         </div>
@@ -1895,6 +1943,7 @@ function focusJob(job: MappedJob) {
     </main>
   );
 }
+
 
 
 
