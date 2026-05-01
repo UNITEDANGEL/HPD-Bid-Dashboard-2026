@@ -219,6 +219,13 @@ function overdueBucket(job: JobRecord) {
   return "od90plus";
 }
 
+function overdueDays(job: JobRecord) {
+  const info = maturityInfo(job);
+  if (info.daysLeft === null) return null;
+  if (info.daysLeft >= 0) return 0;
+  return Math.abs(info.daysLeft);
+}
+
 async function wait(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -329,6 +336,28 @@ export default function MapClient() {
   }, [jobs, mappedJobs, search, maturityFilter]);
 
   const plottedCount = mappedJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng)).length;
+
+  const bucketCounts = useMemo(() => {
+    const rows = mappedJobs.length
+      ? mappedJobs
+      : jobs.map((job) => {
+          const coords = getStoredCoords(job);
+          return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" } : { ...job };
+        });
+
+    return rows.reduce(
+      (acc, job) => {
+        const bucket = overdueBucket(job);
+        acc.all += 1;
+        if (bucket === "od0_30") acc.od0_30 += 1;
+        if (bucket === "od31_60") acc.od31_60 += 1;
+        if (bucket === "od61_90") acc.od61_90 += 1;
+        if (bucket === "od90plus") acc.od90plus += 1;
+        return acc;
+      },
+      { all: 0, od0_30: 0, od31_60: 0, od61_90: 0, od90plus: 0 }
+    );
+  }, [jobs, mappedJobs]);
 
   useEffect(() => {
     let cancelled = false;
@@ -516,7 +545,7 @@ export default function MapClient() {
             <strong>${jobKey(job, index)}</strong><br/>
             ${displayAddress(job)}<br/>
             ${job.borough || ""} ${job.trade ? "· " + job.trade : ""}<br/>
-            ${job.status || ""} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Matures: ${maturityInfo(job).maturity}<br/>Matured: ${maturityMapLabel(job)} days overdue
+            ${job.status || ""} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Matures: ${maturityInfo(job).maturity}<br/>Overdue: ${overdueDays(job) ?? "?"} days
           </div>
         `);
 
@@ -1233,11 +1262,11 @@ export default function MapClient() {
         </div>
 
         <div className="map-filter-row">
-          <button className={maturityFilter === "all" ? "active" : ""} type="button" onClick={() => setMaturityFilter("all")}>All</button>
-          <button className={maturityFilter === "od0_30" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od0_30")}>0-30</button>
-          <button className={maturityFilter === "od31_60" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od31_60")}>31-60</button>
-          <button className={maturityFilter === "od61_90" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od61_90")}>61-90</button>
-          <button className={maturityFilter === "od90plus" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od90plus")}>90+</button>
+          <button className={maturityFilter === "all" ? "active" : ""} type="button" onClick={() => setMaturityFilter("all")}>All {bucketCounts.all}</button>
+          <button className={maturityFilter === "od0_30" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od0_30")}>0-30 OD {bucketCounts.od0_30}</button>
+          <button className={maturityFilter === "od31_60" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od31_60")}>31-60 OD {bucketCounts.od31_60}</button>
+          <button className={maturityFilter === "od61_90" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od61_90")}>61-90 OD {bucketCounts.od61_90}</button>
+          <button className={maturityFilter === "od90plus" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od90plus")}>90+ OD {bucketCounts.od90plus}</button>
           <button className="full-btn" type="button" onClick={() => {
             setFullMap((value) => !value);
             setTimeout(() => mapRef.current?.invalidateSize(), 250);
@@ -1358,6 +1387,7 @@ export default function MapClient() {
     </main>
   );
 }
+
 
 
 
