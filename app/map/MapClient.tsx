@@ -609,7 +609,27 @@ export default function MapClient() {
     drawMarkers();
   }, [mapReady, filteredJobs]);
 
-  function focusJob(job: MappedJob) {
+  function updateStatus(job: any, newStatus: string) {
+  if (!job?.OMO) return;
+
+  fetch("/api/update-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      omo: job.OMO,
+      status: newStatus
+    })
+  })
+    .then(() => {
+      // update UI immediately
+      job.StatusOverride = newStatus;
+      job.status = newStatus;
+      setSelected({ ...job });
+    })
+    .catch(() => alert("Failed to update status"));
+}
+
+function focusJob(job: MappedJob) {
     setSelected(job);
     setDrawerOpen(true);
 
@@ -842,7 +862,28 @@ export default function MapClient() {
           grid-template-rows: auto minmax(0, 1fr);
         }
 
-        .map-shell.full-map-mode .job-drawer {
+        .map-shell.full-map-mode .status-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.status-actions button {
+  padding: 8px;
+  font-size: 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+
+.status-actions button:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+.job-drawer {
           display: none;
         }
 
@@ -923,7 +964,28 @@ export default function MapClient() {
           box-shadow: 0 12px 34px rgba(0,0,0,.32);
         }
 
-        .job-drawer {
+        .status-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.status-actions button {
+  padding: 8px;
+  font-size: 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+
+.status-actions button:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+.job-drawer {
           z-index: 6;
           max-height: 42dvh;
           background: rgba(7, 17, 31, 0.98);
@@ -1234,7 +1296,28 @@ export default function MapClient() {
           box-shadow: 0 12px 34px rgba(0,0,0,.32);
         }
 
-        .job-drawer {
+        .status-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.status-actions button {
+  padding: 8px;
+  font-size: 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+
+.status-actions button:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+.job-drawer {
             grid-column: 1;
             grid-row: 2;
             height: 100%;
@@ -1281,7 +1364,28 @@ export default function MapClient() {
           grid-template-rows: auto minmax(0, 1fr);
         }
 
-        .map-shell.full-map-mode .job-drawer {
+        .map-shell.full-map-mode .status-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.status-actions button {
+  padding: 8px;
+  font-size: 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+
+.status-actions button:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+.job-drawer {
           display: none;
         }
 
@@ -1369,7 +1473,28 @@ export default function MapClient() {
           box-shadow: 0 12px 34px rgba(0,0,0,.32);
         }
 
-        .job-drawer {
+        .status-actions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.status-actions button {
+  padding: 8px;
+  font-size: 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+
+.status-actions button:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+.job-drawer {
             max-height: 44dvh;
           }
         }
@@ -1521,6 +1646,7 @@ export default function MapClient() {
     </main>
   );
 }
+
 
 
 
