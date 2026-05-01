@@ -12,6 +12,7 @@ type JobRecord = {
   status?: string;
   trade?: string;
   awardDate?: string;
+  AwardDate?: string;
   dueDate?: string;
   bidDueDate?: string;
   bidAmount?: string;
@@ -117,6 +118,79 @@ function statusClass(status?: string) {
   if (value.includes("open") || value.includes("new")) return "hot";
   if (value.includes("pending")) return "warn";
   return "neutral";
+}
+
+function parseAwardDate(value?: string) {
+  if (!value) return null;
+
+  const clean = String(value).trim();
+  const parts = clean.split(/[\/\-]/).map((part) => Number(part));
+
+  if (parts.length >= 3 && parts.every((part) => Number.isFinite(part))) {
+    let [month, day, year] = parts;
+    if (year < 100) year += 2000;
+
+    const date = new Date(year, month - 1, day);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  const fallback = new Date(clean);
+  return Number.isNaN(fallback.getTime()) ? null : fallback;
+}
+
+function maturityInfo(job: JobRecord, maturityDays = 30) {
+  const award = parseAwardDate(job.AwardDate || job.awardDate);
+
+  if (!award) {
+    return {
+      award: "Not listed",
+      maturity: "Not listed",
+      daysLeft: null as number | null,
+      label: "No award date",
+      priority: "nodate",
+    };
+  }
+
+  const maturity = new Date(award);
+  maturity.setDate(maturity.getDate() + maturityDays);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  maturity.setHours(0, 0, 0, 0);
+
+  const daysLeft = Math.ceil((maturity.getTime() - today.getTime()) / 86400000);
+
+  let label = "";
+  let priority = "";
+
+  if (daysLeft < 0) {
+    label = `${Math.abs(daysLeft)} days overdue`;
+    priority = "overdue";
+  } else if (daysLeft === 0) {
+    label = "Due today";
+    priority = "urgent";
+  } else if (daysLeft <= 3) {
+    label = `${daysLeft} days left`;
+    priority = "urgent";
+  } else if (daysLeft <= 7) {
+    label = `${daysLeft} days left`;
+    priority = "warning";
+  } else {
+    label = `${daysLeft} days left`;
+    priority = "normal";
+  }
+
+  return {
+    award: award.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "2-digit" }),
+    maturity: maturity.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "2-digit" }),
+    daysLeft,
+    label,
+    priority,
+  };
+}
+
+function maturityPriorityClass(job: JobRecord) {
+  return `maturity-${maturityInfo(job).priority}`;
 }
 
 async function wait(ms: number) {
@@ -395,7 +469,7 @@ export default function MapClient() {
             <strong>${jobKey(job, index)}</strong><br/>
             ${displayAddress(job)}<br/>
             ${job.borough || ""} ${job.trade ? "· " + job.trade : ""}<br/>
-            ${job.status || ""} ${money(job) ? "· " + money(job) : ""}
+            ${job.status || ""} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Matures: ${maturityInfo(job).maturity}<br/>Priority: ${maturityInfo(job).label}
           </div>
         `);
 
@@ -718,6 +792,42 @@ export default function MapClient() {
           color: #d7e4f8;
         }
 
+        .maturity-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          padding: 7px 9px;
+          font-size: 11px;
+          font-weight: 1000;
+          white-space: nowrap;
+        }
+
+        .maturity-normal {
+          background: rgba(83, 230, 156, 0.15);
+          color: #baffd8;
+        }
+
+        .maturity-warning {
+          background: rgba(255, 209, 102, 0.16);
+          color: #ffe7a3;
+        }
+
+        .maturity-urgent {
+          background: rgba(255, 138, 76, 0.18);
+          color: #ffd0ba;
+        }
+
+        .maturity-overdue {
+          background: rgba(255, 107, 122, 0.18);
+          color: #ffc2cb;
+        }
+
+        .maturity-nodate {
+          background: rgba(255, 255, 255, 0.09);
+          color: #d7e4f8;
+        }
+
         .detail-grid {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -843,7 +953,43 @@ export default function MapClient() {
             grid-template-columns: repeat(3, 1fr);
           }
 
-          .detail-grid {
+          .maturity-pill {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          padding: 7px 9px;
+          font-size: 11px;
+          font-weight: 1000;
+          white-space: nowrap;
+        }
+
+        .maturity-normal {
+          background: rgba(83, 230, 156, 0.15);
+          color: #baffd8;
+        }
+
+        .maturity-warning {
+          background: rgba(255, 209, 102, 0.16);
+          color: #ffe7a3;
+        }
+
+        .maturity-urgent {
+          background: rgba(255, 138, 76, 0.18);
+          color: #ffd0ba;
+        }
+
+        .maturity-overdue {
+          background: rgba(255, 107, 122, 0.18);
+          color: #ffc2cb;
+        }
+
+        .maturity-nodate {
+          background: rgba(255, 255, 255, 0.09);
+          color: #d7e4f8;
+        }
+
+        .detail-grid {
             grid-template-columns: 1fr;
           }
 
@@ -946,12 +1092,17 @@ export default function MapClient() {
                 <p className="job-address">{displayAddress(selected)}</p>
                 <p className="job-sub">{selected.borough || "Unknown borough"} · {selected.trade || "Trade not listed"}</p>
               </div>
-              <span className={`status ${statusClass(selected.status)}`}>{selected.status || "Status"}</span>
+              <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
+                <span className={`status ${statusClass(selected.status)}`}>{selected.status || "Status"}</span>
+                <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{maturityInfo(selected).label}</span>
+              </div>
             </div>
 
             <div className="detail-grid">
               <div className="detail"><span>Amount</span><strong>{money(selected) || "Not listed"}</strong></div>
-              <div className="detail"><span>Award Date</span><strong>{selected.awardDate || "Not listed"}</strong></div>
+              <div className="detail"><span>Award Date</span><strong>{maturityInfo(selected).award}</strong></div>
+              <div className="detail"><span>Maturity Date</span><strong>{maturityInfo(selected).maturity}</strong></div>
+              <div className="detail"><span>Maturity Counter</span><strong>{maturityInfo(selected).label}</strong></div>
               <div className="detail"><span>Due Date</span><strong>{selected.bidDueDate || selected.dueDate || "Not listed"}</strong></div>
               <div className="detail"><span>Phone</span><strong>{phone(selected) || "Not listed"}</strong></div>
               <div className="detail"><span>Contractor</span><strong>{selected.contractor || "Not listed"}</strong></div>
@@ -979,7 +1130,10 @@ export default function MapClient() {
                   <p className="job-address">{displayAddress(job)}</p>
                   <p className="job-sub">{job.borough || "Unknown borough"} · {job.trade || "Trade not listed"}</p>
                 </div>
-                <span className={`status ${statusClass(job.status)}`}>{job.status || "Status"}</span>
+                <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
+                  <span className={`status ${statusClass(job.status)}`}>{job.status || "Status"}</span>
+                  <span className={`maturity-pill ${maturityPriorityClass(job)}`}>{maturityInfo(job).label}</span>
+                </div>
               </div>
 
               <div className="detail-grid">
@@ -1001,6 +1155,7 @@ export default function MapClient() {
     </main>
   );
 }
+
 
 
 
