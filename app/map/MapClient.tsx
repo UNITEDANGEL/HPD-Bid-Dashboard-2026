@@ -655,6 +655,23 @@ function updateLocalStatus(job: MappedJob, nextStatus: string) {
     );
   }
 
+function generateAffidavit(job: any, type: string) {
+    fetch("/api/affidavit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job, type }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.url) {
+          window.open(data.url, "_blank");
+        } else {
+          alert("Failed to generate affidavit");
+        }
+      })
+      .catch(() => alert("Failed to generate affidavit"));
+  }
+
 function focusJob(job: MappedJob) {
     setSelected(job);
     setDrawerOpen(true);
@@ -1763,6 +1780,19 @@ function focusJob(job: MappedJob) {
 
             <div className="card-actions">
               <button type="button" className="secondary" onClick={() => setDrawerOpen(true)}>Details</button>
+              <button
+                type="button"
+                onClick={() =>
+                  generateAffidavit(
+                    selected,
+                    (selected.StatusOverride || selected.status || "").toLowerCase().includes("completed")
+                      ? "completed"
+                      : "no_work"
+                  )
+                }
+              >
+                Affidavit
+              </button>
               <a href={`/invoice-generator?job=${encodeURIComponent(jobKey(selected))}`}>Invoice</a>
               <a target="_blank" rel="noreferrer" href={directionsUrl(selected)}>Directions</a>
             </div>
@@ -1812,6 +1842,7 @@ function focusJob(job: MappedJob) {
     </main>
   );
 }
+
 
 
 
