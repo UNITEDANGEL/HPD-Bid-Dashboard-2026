@@ -199,10 +199,10 @@ function maturityMapLabel(job: JobRecord) {
   if (info.daysLeft === null) return "?";
 
   if (info.daysLeft < 0) {
-    return `-${Math.abs(info.daysLeft)}d`;
+    return `-${Math.abs(info.daysLeft)}`;
   }
 
-  return `${info.daysLeft}d`;
+  return `${info.daysLeft}`;
 }
 
 async function wait(ms: number) {
@@ -266,6 +266,8 @@ export default function MapClient() {
   const [message, setMessage] = useState("Loading jobs...");
   const [mapReady, setMapReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
+  const [maturityFilter, setMaturityFilter] = useState<"all" | "overdue" | "urgent" | "warning" | "normal">("all");
+  const [fullMap, setFullMap] = useState(false);
 
   const filteredJobs = useMemo<MappedJob[]>(() => {
     const needle = search.trim().toLowerCase();
@@ -279,9 +281,14 @@ export default function MapClient() {
             : { ...job };
         });
 
-    if (!needle) return rows;
+    const maturityFiltered =
+      maturityFilter === "all"
+        ? rows
+        : rows.filter((job) => maturityInfo(job).priority === maturityFilter);
 
-    return rows.filter((job) =>
+    if (!needle) return maturityFiltered;
+
+    return maturityFiltered.filter((job) =>
       [
         job.id,
         job.omo,
@@ -305,7 +312,7 @@ export default function MapClient() {
         .toLowerCase()
         .includes(needle)
     );
-  }, [jobs, mappedJobs, search]);
+  }, [jobs, mappedJobs, search, maturityFilter]);
 
   const plottedCount = mappedJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng)).length;
 
@@ -479,8 +486,8 @@ export default function MapClient() {
             html: `<div class="maturity-marker-bubble maturity-${info.priority}" style="border-color:${markerColor}">
                     <strong>${maturityMapLabel(job)}</strong>
                   </div>`,
-            iconSize: [54, 34],
-            iconAnchor: [27, 17],
+            iconSize: [46, 34],
+            iconAnchor: [23, 17],
             popupAnchor: [0, -18],
           }),
         });
@@ -532,7 +539,7 @@ export default function MapClient() {
   }
 
   return (
-    <main className="map-shell">
+    <main className={`map-shell ${fullMap ? "full-map-mode" : ""}`}>
       <style jsx global>{`
         html,
         body {
@@ -558,7 +565,7 @@ export default function MapClient() {
         }
 
         .maturity-marker-bubble {
-          min-width: 54px;
+          min-width: 44px;
           min-height: 34px;
           padding: 4px 7px;
           display: grid;
@@ -688,6 +695,51 @@ export default function MapClient() {
           color: #04111f;
           font-weight: 950;
           padding: 0 13px;
+        }
+
+        .map-filter-row {
+          display: grid;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 6px;
+        }
+
+        .map-filter-row button {
+          min-height: 34px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.08);
+          color: #d7e4f8;
+          font-size: 11px;
+          font-weight: 950;
+          padding: 0 8px;
+        }
+
+        .map-filter-row button.active {
+          background: linear-gradient(135deg, #42e8f3, #47a3ff);
+          color: #04111f;
+          border-color: transparent;
+        }
+
+        .map-filter-row .full-btn {
+          background: rgba(83, 230, 156, 0.15);
+          color: #caffdf;
+          border-color: rgba(83, 230, 156, 0.34);
+        }
+
+        .map-shell.full-map-mode {
+          grid-template-rows: auto minmax(0, 1fr);
+        }
+
+        .map-shell.full-map-mode .job-drawer {
+          display: none;
+        }
+
+        .map-shell.full-map-mode .map-top {
+          padding-bottom: 8px;
+        }
+
+        .map-shell.full-map-mode .map-stage {
+          min-height: 0;
         }
 
         .map-stage {
@@ -1019,7 +1071,52 @@ export default function MapClient() {
             max-height: none;
           }
 
-          .map-stage {
+          .map-filter-row {
+          display: grid;
+          grid-template-columns: repeat(6, minmax(0, 1fr));
+          gap: 6px;
+        }
+
+        .map-filter-row button {
+          min-height: 34px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.08);
+          color: #d7e4f8;
+          font-size: 11px;
+          font-weight: 950;
+          padding: 0 8px;
+        }
+
+        .map-filter-row button.active {
+          background: linear-gradient(135deg, #42e8f3, #47a3ff);
+          color: #04111f;
+          border-color: transparent;
+        }
+
+        .map-filter-row .full-btn {
+          background: rgba(83, 230, 156, 0.15);
+          color: #caffdf;
+          border-color: rgba(83, 230, 156, 0.34);
+        }
+
+        .map-shell.full-map-mode {
+          grid-template-rows: auto minmax(0, 1fr);
+        }
+
+        .map-shell.full-map-mode .job-drawer {
+          display: none;
+        }
+
+        .map-shell.full-map-mode .map-top {
+          padding-bottom: 8px;
+        }
+
+        .map-shell.full-map-mode .map-stage {
+          min-height: 0;
+        }
+
+        .map-stage {
             grid-column: 2;
             grid-row: 2;
           }
@@ -1118,6 +1215,20 @@ export default function MapClient() {
           />
           <button className="jobs-toggle" type="button" onClick={() => setDrawerOpen((value) => !value)}>
             Jobs
+          </button>
+        </div>
+
+        <div className="map-filter-row">
+          <button className={maturityFilter === "all" ? "active" : ""} type="button" onClick={() => setMaturityFilter("all")}>All</button>
+          <button className={maturityFilter === "overdue" ? "active" : ""} type="button" onClick={() => setMaturityFilter("overdue")}>Overdue</button>
+          <button className={maturityFilter === "urgent" ? "active" : ""} type="button" onClick={() => setMaturityFilter("urgent")}>0-3</button>
+          <button className={maturityFilter === "warning" ? "active" : ""} type="button" onClick={() => setMaturityFilter("warning")}>4-7</button>
+          <button className={maturityFilter === "normal" ? "active" : ""} type="button" onClick={() => setMaturityFilter("normal")}>8+</button>
+          <button className="full-btn" type="button" onClick={() => {
+            setFullMap((value) => !value);
+            setTimeout(() => mapRef.current?.invalidateSize(), 250);
+          }}>
+            {fullMap ? "Exit Full" : "Full Map"}
           </button>
         </div>
       </header>
@@ -1232,6 +1343,7 @@ export default function MapClient() {
     </main>
   );
 }
+
 
 
 
