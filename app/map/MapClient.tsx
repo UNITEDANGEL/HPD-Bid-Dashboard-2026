@@ -1,5 +1,7 @@
 ﻿"use client";
 
+
+import * as JobStatus from "../../lib/jobs/status";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type JobRecord = {
@@ -560,12 +562,12 @@ export default function MapClient() {
             : "#42e8f3";
 
         const info = maturityInfo(job);
-        const markerColor = markerColorForJob(job);
+        const markerColor = JobStatus.statusColor(job);
 
         const marker = L.marker([lat, lng], {
           icon: L.divIcon({
             className: "maturity-map-marker",
-            html: `<div class="maturity-marker-bubble maturity-${info.priority} status-marker-${statusKind(job)}" style="border-color:${markerColor}">
+            html: `<div class="maturity-marker-bubble maturity-${info.priority} ${JobStatus.statusMarkerClass(job)}" style="border-color:${markerColor}">
                     <strong>${maturityMapLabel(job)}</strong>
                   </div>`,
             iconSize: [46, 34],
@@ -584,7 +586,7 @@ export default function MapClient() {
             <strong>${jobKey(job, index)}</strong><br/>
             ${displayAddress(job)}<br/>
             ${job.borough || ""} ${job.trade ? "· " + job.trade : ""}<br/>
-            ${statusLabel(job)} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Matures: ${maturityInfo(job).maturity}<br/>Overdue: ${overdueDays(job) ?? "?"} days
+            ${JobStatus.statusLabel(job)} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Matures: ${maturityInfo(job).maturity}<br/>Overdue: ${overdueDays(job) ?? "?"} days
           </div>
         `);
 
@@ -668,33 +670,31 @@ export default function MapClient() {
         }
 
         .maturity-marker-bubble.status-marker-completed {
-          background: rgba(11, 70, 43, 0.96);
-          color: #d9ffe9;
+          box-shadow: 0 0 0 4px rgba(83, 230, 156, 0.22), 0 0 28px rgba(83, 230, 156, 0.8), 0 12px 30px rgba(0,0,0,.38);
         }
 
         .maturity-marker-bubble.status-marker-refused {
-          background: rgba(92, 12, 22, 0.96);
-          color: #ffe5e8;
+          box-shadow: 0 0 0 4px rgba(255, 77, 95, 0.24), 0 0 30px rgba(255, 77, 95, 0.82), 0 12px 30px rgba(0,0,0,.38);
         }
 
-        .maturity-marker-bubble.status-marker-noaccess {
-          background: rgba(10, 50, 98, 0.96);
-          color: #e5f2ff;
+        .maturity-marker-bubble.status-marker-noaccess1 {
+          box-shadow: 0 0 0 4px rgba(127, 147, 170, 0.25), 0 0 24px rgba(127, 147, 170, 0.72), 0 12px 30px rgba(0,0,0,.38);
+        }
+
+        .maturity-marker-bubble.status-marker-noaccess2 {
+          box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.55), 0 0 30px rgba(0, 0, 0, 0.92), 0 12px 30px rgba(0,0,0,.5);
         }
 
         .maturity-marker-bubble.status-marker-otherdone {
-          background: rgba(67, 35, 112, 0.96);
-          color: #f0e5ff;
+          box-shadow: 0 0 0 4px rgba(184, 117, 255, 0.25), 0 0 28px rgba(184, 117, 255, 0.8), 0 12px 30px rgba(0,0,0,.38);
         }
 
         .maturity-marker-bubble.status-marker-pending {
-          background: rgba(87, 66, 10, 0.96);
-          color: #fff1bc;
+          box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.2), 0 0 24px rgba(255, 209, 102, 0.65), 0 12px 30px rgba(0,0,0,.38);
         }
 
-        .maturity-marker-bubble.status-marker-unknown {
-          background: rgba(39, 48, 62, 0.96);
-          color: #d7e4f8;
+        .maturity-marker-bubble.status-marker-none {
+          box-shadow: 0 10px 28px rgba(0, 0, 0, 0.36);
         }
 
         .maturity-marker-bubble.maturity-overdue {
@@ -1451,7 +1451,7 @@ export default function MapClient() {
         </div>
 
         {selected ? (
-          <div className={`selected-card job-status-card status-card-${statusKind(selected)}`}>
+          <div className={`selected-card job-status-card ${JobStatus.statusCardClass(selected)}`}>
             <div className="job-main-row">
               <div>
                 <strong className="job-title">{jobKey(selected)}</strong>
@@ -1459,7 +1459,7 @@ export default function MapClient() {
                 <p className="job-sub">{selected.borough || "Unknown borough"} · {selected.trade || "Trade not listed"}</p>
               </div>
               <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
-                <span className={`status ${statusClass(selected.status)}`}>{statusLabel(selected)}</span>
+                <span className={`status ${statusClass(selected.status)}`}>{JobStatus.statusLabel(selected)}</span>
                 <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{maturityInfo(selected).label}</span>
               </div>
             </div>
@@ -1488,7 +1488,7 @@ export default function MapClient() {
         ) : null}
 
         {filteredJobs.slice(0, 300).map((job, index) => (
-          <div className={`job-card job-status-card status-card-${statusKind(job)}`} key={`${jobKey(job, index)}-${index}`}>
+          <div className={`job-card job-status-card ${JobStatus.statusCardClass(job)}`} key={`${jobKey(job, index)}-${index}`}>
             <button className="job-card-button" type="button" onClick={() => focusJob(job)}>
               <div className="job-main-row">
                 <div>
@@ -1497,7 +1497,7 @@ export default function MapClient() {
                   <p className="job-sub">{job.borough || "Unknown borough"} · {job.trade || "Trade not listed"}</p>
                 </div>
                 <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
-                  <span className={`status ${statusClass(job.status)}`}>{statusLabel(job)}</span>
+                  <span className={`status ${statusClass(job.status)}`}>{JobStatus.statusLabel(job)}</span>
                   <span className={`maturity-pill ${maturityPriorityClass(job)}`}>{maturityInfo(job).label}</span>
                 </div>
               </div>
@@ -1521,6 +1521,13 @@ export default function MapClient() {
     </main>
   );
 }
+
+
+
+
+
+
+
 
 
 
