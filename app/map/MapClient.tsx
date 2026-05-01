@@ -579,6 +579,13 @@ export default function MapClient() {
         marker.on("click", () => {
           setSelected(job);
           setDrawerOpen(true);
+
+          setTimeout(() => {
+            document.querySelector(".job-drawer")?.scrollIntoView({
+              behavior: "smooth",
+              block: "end",
+            });
+          }, 100);
         });
 
         marker.bindPopup(`
@@ -884,8 +891,17 @@ function focusJob(job: MappedJob) {
 }
 
 .job-drawer {
-          display: none;
-        }
+          display: block;
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 9999;
+          max-height: 46dvh;
+          overflow-y: auto;
+          position: relative;
+          z-index: 20;
+          }
 
         .map-shell.full-map-mode .map-top {
           padding-bottom: 8px;
@@ -986,6 +1002,16 @@ function focusJob(job: MappedJob) {
 }
 
 .job-drawer {
+          display: block;
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 9999;
+          max-height: 46dvh;
+          overflow-y: auto;
+          position: relative;
+          z-index: 20;
           z-index: 6;
           max-height: 42dvh;
           background: rgba(7, 17, 31, 0.98);
@@ -1318,6 +1344,16 @@ function focusJob(job: MappedJob) {
 }
 
 .job-drawer {
+          display: block;
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 9999;
+          max-height: 46dvh;
+          overflow-y: auto;
+          position: relative;
+          z-index: 20;
             grid-column: 1;
             grid-row: 2;
             height: 100%;
@@ -1386,8 +1422,17 @@ function focusJob(job: MappedJob) {
 }
 
 .job-drawer {
-          display: none;
-        }
+          display: block;
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 9999;
+          max-height: 46dvh;
+          overflow-y: auto;
+          position: relative;
+          z-index: 20;
+          }
 
         .map-shell.full-map-mode .map-top {
           padding-bottom: 8px;
@@ -1495,6 +1540,16 @@ function focusJob(job: MappedJob) {
 }
 
 .job-drawer {
+          display: block;
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 9999;
+          max-height: 46dvh;
+          overflow-y: auto;
+          position: relative;
+          z-index: 20;
             max-height: 44dvh;
           }
         }
@@ -1646,6 +1701,8 @@ function focusJob(job: MappedJob) {
     </main>
   );
 }
+
+
 
 
 
