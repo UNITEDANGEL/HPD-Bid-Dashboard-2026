@@ -472,7 +472,7 @@ export default function MapClient() {
 
         .map-top {
           z-index: 5;
-          padding: max(9px, env(safe-area-inset-top)) 10px 9px;
+          padding: max(7px, env(safe-area-inset-top)) 10px 7px;
           display: grid;
           gap: 8px;
           background: rgba(7, 17, 31, 0.95);
@@ -489,7 +489,7 @@ export default function MapClient() {
 
         .map-title-row h1 {
           margin: 0;
-          font-size: clamp(21px, 6vw, 34px);
+          font-size: clamp(19px, 5.4vw, 30px);
           letter-spacing: -0.06em;
           line-height: 1;
         }
@@ -519,7 +519,7 @@ export default function MapClient() {
 
         .map-search input {
           width: 100%;
-          min-height: 42px;
+          min-height: 38px;
           border: 1px solid rgba(255, 255, 255, 0.14);
           border-radius: 14px;
           background: rgba(255, 255, 255, 0.08);
@@ -530,7 +530,7 @@ export default function MapClient() {
         }
 
         .jobs-toggle {
-          min-height: 42px;
+          min-height: 38px;
           border: 0;
           border-radius: 14px;
           background: linear-gradient(135deg, #42e8f3, #47a3ff);
@@ -587,9 +587,30 @@ export default function MapClient() {
           font-weight: 900;
         }
 
+        .zoom-panel {
+          position: absolute;
+          z-index: 5;
+          right: 12px;
+          bottom: 12px;
+          display: grid;
+          gap: 8px;
+        }
+
+        .zoom-panel button {
+          width: 48px;
+          min-height: 44px;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 15px;
+          background: rgba(7, 17, 31, 0.9);
+          color: #f8fbff;
+          font-size: 20px;
+          font-weight: 950;
+          box-shadow: 0 12px 34px rgba(0,0,0,.32);
+        }
+
         .job-drawer {
           z-index: 6;
-          max-height: 46dvh;
+          max-height: 42dvh;
           background: rgba(7, 17, 31, 0.98);
           border-top: 1px solid rgba(255, 255, 255, 0.14);
           border-radius: 22px 22px 0 0;
@@ -613,7 +634,7 @@ export default function MapClient() {
         }
 
         .drawer-head strong {
-          font-size: 18px;
+          font-size: 20px;
         }
 
         .drawer-head button {
@@ -629,8 +650,7 @@ export default function MapClient() {
         .job-card {
           border: 1px solid rgba(255, 255, 255, 0.14);
           background: rgba(255, 255, 255, 0.08);
-          border-radius: 20px;
-          padding: 15px;
+          border-radius: 22px; padding: 17px;
           margin-bottom: 10px;
         }
 
@@ -648,7 +668,7 @@ export default function MapClient() {
 
         .job-title {
           display: block;
-          font-size: 18px;
+          font-size: 20px;
           letter-spacing: -0.035em;
         }
 
@@ -777,7 +797,28 @@ export default function MapClient() {
             grid-column: 1 / -1;
           }
 
-          .job-drawer {
+          .zoom-panel {
+          position: absolute;
+          z-index: 5;
+          right: 12px;
+          bottom: 12px;
+          display: grid;
+          gap: 8px;
+        }
+
+        .zoom-panel button {
+          width: 48px;
+          min-height: 44px;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 15px;
+          background: rgba(7, 17, 31, 0.9);
+          color: #f8fbff;
+          font-size: 20px;
+          font-weight: 950;
+          box-shadow: 0 12px 34px rgba(0,0,0,.32);
+        }
+
+        .job-drawer {
             grid-column: 1;
             grid-row: 2;
             height: 100%;
@@ -810,8 +851,29 @@ export default function MapClient() {
             grid-template-columns: 1fr;
           }
 
-          .job-drawer {
-            max-height: 50dvh;
+          .zoom-panel {
+          position: absolute;
+          z-index: 5;
+          right: 12px;
+          bottom: 12px;
+          display: grid;
+          gap: 8px;
+        }
+
+        .zoom-panel button {
+          width: 48px;
+          min-height: 44px;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 15px;
+          background: rgba(7, 17, 31, 0.9);
+          color: #f8fbff;
+          font-size: 20px;
+          font-weight: 950;
+          box-shadow: 0 12px 34px rgba(0,0,0,.32);
+        }
+
+        .job-drawer {
+            max-height: 44dvh;
           }
         }
       `}</style>
@@ -854,6 +916,18 @@ export default function MapClient() {
             <span>Need geo</span>
           </div>
         </div>
+
+        <div className="zoom-panel">
+          <button type="button" onClick={() => mapRef.current?.zoomIn()}>+</button>
+          <button type="button" onClick={() => mapRef.current?.zoomOut()}>−</button>
+          <button type="button" onClick={() => {
+            const mapped = filteredJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng));
+            if (mapped.length && mapRef.current) {
+              const bounds = mapped.map((job) => [Number(job._lat), Number(job._lng)]);
+              mapRef.current.fitBounds(bounds, { padding: [34, 34], maxZoom: 15 });
+            }
+          }}>Fit</button>
+        </div>
       </section>
 
       <aside className={`job-drawer ${drawerOpen ? "" : "closed"}`}>
@@ -889,7 +963,7 @@ export default function MapClient() {
             {selected.description ? <p className="job-sub">{selected.description}</p> : null}
 
             <div className="card-actions">
-              <a href={`/jobs/${encodeURIComponent(jobKey(selected))}`}>Open Job</a>
+              <button type="button" className="secondary" onClick={() => setDrawerOpen(true)}>Details</button>
               <a href={`/invoice-generator?job=${encodeURIComponent(jobKey(selected))}`}>Invoice</a>
               <a target="_blank" rel="noreferrer" href={directionsUrl(selected)}>Directions</a>
             </div>
@@ -917,7 +991,7 @@ export default function MapClient() {
             </button>
 
             <div className="card-actions">
-              <a className="secondary" href={`/jobs/${encodeURIComponent(jobKey(job, index))}`}>Open</a>
+              <button className="secondary" type="button" onClick={() => focusJob(job)}>Details</button>
               <a className="secondary" href={`/invoice-generator?job=${encodeURIComponent(jobKey(job, index))}`}>Invoice</a>
               <a target="_blank" rel="noreferrer" href={directionsUrl(job)}>Directions</a>
             </div>
@@ -927,4 +1001,6 @@ export default function MapClient() {
     </main>
   );
 }
+
+
 
