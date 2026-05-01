@@ -10,6 +10,9 @@ type JobRecord = {
   location?: string;
   borough?: string;
   status?: string;
+  StatusOverride?: string;
+  ITBMatchStatus?: string;
+  COAParseStatus?: string;
   trade?: string;
   awardDate?: string;
   AwardDate?: string;
@@ -112,12 +115,55 @@ function phone(job: JobRecord) {
   return job.tenantPhone || job.phone || "";
 }
 
+function normalizedStatus(jobOrStatus?: JobRecord | string) {
+  const raw =
+    typeof jobOrStatus === "string"
+      ? jobOrStatus
+      : jobOrStatus?.StatusOverride ||
+        jobOrStatus?.status ||
+        jobOrStatus?.ITBMatchStatus ||
+        jobOrStatus?.COAParseStatus ||
+        "";
+
+  return String(raw).toLowerCase().trim();
+}
+
+function statusLabel(job: JobRecord) {
+  return (
+    job.StatusOverride ||
+    job.status ||
+    job.ITBMatchStatus ||
+    job.COAParseStatus ||
+    "Pending"
+  );
+}
+
+function statusKind(jobOrStatus?: JobRecord | string) {
+  const value = normalizedStatus(jobOrStatus);
+
+  if (value.includes("refused")) return "refused";
+  if (value.includes("no access")) return "noaccess";
+  if (value.includes("completed by other") || value.includes("completed by owner") || value.includes("landlord")) return "otherdone";
+  if (value.includes("complete") || value.includes("work completed")) return "completed";
+  if (value.includes("pending") || value.includes("active") || value.includes("loaded") || value.includes("matched") || value.includes("ok")) return "pending";
+
+  return "unknown";
+}
+
 function statusClass(status?: string) {
-  const value = (status || "").toLowerCase();
-  if (value.includes("award")) return "good";
-  if (value.includes("open") || value.includes("new")) return "hot";
-  if (value.includes("pending")) return "warn";
-  return "neutral";
+  return `status-${statusKind(status)}`;
+}
+
+function markerColorForJob(job: JobRecord) {
+  const kind = statusKind(job);
+
+  if (kind === "completed") return "#53e69c";
+  if (kind === "refused") return "#ff4d5f";
+  if (kind === "noaccess") return "#47a3ff";
+  if (kind === "otherdone") return "#b875ff";
+  if (kind === "pending") return "#ffd166";
+
+  return "#aebbd0";
 }
 
 function parseAwardDate(value?: string) {
@@ -514,19 +560,12 @@ export default function MapClient() {
             : "#42e8f3";
 
         const info = maturityInfo(job);
-        const markerColor =
-          info.priority === "overdue"
-            ? "#ff4d5f"
-            : info.priority === "urgent"
-              ? "#ff8a4c"
-              : info.priority === "warning"
-                ? "#ffd166"
-                : "#42e8f3";
+        const markerColor = markerColorForJob(job);
 
         const marker = L.marker([lat, lng], {
           icon: L.divIcon({
             className: "maturity-map-marker",
-            html: `<div class="maturity-marker-bubble maturity-${info.priority}" style="border-color:${markerColor}">
+            html: `<div class="maturity-marker-bubble maturity-${info.priority} status-marker-${statusKind(job)}" style="border-color:${markerColor}">
                     <strong>${maturityMapLabel(job)}</strong>
                   </div>`,
             iconSize: [46, 34],
@@ -545,7 +584,7 @@ export default function MapClient() {
             <strong>${jobKey(job, index)}</strong><br/>
             ${displayAddress(job)}<br/>
             ${job.borough || ""} ${job.trade ? "· " + job.trade : ""}<br/>
-            ${job.status || ""} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Matures: ${maturityInfo(job).maturity}<br/>Overdue: ${overdueDays(job) ?? "?"} days
+            ${statusLabel(job)} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Matures: ${maturityInfo(job).maturity}<br/>Overdue: ${overdueDays(job) ?? "?"} days
           </div>
         `);
 
@@ -626,6 +665,36 @@ export default function MapClient() {
           line-height: 1;
           font-weight: 1000;
           letter-spacing: -0.04em;
+        }
+
+        .maturity-marker-bubble.status-marker-completed {
+          background: rgba(11, 70, 43, 0.96);
+          color: #d9ffe9;
+        }
+
+        .maturity-marker-bubble.status-marker-refused {
+          background: rgba(92, 12, 22, 0.96);
+          color: #ffe5e8;
+        }
+
+        .maturity-marker-bubble.status-marker-noaccess {
+          background: rgba(10, 50, 98, 0.96);
+          color: #e5f2ff;
+        }
+
+        .maturity-marker-bubble.status-marker-otherdone {
+          background: rgba(67, 35, 112, 0.96);
+          color: #f0e5ff;
+        }
+
+        .maturity-marker-bubble.status-marker-pending {
+          background: rgba(87, 66, 10, 0.96);
+          color: #fff1bc;
+        }
+
+        .maturity-marker-bubble.status-marker-unknown {
+          background: rgba(39, 48, 62, 0.96);
+          color: #d7e4f8;
         }
 
         .maturity-marker-bubble.maturity-overdue {
@@ -892,6 +961,41 @@ export default function MapClient() {
           font-weight: 950;
         }
 
+        .job-status-card {
+          position: relative;
+          overflow: hidden;
+          border-left-width: 7px !important;
+        }
+
+        .status-card-completed {
+          border-left-color: #53e69c !important;
+          background: linear-gradient(135deg, rgba(83, 230, 156, 0.14), rgba(255, 255, 255, 0.07)) !important;
+        }
+
+        .status-card-refused {
+          border-left-color: #ff4d5f !important;
+          background: linear-gradient(135deg, rgba(255, 77, 95, 0.16), rgba(255, 255, 255, 0.07)) !important;
+        }
+
+        .status-card-noaccess {
+          border-left-color: #47a3ff !important;
+          background: linear-gradient(135deg, rgba(71, 163, 255, 0.16), rgba(255, 255, 255, 0.07)) !important;
+        }
+
+        .status-card-otherdone {
+          border-left-color: #b875ff !important;
+          background: linear-gradient(135deg, rgba(184, 117, 255, 0.16), rgba(255, 255, 255, 0.07)) !important;
+        }
+
+        .status-card-pending {
+          border-left-color: #ffd166 !important;
+          background: linear-gradient(135deg, rgba(255, 209, 102, 0.14), rgba(255, 255, 255, 0.07)) !important;
+        }
+
+        .status-card-unknown {
+          border-left-color: #aebbd0 !important;
+        }
+
         .selected-card,
         .job-card {
           border: 1px solid rgba(255, 255, 255, 0.14);
@@ -942,6 +1046,36 @@ export default function MapClient() {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+
+        .status.status-completed {
+          background: rgba(83, 230, 156, 0.16);
+          color: #baffd8;
+        }
+
+        .status.status-refused {
+          background: rgba(255, 77, 95, 0.18);
+          color: #ffc7ce;
+        }
+
+        .status.status-noaccess {
+          background: rgba(71, 163, 255, 0.18);
+          color: #d6ebff;
+        }
+
+        .status.status-otherdone {
+          background: rgba(184, 117, 255, 0.18);
+          color: #efdfff;
+        }
+
+        .status.status-pending {
+          background: rgba(255, 209, 102, 0.16);
+          color: #ffe7a3;
+        }
+
+        .status.status-unknown {
+          background: rgba(255, 255, 255, 0.09);
+          color: #d7e4f8;
         }
 
         .status.good {
@@ -1317,7 +1451,7 @@ export default function MapClient() {
         </div>
 
         {selected ? (
-          <div className="selected-card">
+          <div className={`selected-card job-status-card status-card-${statusKind(selected)}`}>
             <div className="job-main-row">
               <div>
                 <strong className="job-title">{jobKey(selected)}</strong>
@@ -1325,7 +1459,7 @@ export default function MapClient() {
                 <p className="job-sub">{selected.borough || "Unknown borough"} · {selected.trade || "Trade not listed"}</p>
               </div>
               <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
-                <span className={`status ${statusClass(selected.status)}`}>{selected.status || "Status"}</span>
+                <span className={`status ${statusClass(selected.status)}`}>{statusLabel(selected)}</span>
                 <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{maturityInfo(selected).label}</span>
               </div>
             </div>
@@ -1354,7 +1488,7 @@ export default function MapClient() {
         ) : null}
 
         {filteredJobs.slice(0, 300).map((job, index) => (
-          <div className="job-card" key={`${jobKey(job, index)}-${index}`}>
+          <div className={`job-card job-status-card status-card-${statusKind(job)}`} key={`${jobKey(job, index)}-${index}`}>
             <button className="job-card-button" type="button" onClick={() => focusJob(job)}>
               <div className="job-main-row">
                 <div>
@@ -1363,7 +1497,7 @@ export default function MapClient() {
                   <p className="job-sub">{job.borough || "Unknown borough"} · {job.trade || "Trade not listed"}</p>
                 </div>
                 <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
-                  <span className={`status ${statusClass(job.status)}`}>{job.status || "Status"}</span>
+                  <span className={`status ${statusClass(job.status)}`}>{statusLabel(job)}</span>
                   <span className={`maturity-pill ${maturityPriorityClass(job)}`}>{maturityInfo(job).label}</span>
                 </div>
               </div>
@@ -1387,6 +1521,8 @@ export default function MapClient() {
     </main>
   );
 }
+
+
 
 
 
