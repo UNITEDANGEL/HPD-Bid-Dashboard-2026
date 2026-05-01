@@ -199,10 +199,24 @@ function maturityMapLabel(job: JobRecord) {
   if (info.daysLeft === null) return "?";
 
   if (info.daysLeft < 0) {
-    return `-${Math.abs(info.daysLeft)}`;
+    return `${Math.abs(info.daysLeft)}`;
   }
 
   return `${info.daysLeft}`;
+}
+
+function overdueBucket(job: JobRecord) {
+  const info = maturityInfo(job);
+
+  if (info.daysLeft === null) return "nodate";
+  if (info.daysLeft >= 0) return "notdue";
+
+  const overdueDays = Math.abs(info.daysLeft);
+
+  if (overdueDays <= 30) return "od0_30";
+  if (overdueDays <= 60) return "od31_60";
+  if (overdueDays <= 90) return "od61_90";
+  return "od90plus";
 }
 
 async function wait(ms: number) {
@@ -266,7 +280,7 @@ export default function MapClient() {
   const [message, setMessage] = useState("Loading jobs...");
   const [mapReady, setMapReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
-  const [maturityFilter, setMaturityFilter] = useState<"all" | "overdue" | "urgent" | "warning" | "normal">("all");
+  const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60" | "od61_90" | "od90plus">("all");
   const [fullMap, setFullMap] = useState(false);
 
   const filteredJobs = useMemo<MappedJob[]>(() => {
@@ -284,7 +298,7 @@ export default function MapClient() {
     const maturityFiltered =
       maturityFilter === "all"
         ? rows
-        : rows.filter((job) => maturityInfo(job).priority === maturityFilter);
+        : rows.filter((job) => overdueBucket(job) === maturityFilter);
 
     if (!needle) return maturityFiltered;
 
@@ -502,7 +516,7 @@ export default function MapClient() {
             <strong>${jobKey(job, index)}</strong><br/>
             ${displayAddress(job)}<br/>
             ${job.borough || ""} ${job.trade ? "· " + job.trade : ""}<br/>
-            ${job.status || ""} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Matures: ${maturityInfo(job).maturity}<br/>Priority: ${maturityInfo(job).label}
+            ${job.status || ""} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Matures: ${maturityInfo(job).maturity}<br/>Matured: ${maturityMapLabel(job)} days overdue
           </div>
         `);
 
@@ -1220,13 +1234,14 @@ export default function MapClient() {
 
         <div className="map-filter-row">
           <button className={maturityFilter === "all" ? "active" : ""} type="button" onClick={() => setMaturityFilter("all")}>All</button>
-          <button className={maturityFilter === "overdue" ? "active" : ""} type="button" onClick={() => setMaturityFilter("overdue")}>Overdue</button>
-          <button className={maturityFilter === "urgent" ? "active" : ""} type="button" onClick={() => setMaturityFilter("urgent")}>0-3</button>
-          <button className={maturityFilter === "warning" ? "active" : ""} type="button" onClick={() => setMaturityFilter("warning")}>4-7</button>
-          <button className={maturityFilter === "normal" ? "active" : ""} type="button" onClick={() => setMaturityFilter("normal")}>8+</button>
+          <button className={maturityFilter === "od0_30" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od0_30")}>0-30</button>
+          <button className={maturityFilter === "od31_60" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od31_60")}>31-60</button>
+          <button className={maturityFilter === "od61_90" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od61_90")}>61-90</button>
+          <button className={maturityFilter === "od90plus" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od90plus")}>90+</button>
           <button className="full-btn" type="button" onClick={() => {
             setFullMap((value) => !value);
             setTimeout(() => mapRef.current?.invalidateSize(), 250);
+            setTimeout(() => mapRef.current?.invalidateSize(), 700);
           }}>
             {fullMap ? "Exit Full" : "Full Map"}
           </button>
@@ -1343,6 +1358,7 @@ export default function MapClient() {
     </main>
   );
 }
+
 
 
 
