@@ -137,6 +137,11 @@ function loadCsv(filePath: string) {
 
   return parsed.data
     .filter((row) => text(row.OMO) || text(row.BuildingAddress) || text(row.JobDescription))
+    .filter((row) =>
+      /\/26|2026/.test(text(row.AwardDate)) ||
+      /\/26|2026/.test(text(row.WorkStartDate)) ||
+      /\/26|2026/.test(text(row.WorkCompletionDate))
+    )
     .map((row, index) => normalizeJob(row, index));
 }
 
@@ -161,3 +166,4 @@ export async function GET() {
     updatedAt: new Date().toISOString(),
   });
 }
+
