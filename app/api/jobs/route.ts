@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import Papa from "papaparse";
 
 export const dynamic = "force-dynamic";
 
@@ -11,30 +12,22 @@ function text(value: unknown) {
   return String(value).trim();
 }
 
-function parseCsvLine(line: string) {
-  const out: string[] = [];
-  let cur = "";
-  let inQuotes = false;
+function extractBorough(description: string) {
+  const match = description.match(/Boro:\s*([^\n\r]+)/i);
+  return match?.[1]?.trim() || "";
+}
 
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    const next = line[i + 1];
-
-    if (ch === '"' && inQuotes && next === '"') {
-      cur += '"';
-      i++;
-    } else if (ch === '"') {
-      inQuotes = !inQuotes;
-    } else if (ch === "," && !inQuotes) {
-      out.push(cur);
-      cur = "";
-    } else {
-      cur += ch;
-    }
-  }
-
-  out.push(cur);
-  return out;
+function extractTrade(description: string) {
+  if (/general construction/i.test(description)) return "General Construction";
+  if (/plumbing/i.test(description)) return "Plumbing";
+  if (/electrical/i.test(description)) return "Electrical";
+  if (/roof/i.test(description)) return "Roofing";
+  if (/door/i.test(description)) return "Door / Hardware";
+  if (/paint/i.test(description)) return "Painting";
+  if (/lock/i.test(description)) return "Locksmith";
+  if (/window/i.test(description)) return "Window";
+  if (/cabinet/i.test(description)) return "Cabinet";
+  return "";
 }
 
 function normalizeJob(row: RawJob, index: number) {
@@ -52,6 +45,8 @@ function normalizeJob(row: RawJob, index: number) {
   const buildingAddress = get("BuildingAddress", "Building_Address", "Building Address", "Address", "address");
   const location = get("Location", "location");
   const description = get("JobDescription", "Job_Description", "Job Description", "Description", "description");
+  const latitude = get("Latitude", "latitude", "lat");
+  const longitude = get("Longitude", "longitude", "lng", "lon");
 
   return {
     ...row,
@@ -99,11 +94,11 @@ function normalizeJob(row: RawJob, index: number) {
     geocode: get("Geocode"),
     Geocode: get("Geocode"),
 
-    latitude: get("Latitude", "latitude", "lat"),
-    Latitude: get("Latitude", "latitude", "lat"),
+    latitude,
+    Latitude: latitude,
 
-    longitude: get("Longitude", "longitude", "lng", "lon"),
-    Longitude: get("Longitude", "longitude", "lng", "lon"),
+    longitude,
+    Longitude: longitude,
 
     coaFile: get("COAFile", "COA File", "COA_File", "coaFile"),
     COAFile: get("COAFile", "COA File", "COA_File", "coaFile"),
@@ -127,91 +122,42 @@ function normalizeJob(row: RawJob, index: number) {
   };
 }
 
-function extractBorough(description: string) {
-  const match = description.match(/Boro:\s*([^\n\r]+)/i);
-  return match?.[1]?.trim() || "";
-}
-
-function extractTrade(description: string) {
-  if (/general construction/i.test(description)) return "General Construction";
-  if (/plumbing/i.test(description)) return "Plumbing";
-  if (/electrical/i.test(description)) return "Electrical";
-  if (/roof/i.test(description)) return "Roofing";
-  if (/door/i.test(description)) return "Door / Hardware";
-  if (/paint/i.test(description)) return "Painting";
-  if (/lock/i.test(description)) return "Locksmith";
-  return "";
-}
-
 function loadCsv(filePath: string) {
   const raw = fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
-  const lines = raw.split(/\r?\n/).filter((line) => line.trim().length > 0);
 
-  if (!lines.length) return [];
-
-  const headers = parseCsvLine(lines[0]).map((h) => h.trim());
-
-  return lines.slice(1).map((line, index) => {
-    const values = parseCsvLine(line);
-    const row: RawJob = {};
-
-    headers.forEach((header, i) => {
-      row[header] = values[i] ?? "";
-    });
-
-    return normalizeJob(row, index);
+  const parsed = Papa.parse<RawJob>(raw, {
+    header: true,
+    skipEmptyLines: true,
+    dynamicTyping: false,
   });
-}
 
-function loadJson(filePath: string) {
-  const raw = fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
-  const parsed = JSON.parse(raw);
-
-  let rows: RawJob[] = [];
-
-  if (Array.isArray(parsed)) {
-    rows = parsed as RawJob[];
-  } else if (parsed && typeof parsed === "object") {
-    const obj = parsed as Record<string, unknown>;
-    if (Array.isArray(obj.jobs)) rows = obj.jobs as RawJob[];
-    else if (Array.isArray(obj.data)) rows = obj.data as RawJob[];
-    else if (Array.isArray(obj.records)) rows = obj.records as RawJob[];
-    else if (Array.isArray(obj.rows)) rows = obj.rows as RawJob[];
+  if (parsed.errors.length) {
+    console.warn("CSV parse warnings:", parsed.errors.slice(0, 5));
   }
 
-  return rows.map((row, index) => normalizeJob(row, index));
+  return parsed.data
+    .filter((row) => text(row.OMO) || text(row.BuildingAddress) || text(row.JobDescription))
+    .map((row, index) => normalizeJob(row, index));
 }
 
 export async function GET() {
   const csvPath = path.join(process.cwd(), "data", "COA_Fetcher_2026.csv");
-  const jsonPath = path.join(process.cwd(), "data", "COA_Fetcher_2026.json");
 
-  if (fs.existsSync(csvPath)) {
-    const jobs = loadCsv(csvPath);
-
+  if (!fs.existsSync(csvPath)) {
     return NextResponse.json({
-      jobs,
-      source: "COA_Fetcher_2026.csv",
-      count: jobs.length,
-      updatedAt: new Date().toISOString(),
+      jobs: [],
+      source: null,
+      count: 0,
+      error: "No job source found. Expected data/COA_Fetcher_2026.csv",
     });
   }
 
-  if (fs.existsSync(jsonPath)) {
-    const jobs = loadJson(jsonPath);
-
-    return NextResponse.json({
-      jobs,
-      source: "COA_Fetcher_2026.json",
-      count: jobs.length,
-      updatedAt: new Date().toISOString(),
-    });
-  }
+  const jobs = loadCsv(csvPath);
 
   return NextResponse.json({
-    jobs: [],
-    source: null,
-    count: 0,
-    error: "No job source found. Expected data/COA_Fetcher_2026.csv",
+    jobs,
+    source: "COA_Fetcher_2026.csv",
+    count: jobs.length,
+    updatedAt: new Date().toISOString(),
   });
 }
