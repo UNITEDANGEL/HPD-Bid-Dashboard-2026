@@ -911,7 +911,7 @@ function focusJob(job: MappedJob) {
             -webkit-overflow-scrolling: touch;
           }
 
-        .map-filter-row button { flex: 0 0 auto;
+        .map-filter-row button { flex: 0 0 auto; flex: 0 0 auto;
           min-height: 34px;
           border: 1px solid rgba(255, 255, 255, 0.14);
           border-radius: 999px;
@@ -1718,6 +1718,7 @@ function focusJob(job: MappedJob) {
     </main>
   );
 }
+
 
 
 
