@@ -335,7 +335,10 @@ export default function MapClient() {
   const [message, setMessage] = useState("Loading jobs...");
   const [mapReady, setMapReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(true);
-  const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60" | "od61_90" | "od90plus">("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+const [hideCompleted, setHideCompleted] = useState(false);
+
+const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60" | "od61_90" | "od90plus">("all");
   const [fullMap, setFullMap] = useState(false);
 
   const filteredJobs = useMemo<MappedJob[]>(() => {
@@ -813,6 +816,24 @@ function focusJob(job: MappedJob) {
           overflow: hidden;
         }
 
+        .status-filter-bar {
+          display: flex;
+          gap: 6px;
+          overflow-x: auto;
+          padding-bottom: 6px;
+        }
+
+        .status-filter-bar button {
+          padding: 6px 10px;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,.18);
+          background: rgba(255,255,255,.08);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
         .map-top {
           z-index: 5;
           padding: max(7px, env(safe-area-inset-top)) 10px 7px;
@@ -949,7 +970,25 @@ function focusJob(job: MappedJob) {
           z-index: 20;
           }
 
-        .map-shell.full-map-mode .map-top {
+        .map-shell.full-map-mode .status-filter-bar {
+          display: flex;
+          gap: 6px;
+          overflow-x: auto;
+          padding-bottom: 6px;
+        }
+
+        .status-filter-bar button {
+          padding: 6px 10px;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,.18);
+          background: rgba(255,255,255,.08);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .map-top {
           padding-bottom: 8px;
         }
 
@@ -1080,7 +1119,25 @@ function focusJob(job: MappedJob) {
           overflow: hidden !important;
         }
 
-        .map-shell.full-map-mode .map-top {
+        .map-shell.full-map-mode .status-filter-bar {
+          display: flex;
+          gap: 6px;
+          overflow-x: auto;
+          padding-bottom: 6px;
+        }
+
+        .status-filter-bar button {
+          padding: 6px 10px;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,.18);
+          background: rgba(255,255,255,.08);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .map-top {
           grid-row: 1 !important;
           grid-column: 1 !important;
           border-radius: 0 !important;
@@ -1491,7 +1548,25 @@ function focusJob(job: MappedJob) {
             grid-template-rows: auto minmax(0, 1fr);
           }
 
-          .map-top {
+          .status-filter-bar {
+          display: flex;
+          gap: 6px;
+          overflow-x: auto;
+          padding-bottom: 6px;
+        }
+
+        .status-filter-bar button {
+          padding: 6px 10px;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,.18);
+          background: rgba(255,255,255,.08);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .map-top {
             grid-column: 1 / -1;
           }
 
@@ -1550,7 +1625,25 @@ function focusJob(job: MappedJob) {
           overflow: hidden !important;
         }
 
-        .map-shell.full-map-mode .map-top {
+        .map-shell.full-map-mode .status-filter-bar {
+          display: flex;
+          gap: 6px;
+          overflow-x: auto;
+          padding-bottom: 6px;
+        }
+
+        .status-filter-bar button {
+          padding: 6px 10px;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,.18);
+          background: rgba(255,255,255,.08);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .map-top {
           grid-row: 1 !important;
           grid-column: 1 !important;
           border-radius: 0 !important;
@@ -1719,7 +1812,25 @@ function focusJob(job: MappedJob) {
           z-index: 20;
           }
 
-        .map-shell.full-map-mode .map-top {
+        .map-shell.full-map-mode .status-filter-bar {
+          display: flex;
+          gap: 6px;
+          overflow-x: auto;
+          padding-bottom: 6px;
+        }
+
+        .status-filter-bar button {
+          padding: 6px 10px;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,.18);
+          background: rgba(255,255,255,.08);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .map-top {
           padding-bottom: 8px;
         }
 
@@ -1894,7 +2005,25 @@ function focusJob(job: MappedJob) {
           overflow: hidden !important;
         }
 
-        .map-shell.full-map-mode .map-top {
+        .map-shell.full-map-mode .status-filter-bar {
+          display: flex;
+          gap: 6px;
+          overflow-x: auto;
+          padding-bottom: 6px;
+        }
+
+        .status-filter-bar button {
+          padding: 6px 10px;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,.18);
+          background: rgba(255,255,255,.08);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .map-top {
           grid-row: 1 !important;
           grid-column: 1 !important;
           border-radius: 0 !important;
@@ -2000,7 +2129,25 @@ function focusJob(job: MappedJob) {
           overflow: hidden !important;
         }
 
-        .map-shell.full-map-mode .map-top {
+        .map-shell.full-map-mode .status-filter-bar {
+          display: flex;
+          gap: 6px;
+          overflow-x: auto;
+          padding-bottom: 6px;
+        }
+
+        .status-filter-bar button {
+          padding: 6px 10px;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,.18);
+          background: rgba(255,255,255,.08);
+          color: #fff;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+
+        .map-top {
           grid-row: 1 !important;
           grid-column: 1 !important;
           border-radius: 0 !important;
@@ -2224,6 +2371,7 @@ function focusJob(job: MappedJob) {
     </main>
   );
 }
+
 
 
 
