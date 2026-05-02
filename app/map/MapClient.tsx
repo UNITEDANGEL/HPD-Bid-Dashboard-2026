@@ -334,7 +334,7 @@ export default function MapClient() {
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
   const [mapReady, setMapReady] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(true);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
 const [hideCompleted, setHideCompleted] = useState(false);
 
@@ -808,13 +808,13 @@ function focusJob(job: MappedJob) {
         }
 
         .map-shell {
-          height: 100dvh;
-          width: 100%;
-          display: grid;
-          grid-template-rows: auto minmax(0, 1fr) auto;
-          background: #07111f;
-          overflow: hidden;
-        }
+            height: 100dvh;
+            width: 100%;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            background: #07111f;
+            overflow: hidden;
+          }
 
         .status-filter-bar {
           display: flex;
@@ -904,12 +904,14 @@ function focusJob(job: MappedJob) {
         }
 
         .map-filter-row {
-          display: grid;
-          grid-template-columns: repeat(6, minmax(0, 1fr));
-          gap: 6px;
-        }
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 2px;
+            -webkit-overflow-scrolling: touch;
+          }
 
-        .map-filter-row button {
+        .map-filter-row button { flex: 0 0 auto;
           min-height: 34px;
           border: 1px solid rgba(255, 255, 255, 0.14);
           border-radius: 999px;
@@ -1003,25 +1005,11 @@ function focusJob(job: MappedJob) {
         }
 
         .map-stage {
-          min-height: 0;
-        }
-
-        .map-stage:fullscreen {
-          width: 100vw;
-          height: 100vh;
-          background: #050914;
-        }
-
-        .map-stage:fullscreen .leaflet-container {
-          height: 100vh !important;
-        }
-
-        .map-stage {
-          position: relative;
-          height: 100%;
-          min-height: 0;
-          width: 100%;
-        }
+            position: relative;
+            height: 100%;
+            min-height: 0;
+            width: 100%;
+          }
 
         .map-node {
           position: absolute;
@@ -1031,16 +1019,16 @@ function focusJob(job: MappedJob) {
         }
 
         .map-stats {
-          position: absolute;
-          z-index: 4;
-          left: 10px;
-          right: 10px;
-          top: 10px;
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 8px;
-          pointer-events: none;
-        }
+            position: absolute;
+            z-index: 4;
+            left: 10px;
+            right: 78px;
+            top: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 7px;
+            pointer-events: none;
+          }
 
         .map-stat {
           border: 1px solid rgba(255, 255, 255, 0.14);
@@ -1145,102 +1133,16 @@ function focusJob(job: MappedJob) {
         }
 
         .map-shell.full-map-mode .map-stage {
-          grid-row: 2 !important;
-          grid-column: 1 !important;
-          height: 100% !important;
-          min-height: 0 !important;
-          border-radius: 0 !important;
-        }
-
-        .map-shell.full-map-mode .leaflet-container,
-        .map-shell.full-map-mode #map {
-          height: 100% !important;
-          min-height: 100% !important;
-        }
-
-        .map-shell.full-map-mode .job-drawer {
-          position: fixed !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          z-index: 100000 !important;
-          max-height: 46dvh !important;
-          display: block !important;
-        }
-
-        .map-shell.full-map-mode .job-drawer.closed {
-          transform: translateY(calc(100% - 58px)) !important;
-          max-height: 58px !important;
-          overflow: hidden !important;
-        }
-
-        .zoom-panel {
-          position: absolute;
-          z-index: 5;
-          right: 12px;
-          bottom: 12px;
-          display: grid;
-          gap: 8px;
-        }
-
-        .zoom-panel button {
-          width: 54px; min-height: 50px;
-          border: 1px solid rgba(255, 255, 255, 0.16);
-          border-radius: 18px;
-          background: rgba(7, 17, 31, 0.9);
-          color: #f8fbff;
-          font-size: 20px;
-          font-weight: 950;
-          box-shadow: 0 12px 34px rgba(0,0,0,.32);
-        }
-
-        .status-actions {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.status-actions button {
-  padding: 8px;
-  font-size: 12px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-}
-
-.status-actions button:hover {
-  background: rgba(255,255,255,0.18);
-}
-
-.job-drawer {
-          display: block;
-          position: fixed;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          z-index: 9999;
-          max-height: 46dvh;
-          overflow-y: auto;
-          position: relative;
-          z-index: 20;
-          z-index: 6;
-          max-height: 42dvh;
-          background: rgba(7, 17, 31, 0.98);
-          border-top: 1px solid rgba(255, 255, 255, 0.14);
-          border-radius: 22px 22px 0 0;
-          padding: 12px;
-          padding-bottom: max(12px, env(safe-area-inset-bottom));
-          overflow: auto;
-          box-shadow: 0 -20px 70px rgba(0, 0, 0, 0.42);
-        }
+            position: relative;
+            height: 100%;
+            min-height: 0;
+            width: 100%;
+          }
 
         .job-drawer.closed {
-          max-height: 62px;
-          overflow: hidden;
-        }
+            max-height: 64px;
+            overflow: hidden;
+          }
 
         .drawer-head {
           display: flex;
@@ -1543,74 +1445,24 @@ function focusJob(job: MappedJob) {
         }
 
         @media (min-width: 920px) {
-          .map-shell {
-            grid-template-columns: 430px minmax(0, 1fr);
-            grid-template-rows: auto minmax(0, 1fr);
+            .map-shell {
+              grid-template-columns: 1fr;
+              grid-template-rows: auto minmax(0, 1fr);
+            }
+            .map-top {
+              grid-column: 1;
+            }
+            .map-stage {
+              grid-column: 1;
+              grid-row: 2;
+            }
+            .job-drawer {
+              left: 50%;
+              right: auto;
+              width: min(760px, calc(100vw - 24px));
+              transform: translateX(-50%);
+            }
           }
-
-          .status-filter-bar {
-          display: flex;
-          gap: 6px;
-          overflow-x: auto;
-          padding-bottom: 6px;
-        }
-
-        .status-filter-bar button {
-          padding: 6px 10px;
-          border-radius: 999px;
-          border: 1px solid rgba(255,255,255,.18);
-          background: rgba(255,255,255,.08);
-          color: #fff;
-          font-size: 11px;
-          font-weight: 800;
-          white-space: nowrap;
-        }
-
-        .map-top {
-            grid-column: 1 / -1;
-          }
-
-          .status-legend {
-          position: absolute;
-          z-index: 6;
-          left: 12px;
-          bottom: 12px;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-          max-width: calc(100% - 82px);
-          padding: 7px;
-          border: 1px solid rgba(255,255,255,.14);
-          border-radius: 999px;
-          background: rgba(7,17,31,.84);
-          backdrop-filter: blur(14px);
-          box-shadow: 0 14px 42px rgba(0,0,0,.36);
-        }
-
-        .status-legend span {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          color: #e9f3ff;
-          font-size: 10px;
-          font-weight: 950;
-          white-space: nowrap;
-        }
-
-        .dot {
-          width: 9px;
-          height: 9px;
-          border-radius: 999px;
-          display: inline-block;
-          box-shadow: 0 0 12px currentColor;
-        }
-
-        .dot.completed { background: #53e69c; color: #53e69c; }
-        .dot.refused { background: #ff4d5f; color: #ff4d5f; }
-        .dot.noaccess { background: #47a3ff; color: #47a3ff; }
-        .dot.second { background: #05070b; color: #ffffff; border: 1px solid #fff; }
-        .dot.pending { background: #ffd166; color: #ffd166; }
-
         .map-shell.full-map-mode {
           position: fixed !important;
           inset: 0 !important;
@@ -1675,520 +1527,15 @@ function focusJob(job: MappedJob) {
         }
 
         .map-shell.full-map-mode .job-drawer.closed {
-          transform: translateY(calc(100% - 58px)) !important;
-          max-height: 58px !important;
-          overflow: hidden !important;
-        }
-
-        .zoom-panel {
-          position: absolute;
-          z-index: 5;
-          right: 12px;
-          bottom: 12px;
-          display: grid;
-          gap: 8px;
-        }
-
-        .zoom-panel button {
-          width: 54px; min-height: 50px;
-          border: 1px solid rgba(255, 255, 255, 0.16);
-          border-radius: 18px;
-          background: rgba(7, 17, 31, 0.9);
-          color: #f8fbff;
-          font-size: 20px;
-          font-weight: 950;
-          box-shadow: 0 12px 34px rgba(0,0,0,.32);
-        }
-
-        .status-actions {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.status-actions button {
-  padding: 8px;
-  font-size: 12px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-}
-
-.status-actions button:hover {
-  background: rgba(255,255,255,0.18);
-}
-
-.job-drawer {
-          display: block;
-          position: fixed;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          z-index: 9999;
-          max-height: 46dvh;
-          overflow-y: auto;
-          position: relative;
-          z-index: 20;
-            grid-column: 1;
-            grid-row: 2;
-            height: 100%;
-            max-height: none;
-            border-radius: 0;
-            border-top: 0;
-            border-right: 1px solid rgba(255, 255, 255, 0.14);
+            max-height: 64px;
+            overflow: hidden;
           }
-
-          .job-drawer.closed {
-            max-height: none;
-          }
-
-          .map-filter-row {
-          display: grid;
-          grid-template-columns: repeat(6, minmax(0, 1fr));
-          gap: 6px;
-        }
-
-        .map-filter-row button {
-          min-height: 34px;
-          border: 1px solid rgba(255, 255, 255, 0.14);
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.08);
-          color: #d7e4f8;
-          font-size: 11px;
-          font-weight: 950;
-          padding: 0 8px;
-        }
-
-        .map-filter-row button.active {
-          background: linear-gradient(135deg, #42e8f3, #47a3ff);
-          color: #04111f;
-          border-color: transparent;
-        }
-
-        .map-filter-row .full-btn {
-          background: rgba(83, 230, 156, 0.15);
-          color: #caffdf;
-          border-color: rgba(83, 230, 156, 0.34);
-        }
-
-        .map-shell.full-map-mode {
-          grid-template-rows: auto minmax(0, 1fr);
-        }
-
-        .map-shell.full-map-mode .status-actions {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.status-actions button {
-  padding: 8px;
-  font-size: 12px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-}
-
-.status-actions button:hover {
-  background: rgba(255,255,255,0.18);
-}
-
-.job-drawer {
-          display: block;
-          position: fixed;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          z-index: 9999;
-          max-height: 46dvh;
-          overflow-y: auto;
-          position: relative;
-          z-index: 20;
-          }
-
-        .map-shell.full-map-mode .status-filter-bar {
-          display: flex;
-          gap: 6px;
-          overflow-x: auto;
-          padding-bottom: 6px;
-        }
-
-        .status-filter-bar button {
-          padding: 6px 10px;
-          border-radius: 999px;
-          border: 1px solid rgba(255,255,255,.18);
-          background: rgba(255,255,255,.08);
-          color: #fff;
-          font-size: 11px;
-          font-weight: 800;
-          white-space: nowrap;
-        }
-
-        .map-top {
-          padding-bottom: 8px;
-        }
-
-        .map-shell.full-map-mode .map-stage:fullscreen {
-          width: 100vw;
-          height: 100vh;
-          background: #050914;
-        }
-
-        .map-stage:fullscreen .leaflet-container {
-          height: 100vh !important;
-        }
-
-        .map-stage {
-          min-height: 0;
-        }
-
-        .map-stage:fullscreen {
-          width: 100vw;
-          height: 100vh;
-          background: #050914;
-        }
-
-        .map-stage:fullscreen .leaflet-container {
-          height: 100vh !important;
-        }
-
-        .map-stage {
-            grid-column: 2;
-            grid-row: 2;
-          }
-        }
-
-        @media (max-width: 520px) {
-          .map-stats {
-            grid-template-columns: repeat(3, 1fr);
-          }
-
-          .maturity-pill {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          border-radius: 999px;
-          padding: 7px 9px;
-          font-size: 11px;
-          font-weight: 1000;
-          white-space: nowrap;
-        }
-
-        .maturity-normal {
-          background: rgba(83, 230, 156, 0.15);
-          color: #baffd8;
-        }
-
-        .maturity-warning {
-          background: rgba(255, 209, 102, 0.16);
-          color: #ffe7a3;
-        }
-
-        .maturity-urgent {
-          background: rgba(255, 138, 76, 0.18);
-          color: #ffd0ba;
-        }
-
-        .maturity-overdue {
-          background: rgba(255, 107, 122, 0.18);
-          color: #ffc2cb;
-        }
-
-        .maturity-nodate {
-          background: rgba(255, 255, 255, 0.09);
-          color: #d7e4f8;
-        }
-
-        .detail-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .status-actions {
-          display: grid;
-          grid-template-columns: repeat(2, 1fr);
-          gap: 8px;
-          margin: 12px 0;
-        }
-
-        .status-actions button {
-          min-height: 38px;
-          border: 1px solid rgba(255,255,255,0.14);
-          border-radius: 12px;
-          background: rgba(255,255,255,0.08);
-          color: #f8fbff;
-          font-size: 12px;
-          font-weight: 900;
-        }
-
-        .status-actions button:nth-child(1) {
-          border-color: rgba(127,147,170,.45);
-        }
-
-        .status-actions button:nth-child(2) {
-          border-color: rgba(0,0,0,.75);
-        }
-
-        .status-actions button:nth-child(3) {
-          border-color: rgba(255,77,95,.6);
-        }
-
-        .status-actions button:nth-child(4) {
-          border-color: rgba(83,230,156,.6);
-        }
-
-        .status-actions button:nth-child(5) {
-          border-color: rgba(184,117,255,.6);
-        }
-
-        .card-actions {
-            grid-template-columns: 1fr;
-          }
-
-          .status-legend {
-          position: absolute;
-          z-index: 6;
-          left: 12px;
-          bottom: 12px;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-          max-width: calc(100% - 82px);
-          padding: 7px;
-          border: 1px solid rgba(255,255,255,.14);
-          border-radius: 999px;
-          background: rgba(7,17,31,.84);
-          backdrop-filter: blur(14px);
-          box-shadow: 0 14px 42px rgba(0,0,0,.36);
-        }
-
-        .status-legend span {
-          display: inline-flex;
-          align-items: center;
-          gap: 5px;
-          color: #e9f3ff;
-          font-size: 10px;
-          font-weight: 950;
-          white-space: nowrap;
-        }
-
-        .dot {
-          width: 9px;
-          height: 9px;
-          border-radius: 999px;
-          display: inline-block;
-          box-shadow: 0 0 12px currentColor;
-        }
-
-        .dot.completed { background: #53e69c; color: #53e69c; }
-        .dot.refused { background: #ff4d5f; color: #ff4d5f; }
-        .dot.noaccess { background: #47a3ff; color: #47a3ff; }
-        .dot.second { background: #05070b; color: #ffffff; border: 1px solid #fff; }
-        .dot.pending { background: #ffd166; color: #ffd166; }
-
-        .map-shell.full-map-mode {
-          position: fixed !important;
-          inset: 0 !important;
-          width: 100vw !important;
-          height: 100dvh !important;
-          z-index: 99999 !important;
-          background: #050914 !important;
-          display: grid !important;
-          grid-template-rows: auto 1fr !important;
-          grid-template-columns: 1fr !important;
-          padding: 0 !important;
-          overflow: hidden !important;
-        }
-
-        .map-shell.full-map-mode .status-filter-bar {
-          display: flex;
-          gap: 6px;
-          overflow-x: auto;
-          padding-bottom: 6px;
-        }
-
-        .status-filter-bar button {
-          padding: 6px 10px;
-          border-radius: 999px;
-          border: 1px solid rgba(255,255,255,.18);
-          background: rgba(255,255,255,.08);
-          color: #fff;
-          font-size: 11px;
-          font-weight: 800;
-          white-space: nowrap;
-        }
-
-        .map-top {
-          grid-row: 1 !important;
-          grid-column: 1 !important;
-          border-radius: 0 !important;
-          padding: max(8px, env(safe-area-inset-top)) 10px 8px !important;
-        }
-
-        .map-shell.full-map-mode .map-stage {
-          grid-row: 2 !important;
-          grid-column: 1 !important;
-          height: 100% !important;
-          min-height: 0 !important;
-          border-radius: 0 !important;
-        }
-
-        .map-shell.full-map-mode .leaflet-container,
-        .map-shell.full-map-mode #map {
-          height: 100% !important;
-          min-height: 100% !important;
-        }
-
-        .map-shell.full-map-mode .job-drawer {
-          position: fixed !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          z-index: 100000 !important;
-          max-height: 46dvh !important;
-          display: block !important;
-        }
-
-        .map-shell.full-map-mode .job-drawer.closed {
-          transform: translateY(calc(100% - 58px)) !important;
-          max-height: 58px !important;
-          overflow: hidden !important;
-        }
-
-        .zoom-panel {
-          position: absolute;
-          z-index: 5;
-          right: 12px;
-          bottom: 12px;
-          display: grid;
-          gap: 8px;
-        }
-
-        .zoom-panel button {
-          width: 54px; min-height: 50px;
-          border: 1px solid rgba(255, 255, 255, 0.16);
-          border-radius: 18px;
-          background: rgba(7, 17, 31, 0.9);
-          color: #f8fbff;
-          font-size: 20px;
-          font-weight: 950;
-          box-shadow: 0 12px 34px rgba(0,0,0,.32);
-        }
-
-        .status-actions {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.status-actions button {
-  padding: 8px;
-  font-size: 12px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-}
-
-.status-actions button:hover {
-  background: rgba(255,255,255,0.18);
-}
-
-.job-drawer {
-          display: block;
-          position: fixed;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          z-index: 9999;
-          max-height: 46dvh;
-          overflow-y: auto;
-          position: relative;
-          z-index: 20;
-            max-height: 44dvh;
-          }
-        }
-        .map-shell.full-map-mode {
-          position: fixed !important;
-          inset: 0 !important;
-          width: 100vw !important;
-          height: 100dvh !important;
-          z-index: 99999 !important;
-          background: #050914 !important;
-          display: grid !important;
-          grid-template-rows: auto 1fr !important;
-          grid-template-columns: 1fr !important;
-          padding: 0 !important;
-          overflow: hidden !important;
-        }
-
-        .map-shell.full-map-mode .status-filter-bar {
-          display: flex;
-          gap: 6px;
-          overflow-x: auto;
-          padding-bottom: 6px;
-        }
-
-        .status-filter-bar button {
-          padding: 6px 10px;
-          border-radius: 999px;
-          border: 1px solid rgba(255,255,255,.18);
-          background: rgba(255,255,255,.08);
-          color: #fff;
-          font-size: 11px;
-          font-weight: 800;
-          white-space: nowrap;
-        }
-
-        .map-top {
-          grid-row: 1 !important;
-          grid-column: 1 !important;
-          border-radius: 0 !important;
-          padding: max(8px, env(safe-area-inset-top)) 10px 8px !important;
-        }
-
-        .map-shell.full-map-mode .map-stage {
-          grid-row: 2 !important;
-          grid-column: 1 !important;
-          height: 100% !important;
-          min-height: 0 !important;
-          border-radius: 0 !important;
-        }
-
-        .map-shell.full-map-mode .leaflet-container,
-        .map-shell.full-map-mode #map {
-          height: 100% !important;
-          min-height: 100% !important;
-        }
-
-        .map-shell.full-map-mode .job-drawer {
-          position: fixed !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          z-index: 100000 !important;
-          max-height: 46dvh !important;
-          display: block !important;
-        }
-
-        .map-shell.full-map-mode .job-drawer.closed {
-          transform: translateY(calc(100% - 58px)) !important;
-          max-height: 58px !important;
-          overflow: hidden !important;
-        }
       `}</style>
 
       <header className="map-top">
         <div className="map-title-row">
           <div>
-            <h1>All Jobs Map</h1>
+            <h1>Field Operations</h1>
             <p>{message}</p>
           </div>
           <a className="home-btn" href="/">Home</a>
@@ -2371,6 +1718,7 @@ function focusJob(job: MappedJob) {
     </main>
   );
 }
+
 
 
 
