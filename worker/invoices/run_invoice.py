@@ -120,8 +120,9 @@ def main():
     burn_invoice(TEMPLATE, out_pdf, text_map)
     print(json.dumps({
         "ok": True,
-        "url": f"/generated/{out_name}",
+        "url": f"/api/generated/{out_name}",
         "file": out_pdf
     }))
 if __name__ == "__main__":
     main()
+
