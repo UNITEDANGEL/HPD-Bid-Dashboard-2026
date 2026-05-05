@@ -966,7 +966,7 @@ function focusJob(job: MappedJob) {
           right: 0;
           bottom: 0;
           z-index: 9999;
-          max-height: 46dvh;
+          max-height: 38dvh;
           overflow-y: auto;
           position: relative;
           z-index: 20;
@@ -1530,7 +1530,198 @@ function focusJob(job: MappedJob) {
             max-height: 64px;
             overflow: hidden;
           }
-      `}</style>
+          @media (max-width: 700px) {
+            .map-shell {
+              grid-template-rows: auto minmax(0, 1fr) !important;
+            }
+
+            .map-top {
+              padding: max(5px, env(safe-area-inset-top)) 7px 5px !important;
+              gap: 5px !important;
+            }
+
+            .map-title-row h1 {
+              font-size: 18px !important;
+            }
+
+            .map-title-row p {
+              font-size: 10px !important;
+              max-height: 14px;
+              overflow: hidden;
+            }
+
+            .map-search input {
+              min-height: 34px !important;
+              font-size: 14px !important;
+            }
+
+            .jobs-toggle {
+              min-height: 34px !important;
+              padding: 0 10px !important;
+            }
+
+            .map-filter-row,
+            .status-filter-bar {
+              gap: 5px !important;
+              padding-bottom: 1px !important;
+            }
+
+            .map-filter-row button,
+            .status-filter-bar button {
+              min-height: 30px !important;
+              font-size: 10px !important;
+              padding: 0 8px !important;
+            }
+
+            .map-stats {
+              top: 7px !important;
+              left: 7px !important;
+              right: 68px !important;
+              gap: 5px !important;
+            }
+
+            .map-stat {
+              padding: 6px !important;
+              border-radius: 13px !important;
+              backdrop-filter: none !important;
+              background: rgba(7, 17, 31, 0.72) !important;
+            }
+
+            .map-stat strong {
+              font-size: 14px !important;
+            }
+
+            .map-stat span {
+              font-size: 8px !important;
+            }
+
+            .status-legend {
+              left: 7px !important;
+              bottom: 7px !important;
+              max-width: calc(100% - 74px) !important;
+              padding: 5px !important;
+              gap: 5px !important;
+              backdrop-filter: none !important;
+              border-radius: 14px !important;
+            }
+
+            .status-legend span {
+              font-size: 9px !important;
+            }
+
+            .zoom-panel {
+              right: 7px !important;
+              bottom: 7px !important;
+              gap: 6px !important;
+            }
+
+            .zoom-panel button {
+              width: 46px !important;
+              min-height: 42px !important;
+              border-radius: 15px !important;
+              font-size: 16px !important;
+            }
+
+            .job-drawer {
+              left: 6px !important;
+              right: 6px !important;
+              bottom: 6px !important;
+              max-height: 38dvh !important;
+              padding: 9px !important;
+              border-radius: 20px !important;
+              backdrop-filter: none !important;
+              box-shadow: 0 -10px 34px rgba(0,0,0,.48) !important;
+              -webkit-overflow-scrolling: touch;
+            }
+
+            .job-drawer.closed {
+              max-height: 52px !important;
+            }
+
+            .drawer-head {
+              margin-bottom: 6px !important;
+            }
+
+            .drawer-head strong {
+              font-size: 16px !important;
+            }
+
+            .selected-card,
+            .job-card {
+              border-radius: 16px !important;
+              padding: 11px !important;
+              margin-bottom: 8px !important;
+            }
+
+            .job-title {
+              font-size: 17px !important;
+            }
+
+            .job-address {
+              font-size: 13px !important;
+              margin-top: 4px !important;
+            }
+
+            .job-sub {
+              font-size: 11px !important;
+            }
+
+            .detail-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 6px !important;
+              margin-top: 8px !important;
+            }
+
+            .detail {
+              padding: 7px !important;
+              border-radius: 10px !important;
+            }
+
+            .detail span {
+              font-size: 8px !important;
+            }
+
+            .detail strong {
+              font-size: 11px !important;
+            }
+
+            .status-actions {
+              gap: 6px !important;
+              margin: 8px 0 !important;
+            }
+
+            .status-actions button {
+              min-height: 34px !important;
+              font-size: 11px !important;
+              border-radius: 10px !important;
+            }
+
+            .card-actions {
+              gap: 6px !important;
+              margin-top: 8px !important;
+            }
+
+            .card-actions a,
+            .card-actions button {
+              min-height: 36px !important;
+              font-size: 11px !important;
+              border-radius: 11px !important;
+            }
+
+            .maturity-marker-bubble {
+              min-width: 38px !important;
+              min-height: 30px !important;
+              padding: 3px 6px !important;
+              border-width: 2px !important;
+              box-shadow: 0 8px 20px rgba(0,0,0,.34) !important;
+              backdrop-filter: none !important;
+            }
+
+            .maturity-marker-bubble strong {
+              font-size: 12px !important;
+            }
+          }
+        `}</style>
 
       <header className="map-top">
         <div className="map-title-row">
@@ -1675,7 +1866,7 @@ function focusJob(job: MappedJob) {
           </div>
         ) : null}
 
-        {filteredJobs.slice(0, 300).map((job, index) => (
+        {filteredJobs.slice(0, 60).map((job, index) => (
           <div className={`job-card job-status-card ${JobStatus.statusCardClass(job)}`} key={`${jobKey(job, index)}-${index}`}>
             <button className="job-card-button" type="button" onClick={() => focusJob(job)}>
               <div className="job-main-row">
@@ -1718,6 +1909,7 @@ function focusJob(job: MappedJob) {
     </main>
   );
 }
+
 
 
 
