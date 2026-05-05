@@ -331,6 +331,7 @@ export default function MapClient() {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
   const [selected, setSelected] = useState<MappedJob | null>(null);
+const [selectedOnly, setSelectedOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
   const [mapReady, setMapReady] = useState(false);
@@ -581,6 +582,7 @@ const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60
 
         marker.on("click", () => {
           setSelected(job);
+          setSelectedOnly(true);
           setDrawerOpen(true);
 
           setTimeout(() => {
@@ -701,7 +703,8 @@ async function openRealFullMap() {
 
 function focusJob(job: MappedJob) {
     setSelected(job);
-    setDrawerOpen(true);
+          setSelectedOnly(true);
+          setDrawerOpen(true);
 
     if (Number.isFinite(job._lat) && Number.isFinite(job._lng) && mapRef.current) {
       mapRef.current.flyTo([Number(job._lat), Number(job._lng)], 16, {
@@ -1841,6 +1844,27 @@ function focusJob(job: MappedJob) {
               backdrop-filter: none;
             }
           }
+          .job-drawer.selected-focus {
+            max-height: 70dvh !important;
+          }
+
+          .job-drawer.selected-focus .selected-card {
+            margin-bottom: 0 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(7,17,31,.98);
+            padding-bottom: 8px;
+          }
+
+          @media (max-width: 700px) {
+            .job-drawer.selected-focus {
+              max-height: 72dvh !important;
+            }
+          }
         `}</style>
 
       <header className="map-top">
@@ -1919,9 +1943,21 @@ function focusJob(job: MappedJob) {
         </div>
       </section>
 
-      <aside className={`job-drawer ${drawerOpen ? "" : "closed"}`}>
+      <aside className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus" : ""}`}>
         <div className="drawer-head">
-          <strong>{filteredJobs.length} jobs</strong>
+          <strong>{selectedOnly && selected ? jobKey(selected) : `${filteredJobs.length} jobs`}</strong>
+          {selectedOnly ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedOnly(false);
+                setSelected(null);
+                setDrawerOpen(true);
+              }}
+            >
+              Back to List
+            </button>
+          ) : null}
           <button type="button" onClick={() => setDrawerOpen((value) => !value)}>
             {drawerOpen ? "Hide Cards" : "Show Cards"}
           </button>
@@ -1994,7 +2030,7 @@ function focusJob(job: MappedJob) {
           </div>
         ) : null}
 
-        {filteredJobs.slice(0, 60).map((job, index) => (
+        {!selectedOnly ? filteredJobs.slice(0, 60).map((job, index) => (
           <div className={`job-card job-status-card ${JobStatus.statusCardClass(job)}`} key={`${jobKey(job, index)}-${index}`}>
             <button className="job-card-button" type="button" onClick={() => focusJob(job)}>
               <div className="job-main-row">
@@ -2032,11 +2068,12 @@ function focusJob(job: MappedJob) {
               <a target="_blank" rel="noreferrer" href={directionsUrl(job)}>Directions</a>
             </div>
           </div>
-        ))}
-      </aside>
+        )) : null}
+        </aside>
     </main>
   );
 }
+
 
 
 
