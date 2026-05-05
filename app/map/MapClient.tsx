@@ -582,6 +582,20 @@ const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60
         marker.on("click", () => {
           setSelected(job);
           setDrawerOpen(true);
+
+          setTimeout(() => {
+            mapRef.current?.panTo([Number(job._lat), Number(job._lng)], {
+              animate: true,
+              duration: 0.55,
+            });
+          }, 40);
+
+          setTimeout(() => {
+            document.querySelector(".selected-card")?.scrollIntoView({
+              behavior: "smooth",
+              block: "nearest",
+            });
+          }, 160);
         });
 
         marker.bindPopup(`
@@ -690,7 +704,10 @@ function focusJob(job: MappedJob) {
     setDrawerOpen(true);
 
     if (Number.isFinite(job._lat) && Number.isFinite(job._lng) && mapRef.current) {
-      mapRef.current.setView([Number(job._lat), Number(job._lng)], 16);
+      mapRef.current.flyTo([Number(job._lat), Number(job._lng)], 16, {
+        animate: true,
+        duration: 0.65,
+      });
     }
   }
 
@@ -1721,6 +1738,109 @@ function focusJob(job: MappedJob) {
               font-size: 12px !important;
             }
           }
+          .selected-card {
+            scroll-margin-bottom: 90px;
+            animation: selectedCardIn 180ms ease-out;
+          }
+
+          @keyframes selectedCardIn {
+            from {
+              transform: translateY(10px);
+              opacity: 0.72;
+            }
+            to {
+              transform: translateY(0);
+              opacity: 1;
+            }
+          }
+
+          .selected-description {
+            margin-top: 12px;
+            border: 1px solid rgba(66, 232, 243, 0.22);
+            background: rgba(255,255,255,0.075);
+            border-radius: 18px;
+            padding: 12px;
+          }
+
+          .description-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+          }
+
+          .description-head span {
+            color: #aebbd0;
+            font-size: 10px;
+            font-weight: 1000;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+          }
+
+          .description-head strong {
+            color: #c4fbff;
+            font-size: 11px;
+            font-weight: 1000;
+            border: 1px solid rgba(66,232,243,.24);
+            background: rgba(66,232,243,.1);
+            border-radius: 999px;
+            padding: 5px 8px;
+          }
+
+          .selected-description p {
+            margin: 0;
+            color: #f8fbff;
+            font-size: 16px;
+            line-height: 1.55;
+            font-weight: 650;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+          }
+
+          .job-drawer {
+            scroll-behavior: smooth;
+          }
+
+          .job-card,
+          .selected-card,
+          .maturity-marker-bubble {
+            transition:
+              transform 160ms ease,
+              box-shadow 160ms ease,
+              border-color 160ms ease,
+              background 160ms ease;
+          }
+
+          .job-card:active,
+          .selected-card:active {
+            transform: scale(0.992);
+          }
+
+          @media (max-width: 700px) {
+            .selected-description {
+              max-height: 24dvh;
+              overflow: auto;
+              -webkit-overflow-scrolling: touch;
+              padding: 11px;
+              border-radius: 16px;
+            }
+
+            .selected-description p {
+              font-size: 15px !important;
+              line-height: 1.52 !important;
+              font-weight: 700;
+            }
+
+            .description-head {
+              position: sticky;
+              top: 0;
+              z-index: 2;
+              padding-bottom: 6px;
+              background: rgba(7,17,31,.96);
+              backdrop-filter: none;
+            }
+          }
         `}</style>
 
       <header className="map-top">
@@ -1834,7 +1954,15 @@ function focusJob(job: MappedJob) {
               <div className="detail"><span>Map Source</span><strong>{selected._source || "unmapped"}</strong></div>
             </div>
 
-            {selected.description ? <p className="job-sub">{selected.description}</p> : null}
+            {selected.description ? (
+              <div className="selected-description">
+                <div className="description-head">
+                  <span>Job Description</span>
+                  <strong>Read Mode</strong>
+                </div>
+                <p>{selected.description}</p>
+              </div>
+            ) : null}
 
             <div className="status-actions">
               <button type="button" onClick={() => updateLocalStatus(selected, "No Access - 1st Attempt")}>No Access 1st</button>
@@ -1909,6 +2037,7 @@ function focusJob(job: MappedJob) {
     </main>
   );
 }
+
 
 
 
