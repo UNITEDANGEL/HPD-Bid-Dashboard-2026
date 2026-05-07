@@ -332,7 +332,9 @@ export default function MapClient() {
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
   const [selected, setSelected] = useState<MappedJob | null>(null);
 const [selectedOnly, setSelectedOnly] = useState(false);
+const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
 const [selectedOnly, setSelectedOnly] = useState(false);
+const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
   const [mapReady, setMapReady] = useState(false);
@@ -584,6 +586,7 @@ const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60
         marker.on("click", () => {
           setSelected(job);
           setSelectedOnly(true);
+          setGeneratedLinks({});
           setDrawerOpen(true);
 
           setTimeout(() => {
@@ -668,6 +671,24 @@ function updateLocalStatus(job: MappedJob, nextStatus: string) {
     );
   }
 
+function generateInvoice(job: any, workflow = "invoice") {
+    fetch("/api/invoice/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job, workflow }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.url) {
+          setGeneratedLinks((prev) => ({ ...prev, invoice: data.url }));
+          window.open(data.url, "_blank");
+        } else {
+          alert(data.error || "Failed to generate invoice");
+        }
+      })
+      .catch(() => alert("Failed to generate invoice"));
+  }
+
 function generateAffidavit(job: any, type: string) {
     fetch("/api/affidavit", {
       method: "POST",
@@ -677,6 +698,7 @@ function generateAffidavit(job: any, type: string) {
       .then((r) => r.json())
       .then((data) => {
         if (data.url) {
+          setGeneratedLinks((prev) => ({ ...prev, affidavit: data.url }));
           window.open(data.url, "_blank");
         } else {
           alert("Failed to generate affidavit");
@@ -705,6 +727,7 @@ async function openRealFullMap() {
 function focusJob(job: MappedJob) {
     setSelected(job);
           setSelectedOnly(true);
+          setGeneratedLinks({});
           setDrawerOpen(true);
 
     if (Number.isFinite(job._lat) && Number.isFinite(job._lng) && mapRef.current) {
@@ -1887,6 +1910,54 @@ function focusJob(job: MappedJob) {
               max-height: 72dvh !important;
             }
           }
+          .selected-description {
+            touch-action: pan-y;
+            overscroll-behavior: contain;
+          }
+
+          .selected-description p {
+            user-select: text;
+          }
+
+          .generated-output-links {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+            margin-top: 10px;
+          }
+
+          .generated-output-links a {
+            min-height: 42px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            background: rgba(83, 230, 156, 0.16);
+            border: 1px solid rgba(83, 230, 156, 0.32);
+            color: #caffdf;
+            font-weight: 950;
+            font-size: 13px;
+          }
+
+          @media (max-width: 700px) {
+            .job-drawer.selected-focus {
+              max-height: 82dvh !important;
+              overflow-y: auto !important;
+              -webkit-overflow-scrolling: touch !important;
+            }
+
+            .selected-description {
+              max-height: 34dvh !important;
+              overflow-y: auto !important;
+              -webkit-overflow-scrolling: touch !important;
+              touch-action: pan-y !important;
+              overscroll-behavior: contain !important;
+            }
+
+            .selected-description p {
+              font-size: 16px !important;
+              line-height: 1.6 !important;
+            }
+          }
         `}</style>
 
       <header className="map-top">
@@ -2058,11 +2129,23 @@ function focusJob(job: MappedJob) {
               >
                 Affidavit
               </button>
-              <a href={`/invoice-generator?job=${encodeURIComponent(jobKey(selected))}`}>Invoice</a>
+              <button
+                  type="button"
+                  onClick={() => generateInvoice(selected, "selected_job")}
+                >
+                  Invoice
+                </button>
               <a target="_blank" rel="noreferrer" href={directionsUrl(selected)}>Directions</a>
             </div>
-          </div>
-        ) : null}
+
+              {(generatedLinks.invoice || generatedLinks.affidavit) ? (
+                <div className="generated-output-links">
+                  {generatedLinks.invoice ? <a target="_blank" rel="noreferrer" href={generatedLinks.invoice}>Open Invoice PDF</a> : null}
+                  {generatedLinks.affidavit ? <a target="_blank" rel="noreferrer" href={generatedLinks.affidavit}>Open Affidavit PDF</a> : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
         {!selectedOnly ? filteredJobs.slice(0, 60).map((job, index) => (
           <div className={`job-card job-status-card ${JobStatus.statusCardClass(job)}`} key={`${jobKey(job, index)}-${index}`}>
@@ -2107,6 +2190,7 @@ function focusJob(job: MappedJob) {
     </main>
   );
 }
+
 
 
 
