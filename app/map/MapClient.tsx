@@ -670,6 +670,14 @@ function updateLocalStatus(job: MappedJob, nextStatus: string) {
     );
   }
 
+function isMissingItb(job: any) {
+    const itbStatus = String(job.ITBMatchStatus || job.itbMatchStatus || job.status || "").toLowerCase();
+    const missingReason = String(job.MissingITBReason || job.missingITBReason || "").toLowerCase();
+    const itbFile = String(job.ITBFile || job.itbFile || "").trim();
+
+    return itbStatus.includes("no_itb") || missingReason.includes("no itb") || !itbFile;
+  }
+
 function generateInvoice(job: any, workflow = "invoice") {
     fetch("/api/invoice/generate", {
       method: "POST",
@@ -2041,6 +2049,58 @@ function focusJob(job: MappedJob) {
               line-height: 1.65 !important;
             }
           }
+          .no-itb-alert {
+            margin: 8px 0 10px;
+            border: 1px solid rgba(255, 209, 102, 0.38);
+            background: rgba(255, 209, 102, 0.14);
+            border-radius: 16px;
+            padding: 10px;
+            color: #ffe6a3;
+          }
+
+          .no-itb-alert strong {
+            display: block;
+            font-size: 13px;
+            font-weight: 1000;
+            letter-spacing: 0.04em;
+          }
+
+          .no-itb-alert span {
+            display: block;
+            margin-top: 3px;
+            font-size: 11px;
+            color: #fff4cf;
+            line-height: 1.35;
+          }
+
+          .mini-no-itb {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 7px;
+            padding: 3px 7px;
+            border-radius: 999px;
+            background: rgba(255, 209, 102, 0.16);
+            border: 1px solid rgba(255, 209, 102, 0.32);
+            color: #ffe6a3;
+            font-size: 9px;
+            font-weight: 1000;
+            vertical-align: middle;
+          }
+
+          @media (max-width: 700px) {
+            .no-itb-alert {
+              padding: 9px;
+              border-radius: 14px;
+            }
+
+            .no-itb-alert strong {
+              font-size: 12px;
+            }
+
+            .no-itb-alert span {
+              font-size: 10px;
+            }
+          }
         `}</style>
 
       <header className="map-top">
@@ -2293,6 +2353,7 @@ function focusJob(job: MappedJob) {
       </main>
   );
 }
+
 
 
 
