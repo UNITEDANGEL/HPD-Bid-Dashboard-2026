@@ -30,7 +30,9 @@ type JobRecord = {
   coaFile?: string;
   itbFile?: string;
   pdfFile?: string;
+  Latitude?: number | string;
   latitude?: number | string;
+  Longitude?: number | string;
   longitude?: number | string;
   lat?: number | string;
   lng?: number | string;
@@ -63,8 +65,8 @@ function toNumber(value: unknown) {
 }
 
 function getStoredCoords(job: JobRecord) {
-  const lat = toNumber(job.latitude ?? job.lat);
-  const lng = toNumber(job.longitude ?? job.lng ?? job.lon);
+  const lat = toNumber(job.Latitude ?? job.latitude ?? job.lat);
+  const lng = toNumber(job.Longitude ?? job.longitude ?? job.lng ?? job.lon);
 
   if (lat === null || lng === null) return null;
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
@@ -2405,6 +2407,8 @@ function focusJob(job: MappedJob) {
       </main>
   );
 }
+
+
 
 
 
