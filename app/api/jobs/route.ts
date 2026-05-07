@@ -202,26 +202,43 @@ function loadCsv(filePath: string) {
     });
 }
 
+function loadJson(filePath: string) {
+  const raw = fs.readFileSync(filePath, "utf8");
+  const parsed = JSON.parse(raw);
+  const rows = Array.isArray(parsed) ? parsed : parsed.jobs || [];
+
+  return rows
+    .filter((row: any) => text(row.OMO) || text(row.BuildingAddress) || text(row.JobDescription))
+    .filter((row: any) =>
+      /\/26|2026/.test(text(row.AwardDate)) ||
+      /\/26|2026/.test(text(row.WorkStartDate)) ||
+      /\/26|2026/.test(text(row.WorkCompletionDate))
+    )
+    .map(normalizeJob);
+}
+
 export async function GET() {
+  const jsonPath = path.join(process.cwd(), "data", "COA_Fetcher_2026.json");
   const csvPath = path.join(process.cwd(), "data", "COA_Fetcher_2026.csv");
 
-  if (!fs.existsSync(csvPath)) {
+  if (!fs.existsSync(jsonPath) && !fs.existsSync(csvPath)) {
     return NextResponse.json({
-      jobs: [],
-      source: null,
+      ok: false,
       count: 0,
-      error: "No job source found. Expected data/COA_Fetcher_2026.csv",
+      jobs: [],
+      error: "No job source found. Expected data/COA_Fetcher_2026.json or data/COA_Fetcher_2026.csv",
     });
   }
 
-  const jobs = loadCsv(csvPath);
+  const jobs = fs.existsSync(jsonPath) ? loadJson(jsonPath) : loadCsv(csvPath);
 
   return NextResponse.json({
     jobs,
-    source: "COA_Fetcher_2026.csv",
+    source: fs.existsSync(jsonPath) ? "COA_Fetcher_2026.json" : "COA_Fetcher_2026.csv",
     count: jobs.length,
     updatedAt: new Date().toISOString(),
   });
 }
+
 
 
