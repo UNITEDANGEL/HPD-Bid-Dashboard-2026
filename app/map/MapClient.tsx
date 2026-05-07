@@ -333,6 +333,7 @@ export default function MapClient() {
   const [selected, setSelected] = useState<MappedJob | null>(null);
 const [selectedOnly, setSelectedOnly] = useState(false);
 const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
+const [descriptionOpen, setDescriptionOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
   const [mapReady, setMapReady] = useState(false);
@@ -1956,6 +1957,90 @@ function focusJob(job: MappedJob) {
               line-height: 1.6 !important;
             }
           }
+          .description-open-button {
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+          }
+
+          .description-open-button p {
+            display: -webkit-box;
+            -webkit-line-clamp: 5;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+
+          .description-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 200000;
+            background: #06101f;
+            color: #f8fbff;
+            display: grid;
+            grid-template-rows: auto 1fr;
+            padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+          }
+
+          .description-modal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 0 12px;
+            border-bottom: 1px solid rgba(255,255,255,.14);
+          }
+
+          .description-modal-head strong {
+            display: block;
+            font-size: 20px;
+            letter-spacing: -0.04em;
+          }
+
+          .description-modal-head span {
+            display: block;
+            margin-top: 4px;
+            color: #aebbd0;
+            font-size: 12px;
+            line-height: 1.3;
+          }
+
+          .description-modal-head button {
+            min-height: 42px;
+            border: 0;
+            border-radius: 999px;
+            padding: 0 16px;
+            background: linear-gradient(135deg, #42e8f3, #47a3ff);
+            color: #04111f;
+            font-weight: 1000;
+          }
+
+          .description-modal-body {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 16px 2px 28px;
+          }
+
+          .description-modal-body h2 {
+            margin: 0 0 14px;
+            font-size: 24px;
+            letter-spacing: -0.05em;
+          }
+
+          .description-modal-body p {
+            margin: 0;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            font-size: 19px;
+            line-height: 1.62;
+            font-weight: 700;
+          }
+
+          @media (max-width: 700px) {
+            .description-modal-body p {
+              font-size: 18px !important;
+              line-height: 1.65 !important;
+            }
+          }
         `}</style>
 
       <header className="map-top">
@@ -2094,13 +2179,17 @@ function focusJob(job: MappedJob) {
             </div>
 
             {selected.description ? (
-              <div className="selected-description">
+              <button
+                type="button"
+                className="selected-description description-open-button"
+                onClick={() => setDescriptionOpen(true)}
+              >
                 <div className="description-head">
                   <span>Job Description</span>
-                  <strong>Read Mode</strong>
+                  <strong>Tap to Open</strong>
                 </div>
                 <p>{selected.description}</p>
-              </div>
+              </button>
             ) : null}
 
             <div className="status-actions">
@@ -2185,9 +2274,26 @@ function focusJob(job: MappedJob) {
           </div>
         )) : null}
         </aside>
-    </main>
+            {descriptionOpen && selected?.description ? (
+          <div className="description-modal">
+            <div className="description-modal-head">
+              <div>
+                <strong>{jobKey(selected)}</strong>
+                <span>{displayAddress(selected)}</span>
+              </div>
+              <button type="button" onClick={() => setDescriptionOpen(false)}>Close</button>
+            </div>
+
+            <div className="description-modal-body">
+              <h2>Job Description</h2>
+              <p>{selected.description}</p>
+            </div>
+          </div>
+        ) : null}
+      </main>
   );
 }
+
 
 
 
