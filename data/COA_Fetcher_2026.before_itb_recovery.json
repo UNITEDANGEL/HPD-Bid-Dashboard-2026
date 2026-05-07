@@ -2,7 +2,7 @@
   {
     "OMO": "EQ15489",
     "COAFile": "EQ15489_010526045104.pdf",
-    "ITBFile": "EQ15489_010226100207.pdf",
+    "ITBFile": "",
     "BuildingAddress": "395 MAPLE STREET, 11225",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -18,20 +18,17 @@
     "Geocode": "OK",
     "Latitude": 40.6611705,
     "Longitude": -73.9474771,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15489_010526045104.pdf"
-    },
-    "itbFile": "EQ15489_010226100207.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15719",
     "COAFile": "EQ15719_010526044109.pdf",
-    "ITBFile": "EQ15719_123125044907.pdf",
+    "ITBFile": "",
     "BuildingAddress": "503 WEST 158 STREET, 10032",
     "Location": "(718) 989-1382 Fax: Procurement Specialist:",
     "ApartmentUnit": "",
@@ -47,20 +44,17 @@
     "Geocode": "OK",
     "Latitude": 40.8338841,
     "Longitude": -73.94197059999999,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15719_010526044109.pdf"
-    },
-    "itbFile": "EQ15719_123125044907.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14157",
     "COAFile": "EQ14157_010526041305.pdf",
-    "ITBFile": "EQ14157_123025025906.pdf",
+    "ITBFile": "",
     "BuildingAddress": "2070 VYSE AVENUE, 10460",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -76,15 +70,12 @@
     "Geocode": "OK",
     "Latitude": 40.8430124,
     "Longitude": -73.881053,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14157_010526041305.pdf"
-    },
-    "itbFile": "EQ14157_123025025906.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15665",
@@ -116,7 +107,7 @@
   {
     "OMO": "EQ15750",
     "COAFile": "EQ15750_010526040421.pdf",
-    "ITBFile": "EQ15750_010226033447.pdf",
+    "ITBFile": "",
     "BuildingAddress": "1252 EAST 53 STREET, 11234",
     "Location": "1252",
     "ApartmentUnit": "",
@@ -132,20 +123,17 @@
     "Geocode": "OK",
     "Latitude": 40.62857839999999,
     "Longitude": -73.9252588,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15750_010526040421.pdf"
-    },
-    "itbFile": "EQ15750_010226033447.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15085",
     "COAFile": "EQ15085_010526035829.pdf",
-    "ITBFile": "EQ15085_010226033918.pdf",
+    "ITBFile": "",
     "BuildingAddress": "1711 EAST 15 STREET, 11229",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -161,20 +149,17 @@
     "Geocode": "OK",
     "Latitude": 40.60793,
     "Longitude": -73.95791419999999,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15085_010526035829.pdf"
-    },
-    "itbFile": "EQ15085_010226033918.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15488",
     "COAFile": "EQ15488_010526033551.pdf",
-    "ITBFile": "EQ15488_010226100438.pdf",
+    "ITBFile": "",
     "BuildingAddress": "1360 NEW YORK AVENUE, 11210",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -190,20 +175,17 @@
     "Geocode": "OK",
     "Latitude": 40.6388591,
     "Longitude": -73.94798089999999,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15488_010526033551.pdf"
-    },
-    "itbFile": "EQ15488_010226100438.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15340",
     "COAFile": "EQ15340_010526011610.pdf",
-    "ITBFile": "EQ15340_010226091936.pdf",
+    "ITBFile": "",
     "BuildingAddress": "541 WEST 204 STREET, 10034",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -219,20 +201,17 @@
     "Geocode": "OK",
     "Latitude": 40.8635099,
     "Longitude": -73.92041309999999,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15340_010526011610.pdf"
-    },
-    "itbFile": "EQ15340_010226091936.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15334",
     "COAFile": "EQ15334_010326061257.pdf",
-    "ITBFile": "EQ15334_122925103347.pdf",
+    "ITBFile": "",
     "BuildingAddress": "2011 AMSTERDAM AVENUE, 10032",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -248,20 +227,17 @@
     "Geocode": "OK",
     "Latitude": 40.8343665,
     "Longitude": -73.9405549,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15334_010326061257.pdf"
-    },
-    "itbFile": "EQ15334_122925103347.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15088",
     "COAFile": "EQ15088_010326060940.pdf",
-    "ITBFile": "EQ15088_122925102524.pdf",
+    "ITBFile": "",
     "BuildingAddress": "589 VAN NEST AVENUE, 10460",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -277,20 +253,17 @@
     "Geocode": "OK",
     "Latitude": 40.8424625,
     "Longitude": -73.8683839,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15088_010326060940.pdf"
-    },
-    "itbFile": "EQ15088_122925102524.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15766",
     "COAFile": "EQ15766_010326060312.pdf",
-    "ITBFile": "EQ15766_123125110417.pdf",
+    "ITBFile": "",
     "BuildingAddress": "263 14 STREET, 11215",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -306,15 +279,12 @@
     "Geocode": "OK",
     "Latitude": 40.666109,
     "Longitude": -73.988152,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15766_010326060312.pdf"
-    },
-    "itbFile": "EQ15766_123125110417.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ16020",
@@ -778,7 +748,7 @@
   {
     "OMO": "EQ14952",
     "COAFile": "EQ14952_122925034157.pdf",
-    "ITBFile": "EQ14952_122625040732.pdf",
+    "ITBFile": "",
     "BuildingAddress": "15 WESTMINSTER ROAD, 11218",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -794,20 +764,17 @@
     "Geocode": "OK",
     "Latitude": 40.6486519,
     "Longitude": -73.968402,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14952_122925034157.pdf"
-    },
-    "itbFile": "EQ14952_122625040732.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15218",
     "COAFile": "EQ15218_122925011315.pdf",
-    "ITBFile": "EQ15218_122325023218.pdf",
+    "ITBFile": "",
     "BuildingAddress": "143-45 SANFORD AVENUE, 11355",
     "Location": "(718) 989-1382 Fax: Procurement Specialist:",
     "ApartmentUnit": "",
@@ -823,20 +790,17 @@
     "Geocode": "OK",
     "Latitude": 40.7589005,
     "Longitude": -73.8216546,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15218_122925011315.pdf"
-    },
-    "itbFile": "EQ15218_122325023218.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15260",
     "COAFile": "EQ15260_122725061425.pdf",
-    "ITBFile": "EQ15260_122325100554.pdf",
+    "ITBFile": "",
     "BuildingAddress": "655 MORRIS AVENUE, 10451",
     "Location": "(718) 989-1382 Fax: Procurement Specialist:",
     "ApartmentUnit": "",
@@ -852,15 +816,12 @@
     "Geocode": "OK",
     "Latitude": 40.8199522,
     "Longitude": -73.9218877,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15260_122725061425.pdf"
-    },
-    "itbFile": "EQ15260_122325100554.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15252",
@@ -892,7 +853,7 @@
   {
     "OMO": "EQ15356",
     "COAFile": "EQ15356_122725060408.pdf",
-    "ITBFile": "EQ15356_122325023636.pdf",
+    "ITBFile": "",
     "BuildingAddress": "3044 WALLACE AVENUE, 10467",
     "Location": "2A",
     "ApartmentUnit": "",
@@ -908,20 +869,17 @@
     "Geocode": "OK",
     "Latitude": 40.87057,
     "Longitude": -73.8638533,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15356_122725060408.pdf"
-    },
-    "itbFile": "EQ15356_122325023636.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14519",
     "COAFile": "EQ14519_122725053606.pdf",
-    "ITBFile": "EQ14519_122325040214.pdf",
+    "ITBFile": "",
     "BuildingAddress": "2265 OLINVILLE AVENUE, 10467",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -937,20 +895,17 @@
     "Geocode": "OK",
     "Latitude": 40.8595023,
     "Longitude": -73.868814,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14519_122725053606.pdf"
-    },
-    "itbFile": "EQ14519_122325040214.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15398",
     "COAFile": "EQ15398_122625054715.pdf",
-    "ITBFile": "EQ15398_122325042920.pdf",
+    "ITBFile": "",
     "BuildingAddress": "389 CHAUNCEY STREET, 11233",
     "Location": "2A",
     "ApartmentUnit": "",
@@ -966,20 +921,17 @@
     "Geocode": "OK",
     "Latitude": 40.6818353,
     "Longitude": -73.91885959999999,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15398_122625054715.pdf"
-    },
-    "itbFile": "EQ15398_122325042920.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14614",
     "COAFile": "EQ14614_122625054516.pdf",
-    "ITBFile": "EQ14614_122325042645.pdf",
+    "ITBFile": "",
     "BuildingAddress": "86-02 FOREST PARKWAY, 11421",
     "Location": "A1",
     "ApartmentUnit": "",
@@ -995,20 +947,17 @@
     "Geocode": "OK",
     "Latitude": 40.6933131,
     "Longitude": -73.8616004,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14614_122625054516.pdf"
-    },
-    "itbFile": "EQ14614_122325042645.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ06352",
     "COAFile": "EQ06352_122625123940.pdf",
-    "ITBFile": "EQ06352_122425105414.pdf",
+    "ITBFile": "",
     "BuildingAddress": "698 AMSTERDAM AVENUE, 10025",
     "Location": "3S",
     "ApartmentUnit": "",
@@ -1024,20 +973,17 @@
     "Geocode": "OK",
     "Latitude": 40.7926832,
     "Longitude": -73.9715951,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ06352_122625123940.pdf"
-    },
-    "itbFile": "EQ06352_122425105414.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14942",
     "COAFile": "EQ14942_122625120621.pdf",
-    "ITBFile": "EQ14942_122325041257.pdf",
+    "ITBFile": "",
     "BuildingAddress": "1091 WILLMOHR STREET, 11212",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -1053,20 +999,17 @@
     "Geocode": "OK",
     "Latitude": 40.6570728,
     "Longitude": -73.9180562,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14942_122625120621.pdf"
-    },
-    "itbFile": "EQ14942_122325041257.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14837",
     "COAFile": "EQ14837_122625115333.pdf",
-    "ITBFile": "EQ14837_122225095048.pdf",
+    "ITBFile": "",
     "BuildingAddress": "345 BAY RIDGE PARKWAY, 11209",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -1082,15 +1025,12 @@
     "Geocode": "OK",
     "Latitude": 40.63133140000001,
     "Longitude": -74.0262235,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14837_122625115333.pdf"
-    },
-    "itbFile": "EQ14837_122225095048.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15325",
@@ -1149,7 +1089,7 @@
   {
     "OMO": "EQ13366",
     "COAFile": "EQ13366_122225050347.pdf",
-    "ITBFile": "EQ13366_121725051336.pdf",
+    "ITBFile": "",
     "BuildingAddress": "850 EAST 165 STREET, 10459",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -1165,20 +1105,17 @@
     "Geocode": "OK",
     "Latitude": 40.8238967,
     "Longitude": -73.89948989999999,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ13366_122225050347.pdf"
-    },
-    "itbFile": "EQ13366_121725051336.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14002",
     "COAFile": "EQ14002_122225103739.pdf",
-    "ITBFile": "EQ14002_121025104506.pdf",
+    "ITBFile": "",
     "BuildingAddress": "34-32 91 STREET, 11372",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -1194,15 +1131,12 @@
     "Geocode": "OK",
     "Latitude": 40.7536183,
     "Longitude": -73.8767307,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14002_122225103739.pdf"
-    },
-    "itbFile": "EQ14002_121025104506.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ12870",
@@ -1531,7 +1465,7 @@
   {
     "OMO": "EQ13991",
     "COAFile": "EQ13991_121725125218.pdf",
-    "ITBFile": "EQ13991_120925010030.pdf",
+    "ITBFile": "",
     "BuildingAddress": "570 WILLOUGHBY AVENUE, 11206",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -1547,15 +1481,12 @@
     "Geocode": "OK",
     "Latitude": 40.6939629,
     "Longitude": -73.946585,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ13991_121725125218.pdf"
-    },
-    "itbFile": "EQ13991_120925010030.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14688",
@@ -1668,7 +1599,7 @@
   {
     "OMO": "EQ13983",
     "COAFile": "EQ13983_121625104211.pdf",
-    "ITBFile": "EQ13983_121025033528.pdf",
+    "ITBFile": "",
     "BuildingAddress": "2816 FREDERICK DOUGLASS BOULEVARD, 10039",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -1684,20 +1615,17 @@
     "Geocode": "OK",
     "Latitude": 40.8256595,
     "Longitude": -73.9395208,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ13983_121625104211.pdf"
-    },
-    "itbFile": "EQ13983_121025033528.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ13963",
     "COAFile": "EQ13963_121625103203.pdf",
-    "ITBFile": "EQ13963_120825102800.pdf",
+    "ITBFile": "",
     "BuildingAddress": "2950 GRAND CONCOURSE, 10458",
     "Location": "(718) 989-1382 Fax: Procurement Specialist:",
     "ApartmentUnit": "",
@@ -1713,20 +1641,17 @@
     "Geocode": "OK",
     "Latitude": 40.8720727,
     "Longitude": -73.8873378,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ13963_121625103203.pdf"
-    },
-    "itbFile": "EQ13963_120825102800.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14050",
     "COAFile": "EQ14050_121525043342.pdf",
-    "ITBFile": "EQ14050_120825043126.pdf",
+    "ITBFile": "",
     "BuildingAddress": "64-05 WOODSIDE AVENUE, 11377",
     "Location": "(718) 989-1382 Fax: Procurement Specialist:",
     "ApartmentUnit": "",
@@ -1742,20 +1667,17 @@
     "Geocode": "OK",
     "Latitude": 40.7441592,
     "Longitude": -73.90072099999999,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14050_121525043342.pdf"
-    },
-    "itbFile": "EQ14050_120825043126.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14109",
     "COAFile": "EQ14109_121525042804.pdf",
-    "ITBFile": "EQ14109_121225095055.pdf",
+    "ITBFile": "",
     "BuildingAddress": "368 EAST 155 STREET, 10455",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -1771,20 +1693,17 @@
     "Geocode": "OK",
     "Latitude": 40.8203676,
     "Longitude": -73.9171824,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14109_121525042804.pdf"
-    },
-    "itbFile": "EQ14109_121225095055.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14625",
     "COAFile": "EQ14625_121525035951.pdf",
-    "ITBFile": "EQ14625_121225025527.pdf",
+    "ITBFile": "",
     "BuildingAddress": "1411 NEW YORK AVENUE, 11210",
     "Location": "2F",
     "ApartmentUnit": "",
@@ -1800,15 +1719,12 @@
     "Geocode": "OK",
     "Latitude": 40.6380516,
     "Longitude": -73.9443598,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14625_121525035951.pdf"
-    },
-    "itbFile": "EQ14625_121225025527.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ13828",
@@ -1840,7 +1756,7 @@
   {
     "OMO": "EQ14088",
     "COAFile": "EQ14088_121525031548.pdf",
-    "ITBFile": "EQ14088_121125040856.pdf",
+    "ITBFile": "",
     "BuildingAddress": "206 AUDUBON AVENUE, 10033",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -1856,20 +1772,17 @@
     "Geocode": "OK",
     "Latitude": 40.8452223,
     "Longitude": -73.9351341,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14088_121525031548.pdf"
-    },
-    "itbFile": "EQ14088_121125040856.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ13795",
     "COAFile": "EQ13795_121525031258.pdf",
-    "ITBFile": "EQ13795_121225011132.pdf",
+    "ITBFile": "",
     "BuildingAddress": "531 EAST 22 STREET, 11226",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -1885,20 +1798,17 @@
     "Geocode": "OK",
     "Latitude": 40.6393178,
     "Longitude": -73.95679439999999,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ13795_121525031258.pdf"
-    },
-    "itbFile": "EQ13795_121225011132.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14427",
     "COAFile": "EQ14427_121525030802.pdf",
-    "ITBFile": "EQ14427_121225125233.pdf",
+    "ITBFile": "",
     "BuildingAddress": "1530 ST NICHOLAS AVENUE, 10033",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -1914,20 +1824,17 @@
     "Geocode": "OK",
     "Latitude": 40.8526364,
     "Longitude": -73.9309545,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14427_121525030802.pdf"
-    },
-    "itbFile": "EQ14427_121225125233.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14351",
     "COAFile": "EQ14351_121525122451.pdf",
-    "ITBFile": "EQ14351_121125040049.pdf",
+    "ITBFile": "",
     "BuildingAddress": "234 WEST 135 STREET, 10030",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -1943,20 +1850,17 @@
     "Geocode": "OK",
     "Latitude": 40.815582,
     "Longitude": -73.945127,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14351_121525122451.pdf"
-    },
-    "itbFile": "EQ14351_121125040049.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ00530",
     "COAFile": "EQ00530_121525113450.pdf",
-    "ITBFile": "EQ00530_121225093242.pdf",
+    "ITBFile": "",
     "BuildingAddress": "909 SHERIDAN AVENUE, 10451",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -1972,20 +1876,17 @@
     "Geocode": "OK",
     "Latitude": 40.8274981,
     "Longitude": -73.9207306,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ00530_121525113450.pdf"
-    },
-    "itbFile": "EQ00530_121225093242.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14153",
     "COAFile": "EQ14153_121325084557.pdf",
-    "ITBFile": "EQ14153_121125100446.pdf",
+    "ITBFile": "",
     "BuildingAddress": "33 ARDEN STREET, 10040",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -2001,20 +1902,17 @@
     "Geocode": "OK",
     "Latitude": 40.8620118,
     "Longitude": -73.9268668,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14153_121325084557.pdf"
-    },
-    "itbFile": "EQ14153_121125100446.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14145",
     "COAFile": "EQ14145_121325082514.pdf",
-    "ITBFile": "EQ14145_121125115715.pdf",
+    "ITBFile": "",
     "BuildingAddress": "67-25 DARTMOUTH STREET, 11375",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -2030,20 +1928,17 @@
     "Geocode": "OK",
     "Latitude": 40.72146,
     "Longitude": -73.85566399999999,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14145_121325082514.pdf"
-    },
-    "itbFile": "EQ14145_121125115715.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14414",
     "COAFile": "EQ14414_121325081600.pdf",
-    "ITBFile": "EQ14414_121125020740.pdf",
+    "ITBFile": "",
     "BuildingAddress": "330 EAST 100 STREET, 10029",
     "Location": "1C",
     "ApartmentUnit": "",
@@ -2059,20 +1954,17 @@
     "Geocode": "OK",
     "Latitude": 40.7860383,
     "Longitude": -73.9436305,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14414_121325081600.pdf"
-    },
-    "itbFile": "EQ14414_121125020740.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ12897",
     "COAFile": "EQ12897_121325081413.pdf",
-    "ITBFile": "EQ12897_120925041515.pdf",
+    "ITBFile": "",
     "BuildingAddress": "81 SOUTH 9 STREET, 11249",
     "Location": "(718) 989-1382 Fax: Procurement Specialist:",
     "ApartmentUnit": "",
@@ -2088,20 +1980,17 @@
     "Geocode": "OK",
     "Latitude": 40.7091146,
     "Longitude": -73.9661046,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ12897_121325081413.pdf"
-    },
-    "itbFile": "EQ12897_120925041515.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14156",
     "COAFile": "EQ14156_121225042107.pdf",
-    "ITBFile": "EQ14156_121025125336.pdf",
+    "ITBFile": "",
     "BuildingAddress": "1170 GERARD AVENUE, 10452",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -2117,20 +2006,17 @@
     "Geocode": "OK",
     "Latitude": 40.834492,
     "Longitude": -73.9205163,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14156_121225042107.pdf"
-    },
-    "itbFile": "EQ14156_121025125336.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ13770",
     "COAFile": "EQ13770_121225013208.pdf",
-    "ITBFile": "EQ13770_121025032629.pdf",
+    "ITBFile": "",
     "BuildingAddress": "971 ST MARKS AVENUE, 11213",
     "Location": "2L",
     "ApartmentUnit": "",
@@ -2146,20 +2032,17 @@
     "Geocode": "OK",
     "Latitude": 40.6748416,
     "Longitude": -73.9392632,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ13770_121225013208.pdf"
-    },
-    "itbFile": "EQ13770_121025032629.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14007",
     "COAFile": "EQ14007_121225012221.pdf",
-    "ITBFile": "EQ14007_121125010234.pdf",
+    "ITBFile": "",
     "BuildingAddress": "95 FOUNTAIN AVENUE, 11208",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -2175,20 +2058,17 @@
     "Geocode": "OK",
     "Latitude": 40.6779704,
     "Longitude": -73.8757408,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14007_121225012221.pdf"
-    },
-    "itbFile": "EQ14007_121125010234.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14187",
     "COAFile": "EQ14187_121225125241.pdf",
-    "ITBFile": "EQ14187_121025041850.pdf",
+    "ITBFile": "",
     "BuildingAddress": "40 UNIVERSITY PLACE, 10003",
     "Location": "10G",
     "ApartmentUnit": "",
@@ -2204,20 +2084,17 @@
     "Geocode": "OK",
     "Latitude": 40.7323205,
     "Longitude": -73.9943236,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14187_121225125241.pdf"
-    },
-    "itbFile": "EQ14187_121025041850.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14338",
     "COAFile": "EQ14338_121225115539.pdf",
-    "ITBFile": "EQ14338_121125092208.pdf",
+    "ITBFile": "",
     "BuildingAddress": "2763 MILL AVENUE, 11234",
     "Location": "1",
     "ApartmentUnit": "",
@@ -2233,15 +2110,12 @@
     "Geocode": "OK",
     "Latitude": 40.6070974,
     "Longitude": -73.9147431,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ14338_121225115539.pdf"
-    },
-    "itbFile": "EQ14338_121125092208.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ14317",
@@ -2570,7 +2444,7 @@
   {
     "OMO": "EQ13215",
     "COAFile": "EQ13215_120925030858.pdf",
-    "ITBFile": "EQ13215_120525110035.pdf",
+    "ITBFile": "",
     "BuildingAddress": "303 EAST 158 STREET, 10451",
     "Location": "(718) 989-1382 Fax: Procurement Specialist:",
     "ApartmentUnit": "",
@@ -2586,20 +2460,17 @@
     "Geocode": "OK",
     "Latitude": 40.8234685,
     "Longitude": -73.9179169,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ13215_120925030858.pdf"
-    },
-    "itbFile": "EQ13215_120525110035.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ13404",
     "COAFile": "EQ13404_120825041903.pdf",
-    "ITBFile": "EQ13404_120525041204.pdf",
+    "ITBFile": "",
     "BuildingAddress": "1505 BROADWAY, 11221",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -2615,20 +2486,17 @@
     "Geocode": "OK",
     "Latitude": 40.6872088,
     "Longitude": -73.9175959,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ13404_120825041903.pdf"
-    },
-    "itbFile": "EQ13404_120525041204.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ13475",
     "COAFile": "EQ13475_120825024057.pdf",
-    "ITBFile": "EQ13475_120525102603.pdf",
+    "ITBFile": "",
     "BuildingAddress": "2225 5 AVENUE, 10037",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -2644,15 +2512,12 @@
     "Geocode": "OK",
     "Latitude": 40.8129626,
     "Longitude": -73.9370677,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ13475_120825024057.pdf"
-    },
-    "itbFile": "EQ13475_120525102603.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ20646",
@@ -4412,7 +4277,7 @@
   {
     "OMO": "EQ17854",
     "COAFile": "EQ17854_012926111526.pdf",
-    "ITBFile": "EQ17854_012326041709.pdf",
+    "ITBFile": "",
     "BuildingAddress": "1084 NEW YORK AVENUE, 11203",
     "Location": "C14",
     "ApartmentUnit": "",
@@ -4428,20 +4293,17 @@
     "Geocode": "OK",
     "Latitude": 40.6467536,
     "Longitude": -73.94647549999999,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ17854_012926111526.pdf"
-    },
-    "itbFile": "EQ17854_012326041709.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ17241",
     "COAFile": "EQ17241_012926094525.pdf",
-    "ITBFile": "EQ17241_012326043925.pdf",
+    "ITBFile": "",
     "BuildingAddress": "390 MARYLAND AVENUE, 10305",
     "Location": "Public Area (Exterior)",
     "ApartmentUnit": "",
@@ -4457,15 +4319,12 @@
     "Geocode": "OK",
     "Latitude": 40.6089881,
     "Longitude": -74.0737583,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ17241_012926094525.pdf"
-    },
-    "itbFile": "EQ17241_012326043925.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ18226",
@@ -4740,7 +4599,7 @@
   {
     "OMO": "EQ17262",
     "COAFile": "EQ17262_012726013759.pdf",
-    "ITBFile": "EQ17262_012226101215.pdf",
+    "ITBFile": "",
     "BuildingAddress": "708 MANHATTAN AVENUE, 11222",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -4756,20 +4615,17 @@
     "Geocode": "OK",
     "Latitude": 40.7258111,
     "Longitude": -73.9517106,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ17262_012726013759.pdf"
-    },
-    "itbFile": "EQ17262_012226101215.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ18038",
     "COAFile": "EQ18038_012726111834.pdf",
-    "ITBFile": "EQ18038_012326030515.pdf",
+    "ITBFile": "",
     "BuildingAddress": "1353 STERLING PLACE, 11213",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -4785,20 +4641,17 @@
     "Geocode": "OK",
     "Latitude": 40.6717678,
     "Longitude": -73.9339402,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ18038_012726111834.pdf"
-    },
-    "itbFile": "EQ18038_012326030515.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ17786",
     "COAFile": "EQ17786_012626110317.pdf",
-    "ITBFile": "EQ17786_012126094156.pdf",
+    "ITBFile": "",
     "BuildingAddress": "184 BRADHURST AVENUE, 10039",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -4814,15 +4667,12 @@
     "Geocode": "OK",
     "Latitude": 40.8266894,
     "Longitude": -73.9400923,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ17786_012626110317.pdf"
-    },
-    "itbFile": "EQ17786_012126094156.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ18096",
@@ -5826,7 +5676,7 @@
   {
     "OMO": "EQ16592",
     "COAFile": "EQ16592_011526110925.pdf",
-    "ITBFile": "EQ16592_010826042739.pdf",
+    "ITBFile": "",
     "BuildingAddress": "101-17 115 STREET, 11419",
     "Location": "2F",
     "ApartmentUnit": "",
@@ -5842,15 +5692,12 @@
     "Geocode": "OK",
     "Latitude": 40.6886124,
     "Longitude": -73.8288836,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ16592_011526110925.pdf"
-    },
-    "itbFile": "EQ16592_010826042739.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ16983",
@@ -5882,7 +5729,7 @@
   {
     "OMO": "EQ16619",
     "COAFile": "EQ16619_011426043109.pdf",
-    "ITBFile": "EQ16619_011226112216.pdf",
+    "ITBFile": "",
     "BuildingAddress": "278 EAST 237 STREET, 10470",
     "Location": "Public Area (Exterior)",
     "ApartmentUnit": "",
@@ -5898,20 +5745,17 @@
     "Geocode": "OK",
     "Latitude": 40.8987222,
     "Longitude": -73.86802209999999,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ16619_011426043109.pdf"
-    },
-    "itbFile": "EQ16619_011226112216.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ16822",
     "COAFile": "EQ16822_011426042615.pdf",
-    "ITBFile": "EQ16822_011226040820.pdf",
+    "ITBFile": "",
     "BuildingAddress": "1881 STARR STREET, 11385",
     "Location": "419",
     "ApartmentUnit": "",
@@ -5927,15 +5771,12 @@
     "Geocode": "OK",
     "Latitude": 40.7112416,
     "Longitude": -73.9170855,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ16822_011426042615.pdf"
-    },
-    "itbFile": "EQ16822_011226040820.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ17168",
@@ -5967,7 +5808,7 @@
   {
     "OMO": "EQ16693",
     "COAFile": "EQ16693_011426023824.pdf",
-    "ITBFile": "EQ16693_011226034718.pdf",
+    "ITBFile": "",
     "BuildingAddress": "41-08 42 STREET, 11104",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -5983,15 +5824,12 @@
     "Geocode": "OK",
     "Latitude": 40.7545445,
     "Longitude": -73.9824486,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ16693_011426023824.pdf"
-    },
-    "itbFile": "EQ16693_011226034718.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ16832",
@@ -6023,7 +5861,7 @@
   {
     "OMO": "EQ15012",
     "COAFile": "EQ15012_011326052731.pdf",
-    "ITBFile": "EQ15012_011226013718.pdf",
+    "ITBFile": "",
     "BuildingAddress": "361 EAST 163 STREET, 10451",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -6039,15 +5877,12 @@
     "Geocode": "OK",
     "Latitude": 40.82648750000001,
     "Longitude": -73.9147907,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15012_011326052731.pdf"
-    },
-    "itbFile": "EQ15012_011226013718.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ17038",
@@ -6079,7 +5914,7 @@
   {
     "OMO": "EQ16892",
     "COAFile": "EQ16892_011326045343.pdf",
-    "ITBFile": "EQ16892_011226112406.pdf",
+    "ITBFile": "",
     "BuildingAddress": "1274 55 STREET, 11219",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -6095,20 +5930,17 @@
     "Geocode": "OK",
     "Latitude": 40.6317724,
     "Longitude": -73.9959914,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ16892_011326045343.pdf"
-    },
-    "itbFile": "EQ16892_011226112406.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ15867",
     "COAFile": "EQ15867_011326045118.pdf",
-    "ITBFile": "EQ15867_011226030825.pdf",
+    "ITBFile": "",
     "BuildingAddress": "14-20 114 STREET, 11356",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -6124,20 +5956,17 @@
     "Geocode": "OK",
     "Latitude": 40.7851306,
     "Longitude": -73.8534845,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ15867_011326045118.pdf"
-    },
-    "itbFile": "EQ15867_011226030825.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ16744",
     "COAFile": "EQ16744_011326043209.pdf",
-    "ITBFile": "EQ16744_011226112544.pdf",
+    "ITBFile": "",
     "BuildingAddress": "70 AVENUE U, 11223",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -6153,15 +5982,12 @@
     "Geocode": "OK",
     "Latitude": 40.5958248,
     "Longitude": -73.9818229,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ16744_011326043209.pdf"
-    },
-    "itbFile": "EQ16744_011226112544.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ16859",
@@ -6193,7 +6019,7 @@
   {
     "OMO": "EQ16597",
     "COAFile": "EQ16597_011326031757.pdf",
-    "ITBFile": "EQ16597_011226051130.pdf",
+    "ITBFile": "",
     "BuildingAddress": "178 AMBOY STREET, 11212",
     "Location": "4A",
     "ApartmentUnit": "",
@@ -6209,15 +6035,12 @@
     "Geocode": "OK",
     "Latitude": 40.6660078,
     "Longitude": -73.91399129999999,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ16597_011326031757.pdf"
-    },
-    "itbFile": "EQ16597_011226051130.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ16054",
@@ -6519,7 +6342,7 @@
   {
     "OMO": "EQ16164",
     "COAFile": "EQ16164_010626010542.pdf",
-    "ITBFile": "EQ16164_010226041542.pdf",
+    "ITBFile": "",
     "BuildingAddress": "2358 WEBSTER AVENUE, 10458",
     "Location": "Public Area (Interior)",
     "ApartmentUnit": "",
@@ -6535,15 +6358,12 @@
     "Geocode": "OK",
     "Latitude": 40.857578,
     "Longitude": -73.8943675,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ16164_010626010542.pdf"
-    },
-    "itbFile": "EQ16164_010226041542.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ16228",
@@ -6602,7 +6422,7 @@
   {
     "OMO": "EQ12814",
     "COAFile": "EQ12814_120525125106.pdf",
-    "ITBFile": "EQ12814_120425103558.pdf",
+    "ITBFile": "",
     "BuildingAddress": "212 GREEN STREET, 11222",
     "Location": "Public Hallway",
     "ApartmentUnit": "",
@@ -6618,15 +6438,12 @@
     "Geocode": "OK",
     "Latitude": 40.7337918,
     "Longitude": -73.9527549,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ12814_120525125106.pdf"
-    },
-    "itbFile": "EQ12814_120425103558.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ13554",
@@ -6658,7 +6475,7 @@
   {
     "OMO": "EQ13297",
     "COAFile": "EQ13297_120225051156.pdf",
-    "ITBFile": "EQ13297_112625020712.pdf",
+    "ITBFile": "",
     "BuildingAddress": "479 HARMAN STREET, 11237",
     "Location": "1R",
     "ApartmentUnit": "",
@@ -6674,20 +6491,17 @@
     "Geocode": "OK",
     "Latitude": 40.7045545,
     "Longitude": -73.914576,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ13297_120225051156.pdf"
-    },
-    "itbFile": "EQ13297_112625020712.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ13270",
     "COAFile": "EQ13270_120125125816.pdf",
-    "ITBFile": "EQ13270_112625023620.pdf",
+    "ITBFile": "",
     "BuildingAddress": "774 ROCKAWAY AVENUE, 11212",
     "Location": "6B",
     "ApartmentUnit": "",
@@ -6703,20 +6517,17 @@
     "Geocode": "OK",
     "Latitude": 40.6607732,
     "Longitude": -73.90875319999999,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ13270_120125125816.pdf"
-    },
-    "itbFile": "EQ13270_112625023620.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ13112",
     "COAFile": "EQ13112_112825052418.pdf",
-    "ITBFile": "EQ13112_112525104814.pdf",
+    "ITBFile": "",
     "BuildingAddress": "1750 GRAND CONCOURSE, 10457",
     "Location": "6B",
     "ApartmentUnit": "",
@@ -6732,20 +6543,17 @@
     "Geocode": "OK",
     "Latitude": 40.8454685,
     "Longitude": -73.9100347,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ13112_112825052418.pdf"
-    },
-    "itbFile": "EQ13112_112525104814.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ13174",
     "COAFile": "EQ13174_112625040716.pdf",
-    "ITBFile": "EQ13174_112525010104.pdf",
+    "ITBFile": "",
     "BuildingAddress": "705 SCHENCK AVENUE, 11207",
     "Location": "1",
     "ApartmentUnit": "",
@@ -6761,15 +6569,12 @@
     "Geocode": "OK",
     "Latitude": 40.6632344,
     "Longitude": -73.8852091,
-    "MissingITBReason": "",
+    "MissingITBReason": "No ITB found for this OMO",
     "COAParseStatus": "OK",
-    "ITBMatchStatus": "RECOVERED_ITB",
+    "ITBMatchStatus": "NO_ITB",
     "DebugInfo": {
       "COA_file": "EQ13174_112625040716.pdf"
-    },
-    "itbFile": "EQ13174_112525010104.pdf",
-    "missingITBReason": "",
-    "itbMatchStatus": "RECOVERED_ITB"
+    }
   },
   {
     "OMO": "EQ19539",
