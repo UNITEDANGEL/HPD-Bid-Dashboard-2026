@@ -333,8 +333,6 @@ export default function MapClient() {
   const [selected, setSelected] = useState<MappedJob | null>(null);
 const [selectedOnly, setSelectedOnly] = useState(false);
 const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
-const [selectedOnly, setSelectedOnly] = useState(false);
-const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
   const [mapReady, setMapReady] = useState(false);
@@ -2190,6 +2188,7 @@ function focusJob(job: MappedJob) {
     </main>
   );
 }
+
 
 
 
