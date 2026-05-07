@@ -2185,11 +2185,12 @@ function focusJob(job: MappedJob) {
               <a target="_blank" rel="noreferrer" href={directionsUrl(job)}>Directions</a>
             </div>
           </div>
-        )) : null}          )) : null}
+        )) : null}
         </aside>
     </main>
   );
 }
+
 
 
 
