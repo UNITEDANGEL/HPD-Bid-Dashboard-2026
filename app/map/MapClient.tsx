@@ -332,6 +332,7 @@ export default function MapClient() {
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
   const [selected, setSelected] = useState<MappedJob | null>(null);
 const [selectedOnly, setSelectedOnly] = useState(false);
+const [selectedOnly, setSelectedOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
   const [mapReady, setMapReady] = useState(false);
@@ -1865,6 +1866,27 @@ function focusJob(job: MappedJob) {
               max-height: 72dvh !important;
             }
           }
+          .job-drawer.selected-focus {
+            max-height: 70dvh !important;
+          }
+
+          .job-drawer.selected-focus .selected-card {
+            margin-bottom: 0 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(7,17,31,.98);
+            padding-bottom: 8px;
+          }
+
+          @media (max-width: 700px) {
+            .job-drawer.selected-focus {
+              max-height: 72dvh !important;
+            }
+          }
         `}</style>
 
       <header className="map-top">
@@ -1946,6 +1968,18 @@ function focusJob(job: MappedJob) {
       <aside className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus" : ""}`}>
         <div className="drawer-head">
           <strong>{selectedOnly && selected ? jobKey(selected) : `${filteredJobs.length} jobs`}</strong>
+          {selectedOnly ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedOnly(false);
+                setSelected(null);
+                setDrawerOpen(true);
+              }}
+            >
+              Back to List
+            </button>
+          ) : null}
           {selectedOnly ? (
             <button
               type="button"
@@ -2068,11 +2102,12 @@ function focusJob(job: MappedJob) {
               <a target="_blank" rel="noreferrer" href={directionsUrl(job)}>Directions</a>
             </div>
           </div>
-        )) : null}
+        )) : null}          )) : null}
         </aside>
     </main>
   );
 }
+
 
 
 
