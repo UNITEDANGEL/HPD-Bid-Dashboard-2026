@@ -675,9 +675,8 @@ function updateLocalStatus(job: MappedJob, nextStatus: string) {
 function isMissingItb(job: any) {
     const itbStatus = String(job.ITBMatchStatus || job.itbMatchStatus || job.status || "").toLowerCase();
     const missingReason = String(job.MissingITBReason || job.missingITBReason || "").toLowerCase();
-    const itbFile = String(job.ITBFile || job.itbFile || "").trim();
 
-    return itbStatus.includes("no_itb") || missingReason.includes("no itb") || !itbFile;
+    return itbStatus === "no_itb" || missingReason.includes("no itb found");
   }
 
 function generateInvoice(job: any, workflow = "invoice") {
@@ -2407,6 +2406,7 @@ function focusJob(job: MappedJob) {
       </main>
   );
 }
+
 
 
 
