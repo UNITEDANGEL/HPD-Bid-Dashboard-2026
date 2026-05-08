@@ -7537,7 +7537,7 @@
     "AwardAmount": "440.00",
     "AwardedBy": "THIS OMO IS NOT SUBJECT TO DAVIS BACON BECAUSE IT C ALLS FOR WORK IN A RESIDENTIAL BUILDING OF SEVEN (7 ) UNITS OR",
     "TotalSqFt": "",
-    "JobDescription": "REPLACE BUILDING ENTRANCE LOCK\n\nAT BUILDING ENTRANCE DOOR..REPLACE DEFECTIVE LOCK SET WITH NEW ADAM RITE\nSTYLE LOCK SET SIMILAR TO EXISTING..RESTORE DOOR TO PROPER WORKING CONDITION\nTOTAL DOOR = 1",
+    "JobDescription": "",
     "Geocode": "OK",
     "Latitude": 40.8592401,
     "Longitude": -73.9058972,
@@ -7548,10 +7548,10 @@
       "COA_file": "EQ15728_010626111202.pdf",
       "ITB_file": "faxCopy_20260106_104555_.695d315782d68.pdf"
     },
-    "description": "REPLACE BUILDING ENTRANCE LOCK\n\nAT BUILDING ENTRANCE DOOR..REPLACE DEFECTIVE LOCK SET WITH NEW ADAM RITE\nSTYLE LOCK SET SIMILAR TO EXISTING..RESTORE DOOR TO PROPER WORKING CONDITION\nTOTAL DOOR = 1",
-    "Job_Description": "REPLACE BUILDING ENTRANCE LOCK\n\nAT BUILDING ENTRANCE DOOR..REPLACE DEFECTIVE LOCK SET WITH NEW ADAM RITE\nSTYLE LOCK SET SIMILAR TO EXISTING..RESTORE DOOR TO PROPER WORKING CONDITION\nTOTAL DOOR = 1",
-    "DescriptionSource": "ITB_OCR_PAGES_1_6",
-    "descriptionSource": "ITB_OCR_PAGES_1_6",
+    "description": "",
+    "Job_Description": "",
+    "DescriptionSource": "OCR_ITB",
+    "descriptionSource": "OCR_ITB",
     "DescriptionNeedsReview": true,
     "descriptionNeedsReview": true
   },
@@ -9469,7 +9469,7 @@
     "AwardAmount": "390.00",
     "AwardedBy": "THIS OMO IS NOT SUBJECT TO DAVIS BACON BECAUSE IT’S VALUE IS UNDER $2000. IF YOU ACCEPT A CHANGE ORDE R THAT",
     "TotalSqFt": "",
-    "JobDescription": "REPLACE LATCH AT 5TH STY COMPACTOR DOOR\n\nAT 5TH STY PUBLIC HALL COMPACTOR CLOSET..REPLACE THE DEFECTIVE LATCH SET WITH NEW PASSAGE LATCH SET..ENSURE DOOR SELF CLOSE AND LATCH\n\nTOTAL DOOR = 1",
+    "JobDescription": "",
     "Geocode": "OK",
     "Latitude": 40.8738555,
     "Longitude": -73.87450969999999,
@@ -9480,12 +9480,12 @@
       "COA_file": "EQ23165_032426042156.pdf",
       "ITB_file": "faxCopy_20260324_123735_.69c2bf4dc9546.pdf"
     },
-    "description": "REPLACE LATCH AT 5TH STY COMPACTOR DOOR\n\nAT 5TH STY PUBLIC HALL COMPACTOR CLOSET..REPLACE THE DEFECTIVE LATCH SET WITH NEW PASSAGE LATCH SET..ENSURE DOOR SELF CLOSE AND LATCH\n\nTOTAL DOOR = 1",
-    "Job_Description": "REPLACE LATCH AT 5TH STY COMPACTOR DOOR\n\nAT 5TH STY PUBLIC HALL COMPACTOR CLOSET..REPLACE THE DEFECTIVE LATCH SET WITH NEW PASSAGE LATCH SET..ENSURE DOOR SELF CLOSE AND LATCH\n\nTOTAL DOOR = 1",
-    "DescriptionSource": "MANUAL_OCR_PAGE_3",
-    "descriptionSource": "MANUAL_OCR_PAGE_3",
-    "DescriptionNeedsReview": false,
-    "descriptionNeedsReview": false
+    "description": "",
+    "Job_Description": "",
+    "DescriptionSource": "OCR_ITB",
+    "descriptionSource": "OCR_ITB",
+    "DescriptionNeedsReview": true,
+    "descriptionNeedsReview": true
   },
   {
     "OMO": "EQ22135",
