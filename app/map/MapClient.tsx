@@ -682,6 +682,20 @@ function isMissingItb(job: any) {
     return itbStatus === "no_itb" || missingReason.includes("no itb found for this omo");
   }
 
+function needsDescriptionOcr(job: any) {
+    const description = String(
+      job.JobDescription ||
+      job.description ||
+      job.Job_Description ||
+      ""
+    ).trim();
+
+    const itbFile = String(job.ITBFile || job.itbFile || "").trim();
+    const status = String(job.ITBMatchStatus || job.itbMatchStatus || job.status || "").toLowerCase().trim();
+
+    return !description && !!itbFile && status !== "no_itb";
+  }
+
 function generateInvoice(job: any, workflow = "invoice") {
     fetch("/api/invoice/generate", {
       method: "POST",
@@ -2157,6 +2171,43 @@ function focusJob(job: MappedJob) {
               font-size: 10px;
             }
           }
+          .ocr-alert {
+            margin: 8px 0 10px;
+            border: 1px solid rgba(66, 232, 243, 0.34);
+            background: rgba(66, 232, 243, 0.12);
+            border-radius: 16px;
+            padding: 10px;
+            color: #c4fbff;
+          }
+
+          .ocr-alert strong {
+            display: block;
+            font-size: 13px;
+            font-weight: 1000;
+            letter-spacing: 0.04em;
+          }
+
+          .ocr-alert span {
+            display: block;
+            margin-top: 3px;
+            font-size: 11px;
+            color: #dffcff;
+            line-height: 1.35;
+          }
+
+          .mini-ocr {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 7px;
+            padding: 3px 7px;
+            border-radius: 999px;
+            background: rgba(66, 232, 243, 0.14);
+            border: 1px solid rgba(66, 232, 243, 0.32);
+            color: #c4fbff;
+            font-size: 9px;
+            font-weight: 1000;
+            vertical-align: middle;
+          }
         `}</style>
 
       <header className="map-top">
@@ -2396,6 +2447,7 @@ function focusJob(job: MappedJob) {
       </main>
   );
 }
+
 
 
 
