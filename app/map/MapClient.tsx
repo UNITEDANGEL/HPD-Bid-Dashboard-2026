@@ -27,8 +27,11 @@ type JobRecord = {
   contractor?: string;
   owner?: string;
   description?: string;
+  COAFile?: string;
   coaFile?: string;
+  ITBFile?: string;
   itbFile?: string;
+  PDFFile?: string;
   pdfFile?: string;
   Latitude?: number | string;
   latitude?: number | string;
@@ -2234,20 +2237,7 @@ function focusJob(job: MappedJob) {
 
       <aside className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus" : ""}`}>
         <div className="drawer-head">
-          <strong>{selectedOnly && selected ? jobKey(selected) : `${filteredJobs.length} jobs`}</strong>
-          {selectedOnly ? (
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedOnly(false);
-                setSelected(null);
-                setDrawerOpen(true);
-              }}
-            >
-              Back to List
-            </button>
-          ) : null}
-          {selectedOnly ? (
+          <strong>{selectedOnly && selected ? jobKey(selected) : `${filteredJobs.length} jobs`}</strong>          {selectedOnly ? (
             <button
               type="button"
               onClick={() => {
@@ -2287,7 +2277,7 @@ function focusJob(job: MappedJob) {
               <div className="detail"><span>Phone</span><strong>{phone(selected) || "Not listed"}</strong></div>
               <div className="detail"><span>Contractor</span><strong>{selected.contractor || "Not listed"}</strong></div>
               <div className="detail"><span>Owner</span><strong>{selected.owner || "Not listed"}</strong></div>
-              <div className="detail"><span>Docs</span><strong>{[selected.coaFile ? "COA ✓" : "", selected.itbFile ? "ITB ✓" : "", selected.pdfFile ? "PDF ✓" : ""].filter(Boolean).join(" ") || "Not listed"}</strong></div>
+              <div className="detail"><span>Docs</span><strong>{[(selected.COAFile || selected.coaFile) ? "COA ✓" : "", (selected.ITBFile || selected.itbFile) ? "ITB ✓" : "", (selected.PDFFile || selected.pdfFile) ? "PDF ✓" : ""].filter(Boolean).join(" ") || "Not listed"}</strong></div>
               <div className="detail"><span>Map Source</span><strong>{selected._source || "unmapped"}</strong></div>
             </div>
 
@@ -2366,7 +2356,7 @@ function focusJob(job: MappedJob) {
                 <div className="detail"><span>Amount</span><strong>{money(job) || "Not listed"}</strong></div>
                 <div className="detail"><span>Award</span><strong>{job.awardDate || "Not listed"}</strong></div>
                 <div className="detail"><span>Due</span><strong>{job.bidDueDate || job.dueDate || "Not listed"}</strong></div>
-                <div className="detail"><span>Docs</span><strong>{[job.coaFile ? "COA ✓" : "", job.itbFile ? "ITB ✓" : "", job.pdfFile ? "PDF ✓" : ""].filter(Boolean).join(" ") || "Not listed"}</strong></div>
+                <div className="detail"><span>Docs</span><strong>{[(job.COAFile || job.coaFile) ? "COA ✓" : "", (job.ITBFile || job.itbFile) ? "ITB ✓" : "", (job.PDFFile || job.pdfFile) ? "PDF ✓" : ""].filter(Boolean).join(" ") || "Not listed"}</strong></div>
               </div>
             </button>
 
@@ -2406,6 +2396,7 @@ function focusJob(job: MappedJob) {
       </main>
   );
 }
+
 
 
 
