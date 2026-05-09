@@ -763,7 +763,22 @@ function focusJob(job: MappedJob) {
     }
   }
 
-  function directionsUrl(job: JobRecord) {
+  function smoothFocusSelectedCard(job: JobRecord) {
+  const key = jobKey(job);
+
+  window.requestAnimationFrame(() => {
+    const el = document.querySelector(`[data-job-card="${key}"]`);
+    if (el) {
+      el.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    }
+  });
+}
+
+function directionsUrl(job: JobRecord) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddress(job))}`;
   }
 
@@ -2245,6 +2260,37 @@ function focusJob(job: MappedJob) {
             font-weight: 1000;
             vertical-align: middle;
           }
+          .job-card {
+            transition:
+              transform 180ms ease,
+              border-color 180ms ease,
+              box-shadow 180ms ease,
+              background 180ms ease;
+            will-change: transform;
+          }
+
+          .job-card.selected-live {
+            transform: translateY(-2px) scale(1.012);
+            border-color: rgba(88, 166, 255, 0.86);
+            box-shadow:
+              0 0 0 1px rgba(88, 166, 255, 0.5),
+              0 18px 44px rgba(0, 0, 0, 0.34),
+              0 0 34px rgba(88, 166, 255, 0.24);
+            background: linear-gradient(180deg, rgba(18, 35, 64, 0.98), rgba(8, 14, 26, 0.98));
+          }
+
+          @media (max-width: 720px) {
+            .job-card.selected-live {
+              transform: translateY(-1px) scale(1.006);
+            }
+
+            .jobs-list,
+            .drawer-body,
+            aside {
+              -webkit-overflow-scrolling: touch;
+              scroll-behavior: smooth;
+            }
+          }
         `}</style>
 
       <header className="map-top">
@@ -2484,6 +2530,7 @@ function focusJob(job: MappedJob) {
       </main>
   );
 }
+
 
 
 
