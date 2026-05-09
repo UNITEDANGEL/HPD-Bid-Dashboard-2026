@@ -2291,6 +2291,24 @@ function directionsUrl(job: JobRecord) {
               scroll-behavior: smooth;
             }
           }
+          .job-drawer.closed {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            transform: translateX(110%) !important;
+          }
+
+          @media (max-width: 720px) {
+            .job-drawer.closed {
+              transform: translateY(110%) !important;
+            }
+          }
+
+          .map-shell.full-map .job-drawer,
+          .dashboard.full-map .job-drawer,
+          main.full-map .job-drawer {
+            display: none !important;
+          }
         `}</style>
 
       <header className="map-top">
@@ -2540,6 +2558,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
