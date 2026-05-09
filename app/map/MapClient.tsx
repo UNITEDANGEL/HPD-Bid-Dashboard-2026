@@ -2377,8 +2377,13 @@ function directionsUrl(job: JobRecord) {
               onClick={() => {
                 setSelectedOnly(false);
                 setSelected(null);
-                setDrawerOpen(true);
+                setGeneratedLinks({});
                 setDescriptionOpen(false);
+                setDrawerOpen(true);
+                window.requestAnimationFrame(() => {
+                  const drawer = document.querySelector(".job-drawer");
+                  if (drawer) drawer.scrollTo({ top: 0, behavior: "smooth" });
+                });
               }}
             >
               Back to List
@@ -2531,6 +2536,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
