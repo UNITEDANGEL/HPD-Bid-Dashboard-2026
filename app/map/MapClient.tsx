@@ -2378,6 +2378,7 @@ function directionsUrl(job: JobRecord) {
                 setSelectedOnly(false);
                 setSelected(null);
                 setDrawerOpen(true);
+                setDescriptionOpen(false);
               }}
             >
               Back to List
@@ -2530,6 +2531,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
