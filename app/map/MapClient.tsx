@@ -2379,12 +2379,14 @@ function directionsUrl(job: JobRecord) {
                 setSelected(null);
                 setGeneratedLinks({});
                 setDescriptionOpen(false);
-                setDrawerOpen(true);
+                setDrawerOpen(false);
+                setFullMap(true);
                 window.requestAnimationFrame(() => {
-                  const drawerBody = document.querySelector(".drawer-body");
-                  const drawer = document.querySelector(".job-drawer");
-                  if (drawerBody) drawerBody.scrollTo({ top: 0, behavior: "smooth" });
-                  if (drawer) drawer.scrollTo({ top: 0, behavior: "smooth" });
+                  document.querySelector(".map-stage")?.classList.add("map-focus-boost");
+                  setTimeout(() => {
+                    document.querySelector(".map-stage")?.classList.remove("map-focus-boost");
+                    mapRef.current?.invalidateSize();
+                  }, 320);
                 });
               }}
             >
@@ -2538,6 +2540,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
