@@ -2369,7 +2369,7 @@ function directionsUrl(job: JobRecord) {
         </div>
       </section>
 
-      <aside className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus" : ""}`}>
+      <aside className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""}`}>
         <div className="drawer-head">
           <strong>{selectedOnly && selected ? jobKey(selected) : `${filteredJobs.length} jobs`}</strong>          {selectedOnly ? (
             <button
@@ -2381,7 +2381,9 @@ function directionsUrl(job: JobRecord) {
                 setDescriptionOpen(false);
                 setDrawerOpen(true);
                 window.requestAnimationFrame(() => {
+                  const drawerBody = document.querySelector(".drawer-body");
                   const drawer = document.querySelector(".job-drawer");
+                  if (drawerBody) drawerBody.scrollTo({ top: 0, behavior: "smooth" });
                   if (drawer) drawer.scrollTo({ top: 0, behavior: "smooth" });
                 });
               }}
@@ -2536,6 +2538,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
