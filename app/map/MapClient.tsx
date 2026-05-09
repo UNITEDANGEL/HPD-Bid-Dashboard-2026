@@ -591,6 +591,7 @@ const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60
           setSelected(job);
           setSelectedOnly(true);
           setGeneratedLinks({});
+          setFullMap(false);
           setDrawerOpen(true);
 
           setTimeout(() => {
@@ -753,6 +754,7 @@ function focusJob(job: MappedJob) {
     setSelected(job);
           setSelectedOnly(true);
           setGeneratedLinks({});
+          setFullMap(false);
           setDrawerOpen(true);
 
     if (Number.isFinite(job._lat) && Number.isFinite(job._lng) && mapRef.current) {
@@ -2387,7 +2389,7 @@ function directionsUrl(job: JobRecord) {
         </div>
       </section>
 
-      <aside className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""}`}>
+      <aside className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""} ${fullMap && !drawerOpen ? "drawer-hard-hidden" : ""}`}>
         <div className="drawer-head">
           <strong>{selectedOnly && selected ? jobKey(selected) : `${filteredJobs.length} jobs`}</strong>          {selectedOnly ? (
             <button
@@ -2558,6 +2560,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
