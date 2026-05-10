@@ -262,22 +262,19 @@ function maturityMapLabel(job: JobRecord) {
 function overdueBucket(job: JobRecord) {
   const info = maturityInfo(job);
 
-  if (info.daysLeft === null) return "nodate";
-  if (info.daysLeft >= 0) return "notdue";
+  if (info.daysLeft === null) return null;
 
-  const overdueDays = Math.abs(info.daysLeft);
+  const counterDays = Math.max(0, info.daysLeft);
 
-  if (overdueDays <= 30) return "od0_30";
-  if (overdueDays <= 60) return "od31_60";
-  if (overdueDays <= 90) return "od61_90";
+  if (counterDays <= 30) return "od0_30";
+  if (counterDays <= 60) return "od31_60";
+  if (counterDays <= 90) return "od61_90";
   return "od90plus";
 }
 
 function overdueDays(job: JobRecord) {
   const info = maturityInfo(job);
-  if (info.daysLeft === null) return null;
-  if (info.daysLeft >= 0) return 0;
-  return Math.abs(info.daysLeft);
+  return info.daysLeft === null ? null : Math.max(0, info.daysLeft);
 }
 
 async function wait(ms: number) {
@@ -2336,10 +2333,10 @@ function directionsUrl(job: JobRecord) {
 
         <div className="map-filter-row">
           <button className={maturityFilter === "all" ? "active" : ""} type="button" onClick={() => setMaturityFilter("all")}>All {bucketCounts.all}</button>
-          <button className={maturityFilter === "od0_30" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od0_30")}>0-30 OD {bucketCounts.od0_30}</button>
-          <button className={maturityFilter === "od31_60" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od31_60")}>31-60 OD {bucketCounts.od31_60}</button>
-          <button className={maturityFilter === "od61_90" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od61_90")}>61-90 OD {bucketCounts.od61_90}</button>
-          <button className={maturityFilter === "od90plus" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od90plus")}>90+ OD {bucketCounts.od90plus}</button>
+          <button className={maturityFilter === "od0_30" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od0_30")}>0-30 Days {bucketCounts.od0_30}</button>
+          <button className={maturityFilter === "od31_60" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od31_60")}>31-60 Days {bucketCounts.od31_60}</button>
+          <button className={maturityFilter === "od61_90" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od61_90")}>61-90 Days {bucketCounts.od61_90}</button>
+          <button className={maturityFilter === "od90plus" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od90plus")}>90+ Days {bucketCounts.od90plus}</button>
           <button className="full-btn" type="button" onClick={() => {
             setFullMap((v) => !v);
             setDrawerOpen(false);
@@ -2565,6 +2562,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
