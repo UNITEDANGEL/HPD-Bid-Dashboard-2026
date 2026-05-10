@@ -195,7 +195,7 @@ function parseAwardDate(value?: string) {
   return Number.isNaN(fallback.getTime()) ? null : fallback;
 }
 
-function maturityInfo(job: JobRecord, maturityDays = 30) {
+function maturityInfo(job: JobRecord) {
   const award = parseAwardDate(job.AwardDate || job.awardDate);
 
   if (!award) {
@@ -208,39 +208,36 @@ function maturityInfo(job: JobRecord, maturityDays = 30) {
     };
   }
 
-  const maturity = new Date(award);
-  maturity.setDate(maturity.getDate() + maturityDays);
-
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  maturity.setHours(0, 0, 0, 0);
 
-  const daysLeft = Math.ceil((maturity.getTime() - today.getTime()) / 86400000);
+  const awardDay = new Date(award);
+  awardDay.setHours(0, 0, 0, 0);
+
+  const daysSinceAward = Math.floor((today.getTime() - awardDay.getTime()) / 86400000);
 
   let label = "";
-  let priority = "";
+  let priority = "normal";
 
-  if (daysLeft < 0) {
-    label = `${Math.abs(daysLeft)} days overdue`;
-    priority = "overdue";
-  } else if (daysLeft === 0) {
-    label = "Due today";
-    priority = "urgent";
-  } else if (daysLeft <= 3) {
-    label = `${daysLeft} days left`;
-    priority = "urgent";
-  } else if (daysLeft <= 7) {
-    label = `${daysLeft} days left`;
-    priority = "warning";
-  } else {
-    label = `${daysLeft} days left`;
+  if (daysSinceAward < 0) {
+    label = `Starts in ${Math.abs(daysSinceAward)} days`;
     priority = "normal";
+  } else if (daysSinceAward === 0) {
+    label = "Awarded today";
+    priority = "normal";
+  } else {
+    label = `${daysSinceAward} days since award`;
+
+    if (daysSinceAward >= 90) priority = "overdue";
+    else if (daysSinceAward >= 60) priority = "urgent";
+    else if (daysSinceAward >= 30) priority = "warning";
+    else priority = "normal";
   }
 
   return {
-    award: award.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "2-digit" }),
-    maturity: maturity.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "2-digit" }),
-    daysLeft,
+    award: awardDay.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "2-digit" }),
+    maturity: awardDay.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "2-digit" }),
+    daysLeft: daysSinceAward,
     label,
     priority,
   };
@@ -618,7 +615,7 @@ const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60
             <strong>${jobKey(job, index)}</strong><br/>
             ${displayAddress(job)}<br/>
             ${job.borough || ""} ${job.trade ? "· " + job.trade : ""}<br/>
-            ${JobStatus.statusLabel(job)} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Matures: ${maturityInfo(job).maturity}<br/>Overdue: ${overdueDays(job) ?? "?"} days
+            ${JobStatus.statusLabel(job)} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Counter Start: ${maturityInfo(job).maturity}<br/>Counter: ${maturityInfo(job).label}
           </div>
         `);
 
@@ -2441,7 +2438,7 @@ function directionsUrl(job: JobRecord) {
               <div className="detail"><span>Award Date</span><strong>{maturityInfo(selected).award}</strong></div>
               <div className="detail"><span>Work Start Date</span><strong>{selected.WorkStartDate || selected.workStartDate || "Not listed"}</strong></div>
               <div className="detail"><span>Work Completion Date</span><strong>{selected.WorkCompletionDate || selected.workCompletionDate || "Not listed"}</strong></div>
-              <div className="detail"><span>Maturity Date</span><strong>{maturityInfo(selected).maturity}</strong></div>
+              <div className="detail"><span>Counter Start Date</span><strong>{maturityInfo(selected).maturity}</strong></div>
               <div className="detail"><span>Maturity Counter</span><strong>{maturityInfo(selected).label}</strong></div>
               <div className="detail"><span>Due Date</span><strong>{selected.bidDueDate || selected.dueDate || "Not listed"}</strong></div>
               <div className="detail"><span>Phone</span><strong>{phone(selected) || "Not listed"}</strong></div>
@@ -2568,6 +2565,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
