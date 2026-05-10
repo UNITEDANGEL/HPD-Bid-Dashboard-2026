@@ -18,6 +18,10 @@ type JobRecord = {
   trade?: string;
   awardDate?: string;
   AwardDate?: string;
+  workStartDate?: string;
+  WorkStartDate?: string;
+  workCompletionDate?: string;
+  WorkCompletionDate?: string;
   dueDate?: string;
   bidDueDate?: string;
   bidAmount?: string;
@@ -2435,6 +2439,8 @@ function directionsUrl(job: JobRecord) {
             <div className="detail-grid">
               <div className="detail"><span>Amount</span><strong>{money(selected) || "Not listed"}</strong></div>
               <div className="detail"><span>Award Date</span><strong>{maturityInfo(selected).award}</strong></div>
+              <div className="detail"><span>Work Start Date</span><strong>{selected.WorkStartDate || selected.workStartDate || "Not listed"}</strong></div>
+              <div className="detail"><span>Work Completion Date</span><strong>{selected.WorkCompletionDate || selected.workCompletionDate || "Not listed"}</strong></div>
               <div className="detail"><span>Maturity Date</span><strong>{maturityInfo(selected).maturity}</strong></div>
               <div className="detail"><span>Maturity Counter</span><strong>{maturityInfo(selected).label}</strong></div>
               <div className="detail"><span>Due Date</span><strong>{selected.bidDueDate || selected.dueDate || "Not listed"}</strong></div>
@@ -2518,7 +2524,9 @@ function directionsUrl(job: JobRecord) {
 
               <div className="detail-grid">
                 <div className="detail"><span>Amount</span><strong>{money(job) || "Not listed"}</strong></div>
-                <div className="detail"><span>Award</span><strong>{job.awardDate || "Not listed"}</strong></div>
+                <div className="detail"><span>Award</span><strong>{job.AwardDate || job.awardDate || "Not listed"}</strong></div>
+                <div className="detail"><span>Work Start</span><strong>{job.WorkStartDate || job.workStartDate || "Not listed"}</strong></div>
+                <div className="detail"><span>Work Complete</span><strong>{job.WorkCompletionDate || job.workCompletionDate || "Not listed"}</strong></div>
                 <div className="detail"><span>Due</span><strong>{job.bidDueDate || job.dueDate || "Not listed"}</strong></div>
                 <div className="detail"><span>Docs</span><strong>{[(job.COAFile || job.coaFile) ? "COA ✓" : "", (job.ITBFile || job.itbFile) ? "ITB ✓" : "", (job.PDFFile || job.pdfFile) ? "PDF ✓" : ""].filter(Boolean).join(" ") || "Not listed"}</strong></div>
               </div>
@@ -2560,6 +2568,8 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
 
 
 
