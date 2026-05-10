@@ -5,3 +5,23 @@ node_modules/
 
 # Local backup folders
 _backup_*/
+
+# Local secrets - NEVER COMMIT
+credentials.json
+token.json
+google_api_key.txt
+.env
+.env.*
+!.env.example
+
+# Downloaded PDFs - local only
+COA_Downloads_V5/
+ITB_Downloads_V5/
+
+# Fetcher output/staging folders
+mereged_data_csv_2025/
+
+# Local backup/report files
+data/*.before_*.json
+data/*.before_*.csv
+data/safe_7day_merge_report.json
