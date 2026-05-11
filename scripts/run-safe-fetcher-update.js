@@ -51,8 +51,13 @@ function extractNumber(text, label) {
   return m ? Number(m[1]) : null;
 }
 
-function summarizeChecks(mappingOut, descOut, itbOut) {
+function summarizeChecks(mappingOut, descOut, itbOut, fullLog) {
   return {
+    fetchedCoaItems: extractNumber(fullLog, "COA items parsed (latest per OMO)"),
+    fetchedItbItems: extractNumber(fullLog, "ITB items parsed (latest per OMO)"),
+    fetchedFinalJobRows: extractNumber(fullLog, "Final JobRows"),
+    addedNewOmos: extractNumber(fullLog, "Added new OMOs"),
+    skippedExistingOmos: extractNumber(fullLog, "Skipped existing OMOs"),
     rawRows: extractNumber(mappingOut, "Raw JSON rows"),
     rows2026: extractNumber(mappingOut, "2026 rows"),
     mapped2026: extractNumber(mappingOut, "2026 rows with valid NYC coordinates"),
@@ -114,7 +119,8 @@ async function main() {
     const descOut = runStep("Verify descriptions", "node", ["check-generic-descriptions.js"]);
     const itbOut = runStep("Verify missing ITB", "node", ["export-missing-itb.js"]);
 
-    const summary = summarizeChecks(mappingOut, descOut, itbOut);
+    const fullLog = fs.readFileSync(LOG_PATH, "utf8");
+    const summary = summarizeChecks(mappingOut, descOut, itbOut, fullLog);
 
     status.state = "complete";
     status.ok = true;
@@ -141,4 +147,5 @@ async function main() {
 }
 
 main();
+
 

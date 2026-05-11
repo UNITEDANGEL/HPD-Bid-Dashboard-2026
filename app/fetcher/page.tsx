@@ -16,6 +16,11 @@ type FetcherStatus = {
     badDescriptions?: number;
     missingDescriptions?: number;
     missingItbJobs?: number;
+    fetchedCoaItems?: number;
+    fetchedItbItems?: number;
+    fetchedFinalJobRows?: number;
+    addedNewOmos?: number;
+    skippedExistingOmos?: number;
   };
   logTail?: string;
   environment?: {
@@ -94,6 +99,11 @@ export default function FetcherPage() {
         {status.error ? <p className="error">{status.error}</p> : null}
 
         <div className="grid">
+          <div><span>Fetched COAs</span><strong>{summary.fetchedCoaItems ?? "—"}</strong></div>
+          <div><span>Fetched ITBs</span><strong>{summary.fetchedItbItems ?? "—"}</strong></div>
+          <div><span>Fetcher Rows</span><strong>{summary.fetchedFinalJobRows ?? "—"}</strong></div>
+          <div><span>New Added</span><strong>{summary.addedNewOmos ?? "—"}</strong></div>
+          <div><span>Skipped Existing</span><strong>{summary.skippedExistingOmos ?? "—"}</strong></div>
           <div><span>2026 Jobs</span><strong>{summary.rows2026 ?? "—"}</strong></div>
           <div><span>Mapped</span><strong>{summary.mapped2026 ?? "—"}</strong></div>
           <div><span>Need Geo</span><strong>{summary.notMapped2026 ?? "—"}</strong></div>
@@ -249,3 +259,4 @@ export default function FetcherPage() {
     </main>
   );
 }
+
