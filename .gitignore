@@ -25,3 +25,7 @@ mereged_data_csv_2025/
 data/*.before_*.json
 data/*.before_*.csv
 data/safe_7day_merge_report.json
+
+# Fetcher runtime status/logs
+data/fetcher_latest_run.log
+data/fetcher_latest_status.json
