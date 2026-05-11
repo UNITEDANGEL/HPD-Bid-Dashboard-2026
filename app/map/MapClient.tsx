@@ -2411,9 +2411,6 @@ function directionsUrl(job: JobRecord) {
               Back to List
             </button>
           ) : null}
-          <button type="button" onClick={() => setDrawerOpen((value) => !value)}>
-            {drawerOpen ? "Hide Cards" : "Show Cards"}
-          </button>
         </div>
 
         {selected ? (
@@ -2562,6 +2559,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
