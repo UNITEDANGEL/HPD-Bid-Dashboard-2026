@@ -111,9 +111,9 @@ def load_google_api_key() -> Optional[str]:
 
 GOOGLE_GEOCODE_API_KEY = load_google_api_key()
 if not GOOGLE_GEOCODE_API_KEY:
-    print("âš ï¸  WARNING: No Google API key found. Geocoding will return NO_KEY.")
+    print("WARNING: No Google API key found. Geocoding will return NO_KEY.")
 else:
-    print("âœ… Google API key loaded for geocoding.")
+    print("Google API key loaded for geocoding.")
 
 
 # ------------------------- UTILS -------------------------
@@ -1135,4 +1135,5 @@ def infer_award_date_from_filename(path_or_name: str) -> str:
         yy = ts[4:6]
         return f"{mm}/{dd}/{yy}"
     return ""
+
 
