@@ -154,6 +154,55 @@ function parseStatusOverrides() {
   return map;
 }
 
+function parseWorkflowOverrides() {
+  const overridePath = path.join(process.cwd(), "data", "job_status_overrides.json");
+
+  if (!fs.existsSync(overridePath)) return new Map<string, Record<string, any>>();
+
+  try {
+    const raw = fs.readFileSync(overridePath, "utf8").replace(/^\uFEFF/, "");
+    const parsed = JSON.parse(raw);
+    const map = new Map<string, Record<string, any>>();
+
+    Object.entries(parsed || {}).forEach(([key, value]) => {
+      if (!key || !value || typeof value !== "object") return;
+      map.set(String(key).trim(), value as Record<string, any>);
+    });
+
+    return map;
+  } catch (error) {
+    console.warn("Failed to parse job_status_overrides.json", error);
+    return new Map<string, Record<string, any>>();
+  }
+}
+
+function applyWorkflowOverride(row: any, overrides: Map<string, Record<string, any>>) {
+  const omo = text(row.OMO || row.id || row.omo);
+  const override = overrides.get(omo);
+
+  if (!override) return row;
+
+  const next = {
+    ...row,
+    ...override,
+  };
+
+  if (override.StatusOverride) {
+    next.StatusOverride = override.StatusOverride;
+    next.status = override.status || override.StatusOverride;
+  }
+
+  if (override.WorkflowStatus) next.WorkflowStatus = override.WorkflowStatus;
+  if (override.FieldOutcome) next.FieldOutcome = override.FieldOutcome;
+  if (override.RefusalDate) next.RefusalDate = override.RefusalDate;
+  if (override.NoAccessFirstAttemptAt) next.NoAccessFirstAttemptAt = override.NoAccessFirstAttemptAt;
+  if (override.NoAccessSecondAttemptAt) next.NoAccessSecondAttemptAt = override.NoAccessSecondAttemptAt;
+  if (override.SecondAttemptAvailableAt) next.SecondAttemptAvailableAt = override.SecondAttemptAvailableAt;
+  if (override.ArchivedFromMap !== undefined) next.ArchivedFromMap = override.ArchivedFromMap;
+
+  return next;
+}
+
 function loadCsv(filePath: string) {
   const raw = fs.readFileSync(filePath, "utf8").replace(/^\uFEFF/, "");
 
@@ -164,6 +213,7 @@ function loadCsv(filePath: string) {
   });
 
   const overrides = parseStatusOverrides();
+  const workflowOverrides = parseWorkflowOverrides();
 
   if (parsed.errors.length) {
     console.warn("CSV parse warnings:", parsed.errors.slice(0, 5));
@@ -198,7 +248,7 @@ function loadCsv(filePath: string) {
         }
       }
 
-      return normalizeJob(row, index);
+      return normalizeJob(applyWorkflowOverride(row, workflowOverrides), index);
     });
 }
 
@@ -206,6 +256,7 @@ function loadJson(filePath: string) {
   const raw = fs.readFileSync(filePath, "utf8");
   const parsed = JSON.parse(raw);
   const rows = Array.isArray(parsed) ? parsed : parsed.jobs || [];
+  const workflowOverrides = parseWorkflowOverrides();
 
   return rows
     .filter((row: any) => text(row.OMO) || text(row.BuildingAddress) || text(row.JobDescription))
@@ -214,7 +265,7 @@ function loadJson(filePath: string) {
       /\/26|2026/.test(text(row.WorkStartDate)) ||
       /\/26|2026/.test(text(row.WorkCompletionDate))
     )
-    .map(normalizeJob);
+    .map((row: any, index: number) => normalizeJob(applyWorkflowOverride(row, workflowOverrides), index));
 }
 
 export async function GET() {
@@ -239,6 +290,7 @@ export async function GET() {
     updatedAt: new Date().toISOString(),
   });
 }
+
 
 
 
