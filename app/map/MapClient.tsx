@@ -13,6 +13,28 @@ type JobRecord = {
   borough?: string;
   status?: string;
   StatusOverride?: string;
+  WorkflowStatus?: string;
+  workflowStatus?: string;
+  FieldOutcome?: string;
+  fieldOutcome?: string;
+  NoAccessFirstAttemptAt?: string;
+  noAccessFirstAttemptAt?: string;
+  NoAccessSecondAttemptAt?: string;
+  noAccessSecondAttemptAt?: string;
+  SecondAttemptAvailableAt?: string;
+  secondAttemptAvailableAt?: string;
+  RefusalDate?: string;
+  refusalDate?: string;
+  VerifiedByOthersDate?: string;
+  verifiedByOthersDate?: string;
+  ActualWorkStartDate?: string;
+  actualWorkStartDate?: string;
+  ActualWorkCompletionDate?: string;
+  actualWorkCompletionDate?: string;
+  OutcomeLockedAt?: string;
+  outcomeLockedAt?: string;
+  ArchivedFromMap?: boolean;
+  archivedFromMap?: boolean;
   ITBMatchStatus?: string;
   COAParseStatus?: string;
   trade?: string;
@@ -795,6 +817,110 @@ async function openRealFullMap() {
     setTimeout(() => mapRef.current?.invalidateSize(), 150);
     setTimeout(() => mapRef.current?.invalidateSize(), 500);
   }
+
+const CLOSED_WORKFLOW_STATUSES = new Set([
+  "NO_ACCESS_COMPLETE",
+  "REFUSED_ACCESS",
+  "COMPLETED_BY_OTHERS",
+  "WORK_COMPLETED",
+  "PARTIAL_WORK_COMPLETED",
+  "PACKAGE_REVIEW",
+  "SENT_TO_REVIEWER",
+  "APPROVED_BY_YOU",
+  "SENT_TO_HPD",
+  "ARCHIVED",
+]);
+
+function workflowStatus(job: JobRecord) {
+  return String(
+    (job as any).WorkflowStatus ||
+      (job as any).workflowStatus ||
+      (job as any).FieldOutcome ||
+      (job as any).fieldOutcome ||
+      (job as any).StatusOverride ||
+      job.status ||
+      ""
+  ).toUpperCase();
+}
+
+function workflowLabel(job: JobRecord) {
+  const status = workflowStatus(job);
+
+  const labels: Record<string, string> = {
+    EN_ROUTE: "En Route",
+    VISIT_STARTED: "Visit Started",
+    NO_ACCESS_1_WAITING_72H: "No Access 1st - Waiting 72h",
+    READY_SECOND_ATTEMPT: "Ready 2nd Attempt",
+    NO_ACCESS_COMPLETE: "No Access Complete",
+    REFUSED_ACCESS: "Refused Access",
+    COMPLETED_BY_OTHERS: "Completed by Others",
+    WORK_STARTED: "Work Started",
+    WORK_COMPLETED: "Work Completed",
+    PARTIAL_WORK_COMPLETED: "Partial Work Completed",
+    PACKAGE_REVIEW: "Package Review",
+    SENT_TO_REVIEWER: "Sent to Reviewer",
+    APPROVED_BY_YOU: "Approved",
+    SENT_TO_HPD: "Sent to HPD",
+    ARCHIVED: "Archived",
+  };
+
+  return labels[status] || "";
+}
+
+function isClosedWorkflow(job: JobRecord) {
+  return CLOSED_WORKFLOW_STATUSES.has(workflowStatus(job));
+}
+
+function parseWorkflowDate(value?: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function displayWorkflowDate(value?: string) {
+  if (!value) return "Not listed";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not listed";
+
+  return date.toLocaleString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+function secondAttemptInfo(job: JobRecord) {
+  const first = parseWorkflowDate((job as any).NoAccessFirstAttemptAt || (job as any).noAccessFirstAttemptAt);
+  const available = parseWorkflowDate((job as any).SecondAttemptAvailableAt || (job as any).secondAttemptAvailableAt);
+
+  if (!first || !available) return null;
+
+  const now = new Date();
+  const msLeft = available.getTime() - now.getTime();
+  const hoursLeft = Math.max(0, Math.ceil(msLeft / 3600000));
+
+  return {
+    first,
+    available,
+    ready: msLeft <= 0,
+    hoursLeft,
+    label: msLeft <= 0 ? "Ready for 2nd attempt" : `${hoursLeft}h until 2nd attempt`,
+  };
+}
+function shouldShowOnActiveMap(job: JobRecord) {
+  const status = workflowStatus(job);
+
+  if (isClosedWorkflow(job)) return false;
+
+  if (status === "NO_ACCESS_1_WAITING_72H") {
+    const info = secondAttemptInfo(job);
+    return Boolean(info?.ready);
+  }
+
+  return true;
+}
 
 function focusJob(job: MappedJob) {
     setSelected(job);
@@ -2482,6 +2608,18 @@ function directionsUrl(job: JobRecord) {
               <div className="detail"><span>Work Completion Date</span><strong>{selected.WorkCompletionDate || selected.workCompletionDate || "Not listed"}</strong></div>
               <div className="detail"><span>Counter Start Date</span><strong>{maturityInfo(selected).maturity}</strong></div>
               <div className="detail"><span>Maturity Counter</span><strong>{maturityInfo(selected).label}</strong></div>
+              {workflowLabel(selected) ? (
+                <div className="detail"><span>Field Status</span><strong>{workflowLabel(selected)}</strong></div>
+              ) : null}
+              {selected.NoAccessFirstAttemptAt || selected.noAccessFirstAttemptAt ? (
+                <div className="detail"><span>No Access 1st</span><strong>{displayWorkflowDate(selected.NoAccessFirstAttemptAt || selected.noAccessFirstAttemptAt)}</strong></div>
+              ) : null}
+              {selected.SecondAttemptAvailableAt || selected.secondAttemptAvailableAt ? (
+                <div className="detail"><span>2nd Attempt Available</span><strong>{displayWorkflowDate(selected.SecondAttemptAvailableAt || selected.secondAttemptAvailableAt)}</strong></div>
+              ) : null}
+              {selected.NoAccessSecondAttemptAt || selected.noAccessSecondAttemptAt ? (
+                <div className="detail"><span>No Access 2nd</span><strong>{displayWorkflowDate(selected.NoAccessSecondAttemptAt || selected.noAccessSecondAttemptAt)}</strong></div>
+              ) : null}
               <div className="detail"><span>Due Date</span><strong>{selected.bidDueDate || selected.dueDate || "Not listed"}</strong></div>
               <div className="detail"><span>Phone</span><strong>{phone(selected) || "Not listed"}</strong></div>
               <div className="detail"><span>Contractor</span><strong>{selected.contractor || "Not listed"}</strong></div>
@@ -2607,6 +2745,11 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
+
 
 
 
