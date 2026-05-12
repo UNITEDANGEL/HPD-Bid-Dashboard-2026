@@ -2812,6 +2812,9 @@ function directionsUrl(job: JobRecord) {
               {workflowLabel(selected) ? (
                 <div className="detail"><span>Field Status</span><strong>{workflowLabel(selected)}</strong></div>
               ) : null}
+              {selected.RefusalDate || selected.refusalDate ? (
+                <div className="detail"><span>Refused Access Date</span><strong>{displayWorkflowDate(selected.RefusalDate || selected.refusalDate)}</strong></div>
+              ) : null}
               {selected.NoAccessFirstAttemptAt || selected.noAccessFirstAttemptAt ? (
                 <div className="detail"><span>No Access 1st</span><strong>{displayWorkflowDate(selected.NoAccessFirstAttemptAt || selected.noAccessFirstAttemptAt)}</strong></div>
               ) : null}
@@ -3053,6 +3056,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
