@@ -29,3 +29,6 @@ data/safe_7day_merge_report.json
 # Fetcher runtime status/logs
 data/fetcher_latest_run.log
 data/fetcher_latest_status.json
+
+# Runtime job status backups/logs
+data/job_status_overrides.before_*.json

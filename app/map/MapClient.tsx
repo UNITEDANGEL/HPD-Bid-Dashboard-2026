@@ -365,6 +365,21 @@ function workflowStorageWrite(rows: Record<string, any>) {
   window.localStorage.setItem(WORKFLOW_STORAGE_KEY, JSON.stringify(rows));
 }
 
+async function workflowServerSave(key: string, patch: Record<string, any>) {
+  if (!key) return;
+
+  const response = await fetch("/api/job-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key, patch }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || "Failed to save job status.");
+  }
+}
+
 function workflowStorageSave(key: string, patch: Record<string, any>) {
   if (!key) return;
 
@@ -1011,148 +1026,12 @@ function localDatetimeValue(date = new Date()) {
 
     if (key) {
       workflowStorageSave(key, patch);
-    }
-
-    const applyPatch = (row: any) => {
-      if (jobKey(row) !== key) return row;
-      return { ...row, ...patch };
-    };
-
-    setSelected((current) => (current && jobKey(current) === key ? applyPatch(current) as MappedJob : current));
-    setJobs((rows) => rows.map(applyPatch));
-    setMappedJobs((rows) => rows.map(applyPatch));
-    setDraftWorkflowSaved(true);
-  }
-
-  function updateLocalStatus(job: MappedJob, nextStatus: string) {
-    const now = new Date();
-    const key = jobKey(job);
-
-    let patch: Record<string, any> = {
-      StatusOverride: nextStatus,
-      status: nextStatus || "Pending",
-      ITBMatchStatus: nextStatus || job.ITBMatchStatus,
-    };
-
-    if (nextStatus === "No Access - 1st Attempt") {
-      const available = new Date(now);
-      available.setHours(available.getHours() + 72);
-
-      patch = {
-        ...patch,
-        WorkflowStatus: "NO_ACCESS_1_WAITING_72H",
-        workflowStatus: "NO_ACCESS_1_WAITING_72H",
-        FieldOutcome: "NO_ACCESS_1_WAITING_72H",
-        fieldOutcome: "NO_ACCESS_1_WAITING_72H",
-        StatusOverride: "No Access 1st - Waiting 72h",
-        status: "No Access 1st - Waiting 72h",
-        NoAccessFirstAttemptAt: now.toISOString(),
-        noAccessFirstAttemptAt: now.toISOString(),
-        SecondAttemptAvailableAt: available.toISOString(),
-        secondAttemptAvailableAt: available.toISOString(),
-        ArchivedFromMap: true,
-        archivedFromMap: true,
-        OutcomeLockedAt: now.toISOString(),
-        outcomeLockedAt: now.toISOString(),
-      };
-    }
-
-    if (nextStatus === "No Access - 2nd Attempt") {
-      patch = {
-        ...patch,
-        WorkflowStatus: "NO_ACCESS_COMPLETE",
-        workflowStatus: "NO_ACCESS_COMPLETE",
-        FieldOutcome: "NO_ACCESS_COMPLETE",
-        fieldOutcome: "NO_ACCESS_COMPLETE",
-        StatusOverride: "No Access Complete",
-        status: "No Access Complete",
-        NoAccessSecondAttemptAt: now.toISOString(),
-        noAccessSecondAttemptAt: now.toISOString(),
-        ArchivedFromMap: true,
-        archivedFromMap: true,
-        OutcomeLockedAt: now.toISOString(),
-        outcomeLockedAt: now.toISOString(),
-      };
-    }
-
-    if (nextStatus === "Refused Access") {
-      patch = {
-        ...patch,
-        WorkflowStatus: "REFUSED_ACCESS",
-        workflowStatus: "REFUSED_ACCESS",
-        FieldOutcome: "REFUSED_ACCESS",
-        fieldOutcome: "REFUSED_ACCESS",
-        RefusalDate: now.toISOString(),
-        refusalDate: now.toISOString(),
-        ArchivedFromMap: true,
-        archivedFromMap: true,
-        OutcomeLockedAt: now.toISOString(),
-        outcomeLockedAt: now.toISOString(),
-      };
-    }
-
-    if (nextStatus === "Completed by Others") {
-      patch = {
-        ...patch,
-        WorkflowStatus: "COMPLETED_BY_OTHERS",
-        workflowStatus: "COMPLETED_BY_OTHERS",
-        FieldOutcome: "COMPLETED_BY_OTHERS",
-        fieldOutcome: "COMPLETED_BY_OTHERS",
-        VerifiedByOthersDate: now.toISOString(),
-        verifiedByOthersDate: now.toISOString(),
-        ArchivedFromMap: true,
-        archivedFromMap: true,
-        OutcomeLockedAt: now.toISOString(),
-        outcomeLockedAt: now.toISOString(),
-      };
-    }
-
-    if (nextStatus === "Work Completed") {
-      patch = {
-        ...patch,
-        WorkflowStatus: "WORK_COMPLETED",
-        workflowStatus: "WORK_COMPLETED",
-        FieldOutcome: "WORK_COMPLETED",
-        fieldOutcome: "WORK_COMPLETED",
-        ActualWorkCompletionDate: now.toISOString(),
-        actualWorkCompletionDate: now.toISOString(),
-        ArchivedFromMap: true,
-        archivedFromMap: true,
-        OutcomeLockedAt: now.toISOString(),
-        outcomeLockedAt: now.toISOString(),
-      };
-    }
-
-    if (!nextStatus) {
-      patch = {
-        __clearWorkflow: true,
-        StatusOverride: "",
-        status: "Pending",
-        WorkflowStatus: "",
-        workflowStatus: "",
-        FieldOutcome: "",
-        fieldOutcome: "",
-        NoAccessFirstAttemptAt: "",
-        noAccessFirstAttemptAt: "",
-        NoAccessSecondAttemptAt: "",
-        noAccessSecondAttemptAt: "",
-        SecondAttemptAvailableAt: "",
-        secondAttemptAvailableAt: "",
-        RefusalDate: "",
-        refusalDate: "",
-        VerifiedByOthersDate: "",
-        verifiedByOthersDate: "",
-        ActualWorkCompletionDate: "",
-        actualWorkCompletionDate: "",
-        ArchivedFromMap: false,
-        archivedFromMap: false,
-        OutcomeLockedAt: "",
-        outcomeLockedAt: "",
-      };
-    }
-
-    if (key) {
-      workflowStorageSave(key, patch);
+      workflowServerSave(key, patch)
+        .then(() => setDraftWorkflowSaved(true))
+        .catch((error) => {
+          console.error(error);
+          alert("Saved on this device, but server save failed.");
+        });
     }
 
     const applyPatch = (row: any) => {
@@ -2970,7 +2849,45 @@ function directionsUrl(job: JobRecord) {
               <button type="button" onClick={() => pickDraftWorkflow("Refused Access")}>Refused</button>
               <button type="button" onClick={() => pickDraftWorkflow("Work Completed")}>Completed</button>
               <button type="button" onClick={() => pickDraftWorkflow("Completed by Others")}>Other Done</button>
-              <button type="button" onClick={() => updateLocalStatus(selected, "")}>Clear</button>
+              <button type="button" onClick={() => {
+                const key = jobKey(selected);
+                const patch = { __clearWorkflow: true };
+                if (key) {
+                  workflowStorageSave(key, patch);
+                  workflowServerSave(key, patch).catch((error) => {
+                    console.error(error);
+                    alert("Cleared on this device, but server clear failed.");
+                  });
+                }
+                setDraftWorkflowStatus("");
+                setDraftWorkflowDate("");
+                setDraftWorkflowSaved(false);
+                setSelected((current) => current ? ({
+                  ...current,
+                  WorkflowStatus: "",
+                  workflowStatus: "",
+                  FieldOutcome: "",
+                  fieldOutcome: "",
+                  StatusOverride: "",
+                  status: "Pending",
+                  NoAccessFirstAttemptAt: "",
+                  noAccessFirstAttemptAt: "",
+                  NoAccessSecondAttemptAt: "",
+                  noAccessSecondAttemptAt: "",
+                  SecondAttemptAvailableAt: "",
+                  secondAttemptAvailableAt: "",
+                  RefusalDate: "",
+                  refusalDate: "",
+                  VerifiedByOthersDate: "",
+                  verifiedByOthersDate: "",
+                  ActualWorkCompletionDate: "",
+                  actualWorkCompletionDate: "",
+                  ArchivedFromMap: false,
+                  archivedFromMap: false,
+                  OutcomeLockedAt: "",
+                  outcomeLockedAt: "",
+                } as MappedJob) : current);
+              }}>Clear</button>
             </div>
 
             {draftWorkflowStatus ? (
@@ -3044,7 +2961,45 @@ function directionsUrl(job: JobRecord) {
               <button type="button" onClick={() => pickDraftWorkflow("Refused Access")}>Refused</button>
               <button type="button" onClick={() => pickDraftWorkflow("Work Completed")}>Completed</button>
               <button type="button" onClick={() => pickDraftWorkflow("Completed by Others")}>Other Done</button>
-              <button type="button" onClick={() => updateLocalStatus(selected, "")}>Clear</button>
+              <button type="button" onClick={() => {
+                const key = jobKey(selected);
+                const patch = { __clearWorkflow: true };
+                if (key) {
+                  workflowStorageSave(key, patch);
+                  workflowServerSave(key, patch).catch((error) => {
+                    console.error(error);
+                    alert("Cleared on this device, but server clear failed.");
+                  });
+                }
+                setDraftWorkflowStatus("");
+                setDraftWorkflowDate("");
+                setDraftWorkflowSaved(false);
+                setSelected((current) => current ? ({
+                  ...current,
+                  WorkflowStatus: "",
+                  workflowStatus: "",
+                  FieldOutcome: "",
+                  fieldOutcome: "",
+                  StatusOverride: "",
+                  status: "Pending",
+                  NoAccessFirstAttemptAt: "",
+                  noAccessFirstAttemptAt: "",
+                  NoAccessSecondAttemptAt: "",
+                  noAccessSecondAttemptAt: "",
+                  SecondAttemptAvailableAt: "",
+                  secondAttemptAvailableAt: "",
+                  RefusalDate: "",
+                  refusalDate: "",
+                  VerifiedByOthersDate: "",
+                  verifiedByOthersDate: "",
+                  ActualWorkCompletionDate: "",
+                  actualWorkCompletionDate: "",
+                  ArchivedFromMap: false,
+                  archivedFromMap: false,
+                  OutcomeLockedAt: "",
+                  outcomeLockedAt: "",
+                } as MappedJob) : current);
+              }}>Clear</button>
             </div>
 
             {draftWorkflowStatus ? (
@@ -3098,6 +3053,8 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
 
 
 
