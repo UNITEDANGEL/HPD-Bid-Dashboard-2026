@@ -489,17 +489,37 @@ const CLOSED_WORKFLOW_STATUSES = new Set([
   "ARCHIVED",
 ]);
 
-function shouldShowOnActiveMap(job: JobRecord) {
+function workflowViewBucket(job: JobRecord) {
   const status = workflowStatus(job);
-
-  if (CLOSED_WORKFLOW_STATUSES.has(status)) return false;
+  const archived = Boolean((job as any).ArchivedFromMap || (job as any).archivedFromMap);
 
   if (status === "NO_ACCESS_1_WAITING_72H") {
     const info = workflowSecondAttemptInfo(job);
-    return Boolean(info?.ready);
+    return info?.ready ? "ready2" : "waiting72";
   }
 
-  return true;
+  if (
+    archived ||
+    CLOSED_WORKFLOW_STATUSES.has(status) ||
+    status === "REFUSED_ACCESS" ||
+    status === "COMPLETED_BY_OTHERS" ||
+    status === "WORK_COMPLETED" ||
+    status === "PARTIAL_WORK_COMPLETED" ||
+    status === "NO_ACCESS_COMPLETE"
+  ) {
+    return "archived";
+  }
+
+  return "active";
+}
+
+function shouldShowForWorkflowView(job: JobRecord, view: "active" | "waiting72" | "ready2" | "archived" | "all") {
+  if (view === "all") return true;
+  return workflowViewBucket(job) === view;
+}
+
+function shouldShowOnActiveMap(job: JobRecord) {
+  return workflowViewBucket(job) === "active" || workflowViewBucket(job) === "ready2";
 }
 
 export default function MapClient() {
@@ -516,6 +536,7 @@ const [descriptionOpen, setDescriptionOpen] = useState(false);
 const [draftWorkflowStatus, setDraftWorkflowStatus] = useState("");
 const [draftWorkflowDate, setDraftWorkflowDate] = useState("");
 const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
+const [workflowViewFilter, setWorkflowViewFilter] = useState<"active" | "waiting72" | "ready2" | "archived" | "all">("active");
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
   const [mapReady, setMapReady] = useState(false);
@@ -1103,17 +1124,37 @@ function secondAttemptInfo(job: JobRecord) {
     label: msLeft <= 0 ? "Ready for 2nd attempt" : `${hoursLeft}h until 2nd attempt`,
   };
 }
-function shouldShowOnActiveMap(job: JobRecord) {
+function workflowViewBucket(job: JobRecord) {
   const status = workflowStatus(job);
-
-  if (isClosedWorkflow(job)) return false;
+  const archived = Boolean((job as any).ArchivedFromMap || (job as any).archivedFromMap);
 
   if (status === "NO_ACCESS_1_WAITING_72H") {
     const info = workflowSecondAttemptInfo(job);
-    return Boolean(info?.ready);
+    return info?.ready ? "ready2" : "waiting72";
   }
 
-  return true;
+  if (
+    archived ||
+    CLOSED_WORKFLOW_STATUSES.has(status) ||
+    status === "REFUSED_ACCESS" ||
+    status === "COMPLETED_BY_OTHERS" ||
+    status === "WORK_COMPLETED" ||
+    status === "PARTIAL_WORK_COMPLETED" ||
+    status === "NO_ACCESS_COMPLETE"
+  ) {
+    return "archived";
+  }
+
+  return "active";
+}
+
+function shouldShowForWorkflowView(job: JobRecord, view: "active" | "waiting72" | "ready2" | "archived" | "all") {
+  if (view === "all") return true;
+  return workflowViewBucket(job) === view;
+}
+
+function shouldShowOnActiveMap(job: JobRecord) {
+  return workflowViewBucket(job) === "active" || workflowViewBucket(job) === "ready2";
 }
 
 function focusJob(job: MappedJob) {
@@ -2677,7 +2718,42 @@ function directionsUrl(job: JobRecord) {
           main.full-map .job-drawer {
             display: none !important;
           }
-        `}</style>
+          /* WORKFLOW_FILTER_CSS_OK */
+          .workflow-filter-bar {
+            position: fixed;
+            left: 12px;
+            right: 12px;
+            top: 82px;
+            z-index: 1200;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 8px;
+            border-radius: 18px;
+            background: rgba(4, 12, 28, 0.78);
+            border: 1px solid rgba(255,255,255,0.12);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 18px 50px rgba(0,0,0,0.28);
+          }
+
+          .workflow-filter-bar button {
+            border: 1px solid rgba(255,255,255,0.14);
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.86);
+            border-radius: 999px;
+            padding: 9px 12px;
+            font-weight: 900;
+            font-size: 12px;
+            white-space: nowrap;
+          }
+
+          .workflow-filter-bar button.active {
+            background: linear-gradient(135deg, #27e2b6, #6fb4ff);
+            color: #04101f;
+            border-color: transparent;
+          }
+        `}
+      </style>
 
       <header className="map-top">
         <div className="map-title-row">
@@ -2779,6 +2855,24 @@ function directionsUrl(job: JobRecord) {
               Back to List
             </button>
           ) : null}
+        </div>
+
+        <div className="workflow-filter-bar">
+          <button type="button" className={workflowViewFilter === "active" ? "active" : ""} onClick={() => setWorkflowViewFilter("active")}>
+            Active
+          </button>
+          <button type="button" className={workflowViewFilter === "waiting72" ? "active" : ""} onClick={() => setWorkflowViewFilter("waiting72")}>
+            Waiting 72h
+          </button>
+          <button type="button" className={workflowViewFilter === "ready2" ? "active" : ""} onClick={() => setWorkflowViewFilter("ready2")}>
+            Ready 2nd
+          </button>
+          <button type="button" className={workflowViewFilter === "archived" ? "active" : ""} onClick={() => setWorkflowViewFilter("archived")}>
+            Archived
+          </button>
+          <button type="button" className={workflowViewFilter === "all" ? "active" : ""} onClick={() => setWorkflowViewFilter("all")}>
+            All
+          </button>
         </div>
 
         {selected ? (
@@ -3049,6 +3143,13 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
+
+
+
 
 
 
