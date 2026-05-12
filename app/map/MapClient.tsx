@@ -348,6 +348,152 @@ async function geocodeJob(job: JobRecord) {
   return { lat, lng };
 }
 
+const WORKFLOW_STORAGE_KEY = "hpd-job-workflow-overrides-v2";
+
+function workflowStorageRead(): Record<string, any> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(WORKFLOW_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function workflowStorageWrite(rows: Record<string, any>) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(WORKFLOW_STORAGE_KEY, JSON.stringify(rows));
+}
+
+function workflowStorageSave(key: string, patch: Record<string, any>) {
+  if (!key) return;
+
+  const rows = workflowStorageRead();
+
+  if (patch.__clearWorkflow) {
+    delete rows[key];
+  } else {
+    rows[key] = {
+      ...(rows[key] || {}),
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  workflowStorageWrite(rows);
+}
+
+function workflowStorageApply<T extends JobRecord>(rows: T[]): T[] {
+  const saved = workflowStorageRead();
+
+  return rows.map((row) => {
+    const key = jobKey(row);
+    const patch = key ? saved[key] : null;
+    return patch ? ({ ...row, ...patch } as T) : row;
+  });
+}
+
+function workflowStatus(job: JobRecord) {
+  return String(
+    (job as any).WorkflowStatus ||
+      (job as any).workflowStatus ||
+      (job as any).FieldOutcome ||
+      (job as any).fieldOutcome ||
+      (job as any).StatusOverride ||
+      job.status ||
+      ""
+  ).toUpperCase();
+}
+
+function workflowLabel(job: JobRecord) {
+  const status = workflowStatus(job);
+
+  const labels: Record<string, string> = {
+    EN_ROUTE: "En Route",
+    VISIT_STARTED: "Visit Started",
+    NO_ACCESS_1_WAITING_72H: "No Access 1st - Waiting 72h",
+    READY_SECOND_ATTEMPT: "Ready 2nd Attempt",
+    NO_ACCESS_COMPLETE: "No Access Complete",
+    REFUSED_ACCESS: "Refused Access",
+    COMPLETED_BY_OTHERS: "Completed by Others",
+    WORK_STARTED: "Work Started",
+    WORK_COMPLETED: "Work Completed",
+    PARTIAL_WORK_COMPLETED: "Partial Work Completed",
+    PACKAGE_REVIEW: "Package Review",
+    SENT_TO_REVIEWER: "Sent to Reviewer",
+    APPROVED_BY_YOU: "Approved",
+    SENT_TO_HPD: "Sent to HPD",
+    ARCHIVED: "Archived",
+  };
+
+  return labels[status] || "";
+}
+
+function displayWorkflowDate(value?: string) {
+  if (!value) return "Not listed";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Not listed";
+
+  return date.toLocaleString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function workflowSecondAttemptInfo(job: JobRecord) {
+  const firstRaw = (job as any).NoAccessFirstAttemptAt || (job as any).noAccessFirstAttemptAt;
+  const availableRaw = (job as any).SecondAttemptAvailableAt || (job as any).secondAttemptAvailableAt;
+
+  if (!firstRaw || !availableRaw) return null;
+
+  const first = new Date(firstRaw);
+  const available = new Date(availableRaw);
+
+  if (Number.isNaN(first.getTime()) || Number.isNaN(available.getTime())) return null;
+
+  const now = new Date();
+  const msLeft = available.getTime() - now.getTime();
+  const hoursLeft = Math.max(0, Math.ceil(msLeft / 3600000));
+
+  return {
+    first,
+    available,
+    ready: msLeft <= 0,
+    hoursLeft,
+    label: msLeft <= 0 ? "Ready for 2nd attempt" : `${hoursLeft}h until 2nd attempt`,
+  };
+}
+
+const CLOSED_WORKFLOW_STATUSES = new Set([
+  "NO_ACCESS_COMPLETE",
+  "REFUSED_ACCESS",
+  "COMPLETED_BY_OTHERS",
+  "WORK_COMPLETED",
+  "PARTIAL_WORK_COMPLETED",
+  "PACKAGE_REVIEW",
+  "SENT_TO_REVIEWER",
+  "APPROVED_BY_YOU",
+  "SENT_TO_HPD",
+  "ARCHIVED",
+]);
+
+function shouldShowOnActiveMap(job: JobRecord) {
+  const status = workflowStatus(job);
+
+  if (CLOSED_WORKFLOW_STATUSES.has(status)) return false;
+
+  if (status === "NO_ACCESS_1_WAITING_72H") {
+    const info = workflowSecondAttemptInfo(job);
+    return Boolean(info?.ready);
+  }
+
+  return true;
+}
+
 export default function MapClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
@@ -368,6 +514,18 @@ const [hideCompleted, setHideCompleted] = useState(false);
 
 const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60" | "od61_90" | "od90plus">("all");
   const [fullMap, setFullMap] = useState(false);
+
+  // Apply saved workflow statuses after jobs load from /api/jobs.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const saved = workflowStorageRead();
+    if (!Object.keys(saved).length) return;
+
+    setJobs((rows) => workflowStorageApply(rows));
+    setMappedJobs((rows) => workflowStorageApply(rows));
+    setSelected((current) => (current ? (workflowStorageApply([current])[0] as MappedJob) : current));
+  }, [jobs.length, mappedJobs.length]);
 
 const WORKFLOW_STORAGE_KEY = "hpd-job-workflow-overrides-v1";
 
@@ -726,122 +884,145 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 }
 
 function updateLocalStatus(job: MappedJob, nextStatus: string) {
-    const updated = {
-      ...job,
+    const now = new Date();
+    const key = jobKey(job);
+
+    let patch: Record<string, any> = {
       StatusOverride: nextStatus,
       status: nextStatus || "Pending",
       ITBMatchStatus: nextStatus || job.ITBMatchStatus,
     };
 
-    setSelected(updated);
+    if (nextStatus === "No Access - 1st Attempt") {
+      const available = new Date(now);
+      available.setHours(available.getHours() + 72);
 
-    setMappedJobs((rows) =>
-      rows.map((row) => jobKey(row) === jobKey(job) ? { ...row, ...updated } : row)
-    );
-
-    setJobs((rows) =>
-      rows.map((row) => jobKey(row) === jobKey(job) ? { ...row, ...updated } : row)
-    );
-  }
-
-function isMissingItb(job: any) {
-    const itbStatus = String(job.ITBMatchStatus || job.itbMatchStatus || job.status || "").toLowerCase().trim();
-    const missingReason = String(job.MissingITBReason || job.missingITBReason || "").toLowerCase().trim();
-
-    return itbStatus === "no_itb" || missingReason.includes("no itb found for this omo");
-  }
-
-function needsDescriptionOcr(job: any) {
-    const description = String(
-      job.JobDescription ||
-      job.description ||
-      job.Job_Description ||
-      ""
-    ).trim();
-
-    const itbFile = String(job.ITBFile || job.itbFile || "").trim();
-    const status = String(job.ITBMatchStatus || job.itbMatchStatus || job.status || "").toLowerCase().trim();
-
-    return !description && !!itbFile && status !== "no_itb";
-  }
-
-function generateInvoice(job: any, workflow = "invoice") {
-    fetch("/api/invoice/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ job, workflow }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.url) {
-          setGeneratedLinks((prev) => ({ ...prev, invoice: data.url }));
-          window.open(data.url, "_blank");
-        } else {
-          alert(data.error || "Failed to generate invoice");
-        }
-      })
-      .catch(() => alert("Failed to generate invoice"));
-  }
-
-function generateAffidavit(job: any, type: string) {
-    fetch("/api/affidavit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ job, type }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.url) {
-          setGeneratedLinks((prev) => ({ ...prev, affidavit: data.url }));
-          window.open(data.url, "_blank");
-        } else {
-          alert("Failed to generate affidavit");
-        }
-      })
-      .catch(() => alert("Failed to generate affidavit"));
-  }
-
-async function openRealFullMap() {
-    const el = document.querySelector(".map-stage") as HTMLElement | null;
-
-    try {
-      if (!document.fullscreenElement && el?.requestFullscreen) {
-        await el.requestFullscreen();
-      } else if (document.exitFullscreen) {
-        await document.exitFullscreen();
-      }
-    } catch {
-      // ignore fullscreen errors
+      patch = {
+        ...patch,
+        WorkflowStatus: "NO_ACCESS_1_WAITING_72H",
+        workflowStatus: "NO_ACCESS_1_WAITING_72H",
+        FieldOutcome: "NO_ACCESS_1_WAITING_72H",
+        fieldOutcome: "NO_ACCESS_1_WAITING_72H",
+        StatusOverride: "No Access 1st - Waiting 72h",
+        status: "No Access 1st - Waiting 72h",
+        NoAccessFirstAttemptAt: now.toISOString(),
+        noAccessFirstAttemptAt: now.toISOString(),
+        SecondAttemptAvailableAt: available.toISOString(),
+        secondAttemptAvailableAt: available.toISOString(),
+        ArchivedFromMap: true,
+        archivedFromMap: true,
+        OutcomeLockedAt: now.toISOString(),
+        outcomeLockedAt: now.toISOString(),
+      };
     }
 
-    setTimeout(() => mapRef.current?.invalidateSize(), 150);
-    setTimeout(() => mapRef.current?.invalidateSize(), 500);
+    if (nextStatus === "No Access - 2nd Attempt") {
+      patch = {
+        ...patch,
+        WorkflowStatus: "NO_ACCESS_COMPLETE",
+        workflowStatus: "NO_ACCESS_COMPLETE",
+        FieldOutcome: "NO_ACCESS_COMPLETE",
+        fieldOutcome: "NO_ACCESS_COMPLETE",
+        StatusOverride: "No Access Complete",
+        status: "No Access Complete",
+        NoAccessSecondAttemptAt: now.toISOString(),
+        noAccessSecondAttemptAt: now.toISOString(),
+        ArchivedFromMap: true,
+        archivedFromMap: true,
+        OutcomeLockedAt: now.toISOString(),
+        outcomeLockedAt: now.toISOString(),
+      };
+    }
+
+    if (nextStatus === "Refused Access") {
+      patch = {
+        ...patch,
+        WorkflowStatus: "REFUSED_ACCESS",
+        workflowStatus: "REFUSED_ACCESS",
+        FieldOutcome: "REFUSED_ACCESS",
+        fieldOutcome: "REFUSED_ACCESS",
+        RefusalDate: now.toISOString(),
+        refusalDate: now.toISOString(),
+        ArchivedFromMap: true,
+        archivedFromMap: true,
+        OutcomeLockedAt: now.toISOString(),
+        outcomeLockedAt: now.toISOString(),
+      };
+    }
+
+    if (nextStatus === "Completed by Others") {
+      patch = {
+        ...patch,
+        WorkflowStatus: "COMPLETED_BY_OTHERS",
+        workflowStatus: "COMPLETED_BY_OTHERS",
+        FieldOutcome: "COMPLETED_BY_OTHERS",
+        fieldOutcome: "COMPLETED_BY_OTHERS",
+        VerifiedByOthersDate: now.toISOString(),
+        verifiedByOthersDate: now.toISOString(),
+        ArchivedFromMap: true,
+        archivedFromMap: true,
+        OutcomeLockedAt: now.toISOString(),
+        outcomeLockedAt: now.toISOString(),
+      };
+    }
+
+    if (nextStatus === "Work Completed") {
+      patch = {
+        ...patch,
+        WorkflowStatus: "WORK_COMPLETED",
+        workflowStatus: "WORK_COMPLETED",
+        FieldOutcome: "WORK_COMPLETED",
+        fieldOutcome: "WORK_COMPLETED",
+        ActualWorkCompletionDate: now.toISOString(),
+        actualWorkCompletionDate: now.toISOString(),
+        ArchivedFromMap: true,
+        archivedFromMap: true,
+        OutcomeLockedAt: now.toISOString(),
+        outcomeLockedAt: now.toISOString(),
+      };
+    }
+
+    if (!nextStatus) {
+      patch = {
+        __clearWorkflow: true,
+        StatusOverride: "",
+        status: "Pending",
+        WorkflowStatus: "",
+        workflowStatus: "",
+        FieldOutcome: "",
+        fieldOutcome: "",
+        NoAccessFirstAttemptAt: "",
+        noAccessFirstAttemptAt: "",
+        NoAccessSecondAttemptAt: "",
+        noAccessSecondAttemptAt: "",
+        SecondAttemptAvailableAt: "",
+        secondAttemptAvailableAt: "",
+        RefusalDate: "",
+        refusalDate: "",
+        VerifiedByOthersDate: "",
+        verifiedByOthersDate: "",
+        ActualWorkCompletionDate: "",
+        actualWorkCompletionDate: "",
+        ArchivedFromMap: false,
+        archivedFromMap: false,
+        OutcomeLockedAt: "",
+        outcomeLockedAt: "",
+      };
+    }
+
+    if (key) {
+      workflowStorageSave(key, patch);
+    }
+
+    const applyPatch = (row: any) => {
+      if (jobKey(row) !== key) return row;
+      return { ...row, ...patch };
+    };
+
+    setSelected((current) => (current && jobKey(current) === key ? applyPatch(current) as MappedJob : current));
+    setJobs((rows) => rows.map(applyPatch));
+    setMappedJobs((rows) => rows.map(applyPatch));
   }
-
-const CLOSED_WORKFLOW_STATUSES = new Set([
-  "NO_ACCESS_COMPLETE",
-  "REFUSED_ACCESS",
-  "COMPLETED_BY_OTHERS",
-  "WORK_COMPLETED",
-  "PARTIAL_WORK_COMPLETED",
-  "PACKAGE_REVIEW",
-  "SENT_TO_REVIEWER",
-  "APPROVED_BY_YOU",
-  "SENT_TO_HPD",
-  "ARCHIVED",
-]);
-
-function workflowStatus(job: JobRecord) {
-  return String(
-    (job as any).WorkflowStatus ||
-      (job as any).workflowStatus ||
-      (job as any).FieldOutcome ||
-      (job as any).fieldOutcome ||
-      (job as any).StatusOverride ||
-      job.status ||
-      ""
-  ).toUpperCase();
-}
 
 function workflowLabel(job: JobRecord) {
   const status = workflowStatus(job);
@@ -915,7 +1096,7 @@ function shouldShowOnActiveMap(job: JobRecord) {
   if (isClosedWorkflow(job)) return false;
 
   if (status === "NO_ACCESS_1_WAITING_72H") {
-    const info = secondAttemptInfo(job);
+    const info = workflowSecondAttemptInfo(job);
     return Boolean(info?.ready);
   }
 
@@ -2653,25 +2834,8 @@ function directionsUrl(job: JobRecord) {
 
             <div className="card-actions">
               <button type="button" className="secondary" onClick={() => setDrawerOpen(true)}>Details</button>
-              <button
-                type="button"
-                onClick={() =>
-                  generateAffidavit(
-                    selected,
-                    (selected.StatusOverride || selected.status || "").toLowerCase().includes("completed")
-                      ? "completed"
-                      : "no_work"
-                  )
-                }
-              >
-                Affidavit
-              </button>
-              <button
-                  type="button"
-                  onClick={() => generateInvoice(selected, "selected_job")}
-                >
-                  Invoice
-                </button>
+              <button type="button" onClick={() => alert("Affidavit generation is planned for Phase 4. Save field status first.")}>Affidavit</button>
+              <button type="button" onClick={() => alert("Invoice generation is planned for Phase 5. Save field status first.")}>Invoice</button>
               <a target="_blank" rel="noreferrer" href={directionsUrl(selected)}>Directions</a>
             </div>
 
@@ -2745,6 +2909,13 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
+
+
+
 
 
 
