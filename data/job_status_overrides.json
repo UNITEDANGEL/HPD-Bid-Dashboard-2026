@@ -1,0 +1,29 @@
+{
+  "TEST_JOB_123": {
+    "WorkflowStatus": "NO_ACCESS_1_WAITING_72H",
+    "NoAccessFirstAttemptAt": "2026-05-12T12:50:15.4575266-04:00",
+    "StatusOverride": "No Access 1st - Waiting 72h",
+    "SecondAttemptAvailableAt": "2026-05-15T12:50:15.4625264-04:00",
+    "updatedAt": "2026-05-12T16:50:17.055Z"
+  },
+  "EO29204": {
+    "StatusOverride": "No Access Complete",
+    "status": "No Access Complete",
+    "ITBMatchStatus": "No Access - 2nd Attempt",
+    "WorkflowStatus": "NO_ACCESS_COMPLETE",
+    "workflowStatus": "NO_ACCESS_COMPLETE",
+    "FieldOutcome": "NO_ACCESS_COMPLETE",
+    "fieldOutcome": "NO_ACCESS_COMPLETE",
+    "NoAccessFirstAttemptAt": "2026-04-24T16:54:00.000Z",
+    "noAccessFirstAttemptAt": "2026-04-24T16:54:00.000Z",
+    "SecondAttemptAvailableAt": "2026-04-27T16:54:00.000Z",
+    "secondAttemptAvailableAt": "2026-04-27T16:54:00.000Z",
+    "ArchivedFromMap": true,
+    "archivedFromMap": true,
+    "OutcomeLockedAt": "2026-05-04T16:55:00.000Z",
+    "outcomeLockedAt": "2026-05-04T16:55:00.000Z",
+    "updatedAt": "2026-05-12T16:56:14.760Z",
+    "NoAccessSecondAttemptAt": "2026-05-04T16:55:00.000Z",
+    "noAccessSecondAttemptAt": "2026-05-04T16:55:00.000Z"
+  }
+}
