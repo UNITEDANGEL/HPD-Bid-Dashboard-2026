@@ -347,6 +347,54 @@ const [hideCompleted, setHideCompleted] = useState(false);
 const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60" | "od61_90" | "od90plus">("all");
   const [fullMap, setFullMap] = useState(false);
 
+const WORKFLOW_STORAGE_KEY = "hpd-job-workflow-overrides-v1";
+
+function readWorkflowOverrides(): Record<string, any> {
+  if (typeof window === "undefined") return {};
+
+  try {
+    const raw = window.localStorage.getItem(WORKFLOW_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeWorkflowOverrides(overrides: Record<string, any>) {
+  if (typeof window === "undefined") return;
+
+  window.localStorage.setItem(WORKFLOW_STORAGE_KEY, JSON.stringify(overrides));
+}
+
+function saveWorkflowOverride(job: JobRecord, patch: Record<string, any>) {
+  const key = jobKey(job);
+  if (!key) return;
+
+  const overrides = readWorkflowOverrides();
+
+  if (!patch.WorkflowStatus && !patch.workflowStatus && !patch.StatusOverride) {
+    delete overrides[key];
+  } else {
+    overrides[key] = {
+      ...(overrides[key] || {}),
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  writeWorkflowOverrides(overrides);
+}
+
+function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
+  const overrides = readWorkflowOverrides();
+
+  return rows.map((row) => {
+    const key = jobKey(row);
+    const patch = key ? overrides[key] : null;
+    return patch ? ({ ...row, ...patch } as T) : row;
+  });
+}
+
   const filteredJobs = useMemo<MappedJob[]>(() => {
     const needle = search.trim().toLowerCase();
 
@@ -2559,6 +2607,11 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
+
 
 
 
