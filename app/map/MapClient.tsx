@@ -351,18 +351,11 @@ async function geocodeJob(job: JobRecord) {
 const WORKFLOW_STORAGE_KEY = "hpd-job-workflow-overrides-v2";
 
 function workflowStorageRead(): Record<string, any> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(WORKFLOW_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
+  return {};
 }
 
 function workflowStorageWrite(rows: Record<string, any>) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(WORKFLOW_STORAGE_KEY, JSON.stringify(rows));
+  // Server is now the source of truth.
 }
 
 async function workflowServerSave(key: string, patch: Record<string, any>) {
@@ -3056,6 +3049,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 

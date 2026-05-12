@@ -99,7 +99,7 @@ function updateMasterJson(key: string, patch: Record<string, any>) {
     }
 
     return {
-      ...job,
+      ...clearWorkflowFields(job),
       ...patch,
       updatedAt: new Date().toISOString(),
     };
@@ -210,7 +210,6 @@ export async function POST(request: Request) {
       delete statuses[key];
     } else {
       statuses[key] = {
-        ...(statuses[key] || {}),
         ...patch,
         updatedAt: new Date().toISOString(),
       };
@@ -238,3 +237,4 @@ export async function POST(request: Request) {
     );
   }
 }
+
