@@ -505,6 +505,9 @@ export default function MapClient() {
 const [selectedOnly, setSelectedOnly] = useState(false);
 const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
 const [descriptionOpen, setDescriptionOpen] = useState(false);
+const [draftWorkflowStatus, setDraftWorkflowStatus] = useState("");
+const [draftWorkflowDate, setDraftWorkflowDate] = useState("");
+const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
   const [mapReady, setMapReady] = useState(false);
@@ -883,7 +886,145 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     .catch(() => alert("Failed to update status"));
 }
 
-function updateLocalStatus(job: MappedJob, nextStatus: string) {
+function localDatetimeValue(date = new Date()) {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function isoFromLocalDatetime(value: string) {
+    if (!value) return new Date().toISOString();
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+  }
+
+  function pickDraftWorkflow(status: string) {
+    setDraftWorkflowStatus(status);
+    setDraftWorkflowDate(localDatetimeValue());
+    setDraftWorkflowSaved(false);
+  }
+
+  function saveDraftWorkflow(job: MappedJob) {
+    if (!draftWorkflowStatus) {
+      alert("Select a status first.");
+      return;
+    }
+
+    const when = new Date(isoFromLocalDatetime(draftWorkflowDate));
+    const iso = when.toISOString();
+    const available = new Date(when);
+    available.setHours(available.getHours() + 72);
+
+    let nextStatus = draftWorkflowStatus;
+    let patch: Record<string, any> = {
+      StatusOverride: nextStatus,
+      status: nextStatus || "Pending",
+      ITBMatchStatus: nextStatus || job.ITBMatchStatus,
+    };
+
+    if (draftWorkflowStatus === "No Access - 1st Attempt") {
+      patch = {
+        ...patch,
+        WorkflowStatus: "NO_ACCESS_1_WAITING_72H",
+        workflowStatus: "NO_ACCESS_1_WAITING_72H",
+        FieldOutcome: "NO_ACCESS_1_WAITING_72H",
+        fieldOutcome: "NO_ACCESS_1_WAITING_72H",
+        StatusOverride: "No Access 1st - Waiting 72h",
+        status: "No Access 1st - Waiting 72h",
+        NoAccessFirstAttemptAt: iso,
+        noAccessFirstAttemptAt: iso,
+        SecondAttemptAvailableAt: available.toISOString(),
+        secondAttemptAvailableAt: available.toISOString(),
+        ArchivedFromMap: true,
+        archivedFromMap: true,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+      };
+    }
+
+    if (draftWorkflowStatus === "No Access - 2nd Attempt") {
+      patch = {
+        ...patch,
+        WorkflowStatus: "NO_ACCESS_COMPLETE",
+        workflowStatus: "NO_ACCESS_COMPLETE",
+        FieldOutcome: "NO_ACCESS_COMPLETE",
+        fieldOutcome: "NO_ACCESS_COMPLETE",
+        StatusOverride: "No Access Complete",
+        status: "No Access Complete",
+        NoAccessSecondAttemptAt: iso,
+        noAccessSecondAttemptAt: iso,
+        ArchivedFromMap: true,
+        archivedFromMap: true,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+      };
+    }
+
+    if (draftWorkflowStatus === "Refused Access") {
+      patch = {
+        ...patch,
+        WorkflowStatus: "REFUSED_ACCESS",
+        workflowStatus: "REFUSED_ACCESS",
+        FieldOutcome: "REFUSED_ACCESS",
+        fieldOutcome: "REFUSED_ACCESS",
+        RefusalDate: iso,
+        refusalDate: iso,
+        ArchivedFromMap: true,
+        archivedFromMap: true,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+      };
+    }
+
+    if (draftWorkflowStatus === "Completed by Others") {
+      patch = {
+        ...patch,
+        WorkflowStatus: "COMPLETED_BY_OTHERS",
+        workflowStatus: "COMPLETED_BY_OTHERS",
+        FieldOutcome: "COMPLETED_BY_OTHERS",
+        fieldOutcome: "COMPLETED_BY_OTHERS",
+        VerifiedByOthersDate: iso,
+        verifiedByOthersDate: iso,
+        ArchivedFromMap: true,
+        archivedFromMap: true,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+      };
+    }
+
+    if (draftWorkflowStatus === "Work Completed") {
+      patch = {
+        ...patch,
+        WorkflowStatus: "WORK_COMPLETED",
+        workflowStatus: "WORK_COMPLETED",
+        FieldOutcome: "WORK_COMPLETED",
+        fieldOutcome: "WORK_COMPLETED",
+        ActualWorkCompletionDate: iso,
+        actualWorkCompletionDate: iso,
+        ArchivedFromMap: true,
+        archivedFromMap: true,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+      };
+    }
+
+    const key = jobKey(job);
+
+    if (key) {
+      workflowStorageSave(key, patch);
+    }
+
+    const applyPatch = (row: any) => {
+      if (jobKey(row) !== key) return row;
+      return { ...row, ...patch };
+    };
+
+    setSelected((current) => (current && jobKey(current) === key ? applyPatch(current) as MappedJob : current));
+    setJobs((rows) => rows.map(applyPatch));
+    setMappedJobs((rows) => rows.map(applyPatch));
+    setDraftWorkflowSaved(true);
+  }
+
+  function updateLocalStatus(job: MappedJob, nextStatus: string) {
     const now = new Date();
     const key = jobKey(job);
 
@@ -2824,13 +2965,37 @@ function directionsUrl(job: JobRecord) {
             ) : null}
 
             <div className="status-actions">
-              <button type="button" onClick={() => updateLocalStatus(selected, "No Access - 1st Attempt")}>No Access 1st</button>
-              <button type="button" onClick={() => updateLocalStatus(selected, "No Access - 2nd Attempt")}>No Access 2nd</button>
-              <button type="button" onClick={() => updateLocalStatus(selected, "Refused Access")}>Refused</button>
-              <button type="button" onClick={() => updateLocalStatus(selected, "Work Completed")}>Completed</button>
-              <button type="button" onClick={() => updateLocalStatus(selected, "Completed by Others")}>Other Done</button>
+              <button type="button" onClick={() => pickDraftWorkflow("No Access - 1st Attempt")}>No Access 1st</button>
+              <button type="button" onClick={() => pickDraftWorkflow("No Access - 2nd Attempt")}>No Access 2nd</button>
+              <button type="button" onClick={() => pickDraftWorkflow("Refused Access")}>Refused</button>
+              <button type="button" onClick={() => pickDraftWorkflow("Work Completed")}>Completed</button>
+              <button type="button" onClick={() => pickDraftWorkflow("Completed by Others")}>Other Done</button>
               <button type="button" onClick={() => updateLocalStatus(selected, "")}>Clear</button>
             </div>
+
+            {draftWorkflowStatus ? (
+              <div className="workflow-save-panel">
+                <div className="detail">
+                  <span>Selected Status</span>
+                  <strong>{draftWorkflowStatus}</strong>
+                </div>
+                <label className="workflow-date-input">
+                  Status Date / Time
+                  <input
+                    type="datetime-local"
+                    value={draftWorkflowDate}
+                    onChange={(event) => {
+                      setDraftWorkflowDate(event.target.value);
+                      setDraftWorkflowSaved(false);
+                    }}
+                  />
+                </label>
+                <button type="button" className="save-status-btn" onClick={() => saveDraftWorkflow(selected)}>
+                  Save Status
+                </button>
+                {draftWorkflowSaved ? <p className="saved-status-note">Saved ✓ Refresh-safe locally.</p> : null}
+              </div>
+            ) : null}
 
             <div className="card-actions">
               <button type="button" className="secondary" onClick={() => setDrawerOpen(true)}>Details</button>
@@ -2874,13 +3039,37 @@ function directionsUrl(job: JobRecord) {
             </button>
 
             <div className="status-actions">
-              <button type="button" onClick={() => updateLocalStatus(selected, "No Access - 1st Attempt")}>No Access 1st</button>
-              <button type="button" onClick={() => updateLocalStatus(selected, "No Access - 2nd Attempt")}>No Access 2nd</button>
-              <button type="button" onClick={() => updateLocalStatus(selected, "Refused Access")}>Refused</button>
-              <button type="button" onClick={() => updateLocalStatus(selected, "Work Completed")}>Completed</button>
-              <button type="button" onClick={() => updateLocalStatus(selected, "Completed by Others")}>Other Done</button>
+              <button type="button" onClick={() => pickDraftWorkflow("No Access - 1st Attempt")}>No Access 1st</button>
+              <button type="button" onClick={() => pickDraftWorkflow("No Access - 2nd Attempt")}>No Access 2nd</button>
+              <button type="button" onClick={() => pickDraftWorkflow("Refused Access")}>Refused</button>
+              <button type="button" onClick={() => pickDraftWorkflow("Work Completed")}>Completed</button>
+              <button type="button" onClick={() => pickDraftWorkflow("Completed by Others")}>Other Done</button>
               <button type="button" onClick={() => updateLocalStatus(selected, "")}>Clear</button>
             </div>
+
+            {draftWorkflowStatus ? (
+              <div className="workflow-save-panel">
+                <div className="detail">
+                  <span>Selected Status</span>
+                  <strong>{draftWorkflowStatus}</strong>
+                </div>
+                <label className="workflow-date-input">
+                  Status Date / Time
+                  <input
+                    type="datetime-local"
+                    value={draftWorkflowDate}
+                    onChange={(event) => {
+                      setDraftWorkflowDate(event.target.value);
+                      setDraftWorkflowSaved(false);
+                    }}
+                  />
+                </label>
+                <button type="button" className="save-status-btn" onClick={() => saveDraftWorkflow(selected)}>
+                  Save Status
+                </button>
+                {draftWorkflowSaved ? <p className="saved-status-note">Saved ✓ Refresh-safe locally.</p> : null}
+              </div>
+            ) : null}
 
             <div className="card-actions">
               <button className="secondary" type="button" onClick={() => focusJob(job)}>Details</button>
@@ -2909,6 +3098,11 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
+
 
 
 
