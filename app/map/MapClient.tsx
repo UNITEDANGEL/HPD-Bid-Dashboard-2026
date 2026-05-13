@@ -1013,7 +1013,7 @@ function localDatetimeValue(date = new Date()) {
         status: "No Access Complete",
         NoAccessSecondAttemptAt: iso,
         noAccessSecondAttemptAt: iso,
-        ArchivedFromMap: false,
+        ArchivedFromMap: true,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
       };
@@ -1028,7 +1028,7 @@ function localDatetimeValue(date = new Date()) {
         fieldOutcome: "REFUSED_ACCESS",
         RefusalDate: iso,
         refusalDate: iso,
-        ArchivedFromMap: false,
+        ArchivedFromMap: true,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
       };
@@ -1043,7 +1043,7 @@ function localDatetimeValue(date = new Date()) {
         fieldOutcome: "COMPLETED_BY_OTHERS",
         VerifiedByOthersDate: iso,
         verifiedByOthersDate: iso,
-        ArchivedFromMap: false,
+        ArchivedFromMap: true,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
       };
@@ -1058,7 +1058,7 @@ function localDatetimeValue(date = new Date()) {
         fieldOutcome: "WORK_COMPLETED",
         ActualWorkCompletionDate: iso,
         actualWorkCompletionDate: iso,
-        ArchivedFromMap: false,
+        ArchivedFromMap: true,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
       };
@@ -3168,6 +3168,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
