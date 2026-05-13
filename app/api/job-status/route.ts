@@ -1,18 +1,12 @@
 ﻿import { NextResponse } from "next/server";
 import fs from "fs";
-import path from "path";
-import { dataPath, ensureDataDir, seedDataFileIfMissing } from "../../../lib/data-paths";
+import { dataPath, ensureDataDir } from "../../../lib/data-paths";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const STATUS_JSON_PATH = dataPath("job_status_overrides.json");
 const STATUS_CSV_PATH = dataPath("status_overrides_2026.csv");
-const MASTER_JSON_PATH = dataPath("COA_Fetcher_2026.json");
-const MASTER_CSV_PATH = dataPath("COA_Fetcher_2026.csv");
-
-seedDataFileIfMissing("COA_Fetcher_2026.json");
-seedDataFileIfMissing("COA_Fetcher_2026.csv");
 
 function readJsonFile<T>(filePath: string, fallback: T): T {
   try {
@@ -120,11 +114,7 @@ function writeOverrideCsvRows(rows: Record<string, any>[]) {
   fs.writeFileSync(STATUS_CSV_PATH, csv, "utf8");
 }
 
-function jobKey(job: any) {
-  return String(job.OMO || job.id || job.omo || "").trim();
-}
-
-function cleanPatchForOverride(patch: Record<string, any>) {
+function cleanPatch(patch: Record<string, any>) {
   const cleaned: Record<string, any> = {};
 
   for (const [key, value] of Object.entries(patch || {})) {
@@ -135,9 +125,25 @@ function cleanPatchForOverride(patch: Record<string, any>) {
   return cleaned;
 }
 
+function writeOverrideJson(key: string, patch: Record<string, any>) {
+  const statuses = readJsonFile<Record<string, any>>(STATUS_JSON_PATH, {});
+
+  if (patch.__clearWorkflow) {
+    delete statuses[key];
+  } else {
+    statuses[key] = {
+      ...cleanPatch(patch),
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  writeJsonFile(STATUS_JSON_PATH, statuses);
+
+  return statuses[key] || null;
+}
+
 function writeOverrideCsv(key: string, patch: Record<string, any>) {
   const rows = readOverrideCsvRows();
-  const rowId = key;
   const now = new Date().toISOString();
 
   const withoutExisting = rows.filter((row) => {
@@ -151,7 +157,7 @@ function writeOverrideCsv(key: string, patch: Record<string, any>) {
   }
 
   const row = {
-    RowID: rowId,
+    RowID: key,
     OMO: key,
     StatusOverride: patch.StatusOverride || patch.status || "",
     WorkflowStatus: patch.WorkflowStatus || "",
@@ -174,30 +180,6 @@ function writeOverrideCsv(key: string, patch: Record<string, any>) {
   return row;
 }
 
-function writeOverrideJson(key: string, patch: Record<string, any>) {
-  const statuses = readJsonFile<Record<string, any>>(STATUS_JSON_PATH, {});
-
-  if (patch.__clearWorkflow) {
-    delete statuses[key];
-  } else {
-    statuses[key] = {
-      ...cleanPatchForOverride(patch),
-      updatedAt: new Date().toISOString(),
-    };
-  }
-
-  writeJsonFile(STATUS_JSON_PATH, statuses);
-
-  return statuses[key] || null;
-}
-
-function findMasterJob(key: string) {
-  const jobs = readJsonFile<any[]>(MASTER_JSON_PATH, []);
-  if (!Array.isArray(jobs)) return null;
-
-  return jobs.find((job) => jobKey(job) === key) || null;
-}
-
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const key = String(url.searchParams.get("key") || "").trim();
@@ -216,12 +198,9 @@ export async function GET(request: Request) {
       key,
       json: statuses[key] || null,
       csv: csvRow || null,
-      masterJob: findMasterJob(key),
       files: {
         overrideCsv: STATUS_CSV_PATH,
         overrideJson: STATUS_JSON_PATH,
-        masterJson: MASTER_JSON_PATH,
-        masterCsv: MASTER_CSV_PATH,
       },
     });
   }
@@ -233,8 +212,6 @@ export async function GET(request: Request) {
     files: {
       overrideCsv: STATUS_CSV_PATH,
       overrideJson: STATUS_JSON_PATH,
-      masterJson: MASTER_JSON_PATH,
-      masterCsv: MASTER_CSV_PATH,
     },
   });
 }
@@ -249,20 +226,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Missing job key." }, { status: 400 });
     }
 
-    const savedJson = writeOverrideJson(key, patch);
+    const saved = writeOverrideJson(key, patch);
     const savedCsv = writeOverrideCsv(key, patch);
 
     return NextResponse.json({
       ok: true,
       key,
-      saved: savedJson,
+      saved,
       savedCsv,
-      masterJob: findMasterJob(key),
       updatedFiles: {
         overrideCsv: "status_overrides_2026.csv",
         overrideJson: "job_status_overrides.json",
       },
-      note: "Status was written to override CSV/JSON. Master COA_Fetcher files are not modified by this route.",
+      note: "Status saved to override CSV/JSON only. Browser localStorage is not the source of truth.",
     });
   } catch (error: any) {
     return NextResponse.json(
