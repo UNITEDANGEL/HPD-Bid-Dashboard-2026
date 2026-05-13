@@ -530,6 +530,7 @@ export default function MapClient() {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
   const [selected, setSelected] = useState<MappedJob | null>(null);
+  const selectedCardRef = useRef<HTMLDivElement | null>(null);
 const [selectedOnly, setSelectedOnly] = useState(false);
 const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
 const [descriptionOpen, setDescriptionOpen] = useState(false);
@@ -548,6 +549,14 @@ const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60
   const [fullMap, setFullMap] = useState(false);
 
   // Apply saved workflow statuses after jobs load from /api/jobs.
+  useEffect(() => {
+    if (selected) {
+      window.setTimeout(() => {
+        selectedCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
+  }, [selected]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -677,6 +686,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }, [jobs, mappedJobs]);
 
   useEffect(() => {
+    if (selected) {
+      window.setTimeout(() => {
+        selectedCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
+  }, [selected]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function loadJobs() {
@@ -758,6 +775,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }, []);
 
   useEffect(() => {
+    if (selected) {
+      window.setTimeout(() => {
+        selectedCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
+  }, [selected]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function initMap() {
@@ -805,6 +830,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (selected) {
+      window.setTimeout(() => {
+        selectedCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 80);
+    }
+  }, [selected]);
 
   useEffect(() => {
     async function drawMarkers() {
@@ -3143,6 +3176,9 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
 
 
 
