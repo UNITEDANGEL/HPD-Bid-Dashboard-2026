@@ -588,7 +588,7 @@ function writeWorkflowOverrides(overrides: Record<string, any>) {
 }
 
 function saveWorkflowOverride(job: JobRecord, patch: Record<string, any>) {
-  const key = jobKey(job);
+    const key = jobKey(job);
   if (!key) return;
 
   const overrides = readWorkflowOverrides();
@@ -996,8 +996,7 @@ function localDatetimeValue(date = new Date()) {
         noAccessFirstAttemptAt: iso,
         SecondAttemptAvailableAt: available.toISOString(),
         secondAttemptAvailableAt: available.toISOString(),
-        ArchivedFromMap: true,
-        archivedFromMap: true,
+        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
       };
@@ -1014,8 +1013,7 @@ function localDatetimeValue(date = new Date()) {
         status: "No Access Complete",
         NoAccessSecondAttemptAt: iso,
         noAccessSecondAttemptAt: iso,
-        ArchivedFromMap: true,
-        archivedFromMap: true,
+        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
       };
@@ -1030,8 +1028,7 @@ function localDatetimeValue(date = new Date()) {
         fieldOutcome: "REFUSED_ACCESS",
         RefusalDate: iso,
         refusalDate: iso,
-        ArchivedFromMap: true,
-        archivedFromMap: true,
+        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
       };
@@ -1046,8 +1043,7 @@ function localDatetimeValue(date = new Date()) {
         fieldOutcome: "COMPLETED_BY_OTHERS",
         VerifiedByOthersDate: iso,
         verifiedByOthersDate: iso,
-        ArchivedFromMap: true,
-        archivedFromMap: true,
+        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
       };
@@ -1062,13 +1058,11 @@ function localDatetimeValue(date = new Date()) {
         fieldOutcome: "WORK_COMPLETED",
         ActualWorkCompletionDate: iso,
         actualWorkCompletionDate: iso,
-        ArchivedFromMap: true,
-        archivedFromMap: true,
+        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
       };
     }
-
     const key = jobKey(job);
 
     if (key) {
@@ -1206,7 +1200,7 @@ function focusJob(job: MappedJob) {
   }
 
   function smoothFocusSelectedCard(job: JobRecord) {
-  const key = jobKey(job);
+    const key = jobKey(job);
 
   window.requestAnimationFrame(() => {
     const el = document.querySelector(`[data-job-card="${key}"]`);
@@ -3006,7 +3000,6 @@ function directionsUrl(job: JobRecord) {
                   ActualWorkCompletionDate: "",
                   actualWorkCompletionDate: "",
                   ArchivedFromMap: false,
-                  archivedFromMap: false,
                   OutcomeLockedAt: "",
                   outcomeLockedAt: "",
                 } as MappedJob) : current);
@@ -3118,7 +3111,6 @@ function directionsUrl(job: JobRecord) {
                   ActualWorkCompletionDate: "",
                   actualWorkCompletionDate: "",
                   ArchivedFromMap: false,
-                  archivedFromMap: false,
                   OutcomeLockedAt: "",
                   outcomeLockedAt: "",
                 } as MappedJob) : current);
@@ -3176,6 +3168,9 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
 
 
 
