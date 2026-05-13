@@ -1,14 +1,17 @@
 ﻿import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { dataPath, ensureDataDir, seedDataFileIfMissing } from "../../../lib/data-paths";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const STATUS_PATH = path.join(DATA_DIR, "job_status_overrides.json");
-const JSON_PATH = path.join(DATA_DIR, "COA_Fetcher_2026.json");
-const CSV_PATH = path.join(DATA_DIR, "COA_Fetcher_2026.csv");
+const STATUS_PATH = dataPath("job_status_overrides.json");
+const JSON_PATH = dataPath("COA_Fetcher_2026.json");
+const CSV_PATH = dataPath("COA_Fetcher_2026.csv");
+
+seedDataFileIfMissing("COA_Fetcher_2026.json");
+seedDataFileIfMissing("COA_Fetcher_2026.csv");
 
 const WORKFLOW_FIELDS = [
   "WorkflowStatus",
@@ -48,7 +51,7 @@ function readJsonFile<T>(filePath: string, fallback: T): T {
 }
 
 function writeJsonFile(filePath: string, value: any) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  ensureDataDir();
   fs.writeFileSync(filePath, JSON.stringify(value, null, 2), "utf8");
 }
 
@@ -237,4 +240,7 @@ export async function POST(request: Request) {
     );
   }
 }
+
+
+
 

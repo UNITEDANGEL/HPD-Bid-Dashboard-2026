@@ -2,6 +2,7 @@
 import fs from "fs";
 import path from "path";
 import Papa from "papaparse";
+import { dataPath, seedDataFileIfMissing } from "../../../lib/data-paths";
 
 export const dynamic = "force-dynamic";
 
@@ -155,7 +156,7 @@ function parseStatusOverrides() {
 }
 
 function parseWorkflowOverrides() {
-  const overridePath = path.join(process.cwd(), "data", "job_status_overrides.json");
+  const overridePath = dataPath("job_status_overrides.json");
 
   if (!fs.existsSync(overridePath)) return new Map<string, Record<string, any>>();
 
@@ -269,8 +270,8 @@ function loadJson(filePath: string) {
 }
 
 export async function GET() {
-  const jsonPath = path.join(process.cwd(), "data", "COA_Fetcher_2026.json");
-  const csvPath = path.join(process.cwd(), "data", "COA_Fetcher_2026.csv");
+  const jsonPath = seedDataFileIfMissing("COA_Fetcher_2026.json");
+  const csvPath = seedDataFileIfMissing("COA_Fetcher_2026.csv");
 
   if (!fs.existsSync(jsonPath) && !fs.existsSync(csvPath)) {
     return NextResponse.json({
@@ -290,6 +291,9 @@ export async function GET() {
     updatedAt: new Date().toISOString(),
   });
 }
+
+
+
 
 
 
