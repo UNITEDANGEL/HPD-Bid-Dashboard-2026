@@ -507,15 +507,7 @@ function workflowViewBucket(job: JobRecord) {
     return info?.ready ? "ready2" : "waiting72";
   }
 
-  if (
-    archived ||
-    CLOSED_WORKFLOW_STATUSES.has(status) ||
-    status === "REFUSED_ACCESS" ||
-    status === "COMPLETED_BY_OTHERS" ||
-    status === "WORK_COMPLETED" ||
-    status === "PARTIAL_WORK_COMPLETED" ||
-    status === "NO_ACCESS_COMPLETE"
-  ) {
+  if (archived) {
     return "archived";
   }
 
@@ -549,6 +541,7 @@ const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<"active" | "waiting72" | "ready2" | "archived" | "all">("active");
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
+const [actionNotice, setActionNotice] = useState("");
   const [mapReady, setMapReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -556,6 +549,14 @@ const [hideCompleted, setHideCompleted] = useState(false);
 
 const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60" | "od61_90" | "od90plus">("all");
   const [fullMap, setFullMap] = useState(false);
+
+  // MAP_VIEW_QUERY_SUPPORT
+  useEffect(() => {
+    const view = new URLSearchParams(window.location.search).get("view");
+    if (view === "archived" || view === "active" || view === "waiting72" || view === "ready2" || view === "all") {
+      setWorkflowViewFilter(view);
+    }
+  }, []);
 
   // Apply saved workflow statuses after jobs load from /api/jobs.
   useEffect(() => {
@@ -956,7 +957,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     })
     .catch(() => alert("Failed to update status"));
 }
-
+  function showActionNotice(text: string) {
+    setActionNotice(text);
+    window.setTimeout(() => setActionNotice(""), 3600);
+  }
   function sendJobToArchive(job: MappedJob) {
     const key = jobKey(job);
     if (!key) return;
@@ -971,6 +975,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     workflowServerSave(key, patch)
       .then(() => {
         setDraftWorkflowSaved(true);
+        setWorkflowViewFilter("archived");
+        showActionNotice("Archived ✓ Moved to Archived view.");
         setSelected((current) =>
           current && jobKey(current) === key
             ? ({ ...current, ...patch } as MappedJob)
@@ -1113,7 +1119,12 @@ function localDatetimeValue(date = new Date()) {
     if (key) {
       workflowStorageSave(key, patch);
       workflowServerSave(key, patch)
-        .then(() => setDraftWorkflowSaved(true))
+        .then(() => {
+          setDraftWorkflowSaved(true);
+        setWorkflowViewFilter("archived");
+        showActionNotice("Archived ✓ Moved to Archived view.");
+          showActionNotice("Saved ✓ Status synced to CSV + Google Drive.");
+        })
         .catch((error) => {
           console.error(error);
           alert("Saved on this device, but server save failed.");
@@ -1205,15 +1216,7 @@ function workflowViewBucket(job: JobRecord) {
     return info?.ready ? "ready2" : "waiting72";
   }
 
-  if (
-    archived ||
-    CLOSED_WORKFLOW_STATUSES.has(status) ||
-    status === "REFUSED_ACCESS" ||
-    status === "COMPLETED_BY_OTHERS" ||
-    status === "WORK_COMPLETED" ||
-    status === "PARTIAL_WORK_COMPLETED" ||
-    status === "NO_ACCESS_COMPLETE"
-  ) {
+  if (archived) {
     return "archived";
   }
 
@@ -2899,6 +2902,26 @@ function directionsUrl(job: JobRecord) {
           .no-access-ready strong {
             color: #baffd8;
           }
+          .action-notice {
+            position: fixed;
+            z-index: 1400;
+            left: 50%;
+            top: 138px;
+            transform: translateX(-50%);
+            max-width: calc(100vw - 24px);
+            padding: 11px 16px;
+            border-radius: 999px;
+            border: 1px solid rgba(83, 230, 156, 0.42);
+            background: linear-gradient(135deg, rgba(17, 31, 52, 0.96), rgba(16, 74, 64, 0.94));
+            color: #dfffee;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 0.01em;
+            box-shadow:
+              0 0 0 3px rgba(83, 230, 156, 0.13),
+              0 0 34px rgba(83, 230, 156, 0.28),
+              0 14px 38px rgba(0,0,0,0.44);
+          }
           /* WORKFLOW_FILTER_CSS_OK */
           .workflow-filter-bar {
             position: fixed;
@@ -3055,6 +3078,7 @@ function directionsUrl(job: JobRecord) {
             All
           </button>
         </div>
+        {actionNotice ? <div className="action-notice">{actionNotice}</div> : null}
 
         {selected ? (
           <div className={`selected-card job-status-card ${JobStatus.statusCardClass(selected)}`}>
@@ -3339,6 +3363,9 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
 
 
 
