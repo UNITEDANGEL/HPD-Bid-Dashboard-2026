@@ -119,6 +119,27 @@ function normalizeJob(row: RawJob, index: number) {
 
     status: get("StatusOverride", "Status Override") || get("ITBMatchStatus", "ITB Match Status") || get("COAParseStatus", "COA Parse Status") || "Loaded",
     StatusOverride: get("StatusOverride", "Status Override"),
+    WorkflowStatus: get("WorkflowStatus", "workflowStatus"),
+    workflowStatus: get("workflowStatus", "WorkflowStatus"),
+    FieldOutcome: get("FieldOutcome", "fieldOutcome"),
+    fieldOutcome: get("fieldOutcome", "FieldOutcome"),
+    RefusalDate: get("RefusalDate", "refusalDate"),
+    refusalDate: get("refusalDate", "RefusalDate"),
+    NoAccessFirstAttemptAt: get("NoAccessFirstAttemptAt", "noAccessFirstAttemptAt"),
+    noAccessFirstAttemptAt: get("noAccessFirstAttemptAt", "NoAccessFirstAttemptAt"),
+    SecondAttemptAvailableAt: get("SecondAttemptAvailableAt", "secondAttemptAvailableAt"),
+    secondAttemptAvailableAt: get("secondAttemptAvailableAt", "SecondAttemptAvailableAt"),
+    NoAccessSecondAttemptAt: get("NoAccessSecondAttemptAt", "noAccessSecondAttemptAt"),
+    noAccessSecondAttemptAt: get("noAccessSecondAttemptAt", "NoAccessSecondAttemptAt"),
+    VerifiedByOthersDate: get("VerifiedByOthersDate", "verifiedByOthersDate"),
+    verifiedByOthersDate: get("verifiedByOthersDate", "VerifiedByOthersDate"),
+    ActualWorkStartDate: get("ActualWorkStartDate", "actualWorkStartDate"),
+    actualWorkStartDate: get("actualWorkStartDate", "ActualWorkStartDate"),
+    ActualWorkCompletionDate: get("ActualWorkCompletionDate", "actualWorkCompletionDate"),
+    actualWorkCompletionDate: get("actualWorkCompletionDate", "ActualWorkCompletionDate"),
+    WorkStartDateOverride: get("WorkStartDateOverride"),
+    WorkCompletionDateOverride: get("WorkCompletionDateOverride"),
+    ArchivedFromMap: get("ArchivedFromMap", "archivedFromMap") === "true",
 
     borough: extractBorough(description),
     trade: extractTrade(description),
@@ -331,6 +352,8 @@ export async function GET() {
     updatedAt: new Date().toISOString(),
   });
 }
+
+
 
 
 
