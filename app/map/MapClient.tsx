@@ -270,13 +270,10 @@ function maturityPriorityClass(job: JobRecord) {
 }
 
 function maturityMapLabel(job: JobRecord) {
-  const workflow = workflowStatus(job);
+  const second = workflowSecondAttemptInfo(job);
 
-  if (workflow === "NO_ACCESS_1_WAITING_72H") {
-    const second = workflowSecondAttemptInfo(job);
-    if (second?.ready) return "REVISIT";
-    if (second?.hoursLeft !== undefined) return `${second.hoursLeft}h`;
-    return "72h";
+  if (second) {
+    return second.ready ? "REVISIT" : `${second.hoursLeft}h`;
   }
 
   const info = maturityInfo(job);
@@ -284,12 +281,22 @@ function maturityMapLabel(job: JobRecord) {
   if (info.daysLeft === null) return "?";
 
   if (info.daysLeft < 0) {
-    return `${Math.abs(info.daysLeft)}`;
+    return `${Math.abs(info.daysLeft)}d`;
   }
 
-  return `${info.daysLeft}`;
+  return `${info.daysLeft}d`;
 }
 
+
+function jobCounterLabel(job: JobRecord) {
+  const second = workflowSecondAttemptInfo(job);
+
+  if (second) {
+    return second.ready ? "REVISIT" : second.label;
+  }
+
+  return maturityInfo(job).label;
+}
 function overdueBucket(job: JobRecord) {
   const info = maturityInfo(job);
 
@@ -501,6 +508,11 @@ const CLOSED_WORKFLOW_STATUSES = new Set([
 function workflowViewBucket(job: JobRecord) {
   const status = workflowStatus(job);
   const archived = Boolean((job as any).ArchivedFromMap || (job as any).archivedFromMap);
+
+  const secondAttempt = workflowSecondAttemptInfo(job);
+  if (secondAttempt) {
+    return secondAttempt.ready ? "ready2" : "waiting72";
+  }
 
   if (status === "NO_ACCESS_1_WAITING_72H") {
     const info = workflowSecondAttemptInfo(job);
@@ -925,7 +937,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             <strong>${jobKey(job, index)}</strong><br/>
             ${displayAddress(job)}<br/>
             ${job.borough || ""} ${job.trade ? "· " + job.trade : ""}<br/>
-            ${JobStatus.statusLabel(job)} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Counter Start: ${maturityInfo(job).maturity}<br/>Counter: ${maturityInfo(job).label}
+            ${JobStatus.statusLabel(job)} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Counter Start: ${maturityInfo(job).maturity}<br/>Counter: ${jobCounterLabel(job)}
           </div>
         `);
 
@@ -1220,6 +1232,11 @@ function secondAttemptInfo(job: JobRecord) {
 function workflowViewBucket(job: JobRecord) {
   const status = workflowStatus(job);
   const archived = Boolean((job as any).ArchivedFromMap || (job as any).archivedFromMap);
+
+  const secondAttempt = workflowSecondAttemptInfo(job);
+  if (secondAttempt) {
+    return secondAttempt.ready ? "ready2" : "waiting72";
+  }
 
   if (status === "NO_ACCESS_1_WAITING_72H") {
     const info = workflowSecondAttemptInfo(job);
@@ -3399,7 +3416,7 @@ function directionsUrl(job: JobRecord) {
               </div>
               <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
                 <span className={`status ${statusClass(selected.status)}`}>{JobStatus.statusLabel(selected)}</span>
-                <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{maturityInfo(selected).label}</span>
+                <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{jobCounterLabel(selected)}</span>
               </div>
             </div>
 
@@ -3409,11 +3426,11 @@ function directionsUrl(job: JobRecord) {
               <div className="detail"><span>Work Start Date</span><strong>{selected.WorkStartDate || selected.workStartDate || "Not listed"}</strong></div>
               <div className="detail"><span>Work Completion Date</span><strong>{selected.WorkCompletionDate || selected.workCompletionDate || "Not listed"}</strong></div>
               <div className="detail"><span>Counter Start Date</span><strong>{maturityInfo(selected).maturity}</strong></div>
-              <div className="detail"><span>Maturity Counter</span><strong>{maturityInfo(selected).label}</strong></div>
+              <div className="detail"><span>Counter</span><strong>{jobCounterLabel(selected)}</strong></div>
               {workflowLabel(selected) ? (
                 <div className="detail"><span>Field Status</span><strong>{workflowLabel(selected)}</strong></div>
               ) : null}
-              {workflowStatus(selected) === "NO_ACCESS_1_WAITING_72H" && workflowSecondAttemptInfo(selected) ? (
+              {workflowSecondAttemptInfo(selected) ? (
                 <div className={`detail no-access-timer-card ${workflowSecondAttemptInfo(selected)?.ready ? "no-access-ready" : ""}`}>
                   <span>72h No Access Counter</span>
                   <strong>
@@ -3560,7 +3577,7 @@ function directionsUrl(job: JobRecord) {
                 </div>
                 <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
                   <span className={`status ${statusClass(job.status)}`}>{JobStatus.statusLabel(job)}</span>
-                  <span className={`maturity-pill ${maturityPriorityClass(job)}`}>{maturityInfo(job).label}</span>
+                  <span className={`maturity-pill ${maturityPriorityClass(job)}`}>{jobCounterLabel(job)}</span>
                 </div>
               </div>
 
@@ -3672,6 +3689,8 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
 
 
 
