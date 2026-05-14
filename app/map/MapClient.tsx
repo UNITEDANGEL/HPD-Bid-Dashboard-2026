@@ -2745,6 +2745,115 @@ function directionsUrl(job: JobRecord) {
           main.full-map .job-drawer {
             display: none !important;
           }
+          /* STATUS_GLOW_UPGRADE_2026 */
+          @keyframes statusGlowPulse {
+            0% {
+              box-shadow:
+                0 0 0 1px rgba(255,255,255,0.10),
+                0 0 18px rgba(255,255,255,0.10),
+                0 14px 36px rgba(0,0,0,0.34);
+            }
+            50% {
+              box-shadow:
+                0 0 0 5px var(--status-ring-soft),
+                0 0 34px var(--status-glow),
+                0 0 70px var(--status-glow-wide),
+                0 18px 46px rgba(0,0,0,0.44);
+            }
+            100% {
+              box-shadow:
+                0 0 0 1px rgba(255,255,255,0.10),
+                0 0 18px rgba(255,255,255,0.10),
+                0 14px 36px rgba(0,0,0,0.34);
+            }
+          }
+
+          .job-status-card {
+            --status-glow: rgba(255, 209, 102, 0.45);
+            --status-glow-wide: rgba(255, 209, 102, 0.20);
+            --status-ring-soft: rgba(255, 209, 102, 0.22);
+          }
+
+          .job-status-card.status-card-completed,
+          .job-status-card.status-card-refused,
+          .job-status-card.status-card-noaccess,
+          .job-status-card.status-card-otherdone {
+            animation: statusGlowPulse 4.8s ease-in-out infinite;
+            box-shadow:
+              0 0 0 4px var(--status-ring-soft),
+              0 0 34px var(--status-glow),
+              0 0 78px var(--status-glow-wide),
+              0 18px 46px rgba(0,0,0,0.42) !important;
+          }
+
+          .job-status-card.status-card-completed {
+            --status-glow: rgba(83, 230, 156, 0.75);
+            --status-glow-wide: rgba(83, 230, 156, 0.28);
+            --status-ring-soft: rgba(83, 230, 156, 0.28);
+          }
+
+          .job-status-card.status-card-refused {
+            --status-glow: rgba(255, 77, 95, 0.80);
+            --status-glow-wide: rgba(255, 77, 95, 0.30);
+            --status-ring-soft: rgba(255, 77, 95, 0.30);
+          }
+
+          .job-status-card.status-card-noaccess {
+            --status-glow: rgba(71, 163, 255, 0.82);
+            --status-glow-wide: rgba(71, 163, 255, 0.32);
+            --status-ring-soft: rgba(71, 163, 255, 0.32);
+          }
+
+          .job-status-card.status-card-otherdone {
+            --status-glow: rgba(184, 117, 255, 0.78);
+            --status-glow-wide: rgba(184, 117, 255, 0.30);
+            --status-ring-soft: rgba(184, 117, 255, 0.30);
+          }
+
+          .maturity-marker-bubble.status-marker-completed,
+          .maturity-marker-bubble.status-marker-refused,
+          .maturity-marker-bubble.status-marker-noaccess1,
+          .maturity-marker-bubble.status-marker-noaccess2,
+          .maturity-marker-bubble.status-marker-otherdone {
+            animation: statusGlowPulse 5.2s ease-in-out infinite;
+          }
+          .no-access-timer-card {
+            grid-column: 1 / -1;
+            border: 1px solid rgba(71, 163, 255, 0.36) !important;
+            background:
+              radial-gradient(circle at top left, rgba(71,163,255,0.28), transparent 42%),
+              rgba(71, 163, 255, 0.10) !important;
+            box-shadow:
+              0 0 0 3px rgba(71,163,255,0.14),
+              0 0 32px rgba(71,163,255,0.24) !important;
+          }
+
+          .no-access-timer-card strong {
+            color: #d6ebff;
+            font-size: 15px;
+            letter-spacing: 0.02em;
+          }
+
+          .no-access-timer-card small {
+            display: block;
+            margin-top: 6px;
+            color: rgba(214, 235, 255, 0.82);
+            line-height: 1.35;
+          }
+
+          .no-access-ready {
+            border-color: rgba(83, 230, 156, 0.50) !important;
+            background:
+              radial-gradient(circle at top left, rgba(83,230,156,0.30), transparent 42%),
+              rgba(83, 230, 156, 0.11) !important;
+            box-shadow:
+              0 0 0 3px rgba(83,230,156,0.18),
+              0 0 38px rgba(83,230,156,0.30) !important;
+          }
+
+          .no-access-ready strong {
+            color: #baffd8;
+          }
           /* WORKFLOW_FILTER_CSS_OK */
           .workflow-filter-bar {
             position: fixed;
@@ -2780,7 +2889,7 @@ function directionsUrl(job: JobRecord) {
             border-color: transparent;
           }
         `}
-      </style>
+        </style>
 
       <header className="map-top">
         <div className="map-title-row">
@@ -2925,6 +3034,21 @@ function directionsUrl(job: JobRecord) {
               <div className="detail"><span>Maturity Counter</span><strong>{maturityInfo(selected).label}</strong></div>
               {workflowLabel(selected) ? (
                 <div className="detail"><span>Field Status</span><strong>{workflowLabel(selected)}</strong></div>
+              ) : null}
+              {workflowStatus(selected) === "NO_ACCESS_1_WAITING_72H" && workflowSecondAttemptInfo(selected) ? (
+                <div className={`detail no-access-timer-card ${workflowSecondAttemptInfo(selected)?.ready ? "no-access-ready" : ""}`}>
+                  <span>72h No Access Counter</span>
+                  <strong>
+                    {workflowSecondAttemptInfo(selected)?.ready
+                      ? "READY FOR 2ND ATTEMPT"
+                      : workflowSecondAttemptInfo(selected)?.label}
+                  </strong>
+                  <small>
+                    1st Attempt: {displayWorkflowDate(selected.NoAccessFirstAttemptAt || selected.noAccessFirstAttemptAt)}
+                    {" · "}
+                    Maturity: {displayWorkflowDate(selected.SecondAttemptAvailableAt || selected.secondAttemptAvailableAt)}
+                  </small>
+                </div>
               ) : null}
               {selected.RefusalDate || selected.refusalDate ? (
                 <div className="detail"><span>Refused Access Date</span><strong>{displayWorkflowDate(selected.RefusalDate || selected.refusalDate)}</strong></div>
@@ -3168,6 +3292,11 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
+
 
 
 
