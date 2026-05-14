@@ -258,6 +258,7 @@ function loadJson(filePath: string) {
   const raw = fs.readFileSync(filePath, "utf8");
   const parsed = JSON.parse(raw);
   const rows = Array.isArray(parsed) ? parsed : parsed.jobs || [];
+  const statusOverrides = parseStatusOverrides();
   const workflowOverrides = parseWorkflowOverrides();
 
   return rows
@@ -267,7 +268,44 @@ function loadJson(filePath: string) {
       /\/26|2026/.test(text(row.WorkStartDate)) ||
       /\/26|2026/.test(text(row.WorkCompletionDate))
     )
-    .map((row: any, index: number) => normalizeJob(applyWorkflowOverride(row, workflowOverrides), index));
+    .map((row: any, index: number) => {
+      const omo = text(row.OMO || row.id || row.omo);
+      const override = statusOverrides.get(omo);
+
+      if (override) {
+        if (override.StatusOverride) {
+          row.StatusOverride = override.StatusOverride;
+          row.status = override.StatusOverride;
+          row.ITBMatchStatus = override.StatusOverride;
+        }
+
+        if (override.WorkflowStatus) row.WorkflowStatus = override.WorkflowStatus;
+        if (override.FieldOutcome) row.FieldOutcome = override.FieldOutcome;
+        if (override.RefusalDate) row.RefusalDate = override.RefusalDate;
+        if (override.NoAccessFirstAttemptAt) row.NoAccessFirstAttemptAt = override.NoAccessFirstAttemptAt;
+        if (override.SecondAttemptAvailableAt) row.SecondAttemptAvailableAt = override.SecondAttemptAvailableAt;
+        if (override.NoAccessSecondAttemptAt) row.NoAccessSecondAttemptAt = override.NoAccessSecondAttemptAt;
+        if (override.VerifiedByOthersDate) row.VerifiedByOthersDate = override.VerifiedByOthersDate;
+        if (override.ActualWorkStartDate) row.ActualWorkStartDate = override.ActualWorkStartDate;
+        if (override.ActualWorkCompletionDate) row.ActualWorkCompletionDate = override.ActualWorkCompletionDate;
+
+        if (override.ArchivedFromMap) {
+          row.ArchivedFromMap = override.ArchivedFromMap === "true";
+        }
+
+        if (override.WorkStartDateOverride) {
+          row.WorkStartDateOverride = override.WorkStartDateOverride;
+          row.WorkStartDate = override.WorkStartDateOverride;
+        }
+
+        if (override.WorkCompletionDateOverride) {
+          row.WorkCompletionDateOverride = override.WorkCompletionDateOverride;
+          row.WorkCompletionDate = override.WorkCompletionDateOverride;
+        }
+      }
+
+      return normalizeJob(applyWorkflowOverride(row, workflowOverrides), index);
+    });
 }
 
 export async function GET() {
@@ -293,6 +331,7 @@ export async function GET() {
     updatedAt: new Date().toISOString(),
   });
 }
+
 
 
 
