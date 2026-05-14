@@ -274,7 +274,7 @@ function maturityMapLabel(job: JobRecord) {
 
   if (workflow === "NO_ACCESS_1_WAITING_72H") {
     const second = workflowSecondAttemptInfo(job);
-    if (second?.ready) return "2ND";
+    if (second?.ready) return "REVISIT";
     if (second?.hoursLeft !== undefined) return `${second.hoursLeft}h`;
     return "72h";
   }
@@ -520,7 +520,7 @@ function shouldShowForWorkflowView(job: JobRecord, view: "active" | "waiting72" 
 }
 
 function shouldShowOnActiveMap(job: JobRecord) {
-  return workflowViewBucket(job) === "active" || workflowViewBucket(job) === "ready2";
+  return workflowViewBucket(job) === "active" || workflowViewBucket(job) === "waiting72" || workflowViewBucket(job) === "ready2";
 }
 
 export default function MapClient() {
@@ -539,6 +539,7 @@ const [draftWorkflowStatus, setDraftWorkflowStatus] = useState("");
 const [draftWorkflowDate, setDraftWorkflowDate] = useState("");
 const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<"active" | "waiting72" | "ready2" | "archived" | "all">("active");
+const [countdownTick, setCountdownTick] = useState(0);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
 const [actionNotice, setActionNotice] = useState("");
@@ -550,6 +551,15 @@ const [hideCompleted, setHideCompleted] = useState(false);
 const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60" | "od61_90" | "od90plus">("all");
   const [fullMap, setFullMap] = useState(false);
 
+
+  // LIVE_72H_COUNTDOWN_TICK
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setCountdownTick((value) => value + 1);
+    }, 60000);
+
+    return () => window.clearInterval(timer);
+  }, []);
   // MAP_VIEW_QUERY_SUPPORT
   useEffect(() => {
     const view = new URLSearchParams(window.location.search).get("view");
@@ -879,7 +889,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const marker = L.marker([lat, lng], {
           icon: L.divIcon({
             className: "maturity-map-marker",
-            html: `<div class="maturity-marker-bubble maturity-${info.priority} ${JobStatus.statusMarkerClass(job)}" style="border-color:${markerColor}">
+            html: `<div class="maturity-marker-bubble maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${markerColor}">
                     <strong>${maturityMapLabel(job)}</strong>
                   </div>`,
             iconSize: [78, 78],
@@ -936,7 +946,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     drawMarkers();
-  }, [mapReady, filteredJobs]);
+  }, [mapReady, filteredJobs, countdownTick]);
 
   function updateStatus(job: any, newStatus: string) {
   if (!job?.OMO) return;
@@ -975,6 +985,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     workflowServerSave(key, patch)
       .then(() => {
         setDraftWorkflowSaved(true);
+        setWorkflowViewFilter("archived");
+        showActionNotice("Archived ✓ Moved to Archived view.");
         setWorkflowViewFilter("archived");
         showActionNotice("Archived ✓ Moved to Archived view.");
         setSelected((current) =>
@@ -1121,8 +1133,6 @@ function localDatetimeValue(date = new Date()) {
       workflowServerSave(key, patch)
         .then(() => {
           setDraftWorkflowSaved(true);
-        setWorkflowViewFilter("archived");
-        showActionNotice("Archived ✓ Moved to Archived view.");
           showActionNotice("Saved ✓ Status synced to CSV + Google Drive.");
         })
         .catch((error) => {
@@ -1229,7 +1239,7 @@ function shouldShowForWorkflowView(job: JobRecord, view: "active" | "waiting72" 
 }
 
 function shouldShowOnActiveMap(job: JobRecord) {
-  return workflowViewBucket(job) === "active" || workflowViewBucket(job) === "ready2";
+  return workflowViewBucket(job) === "active" || workflowViewBucket(job) === "waiting72" || workflowViewBucket(job) === "ready2";
 }
 
 function focusJob(job: MappedJob) {
@@ -3001,6 +3011,219 @@ function directionsUrl(job: JobRecord) {
           .maturity-marker-bubble.status-marker-none::before {
             display: none;
           }
+          /* LIVE_REVISIT_ALERT_2026 */
+          .maturity-marker-bubble.marker-ready-revisit {
+            min-width: 68px !important;
+            height: 42px !important;
+            border-color: #53e69c !important;
+            background: linear-gradient(135deg, rgba(83,230,156,0.96), rgba(255,209,102,0.92)) !important;
+            color: #04101f !important;
+            font-weight: 950 !important;
+            letter-spacing: -0.04em;
+            animation: revisitMarkerPulse 1.15s ease-in-out infinite !important;
+          }
+
+          .maturity-marker-bubble.marker-ready-revisit::before {
+            width: 104px !important;
+            height: 104px !important;
+            background: radial-gradient(circle, rgba(83,230,156,0.62), transparent 62%) !important;
+            box-shadow:
+              0 0 0 12px rgba(83,230,156,0.26),
+              0 0 48px rgba(83,230,156,0.96),
+              0 0 110px rgba(255,209,102,0.54) !important;
+            animation: revisitHaloPulse 1.15s ease-in-out infinite !important;
+          }
+
+          @keyframes revisitMarkerPulse {
+            0%, 100% {
+              transform: scale(1);
+              filter: brightness(1);
+            }
+            50% {
+              transform: scale(1.12);
+              filter: brightness(1.22);
+            }
+          }
+
+          @keyframes revisitHaloPulse {
+            0%, 100% {
+              transform: translate(-50%, -50%) scale(0.86);
+              opacity: 0.62;
+            }
+            50% {
+              transform: translate(-50%, -50%) scale(1.28);
+              opacity: 1;
+            }
+          }
+
+          .ready-revisit-alert {
+            position: fixed;
+            z-index: 1401;
+            left: 50%;
+            top: 184px;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: calc(100vw - 20px);
+            padding: 10px 12px;
+            border-radius: 18px;
+            border: 1px solid rgba(83, 230, 156, 0.52);
+            background:
+              radial-gradient(circle at top left, rgba(83,230,156,0.30), transparent 38%),
+              linear-gradient(135deg, rgba(8, 25, 38, 0.96), rgba(51, 45, 12, 0.94));
+            color: #eafff4;
+            box-shadow:
+              0 0 0 4px rgba(83,230,156,0.13),
+              0 0 38px rgba(83,230,156,0.30),
+              0 16px 44px rgba(0,0,0,0.50);
+            animation: readyAlertPulse 1.8s ease-in-out infinite;
+          }
+
+          .ready-revisit-alert strong {
+            color: #baffd8;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            white-space: nowrap;
+          }
+
+          .ready-revisit-alert span {
+            font-size: 12px;
+            font-weight: 750;
+            white-space: nowrap;
+          }
+
+          .ready-revisit-alert button {
+            border: 0;
+            border-radius: 999px;
+            background: #53e69c;
+            color: #04101f;
+            font-size: 12px;
+            font-weight: 900;
+            padding: 7px 10px;
+          }
+
+          @keyframes readyAlertPulse {
+            0%, 100% {
+              box-shadow:
+                0 0 0 3px rgba(83,230,156,0.12),
+                0 0 26px rgba(83,230,156,0.22),
+                0 16px 44px rgba(0,0,0,0.50);
+            }
+            50% {
+              box-shadow:
+                0 0 0 7px rgba(83,230,156,0.20),
+                0 0 48px rgba(83,230,156,0.42),
+                0 16px 44px rgba(0,0,0,0.50);
+            }
+          }
+
+          @media (max-width: 720px) {
+            .ready-revisit-alert {
+              top: 176px;
+              gap: 7px;
+              padding: 8px 9px;
+            }
+
+            .ready-revisit-alert span {
+              max-width: 155px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+          }
+          /* MOBILE_SPACE_UPGRADE_2026 */
+          .map-filter-row,
+          .status-filter-bar,
+          .workflow-filter-bar {
+            transform-origin: top center;
+          }
+
+          .map-shell.full-map-mode .workflow-filter-bar {
+            top: 54px !important;
+            padding: 6px !important;
+            gap: 5px !important;
+          }
+
+          .map-shell.full-map-mode .workflow-filter-bar button {
+            min-height: 28px !important;
+            padding: 5px 8px !important;
+            font-size: 10px !important;
+          }
+
+          .map-shell.full-map-mode .map-filter-row,
+          .map-shell.full-map-mode .status-filter-bar {
+            padding: 4px 6px !important;
+            gap: 5px !important;
+          }
+
+          .map-shell.full-map-mode .map-filter-row button,
+          .map-shell.full-map-mode .status-filter-bar button {
+            min-height: 28px !important;
+            padding: 4px 8px !important;
+            font-size: 10px !important;
+          }
+
+          .map-shell.full-map-mode .map-stage {
+            min-height: calc(100vh - 72px) !important;
+          }
+
+          .selected-focus-advanced {
+            width: min(620px, calc(100vw - 12px)) !important;
+          }
+
+          .selected-focus-advanced .selected-card {
+            max-height: calc(100vh - 118px);
+            overflow-y: auto;
+            padding: 14px !important;
+          }
+
+          .selected-focus-advanced .detail-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px !important;
+          }
+
+          .selected-focus-advanced .job-title {
+            font-size: 18px !important;
+          }
+
+          .selected-focus-advanced .job-address {
+            font-size: 12px !important;
+            line-height: 1.25 !important;
+          }
+
+          @media (max-width: 720px) {
+            .workflow-filter-bar {
+              top: 58px !important;
+              padding: 5px !important;
+            }
+
+            .workflow-filter-bar button {
+              min-height: 27px !important;
+              padding: 4px 7px !important;
+              font-size: 10px !important;
+            }
+
+            .selected-focus-advanced .selected-card {
+              max-height: calc(100vh - 104px);
+              padding: 12px !important;
+            }
+
+            .selected-focus-advanced .detail-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .selected-focus-advanced .detail {
+              padding: 8px !important;
+            }
+
+            .selected-focus-advanced .detail span {
+              font-size: 9px !important;
+            }
+
+            .selected-focus-advanced .detail strong {
+              font-size: 11px !important;
+            }
+          }
           /* WORKFLOW_FILTER_CSS_OK */
           .workflow-filter-bar {
             position: fixed;
@@ -3158,6 +3381,13 @@ function directionsUrl(job: JobRecord) {
           </button>
         </div>
         {actionNotice ? <div className="action-notice">{actionNotice}</div> : null}
+        {filteredJobs.filter((job) => workflowViewBucket(job) === "ready2").length > 0 ? (
+          <div className="ready-revisit-alert">
+            <strong>REVISIT READY</strong>
+            <span>{filteredJobs.filter((job) => workflowViewBucket(job) === "ready2").length} job(s) need 2nd attempt now.</span>
+            <button type="button" onClick={() => setWorkflowViewFilter("ready2")}>Show Ready</button>
+          </div>
+        ) : null}
 
         {selected ? (
           <div className={`selected-card job-status-card ${JobStatus.statusCardClass(selected)}`}>
@@ -3442,6 +3672,11 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
+
 
 
 
