@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import Papa from "papaparse";
 import { dataPath, seedDataFileIfMissing } from "../../../lib/data-paths";
+import { downloadStatusOverridesFromDriveIfAvailable } from "../../../lib/google-drive-status-store";
 
 export const dynamic = "force-dynamic";
 
@@ -270,6 +271,7 @@ function loadJson(filePath: string) {
 }
 
 export async function GET() {
+  await downloadStatusOverridesFromDriveIfAvailable();
   const jsonPath = seedDataFileIfMissing("COA_Fetcher_2026.json");
   const csvPath = seedDataFileIfMissing("COA_Fetcher_2026.csv");
 
@@ -291,6 +293,7 @@ export async function GET() {
     updatedAt: new Date().toISOString(),
   });
 }
+
 
 
 

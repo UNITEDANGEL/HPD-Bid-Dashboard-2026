@@ -1,6 +1,7 @@
 ﻿import { NextResponse } from "next/server";
 import fs from "fs";
 import { dataPath, ensureDataDir } from "../../../lib/data-paths";
+import { uploadStatusOverridesToDrive, downloadStatusOverridesFromDriveIfAvailable } from "../../../lib/google-drive-status-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -181,9 +182,9 @@ function writeOverrideCsv(key: string, patch: Record<string, any>) {
 }
 
 export async function GET(request: Request) {
+  await downloadStatusOverridesFromDriveIfAvailable();
   const url = new URL(request.url);
   const key = String(url.searchParams.get("key") || "").trim();
-
   const statuses = readJsonFile<Record<string, any>>(STATUS_JSON_PATH, {});
   const csvRows = readOverrideCsvRows();
 
@@ -228,6 +229,7 @@ export async function POST(request: Request) {
 
     const saved = writeOverrideJson(key, patch);
     const savedCsv = writeOverrideCsv(key, patch);
+    const driveSync = await uploadStatusOverridesToDrive();
 
     return NextResponse.json({
       ok: true,
@@ -247,3 +249,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+
