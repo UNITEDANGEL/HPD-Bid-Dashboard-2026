@@ -882,8 +882,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             html: `<div class="maturity-marker-bubble maturity-${info.priority} ${JobStatus.statusMarkerClass(job)}" style="border-color:${markerColor}">
                     <strong>${maturityMapLabel(job)}</strong>
                   </div>`,
-            iconSize: [46, 34],
-            iconAnchor: [23, 17],
+            iconSize: [78, 78],
+            iconAnchor: [39, 39],
             popupAnchor: [0, -18],
           }),
         });
@@ -2922,6 +2922,85 @@ function directionsUrl(job: JobRecord) {
               0 0 34px rgba(83, 230, 156, 0.28),
               0 14px 38px rgba(0,0,0,0.44);
           }
+          /* STRONG_MARKER_GLOW_2026 */
+          .maturity-map-marker {
+            overflow: visible !important;
+            pointer-events: auto;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble {
+            position: relative;
+            overflow: visible !important;
+            z-index: 2;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 72px;
+            height: 72px;
+            transform: translate(-50%, -50%);
+            border-radius: 999px;
+            background: radial-gradient(circle, var(--marker-glow-core), transparent 62%);
+            box-shadow:
+              0 0 0 8px var(--marker-ring),
+              0 0 34px var(--marker-glow),
+              0 0 76px var(--marker-glow-wide);
+            opacity: 0.95;
+            z-index: -1;
+            animation: markerHaloPulse 2.8s ease-in-out infinite;
+          }
+
+          @keyframes markerHaloPulse {
+            0% {
+              transform: translate(-50%, -50%) scale(0.82);
+              opacity: 0.58;
+            }
+            50% {
+              transform: translate(-50%, -50%) scale(1.18);
+              opacity: 1;
+            }
+            100% {
+              transform: translate(-50%, -50%) scale(0.82);
+              opacity: 0.58;
+            }
+          }
+
+          .maturity-marker-bubble.status-marker-completed {
+            --marker-glow-core: rgba(83, 230, 156, 0.42);
+            --marker-ring: rgba(83, 230, 156, 0.26);
+            --marker-glow: rgba(83, 230, 156, 0.86);
+            --marker-glow-wide: rgba(83, 230, 156, 0.34);
+          }
+
+          .maturity-marker-bubble.status-marker-refused {
+            --marker-glow-core: rgba(255, 77, 95, 0.44);
+            --marker-ring: rgba(255, 77, 95, 0.28);
+            --marker-glow: rgba(255, 77, 95, 0.90);
+            --marker-glow-wide: rgba(255, 77, 95, 0.36);
+          }
+
+          .maturity-marker-bubble.status-marker-noaccess1,
+          .maturity-marker-bubble.status-marker-noaccess2 {
+            --marker-glow-core: rgba(71, 163, 255, 0.46);
+            --marker-ring: rgba(71, 163, 255, 0.30);
+            --marker-glow: rgba(71, 163, 255, 0.92);
+            --marker-glow-wide: rgba(71, 163, 255, 0.38);
+          }
+
+          .maturity-marker-bubble.status-marker-otherdone {
+            --marker-glow-core: rgba(184, 117, 255, 0.44);
+            --marker-ring: rgba(184, 117, 255, 0.28);
+            --marker-glow: rgba(184, 117, 255, 0.88);
+            --marker-glow-wide: rgba(184, 117, 255, 0.36);
+          }
+
+          .maturity-marker-bubble.status-marker-pending::before,
+          .maturity-marker-bubble.status-marker-none::before {
+            display: none;
+          }
           /* WORKFLOW_FILTER_CSS_OK */
           .workflow-filter-bar {
             position: fixed;
@@ -3363,6 +3442,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
