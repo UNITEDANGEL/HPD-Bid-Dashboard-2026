@@ -957,6 +957,36 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     .catch(() => alert("Failed to update status"));
 }
 
+  function sendJobToArchive(job: MappedJob) {
+    const key = jobKey(job);
+    if (!key) return;
+
+    const patch = {
+      ArchivedFromMap: true,
+      archivedFromMap: true,
+      updatedAt: new Date().toISOString(),
+    };
+
+    workflowStorageSave(key, patch);
+    workflowServerSave(key, patch)
+      .then(() => {
+        setDraftWorkflowSaved(true);
+        setSelected((current) =>
+          current && jobKey(current) === key
+            ? ({ ...current, ...patch } as MappedJob)
+            : current
+        );
+        setJobs((current) =>
+          current.map((item) =>
+            jobKey(item) === key ? ({ ...item, ...patch } as MappedJob) : item
+          )
+        );
+      })
+      .catch((error) => {
+        console.error(error);
+        alert("Archive save failed. Check connection and try again.");
+      });
+  }
 function localDatetimeValue(date = new Date()) {
     const pad = (n: number) => String(n).padStart(2, "0");
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
@@ -1012,6 +1042,8 @@ function localDatetimeValue(date = new Date()) {
     }
 
     if (draftWorkflowStatus === "No Access - 2nd Attempt") {
+      const existingFirstAttempt = job.NoAccessFirstAttemptAt || job.noAccessFirstAttemptAt || "";
+      const existingSecondAvailable = job.SecondAttemptAvailableAt || job.secondAttemptAvailableAt || "";
       patch = {
         ...patch,
         WorkflowStatus: "NO_ACCESS_COMPLETE",
@@ -1020,9 +1052,13 @@ function localDatetimeValue(date = new Date()) {
         fieldOutcome: "NO_ACCESS_COMPLETE",
         StatusOverride: "No Access Complete",
         status: "No Access Complete",
+        NoAccessFirstAttemptAt: existingFirstAttempt,
+        noAccessFirstAttemptAt: existingFirstAttempt,
+        SecondAttemptAvailableAt: existingSecondAvailable,
+        secondAttemptAvailableAt: existingSecondAvailable,
         NoAccessSecondAttemptAt: iso,
         noAccessSecondAttemptAt: iso,
-        ArchivedFromMap: true,
+        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
       };
@@ -1037,7 +1073,7 @@ function localDatetimeValue(date = new Date()) {
         fieldOutcome: "REFUSED_ACCESS",
         RefusalDate: iso,
         refusalDate: iso,
-        ArchivedFromMap: true,
+        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
       };
@@ -1052,7 +1088,7 @@ function localDatetimeValue(date = new Date()) {
         fieldOutcome: "COMPLETED_BY_OTHERS",
         VerifiedByOthersDate: iso,
         verifiedByOthersDate: iso,
-        ArchivedFromMap: true,
+        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
       };
@@ -1067,7 +1103,7 @@ function localDatetimeValue(date = new Date()) {
         fieldOutcome: "WORK_COMPLETED",
         ActualWorkCompletionDate: iso,
         actualWorkCompletionDate: iso,
-        ArchivedFromMap: true,
+        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
       };
@@ -3165,6 +3201,7 @@ function directionsUrl(job: JobRecord) {
 
             <div className="card-actions">
               <button type="button" className="secondary" onClick={() => setDrawerOpen(true)}>Details</button>
+              <button type="button" className="secondary archive-btn" onClick={() => sendJobToArchive(selected)}>Send to Archive</button>
               <button type="button" onClick={() => alert("Affidavit generation is planned for Phase 4. Save field status first.")}>Affidavit</button>
               <button type="button" onClick={() => alert("Invoice generation is planned for Phase 5. Save field status first.")}>Invoice</button>
               <a target="_blank" rel="noreferrer" href={directionsUrl(selected)}>Directions</a>
@@ -3276,6 +3313,7 @@ function directionsUrl(job: JobRecord) {
 
             <div className="card-actions">
               <button className="secondary" type="button" onClick={() => focusJob(job)}>Details</button>
+              <button type="button" className="secondary archive-btn" onClick={() => sendJobToArchive(job)}>Send to Archive</button>
               <a className="secondary" href={`/invoice-generator?job=${encodeURIComponent(jobKey(job, index))}`}>Invoice</a>
               <a target="_blank" rel="noreferrer" href={directionsUrl(job)}>Directions</a>
             </div>
@@ -3301,6 +3339,10 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
 
 
 
