@@ -270,6 +270,15 @@ function maturityPriorityClass(job: JobRecord) {
 }
 
 function maturityMapLabel(job: JobRecord) {
+  const workflow = workflowStatus(job);
+
+  if (workflow === "NO_ACCESS_1_WAITING_72H") {
+    const second = workflowSecondAttemptInfo(job);
+    if (second?.ready) return "2ND";
+    if (second?.hoursLeft !== undefined) return `${second.hoursLeft}h`;
+    return "72h";
+  }
+
   const info = maturityInfo(job);
 
   if (info.daysLeft === null) return "?";
@@ -3150,7 +3159,7 @@ function directionsUrl(job: JobRecord) {
                 <button type="button" className="save-status-btn" onClick={() => saveDraftWorkflow(selected)}>
                   Save Status
                 </button>
-                {draftWorkflowSaved ? <p className="saved-status-note">Saved ✓ Refresh-safe locally.</p> : null}
+                {draftWorkflowSaved ? <p className="saved-status-note">Saved ✓ Synced to CSV + Google Drive.</p> : null}
               </div>
             ) : null}
 
@@ -3258,10 +3267,10 @@ function directionsUrl(job: JobRecord) {
                     }}
                   />
                 </label>
-                <button type="button" className="save-status-btn" onClick={() => saveDraftWorkflow(selected)}>
+                <button type="button" className="save-status-btn" onClick={() => saveDraftWorkflow(job)}>
                   Save Status
                 </button>
-                {draftWorkflowSaved ? <p className="saved-status-note">Saved ✓ Refresh-safe locally.</p> : null}
+                {draftWorkflowSaved ? <p className="saved-status-note">Saved ✓ Synced to CSV + Google Drive.</p> : null}
               </div>
             ) : null}
 
@@ -3292,6 +3301,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
