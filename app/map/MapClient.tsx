@@ -294,8 +294,8 @@ function jobCounterInfo(job: JobRecord) {
   if (second) {
     return {
       mode: "noAccess72",
-      label: second.ready ? "REVISIT" : `${second.hoursLeft}h`,
-      detail: second.ready ? "Ready for 2nd attempt" : `${second.hoursLeft}h until 2nd attempt`,
+      label: second.ready ? "REVISIT NOW" : `REVISIT IN ${second.hoursLeft}H`,
+      detail: second.ready ? "REVISIT NOW - Ready for 2nd attempt" : `REVISIT IN ${second.hoursLeft}H`,
       ready: second.ready,
     };
   }
@@ -505,7 +505,7 @@ function workflowSecondAttemptInfo(job: JobRecord) {
     available,
     ready: msLeft <= 0,
     hoursLeft,
-    label: msLeft <= 0 ? "Ready for 2nd attempt" : `${hoursLeft}h until 2nd attempt`,
+    label: msLeft <= 0 ? "REVISIT NOW" : `REVISIT IN ${hoursLeft}H`,
   };
 }
 
@@ -1243,7 +1243,7 @@ function secondAttemptInfo(job: JobRecord) {
     available,
     ready: msLeft <= 0,
     hoursLeft,
-    label: msLeft <= 0 ? "Ready for 2nd attempt" : `${hoursLeft}h until 2nd attempt`,
+    label: msLeft <= 0 ? "REVISIT NOW" : `REVISIT IN ${hoursLeft}H`,
   };
 }
 function workflowViewBucket(job: JobRecord) {
@@ -3452,8 +3452,7 @@ function directionsUrl(job: JobRecord) {
                   <span>72h No Access Counter</span>
                   <strong>
                     {workflowSecondAttemptInfo(selected)?.ready
-                      ? "READY FOR 2ND ATTEMPT"
-                      : workflowSecondAttemptInfo(selected)?.label}
+                      ? "REVISIT NOW - READY FOR 2ND ATTEMPT" : workflowSecondAttemptInfo(selected)?.label}
                   </strong>
                   <small>
                     1st Attempt: {displayWorkflowDate(selected.NoAccessFirstAttemptAt || selected.noAccessFirstAttemptAt)}
@@ -3706,6 +3705,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
