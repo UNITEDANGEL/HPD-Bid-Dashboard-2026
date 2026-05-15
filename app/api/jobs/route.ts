@@ -169,8 +169,28 @@ function parseStatusOverrides() {
 
     map.set(omo, {
       StatusOverride: text(row.StatusOverride),
+      status: text(row.StatusOverride),
+      WorkflowStatus: text(row.WorkflowStatus),
+      workflowStatus: text(row.WorkflowStatus),
+      FieldOutcome: text(row.FieldOutcome),
+      fieldOutcome: text(row.FieldOutcome),
+      RefusalDate: text(row.RefusalDate),
+      refusalDate: text(row.RefusalDate),
+      NoAccessFirstAttemptAt: text(row.NoAccessFirstAttemptAt),
+      noAccessFirstAttemptAt: text(row.NoAccessFirstAttemptAt),
+      SecondAttemptAvailableAt: text(row.SecondAttemptAvailableAt),
+      secondAttemptAvailableAt: text(row.SecondAttemptAvailableAt),
+      NoAccessSecondAttemptAt: text(row.NoAccessSecondAttemptAt),
+      noAccessSecondAttemptAt: text(row.NoAccessSecondAttemptAt),
+      VerifiedByOthersDate: text(row.VerifiedByOthersDate),
+      verifiedByOthersDate: text(row.VerifiedByOthersDate),
+      ActualWorkStartDate: text(row.ActualWorkStartDate),
+      actualWorkStartDate: text(row.ActualWorkStartDate),
+      ActualWorkCompletionDate: text(row.ActualWorkCompletionDate),
+      actualWorkCompletionDate: text(row.ActualWorkCompletionDate),
       WorkStartDateOverride: text(row.WorkStartDateOverride),
       WorkCompletionDateOverride: text(row.WorkCompletionDateOverride),
+      ArchivedFromMap: text(row.ArchivedFromMap),
     });
   });
 
@@ -352,6 +372,8 @@ export async function GET() {
     updatedAt: new Date().toISOString(),
   });
 }
+
+
 
 
 
