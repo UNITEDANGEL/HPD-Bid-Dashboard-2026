@@ -616,6 +616,10 @@ function workflowViewBucket(job: JobRecord) {
   const status = workflowStatus(job);
   const archived = Boolean((job as any).ArchivedFromMap || (job as any).archivedFromMap);
 
+  if (archived) {
+    return "archived";
+  }
+
   const secondAttempt = workflowSecondAttemptInfo(job);
   if (secondAttempt) {
     return secondAttempt.ready ? "ready2" : "waiting72";
@@ -626,20 +630,26 @@ function workflowViewBucket(job: JobRecord) {
     return info?.ready ? "ready2" : "waiting72";
   }
 
-  if (archived) {
-    return "archived";
+  if (
+    status === "NO_ACCESS_COMPLETE" ||
+    status === "REFUSED_ACCESS" ||
+    status === "COMPLETED_BY_OTHERS" ||
+    status === "WORK_COMPLETED" ||
+    status === "PARTIAL_WORK_COMPLETED"
+  ) {
+    return "final";
   }
 
   return "active";
 }
 
-function shouldShowForWorkflowView(job: JobRecord, view: "active" | "waiting72" | "ready2" | "archived" | "all") {
+function shouldShowForWorkflowView(job: JobRecord, view: "active" | "waiting72" | "ready2" | "final" | "archived" | "all") {
   if (view === "all") return true;
   return workflowViewBucket(job) === view;
 }
 
 function shouldShowOnActiveMap(job: JobRecord) {
-  return workflowViewBucket(job) === "active" || workflowViewBucket(job) === "waiting72" || workflowViewBucket(job) === "ready2";
+  return workflowViewBucket(job) === "active" || workflowViewBucket(job) === "waiting72" || workflowViewBucket(job) === "ready2" || workflowViewBucket(job) === "final";
 }
 
 export default function MapClient() {
@@ -657,7 +667,7 @@ const [descriptionOpen, setDescriptionOpen] = useState(false);
 const [draftWorkflowStatus, setDraftWorkflowStatus] = useState("");
 const [draftWorkflowDate, setDraftWorkflowDate] = useState("");
 const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
-const [workflowViewFilter, setWorkflowViewFilter] = useState<"active" | "waiting72" | "ready2" | "archived" | "all">("active");
+const [workflowViewFilter, setWorkflowViewFilter] = useState<"active" | "waiting72" | "ready2" | "final" | "archived" | "all">("active");
 const [countdownTick, setCountdownTick] = useState(0);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
@@ -682,7 +692,7 @@ const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60
   // MAP_VIEW_QUERY_SUPPORT
   useEffect(() => {
     const view = new URLSearchParams(window.location.search).get("view");
-    if (view === "archived" || view === "active" || view === "waiting72" || view === "ready2" || view === "all") {
+    if (view === "archived" || view === "active" || view === "waiting72" || view === "ready2" || view === "final" || view === "all") {
       setWorkflowViewFilter(view);
     }
   }, []);
@@ -1340,6 +1350,10 @@ function workflowViewBucket(job: JobRecord) {
   const status = workflowStatus(job);
   const archived = Boolean((job as any).ArchivedFromMap || (job as any).archivedFromMap);
 
+  if (archived) {
+    return "archived";
+  }
+
   const secondAttempt = workflowSecondAttemptInfo(job);
   if (secondAttempt) {
     return secondAttempt.ready ? "ready2" : "waiting72";
@@ -1350,20 +1364,26 @@ function workflowViewBucket(job: JobRecord) {
     return info?.ready ? "ready2" : "waiting72";
   }
 
-  if (archived) {
-    return "archived";
+  if (
+    status === "NO_ACCESS_COMPLETE" ||
+    status === "REFUSED_ACCESS" ||
+    status === "COMPLETED_BY_OTHERS" ||
+    status === "WORK_COMPLETED" ||
+    status === "PARTIAL_WORK_COMPLETED"
+  ) {
+    return "final";
   }
 
   return "active";
 }
 
-function shouldShowForWorkflowView(job: JobRecord, view: "active" | "waiting72" | "ready2" | "archived" | "all") {
+function shouldShowForWorkflowView(job: JobRecord, view: "active" | "waiting72" | "ready2" | "final" | "archived" | "all") {
   if (view === "all") return true;
   return workflowViewBucket(job) === view;
 }
 
 function shouldShowOnActiveMap(job: JobRecord) {
-  return workflowViewBucket(job) === "active" || workflowViewBucket(job) === "waiting72" || workflowViewBucket(job) === "ready2";
+  return workflowViewBucket(job) === "active" || workflowViewBucket(job) === "waiting72" || workflowViewBucket(job) === "ready2" || workflowViewBucket(job) === "final";
 }
 
 function focusJob(job: MappedJob) {
@@ -3743,6 +3763,9 @@ function directionsUrl(job: JobRecord) {
           <button type="button" className={workflowViewFilter === "ready2" ? "active" : ""} onClick={() => setWorkflowViewFilter("ready2")}>
             Ready 2nd
           </button>
+          <button type="button" className={workflowViewFilter === "final" ? "active" : ""} onClick={() => setWorkflowViewFilter("final")}>
+            Final Status
+          </button>
           <button type="button" className={workflowViewFilter === "archived" ? "active" : ""} onClick={() => setWorkflowViewFilter("archived")}>
             Archived
           </button>
@@ -4041,6 +4064,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
