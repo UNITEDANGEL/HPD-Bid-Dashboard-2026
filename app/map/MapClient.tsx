@@ -270,10 +270,10 @@ function maturityPriorityClass(job: JobRecord) {
 }
 
 function maturityMapLabel(job: JobRecord) {
-  const second = workflowSecondAttemptInfo(job);
+  const counter = jobCounterInfo(job);
 
-  if (second) {
-    return second.ready ? "REVISIT" : `${second.hoursLeft}h`;
+  if (counter.mode === "noAccess72") {
+    return counter.label;
   }
 
   const info = maturityInfo(job);
@@ -288,15 +288,32 @@ function maturityMapLabel(job: JobRecord) {
 }
 
 
-function jobCounterLabel(job: JobRecord) {
+function jobCounterInfo(job: JobRecord) {
   const second = workflowSecondAttemptInfo(job);
 
   if (second) {
-    return second.ready ? "REVISIT" : second.label;
+    return {
+      mode: "noAccess72",
+      label: second.ready ? "REVISIT" : `${second.hoursLeft}h`,
+      detail: second.ready ? "Ready for 2nd attempt" : `${second.hoursLeft}h until 2nd attempt`,
+      ready: second.ready,
+    };
   }
 
-  return maturityInfo(job).label;
+  const maturity = maturityInfo(job);
+
+  return {
+    mode: "maturity",
+    label: maturity.label,
+    detail: maturity.label,
+    ready: false,
+  };
 }
+
+function jobCounterLabel(job: JobRecord) {
+  return jobCounterInfo(job).label;
+}
+
 function overdueBucket(job: JobRecord) {
   const info = maturityInfo(job);
 
@@ -3426,7 +3443,7 @@ function directionsUrl(job: JobRecord) {
               <div className="detail"><span>Work Start Date</span><strong>{selected.WorkStartDate || selected.workStartDate || "Not listed"}</strong></div>
               <div className="detail"><span>Work Completion Date</span><strong>{selected.WorkCompletionDate || selected.workCompletionDate || "Not listed"}</strong></div>
               <div className="detail"><span>Counter Start Date</span><strong>{maturityInfo(selected).maturity}</strong></div>
-              <div className="detail"><span>Counter</span><strong>{jobCounterLabel(selected)}</strong></div>
+              <div className="detail"><span>Counter</span><strong>{jobCounterInfo(selected).detail}</strong></div>
               {workflowLabel(selected) ? (
                 <div className="detail"><span>Field Status</span><strong>{workflowLabel(selected)}</strong></div>
               ) : null}
@@ -3689,6 +3706,10 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
 
 
 
