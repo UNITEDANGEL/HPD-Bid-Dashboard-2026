@@ -200,9 +200,6 @@ function normalMaturityLabel(job: JobRecord) {
 }
 function smartWorkflowLabel(job: JobRecord) {
   const status = workflowStatus(job);
-  const archived = Boolean((job as any).ArchivedFromMap || (job as any).archivedFromMap);
-
-  const prefix = archived ? "ARCH " : "";
 
   const noAccessFirst = (job as any).NoAccessFirstAttemptAt || (job as any).noAccessFirstAttemptAt;
   const secondAvailable = (job as any).SecondAttemptAvailableAt || (job as any).secondAttemptAvailableAt;
@@ -212,38 +209,36 @@ function smartWorkflowLabel(job: JobRecord) {
   const otherDone = (job as any).VerifiedByOthersDate || (job as any).verifiedByOthersDate;
 
   if (status === "WORK_COMPLETED" || completed) {
-    return `${prefix}DONE ${shortWorkflowDate(completed || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
+    return `COMPLETED ${shortWorkflowDate(completed || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
   }
 
   if (status === "REFUSED_ACCESS" || refused) {
-    return `${prefix}REFUSED ${shortWorkflowDate(refused || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
+    return `REFUSED ACCESS ${shortWorkflowDate(refused || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
   }
 
   if (status === "COMPLETED_BY_OTHERS" || otherDone) {
-    return `${prefix}OTHER ${shortWorkflowDate(otherDone || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
+    return `OTHER DONE ${shortWorkflowDate(otherDone || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
   }
 
   if (status === "NO_ACCESS_COMPLETE" || noAccessSecond) {
-    return `${prefix}NA 2ND ${shortWorkflowDate(noAccessSecond || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
+    return `NO ACCESS 2ND ${shortWorkflowDate(noAccessSecond || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
   }
 
   if (noAccessFirst && secondAvailable) {
     const hoursLeft = hoursBetweenNow(secondAvailable);
-    if (hoursLeft === null) return `${prefix}REVISIT ?`.trim();
+    if (hoursLeft === null) return "REVISIT ?";
 
     if (hoursLeft > 0) {
-      return `${prefix}RV ${hoursLeft}H`.trim();
+      return `REVISIT IN ${hoursLeft}H`;
     }
 
     const overdueHours = Math.abs(hoursLeft);
     if (overdueHours >= 24) {
-      return `${prefix}RV -${Math.ceil(overdueHours / 24)}D`.trim();
+      return `REVISIT -${Math.ceil(overdueHours / 24)}D`;
     }
 
-    return `${prefix}RV -${overdueHours}H`.trim();
+    return `REVISIT -${overdueHours}H`;
   }
-
-  if (archived) return "ARCH";
 
   return normalMaturityLabel(job);
 }
@@ -263,6 +258,25 @@ function statusClass(status?: string) {
   return `status-${statusKind(status)}`;
 }
 
+
+function markerWorkflowLabelHtml(job: JobRecord) {
+  const label = smartWorkflowLabel(job);
+
+  const dateMatch = label.match(/(.*)\s(\d{2}\/\d{2})$/);
+  if (dateMatch) {
+    return `<span class="marker-label-main">${dateMatch[1]}</span><span class="marker-label-date">${dateMatch[2]}</span>`;
+  }
+
+  if (label.startsWith("REVISIT IN ")) {
+    return `<span class="marker-label-main">REVISIT IN</span><span class="marker-label-date">${label.replace("REVISIT IN ", "")}</span>`;
+  }
+
+  if (label.startsWith("REVISIT -")) {
+    return `<span class="marker-label-main">REVISIT</span><span class="marker-label-date">${label.replace("REVISIT ", "")}</span>`;
+  }
+
+  return `<span class="marker-label-main">${label}</span>`;
+}
 function markerColorForJob(job: JobRecord) {
   const kind = statusKind(job);
 
@@ -995,10 +1009,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           icon: L.divIcon({
             className: "maturity-map-marker",
             html: `<div class="maturity-marker-bubble maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${markerColor}">
-                    <strong>${smartWorkflowLabel(job)}</strong>
+                    <strong>${markerWorkflowLabelHtml(job)}</strong>
                   </div>`,
-            iconSize: [112, 78],
-            iconAnchor: [56, 39],
+            iconSize: [132, 86],
+            iconAnchor: [66, 43],
             popupAnchor: [0, -18],
           }),
         });
@@ -3516,6 +3530,70 @@ function directionsUrl(job: JobRecord) {
           .status-marker-otherdone {
             border-width: 2px !important;
           }
+          /* TWO_LINE_MARKER_LABELS_2026 */
+          .maturity-marker-bubble {
+            min-width: 118px !important;
+            max-width: 132px !important;
+            height: 46px !important;
+            padding: 5px 8px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            overflow: visible !important;
+          }
+
+          .maturity-marker-bubble strong {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 1px !important;
+            width: 100% !important;
+            max-width: 120px !important;
+            line-height: 1.02 !important;
+            white-space: normal !important;
+            overflow: hidden !important;
+          }
+
+          .marker-label-main {
+            display: block !important;
+            max-width: 118px !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            font-size: 9.5px !important;
+            font-weight: 1000 !important;
+            letter-spacing: -0.035em !important;
+            line-height: 1.02 !important;
+          }
+
+          .marker-label-date {
+            display: block !important;
+            max-width: 118px !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            letter-spacing: -0.025em !important;
+            line-height: 1.02 !important;
+          }
+
+          .maturity-marker-bubble.marker-ready-revisit {
+            min-width: 124px !important;
+            max-width: 138px !important;
+          }
+
+          .maturity-marker-bubble.marker-ready-revisit .marker-label-main {
+            color: #04101f !important;
+            font-size: 10px !important;
+          }
+
+          .maturity-marker-bubble.marker-ready-revisit .marker-label-date {
+            color: #04101f !important;
+            font-size: 12px !important;
+          }
           /* WORKFLOW_FILTER_CSS_OK */
           .workflow-filter-bar {
             position: fixed;
@@ -3963,6 +4041,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
