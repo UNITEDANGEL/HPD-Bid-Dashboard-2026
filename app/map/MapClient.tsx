@@ -186,6 +186,18 @@ function hoursBetweenNow(value?: string) {
   return Math.ceil((date.getTime() - Date.now()) / 3600000);
 }
 
+
+function normalMaturityLabel(job: JobRecord) {
+  const info = maturityInfo(job);
+
+  if (info.daysLeft === null) return "NO DATE";
+
+  if (info.daysLeft < 0) {
+    return `${Math.abs(info.daysLeft)}D`;
+  }
+
+  return `${info.daysLeft}D`;
+}
 function smartWorkflowLabel(job: JobRecord) {
   const status = workflowStatus(job);
   const archived = Boolean((job as any).ArchivedFromMap || (job as any).archivedFromMap);
@@ -225,7 +237,7 @@ function smartWorkflowLabel(job: JobRecord) {
     return `REVISIT -${overdueHours}H`;
   }
 
-  return statusLabel(job);
+  return normalMaturityLabel(job);
 }
 function statusKind(jobOrStatus?: JobRecord | string) {
   const value = normalizedStatus(jobOrStatus);
@@ -3899,6 +3911,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
