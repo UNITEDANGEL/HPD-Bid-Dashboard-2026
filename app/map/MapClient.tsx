@@ -171,6 +171,62 @@ function statusLabel(job: JobRecord) {
   );
 }
 
+
+function shortWorkflowDate(value?: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit" });
+}
+
+function hoursBetweenNow(value?: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return Math.ceil((date.getTime() - Date.now()) / 3600000);
+}
+
+function smartWorkflowLabel(job: JobRecord) {
+  const status = workflowStatus(job);
+  const archived = Boolean((job as any).ArchivedFromMap || (job as any).archivedFromMap);
+
+  if (archived) return "ARCHIVED";
+
+  const noAccessFirst = (job as any).NoAccessFirstAttemptAt || (job as any).noAccessFirstAttemptAt;
+  const secondAvailable = (job as any).SecondAttemptAvailableAt || (job as any).secondAttemptAvailableAt;
+  const noAccessSecond = (job as any).NoAccessSecondAttemptAt || (job as any).noAccessSecondAttemptAt;
+  const completed = (job as any).ActualWorkCompletionDate || (job as any).actualWorkCompletionDate;
+  const refused = (job as any).RefusalDate || (job as any).refusalDate;
+  const otherDone = (job as any).VerifiedByOthersDate || (job as any).verifiedByOthersDate;
+
+  if (status === "WORK_COMPLETED" || completed) {
+    return `COMPLETED ${shortWorkflowDate(completed || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
+  }
+
+  if (status === "REFUSED_ACCESS" || refused) {
+    return `REFUSED ${shortWorkflowDate(refused || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
+  }
+
+  if (status === "COMPLETED_BY_OTHERS" || otherDone) {
+    return `OTHER DONE ${shortWorkflowDate(otherDone || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
+  }
+
+  if (status === "NO_ACCESS_COMPLETE" || noAccessSecond) {
+    return `NO ACCESS 2ND ${shortWorkflowDate(noAccessSecond || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
+  }
+
+  if (noAccessFirst && secondAvailable) {
+    const hoursLeft = hoursBetweenNow(secondAvailable);
+    if (hoursLeft === null) return "REVISIT ?";
+    if (hoursLeft > 0) return `REVISIT IN ${hoursLeft}H`;
+
+    const overdueHours = Math.abs(hoursLeft);
+    if (overdueHours >= 24) return `REVISIT -${Math.ceil(overdueHours / 24)}D`;
+    return `REVISIT -${overdueHours}H`;
+  }
+
+  return statusLabel(job);
+}
 function statusKind(jobOrStatus?: JobRecord | string) {
   const value = normalizedStatus(jobOrStatus);
 
@@ -919,7 +975,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           icon: L.divIcon({
             className: "maturity-map-marker",
             html: `<div class="maturity-marker-bubble maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${markerColor}">
-                    <strong>${maturityMapLabel(job)}</strong>
+                    <strong>${smartWorkflowLabel(job)}</strong>
                   </div>`,
             iconSize: [78, 78],
             iconAnchor: [39, 39],
@@ -954,7 +1010,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             <strong>${jobKey(job, index)}</strong><br/>
             ${displayAddress(job)}<br/>
             ${job.borough || ""} ${job.trade ? "· " + job.trade : ""}<br/>
-            ${JobStatus.statusLabel(job)} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Counter Start: ${maturityInfo(job).maturity}<br/>Counter: ${jobCounterLabel(job)}
+            ${JobStatus.statusLabel(job)} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Counter Start: ${maturityInfo(job).maturity}<br/>Counter: ${smartWorkflowLabel(job)}
           </div>
         `);
 
@@ -3258,6 +3314,144 @@ function directionsUrl(job: JobRecord) {
               font-size: 11px !important;
             }
           }
+          /* JOB_CARD_VISUAL_UPGRADE_2026 */
+          .job-status-card,
+          .selected-card,
+          .job-card {
+            border-radius: 22px !important;
+            border: 1px solid rgba(255,255,255,0.16) !important;
+            background:
+              radial-gradient(circle at top left, rgba(111,180,255,0.16), transparent 36%),
+              linear-gradient(180deg, rgba(13, 24, 42, 0.97), rgba(7, 14, 26, 0.98)) !important;
+            box-shadow:
+              0 18px 48px rgba(0,0,0,0.42),
+              inset 0 1px 0 rgba(255,255,255,0.08) !important;
+            transform: translateZ(0);
+            transition:
+              transform 180ms ease,
+              box-shadow 180ms ease,
+              border-color 180ms ease,
+              background 180ms ease !important;
+          }
+
+          .job-status-card:hover,
+          .selected-card:hover,
+          .job-card:hover {
+            transform: translateY(-2px) scale(1.008);
+            border-color: rgba(111,180,255,0.38) !important;
+            box-shadow:
+              0 24px 64px rgba(0,0,0,0.52),
+              0 0 42px rgba(111,180,255,0.16),
+              inset 0 1px 0 rgba(255,255,255,0.10) !important;
+          }
+
+          .selected-card .job-title,
+          .job-card .job-title {
+            font-size: 21px !important;
+            line-height: 1.12 !important;
+            letter-spacing: -0.03em;
+          }
+
+          .selected-card .job-address,
+          .job-card .job-address {
+            font-size: 14px !important;
+            line-height: 1.35 !important;
+            color: rgba(232,240,255,0.88) !important;
+          }
+
+          .detail {
+            border-radius: 16px !important;
+            background: rgba(255,255,255,0.075) !important;
+            border: 1px solid rgba(255,255,255,0.10) !important;
+            padding: 11px !important;
+          }
+
+          .detail span {
+            font-size: 10px !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: rgba(200,215,240,0.72) !important;
+          }
+
+          .detail strong {
+            font-size: 14px !important;
+            line-height: 1.25 !important;
+            color: #ffffff !important;
+          }
+
+          .status-chip,
+          .maturity-chip,
+          .job-counter-chip {
+            font-size: 13px !important;
+            font-weight: 950 !important;
+            letter-spacing: -0.02em;
+            padding: 8px 11px !important;
+            border-radius: 999px !important;
+          }
+
+          .card-actions button,
+          .card-actions a,
+          .status-actions button,
+          .save-status-btn {
+            min-height: 42px !important;
+            border-radius: 15px !important;
+            font-size: 13px !important;
+            font-weight: 900 !important;
+            transition:
+              transform 150ms ease,
+              filter 150ms ease,
+              box-shadow 150ms ease !important;
+          }
+
+          .card-actions button:active,
+          .card-actions a:active,
+          .status-actions button:active,
+          .save-status-btn:active {
+            transform: scale(0.965);
+            filter: brightness(1.12);
+          }
+
+          .status-card-noaccess {
+            border-color: rgba(71,163,255,0.48) !important;
+            background:
+              radial-gradient(circle at top left, rgba(71,163,255,0.28), transparent 40%),
+              linear-gradient(180deg, rgba(11, 32, 58, 0.98), rgba(6, 14, 28, 0.98)) !important;
+          }
+
+          .status-card-completed {
+            border-color: rgba(83,230,156,0.48) !important;
+            background:
+              radial-gradient(circle at top left, rgba(83,230,156,0.24), transparent 40%),
+              linear-gradient(180deg, rgba(7, 43, 32, 0.98), rgba(6, 14, 22, 0.98)) !important;
+          }
+
+          .status-card-refused {
+            border-color: rgba(255,77,95,0.54) !important;
+            background:
+              radial-gradient(circle at top left, rgba(255,77,95,0.26), transparent 40%),
+              linear-gradient(180deg, rgba(54, 13, 22, 0.98), rgba(16, 8, 15, 0.98)) !important;
+          }
+
+          .status-card-otherdone {
+            border-color: rgba(184,117,255,0.48) !important;
+            background:
+              radial-gradient(circle at top left, rgba(184,117,255,0.24), transparent 40%),
+              linear-gradient(180deg, rgba(35, 18, 58, 0.98), rgba(11, 8, 24, 0.98)) !important;
+          }
+
+          .maturity-marker-bubble strong {
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            letter-spacing: -0.05em;
+            white-space: nowrap;
+          }
+
+          .maturity-marker-bubble {
+            min-width: 86px !important;
+            padding-left: 10px !important;
+            padding-right: 10px !important;
+          }
           /* WORKFLOW_FILTER_CSS_OK */
           .workflow-filter-bar {
             position: fixed;
@@ -3433,7 +3627,7 @@ function directionsUrl(job: JobRecord) {
               </div>
               <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
                 <span className={`status ${statusClass(selected.status)}`}>{JobStatus.statusLabel(selected)}</span>
-                <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{jobCounterLabel(selected)}</span>
+                <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{smartWorkflowLabel(selected)}</span>
               </div>
             </div>
 
@@ -3443,7 +3637,7 @@ function directionsUrl(job: JobRecord) {
               <div className="detail"><span>Work Start Date</span><strong>{selected.WorkStartDate || selected.workStartDate || "Not listed"}</strong></div>
               <div className="detail"><span>Work Completion Date</span><strong>{selected.WorkCompletionDate || selected.workCompletionDate || "Not listed"}</strong></div>
               <div className="detail"><span>Counter Start Date</span><strong>{maturityInfo(selected).maturity}</strong></div>
-              <div className="detail"><span>Counter</span><strong>{jobCounterInfo(selected).detail}</strong></div>
+              <div className="detail"><span>Counter</span><strong>{smartWorkflowLabel(selected)}</strong></div>
               {workflowLabel(selected) ? (
                 <div className="detail"><span>Field Status</span><strong>{workflowLabel(selected)}</strong></div>
               ) : null}
@@ -3593,7 +3787,7 @@ function directionsUrl(job: JobRecord) {
                 </div>
                 <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
                   <span className={`status ${statusClass(job.status)}`}>{JobStatus.statusLabel(job)}</span>
-                  <span className={`maturity-pill ${maturityPriorityClass(job)}`}>{jobCounterLabel(job)}</span>
+                  <span className={`maturity-pill ${maturityPriorityClass(job)}`}>{smartWorkflowLabel(job)}</span>
                 </div>
               </div>
 
@@ -3705,6 +3899,8 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
 
 
 
