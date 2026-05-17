@@ -1,9 +1,7 @@
-﻿name: Daily Fetcher Run
+name: Daily Fetcher Run
 
 on:
   schedule:
-    # Runs every day at 5:00 AM New York time during EDT approximately.
-    # GitHub cron is UTC.
     - cron: "0 9 * * *"
   workflow_dispatch:
 
