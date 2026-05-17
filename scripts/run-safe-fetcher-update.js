@@ -131,6 +131,8 @@ async function main() {
   writeStatus(status);
 
   try {
+    restoreGoogleAuthFilesFromEnv();
+
     if (!fs.existsSync(path.join(ROOT, "FetchrMatcherV5.py"))) {
       throw new Error("FetchrMatcherV5.py not found in project root.");
     }
@@ -192,6 +194,7 @@ async function main() {
 }
 
 main();
+
 
 
 
