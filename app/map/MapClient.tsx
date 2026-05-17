@@ -1128,7 +1128,21 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     drawMarkers();
   }, [mapReady, filteredJobs, countdownTick]);
+  function showReadyRevisitJobs() {
+    setWorkflowViewFilter("ready2");
+    setSelectedOnly(false);
+    setSelected(null);
+    setDrawerOpen(false);
+    setFullMap(true);
 
+    window.requestAnimationFrame(() => {
+      mapRef.current?.invalidateSize();
+    });
+
+    window.setTimeout(() => {
+      mapRef.current?.invalidateSize();
+    }, 250);
+  }
   function updateStatus(job: any, newStatus: string) {
   if (!job?.OMO) return;
 
@@ -3822,11 +3836,11 @@ function directionsUrl(job: JobRecord) {
           </button>
         </div>
         {actionNotice ? <div className="action-notice">{actionNotice}</div> : null}
-        {filteredJobs.filter((job) => workflowViewBucket(job) === "ready2").length > 0 ? (
+        {jobs.filter((job) => workflowViewBucket(job) === "ready2").length > 0 ? (
           <div className="ready-revisit-alert">
             <strong>REVISIT READY</strong>
-            <span>{filteredJobs.filter((job) => workflowViewBucket(job) === "ready2").length} job(s) need 2nd attempt now.</span>
-            <button type="button" onClick={() => setWorkflowViewFilter("ready2")}>Show Ready</button>
+            <span>{jobs.filter((job) => workflowViewBucket(job) === "ready2").length} job(s) need 2nd attempt now.</span>
+            <button type="button" onClick={showReadyRevisitJobs}>Show Ready</button>
           </div>
         ) : null}
 
@@ -4112,6 +4126,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
