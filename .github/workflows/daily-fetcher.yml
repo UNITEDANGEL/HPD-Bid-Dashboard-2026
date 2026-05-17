@@ -1,0 +1,19 @@
+﻿name: Daily Fetcher Run
+
+on:
+  schedule:
+    # Runs every day at 5:00 AM New York time during EDT approximately.
+    # GitHub cron is UTC.
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+jobs:
+  run-fetcher:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render fetcher
+        run: |
+          curl -sS -X POST "https://hpd-bid-dashboard-2026.onrender.com/api/fetcher/run" \
+            -H "x-fetcher-secret: ${{ secrets.FETCHER_CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --fail
