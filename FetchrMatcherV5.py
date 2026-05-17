@@ -191,34 +191,40 @@ def infer_award_date_from_filename(path_or_name: str) -> str:
 
 def get_gmail_service():
     creds = None
+
     if os.path.exists(TOKEN_FILE):
         try:
             from google.oauth2.credentials import Credentials
             creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
-        except Exception:
+            print("Loaded Gmail token.json.")
+        except Exception as e:
+            print(f"AUTH TOKEN LOAD ERROR: {e}")
             creds = None
 
-    if not creds or not creds.valid:
-        try:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    CREDENTIALS_FILE, SCOPES
-                )
-                creds = flow.run_local_server(port=0)
-        except Exception as e:
-            print(f"AUTH ERROR: {e}")
-            raise SystemExit(1)
+    if not creds:
+        print("AUTH ERROR: token.json could not be loaded. Render cannot open browser OAuth.")
+        raise SystemExit(1)
 
-        with open(TOKEN_FILE, "w", encoding="utf-8") as f:
-            f.write(creds.to_json())
+    if not creds.valid:
+        try:
+            if creds.expired and creds.refresh_token:
+                print("Refreshing expired Gmail token headlessly.")
+                creds.refresh(Request())
+                with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+                    f.write(creds.to_json())
+            else:
+                print("AUTH ERROR: token.json is invalid and has no refresh_token. Recreate token.json locally, then update GOOGLE_TOKEN_JSON_BASE64 in Render.")
+                raise SystemExit(1)
+        except Exception as e:
+            print(f"AUTH REFRESH ERROR: {e}")
+            raise SystemExit(1)
 
     try:
         service = build("gmail", "v1", credentials=creds, cache_discovery=False)
     except HttpError as e:
         print(f"GMAIL BUILD ERROR: {e}")
         raise SystemExit(1)
+
     return service
 
 
@@ -1134,5 +1140,6 @@ def infer_award_date_from_filename(path_or_name: str) -> str:
         yy = ts[4:6]
         return f"{mm}/{dd}/{yy}"
     return ""
+
 
 

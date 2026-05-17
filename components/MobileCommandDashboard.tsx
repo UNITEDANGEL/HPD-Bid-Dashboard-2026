@@ -716,9 +716,10 @@ export default function MobileCommandDashboard() {
         <Link href="/">Home</Link>
         <Link href="/jobs">Jobs</Link>
         <Link href="/map">Map</Link>
-        <Link href="/automation">Run</Link>
+        <Link href="/fetcher">Fetch</Link>
         <Link href="/outputs">Files</Link>
       </nav>
     </main>
   );
 }
+

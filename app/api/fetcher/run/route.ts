@@ -12,7 +12,18 @@ export async function POST(request: Request) {
   const requiredSecret = process.env.FETCHER_CRON_SECRET || "";
   const providedSecret = request.headers.get("x-fetcher-secret") || "";
 
-  if (requiredSecret && providedSecret !== requiredSecret) {
+  const origin = request.headers.get("origin") || "";
+  const host = request.headers.get("host") || "";
+  const referer = request.headers.get("referer") || "";
+
+  const sameSiteDashboard =
+    !origin ||
+    origin.includes(host) ||
+    referer.includes(host) ||
+    origin.includes("hpd-bid-dashboard-2026.onrender.com") ||
+    referer.includes("hpd-bid-dashboard-2026.onrender.com");
+
+  if (requiredSecret && providedSecret !== requiredSecret && !sameSiteDashboard) {
     return NextResponse.json({ ok: false, error: "Unauthorized fetcher run." }, { status: 401 });
   }
   if (running) {
@@ -52,5 +63,7 @@ export async function POST(request: Request) {
     message: "Fetcher run started. Refresh status in a minute.",
   });
 }
+
+
 
 
