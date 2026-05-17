@@ -144,6 +144,8 @@ async function main() {
     // token.json may be created by OAuth on first local run.
     appendLog("Credentials file exists. Starting 7-day fetcher pipeline.");
 
+    runStep("Install Python fetcher dependencies", "python", ["-m", "pip", "install", "--quiet", "requests", "tqdm", "PyPDF2", "google-api-python-client", "google-auth-oauthlib", "google-auth-httplib2"]);
+
     runStep("Run Gmail fetcher for last 7 days", "python", ["FetchrMatcherV5.py", "--update", "--days", "7"]);
 
     runStep("Safe merge fetcher output into dashboard data", "node", ["safe-merge-7day-fetch.js"]);
@@ -194,6 +196,7 @@ async function main() {
 }
 
 main();
+
 
 
 
