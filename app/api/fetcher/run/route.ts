@@ -8,7 +8,13 @@ export const dynamic = "force-dynamic";
 
 let running = false;
 
-export async function POST() {
+export async function POST(request: Request) {
+  const requiredSecret = process.env.FETCHER_CRON_SECRET || "";
+  const providedSecret = request.headers.get("x-fetcher-secret") || "";
+
+  if (requiredSecret && providedSecret !== requiredSecret) {
+    return NextResponse.json({ ok: false, error: "Unauthorized fetcher run." }, { status: 401 });
+  }
   if (running) {
     return NextResponse.json({ ok: false, error: "Fetcher is already running." }, { status: 409 });
   }
@@ -46,3 +52,5 @@ export async function POST() {
     message: "Fetcher run started. Refresh status in a minute.",
   });
 }
+
+
