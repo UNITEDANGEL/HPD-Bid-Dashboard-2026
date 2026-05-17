@@ -199,7 +199,7 @@ function normalMaturityLabel(job: JobRecord) {
   return `${info.daysLeft}D`;
 }
 function smartWorkflowLabel(job: JobRecord) {
-  const status = workflowStatus(job);
+  const status = workflowStatus(job) || legacyWorkflowKind(job);
 
   const noAccessFirst = (job as any).NoAccessFirstAttemptAt || (job as any).noAccessFirstAttemptAt;
   const secondAvailable = (job as any).SecondAttemptAvailableAt || (job as any).secondAttemptAvailableAt;
@@ -207,36 +207,32 @@ function smartWorkflowLabel(job: JobRecord) {
   const completed = (job as any).ActualWorkCompletionDate || (job as any).actualWorkCompletionDate;
   const refused = (job as any).RefusalDate || (job as any).refusalDate;
   const otherDone = (job as any).VerifiedByOthersDate || (job as any).verifiedByOthersDate;
+  const fallbackDate = (job as any).UpdatedAt || (job as any).updatedAt || (job as any).OutcomeLockedAt || (job as any).outcomeLockedAt;
 
-  if (status === "WORK_COMPLETED" || completed) {
-    return `COMPLETED ${shortWorkflowDate(completed || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
+  if (status === "WORK_COMPLETED" || status === "PARTIAL_WORK_COMPLETED" || completed) {
+    return `COMPLETED ${shortWorkflowDate(completed || fallbackDate)}`.trim();
   }
 
   if (status === "REFUSED_ACCESS" || refused) {
-    return `REFUSED ACCESS ${shortWorkflowDate(refused || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
+    return `REFUSED ACCESS ${shortWorkflowDate(refused || fallbackDate)}`.trim();
   }
 
   if (status === "COMPLETED_BY_OTHERS" || otherDone) {
-    return `OTHER DONE ${shortWorkflowDate(otherDone || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
+    return `OTHER DONE ${shortWorkflowDate(otherDone || fallbackDate)}`.trim();
   }
 
   if (status === "NO_ACCESS_COMPLETE" || noAccessSecond) {
-    return `NO ACCESS 2ND ${shortWorkflowDate(noAccessSecond || (job as any).OutcomeLockedAt || (job as any).updatedAt)}`.trim();
+    return `NO ACCESS 2ND ${shortWorkflowDate(noAccessSecond || fallbackDate)}`.trim();
   }
 
   if (noAccessFirst && secondAvailable) {
     const hoursLeft = hoursBetweenNow(secondAvailable);
     if (hoursLeft === null) return "REVISIT ?";
 
-    if (hoursLeft > 0) {
-      return `REVISIT IN ${hoursLeft}H`;
-    }
+    if (hoursLeft > 0) return `REVISIT IN ${hoursLeft}H`;
 
     const overdueHours = Math.abs(hoursLeft);
-    if (overdueHours >= 24) {
-      return `REVISIT -${Math.ceil(overdueHours / 24)}D`;
-    }
-
+    if (overdueHours >= 24) return `REVISIT -${Math.ceil(overdueHours / 24)}D`;
     return `REVISIT -${overdueHours}H`;
   }
 
@@ -524,6 +520,25 @@ function workflowStorageApply<T extends JobRecord>(rows: T[]): T[] {
   });
 }
 
+
+function legacyWorkflowKind(job: JobRecord) {
+  const raw = String(
+    (job as any).WorkflowStatus ||
+    (job as any).workflowStatus ||
+    (job as any).StatusOverride ||
+    (job as any).status ||
+    ""
+  ).toLowerCase();
+
+  if (raw.includes("refused")) return "REFUSED_ACCESS";
+  if (raw.includes("no access") && raw.includes("2")) return "NO_ACCESS_COMPLETE";
+  if (raw.includes("no access") && raw.includes("second")) return "NO_ACCESS_COMPLETE";
+  if (raw.includes("completed by other") || raw.includes("completed by others") || raw.includes("work completed by other")) return "COMPLETED_BY_OTHERS";
+  if (raw.includes("partial work completed")) return "PARTIAL_WORK_COMPLETED";
+  if (raw.includes("work completed") || raw === "completed") return "WORK_COMPLETED";
+
+  return "";
+}
 function workflowStatus(job: JobRecord) {
   return String(
     (job as any).WorkflowStatus ||
@@ -613,17 +628,13 @@ const CLOSED_WORKFLOW_STATUSES = new Set([
 ]);
 
 function workflowViewBucket(job: JobRecord) {
-  const status = workflowStatus(job);
+  const status = workflowStatus(job) || legacyWorkflowKind(job);
   const archived = Boolean((job as any).ArchivedFromMap || (job as any).archivedFromMap);
 
-  if (archived) {
-    return "archived";
-  }
+  if (archived) return "archived";
 
   const secondAttempt = workflowSecondAttemptInfo(job);
-  if (secondAttempt) {
-    return secondAttempt.ready ? "ready2" : "waiting72";
-  }
+  if (secondAttempt) return secondAttempt.ready ? "ready2" : "waiting72";
 
   if (status === "NO_ACCESS_1_WAITING_72H") {
     const info = workflowSecondAttemptInfo(job);
@@ -1347,17 +1358,13 @@ function secondAttemptInfo(job: JobRecord) {
   };
 }
 function workflowViewBucket(job: JobRecord) {
-  const status = workflowStatus(job);
+  const status = workflowStatus(job) || legacyWorkflowKind(job);
   const archived = Boolean((job as any).ArchivedFromMap || (job as any).archivedFromMap);
 
-  if (archived) {
-    return "archived";
-  }
+  if (archived) return "archived";
 
   const secondAttempt = workflowSecondAttemptInfo(job);
-  if (secondAttempt) {
-    return secondAttempt.ready ? "ready2" : "waiting72";
-  }
+  if (secondAttempt) return secondAttempt.ready ? "ready2" : "waiting72";
 
   if (status === "NO_ACCESS_1_WAITING_72H") {
     const info = workflowSecondAttemptInfo(job);
@@ -4064,6 +4071,8 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
 
 
 
