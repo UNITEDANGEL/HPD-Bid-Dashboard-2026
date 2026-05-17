@@ -12,44 +12,48 @@ function restoreGoogleAuthFilesFromEnv() {
   const credentialsPath = path.join(ROOT, "credentials.json");
   const tokenPath = path.join(ROOT, "token.json");
 
-  if (!fs.existsSync(credentialsPath)) {
-    const rawCredentials =
-      process.env.GOOGLE_CREDENTIALS_JSON ||
-      process.env.GOOGLE_CREDENTIALS ||
-      "";
+  const base64Credentials =
+    process.env.GOOGLE_CREDENTIALS_JSON_BASE64 ||
+    process.env.GOOGLE_CREDENTIALS_BASE64 ||
+    "";
 
-    const base64Credentials =
-      process.env.GOOGLE_CREDENTIALS_JSON_BASE64 ||
-      process.env.GOOGLE_CREDENTIALS_BASE64 ||
-      "";
+  const rawCredentials =
+    process.env.GOOGLE_CREDENTIALS_JSON ||
+    process.env.GOOGLE_CREDENTIALS ||
+    "";
 
-    if (base64Credentials) {
-      fs.writeFileSync(credentialsPath, Buffer.from(base64Credentials, "base64").toString("utf8"), "utf8");
-      appendLog("Restored credentials.json from GOOGLE_CREDENTIALS_JSON_BASE64.");
-    } else if (rawCredentials) {
-      fs.writeFileSync(credentialsPath, rawCredentials, "utf8");
-      appendLog("Restored credentials.json from GOOGLE_CREDENTIALS_JSON.");
-    }
+  const base64Token =
+    process.env.GOOGLE_TOKEN_JSON_BASE64 ||
+    process.env.GOOGLE_OAUTH_TOKEN_JSON_BASE64 ||
+    "";
+
+  const rawToken =
+    process.env.GOOGLE_TOKEN_JSON ||
+    process.env.GOOGLE_OAUTH_TOKEN_JSON ||
+    "";
+
+  if (base64Credentials) {
+    fs.writeFileSync(credentialsPath, Buffer.from(base64Credentials, "base64").toString("utf8"), "utf8");
+    appendLog("Restored credentials.json from GOOGLE_CREDENTIALS_JSON_BASE64.");
+  } else if (rawCredentials) {
+    fs.writeFileSync(credentialsPath, rawCredentials, "utf8");
+    appendLog("Restored credentials.json from GOOGLE_CREDENTIALS_JSON.");
   }
 
-  if (!fs.existsSync(tokenPath)) {
-    const rawToken =
-      process.env.GOOGLE_TOKEN_JSON ||
-      process.env.GOOGLE_OAUTH_TOKEN_JSON ||
-      "";
+  if (base64Token) {
+    fs.writeFileSync(tokenPath, Buffer.from(base64Token, "base64").toString("utf8"), "utf8");
+    appendLog("Restored token.json from GOOGLE_TOKEN_JSON_BASE64.");
+  } else if (rawToken) {
+    fs.writeFileSync(tokenPath, rawToken, "utf8");
+    appendLog("Restored token.json from GOOGLE_TOKEN_JSON.");
+  }
 
-    const base64Token =
-      process.env.GOOGLE_TOKEN_JSON_BASE64 ||
-      process.env.GOOGLE_OAUTH_TOKEN_JSON_BASE64 ||
-      "";
-
-    if (base64Token) {
-      fs.writeFileSync(tokenPath, Buffer.from(base64Token, "base64").toString("utf8"), "utf8");
-      appendLog("Restored token.json from GOOGLE_TOKEN_JSON_BASE64.");
-    } else if (rawToken) {
-      fs.writeFileSync(tokenPath, rawToken, "utf8");
-      appendLog("Restored token.json from GOOGLE_TOKEN_JSON.");
-    }
+  try {
+    JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
+    JSON.parse(fs.readFileSync(tokenPath, "utf8"));
+    appendLog("Google auth files validated as JSON.");
+  } catch (err) {
+    throw new Error("Google auth env restored invalid JSON: " + (err.message || String(err)));
   }
 }
 function now() {
@@ -196,6 +200,7 @@ async function main() {
 }
 
 main();
+
 
 
 
