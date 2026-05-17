@@ -179,11 +179,22 @@ function shortWorkflowDate(value?: string) {
   return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit" });
 }
 
-function hoursBetweenNow(value?: string) {
+function msUntil(value?: string) {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return Math.ceil((date.getTime() - Date.now()) / 3600000);
+  return date.getTime() - Date.now();
+}
+
+function hoursBetweenNow(value?: string) {
+  const ms = msUntil(value);
+  if (ms === null) return null;
+
+  if (ms > 0) {
+    return Math.max(1, Math.ceil(ms / 3600000));
+  }
+
+  return -Math.max(1, Math.floor(Math.abs(ms) / 3600000));
 }
 
 
@@ -232,8 +243,12 @@ function smartWorkflowLabel(job: JobRecord) {
     if (hoursLeft > 0) return `REVISIT IN ${hoursLeft}H`;
 
     const overdueHours = Math.abs(hoursLeft);
-    if (overdueHours >= 24) return `REVISIT -${Math.ceil(overdueHours / 24)}D`;
-    return `REVISIT -${overdueHours}H`;
+
+    if (overdueHours <= 72) {
+      return `REVISIT -${overdueHours}H`;
+    }
+
+    return `REVISIT -${Math.ceil(overdueHours / 24)}D`;
   }
 
   return normalMaturityLabel(job);
@@ -378,10 +393,36 @@ function jobCounterInfo(job: JobRecord) {
   const second = workflowSecondAttemptInfo(job);
 
   if (second) {
+    const availableAt = (job as any).SecondAttemptAvailableAt || (job as any).secondAttemptAvailableAt;
+    const hoursLeft = hoursBetweenNow(availableAt);
+
+    if (hoursLeft !== null) {
+      if (hoursLeft > 0) {
+        return {
+          mode: "noAccess72",
+          label: `REVISIT IN ${hoursLeft}H`,
+          detail: `REVISIT IN ${hoursLeft}H`,
+          ready: false,
+        };
+      }
+
+      const overdueHours = Math.abs(hoursLeft);
+      const label = overdueHours <= 72
+        ? `REVISIT -${overdueHours}H`
+        : `REVISIT -${Math.ceil(overdueHours / 24)}D`;
+
+      return {
+        mode: "noAccess72",
+        label,
+        detail: label,
+        ready: true,
+      };
+    }
+
     return {
       mode: "noAccess72",
-      label: second.ready ? "REVISIT NOW" : `REVISIT IN ${second.hoursLeft}H`,
-      detail: second.ready ? "REVISIT NOW - Ready for 2nd attempt" : `REVISIT IN ${second.hoursLeft}H`,
+      label: "REVISIT ?",
+      detail: "REVISIT ?",
       ready: second.ready,
     };
   }
@@ -4071,6 +4112,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
