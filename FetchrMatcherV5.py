@@ -1,5 +1,5 @@
-"""
-FETCHR MATCHER V5 – STEP 1 + STEP 2
+﻿"""
+FETCHR MATCHER V5 â€“ STEP 1 + STEP 2
 
 Step 1 (COA):
 - Fetch latest CONFIRMATION OF AWARD emails (100d or 5d).
@@ -14,7 +14,7 @@ Step 1 (COA):
     * AwardedBy
 - Unit and TotalSqFt are NOT used (always blank).
 - Geocode BuildingAddress (if Google API key present).
-- If multiple COAs for same OMO → keep latest by timestamp in filename.
+- If multiple COAs for same OMO â†’ keep latest by timestamp in filename.
 
 Step 2 (ITB):
 - For each OMO from COA:
@@ -26,8 +26,8 @@ Step 2 (ITB):
         - Location (fallback if COA location missing)
     * ITB Page 3:
         - Full JobDescription page (entire page text, no cleaning).
-- If Location indicates hallway/public area → TenantName = "John Doe", no phone/unit.
-- If no tenant + no unit → TenantName = "John Doe".
+- If Location indicates hallway/public area â†’ TenantName = "John Doe", no phone/unit.
+- If no tenant + no unit â†’ TenantName = "John Doe".
 - Merge COA + ITB into monthly CSV + JSON:
     "November Merge Data 2025.<ext>" etc.
 """
@@ -110,9 +110,9 @@ def load_google_api_key() -> Optional[str]:
 
 GOOGLE_GEOCODE_API_KEY = load_google_api_key()
 if not GOOGLE_GEOCODE_API_KEY:
-    print("⚠️  WARNING: No Google API key found. Geocoding will return NO_KEY.")
+    print("âš ï¸  WARNING: No Google API key found. Geocoding will return NO_KEY.")
 else:
-    print("✅ Google API key loaded for geocoding.")
+    print("âœ… Google API key loaded for geocoding.")
 
 
 # ------------------------- UTILS -------------------------
@@ -164,7 +164,7 @@ def extract_omo(text: str) -> str:
 
 def extract_timestamp_from_filename(fn: str) -> str:
     """
-    From 'EQ10797_102725122849.pdf' → '102725122849'
+    From 'EQ10797_102725122849.pdf' â†’ '102725122849'
     Used only for picking the latest file.
     """
     base = os.path.basename(fn)
@@ -259,7 +259,7 @@ def extract_award_amount_no_dollar(text: str) -> str:
     """
     Awarded Amount line sometimes looks like:
     'Awarded Amount: (212) 863 - 7805 490.00'
-    We want the LAST numeric chunk → 490.00
+    We want the LAST numeric chunk â†’ 490.00
     """
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     for ln in lines:
@@ -337,7 +337,7 @@ def extract_dates(text: str) -> Tuple[str, str, str]:
 def extract_address_location_unit(text: str) -> Tuple[str, str, str]:
     """
     COA address + location.
-    Apartment/Unit is NOT used for COA → always blank.
+    Apartment/Unit is NOT used for COA â†’ always blank.
     """
     addr = ""
     loc = ""
@@ -560,15 +560,15 @@ def apply_geocoding(coa_items: List[COAItem]) -> None:
         c.geo_status = status
         c.lat = lat
         c.lng = lng
-        dlog(f"[GEOCODE] {idx}/{len(coa_items)} OMO {c.omo} → {status} {lat},{lng}")
+        dlog(f"[GEOCODE] {idx}/{len(coa_items)} OMO {c.omo} â†’ {status} {lat},{lng}")
 
 
 # ------------------------- TENANT LOGIC (JOHN DOE) -------------------------
 
 def apply_tenant_logic(location: str, tenant_name: str, tenant_phone: str, apartment_unit: str):
     """
-    - If location indicates hallway / public → John Doe, no phone/unit.
-    - If no apartment AND no tenant → John Doe.
+    - If location indicates hallway / public â†’ John Doe, no phone/unit.
+    - If no apartment AND no tenant â†’ John Doe.
     """
     loc_lower = (location or "").lower()
     hallway_keywords = [
@@ -817,7 +817,7 @@ def build_itb_lookup_from_gmail_for_omos(
     omo_list = sorted(set([o for o in omo_list if o]))
 
     if not omo_list:
-        print("No OMOs from COA — skipping ITB lookup.")
+        print("No OMOs from COA â€” skipping ITB lookup.")
         return lookup
 
     for idx, omo in enumerate(
@@ -1106,7 +1106,7 @@ def run():
     # 1) COA
     coa_items = build_coa_items_from_gmail(svc, LOOKBACK_DAYS)
 
-    # 2) ITB – only OMOs from COA, latest per OMO
+    # 2) ITB â€“ only OMOs from COA, latest per OMO
     omo_list = [c.omo for c in coa_items if c.omo]
     itb_lookup = build_itb_lookup_from_gmail_for_omos(svc, LOOKBACK_DAYS, omo_list)
 
@@ -1134,3 +1134,4 @@ def infer_award_date_from_filename(path_or_name: str) -> str:
         yy = ts[4:6]
         return f"{mm}/{dd}/{yy}"
     return ""
+
