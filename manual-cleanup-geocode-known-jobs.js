@@ -15,7 +15,8 @@ const manual = {
   "EQ27108": { lat: 40.61975, lng: -74.08082, note: "160 PARKHILL AVENUE, 10304" },
   "EQ27459": { lat: 40.75061, lng: -73.86637, note: "38-19 99 STREET, 11368" },
   "EQ27267": { lat: 40.60836, lng: -73.95471, note: "1909 QUENTIN ROAD, 11229" },
-  "EQ27468": { lat: 40.75116, lng: -73.85969, note: "108-07 44 AVENUE, 11368" }
+  "EQ27468": { lat: 40.75116, lng: -73.85969, note: "108-07 44 AVENUE, 11368" },
+  "EQ27940": { lat: 40.71664, lng: -73.95651, note: "548 DRIGGS AVENUE, 11211" }
 };
 function get(job, ...keys) {
   for (const key of keys) {
