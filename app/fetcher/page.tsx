@@ -83,8 +83,8 @@ export default function FetcherPage() {
         </p>
 
         <div className="actions">
-          <button type="button" onClick={runFetcher} disabled={loading || status.state === "running"}>
-            {loading || status.state === "running" ? "Fetcher Running..." : "Run 7-Day Fetcher Update"}
+          <button type="button" onClick={() => runFetcher(7)} disabled={loading || status.state === "running"}>
+            {loading || status.state === "running" ? "Fetcher Running..." : "Run 7-Day Update"}
           </button>
           <button type="button" className="secondary" onClick={loadStatus}>
             Refresh Status
@@ -283,5 +283,6 @@ export default function FetcherPage() {
     </main>
   );
 }
+
 
 
