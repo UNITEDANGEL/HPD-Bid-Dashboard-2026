@@ -1,4 +1,4 @@
-﻿const fs = require("fs");
+const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
@@ -168,6 +168,7 @@ async function main() {
 
     if (fs.existsSync(path.join(ROOT, "manual-cleanup-geocode-known-jobs.js"))) {
       runStep("Apply known cleanup geocodes", "node", ["manual-cleanup-geocode-known-jobs.js"]);
+    }
 
     // This script is harmless if those rows are already patched.
     if (fs.existsSync(path.join(ROOT, "patch-9-recovered-drive-itbs.js"))) {
