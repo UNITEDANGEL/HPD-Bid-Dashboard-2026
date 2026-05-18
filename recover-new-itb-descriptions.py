@@ -285,8 +285,8 @@ for job in targets:
     job["JobDescription"] = desc
     job["description"] = desc
     job["Job_Description"] = desc
-    job["DescriptionSource"] = "NEW_ITB_SCOPE_RECOVERY"
-    job["descriptionSource"] = "NEW_ITB_SCOPE_RECOVERY"
+    job["DescriptionSource"] = "CURRENT_OR_ALTERNATE_ITB_SCOPE_RECOVERY"
+    job["descriptionSource"] = "CURRENT_OR_ALTERNATE_ITB_SCOPE_RECOVERY"`r`n    job["DescriptionRecoveredFromFile"] = used_pdf`r`n    job["descriptionRecoveredFromFile"] = used_pdf
     job["DescriptionNeedsReview"] = False
     job["descriptionNeedsReview"] = False
 
@@ -309,4 +309,5 @@ print("Backup:", BACKUP_PATH)
 print("\nSamples:")
 for sample in samples:
     print(sample)
+
 

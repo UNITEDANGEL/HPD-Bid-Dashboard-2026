@@ -4,6 +4,9 @@ const backupPath = "./data/COA_Fetcher_2026.before_manual_cleanup_geocode.json";
 const jobs = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
 fs.copyFileSync(jsonPath, backupPath);
 const manual = {
+  "EQ26798": { lat: 40.83444, lng: -73.94268, note: "569 WEST 159 STREET, 10032" },
+  "EQ25734": { lat: 40.69136, lng: -73.83383, note: "95-45 112 STREET, 11419" },
+  "EQ27940": { lat: 40.71664, lng: -73.95651, note: "548 DRIGGS AVENUE, 11211" },
   "EQ27013": { lat: 40.87233, lng: -73.87942, note: "3144 HULL AVENUE, 10467" },
   "EQ27383": { lat: 40.70892, lng: -73.80858, note: "150-73 87 AVENUE, 11432" },
   "EQ27076": { lat: 40.79491, lng: -73.94237, note: "237 EAST 111 STREET, 10029" },
@@ -15,8 +18,7 @@ const manual = {
   "EQ27108": { lat: 40.61975, lng: -74.08082, note: "160 PARKHILL AVENUE, 10304" },
   "EQ27459": { lat: 40.75061, lng: -73.86637, note: "38-19 99 STREET, 11368" },
   "EQ27267": { lat: 40.60836, lng: -73.95471, note: "1909 QUENTIN ROAD, 11229" },
-  "EQ27468": { lat: 40.75116, lng: -73.85969, note: "108-07 44 AVENUE, 11368" },
-  "EQ27940": { lat: 40.71664, lng: -73.95651, note: "548 DRIGGS AVENUE, 11211" }
+  "EQ27468": { lat: 40.75116, lng: -73.85969, note: "108-07 44 AVENUE, 11368" }
 };
 function get(job, ...keys) {
   for (const key of keys) {
