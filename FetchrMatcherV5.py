@@ -195,8 +195,9 @@ def get_gmail_service():
     if os.path.exists(TOKEN_FILE):
         try:
             from google.oauth2.credentials import Credentials
-            creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
-            print("Loaded Gmail token.json.")
+            token_info = load_authorized_user_token_info()
+            creds = Credentials.from_authorized_user_info(token_info, SCOPES)
+            print("Loaded Gmail token.json with OAuth client fields.")
         except Exception as e:
             print(f"AUTH TOKEN LOAD ERROR: {e}")
             creds = None
@@ -1140,6 +1141,7 @@ def infer_award_date_from_filename(path_or_name: str) -> str:
         yy = ts[4:6]
         return f"{mm}/{dd}/{yy}"
     return ""
+
 
 
 
