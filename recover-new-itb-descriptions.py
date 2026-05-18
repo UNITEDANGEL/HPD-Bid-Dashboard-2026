@@ -59,6 +59,67 @@ def find_pdf(file_name):
     matches = list(ITB_ROOT.rglob(file_name))
     return matches[0] if matches else None
 
+def candidate_pdfs_for_omo(omo, preferred_file=""):
+    candidates = []
+    seen = set()
+    def add(pdf):
+        if not pdf:
+            return
+        try:
+            key = str(pdf.resolve())
+        except Exception:
+            key = str(pdf)
+        if pdf.exists() and key not in seen:
+            seen.add(key)
+            candidates.append(pdf)
+    # 1) Preferred file from the row.
+    add(find_pdf(preferred_file))
+    # 2) Any filename containing the OMO.
+    if omo:
+        for pdf in ITB_ROOT.rglob("*.pdf"):
+            name = pdf.name.upper()
+            if omo.upper() in name:
+                add(pdf)
+    # 3) Fax-copy PDFs may not include OMO in filename. Try likely current fax PDFs too.
+    for pdf in ITB_ROOT.rglob("*.pdf"):
+        name = pdf.name.lower()
+        if "faxcopy" in name or "fax" in name or "itb" in name:
+            add(pdf)
+    return candidates
+def pdf_mentions_omo(pdf, omo):
+    if not omo:
+        return True
+    try:
+        pages = pypdf_pages(pdf)
+        joined = "\n".join(pages).upper()
+        if omo.upper() in joined:
+            return True
+    except Exception:
+        pass
+    try:
+        pages = ocr_pages(pdf, 1, 3)
+        joined = "\n".join(pages).upper()
+        if omo.upper() in joined:
+            return True
+    except Exception:
+        pass
+    return False
+def recover_description_from_pdf(pdf, omo):
+    pages = pypdf_pages(pdf)
+    desc = extract_desc(pages)
+    if not desc:
+        try:
+            # Current/fax ITBs can have scope pages after page 6.
+            pages = ocr_pages(pdf, 1, 10)
+            desc = extract_desc(pages)
+        except Exception:
+            desc = ""
+    if not desc and "extract_fax_scope_fallback" in globals():
+        try:
+            desc = extract_fax_scope_fallback(pages, omo)
+        except Exception:
+            desc = ""
+    return desc
 def pypdf_pages(pdf):
     pages = []
     try:
@@ -248,3 +309,4 @@ print("Backup:", BACKUP_PATH)
 print("\nSamples:")
 for sample in samples:
     print(sample)
+
