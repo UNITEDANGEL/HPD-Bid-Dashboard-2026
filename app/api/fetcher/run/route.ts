@@ -26,15 +26,16 @@ export async function POST(request: Request) {
   if (requiredSecret && providedSecret !== requiredSecret && !sameSiteDashboard) {
     return NextResponse.json({ ok: false, error: "Unauthorized fetcher run." }, { status: 401 });
   }
-  let requestedDays = 7;
+    const defaultDays = Math.min(95, Math.max(1, Number(process.env.FETCHER_DEFAULT_DAYS || 7) || 7));
+  let requestedDays = defaultDays;
   try {
     const body = await request.json().catch(() => ({}));
     const parsedDays = Number(body?.days);
-    if ([7, 30].includes(parsedDays)) {
-      requestedDays = parsedDays;
+    if (Number.isFinite(parsedDays) && parsedDays >= 1 && parsedDays <= 95) {
+      requestedDays = Math.floor(parsedDays);
     }
   } catch {
-    requestedDays = 7;
+    requestedDays = defaultDays;
   }
   if (running) {
     return NextResponse.json({ ok: false, error: "Fetcher is already running." }, { status: 409 });
@@ -73,6 +74,7 @@ export async function POST(request: Request) {
     message: `Fetcher ${requestedDays}-day run started. Refresh status in a minute.`,
   });
 }
+
 
 
 

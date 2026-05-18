@@ -34,6 +34,7 @@ export default function FetcherPage() {
   const [status, setStatus] = useState<FetcherStatus>({});
   const [loading, setLoading] = useState(false);
   const [runMessage, setRunMessage] = useState("");
+  const [daysBack, setDaysBack] = useState(7);
 
   async function loadStatus() {
     const res = await fetch("/api/fetcher/status?v=" + Date.now(), { cache: "no-store" });
@@ -41,20 +42,21 @@ export default function FetcherPage() {
     setStatus(data);
   }
 
-  async function runFetcher(days = 7) {
+  async function runFetcher(days = daysBack) {
+    const safeDays = Math.min(95, Math.max(1, Math.floor(Number(days) || 7)));
     setLoading(true);
     setRunMessage("");
     try {
       const res = await fetch("/api/fetcher/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ days }),
+        body: JSON.stringify({ days: safeDays }),
       });
       const data = await res.json();
       if (!res.ok) {
         setRunMessage(data.error || "Fetcher failed to start.");
       } else {
-        setRunMessage(data.message || `Fetcher ${days}-day run started.`);
+        setRunMessage(data.message || `Fetcher ${safeDays}-day run started.`);
       }
       await loadStatus();
     } catch (err: any) {
@@ -83,8 +85,29 @@ export default function FetcherPage() {
         </p>
 
         <div className="actions">
-          <button type="button" onClick={() => runFetcher(7)} disabled={loading || status.state === "running"}>
-            {loading || status.state === "running" ? "Fetcher Running..." : "Run 7-Day Update"}
+                    <div className="days-picker">
+            <label>
+              Days back
+              <input
+                type="number"
+                min="1"
+                max="95"
+                value={daysBack}
+                onChange={(event) => setDaysBack(Math.min(95, Math.max(1, Number(event.target.value) || 1)))}
+              />
+            </label>
+            <button type="button" onClick={() => runFetcher(daysBack)} disabled={loading || status.state === "running"}>
+              {loading || status.state === "running" ? "Fetcher Running..." : `Run ${daysBack}-Day Fetch`}
+            </button>
+          </div>
+          <button type="button" className="secondary" onClick={() => { setDaysBack(7); runFetcher(7); }} disabled={loading || status.state === "running"}>
+            7-Day Update
+          </button>
+          <button type="button" className="secondary" onClick={() => { setDaysBack(30); runFetcher(30); }} disabled={loading || status.state === "running"}>
+            30-Day Catch-Up
+          </button>
+          <button type="button" className="secondary" onClick={() => { setDaysBack(60); runFetcher(60); }} disabled={loading || status.state === "running"}>
+            60-Day Deep Scan
           </button>
           <button type="button" className="secondary" onClick={loadStatus}>
             Refresh Status
@@ -283,6 +306,7 @@ export default function FetcherPage() {
     </main>
   );
 }
+
 
 
 
