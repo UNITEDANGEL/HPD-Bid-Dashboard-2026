@@ -166,6 +166,9 @@ async function main() {
       runStep("Apply manual fallback geocodes", "node", ["manual-geocode-11-new-jobs.js"]);
     }
 
+    if (fs.existsSync(path.join(ROOT, "manual-cleanup-geocode-known-jobs.js"))) {
+      runStep("Apply known cleanup geocodes", "node", ["manual-cleanup-geocode-known-jobs.js"]);
+
     // This script is harmless if those rows are already patched.
     if (fs.existsSync(path.join(ROOT, "patch-9-recovered-drive-itbs.js"))) {
       runStep("Apply known recovered Drive ITB matches", "node", ["patch-9-recovered-drive-itbs.js"]);
@@ -205,6 +208,7 @@ async function main() {
 }
 
 main();
+
 
 
 

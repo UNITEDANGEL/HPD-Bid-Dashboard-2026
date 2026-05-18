@@ -1,4 +1,4 @@
-﻿import json
+import json
 import re
 import subprocess
 import tempfile
@@ -260,6 +260,7 @@ for job in targets:
     address = get(job, "BuildingAddress", "address")
     itb = get(job, "ITBFile", "itbFile")
     pdf = find_pdf(itb)
+    used_pdf = pdf.name if pdf else ""
 
     if not pdf:
         missing_pdf += 1
