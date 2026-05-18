@@ -1,5 +1,5 @@
 ﻿"""
-FETCHR MATCHER V5 â€“ STEP 1 + STEP 2
+FETCHR MATCHER V5 Ã¢â‚¬â€œ STEP 1 + STEP 2
 
 Step 1 (COA):
 - Fetch latest CONFIRMATION OF AWARD emails (100d or 5d).
@@ -14,7 +14,7 @@ Step 1 (COA):
     * AwardedBy
 - Unit and TotalSqFt are NOT used (always blank).
 - Geocode BuildingAddress (if Google API key present).
-- If multiple COAs for same OMO â†’ keep latest by timestamp in filename.
+- If multiple COAs for same OMO Ã¢â€ â€™ keep latest by timestamp in filename.
 
 Step 2 (ITB):
 - For each OMO from COA:
@@ -26,8 +26,8 @@ Step 2 (ITB):
         - Location (fallback if COA location missing)
     * ITB Page 3:
         - Full JobDescription page (entire page text, no cleaning).
-- If Location indicates hallway/public area â†’ TenantName = "John Doe", no phone/unit.
-- If no tenant + no unit â†’ TenantName = "John Doe".
+- If Location indicates hallway/public area Ã¢â€ â€™ TenantName = "John Doe", no phone/unit.
+- If no tenant + no unit Ã¢â€ â€™ TenantName = "John Doe".
 - Merge COA + ITB into monthly CSV + JSON:
     "November Merge Data 2025.<ext>" etc.
 """
@@ -111,9 +111,9 @@ def load_google_api_key() -> Optional[str]:
 
 GOOGLE_GEOCODE_API_KEY = load_google_api_key()
 if not GOOGLE_GEOCODE_API_KEY:
-    print("âš ï¸  WARNING: No Google API key found. Geocoding will return NO_KEY.")
+    print("Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.")
 else:
-    print("âœ… Google API key loaded for geocoding.")
+    print("Ã¢Å“â€¦ Google API key loaded for geocoding.")
 
 
 # ------------------------- UTILS -------------------------
@@ -165,7 +165,7 @@ def extract_omo(text: str) -> str:
 
 def extract_timestamp_from_filename(fn: str) -> str:
     """
-    From 'EQ10797_102725122849.pdf' â†’ '102725122849'
+    From 'EQ10797_102725122849.pdf' Ã¢â€ â€™ '102725122849'
     Used only for picking the latest file.
     """
     base = os.path.basename(fn)
@@ -281,7 +281,7 @@ def extract_award_amount_no_dollar(text: str) -> str:
     """
     Awarded Amount line sometimes looks like:
     'Awarded Amount: (212) 863 - 7805 490.00'
-    We want the LAST numeric chunk â†’ 490.00
+    We want the LAST numeric chunk Ã¢â€ â€™ 490.00
     """
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     for ln in lines:
@@ -359,7 +359,7 @@ def extract_dates(text: str) -> Tuple[str, str, str]:
 def extract_address_location_unit(text: str) -> Tuple[str, str, str]:
     """
     COA address + location.
-    Apartment/Unit is NOT used for COA â†’ always blank.
+    Apartment/Unit is NOT used for COA Ã¢â€ â€™ always blank.
     """
     addr = ""
     loc = ""
@@ -582,15 +582,15 @@ def apply_geocoding(coa_items: List[COAItem]) -> None:
         c.geo_status = status
         c.lat = lat
         c.lng = lng
-        dlog(f"[GEOCODE] {idx}/{len(coa_items)} OMO {c.omo} â†’ {status} {lat},{lng}")
+        dlog(f"[GEOCODE] {idx}/{len(coa_items)} OMO {c.omo} Ã¢â€ â€™ {status} {lat},{lng}")
 
 
 # ------------------------- TENANT LOGIC (JOHN DOE) -------------------------
 
 def apply_tenant_logic(location: str, tenant_name: str, tenant_phone: str, apartment_unit: str):
     """
-    - If location indicates hallway / public â†’ John Doe, no phone/unit.
-    - If no apartment AND no tenant â†’ John Doe.
+    - If location indicates hallway / public Ã¢â€ â€™ John Doe, no phone/unit.
+    - If no apartment AND no tenant Ã¢â€ â€™ John Doe.
     """
     loc_lower = (location or "").lower()
     hallway_keywords = [
@@ -839,7 +839,7 @@ def build_itb_lookup_from_gmail_for_omos(
     omo_list = sorted(set([o for o in omo_list if o]))
 
     if not omo_list:
-        print("No OMOs from COA â€” skipping ITB lookup.")
+        print("No OMOs from COA Ã¢â‚¬â€ skipping ITB lookup.")
         return lookup
 
     for idx, omo in enumerate(
@@ -851,26 +851,57 @@ def build_itb_lookup_from_gmail_for_omos(
         today = datetime.datetime.now().strftime("%Y/%m/%d")
         start = (datetime.datetime.now() - datetime.timedelta(days=days)).strftime("%Y/%m/%d")
         tomorrow = (datetime.datetime.now() + datetime.timedelta(days=days)).strftime("%Y/%m/%d")
-        query = (
-            f'"Invitation to Bid" {omo} '
-            f'has:attachment filename:pdf '
-            f'after:{start} before:{tomorrow}'
-        )
-        dlog(f"[ITB] Searching: {query}")
-        try:
-            resp = (
-                service.users()
-                .messages()
-                .list(userId="me", q=query, maxResults=5)
-                .execute()
-            )
-        except HttpError as e:
-            print(f"ITB search error for {omo}: {e}")
-            continue
-
-        msgs = resp.get("messages", [])
+        queries = [
+            (
+                f'from:OMOBid@hpd.nyc.gov '
+                f'subject:"INVITATION TO BID" '
+                f'{omo} '
+                f'has:attachment filename:pdf '
+                f'after:{start} before:{tomorrow}'
+            ),
+            (
+                f'from:OMOBid@hpd.nyc.gov '
+                f'"INVITATION TO BID" '
+                f'{omo} '
+                f'has:attachment filename:pdf '
+                f'after:{start} before:{tomorrow}'
+            ),
+            (
+                f'from:OMOBid@hpd.nyc.gov '
+                f'{omo} '
+                f'has:attachment filename:pdf '
+                f'after:{start} before:{tomorrow}'
+            ),
+            (
+                f'"Invitation to Bid" {omo} '
+                f'has:attachment filename:pdf '
+                f'after:{start} before:{tomorrow}'
+            ),
+        ]
+        msgs = []
+        seen_msg_ids = set()
+        for query in queries:
+            dlog(f"[ITB] Searching: {query}")
+            try:
+                resp = (
+                    service.users()
+                    .messages()
+                    .list(userId="me", q=query, maxResults=10)
+                    .execute()
+                )
+            except HttpError as e:
+                print(f"ITB search error for {omo}: {e}")
+                continue
+            for msg in resp.get("messages", []):
+                msg_id = msg.get("id")
+                if msg_id and msg_id not in seen_msg_ids:
+                    seen_msg_ids.add(msg_id)
+                    msgs.append(msg)
+            if msgs:
+                break
         if not msgs:
-            dlog(f"[ITB] No ITB found for {omo}")
+            print(f"NO_ITB_GMAIL_SEARCH {omo} tried exact INVITATION TO BID subject/from queries")
+            continue
             continue
 
         # We'll only inspect first few messages, attachments inside them
@@ -1128,7 +1159,7 @@ def run():
     # 1) COA
     coa_items = build_coa_items_from_gmail(svc, LOOKBACK_DAYS)
 
-    # 2) ITB â€“ only OMOs from COA, latest per OMO
+    # 2) ITB Ã¢â‚¬â€œ only OMOs from COA, latest per OMO
     omo_list = [c.omo for c in coa_items if c.omo]
     itb_lookup = build_itb_lookup_from_gmail_for_omos(svc, LOOKBACK_DAYS, omo_list)
 
@@ -1156,6 +1187,9 @@ def infer_award_date_from_filename(path_or_name: str) -> str:
         yy = ts[4:6]
         return f"{mm}/{dd}/{yy}"
     return ""
+
+
+
 
 
 
