@@ -1,17 +1,27 @@
 name: Daily Fetcher Run
-
 on:
   schedule:
     - cron: "0 9 * * *"
   workflow_dispatch:
-
+    inputs:
+      days:
+        description: "Days back to fetch"
+        required: false
+        default: "7"
 jobs:
   run-fetcher:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Render fetcher
+        env:
+          FETCHER_SECRET: ${{ secrets.FETCHER_CRON_SECRET }}
+          INPUT_DAYS: ${{ github.event.inputs.days }}
+          AUTO_DAYS: ${{ vars.FETCHER_AUTO_DAYS }}
         run: |
+          DAYS="${INPUT_DAYS:-${AUTO_DAYS:-7}}"
+          echo "Running fetcher for ${DAYS} days"
           curl -sS -X POST "https://hpd-bid-dashboard-2026.onrender.com/api/fetcher/run" \
-            -H "x-fetcher-secret: ${{ secrets.FETCHER_CRON_SECRET }}" \
+            -H "x-fetcher-secret: ${FETCHER_SECRET}" \
             -H "Content-Type: application/json" \
+            -d "{\"days\":${DAYS}}" \
             --fail
