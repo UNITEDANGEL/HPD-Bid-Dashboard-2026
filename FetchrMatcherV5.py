@@ -187,7 +187,21 @@ def infer_award_date_from_filename(path_or_name: str) -> str:
         yy = ts[4:6]
         return f"{mm}/{dd}/{yy}"
     return ""
-# ------------------------- GMAIL AUTH -------------------------
+def load_authorized_user_token_info():
+    with open(TOKEN_FILE, "r", encoding="utf-8") as f:
+        token_info = json.load(f)
+    with open(CREDENTIALS_FILE, "r", encoding="utf-8") as f:
+        client_info = json.load(f)
+    installed = client_info.get("installed") or client_info.get("web") or {}
+    if "client_id" not in token_info and installed.get("client_id"):
+        token_info["client_id"] = installed["client_id"]
+    if "client_secret" not in token_info and installed.get("client_secret"):
+        token_info["client_secret"] = installed["client_secret"]
+    if "token_uri" not in token_info:
+        token_info["token_uri"] = installed.get("token_uri", "https://oauth2.googleapis.com/token")
+    if "type" not in token_info:
+        token_info["type"] = "authorized_user"
+    return token_info# ------------------------- GMAIL AUTH -------------------------
 
 def get_gmail_service():
     creds = None
@@ -1141,6 +1155,7 @@ def infer_award_date_from_filename(path_or_name: str) -> str:
         yy = ts[4:6]
         return f"{mm}/{dd}/{yy}"
     return ""
+
 
 
 
