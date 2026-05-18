@@ -41,20 +41,21 @@ export default function FetcherPage() {
     setStatus(data);
   }
 
-  async function runFetcher() {
+  async function runFetcher(days = 7) {
     setLoading(true);
     setRunMessage("");
-
     try {
-      const res = await fetch("/api/fetcher/run", { method: "POST" });
+      const res = await fetch("/api/fetcher/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days }),
+      });
       const data = await res.json();
-
       if (!res.ok) {
         setRunMessage(data.error || "Fetcher failed to start.");
       } else {
-        setRunMessage(data.message || "Fetcher started.");
+        setRunMessage(data.message || `Fetcher ${days}-day run started.`);
       }
-
       await loadStatus();
     } catch (err: any) {
       setRunMessage(err.message || "Fetcher failed to start.");
@@ -96,7 +97,13 @@ export default function FetcherPage() {
 
       <section className={`status-card ${status.ok ? "ok" : "warn"}`}>
         <h2>Status: {status.state || "unknown"}</h2>
-        {status.error ? <p className="error">{status.error}</p> : null}
+                {status.error ? <p className="error">{status.error}</p> : null}
+        {status.state === "complete" ? (
+          <div className="cleanup-alert">
+            <strong>Fetcher Complete</strong>
+            <span>{summary.notMapped2026 ?? 0} need geo · {summary.missingDescriptions ?? 0} missing descriptions · {summary.missingItbJobs ?? 0} missing ITB</span>
+          </div>
+        ) : null}
 
         <div className="grid">
           <div><span>Fetched COAs</span><strong>{summary.fetchedCoaItems ?? "—"}</strong></div>
@@ -244,6 +251,23 @@ export default function FetcherPage() {
           margin-top: 16px;
         }
 
+        .cleanup-alert {
+          margin: 14px 0 16px;
+          padding: 14px 16px;
+          border-radius: 18px;
+          border: 1px solid rgba(255, 209, 102, 0.34);
+          background: rgba(255, 209, 102, 0.10);
+          display: grid;
+          gap: 4px;
+        }
+        .cleanup-alert strong {
+          color: #ffe7a3;
+          font-size: 16px;
+        }
+        .cleanup-alert span {
+          color: #f7f8ff;
+          font-weight: 800;
+        }
         pre {
           max-height: 520px;
           overflow: auto;
@@ -259,4 +283,5 @@ export default function FetcherPage() {
     </main>
   );
 }
+
 

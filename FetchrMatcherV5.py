@@ -57,9 +57,10 @@ parser = argparse.ArgumentParser(description="Fetchr Matcher V5")
 parser.add_argument("--initial", action="store_true", help="Run initial 100-day pull")
 parser.add_argument("--update", action="store_true", help="Run 5-day incremental update")
 parser.add_argument("--debug", action="store_true", help="Enable verbose logging")
+parser.add_argument("--days", type=int, default=0, help="Lookback days override")
 args, _ = parser.parse_known_args()
 
-LOOKBACK_DAYS = 75 if args.initial else 95
+LOOKBACK_DAYS = args.days if args.days and args.days > 0 else (75 if args.initial else 95)
 DEBUG = bool(args.debug)
 
 print(f"\n=== FETCHR MATCHER V5 START (Last {LOOKBACK_DAYS} Days) ===\n")
@@ -1155,6 +1156,7 @@ def infer_award_date_from_filename(path_or_name: str) -> str:
         yy = ts[4:6]
         return f"{mm}/{dd}/{yy}"
     return ""
+
 
 
 

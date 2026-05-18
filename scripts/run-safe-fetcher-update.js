@@ -117,6 +117,10 @@ function summarizeChecks(mappingOut, descOut, itbOut, fullLog) {
   };
 }
 
+function selectedLookbackDays() {
+  const raw = Number(process.env.FETCHER_LOOKBACK_DAYS || 7);
+  return [7, 30].includes(raw) ? raw : 7;
+}
 async function main() {
   const startedAt = now();
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -146,11 +150,12 @@ async function main() {
     }
 
     // token.json may be created by OAuth on first local run.
-    appendLog("Credentials file exists. Starting 7-day fetcher pipeline.");
+    const lookbackDays = selectedLookbackDays();
+    appendLog(`Credentials file exists. Starting ${lookbackDays}-day fetcher pipeline.`);
 
     runStep("Install Python fetcher dependencies", "python", ["-m", "pip", "install", "--quiet", "requests", "tqdm", "PyPDF2", "google-api-python-client", "google-auth-oauthlib", "google-auth-httplib2"]);
 
-    runStep("Run Gmail fetcher for last 7 days", "python", ["FetchrMatcherV5.py", "--update", "--days", "7"]);
+    runStep(`Run Gmail fetcher for last ${lookbackDays} days`, "python", ["FetchrMatcherV5.py", "--update", "--days", String(lookbackDays)]);
 
     runStep("Safe merge fetcher output into dashboard data", "node", ["safe-merge-7day-fetch.js"]);
 
@@ -200,6 +205,7 @@ async function main() {
 }
 
 main();
+
 
 
 

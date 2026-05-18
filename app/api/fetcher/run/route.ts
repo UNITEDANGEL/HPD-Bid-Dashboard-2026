@@ -26,6 +26,16 @@ export async function POST(request: Request) {
   if (requiredSecret && providedSecret !== requiredSecret && !sameSiteDashboard) {
     return NextResponse.json({ ok: false, error: "Unauthorized fetcher run." }, { status: 401 });
   }
+  let requestedDays = 7;
+  try {
+    const body = await request.json().catch(() => ({}));
+    const parsedDays = Number(body?.days);
+    if ([7, 30].includes(parsedDays)) {
+      requestedDays = parsedDays;
+    }
+  } catch {
+    requestedDays = 7;
+  }
   if (running) {
     return NextResponse.json({ ok: false, error: "Fetcher is already running." }, { status: 409 });
   }
@@ -42,7 +52,7 @@ export async function POST(request: Request) {
   const child = spawn("node", [script], {
     cwd: root,
     shell: process.platform === "win32",
-    env: process.env,
+    env: { ...process.env, FETCHER_LOOKBACK_DAYS: String(requestedDays) },
     detached: false,
     stdio: "ignore",
   });
@@ -60,9 +70,10 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     state: "started",
-    message: "Fetcher run started. Refresh status in a minute.",
+    message: `Fetcher ${requestedDays}-day run started. Refresh status in a minute.`,
   });
 }
+
 
 
 
