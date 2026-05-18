@@ -34,7 +34,9 @@ const bad = jobs.filter((job) => {
 
 const missing = jobs.filter((job) => {
   const desc = get(job, "JobDescription", "description", "Job_Description");
-  return !desc;
+  const status = get(job, "ITBMatchStatus", "itbMatchStatus", "status").toUpperCase();
+  const itb = get(job, "ITBFile", "itbFile");
+  return !desc && status !== "NO_ITB" && itb;
 });
 
 console.log("Bad/boilerplate descriptions:", bad.length);
@@ -57,3 +59,5 @@ console.table(missing.slice(0, 20).map((j) => ({
   ITB: get(j, "ITBFile", "itbFile"),
   Status: get(j, "ITBMatchStatus", "itbMatchStatus", "status")
 })));
+
+
