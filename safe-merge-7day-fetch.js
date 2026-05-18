@@ -1,4 +1,4 @@
-﻿const fs = require("fs");
+const fs = require("fs");
 
 const masterPath = "./data/COA_Fetcher_2026.json";
 const incomingPath = "./mereged_data_csv_2025/COA_Fetcher_2026.json";
@@ -114,7 +114,46 @@ for (const raw of incoming) {
   if (!omo) continue;
 
   if (masterByOmo.has(omo)) {
-    report.skippedExisting.push(omo);
+    const existing = masterByOmo.get(omo);
+    const incomingItb = get(row, "ITBFile", "itbFile");
+    const existingItb = get(existing, "ITBFile", "itbFile");
+    const incomingDesc = get(row, "JobDescription", "description", "Job_Description");
+    const existingDesc = get(existing, "JobDescription", "description", "Job_Description");
+    const incomingStatus = get(row, "ITBMatchStatus", "itbMatchStatus", "status");
+    let updatedExisting = false;
+    if (incomingItb && !existingItb) {
+      existing.ITBFile = incomingItb;
+      existing.itbFile = incomingItb;
+      existing.ITBMatchStatus = incomingStatus || "MATCHED";
+      existing.itbMatchStatus = existing.ITBMatchStatus;
+      existing.status = existing.status === "NO_ITB" ? "MATCHED" : existing.status;
+      existing.MissingITBReason = "";
+      existing.missingITBReason = "";
+      updatedExisting = true;
+    }
+    if (incomingDesc && (!existingDesc || isBadDescription(existingDesc))) {
+      existing.JobDescription = incomingDesc;
+      existing.description = incomingDesc;
+      existing.Job_Description = incomingDesc;
+      existing.DescriptionNeedsReview = false;
+      existing.descriptionNeedsReview = false;
+      updatedExisting = true;
+    }
+    if (!hasGoodCoords(existing) && hasGoodCoords(row)) {
+      existing.Latitude = get(row, "Latitude", "latitude", "lat");
+      existing.Longitude = get(row, "Longitude", "longitude", "lng", "lon");
+      existing.latitude = existing.Latitude;
+      existing.longitude = existing.Longitude;
+      existing.Geocode = get(row, "Geocode", "geocode") || "FETCH_GEOCODE_OK";
+      existing.geocode = existing.Geocode;
+      updatedExisting = true;
+    }
+    if (updatedExisting) {
+      report.updatedExisting = report.updatedExisting || [];
+      report.updatedExisting.push(omo);
+    } else {
+      report.skippedExisting.push(omo);
+    }
     continue;
   }
 
@@ -139,9 +178,11 @@ console.log("Master before:", report.masterBefore);
 console.log("Incoming rows:", report.incomingRows);
 console.log("Added new OMOs:", report.added.length);
 console.log("Skipped existing OMOs:", report.skippedExisting.length);
+console.log("Updated existing OMOs:", (report.updatedExisting || []).length);
 console.log("Need geocode:", report.incomingNeedsGeocode.length);
 console.log("Missing ITB:", report.incomingMissingITB.length);
 console.log("Missing description:", report.incomingMissingDescription.length);
 console.log("Master after:", report.masterAfter);
 console.log("Backup:", backupPath);
 console.log("Report:", reportPath);
+

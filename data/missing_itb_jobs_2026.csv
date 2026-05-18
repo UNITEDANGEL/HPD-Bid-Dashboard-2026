@@ -1,3 +1,1 @@
 OMO,BuildingAddress,AwardDate,WorkStartDate,WorkCompletionDate,COAFile,ITBFile,MissingITBReason,ITBMatchStatus,StatusOverride,Status
-"EQ25734","95-45 112 STREET, 11419","05/18/26","5/18/26","5/25/26","EQ25734_051826125844.pdf","","Needs ITB recovery after 7-day fetch","NO_ITB","","NO_ITB"
-"EQ27468","108-07 44 AVENUE, 11368","05/11/26","5/11/26","5/22/26","EQ27468_051126020222.pdf","","Needs ITB recovery after 7-day fetch","NO_ITB","","NO_ITB"
