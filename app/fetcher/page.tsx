@@ -30,13 +30,69 @@ type FetcherStatus = {
   };
 };
 
-export default function FetcherPage() {
+type CleanupJob = {
+  OMO?: string;
+  id?: string;
+  BuildingAddress?: string;
+  address?: string;
+  AwardDate?: string;
+  awardDate?: string;
+  WorkStartDate?: string;
+  workStartDate?: string;
+  Latitude?: string | number;
+  Longitude?: string | number;
+  latitude?: string | number;
+  longitude?: string | number;
+  Geocode?: string;
+  geocode?: string;
+  ITB?: string;
+  ITBFile?: string;
+  itbFile?: string;
+  JobDescription?: string;
+  jobDescription?: string;
+  Description?: string;
+  description?: string;
+  ITBMatchStatus?: string;
+  status?: string;
+};export default function FetcherPage() {
   const [status, setStatus] = useState<FetcherStatus>({});
   const [loading, setLoading] = useState(false);
   const [runMessage, setRunMessage] = useState("");
   const [daysBack, setDaysBack] = useState(7);
+  const [needGeoJobs, setNeedGeoJobs] = useState<CleanupJob[]>([]);
+  const [missingDescJobs, setMissingDescJobs] = useState<CleanupJob[]>([]);
+  const [cleanupOpen, setCleanupOpen] = useState(false);
 
-  async function loadStatus() {
+  function jobId(job: CleanupJob) {
+    return job.OMO || job.id || "Unknown";
+  }
+  function jobAddress(job: CleanupJob) {
+    return job.BuildingAddress || job.address || "No address listed";
+  }
+  function isMissingCoord(job: CleanupJob) {
+    const lat = Number(job.Latitude ?? job.latitude);
+    const lng = Number(job.Longitude ?? job.longitude);
+    return !Number.isFinite(lat) || !Number.isFinite(lng);
+  }
+  function isMissingDescription(job: CleanupJob) {
+    const desc = String(job.JobDescription || job.jobDescription || job.Description || job.description || "").trim();
+    return !desc;
+  }
+  async function loadCleanupJobs() {
+    try {
+      const res = await fetch("/api/jobs?v=fetcher-cleanup-" + Date.now(), { cache: "no-store" });
+      const data = await res.json();
+      const rows: CleanupJob[] = Array.isArray(data) ? data : data.jobs || data.data || [];
+      const rows2026 = rows.filter((job) => {
+        const award = String(job.AwardDate || job.awardDate || "");
+        return award.includes("/26") || award.includes("2026");
+      });
+      setNeedGeoJobs(rows2026.filter(isMissingCoord).slice(0, 50));
+      setMissingDescJobs(rows2026.filter(isMissingDescription).slice(0, 50));
+    } catch (err) {
+      console.error(err);
+    }
+  }  async function loadStatus() {
     const res = await fetch("/api/fetcher/status?v=" + Date.now(), { cache: "no-store" });
     const data = await res.json();
     setStatus(data);
@@ -291,6 +347,61 @@ export default function FetcherPage() {
           color: #f7f8ff;
           font-weight: 800;
         }
+        .cleanup-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 10px;
+        }
+        .cleanup-actions a {
+          background: rgba(255, 255, 255, 0.10);
+          color: #f7f8ff;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+        }
+        .cleanup-panel {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+          gap: 14px;
+          margin: 14px 0 18px;
+        }
+        .cleanup-list {
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: rgba(255, 255, 255, 0.07);
+          border-radius: 20px;
+          padding: 14px;
+        }
+        .cleanup-list h3 {
+          margin: 0 0 12px;
+          font-size: 18px;
+        }
+        .cleanup-list p {
+          margin: 0;
+          color: #aeb9d6;
+        }
+        .cleanup-row {
+          display: grid;
+          gap: 3px;
+          border-radius: 15px;
+          padding: 12px;
+          margin-bottom: 9px;
+          background: rgba(5, 8, 18, 0.62);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          color: #f7f8ff;
+        }
+        .cleanup-row strong {
+          color: #9ddcff;
+          font-size: 16px;
+        }
+        .cleanup-row span {
+          color: #f7f8ff;
+          font-weight: 800;
+          line-height: 1.25;
+        }
+        .cleanup-row small {
+          color: #ffd166;
+          font-weight: 800;
+          line-height: 1.25;
+        }
         pre {
           max-height: 520px;
           overflow: auto;
@@ -306,6 +417,8 @@ export default function FetcherPage() {
     </main>
   );
 }
+
+
 
 
 
