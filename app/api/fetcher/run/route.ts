@@ -14,6 +14,11 @@ export async function POST(request: Request) {
     state: "disabled",
     error: "Fetcher is disabled on Render. Run it locally from C:\\dev\\Node_Dashboard_Live, then push updated data to GitHub.",
   }, { status: 410 });
+  return NextResponse.json({
+    ok: false,
+    state: "disabled",
+    error: "Fetcher is disabled on Render. Run it locally from C:\\dev\\Node_Dashboard_Live, then push updated data to GitHub.",
+  }, { status: 410 });
   const requiredSecret = process.env.FETCHER_CRON_SECRET || "";
   const providedSecret = request.headers.get("x-fetcher-secret") || "";
 
@@ -79,6 +84,7 @@ export async function POST(request: Request) {
     message: `Fetcher ${requestedDays}-day run started. Refresh status in a minute.`,
   });
 }
+
 
 
 
