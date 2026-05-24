@@ -1,4 +1,4 @@
-Fetcher run started: 2026-05-24T16:05:24.087Z
+Fetcher run started: 2026-05-24T16:26:41.106Z
 Google auth files validated as JSON.
 Credentials file exists. Starting 7-day fetcher pipeline.
 
@@ -17,8 +17,164 @@ $ python FetchrMatcherV5.py --update --days 7
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
-Refreshing expired Gmail token headlessly.
-AUTH REFRESH ERROR: ('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/05/17 before:2026/05/25
+COA items parsed (latest per OMO): 15
+ITB items parsed (latest per OMO): 15
+Final JobRows: 15
+
+CSV saved -> C:\dev\Node_Dashboard_Live\mereged_data_csv_2025\COA_Fetcher_2026.csv
+JSON saved -> C:\dev\Node_Dashboard_Live\mereged_data_csv_2025\COA_Fetcher_2026.json
+
+=== FETCHR MATCHER V5 DONE ===
+
+Downloading COA messages:   0%|          | 0/16 [00:00<?, ?it/s]Downloading COA messages:   6%|▋         | 1/16 [00:00<00:02,  5.61it/s]Downloading COA messages:  12%|█▎        | 2/16 [00:00<00:01,  7.55it/s]Downloading COA messages:  19%|█▉        | 3/16 [00:00<00:02,  6.28it/s]Downloading COA messages:  25%|██▌       | 4/16 [00:00<00:01,  6.11it/s]Downloading COA messages:  31%|███▏      | 5/16 [00:00<00:01,  6.67it/s]Downloading COA messages:  38%|███▊      | 6/16 [00:00<00:01,  6.77it/s]Downloading COA messages:  44%|████▍     | 7/16 [00:01<00:01,  7.29it/s]Downloading COA messages:  50%|█████     | 8/16 [00:01<00:01,  7.83it/s]Downloading COA messages:  56%|█████▋    | 9/16 [00:01<00:01,  6.32it/s]Downloading COA messages:  62%|██████▎   | 10/16 [00:01<00:00,  6.93it/s]Downloading COA messages:  69%|██████▉   | 11/16 [00:01<00:00,  7.49it/s]Downloading COA messages:  75%|███████▌  | 12/16 [00:01<00:00,  7.55it/s]Downloading COA messages:  81%|████████▏ | 13/16 [00:01<00:00,  7.81it/s]Downloading COA messages:  88%|████████▊ | 14/16 [00:01<00:00,  7.14it/s]Downloading COA messages:  94%|█████████▍| 15/16 [00:02<00:00,  7.37it/s]Downloading COA messages: 100%|██████████| 16/16 [00:02<00:00,  6.62it/s]Downloading COA messages: 100%|██████████| 16/16 [00:02<00:00,  6.93it/s]
+Geocoding COA addresses:   0%|          | 0/15 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 15/15 [00:00<?, ?it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/15 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   7%|▋         | 1/15 [00:00<00:09,  1.41it/s]Fetching ITBs for COA OMOs:  13%|█▎        | 2/15 [00:01<00:08,  1.54it/s]Fetching ITBs for COA OMOs:  20%|██        | 3/15 [00:01<00:07,  1.71it/s]Fetching ITBs for COA OMOs:  27%|██▋       | 4/15 [00:02<00:06,  1.75it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 5/15 [00:02<00:05,  1.79it/s]Fetching ITBs for COA OMOs:  40%|████      | 6/15 [00:03<00:04,  1.83it/s]Fetching ITBs for COA OMOs:  47%|████▋     | 7/15 [00:04<00:04,  1.76it/s]Fetching ITBs for COA OMOs:  53%|█████▎    | 8/15 [00:04<00:03,  1.84it/s]Fetching ITBs for COA OMOs:  60%|██████    | 9/15 [00:05<00:03,  1.79it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 10/15 [00:05<00:02,  1.77it/s]Fetching ITBs for COA OMOs:  73%|███████▎  | 11/15 [00:06<00:02,  1.76it/s]Fetching ITBs for COA OMOs:  80%|████████  | 12/15 [00:06<00:01,  1.94it/s]Fetching ITBs for COA OMOs:  87%|████████▋ | 13/15 [00:07<00:01,  1.99it/s]Fetching ITBs for COA OMOs:  93%|█████████▎| 14/15 [00:07<00:00,  2.06it/s]Fetching ITBs for COA OMOs: 100%|██████████| 15/15 [00:08<00:00,  2.14it/s]Fetching ITBs for COA OMOs: 100%|██████████| 15/15 [00:08<00:00,  1.87it/s]
 
 
-FAILED: Run Gmail fetcher for last 7 days failed with exit code 1
+========== Safe merge fetcher output into dashboard data ==========
+$ node safe-merge-7day-fetch.js
+Safe merge complete
+Master before: 454
+Incoming rows: 270
+Added new OMOs: 11
+Skipped existing OMOs: 259
+Updated existing OMOs: 0
+Need geocode: 11
+Missing ITB: 0
+Missing description: 11
+Master after: 465
+Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
+Report: ./data/safe_7day_merge_report.json
+
+
+========== Geocode new safe-merged jobs ==========
+$ node geocode-new-safe-fetch-jobs.js
+Need geocode: 11
+OK EQ27934 50 GREENE AVENUE, 11238 40.6859586 -73.9706945
+OK EQ28089 1219 ELDER AVENUE, 10472 40.8293453 -73.8796057
+FAILED EQ28621 2533 AQUEDUCT AVENUE WEST, 10468
+OK EQ28357 1926 83 STREET, 11214 40.7727677 -73.9456869
+OK EQ25957 28-30 34 STREET, 11103 40.7432766 -73.9723089
+OK EQ28455 225 BOWERY, 10002 40.721909 -73.9929183
+OK EQ26235 1013 AVENUE J, 11230 40.6248483 -73.9655509
+OK EQ27419 2020 EAST 41 STREET, 11234 40.7478105 -73.9694875
+OK EQ28492 92-01 LAMONT AVENUE, 11373 40.7448203 -73.8739113
+OK EQ28123 962 ANDERSON AVENUE, 10452 40.8313678 -73.9274993
+OK EQ27348 209 DYCKMAN STREET, 10040 40.865193 -73.9266313
+Geocoded: 10
+Failed: 1
+Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
+
+
+========== Apply manual fallback geocodes ==========
+$ node manual-geocode-11-new-jobs.js
+Manual geocodes patched: 11
+Backup: ./data/COA_Fetcher_2026.before_manual_geocode_11_new.json
+
+
+========== Apply known cleanup geocodes ==========
+$ node manual-cleanup-geocode-known-jobs.js
+Manual geocode patched: 0
+Backup: ./data/COA_Fetcher_2026.before_manual_cleanup_geocode.json
+
+
+========== Apply known recovered Drive ITB matches ==========
+$ node patch-9-recovered-drive-itbs.js
+Recovered ITBs patched: 9
+Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
+
+
+========== Recover descriptions from matched ITBs ==========
+$ python recover-new-itb-descriptions.py
+Matched ITBs needing description: 11
+DESCRIPTION OK EQ27934 EQ27934_051926030119.pdf
+DESCRIPTION OK EQ28089 EQ28089_052126085153.pdf
+DESCRIPTION OK EQ28621 EQ28621_052026124247.pdf
+DESCRIPTION OK EQ28357 EQ28357_051926032302.pdf
+DESCRIPTION OK EQ25957 EQ25957_051826035242.pdf
+DESCRIPTION OK EQ28455 EQ28455_051826122931.pdf
+DESCRIPTION OK EQ26235 EQ26235_051926012614.pdf
+DESCRIPTION OK EQ27419 EQ27419_051926015214.pdf
+DESCRIPTION OK EQ28492 EQ28492_051826122720.pdf
+DESCRIPTION OK EQ28123 EQ28123_051926123910.pdf
+DESCRIPTION OK EQ27348 EQ27348_051826121201.pdf
+Descriptions patched: 11
+Missing PDF: 0
+Failed: 0
+Backup: data\COA_Fetcher_2026.before_deep_description_recovery.json
+
+Samples:
+{'OMO': 'EQ27934', 'Address': '50 GREENE AVENUE, 11238', 'RecoveredFrom': 'EQ27934_051926030119.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK" MAKE THE HOPPER DOOR AT 4TH STORY SELF CLOSE AND LA TCH. REMOVE THE DEFECTIVE HOPPER DOOR HYDRAULIC CLOSER A RM. SUPPLY AND INSTALL NEW CLOSER ARM FOR TH'}
+{'OMO': 'EQ28089', 'Address': '1219 ELDER AVENUE, 10472', 'RecoveredFrom': 'EQ28089_052126085153.pdf', 'Preview': ': LOCATOIN: 1ST STORY PUBLIC HALL/ VESTIBULE DOOR (LA TCH)  (EMERGENCY OPERATIONS DIVISION "ESSE NTIAL SERVICE REPAIRS"- AT THE 1ST STORY PUBLIC HALL/ VESTIBULE DOOR INSTALL NEW MORTISE PASSAGE LOCK TO MAKE DOOR SELF CLO'}
+{'OMO': 'EQ28621', 'Address': '2533 AQUEDUCT AVENUE WEST, 10468', 'RecoveredFrom': 'EQ28621_052026124247.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT VESTIBULE DOOR 1ST STORY. INSTALL DOOR CLOSER, MAKE ALL NECESSARY ADJUSTMENTS / ALIGNMENT TO DOOR ENSURE DOORS IS PROPERLY SELF CLOSING AND LATCHING '}
+{'OMO': 'EQ28357', 'Address': '1926 83 STREET, 11214', 'RecoveredFrom': 'EQ28357_051926032302.pdf', 'Preview': ': REPLACING MISSING LOCK SET ***NYC HPD EMERGENCY OPERATIONS DIVISION – "ESSENTI AL SERVICE WORK"*** AT BLDG ENT DOOR MAKE ALL NECESSARY REPAIRS TO REPLACE THE MISSING A DAM WRIGHT LOCK SET WITH NEW SIMILAR TO EXISTING A'}
+{'OMO': 'EQ25957', 'Address': '28-30 34 STREET, 11103', 'RecoveredFrom': 'EQ25957_051826035242.pdf', 'Preview': ': DEFECTICE LATCH ASSEMBLY AT 2ND STORY COMPACTOR CLO SET DOOR. MAKE ALL NECESSARY REPAIRS TO REPLACE THE DEFECTIVE DOOR LATCH ASSEMBLY WITH NEW DOOOR LATCH ASSEMBLY , COMPLETE WITH , NEW STRIKE AT ( PUBLIC PARTS , 2ND S'}
+{'OMO': 'EQ28455', 'Address': '225 BOWERY, 10002', 'RecoveredFrom': 'EQ28455_051826122931.pdf', 'Preview': ': AT THE BOILER ROOM. MAKE DOOR SELF CLOSING NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK AT THE BOILER ROOM INSTALL A NEW LOCK SET AT THE BOILER ROOM DOOR. ENS URE DOOR IS SELF CLOSING AND LATCHING IN'}
+{'OMO': 'EQ26235', 'Address': '1013 AVENUE J, 11230', 'RecoveredFrom': 'EQ26235_051926012614.pdf', 'Preview': ': INSTALL NEW MORTISE PASSAGE LOCK AT PUBLIC HALL 6TH STORY AND PUBLIC HALL 1ST STORY, COMPACTOR CLOSET DOOR. TOTAL DOORS= (2) NYC HPD EMERGENCY OPERATIONS DIVISION - "ESSENTIALS SERVICE WORK" AT COMPACTOR CLOSET DOOR, 6'}
+{'OMO': 'EQ27419', 'Address': '2020 EAST 41 STREET, 11234', 'RecoveredFrom': 'EQ27419_051926015214.pdf', 'Preview': '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to abide by the HPD Open Market Order Bid Terms and Conditions an d In addition, yo'}
+{'OMO': 'EQ28492', 'Address': '92-01 LAMONT AVENUE, 11373', 'RecoveredFrom': 'EQ28492_051826122720.pdf', 'Preview': 'FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS  Provide/Install   Abate   Remove   Delead   Painting/SPP   Repair   Replace   APPLIANCES: STOVE: REFRIGERATOR:  '}
+{'OMO': 'EQ28123', 'Address': '962 ANDERSON AVENUE, 10452', 'RecoveredFrom': 'EQ28123_051926123910.pdf', 'Preview': '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to abide by the HPD Open Market Order Bid Terms and Conditions an d In addition, yo'}
+{'OMO': 'EQ27348', 'Address': '209 DYCKMAN STREET, 10040', 'RecoveredFrom': 'EQ27348_051826121201.pdf', 'Preview': ": NYC HPD EMERGENCY OPERATIONS DIVISION - 'ESSENTIAL SERVICE WORK' RESTORE DEFECTIVE LOWER SASH WINDOW AT 1ST ROOM FRO M EAST. AT APT 64: MAKE ALL NECESSARY REPAIRS TO LOWER SASH WINDOW CON TER BALANCE AT 1ST ROOM FROM E"}
+
+
+========== Verify mapping ==========
+$ node check-local-mapping.js
+Raw JSON rows: 465
+2026 rows: 414
+2026 rows with any Latitude/Longitude: 413
+2026 rows with valid NYC coordinates: 413
+2026 rows NOT valid mapped: 1
+
+Not mapped sample:
+┌─────────┬───────────┬────────────────────────────────────┬────────────┬───────────────┬──────────┬───────────┬──────────────┬──────────────────┬───────────┐
+│ (index) │ OMO       │ Address                            │ AwardDate  │ WorkStartDate │ Latitude │ Longitude │ Geocode      │ MissingITBReason │ Status    │
+├─────────┼───────────┼────────────────────────────────────┼────────────┼───────────────┼──────────┼───────────┼──────────────┼──────────────────┼───────────┤
+│ 0       │ 'EQ28621' │ '2533 AQUEDUCT AVENUE WEST, 10468' │ '05/21/26' │ '5/21/26'     │ ''       │ ''        │ 'OSM_FAILED' │ ''               │ 'MATCHED' │
+└─────────┴───────────┴────────────────────────────────────┴────────────┴───────────────┴──────────┴───────────┴──────────────┴──────────────────┴───────────┘
+
+
+========== Verify descriptions ==========
+$ node check-generic-descriptions.js
+Bad/boilerplate descriptions: 0
+Missing descriptions: 0
+
+Bad sample:
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+Missing sample:
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+
+========== Verify missing ITB ==========
+$ node export-missing-itb.js
+Total jobs: 465
+Missing ITB jobs: 0
+Exported: ./data/missing_itb_jobs_2026.csv
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+
+Fetcher run finished: 2026-05-24T16:27:19.607Z
+{
+  "fetchedCoaItems": 15,
+  "fetchedItbItems": 15,
+  "fetchedFinalJobRows": 15,
+  "addedNewOmos": 11,
+  "skippedExistingOmos": 259,
+  "rawRows": 465,
+  "rows2026": 414,
+  "mapped2026": 413,
+  "notMapped2026": 1,
+  "badDescriptions": 0,
+  "missingDescriptions": 0,
+  "missingItbJobs": 0
+}

@@ -1,4 +1,4 @@
-﻿"""
+"""
 FETCHR MATCHER V5 Ã¢â‚¬â€œ STEP 1 + STEP 2
 
 Step 1 (COA):
@@ -218,8 +218,14 @@ def get_gmail_service():
             creds = None
 
     if not creds:
-        print("AUTH ERROR: token.json could not be loaded. Render cannot open browser OAuth.")
-        raise SystemExit(1)
+        if os.getenv("RENDER"):
+            print("AUTH ERROR: token.json could not be loaded. Render cannot open browser OAuth.")
+            raise SystemExit(1)
+        print("No valid token.json found. Opening local browser for Google OAuth.")
+        flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+        creds = flow.run_local_server(port=0)
+        with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+            f.write(creds.to_json())
 
     if not creds.valid:
         try:
@@ -1187,6 +1193,7 @@ def infer_award_date_from_filename(path_or_name: str) -> str:
         yy = ts[4:6]
         return f"{mm}/{dd}/{yy}"
     return ""
+
 
 
 
