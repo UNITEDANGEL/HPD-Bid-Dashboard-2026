@@ -1,0 +1,146 @@
+Fetcher run started: 2026-05-24T17:24:03.881Z
+Google auth files validated as JSON.
+Credentials file exists. Starting 7-day fetcher pipeline.
+
+========== Install Python fetcher dependencies ==========
+$ python -m pip install --quiet requests tqdm PyPDF2 google-api-python-client google-auth-oauthlib google-auth-httplib2
+
+[notice] A new release of pip is available: 25.0.1 -> 26.1.1
+[notice] To update, run: python.exe -m pip install --upgrade pip
+
+
+========== Run Gmail fetcher for last 7 days ==========
+$ python FetchrMatcherV5.py --update --days 7
+
+=== FETCHR MATCHER V5 START (Last 7 Days) ===
+
+Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
+=== FETCHR MATCHER V5 PIPELINE ===
+Loaded Gmail token.json with OAuth client fields.
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/05/17 before:2026/05/25
+COA items parsed (latest per OMO): 15
+ITB items parsed (latest per OMO): 15
+Final JobRows: 15
+
+CSV saved -> C:\dev\Node_Dashboard_Live\mereged_data_csv_2025\COA_Fetcher_2026.csv
+JSON saved -> C:\dev\Node_Dashboard_Live\mereged_data_csv_2025\COA_Fetcher_2026.json
+
+=== FETCHR MATCHER V5 DONE ===
+
+Downloading COA messages:   0%|          | 0/16 [00:00<?, ?it/s]Downloading COA messages:   6%|▋         | 1/16 [00:00<00:01,  9.36it/s]Downloading COA messages:  12%|█▎        | 2/16 [00:00<00:01,  8.88it/s]Downloading COA messages:  25%|██▌       | 4/16 [00:00<00:01,  9.50it/s]Downloading COA messages:  38%|███▊      | 6/16 [00:00<00:00, 10.28it/s]Downloading COA messages:  50%|█████     | 8/16 [00:00<00:00,  9.69it/s]Downloading COA messages:  62%|██████▎   | 10/16 [00:00<00:00, 10.43it/s]Downloading COA messages:  75%|███████▌  | 12/16 [00:01<00:00, 10.51it/s]Downloading COA messages:  88%|████████▊ | 14/16 [00:01<00:00, 10.06it/s]Downloading COA messages: 100%|██████████| 16/16 [00:01<00:00,  9.90it/s]Downloading COA messages: 100%|██████████| 16/16 [00:01<00:00,  9.97it/s]
+Geocoding COA addresses:   0%|          | 0/15 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 15/15 [00:00<?, ?it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/15 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   7%|▋         | 1/15 [00:00<00:07,  1.82it/s]Fetching ITBs for COA OMOs:  13%|█▎        | 2/15 [00:00<00:06,  2.09it/s]Fetching ITBs for COA OMOs:  20%|██        | 3/15 [00:01<00:05,  2.03it/s]Fetching ITBs for COA OMOs:  27%|██▋       | 4/15 [00:02<00:05,  1.94it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 5/15 [00:02<00:05,  2.00it/s]Fetching ITBs for COA OMOs:  40%|████      | 6/15 [00:02<00:04,  2.15it/s]Fetching ITBs for COA OMOs:  47%|████▋     | 7/15 [00:03<00:03,  2.13it/s]Fetching ITBs for COA OMOs:  53%|█████▎    | 8/15 [00:03<00:03,  2.25it/s]Fetching ITBs for COA OMOs:  60%|██████    | 9/15 [00:04<00:02,  2.08it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 10/15 [00:04<00:02,  2.12it/s]Fetching ITBs for COA OMOs:  73%|███████▎  | 11/15 [00:05<00:01,  2.02it/s]Fetching ITBs for COA OMOs:  80%|████████  | 12/15 [00:05<00:01,  2.19it/s]Fetching ITBs for COA OMOs:  87%|████████▋ | 13/15 [00:06<00:00,  2.29it/s]Fetching ITBs for COA OMOs:  93%|█████████▎| 14/15 [00:06<00:00,  2.41it/s]Fetching ITBs for COA OMOs: 100%|██████████| 15/15 [00:06<00:00,  2.46it/s]Fetching ITBs for COA OMOs: 100%|██████████| 15/15 [00:06<00:00,  2.19it/s]
+
+
+========== Safe merge fetcher output into dashboard data ==========
+$ node safe-merge-7day-fetch.js
+Safe merge complete
+Master before: 465
+Incoming rows: 270
+Added new OMOs: 0
+Skipped existing OMOs: 270
+Updated existing OMOs: 0
+Need geocode: 0
+Missing ITB: 0
+Missing description: 0
+Master after: 465
+Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
+Report: ./data/safe_7day_merge_report.json
+
+
+========== Geocode new safe-merged jobs ==========
+$ node geocode-new-safe-fetch-jobs.js
+Need geocode: 0
+Geocoded: 0
+Failed: 0
+Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
+
+
+========== Apply manual fallback geocodes ==========
+$ node manual-geocode-11-new-jobs.js
+Manual geocodes patched: 11
+Backup: ./data/COA_Fetcher_2026.before_manual_geocode_11_new.json
+
+
+========== Apply known cleanup geocodes ==========
+$ node manual-cleanup-geocode-known-jobs.js
+Manual geocode patched: 0
+Backup: ./data/COA_Fetcher_2026.before_manual_cleanup_geocode.json
+
+
+========== Apply known recovered Drive ITB matches ==========
+$ node patch-9-recovered-drive-itbs.js
+Recovered ITBs patched: 9
+Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
+
+
+========== Recover descriptions from matched ITBs ==========
+$ python recover-new-itb-descriptions.py
+Matched ITBs needing description: 0
+Descriptions patched: 0
+Missing PDF: 0
+Failed: 0
+Backup: data\COA_Fetcher_2026.before_deep_description_recovery.json
+
+Samples:
+
+
+========== Verify mapping ==========
+$ node check-local-mapping.js
+Raw JSON rows: 465
+2026 rows: 414
+2026 rows with any Latitude/Longitude: 414
+2026 rows with valid NYC coordinates: 414
+2026 rows NOT valid mapped: 0
+
+Not mapped sample:
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+
+========== Verify descriptions ==========
+$ node check-generic-descriptions.js
+Bad/boilerplate descriptions: 0
+Missing descriptions: 0
+
+Bad sample:
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+Missing sample:
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+
+========== Verify missing ITB ==========
+$ node export-missing-itb.js
+Total jobs: 465
+Missing ITB jobs: 0
+Exported: ./data/missing_itb_jobs_2026.csv
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+
+Fetcher run finished: 2026-05-24T17:24:19.472Z
+{
+  "fetchedCoaItems": 15,
+  "fetchedItbItems": 15,
+  "fetchedFinalJobRows": 15,
+  "addedNewOmos": 0,
+  "skippedExistingOmos": 270,
+  "rawRows": 465,
+  "rows2026": 414,
+  "mapped2026": 414,
+  "notMapped2026": 0,
+  "badDescriptions": 0,
+  "missingDescriptions": 0,
+  "missingItbJobs": 0
+}

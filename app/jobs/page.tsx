@@ -1,7 +1,5 @@
-import { DashboardClient } from "../../components/DashboardClient";
+﻿import { DashboardClient } from "../../components/DashboardClient";
 import { getJobs } from "../../lib/jobs";
-
-export const dynamic = "force-dynamic";
 
 export default function JobsPage() {
   const jobs = getJobs();
@@ -14,3 +12,4 @@ export default function JobsPage() {
     />
   );
 }
+

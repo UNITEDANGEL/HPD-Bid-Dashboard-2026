@@ -80,7 +80,7 @@ type CleanupJob = {
   }
   async function loadCleanupJobs() {
     try {
-      const res = await fetch("/api/jobs?v=fetcher-cleanup-" + Date.now(), { cache: "no-store" });
+      const res = await fetch("/data/COA_Fetcher_2026.json?v=fetcher-cleanup-" + Date.now(), { cache: "no-store" });
       const data = await res.json();
       const rows: CleanupJob[] = Array.isArray(data) ? data : data.jobs || data.data || [];
       const rows2026 = rows.filter((job) => {
@@ -93,33 +93,14 @@ type CleanupJob = {
       console.error(err);
     }
   }  async function loadStatus() {
-    const res = await fetch("/api/fetcher/status?v=" + Date.now(), { cache: "no-store" });
+    const res = await fetch("/data/fetcher_latest_status.json?v=" + Date.now(), { cache: "no-store" });
     const data = await res.json();
     setStatus(data);
   }
 
   async function runFetcher(days = daysBack) {
     const safeDays = Math.min(95, Math.max(1, Math.floor(Number(days) || 7)));
-    setLoading(true);
-    setRunMessage("");
-    try {
-      const res = await fetch("/api/fetcher/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ days: safeDays }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setRunMessage(data.error || "Fetcher failed to start.");
-      } else {
-        setRunMessage(data.message || `Fetcher ${safeDays}-day run started.`);
-      }
-      await loadStatus();
-    } catch (err: any) {
-      setRunMessage(err.message || "Fetcher failed to start.");
-    } finally {
-      setLoading(false);
-    }
+    setRunMessage(`Static site only. Run locally: cd C:\\dev\\Node_Dashboard_Live && $env:FETCHER_LOOKBACK_DAYS="${safeDays}" && node scripts/run-safe-fetcher-update.js`);
   }
 
   useEffect(() => {
@@ -417,6 +398,7 @@ type CleanupJob = {
     </main>
   );
 }
+
 
 
 

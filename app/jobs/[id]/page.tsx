@@ -1,8 +1,13 @@
-import Link from "next/link";
+﻿import jobsData from "../../../data/COA_Fetcher_2026.json";
+export async function generateStaticParams() {
+  const rows = Array.isArray(jobsData) ? jobsData : [];
+  return rows
+    .map((job: any) => String(job.OMO || job.id || "").trim())
+    .filter(Boolean)
+    .map((id: string) => ({ id }));
+}import Link from "next/link";
 import { StatusBadge } from "../../../components/StatusBadge";
 import { getJobById } from "../../../lib/jobs";
-
-export const dynamic = "force-dynamic";
 
 function mapsHref(latitude: string, longitude: string, address: string) {
   const query = latitude && longitude ? `${latitude},${longitude}` : address;
@@ -135,3 +140,5 @@ export default async function JobDetailPage({
     </div>
   );
 }
+
+

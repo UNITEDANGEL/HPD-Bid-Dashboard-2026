@@ -1,0 +1,22 @@
+{
+  "state": "complete",
+  "startedAt": "2026-05-24T17:24:03.881Z",
+  "finishedAt": "2026-05-24T17:24:19.472Z",
+  "ok": true,
+  "error": "",
+  "summary": {
+    "fetchedCoaItems": 15,
+    "fetchedItbItems": 15,
+    "fetchedFinalJobRows": 15,
+    "addedNewOmos": 0,
+    "skippedExistingOmos": 270,
+    "rawRows": 465,
+    "rows2026": 414,
+    "mapped2026": 414,
+    "notMapped2026": 0,
+    "badDescriptions": 0,
+    "missingDescriptions": 0,
+    "missingItbJobs": 0
+  },
+  "logPath": "data/fetcher_latest_run.log"
+}
