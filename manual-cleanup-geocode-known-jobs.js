@@ -4,6 +4,7 @@ const backupPath = "./data/COA_Fetcher_2026.before_manual_cleanup_geocode.json";
 const jobs = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
 fs.copyFileSync(jsonPath, backupPath);
 const manual = {
+  "EQ28621": { lat: 40.86684, lng: -73.90260, note: "2533 AQUEDUCT AVENUE WEST, 10468" },
   "EQ26798": { lat: 40.83444, lng: -73.94268, note: "569 WEST 159 STREET, 10032" },
   "EQ25734": { lat: 40.69136, lng: -73.83383, note: "95-45 112 STREET, 11419" },
   "EQ27940": { lat: 40.71664, lng: -73.95651, note: "548 DRIGGS AVENUE, 11211" },
@@ -55,3 +56,4 @@ for (const job of jobs) {
 fs.writeFileSync(jsonPath, JSON.stringify(jobs, null, 2), "utf8");
 console.log("Manual geocode patched:", patched);
 console.log("Backup:", backupPath);
+
