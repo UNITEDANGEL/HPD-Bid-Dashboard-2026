@@ -899,10 +899,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     async function loadJobs() {
       try {
-        const response = await fetch("/api/jobs", { cache: "no-store" });
-        if (!response.ok) throw new Error(`/api/jobs returned ${response.status}`);
+        const response = await fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" });
+        if (!response.ok) throw new Error(`/data/COA_Fetcher_2026.json returned ${response.status}`);
 
-        const rows = asArray(await response.json());
+        const data = await response.json();
+        const rows = asArray(Array.isArray(data) ? data : data.jobs || data.data || []);
 
         if (cancelled) return;
 
@@ -4126,6 +4127,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
