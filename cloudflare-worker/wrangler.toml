@@ -1,0 +1,7 @@
+﻿name = "hpd-status-worker"
+main = "src/index.js"
+compatibility_date = "2026-05-26"
+kv_namespaces = [
+  { binding = "HPD_STATUS_OVERRIDES", id = "6bd78f1a2d944eebb86704cf31f7f916" }
+]
+

@@ -1,4 +1,5 @@
 ﻿"use client";
+const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
 
 
 import * as JobStatus from "../../lib/jobs/status";
@@ -521,7 +522,7 @@ function workflowStorageWrite(rows: Record<string, any>) {
 async function workflowServerSave(key: string, patch: Record<string, any>) {
   if (!key) return;
 
-  const response = await fetch("/api/job-status", {
+  const response = await fetch(`${HPD_STATUS_WORKER_URL}/override`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ key, patch }),
@@ -1147,7 +1148,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   function updateStatus(job: any, newStatus: string) {
   if (!job?.OMO) return;
 
-  fetch("/api/update-status", {
+  fetch(`${HPD_STATUS_WORKER_URL}/override`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -4127,6 +4128,9 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
 
 
 
