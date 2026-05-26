@@ -128,8 +128,33 @@ function displayDescription(job: JobRecord) {
     (job as any).JobDescription ||
     (job as any).Job_Description ||
     (job as any).Description ||
+    (job as any).WorkDescription ||
+    (job as any).ScopeOfWork ||
+    (job as any)["Job Description"] ||
+    (job as any)["Description"] ||
     ""
   );
+}
+function displayAmount(job: JobRecord) {
+  const raw =
+    (job as any).AwardAmount ||
+    (job as any).awardAmount ||
+    (job as any).bidAmount ||
+    (job as any).BidAmount ||
+    (job as any).Amount ||
+    (job as any)["Award Amount"] ||
+    (job as any)["Bid Amount"] ||
+    (job as any).amountValue ||
+    "";
+  if (raw === null || raw === undefined || raw === "") return "";
+  const value = String(raw).trim();
+  if (!value) return "";
+  if (value.includes("$")) return value;
+  const num = Number(value.replace(/[^0-9.-]/g, ""));
+  if (Number.isFinite(num) && num > 0) {
+    return num.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  }
+  return value;
 }
 
 function cleanAddress(job: JobRecord) {
@@ -3888,7 +3913,7 @@ function directionsUrl(job: JobRecord) {
             </div>
 
             <div className="detail-grid">
-              <div className="detail"><span>Amount</span><strong>{money(selected) || "Not listed"}</strong></div>
+              <div className="detail"><span>Amount</span><strong>{displayAmount(selected) || money(selected) || "Not listed"}</strong></div>
               <div className="detail"><span>Award Date</span><strong>{maturityInfo(selected).award}</strong></div>
               <div className="detail"><span>Work Start Date</span><strong>{selected.WorkStartDate || selected.workStartDate || "Not listed"}</strong></div>
               <div className="detail"><span>Work Completion Date</span><strong>{selected.WorkCompletionDate || selected.workCompletionDate || "Not listed"}</strong></div>
@@ -3931,7 +3956,7 @@ function directionsUrl(job: JobRecord) {
               <div className="detail"><span>Map Source</span><strong>{selected._source || "unmapped"}</strong></div>
             </div>
 
-            {selected.description ? (
+            {displayDescription(selected) ? (
               <button
                 type="button"
                 className="selected-description description-open-button"
@@ -3941,7 +3966,7 @@ function directionsUrl(job: JobRecord) {
                   <span>Job Description</span>
                   <strong>Tap to Open</strong>
                 </div>
-                <p>{selected.description}</p>
+                <p>{displayDescription(selected)}</p>
               </button>
             ) : null}
 
@@ -4048,7 +4073,7 @@ function directionsUrl(job: JobRecord) {
               </div>
 
               <div className="detail-grid">
-                <div className="detail"><span>Amount</span><strong>{money(job) || "Not listed"}</strong></div>
+                <div className="detail"><span>Amount</span><strong>{displayAmount(job) || money(job) || "Not listed"}</strong></div>
                 <div className="detail"><span>Award</span><strong>{job.AwardDate || job.awardDate || "Not listed"}</strong></div>
                 <div className="detail"><span>Work Start</span><strong>{job.WorkStartDate || job.workStartDate || "Not listed"}</strong></div>
                 <div className="detail"><span>Work Complete</span><strong>{job.WorkCompletionDate || job.workCompletionDate || "Not listed"}</strong></div>
@@ -4148,13 +4173,14 @@ function directionsUrl(job: JobRecord) {
 
             <div className="description-modal-body">
               <h2>Job Description</h2>
-              <p>{selected.description}</p>
+              <p>{displayDescription(selected)}</p>
             </div>
           </div>
         ) : null}
       </main>
   );
 }
+
 
 
 
