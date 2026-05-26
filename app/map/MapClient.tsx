@@ -54,6 +54,9 @@ type JobRecord = {
   contractor?: string;
   owner?: string;
   description?: string;
+  Description?: string;
+  JobDescription?: string;
+  Job_Description?: string;
   COAFile?: string;
   coaFile?: string;
   ITBFile?: string;
@@ -4128,6 +4131,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
