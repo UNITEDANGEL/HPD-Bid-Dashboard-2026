@@ -112,11 +112,35 @@ function jobKey(job: JobRecord, index?: number) {
 }
 
 function displayAddress(job: JobRecord) {
-  return job.address || job.location || "No address listed";
+  return (
+    (job as any).address ||
+    (job as any).BuildingAddress ||
+    (job as any).Address ||
+    (job as any).Building_Address ||
+    (job as any).location ||
+    (job as any).Location ||
+    "No address listed"
+  );
+}
+function displayDescription(job: JobRecord) {
+  return (
+    (job as any).description ||
+    (job as any).JobDescription ||
+    (job as any).Job_Description ||
+    (job as any).Description ||
+    ""
+  );
 }
 
 function cleanAddress(job: JobRecord) {
-  const raw = job.address || job.location || "";
+  const raw =
+    (job as any).address ||
+    (job as any).BuildingAddress ||
+    (job as any).Address ||
+    (job as any).Building_Address ||
+    (job as any).location ||
+    (job as any).Location ||
+    "";
   if (!raw.trim()) return "";
 
   const parts = [raw];
@@ -4131,6 +4155,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
