@@ -749,7 +749,7 @@ const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60
     }
   }, []);
 
-  // Apply saved workflow statuses after jobs load from /api/jobs.
+  // Apply saved workflow statuses after jobs load from static data.
   useEffect(() => {
     if (selected) {
       window.setTimeout(() => {
@@ -964,7 +964,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         if (!cancelled) {
           setJobs([]);
           setMappedJobs([]);
-          setMessage("Could not load /api/jobs. Showing NYC map only.");
+          setMessage("Could not load static jobs data. Showing NYC map only.");
         }
       }
     }
@@ -4127,6 +4127,8 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
 
 
 

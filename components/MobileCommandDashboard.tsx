@@ -72,9 +72,10 @@ export default function MobileCommandDashboard() {
 
     async function load() {
       try {
-        const res = await fetch("/api/jobs", { cache: "no-store" });
-        if (!res.ok) throw new Error(`Jobs API returned ${res.status}`);
-        const rows = asArray(await res.json());
+        const res = await fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" });
+        if (!res.ok) throw new Error(`Static jobs data returned ${res.status}`);
+        const data = await res.json();
+        const rows = asArray(Array.isArray(data) ? data : data.jobs || data.data || []);
 
         if (!cancelled) {
           setJobs(rows);
@@ -722,4 +723,5 @@ export default function MobileCommandDashboard() {
     </main>
   );
 }
+
 

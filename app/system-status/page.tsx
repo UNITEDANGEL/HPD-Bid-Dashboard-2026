@@ -7,7 +7,7 @@ export default function SystemStatusPage() {
   const [automation, setAutomation] = useState("Checking...");
 
   useEffect(() => {
-    fetch("/api/jobs", { cache: "no-store" })
+    fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" })
       .then((res) => setJobs(res.ok ? "OK" : `HTTP ${res.status}`))
       .catch(() => setJobs("Unavailable"));
 
@@ -124,3 +124,5 @@ export default function SystemStatusPage() {
     </main>
   );
 }
+
+

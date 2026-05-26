@@ -61,10 +61,11 @@ export default function InvoiceGeneratorPage() {
 
     async function loadJobs() {
       try {
-        const res = await fetch("/api/jobs", { cache: "no-store" });
+        const res = await fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" });
         if (!res.ok) return;
 
-        const rows = asArray(await res.json());
+        const data = await res.json();
+        const rows = asArray(Array.isArray(data) ? data : data.jobs || data.data || []);
         if (!cancelled) setJobs(rows);
       } catch (error) {
         console.error(error);
@@ -411,3 +412,5 @@ export default function InvoiceGeneratorPage() {
     </main>
   );
 }
+
+
