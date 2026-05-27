@@ -1207,7 +1207,34 @@ function shouldShowOnActiveMap(job: JobRecord) {
   return workflowViewBucket(job) === "active" || workflowViewBucket(job) === "waiting72" || workflowViewBucket(job) === "ready2" || workflowViewBucket(job) === "final";
 }
 
-export default function MapClient() {
+function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overrides: Record<string, any>): T[] {
+  return rows.map((row) => {
+    const key = jobKey(row);
+    const patch = key ? overrides[key] : null;
+    if (!patch) return row;
+    if (patch.__clearWorkflow) {
+      return {
+        ...row,
+        WorkflowStatus: "",
+        workflowStatus: "",
+        FieldOutcome: "",
+        fieldOutcome: "",
+        StatusOverride: "",
+        status: "Pending",
+        NoAccessFirstAttemptAt: "",
+        noAccessFirstAttemptAt: "",
+        NoAccessSecondAttemptAt: "",
+        noAccessSecondAttemptAt: "",
+        SecondAttemptAvailableAt: "",
+        secondAttemptAvailableAt: "",
+        RefusalDate: "",
+        refusalDate: "",
+        ArchivedFromMap: false,
+      } as T;
+    }
+    return { ...row, ...patch } as T;
+  });
+}export default function MapClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const markerLayerRef = useRef<any>(null);
@@ -1227,6 +1254,7 @@ const [countdownTick, setCountdownTick] = useState(0);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
 const [actionNotice, setActionNotice] = useState("");
+const [serverWorkflowOverrides, setServerWorkflowOverrides] = useState<Record<string, any>>({});
   const [mapReady, setMapReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -1252,6 +1280,50 @@ const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60
     }
   }, []);
 
+  // LOAD_WORKFLOW_OVERRIDES_FROM_WORKER
+  useEffect(() => {
+    let cancelled = false;
+    async function loadServerOverrides() {
+      try {
+        const response = await fetch(`${HPD_STATUS_WORKER_URL}/overrides`, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`Failed to load workflow overrides: ${response.status}`);
+        }
+        let data = await response.json();
+        if (typeof data === "string") {
+          try {
+            data = JSON.parse(data);
+          } catch {
+            data = {};
+          }
+        }
+        const overrides =
+          data?.overrides && typeof data.overrides === "object"
+            ? data.overrides
+            : {};
+        if (cancelled) return;
+        setServerWorkflowOverrides(overrides);
+        if (Object.keys(overrides).length) {
+          setActionNotice("Synced latest job statuses.");
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+    loadServerOverrides();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  // APPLY_SERVER_OVERRIDES_AFTER_ROWS_LOAD
+  useEffect(() => {
+    if (!Object.keys(serverWorkflowOverrides).length) return;
+    setJobs((rows) => applyWorkflowOverrideObjectToRows(rows, serverWorkflowOverrides));
+    setMappedJobs((rows) => applyWorkflowOverrideObjectToRows(rows, serverWorkflowOverrides));
+    setSelected((current) =>
+      current ? (applyWorkflowOverrideObjectToRows([current], serverWorkflowOverrides)[0] as MappedJob) : current
+    );
+  }, [serverWorkflowOverrides, jobs.length, mappedJobs.length]);
   // Apply saved workflow statuses after jobs load from static data.
   useEffect(() => {
     if (selected) {
@@ -4976,6 +5048,12 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
+
+
 
 
 
