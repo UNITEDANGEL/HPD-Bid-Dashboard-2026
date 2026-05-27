@@ -217,15 +217,47 @@ function descriptionStatusLabel(job: JobRecord | null | undefined) {
   }
   return "Description ready";
 }
-function speakText(text: string) {
+function getBestVoice() {
+  if (typeof window === "undefined") return null;
+  if (!("speechSynthesis" in window)) return null;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+  const preferredNames = [
+    "Samantha",
+    "Google US English",
+    "Microsoft Aria",
+    "Microsoft Jenny",
+    "Microsoft Zira",
+    "Alex",
+    "Karen",
+    "Daniel"
+  ];
+  const englishVoices = voices.filter((voice) => /^en[-_]/i.test(voice.lang || ""));
+  for (const name of preferredNames) {
+    const found = englishVoices.find((voice) =>
+      `${voice.name} ${voice.lang}`.toLowerCase().includes(name.toLowerCase())
+    );
+    if (found) return found;
+  }
+  return englishVoices[0] || voices[0] || null;
+}
+function speakText(text: string, mode: "full" | "summary" = "full") {
   if (typeof window === "undefined") return;
   if (!("speechSynthesis" in window)) {
     alert("Text-to-speech is not supported in this browser.");
     return;
   }
+  const clean = String(text || "").trim();
+  if (!clean) {
+    alert("No text available to read.");
+    return;
+  }
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.92;
+  const utterance = new SpeechSynthesisUtterance(clean);
+  const voice = getBestVoice();
+  if (voice) utterance.voice = voice;
+  utterance.lang = voice?.lang || "en-US";
+  utterance.rate = mode === "summary" ? 0.9 : 0.86;
   utterance.pitch = 1;
   utterance.volume = 1;
   window.speechSynthesis.speak(utterance);
@@ -233,6 +265,31 @@ function speakText(text: string) {
 function stopSpeaking() {
   if (typeof window === "undefined") return;
   if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+}
+function reloadSpeechVoices() {
+  if (typeof window === "undefined") return;
+  if (!("speechSynthesis" in window)) {
+    alert("Text-to-speech is not supported in this browser.");
+    return;
+  }
+  window.speechSynthesis.getVoices();
+  alert("Voices reloaded. Try Read again.");
+}
+function descriptionSummary(job: JobRecord | null | undefined) {
+  const text = displayDescription(job);
+  if (!text) return "No description available.";
+  const compact = text
+    .replace(/\s+/g, " ")
+    .replace(/NYC HPD EMERGENCY OPERATIONS DIVISION/gi, "")
+    .replace(/ESSENTIAL SERVICE WORK/gi, "")
+    .trim();
+  const sentences = compact
+    .split(/(?<=[.!?])\s+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const first = sentences.slice(0, 2).join(" ");
+  const fallback = compact.slice(0, 260);
+  return first || fallback;
 }
 function displayAmount(job: JobRecord | null | undefined) {
   if (!job) return "";
@@ -4367,9 +4424,16 @@ function directionsUrl(job: JobRecord) {
                   <button
                     type="button"
                     className="read-description-btn"
-                    onClick={() => speakText(displayDescription(selected))}
+                    onClick={() => speakText(descriptionSummary(selected), "summary")}
                   >
-                    🔊 Read
+                    🧠 Summary
+                  </button>
+                  <button
+                    type="button"
+                    className="read-description-btn"
+                    onClick={() => speakText(displayDescription(selected), "full")}
+                  >
+                    🔊 Full
                   </button>
                   <button
                     type="button"
@@ -4378,9 +4442,25 @@ function directionsUrl(job: JobRecord) {
                   >
                     Stop
                   </button>
+                  <button
+                    type="button"
+                    className="stop-description-btn"
+                    onClick={reloadSpeechVoices}
+                  >
+                    Reload
+                  </button>
                 </div>
               ) : null}
             </div>
+            {displayDescription(selected) ? (
+              <div className="description-summary-box">
+                <div className="description-head">
+                  <span>Smart Summary</span>
+                  <strong>Tap Summary to hear</strong>
+                </div>
+                <p>{descriptionSummary(selected)}</p>
+              </div>
+            ) : null}
             {displayDescription(selected) ? (
               <button
                 type="button"
@@ -4623,6 +4703,10 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
 
 
 
