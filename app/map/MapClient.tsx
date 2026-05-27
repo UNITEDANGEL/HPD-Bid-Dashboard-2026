@@ -179,6 +179,17 @@ function displayAddress(job: JobRecord) {
     "No address listed"
   );
 }
+function displayLocation(job: JobRecord | null | undefined) {
+  if (!job) return "";
+  return (
+    (job as any).Location ||
+    (job as any).location ||
+    (job as any).ApartmentUnit ||
+    (job as any).Apartment ||
+    (job as any).Unit ||
+    ""
+  );
+}
 function displayDescription(job: JobRecord) {
   return (
     (job as any).description ||
@@ -192,26 +203,36 @@ function displayDescription(job: JobRecord) {
     ""
   );
 }
-function displayAmount(job: JobRecord) {
+function displayAmount(job: JobRecord | null | undefined) {
+  if (!job) return "";
   const raw =
-    (job as any).AwardAmount ||
-    (job as any).awardAmount ||
-    (job as any).bidAmount ||
-    (job as any).BidAmount ||
-    (job as any).Amount ||
-    (job as any)["Award Amount"] ||
-    (job as any)["Bid Amount"] ||
-    (job as any).amountValue ||
+    (job as any).AwardAmount ??
+    (job as any).awardAmount ??
+    (job as any)["Award Amount"] ??
+    (job as any).bidAmount ??
+    (job as any).BidAmount ??
+    (job as any)["Bid Amount"] ??
+    (job as any).Amount ??
+    (job as any).amountValue ??
     "";
-  if (raw === null || raw === undefined || raw === "") return "";
-  const value = String(raw).trim();
-  if (!value) return "";
-  if (value.includes("$")) return value;
-  const num = Number(value.replace(/[^0-9.-]/g, ""));
-  if (Number.isFinite(num) && num > 0) {
-    return num.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
-  }
-  return value;
+  if (raw === null || raw === undefined) return "";
+  const original = String(raw).trim();
+  if (!original) return "";
+  const cleaned = original.replace(/[$,\s]/g, "");
+  const num = Number(cleaned);
+  if (!Number.isFinite(num)) return original;
+  const suspicious =
+    num === 0 ||
+    /^0\d/.test(cleaned) ||
+    original === "000.00" ||
+    original === "090.00";
+  const formatted = num.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  return suspicious ? `${formatted} ⚠ check` : formatted;
 }
 
 function cleanAddress(job: JobRecord) {
@@ -4242,7 +4263,7 @@ function directionsUrl(job: JobRecord) {
               <div>
                 <strong className="job-title">{jobKey(selected)}</strong>
                 <p className="job-address">{displayAddress(selected)}</p>
-                <p className="job-sub">{selected.borough || "Unknown borough"} · {selected.trade || "Trade not listed"}</p>
+                <p className="job-sub">{selected.borough || "Unknown borough"} · {displayLocation(selected) || "Location not listed"}</p>
               </div>
               <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
                 <span className={`status ${statusClass(selected.status)}`}>{JobStatus.statusLabel(selected)}</span>
@@ -4250,6 +4271,11 @@ function directionsUrl(job: JobRecord) {
               </div>
             </div>
 
+            <div className="quick-info-strip">
+              <div><span>Amount</span><strong>{displayAmount(selected) || "Not listed"}</strong></div>
+              <div><span>Location</span><strong>{displayLocation(selected) || "Not listed"}</strong></div>
+              <div><span>Borough</span><strong>{selected?.borough || "Unknown"}</strong></div>
+            </div>
             <div className="detail-grid">
               <div className="detail"><span>Amount</span><strong>{displayAmount(selected) || money(selected) || "Not listed"}</strong></div>
               <div className="detail"><span>Award Date</span><strong>{maturityInfo(selected).award}</strong></div>
@@ -4411,7 +4437,7 @@ function directionsUrl(job: JobRecord) {
                 <div>
                   <strong className="job-title">{jobKey(job, index)}</strong>
                   <p className="job-address">{displayAddress(job)}</p>
-                  <p className="job-sub">{job.borough || "Unknown borough"} · {job.trade || "Trade not listed"}</p>
+                  <p className="job-sub">{job.borough || "Unknown borough"} · {displayLocation(job) || "Location not listed"}</p>
                 </div>
                 <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
                   <span className={`status ${statusClass(job.status)}`}>{JobStatus.statusLabel(job)}</span>
@@ -4419,7 +4445,12 @@ function directionsUrl(job: JobRecord) {
                 </div>
               </div>
 
-              <div className="detail-grid">
+              <div className="quick-info-strip">
+              <div><span>Amount</span><strong>{displayAmount(job) || "Not listed"}</strong></div>
+              <div><span>Location</span><strong>{displayLocation(job) || "Not listed"}</strong></div>
+              <div><span>Borough</span><strong>{job?.borough || "Unknown"}</strong></div>
+            </div>
+            <div className="detail-grid">
                 <div className="detail"><span>Amount</span><strong>{displayAmount(job) || money(job) || "Not listed"}</strong></div>
                 <div className="detail"><span>Award</span><strong>{job.AwardDate || job.awardDate || "Not listed"}</strong></div>
                 <div className="detail"><span>Work Start</span><strong>{job.WorkStartDate || job.workStartDate || "Not listed"}</strong></div>
@@ -4532,6 +4563,11 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
+
 
 
 
