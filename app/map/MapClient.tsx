@@ -378,6 +378,33 @@ function markerOverdueLabel(job: JobRecord) {
   const diffDays = Math.round((todayOnly.getTime() - endDate.getTime()) / 86400000);
   return diffDays > 0 ? `OD ${diffDays}d` : "";
 }
+function markerPulseClass(job: JobRecord) {
+  const status = workflowStatus(job) || legacyWorkflowKind(job);
+  const second = workflowSecondAttemptInfo(job);
+  if (second?.ready) return "marker-pulse-ready";
+  if (second && !second.ready) return "marker-pulse-waiting";
+  if (
+    status === "WORK_COMPLETED" ||
+    status === "COMPLETED_BY_OTHERS" ||
+    status === "NO_ACCESS_COMPLETE" ||
+    status === "REFUSED_ACCESS" ||
+    status === "PARTIAL_WORK_COMPLETED"
+  ) {
+    return "marker-pulse-status";
+  }
+  return "";
+}
+function markerUrgencyClass(job: JobRecord) {
+  const second = workflowSecondAttemptInfo(job);
+  if (second?.ready) return "marker-urgent-ready";
+  if (markerOverdueLabel(job)) return "marker-urgent-overdue";
+  const work = workWindowInfo(job);
+  if (String(work.statusLabel || "").toLowerCase().includes("due today")) return "marker-urgent-today";
+  if (String(work.statusLabel || "").toLowerCase().includes("due in")) return "marker-urgent-soon";
+  const status = workflowStatus(job) || legacyWorkflowKind(job);
+  if (status === "WORK_COMPLETED" || status === "COMPLETED_BY_OTHERS") return "marker-urgent-complete";
+  return "marker-urgent-normal";
+}
 function markerMaturityLabel(job: JobRecord) {
   const awardRaw =
     (job as any).AwardDate ||
@@ -4949,6 +4976,7 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
 
 
 
