@@ -190,8 +190,9 @@ function displayLocation(job: JobRecord | null | undefined) {
     ""
   );
 }
-function displayDescription(job: JobRecord) {
-  return (
+function displayDescription(job: JobRecord | null | undefined) {
+  if (!job) return "";
+  const raw =
     (job as any).description ||
     (job as any).JobDescription ||
     (job as any).Job_Description ||
@@ -200,8 +201,38 @@ function displayDescription(job: JobRecord) {
     (job as any).ScopeOfWork ||
     (job as any)["Job Description"] ||
     (job as any)["Description"] ||
-    ""
-  );
+    "";
+  return String(raw || "")
+    .replace(/\r/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+function descriptionStatusLabel(job: JobRecord | null | undefined) {
+  const text = displayDescription(job);
+  if (!text) return "Description missing";
+  if (text.length < 40) return "Description short - check source";
+  if (/confirmation of award/i.test(text) && !/essential service|repair|replace|install|remove|restore/i.test(text)) {
+    return "Description may need review";
+  }
+  return "Description ready";
+}
+function speakText(text: string) {
+  if (typeof window === "undefined") return;
+  if (!("speechSynthesis" in window)) {
+    alert("Text-to-speech is not supported in this browser.");
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 0.92;
+  utterance.pitch = 1;
+  utterance.volume = 1;
+  window.speechSynthesis.speak(utterance);
+}
+function stopSpeaking() {
+  if (typeof window === "undefined") return;
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
 }
 function displayAmount(job: JobRecord | null | undefined) {
   if (!job) return "";
@@ -4329,6 +4360,27 @@ function directionsUrl(job: JobRecord) {
               <div className="detail"><span>Map Source</span><strong>{selected._source || "unmapped"}</strong></div>
             </div>
 
+            <div className={`description-status ${displayDescription(selected) ? "has-description" : "missing-description"}`}>
+              <span>{descriptionStatusLabel(selected)}</span>
+              {displayDescription(selected) ? (
+                <div className="description-speech-actions">
+                  <button
+                    type="button"
+                    className="read-description-btn"
+                    onClick={() => speakText(displayDescription(selected))}
+                  >
+                    🔊 Read
+                  </button>
+                  <button
+                    type="button"
+                    className="stop-description-btn"
+                    onClick={stopSpeaking}
+                  >
+                    Stop
+                  </button>
+                </div>
+              ) : null}
+            </div>
             {displayDescription(selected) ? (
               <button
                 type="button"
@@ -4341,7 +4393,15 @@ function directionsUrl(job: JobRecord) {
                 </div>
                 <p>{displayDescription(selected)}</p>
               </button>
-            ) : null}
+            ) : (
+              <div className="selected-description missing-description-box">
+                <div className="description-head">
+                  <span>Job Description</span>
+                  <strong>Missing</strong>
+                </div>
+                <p>No job description was found for this row. Check ITB/COA source.</p>
+              </div>
+            )}
 
             <div className="status-actions">
               <button type="button" onClick={() => pickDraftWorkflow("No Access - 1st Attempt")}>No Access 1st</button>
@@ -4563,6 +4623,8 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
 
 
 
