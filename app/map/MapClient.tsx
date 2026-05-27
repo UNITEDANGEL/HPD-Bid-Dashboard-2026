@@ -943,6 +943,105 @@ function markerWorkWindowClass(job: JobRecord) {
   if (statusClass === "ok") return "marker-work-ok";
   return "marker-work-neutral";
 }
+function nextActionInfo(job: JobRecord | null | undefined) {
+  if (!job) {
+    return {
+      label: "Select a job",
+      detail: "Open a job to see the next field action.",
+      tone: "neutral",
+    };
+  }
+  const work = workWindowInfo(job);
+  const desc = displayDescription(job);
+  const workflow = workflowLabel(job);
+  const second = workflowSecondAttemptInfo(job);
+  if (workflow && /completed|done/i.test(workflow)) {
+    return {
+      label: "Work marked complete",
+      detail: "Review photos, affidavit, and invoice package.",
+      tone: "ok",
+    };
+  }
+  if (second?.ready) {
+    return {
+      label: "2nd attempt ready",
+      detail: "72-hour no-access counter matured. Schedule revisit now.",
+      tone: "danger",
+    };
+  }
+  if (work.statusLabel.toLowerCase().includes("overdue")) {
+    return {
+      label: work.statusLabel,
+      detail: "Complete the job, mark no access, refused access, or document the field issue.",
+      tone: "danger",
+    };
+  }
+  if (work.statusLabel.toLowerCase().includes("due today")) {
+    return {
+      label: "Due today",
+      detail: "Prioritize this job today or document access/status.",
+      tone: "warning",
+    };
+  }
+  if (work.statusLabel.toLowerCase().includes("due in")) {
+    return {
+      label: work.statusLabel,
+      detail: "Work window is active. Track completion before deadline.",
+      tone: "ok",
+    };
+  }
+  if (work.startLabel.toLowerCase().includes("starts in")) {
+    return {
+      label: work.startLabel,
+      detail: "Prepare crew, materials, access, and route.",
+      tone: "neutral",
+    };
+  }
+  if (!desc) {
+    return {
+      label: "Description missing",
+      detail: "Description should be recovered before field work.",
+      tone: "danger",
+    };
+  }
+  return {
+    label: "Review job",
+    detail: "Check scope, dates, access, and status before dispatch.",
+    tone: "neutral",
+  };
+}
+function timelineDateLabel(value?: string) {
+  const parsed = parseJobDate(value);
+  if (!parsed) return value || "—";
+  return parsed.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "2-digit",
+  });
+}
+function timelineMaturityLabel(job: JobRecord | null | undefined) {
+  if (!job) return "—";
+  const raw = (job as any).AwardDate || (job as any).awardDate || "";
+  const date = parseJobDate(raw);
+  if (!date) return "—";
+  const today = dateOnly(new Date());
+  const diff = daysBetween(date, today);
+  return diff >= 0 ? `MD ${diff}d` : "Future";
+}
+function timelineOverdueLabel(job: JobRecord | null | undefined) {
+  if (!job) return "—";
+  const raw =
+    (job as any).WorkCompletionDate ||
+    (job as any).workCompletionDate ||
+    "";
+  const date = parseJobDate(raw);
+  if (!date) return "—";
+  const today = dateOnly(new Date());
+  const diff = daysBetween(date, today);
+  if (diff > 0) return `OD ${diff}d`;
+  if (diff === 0) return "Due today";
+  return `Due ${Math.abs(diff)}d`;
+}
 function workWindowInfo(job: JobRecord) {
   const startRaw = (job as any).WorkStartDate || (job as any).workStartDate || (job as any)["Work Start Date"] || "";
   const endRaw =
@@ -1830,6 +1929,105 @@ function markerWorkWindowClass(job: JobRecord) {
   if (statusClass === "warning") return "marker-work-warning";
   if (statusClass === "ok") return "marker-work-ok";
   return "marker-work-neutral";
+}
+function nextActionInfo(job: JobRecord | null | undefined) {
+  if (!job) {
+    return {
+      label: "Select a job",
+      detail: "Open a job to see the next field action.",
+      tone: "neutral",
+    };
+  }
+  const work = workWindowInfo(job);
+  const desc = displayDescription(job);
+  const workflow = workflowLabel(job);
+  const second = workflowSecondAttemptInfo(job);
+  if (workflow && /completed|done/i.test(workflow)) {
+    return {
+      label: "Work marked complete",
+      detail: "Review photos, affidavit, and invoice package.",
+      tone: "ok",
+    };
+  }
+  if (second?.ready) {
+    return {
+      label: "2nd attempt ready",
+      detail: "72-hour no-access counter matured. Schedule revisit now.",
+      tone: "danger",
+    };
+  }
+  if (work.statusLabel.toLowerCase().includes("overdue")) {
+    return {
+      label: work.statusLabel,
+      detail: "Complete the job, mark no access, refused access, or document the field issue.",
+      tone: "danger",
+    };
+  }
+  if (work.statusLabel.toLowerCase().includes("due today")) {
+    return {
+      label: "Due today",
+      detail: "Prioritize this job today or document access/status.",
+      tone: "warning",
+    };
+  }
+  if (work.statusLabel.toLowerCase().includes("due in")) {
+    return {
+      label: work.statusLabel,
+      detail: "Work window is active. Track completion before deadline.",
+      tone: "ok",
+    };
+  }
+  if (work.startLabel.toLowerCase().includes("starts in")) {
+    return {
+      label: work.startLabel,
+      detail: "Prepare crew, materials, access, and route.",
+      tone: "neutral",
+    };
+  }
+  if (!desc) {
+    return {
+      label: "Description missing",
+      detail: "Description should be recovered before field work.",
+      tone: "danger",
+    };
+  }
+  return {
+    label: "Review job",
+    detail: "Check scope, dates, access, and status before dispatch.",
+    tone: "neutral",
+  };
+}
+function timelineDateLabel(value?: string) {
+  const parsed = parseJobDate(value);
+  if (!parsed) return value || "—";
+  return parsed.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "2-digit",
+  });
+}
+function timelineMaturityLabel(job: JobRecord | null | undefined) {
+  if (!job) return "—";
+  const raw = (job as any).AwardDate || (job as any).awardDate || "";
+  const date = parseJobDate(raw);
+  if (!date) return "—";
+  const today = dateOnly(new Date());
+  const diff = daysBetween(date, today);
+  return diff >= 0 ? `MD ${diff}d` : "Future";
+}
+function timelineOverdueLabel(job: JobRecord | null | undefined) {
+  if (!job) return "—";
+  const raw =
+    (job as any).WorkCompletionDate ||
+    (job as any).workCompletionDate ||
+    "";
+  const date = parseJobDate(raw);
+  if (!date) return "—";
+  const today = dateOnly(new Date());
+  const diff = daysBetween(date, today);
+  if (diff > 0) return `OD ${diff}d`;
+  if (diff === 0) return "Due today";
+  return `Due ${Math.abs(diff)}d`;
 }
 function workWindowInfo(job: JobRecord) {
   const startRaw = (job as any).WorkStartDate || (job as any).workStartDate || (job as any)["Work Start Date"] || "";
@@ -4364,6 +4562,30 @@ function directionsUrl(job: JobRecord) {
               <div><span>Location</span><strong>{displayLocation(selected) || "Not listed"}</strong></div>
               <div><span>Borough</span><strong>{selected?.borough || "Unknown"}</strong></div>
             </div>
+            <div className={`next-action-banner ${nextActionInfo(selected).tone}`}>
+              <span>Next Action</span>
+              <strong>{nextActionInfo(selected).label}</strong>
+              <p>{nextActionInfo(selected).detail}</p>
+            </div>
+            <div className="deadline-timeline">
+              <div className="timeline-item">
+                <span>COA</span>
+                <strong>{timelineDateLabel(selected?.AwardDate || selected?.awardDate)}</strong>
+                <small>{timelineMaturityLabel(selected)}</small>
+              </div>
+              <div className="timeline-line" />
+              <div className="timeline-item">
+                <span>Start</span>
+                <strong>{timelineDateLabel(selected?.WorkStartDate || selected?.workStartDate)}</strong>
+                <small>{selected ? workWindowInfo(selected).startLabel : "—"}</small>
+              </div>
+              <div className="timeline-line" />
+              <div className="timeline-item">
+                <span>Complete</span>
+                <strong>{timelineDateLabel(selected?.WorkCompletionDate || selected?.workCompletionDate)}</strong>
+                <small>{timelineOverdueLabel(selected)}</small>
+              </div>
+            </div>
             <div className="detail-grid">
               <div className="detail"><span>Amount</span><strong>{displayAmount(selected) || money(selected) || "Not listed"}</strong></div>
               <div className="detail"><span>Award Date</span><strong>{maturityInfo(selected).award}</strong></div>
@@ -4375,7 +4597,7 @@ function directionsUrl(job: JobRecord) {
                 <small>
                   Start: {workWindowInfo(selected).startDate} · End: {workWindowInfo(selected).endDate}
                   <br />
-                  {workWindowInfo(selected).startLabel} · {workWindowInfo(selected).endLabel}
+                  {selected ? workWindowInfo(selected).startLabel : "—"} · {workWindowInfo(selected).endLabel}
                 </small>
               </div>
               <div className="detail"><span>Counter Start Date</span><strong>{maturityInfo(selected).maturity}</strong></div>
@@ -4590,6 +4812,30 @@ function directionsUrl(job: JobRecord) {
               <div><span>Location</span><strong>{displayLocation(job) || "Not listed"}</strong></div>
               <div><span>Borough</span><strong>{job?.borough || "Unknown"}</strong></div>
             </div>
+            <div className={`next-action-banner ${nextActionInfo(selected).tone}`}>
+              <span>Next Action</span>
+              <strong>{nextActionInfo(selected).label}</strong>
+              <p>{nextActionInfo(selected).detail}</p>
+            </div>
+            <div className="deadline-timeline">
+              <div className="timeline-item">
+                <span>COA</span>
+                <strong>{timelineDateLabel(selected?.AwardDate || selected?.awardDate)}</strong>
+                <small>{timelineMaturityLabel(selected)}</small>
+              </div>
+              <div className="timeline-line" />
+              <div className="timeline-item">
+                <span>Start</span>
+                <strong>{timelineDateLabel(selected?.WorkStartDate || selected?.workStartDate)}</strong>
+                <small>{selected ? workWindowInfo(selected).startLabel : "—"}</small>
+              </div>
+              <div className="timeline-line" />
+              <div className="timeline-item">
+                <span>Complete</span>
+                <strong>{timelineDateLabel(selected?.WorkCompletionDate || selected?.workCompletionDate)}</strong>
+                <small>{timelineOverdueLabel(selected)}</small>
+              </div>
+            </div>
             <div className="detail-grid">
                 <div className="detail"><span>Amount</span><strong>{displayAmount(job) || money(job) || "Not listed"}</strong></div>
                 <div className="detail"><span>Award</span><strong>{job.AwardDate || job.awardDate || "Not listed"}</strong></div>
@@ -4703,6 +4949,8 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
 
 
 
