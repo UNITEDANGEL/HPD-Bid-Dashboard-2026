@@ -275,6 +275,74 @@ function reloadSpeechVoices() {
   window.speechSynthesis.getVoices();
   alert("Voices reloaded. Try Read again.");
 }
+function jobInfoPopupText(job: JobRecord | null | undefined, type: "amount" | "location" | "dates" | "status" | "docs") {
+  if (!job) return "No job selected.";
+  if (type === "amount") {
+    return [
+      `Job: ${jobKey(job)}`,
+      `Amount: ${displayAmount(job) || money(job) || "Not listed"}`,
+      `Contractor: ${(job as any).contractor || "Not listed"}`,
+      `Owner: ${(job as any).owner || "Not listed"}`,
+    ].join("\n");
+  }
+  if (type === "location") {
+    return [
+      `Job: ${jobKey(job)}`,
+      `Address: ${displayAddress(job)}`,
+      `Borough: ${(job as any).borough || (job as any).Borough || "Unknown"}`,
+      `Location: ${displayLocation(job) || "Not listed"}`,
+      `Phone: ${phone(job) || "Not listed"}`,
+    ].join("\n");
+  }
+  if (type === "dates") {
+    return [
+      `Job: ${jobKey(job)}`,
+      `Award Date: ${maturityInfo(job).award}`,
+      `COA Counter: ${smartWorkflowLabel(job)}`,
+      `Work Start: ${(job as any).WorkStartDate || (job as any).workStartDate || "Not listed"}`,
+      `Work Complete: ${(job as any).WorkCompletionDate || (job as any).workCompletionDate || "Not listed"}`,
+      `Work Window: ${workWindowInfo(job).statusLabel}`,
+      `Timeline: ${timelineMaturityLabel(job)} / ${timelineOverdueLabel(job)}`,
+    ].join("\n");
+  }
+  if (type === "status") {
+    const second = workflowSecondAttemptInfo(job);
+    return [
+      `Job: ${jobKey(job)}`,
+      `Status: ${JobStatus.statusLabel(job)}`,
+      `Field Status: ${workflowLabel(job) || "Not set"}`,
+      `Next Action: ${nextActionInfo(job).label}`,
+      `Detail: ${nextActionInfo(job).detail}`,
+      second ? `72h Counter: ${second.label}` : "72h Counter: Not active",
+    ].join("\n");
+  }
+  return [
+    `Job: ${jobKey(job)}`,
+    `COA: ${((job as any).COAFile || (job as any).coaFile) ? "Available" : "Not listed"}`,
+    `ITB: ${((job as any).ITBFile || (job as any).itbFile) ? "Available" : "Not listed"}`,
+    `PDF: ${((job as any).PDFFile || (job as any).pdfFile) ? "Available" : "Not listed"}`,
+    `Description: ${displayDescription(job) ? "Ready" : "Missing"}`,
+  ].join("\n");
+}
+function openJobInfoPopup(job: JobRecord | null | undefined, type: "amount" | "location" | "dates" | "status" | "docs") {
+  if (typeof window === "undefined") return;
+  const titles: Record<string, string> = {
+    amount: "Amount Details",
+    location: "Location Details",
+    dates: "Date Timeline",
+    status: "Status & Next Action",
+    docs: "Document Checklist",
+  };
+  const text = jobInfoPopupText(job, type);
+  window.dispatchEvent(
+    new CustomEvent("hpd-open-touch-info", {
+      detail: {
+        title: titles[type] || "Job Details",
+        text,
+      },
+    })
+  );
+}
 function descriptionSummary(job: JobRecord | null | undefined) {
   const text = displayDescription(job);
   if (!text) return "No description available.";
@@ -1246,6 +1314,9 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
 const [selectedOnly, setSelectedOnly] = useState(false);
 const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
 const [descriptionOpen, setDescriptionOpen] = useState(false);
+const [touchInfoOpen, setTouchInfoOpen] = useState(false);
+const [touchInfoTitle, setTouchInfoTitle] = useState("");
+const [touchInfoText, setTouchInfoText] = useState("");
 const [draftWorkflowStatus, setDraftWorkflowStatus] = useState("");
 const [draftWorkflowDate, setDraftWorkflowDate] = useState("");
 const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
@@ -1259,6 +1330,19 @@ const [serverWorkflowOverrides, setServerWorkflowOverrides] = useState<Record<st
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
 const [hideCompleted, setHideCompleted] = useState(false);
+  // HPD_TOUCH_INFO_EVENT_LISTENER
+  useEffect(() => {
+    function handleTouchInfo(event: Event) {
+      const detail = (event as CustomEvent).detail || {};
+      setTouchInfoTitle(String(detail.title || "Job Details"));
+      setTouchInfoText(String(detail.text || ""));
+      setTouchInfoOpen(true);
+    }
+    window.addEventListener("hpd-open-touch-info", handleTouchInfo as EventListener);
+    return () => {
+      window.removeEventListener("hpd-open-touch-info", handleTouchInfo as EventListener);
+    };
+  }, []);
 
 const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60" | "od61_90" | "od90plus">("all");
   const [fullMap, setFullMap] = useState(false);
@@ -4656,10 +4740,32 @@ function directionsUrl(job: JobRecord) {
               </div>
             </div>
 
-            <div className="quick-info-strip">
-              <div><span>Amount</span><strong>{displayAmount(selected) || "Not listed"}</strong></div>
-              <div><span>Location</span><strong>{displayLocation(selected) || "Not listed"}</strong></div>
-              <div><span>Borough</span><strong>{selected?.borough || "Unknown"}</strong></div>
+            <div className="quick-info-strip interactive-info-strip">
+              <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "amount")}>
+                <span>Amount</span>
+                <strong>{displayAmount(selected) || "Not listed"}</strong>
+                <small>Tap details</small>
+              </button>
+              <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "location")}>
+                <span>Location</span>
+                <strong>{displayLocation(selected) || "Not listed"}</strong>
+                <small>{selected?.borough || "Unknown"}</small>
+              </button>
+              <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "dates")}>
+                <span>Dates</span>
+                <strong>{timelineOverdueLabel(selected)}</strong>
+                <small>{timelineMaturityLabel(selected)}</small>
+              </button>
+              <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "status")}>
+                <span>Status</span>
+                <strong>{workflowLabel(selected) || JobStatus.statusLabel(selected)}</strong>
+                <small>Next action</small>
+              </button>
+              <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "docs")}>
+                <span>Docs</span>
+                <strong>{[(selected?.COAFile || selected?.coaFile) ? "COA" : "", (selected?.ITBFile || selected?.itbFile) ? "ITB" : "", (selected?.PDFFile || selected?.pdfFile) ? "PDF" : ""].filter(Boolean).join(" / ") || "Check"}</strong>
+                <small>Tap files</small>
+              </button>
             </div>
             <div className={`next-action-banner ${nextActionInfo(selected).tone}`}>
               <span>Next Action</span>
@@ -5048,6 +5154,8 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
 
 
 
