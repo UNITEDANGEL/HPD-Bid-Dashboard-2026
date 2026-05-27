@@ -6,36 +6,29 @@ import * as JobStatus from "../../lib/jobs/status";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type JobRecord = {
+  [key: string]: any;
   id?: string;
   omo?: string;
   jobId?: string;
   address?: string;
+  Address?: string;
+  BuildingAddress?: string;
+  Building_Address?: string;
   location?: string;
   borough?: string;
   status?: string;
   StatusOverride?: string;
   WorkflowStatus?: string;
-  workflowStatus?: string;
   FieldOutcome?: string;
-  fieldOutcome?: string;
   NoAccessFirstAttemptAt?: string;
-  noAccessFirstAttemptAt?: string;
   NoAccessSecondAttemptAt?: string;
-  noAccessSecondAttemptAt?: string;
   SecondAttemptAvailableAt?: string;
-  secondAttemptAvailableAt?: string;
   RefusalDate?: string;
-  refusalDate?: string;
   VerifiedByOthersDate?: string;
-  verifiedByOthersDate?: string;
   ActualWorkStartDate?: string;
-  actualWorkStartDate?: string;
   ActualWorkCompletionDate?: string;
-  actualWorkCompletionDate?: string;
   OutcomeLockedAt?: string;
-  outcomeLockedAt?: string;
   ArchivedFromMap?: boolean;
-  archivedFromMap?: boolean;
   ITBMatchStatus?: string;
   COAParseStatus?: string;
   trade?: string;
@@ -44,7 +37,6 @@ type JobRecord = {
   workStartDate?: string;
   WorkStartDate?: string;
   workCompletionDate?: string;
-  WorkCompletionDate?: string;
   dueDate?: string;
   bidDueDate?: string;
   bidAmount?: string;
@@ -54,15 +46,11 @@ type JobRecord = {
   contractor?: string;
   owner?: string;
   description?: string;
-  Description?: string;
   JobDescription?: string;
   Job_Description?: string;
   COAFile?: string;
-  coaFile?: string;
   ITBFile?: string;
-  itbFile?: string;
   PDFFile?: string;
-  pdfFile?: string;
   Latitude?: number | string;
   latitude?: number | string;
   Longitude?: number | string;
@@ -91,6 +79,75 @@ function asArray(value: unknown): JobRecord[] {
   return [];
 }
 
+function getAny(row: any, ...keys: string[]) {
+  for (const key of keys) {
+    const value = row?.[key];
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return String(value).trim();
+    }
+  }
+  return "";
+}
+function boroughFromAddress(address: string) {
+  const zipMatch = String(address || "").match(/\b(1\d{4})\b/);
+  const zip = zipMatch ? zipMatch[1] : "";
+  if (!zip) return "";
+  const z = Number(zip);
+  if (z >= 10001 && z <= 10282) return "Manhattan";
+  if (z >= 10301 && z <= 10314) return "Staten Island";
+  if (z >= 10451 && z <= 10475) return "Bronx";
+  if (z >= 11004 && z <= 11109) return "Queens";
+  if (z >= 11351 && z <= 11697) return "Queens";
+  if (z >= 11201 && z <= 11256) return "Brooklyn";
+  return "";
+}
+function normalizeStaticJob(row: JobRecord, index: number): any {
+  const anyRow = row as any;
+  const omo = getAny(anyRow, "OMO", "omo", "Job_ID", "Job ID", "jobId", "id") || `JOB-${index + 1}`;
+  const address = getAny(anyRow, "address", "BuildingAddress", "Building_Address", "Building Address", "Address", "location", "Location");
+  const borough = getAny(anyRow, "borough", "Borough", "Boro", "boro") || boroughFromAddress(address);
+  const description = getAny(anyRow, "description", "JobDescription", "Job_Description", "Job Description", "Description", "WorkDescription", "ScopeOfWork");
+  const amount = getAny(anyRow, "AwardAmount", "awardAmount", "Award Amount", "bidAmount", "BidAmount", "Bid Amount", "Amount", "amountValue");
+  const awardDate = getAny(anyRow, "AwardDate", "awardDate", "Award Date", "Award_Date");
+  const workStartDate = getAny(anyRow, "WorkStartDate", "workStartDate", "Work Start Date");
+  const workCompletionDate = getAny(anyRow, "WorkCompletionDate", "workCompletionDate", "Work Completion Date");
+  const lat = getAny(anyRow, "Latitude", "latitude", "lat");
+  const lng = getAny(anyRow, "Longitude", "longitude", "lng", "lon");
+  return {
+    ...row,
+    id: omo,
+    omo,
+    OMO: omo,
+    address,
+    BuildingAddress: address,
+    location: getAny(anyRow, "Location", "location"),
+    borough,
+    Borough: borough,
+    boro: borough,
+    description,
+    JobDescription: description,
+    bidAmount: amount,
+    AwardAmount: amount,
+    awardDate,
+    AwardDate: awardDate,
+    workStartDate,
+    WorkStartDate: workStartDate,
+    workCompletionDate,
+    WorkCompletionDate: workCompletionDate,
+    latitude: lat,
+    Latitude: lat,
+    longitude: lng,
+    Longitude: lng,
+    coaFile: getAny(anyRow, "COAFile", "COA File", "COA_File", "coaFile"),
+    COAFile: getAny(anyRow, "COAFile", "COA File", "COA_File", "coaFile"),
+    itbFile: getAny(anyRow, "ITBFile", "ITB File", "ITB_File", "itbFile"),
+    ITBFile: getAny(anyRow, "ITBFile", "ITB File", "ITB_File", "itbFile"),
+    status: getAny(anyRow, "StatusOverride", "status", "ITBMatchStatus", "COAParseStatus") || "Pending",
+    StatusOverride: getAny(anyRow, "StatusOverride"),
+    WorkflowStatus: getAny(anyRow, "WorkflowStatus", "workflowStatus"),
+    workflowStatus: getAny(anyRow, "workflowStatus", "WorkflowStatus"),
+  };
+}
 function toNumber(value: unknown) {
   if (value === null || value === undefined || value === "") return null;
   const parsed = Number(value);
@@ -181,6 +238,50 @@ function cleanAddress(job: JobRecord) {
   return parts.filter(Boolean).join(", ").replace(/\s+/g, " ").trim();
 }
 
+function markerDateValue(value: any) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  const parts = raw.replace(/-/g, "/").split("/");
+  if (parts.length >= 3) {
+    let month = Number(parts[0]);
+    let day = Number(parts[1]);
+    let year = Number(parts[2]);
+    if (year < 100) year += 2000;
+    const date = new Date(year, month - 1, day);
+    if (!Number.isNaN(date.getTime())) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+  }
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+}
+function markerOverdueLabel(job: JobRecord) {
+  const endRaw =
+    (job as any).WorkCompletionDate ||
+    (job as any).workCompletionDate ||
+    (job as any)["Work Completion Date"] ||
+    "";
+  const endDate = markerDateValue(endRaw);
+  if (!endDate) return "";
+  const today = new Date();
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diffDays = Math.round((todayOnly.getTime() - endDate.getTime()) / 86400000);
+  return diffDays > 0 ? `OD ${diffDays}d` : "";
+}
+function markerMaturityLabel(job: JobRecord) {
+  const awardRaw =
+    (job as any).AwardDate ||
+    (job as any).awardDate ||
+    (job as any)["Award Date"] ||
+    "";
+  const awardDate = markerDateValue(awardRaw);
+  if (!awardDate) return "";
+  const today = new Date();
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diffDays = Math.round((todayOnly.getTime() - awardDate.getTime()) / 86400000);
+  return diffDays >= 0 ? `MD ${diffDays}d` : "";
+}
 function cacheKey(job: JobRecord) {
   return `hpd_geo_${jobKey(job)}_${cleanAddress(job)}`.toLowerCase();
 }
@@ -669,6 +770,120 @@ function workflowLabel(job: JobRecord) {
   return labels[status] || "";
 }
 
+function parseJobDate(value?: string) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  const normalized = raw.replace(/-/g, "/");
+  const parts = normalized.split("/").map((part) => part.trim());
+  if (parts.length >= 3) {
+    let month = Number(parts[0]);
+    let day = Number(parts[1]);
+    let year = Number(parts[2]);
+    if (year < 100) year += 2000;
+    if (Number.isFinite(month) && Number.isFinite(day) && Number.isFinite(year)) {
+      const date = new Date(year, month - 1, day);
+      if (!Number.isNaN(date.getTime())) return date;
+    }
+  }
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+function dateOnly(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+function daysBetween(from: Date, to: Date) {
+  const ms = dateOnly(to).getTime() - dateOnly(from).getTime();
+  return Math.round(ms / 86400000);
+}
+function shortJobDate(value?: string) {
+  const date = parseJobDate(value);
+  if (!date) return value || "Not listed";
+  return date.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "2-digit",
+  });
+}
+function markerWorkWindowLabel(job: JobRecord) {
+  const info = workWindowInfo(job);
+  const text = String(info.statusLabel || "").toLowerCase();
+  if (text.includes("overdue by")) {
+    const match = info.statusLabel.match(/overdue by\s+(\d+)/i);
+    return match ? `OD ${match[1]}d` : "OVERDUE";
+  }
+  if (text.includes("due today")) return "DUE TODAY";
+  if (text.includes("due in")) {
+    const match = info.statusLabel.match(/due in\s+(\d+)/i);
+    return match ? `Due ${match[1]}d` : "DUE";
+  }
+  if (text.includes("starts today")) return "START TODAY";
+  if (text.includes("starts in")) {
+    const match = info.statusLabel.match(/starts in\s+(\d+)/i);
+    return match ? `Start ${match[1]}d` : "START";
+  }
+  if (text.includes("started")) {
+    const match = info.statusLabel.match(/started\s+(\d+)/i);
+    return match ? `Started ${match[1]}d` : "STARTED";
+  }
+  return "";
+}
+function markerWorkWindowClass(job: JobRecord) {
+  const statusClass = workWindowInfo(job).statusClass;
+  if (statusClass === "danger") return "marker-work-danger";
+  if (statusClass === "warning") return "marker-work-warning";
+  if (statusClass === "ok") return "marker-work-ok";
+  return "marker-work-neutral";
+}
+function workWindowInfo(job: JobRecord) {
+  const startRaw = (job as any).WorkStartDate || (job as any).workStartDate || (job as any)["Work Start Date"] || "";
+  const endRaw =
+    (job as any).WorkCompletionDate ||
+    (job as any).workCompletionDate ||
+    (job as any)["Work Completion Date"] ||
+    "";
+  const start = parseJobDate(startRaw);
+  const end = parseJobDate(endRaw);
+  const today = dateOnly(new Date());
+  let startLabel = "Start not listed";
+  let endLabel = "End not listed";
+  let statusLabel = "Work window not listed";
+  let statusClass = "neutral";
+  if (start) {
+    const startDiff = daysBetween(today, start);
+    if (startDiff > 0) startLabel = `Starts in ${startDiff} day${startDiff === 1 ? "" : "s"}`;
+    else if (startDiff === 0) startLabel = "Starts today";
+    else startLabel = `Started ${Math.abs(startDiff)} day${Math.abs(startDiff) === 1 ? "" : "s"} ago`;
+  }
+  if (end) {
+    const endDiff = daysBetween(today, end);
+    if (endDiff > 0) {
+      endLabel = `Due in ${endDiff} day${endDiff === 1 ? "" : "s"}`;
+      statusLabel = endLabel;
+      statusClass = endDiff <= 2 ? "warning" : "ok";
+    } else if (endDiff === 0) {
+      endLabel = "Due today";
+      statusLabel = "Due today";
+      statusClass = "warning";
+    } else {
+      endLabel = `Overdue by ${Math.abs(endDiff)} day${Math.abs(endDiff) === 1 ? "" : "s"}`;
+      statusLabel = endLabel;
+      statusClass = "danger";
+    }
+  } else if (start) {
+    statusLabel = startLabel;
+    statusClass = "neutral";
+  }
+  return {
+    startRaw,
+    endRaw,
+    startDate: shortJobDate(startRaw),
+    endDate: shortJobDate(endRaw),
+    startLabel,
+    endLabel,
+    statusLabel,
+    statusClass,
+  };
+}
 function displayWorkflowDate(value?: string) {
   if (!value) return "Not listed";
 
@@ -926,7 +1141,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         });
 
     return rows.reduce(
-      (acc, job) => {
+      (
+        acc: { all: number; od0_30: number; od31_60: number; od61_90: number; od90plus: number },
+        job: MappedJob
+      ) => {
         const bucket = overdueBucket(job);
         acc.all += 1;
         if (bucket === "od0_30") acc.od0_30 += 1;
@@ -956,7 +1174,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         if (!response.ok) throw new Error(`/data/COA_Fetcher_2026.json returned ${response.status}`);
 
         const data = await response.json();
-        const rows = asArray(Array.isArray(data) ? data : data.jobs || data.data || []);
+        const rows = asArray(Array.isArray(data) ? data : data.jobs || data.data || []).map(normalizeStaticJob);
 
         if (cancelled) return;
 
@@ -1120,12 +1338,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
         const info = maturityInfo(job);
         const markerColor = JobStatus.statusColor(job);
+        const maturityLabel = markerMaturityLabel(job);
+        const overdueLabel = markerOverdueLabel(job);
 
         const marker = L.marker([lat, lng], {
           icon: L.divIcon({
             className: "maturity-map-marker",
             html: `<div class="maturity-marker-bubble maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${markerColor}">
                     <strong>${markerWorkflowLabelHtml(job)}</strong>
+                    <span class="marker-counter-row">
+                      ${maturityLabel ? `<span class="marker-md-badge">${maturityLabel}</span>` : ""}
+                      ${overdueLabel ? `<span class="marker-overdue-badge">${overdueLabel}</span>` : ""}
+                    </span>
                   </div>`,
             iconSize: [132, 86],
             iconAnchor: [66, 43],
@@ -1434,6 +1658,120 @@ function parseWorkflowDate(value?: string) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function parseJobDate(value?: string) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  const normalized = raw.replace(/-/g, "/");
+  const parts = normalized.split("/").map((part) => part.trim());
+  if (parts.length >= 3) {
+    let month = Number(parts[0]);
+    let day = Number(parts[1]);
+    let year = Number(parts[2]);
+    if (year < 100) year += 2000;
+    if (Number.isFinite(month) && Number.isFinite(day) && Number.isFinite(year)) {
+      const date = new Date(year, month - 1, day);
+      if (!Number.isNaN(date.getTime())) return date;
+    }
+  }
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+function dateOnly(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+function daysBetween(from: Date, to: Date) {
+  const ms = dateOnly(to).getTime() - dateOnly(from).getTime();
+  return Math.round(ms / 86400000);
+}
+function shortJobDate(value?: string) {
+  const date = parseJobDate(value);
+  if (!date) return value || "Not listed";
+  return date.toLocaleDateString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "2-digit",
+  });
+}
+function markerWorkWindowLabel(job: JobRecord) {
+  const info = workWindowInfo(job);
+  const text = String(info.statusLabel || "").toLowerCase();
+  if (text.includes("overdue by")) {
+    const match = info.statusLabel.match(/overdue by\s+(\d+)/i);
+    return match ? `OD ${match[1]}d` : "OVERDUE";
+  }
+  if (text.includes("due today")) return "DUE TODAY";
+  if (text.includes("due in")) {
+    const match = info.statusLabel.match(/due in\s+(\d+)/i);
+    return match ? `Due ${match[1]}d` : "DUE";
+  }
+  if (text.includes("starts today")) return "START TODAY";
+  if (text.includes("starts in")) {
+    const match = info.statusLabel.match(/starts in\s+(\d+)/i);
+    return match ? `Start ${match[1]}d` : "START";
+  }
+  if (text.includes("started")) {
+    const match = info.statusLabel.match(/started\s+(\d+)/i);
+    return match ? `Started ${match[1]}d` : "STARTED";
+  }
+  return "";
+}
+function markerWorkWindowClass(job: JobRecord) {
+  const statusClass = workWindowInfo(job).statusClass;
+  if (statusClass === "danger") return "marker-work-danger";
+  if (statusClass === "warning") return "marker-work-warning";
+  if (statusClass === "ok") return "marker-work-ok";
+  return "marker-work-neutral";
+}
+function workWindowInfo(job: JobRecord) {
+  const startRaw = (job as any).WorkStartDate || (job as any).workStartDate || (job as any)["Work Start Date"] || "";
+  const endRaw =
+    (job as any).WorkCompletionDate ||
+    (job as any).workCompletionDate ||
+    (job as any)["Work Completion Date"] ||
+    "";
+  const start = parseJobDate(startRaw);
+  const end = parseJobDate(endRaw);
+  const today = dateOnly(new Date());
+  let startLabel = "Start not listed";
+  let endLabel = "End not listed";
+  let statusLabel = "Work window not listed";
+  let statusClass = "neutral";
+  if (start) {
+    const startDiff = daysBetween(today, start);
+    if (startDiff > 0) startLabel = `Starts in ${startDiff} day${startDiff === 1 ? "" : "s"}`;
+    else if (startDiff === 0) startLabel = "Starts today";
+    else startLabel = `Started ${Math.abs(startDiff)} day${Math.abs(startDiff) === 1 ? "" : "s"} ago`;
+  }
+  if (end) {
+    const endDiff = daysBetween(today, end);
+    if (endDiff > 0) {
+      endLabel = `Due in ${endDiff} day${endDiff === 1 ? "" : "s"}`;
+      statusLabel = endLabel;
+      statusClass = endDiff <= 2 ? "warning" : "ok";
+    } else if (endDiff === 0) {
+      endLabel = "Due today";
+      statusLabel = "Due today";
+      statusClass = "warning";
+    } else {
+      endLabel = `Overdue by ${Math.abs(endDiff)} day${Math.abs(endDiff) === 1 ? "" : "s"}`;
+      statusLabel = endLabel;
+      statusClass = "danger";
+    }
+  } else if (start) {
+    statusLabel = startLabel;
+    statusClass = "neutral";
+  }
+  return {
+    startRaw,
+    endRaw,
+    startDate: shortJobDate(startRaw),
+    endDate: shortJobDate(endRaw),
+    startLabel,
+    endLabel,
+    statusLabel,
+    statusClass,
+  };
+}
 function displayWorkflowDate(value?: string) {
   if (!value) return "Not listed";
 
@@ -3917,8 +4255,17 @@ function directionsUrl(job: JobRecord) {
               <div className="detail"><span>Award Date</span><strong>{maturityInfo(selected).award}</strong></div>
               <div className="detail"><span>Work Start Date</span><strong>{selected.WorkStartDate || selected.workStartDate || "Not listed"}</strong></div>
               <div className="detail"><span>Work Completion Date</span><strong>{selected.WorkCompletionDate || selected.workCompletionDate || "Not listed"}</strong></div>
+              <div className={`detail work-window-card ${workWindowInfo(selected).statusClass}`}>
+                <span>Work Window Counter</span>
+                <strong>{workWindowInfo(selected).statusLabel}</strong>
+                <small>
+                  Start: {workWindowInfo(selected).startDate} · End: {workWindowInfo(selected).endDate}
+                  <br />
+                  {workWindowInfo(selected).startLabel} · {workWindowInfo(selected).endLabel}
+                </small>
+              </div>
               <div className="detail"><span>Counter Start Date</span><strong>{maturityInfo(selected).maturity}</strong></div>
-              <div className="detail"><span>Counter</span><strong>{smartWorkflowLabel(selected)}</strong></div>
+              <div className="detail"><span>COA Counter</span><strong>{smartWorkflowLabel(selected)}</strong></div>
               {workflowLabel(selected) ? (
                 <div className="detail"><span>Field Status</span><strong>{workflowLabel(selected)}</strong></div>
               ) : null}
@@ -4077,6 +4424,11 @@ function directionsUrl(job: JobRecord) {
                 <div className="detail"><span>Award</span><strong>{job.AwardDate || job.awardDate || "Not listed"}</strong></div>
                 <div className="detail"><span>Work Start</span><strong>{job.WorkStartDate || job.workStartDate || "Not listed"}</strong></div>
                 <div className="detail"><span>Work Complete</span><strong>{job.WorkCompletionDate || job.workCompletionDate || "Not listed"}</strong></div>
+                <div className={`detail work-window-card ${workWindowInfo(job).statusClass}`}>
+                  <span>Work Window</span>
+                  <strong>{workWindowInfo(job).statusLabel}</strong>
+                  <small>Start: {workWindowInfo(job).startDate} · End: {workWindowInfo(job).endDate}</small>
+                </div>
                 <div className="detail"><span>Due</span><strong>{job.bidDueDate || job.dueDate || "Not listed"}</strong></div>
                 <div className="detail"><span>Docs</span><strong>{[(job.COAFile || job.coaFile) ? "COA ✓" : "", (job.ITBFile || job.itbFile) ? "ITB ✓" : "", (job.PDFFile || job.pdfFile) ? "PDF ✓" : ""].filter(Boolean).join(" ") || "Not listed"}</strong></div>
               </div>
@@ -4180,6 +4532,18 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
