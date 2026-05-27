@@ -168,7 +168,8 @@ function jobKey(job: JobRecord, index?: number) {
   return job.id || job.omo || job.jobId || `JOB-${index ?? ""}`;
 }
 
-function displayAddress(job: JobRecord) {
+function displayAddress(job: JobRecord | null | undefined) {
+  if (!job) return "No address listed";
   return (
     (job as any).address ||
     (job as any).BuildingAddress ||
@@ -298,7 +299,7 @@ function jobInfoPopupText(job: JobRecord | null | undefined, type: "amount" | "l
     return [
       `Job: ${jobKey(job)}`,
       `Award Date: ${maturityInfo(job).award}`,
-      `COA Counter: ${smartWorkflowLabel(job)}`,
+      `COA Counter: ${jobCounterLabel(job)}`,
       `Work Start: ${(job as any).WorkStartDate || (job as any).workStartDate || "Not listed"}`,
       `Work Complete: ${(job as any).WorkCompletionDate || (job as any).workCompletionDate || "Not listed"}`,
       `Work Window: ${workWindowInfo(job).statusLabel}`,
@@ -473,6 +474,20 @@ function markerUrgencyClass(job: JobRecord) {
   if (status === "WORK_COMPLETED" || status === "COMPLETED_BY_OTHERS") return "marker-urgent-complete";
   return "marker-urgent-normal";
 }
+function escapeMarkerHtml(value: unknown) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+function markerWorkflowLabelHtml(job: JobRecord) {
+  const counter = jobCounterInfo(job);
+  const workflow = workflowLabel(job);
+  const label = workflow || counter.label || jobKey(job);
+  return escapeMarkerHtml(label);
+}
 function markerMaturityLabel(job: JobRecord) {
   const awardRaw =
     (job as any).AwardDate ||
@@ -519,6 +534,15 @@ function normalizedStatus(jobOrStatus?: JobRecord | string) {
   return String(raw).toLowerCase().trim();
 }
 
+function statusClass(value?: string) {
+  const raw = String(value || "").toLowerCase();
+  if (raw.includes("completed") || raw.includes("done")) return "ok";
+  if (raw.includes("no access")) return "warning";
+  if (raw.includes("refused")) return "danger";
+  if (raw.includes("award")) return "ok";
+  if (raw.includes("pending")) return "pending";
+  return "pending";
+}
 function statusLabel(job: JobRecord) {
   return (
     job.StatusOverride ||
@@ -528,136 +552,6 @@ function statusLabel(job: JobRecord) {
     "Pending"
   );
 }
-
-
-function shortWorkflowDate(value?: string) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleDateString("en-US", { month: "2-digit", day: "2-digit" });
-}
-
-function msUntil(value?: string) {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.getTime() - Date.now();
-}
-
-function hoursBetweenNow(value?: string) {
-  const ms = msUntil(value);
-  if (ms === null) return null;
-
-  if (ms > 0) {
-    return Math.max(1, Math.ceil(ms / 3600000));
-  }
-
-  return -Math.max(1, Math.floor(Math.abs(ms) / 3600000));
-}
-
-
-function normalMaturityLabel(job: JobRecord) {
-  const info = maturityInfo(job);
-
-  if (info.daysLeft === null) return "NO DATE";
-
-  if (info.daysLeft < 0) {
-    return `${Math.abs(info.daysLeft)}D`;
-  }
-
-  return `${info.daysLeft}D`;
-}
-function smartWorkflowLabel(job: JobRecord) {
-  const status = workflowStatus(job) || legacyWorkflowKind(job);
-
-  const noAccessFirst = (job as any).NoAccessFirstAttemptAt || (job as any).noAccessFirstAttemptAt;
-  const secondAvailable = (job as any).SecondAttemptAvailableAt || (job as any).secondAttemptAvailableAt;
-  const noAccessSecond = (job as any).NoAccessSecondAttemptAt || (job as any).noAccessSecondAttemptAt;
-  const completed = (job as any).ActualWorkCompletionDate || (job as any).actualWorkCompletionDate;
-  const refused = (job as any).RefusalDate || (job as any).refusalDate;
-  const otherDone = (job as any).VerifiedByOthersDate || (job as any).verifiedByOthersDate;
-  const fallbackDate = (job as any).UpdatedAt || (job as any).updatedAt || (job as any).OutcomeLockedAt || (job as any).outcomeLockedAt;
-
-  if (status === "WORK_COMPLETED" || status === "PARTIAL_WORK_COMPLETED" || completed) {
-    return `COMPLETED ${shortWorkflowDate(completed || fallbackDate)}`.trim();
-  }
-
-  if (status === "REFUSED_ACCESS" || refused) {
-    return `REFUSED ACCESS ${shortWorkflowDate(refused || fallbackDate)}`.trim();
-  }
-
-  if (status === "COMPLETED_BY_OTHERS" || otherDone) {
-    return `OTHER DONE ${shortWorkflowDate(otherDone || fallbackDate)}`.trim();
-  }
-
-  if (status === "NO_ACCESS_COMPLETE" || noAccessSecond) {
-    return `NO ACCESS 2ND ${shortWorkflowDate(noAccessSecond || fallbackDate)}`.trim();
-  }
-
-  if (noAccessFirst && secondAvailable) {
-    const hoursLeft = hoursBetweenNow(secondAvailable);
-    if (hoursLeft === null) return "REVISIT ?";
-
-    if (hoursLeft > 0) return `REVISIT IN ${hoursLeft}H`;
-
-    const overdueHours = Math.abs(hoursLeft);
-
-    if (overdueHours <= 72) {
-      return `REVISIT -${overdueHours}H`;
-    }
-
-    return `REVISIT -${Math.ceil(overdueHours / 24)}D`;
-  }
-
-  return normalMaturityLabel(job);
-}
-function statusKind(jobOrStatus?: JobRecord | string) {
-  const value = normalizedStatus(jobOrStatus);
-
-  if (value.includes("refused")) return "refused";
-  if (value.includes("no access")) return "noaccess";
-  if (value.includes("completed by other") || value.includes("completed by owner") || value.includes("landlord")) return "otherdone";
-  if (value.includes("complete") || value.includes("work completed")) return "completed";
-  if (value.includes("pending") || value.includes("active") || value.includes("loaded") || value.includes("matched") || value.includes("ok")) return "pending";
-
-  return "unknown";
-}
-
-function statusClass(status?: string) {
-  return `status-${statusKind(status)}`;
-}
-
-
-function markerWorkflowLabelHtml(job: JobRecord) {
-  const label = smartWorkflowLabel(job);
-
-  const dateMatch = label.match(/(.*)\s(\d{2}\/\d{2})$/);
-  if (dateMatch) {
-    return `<span class="marker-label-main">${dateMatch[1]}</span><span class="marker-label-date">${dateMatch[2]}</span>`;
-  }
-
-  if (label.startsWith("REVISIT IN ")) {
-    return `<span class="marker-label-main">REVISIT IN</span><span class="marker-label-date">${label.replace("REVISIT IN ", "")}</span>`;
-  }
-
-  if (label.startsWith("REVISIT -")) {
-    return `<span class="marker-label-main">REVISIT</span><span class="marker-label-date">${label.replace("REVISIT ", "")}</span>`;
-  }
-
-  return `<span class="marker-label-main">${label}</span>`;
-}
-function markerColorForJob(job: JobRecord) {
-  const kind = statusKind(job);
-
-  if (kind === "completed") return "#53e69c";
-  if (kind === "refused") return "#ff4d5f";
-  if (kind === "noaccess") return "#47a3ff";
-  if (kind === "otherdone") return "#b875ff";
-  if (kind === "pending") return "#ffd166";
-
-  return "#aebbd0";
-}
-
 function parseAwardDate(value?: string) {
   if (!value) return null;
 
@@ -747,6 +641,13 @@ function maturityMapLabel(job: JobRecord) {
 }
 
 
+function hoursBetweenNow(value?: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const now = new Date();
+  return Math.ceil((date.getTime() - now.getTime()) / 3600000);
+}
 function jobCounterInfo(job: JobRecord) {
   const second = workflowSecondAttemptInfo(job);
 
@@ -1311,6 +1212,8 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
   const [selected, setSelected] = useState<MappedJob | null>(null);
   const selectedCardRef = useRef<HTMLDivElement | null>(null);
+  const swipeStartXRef = useRef<number | null>(null);
+  const swipeStartYRef = useRef<number | null>(null);
 const [selectedOnly, setSelectedOnly] = useState(false);
 const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
 const [descriptionOpen, setDescriptionOpen] = useState(false);
@@ -1775,7 +1678,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             <strong>${jobKey(job, index)}</strong><br/>
             ${displayAddress(job)}<br/>
             ${job.borough || ""} ${job.trade ? "· " + job.trade : ""}<br/>
-            ${JobStatus.statusLabel(job)} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Counter Start: ${maturityInfo(job).maturity}<br/>Counter: ${smartWorkflowLabel(job)}
+            ${JobStatus.statusLabel(job)} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Counter Start: ${maturityInfo(job).maturity}<br/>Counter: ${jobCounterLabel(job)}
           </div>
         `);
 
@@ -2363,8 +2266,7 @@ function focusJob(job: MappedJob) {
 function directionsUrl(job: JobRecord) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddress(job))}`;
   }
-
-  return (
+return (
     <main className={`map-shell ${fullMap ? "full-map-mode" : ""}`}>
       <style jsx global>{`
         html,
@@ -4727,7 +4629,9 @@ function directionsUrl(job: JobRecord) {
         ) : null}
 
         {selected ? (
-          <div className={`selected-card job-status-card ${JobStatus.statusCardClass(selected)}`}>
+          <div
+            className={`selected-card job-status-card ${JobStatus.statusCardClass(selected)}`}
+          >
             <div className="job-main-row">
               <div>
                 <strong className="job-title">{jobKey(selected)}</strong>
@@ -4736,11 +4640,9 @@ function directionsUrl(job: JobRecord) {
               </div>
               <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
                 <span className={`status ${statusClass(selected.status)}`}>{JobStatus.statusLabel(selected)}</span>
-                <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{smartWorkflowLabel(selected)}</span>
+                <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{jobCounterLabel(selected)}</span>
               </div>
-            </div>
-
-            <div className="quick-info-strip interactive-info-strip">
+            </div>            <div className="quick-info-strip interactive-info-strip">
               <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "amount")}>
                 <span>Amount</span>
                 <strong>{displayAmount(selected) || "Not listed"}</strong>
@@ -4806,7 +4708,7 @@ function directionsUrl(job: JobRecord) {
                 </small>
               </div>
               <div className="detail"><span>Counter Start Date</span><strong>{maturityInfo(selected).maturity}</strong></div>
-              <div className="detail"><span>COA Counter</span><strong>{smartWorkflowLabel(selected)}</strong></div>
+              <div className="detail"><span>COA Counter</span><strong>{jobCounterLabel(selected)}</strong></div>
               {workflowLabel(selected) ? (
                 <div className="detail"><span>Field Status</span><strong>{workflowLabel(selected)}</strong></div>
               ) : null}
@@ -5008,7 +4910,7 @@ function directionsUrl(job: JobRecord) {
                 </div>
                 <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
                   <span className={`status ${statusClass(job.status)}`}>{JobStatus.statusLabel(job)}</span>
-                  <span className={`maturity-pill ${maturityPriorityClass(job)}`}>{smartWorkflowLabel(job)}</span>
+                  <span className={`maturity-pill ${maturityPriorityClass(job)}`}>{jobCounterLabel(job)}</span>
                 </div>
               </div>
 
@@ -5154,6 +5056,18 @@ function directionsUrl(job: JobRecord) {
       </main>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
