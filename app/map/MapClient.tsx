@@ -2553,6 +2553,13 @@ function focusJob(job: MappedJob) {
   });
 }
 
+function wazeDirectionsUrl(job: JobRecord | null | undefined) {
+  if (!job) return "#";
+  const address = displayAddress(job);
+  const borough = (job as any).borough || (job as any).Borough || "";
+  const destination = [address, borough, "NY"].filter(Boolean).join(", ");
+  return `https://waze.com/ul?q=${encodeURIComponent(destination)}&navigate=yes`;
+}
 function directionsUrl(job: JobRecord) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddress(job))}`;
   }
@@ -5140,6 +5147,14 @@ return (
                 <small>{timelineOverdueLabel(selected)}</small>
               </div>
             </div>
+            <div className="status-actions">
+              <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                🚗 Open Waze
+              </a>
+              <a href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                🗺️ Google Maps
+              </a>
+            </div>
             <div className="detail-grid">
               <div className="detail"><span>Amount</span><strong>{displayAmount(selected) || money(selected) || "Not listed"}</strong></div>
               <div className="detail"><span>Award Date</span><strong>{maturityInfo(selected).award}</strong></div>
@@ -5390,6 +5405,14 @@ return (
                 <small>{timelineOverdueLabel(selected)}</small>
               </div>
             </div>
+            <div className="status-actions">
+              <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                🚗 Open Waze
+              </a>
+              <a href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                🗺️ Google Maps
+              </a>
+            </div>
             <div className="detail-grid">
                 <div className="detail"><span>Amount</span><strong>{displayAmount(job) || money(job) || "Not listed"}</strong></div>
                 <div className="detail"><span>Award</span><strong>{job.AwardDate || job.awardDate || "Not listed"}</strong></div>
@@ -5503,6 +5526,7 @@ return (
       </main>
   );
 }
+
 
 
 
