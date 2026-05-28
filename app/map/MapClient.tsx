@@ -1034,6 +1034,7 @@ function timelineOverdueLabel(job: JobRecord | null | undefined) {
   if (!date) return "—";
   const today = dateOnly(new Date());
   const diff = daysBetween(date, today);
+  if (diff > 180) return "Check date";
   if (diff > 0) return `OD ${diff}d`;
   if (diff === 0) return "Due today";
   return `Due ${Math.abs(diff)}d`;
@@ -2401,6 +2402,7 @@ function timelineOverdueLabel(job: JobRecord | null | undefined) {
   if (!date) return "—";
   const today = dateOnly(new Date());
   const diff = daysBetween(date, today);
+  if (diff > 180) return "Check date";
   if (diff > 0) return `OD ${diff}d`;
   if (diff === 0) return "Due today";
   return `Due ${Math.abs(diff)}d`;
@@ -5096,56 +5098,21 @@ return (
                 <span className={`status ${statusClass(selected.status)}`}>{JobStatus.statusLabel(selected)}</span>
                 <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{jobCounterLabel(selected)}</span>
               </div>
-            </div>            <div className="quick-info-strip interactive-info-strip">
+            </div>            <div className="quick-info-strip clean-info-strip">
               <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "amount")}>
                 <span>Amount</span>
                 <strong>{displayAmount(selected) || "Not listed"}</strong>
-                <small>Tap details</small>
               </button>
               <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "location")}>
                 <span>Location</span>
                 <strong>{displayLocation(selected) || "Not listed"}</strong>
-                <small>{selected?.borough || "Unknown"}</small>
+                <small>{selected?.borough || "Unknown borough"}</small>
               </button>
               <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "dates")}>
                 <span>Dates</span>
                 <strong>{timelineOverdueLabel(selected)}</strong>
                 <small>{timelineMaturityLabel(selected)}</small>
               </button>
-              <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "status")}>
-                <span>Status</span>
-                <strong>{workflowLabel(selected) || JobStatus.statusLabel(selected)}</strong>
-                <small>Next action</small>
-              </button>
-              <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "docs")}>
-                <span>Docs</span>
-                <strong>{[(selected?.COAFile || selected?.coaFile) ? "COA" : "", (selected?.ITBFile || selected?.itbFile) ? "ITB" : "", (selected?.PDFFile || selected?.pdfFile) ? "PDF" : ""].filter(Boolean).join(" / ") || "Check"}</strong>
-                <small>Tap files</small>
-              </button>
-            </div>
-            <div className={`next-action-banner ${nextActionInfo(selected).tone}`}>
-              <span>Next Action</span>
-              <strong>{nextActionInfo(selected).label}</strong>
-              <p>{nextActionInfo(selected).detail}</p>
-            </div>
-            <div className="deadline-timeline">
-              <div className="timeline-item">
-                <span>COA</span>
-                <strong>{timelineDateLabel(selected?.AwardDate || selected?.awardDate)}</strong>
-                <small>{timelineMaturityLabel(selected)}</small>
-              </div>
-              <div className="timeline-line" />
-              <div className="timeline-item">
-                <span>Start</span>
-                <strong>{timelineDateLabel(selected?.WorkStartDate || selected?.workStartDate)}</strong>
-                <small>{selected ? workWindowInfo(selected).startLabel : "—"}</small>
-              </div>
-              <div className="timeline-line" />
-              <div className="timeline-item">
-                <span>Complete</span>
-                <strong>{timelineDateLabel(selected?.WorkCompletionDate || selected?.workCompletionDate)}</strong>
-                <small>{timelineOverdueLabel(selected)}</small>
-              </div>
             </div>
             <div className="status-actions">
               <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
@@ -5526,6 +5493,7 @@ return (
       </main>
   );
 }
+
 
 
 
