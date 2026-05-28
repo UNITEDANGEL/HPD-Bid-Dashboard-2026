@@ -1228,6 +1228,296 @@ const [countdownTick, setCountdownTick] = useState(0);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
 const [actionNotice, setActionNotice] = useState("");
+const [dispatchQuestion, setDispatchQuestion] = useState("");
+const [dispatchMessages, setDispatchMessages] = useState<Array<{ role: "user" | "assistant"; text: string; jobs?: string[] }>>([
+  {
+    role: "assistant",
+    text: "Ask me what jobs are urgent, overdue, due today, ready for second attempt, no access, or what you should do today.",
+  },
+]);
+const dispatchJobPool = () => {
+  return (mappedJobs.length ? mappedJobs : filteredJobs.length ? filteredJobs : jobs) as MappedJob[];
+};
+const dispatchDueDiff = (job: JobRecord) => {
+  const raw = (job as any).WorkCompletionDate || (job as any).workCompletionDate || "";
+  const date = parseJobDate(raw);
+  if (!date) return null;
+  return daysBetween(date, dateOnly(new Date()));
+};
+const dispatchUrgencyScore = (job: JobRecord) => {
+  let score = 0;
+  const due = dispatchDueDiff(job);
+  const second = workflowSecondAttemptInfo(job);
+  const workflow = workflowStatus(job) || legacyWorkflowKind(job);
+  if (second?.ready) score += 1000;
+  else if (second) score += 350;
+  if (due !== null && due > 0) score += 700 + due;
+  if (due === 0) score += 600;
+  if (due !== null && due < 0 && Math.abs(due) <= 2) score += 250;
+  if (workflow.includes("NO_ACCESS")) score += 180;
+  if (workflow.includes("REFUSED")) score += 120;
+  if (workflow.includes("WORK_COMPLETED") || workflow.includes("COMPLETED_BY_OTHERS")) score -= 500;
+  return score;
+};
+const dispatchJobReason = (job: JobRecord) => {
+  const due = dispatchDueDiff(job);
+  const second = workflowSecondAttemptInfo(job);
+  const workflow = workflowLabel(job) || JobStatus.statusLabel(job);
+  if (second?.ready) return "72-hour no-access counter matured — ready for 2nd attempt.";
+  if (second) return `${second.label} — waiting on 72-hour no-access counter.`;
+  if (due !== null && due > 0) return `Overdue by ${due} day${due === 1 ? "" : "s"}.`;
+  if (due === 0) return "Due today.";
+  if (due !== null && due < 0 && Math.abs(due) <= 2) return `Due in ${Math.abs(due)} day${Math.abs(due) === 1 ? "" : "s"}.`;
+  if (/completed|done/i.test(workflow)) return "Completed/final — review paperwork package.";
+  return workflow || "Review job details.";
+};
+const dispatchJobLine = (job: JobRecord, index: number) => {
+  const address = displayAddress(job);
+  const borough = (job as any).borough || (job as any).Borough || "Unknown";
+  const amount = displayAmount(job);
+  const reason = dispatchJobReason(job);
+  return `${index + 1}. ${jobKey(job)} — ${borough} — ${reason}\n   ${address}${amount ? ` — ${amount}` : ""}`;
+};
+const openDispatchJob = (jobId: string) => {
+  const pool = dispatchJobPool();
+  const job = pool.find((row) => String(jobKey(row)).trim() === String(jobId).trim());
+  if (!job) {
+    setActionNotice(`Could not find ${jobId}.`);
+    return;
+  }
+  setSelected(job);
+  setSelectedOnly(true);
+  setDrawerOpen(true);
+  setFullMap(false);
+  setGeneratedLinks({});
+  setDescriptionOpen(false);
+  setActionNotice(`Opened ${jobId}.`);
+  if (Number.isFinite(job._lat) && Number.isFinite(job._lng)) {
+    window.setTimeout(() => {
+      mapRef.current?.panTo([Number(job._lat), Number(job._lng)], {
+        animate: true,
+        duration: 0.5,
+      });
+    }, 40);
+  }
+};
+const runDispatchChat = (text?: string) => {
+  const question = String(text || dispatchQuestion || "").trim();
+  if (!question) return;
+  const q = question.toLowerCase();
+  let rows = [...dispatchJobPool()];
+  let title = "Dispatch Answer";
+  let recommendation = "Review the top jobs and open the first priority job.";
+  const wantsToday = q.includes("today") || q.includes("now") || q.includes("should i") || q.includes("priority") || q.includes("urgent");
+  const wantsOverdue = q.includes("overdue") || q.includes("late") || q.includes("od");
+  const wantsReadySecond = q.includes("ready") || q.includes("2nd") || q.includes("second attempt") || q.includes("revisit");
+  const wantsNoAccess = q.includes("no access") || q.includes("72");
+  const wantsCompleted = q.includes("completed") || q.includes("done") || q.includes("paperwork") || q.includes("invoice") || q.includes("affidavit");
+  const wantsDueToday = q.includes("due today");
+  const wantsDueSoon = q.includes("due soon") || q.includes("next") || q.includes("this week");
+  if (q.includes("bronx")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("bronx"));
+  if (q.includes("brooklyn")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("brooklyn"));
+  if (q.includes("queens")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("queens"));
+  if (q.includes("manhattan")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("manhattan"));
+  if (q.includes("staten")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("staten"));
+  if (wantsReadySecond) {
+    title = "Ready for 2nd Attempt";
+    rows = rows.filter((job) => workflowSecondAttemptInfo(job)?.ready);
+    recommendation = "These are the highest no-access priority because the 72-hour counter matured.";
+  } else if (wantsNoAccess) {
+    title = "No Access / 72-Hour Watchlist";
+    rows = rows.filter((job) => {
+      const status = workflowStatus(job) || legacyWorkflowKind(job);
+      return status.includes("NO_ACCESS") || Boolean(workflowSecondAttemptInfo(job));
+    });
+    recommendation = "Watch waiting counters and prioritize anything marked ready for 2nd attempt.";
+  } else if (wantsCompleted) {
+    title = "Completed / Paperwork Review";
+    rows = rows.filter((job) => /completed|done/i.test(workflowLabel(job) || JobStatus.statusLabel(job)));
+    recommendation = "Review photos, affidavit, invoice package, and documentation before sending.";
+  } else if (wantsOverdue) {
+    title = "Overdue Jobs";
+    rows = rows.filter((job) => {
+      const due = dispatchDueDiff(job);
+      return due !== null && due > 0;
+    });
+    recommendation = "Handle the oldest overdue jobs first, unless a 72-hour revisit is ready.";
+  } else if (wantsDueToday) {
+    title = "Due Today";
+    rows = rows.filter((job) => dispatchDueDiff(job) === 0);
+    recommendation = "These should be completed or documented today.";
+  } else if (wantsDueSoon) {
+    title = "Due Soon";
+    rows = rows.filter((job) => {
+      const due = dispatchDueDiff(job);
+      return due !== null && due <= 7 && due >= -2;
+    });
+    recommendation = "Plan these into the route before they become overdue.";
+  } else if (wantsToday) {
+    title = "Today’s Dispatch Priority";
+    rows = rows.filter((job) => {
+      const due = dispatchDueDiff(job);
+      const second = workflowSecondAttemptInfo(job);
+      return second?.ready || due === 0 || (due !== null && due > 0);
+    });
+    recommendation = "Start with ready 2nd attempts, then oldest overdue jobs, then due-today jobs.";
+  } else {
+    title = `Search: ${question}`;
+    rows = rows.filter((job) =>
+      [
+        jobKey(job),
+        displayAddress(job),
+        (job as any).borough,
+        displayDescription(job),
+        workflowLabel(job),
+        JobStatus.statusLabel(job),
+        displayAmount(job),
+      ].join(" ").toLowerCase().includes(q)
+    );
+    recommendation = "I matched jobs based on your question. Ask about urgent, overdue, no access, or due today for better dispatch ranking.";
+  }
+  rows.sort((a, b) => dispatchUrgencyScore(b) - dispatchUrgencyScore(a));
+  const top = rows.slice(0, 8);
+  const jobIds = top.map((job) => jobKey(job));
+  const answer =
+    `${title}\n\n` +
+    `${top.length} job(s) found.\n\n` +
+    (top.length ? top.map(dispatchJobLine).join("\n\n") : "No matching jobs found.") +
+    `\n\nRecommendation:\n${recommendation}`;
+  setDispatchMessages((messages) => [
+    ...messages,
+    { role: "user", text: question },
+    { role: "assistant", text: answer, jobs: jobIds },
+  ]);
+  setDispatchQuestion("");
+  setActionNotice("AI Dispatch Chat answered.");
+};
+const [aiQuestion, setAiQuestion] = useState("");
+const [aiAnswer, setAiAnswer] = useState("Ask me what jobs are due, overdue, no access, ready for second attempt, or what you should do today.");
+const [aiResults, setAiResults] = useState<MappedJob[]>([]);
+const jobDueDiffForAi = (job: JobRecord) => {
+  const raw = (job as any).WorkCompletionDate || (job as any).workCompletionDate || "";
+  const date = parseJobDate(raw);
+  if (!date) return null;
+  return daysBetween(date, dateOnly(new Date()));
+};
+const jobAssistantLineForAi = (job: JobRecord, index: number) => {
+  const due = jobDueDiffForAi(job);
+  const second = workflowSecondAttemptInfo(job);
+  const amount = displayAmount(job);
+  const address = displayAddress(job);
+  const status = workflowLabel(job) || JobStatus.statusLabel(job);
+  const dueText =
+    second?.ready ? "READY 2ND ATTEMPT" :
+    second ? second.label :
+    due === null ? "No due date" :
+    due > 0 ? `OD ${due}d` :
+    due === 0 ? "Due today" :
+    `Due in ${Math.abs(due)}d`;
+  return `${index + 1}. ${jobKey(job)} — ${dueText} — ${status} — ${(job as any).borough || "Unknown"} — ${address}${amount ? ` — ${amount}` : ""}`;
+};
+const openAssistantJob = (job: MappedJob) => {
+  setSelected(job);
+  setSelectedOnly(true);
+  setDrawerOpen(true);
+  setFullMap(false);
+  setGeneratedLinks({});
+  setDescriptionOpen(false);
+  if (Number.isFinite(job._lat) && Number.isFinite(job._lng)) {
+    window.setTimeout(() => {
+      mapRef.current?.panTo([Number(job._lat), Number(job._lng)], {
+        animate: true,
+        duration: 0.5,
+      });
+    }, 40);
+  }
+};
+const runJobAssistant = (questionText?: string) => {
+  const question = String(questionText || aiQuestion || "").trim();
+  const q = question.toLowerCase();
+  const pool = (mappedJobs.length ? mappedJobs : filteredJobs.length ? filteredJobs : jobs) as MappedJob[];
+  let rows = [...pool];
+  let title = "Job Assistant";
+  let recommendation = "Review the highest urgency jobs first.";
+  const wantsToday = q.includes("today") || q.includes("now") || q.includes("priority") || q.includes("should i do");
+  const wantsOverdue = q.includes("overdue") || q.includes("late") || q.includes("od");
+  const wantsNoAccess = q.includes("no access") || q.includes("72") || q.includes("second") || q.includes("revisit");
+  const wantsReadySecond = q.includes("ready") || q.includes("2nd") || q.includes("second attempt");
+  const wantsCompleted = q.includes("completed") || q.includes("done") || q.includes("finished");
+  if (q.includes("bronx")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("bronx"));
+  if (q.includes("brooklyn")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("brooklyn"));
+  if (q.includes("queens")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("queens"));
+  if (q.includes("manhattan")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("manhattan"));
+  if (wantsReadySecond) {
+    title = "Ready for 2nd Attempt";
+    rows = rows.filter((job) => workflowSecondAttemptInfo(job)?.ready);
+    recommendation = "These jobs should be revisited now because the 72-hour no-access counter matured.";
+  } else if (wantsNoAccess) {
+    title = "No Access / 72-Hour Jobs";
+    rows = rows.filter((job) => {
+      const status = workflowStatus(job) || legacyWorkflowKind(job);
+      return status.includes("NO_ACCESS") || Boolean(workflowSecondAttemptInfo(job));
+    });
+    recommendation = "Track waiting jobs and prioritize any that say REVISIT NOW.";
+  } else if (wantsCompleted) {
+    title = "Completed / Final Jobs";
+    rows = rows.filter((job) => /completed|done/i.test(workflowLabel(job) || JobStatus.statusLabel(job)));
+    recommendation = "Review photos, affidavit, and invoice package for completed jobs.";
+  } else if (wantsOverdue) {
+    title = "Overdue Jobs";
+    rows = rows.filter((job) => {
+      const due = jobDueDiffForAi(job);
+      return due !== null && due > 0;
+    });
+    recommendation = "Handle the oldest overdue jobs first or document no access/refusal.";
+  } else if (wantsToday) {
+    title = "Today’s Priority";
+    rows = rows.filter((job) => {
+      const due = jobDueDiffForAi(job);
+      const second = workflowSecondAttemptInfo(job);
+      return second?.ready || due === 0 || (due !== null && due > 0);
+    });
+    recommendation = "Start with ready second attempts, then overdue jobs, then due-today jobs.";
+  } else if (q) {
+    title = `Search: ${question}`;
+    rows = rows.filter((job) =>
+      [
+        jobKey(job),
+        displayAddress(job),
+        (job as any).borough,
+        displayDescription(job),
+        workflowLabel(job),
+        JobStatus.statusLabel(job),
+        displayAmount(job),
+      ].join(" ").toLowerCase().includes(q)
+    );
+    recommendation = "Matched jobs based on your question text.";
+  } else {
+    title = "Today’s Priority";
+    rows = rows.filter((job) => {
+      const due = jobDueDiffForAi(job);
+      const second = workflowSecondAttemptInfo(job);
+      return second?.ready || due === 0 || (due !== null && due > 0);
+    });
+  }
+  rows.sort((a, b) => {
+    const aSecond = workflowSecondAttemptInfo(a)?.ready ? 1 : 0;
+    const bSecond = workflowSecondAttemptInfo(b)?.ready ? 1 : 0;
+    if (bSecond !== aSecond) return bSecond - aSecond;
+    const aDue = jobDueDiffForAi(a);
+    const bDue = jobDueDiffForAi(b);
+    return (bDue ?? -9999) - (aDue ?? -9999);
+  });
+  const top = rows.slice(0, 12);
+  setAiResults(top);
+  const answer =
+    `${title}\n\n` +
+    `${top.length} job(s) found.\n\n` +
+    (top.length ? top.map(jobAssistantLineForAi).join("\n") : "No matching jobs found.") +
+    `\n\nRecommendation:\n${recommendation}`;
+  setAiAnswer(answer);
+  setActionNotice("AI Job Assistant updated.");
+};
 const [serverWorkflowOverrides, setServerWorkflowOverrides] = useState<Record<string, any>>({});
   const [mapReady, setMapReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -2266,6 +2556,78 @@ function focusJob(job: MappedJob) {
 function directionsUrl(job: JobRecord) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddress(job))}`;
   }
+
+  function currentSelectedIndex() {
+    if (!selected) return -1;
+    const key = String(jobKey(selected)).trim();
+    return filteredJobs.findIndex((job) => String(jobKey(job)).trim() === key);
+  }
+
+  function selectAdjacentJob(direction: "next" | "prev") {
+    if (!filteredJobs.length) return;
+
+    const currentIndex = currentSelectedIndex();
+    let nextIndex = 0;
+
+    if (currentIndex >= 0) {
+      nextIndex = direction === "next" ? currentIndex + 1 : currentIndex - 1;
+    }
+
+    if (nextIndex >= filteredJobs.length) nextIndex = 0;
+    if (nextIndex < 0) nextIndex = filteredJobs.length - 1;
+
+    const nextJob = filteredJobs[nextIndex];
+    if (!nextJob) return;
+
+    setSelected(nextJob);
+    setSelectedOnly(true);
+    setDrawerOpen(true);
+    setFullMap(false);
+    setGeneratedLinks({});
+    setDescriptionOpen(false);
+    setActionNotice(direction === "next" ? "Next job selected." : "Previous job selected.");
+
+    if (Number.isFinite(nextJob._lat) && Number.isFinite(nextJob._lng)) {
+      window.setTimeout(() => {
+        mapRef.current?.panTo([Number(nextJob._lat), Number(nextJob._lng)], {
+          animate: true,
+          duration: 0.45,
+        });
+      }, 40);
+    }
+  }
+
+  function handleSelectedTouchStart(event: any) {
+    const touch = event.touches?.[0];
+    if (!touch) return;
+
+    swipeStartXRef.current = touch.clientX;
+    swipeStartYRef.current = touch.clientY;
+  }
+
+  function handleSelectedTouchEnd(event: any) {
+    const startX = swipeStartXRef.current;
+    const startY = swipeStartYRef.current;
+    const touch = event.changedTouches?.[0];
+
+    swipeStartXRef.current = null;
+    swipeStartYRef.current = null;
+
+    if (startX === null || startY === null || !touch) return;
+
+    const dx = touch.clientX - startX;
+    const dy = touch.clientY - startY;
+
+    if (Math.abs(dx) < 55) return;
+    if (Math.abs(dy) > 75) return;
+
+    if (dx < 0) {
+      selectAdjacentJob("next");
+    } else {
+      selectAdjacentJob("prev");
+    }
+  }
+
 return (
     <main className={`map-shell ${fullMap ? "full-map-mode" : ""}`}>
       <style jsx global>{`
@@ -4620,6 +4982,89 @@ return (
           </button>
         </div>
         {actionNotice ? <div className="action-notice">{actionNotice}</div> : null}
+        <section className="ai-dispatch-chat">
+          <div className="dispatch-chat-head">
+            <div>
+              <span>AI Dispatch Chat</span>
+              <strong>Ask what to do next</strong>
+            </div>
+            <button type="button" onClick={() => speakText(dispatchMessages[dispatchMessages.length - 1]?.text || "", "summary")}>
+              🔊 Read
+            </button>
+          </div>
+          <div className="dispatch-chat-messages">
+            {dispatchMessages.slice(-4).map((message, index) => (
+              <div key={index} className={`dispatch-message ${message.role}`}>
+                <pre>{message.text}</pre>
+                {message.jobs?.length ? (
+                  <div className="dispatch-open-row">
+                    {message.jobs.slice(0, 4).map((jobId) => (
+                      <button type="button" key={jobId} onClick={() => openDispatchJob(jobId)}>
+                        Open {jobId}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+          <div className="dispatch-chip-row">
+            <button type="button" onClick={() => runDispatchChat("What should I do today?")}>Today</button>
+            <button type="button" onClick={() => runDispatchChat("Show urgent overdue jobs")}>Urgent</button>
+            <button type="button" onClick={() => runDispatchChat("Ready second attempt jobs")}>Ready 2nd</button>
+            <button type="button" onClick={() => runDispatchChat("No access 72 hour jobs")}>No Access</button>
+            <button type="button" onClick={() => runDispatchChat("Completed jobs needing paperwork")}>Paperwork</button>
+          </div>
+          <div className="dispatch-input-row">
+            <input
+              value={dispatchQuestion}
+              onChange={(event) => setDispatchQuestion(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") runDispatchChat();
+              }}
+              placeholder="Ask: what jobs are urgent today?"
+            />
+            <button type="button" onClick={() => runDispatchChat()}>Send</button>
+          </div>
+        </section>
+        <section className="ai-job-assistant">
+          <div className="ai-head">
+            <div>
+              <span>AI Job Assistant</span>
+              <strong>Ask what needs attention</strong>
+            </div>
+            <button type="button" onClick={() => speakText(aiAnswer, "summary")}>🔊 Read</button>
+          </div>
+          <div className="ai-input-row">
+            <input
+              value={aiQuestion}
+              onChange={(event) => setAiQuestion(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") runJobAssistant();
+              }}
+              placeholder="Ask: what jobs are due today?"
+            />
+            <button type="button" onClick={() => runJobAssistant()}>Ask</button>
+          </div>
+          <div className="ai-chip-row">
+            <button type="button" onClick={() => runJobAssistant("what should I do today")}>Today</button>
+            <button type="button" onClick={() => runJobAssistant("overdue jobs")}>Overdue</button>
+            <button type="button" onClick={() => runJobAssistant("ready second attempt")}>Ready 2nd</button>
+            <button type="button" onClick={() => runJobAssistant("no access 72 hour")}>No Access</button>
+            <button type="button" onClick={() => runJobAssistant("completed jobs")}>Completed</button>
+          </div>
+          <pre className="ai-answer">{aiAnswer}</pre>
+          {aiResults.length ? (
+            <div className="ai-result-list">
+              {aiResults.slice(0, 5).map((job) => (
+                <button type="button" key={jobKey(job)} onClick={() => openAssistantJob(job)}>
+                  <strong>{jobKey(job)}</strong>
+                  <span>{workflowLabel(job) || JobStatus.statusLabel(job)} · {timelineOverdueLabel(job)}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </section>
         {jobs.filter((job) => workflowViewBucket(job) === "ready2").length > 0 ? (
           <div className="ready-revisit-alert">
             <strong>REVISIT READY</strong>
@@ -4630,7 +5075,9 @@ return (
 
         {selected ? (
           <div
-            className={`selected-card job-status-card ${JobStatus.statusCardClass(selected)}`}
+            className={`selected-card job-status-card ${JobStatus.statusCardClass(selected)} swipe-enabled-card`}
+            onTouchStart={handleSelectedTouchStart}
+            onTouchEnd={handleSelectedTouchEnd}
           >
             <div className="job-main-row">
               <div>
@@ -5056,6 +5503,10 @@ return (
       </main>
   );
 }
+
+
+
+
 
 
 
