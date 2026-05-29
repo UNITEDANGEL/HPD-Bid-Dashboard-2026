@@ -1321,7 +1321,16 @@ const runDispatchChat = (text?: string) => {
   if (q.includes("queens")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("queens"));
   if (q.includes("manhattan")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("manhattan"));
   if (q.includes("staten")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("staten"));
-  if (wantsReadySecond) {
+  const wantsRouteMe = q.includes("route me") || q.includes("best route") || q.includes("where should i go") || q.includes("go first") || q.includes("what should i do first") || q.includes("take me");
+  if (wantsRouteMe) {
+    title = "Route Me Today";
+    rows = rows.filter((job) => {
+      const due = dispatchDueDiff(job);
+      const second = workflowSecondAttemptInfo(job);
+      return second?.ready || due === 0 || (due !== null && due > 0) || (due !== null && due < 0 && Math.abs(due) <= 3);
+    });
+    recommendation = "Open the first job below and tap Waze. Waze will handle live traffic for free. After that, continue down the ranked list.";
+  } else if (wantsReadySecond) {
     title = "Ready for 2nd Attempt";
     rows = rows.filter((job) => workflowSecondAttemptInfo(job)?.ready);
     recommendation = "These are the highest no-access priority because the 72-hour counter matured.";
@@ -1449,7 +1458,16 @@ const runJobAssistant = (questionText?: string) => {
   if (q.includes("brooklyn")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("brooklyn"));
   if (q.includes("queens")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("queens"));
   if (q.includes("manhattan")) rows = rows.filter((job) => String((job as any).borough || "").toLowerCase().includes("manhattan"));
-  if (wantsReadySecond) {
+  const wantsRouteMe = q.includes("route me") || q.includes("best route") || q.includes("where should i go") || q.includes("go first") || q.includes("what should i do first") || q.includes("take me");
+  if (wantsRouteMe) {
+    title = "Route Me Today";
+    rows = rows.filter((job) => {
+      const due = dispatchDueDiff(job);
+      const second = workflowSecondAttemptInfo(job);
+      return second?.ready || due === 0 || (due !== null && due > 0) || (due !== null && due < 0 && Math.abs(due) <= 3);
+    });
+    recommendation = "Open the first job below and tap Waze. Waze will handle live traffic for free. After that, continue down the ranked list.";
+  } else if (wantsReadySecond) {
     title = "Ready for 2nd Attempt";
     rows = rows.filter((job) => workflowSecondAttemptInfo(job)?.ready);
     recommendation = "These jobs should be revisited now because the 72-hour no-access counter matured.";
@@ -5499,6 +5517,9 @@ return (
       </main>
   );
 }
+
+
+
 
 
 
