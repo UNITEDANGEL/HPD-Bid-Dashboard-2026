@@ -2562,6 +2562,12 @@ function wazeDirectionsUrl(job: JobRecord | null | undefined) {
   const destination = [address, borough, "NY"].filter(Boolean).join(", ");
   return `https://waze.com/ul?q=${encodeURIComponent(destination)}&navigate=yes`;
 }
+function googleDirectionsUrl(job: JobRecord | null | undefined) {
+  if (!job) return "#";
+
+  return directionsUrl(job as JobRecord);
+}
+
 function directionsUrl(job: JobRecord) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddress(job))}`;
   }
@@ -5493,6 +5499,7 @@ return (
       </main>
   );
 }
+
 
 
 
