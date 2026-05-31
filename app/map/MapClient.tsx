@@ -2661,6 +2661,93 @@ function directionsUrl(job: JobRecord) {
     }
   }
 
+
+  function mapDataHealth() {
+    const pool = (mappedJobs.length ? mappedJobs : jobs) as MappedJob[];
+
+    function healthZipFromAddress(address: string) {
+      const match = String(address || "").match(/\b(10\d{3}|11\d{3}|12\d{3})\b/);
+      return match ? match[1] : "";
+    }
+
+    function healthExpectedBoroughFromZip(zip: string) {
+      const z = Number(zip);
+      if (!z) return "";
+      if (z >= 10001 && z <= 10282) return "Manhattan";
+      if (z >= 10301 && z <= 10314) return "Staten Island";
+      if (z >= 10451 && z <= 10475) return "Bronx";
+      if (z >= 11004 && z <= 11109) return "Queens";
+      if (z >= 11351 && z <= 11697) return "Queens";
+      if (z >= 11201 && z <= 11256) return "Brooklyn";
+      return "";
+    }
+
+    function healthSuspiciousQueensCoord(job: JobRecord) {
+      const address = displayAddress(job);
+      const zip = healthZipFromAddress(address);
+      const expected = healthExpectedBoroughFromZip(zip);
+      if (expected !== "Queens") return false;
+
+      const lat = toNumber((job as any).Latitude ?? (job as any).latitude ?? (job as any).lat);
+      const lng = toNumber((job as any).Longitude ?? (job as any).longitude ?? (job as any).lng ?? (job as any).lon);
+
+      if (lat === null || lng === null) return true;
+      if (lat < 40.52 || lat > 40.82) return true;
+      if (lng < -73.97 || lng > -73.70) return true;
+
+      return false;
+    }
+
+    const blankBorough = pool.filter((job) => !String((job as any).borough || (job as any).Borough || (job as any).Boro || "").trim());
+
+    const missingCoords = pool.filter((job) => {
+      const lat = toNumber((job as any).Latitude ?? (job as any).latitude ?? (job as any).lat);
+      const lng = toNumber((job as any).Longitude ?? (job as any).longitude ?? (job as any).lng ?? (job as any).lon);
+      return lat === null || lng === null || lat === 0 || lng === 0;
+    });
+
+    const badDescriptions = pool.filter((job) => {
+      const desc = displayDescription(job).toLowerCase();
+      const source = String((job as any).DescriptionSource || (job as any).descriptionSource || "").toLowerCase();
+
+      return (
+        !desc ||
+        source.includes("needs_manual") ||
+        desc.includes("description needs review") ||
+        (desc.includes("prepared by") && desc.includes("signature") && desc.includes("permit required"))
+      );
+    });
+
+    const suspiciousQueens = pool.filter(healthSuspiciousQueensCoord);
+
+    const checkDate = pool.filter((job) =>
+      timelineOverdueLabel(job) === "Check date" || workWindowInfo(job).statusLabel === "Check completion date"
+    );
+
+    const readySecond = pool.filter((job) => workflowSecondAttemptInfo(job)?.ready);
+
+    const overdue = pool.filter((job) => {
+      const label = timelineOverdueLabel(job);
+      return /^OD\s+\d+d$/i.test(label);
+    });
+
+    const totalIssues = blankBorough.length + missingCoords.length + badDescriptions.length + suspiciousQueens.length + checkDate.length;
+
+    return {
+      totalJobs: pool.length,
+      totalIssues,
+      blankBorough,
+      missingCoords,
+      badDescriptions,
+      suspiciousQueens,
+      checkDate,
+      readySecond,
+      overdue,
+    };
+  }
+
+  const health = mapDataHealth();
+
 return (
     <main className={`map-shell ${fullMap ? "full-map-mode" : ""}`}>
       <style jsx global>{`
@@ -5015,6 +5102,45 @@ return (
           </button>
         </div>
         {actionNotice ? <div className="action-notice">{actionNotice}</div> : null}
+
+        <section className={`map-health-panel ${health.totalIssues ? "has-issues" : "clean"}`}>
+          <div className="map-health-head">
+            <div>
+              <span>Map Data Health</span>
+              <strong>{health.totalIssues ? `${health.totalIssues} item(s) need attention` : "All core checks clean"}</strong>
+            </div>
+            <button type="button" onClick={() => runDispatchChat("What should I do today?")}>
+              Ask AI
+            </button>
+          </div>
+
+          <div className="map-health-grid">
+            <button type="button" onClick={() => setActionNotice(`${health.badDescriptions.length} bad descriptions found.`)}>
+              <span>Bad descriptions</span>
+              <strong>{health.badDescriptions.length}</strong>
+            </button>
+            <button type="button" onClick={() => setActionNotice(`${health.blankBorough.length} blank boroughs found.`)}>
+              <span>Blank boroughs</span>
+              <strong>{health.blankBorough.length}</strong>
+            </button>
+            <button type="button" onClick={() => setActionNotice(`${health.missingCoords.length} missing coordinates found.`)}>
+              <span>Missing coords</span>
+              <strong>{health.missingCoords.length}</strong>
+            </button>
+            <button type="button" onClick={() => setActionNotice(`${health.suspiciousQueens.length} suspicious Queens coordinates found.`)}>
+              <span>Queens coord check</span>
+              <strong>{health.suspiciousQueens.length}</strong>
+            </button>
+            <button type="button" onClick={() => setActionNotice(`${health.checkDate.length} check-date jobs found.`)}>
+              <span>Check-date jobs</span>
+              <strong>{health.checkDate.length}</strong>
+            </button>
+            <button type="button" onClick={() => runDispatchChat("Ready second attempt jobs")}>
+              <span>Ready 2nd attempts</span>
+              <strong>{health.readySecond.length}</strong>
+            </button>
+          </div>
+        </section>
         <section className="ai-dispatch-chat">
           <div className="dispatch-chat-head">
             <div>
@@ -5517,6 +5643,7 @@ return (
       </main>
   );
 }
+
 
 
 
