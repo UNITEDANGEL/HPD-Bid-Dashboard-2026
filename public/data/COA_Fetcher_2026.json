@@ -7918,9 +7918,9 @@
     "AwardedBy": "THIS OMO IS NOT SUBJECT TO DAVIS BACON BECAUSE IT C ALLS FOR WORK IN A RESIDENTIAL BUILDING OF SEVEN (7 ) UNITS OR",
     "TotalSqFt": "",
     "JobDescription": "NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “\nAT BUILDING ENTRANCE DOOR , 1st STORY\nREPAIRS TO MAKE DOOR SELF CLOSE AND LATCH\nMAKE ALL NECESSARY ADJUSTMENTS AND ALIGNMENTS TO D OOR\nTO ENSURE DOOR PROPERLY SELF-CLOSES AND LATCHES\nAS PER NYC GUIDELINES. RESTORE DOOR TO PROPER\nWORKING ORDER.\nTOTAL DOORS = (1)\nREMOVE ALL WORK-RELATED DEBRIS.\nALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS.",
-    "Geocode": "OK",
-    "Latitude": 40.7039915,
-    "Longitude": -74.0110917,
+    "Geocode": "OSM_REGEOCODED_STATEN_ISLAND_FIX",
+    "Latitude": "40.6251871",
+    "Longitude": "-74.0784759",
     "MissingITBReason": "",
     "COAParseStatus": "OK",
     "ITBMatchStatus": "MATCHED",
@@ -7936,8 +7936,13 @@
     "borough": "Staten Island",
     "Boro": "Staten Island",
     "boro": "Staten Island",
-    "BoroughSource": "ZIP_CODE_CORRECTED",
-    "boroughSource": "ZIP_CODE_CORRECTED"
+    "BoroughSource": "ZIP_AND_ADDRESS_VERIFIED",
+    "boroughSource": "ZIP_AND_ADDRESS_VERIFIED",
+    "latitude": "40.6251871",
+    "longitude": "-74.0784759",
+    "geocode": "OSM_REGEOCODED_STATEN_ISLAND_FIX",
+    "GeocodeNote": "91, Broad Street, Stapleton, Staten Island, Richmond County, New York, 10304, United States",
+    "geocodeNote": "91, Broad Street, Stapleton, Staten Island, Richmond County, New York, 10304, United States"
   },
   {
     "OMO": "EQ16592",
