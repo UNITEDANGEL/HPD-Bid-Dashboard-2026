@@ -2746,6 +2746,25 @@ function directionsUrl(job: JobRecord) {
     };
   }
 
+  function openHealthGroup(label: string, rows: MappedJob[], recommendation: string) {
+    const top = rows.slice(0, 12);
+    const jobIds = top.map((job) => jobKey(job));
+
+    const answer =
+      `${label}\n\n` +
+      `${top.length} job(s) found.\n\n` +
+      (top.length ? top.map(dispatchJobLine).join("\n\n") : "No matching jobs found.") +
+      `\n\nRecommendation:\n${recommendation}`;
+
+    setDispatchMessages((messages) => [
+      ...messages,
+      { role: "user", text: label },
+      { role: "assistant", text: answer, jobs: jobIds },
+    ]);
+
+    setActionNotice(`${label}: ${rows.length} item(s).`);
+  }
+
   const health = mapDataHealth();
 
 return (
@@ -5643,6 +5662,8 @@ return (
       </main>
   );
 }
+
+
 
 
 
