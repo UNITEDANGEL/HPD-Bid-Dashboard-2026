@@ -5146,8 +5146,8 @@ return (
               <span>Missing coords</span>
               <strong>{health.missingCoords.length}</strong>
             </button>
-            <button type="button" onClick={() => setActionNotice(`${health.suspiciousQueens.length} suspicious Queens coordinates found.`)}>
-              <span>Queens coord check</span>
+            <button type="button" onClick={() => setActionNotice(`${health.suspiciousQueens.length} suspicious borough coordinates found.`)}>
+              <span>Borough map check</span>
               <strong>{health.suspiciousQueens.length}</strong>
             </button>
             <button type="button" onClick={() => setActionNotice(`${health.checkDate.length} check-date jobs found.`)}>
@@ -5662,6 +5662,7 @@ return (
       </main>
   );
 }
+
 
 
 
