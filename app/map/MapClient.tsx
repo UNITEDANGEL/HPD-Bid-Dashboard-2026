@@ -5123,6 +5123,13 @@ return (
         {actionNotice ? <div className="action-notice">{actionNotice}</div> : null}
 
         <section className={`map-health-panel ${health.totalIssues ? "has-issues" : "clean"}`}>
+          {health.totalIssues === 0 ? (
+            <div className="verified-map-badge">
+              <span>Verified Map Data</span>
+              <strong>All core checks clean</strong>
+            </div>
+          ) : null}
+
           <div className="map-health-head">
             <div>
               <span>Map Data Health</span>
@@ -5662,6 +5669,7 @@ return (
       </main>
   );
 }
+
 
 
 
