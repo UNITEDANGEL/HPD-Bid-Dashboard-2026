@@ -1557,6 +1557,8 @@ const [hideCompleted, setHideCompleted] = useState(false);
   }, []);
 
 const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60" | "od61_90" | "od90plus">("all");
+const [customMaturityMin, setCustomMaturityMin] = useState("");
+const [customMaturityMax, setCustomMaturityMax] = useState("");
   const [fullMap, setFullMap] = useState(false);
 
 
@@ -5669,6 +5671,7 @@ return (
       </main>
   );
 }
+
 
 
 
