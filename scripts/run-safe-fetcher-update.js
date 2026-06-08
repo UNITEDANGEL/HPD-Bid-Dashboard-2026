@@ -1,4 +1,4 @@
-const fs = require("fs");
+﻿const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
 
@@ -75,7 +75,7 @@ function runStep(name, command, args) {
 
   const result = spawnSync(command, args, {
     cwd: ROOT,
-    shell: process.platform === "win32",
+    shell: false,
     encoding: "utf8",
     env: {
       ...process.env,
@@ -209,6 +209,8 @@ async function main() {
 }
 
 main();
+
+
 
 
 

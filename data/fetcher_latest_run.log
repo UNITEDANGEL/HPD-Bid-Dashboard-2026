@@ -1,11 +1,11 @@
-Fetcher run started: 2026-06-02T14:47:21.062Z
+Fetcher run started: 2026-06-08T00:02:42.322Z
 Google auth files validated as JSON.
 Credentials file exists. Starting 7-day fetcher pipeline.
 
 ========== Install Python fetcher dependencies ==========
 $ python -m pip install --quiet requests tqdm PyPDF2 google-api-python-client google-auth-oauthlib google-auth-httplib2
 
-[notice] A new release of pip is available: 25.0.1 -> 26.1.1
+[notice] A new release of pip is available: 25.0.1 -> 26.1.2
 [notice] To update, run: python.exe -m pip install --upgrade pip
 
 
@@ -18,46 +18,56 @@ $ python FetchrMatcherV5.py --update --days 7
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/05/26 before:2026/06/03
-COA items parsed (latest per OMO): 9
-ITB items parsed (latest per OMO): 9
-Final JobRows: 9
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/05/31 before:2026/06/08
+COA items parsed (latest per OMO): 29
+ITB items parsed (latest per OMO): 29
+Final JobRows: 29
 
 CSV saved -> C:\dev\Node_Dashboard_Live\mereged_data_csv_2025\COA_Fetcher_2026.csv
 JSON saved -> C:\dev\Node_Dashboard_Live\mereged_data_csv_2025\COA_Fetcher_2026.json
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/10 [00:00<?, ?it/s]Downloading COA messages:  10%|█         | 1/10 [00:00<00:01,  7.79it/s]Downloading COA messages:  20%|██        | 2/10 [00:00<00:00,  8.37it/s]Downloading COA messages:  30%|███       | 3/10 [00:00<00:00,  7.80it/s]Downloading COA messages:  40%|████      | 4/10 [00:00<00:00,  7.83it/s]Downloading COA messages:  50%|█████     | 5/10 [00:00<00:00,  5.62it/s]Downloading COA messages:  60%|██████    | 6/10 [00:00<00:00,  5.82it/s]Downloading COA messages:  70%|███████   | 7/10 [00:01<00:00,  6.68it/s]Downloading COA messages:  80%|████████  | 8/10 [00:01<00:00,  7.33it/s]Downloading COA messages:  90%|█████████ | 9/10 [00:01<00:00,  7.67it/s]Downloading COA messages: 100%|██████████| 10/10 [00:01<00:00,  7.45it/s]Downloading COA messages: 100%|██████████| 10/10 [00:01<00:00,  7.11it/s]
-Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<?, ?it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:06,  1.29it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:01<00:05,  1.23it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:02<00:05,  1.19it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:05<00:07,  1.51s/it]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:06<00:06,  1.66s/it]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:15<00:11,  3.84s/it]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:18<00:07,  3.61s/it]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:19<00:02,  2.73s/it]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:19<00:00,  2.13s/it]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:19<00:00,  2.20s/it]
+Downloading COA messages:   0%|          | 0/32 [00:00<?, ?it/s]Downloading COA messages:   3%|▎         | 1/32 [00:00<00:04,  6.46it/s]Downloading COA messages:   6%|▋         | 2/32 [00:00<00:05,  5.46it/s]Downloading COA messages:   9%|▉         | 3/32 [00:00<00:04,  6.75it/s]Downloading COA messages:  12%|█▎        | 4/32 [00:00<00:03,  7.25it/s]Downloading COA messages:  16%|█▌        | 5/32 [00:00<00:03,  7.56it/s]Downloading COA messages:  19%|█▉        | 6/32 [00:00<00:03,  7.63it/s]Downloading COA messages:  22%|██▏       | 7/32 [00:00<00:03,  7.60it/s]Downloading COA messages:  25%|██▌       | 8/32 [00:01<00:03,  7.93it/s]Downloading COA messages:  31%|███▏      | 10/32 [00:01<00:02,  8.69it/s]Downloading COA messages:  38%|███▊      | 12/32 [00:01<00:02,  9.06it/s]Downloading COA messages:  41%|████      | 13/32 [00:01<00:02,  8.93it/s]Downloading COA messages:  44%|████▍     | 14/32 [00:01<00:02,  8.99it/s]Downloading COA messages:  47%|████▋     | 15/32 [00:01<00:02,  8.47it/s]Downloading COA messages:  50%|█████     | 16/32 [00:02<00:02,  7.73it/s]Downloading COA messages:  53%|█████▎    | 17/32 [00:02<00:02,  6.81it/s]Downloading COA messages:  56%|█████▋    | 18/32 [00:02<00:01,  7.29it/s]Downloading COA messages:  59%|█████▉    | 19/32 [00:02<00:01,  7.45it/s]Downloading COA messages:  62%|██████▎   | 20/32 [00:02<00:01,  7.86it/s]Downloading COA messages:  66%|██████▌   | 21/32 [00:02<00:01,  8.04it/s]Downloading COA messages:  69%|██████▉   | 22/32 [00:02<00:01,  8.10it/s]Downloading COA messages:  72%|███████▏  | 23/32 [00:02<00:01,  8.29it/s]Downloading COA messages:  75%|███████▌  | 24/32 [00:03<00:01,  7.38it/s]Downloading COA messages:  81%|████████▏ | 26/32 [00:03<00:00,  8.09it/s]Downloading COA messages:  84%|████████▍ | 27/32 [00:03<00:00,  8.45it/s]Downloading COA messages:  91%|█████████ | 29/32 [00:03<00:00,  8.49it/s]Downloading COA messages:  94%|█████████▍| 30/32 [00:03<00:00,  8.76it/s]Downloading COA messages:  97%|█████████▋| 31/32 [00:03<00:00,  7.49it/s]Downloading COA messages: 100%|██████████| 32/32 [00:04<00:00,  7.62it/s]Downloading COA messages: 100%|██████████| 32/32 [00:04<00:00,  7.88it/s]
+Geocoding COA addresses:   0%|          | 0/29 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 29/29 [00:00<?, ?it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/29 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   3%|▎         | 1/29 [00:00<00:20,  1.39it/s]Fetching ITBs for COA OMOs:   7%|▋         | 2/29 [00:01<00:16,  1.66it/s]Fetching ITBs for COA OMOs:  10%|█         | 3/29 [00:01<00:16,  1.59it/s]Fetching ITBs for COA OMOs:  14%|█▍        | 4/29 [00:02<00:16,  1.50it/s]Fetching ITBs for COA OMOs:  17%|█▋        | 5/29 [00:03<00:18,  1.28it/s]Fetching ITBs for COA OMOs:  21%|██        | 6/29 [00:04<00:16,  1.43it/s]Fetching ITBs for COA OMOs:  24%|██▍       | 7/29 [00:04<00:14,  1.48it/s]Fetching ITBs for COA OMOs:  28%|██▊       | 8/29 [00:05<00:12,  1.63it/s]Fetching ITBs for COA OMOs:  31%|███       | 9/29 [00:05<00:11,  1.73it/s]Fetching ITBs for COA OMOs:  34%|███▍      | 10/29 [00:06<00:10,  1.73it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 11/29 [00:07<00:11,  1.64it/s]Fetching ITBs for COA OMOs:  41%|████▏     | 12/29 [00:07<00:10,  1.69it/s]Fetching ITBs for COA OMOs:  45%|████▍     | 13/29 [00:08<00:09,  1.69it/s]Fetching ITBs for COA OMOs:  48%|████▊     | 14/29 [00:08<00:08,  1.76it/s]Fetching ITBs for COA OMOs:  52%|█████▏    | 15/29 [00:09<00:07,  1.83it/s]Fetching ITBs for COA OMOs:  55%|█████▌    | 16/29 [00:09<00:07,  1.80it/s]Fetching ITBs for COA OMOs:  59%|█████▊    | 17/29 [00:10<00:06,  1.83it/s]Fetching ITBs for COA OMOs:  62%|██████▏   | 18/29 [00:10<00:06,  1.76it/s]Fetching ITBs for COA OMOs:  66%|██████▌   | 19/29 [00:11<00:05,  1.71it/s]Fetching ITBs for COA OMOs:  69%|██████▉   | 20/29 [00:12<00:05,  1.71it/s]Fetching ITBs for COA OMOs:  72%|███████▏  | 21/29 [00:12<00:04,  1.69it/s]Fetching ITBs for COA OMOs:  76%|███████▌  | 22/29 [00:13<00:03,  1.77it/s]Fetching ITBs for COA OMOs:  79%|███████▉  | 23/29 [00:13<00:03,  1.86it/s]Fetching ITBs for COA OMOs:  83%|████████▎ | 24/29 [00:14<00:02,  1.78it/s]Fetching ITBs for COA OMOs:  86%|████████▌ | 25/29 [00:14<00:02,  1.79it/s]Fetching ITBs for COA OMOs:  90%|████████▉ | 26/29 [00:15<00:01,  1.85it/s]Fetching ITBs for COA OMOs:  93%|█████████▎| 27/29 [00:15<00:01,  1.87it/s]Fetching ITBs for COA OMOs:  97%|█████████▋| 28/29 [00:16<00:00,  1.84it/s]Fetching ITBs for COA OMOs: 100%|██████████| 29/29 [00:16<00:00,  1.84it/s]Fetching ITBs for COA OMOs: 100%|██████████| 29/29 [00:16<00:00,  1.71it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
 Safe merge complete
-Master before: 474
-Incoming rows: 279
-Added new OMOs: 0
-Skipped existing OMOs: 279
+Master before: 494
+Incoming rows: 305
+Added new OMOs: 6
+Skipped existing OMOs: 299
 Updated existing OMOs: 0
-Need geocode: 0
+Need geocode: 6
 Missing ITB: 0
-Missing description: 0
-Master after: 474
+Missing description: 6
+Master after: 500
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
 
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 4
+Need geocode: 14
 FAILED EQ29600 108-43 48 AVENUE, 11368
 FAILED EQ27758 3052 BRIGHTON 1 STREET, 11235
 FAILED EQ28868 202 WEST 146 STREET, 10039
 FAILED EQ27680 621 EAST 170 STREET, 10456
-Geocoded: 0
-Failed: 4
+FAILED EQ29302 558 EAST 2 STREET, 11218
+FAILED EQ25568 230 EAST 173 STREET, 10457
+FAILED EQ27441 89-04 148 STREET, 11435
+FAILED EQ29106 11-40 44 DRIVE, 11101
+OK EQ28557 470 OCEAN AVENUE, 11226 40.6512834 -73.9617531
+OK EQ29802 257 GRAFTON STREET, 11212 40.6618692 -73.9172185
+FAILED EQ28830 71-27 65 STREET, 11385
+OK EQ29670 101-24 QUEENS BOULEVARD, 11375 40.725866 -73.8520998
+OK EQ29866 3205 EMMONS AVENUE, 11235 40.5844045 -73.9322702
+OK EQ29346 332 ROGERS AVENUE, 11225 40.6650341 -73.954225
+Geocoded: 5
+Failed: 9
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
 
@@ -81,22 +91,34 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 0
-Descriptions patched: 0
+Matched ITBs needing description: 6
+DESCRIPTION OK EQ28557 EQ28557_060326123131.pdf
+DESCRIPTION OK EQ29802 EQ29802_060326091554.pdf
+DESCRIPTION OK EQ28830 EQ28830_060326014151.pdf
+DESCRIPTION OK EQ29670 EQ29670_060326013442.pdf
+DESCRIPTION OK EQ29866 EQ29866_060326110051.pdf
+DESCRIPTION OK EQ29346 EQ29346_060226040949.pdf
+Descriptions patched: 6
 Missing PDF: 0
 Failed: 0
 Backup: data\COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
+{'OMO': 'EQ28557', 'Address': '470 OCEAN AVENUE, 11226', 'RecoveredFrom': 'EQ28557_060326123131.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK" REPAIR THE WINDOW IN THE 3RD ROOM FROM EAST AT APT LE5. WINDOW AT WEST IN THE 3RD ROOM FROM EAST LOCATED AT APT LE5, 5TH STORY, 4TH DOOR FROM EAST AT SOU'}
+{'OMO': 'EQ29802', 'Address': '257 GRAFTON STREET, 11212', 'RecoveredFrom': 'EQ29802_060326091554.pdf', 'Preview': ': REPAIR BUILDING VESTIBULE DOOR TO ADHERE TO LOCAL L AW 111 OF 2018. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BUILDING VESTIBULE DOOR, AT PUBLIC HALL, 1ST STO RY. REMOVE DEFECTIVE HINGES. SUP'}
+{'OMO': 'EQ28830', 'Address': '71-27 65 STREET, 11385', 'RecoveredFrom': 'EQ28830_060326014151.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR AT PUBLIC HALL, 1st STORY REPAIR TO MAKE DOORS SELF CLOSING AND LATCHING MAKE ALL NECESSARY REPAIRS TO ADJUST HYDRAULIC DOOR C'}
+{'OMO': 'EQ29670', 'Address': '101-24 QUEENS BOULEVARD, 11375', 'RecoveredFrom': 'EQ29670_060326013442.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT 7TH STORY COMPACTOR CLOSET, HOPPER DOOR REPAIR FIRE DOOR TO ADHERE TO LOCAL LAW 111 OF 2018 INSTALL NEW LATCH ASSEMBLY. ENSURE DOOR IS SELF CLO SING'}
+{'OMO': 'EQ29866', 'Address': '3205 EMMONS AVENUE, 11235', 'RecoveredFrom': 'EQ29866_060326110051.pdf', 'Preview': ': AT APT 2H. REPLACE GLASS PANE. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK" AT APT 2H. MAKE ALL NECESSARY REPAIRS TO REPLACE GLASS PANE AT THE LOWER SASH WINDOW IN 1ST ROOM AT APT 2H. ENSURE WINDOW '}
+{'OMO': 'EQ29346', 'Address': '332 ROGERS AVENUE, 11225', 'RecoveredFrom': 'EQ29346_060226040949.pdf', 'Preview': ':  AT APT#B16 ENTRANCE DOOR 2ND STORY , INSTA LLED NEW SELF CLOSING HINGES TO MAKE DOOR SELF CLOSING NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “  AT APT#B16 ENTRANCE DOOR 2ND STORY , INSTA LLED NEW '}
 
 
 ========== Verify mapping ==========
 $ node check-local-mapping.js
-Raw JSON rows: 474
-2026 rows: 423
-2026 rows with any Latitude/Longitude: 419
-2026 rows with valid NYC coordinates: 419
-2026 rows NOT valid mapped: 4
+Raw JSON rows: 500
+2026 rows: 449
+2026 rows with any Latitude/Longitude: 440
+2026 rows with valid NYC coordinates: 440
+2026 rows NOT valid mapped: 9
 
 Not mapped sample:
 ┌─────────┬───────────┬─────────────────────────────────┬────────────┬───────────────┬──────────┬───────────┬──────────────┬──────────────────┬───────────┐
@@ -106,6 +128,11 @@ Not mapped sample:
 │ 1       │ 'EQ27758' │ '3052 BRIGHTON 1 STREET, 11235' │ '06/01/26' │ '5/29/26'     │ ''       │ ''        │ 'OSM_FAILED' │ ''               │ 'MATCHED' │
 │ 2       │ 'EQ28868' │ '202 WEST 146 STREET, 10039'    │ '05/27/26' │ '5/28/26'     │ ''       │ ''        │ 'OSM_FAILED' │ ''               │ 'MATCHED' │
 │ 3       │ 'EQ27680' │ '621 EAST 170 STREET, 10456'    │ '05/26/26' │ '5/26/26'     │ ''       │ ''        │ 'OSM_FAILED' │ ''               │ 'MATCHED' │
+│ 4       │ 'EQ29302' │ '558 EAST 2 STREET, 11218'      │ '06/03/26' │ '6/4/26'      │ ''       │ ''        │ 'OSM_FAILED' │ ''               │ 'MATCHED' │
+│ 5       │ 'EQ25568' │ '230 EAST 173 STREET, 10457'    │ '06/02/26' │ '6/3/26'      │ ''       │ ''        │ 'OSM_FAILED' │ ''               │ 'MATCHED' │
+│ 6       │ 'EQ27441' │ '89-04 148 STREET, 11435'       │ '06/02/26' │ '6/2/26'      │ ''       │ ''        │ 'OSM_FAILED' │ ''               │ 'MATCHED' │
+│ 7       │ 'EQ29106' │ '11-40 44 DRIVE, 11101'         │ '06/02/26' │ '6/3/26'      │ ''       │ ''        │ 'OSM_FAILED' │ ''               │ 'MATCHED' │
+│ 8       │ 'EQ28830' │ '71-27 65 STREET, 11385'        │ '06/04/26' │ '6/4/26'      │ ''       │ ''        │ 'OSM_FAILED' │ ''               │ 'MATCHED' │
 └─────────┴───────────┴─────────────────────────────────┴────────────┴───────────────┴──────────┴───────────┴──────────────┴──────────────────┴───────────┘
 
 
@@ -129,7 +156,7 @@ Missing sample:
 
 ========== Verify missing ITB ==========
 $ node export-missing-itb.js
-Total jobs: 474
+Total jobs: 500
 Missing ITB jobs: 0
 Exported: ./data/missing_itb_jobs_2026.csv
 ┌─────────┐
@@ -138,17 +165,17 @@ Exported: ./data/missing_itb_jobs_2026.csv
 └─────────┘
 
 
-Fetcher run finished: 2026-06-02T14:47:56.621Z
+Fetcher run finished: 2026-06-08T00:03:54.755Z
 {
-  "fetchedCoaItems": 9,
-  "fetchedItbItems": 9,
-  "fetchedFinalJobRows": 9,
-  "addedNewOmos": 0,
-  "skippedExistingOmos": 279,
-  "rawRows": 474,
-  "rows2026": 423,
-  "mapped2026": 419,
-  "notMapped2026": 4,
+  "fetchedCoaItems": 29,
+  "fetchedItbItems": 29,
+  "fetchedFinalJobRows": 29,
+  "addedNewOmos": 6,
+  "skippedExistingOmos": 299,
+  "rawRows": 500,
+  "rows2026": 449,
+  "mapped2026": 440,
+  "notMapped2026": 9,
   "badDescriptions": 0,
   "missingDescriptions": 0,
   "missingItbJobs": 0
