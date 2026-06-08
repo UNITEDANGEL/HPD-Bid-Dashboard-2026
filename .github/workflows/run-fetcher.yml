@@ -1,0 +1,69 @@
+﻿name: Run Built-In Fetcher
+
+on:
+  workflow_dispatch:
+    inputs:
+      days_back:
+        description: "Days back to fetch"
+        required: true
+        default: "7"
+
+permissions:
+  contents: write
+
+jobs:
+  run-fetcher:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: render-map-upgrade
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore Google credentials if secrets exist
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.GOOGLE_CREDENTIALS_JSON }}" ]; then
+            printf '%s' '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > credentials.json
+          fi
+
+          if [ -n "${{ secrets.GOOGLE_TOKEN_JSON }}" ]; then
+            printf '%s' '${{ secrets.GOOGLE_TOKEN_JSON }}' > token.json
+          fi
+
+      - name: Run safe fetcher update
+        env:
+          FETCHER_LOOKBACK_DAYS: ${{ github.event.inputs.days_back }}
+        run: node scripts/run-safe-fetcher-update.js
+
+      - name: Sync public data
+        run: |
+          cp data/COA_Fetcher_2026.json public/data/COA_Fetcher_2026.json
+          cp data/fetcher_latest_status.json public/data/fetcher_latest_status.json
+
+      - name: Build dashboard
+        run: npm run build
+
+      - name: Commit fetcher output
+        shell: bash
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add data/COA_Fetcher_2026.json public/data/COA_Fetcher_2026.json data/fetcher_latest_status.json public/data/fetcher_latest_status.json data/fetcher_latest_run.log
+
+          if git diff --cached --quiet; then
+            echo "No fetcher data changes to commit."
+          else
+            git commit -m "Run built-in fetcher from GitHub Action"
+            git push origin render-map-upgrade
+          fi
