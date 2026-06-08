@@ -100,7 +100,7 @@ type CleanupJob = {
 
   async function runFetcher(days = daysBack) {
     const safeDays = Math.min(95, Math.max(1, Math.floor(Number(days) || 7)));
-    setRunMessage(`Static site only. Run locally: cd C:\\dev\\Node_Dashboard_Live && $env:FETCHER_LOOKBACK_DAYS="${safeDays}" && node scripts/run-safe-fetcher-update.js`);
+    setRunMessage(`Run locally: cd C:\\dev\\Node_Dashboard_Live && $env:FETCHER_LOOKBACK_DAYS="${safeDays}" && node scripts/run-safe-fetcher-update.js`);
   }
 
   useEffect(() => {
@@ -398,6 +398,7 @@ type CleanupJob = {
     </main>
   );
 }
+
 
 
 
