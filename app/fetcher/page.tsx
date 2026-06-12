@@ -59,7 +59,7 @@ type CleanupJob = {
   const [status, setStatus] = useState<FetcherStatus>({});
   const [loading, setLoading] = useState(false);
   const [runMessage, setRunMessage] = useState("");
-  const [daysBack, setDaysBack] = useState(7);
+  const [daysBack, setDaysBack] = useState(14);
   const [needGeoJobs, setNeedGeoJobs] = useState<CleanupJob[]>([]);
   const [missingDescJobs, setMissingDescJobs] = useState<CleanupJob[]>([]);
   const [cleanupOpen, setCleanupOpen] = useState(false);
@@ -100,10 +100,30 @@ type CleanupJob = {
   }
 
   async function runFetcher(days = daysBack) {
-    const safeDays = Math.min(95, Math.max(1, Math.floor(Number(days) || 7)));
-    setRunMessage(`To run from phone/app: tap Open GitHub Fetcher, choose branch render-map-upgrade, set days_back=${safeDays}, then Run workflow. Local backup command: cd C:\\dev\\Node_Dashboard_Live && $env:FETCHER_LOOKBACK_DAYS="${safeDays}" && node scripts/run-safe-fetcher-update.js`);
+    const safeDays = Math.min(95, Math.max(1, Math.floor(Number(days) || 14)));
+    setLoading(true);
+    setRunMessage(`Starting ${safeDays}-day fetcher from the app...`);
+    try {
+      const res = await fetch("/api/run-fetcher", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ days_back: safeDays })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || data.details || `Fetcher start failed with status ${res.status}.`);
+      }
+      setRunMessage(`Fetcher started for ${safeDays} days. Wait a few minutes, then press Refresh Status or Open Map.`);
+      setTimeout(loadStatus, 3000);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setRunMessage(message);
+    } finally {
+      setLoading(false);
+    }
   }
-
   useEffect(() => {
     loadStatus();
     const id = setInterval(loadStatus, 10000);
@@ -125,7 +145,7 @@ type CleanupJob = {
         <p className="eyebrow">HPD Bid Dashboard</p>
         <h1>Fetcher Dashboard</h1>
         <p>
-          Run the safe 7-day fetcher update, merge new jobs, geocode, recover ITBs,
+          Run the safe fetcher update, merge new jobs, geocode, recover ITBs,
           recover descriptions, and verify dashboard counts.
         </p>
 
@@ -471,6 +491,8 @@ type CleanupJob = {
     </main>
   );
 }
+
+
 
 
 
