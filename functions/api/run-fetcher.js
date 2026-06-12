@@ -30,12 +30,15 @@ export async function onRequestPost(context) {
     const token =
       context.env.GITHUB_ACTIONS_PAT ||
       context.env.GITHUB_TOKEN_PAT ||
+      context.env.GITHUB_PAT ||
+      context.env.GITHUB_TOKEN ||
+      context.env.GH_TOKEN ||
       "";
     if (!token) {
       return json(
         {
           ok: false,
-          error: "Missing GITHUB_ACTIONS_PAT in Cloudflare Pages environment variables."
+          error: "Missing GitHub token in Cloudflare Pages variables. Add one of these in Production: GITHUB_ACTIONS_PAT, GITHUB_PAT, GITHUB_TOKEN_PAT, GITHUB_TOKEN, or GH_TOKEN."
         },
         500
       );
@@ -95,3 +98,5 @@ export async function onRequestPost(context) {
     );
   }
 }
+
+
