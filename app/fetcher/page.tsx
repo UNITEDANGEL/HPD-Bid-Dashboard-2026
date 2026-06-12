@@ -111,16 +111,45 @@ type CleanupJob = {
 
   const summary = status.summary || {};
 
+
+  const dataIssues =
+    (summary.badDescriptions ?? 0) +
+    (summary.missingDescriptions ?? 0) +
+    (summary.missingItbJobs ?? 0);
+  const fetcherClean = Boolean(status.ok) && dataIssues === 0;
+
   return (
     <main className="fetcher-page">
       <section className="hero">
         <p className="eyebrow">HPD Bid Dashboard</p>
-        <h1>Fetcher Control</h1>
+        <h1>Fetcher Dashboard</h1>
         <p>
           Run the safe 7-day fetcher update, merge new jobs, geocode, recover ITBs,
           recover descriptions, and verify dashboard counts.
         </p>
 
+        <div className="fetcher-command-center">
+          <div className="command-card primary">
+            <span>Daily automation</span>
+            <strong>GitHub Action ready</strong>
+            <small>Runs every day and can also be started from iPhone.</small>
+          </div>
+          <div className="command-card">
+            <span>Latest result</span>
+            <strong>{status.ok ? "Clean" : "Needs check"}</strong>
+            <small>{status.state || "unknown"}</small>
+          </div>
+          <div className="command-card">
+            <span>New jobs</span>
+            <strong>{summary.addedNewOmos ?? "—"}</strong>
+            <small>From latest fetcher run</small>
+          </div>
+          <div className={`command-card ${dataIssues ? "warn" : "primary"}`}>
+            <span>Data issues</span>
+            <strong>{dataIssues}</strong>
+            <small>{dataIssues ? "Review before dispatch" : "No missing ITB/description issues"}</small>
+          </div>
+        </div>
         <div className="actions">
                     <div className="days-picker">
             <label>
@@ -155,7 +184,7 @@ type CleanupJob = {
         {runMessage ? <p className="message">{runMessage}</p> : null}
       </section>
 
-      <section className={`status-card ${status.ok ? "ok" : "warn"}`}>
+      <section className={`status-card ${fetcherClean ? "ok" : "warn"}`}>
         <h2>Status: {status.state || "unknown"}</h2>
                 {status.error ? <p className="error">{status.error}</p> : null}
         {status.state === "complete" ? (
@@ -398,6 +427,12 @@ type CleanupJob = {
     </main>
   );
 }
+
+
+
+
+
+
 
 
 
