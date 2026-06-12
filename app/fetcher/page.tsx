@@ -23,6 +23,7 @@ type FetcherStatus = {
     skippedExistingOmos?: number;
   };
   logTail?: string;
+  logPath?: string;
   environment?: {
     hasCredentialsJson?: boolean;
     hasTokenJson?: boolean;
@@ -100,7 +101,7 @@ type CleanupJob = {
 
   async function runFetcher(days = daysBack) {
     const safeDays = Math.min(95, Math.max(1, Math.floor(Number(days) || 7)));
-    setRunMessage(`Run locally: cd C:\\dev\\Node_Dashboard_Live && $env:FETCHER_LOOKBACK_DAYS="${safeDays}" && node scripts/run-safe-fetcher-update.js`);
+    setRunMessage(`To run from phone/app: tap Open GitHub Fetcher, choose branch render-map-upgrade, set days_back=${safeDays}, then Run workflow. Local backup command: cd C:\\dev\\Node_Dashboard_Live && $env:FETCHER_LOOKBACK_DAYS="${safeDays}" && node scripts/run-safe-fetcher-update.js`);
   }
 
   useEffect(() => {
@@ -190,7 +191,7 @@ type CleanupJob = {
         {status.state === "complete" ? (
           <div className="cleanup-alert">
             <strong>Fetcher Complete</strong>
-            <span>{summary.notMapped2026 ?? 0} need geo · {summary.missingDescriptions ?? 0} missing descriptions · {summary.missingItbJobs ?? 0} missing ITB</span>
+            <span>{summary.notMapped2026 ?? 0} need map/geocode review · {summary.missingDescriptions ?? 0} missing descriptions · {summary.missingItbJobs ?? 0} missing ITB</span>
           </div>
         ) : null}
 
@@ -208,16 +209,17 @@ type CleanupJob = {
           <div><span>Bad Desc</span><strong>{summary.badDescriptions ?? "—"}</strong></div>
         </div>
 
-        <div className="env">
-          <p>Credentials: {status.environment?.hasCredentialsJson ? "Found" : "Missing"}</p>
-          <p>Token: {status.environment?.hasTokenJson ? "Found" : "Missing"}</p>
-          <p>Fetcher Script: {status.environment?.hasFetcherScript ? "Found" : "Missing"}</p>
+        <div className="env clean-env">
+          <p>Daily Auto Fetch: ON</p>
+          <p>Default Scan: 14 days back</p>
+          <p>Manual Scan: 1–95 days</p>
+          <p>GitHub Action: Run Built-In Fetcher</p>
         </div>
       </section>
 
       <section className="log-card">
         <h2>Latest Log</h2>
-        <pre>{status.logTail || "No log yet."}</pre>
+        <pre>{status.logTail || `Latest log is saved at ${status.logPath || "data/fetcher_latest_run.log"}. Run locally or from GitHub Action, then refresh status.`}</pre>
       </section>
 
       <style jsx>{`
@@ -295,6 +297,48 @@ type CleanupJob = {
           font-weight: 700;
         }
 
+        .github-action-card {
+          display: flex;
+          justify-content: space-between;
+          gap: 14px;
+          align-items: center;
+          margin-top: 16px;
+          padding: 16px;
+          border-radius: 20px;
+          border: 1px solid rgba(39, 226, 182, 0.26);
+          background:
+            radial-gradient(circle at top left, rgba(39, 226, 182, 0.14), transparent 42%),
+            rgba(255, 255, 255, 0.07);
+        }
+        .github-action-card strong {
+          display: block;
+          font-size: 16px;
+          color: #f7f8ff;
+        }
+        .github-action-card span {
+          display: block;
+          margin-top: 5px;
+          color: #aeb9d6;
+          font-weight: 700;
+          line-height: 1.35;
+        }
+        .github-action-card a {
+          flex: 0 0 auto;
+          background: rgba(39, 226, 182, 0.95);
+          color: #06101f;
+        }
+        .clean-env p {
+          color: #d9ffe9;
+          font-weight: 800;
+        }
+        @media (max-width: 720px) {
+          .github-action-card {
+            display: grid;
+          }
+          .github-action-card a {
+            text-align: center;
+          }
+        }
         .status-card.ok {
           border-color: rgba(39, 226, 182, 0.38);
         }
@@ -427,6 +471,8 @@ type CleanupJob = {
     </main>
   );
 }
+
+
 
 
 
