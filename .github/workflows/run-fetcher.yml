@@ -48,6 +48,8 @@ jobs:
           FETCHER_LOOKBACK_DAYS: ${{ github.event.inputs.days_back || '14' }}
         run: node scripts/run-safe-fetcher-update.js
 
+      - name: Check fetcher health
+        run: node scripts/check-fetcher-health.js
       - name: Sync public data
         run: |
           cp data/COA_Fetcher_2026.json public/data/COA_Fetcher_2026.json
@@ -70,4 +72,5 @@ jobs:
             git commit -m "Run built-in fetcher from GitHub Action"
             git push origin render-map-upgrade
           fi
+
 
