@@ -1,4 +1,4 @@
-Fetcher run started: 2026-06-08T00:02:42.322Z
+Fetcher run started: 2026-06-12T01:53:18.280Z
 Google auth files validated as JSON.
 Credentials file exists. Starting 7-day fetcher pipeline.
 
@@ -18,40 +18,40 @@ $ python FetchrMatcherV5.py --update --days 7
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/05/31 before:2026/06/08
-COA items parsed (latest per OMO): 29
-ITB items parsed (latest per OMO): 29
-Final JobRows: 29
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/06/04 before:2026/06/12
+COA items parsed (latest per OMO): 20
+ITB items parsed (latest per OMO): 20
+Final JobRows: 20
 
 CSV saved -> C:\dev\Node_Dashboard_Live\mereged_data_csv_2025\COA_Fetcher_2026.csv
 JSON saved -> C:\dev\Node_Dashboard_Live\mereged_data_csv_2025\COA_Fetcher_2026.json
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/32 [00:00<?, ?it/s]Downloading COA messages:   3%|▎         | 1/32 [00:00<00:04,  6.46it/s]Downloading COA messages:   6%|▋         | 2/32 [00:00<00:05,  5.46it/s]Downloading COA messages:   9%|▉         | 3/32 [00:00<00:04,  6.75it/s]Downloading COA messages:  12%|█▎        | 4/32 [00:00<00:03,  7.25it/s]Downloading COA messages:  16%|█▌        | 5/32 [00:00<00:03,  7.56it/s]Downloading COA messages:  19%|█▉        | 6/32 [00:00<00:03,  7.63it/s]Downloading COA messages:  22%|██▏       | 7/32 [00:00<00:03,  7.60it/s]Downloading COA messages:  25%|██▌       | 8/32 [00:01<00:03,  7.93it/s]Downloading COA messages:  31%|███▏      | 10/32 [00:01<00:02,  8.69it/s]Downloading COA messages:  38%|███▊      | 12/32 [00:01<00:02,  9.06it/s]Downloading COA messages:  41%|████      | 13/32 [00:01<00:02,  8.93it/s]Downloading COA messages:  44%|████▍     | 14/32 [00:01<00:02,  8.99it/s]Downloading COA messages:  47%|████▋     | 15/32 [00:01<00:02,  8.47it/s]Downloading COA messages:  50%|█████     | 16/32 [00:02<00:02,  7.73it/s]Downloading COA messages:  53%|█████▎    | 17/32 [00:02<00:02,  6.81it/s]Downloading COA messages:  56%|█████▋    | 18/32 [00:02<00:01,  7.29it/s]Downloading COA messages:  59%|█████▉    | 19/32 [00:02<00:01,  7.45it/s]Downloading COA messages:  62%|██████▎   | 20/32 [00:02<00:01,  7.86it/s]Downloading COA messages:  66%|██████▌   | 21/32 [00:02<00:01,  8.04it/s]Downloading COA messages:  69%|██████▉   | 22/32 [00:02<00:01,  8.10it/s]Downloading COA messages:  72%|███████▏  | 23/32 [00:02<00:01,  8.29it/s]Downloading COA messages:  75%|███████▌  | 24/32 [00:03<00:01,  7.38it/s]Downloading COA messages:  81%|████████▏ | 26/32 [00:03<00:00,  8.09it/s]Downloading COA messages:  84%|████████▍ | 27/32 [00:03<00:00,  8.45it/s]Downloading COA messages:  91%|█████████ | 29/32 [00:03<00:00,  8.49it/s]Downloading COA messages:  94%|█████████▍| 30/32 [00:03<00:00,  8.76it/s]Downloading COA messages:  97%|█████████▋| 31/32 [00:03<00:00,  7.49it/s]Downloading COA messages: 100%|██████████| 32/32 [00:04<00:00,  7.62it/s]Downloading COA messages: 100%|██████████| 32/32 [00:04<00:00,  7.88it/s]
-Geocoding COA addresses:   0%|          | 0/29 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 29/29 [00:00<?, ?it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/29 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   3%|▎         | 1/29 [00:00<00:20,  1.39it/s]Fetching ITBs for COA OMOs:   7%|▋         | 2/29 [00:01<00:16,  1.66it/s]Fetching ITBs for COA OMOs:  10%|█         | 3/29 [00:01<00:16,  1.59it/s]Fetching ITBs for COA OMOs:  14%|█▍        | 4/29 [00:02<00:16,  1.50it/s]Fetching ITBs for COA OMOs:  17%|█▋        | 5/29 [00:03<00:18,  1.28it/s]Fetching ITBs for COA OMOs:  21%|██        | 6/29 [00:04<00:16,  1.43it/s]Fetching ITBs for COA OMOs:  24%|██▍       | 7/29 [00:04<00:14,  1.48it/s]Fetching ITBs for COA OMOs:  28%|██▊       | 8/29 [00:05<00:12,  1.63it/s]Fetching ITBs for COA OMOs:  31%|███       | 9/29 [00:05<00:11,  1.73it/s]Fetching ITBs for COA OMOs:  34%|███▍      | 10/29 [00:06<00:10,  1.73it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 11/29 [00:07<00:11,  1.64it/s]Fetching ITBs for COA OMOs:  41%|████▏     | 12/29 [00:07<00:10,  1.69it/s]Fetching ITBs for COA OMOs:  45%|████▍     | 13/29 [00:08<00:09,  1.69it/s]Fetching ITBs for COA OMOs:  48%|████▊     | 14/29 [00:08<00:08,  1.76it/s]Fetching ITBs for COA OMOs:  52%|█████▏    | 15/29 [00:09<00:07,  1.83it/s]Fetching ITBs for COA OMOs:  55%|█████▌    | 16/29 [00:09<00:07,  1.80it/s]Fetching ITBs for COA OMOs:  59%|█████▊    | 17/29 [00:10<00:06,  1.83it/s]Fetching ITBs for COA OMOs:  62%|██████▏   | 18/29 [00:10<00:06,  1.76it/s]Fetching ITBs for COA OMOs:  66%|██████▌   | 19/29 [00:11<00:05,  1.71it/s]Fetching ITBs for COA OMOs:  69%|██████▉   | 20/29 [00:12<00:05,  1.71it/s]Fetching ITBs for COA OMOs:  72%|███████▏  | 21/29 [00:12<00:04,  1.69it/s]Fetching ITBs for COA OMOs:  76%|███████▌  | 22/29 [00:13<00:03,  1.77it/s]Fetching ITBs for COA OMOs:  79%|███████▉  | 23/29 [00:13<00:03,  1.86it/s]Fetching ITBs for COA OMOs:  83%|████████▎ | 24/29 [00:14<00:02,  1.78it/s]Fetching ITBs for COA OMOs:  86%|████████▌ | 25/29 [00:14<00:02,  1.79it/s]Fetching ITBs for COA OMOs:  90%|████████▉ | 26/29 [00:15<00:01,  1.85it/s]Fetching ITBs for COA OMOs:  93%|█████████▎| 27/29 [00:15<00:01,  1.87it/s]Fetching ITBs for COA OMOs:  97%|█████████▋| 28/29 [00:16<00:00,  1.84it/s]Fetching ITBs for COA OMOs: 100%|██████████| 29/29 [00:16<00:00,  1.84it/s]Fetching ITBs for COA OMOs: 100%|██████████| 29/29 [00:16<00:00,  1.71it/s]
+Downloading COA messages:   0%|          | 0/23 [00:00<?, ?it/s]Downloading COA messages:   4%|▍         | 1/23 [00:00<00:02,  7.68it/s]Downloading COA messages:   9%|▊         | 2/23 [00:00<00:03,  6.35it/s]Downloading COA messages:  13%|█▎        | 3/23 [00:00<00:02,  6.98it/s]Downloading COA messages:  17%|█▋        | 4/23 [00:00<00:02,  6.53it/s]Downloading COA messages:  22%|██▏       | 5/23 [00:00<00:02,  6.92it/s]Downloading COA messages:  26%|██▌       | 6/23 [00:00<00:02,  7.55it/s]Downloading COA messages:  30%|███       | 7/23 [00:00<00:02,  7.71it/s]Downloading COA messages:  35%|███▍      | 8/23 [00:01<00:02,  7.02it/s]Downloading COA messages:  39%|███▉      | 9/23 [00:01<00:01,  7.08it/s]Downloading COA messages:  43%|████▎     | 10/23 [00:01<00:01,  7.18it/s]Downloading COA messages:  48%|████▊     | 11/23 [00:01<00:01,  7.53it/s]Downloading COA messages:  52%|█████▏    | 12/23 [00:01<00:01,  7.92it/s]Downloading COA messages:  57%|█████▋    | 13/23 [00:01<00:01,  7.86it/s]Downloading COA messages:  61%|██████    | 14/23 [00:01<00:01,  7.96it/s]Downloading COA messages:  65%|██████▌   | 15/23 [00:02<00:01,  7.56it/s]Downloading COA messages:  70%|██████▉   | 16/23 [00:02<00:00,  7.84it/s]Downloading COA messages:  74%|███████▍  | 17/23 [00:02<00:00,  7.90it/s]Downloading COA messages:  78%|███████▊  | 18/23 [00:02<00:00,  5.34it/s]Downloading COA messages:  83%|████████▎ | 19/23 [00:02<00:00,  5.05it/s]Downloading COA messages:  91%|█████████▏| 21/23 [00:03<00:00,  6.20it/s]Downloading COA messages:  96%|█████████▌| 22/23 [00:03<00:00,  6.63it/s]Downloading COA messages: 100%|██████████| 23/23 [00:03<00:00,  7.11it/s]Downloading COA messages: 100%|██████████| 23/23 [00:03<00:00,  6.98it/s]
+Geocoding COA addresses:   0%|          | 0/20 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 20/20 [00:00<?, ?it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/20 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   5%|▌         | 1/20 [00:00<00:11,  1.71it/s]Fetching ITBs for COA OMOs:  10%|█         | 2/20 [00:01<00:12,  1.42it/s]Fetching ITBs for COA OMOs:  15%|█▌        | 3/20 [00:01<00:10,  1.57it/s]Fetching ITBs for COA OMOs:  20%|██        | 4/20 [00:02<00:09,  1.70it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 5/20 [00:02<00:08,  1.81it/s]Fetching ITBs for COA OMOs:  30%|███       | 6/20 [00:03<00:07,  1.79it/s]Fetching ITBs for COA OMOs:  35%|███▌      | 7/20 [00:04<00:07,  1.75it/s]Fetching ITBs for COA OMOs:  40%|████      | 8/20 [00:04<00:06,  1.78it/s]Fetching ITBs for COA OMOs:  45%|████▌     | 9/20 [00:05<00:06,  1.75it/s]Fetching ITBs for COA OMOs:  50%|█████     | 10/20 [00:05<00:05,  1.77it/s]Fetching ITBs for COA OMOs:  55%|█████▌    | 11/20 [00:06<00:04,  1.90it/s]Fetching ITBs for COA OMOs:  60%|██████    | 12/20 [00:06<00:04,  1.79it/s]Fetching ITBs for COA OMOs:  65%|██████▌   | 13/20 [00:07<00:04,  1.71it/s]Fetching ITBs for COA OMOs:  70%|███████   | 14/20 [00:08<00:03,  1.70it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 15/20 [00:08<00:02,  1.84it/s]Fetching ITBs for COA OMOs:  80%|████████  | 16/20 [00:09<00:02,  1.77it/s]Fetching ITBs for COA OMOs:  85%|████████▌ | 17/20 [00:09<00:01,  1.72it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 18/20 [00:10<00:01,  1.87it/s]Fetching ITBs for COA OMOs:  95%|█████████▌| 19/20 [00:11<00:00,  1.51it/s]Fetching ITBs for COA OMOs: 100%|██████████| 20/20 [00:12<00:00,  1.36it/s]Fetching ITBs for COA OMOs: 100%|██████████| 20/20 [00:12<00:00,  1.66it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
 Safe merge complete
-Master before: 494
-Incoming rows: 305
-Added new OMOs: 6
-Skipped existing OMOs: 299
+Master before: 500
+Incoming rows: 319
+Added new OMOs: 14
+Skipped existing OMOs: 305
 Updated existing OMOs: 0
-Need geocode: 6
+Need geocode: 14
 Missing ITB: 0
-Missing description: 6
-Master after: 500
+Missing description: 14
+Master after: 514
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
 
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 14
+Need geocode: 23
 FAILED EQ29600 108-43 48 AVENUE, 11368
 FAILED EQ27758 3052 BRIGHTON 1 STREET, 11235
 FAILED EQ28868 202 WEST 146 STREET, 10039
@@ -60,14 +60,23 @@ FAILED EQ29302 558 EAST 2 STREET, 11218
 FAILED EQ25568 230 EAST 173 STREET, 10457
 FAILED EQ27441 89-04 148 STREET, 11435
 FAILED EQ29106 11-40 44 DRIVE, 11101
-OK EQ28557 470 OCEAN AVENUE, 11226 40.6512834 -73.9617531
-OK EQ29802 257 GRAFTON STREET, 11212 40.6618692 -73.9172185
 FAILED EQ28830 71-27 65 STREET, 11385
-OK EQ29670 101-24 QUEENS BOULEVARD, 11375 40.725866 -73.8520998
-OK EQ29866 3205 EMMONS AVENUE, 11235 40.5844045 -73.9322702
-OK EQ29346 332 ROGERS AVENUE, 11225 40.6650341 -73.954225
-Geocoded: 5
-Failed: 9
+OK EQ29849 1490 BOSTON ROAD, 10460 40.8344599 -73.8940338
+OK EQ29461 345 WEST 84 STREET, 10024 40.7868419 -73.9771084
+OK EQ28772 3214 CORTELYOU ROAD, 11226 40.6443283 -73.9464272
+OK EQ30047 593 LEXINGTON AVENUE, 11221 40.6894024 -73.937681
+OK EQ30412 110 MADISON STREET, 10002 40.7120305 -73.995061
+OK EQ28715 2125 PACIFIC STREET, 11233 40.6759384 -73.9162904
+OK EQ29867 3191 EMMONS AVENUE, 11235 40.5844436 -73.9327887
+OK EQ30026 2215 NEWKIRK AVENUE, 11226 40.6389959 -73.9563709
+OK EQ28831 91 EAST 18 STREET, 11226 40.7373378 -73.9888081
+OK EQ28775 1706 UNION STREET, 11213 40.6676328 -73.9317987
+OK EQ29525 356 SUMPTER STREET, 11233 40.6809473 -73.9098319
+OK EQ28221 13-62 GIPSON STREET, 11691 40.6076491 -73.75802
+FAILED EQ29728 147-41 76 AVENUE, 11367
+OK EQ28986 225 BOWERY, 10002 40.721909 -73.9929183
+Geocoded: 13
+Failed: 10
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
 
@@ -91,34 +100,48 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 6
-DESCRIPTION OK EQ28557 EQ28557_060326123131.pdf
-DESCRIPTION OK EQ29802 EQ29802_060326091554.pdf
-DESCRIPTION OK EQ28830 EQ28830_060326014151.pdf
-DESCRIPTION OK EQ29670 EQ29670_060326013442.pdf
-DESCRIPTION OK EQ29866 EQ29866_060326110051.pdf
-DESCRIPTION OK EQ29346 EQ29346_060226040949.pdf
-Descriptions patched: 6
+Matched ITBs needing description: 14
+DESCRIPTION OK EQ29849 EQ29849_060826124003.pdf
+DESCRIPTION OK EQ29461 EQ29461_060826124814.pdf
+DESCRIPTION OK EQ28772 EQ28772_060526042622.pdf
+DESCRIPTION OK EQ30047 EQ30047_061026094542.pdf
+DESCRIPTION OK EQ30412 EQ30412_061026125036.pdf
+DESCRIPTION OK EQ28715 EQ28715_060526103430.pdf
+DESCRIPTION OK EQ29867 EQ29867_060826054558.pdf
+DESCRIPTION OK EQ30026 EQ30026_060526105116.pdf
+DESCRIPTION OK EQ28831 EQ28831_060826014831.pdf
+DESCRIPTION OK EQ28775 EQ28775_060526012636.pdf
+DESCRIPTION OK EQ29525 EQ29525_060526012512.pdf
+DESCRIPTION OK EQ28221 EQ28221_060426053658.pdf
+DESCRIPTION OK EQ29728 EQ29728_060826112837.pdf
+DESCRIPTION OK EQ28986 EQ28986_060426101211.pdf
+Descriptions patched: 14
 Missing PDF: 0
 Failed: 0
 Backup: data\COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'EQ28557', 'Address': '470 OCEAN AVENUE, 11226', 'RecoveredFrom': 'EQ28557_060326123131.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK" REPAIR THE WINDOW IN THE 3RD ROOM FROM EAST AT APT LE5. WINDOW AT WEST IN THE 3RD ROOM FROM EAST LOCATED AT APT LE5, 5TH STORY, 4TH DOOR FROM EAST AT SOU'}
-{'OMO': 'EQ29802', 'Address': '257 GRAFTON STREET, 11212', 'RecoveredFrom': 'EQ29802_060326091554.pdf', 'Preview': ': REPAIR BUILDING VESTIBULE DOOR TO ADHERE TO LOCAL L AW 111 OF 2018. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BUILDING VESTIBULE DOOR, AT PUBLIC HALL, 1ST STO RY. REMOVE DEFECTIVE HINGES. SUP'}
-{'OMO': 'EQ28830', 'Address': '71-27 65 STREET, 11385', 'RecoveredFrom': 'EQ28830_060326014151.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR AT PUBLIC HALL, 1st STORY REPAIR TO MAKE DOORS SELF CLOSING AND LATCHING MAKE ALL NECESSARY REPAIRS TO ADJUST HYDRAULIC DOOR C'}
-{'OMO': 'EQ29670', 'Address': '101-24 QUEENS BOULEVARD, 11375', 'RecoveredFrom': 'EQ29670_060326013442.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT 7TH STORY COMPACTOR CLOSET, HOPPER DOOR REPAIR FIRE DOOR TO ADHERE TO LOCAL LAW 111 OF 2018 INSTALL NEW LATCH ASSEMBLY. ENSURE DOOR IS SELF CLO SING'}
-{'OMO': 'EQ29866', 'Address': '3205 EMMONS AVENUE, 11235', 'RecoveredFrom': 'EQ29866_060326110051.pdf', 'Preview': ': AT APT 2H. REPLACE GLASS PANE. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK" AT APT 2H. MAKE ALL NECESSARY REPAIRS TO REPLACE GLASS PANE AT THE LOWER SASH WINDOW IN 1ST ROOM AT APT 2H. ENSURE WINDOW '}
-{'OMO': 'EQ29346', 'Address': '332 ROGERS AVENUE, 11225', 'RecoveredFrom': 'EQ29346_060226040949.pdf', 'Preview': ':  AT APT#B16 ENTRANCE DOOR 2ND STORY , INSTA LLED NEW SELF CLOSING HINGES TO MAKE DOOR SELF CLOSING NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “  AT APT#B16 ENTRANCE DOOR 2ND STORY , INSTA LLED NEW '}
+{'OMO': 'EQ29849', 'Address': '1490 BOSTON ROAD, 10460', 'RecoveredFrom': 'EQ29849_060826124003.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT APT # 3G KITCHEN, 3RD STORY FLOOR REPAIRS PROPERLY REMOVE THE VINYL FLOOR TILES AT LEAST 18 SQ. FT. FASTEN, REINFORCE OR REPLACE ALL LOOSE AREAS OF '}
+{'OMO': 'EQ29461', 'Address': '345 WEST 84 STREET, 10024', 'RecoveredFrom': 'EQ29461_060826124814.pdf', 'Preview': ': MAKE BUILDING ENTRANCE DOOR LATCHES PROPERLY.  NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK AT 1ST STORY BUILDING ENTRANCE METAL DOOR, REPLACE MISSING LOCK WITH NEW PASSAGE LOCK AT DOOR TO ENSURE DOO'}
+{'OMO': 'EQ28772', 'Address': '3214 CORTELYOU ROAD, 11226', 'RecoveredFrom': 'EQ28772_060526042622.pdf', 'Preview': ': AT VESTIBULE ENTRANCE DOOR 1ST STORY REPLACE THE BROKEN DOOR ARM CLOSER WITH NEW NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT STEEL GATE STYLE VESTIBULE DOOR - INSTALL NEW DOOR ARM CLOSER AND P'}
+{'OMO': 'EQ30047', 'Address': '593 LEXINGTON AVENUE, 11221', 'RecoveredFrom': 'EQ30047_061026094542.pdf', 'Preview': ': AT APT 2, 2nd STORY, 1st APARTMENT FROM NORTH AT EA ST  ;;HPD NYC EMERGENCY OPERATIONS DIVISION -ESSENTIA L SERVICE WORK. AT APT 2, 2nd STORY, 1st APARTMENT FROM NORTH AT EA ST AT BATHROOM PROPERLY REMOVE THE BROKEN CE'}
+{'OMO': 'EQ30412', 'Address': '110 MADISON STREET, 10002', 'RecoveredFrom': 'EQ30412_061026125036.pdf', 'Preview': ': MAKE DOOR SELF CLOSING AT THE ENTRANCE LOCATED AT APT BASEME, 1st APARTMENT FROM EAST AT SOUTH . THE ENTRANCE DOOR LOCATED AT APT BASEME, 1st APA RTMENT FROM EAST AT SOUTH . MAKE ALL NECESSARY REPAIRS TO FIX DEFECTIVE '}
+{'OMO': 'EQ28715', 'Address': '2125 PACIFIC STREET, 11233', 'RecoveredFrom': 'EQ28715_060526103430.pdf', 'Preview': ': DOOR REPAIRS AT APT. 3E, 3RD. STORY ENTRANCE DOOR  NYC HPD EMERGENC Y OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK AT APT. 3E, 3RD. STORY ENTRANCE DOOR INSTALL NEW SE LF CLOSING HINGES AND MAKE ALL NECESSARY REPAIRS A'}
+{'OMO': 'EQ29867', 'Address': '3191 EMMONS AVENUE, 11235', 'RecoveredFrom': 'EQ29867_060826054558.pdf', 'Preview': '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to abide by the HPD Open Market Order Bid Terms and Conditions an d In addition, yo'}
+{'OMO': 'EQ30026', 'Address': '2215 NEWKIRK AVENUE, 11226', 'RecoveredFrom': 'EQ30026_060526105116.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK" REPAIR THE WINDOWS IN THE 2ND ROOM FROM NORTH. LOCATED AT APT E7, 5TH STORY 2ND APT FROM WEST AT N ORTH SECTION SOUTH.: 1ST AND 2ND WINDOWS FROM NORTH AT'}
+{'OMO': 'EQ28831', 'Address': '91 EAST 18 STREET, 11226', 'RecoveredFrom': 'EQ28831_060826014831.pdf', 'Preview': '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to abide by the HPD Open Market Order Bid Terms and Conditions an d In addition, yo'}
+{'OMO': 'EQ28775', 'Address': '1706 UNION STREET, 11213', 'RecoveredFrom': 'EQ28775_060526012636.pdf', 'Preview': ': AT APT#403 4TH STORY AT KITCHEN REPLACE SPRING BALANCE WITH NEW. NYC HPD EMERGENCY OPERATIONS DIVISION-ESSENTIAL SER VICE WORK. AT KITCHEN - PROPERLY REPLACE WITH NEW THE BROKEN UPPER SASH S PRING BALANCE AT KITCHEN LO'}
+{'OMO': 'EQ29525', 'Address': '356 SUMPTER STREET, 11233', 'RecoveredFrom': 'EQ29525_060526012512.pdf', 'Preview': ': DOOR REPAIRS  : NYC HPD EMERGENCY OPERATIONS DIVISION-ESSENTIAL SERVICE WORK.  AT BUILDING ENTRANCE DOOR 1ST STORY PUBLIC HALL AD JUST DOOR CLOSER AND MAKE ALL NECESSARY REPAIRS ADJUSTMENT/ ALIGNMENT TO DOOR AND ENSURE'}
+{'OMO': 'EQ28221', 'Address': '13-62 GIPSON STREET, 11691', 'RecoveredFrom': 'EQ28221_060426053658.pdf', 'Preview': ': REPALCE SHOWER BODY AT 2ND FLOOR REAR RIGHT BATHROO M: NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK AT 2ND FLOOR REAR RIGHT BATHROOM: REPLACE DEFECTIVE 3 HANDLED FAUCET COMPLETE WITH AL L NECESSARY H'}
 
 
 ========== Verify mapping ==========
 $ node check-local-mapping.js
-Raw JSON rows: 500
-2026 rows: 449
-2026 rows with any Latitude/Longitude: 440
-2026 rows with valid NYC coordinates: 440
-2026 rows NOT valid mapped: 9
+Raw JSON rows: 514
+2026 rows: 463
+2026 rows with any Latitude/Longitude: 453
+2026 rows with valid NYC coordinates: 453
+2026 rows NOT valid mapped: 10
 
 Not mapped sample:
 ┌─────────┬───────────┬─────────────────────────────────┬────────────┬───────────────┬──────────┬───────────┬──────────────┬──────────────────┬───────────┐
@@ -133,6 +156,7 @@ Not mapped sample:
 │ 6       │ 'EQ27441' │ '89-04 148 STREET, 11435'       │ '06/02/26' │ '6/2/26'      │ ''       │ ''        │ 'OSM_FAILED' │ ''               │ 'MATCHED' │
 │ 7       │ 'EQ29106' │ '11-40 44 DRIVE, 11101'         │ '06/02/26' │ '6/3/26'      │ ''       │ ''        │ 'OSM_FAILED' │ ''               │ 'MATCHED' │
 │ 8       │ 'EQ28830' │ '71-27 65 STREET, 11385'        │ '06/04/26' │ '6/4/26'      │ ''       │ ''        │ 'OSM_FAILED' │ ''               │ 'MATCHED' │
+│ 9       │ 'EQ29728' │ '147-41 76 AVENUE, 11367'       │ '06/08/26' │ '6/8/26'      │ ''       │ ''        │ 'OSM_FAILED' │ ''               │ 'MATCHED' │
 └─────────┴───────────┴─────────────────────────────────┴────────────┴───────────────┴──────────┴───────────┴──────────────┴──────────────────┴───────────┘
 
 
@@ -156,7 +180,7 @@ Missing sample:
 
 ========== Verify missing ITB ==========
 $ node export-missing-itb.js
-Total jobs: 500
+Total jobs: 514
 Missing ITB jobs: 0
 Exported: ./data/missing_itb_jobs_2026.csv
 ┌─────────┐
@@ -165,17 +189,17 @@ Exported: ./data/missing_itb_jobs_2026.csv
 └─────────┘
 
 
-Fetcher run finished: 2026-06-08T00:03:54.755Z
+Fetcher run finished: 2026-06-12T01:54:29.778Z
 {
-  "fetchedCoaItems": 29,
-  "fetchedItbItems": 29,
-  "fetchedFinalJobRows": 29,
-  "addedNewOmos": 6,
-  "skippedExistingOmos": 299,
-  "rawRows": 500,
-  "rows2026": 449,
-  "mapped2026": 440,
-  "notMapped2026": 9,
+  "fetchedCoaItems": 20,
+  "fetchedItbItems": 20,
+  "fetchedFinalJobRows": 20,
+  "addedNewOmos": 14,
+  "skippedExistingOmos": 305,
+  "rawRows": 514,
+  "rows2026": 463,
+  "mapped2026": 453,
+  "notMapped2026": 10,
   "badDescriptions": 0,
   "missingDescriptions": 0,
   "missingItbJobs": 0
