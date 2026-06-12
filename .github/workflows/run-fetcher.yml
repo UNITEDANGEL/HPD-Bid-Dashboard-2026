@@ -1,6 +1,9 @@
 ﻿name: Run Built-In Fetcher
 
 on:
+  schedule:
+    # Runs daily around 6:00 AM New York time during daylight savings.
+    - cron: "0 10 * * *"
   workflow_dispatch:
     inputs:
       days_back:
@@ -42,7 +45,7 @@ jobs:
 
       - name: Run safe fetcher update
         env:
-          FETCHER_LOOKBACK_DAYS: ${{ github.event.inputs.days_back }}
+          FETCHER_LOOKBACK_DAYS: ${{ github.event.inputs.days_back || '14' }}
         run: node scripts/run-safe-fetcher-update.js
 
       - name: Sync public data
@@ -67,3 +70,4 @@ jobs:
             git commit -m "Run built-in fetcher from GitHub Action"
             git push origin render-map-upgrade
           fi
+
