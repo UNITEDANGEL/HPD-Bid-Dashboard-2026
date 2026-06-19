@@ -12,11 +12,12 @@
     "skippedExistingOmos": 319,
     "rawRows": 519,
     "rows2026": 468,
-    "mapped2026": 455,
-    "notMapped2026": 13,
+    "mapped2026": 468,
+    "notMapped2026": 0,
     "badDescriptions": 0,
     "missingDescriptions": 0,
     "missingItbJobs": 0
   },
-  "logPath": "data/fetcher_latest_run.log"
+  "logPath": "data/fetcher_latest_run.log",
+  "geocodeFixedAt": "2026-06-19T17:23:52.772Z"
 }

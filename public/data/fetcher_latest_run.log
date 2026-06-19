@@ -230,3 +230,7 @@ Fetcher run finished: 2026-06-19T16:53:11.658Z
   "missingDescriptions": 0,
   "missingItbJobs": 0
 }
+
+========== Repair missing geocodes ==========
+Patched missing coordinates with NYC Planning GeoSearch: 13
+2026 rows NOT valid mapped: 0
