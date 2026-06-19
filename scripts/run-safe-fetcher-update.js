@@ -119,7 +119,8 @@ function summarizeChecks(mappingOut, descOut, itbOut, fullLog) {
 
 function selectedLookbackDays() {
   const raw = Number(process.env.FETCHER_LOOKBACK_DAYS || 7);
-  return [7, 30].includes(raw) ? raw : 7;
+  const safe = Number.isFinite(raw) ? Math.floor(raw) : 7;
+  return Math.min(95, Math.max(1, safe));
 }
 async function main() {
   const startedAt = now();

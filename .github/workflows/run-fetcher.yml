@@ -2,17 +2,21 @@
 
 on:
   schedule:
-    # Runs daily around 6:00 AM New York time during daylight savings.
+    # Runs every 24 hours at 6:00 AM New York time during daylight savings.
     - cron: "0 10 * * *"
   workflow_dispatch:
     inputs:
       days_back:
         description: "Days back to fetch"
-        required: true
-        default: "7"
+        required: false
+        default: "14"
 
 permissions:
   contents: write
+
+concurrency:
+  group: hpd-built-in-fetcher
+  cancel-in-progress: false
 
 jobs:
   run-fetcher:
@@ -43,9 +47,12 @@ jobs:
             printf '%s' '${{ secrets.GOOGLE_TOKEN_JSON }}' > token.json
           fi
 
+          test -s credentials.json || (echo "Missing GOOGLE_CREDENTIALS_JSON repository secret." && exit 1)
+          test -s token.json || (echo "Missing GOOGLE_TOKEN_JSON repository secret." && exit 1)
+
       - name: Run safe fetcher update
         env:
-          FETCHER_LOOKBACK_DAYS: ${{ github.event.inputs.days_back || '14' }}
+          FETCHER_LOOKBACK_DAYS: ${{ inputs.days_back || vars.FETCHER_AUTO_DAYS || '14' }}
         run: node scripts/run-safe-fetcher-update.js
 
       - name: Check fetcher health
@@ -54,6 +61,7 @@ jobs:
         run: |
           cp data/COA_Fetcher_2026.json public/data/COA_Fetcher_2026.json
           cp data/fetcher_latest_status.json public/data/fetcher_latest_status.json
+          cp data/fetcher_latest_run.log public/data/fetcher_latest_run.log
 
       - name: Build dashboard
         run: npm run build
@@ -64,7 +72,7 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add data/COA_Fetcher_2026.json public/data/COA_Fetcher_2026.json data/fetcher_latest_status.json public/data/fetcher_latest_status.json data/fetcher_latest_run.log
+          git add data/COA_Fetcher_2026.json public/data/COA_Fetcher_2026.json public/data/fetcher_latest_status.json public/data/fetcher_latest_run.log
 
           if git diff --cached --quiet; then
             echo "No fetcher data changes to commit."

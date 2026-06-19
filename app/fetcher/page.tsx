@@ -94,7 +94,13 @@ type CleanupJob = {
       console.error(err);
     }
   }  async function loadStatus() {
-    const res = await fetch("/data/fetcher_latest_status.json?v=" + Date.now(), { cache: "no-store" });
+    const cacheBust = Date.now();
+    let res = await fetch("/api/fetcher/status?v=" + cacheBust, { cache: "no-store" });
+
+    if (!res.ok) {
+      res = await fetch("/data/fetcher_latest_status.json?v=" + cacheBust, { cache: "no-store" });
+    }
+
     const data = await res.json();
     setStatus(data);
   }
@@ -109,13 +115,13 @@ type CleanupJob = {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ days_back: safeDays })
+        body: JSON.stringify({ days: safeDays, days_back: safeDays })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
         throw new Error(data.error || data.details || `Fetcher start failed with status ${res.status}.`);
       }
-      setRunMessage(`Fetcher started for ${safeDays} days. Wait a few minutes, then press Refresh Status or Open Map.`);
+      setRunMessage(data.message || `Fetcher started for ${safeDays} days. Wait a few minutes, then press Refresh Status or Open Map.`);
       setTimeout(loadStatus, 3000);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
