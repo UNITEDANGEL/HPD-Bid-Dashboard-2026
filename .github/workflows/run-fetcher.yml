@@ -57,11 +57,15 @@ jobs:
 
       - name: Check fetcher health
         run: node scripts/check-fetcher-health.js
+
       - name: Sync public data
         run: |
           cp data/COA_Fetcher_2026.json public/data/COA_Fetcher_2026.json
           cp data/fetcher_latest_status.json public/data/fetcher_latest_status.json
           cp data/fetcher_latest_run.log public/data/fetcher_latest_run.log
+          if [ -f data/missing_itb_jobs_2026.csv ]; then
+            cp data/missing_itb_jobs_2026.csv public/data/missing_itb_jobs_2026.csv
+          fi
 
       - name: Build dashboard
         run: npm run build
@@ -72,7 +76,11 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add data/COA_Fetcher_2026.json public/data/COA_Fetcher_2026.json public/data/fetcher_latest_status.json public/data/fetcher_latest_run.log
+          git add data/COA_Fetcher_2026.json data/fetcher_latest_status.json data/fetcher_latest_run.log public/data/COA_Fetcher_2026.json public/data/fetcher_latest_status.json public/data/fetcher_latest_run.log
+
+          if [ -f data/missing_itb_jobs_2026.csv ]; then
+            git add data/missing_itb_jobs_2026.csv public/data/missing_itb_jobs_2026.csv
+          fi
 
           if git diff --cached --quiet; then
             echo "No fetcher data changes to commit."
