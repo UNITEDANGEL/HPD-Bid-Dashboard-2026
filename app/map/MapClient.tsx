@@ -5,6 +5,7 @@ const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
 const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v1";
 const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
 const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
+const USER_LOCATION_OVERVIEW_ZOOM = 12;
 
 
 import * as JobStatus from "../../lib/jobs/status";
@@ -2115,6 +2116,37 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     map.setView([40.7128, -74.006], 10, { animate: true });
   }
 
+  function centerMapOnUserLocation(location = userLocation) {
+    const map = mapRef.current;
+    if (!map || !location) return false;
+
+    map.flyTo([location.lat, location.lng], USER_LOCATION_OVERVIEW_ZOOM, {
+      animate: true,
+      duration: 0.75,
+    });
+    return true;
+  }
+
+  function showMyLocationOverview() {
+    clearMarkerOverviewReturn();
+    setSelectedOnly(false);
+    setSelected(null);
+    setGeneratedLinks({});
+    setDescriptionOpen(false);
+    setDrawerOpen(false);
+    setFullMap(true);
+    mapRef.current?.closePopup?.();
+
+    if (centerMapOnUserLocation()) {
+      showActionNotice("Centered on your location with a wider map view.");
+    } else {
+      startLocationTracking();
+      showActionNotice("Starting location. The map will center on you with a wider view.");
+    }
+
+    window.setTimeout(() => mapRef.current?.invalidateSize(), 120);
+  }
+
   function returnToMapOverview() {
     setSelectedOnly(false);
     setSelected(null);
@@ -2123,7 +2155,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setDrawerOpen(false);
     setFullMap(true);
     mapRef.current?.closePopup?.();
-    fitVisibleJobsOnMap(userLocation ? 12 : 13, true);
+    if (!centerMapOnUserLocation()) {
+      fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true);
+    }
     window.setTimeout(() => mapRef.current?.invalidateSize(), 120);
   }
 
@@ -2492,7 +2526,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       if (!locationOverviewFitRef.current && !selectedOnly && !drawerOpen) {
         locationOverviewFitRef.current = true;
-        fitVisibleJobsOnMap(12, true);
+        centerMapOnUserLocation(userLocation);
       }
     }
 
@@ -3489,19 +3523,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (geolocationWatchRef.current === null) {
       geolocationWatchRef.current = navigator.geolocation.watchPosition(onPosition, onError, options);
     }
-  }
-
-  function stopLocationTracking() {
-    if (typeof navigator !== "undefined" && geolocationWatchRef.current !== null) {
-      navigator.geolocation.clearWatch(geolocationWatchRef.current);
-    }
-    geolocationWatchRef.current = null;
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(LOCATION_ALWAYS_STORAGE_KEY, "off");
-    }
-    locationOverviewFitRef.current = false;
-    setFollowMyLocation(false);
-    setLocationStatus(userLocation ? "Location paused" : "Location off");
   }
 
   function sendJobToArchive(job: MappedJob) {
@@ -9621,15 +9642,15 @@ return (
           <button type="button" onClick={() => mapRef.current?.zoomIn()}>+</button>
           <button type="button" onClick={() => mapRef.current?.zoomOut()}>−</button>
           <button type="button" onClick={() => {
-            fitVisibleJobsOnMap(userLocation ? 12 : 13, true);
+            fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true);
           }}>Fit</button>
           <button
             type="button"
             className={`live-location-btn ${followMyLocation ? "active" : ""}`}
-            title={followMyLocation ? "Pause live location" : "Start live location"}
-            onClick={followMyLocation ? stopLocationTracking : startLocationTracking}
+            title={userLocation ? "Center on my location" : "Start live location"}
+            onClick={showMyLocationOverview}
           >
-            {followMyLocation ? "Live" : "Me"}
+            Me
           </button>
         </div>
 
