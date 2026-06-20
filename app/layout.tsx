@@ -22,7 +22,7 @@ export default function RootLayout({
               <p className="eyebrow">HPD Bid Management</p>
               <h1>2026 Mobile Dashboard</h1>
             </div>
-            <p className="topbar-note">Built for phone review, award tracking, and Render hosting.</p>
+            <p className="topbar-note">Built for phone review, award tracking, and Cloudflare Pages.</p>
           </header>
           <main className="page-frame">{children}</main>
         </div>

@@ -7,11 +7,35 @@ const apiDir = path.join(root, "app", "api");
 const tempRoot = path.join(root, ".cloudflare-build");
 const tempApiDir = path.join(tempRoot, "app-api");
 const outDir = path.join(root, "out");
+const outDataDir = path.join(outDir, "data");
 
 function removeIfExists(target) {
   if (fs.existsSync(target)) {
     fs.rmSync(target, { recursive: true, force: true });
   }
+}
+
+function readJsonIfExists(target) {
+  if (!fs.existsSync(target)) return null;
+
+  try {
+    return JSON.parse(fs.readFileSync(target, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function currentCommit() {
+  if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA;
+
+  const result = spawnSync("git", ["rev-parse", "--short=12", "HEAD"], {
+    cwd: root,
+    encoding: "utf8",
+    shell: false,
+  });
+
+  if (result.status === 0) return result.stdout.trim();
+  return "local";
 }
 
 function moveIfExists(from, to) {
@@ -81,5 +105,19 @@ const missing = requiredFiles.filter((file) => !fs.existsSync(file));
 if (missing.length) {
   throw new Error(`Cloudflare Pages build is missing expected output: ${missing.join(", ")}`);
 }
+
+fs.writeFileSync(
+  path.join(outDataDir, "build_health.json"),
+  JSON.stringify(
+    {
+      builtAt: new Date().toISOString(),
+      commit: currentCommit(),
+      status: readJsonIfExists(path.join(outDataDir, "fetcher_latest_status.json")),
+    },
+    null,
+    2
+  ),
+  "utf8"
+);
 
 console.log("Cloudflare Pages static export ready in out/");

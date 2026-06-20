@@ -1,27 +1,57 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
+import { DataHealthPanel } from "../../components/DataHealthPanel";
 
 export default function SystemStatusPage() {
-  const [jobs, setJobs] = useState("Checking...");
-  const [automation, setAutomation] = useState("Checking...");
+  const [checks, setChecks] = useState<Record<string, string>>({
+    "Static job data": "Checking...",
+    "Static fetcher status": "Checking...",
+    "Fetcher status API": "Checking...",
+    "Fetcher run endpoint": "Checking...",
+    "Cloudflare build marker": "Checking...",
+  });
 
   useEffect(() => {
-    fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" })
-      .then((res) => setJobs(res.ok ? "OK" : `HTTP ${res.status}`))
-      .catch(() => setJobs("Unavailable"));
+    const controller = new AbortController();
+    const endpoints = [
+      ["Static job data", "/data/COA_Fetcher_2026.json"],
+      ["Static fetcher status", "/data/fetcher_latest_status.json"],
+      ["Fetcher status API", "/api/fetcher/status"],
+      ["Fetcher run endpoint", "/api/run-fetcher"],
+      ["Cloudflare build marker", "/data/build_health.json"],
+    ] as const;
 
-    fetch("/api/automation/runs", { cache: "no-store" })
-      .then((res) => setAutomation(res.ok ? "OK" : `HTTP ${res.status}`))
-      .catch(() => setAutomation("Worker/API unavailable"));
+    async function checkEndpoint(name: string, url: string) {
+      try {
+        const response = await fetch(`${url}?v=${Date.now()}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        return [name, response.ok ? "OK" : `HTTP ${response.status}`] as const;
+      } catch {
+        return [name, "Unavailable"] as const;
+      }
+    }
+
+    Promise.all(endpoints.map(([name, url]) => checkEndpoint(name, url))).then((results) => {
+      if (!controller.signal.aborted) {
+        setChecks(Object.fromEntries(results));
+      }
+    });
+
+    return () => controller.abort();
   }, []);
 
   const rows = [
     ["Dashboard", "OK"],
-    ["Jobs API", jobs],
-    ["Mobile Map", "OK - Leaflet/OpenStreetMap"],
-    ["Mapbox", "Removed - not required"],
-    ["Automation", automation],
+    ["Static job data", checks["Static job data"]],
+    ["Static fetcher status", checks["Static fetcher status"]],
+    ["Fetcher status API", checks["Fetcher status API"]],
+    ["Fetcher run endpoint", checks["Fetcher run endpoint"]],
+    ["Cloudflare build marker", checks["Cloudflare build marker"]],
+    ["Mobile Map", "OK"],
     ["Invoice Generator", "OK"],
   ];
 
@@ -62,7 +92,7 @@ export default function SystemStatusPage() {
           margin: 8px 0 4px;
           font-size: clamp(38px, 10vw, 66px);
           line-height: 0.92;
-          letter-spacing: -0.08em;
+          letter-spacing: 0;
         }
 
         .hpd-status-top p {
@@ -107,12 +137,14 @@ export default function SystemStatusPage() {
           <div>
             <p>Health Check</p>
             <h1>System Status</h1>
-            <p>Checks the mobile dashboard, jobs API, map, and automation route.</p>
+            <p>Checks data freshness, map readiness, fetcher routes, and Cloudflare output.</p>
           </div>
           <a className="hpd-home-link" href="/">
             Home
           </a>
         </header>
+
+        <DataHealthPanel compact />
 
         {rows.map(([name, value]) => (
           <div className="hpd-status-row" key={name}>

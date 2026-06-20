@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { DataHealthPanel } from "./DataHealthPanel";
 
 type JobRecord = {
   id?: string;
@@ -618,7 +619,7 @@ export default function MobileCommandDashboard() {
             <p>{loadState}</p>
           </div>
         </div>
-        <span className="hpd-live-pill">Render Ready</span>
+        <span className="hpd-live-pill">Cloudflare Ready</span>
       </header>
 
       <section className="hpd-hero">
@@ -655,6 +656,8 @@ export default function MobileCommandDashboard() {
           <span>COA / ITB</span>
         </div>
       </section>
+
+      <DataHealthPanel />
 
       <section className="hpd-command-grid" aria-label="Main actions">
         {cards.map((card) => (
