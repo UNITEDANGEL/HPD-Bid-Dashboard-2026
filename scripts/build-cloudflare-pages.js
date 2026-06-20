@@ -104,6 +104,8 @@ const requiredFiles = [
   path.join(outDir, "fetcher", "index.html"),
   path.join(outDir, "data", "COA_Fetcher_2026.json"),
   path.join(outDir, "data", "fetcher_latest_status.json"),
+  path.join(outDir, "templates", "blank-work-completed-affidavit-with-invoice.pdf"),
+  path.join(outDir, "templates", "blank-no-work-completed-affidavit-with-invoice.pdf"),
 ];
 
 const missing = requiredFiles.filter((file) => !fs.existsSync(file));

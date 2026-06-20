@@ -49,6 +49,8 @@ type PackageForm = {
 
 const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-completed-affidavit.pdf";
 const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-completed-affidavit.pdf";
+const BLANK_WORK_AFFIDAVIT_TEMPLATE = "/templates/blank-work-completed-affidavit-with-invoice.pdf";
+const BLANK_NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/blank-no-work-completed-affidavit-with-invoice.pdf";
 
 function asArray(value: unknown): JobRecord[] {
   if (Array.isArray(value)) return value as JobRecord[];
@@ -680,6 +682,12 @@ export default function PaperworkPage() {
           <nav className="paperwork-nav" aria-label="Paperwork actions">
             <a href="/map">Map</a>
             <a href={invoiceHref}>Invoice Only</a>
+            <a href={BLANK_WORK_AFFIDAVIT_TEMPLATE} download>
+              Blank Work Template
+            </a>
+            <a href={BLANK_NO_WORK_AFFIDAVIT_TEMPLATE} download>
+              Blank No-Work Template
+            </a>
             <button className="paperwork-secondary" type="button" onClick={generateAffidavitPdf}>
               Download Affidavit PDF
             </button>
