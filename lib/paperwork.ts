@@ -6,6 +6,11 @@ export type PaperworkOutcome =
   | "completed_by_others";
 
 export type PaperworkJob = Record<string, unknown>;
+export type WorkflowOverrides = Record<string, Record<string, unknown>>;
+
+export const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
+
+const WORKFLOW_STORAGE_KEYS = ["hpd-job-workflow-overrides-v2", "hpd-job-workflow-overrides-v1"];
 
 export const PAPERWORK_OUTCOMES: { value: PaperworkOutcome; label: string }[] = [
   { value: "work_completed", label: "Work Completed" },
@@ -28,8 +33,67 @@ function pick(job: PaperworkJob | null | undefined, keys: string[]) {
   return "";
 }
 
+function parseOverridePayload(value: unknown): WorkflowOverrides {
+  let payload = value;
+
+  if (typeof payload === "string") {
+    try {
+      payload = JSON.parse(payload);
+    } catch {
+      return {};
+    }
+  }
+
+  if (!payload || typeof payload !== "object") return {};
+
+  const source = payload as Record<string, unknown>;
+  const overrides =
+    source.overrides && typeof source.overrides === "object"
+      ? (source.overrides as Record<string, unknown>)
+      : source;
+
+  return Object.fromEntries(
+    Object.entries(overrides).filter((entry): entry is [string, Record<string, unknown>] => {
+      const [, patch] = entry;
+      return Boolean(patch) && typeof patch === "object" && !Array.isArray(patch);
+    })
+  );
+}
+
+function clearedWorkflowPatch() {
+  return {
+    WorkflowStatus: "",
+    workflowStatus: "",
+    FieldOutcome: "",
+    fieldOutcome: "",
+    StatusOverride: "",
+    status: "Pending",
+    NoAccessFirstAttemptAt: "",
+    noAccessFirstAttemptAt: "",
+    NoAccessSecondAttemptAt: "",
+    noAccessSecondAttemptAt: "",
+    SecondAttemptAvailableAt: "",
+    secondAttemptAvailableAt: "",
+    RefusalDate: "",
+    refusalDate: "",
+    VerifiedByOthersDate: "",
+    verifiedByOthersDate: "",
+    ActualWorkStartDate: "",
+    actualWorkStartDate: "",
+    ActualWorkCompletionDate: "",
+    actualWorkCompletionDate: "",
+    OutcomeLockedAt: "",
+    outcomeLockedAt: "",
+    ArchivedFromMap: false,
+  };
+}
+
 export function getJobId(job: PaperworkJob | null | undefined, fallback = "") {
   return pick(job, ["OMO", "omo", "id", "jobId", "Job_ID", "Job ID"]) || fallback;
+}
+
+export function getJobWorkflowStatus(job: PaperworkJob | null | undefined) {
+  return pick(job, ["WorkflowStatus", "workflowStatus", "FieldOutcome", "fieldOutcome", "StatusOverride", "status"]);
 }
 
 export function getJobAddress(job: PaperworkJob | null | undefined) {
@@ -104,6 +168,11 @@ export function paperworkOutcomeFromValue(value: unknown): PaperworkOutcome {
   const raw = String(value || "").toLowerCase().trim();
 
   if (!raw) return "pending";
+  if (raw.includes("no_access_1") || raw.includes("waiting_72h") || raw.includes("waiting 72")) return "no_access";
+  if (raw.includes("no_access_complete")) return "no_access";
+  if (raw.includes("work_completed")) return "work_completed";
+  if (raw.includes("refused_access")) return "refused_access";
+  if (raw.includes("completed_by_others")) return "completed_by_others";
   if (raw.includes("refused")) return "refused_access";
   if (raw.includes("no_access") || raw.includes("no access")) return "no_access";
   if (raw.includes("completed_by_others") || raw.includes("completed by other") || raw.includes("completed by others")) {
@@ -115,9 +184,7 @@ export function paperworkOutcomeFromValue(value: unknown): PaperworkOutcome {
 }
 
 export function paperworkOutcomeFromJob(job: PaperworkJob | null | undefined): PaperworkOutcome {
-  return paperworkOutcomeFromValue(
-    pick(job, ["WorkflowStatus", "workflowStatus", "FieldOutcome", "fieldOutcome", "StatusOverride", "status", "ITBMatchStatus"])
-  );
+  return paperworkOutcomeFromValue(getJobWorkflowStatus(job) || pick(job, ["ITBMatchStatus"]));
 }
 
 export function paperworkOutcomeLabel(outcome: PaperworkOutcome) {
@@ -170,4 +237,48 @@ export function paperworkQuery(job: PaperworkJob | null | undefined, outcome?: P
   params.set("outcome", outcome || paperworkOutcomeFromJob(job));
 
   return params.toString();
+}
+
+export function readLocalWorkflowOverrides(): WorkflowOverrides {
+  if (typeof window === "undefined") return {};
+
+  return WORKFLOW_STORAGE_KEYS.reduce<WorkflowOverrides>((merged, key) => {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return merged;
+      return { ...merged, ...parseOverridePayload(raw) };
+    } catch {
+      return merged;
+    }
+  }, {});
+}
+
+export async function fetchServerWorkflowOverrides(): Promise<WorkflowOverrides> {
+  try {
+    const response = await fetch(`${HPD_STATUS_WORKER_URL}/overrides`, { cache: "no-store" });
+    if (!response.ok) return {};
+    return parseOverridePayload(await response.json());
+  } catch {
+    return {};
+  }
+}
+
+export function applyWorkflowOverridesToRows<T extends PaperworkJob>(rows: T[], overrides: WorkflowOverrides): T[] {
+  return rows.map((row, index) => {
+    const key = getJobId(row, `JOB-${index + 1}`);
+    const patch = key ? overrides[key] : null;
+
+    if (!patch) return row;
+    if (patch.__clearWorkflow) return { ...row, ...clearedWorkflowPatch() } as T;
+
+    return { ...row, ...patch } as T;
+  });
+}
+
+export async function applySavedWorkflowStatuses<T extends PaperworkJob>(rows: T[]): Promise<T[]> {
+  const local = readLocalWorkflowOverrides();
+  const server = await fetchServerWorkflowOverrides();
+  const overrides = { ...local, ...server };
+
+  return applyWorkflowOverridesToRows(rows, overrides);
 }

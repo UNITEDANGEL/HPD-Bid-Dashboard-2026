@@ -4,10 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import {
   PAPERWORK_OUTCOMES,
   type PaperworkOutcome,
+  applySavedWorkflowStatuses,
   formatCurrency,
   getJobAddress,
   getJobAmount,
   getJobId,
+  getJobWorkflowStatus,
   invoiceDescriptionForOutcome,
   paperworkOutcomeFromJob,
   paperworkOutcomeFromValue,
@@ -36,15 +38,16 @@ export default function InvoiceGeneratorPage() {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [queryJobId, setQueryJobId] = useState("");
-  const [outcome, setOutcome] = useState<PaperworkOutcome>("work_completed");
+  const [outcome, setOutcome] = useState<PaperworkOutcome>("pending");
   const [loadedQuery, setLoadedQuery] = useState(false);
   const [form, setForm] = useState({
     invoiceNo: defaultInvoiceNo(),
     customer: "HPD / OMO",
     jobId: "",
     address: "",
-    description: "Work completed per HPD bid / work order.",
+    description: "Select a job to prepare the invoice from ITB / COA data.",
     amount: "",
+    sourceStatus: "",
   });
 
   useEffect(() => {
@@ -56,7 +59,7 @@ export default function InvoiceGeneratorPage() {
         if (!res.ok) return;
 
         const data = await res.json();
-        const rows = asArray(Array.isArray(data) ? data : data.jobs || data.data || []);
+        const rows = await applySavedWorkflowStatuses(asArray(data));
         if (!cancelled) setJobs(rows);
       } catch (error) {
         console.error(error);
@@ -79,7 +82,7 @@ export default function InvoiceGeneratorPage() {
 
     setQueryJobId(job);
     setSelectedId(job);
-    setOutcome(nextOutcome === "pending" ? "work_completed" : nextOutcome);
+    setOutcome(nextOutcome);
     setLoadedQuery(true);
   }, [loadedQuery]);
 
@@ -103,12 +106,14 @@ export default function InvoiceGeneratorPage() {
     if (!job) return;
     const resolvedOutcome = nextOutcome === "pending" ? paperworkOutcomeFromJob(job) : nextOutcome;
 
+    setOutcome(resolvedOutcome);
     setForm((prev) => ({
       ...prev,
       jobId: getJobId(job),
       address: getJobAddress(job),
       description: invoiceDescriptionForOutcome(job, resolvedOutcome),
       amount: formatCurrency(getJobAmount(job)) || prev.amount,
+      sourceStatus: getJobWorkflowStatus(job),
     }));
   }
 
@@ -121,7 +126,8 @@ export default function InvoiceGeneratorPage() {
     }));
   }
 
-  const paperworkHref = `/paperwork?job=${encodeURIComponent(form.jobId || selectedId)}&outcome=${encodeURIComponent(outcome)}`;
+  const resolvedPaperworkOutcome = outcome === "pending" ? paperworkOutcomeFromJob(selectedJob) : outcome;
+  const paperworkHref = `/paperwork?job=${encodeURIComponent(form.jobId || selectedId)}&outcome=${encodeURIComponent(resolvedPaperworkOutcome)}`;
 
   return (
     <main className="hpd-invoice-shell">
@@ -246,6 +252,16 @@ export default function InvoiceGeneratorPage() {
           text-align: center;
           text-decoration: none;
           font-weight: 950;
+        }
+
+        .hpd-source-status {
+          margin: 0;
+          border: 1px solid rgba(255, 209, 102, 0.28);
+          background: rgba(255, 209, 102, 0.1);
+          color: #ffe8a3;
+          border-radius: 12px;
+          padding: 11px 12px;
+          font-weight: 850;
         }
 
         .hpd-invoice-sheet {
@@ -377,6 +393,12 @@ export default function InvoiceGeneratorPage() {
               ))}
             </select>
           </label>
+
+          {form.sourceStatus ? (
+            <p className="hpd-source-status">
+              Saved status: <strong>{form.sourceStatus}</strong>
+            </p>
+          ) : null}
 
           <label>
             Invoice Number

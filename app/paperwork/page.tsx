@@ -7,6 +7,7 @@ import {
   type PaperworkOutcome,
   affidavitReasonForOutcome,
   affidavitTemplateLabel,
+  applySavedWorkflowStatuses,
   formatCurrency,
   getJobAddress,
   getJobAmount,
@@ -15,6 +16,7 @@ import {
   getJobDescription,
   getJobId,
   getJobLocation,
+  getJobWorkflowStatus,
   invoiceDescriptionForOutcome,
   paperworkOutcomeFromJob,
   paperworkOutcomeFromValue,
@@ -41,6 +43,7 @@ type PackageForm = {
   workStart: string;
   workComplete: string;
   signer: string;
+  sourceStatus: string;
   notes: string;
 };
 
@@ -97,14 +100,24 @@ function initialForm(): PackageForm {
     workStart: "",
     workComplete: "",
     signer: "",
+    sourceStatus: "",
     notes: "",
   };
 }
 
 function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   const jobId = getJobId(job);
-  const completedAt =
-    String(job.ActualWorkCompletionDate || job.actualWorkCompletionDate || job.OutcomeLockedAt || job.outcomeLockedAt || "").trim();
+  const firstAttemptAt = String(job.NoAccessFirstAttemptAt || job.noAccessFirstAttemptAt || "").trim();
+  const secondAttemptAt = String(job.NoAccessSecondAttemptAt || job.noAccessSecondAttemptAt || "").trim();
+  const refusedAt = String(job.RefusalDate || job.refusalDate || "").trim();
+  const verifiedByOthersAt = String(job.VerifiedByOthersDate || job.verifiedByOthersDate || "").trim();
+  const actualStartAt = String(job.ActualWorkStartDate || job.actualWorkStartDate || "").trim();
+  const actualCompleteAt = String(job.ActualWorkCompletionDate || job.actualWorkCompletionDate || "").trim();
+  const lockedAt = String(job.OutcomeLockedAt || job.outcomeLockedAt || "").trim();
+  const sourceStatus = getJobWorkflowStatus(job);
+  const fieldDate = lockedAt || secondAttemptAt || refusedAt || verifiedByOthersAt || actualCompleteAt || firstAttemptAt;
+  const noWorkCompleteAt = secondAttemptAt || refusedAt || verifiedByOthersAt || lockedAt;
+  const workCompleteAt = actualCompleteAt || lockedAt || getJobDate(job, "complete");
 
   return {
     ...initialForm(),
@@ -117,11 +130,12 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     description: invoiceDescriptionForOutcome(job, outcome),
     affidavitType: affidavitTemplateLabel(outcome),
     affidavitReason: affidavitReasonForOutcome(outcome),
-    fieldDate: displayDate(job.OutcomeLockedAt || job.outcomeLockedAt || completedAt) || todayIsoDate(),
-    firstAttempt: displayDate(job.NoAccessFirstAttemptAt || job.noAccessFirstAttemptAt),
-    secondAttempt: displayDate(job.NoAccessSecondAttemptAt || job.noAccessSecondAttemptAt),
-    workStart: displayDate(job.ActualWorkStartDate || job.actualWorkStartDate || getJobDate(job, "start")),
-    workComplete: displayDate(completedAt || getJobDate(job, "complete")),
+    fieldDate: displayDate(fieldDate) || todayIsoDate(),
+    firstAttempt: displayDate(firstAttemptAt || (outcome === "no_access" ? lockedAt : "")),
+    secondAttempt: displayDate(noWorkCompleteAt),
+    workStart: displayDate(actualStartAt || getJobDate(job, "start")),
+    workComplete: displayDate(outcome === "work_completed" ? workCompleteAt : noWorkCompleteAt),
+    sourceStatus,
     notes: getJobDescription(job).slice(0, 650),
   };
 }
@@ -167,7 +181,8 @@ export default function PaperworkPage() {
         if (!res.ok) return;
 
         const data = await res.json();
-        if (!cancelled) setJobs(asArray(data));
+        const rows = await applySavedWorkflowStatuses(asArray(data));
+        if (!cancelled) setJobs(rows);
       } catch (error) {
         console.error(error);
       }
@@ -518,6 +533,16 @@ export default function PaperworkPage() {
           font-weight: 850;
         }
 
+        .paperwork-source-status {
+          margin: 0;
+          border: 1px solid rgba(255, 209, 102, 0.28);
+          background: rgba(255, 209, 102, 0.1);
+          color: #ffe8a3;
+          border-radius: 8px;
+          padding: 10px;
+          font-weight: 850;
+        }
+
         .paperwork-sheet {
           background: #ffffff;
           color: #111827;
@@ -663,6 +688,11 @@ export default function PaperworkPage() {
 
         <section className="paperwork-card">
           <span className={`paperwork-package-badge ${packageTone}`}>{affidavitTemplateLabel(outcome)}</span>
+          {form.sourceStatus ? (
+            <p className="paperwork-source-status">
+              Saved status: <strong>{form.sourceStatus}</strong>
+            </p>
+          ) : null}
           {pdfStatus ? (
             <p className="paperwork-pdf-status" aria-live="polite">
               {pdfStatus}
