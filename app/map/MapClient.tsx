@@ -1643,9 +1643,8 @@ const [hideCompleted, setHideCompleted] = useState(false);
     };
   }, []);
 
-const [maturityFilter, setMaturityFilter] = useState<"all" | "od0_30" | "od31_60" | "od61_90" | "od90plus">("all");
-const [customMaturityMin, setCustomMaturityMin] = useState("");
-const [customMaturityMax, setCustomMaturityMax] = useState("");
+const [mapDaysBack, setMapDaysBack] = useState("90");
+const [mapShowAllDays, setMapShowAllDays] = useState(false);
   const [fullMap, setFullMap] = useState(false);
 
 
@@ -1782,6 +1781,37 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   });
 }
 
+  function mapDateAnchor(job: JobRecord) {
+    const candidates = [
+      { source: "Work start", raw: (job as any).WorkStartDate || (job as any).workStartDate || (job as any)["Work Start Date"] || "" },
+      { source: "Work complete", raw: (job as any).WorkCompletionDate || (job as any).workCompletionDate || (job as any)["Work Completion Date"] || "" },
+      { source: "Award", raw: (job as any).AwardDate || (job as any).awardDate || (job as any)["Award Date"] || "" },
+    ];
+
+    for (const candidate of candidates) {
+      const date = parseJobDate(candidate.raw);
+      if (date) return { date: dateOnly(date), source: candidate.source };
+    }
+
+    return null;
+  }
+
+  function mapDaysBackLimit() {
+    const limit = Number(mapDaysBack);
+    if (!Number.isFinite(limit) || limit <= 0) return 90;
+    return Math.min(9999, Math.round(limit));
+  }
+
+  function mapDateAgeDays(job: JobRecord) {
+    const anchor = mapDateAnchor(job);
+    if (!anchor) return null;
+    return daysBetween(anchor.date, dateOnly(new Date()));
+  }
+
+  function mapDateFilterLabel() {
+    return mapShowAllDays ? "All mapped jobs" : `Last ${mapDaysBackLimit()} days`;
+  }
+
   const filteredJobs = useMemo<MappedJob[]>(() => {
     const needle = search.trim().toLowerCase();
 
@@ -1794,14 +1824,17 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             : { ...job };
         });
 
-    const maturityFiltered =
-      maturityFilter === "all"
-        ? rows
-        : rows.filter((job) => overdueBucket(job) === maturityFilter);
+    const limit = mapDaysBackLimit();
+    const dateFiltered = mapShowAllDays
+      ? rows
+      : rows.filter((job) => {
+          const age = mapDateAgeDays(job);
+          return age !== null && age >= 0 && age <= limit;
+        });
 
-    if (!needle) return maturityFiltered;
+    if (!needle) return dateFiltered;
 
-    return maturityFiltered.filter((job) =>
+    return dateFiltered.filter((job) =>
       [
         job.id,
         job.omo,
@@ -1825,11 +1858,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         .toLowerCase()
         .includes(needle)
     );
-  }, [jobs, mappedJobs, search, maturityFilter]);
+  }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays]);
 
   const plottedCount = mappedJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng)).length;
 
-  const bucketCounts = useMemo(() => {
+  const mapDateCounts = useMemo(() => {
     const rows = mappedJobs.length
       ? mappedJobs
       : jobs.map((job) => {
@@ -1837,22 +1870,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" } : { ...job };
         });
 
+    const limit = mapDaysBackLimit();
     return rows.reduce(
-      (
-        acc: { all: number; od0_30: number; od31_60: number; od61_90: number; od90plus: number },
-        job: MappedJob
-      ) => {
-        const bucket = overdueBucket(job);
+      (acc: { all: number; visible: number; missingDate: number }, job: MappedJob) => {
         acc.all += 1;
-        if (bucket === "od0_30") acc.od0_30 += 1;
-        if (bucket === "od31_60") acc.od31_60 += 1;
-        if (bucket === "od61_90") acc.od61_90 += 1;
-        if (bucket === "od90plus") acc.od90plus += 1;
+        const age = mapDateAgeDays(job);
+        if (age === null) acc.missingDate += 1;
+        if (mapShowAllDays || (age !== null && age >= 0 && age <= limit)) acc.visible += 1;
         return acc;
       },
-      { all: 0, od0_30: 0, od31_60: 0, od61_90: 0, od90plus: 0 }
+      { all: 0, visible: 0, missingDate: 0 }
     );
-  }, [jobs, mappedJobs]);
+  }, [jobs, mappedJobs, mapDaysBack, mapShowAllDays]);
 
   useEffect(() => {
     if (selected) {
@@ -1969,9 +1998,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           preferCanvas: true,
         }).setView([40.7128, -74.006], 10);
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
           maxZoom: 19,
-          attribution: '&copy; OpenStreetMap contributors',
+          attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
         }).addTo(map);
 
         const markerLayer = L.layerGroup().addTo(map);
@@ -2062,9 +2091,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           setDrawerOpen(true);
 
           setTimeout(() => {
-            mapRef.current?.panTo([Number(job._lat), Number(job._lng)], {
+            mapRef.current?.flyTo([Number(job._lat), Number(job._lng)], 16, {
               animate: true,
-              duration: 0.55,
+              duration: 0.75,
             });
           }, 40);
 
@@ -7940,6 +7969,308 @@ return (
               width: 100%;
             }
           }
+
+          /* FULL_PAGE_DARK_MAP_2026 */
+          .map-shell,
+          .map-shell.full-map-mode {
+            position: relative !important;
+            display: block !important;
+            width: 100vw !important;
+            height: 100dvh !important;
+            min-height: 100dvh !important;
+            overflow: hidden !important;
+            background: #05080d !important;
+          }
+
+          .map-stage {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100dvh !important;
+            min-height: 100dvh !important;
+            background: #05080d !important;
+          }
+
+          .map-node,
+          .map-node .leaflet-container {
+            width: 100% !important;
+            height: 100% !important;
+            min-height: 100% !important;
+            background: #05080d !important;
+          }
+
+          .map-node .leaflet-tile {
+            filter: saturate(1.04) contrast(1.08) brightness(0.92) !important;
+          }
+
+          .map-top {
+            position: fixed !important;
+            z-index: 930 !important;
+            top: calc(env(safe-area-inset-top) + 8px) !important;
+            left: 8px !important;
+            right: 8px !important;
+            padding: 10px !important;
+            border-radius: 18px !important;
+            background: rgba(8, 13, 20, 0.88) !important;
+            border: 1px solid rgba(122, 153, 190, 0.20) !important;
+            box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36) !important;
+            backdrop-filter: blur(18px) saturate(1.12) !important;
+          }
+
+          .map-title-row {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+          }
+
+          .map-title-row h1 {
+            font-size: 17px !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+            color: #f8fbff !important;
+          }
+
+          .map-title-row p {
+            margin-top: 3px !important;
+            color: #9fb0c4 !important;
+            font-size: 11px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .home-btn {
+            min-height: 34px !important;
+            padding: 0 10px !important;
+            border-radius: 11px !important;
+            background: rgba(248, 250, 252, 0.09) !important;
+            border-color: rgba(248, 250, 252, 0.14) !important;
+            color: #f8fbff !important;
+          }
+
+          .map-search {
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 7px !important;
+          }
+
+          .map-search input,
+          .jobs-toggle,
+          .map-days-filter button,
+          .days-back-control {
+            min-height: 40px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(122, 153, 190, 0.22) !important;
+            background: rgba(15, 23, 34, 0.92) !important;
+            color: #f8fbff !important;
+            box-shadow: none !important;
+          }
+
+          .map-search input {
+            padding: 0 12px !important;
+          }
+
+          .jobs-toggle,
+          .map-days-filter button.active {
+            background: linear-gradient(135deg, #23d3ae, #4da2ff) !important;
+            color: #031018 !important;
+            border-color: transparent !important;
+          }
+
+          .map-days-filter {
+            display: grid !important;
+            grid-template-columns: minmax(112px, 1fr) auto auto auto !important;
+            gap: 7px !important;
+            overflow: visible !important;
+            padding: 0 !important;
+          }
+
+          .days-back-control {
+            display: grid !important;
+            grid-template-columns: auto minmax(44px, 1fr) !important;
+            align-items: center !important;
+            gap: 8px !important;
+            padding: 0 10px !important;
+          }
+
+          .days-back-control span {
+            color: #9fb0c4 !important;
+            font-size: 10px !important;
+            font-weight: 950 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.04em !important;
+            white-space: nowrap !important;
+          }
+
+          .days-back-control input {
+            width: 100% !important;
+            min-width: 48px !important;
+            border: 0 !important;
+            outline: 0 !important;
+            background: transparent !important;
+            color: #f8fbff !important;
+            font-size: 17px !important;
+            font-weight: 1000 !important;
+            text-align: right !important;
+          }
+
+          .map-days-filter button {
+            padding: 0 10px !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+            white-space: nowrap !important;
+          }
+
+          .map-days-filter .full-btn {
+            background: rgba(35, 211, 174, 0.12) !important;
+            color: #bfffea !important;
+            border-color: rgba(35, 211, 174, 0.28) !important;
+          }
+
+          .map-stats {
+            left: 10px !important;
+            right: auto !important;
+            top: auto !important;
+            bottom: calc(env(safe-area-inset-bottom) + 12px) !important;
+            width: min(300px, calc(100vw - 104px)) !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+
+          .map-stat {
+            min-height: 44px !important;
+            padding: 7px 8px !important;
+            border-radius: 12px !important;
+            background: rgba(8, 13, 20, 0.76) !important;
+            border-color: rgba(122, 153, 190, 0.18) !important;
+          }
+
+          .map-stat strong {
+            font-size: 14px !important;
+          }
+
+          .map-stat span {
+            font-size: 9px !important;
+            color: #9fb0c4 !important;
+          }
+
+          .status-legend {
+            display: none !important;
+          }
+
+          .zoom-panel {
+            top: auto !important;
+            right: 10px !important;
+            bottom: calc(env(safe-area-inset-bottom) + 12px) !important;
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 7px !important;
+            padding: 7px !important;
+            border-radius: 15px !important;
+            background: rgba(8, 13, 20, 0.82) !important;
+            border: 1px solid rgba(122, 153, 190, 0.20) !important;
+            backdrop-filter: blur(14px) !important;
+          }
+
+          .zoom-panel button {
+            width: 42px !important;
+            height: 38px !important;
+            min-height: 38px !important;
+            border-radius: 11px !important;
+            background: rgba(248, 250, 252, 0.09) !important;
+            color: #f8fbff !important;
+            border: 1px solid rgba(248, 250, 252, 0.14) !important;
+            font-size: 13px !important;
+          }
+
+          .location-status-pill {
+            left: 10px !important;
+            bottom: calc(env(safe-area-inset-bottom) + 70px) !important;
+            background: rgba(8, 13, 20, 0.78) !important;
+            color: #d7e4f8 !important;
+            border-color: rgba(122, 153, 190, 0.18) !important;
+          }
+
+          .job-drawer {
+            position: fixed !important;
+            z-index: 920 !important;
+            left: 8px !important;
+            right: 8px !important;
+            bottom: 8px !important;
+            max-height: min(58dvh, 560px) !important;
+            border-radius: 18px !important;
+            background: rgba(10, 16, 25, 0.94) !important;
+            border: 1px solid rgba(122, 153, 190, 0.18) !important;
+            box-shadow: 0 -18px 52px rgba(0, 0, 0, 0.46) !important;
+            backdrop-filter: blur(18px) saturate(1.08) !important;
+          }
+
+          .job-drawer.selected-focus {
+            max-height: min(82dvh, 760px) !important;
+          }
+
+          .job-drawer.closed {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            transform: translateY(110%) !important;
+          }
+
+          @media (max-width: 720px) {
+            .map-top {
+              left: 7px !important;
+              right: 7px !important;
+              top: calc(env(safe-area-inset-top) + 7px) !important;
+              padding: 8px !important;
+              border-radius: 16px !important;
+              gap: 7px !important;
+            }
+
+            .home-btn {
+              display: none !important;
+            }
+
+            .map-search input,
+            .jobs-toggle,
+            .map-days-filter button,
+            .days-back-control {
+              min-height: 38px !important;
+            }
+
+            .map-days-filter {
+              grid-template-columns: minmax(0, 1fr) auto auto !important;
+            }
+
+            .map-days-filter .full-btn {
+              display: none !important;
+            }
+
+            .days-back-control {
+              padding: 0 9px !important;
+            }
+
+            .days-back-control span {
+              font-size: 9px !important;
+            }
+
+            .days-back-control input {
+              font-size: 16px !important;
+            }
+
+            .map-stats {
+              width: min(244px, calc(100vw - 88px)) !important;
+            }
+
+            .map-stat {
+              min-height: 40px !important;
+              padding: 6px !important;
+            }
+
+            .zoom-panel button {
+              width: 38px !important;
+              height: 36px !important;
+              min-height: 36px !important;
+            }
+          }
         `}
         </style>
 
@@ -7956,8 +8287,8 @@ return (
       <header className="map-top">
         <div className="map-title-row">
           <div>
-            <h1>Field Operations</h1>
-            <p>{message}</p>
+            <h1>Map</h1>
+            <p>{mapDateFilterLabel()} - {filteredJobs.length} visible</p>
           </div>
           <a className="home-btn" href="/">Home</a>
         </div>
@@ -7973,19 +8304,34 @@ return (
           </button>
         </div>
 
-        <div className="map-filter-row">
-          <button className={maturityFilter === "all" ? "active" : ""} type="button" onClick={() => setMaturityFilter("all")}>All {bucketCounts.all}</button>
-          <button className={maturityFilter === "od0_30" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od0_30")}>0-30 Days {bucketCounts.od0_30}</button>
-          <button className={maturityFilter === "od31_60" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od31_60")}>31-60 Days {bucketCounts.od31_60}</button>
-          <button className={maturityFilter === "od61_90" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od61_90")}>61-90 Days {bucketCounts.od61_90}</button>
-          <button className={maturityFilter === "od90plus" ? "active" : ""} type="button" onClick={() => setMaturityFilter("od90plus")}>90+ Days {bucketCounts.od90plus}</button>
+        <div className="map-filter-row map-days-filter">
+          <label className="days-back-control">
+            <span>Days back</span>
+            <input
+              type="number"
+              inputMode="numeric"
+              min="1"
+              max="9999"
+              value={mapDaysBack}
+              onChange={(event) => {
+                setMapShowAllDays(false);
+                setMapDaysBack(event.target.value.replace(/[^\d]/g, "").slice(0, 4));
+              }}
+            />
+          </label>
+          <button className={!mapShowAllDays ? "active" : ""} type="button" onClick={() => setMapShowAllDays(false)}>
+            Show {mapDateCounts.visible}
+          </button>
+          <button className={mapShowAllDays ? "active" : ""} type="button" onClick={() => setMapShowAllDays(true)}>
+            All {mapDateCounts.all}
+          </button>
           <button className="full-btn" type="button" onClick={() => {
             setFullMap((v) => !v);
             setDrawerOpen(false);
             setTimeout(() => mapRef.current?.invalidateSize(), 100);
             setTimeout(() => mapRef.current?.invalidateSize(), 400);
           }}>
-            {fullMap ? "Exit Focus" : "Map Focus"}
+            {fullMap ? "Focus On" : "Focus Off"}
           </button>
         </div>
       </header>
