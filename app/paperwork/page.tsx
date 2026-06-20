@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { PDFDocument } from "pdf-lib";
 import {
   PAPERWORK_OUTCOMES,
   type PaperworkOutcome,
@@ -42,6 +43,9 @@ type PackageForm = {
   signer: string;
   notes: string;
 };
+
+const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-completed-affidavit.pdf";
+const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-completed-affidavit.pdf";
 
 function asArray(value: unknown): JobRecord[] {
   if (Array.isArray(value)) return value as JobRecord[];
@@ -122,6 +126,18 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   };
 }
 
+function cleanAmount(value: string) {
+  const cleaned = String(value || "").replace(/[$,\s]/g, "").trim();
+  return cleaned || "0";
+}
+
+function safeFilename(value: string) {
+  return String(value || "HPD")
+    .replace(/[^a-z0-9_-]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
 function findJob(rows: JobRecord[], id: string) {
   const target = id.trim().toLowerCase();
   if (!target) return null;
@@ -140,6 +156,7 @@ export default function PaperworkPage() {
   const [outcome, setOutcome] = useState<PaperworkOutcome>("pending");
   const [form, setForm] = useState<PackageForm>(initialForm);
   const [loadedQuery, setLoadedQuery] = useState(false);
+  const [pdfStatus, setPdfStatus] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -215,6 +232,126 @@ export default function PaperworkPage() {
 
   function update(key: keyof PackageForm, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function generateAffidavitPdf() {
+    const useWorkTemplate = outcome === "work_completed";
+    const templateUrl = useWorkTemplate ? WORK_AFFIDAVIT_TEMPLATE : NO_WORK_AFFIDAVIT_TEMPLATE;
+    const jobId = form.jobId || selectedId || "HPD";
+    const amount = cleanAmount(form.amount);
+
+    setPdfStatus("Preparing affidavit PDF...");
+
+    try {
+      const response = await fetch(templateUrl, { cache: "no-store" });
+      if (!response.ok) throw new Error(`Template returned HTTP ${response.status}`);
+
+      const pdfDoc = await PDFDocument.load(await response.arrayBuffer());
+      const pdfForm = pdfDoc.getForm();
+
+      const setText = (name: string, value: string, fontSize = name === "Work Description" ? 8 : 10) => {
+        try {
+          const field = pdfForm.getTextField(name);
+          field.enableMultiline();
+          field.setFontSize(fontSize);
+          field.setText(value || "");
+        } catch {}
+      };
+
+      const check = (name: string) => {
+        try {
+          pdfForm.getCheckBox(name).check();
+        } catch {}
+      };
+
+      const clearMaterialRows = () => {
+        for (let index = 1; index <= 12; index += 1) {
+          setText(`M${index}`, "");
+          setText(`Q${index}`, "");
+        }
+      };
+
+      clearMaterialRows();
+      setText("OMO", jobId);
+      setText("TAX ID", "203444624");
+      setText("INVOICE #", form.invoiceNo);
+      setText("TRADE", "GENERAL CONSTRUCTION");
+      setText("Boro", form.borough);
+      setText("Apt #", form.location);
+      setText("Building Address", form.address);
+      setText("BID AMOUNT", amount);
+      setText("INCREASE DECREASE AMOUNT", "0");
+      setText("TOTAL CHARGE", amount);
+      setText("NAME Please Print", form.signer || "JOTJAGRAJ SINGH");
+      setText("TITLE", "VP");
+      check("RC MINI NO");
+      check("APPROVED INCREASE DECREASE NO");
+      check("PERMIT REQUIRED NO");
+
+      if (useWorkTemplate) {
+        setText("START DATE", form.workStart || form.fieldDate);
+        setText("COMPLETE DATE", form.workComplete || form.fieldDate);
+        setText("Work Description", form.description || form.notes || "Work completed per HPD bid / work order.");
+      } else {
+        const noWorkReason = form.affidavitReason || affidavitReasonForOutcome(outcome);
+        const noWorkDescription = [
+          `NO WORK COMPLETED - ${noWorkReason}`,
+          form.description,
+          form.notes,
+        ]
+          .filter(Boolean)
+          .join("\n\n");
+
+        setText("inaccessibility was due to 1", noWorkReason);
+        setText("inaccessibility was due to 2", form.notes);
+        setText("COUNTY OF", form.borough || "NEW YORK");
+        setText("AMOUNT", amount);
+        setText("ARRIVE DATE", form.firstAttempt || form.fieldDate);
+        setText("REFUSE DATE", outcome === "refused_access" ? form.secondAttempt || form.fieldDate : "");
+        setText("DENIED DATE", outcome === "refused_access" ? form.secondAttempt || form.fieldDate : "");
+        setText("DENIED TEL", "");
+        setText("DENIED NAME", "");
+        setText("Description of individual DENIED", "");
+        setText("BUILDING RELATIONSHIP", "");
+        setText("Type or Print Name", form.signer || "JOTJAGRAJ SINGH");
+        setText("State", "NY");
+        setText("I swear statement", `I ${form.signer || "JOTJAGRAJ SINGH"} / United Angel Construction Corp.`);
+        setText("START DATE", form.firstAttempt || form.fieldDate);
+        setText("COMPLETE DATE", form.secondAttempt || form.fieldDate);
+        setText("Work Description", noWorkDescription);
+      }
+
+      pdfForm.updateFieldAppearances();
+      pdfForm.flatten();
+
+      const checkboxPage = pdfDoc.getPages()[useWorkTemplate ? 0 : 2];
+      if (checkboxPage) {
+        [
+          [146, 650],
+          [500, 574],
+          [500, 558],
+        ].forEach(([x, y]) => {
+          checkboxPage.drawText("X", { x, y, size: 10 });
+        });
+      }
+
+      const bytes = await pdfDoc.save();
+      const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+      const blob = new Blob([buffer], { type: "application/pdf" });
+      const href = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = href;
+      anchor.download = `${safeFilename(jobId)}-${useWorkTemplate ? "work-completed" : "no-work-completed"}-affidavit.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(href);
+
+      setPdfStatus("Affidavit PDF downloaded.");
+    } catch (error) {
+      console.error(error);
+      setPdfStatus(error instanceof Error ? error.message : "Could not generate affidavit PDF.");
+    }
   }
 
   const packageTone = outcome === "work_completed" ? "work" : outcome === "pending" ? "pending" : "no-work";
@@ -371,6 +508,16 @@ export default function PaperworkPage() {
           background: #cbd5e1;
         }
 
+        .paperwork-pdf-status {
+          margin: 0;
+          border: 1px solid rgba(83, 230, 156, 0.28);
+          background: rgba(83, 230, 156, 0.1);
+          color: #caffdf;
+          border-radius: 8px;
+          padding: 10px;
+          font-weight: 850;
+        }
+
         .paperwork-sheet {
           background: #ffffff;
           color: #111827;
@@ -505,6 +652,9 @@ export default function PaperworkPage() {
           <nav className="paperwork-nav" aria-label="Paperwork actions">
             <a href="/map">Map</a>
             <a href={invoiceHref}>Invoice Only</a>
+            <button className="paperwork-secondary" type="button" onClick={generateAffidavitPdf}>
+              Download Affidavit PDF
+            </button>
             <button className="paperwork-print" type="button" onClick={() => window.print()}>
               Print / Save PDF
             </button>
@@ -513,6 +663,11 @@ export default function PaperworkPage() {
 
         <section className="paperwork-card">
           <span className={`paperwork-package-badge ${packageTone}`}>{affidavitTemplateLabel(outcome)}</span>
+          {pdfStatus ? (
+            <p className="paperwork-pdf-status" aria-live="polite">
+              {pdfStatus}
+            </p>
+          ) : null}
 
           <label className="paperwork-field">
             Select Job
@@ -619,6 +774,10 @@ export default function PaperworkPage() {
             Notes / Scope
             <textarea value={form.notes} onChange={(event) => update("notes", event.target.value)} />
           </label>
+
+          <button className="paperwork-print" type="button" onClick={generateAffidavitPdf}>
+            Download Filled Affidavit PDF
+          </button>
         </section>
 
         <section className="paperwork-preview">
