@@ -1,5 +1,8 @@
 ﻿"use client";
 const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
+const MAPTILER_ENV_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
+const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
+const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v1";
 
 
 import * as JobStatus from "../../lib/jobs/status";
@@ -91,6 +94,84 @@ type MappedJob = JobRecord & {
   _lng?: number;
   _source?: "stored" | "geocoded";
 };
+
+type MapBaseStyleId =
+  | "maptiler-streets"
+  | "maptiler-basic"
+  | "maptiler-outdoor"
+  | "maptiler-satellite"
+  | "carto-voyager";
+
+type MapBaseStyle = {
+  id: MapBaseStyleId;
+  label: string;
+  provider: "maptiler" | "carto";
+  mapId?: string;
+  tileUrl?: string;
+  attribution: string;
+  maxZoom: number;
+};
+
+const MAP_BASE_STYLES: MapBaseStyle[] = [
+  {
+    id: "maptiler-streets",
+    label: "MapTiler Streets",
+    provider: "maptiler",
+    mapId: "streets-v4",
+    attribution: '&copy; MapTiler &copy; OpenStreetMap contributors',
+    maxZoom: 20,
+  },
+  {
+    id: "maptiler-basic",
+    label: "MapTiler Basic",
+    provider: "maptiler",
+    mapId: "basic-v2",
+    attribution: '&copy; MapTiler &copy; OpenStreetMap contributors',
+    maxZoom: 20,
+  },
+  {
+    id: "maptiler-outdoor",
+    label: "MapTiler Outdoor",
+    provider: "maptiler",
+    mapId: "outdoor-v2",
+    attribution: '&copy; MapTiler &copy; OpenStreetMap contributors',
+    maxZoom: 20,
+  },
+  {
+    id: "maptiler-satellite",
+    label: "MapTiler Satellite",
+    provider: "maptiler",
+    mapId: "satellite",
+    attribution: '&copy; MapTiler &copy; OpenStreetMap contributors',
+    maxZoom: 20,
+  },
+  {
+    id: "carto-voyager",
+    label: "Voyager Backup",
+    provider: "carto",
+    tileUrl: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    maxZoom: 19,
+  },
+];
+
+const CARTO_VOYAGER_STYLE = MAP_BASE_STYLES.find((style) => style.id === "carto-voyager")!;
+
+function mapBaseStyleById(id: string): MapBaseStyle {
+  return MAP_BASE_STYLES.find((style) => style.id === id) || MAP_BASE_STYLES[0];
+}
+
+function resolveMapBaseStyle(styleId: MapBaseStyleId, mapTilerKey: string): MapBaseStyle {
+  const style = mapBaseStyleById(styleId);
+  return style.provider === "maptiler" && !mapTilerKey.trim() ? CARTO_VOYAGER_STYLE : style;
+}
+
+function mapTileUrl(style: MapBaseStyle, mapTilerKey: string) {
+  if (style.provider === "maptiler") {
+    return `https://api.maptiler.com/maps/${style.mapId}/{z}/{x}/{y}.png?key=${encodeURIComponent(mapTilerKey.trim())}`;
+  }
+  return style.tileUrl || CARTO_VOYAGER_STYLE.tileUrl!;
+}
 
 function asArray(value: unknown): JobRecord[] {
   if (Array.isArray(value)) return value as JobRecord[];
@@ -1263,6 +1344,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
 }export default function MapClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
+  const mapTileLayerRef = useRef<any>(null);
   const markerLayerRef = useRef<any>(null);
   const userLocationMarkerRef = useRef<any>(null);
   const userLocationAccuracyRef = useRef<any>(null);
@@ -1645,7 +1727,58 @@ const [hideCompleted, setHideCompleted] = useState(false);
 
 const [mapDaysBack, setMapDaysBack] = useState("90");
 const [mapShowAllDays, setMapShowAllDays] = useState(false);
+const [mapBaseStyle, setMapBaseStyle] = useState<MapBaseStyleId>("maptiler-streets");
+const [mapTilerKey, setMapTilerKey] = useState(MAPTILER_ENV_KEY);
+const [mapTileStatus, setMapTileStatus] = useState(
+  MAPTILER_ENV_KEY ? "MapTiler env key ready." : "MapTiler selected. Add key to load it."
+);
   const [fullMap, setFullMap] = useState(false);
+const requestedMapBaseStyle = mapBaseStyleById(mapBaseStyle);
+const activeMapBaseStyle = resolveMapBaseStyle(mapBaseStyle, mapTilerKey);
+const mapTilerKeyReady = Boolean(mapTilerKey.trim());
+const needsMapTilerKey = requestedMapBaseStyle.provider === "maptiler" && !mapTilerKeyReady;
+
+function updateMapBaseStyle(styleId: MapBaseStyleId) {
+  setMapBaseStyle(styleId);
+  setMapTileStatus(`${mapBaseStyleById(styleId).label} selected.`);
+  try {
+    window.localStorage.setItem(MAP_BASE_STYLE_STORAGE_KEY, styleId);
+  } catch {
+    // Local storage is optional for private browser modes.
+  }
+}
+
+function updateMapTilerKey(value: string) {
+  const next = value.trim();
+  setMapTilerKey(next);
+  setMapTileStatus(next ? "MapTiler key saved on this device." : "MapTiler key removed. Voyager is showing.");
+  try {
+    if (next) window.localStorage.setItem(MAPTILER_KEY_STORAGE_KEY, next);
+    else window.localStorage.removeItem(MAPTILER_KEY_STORAGE_KEY);
+  } catch {
+    // Local storage is optional for private browser modes.
+  }
+}
+
+
+  useEffect(() => {
+    try {
+      const savedStyle = window.localStorage.getItem(MAP_BASE_STYLE_STORAGE_KEY);
+      if (savedStyle && MAP_BASE_STYLES.some((style) => style.id === savedStyle)) {
+        setMapBaseStyle(savedStyle as MapBaseStyleId);
+      }
+
+      if (!MAPTILER_ENV_KEY) {
+        const savedKey = window.localStorage.getItem(MAPTILER_KEY_STORAGE_KEY);
+        if (savedKey) {
+          setMapTilerKey(savedKey);
+          setMapTileStatus("MapTiler key loaded on this device.");
+        }
+      }
+    } catch {
+      // Local storage is optional for private browser modes.
+    }
+  }, []);
 
 
   // LIVE_72H_COUNTDOWN_TICK
@@ -1998,11 +2131,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           preferCanvas: true,
         }).setView([40.7128, -74.006], 10);
 
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-          maxZoom: 19,
-          attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        }).addTo(map);
-
         const markerLayer = L.layerGroup().addTo(map);
 
         mapRef.current = map;
@@ -2025,10 +2153,73 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
+        mapTileLayerRef.current = null;
         markerLayerRef.current = null;
       }
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function updateBaseLayer() {
+      if (!mapReady || !mapRef.current) return;
+
+      const L = await import("leaflet");
+      if (cancelled || !mapRef.current) return;
+
+      const map = mapRef.current;
+      const requestedStyle = mapBaseStyleById(mapBaseStyle);
+      const style = resolveMapBaseStyle(mapBaseStyle, mapTilerKey);
+      const tileUrl = mapTileUrl(style, mapTilerKey);
+      let tileErrorCount = 0;
+      let tileLoaded = false;
+
+      if (mapTileLayerRef.current) {
+        map.removeLayer(mapTileLayerRef.current);
+        mapTileLayerRef.current = null;
+      }
+
+      const tileLayer = L.tileLayer(tileUrl, {
+        maxZoom: style.maxZoom,
+        attribution: style.attribution,
+      });
+
+      tileLayer.on("tileload", () => {
+        if (cancelled || tileLoaded) return;
+        tileLoaded = true;
+        if (requestedStyle.provider === "maptiler" && style.provider === "carto") {
+          setMapTileStatus("MapTiler needs a key. Voyager backup is showing.");
+        } else {
+          setMapTileStatus(`${style.label} loaded.`);
+        }
+      });
+
+      tileLayer.on("tileerror", () => {
+        tileErrorCount += 1;
+        if (tileErrorCount < 3 || cancelled) return;
+        setMapTileStatus(`${style.label} could not load. Voyager backup is showing.`);
+        if (style.provider === "maptiler") {
+          setMapBaseStyle("carto-voyager");
+        }
+      });
+
+      tileLayer.addTo(map);
+      mapTileLayerRef.current = tileLayer;
+
+      if (requestedStyle.provider === "maptiler" && style.provider === "carto") {
+        setMapTileStatus("MapTiler needs a key. Voyager backup is showing.");
+      } else {
+        setMapTileStatus(`${style.label} loading...`);
+      }
+    }
+
+    updateBaseLayer();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mapReady, mapBaseStyle, mapTilerKey]);
 
   useEffect(() => {
     if (selected) {
@@ -7970,7 +8161,7 @@ return (
             }
           }
 
-          /* FULL_PAGE_DARK_MAP_2026 */
+          /* FULL_PAGE_BALANCED_MAPTILER_2026 */
           .map-shell,
           .map-shell.full-map-mode {
             position: relative !important;
@@ -7979,7 +8170,7 @@ return (
             height: 100dvh !important;
             min-height: 100dvh !important;
             overflow: hidden !important;
-            background: #05080d !important;
+            background: #111922 !important;
           }
 
           .map-stage {
@@ -7988,7 +8179,7 @@ return (
             width: 100vw !important;
             height: 100dvh !important;
             min-height: 100dvh !important;
-            background: #05080d !important;
+            background: #d8e4ea !important;
           }
 
           .map-node,
@@ -7996,11 +8187,11 @@ return (
             width: 100% !important;
             height: 100% !important;
             min-height: 100% !important;
-            background: #05080d !important;
+            background: #d8e4ea !important;
           }
 
           .map-node .leaflet-tile {
-            filter: saturate(1.04) contrast(1.08) brightness(0.92) !important;
+            filter: saturate(1.04) contrast(1.02) brightness(0.99) !important;
           }
 
           .map-top {
@@ -8011,9 +8202,9 @@ return (
             right: 8px !important;
             padding: 10px !important;
             border-radius: 18px !important;
-            background: rgba(8, 13, 20, 0.88) !important;
-            border: 1px solid rgba(122, 153, 190, 0.20) !important;
-            box-shadow: 0 18px 44px rgba(0, 0, 0, 0.36) !important;
+            background: rgba(17, 25, 34, 0.86) !important;
+            border: 1px solid rgba(142, 170, 196, 0.28) !important;
+            box-shadow: 0 18px 44px rgba(9, 16, 24, 0.32) !important;
             backdrop-filter: blur(18px) saturate(1.12) !important;
           }
 
@@ -8032,7 +8223,7 @@ return (
 
           .map-title-row p {
             margin-top: 3px !important;
-            color: #9fb0c4 !important;
+            color: #c8d6e3 !important;
             font-size: 11px !important;
             white-space: nowrap !important;
             overflow: hidden !important;
@@ -8059,8 +8250,8 @@ return (
           .days-back-control {
             min-height: 40px !important;
             border-radius: 12px !important;
-            border: 1px solid rgba(122, 153, 190, 0.22) !important;
-            background: rgba(15, 23, 34, 0.92) !important;
+            border: 1px solid rgba(142, 170, 196, 0.30) !important;
+            background: rgba(20, 31, 43, 0.94) !important;
             color: #f8fbff !important;
             box-shadow: none !important;
           }
@@ -8121,9 +8312,79 @@ return (
           }
 
           .map-days-filter .full-btn {
-            background: rgba(35, 211, 174, 0.12) !important;
-            color: #bfffea !important;
-            border-color: rgba(35, 211, 174, 0.28) !important;
+            background: rgba(77, 162, 255, 0.18) !important;
+            color: #d7ecff !important;
+            border-color: rgba(77, 162, 255, 0.34) !important;
+          }
+
+          .map-style-panel {
+            display: grid !important;
+            grid-template-columns: minmax(136px, 0.9fr) minmax(132px, 1fr) minmax(120px, auto) !important;
+            align-items: center !important;
+            gap: 7px !important;
+            margin-top: 7px !important;
+          }
+
+          .map-style-select,
+          .maptiler-key-control {
+            min-height: 38px !important;
+            display: grid !important;
+            grid-template-columns: auto minmax(0, 1fr) !important;
+            align-items: center !important;
+            gap: 8px !important;
+            padding: 0 10px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(142, 170, 196, 0.30) !important;
+            background: rgba(20, 31, 43, 0.94) !important;
+          }
+
+          .map-style-select span,
+          .maptiler-key-control span {
+            color: #c8d6e3 !important;
+            font-size: 10px !important;
+            font-weight: 950 !important;
+            text-transform: uppercase !important;
+            white-space: nowrap !important;
+          }
+
+          .map-style-select select,
+          .maptiler-key-control input {
+            width: 100% !important;
+            min-width: 0 !important;
+            border: 0 !important;
+            outline: 0 !important;
+            background: transparent !important;
+            color: #f8fbff !important;
+            font-size: 13px !important;
+            font-weight: 850 !important;
+          }
+
+          .map-style-select select option {
+            color: #111827 !important;
+          }
+
+          .map-style-status,
+          .map-style-badge {
+            min-height: 38px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 10px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(35, 211, 174, 0.28) !important;
+            background: rgba(35, 211, 174, 0.13) !important;
+            color: #d9fff4 !important;
+            font-size: 11px !important;
+            font-weight: 900 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-style-panel.needs-key .map-style-status {
+            border-color: rgba(255, 193, 7, 0.32) !important;
+            background: rgba(255, 193, 7, 0.16) !important;
+            color: #ffe8a3 !important;
           }
 
           .map-stats {
@@ -8240,6 +8501,35 @@ return (
               grid-template-columns: minmax(0, 1fr) auto auto !important;
             }
 
+            .map-style-panel {
+              grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+              gap: 6px !important;
+            }
+
+            .map-style-status,
+            .map-style-badge {
+              grid-column: 1 / -1 !important;
+              min-height: 30px !important;
+              justify-content: flex-start !important;
+              font-size: 10px !important;
+            }
+
+            .map-style-select,
+            .maptiler-key-control {
+              min-height: 36px !important;
+              padding: 0 8px !important;
+            }
+
+            .map-style-select span,
+            .maptiler-key-control span {
+              font-size: 9px !important;
+            }
+
+            .map-style-select select,
+            .maptiler-key-control input {
+              font-size: 12px !important;
+            }
+
             .map-days-filter .full-btn {
               display: none !important;
             }
@@ -8288,7 +8578,7 @@ return (
         <div className="map-title-row">
           <div>
             <h1>Map</h1>
-            <p>{mapDateFilterLabel()} - {filteredJobs.length} visible</p>
+            <p>{mapDateFilterLabel()} - {filteredJobs.length} visible - {activeMapBaseStyle.label}</p>
           </div>
           <a className="home-btn" href="/">Home</a>
         </div>
@@ -8333,6 +8623,37 @@ return (
           }}>
             {fullMap ? "Focus On" : "Focus Off"}
           </button>
+        </div>
+
+        <div className={`map-style-panel ${needsMapTilerKey ? "needs-key" : ""}`}>
+          <label className="map-style-select">
+            <span>Style</span>
+            <select
+              value={mapBaseStyle}
+              onChange={(event) => updateMapBaseStyle(event.target.value as MapBaseStyleId)}
+            >
+              {MAP_BASE_STYLES.map((style) => (
+                <option key={style.id} value={style.id}>{style.label}</option>
+              ))}
+            </select>
+          </label>
+          {requestedMapBaseStyle.provider === "maptiler" && !MAPTILER_ENV_KEY ? (
+            <label className="maptiler-key-control">
+              <span>Key</span>
+              <input
+                value={mapTilerKey}
+                onChange={(event) => updateMapTilerKey(event.target.value)}
+                placeholder="Paste MapTiler key"
+                type="password"
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+            </label>
+          ) : null}
+          {requestedMapBaseStyle.provider === "maptiler" && MAPTILER_ENV_KEY ? (
+            <span className="map-style-badge">Env key</span>
+          ) : null}
+          <span className="map-style-status">{mapTileStatus}</span>
         </div>
       </header>
 
