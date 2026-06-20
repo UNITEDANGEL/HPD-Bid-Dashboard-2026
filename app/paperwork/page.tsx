@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PDFDocument } from "pdf-lib";
+import { dataUrlToBytes, listFieldPhotos } from "../../lib/field-photo-store";
 import {
   type PaperworkOutcome,
   HPD_STATUS_WORKER_URL,
@@ -226,6 +227,41 @@ function safeFilename(value: string) {
     .replace(/[^a-z0-9_-]+/gi, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 80);
+}
+
+async function appendFieldPhotosToPdf(pdfDoc: PDFDocument, jobId: string) {
+  if (typeof window === "undefined" || !jobId) return 0;
+
+  const photos = await listFieldPhotos(jobId);
+  let appended = 0;
+
+  for (const photo of photos) {
+    try {
+      const bytes = dataUrlToBytes(photo.dataUrl);
+      const image = photo.dataUrl.startsWith("data:image/png")
+        ? await pdfDoc.embedPng(bytes)
+        : await pdfDoc.embedJpg(bytes);
+      const page = pdfDoc.addPage([612, 792]);
+      const maxWidth = 520;
+      const maxHeight = 610;
+      const scale = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+      const width = image.width * scale;
+      const height = image.height * scale;
+      const x = (612 - width) / 2;
+      const y = 112 + (maxHeight - height) / 2;
+      const captured = displayDate(photo.capturedAt) || photo.capturedAt.slice(0, 10);
+
+      page.drawText(`${jobId} FIELD PHOTO`, { x: 46, y: 744, size: 15 });
+      page.drawText(`${photo.kind.toUpperCase()} · ${captured}`, { x: 46, y: 724, size: 11 });
+      page.drawImage(image, { x, y, width, height });
+      page.drawText(photo.name || "Field photo", { x: 46, y: 70, size: 9 });
+      appended += 1;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  return appended;
 }
 
 function findJob(rows: JobRecord[], id: string) {
@@ -550,6 +586,7 @@ export default function PaperworkPage() {
         checkboxPage.drawText(secondAttempt, { x: 423, y: 595, size: 10 });
       }
 
+      const appendedPhotoCount = await appendFieldPhotosToPdf(pdfDoc, jobId);
       const bytes = await pdfDoc.save();
       const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
       const blob = new Blob([buffer], { type: "application/pdf" });
@@ -563,7 +600,9 @@ export default function PaperworkPage() {
       URL.revokeObjectURL(href);
 
       const archiveMessage = await markPackageGenerated(archiveJobId);
-      setPdfStatus(`Invoice package downloaded. ${archiveMessage}`);
+      setPdfStatus(
+        `Invoice package downloaded${appendedPhotoCount ? ` with ${appendedPhotoCount} field photo(s)` : ""}. ${archiveMessage}`
+      );
     } catch (error) {
       console.error(error);
       setPdfStatus(error instanceof Error ? error.message : "Could not generate affidavit PDF.");

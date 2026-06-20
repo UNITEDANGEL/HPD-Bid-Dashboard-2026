@@ -3,8 +3,14 @@ const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
 
 
 import * as JobStatus from "../../lib/jobs/status";
+import {
+  type FieldPhotoKind,
+  canStoreFieldPhotos,
+  countFieldPhotos,
+  saveFieldPhotos,
+} from "../../lib/field-photo-store";
 import { paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type JobRecord = {
   [key: string]: any;
@@ -28,6 +34,11 @@ type JobRecord = {
   VerifiedByOthersDate?: string;
   ActualWorkStartDate?: string;
   ActualWorkCompletionDate?: string;
+  JobStartedAt?: string;
+  JobFinishedAt?: string;
+  FieldTimerStartedAt?: string;
+  BeforePhotoCount?: number | string;
+  AfterPhotoCount?: number | string;
   OutcomeLockedAt?: string;
   ArchivedFromMap?: boolean;
   ITBMatchStatus?: string;
@@ -1200,6 +1211,16 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
         secondAttemptAvailableAt: "",
         RefusalDate: "",
         refusalDate: "",
+        JobStartedAt: "",
+        jobStartedAt: "",
+        JobFinishedAt: "",
+        jobFinishedAt: "",
+        FieldTimerStartedAt: "",
+        fieldTimerStartedAt: "",
+        BeforePhotoCount: 0,
+        beforePhotoCount: 0,
+        AfterPhotoCount: 0,
+        afterPhotoCount: 0,
         ArchivedFromMap: false,
       } as T;
     }
@@ -1209,6 +1230,10 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const mapNode = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const markerLayerRef = useRef<any>(null);
+  const userLocationMarkerRef = useRef<any>(null);
+  const userLocationAccuracyRef = useRef<any>(null);
+  const geolocationWatchRef = useRef<number | null>(null);
+  const fieldPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
@@ -1227,6 +1252,11 @@ const [draftWorkflowDate, setDraftWorkflowDate] = useState("");
 const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<"active" | "waiting72" | "ready2" | "final" | "archived" | "all">("active");
 const [countdownTick, setCountdownTick] = useState(0);
+const [photoCaptureTarget, setPhotoCaptureTarget] = useState<{ jobKey: string; kind: FieldPhotoKind } | null>(null);
+const [fieldPhotoCounts, setFieldPhotoCounts] = useState<Record<string, Record<FieldPhotoKind, number>>>({});
+const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; accuracy?: number; updatedAt: string } | null>(null);
+const [locationStatus, setLocationStatus] = useState("Location off");
+const [followMyLocation, setFollowMyLocation] = useState(false);
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
 const [actionNotice, setActionNotice] = useState("");
@@ -1582,6 +1612,7 @@ const [customMaturityMax, setCustomMaturityMax] = useState("");
   // LOAD_WORKFLOW_OVERRIDES_FROM_WORKER
   useEffect(() => {
     let cancelled = false;
+    let syncNoticeTimer: number | null = null;
     async function loadServerOverrides() {
       try {
         const response = await fetch(`${HPD_STATUS_WORKER_URL}/overrides`, { cache: "no-store" });
@@ -1604,6 +1635,9 @@ const [customMaturityMax, setCustomMaturityMax] = useState("");
         setServerWorkflowOverrides(overrides);
         if (Object.keys(overrides).length) {
           setActionNotice("Synced latest job statuses.");
+          syncNoticeTimer = window.setTimeout(() => {
+            if (!cancelled) setActionNotice("");
+          }, 2800);
         }
       } catch (error) {
         console.error(error);
@@ -1612,6 +1646,7 @@ const [customMaturityMax, setCustomMaturityMax] = useState("");
     loadServerOverrides();
     return () => {
       cancelled = true;
+      if (syncNoticeTimer) window.clearTimeout(syncNoticeTimer);
     };
   }, []);
   // APPLY_SERVER_OVERRIDES_AFTER_ROWS_LOAD
@@ -2012,6 +2047,97 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     drawMarkers();
   }, [mapReady, filteredJobs, countdownTick]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function drawUserLocation() {
+      if (!mapReady || !mapRef.current || !userLocation) return;
+      const L = await import("leaflet");
+      if (cancelled || !mapRef.current) return;
+
+      const map = mapRef.current;
+      const latLng: [number, number] = [userLocation.lat, userLocation.lng];
+
+      if (!userLocationMarkerRef.current) {
+        userLocationMarkerRef.current = L.marker(latLng, {
+          zIndexOffset: 2000,
+          icon: L.divIcon({
+            className: "user-location-marker",
+            html: '<div class="user-location-dot"><span></span></div>',
+            iconSize: [34, 34],
+            iconAnchor: [17, 17],
+          }),
+        }).addTo(map);
+      } else {
+        userLocationMarkerRef.current.setLatLng(latLng);
+      }
+
+      if (!userLocationAccuracyRef.current) {
+        userLocationAccuracyRef.current = L.circle(latLng, {
+          radius: Math.max(15, userLocation.accuracy || 25),
+          color: "#2563eb",
+          weight: 1,
+          fillColor: "#93c5fd",
+          fillOpacity: 0.14,
+        }).addTo(map);
+      } else {
+        userLocationAccuracyRef.current.setLatLng(latLng);
+        userLocationAccuracyRef.current.setRadius(Math.max(15, userLocation.accuracy || 25));
+      }
+
+      if (followMyLocation) {
+        map.setView(latLng, Math.max(map.getZoom(), 15), { animate: true });
+      }
+    }
+
+    drawUserLocation();
+    return () => {
+      cancelled = true;
+    };
+  }, [mapReady, userLocation, followMyLocation]);
+
+  useEffect(() => {
+    return () => {
+      if (typeof navigator !== "undefined" && geolocationWatchRef.current !== null) {
+        navigator.geolocation.clearWatch(geolocationWatchRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const key = selected ? jobKey(selected) : "";
+    if (!key || !canStoreFieldPhotos()) return;
+    let cancelled = false;
+    countFieldPhotos(key)
+      .then((counts) => {
+        if (!cancelled) {
+          setFieldPhotoCounts((current) => ({ ...current, [key]: counts }));
+        }
+      })
+      .catch((error) => console.error(error));
+    return () => {
+      cancelled = true;
+    };
+  }, [selected]);
+
+  useEffect(() => {
+    const readyCount = jobs.filter((job) => workflowViewBucket(job) === "ready2").length;
+    if (!readyCount || typeof window === "undefined") return;
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const noticeKey = `hpd-ready2-notice-${todayKey}`;
+    if (window.localStorage.getItem(noticeKey) === String(readyCount)) return;
+
+    window.localStorage.setItem(noticeKey, String(readyCount));
+    showActionNotice(`${readyCount} job(s) are ready for 2nd attempt today.`);
+
+    if ("Notification" in window && window.Notification.permission === "granted") {
+      new window.Notification("HPD jobs ready", {
+        body: `${readyCount} no-access job(s) are ready for second attempt.`,
+      });
+    }
+  }, [jobs, countdownTick]);
+
   function showReadyRevisitJobs() {
     setWorkflowViewFilter("ready2");
     setSelectedOnly(false);
@@ -2050,6 +2176,259 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setActionNotice(text);
     window.setTimeout(() => setActionNotice(""), 3600);
   }
+
+  function applyWorkflowPatchToState(key: string, patch: Record<string, any>) {
+    const applyPatch = (row: any) => (jobKey(row) === key ? { ...row, ...patch } : row);
+    setSelected((current) => (current && jobKey(current) === key ? (applyPatch(current) as MappedJob) : current));
+    setJobs((rows) => rows.map(applyPatch));
+    setMappedJobs((rows) => rows.map(applyPatch));
+  }
+
+  function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, notice: string) {
+    const key = jobKey(job);
+    if (!key) return;
+
+    const nextPatch = {
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+
+    workflowStorageSave(key, nextPatch);
+    applyWorkflowPatchToState(key, nextPatch);
+    setDraftWorkflowSaved(true);
+
+    workflowServerSave(key, nextPatch)
+      .then(() => showActionNotice(notice))
+      .catch((error) => {
+        console.error(error);
+        showActionNotice("Saved on this phone. Server sync needs retry.");
+      });
+  }
+
+  function fieldPhotoCountsFor(job: JobRecord) {
+    const key = jobKey(job);
+    const local = key ? fieldPhotoCounts[key] : null;
+    return {
+      before: Math.max(
+        Number((job as any).BeforePhotoCount || (job as any).beforePhotoCount || 0) || 0,
+        local?.before || 0
+      ),
+      after: Math.max(
+        Number((job as any).AfterPhotoCount || (job as any).afterPhotoCount || 0) || 0,
+        local?.after || 0
+      ),
+    };
+  }
+
+  function fieldElapsedLabel(job: JobRecord) {
+    void countdownTick;
+    const raw =
+      (job as any).FieldTimerStartedAt ||
+      (job as any).fieldTimerStartedAt ||
+      (job as any).JobStartedAt ||
+      (job as any).jobStartedAt ||
+      "";
+    const start = parseWorkflowDate(raw);
+    if (!start) return "Not started";
+    const minutes = Math.max(0, Math.floor((Date.now() - start.getTime()) / 60000));
+    if (minutes < 60) return `${minutes} min`;
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  }
+
+  function requestFieldPhotoCapture(job: MappedJob, kind: FieldPhotoKind) {
+    const key = jobKey(job);
+    if (!key) return;
+    if (!canStoreFieldPhotos()) {
+      showActionNotice("Photo storage is not available in this browser.");
+      return;
+    }
+
+    setPhotoCaptureTarget({ jobKey: key, kind });
+    window.setTimeout(() => {
+      if (fieldPhotoInputRef.current) {
+        fieldPhotoInputRef.current.value = "";
+        fieldPhotoInputRef.current.click();
+      }
+    }, 80);
+  }
+
+  async function handleFieldPhotoInput(event: ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files;
+    const target = photoCaptureTarget;
+    if (!files?.length || !target) return;
+
+    try {
+      const saved = await saveFieldPhotos(target.jobKey, target.kind, files);
+      const counts = await countFieldPhotos(target.jobKey);
+      const capturedAt = new Date().toISOString();
+      const patch =
+        target.kind === "before"
+          ? {
+              BeforePhotoCount: counts.before,
+              beforePhotoCount: counts.before,
+              BeforePhotosCapturedAt: capturedAt,
+              beforePhotosCapturedAt: capturedAt,
+              PhotoPackageStatus: "Before photos staged on this device",
+              photoPackageStatus: "Before photos staged on this device",
+            }
+          : {
+              AfterPhotoCount: counts.after,
+              afterPhotoCount: counts.after,
+              AfterPhotosCapturedAt: capturedAt,
+              afterPhotosCapturedAt: capturedAt,
+              PhotoPackageStatus: "After photos staged on this device",
+              photoPackageStatus: "After photos staged on this device",
+            };
+
+      setFieldPhotoCounts((current) => ({
+        ...current,
+        [target.jobKey]: counts,
+      }));
+      workflowStorageSave(target.jobKey, { ...patch, updatedAt: capturedAt });
+      applyWorkflowPatchToState(target.jobKey, { ...patch, updatedAt: capturedAt });
+      workflowServerSave(target.jobKey, { ...patch, updatedAt: capturedAt }).catch((error) => {
+        console.error(error);
+      });
+      showActionNotice(`${saved.length} ${target.kind} photo(s) saved for package.`);
+    } catch (error) {
+      console.error(error);
+      showActionNotice("Photo save failed. Try again.");
+    } finally {
+      setPhotoCaptureTarget(null);
+      event.target.value = "";
+    }
+  }
+
+  function startFieldJob(job: MappedJob) {
+    const iso = new Date().toISOString();
+    const takeBefore = window.confirm("Start this job now? Press OK to open the camera for BEFORE photos.");
+    saveFieldWorkflowPatch(
+      job,
+      {
+        WorkflowStatus: "WORK_STARTED",
+        workflowStatus: "WORK_STARTED",
+        FieldOutcome: "WORK_STARTED",
+        fieldOutcome: "WORK_STARTED",
+        StatusOverride: "Work Started",
+        status: "Work Started",
+        JobStartedAt: iso,
+        jobStartedAt: iso,
+        FieldTimerStartedAt: iso,
+        fieldTimerStartedAt: iso,
+        ActualWorkStartDate: iso,
+        actualWorkStartDate: iso,
+        BeforePhotosRequestedAt: takeBefore ? iso : "",
+        beforePhotosRequestedAt: takeBefore ? iso : "",
+        ArchivedFromMap: false,
+      },
+      "Job started. Work timer is running."
+    );
+    if (takeBefore) requestFieldPhotoCapture(job, "before");
+  }
+
+  function finishFieldJob(job: MappedJob) {
+    const iso = new Date().toISOString();
+    const takeAfter = window.confirm("Mark work complete? Press OK to open the camera for AFTER photos.");
+    saveFieldWorkflowPatch(
+      job,
+      {
+        WorkflowStatus: "WORK_COMPLETED",
+        workflowStatus: "WORK_COMPLETED",
+        FieldOutcome: "WORK_COMPLETED",
+        fieldOutcome: "WORK_COMPLETED",
+        StatusOverride: "Work Completed",
+        status: "Work Completed",
+        JobFinishedAt: iso,
+        jobFinishedAt: iso,
+        ActualWorkCompletionDate: iso,
+        actualWorkCompletionDate: iso,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+        AfterPhotosRequestedAt: takeAfter ? iso : "",
+        afterPhotosRequestedAt: takeAfter ? iso : "",
+        ArchivedFromMap: false,
+      },
+      "Work completed. Generate package when photos are ready."
+    );
+    if (takeAfter) requestFieldPhotoCapture(job, "after");
+  }
+
+  function startNoAccessCounter(job: MappedJob) {
+    const when = new Date();
+    const iso = when.toISOString();
+    const available = new Date(when);
+    available.setHours(available.getHours() + 72);
+
+    saveFieldWorkflowPatch(
+      job,
+      {
+        WorkflowStatus: "NO_ACCESS_1_WAITING_72H",
+        workflowStatus: "NO_ACCESS_1_WAITING_72H",
+        FieldOutcome: "NO_ACCESS_1_WAITING_72H",
+        fieldOutcome: "NO_ACCESS_1_WAITING_72H",
+        StatusOverride: "No Access 1st - Waiting 72h",
+        status: "No Access 1st - Waiting 72h",
+        NoAccessFirstAttemptAt: iso,
+        noAccessFirstAttemptAt: iso,
+        SecondAttemptAvailableAt: available.toISOString(),
+        secondAttemptAvailableAt: available.toISOString(),
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+        ArchivedFromMap: false,
+      },
+      "No access saved. 72-hour revisit counter started."
+    );
+    setWorkflowViewFilter("waiting72");
+  }
+
+  function startLocationTracking() {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setLocationStatus("Location unavailable");
+      showActionNotice("Location is not available in this browser.");
+      return;
+    }
+
+    const options: PositionOptions = {
+      enableHighAccuracy: true,
+      maximumAge: 15000,
+      timeout: 12000,
+    };
+
+    const onPosition = (position: GeolocationPosition) => {
+      setUserLocation({
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        updatedAt: new Date().toISOString(),
+      });
+      setLocationStatus(`You are on map · ±${Math.round((position.coords.accuracy || 0) * 3.28084)} ft`);
+    };
+
+    const onError = (error: GeolocationPositionError) => {
+      console.error(error);
+      setLocationStatus("Location blocked");
+      showActionNotice("Allow location in the browser to show your marker.");
+    };
+
+    setFollowMyLocation(true);
+    setLocationStatus("Locating...");
+    navigator.geolocation.getCurrentPosition(onPosition, onError, options);
+    if (geolocationWatchRef.current === null) {
+      geolocationWatchRef.current = navigator.geolocation.watchPosition(onPosition, onError, options);
+    }
+  }
+
+  function stopLocationTracking() {
+    if (typeof navigator !== "undefined" && geolocationWatchRef.current !== null) {
+      navigator.geolocation.clearWatch(geolocationWatchRef.current);
+    }
+    geolocationWatchRef.current = null;
+    setFollowMyLocation(false);
+    setLocationStatus(userLocation ? "Location paused" : "Location off");
+  }
+
   function sendJobToArchive(job: MappedJob) {
     const key = jobKey(job);
     if (!key) return;
@@ -2791,6 +3170,10 @@ function directionsUrl(job: JobRecord) {
   }
 
   const health = mapDataHealth();
+  const todayPriorityJobs = [...dispatchJobPool()]
+    .sort((a, b) => dispatchUrgencyScore(b) - dispatchUrgencyScore(a))
+    .slice(0, 3);
+  const readySecondCount = health.readySecond.length;
 
 return (
     <main className={`map-shell ${fullMap ? "full-map-mode" : ""}`}>
@@ -5601,6 +5984,256 @@ return (
             color: #14532d !important;
           }
 
+          .field-photo-input {
+            position: fixed;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+          }
+
+          .location-status-pill {
+            position: absolute;
+            left: 12px;
+            bottom: 12px;
+            z-index: 900;
+            max-width: min(280px, calc(100vw - 130px));
+            padding: 9px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(126, 146, 169, 0.28);
+            background: rgba(255, 255, 255, 0.92);
+            color: #3c536c;
+            font-size: 12px;
+            font-weight: 900;
+            box-shadow: 0 10px 24px rgba(31, 47, 70, 0.12);
+          }
+
+          .location-status-pill.active {
+            color: #1d4ed8;
+            border-color: rgba(37, 99, 235, 0.28);
+            background: rgba(239, 246, 255, 0.94);
+          }
+
+          .user-location-marker {
+            background: transparent;
+            border: 0;
+          }
+
+          .user-location-dot {
+            width: 34px;
+            height: 34px;
+            display: grid;
+            place-items: center;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.14);
+            border: 1px solid rgba(37, 99, 235, 0.25);
+            box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.10);
+          }
+
+          .user-location-dot span {
+            width: 15px;
+            height: 15px;
+            border-radius: 999px;
+            background: #2563eb;
+            border: 3px solid #ffffff;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.32);
+          }
+
+          .today-route-card,
+          .field-workflow-card {
+            background: #ffffff !important;
+            border: 1px solid rgba(126, 146, 169, 0.28) !important;
+            border-radius: 16px;
+            color: #172033 !important;
+            box-shadow: 0 16px 38px rgba(31, 47, 70, 0.12);
+          }
+
+          .today-route-card {
+            display: grid;
+            gap: 10px;
+            padding: 13px;
+            margin-bottom: 12px;
+          }
+
+          .today-route-card > div:first-child,
+          .field-workflow-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+          }
+
+          .today-route-card span,
+          .field-workflow-card span,
+          .field-workflow-card small {
+            color: #5d7088;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+          }
+
+          .today-route-card strong,
+          .field-workflow-card strong {
+            color: #172033;
+          }
+
+          .today-route-card > button {
+            min-height: 44px;
+            border: 0;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #6ee7b7, #93c5fd);
+            color: #082033;
+            font-weight: 1000;
+          }
+
+          .today-route-list {
+            display: grid;
+            gap: 8px;
+          }
+
+          .today-route-list button {
+            display: grid;
+            grid-template-columns: 82px minmax(0, 1fr);
+            gap: 8px;
+            align-items: center;
+            text-align: left;
+            min-height: 42px;
+            padding: 9px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(126, 146, 169, 0.24);
+            background: #f8fbfd;
+            color: #172033;
+          }
+
+          .today-route-list button span {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            text-transform: none;
+            letter-spacing: 0;
+          }
+
+          .field-workflow-card {
+            display: grid;
+            gap: 12px;
+            padding: 14px;
+            margin: 12px 0;
+          }
+
+          .field-workflow-head strong {
+            display: block;
+            margin-top: 3px;
+          }
+
+          .field-timer-pill {
+            flex: none;
+            padding: 8px 10px;
+            border-radius: 999px;
+            background: #eef6ff;
+            color: #1d4ed8 !important;
+            border: 1px solid rgba(37, 99, 235, 0.18);
+          }
+
+          .field-workflow-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+          }
+
+          .field-workflow-grid div {
+            min-height: 62px;
+            padding: 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(126, 146, 169, 0.22);
+            background: #f8fbfd;
+          }
+
+          .field-workflow-grid strong {
+            display: block;
+            margin-top: 5px;
+            font-size: 13px;
+            overflow-wrap: anywhere;
+          }
+
+          .field-step-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+          }
+
+          .field-step-actions button {
+            min-height: 48px;
+            border-radius: 12px;
+            border: 1px solid rgba(126, 146, 169, 0.28);
+            background: #f8fbfd;
+            color: #172033;
+            font-size: 13px;
+            font-weight: 1000;
+            transition:
+              transform 170ms ease,
+              box-shadow 170ms ease,
+              border-color 170ms ease,
+              filter 170ms ease;
+          }
+
+          .field-step-actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 26px rgba(31, 47, 70, 0.13);
+          }
+
+          .field-step-actions button:active {
+            transform: scale(0.975);
+          }
+
+          .field-step-actions .start-job-btn {
+            background: linear-gradient(135deg, #bbf7d0, #bfdbfe);
+            color: #082033;
+          }
+
+          .field-step-actions .finish-job-btn {
+            background: linear-gradient(135deg, #d9f99d, #86efac);
+            color: #12310f;
+          }
+
+          .field-step-actions .no-access-job-btn {
+            grid-column: 1 / -1;
+            background: #fff7ed;
+            color: #9a3412;
+            border-color: rgba(249, 115, 22, 0.28);
+          }
+
+          .job-drawer.selected-focus .action-notice,
+          .job-drawer.selected-focus .ready-revisit-alert {
+            position: static !important;
+            inset: auto !important;
+            transform: none !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 8px 0 12px !important;
+          }
+
+          .job-drawer.selected-focus .action-notice {
+            border-radius: 14px !important;
+            text-align: center;
+            box-shadow: 0 10px 24px rgba(31, 47, 70, 0.12) !important;
+          }
+
+          .job-drawer.selected-focus .ready-revisit-alert {
+            display: grid !important;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            align-items: center;
+            border-radius: 16px !important;
+            animation-duration: 6s !important;
+            box-shadow: 0 10px 26px rgba(31, 47, 70, 0.12) !important;
+          }
+
+          .job-drawer.selected-focus .ready-revisit-alert span {
+            white-space: normal !important;
+            max-width: none !important;
+            line-height: 1.25;
+          }
+
           @media (max-width: 720px) {
             .job-drawer {
               border-radius: 20px 20px 0 0 !important;
@@ -5611,9 +6244,33 @@ return (
             .job-card {
               border-radius: 16px !important;
             }
+
+            .job-drawer.selected-focus .action-notice,
+            .job-drawer.selected-focus .ready-revisit-alert {
+              margin-top: 0 !important;
+              padding: 9px 10px !important;
+            }
+
+            .job-drawer.selected-focus .ready-revisit-alert {
+              grid-template-columns: 1fr auto;
+            }
+
+            .job-drawer.selected-focus .ready-revisit-alert strong {
+              grid-column: 1 / -1;
+            }
           }
         `}
         </style>
+
+      <input
+        ref={fieldPhotoInputRef}
+        className="field-photo-input"
+        type="file"
+        accept="image/*"
+        capture="environment"
+        multiple
+        onChange={handleFieldPhotoInput}
+      />
 
       <header className="map-top">
         <div className="map-title-row">
@@ -5688,6 +6345,13 @@ return (
               mapRef.current.fitBounds(bounds, { padding: [34, 34], maxZoom: 15 });
             }
           }}>Fit</button>
+          <button type="button" title="Show my location" onClick={followMyLocation ? stopLocationTracking : startLocationTracking}>
+            {followMyLocation ? "Pause" : "Me"}
+          </button>
+        </div>
+
+        <div className={`location-status-pill ${userLocation ? "active" : ""}`}>
+          <span>{locationStatus}</span>
         </div>
       </section>
 
@@ -5738,6 +6402,26 @@ return (
           </button>
         </div>
         {actionNotice ? <div className="action-notice">{actionNotice}</div> : null}
+
+        {!selectedOnly ? (
+          <>
+        <section className="today-route-card">
+          <div>
+            <span>Today</span>
+            <strong>{readySecondCount ? `${readySecondCount} revisit ready` : "Best next jobs"}</strong>
+          </div>
+          <button type="button" onClick={() => runDispatchChat("What should I do today?")}>
+            Show Route
+          </button>
+          <div className="today-route-list">
+            {todayPriorityJobs.map((job) => (
+              <button type="button" key={jobKey(job)} onClick={() => openDispatchJob(jobKey(job))}>
+                <strong>{jobKey(job)}</strong>
+                <span>{dispatchJobReason(job)}</span>
+              </button>
+            ))}
+          </div>
+        </section>
 
         <section className={`map-health-panel ${health.totalIssues ? "has-issues" : "clean"}`}>
           {health.totalIssues === 0 ? (
@@ -5867,6 +6551,8 @@ return (
             </div>
           ) : null}
         </section>
+          </>
+        ) : null}
         {jobs.filter((job) => workflowViewBucket(job) === "ready2").length > 0 ? (
           <div className="ready-revisit-alert">
             <strong>REVISIT READY</strong>
@@ -5907,6 +6593,54 @@ return (
               <button type="button" onClick={() => sendJobToArchive(selected)}>
                 Archive
               </button>
+            </div>
+
+            <div className="field-workflow-card">
+              <div className="field-workflow-head">
+                <div>
+                  <span>Field Workflow</span>
+                  <strong>{workflowLabel(selected) || "Ready to start"}</strong>
+                </div>
+                <span className="field-timer-pill">{fieldElapsedLabel(selected)}</span>
+              </div>
+
+              <div className="field-workflow-grid">
+                <div>
+                  <span>Before Photos</span>
+                  <strong>{fieldPhotoCountsFor(selected).before}</strong>
+                </div>
+                <div>
+                  <span>After Photos</span>
+                  <strong>{fieldPhotoCountsFor(selected).after}</strong>
+                </div>
+                <div>
+                  <span>Started</span>
+                  <strong>{displayWorkflowDate(selected.JobStartedAt || selected.jobStartedAt || selected.ActualWorkStartDate || selected.actualWorkStartDate)}</strong>
+                </div>
+                <div>
+                  <span>Finished</span>
+                  <strong>{displayWorkflowDate(selected.JobFinishedAt || selected.jobFinishedAt || selected.ActualWorkCompletionDate || selected.actualWorkCompletionDate)}</strong>
+                </div>
+              </div>
+
+              <div className="field-step-actions">
+                <button type="button" className="start-job-btn" onClick={() => startFieldJob(selected)}>
+                  Start Job
+                </button>
+                <button type="button" onClick={() => requestFieldPhotoCapture(selected, "before")}>
+                  Before Photos
+                </button>
+                <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected)}>
+                  Finish Work
+                </button>
+                <button type="button" onClick={() => requestFieldPhotoCapture(selected, "after")}>
+                  After Photos
+                </button>
+                <button type="button" className="no-access-job-btn" onClick={() => startNoAccessCounter(selected)}>
+                  No Access 72h
+                </button>
+              </div>
+              <small>Photos saved on this phone are appended when you generate the invoice package.</small>
             </div>
 
             <div className="selected-overview-grid">
@@ -6031,6 +6765,16 @@ return (
                     verifiedByOthersDate: "",
                     ActualWorkCompletionDate: "",
                     actualWorkCompletionDate: "",
+                    JobStartedAt: "",
+                    jobStartedAt: "",
+                    JobFinishedAt: "",
+                    jobFinishedAt: "",
+                    FieldTimerStartedAt: "",
+                    fieldTimerStartedAt: "",
+                    BeforePhotoCount: 0,
+                    beforePhotoCount: 0,
+                    AfterPhotoCount: 0,
+                    afterPhotoCount: 0,
                     ArchivedFromMap: false,
                     OutcomeLockedAt: "",
                     outcomeLockedAt: "",
