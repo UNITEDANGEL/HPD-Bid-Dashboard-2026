@@ -304,6 +304,31 @@ export async function listFieldEvidence(jobId: string) {
   return listFieldPhotos(jobId);
 }
 
+export async function clearFieldEvidence(jobId: string) {
+  const cleanJobId = String(jobId || "").trim();
+  if (!cleanJobId || !hasIndexedDb()) return 0;
+
+  const rows = await listFieldPhotos(cleanJobId);
+  if (!rows.length) return 0;
+
+  const db = await openDb();
+  const transaction = db.transaction(STORE_NAME, "readwrite");
+  const store = transaction.objectStore(STORE_NAME);
+
+  rows.forEach((media) => {
+    store.delete(media.id);
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error || new Error("Could not clear evidence."));
+    transaction.onabort = () => reject(transaction.error || new Error("Evidence clear was aborted."));
+  });
+
+  db.close();
+  return rows.length;
+}
+
 export async function countFieldPhotos(jobId: string) {
   const rows = await listFieldPhotos(jobId);
   return rows.reduce((counts, media) => {

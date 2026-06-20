@@ -9,6 +9,7 @@ import {
   type FieldMediaCounts,
   type FieldMediaKind,
   canStoreFieldPhotos,
+  clearFieldEvidence,
   countFieldPhotos,
   listFieldEvidence,
   saveFieldPhotos,
@@ -2248,6 +2249,79 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       });
   }
 
+  function clearedFieldWorkflowStatePatch() {
+    return {
+      WorkflowStatus: "",
+      workflowStatus: "",
+      FieldOutcome: "",
+      fieldOutcome: "",
+      StatusOverride: "",
+      status: "Pending",
+      NoAccessFirstAttemptAt: "",
+      noAccessFirstAttemptAt: "",
+      NoAccessSecondAttemptAt: "",
+      noAccessSecondAttemptAt: "",
+      SecondAttemptAvailableAt: "",
+      secondAttemptAvailableAt: "",
+      RefusalDate: "",
+      refusalDate: "",
+      VerifiedByOthersDate: "",
+      verifiedByOthersDate: "",
+      ActualWorkStartDate: "",
+      actualWorkStartDate: "",
+      ActualWorkCompletionDate: "",
+      actualWorkCompletionDate: "",
+      JobStartedAt: "",
+      jobStartedAt: "",
+      JobFinishedAt: "",
+      jobFinishedAt: "",
+      FieldTimerStartedAt: "",
+      fieldTimerStartedAt: "",
+      BeforePhotoCount: 0,
+      beforePhotoCount: 0,
+      AfterPhotoCount: 0,
+      afterPhotoCount: 0,
+      EvidenceMediaCount: 0,
+      evidenceMediaCount: 0,
+      ImageEvidenceCount: 0,
+      imageEvidenceCount: 0,
+      VideoEvidenceCount: 0,
+      videoEvidenceCount: 0,
+      LastEvidenceCapturedAt: "",
+      lastEvidenceCapturedAt: "",
+      PhotoPackageStatus: "",
+      photoPackageStatus: "",
+      BeforePhotosRequestedAt: "",
+      beforePhotosRequestedAt: "",
+      BeforePhotosCapturedAt: "",
+      beforePhotosCapturedAt: "",
+      AfterPhotosRequestedAt: "",
+      afterPhotosRequestedAt: "",
+      AfterPhotosCapturedAt: "",
+      afterPhotosCapturedAt: "",
+      NoAccessEvidenceCount: 0,
+      noAccessEvidenceCount: 0,
+      NoAccessEvidenceCapturedAt: "",
+      noAccessEvidenceCapturedAt: "",
+      RefusedEvidenceCount: 0,
+      refusedEvidenceCount: 0,
+      RefusedEvidenceCapturedAt: "",
+      refusedEvidenceCapturedAt: "",
+      CompletedByOthersEvidenceCount: 0,
+      completedByOthersEvidenceCount: 0,
+      CompletedByOthersEvidenceCapturedAt: "",
+      completedByOthersEvidenceCapturedAt: "",
+      PackageGeneratedAt: "",
+      packageGeneratedAt: "",
+      PackageReadyMessage: "",
+      packageReadyMessage: "",
+      OutcomeLockedAt: "",
+      outcomeLockedAt: "",
+      ArchivedFromMap: false,
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
   function emptyFieldMediaCounts(): FieldMediaCounts {
     return {
       before: 0,
@@ -2506,6 +2580,34 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       "Job started. Before evidence capture is open."
     );
     requestFieldPhotoCapture(startedJob, "before", "image/*,video/*");
+  }
+
+  async function resetFieldJobForTesting(job: MappedJob) {
+    const key = jobKey(job);
+    if (!key) return;
+    const confirmed = window.confirm("Reset this job to Pending and clear saved test evidence on this phone?");
+    if (!confirmed) return;
+
+    const resetPatch = clearedFieldWorkflowStatePatch();
+    setFieldCaptureGuide(null);
+    photoCaptureTargetRef.current = null;
+    setPhotoCaptureTarget(null);
+    setDraftWorkflowStatus("");
+    setDraftWorkflowDate("");
+    setDraftWorkflowSaved(false);
+    setFieldPhotoCounts((current) => ({ ...current, [key]: emptyFieldMediaCounts() }));
+    setFieldEvidenceByJob((current) => ({ ...current, [key]: [] }));
+    workflowStorageSave(key, { __clearWorkflow: true });
+    applyWorkflowPatchToState(key, resetPatch);
+
+    try {
+      const cleared = canStoreFieldPhotos() ? await clearFieldEvidence(key) : 0;
+      await workflowServerSave(key, { __clearWorkflow: true, updatedAt: resetPatch.updatedAt });
+      showActionNotice(`Job reset to Pending. Cleared ${cleared} evidence file(s).`);
+    } catch (error) {
+      console.error(error);
+      showActionNotice("Reset on this phone. Server sync needs retry.");
+    }
   }
 
   function finishFieldJob(job: MappedJob, partial = false) {
@@ -6653,6 +6755,12 @@ return (
             color: #081016 !important;
           }
 
+          .field-step-actions .reset-job-btn {
+            background: #1f2935 !important;
+            color: #f8fafc !important;
+            border-color: rgba(248, 250, 252, 0.22) !important;
+          }
+
           .field-step-actions .no-access-job-btn {
             background: #fff6e6 !important;
             color: #7c3f00 !important;
@@ -6707,6 +6815,110 @@ return (
             font-weight: 950;
           }
 
+          .field-evidence-gallery {
+            display: grid;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(248, 250, 252, 0.14);
+            background:
+              radial-gradient(circle at top right, rgba(125, 183, 255, 0.12), transparent 38%),
+              #111923;
+            color: #f8fafc;
+          }
+
+          .field-evidence-gallery.has-evidence {
+            border-color: rgba(66, 214, 181, 0.30);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+          }
+
+          .field-evidence-gallery-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+          }
+
+          .field-evidence-gallery-head span,
+          .field-evidence-gallery-head small {
+            color: #aab7c6 !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+          }
+
+          .field-evidence-gallery-head strong {
+            display: block;
+            margin-top: 2px;
+            color: #f8fafc !important;
+          }
+
+          .field-evidence-gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+          }
+
+          .field-evidence-gallery-item {
+            min-width: 0;
+            overflow: hidden;
+            border-radius: 10px;
+            border: 1px solid rgba(248, 250, 252, 0.14);
+            background: #1b2633;
+          }
+
+          .field-evidence-gallery-preview {
+            aspect-ratio: 4 / 3;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            background: #0d141d;
+            color: #d8e2ee;
+            font-size: 12px;
+            font-weight: 950;
+          }
+
+          .field-evidence-gallery-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+          }
+
+          .field-evidence-gallery-meta {
+            display: grid;
+            gap: 2px;
+            padding: 8px;
+          }
+
+          .field-evidence-gallery-meta strong {
+            color: #f8fafc !important;
+            font-size: 12px !important;
+            line-height: 1.2;
+            overflow-wrap: anywhere;
+          }
+
+          .field-evidence-gallery-meta span,
+          .field-evidence-gallery-empty span {
+            color: #aab7c6 !important;
+            font-size: 11px !important;
+            line-height: 1.2;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+          }
+
+          .field-evidence-gallery-empty {
+            display: grid;
+            gap: 2px;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px dashed rgba(248, 250, 252, 0.18);
+            background: rgba(248, 250, 252, 0.05);
+          }
+
+          .field-evidence-gallery-empty strong {
+            color: #f8fafc !important;
+          }
+
           .field-evidence-rail {
             display: grid;
             gap: 9px;
@@ -6714,6 +6926,10 @@ return (
             border-radius: 8px;
             border: 1px solid #d9e1eb;
             background: #ffffff;
+          }
+
+          .field-evidence-rail.compact {
+            display: none;
           }
 
           .field-evidence-head {
@@ -6823,6 +7039,91 @@ return (
 
           .field-evidence-empty strong {
             color: #16202b !important;
+          }
+
+          /* FIELD_APP_CLEAN_MAP_2026 */
+          .job-drawer.selected-focus .workflow-filter-bar {
+            display: none !important;
+          }
+
+          .selected-card {
+            padding: 12px !important;
+            background:
+              radial-gradient(circle at top left, rgba(66, 214, 181, 0.12), transparent 30%),
+              linear-gradient(180deg, #182332, #101821) !important;
+          }
+
+          .selected-card-head {
+            padding: 11px !important;
+            border-radius: 10px;
+            background: #0e151e;
+            border: 1px solid rgba(248, 250, 252, 0.10);
+          }
+
+          .selected-chip-stack .status,
+          .selected-chip-stack .maturity-pill {
+            background: rgba(248, 250, 252, 0.10) !important;
+            color: #f8fafc !important;
+            border: 1px solid rgba(248, 250, 252, 0.12);
+          }
+
+          .field-workflow-card {
+            background: #202b38 !important;
+            border-color: rgba(248, 250, 252, 0.12) !important;
+            color: #f8fafc !important;
+            box-shadow: none !important;
+          }
+
+          .field-workflow-card span,
+          .field-workflow-card small {
+            color: #aab7c6 !important;
+          }
+
+          .field-workflow-card strong {
+            color: #f8fafc !important;
+          }
+
+          .field-workflow-grid div {
+            background: #131c26 !important;
+            border-color: rgba(248, 250, 252, 0.10) !important;
+          }
+
+          .selected-overview-grid {
+            margin-top: 0 !important;
+          }
+
+          .overview-tile,
+          .selected-alert-card,
+          .selected-status-panel,
+          .more-job-details,
+          .clean-description-card,
+          .workflow-save-panel,
+          .detail {
+            background: #1b2633 !important;
+            border-color: rgba(248, 250, 252, 0.12) !important;
+            color: #f8fafc !important;
+            box-shadow: none !important;
+          }
+
+          .overview-tile span,
+          .selected-alert-card span,
+          .selected-section-head span,
+          .more-job-details summary,
+          .detail span {
+            color: #aab7c6 !important;
+          }
+
+          .overview-tile strong,
+          .selected-alert-card strong,
+          .selected-section-head strong,
+          .more-job-details summary,
+          .detail strong {
+            color: #f8fafc !important;
+          }
+
+          .overview-tile small,
+          .selected-alert-card small {
+            color: #bac6d3 !important;
           }
 
           .job-drawer.selected-focus .action-notice,
@@ -7270,6 +7571,40 @@ return (
                 </div>
               ) : null}
 
+              <div className={`field-evidence-gallery ${fieldEvidenceRowsFor(selected).length ? "has-evidence" : "empty"}`}>
+                <div className="field-evidence-gallery-head">
+                  <div>
+                    <span>Job Evidence</span>
+                    <strong>{fieldEvidenceRowsFor(selected).length ? "Saved on this job card" : "No evidence saved yet"}</strong>
+                  </div>
+                  <small>{fieldPhotoCountsFor(selected).images} image(s) / {fieldPhotoCountsFor(selected).videos} video(s)</small>
+                </div>
+                {fieldEvidenceRowsFor(selected).length ? (
+                  <div className="field-evidence-gallery-grid">
+                    {fieldEvidenceRowsFor(selected).slice(0, 4).map((media) => (
+                      <div className={`field-evidence-gallery-item ${fieldEvidenceKindClass(media.kind)} ${media.mediaType}`} key={`gallery-${media.id}`}>
+                        <div className="field-evidence-gallery-preview">
+                          {fieldEvidencePreview(media) ? (
+                            <img src={fieldEvidencePreview(media)} alt="" />
+                          ) : (
+                            <span>{media.mediaType === "video" ? "VIDEO" : "IMAGE"}</span>
+                          )}
+                        </div>
+                        <div className="field-evidence-gallery-meta">
+                          <strong>{media.evidenceLabel || fieldEvidenceLabel(media.kind)}</strong>
+                          <span>{displayWorkflowDate(media.capturedAt)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="field-evidence-gallery-empty">
+                    <strong>Start Job opens Before Evidence</strong>
+                    <span>Images and videos will appear here with labels after capture.</span>
+                  </div>
+                )}
+              </div>
+
               <div className="field-workflow-grid">
                 <div>
                   <span>Before Media</span>
@@ -7301,6 +7636,9 @@ return (
                 <button type="button" className="start-job-btn" onClick={() => startFieldJob(selected)}>
                   Start Job
                 </button>
+                <button type="button" className="reset-job-btn" onClick={() => resetFieldJobForTesting(selected)}>
+                  Clear / Pending
+                </button>
                 <button type="button" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*")}>
                   Before Image
                 </button>
@@ -7330,7 +7668,7 @@ return (
                 </button>
               </div>
 
-              <div className="field-evidence-rail">
+              <div className="field-evidence-rail compact">
                 <div className="field-evidence-head">
                   <div>
                     <span>Saved Evidence</span>
@@ -7455,74 +7793,7 @@ return (
                 <button type="button" onClick={() => pickDraftWorkflow("Work Completed")}>Completed</button>
                 <button type="button" onClick={() => pickDraftWorkflow("Partial Work Completed")}>Partial</button>
                 <button type="button" onClick={() => pickDraftWorkflow("Completed by Others")}>Other Done</button>
-                <button type="button" onClick={() => {
-                  const key = jobKey(selected);
-                  const patch = { __clearWorkflow: true };
-                  if (key) {
-                    workflowStorageSave(key, patch);
-                    workflowServerSave(key, patch).catch((error) => {
-                      console.error(error);
-                      alert("Cleared on this device, but server clear failed.");
-                    });
-                  }
-                  setDraftWorkflowStatus("");
-                  setDraftWorkflowDate("");
-                  setDraftWorkflowSaved(false);
-                  setSelected((current) => current ? ({
-                    ...current,
-                    WorkflowStatus: "",
-                    workflowStatus: "",
-                    FieldOutcome: "",
-                    fieldOutcome: "",
-                    StatusOverride: "",
-                    status: "Pending",
-                    NoAccessFirstAttemptAt: "",
-                    noAccessFirstAttemptAt: "",
-                    NoAccessSecondAttemptAt: "",
-                    noAccessSecondAttemptAt: "",
-                    SecondAttemptAvailableAt: "",
-                    secondAttemptAvailableAt: "",
-                    RefusalDate: "",
-                    refusalDate: "",
-                    VerifiedByOthersDate: "",
-                    verifiedByOthersDate: "",
-                    ActualWorkCompletionDate: "",
-                    actualWorkCompletionDate: "",
-                    JobStartedAt: "",
-                    jobStartedAt: "",
-                    JobFinishedAt: "",
-                    jobFinishedAt: "",
-                    FieldTimerStartedAt: "",
-                    fieldTimerStartedAt: "",
-                    BeforePhotoCount: 0,
-                    beforePhotoCount: 0,
-                    AfterPhotoCount: 0,
-                    afterPhotoCount: 0,
-                    EvidenceMediaCount: 0,
-                    evidenceMediaCount: 0,
-                    ImageEvidenceCount: 0,
-                    imageEvidenceCount: 0,
-                    VideoEvidenceCount: 0,
-                    videoEvidenceCount: 0,
-                    LastEvidenceCapturedAt: "",
-                    lastEvidenceCapturedAt: "",
-                    NoAccessEvidenceCount: 0,
-                    noAccessEvidenceCount: 0,
-                    NoAccessEvidenceCapturedAt: "",
-                    noAccessEvidenceCapturedAt: "",
-                    RefusedEvidenceCount: 0,
-                    refusedEvidenceCount: 0,
-                    RefusedEvidenceCapturedAt: "",
-                    refusedEvidenceCapturedAt: "",
-                    CompletedByOthersEvidenceCount: 0,
-                    completedByOthersEvidenceCount: 0,
-                    CompletedByOthersEvidenceCapturedAt: "",
-                    completedByOthersEvidenceCapturedAt: "",
-                    ArchivedFromMap: false,
-                    OutcomeLockedAt: "",
-                    outcomeLockedAt: "",
-                  } as MappedJob) : current);
-                }}>Clear</button>
+                <button type="button" onClick={() => resetFieldJobForTesting(selected)}>Clear</button>
               </div>
             </div>
 
