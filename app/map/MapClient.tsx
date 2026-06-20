@@ -5,10 +5,12 @@ const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
 import * as JobStatus from "../../lib/jobs/status";
 import {
   type FieldEvidenceMeta,
+  type FieldMedia,
   type FieldMediaCounts,
   type FieldMediaKind,
   canStoreFieldPhotos,
   countFieldPhotos,
+  listFieldEvidence,
   saveFieldPhotos,
 } from "../../lib/field-photo-store";
 import { paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
@@ -1279,8 +1281,21 @@ const [photoCaptureTarget, setPhotoCaptureTarget] = useState<{
   kind: FieldMediaKind;
   meta: FieldEvidenceMeta;
 } | null>(null);
+const photoCaptureTargetRef = useRef<{
+  jobKey: string;
+  kind: FieldMediaKind;
+  meta: FieldEvidenceMeta;
+} | null>(null);
 const [fieldPhotoCounts, setFieldPhotoCounts] = useState<Record<string, FieldMediaCounts>>({});
+const [fieldEvidenceByJob, setFieldEvidenceByJob] = useState<Record<string, FieldMedia[]>>({});
 const [fieldCaptureAccept, setFieldCaptureAccept] = useState("image/*,video/*");
+const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
+  jobKey: string;
+  kind: FieldMediaKind;
+  accept: string;
+  title: string;
+  text: string;
+} | null>(null);
 const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; accuracy?: number; updatedAt: string } | null>(null);
 const [locationStatus, setLocationStatus] = useState("Location off");
 const [followMyLocation, setFollowMyLocation] = useState(false);
@@ -2136,10 +2151,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const key = selected ? jobKey(selected) : "";
     if (!key || !canStoreFieldPhotos()) return;
     let cancelled = false;
-    countFieldPhotos(key)
-      .then((counts) => {
+    Promise.all([countFieldPhotos(key), listFieldEvidence(key)])
+      .then(([counts, evidenceRows]) => {
         if (!cancelled) {
           setFieldPhotoCounts((current) => ({ ...current, [key]: counts }));
+          setFieldEvidenceByJob((current) => ({ ...current, [key]: fieldEvidenceCardRows(evidenceRows) }));
         }
       })
       .catch((error) => console.error(error));
@@ -2269,6 +2285,36 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     };
   }
 
+  function fieldCaptureGuideText(kind: FieldMediaKind) {
+    const labels: Record<FieldMediaKind, string> = {
+      before: "Capture before work evidence now. It will be labeled and saved on this job card.",
+      after: "Capture after work evidence now. It will be added to this job package.",
+      no_access: "Capture no-access evidence now for the 72-hour record.",
+      refused_access: "Capture refused-access evidence now for the affidavit package.",
+      completed_by_others: "Capture completed-by-others evidence now for the affidavit package.",
+      general: "Capture field evidence now for this job package.",
+    };
+    return labels[kind];
+  }
+
+  function fieldEvidenceRowsFor(job: JobRecord | null) {
+    const key = job ? jobKey(job) : "";
+    if (!key) return [] as FieldMedia[];
+    return [...(fieldEvidenceByJob[key] || [])].sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
+  }
+
+  function fieldEvidenceCardRows(rows: FieldMedia[]) {
+    return rows.slice(-12).map((media) => (media.mediaType === "video" ? { ...media, dataUrl: "" } : media));
+  }
+
+  function fieldEvidencePreview(media: FieldMedia) {
+    return media.mediaType === "video" ? media.posterDataUrl || "" : media.dataUrl;
+  }
+
+  function fieldEvidenceKindClass(kind: FieldMediaKind) {
+    return kind.replace(/_/g, "-");
+  }
+
   function fieldPhotoCountsFor(job: JobRecord) {
     const key = jobKey(job);
     const local = key ? fieldPhotoCounts[key] : null;
@@ -2328,23 +2374,33 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     setFieldCaptureAccept(accept);
-    setPhotoCaptureTarget({ jobKey: key, kind, meta: fieldEvidenceMeta(job, kind) });
-    window.setTimeout(() => {
-      if (fieldPhotoInputRef.current) {
-        fieldPhotoInputRef.current.value = "";
-        fieldPhotoInputRef.current.click();
-      }
-    }, 80);
+    const nextTarget = { jobKey: key, kind, meta: fieldEvidenceMeta(job, kind) };
+    setFieldCaptureGuide({
+      jobKey: key,
+      kind,
+      accept,
+      title: fieldEvidenceLabel(kind),
+      text: fieldCaptureGuideText(kind),
+    });
+    photoCaptureTargetRef.current = nextTarget;
+    setPhotoCaptureTarget(nextTarget);
+
+    if (fieldPhotoInputRef.current) {
+      fieldPhotoInputRef.current.accept = accept;
+      fieldPhotoInputRef.current.value = "";
+      fieldPhotoInputRef.current.click();
+    }
   }
 
   async function handleFieldPhotoInput(event: ChangeEvent<HTMLInputElement>) {
     const files = event.target.files;
-    const target = photoCaptureTarget;
+    const target = photoCaptureTarget || photoCaptureTargetRef.current;
     if (!files?.length || !target) return;
 
     try {
       const saved = await saveFieldPhotos(target.jobKey, target.kind, files, target.meta);
       const counts = await countFieldPhotos(target.jobKey);
+      const evidenceRows = await listFieldEvidence(target.jobKey);
       const capturedAt = new Date().toISOString();
       const patch: Record<string, any> = {
         EvidenceMediaCount: counts.total,
@@ -2398,6 +2454,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         ...current,
         [target.jobKey]: counts,
       }));
+      setFieldEvidenceByJob((current) => ({
+        ...current,
+        [target.jobKey]: fieldEvidenceCardRows(evidenceRows),
+      }));
       workflowStorageSave(target.jobKey, { ...patch, updatedAt: capturedAt });
       applyWorkflowPatchToState(target.jobKey, { ...patch, updatedAt: capturedAt });
       workflowServerSave(target.jobKey, { ...patch, updatedAt: capturedAt }).catch((error) => {
@@ -2405,11 +2465,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       });
       const videoCount = saved.filter((item) => item.mediaType === "video").length;
       const imageCount = saved.length - videoCount;
-      showActionNotice(`${imageCount} image(s), ${videoCount} video(s) saved for package.`);
+      setFieldCaptureGuide(null);
+      showActionNotice(`${fieldEvidenceLabel(target.kind)} saved: ${imageCount} image(s), ${videoCount} video(s).`);
     } catch (error) {
       console.error(error);
       showActionNotice(error instanceof Error ? error.message : "Evidence save failed. Try again.");
     } finally {
+      photoCaptureTargetRef.current = null;
       setPhotoCaptureTarget(null);
       event.target.value = "";
     }
@@ -2417,29 +2479,33 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function startFieldJob(job: MappedJob) {
     const iso = new Date().toISOString();
-    const takeBefore = window.confirm("Start this job now? Press OK to capture BEFORE images/videos.");
+    const patch = {
+      WorkflowStatus: "WORK_STARTED",
+      workflowStatus: "WORK_STARTED",
+      FieldOutcome: "WORK_STARTED",
+      fieldOutcome: "WORK_STARTED",
+      StatusOverride: "Work Started",
+      status: "Work Started",
+      JobStartedAt: iso,
+      jobStartedAt: iso,
+      FieldTimerStartedAt: iso,
+      fieldTimerStartedAt: iso,
+      ActualWorkStartDate: iso,
+      actualWorkStartDate: iso,
+      BeforePhotosRequestedAt: iso,
+      beforePhotosRequestedAt: iso,
+      ArchivedFromMap: false,
+    };
+    const startedJob = { ...job, ...patch } as MappedJob;
+    setSelectedOnly(true);
+    setDrawerOpen(true);
+    setFullMap(false);
     saveFieldWorkflowPatch(
       job,
-      {
-        WorkflowStatus: "WORK_STARTED",
-        workflowStatus: "WORK_STARTED",
-        FieldOutcome: "WORK_STARTED",
-        fieldOutcome: "WORK_STARTED",
-        StatusOverride: "Work Started",
-        status: "Work Started",
-        JobStartedAt: iso,
-        jobStartedAt: iso,
-        FieldTimerStartedAt: iso,
-        fieldTimerStartedAt: iso,
-        ActualWorkStartDate: iso,
-        actualWorkStartDate: iso,
-        BeforePhotosRequestedAt: takeBefore ? iso : "",
-        beforePhotosRequestedAt: takeBefore ? iso : "",
-        ArchivedFromMap: false,
-      },
-      "Job started. Work timer is running."
+      patch,
+      "Job started. Before evidence capture is open."
     );
-    if (takeBefore) requestFieldPhotoCapture(job, "before", "image/*,video/*");
+    requestFieldPhotoCapture(startedJob, "before", "image/*,video/*");
   }
 
   function finishFieldJob(job: MappedJob, partial = false) {
@@ -6376,6 +6442,389 @@ return (
             border-color: rgba(124, 58, 237, 0.24);
           }
 
+          /* BALANCED_FIELD_COMMAND_2026 */
+          .map-shell,
+          .map-shell.full-map-mode {
+            background: #121820 !important;
+            color: #f7f9fc !important;
+          }
+
+          .map-top {
+            background: linear-gradient(180deg, rgba(18, 24, 32, 0.98), rgba(25, 34, 45, 0.96)) !important;
+            border-bottom: 1px solid rgba(222, 230, 240, 0.16) !important;
+            box-shadow: 0 12px 30px rgba(6, 11, 18, 0.28) !important;
+          }
+
+          .map-title-row h1,
+          .drawer-head strong,
+          .selected-card .job-title,
+          .job-card .job-title {
+            color: #f8fafc !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-title-row p,
+          .selected-card .job-address,
+          .selected-card .job-sub,
+          .job-card .job-address,
+          .job-card .job-sub {
+            color: #c7d2df !important;
+          }
+
+          .home-btn,
+          .drawer-head button,
+          .map-search input,
+          .map-filter-row button,
+          .workflow-filter-bar button,
+          .zoom-panel button {
+            background: rgba(247, 249, 252, 0.08) !important;
+            color: #f8fafc !important;
+            border: 1px solid rgba(222, 230, 240, 0.16) !important;
+            box-shadow: none !important;
+          }
+
+          .map-search input::placeholder {
+            color: rgba(222, 230, 240, 0.64);
+          }
+
+          .jobs-toggle,
+          .map-filter-row button.active,
+          .workflow-filter-bar button.active {
+            background: linear-gradient(135deg, #42d6b5, #7db7ff) !important;
+            color: #061019 !important;
+            border-color: transparent !important;
+          }
+
+          .job-drawer {
+            background: linear-gradient(180deg, rgba(18, 24, 32, 0.98), rgba(24, 33, 44, 0.98)) !important;
+            border: 1px solid rgba(222, 230, 240, 0.15) !important;
+            box-shadow: 0 -18px 52px rgba(6, 11, 18, 0.42) !important;
+            color: #f8fafc !important;
+          }
+
+          .workflow-filter-bar {
+            background: rgba(18, 24, 32, 0.92) !important;
+            border: 1px solid rgba(222, 230, 240, 0.14) !important;
+            box-shadow: 0 16px 42px rgba(6, 11, 18, 0.30) !important;
+          }
+
+          .selected-card,
+          .job-card,
+          .job-status-card {
+            border-radius: 14px !important;
+            border: 1px solid rgba(222, 230, 240, 0.16) !important;
+            background:
+              radial-gradient(circle at top left, rgba(66, 214, 181, 0.14), transparent 34%),
+              linear-gradient(180deg, #17202b, #101820) !important;
+            color: #f8fafc !important;
+            box-shadow:
+              0 18px 46px rgba(6, 11, 18, 0.36),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .selected-card {
+            display: grid;
+            gap: 12px;
+          }
+
+          .selected-card:hover,
+          .job-card:hover {
+            border-color: rgba(125, 183, 255, 0.38) !important;
+            box-shadow:
+              0 24px 62px rgba(6, 11, 18, 0.44),
+              0 0 34px rgba(66, 214, 181, 0.12) !important;
+          }
+
+          .selected-hero-actions {
+            margin-top: 0 !important;
+          }
+
+          .selected-hero-actions a,
+          .selected-hero-actions button,
+          .field-step-actions button,
+          .selected-status-grid button,
+          .description-inline-actions button {
+            border-radius: 8px !important;
+            box-shadow: none !important;
+          }
+
+          .selected-hero-actions a,
+          .selected-hero-actions button {
+            background: rgba(247, 249, 252, 0.08) !important;
+            border-color: rgba(222, 230, 240, 0.14) !important;
+            color: #f8fafc !important;
+          }
+
+          .selected-hero-actions .selected-primary-action {
+            background: linear-gradient(135deg, #42d6b5, #f2c86b) !important;
+            color: #081016 !important;
+          }
+
+          .overview-tile,
+          .selected-alert-card,
+          .selected-status-panel,
+          .more-job-details,
+          .clean-description-card,
+          .workflow-save-panel,
+          .detail,
+          .field-workflow-card {
+            border-radius: 8px !important;
+            background: #f7f9fc !important;
+            border: 1px solid #d9e1eb !important;
+            color: #16202b !important;
+            box-shadow: 0 10px 24px rgba(6, 11, 18, 0.14) !important;
+          }
+
+          .overview-tile span,
+          .selected-alert-card span,
+          .selected-section-head span,
+          .more-job-details summary,
+          .field-workflow-card span,
+          .field-workflow-card small,
+          .detail span {
+            color: #5d6f82 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .overview-tile strong,
+          .selected-alert-card strong,
+          .field-workflow-card strong,
+          .detail strong,
+          .more-job-details summary {
+            color: #16202b !important;
+          }
+
+          .field-workflow-card {
+            gap: 10px !important;
+            margin: 0 !important;
+            padding: 12px !important;
+          }
+
+          .field-workflow-head {
+            padding: 10px !important;
+            border-radius: 8px;
+            background: #16202b;
+            border: 1px solid rgba(222, 230, 240, 0.12);
+          }
+
+          .field-workflow-head span,
+          .field-workflow-head strong {
+            color: #f8fafc !important;
+          }
+
+          .field-timer-pill {
+            background: #f2c86b !important;
+            color: #261b03 !important;
+            border-color: transparent !important;
+          }
+
+          .field-workflow-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .field-workflow-grid div {
+            min-height: 58px !important;
+            border-radius: 8px !important;
+            background: #ffffff !important;
+            border-color: #d9e1eb !important;
+          }
+
+          .field-step-actions {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .field-step-actions button {
+            min-height: 44px !important;
+            background: #ffffff !important;
+            color: #16202b !important;
+            border-color: #d9e1eb !important;
+            font-size: 12px !important;
+          }
+
+          .field-step-actions .start-job-btn {
+            background: linear-gradient(135deg, #42d6b5, #7db7ff) !important;
+            color: #061019 !important;
+          }
+
+          .field-step-actions .finish-job-btn {
+            background: linear-gradient(135deg, #7ddc93, #f2c86b) !important;
+            color: #081016 !important;
+          }
+
+          .field-step-actions .no-access-job-btn {
+            background: #fff6e6 !important;
+            color: #7c3f00 !important;
+            border-color: #f3cf99 !important;
+          }
+
+          .field-step-actions .refused-job-btn {
+            background: #fff1f3 !important;
+            color: #8f1d35 !important;
+            border-color: #f1b8c3 !important;
+          }
+
+          .field-step-actions .other-done-job-btn {
+            background: #f0edff !important;
+            color: #4f35a3 !important;
+            border-color: #cec5ff !important;
+          }
+
+          .field-capture-guide {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #d7a83d;
+            background: linear-gradient(135deg, #fff7df, #e8f7ff);
+            color: #16202b;
+          }
+
+          .field-capture-guide span,
+          .field-capture-guide small {
+            display: block;
+            color: #5d4a17 !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+          }
+
+          .field-capture-guide strong {
+            display: block;
+            margin: 3px 0;
+            color: #16202b !important;
+          }
+
+          .field-capture-guide button {
+            min-height: 42px;
+            border: 0;
+            border-radius: 8px;
+            background: #16202b;
+            color: #f8fafc;
+            padding: 0 13px;
+            font-weight: 950;
+          }
+
+          .field-evidence-rail {
+            display: grid;
+            gap: 9px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #d9e1eb;
+            background: #ffffff;
+          }
+
+          .field-evidence-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+          }
+
+          .field-evidence-head small {
+            max-width: 48%;
+            text-align: right;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+            line-height: 1.25;
+          }
+
+          .field-evidence-list {
+            display: grid;
+            gap: 8px;
+          }
+
+          .field-evidence-item {
+            display: grid;
+            grid-template-columns: 58px minmax(0, 1fr);
+            gap: 9px;
+            min-height: 64px;
+            padding: 7px;
+            border-radius: 8px;
+            border: 1px solid #d9e1eb;
+            background: #f7f9fc;
+          }
+
+          .field-evidence-item.before {
+            border-left: 4px solid #42d6b5;
+          }
+
+          .field-evidence-item.after {
+            border-left: 4px solid #7ddc93;
+          }
+
+          .field-evidence-item.no-access {
+            border-left: 4px solid #f2c86b;
+          }
+
+          .field-evidence-item.refused-access {
+            border-left: 4px solid #ef6f86;
+          }
+
+          .field-evidence-item.completed-by-others {
+            border-left: 4px solid #8f7dff;
+          }
+
+          .field-evidence-thumb {
+            width: 58px;
+            height: 50px;
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            border-radius: 8px;
+            background: #16202b;
+            color: #f8fafc;
+            font-size: 11px;
+            font-weight: 950;
+          }
+
+          .field-evidence-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+          }
+
+          .field-evidence-copy {
+            min-width: 0;
+            display: grid;
+            align-content: center;
+            gap: 2px;
+          }
+
+          .field-evidence-copy strong {
+            color: #16202b !important;
+            font-size: 13px !important;
+            line-height: 1.2;
+            overflow-wrap: anywhere;
+          }
+
+          .field-evidence-copy span,
+          .field-evidence-copy small,
+          .field-evidence-empty span {
+            color: #5d6f82 !important;
+            font-size: 11px !important;
+            line-height: 1.2;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+            overflow-wrap: anywhere;
+          }
+
+          .field-evidence-empty {
+            display: grid;
+            gap: 2px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px dashed #b8c4d2;
+            background: #f7f9fc;
+          }
+
+          .field-evidence-empty strong {
+            color: #16202b !important;
+          }
+
           .job-drawer.selected-focus .action-notice,
           .job-drawer.selected-focus .ready-revisit-alert {
             position: static !important;
@@ -6430,6 +6879,37 @@ return (
 
             .job-drawer.selected-focus .ready-revisit-alert strong {
               grid-column: 1 / -1;
+            }
+
+            .field-workflow-grid,
+            .field-step-actions {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .field-capture-guide {
+              grid-template-columns: 1fr !important;
+            }
+
+            .field-capture-guide button {
+              width: 100%;
+            }
+
+            .field-evidence-head {
+              display: grid;
+            }
+
+            .field-evidence-head small {
+              max-width: none;
+              text-align: left;
+            }
+
+            .field-evidence-item {
+              grid-template-columns: 52px minmax(0, 1fr);
+            }
+
+            .field-evidence-thumb {
+              width: 52px;
+              height: 48px;
             }
           }
         `}
@@ -6777,6 +7257,19 @@ return (
                 <span className="field-timer-pill">{fieldElapsedLabel(selected)}</span>
               </div>
 
+              {fieldCaptureGuide && fieldCaptureGuide.jobKey === jobKey(selected) ? (
+                <div className={`field-capture-guide ${fieldEvidenceKindClass(fieldCaptureGuide.kind)}`}>
+                  <div>
+                    <span>Capture Step</span>
+                    <strong>{fieldCaptureGuide.title}</strong>
+                    <small>{fieldCaptureGuide.text}</small>
+                  </div>
+                  <button type="button" onClick={() => requestFieldPhotoCapture(selected, fieldCaptureGuide.kind, fieldCaptureGuide.accept)}>
+                    Open Camera
+                  </button>
+                </div>
+              ) : null}
+
               <div className="field-workflow-grid">
                 <div>
                   <span>Before Media</span>
@@ -6836,7 +7329,41 @@ return (
                   Other Done Evidence
                 </button>
               </div>
-              <small>Images become stamped PDF evidence pages. Videos are attached to the PDF with a stamped evidence page.</small>
+
+              <div className="field-evidence-rail">
+                <div className="field-evidence-head">
+                  <div>
+                    <span>Saved Evidence</span>
+                    <strong>{fieldPhotoCountsFor(selected).total ? `${fieldPhotoCountsFor(selected).total} file(s)` : "None yet"}</strong>
+                  </div>
+                  <small>{selected.PhotoPackageStatus || selected.photoPackageStatus || "Ready for package."}</small>
+                </div>
+                {fieldEvidenceRowsFor(selected).length ? (
+                  <div className="field-evidence-list">
+                    {fieldEvidenceRowsFor(selected).slice(0, 6).map((media) => (
+                      <div className={`field-evidence-item ${fieldEvidenceKindClass(media.kind)} ${media.mediaType}`} key={media.id}>
+                        <div className="field-evidence-thumb">
+                          {fieldEvidencePreview(media) ? (
+                            <img src={fieldEvidencePreview(media)} alt="" />
+                          ) : (
+                            <span>{media.mediaType === "video" ? "VID" : "IMG"}</span>
+                          )}
+                        </div>
+                        <div className="field-evidence-copy">
+                          <strong>{media.evidenceLabel || fieldEvidenceLabel(media.kind)}</strong>
+                          <span>{media.mediaType.toUpperCase()} - {displayWorkflowDate(media.capturedAt)}</span>
+                          <small>{media.address || displayAddress(selected)}</small>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="field-evidence-empty">
+                    <strong>No saved evidence</strong>
+                    <span>Before evidence required.</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="selected-overview-grid">
