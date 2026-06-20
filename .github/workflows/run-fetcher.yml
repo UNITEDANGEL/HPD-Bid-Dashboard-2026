@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: write
+  deployments: write
 
 concurrency:
   group: hpd-built-in-fetcher
@@ -88,5 +89,27 @@ jobs:
             git commit -m "Run built-in fetcher from GitHub Action"
             git push origin main
           fi
+
+      - name: Check Cloudflare credentials
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID. Add both as GitHub Actions repository secrets so daily fetcher runs can update Cloudflare Pages."
+            exit 1
+          fi
+
+      - name: Build Cloudflare Pages output
+        run: npm run build:cloudflare
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy out --project-name=hpd-bid-dashboard-2026 --branch=main
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
 

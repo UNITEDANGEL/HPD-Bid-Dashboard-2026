@@ -23,40 +23,31 @@ jobs:
 
     steps:
       - name: Check Cloudflare credentials
-        id: cloudflare
         shell: bash
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID. Skipping direct Pages deploy."
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "::error::Missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID. Add both as GitHub Actions repository secrets to enable Pages deploys."
+            exit 1
           fi
 
       - name: Checkout repository
-        if: steps.cloudflare.outputs.ready == 'true'
         uses: actions/checkout@v4
 
       - name: Setup Node
-        if: steps.cloudflare.outputs.ready == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: "24"
 
       - name: Install dependencies
-        if: steps.cloudflare.outputs.ready == 'true'
         run: npm ci
 
       - name: Type check
-        if: steps.cloudflare.outputs.ready == 'true'
         run: npm run lint
 
       - name: Build Cloudflare Pages output
-        if: steps.cloudflare.outputs.ready == 'true'
         run: npm run build:cloudflare
 
       - name: Deploy to Cloudflare Pages
-        if: steps.cloudflare.outputs.ready == 'true'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
