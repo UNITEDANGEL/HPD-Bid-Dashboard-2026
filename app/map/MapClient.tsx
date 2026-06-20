@@ -1368,6 +1368,8 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const userLocationMarkerRef = useRef<any>(null);
   const userLocationAccuracyRef = useRef<any>(null);
   const geolocationWatchRef = useRef<number | null>(null);
+  const markerOverviewTimerRef = useRef<number | null>(null);
+  const markerOverviewKeyRef = useRef("");
   const fieldPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   const [jobs, setJobs] = useState<JobRecord[]>([]);
@@ -1476,6 +1478,7 @@ const openDispatchJob = (jobId: string) => {
     setActionNotice(`Could not find ${jobId}.`);
     return;
   }
+  clearMarkerOverviewReturn();
   setSelected(job);
   setSelectedOnly(true);
   setDrawerOpen(true);
@@ -1617,6 +1620,7 @@ const jobAssistantLineForAi = (job: JobRecord, index: number) => {
   return `${index + 1}. ${jobKey(job)} — ${dueText} — ${status} — ${(job as any).borough || "Unknown"} — ${address}${amount ? ` — ${amount}` : ""}`;
 };
 const openAssistantJob = (job: MappedJob) => {
+  clearMarkerOverviewReturn();
   setSelected(job);
   setSelectedOnly(true);
   setDrawerOpen(true);
@@ -2074,6 +2078,64 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     );
   }, [jobs, mappedJobs, mapDaysBack, mapShowAllDays]);
 
+  function clearMarkerOverviewReturn() {
+    if (markerOverviewTimerRef.current !== null) {
+      clearTimeout(markerOverviewTimerRef.current);
+      markerOverviewTimerRef.current = null;
+    }
+    markerOverviewKeyRef.current = "";
+  }
+
+  function fitVisibleJobsOnMap(maxZoom = 13) {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const mapped = filteredJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng));
+    if (mapped.length) {
+      const bounds = mapped.map((job) => [Number(job._lat), Number(job._lng)]);
+      map.fitBounds(bounds, {
+        animate: true,
+        duration: 0.75,
+        padding: [42, 42],
+        maxZoom,
+      });
+      return;
+    }
+
+    map.setView([40.7128, -74.006], 10, { animate: true });
+  }
+
+  function returnToMapOverview() {
+    setSelectedOnly(false);
+    setSelected(null);
+    setGeneratedLinks({});
+    setDescriptionOpen(false);
+    setDrawerOpen(false);
+    setFullMap(true);
+    mapRef.current?.closePopup?.();
+    fitVisibleJobsOnMap();
+    window.setTimeout(() => mapRef.current?.invalidateSize(), 120);
+  }
+
+  function scheduleMarkerOverviewReturn(jobId: string) {
+    clearMarkerOverviewReturn();
+    markerOverviewKeyRef.current = jobId;
+    markerOverviewTimerRef.current = window.setTimeout(() => {
+      if (markerOverviewKeyRef.current !== jobId) return;
+      markerOverviewTimerRef.current = null;
+      markerOverviewKeyRef.current = "";
+      returnToMapOverview();
+    }, 10000);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (markerOverviewTimerRef.current !== null) {
+        clearTimeout(markerOverviewTimerRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     if (selected) {
       window.setTimeout(() => {
@@ -2315,6 +2377,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const markerColor = JobStatus.statusColor(job);
         const maturityLabel = markerMaturityLabel(job);
         const overdueLabel = markerOverdueLabel(job);
+        const popupJobId = jobKey(job, index);
 
         const marker = L.marker([lat, lng], {
           icon: L.divIcon({
@@ -2339,6 +2402,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           setFullMap(true);
           setDrawerOpen(false);
           setMapMenuOpen(false);
+          scheduleMarkerOverviewReturn(popupJobId);
 
           setTimeout(() => {
             mapRef.current?.flyTo([Number(job._lat), Number(job._lng)], 16, {
@@ -2349,7 +2413,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
         });
 
-        const popupJobId = jobKey(job, index);
         marker.bindPopup(`
           <div class="field-map-popup">
             <strong>${escapeMapPopupHtml(popupJobId)}</strong>
@@ -2440,6 +2503,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       if (!job) return;
 
       setMapMenuOpen(false);
+      clearMarkerOverviewReturn();
       focusJob(job);
     }
 
@@ -3857,6 +3921,7 @@ function shouldShowOnActiveMap(job: JobRecord) {
 }
 
 function focusJob(job: MappedJob) {
+    clearMarkerOverviewReturn();
     setSelected(job);
           setSelectedOnly(true);
           setGeneratedLinks({});
@@ -3954,6 +4019,7 @@ function directionsUrl(job: JobRecord) {
     const nextJob = filteredJobs[nextIndex];
     if (!nextJob) return;
 
+    clearMarkerOverviewReturn();
     setSelected(nextJob);
     setSelectedOnly(true);
     setDrawerOpen(true);
@@ -8829,14 +8895,40 @@ return (
           }
 
           .map-top {
-            width: min(318px, calc(100vw - 74px)) !important;
-            padding: 10px !important;
-            border-radius: 18px !important;
+            width: min(286px, calc(100vw - 82px)) !important;
+            padding: 8px !important;
+            border-radius: 16px !important;
             background: rgba(14, 20, 27, 0.94) !important;
+            gap: 6px !important;
           }
 
           .map-menu-scrim.open {
             background: rgba(3, 8, 14, 0.18) !important;
+          }
+
+          .map-menu-fab {
+            width: 46px !important;
+            min-width: 46px !important;
+            height: 42px !important;
+            padding: 0 !important;
+            border-radius: 14px !important;
+          }
+
+          .map-menu-fab-icon {
+            display: grid !important;
+            gap: 4px !important;
+            width: 18px !important;
+          }
+
+          .map-menu-fab-icon span {
+            display: block !important;
+            height: 2px !important;
+            border-radius: 999px !important;
+            background: #f8fbff !important;
+          }
+
+          .map-menu-fab-icon span:nth-child(2) {
+            width: 14px !important;
           }
 
           .map-title-row {
@@ -8848,11 +8940,11 @@ return (
           }
 
           .map-title-row h1 {
-            font-size: 15px !important;
+            font-size: 14px !important;
           }
 
           .map-title-row p {
-            font-size: 10px !important;
+            font-size: 9px !important;
           }
 
           .map-menu-close {
@@ -8867,7 +8959,7 @@ return (
           }
 
           .map-search {
-            grid-template-columns: minmax(0, 1fr) 56px !important;
+            grid-template-columns: minmax(0, 1fr) 48px !important;
           }
 
           .map-search input,
@@ -8880,9 +8972,20 @@ return (
             border-radius: 11px !important;
           }
 
+          .map-search input {
+            padding-inline: 10px !important;
+            font-size: 12px !important;
+          }
+
+          .jobs-toggle,
+          .map-days-filter button {
+            padding-inline: 8px !important;
+            font-size: 10px !important;
+          }
+
           .map-days-filter {
             grid-template-columns: minmax(0, 1fr) auto auto !important;
-            gap: 6px !important;
+            gap: 5px !important;
           }
 
           .map-days-filter .full-btn {
@@ -8894,24 +8997,25 @@ return (
           }
 
           .days-back-control input {
-            font-size: 20px !important;
+            font-size: 18px !important;
           }
 
           .map-day-presets {
             display: grid !important;
-            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-            gap: 6px !important;
-            margin-top: 7px !important;
+            grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+            gap: 4px !important;
+            margin-top: 5px !important;
           }
 
           .map-day-presets button {
-            min-height: 34px !important;
-            border-radius: 11px !important;
+            min-height: 30px !important;
+            border-radius: 9px !important;
             border: 1px solid rgba(142, 170, 196, 0.24) !important;
             background: rgba(248, 250, 252, 0.08) !important;
             color: #dbe7f3 !important;
-            font-size: 12px !important;
+            font-size: 10px !important;
             font-weight: 950 !important;
+            padding: 0 2px !important;
           }
 
           .map-day-presets button.active {
@@ -8922,8 +9026,8 @@ return (
 
           .map-style-panel {
             grid-template-columns: 1fr !important;
-            gap: 6px !important;
-            margin-top: 7px !important;
+            gap: 5px !important;
+            margin-top: 5px !important;
           }
 
           .map-style-status,
@@ -8939,14 +9043,14 @@ return (
 
           .field-map-popup {
             display: grid;
-            gap: 5px;
-            min-width: 190px;
-            max-width: 230px;
+            gap: 4px;
+            min-width: 170px;
+            max-width: 210px;
             color: #172033;
           }
 
           .field-map-popup strong {
-            font-size: 14px;
+            font-size: 13px;
           }
 
           .field-map-popup span,
@@ -8956,21 +9060,22 @@ return (
           }
 
           .field-map-popup span {
-            font-size: 12px;
+            font-size: 11px;
           }
 
           .field-map-popup small {
             color: #526276;
-            font-size: 11px;
+            font-size: 10px;
           }
 
           .field-map-popup button {
-            min-height: 34px;
+            min-height: 32px;
             border: 0;
-            border-radius: 10px;
+            border-radius: 9px;
             background: linear-gradient(135deg, #23d3ae, #4da2ff);
             color: #031018;
             font-weight: 950;
+            font-size: 11px;
           }
 
           .leaflet-popup-content-wrapper {
@@ -8993,14 +9098,14 @@ return (
 
           @media (max-width: 720px) {
             .map-top {
-              width: min(304px, calc(100vw - 78px)) !important;
-              padding: 8px !important;
+              width: min(282px, calc(100vw - 82px)) !important;
+              padding: 7px !important;
             }
 
             .map-menu-fab {
-              min-width: 62px !important;
+              min-width: 44px !important;
+              width: 44px !important;
               height: 40px !important;
-              font-size: 12px !important;
             }
 
             .map-stats {
@@ -9020,8 +9125,12 @@ return (
         onChange={handleFieldPhotoInput}
       />
 
-      <button className="map-menu-fab" type="button" onClick={openMapMenu}>
-        Menu
+      <button className="map-menu-fab" type="button" aria-label="Open map menu" onClick={openMapMenu}>
+        <span className="map-menu-fab-icon" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </span>
       </button>
       <span className="map-swipe-hint" aria-hidden="true" />
       <button
