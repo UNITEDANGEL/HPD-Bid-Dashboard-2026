@@ -5371,6 +5371,247 @@ return (
               grid-template-columns: repeat(2, minmax(0, 1fr));
             }
           }
+
+          /* LIGHT_INTERACTIVE_MAP_2026 */
+          .map-shell,
+          .map-shell.full-map-mode {
+            background: #eef4f8 !important;
+            color: #172033 !important;
+          }
+
+          .map-top {
+            background: rgba(248, 251, 253, 0.95) !important;
+            border-bottom: 1px solid rgba(126, 146, 169, 0.28) !important;
+            box-shadow: 0 10px 28px rgba(31, 47, 70, 0.08) !important;
+          }
+
+          .map-title-row h1,
+          .drawer-head strong,
+          .job-title,
+          .overview-tile strong,
+          .selected-alert-card strong,
+          .detail strong {
+            color: #172033 !important;
+          }
+
+          .map-title-row p,
+          .job-sub,
+          .job-address,
+          .overview-tile small,
+          .selected-alert-card small,
+          .detail span,
+          .more-job-details summary,
+          .selected-section-head span {
+            color: #5d7088 !important;
+          }
+
+          .home-btn,
+          .drawer-head button,
+          .map-search input,
+          .map-filter-row button,
+          .workflow-filter-bar button,
+          .zoom-panel button {
+            background: #ffffff !important;
+            color: #172033 !important;
+            border: 1px solid rgba(126, 146, 169, 0.32) !important;
+            box-shadow: 0 8px 20px rgba(31, 47, 70, 0.08) !important;
+          }
+
+          .jobs-toggle,
+          .map-filter-row button.active,
+          .workflow-filter-bar button.active {
+            background: linear-gradient(135deg, #bde7ff, #c8f7dc) !important;
+            color: #113047 !important;
+            border-color: rgba(75, 133, 168, 0.22) !important;
+          }
+
+          .job-drawer {
+            background: rgba(248, 251, 253, 0.96) !important;
+            border: 1px solid rgba(126, 146, 169, 0.28) !important;
+            box-shadow: 0 -16px 48px rgba(31, 47, 70, 0.18) !important;
+            color: #172033 !important;
+            transition:
+              transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              max-height 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              opacity 220ms ease,
+              box-shadow 220ms ease !important;
+          }
+
+          .job-drawer.closed {
+            opacity: 0.94;
+            transform: translateY(calc(100% - 64px));
+          }
+
+          .workflow-filter-bar {
+            background: rgba(248, 251, 253, 0.90) !important;
+            border: 1px solid rgba(126, 146, 169, 0.26) !important;
+            box-shadow: 0 12px 34px rgba(31, 47, 70, 0.12) !important;
+          }
+
+          .selected-card,
+          .job-card,
+          .job-status-card {
+            background: #ffffff !important;
+            color: #172033 !important;
+            border: 1px solid rgba(126, 146, 169, 0.28) !important;
+            box-shadow:
+              0 18px 46px rgba(31, 47, 70, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+          }
+
+          .selected-card {
+            animation: selectedLightCardIn 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+            transform-origin: bottom center;
+          }
+
+          @keyframes selectedLightCardIn {
+            0% {
+              opacity: 0;
+              transform: translateY(18px) scale(0.985);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+
+          .compact-job-card,
+          .overview-tile,
+          .selected-hero-actions a,
+          .selected-hero-actions button,
+          .selected-status-grid button,
+          .description-inline-actions button {
+            transition:
+              transform 170ms ease,
+              box-shadow 170ms ease,
+              border-color 170ms ease,
+              background-color 170ms ease,
+              filter 170ms ease !important;
+          }
+
+          .compact-job-card:hover,
+          .overview-tile:hover,
+          .selected-hero-actions a:hover,
+          .selected-hero-actions button:hover,
+          .selected-status-grid button:hover,
+          .description-inline-actions button:hover {
+            transform: translateY(-2px);
+            border-color: rgba(64, 126, 170, 0.38) !important;
+            box-shadow: 0 14px 30px rgba(31, 47, 70, 0.14) !important;
+          }
+
+          .compact-job-card:active,
+          .overview-tile:active,
+          .selected-hero-actions a:active,
+          .selected-hero-actions button:active,
+          .selected-status-grid button:active,
+          .description-inline-actions button:active {
+            transform: scale(0.975);
+          }
+
+          .selected-hero-actions a,
+          .selected-hero-actions button,
+          .selected-status-grid button,
+          .description-inline-actions button {
+            background: #f8fbfd !important;
+            color: #172033 !important;
+            border-color: rgba(126, 146, 169, 0.30) !important;
+            box-shadow: 0 8px 18px rgba(31, 47, 70, 0.08) !important;
+          }
+
+          .selected-hero-actions .selected-primary-action {
+            background: linear-gradient(135deg, #6ee7b7, #93c5fd) !important;
+            color: #082033 !important;
+            box-shadow: 0 14px 32px rgba(54, 148, 130, 0.22) !important;
+          }
+
+          .selected-overview-grid,
+          .selected-alert-grid {
+            gap: 10px;
+          }
+
+          .overview-tile,
+          .selected-alert-card,
+          .selected-status-panel,
+          .more-job-details,
+          .clean-description-card,
+          .workflow-save-panel,
+          .detail {
+            background: #f8fbfd !important;
+            border-color: rgba(126, 146, 169, 0.24) !important;
+            color: #172033 !important;
+          }
+
+          .package-ready-card {
+            background: #ecfdf5 !important;
+            border-color: rgba(34, 197, 94, 0.28) !important;
+          }
+
+          .no-access-timer-card {
+            background: #fff7ed !important;
+            border-color: rgba(249, 115, 22, 0.26) !important;
+          }
+
+          .status {
+            background: #edf5ff !important;
+            color: #23415f !important;
+          }
+
+          .maturity-pill {
+            background: #ecfdf5 !important;
+            color: #14532d !important;
+          }
+
+          .maturity-marker-bubble {
+            background: #ffffff !important;
+            color: #172033 !important;
+            border-color: #60a5fa !important;
+            box-shadow: 0 10px 22px rgba(31, 47, 70, 0.20) !important;
+          }
+
+          .maturity-marker-bubble strong,
+          .marker-label-main,
+          .marker-label-date {
+            color: #172033 !important;
+          }
+
+          .maturity-marker-bubble.marker-ready-revisit {
+            background: linear-gradient(135deg, #bbf7d0, #fde68a) !important;
+            color: #17330e !important;
+            box-shadow: 0 12px 28px rgba(68, 118, 60, 0.26) !important;
+          }
+
+          .ready-revisit-alert {
+            background: #ffffff !important;
+            color: #172033 !important;
+            border-color: rgba(34, 197, 94, 0.28) !important;
+            box-shadow: 0 16px 36px rgba(31, 47, 70, 0.16) !important;
+          }
+
+          .ready-revisit-alert strong {
+            color: #166534 !important;
+          }
+
+          .ready-revisit-alert span {
+            color: #3c536c !important;
+          }
+
+          .ready-revisit-alert button {
+            background: #dcfce7 !important;
+            color: #14532d !important;
+          }
+
+          @media (max-width: 720px) {
+            .job-drawer {
+              border-radius: 20px 20px 0 0 !important;
+              box-shadow: 0 -14px 42px rgba(31, 47, 70, 0.20) !important;
+            }
+
+            .selected-card,
+            .job-card {
+              border-radius: 16px !important;
+            }
+          }
         `}
         </style>
 
@@ -5636,6 +5877,7 @@ return (
 
         {selected ? (
           <div
+            key={jobKey(selected)}
             className={`selected-card job-status-card ${JobStatus.statusCardClass(selected)} swipe-enabled-card`}
             onTouchStart={handleSelectedTouchStart}
             onTouchEnd={handleSelectedTouchEnd}
