@@ -5040,6 +5040,180 @@ return (
             align-items: flex-start;
           }
 
+          .selected-card-head {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: flex-start;
+            gap: 12px;
+          }
+
+          .selected-title-block {
+            min-width: 0;
+          }
+
+          .selected-chip-stack {
+            display: grid;
+            gap: 6px;
+            justify-items: end;
+            min-width: 112px;
+          }
+
+          .selected-hero-actions {
+            display: grid;
+            grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 0.72fr));
+            gap: 8px;
+            margin-top: 12px;
+          }
+
+          .selected-hero-actions a,
+          .selected-hero-actions button {
+            min-height: 44px;
+            display: grid;
+            place-items: center;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.14);
+            background: rgba(255,255,255,0.08);
+            color: #f8fbff;
+            font-size: 12px;
+            font-weight: 950;
+            cursor: pointer;
+          }
+
+          .selected-hero-actions .selected-primary-action {
+            background: #53e69c;
+            color: #03120b;
+            border-color: transparent;
+            font-size: 13px;
+          }
+
+          .selected-overview-grid,
+          .selected-alert-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+          }
+
+          .overview-tile,
+          .selected-alert-card {
+            min-width: 0;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.07);
+            border-radius: 8px;
+            padding: 10px;
+            color: #f8fbff;
+            text-align: left;
+          }
+
+          button.overview-tile {
+            cursor: pointer;
+          }
+
+          .overview-tile span,
+          .selected-alert-card span,
+          .selected-section-head span,
+          .more-job-details summary {
+            display: block;
+            color: rgba(200,215,240,0.76);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 10px;
+            font-weight: 950;
+          }
+
+          .overview-tile strong,
+          .selected-alert-card strong {
+            display: block;
+            margin-top: 5px;
+            color: #ffffff;
+            font-size: 13px;
+            line-height: 1.24;
+            overflow-wrap: anywhere;
+          }
+
+          .overview-tile small,
+          .selected-alert-card small {
+            display: block;
+            margin-top: 4px;
+            color: #aebbd0;
+            font-size: 11px;
+            line-height: 1.28;
+          }
+
+          .selected-status-panel,
+          .more-job-details {
+            margin-top: 10px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.055);
+            border-radius: 8px;
+            padding: 10px;
+          }
+
+          .selected-section-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+          }
+
+          .selected-section-head strong {
+            color: #dfffee;
+            font-size: 12px;
+            text-align: right;
+          }
+
+          .selected-status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+          }
+
+          .selected-status-grid button,
+          .description-inline-actions button {
+            min-height: 36px;
+            border: 1px solid rgba(255,255,255,0.14);
+            background: rgba(255,255,255,0.08);
+            color: #f8fbff;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 900;
+            cursor: pointer;
+          }
+
+          .clean-description-card {
+            margin-top: 10px;
+          }
+
+          .clean-description-card p {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+
+          .description-inline-actions {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+            margin-top: 10px;
+          }
+
+          .more-job-details {
+            padding: 0;
+            overflow: hidden;
+          }
+
+          .more-job-details summary {
+            cursor: pointer;
+            padding: 11px;
+            color: #d9e9ff;
+          }
+
+          .compact-detail-grid {
+            padding: 0 10px 10px;
+          }
+
           .compact-job-status {
             display: grid;
             gap: 6px;
@@ -5169,6 +5343,32 @@ return (
 
             .compact-job-status {
               min-width: 88px;
+            }
+
+            .selected-card-head {
+              grid-template-columns: 1fr;
+            }
+
+            .selected-chip-stack {
+              grid-template-columns: repeat(2, max-content);
+              justify-items: start;
+              min-width: 0;
+            }
+
+            .selected-hero-actions {
+              grid-template-columns: 1fr 1fr;
+            }
+
+            .selected-hero-actions .selected-primary-action {
+              grid-column: 1 / -1;
+              min-height: 50px;
+            }
+
+            .selected-overview-grid,
+            .selected-alert-grid,
+            .selected-status-grid,
+            .description-inline-actions {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
             }
           }
         `}
@@ -5440,68 +5640,65 @@ return (
             onTouchStart={handleSelectedTouchStart}
             onTouchEnd={handleSelectedTouchEnd}
           >
-            <div className="job-main-row">
-              <div>
+            <div className="selected-card-head">
+              <div className="selected-title-block">
                 <strong className="job-title">{jobKey(selected)}</strong>
                 <p className="job-address">{displayAddress(selected)}</p>
                 <p className="job-sub">{selected.borough || "Unknown borough"} · {displayLocation(selected) || "Location not listed"}</p>
               </div>
-              <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
+              <div className="selected-chip-stack">
                 <span className={`status ${statusClass(selected.status)}`}>{JobStatus.statusLabel(selected)}</span>
                 <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{jobCounterLabel(selected)}</span>
               </div>
-            </div>            <div className="quick-info-strip clean-info-strip">
-              <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "amount")}>
-                <span>Amount</span>
-                <strong>{displayAmount(selected) || "Not listed"}</strong>
+            </div>
+
+            <div className="selected-hero-actions">
+              <a className="selected-primary-action" href={paperworkHref(selected, "package")}>
+                Generate Invoice Package
+              </a>
+              <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                Waze
+              </a>
+              <a href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                Map
+              </a>
+              <button type="button" onClick={() => sendJobToArchive(selected)}>
+                Archive
               </button>
-              <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "location")}>
+            </div>
+
+            <div className="selected-overview-grid">
+              <button type="button" className="overview-tile" onClick={() => openJobInfoPopup(selected, "amount")}>
+                <span>Amount</span>
+                <strong>{displayAmount(selected) || money(selected) || "Not listed"}</strong>
+              </button>
+              <button type="button" className="overview-tile" onClick={() => openJobInfoPopup(selected, "dates")}>
+                <span>Work Window</span>
+                <strong>{workWindowInfo(selected).statusLabel}</strong>
+                <small>{workWindowInfo(selected).startDate} to {workWindowInfo(selected).endDate}</small>
+              </button>
+              <button type="button" className="overview-tile" onClick={() => openJobInfoPopup(selected, "location")}>
                 <span>Location</span>
                 <strong>{displayLocation(selected) || "Not listed"}</strong>
                 <small>{selected?.borough || "Unknown borough"}</small>
               </button>
-              <button type="button" className="quick-info-button" onClick={() => openJobInfoPopup(selected, "dates")}>
-                <span>Dates</span>
-                <strong>{timelineOverdueLabel(selected)}</strong>
-                <small>{timelineMaturityLabel(selected)}</small>
-              </button>
-            </div>
-            <div className="status-actions">
-              <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                🚗 Open Waze
-              </a>
-              <a href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                🗺️ Google Maps
-              </a>
-            </div>
-            <div className="detail-grid">
-              <div className="detail"><span>Amount</span><strong>{displayAmount(selected) || money(selected) || "Not listed"}</strong></div>
-              <div className="detail"><span>Award Date</span><strong>{maturityInfo(selected).award}</strong></div>
-              <div className="detail"><span>Work Start Date</span><strong>{selected.WorkStartDate || selected.workStartDate || "Not listed"}</strong></div>
-              <div className="detail"><span>Work Completion Date</span><strong>{selected.WorkCompletionDate || selected.workCompletionDate || "Not listed"}</strong></div>
-              <div className={`detail work-window-card ${workWindowInfo(selected).statusClass}`}>
-                <span>Work Window Counter</span>
-                <strong>{workWindowInfo(selected).statusLabel}</strong>
-                <small>
-                  Start: {workWindowInfo(selected).startDate} · End: {workWindowInfo(selected).endDate}
-                  <br />
-                  {selected ? workWindowInfo(selected).startLabel : "—"} · {workWindowInfo(selected).endLabel}
-                </small>
+              <div className="overview-tile">
+                <span>Phone</span>
+                <strong>{phone(selected) || "Not listed"}</strong>
               </div>
-              <div className="detail"><span>Counter Start Date</span><strong>{maturityInfo(selected).maturity}</strong></div>
-              <div className="detail"><span>COA Counter</span><strong>{jobCounterLabel(selected)}</strong></div>
-              {workflowLabel(selected) ? (
-                <div className="detail"><span>Field Status</span><strong>{workflowLabel(selected)}</strong></div>
-              ) : null}
-              {selected.PackageReadyMessage || selected.packageReadyMessage ? (
-                <div className="detail package-ready-card">
-                  <span>Package Message</span>
-                  <strong>{selected.PackageReadyMessage || selected.packageReadyMessage}</strong>
-                  <small>{displayWorkflowDate(selected.PackageGeneratedAt || selected.packageGeneratedAt)}</small>
-                </div>
-              ) : null}
+            </div>
+
+            {(selected.PackageReadyMessage || selected.packageReadyMessage || workflowSecondAttemptInfo(selected) || selected.RefusalDate || selected.refusalDate) ? (
+              <div className="selected-alert-grid">
+                {selected.PackageReadyMessage || selected.packageReadyMessage ? (
+                  <div className="selected-alert-card package-ready-card">
+                    <span>Package Message</span>
+                    <strong>{selected.PackageReadyMessage || selected.packageReadyMessage}</strong>
+                    <small>{displayWorkflowDate(selected.PackageGeneratedAt || selected.packageGeneratedAt)}</small>
+                  </div>
+                ) : null}
               {workflowSecondAttemptInfo(selected) ? (
-                <div className={`detail no-access-timer-card ${workflowSecondAttemptInfo(selected)?.ready ? "no-access-ready" : ""}`}>
+                  <div className={`selected-alert-card no-access-timer-card ${workflowSecondAttemptInfo(selected)?.ready ? "no-access-ready" : ""}`}>
                   <span>72h No Access Counter</span>
                   <strong>
                     {workflowSecondAttemptInfo(selected)?.ready
@@ -5515,81 +5712,28 @@ return (
                 </div>
               ) : null}
               {selected.RefusalDate || selected.refusalDate ? (
-                <div className="detail"><span>Refused Access Date</span><strong>{displayWorkflowDate(selected.RefusalDate || selected.refusalDate)}</strong></div>
+                  <div className="selected-alert-card">
+                    <span>Refused Access Date</span>
+                    <strong>{displayWorkflowDate(selected.RefusalDate || selected.refusalDate)}</strong>
+                  </div>
               ) : null}
-              {selected.NoAccessFirstAttemptAt || selected.noAccessFirstAttemptAt ? (
-                <div className="detail"><span>No Access 1st</span><strong>{displayWorkflowDate(selected.NoAccessFirstAttemptAt || selected.noAccessFirstAttemptAt)}</strong></div>
-              ) : null}
-              {selected.SecondAttemptAvailableAt || selected.secondAttemptAvailableAt ? (
-                <div className="detail"><span>2nd Attempt Available</span><strong>{displayWorkflowDate(selected.SecondAttemptAvailableAt || selected.secondAttemptAvailableAt)}</strong></div>
-              ) : null}
-              {selected.NoAccessSecondAttemptAt || selected.noAccessSecondAttemptAt ? (
-                <div className="detail"><span>No Access 2nd</span><strong>{displayWorkflowDate(selected.NoAccessSecondAttemptAt || selected.noAccessSecondAttemptAt)}</strong></div>
-              ) : null}
-              <div className="detail"><span>Due Date</span><strong>{selected.bidDueDate || selected.dueDate || "Not listed"}</strong></div>
-              <div className="detail"><span>Phone</span><strong>{phone(selected) || "Not listed"}</strong></div>
-              <div className="detail"><span>Contractor</span><strong>{selected.contractor || "Not listed"}</strong></div>
-              <div className="detail"><span>Owner</span><strong>{selected.owner || "Not listed"}</strong></div>
-              <div className="detail"><span>Docs</span><strong>{[(selected.COAFile || selected.coaFile) ? "COA ✓" : "", (selected.ITBFile || selected.itbFile) ? "ITB ✓" : "", (selected.PDFFile || selected.pdfFile) ? "PDF ✓" : ""].filter(Boolean).join(" ") || "Not listed"}</strong></div>
-              <div className="detail"><span>Map Source</span><strong>{selected._source || "unmapped"}</strong></div>
-            </div>
-
-            <div className={`description-status ${displayDescription(selected) ? "has-description" : "missing-description"}`}>
-              <span>{descriptionStatusLabel(selected)}</span>
-              {displayDescription(selected) ? (
-                <div className="description-speech-actions">
-                  <button
-                    type="button"
-                    className="read-description-btn"
-                    onClick={() => speakText(descriptionSummary(selected), "summary")}
-                  >
-                    🧠 Summary
-                  </button>
-                  <button
-                    type="button"
-                    className="read-description-btn"
-                    onClick={() => speakText(displayDescription(selected), "full")}
-                  >
-                    🔊 Full
-                  </button>
-                  <button
-                    type="button"
-                    className="stop-description-btn"
-                    onClick={stopSpeaking}
-                  >
-                    Stop
-                  </button>
-                  <button
-                    type="button"
-                    className="stop-description-btn"
-                    onClick={reloadSpeechVoices}
-                  >
-                    Reload
-                  </button>
-                </div>
-              ) : null}
-            </div>
-            {displayDescription(selected) ? (
-              <div className="description-summary-box">
-                <div className="description-head">
-                  <span>Smart Summary</span>
-                  <strong>Tap Summary to hear</strong>
-                </div>
-                <p>{descriptionSummary(selected)}</p>
               </div>
             ) : null}
+
             {displayDescription(selected) ? (
-              <button
-                type="button"
-                className="selected-description description-open-button"
-                onClick={() => setDescriptionOpen(true)}
-              >
+              <div className="selected-description clean-description-card">
                 <div className="description-head">
                   <span>Job Description</span>
-                  <strong>Tap to Open</strong>
+                  <strong>{descriptionStatusLabel(selected)}</strong>
                 </div>
-                <p>{displayDescription(selected)}</p>
-              </button>
+                <p>{descriptionSummary(selected)}</p>
+                <div className="description-inline-actions">
+                  <button type="button" onClick={() => setDescriptionOpen(true)}>Open</button>
+                  <button type="button" onClick={() => speakText(descriptionSummary(selected), "summary")}>Summary</button>
+                  <button type="button" onClick={() => speakText(displayDescription(selected), "full")}>Read Full</button>
+                  <button type="button" onClick={stopSpeaking}>Stop</button>
+                </div>
+              </div>
             ) : (
               <div className="selected-description missing-description-box">
                 <div className="description-head">
@@ -5600,51 +5744,57 @@ return (
               </div>
             )}
 
-            <div className="status-actions">
-              <button type="button" onClick={() => pickDraftWorkflow("No Access - 1st Attempt")}>No Access 1st</button>
-              <button type="button" onClick={() => pickDraftWorkflow("No Access - 2nd Attempt")}>No Access 2nd</button>
-              <button type="button" onClick={() => pickDraftWorkflow("Refused Access")}>Refused</button>
-              <button type="button" onClick={() => pickDraftWorkflow("Work Completed")}>Completed</button>
-              <button type="button" onClick={() => pickDraftWorkflow("Partial Work Completed")}>Partial</button>
-              <button type="button" onClick={() => pickDraftWorkflow("Completed by Others")}>Other Done</button>
-              <button type="button" onClick={() => {
-                const key = jobKey(selected);
-                const patch = { __clearWorkflow: true };
-                if (key) {
-                  workflowStorageSave(key, patch);
-                  workflowServerSave(key, patch).catch((error) => {
-                    console.error(error);
-                    alert("Cleared on this device, but server clear failed.");
-                  });
-                }
-                setDraftWorkflowStatus("");
-                setDraftWorkflowDate("");
-                setDraftWorkflowSaved(false);
-                setSelected((current) => current ? ({
-                  ...current,
-                  WorkflowStatus: "",
-                  workflowStatus: "",
-                  FieldOutcome: "",
-                  fieldOutcome: "",
-                  StatusOverride: "",
-                  status: "Pending",
-                  NoAccessFirstAttemptAt: "",
-                  noAccessFirstAttemptAt: "",
-                  NoAccessSecondAttemptAt: "",
-                  noAccessSecondAttemptAt: "",
-                  SecondAttemptAvailableAt: "",
-                  secondAttemptAvailableAt: "",
-                  RefusalDate: "",
-                  refusalDate: "",
-                  VerifiedByOthersDate: "",
-                  verifiedByOthersDate: "",
-                  ActualWorkCompletionDate: "",
-                  actualWorkCompletionDate: "",
-                  ArchivedFromMap: false,
-                  OutcomeLockedAt: "",
-                  outcomeLockedAt: "",
-                } as MappedJob) : current);
-              }}>Clear</button>
+            <div className="selected-status-panel">
+              <div className="selected-section-head">
+                <span>Update Status</span>
+                <strong>{draftWorkflowStatus || workflowLabel(selected) || "Choose field outcome"}</strong>
+              </div>
+              <div className="selected-status-grid">
+                <button type="button" onClick={() => pickDraftWorkflow("No Access - 1st Attempt")}>No Access 1st</button>
+                <button type="button" onClick={() => pickDraftWorkflow("No Access - 2nd Attempt")}>No Access 2nd</button>
+                <button type="button" onClick={() => pickDraftWorkflow("Refused Access")}>Refused</button>
+                <button type="button" onClick={() => pickDraftWorkflow("Work Completed")}>Completed</button>
+                <button type="button" onClick={() => pickDraftWorkflow("Partial Work Completed")}>Partial</button>
+                <button type="button" onClick={() => pickDraftWorkflow("Completed by Others")}>Other Done</button>
+                <button type="button" onClick={() => {
+                  const key = jobKey(selected);
+                  const patch = { __clearWorkflow: true };
+                  if (key) {
+                    workflowStorageSave(key, patch);
+                    workflowServerSave(key, patch).catch((error) => {
+                      console.error(error);
+                      alert("Cleared on this device, but server clear failed.");
+                    });
+                  }
+                  setDraftWorkflowStatus("");
+                  setDraftWorkflowDate("");
+                  setDraftWorkflowSaved(false);
+                  setSelected((current) => current ? ({
+                    ...current,
+                    WorkflowStatus: "",
+                    workflowStatus: "",
+                    FieldOutcome: "",
+                    fieldOutcome: "",
+                    StatusOverride: "",
+                    status: "Pending",
+                    NoAccessFirstAttemptAt: "",
+                    noAccessFirstAttemptAt: "",
+                    NoAccessSecondAttemptAt: "",
+                    noAccessSecondAttemptAt: "",
+                    SecondAttemptAvailableAt: "",
+                    secondAttemptAvailableAt: "",
+                    RefusalDate: "",
+                    refusalDate: "",
+                    VerifiedByOthersDate: "",
+                    verifiedByOthersDate: "",
+                    ActualWorkCompletionDate: "",
+                    actualWorkCompletionDate: "",
+                    ArchivedFromMap: false,
+                    OutcomeLockedAt: "",
+                    outcomeLockedAt: "",
+                  } as MappedJob) : current);
+                }}>Clear</button>
+              </div>
             </div>
 
             {draftWorkflowStatus ? (
@@ -5671,12 +5821,22 @@ return (
               </div>
             ) : null}
 
-            <div className="card-actions">
-              <button type="button" className="secondary" onClick={() => setDrawerOpen(true)}>Details</button>
-              <button type="button" className="secondary archive-btn" onClick={() => sendJobToArchive(selected)}>Send to Archive</button>
-              <a href={paperworkHref(selected, "package")}>Generate Package</a>
-              <a target="_blank" rel="noreferrer" href={directionsUrl(selected)}>Directions</a>
-            </div>
+            <details className="more-job-details">
+              <summary>More job details</summary>
+              <div className="detail-grid compact-detail-grid">
+                <div className="detail"><span>Award Date</span><strong>{maturityInfo(selected).award}</strong></div>
+                <div className="detail"><span>COA Counter</span><strong>{jobCounterLabel(selected)}</strong></div>
+                <div className="detail"><span>Work Start</span><strong>{selected.WorkStartDate || selected.workStartDate || "Not listed"}</strong></div>
+                <div className="detail"><span>Work Complete</span><strong>{selected.WorkCompletionDate || selected.workCompletionDate || "Not listed"}</strong></div>
+                <div className="detail"><span>No Access 1st</span><strong>{displayWorkflowDate(selected.NoAccessFirstAttemptAt || selected.noAccessFirstAttemptAt)}</strong></div>
+                <div className="detail"><span>No Access 2nd</span><strong>{displayWorkflowDate(selected.NoAccessSecondAttemptAt || selected.noAccessSecondAttemptAt)}</strong></div>
+                <div className="detail"><span>Due Date</span><strong>{selected.bidDueDate || selected.dueDate || "Not listed"}</strong></div>
+                <div className="detail"><span>Contractor</span><strong>{selected.contractor || "Not listed"}</strong></div>
+                <div className="detail"><span>Owner</span><strong>{selected.owner || "Not listed"}</strong></div>
+                <div className="detail"><span>Docs</span><strong>{[(selected.COAFile || selected.coaFile) ? "COA" : "", (selected.ITBFile || selected.itbFile) ? "ITB" : "", (selected.PDFFile || selected.pdfFile) ? "PDF" : ""].filter(Boolean).join(" / ") || "Not listed"}</strong></div>
+                <div className="detail"><span>Map Source</span><strong>{selected._source || "unmapped"}</strong></div>
+              </div>
+            </details>
 
               {(generatedLinks.invoice || generatedLinks.affidavit) ? (
                 <div className="generated-output-links">
