@@ -4,7 +4,9 @@ const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
 
 import * as JobStatus from "../../lib/jobs/status";
 import {
-  type FieldPhotoKind,
+  type FieldEvidenceMeta,
+  type FieldMediaCounts,
+  type FieldMediaKind,
   canStoreFieldPhotos,
   countFieldPhotos,
   saveFieldPhotos,
@@ -1221,6 +1223,26 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
         beforePhotoCount: 0,
         AfterPhotoCount: 0,
         afterPhotoCount: 0,
+        EvidenceMediaCount: 0,
+        evidenceMediaCount: 0,
+        ImageEvidenceCount: 0,
+        imageEvidenceCount: 0,
+        VideoEvidenceCount: 0,
+        videoEvidenceCount: 0,
+        LastEvidenceCapturedAt: "",
+        lastEvidenceCapturedAt: "",
+        NoAccessEvidenceCount: 0,
+        noAccessEvidenceCount: 0,
+        NoAccessEvidenceCapturedAt: "",
+        noAccessEvidenceCapturedAt: "",
+        RefusedEvidenceCount: 0,
+        refusedEvidenceCount: 0,
+        RefusedEvidenceCapturedAt: "",
+        refusedEvidenceCapturedAt: "",
+        CompletedByOthersEvidenceCount: 0,
+        completedByOthersEvidenceCount: 0,
+        CompletedByOthersEvidenceCapturedAt: "",
+        completedByOthersEvidenceCapturedAt: "",
         ArchivedFromMap: false,
       } as T;
     }
@@ -1252,8 +1274,13 @@ const [draftWorkflowDate, setDraftWorkflowDate] = useState("");
 const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<"active" | "waiting72" | "ready2" | "final" | "archived" | "all">("active");
 const [countdownTick, setCountdownTick] = useState(0);
-const [photoCaptureTarget, setPhotoCaptureTarget] = useState<{ jobKey: string; kind: FieldPhotoKind } | null>(null);
-const [fieldPhotoCounts, setFieldPhotoCounts] = useState<Record<string, Record<FieldPhotoKind, number>>>({});
+const [photoCaptureTarget, setPhotoCaptureTarget] = useState<{
+  jobKey: string;
+  kind: FieldMediaKind;
+  meta: FieldEvidenceMeta;
+} | null>(null);
+const [fieldPhotoCounts, setFieldPhotoCounts] = useState<Record<string, FieldMediaCounts>>({});
+const [fieldCaptureAccept, setFieldCaptureAccept] = useState("image/*,video/*");
 const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; accuracy?: number; updatedAt: string } | null>(null);
 const [locationStatus, setLocationStatus] = useState("Location off");
 const [followMyLocation, setFollowMyLocation] = useState(false);
@@ -2205,10 +2232,50 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       });
   }
 
+  function emptyFieldMediaCounts(): FieldMediaCounts {
+    return {
+      before: 0,
+      after: 0,
+      no_access: 0,
+      refused_access: 0,
+      completed_by_others: 0,
+      general: 0,
+      images: 0,
+      videos: 0,
+      total: 0,
+    };
+  }
+
+  function fieldEvidenceLabel(kind: FieldMediaKind) {
+    const labels: Record<FieldMediaKind, string> = {
+      before: "Before Work Evidence",
+      after: "After Work Evidence",
+      no_access: "No Access Evidence",
+      refused_access: "Refused Access Evidence",
+      completed_by_others: "Completed By Others Evidence",
+      general: "Field Evidence",
+    };
+    return labels[kind];
+  }
+
+  function fieldEvidenceMeta(job: MappedJob, kind: FieldMediaKind): FieldEvidenceMeta {
+    return {
+      jobId: jobKey(job),
+      address: displayAddress(job),
+      location: displayLocation(job),
+      borough: job.borough || "",
+      outcome: workflowLabel(job) || JobStatus.statusLabel(job),
+      label: fieldEvidenceLabel(kind),
+    };
+  }
+
   function fieldPhotoCountsFor(job: JobRecord) {
     const key = jobKey(job);
     const local = key ? fieldPhotoCounts[key] : null;
+    const empty = emptyFieldMediaCounts();
     return {
+      ...empty,
+      ...(local || {}),
       before: Math.max(
         Number((job as any).BeforePhotoCount || (job as any).beforePhotoCount || 0) || 0,
         local?.before || 0
@@ -2217,6 +2284,21 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         Number((job as any).AfterPhotoCount || (job as any).afterPhotoCount || 0) || 0,
         local?.after || 0
       ),
+      no_access: Math.max(
+        Number((job as any).NoAccessEvidenceCount || (job as any).noAccessEvidenceCount || 0) || 0,
+        local?.no_access || 0
+      ),
+      refused_access: Math.max(
+        Number((job as any).RefusedEvidenceCount || (job as any).refusedEvidenceCount || 0) || 0,
+        local?.refused_access || 0
+      ),
+      completed_by_others: Math.max(
+        Number((job as any).CompletedByOthersEvidenceCount || (job as any).completedByOthersEvidenceCount || 0) || 0,
+        local?.completed_by_others || 0
+      ),
+      images: Math.max(Number((job as any).ImageEvidenceCount || (job as any).imageEvidenceCount || 0) || 0, local?.images || 0),
+      videos: Math.max(Number((job as any).VideoEvidenceCount || (job as any).videoEvidenceCount || 0) || 0, local?.videos || 0),
+      total: Math.max(Number((job as any).EvidenceMediaCount || (job as any).evidenceMediaCount || 0) || 0, local?.total || 0),
     };
   }
 
@@ -2237,15 +2319,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return `${hours}h ${mins}m`;
   }
 
-  function requestFieldPhotoCapture(job: MappedJob, kind: FieldPhotoKind) {
+  function requestFieldPhotoCapture(job: MappedJob, kind: FieldMediaKind, accept = "image/*,video/*") {
     const key = jobKey(job);
     if (!key) return;
     if (!canStoreFieldPhotos()) {
-      showActionNotice("Photo storage is not available in this browser.");
+      showActionNotice("Evidence storage is not available in this browser.");
       return;
     }
 
-    setPhotoCaptureTarget({ jobKey: key, kind });
+    setFieldCaptureAccept(accept);
+    setPhotoCaptureTarget({ jobKey: key, kind, meta: fieldEvidenceMeta(job, kind) });
     window.setTimeout(() => {
       if (fieldPhotoInputRef.current) {
         fieldPhotoInputRef.current.value = "";
@@ -2260,27 +2343,56 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (!files?.length || !target) return;
 
     try {
-      const saved = await saveFieldPhotos(target.jobKey, target.kind, files);
+      const saved = await saveFieldPhotos(target.jobKey, target.kind, files, target.meta);
       const counts = await countFieldPhotos(target.jobKey);
       const capturedAt = new Date().toISOString();
-      const patch =
-        target.kind === "before"
-          ? {
-              BeforePhotoCount: counts.before,
-              beforePhotoCount: counts.before,
-              BeforePhotosCapturedAt: capturedAt,
-              beforePhotosCapturedAt: capturedAt,
-              PhotoPackageStatus: "Before photos staged on this device",
-              photoPackageStatus: "Before photos staged on this device",
-            }
-          : {
-              AfterPhotoCount: counts.after,
-              afterPhotoCount: counts.after,
-              AfterPhotosCapturedAt: capturedAt,
-              afterPhotosCapturedAt: capturedAt,
-              PhotoPackageStatus: "After photos staged on this device",
-              photoPackageStatus: "After photos staged on this device",
-            };
+      const patch: Record<string, any> = {
+        EvidenceMediaCount: counts.total,
+        evidenceMediaCount: counts.total,
+        ImageEvidenceCount: counts.images,
+        imageEvidenceCount: counts.images,
+        VideoEvidenceCount: counts.videos,
+        videoEvidenceCount: counts.videos,
+        LastEvidenceCapturedAt: capturedAt,
+        lastEvidenceCapturedAt: capturedAt,
+        PhotoPackageStatus: `${fieldEvidenceLabel(target.kind)} staged on this device`,
+        photoPackageStatus: `${fieldEvidenceLabel(target.kind)} staged on this device`,
+      };
+
+      if (target.kind === "before") {
+        patch.BeforePhotoCount = counts.before;
+        patch.beforePhotoCount = counts.before;
+        patch.BeforePhotosCapturedAt = capturedAt;
+        patch.beforePhotosCapturedAt = capturedAt;
+      }
+
+      if (target.kind === "after") {
+        patch.AfterPhotoCount = counts.after;
+        patch.afterPhotoCount = counts.after;
+        patch.AfterPhotosCapturedAt = capturedAt;
+        patch.afterPhotosCapturedAt = capturedAt;
+      }
+
+      if (target.kind === "no_access") {
+        patch.NoAccessEvidenceCount = counts.no_access;
+        patch.noAccessEvidenceCount = counts.no_access;
+        patch.NoAccessEvidenceCapturedAt = capturedAt;
+        patch.noAccessEvidenceCapturedAt = capturedAt;
+      }
+
+      if (target.kind === "refused_access") {
+        patch.RefusedEvidenceCount = counts.refused_access;
+        patch.refusedEvidenceCount = counts.refused_access;
+        patch.RefusedEvidenceCapturedAt = capturedAt;
+        patch.refusedEvidenceCapturedAt = capturedAt;
+      }
+
+      if (target.kind === "completed_by_others") {
+        patch.CompletedByOthersEvidenceCount = counts.completed_by_others;
+        patch.completedByOthersEvidenceCount = counts.completed_by_others;
+        patch.CompletedByOthersEvidenceCapturedAt = capturedAt;
+        patch.completedByOthersEvidenceCapturedAt = capturedAt;
+      }
 
       setFieldPhotoCounts((current) => ({
         ...current,
@@ -2291,10 +2403,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       workflowServerSave(target.jobKey, { ...patch, updatedAt: capturedAt }).catch((error) => {
         console.error(error);
       });
-      showActionNotice(`${saved.length} ${target.kind} photo(s) saved for package.`);
+      const videoCount = saved.filter((item) => item.mediaType === "video").length;
+      const imageCount = saved.length - videoCount;
+      showActionNotice(`${imageCount} image(s), ${videoCount} video(s) saved for package.`);
     } catch (error) {
       console.error(error);
-      showActionNotice("Photo save failed. Try again.");
+      showActionNotice(error instanceof Error ? error.message : "Evidence save failed. Try again.");
     } finally {
       setPhotoCaptureTarget(null);
       event.target.value = "";
@@ -2303,7 +2417,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function startFieldJob(job: MappedJob) {
     const iso = new Date().toISOString();
-    const takeBefore = window.confirm("Start this job now? Press OK to open the camera for BEFORE photos.");
+    const takeBefore = window.confirm("Start this job now? Press OK to capture BEFORE images/videos.");
     saveFieldWorkflowPatch(
       job,
       {
@@ -2325,21 +2439,21 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       },
       "Job started. Work timer is running."
     );
-    if (takeBefore) requestFieldPhotoCapture(job, "before");
+    if (takeBefore) requestFieldPhotoCapture(job, "before", "image/*,video/*");
   }
 
-  function finishFieldJob(job: MappedJob) {
+  function finishFieldJob(job: MappedJob, partial = false) {
     const iso = new Date().toISOString();
-    const takeAfter = window.confirm("Mark work complete? Press OK to open the camera for AFTER photos.");
+    const takeAfter = window.confirm(`${partial ? "Mark partial work complete" : "Mark work complete"}? Press OK to capture AFTER images/videos.`);
     saveFieldWorkflowPatch(
       job,
       {
-        WorkflowStatus: "WORK_COMPLETED",
-        workflowStatus: "WORK_COMPLETED",
-        FieldOutcome: "WORK_COMPLETED",
-        fieldOutcome: "WORK_COMPLETED",
-        StatusOverride: "Work Completed",
-        status: "Work Completed",
+        WorkflowStatus: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+        workflowStatus: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+        FieldOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+        fieldOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+        StatusOverride: partial ? "Partial Work Completed" : "Work Completed",
+        status: partial ? "Partial Work Completed" : "Work Completed",
         JobFinishedAt: iso,
         jobFinishedAt: iso,
         ActualWorkCompletionDate: iso,
@@ -2352,7 +2466,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       },
       "Work completed. Generate package when photos are ready."
     );
-    if (takeAfter) requestFieldPhotoCapture(job, "after");
+    if (takeAfter) requestFieldPhotoCapture(job, "after", "image/*,video/*");
   }
 
   function startNoAccessCounter(job: MappedJob) {
@@ -2360,6 +2474,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const iso = when.toISOString();
     const available = new Date(when);
     available.setHours(available.getHours() + 72);
+    const takeEvidence = window.confirm("No access? Press OK to capture evidence image/video now.");
 
     saveFieldWorkflowPatch(
       job,
@@ -2381,6 +2496,53 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       "No access saved. 72-hour revisit counter started."
     );
     setWorkflowViewFilter("waiting72");
+    if (takeEvidence) requestFieldPhotoCapture(job, "no_access", "image/*,video/*");
+  }
+
+  function markRefusedAccess(job: MappedJob) {
+    const iso = new Date().toISOString();
+    const takeEvidence = window.confirm("Refused access? Press OK to capture evidence image/video now.");
+    saveFieldWorkflowPatch(
+      job,
+      {
+        WorkflowStatus: "REFUSED_ACCESS",
+        workflowStatus: "REFUSED_ACCESS",
+        FieldOutcome: "REFUSED_ACCESS",
+        fieldOutcome: "REFUSED_ACCESS",
+        StatusOverride: "Refused Access",
+        status: "Refused Access",
+        RefusalDate: iso,
+        refusalDate: iso,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+        ArchivedFromMap: false,
+      },
+      "Refused access saved. Evidence can be added to package."
+    );
+    if (takeEvidence) requestFieldPhotoCapture(job, "refused_access", "image/*,video/*");
+  }
+
+  function markCompletedByOthers(job: MappedJob) {
+    const iso = new Date().toISOString();
+    const takeEvidence = window.confirm("Completed by others? Press OK to capture evidence image/video now.");
+    saveFieldWorkflowPatch(
+      job,
+      {
+        WorkflowStatus: "COMPLETED_BY_OTHERS",
+        workflowStatus: "COMPLETED_BY_OTHERS",
+        FieldOutcome: "COMPLETED_BY_OTHERS",
+        fieldOutcome: "COMPLETED_BY_OTHERS",
+        StatusOverride: "Completed by Others",
+        status: "Completed by Others",
+        VerifiedByOthersDate: iso,
+        verifiedByOthersDate: iso,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+        ArchivedFromMap: false,
+      },
+      "Completed by others saved. Evidence can be added to package."
+    );
+    if (takeEvidence) requestFieldPhotoCapture(job, "completed_by_others", "image/*,video/*");
   }
 
   function startLocationTracking() {
@@ -6197,10 +6359,21 @@ return (
           }
 
           .field-step-actions .no-access-job-btn {
-            grid-column: 1 / -1;
             background: #fff7ed;
             color: #9a3412;
             border-color: rgba(249, 115, 22, 0.28);
+          }
+
+          .field-step-actions .refused-job-btn {
+            background: #fff1f2;
+            color: #9f1239;
+            border-color: rgba(244, 63, 94, 0.26);
+          }
+
+          .field-step-actions .other-done-job-btn {
+            background: #f5f3ff;
+            color: #5b21b6;
+            border-color: rgba(124, 58, 237, 0.24);
           }
 
           .job-drawer.selected-focus .action-notice,
@@ -6266,7 +6439,7 @@ return (
         ref={fieldPhotoInputRef}
         className="field-photo-input"
         type="file"
-        accept="image/*"
+        accept={fieldCaptureAccept}
         capture="environment"
         multiple
         onChange={handleFieldPhotoInput}
@@ -6606,12 +6779,20 @@ return (
 
               <div className="field-workflow-grid">
                 <div>
-                  <span>Before Photos</span>
+                  <span>Before Media</span>
                   <strong>{fieldPhotoCountsFor(selected).before}</strong>
                 </div>
                 <div>
-                  <span>After Photos</span>
+                  <span>After Media</span>
                   <strong>{fieldPhotoCountsFor(selected).after}</strong>
+                </div>
+                <div>
+                  <span>Evidence</span>
+                  <strong>{fieldPhotoCountsFor(selected).total}</strong>
+                </div>
+                <div>
+                  <span>Videos</span>
+                  <strong>{fieldPhotoCountsFor(selected).videos}</strong>
                 </div>
                 <div>
                   <span>Started</span>
@@ -6627,20 +6808,35 @@ return (
                 <button type="button" className="start-job-btn" onClick={() => startFieldJob(selected)}>
                   Start Job
                 </button>
-                <button type="button" onClick={() => requestFieldPhotoCapture(selected, "before")}>
-                  Before Photos
+                <button type="button" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*")}>
+                  Before Image
+                </button>
+                <button type="button" onClick={() => requestFieldPhotoCapture(selected, "before", "video/*")}>
+                  Before Video
                 </button>
                 <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected)}>
                   Finish Work
                 </button>
-                <button type="button" onClick={() => requestFieldPhotoCapture(selected, "after")}>
-                  After Photos
+                <button type="button" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*")}>
+                  After Image
+                </button>
+                <button type="button" onClick={() => requestFieldPhotoCapture(selected, "after", "video/*")}>
+                  After Video
+                </button>
+                <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected, true)}>
+                  Partial Finish
                 </button>
                 <button type="button" className="no-access-job-btn" onClick={() => startNoAccessCounter(selected)}>
                   No Access 72h
                 </button>
+                <button type="button" className="refused-job-btn" onClick={() => markRefusedAccess(selected)}>
+                  Refused Evidence
+                </button>
+                <button type="button" className="other-done-job-btn" onClick={() => markCompletedByOthers(selected)}>
+                  Other Done Evidence
+                </button>
               </div>
-              <small>Photos saved on this phone are appended when you generate the invoice package.</small>
+              <small>Images become stamped PDF evidence pages. Videos are attached to the PDF with a stamped evidence page.</small>
             </div>
 
             <div className="selected-overview-grid">
@@ -6775,6 +6971,26 @@ return (
                     beforePhotoCount: 0,
                     AfterPhotoCount: 0,
                     afterPhotoCount: 0,
+                    EvidenceMediaCount: 0,
+                    evidenceMediaCount: 0,
+                    ImageEvidenceCount: 0,
+                    imageEvidenceCount: 0,
+                    VideoEvidenceCount: 0,
+                    videoEvidenceCount: 0,
+                    LastEvidenceCapturedAt: "",
+                    lastEvidenceCapturedAt: "",
+                    NoAccessEvidenceCount: 0,
+                    noAccessEvidenceCount: 0,
+                    NoAccessEvidenceCapturedAt: "",
+                    noAccessEvidenceCapturedAt: "",
+                    RefusedEvidenceCount: 0,
+                    refusedEvidenceCount: 0,
+                    RefusedEvidenceCapturedAt: "",
+                    refusedEvidenceCapturedAt: "",
+                    CompletedByOthersEvidenceCount: 0,
+                    completedByOthersEvidenceCount: 0,
+                    CompletedByOthersEvidenceCapturedAt: "",
+                    completedByOthersEvidenceCapturedAt: "",
                     ArchivedFromMap: false,
                     OutcomeLockedAt: "",
                     outcomeLockedAt: "",
