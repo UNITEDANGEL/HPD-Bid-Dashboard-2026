@@ -1418,6 +1418,7 @@ const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
   text: string;
 } | null>(null);
 const [fieldFocusPane, setFieldFocusPane] = useState<"capture" | "evidence" | "package" | "send">("capture");
+const [fieldMediaFlashKind, setFieldMediaFlashKind] = useState<FieldMediaKind | "">("");
 const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; accuracy?: number; updatedAt: string } | null>(null);
 const [locationStatus, setLocationStatus] = useState("Location off");
 const [followMyLocation, setFollowMyLocation] = useState(false);
@@ -2843,6 +2844,19 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }, 40);
   }
 
+  function focusFieldMedia(kind?: FieldMediaKind) {
+    if (kind) {
+      setFieldMediaFlashKind(kind);
+      window.setTimeout(() => {
+        setFieldMediaFlashKind((current) => (current === kind ? "" : current));
+      }, 2200);
+    }
+
+    window.setTimeout(() => {
+      document.querySelector("[data-field-media-console]")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
+  }
+
   function downloadStoredPacket(packet: FieldPacket) {
     const bytes = dataUrlToBytes(packet.dataUrl);
     const buffer = new ArrayBuffer(bytes.byteLength);
@@ -3213,8 +3227,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const videoCount = saved.filter((item) => item.mediaType === "video").length;
       const imageCount = saved.length - videoCount;
       setFieldCaptureGuide(null);
-      focusFieldPane("evidence");
-      showActionNotice(`${fieldEvidenceLabel(target.kind)} saved: ${imageCount} image(s), ${videoCount} video(s).`);
+      setFieldFocusPane("evidence");
+      focusFieldMedia(target.kind);
+      showActionNotice(`${fieldEvidenceLabel(target.kind)} saved to job card: ${imageCount} image(s), ${videoCount} video(s).`);
     } catch (error) {
       console.error(error);
       showActionNotice(error instanceof Error ? error.message : "Evidence save failed. Try again.");
@@ -9301,6 +9316,28 @@ return (
             border-style: dashed !important;
           }
 
+          .field-media-lane.just-saved {
+            border-color: #facc15 !important;
+            background: linear-gradient(180deg, rgba(250, 204, 21, 0.18), rgba(35, 211, 174, 0.10)) !important;
+            box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.18), 0 16px 34px rgba(3, 8, 14, 0.24) !important;
+            animation: fieldMediaSavedPulse 1.35s ease-in-out 2 !important;
+          }
+
+          .field-media-lane.just-saved .field-media-preview {
+            box-shadow: inset 0 0 0 2px rgba(250, 204, 21, 0.72) !important;
+          }
+
+          @keyframes fieldMediaSavedPulse {
+            0%,
+            100% {
+              transform: translateY(0);
+            }
+
+            50% {
+              transform: translateY(-2px);
+            }
+          }
+
           .field-media-preview {
             position: relative !important;
             min-height: 118px !important;
@@ -9846,7 +9883,7 @@ return (
                 <span className="field-timer-pill">{fieldElapsedLabel(selected)}</span>
               </div>
 
-              <div className="field-media-console">
+              <div className="field-media-console" data-field-media-console="true">
                 <div className="field-media-console-head">
                   <div>
                     <span>Field Media</span>
@@ -9862,7 +9899,7 @@ return (
                     const label = kind === "before" ? "Before" : "After";
 
                     return (
-                      <section className={`field-media-lane ${fieldEvidenceKindClass(kind)} ${count ? "has-media" : "needs-media"}`} key={kind}>
+                      <section className={`field-media-lane ${fieldEvidenceKindClass(kind)} ${count ? "has-media" : "needs-media"} ${fieldMediaFlashKind === kind ? "just-saved" : ""}`} key={kind}>
                         <div className="field-media-preview">
                           {latest && fieldEvidencePreview(latest) ? (
                             <img src={fieldEvidencePreview(latest)} alt="" />
