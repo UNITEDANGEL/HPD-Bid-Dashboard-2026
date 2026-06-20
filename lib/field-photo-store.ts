@@ -50,6 +50,16 @@ const MAX_IMAGE_SIDE = 1600;
 const JPEG_QUALITY = 0.76;
 const MAX_VIDEO_BYTES = 90 * 1024 * 1024;
 
+type EvidenceStampMeta = {
+  jobId: string;
+  kind: FieldMediaKind;
+  label: string;
+  address: string;
+  location: string;
+  borough: string;
+  capturedAt: string;
+};
+
 function hasIndexedDb() {
   return typeof window !== "undefined" && Boolean(window.indexedDB);
 }
@@ -136,6 +146,82 @@ function loadImage(dataUrl: string): Promise<HTMLImageElement> {
   });
 }
 
+function cleanFilePart(value: string, fallback = "field") {
+  const cleaned = String(value || "")
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 44);
+  return cleaned || fallback;
+}
+
+function fileTimestamp(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return cleanFilePart(value || new Date().toISOString(), "DATE");
+  const pad = (part: number) => String(part).padStart(2, "0");
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`;
+}
+
+function evidenceFileName(meta: EvidenceStampMeta, mediaType: FieldMediaType, mimeType: string) {
+  const extension = mimeType.includes("quicktime")
+    ? "mov"
+    : mimeType.includes("mp4")
+      ? "mp4"
+      : mediaType === "video"
+        ? "mp4"
+        : "jpg";
+  const location = meta.location || meta.address || meta.borough || "LOCATION";
+  return [
+    cleanFilePart(meta.jobId, "OMO"),
+    cleanFilePart(location, "LOCATION"),
+    cleanFilePart(meta.kind.replace(/_/g, "-"), "EVIDENCE"),
+    fileTimestamp(meta.capturedAt),
+  ].join("_") + `.${extension}`;
+}
+
+function stampDisplayText(value: string, maxLength = 70) {
+  return String(value || "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLength);
+}
+
+function stampEvidenceImage(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, meta: EvidenceStampMeta) {
+  const width = canvas.width;
+  const height = canvas.height;
+  const location = stampDisplayText([meta.location, meta.borough].filter(Boolean).join(" - ") || meta.address || "Location not listed");
+  const address = stampDisplayText(meta.address || "Address not listed");
+  const captured = new Date(meta.capturedAt);
+  const capturedLabel = Number.isNaN(captured.getTime())
+    ? meta.capturedAt
+    : captured.toLocaleString("en-US", {
+        month: "2-digit",
+        day: "2-digit",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+  const topSize = Math.max(22, Math.round(width * 0.035));
+  const lineSize = Math.max(16, Math.round(width * 0.024));
+  const pad = Math.max(14, Math.round(width * 0.022));
+  const topHeight = topSize + pad * 1.4;
+  const bottomHeight = lineSize * 3.4 + pad * 1.7;
+
+  context.save();
+  context.fillStyle = "rgba(5, 10, 17, 0.78)";
+  context.fillRect(0, 0, width, topHeight);
+  context.fillRect(0, height - bottomHeight, width, bottomHeight);
+  context.fillStyle = "#ffffff";
+  context.font = `900 ${topSize}px Arial, sans-serif`;
+  context.fillText(stampDisplayText(meta.label.toUpperCase(), 42), pad, pad + topSize * 0.82);
+  context.font = `800 ${lineSize}px Arial, sans-serif`;
+  const bottomY = height - bottomHeight + pad + lineSize;
+  context.fillText(`OMO / WORK #: ${stampDisplayText(meta.jobId, 36)}`, pad, bottomY);
+  context.fillText(`LOCATION: ${location}`, pad, bottomY + lineSize * 1.25);
+  context.fillText(`ADDRESS: ${address}  |  ${capturedLabel}`, pad, bottomY + lineSize * 2.5);
+  context.restore();
+}
+
 function loadVideo(dataUrl: string): Promise<HTMLVideoElement> {
   return new Promise((resolve, reject) => {
     const video = document.createElement("video");
@@ -163,7 +249,7 @@ function loadVideo(dataUrl: string): Promise<HTMLVideoElement> {
   });
 }
 
-async function compressImage(file: File) {
+async function processImageEvidence(file: File, stampMeta: EvidenceStampMeta) {
   const original = await readFileAsDataUrl(file);
 
   try {
@@ -177,6 +263,7 @@ async function compressImage(file: File) {
     const context = canvas.getContext("2d");
     if (!context) return { dataUrl: original, type: file.type, size: file.size };
     context.drawImage(image, 0, 0, width, height);
+    stampEvidenceImage(canvas, context, stampMeta);
     const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
     return {
       dataUrl,
@@ -235,23 +322,34 @@ export async function saveFieldPhotos(
 
     const capturedAt = new Date().toISOString();
     const mediaType: FieldMediaType = file.type.startsWith("video/") ? "video" : "image";
+    const label = meta.label || evidenceLabel(kind);
+    const stampMeta: EvidenceStampMeta = {
+      jobId: cleanJobId,
+      kind,
+      label,
+      address: String(meta.address || "").trim(),
+      location: String(meta.location || "").trim(),
+      borough: String(meta.borough || "").trim(),
+      capturedAt,
+    };
     const source =
       mediaType === "image"
-        ? await compressImage(file)
+        ? await processImageEvidence(file, stampMeta)
         : { dataUrl: await readFileAsDataUrl(file), type: file.type || "video/mp4", size: file.size };
     const posterDataUrl = mediaType === "video" ? await makeVideoPoster(source.dataUrl) : "";
+    const evidenceName = evidenceFileName(stampMeta, mediaType, source.type || file.type || "");
 
     const evidence: FieldMedia = {
       id: `${cleanJobId}-${kind}-${capturedAt}-${Math.random().toString(36).slice(2, 8)}`,
       jobId: cleanJobId,
       kind,
       mediaType,
-      evidenceLabel: meta.label || evidenceLabel(kind),
-      address: String(meta.address || "").trim(),
-      location: String(meta.location || "").trim(),
-      borough: String(meta.borough || "").trim(),
+      evidenceLabel: label,
+      address: stampMeta.address,
+      location: stampMeta.location,
+      borough: stampMeta.borough,
       outcome: String(meta.outcome || "").trim(),
-      name: file.name || `${kind}-${mediaType}.${mediaType === "video" ? "mp4" : "jpg"}`,
+      name: evidenceName,
       type: source.type || file.type || "application/octet-stream",
       size: source.size || file.size,
       dataUrl: source.dataUrl,

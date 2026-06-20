@@ -6898,6 +6898,7 @@ return (
           }
 
           .field-evidence-gallery-meta span,
+          .field-evidence-gallery-meta small,
           .field-evidence-gallery-empty span {
             color: #aab7c6 !important;
             font-size: 11px !important;
@@ -7124,6 +7125,177 @@ return (
           .overview-tile small,
           .selected-alert-card small {
             color: #bac6d3 !important;
+          }
+
+          /* FIELD_APP_FULL_INFO_2026 */
+          .map-health-panel,
+          .ai-dispatch-chat,
+          .ai-job-assistant {
+            display: grid !important;
+          }
+
+          .status-legend {
+            display: flex !important;
+          }
+
+          .map-stage {
+            background:
+              linear-gradient(180deg, rgba(12, 18, 26, 0.10), rgba(12, 18, 26, 0.18)),
+              #121820 !important;
+          }
+
+          .map-node .leaflet-tile {
+            filter: saturate(0.92) contrast(0.98) brightness(0.98);
+          }
+
+          .map-stats,
+          .status-legend,
+          .zoom-panel,
+          .location-status-pill {
+            box-shadow: 0 14px 34px rgba(6, 11, 18, 0.28) !important;
+          }
+
+          .job-drawer.selected-focus {
+            left: 8px !important;
+            right: 8px !important;
+            bottom: 8px !important;
+            max-height: 92dvh !important;
+            padding: 14px !important;
+            border-radius: 18px !important;
+          }
+
+          .job-drawer.selected-focus .workflow-filter-bar {
+            position: static !important;
+            display: flex !important;
+            margin: 0 0 12px !important;
+            background: #111923 !important;
+          }
+
+          .selected-focus-advanced .selected-card {
+            max-height: none !important;
+            overflow: visible !important;
+          }
+
+          .selected-card {
+            gap: 14px !important;
+            padding: 16px !important;
+          }
+
+          .selected-card-head {
+            padding: 14px !important;
+            gap: 14px !important;
+          }
+
+          .selected-card .job-title {
+            font-size: clamp(30px, 8.2vw, 44px) !important;
+            line-height: 1.02 !important;
+          }
+
+          .selected-card .job-address {
+            font-size: clamp(17px, 4.7vw, 22px) !important;
+            line-height: 1.25 !important;
+          }
+
+          .selected-card .job-sub {
+            font-size: 14px !important;
+          }
+
+          .selected-chip-stack .status,
+          .selected-chip-stack .maturity-pill {
+            min-height: 38px;
+            display: inline-grid;
+            place-items: center;
+            padding: 8px 12px !important;
+            font-size: 13px !important;
+          }
+
+          .selected-hero-actions {
+            grid-template-columns: minmax(0, 1.35fr) repeat(3, minmax(0, 0.78fr)) !important;
+            gap: 10px !important;
+          }
+
+          .selected-hero-actions a,
+          .selected-hero-actions button {
+            min-height: 58px !important;
+            font-size: 14px !important;
+          }
+
+          .field-workflow-card {
+            padding: 14px !important;
+            gap: 12px !important;
+          }
+
+          .field-workflow-head {
+            padding: 14px !important;
+          }
+
+          .field-workflow-head strong {
+            font-size: 18px !important;
+          }
+
+          .field-workflow-grid div {
+            min-height: 74px !important;
+            padding: 12px !important;
+          }
+
+          .field-workflow-grid strong {
+            font-size: 16px !important;
+          }
+
+          .field-step-actions {
+            gap: 10px !important;
+          }
+
+          .field-step-actions button {
+            min-height: 58px !important;
+            font-size: 14px !important;
+          }
+
+          .field-evidence-gallery {
+            padding: 12px !important;
+          }
+
+          .field-evidence-gallery-grid {
+            gap: 10px !important;
+          }
+
+          .field-evidence-gallery-preview {
+            aspect-ratio: 16 / 11 !important;
+          }
+
+          .field-evidence-gallery-meta {
+            padding: 10px !important;
+          }
+
+          .field-evidence-gallery-meta strong {
+            font-size: 14px !important;
+          }
+
+          .field-evidence-gallery-meta small {
+            overflow-wrap: anywhere;
+          }
+
+          .overview-tile,
+          .selected-alert-card,
+          .selected-status-panel,
+          .more-job-details,
+          .clean-description-card,
+          .workflow-save-panel,
+          .detail {
+            padding: 13px !important;
+          }
+
+          .overview-tile strong,
+          .selected-alert-card strong,
+          .detail strong {
+            font-size: 15px !important;
+          }
+
+          .description-inline-actions button,
+          .selected-status-grid button,
+          .save-status-btn {
+            min-height: 50px !important;
+            font-size: 13px !important;
           }
 
           .job-drawer.selected-focus .action-notice,
@@ -7593,6 +7765,7 @@ return (
                         <div className="field-evidence-gallery-meta">
                           <strong>{media.evidenceLabel || fieldEvidenceLabel(media.kind)}</strong>
                           <span>{displayWorkflowDate(media.capturedAt)}</span>
+                          <small>{media.name}</small>
                         </div>
                       </div>
                     ))}

@@ -252,6 +252,16 @@ function safePdfText(value: string, maxLength = 110) {
 }
 
 function evidenceFileName(jobId: string, media: FieldMedia, index: number) {
+  if (media.name && /\.(jpe?g|png|mp4|mov|webm)$/i.test(media.name)) {
+    const cleanName = media.name
+      .split(/[\\/]/)
+      .pop()
+      ?.replace(/[^a-z0-9._-]+/gi, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 110);
+    if (cleanName) return cleanName;
+  }
+
   const extension = media.type.includes("png")
     ? "png"
     : media.type.includes("jpeg") || media.type.includes("jpg")
