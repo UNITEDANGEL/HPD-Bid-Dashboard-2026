@@ -1357,6 +1357,8 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const selectedCardRef = useRef<HTMLDivElement | null>(null);
   const swipeStartXRef = useRef<number | null>(null);
   const swipeStartYRef = useRef<number | null>(null);
+  const mapSwipeStartXRef = useRef<number | null>(null);
+  const mapSwipeStartYRef = useRef<number | null>(null);
 const [selectedOnly, setSelectedOnly] = useState(false);
 const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
 const [descriptionOpen, setDescriptionOpen] = useState(false);
@@ -1708,6 +1710,7 @@ const runJobAssistant = (questionText?: string) => {
 };
 const [serverWorkflowOverrides, setServerWorkflowOverrides] = useState<Record<string, any>>({});
   const [mapReady, setMapReady] = useState(false);
+  const [mapMenuOpen, setMapMenuOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
 const [hideCompleted, setHideCompleted] = useState(false);
@@ -1758,6 +1761,42 @@ function updateMapTilerKey(value: string) {
   } catch {
     // Local storage is optional for private browser modes.
   }
+}
+
+function openMapMenu() {
+  setMapMenuOpen(true);
+  setTimeout(() => mapRef.current?.invalidateSize(), 240);
+}
+
+function closeMapMenu() {
+  setMapMenuOpen(false);
+  setTimeout(() => mapRef.current?.invalidateSize(), 240);
+}
+
+function handleMapTouchStart(event: any) {
+  const touch = event.touches?.[0];
+  if (!touch) return;
+
+  mapSwipeStartXRef.current = touch.clientX;
+  mapSwipeStartYRef.current = touch.clientY;
+}
+
+function handleMapTouchEnd(event: any) {
+  const startX = mapSwipeStartXRef.current;
+  const startY = mapSwipeStartYRef.current;
+  const touch = event.changedTouches?.[0];
+
+  mapSwipeStartXRef.current = null;
+  mapSwipeStartYRef.current = null;
+
+  if (startX === null || startY === null || !touch) return;
+
+  const dx = touch.clientX - startX;
+  const dy = touch.clientY - startY;
+
+  if (Math.abs(dy) > 80 || Math.abs(dx) < 70) return;
+  if (!mapMenuOpen && startX <= 32 && dx > 0) openMapMenu();
+  if (mapMenuOpen && dx < 0) closeMapMenu();
 }
 
 
@@ -2126,7 +2165,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         if (cancelled || !mapNode.current) return;
 
         const map = L.map(mapNode.current, {
-          zoomControl: true,
+          zoomControl: false,
           attributionControl: true,
           preferCanvas: true,
         }).setView([40.7128, -74.006], 10);
@@ -3982,7 +4021,11 @@ function directionsUrl(job: JobRecord) {
   const readySecondCount = health.readySecond.length;
 
 return (
-    <main className={`map-shell ${fullMap ? "full-map-mode" : ""}`}>
+    <main
+      className={`map-shell ${fullMap ? "full-map-mode" : ""}`}
+      onTouchStart={handleMapTouchStart}
+      onTouchEnd={handleMapTouchEnd}
+    >
       <style jsx global>{`
         html,
         body {
@@ -8173,6 +8216,38 @@ return (
             background: #111922 !important;
           }
 
+          body:has(.map-shell) {
+            overflow: hidden !important;
+            background: #111922 !important;
+          }
+
+          body:has(.map-shell) .site-shell {
+            min-height: 100dvh !important;
+            padding: 0 !important;
+          }
+
+          body:has(.map-shell) .topbar {
+            display: none !important;
+          }
+
+          body:has(.map-shell) .page-frame {
+            display: block !important;
+            gap: 0 !important;
+          }
+
+          body .site-shell {
+            padding: 0 !important;
+          }
+
+          body .topbar {
+            display: none !important;
+          }
+
+          body .page-frame {
+            display: block !important;
+            gap: 0 !important;
+          }
+
           .map-stage {
             position: fixed !important;
             inset: 0 !important;
@@ -8196,21 +8271,92 @@ return (
 
           .map-top {
             position: fixed !important;
+            z-index: 960 !important;
+            top: calc(env(safe-area-inset-top) + 10px) !important;
+            bottom: calc(env(safe-area-inset-bottom) + 10px) !important;
+            left: 10px !important;
+            right: auto !important;
+            width: min(390px, calc(100vw - 48px)) !important;
+            max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px) !important;
+            overflow-y: auto !important;
+            padding: 12px !important;
+            border-radius: 20px !important;
+            background: rgba(17, 25, 34, 0.92) !important;
+            border: 1px solid rgba(142, 170, 196, 0.32) !important;
+            box-shadow: 0 24px 58px rgba(3, 9, 16, 0.42) !important;
+            backdrop-filter: blur(20px) saturate(1.12) !important;
+            transform: translateX(calc(-100% - 18px)) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transition: transform 260ms ease, opacity 220ms ease !important;
+          }
+
+          .map-top.open {
+            transform: translateX(0) !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+          }
+
+          .map-menu-scrim {
+            position: fixed !important;
+            z-index: 940 !important;
+            inset: 0 !important;
+            background: rgba(4, 10, 16, 0.30) !important;
+            border: 0 !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transition: opacity 220ms ease !important;
+          }
+
+          .map-menu-scrim.open {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+          }
+
+          .map-menu-fab {
+            position: fixed !important;
+            z-index: 950 !important;
+            top: calc(env(safe-area-inset-top) + 10px) !important;
+            left: 10px !important;
+            min-width: 74px !important;
+            height: 44px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(17, 25, 34, 0.18) !important;
+            background: rgba(17, 25, 34, 0.88) !important;
+            color: #f8fbff !important;
+            box-shadow: 0 12px 34px rgba(3, 9, 16, 0.22) !important;
+            backdrop-filter: blur(16px) saturate(1.12) !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            font-size: 13px !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-swipe-hint {
+            position: fixed !important;
             z-index: 930 !important;
-            top: calc(env(safe-area-inset-top) + 8px) !important;
-            left: 8px !important;
-            right: 8px !important;
-            padding: 10px !important;
-            border-radius: 18px !important;
-            background: rgba(17, 25, 34, 0.86) !important;
-            border: 1px solid rgba(142, 170, 196, 0.28) !important;
-            box-shadow: 0 18px 44px rgba(9, 16, 24, 0.32) !important;
-            backdrop-filter: blur(18px) saturate(1.12) !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 28px !important;
+            height: 100dvh !important;
+            pointer-events: none !important;
+          }
+
+          .map-swipe-hint::after {
+            content: "" !important;
+            position: absolute !important;
+            top: 46% !important;
+            left: 6px !important;
+            width: 3px !important;
+            height: 64px !important;
+            border-radius: 999px !important;
+            background: rgba(17, 25, 34, 0.28) !important;
           }
 
           .map-title-row {
             display: grid !important;
-            grid-template-columns: minmax(0, 1fr) auto !important;
+            grid-template-columns: minmax(0, 1fr) auto auto !important;
+            gap: 7px !important;
             align-items: center !important;
           }
 
@@ -8237,6 +8383,18 @@ return (
             background: rgba(248, 250, 252, 0.09) !important;
             border-color: rgba(248, 250, 252, 0.14) !important;
             color: #f8fbff !important;
+          }
+
+          .map-menu-close {
+            min-height: 34px !important;
+            min-width: 42px !important;
+            padding: 0 10px !important;
+            border-radius: 11px !important;
+            background: rgba(248, 250, 252, 0.09) !important;
+            border: 1px solid rgba(248, 250, 252, 0.14) !important;
+            color: #f8fbff !important;
+            font-size: 13px !important;
+            font-weight: 950 !important;
           }
 
           .map-search {
@@ -8479,11 +8637,21 @@ return (
           @media (max-width: 720px) {
             .map-top {
               left: 7px !important;
-              right: 7px !important;
+              right: auto !important;
               top: calc(env(safe-area-inset-top) + 7px) !important;
+              bottom: calc(env(safe-area-inset-bottom) + 7px) !important;
+              width: min(362px, calc(100vw - 42px)) !important;
+              max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 14px) !important;
               padding: 8px !important;
               border-radius: 16px !important;
               gap: 7px !important;
+            }
+
+            .map-menu-fab {
+              top: calc(env(safe-area-inset-top) + 8px) !important;
+              left: 8px !important;
+              height: 42px !important;
+              min-width: 70px !important;
             }
 
             .home-btn {
@@ -8574,13 +8742,27 @@ return (
         onChange={handleFieldPhotoInput}
       />
 
-      <header className="map-top">
+      <button className="map-menu-fab" type="button" onClick={openMapMenu}>
+        Menu
+      </button>
+      <span className="map-swipe-hint" aria-hidden="true" />
+      <button
+        className={`map-menu-scrim ${mapMenuOpen ? "open" : ""}`}
+        type="button"
+        aria-label="Close map menu"
+        onClick={closeMapMenu}
+      />
+
+      <header className={`map-top ${mapMenuOpen ? "open" : ""}`}>
         <div className="map-title-row">
           <div>
             <h1>Map</h1>
             <p>{mapDateFilterLabel()} - {filteredJobs.length} visible - {activeMapBaseStyle.label}</p>
           </div>
           <a className="home-btn" href="/">Home</a>
+          <button className="map-menu-close" type="button" onClick={closeMapMenu}>
+            Close
+          </button>
         </div>
 
         <div className="map-search">
@@ -8589,7 +8771,10 @@ return (
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search OMO, address, borough, trade..."
           />
-          <button className="jobs-toggle" type="button" onClick={() => setDrawerOpen((value) => !value)}>
+          <button className="jobs-toggle" type="button" onClick={() => {
+            setDrawerOpen((value) => !value);
+            closeMapMenu();
+          }}>
             Jobs
           </button>
         </div>
