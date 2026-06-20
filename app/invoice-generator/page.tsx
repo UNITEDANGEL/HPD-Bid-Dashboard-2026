@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   PAPERWORK_OUTCOMES,
   type PaperworkOutcome,
-  NO_WORK_SERVICE_CHARGE,
   applySavedWorkflowStatuses,
   defaultPaperworkInvoiceNo,
   formatCurrency,
@@ -14,6 +13,7 @@ import {
   getJobWorkflowStatus,
   invoiceDescriptionForOutcome,
   isNoWorkOutcome,
+  noWorkServiceChargeForJob,
   paperworkOutcomeFromJob,
   paperworkOutcomeFromValue,
 } from "../../lib/paperwork";
@@ -112,7 +112,7 @@ export default function InvoiceGeneratorPage() {
       jobId: getJobId(job),
       address: getJobAddress(job),
       description: invoiceDescriptionForOutcome(job, resolvedOutcome),
-      amount: isNoWorkOutcome(resolvedOutcome) ? formatCurrency(NO_WORK_SERVICE_CHARGE) : formatCurrency(getJobAmount(job)) || prev.amount,
+      amount: isNoWorkOutcome(resolvedOutcome) ? formatCurrency(noWorkServiceChargeForJob(job)) : formatCurrency(getJobAmount(job)) || prev.amount,
       sourceStatus: getJobWorkflowStatus(job),
     }));
   }
@@ -123,7 +123,7 @@ export default function InvoiceGeneratorPage() {
     setForm((prev) => ({
       ...prev,
       description: invoiceDescriptionForOutcome(selectedJob, nextOutcome),
-      amount: isNoWorkOutcome(nextOutcome) ? formatCurrency(NO_WORK_SERVICE_CHARGE) : selectedJob ? formatCurrency(getJobAmount(selectedJob)) || prev.amount : prev.amount,
+      amount: isNoWorkOutcome(nextOutcome) ? formatCurrency(noWorkServiceChargeForJob(selectedJob)) : selectedJob ? formatCurrency(getJobAmount(selectedJob)) || prev.amount : prev.amount,
     }));
   }
 

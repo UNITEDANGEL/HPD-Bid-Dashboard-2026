@@ -3,9 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { PDFDocument } from "pdf-lib";
 import {
-  PAPERWORK_OUTCOMES,
   type PaperworkOutcome,
-  NO_WORK_SERVICE_CHARGE,
+  HPD_STATUS_WORKER_URL,
   affidavitReasonForOutcome,
   affidavitTemplateLabel,
   applySavedWorkflowStatuses,
@@ -21,6 +20,7 @@ import {
   getJobWorkflowStatus,
   invoiceDescriptionForOutcome,
   isNoWorkOutcome,
+  noWorkServiceChargeForJob,
   paperworkOutcomeFromJob,
   paperworkOutcomeFromValue,
 } from "../../lib/paperwork";
@@ -57,8 +57,6 @@ type PackageForm = {
 
 const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-completed-affidavit.pdf";
 const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-completed-affidavit.pdf";
-const BLANK_WORK_AFFIDAVIT_TEMPLATE = "/templates/blank-work-completed-affidavit-with-invoice.pdf";
-const BLANK_NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/blank-no-work-completed-affidavit-with-invoice.pdf";
 
 function asArray(value: unknown): JobRecord[] {
   if (Array.isArray(value)) return value as JobRecord[];
@@ -161,7 +159,7 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   const noWorkCompleteAt = secondAttemptAt || refusedAt || verifiedByOthersAt || lockedAt;
   const workCompleteAt = actualCompleteAt || lockedAt || getJobDate(job, "complete");
   const bidAmount = formatCurrency(getJobAmount(job));
-  const chargeAmount = isNoWorkOutcome(outcome) ? formatCurrency(NO_WORK_SERVICE_CHARGE) : bidAmount;
+  const chargeAmount = isNoWorkOutcome(outcome) ? formatCurrency(noWorkServiceChargeForJob(job)) : bidAmount;
 
   return {
     ...initialForm(),
@@ -242,6 +240,50 @@ function findJob(rows: JobRecord[], id: string) {
   );
 }
 
+function savedOutcomeForPackage(job: JobRecord | null, packageType: "work" | "no_work", current: PaperworkOutcome = "pending") {
+  const saved = job ? paperworkOutcomeFromJob(job) : "pending";
+
+  if (packageType === "work") {
+    return saved === "partial_work_completed" ? saved : "work_completed";
+  }
+
+  if (isNoWorkOutcome(saved)) return saved;
+  if (isNoWorkOutcome(current)) return current;
+  return "no_access";
+}
+
+function packageTypeForOutcome(outcome: PaperworkOutcome) {
+  return isNoWorkOutcome(outcome) ? "no_work" : "work";
+}
+
+function noWorkSourceLine(outcome: PaperworkOutcome, form: PackageForm) {
+  if (!isNoWorkOutcome(outcome)) return "No access, refused access, or done by others from saved JSON.";
+  if (outcome === "refused_access") {
+    const who = [form.deniedName, form.deniedRelationship].filter(Boolean).join(" / ");
+    return `Refused access${who ? ` by ${who}` : ""}${form.secondAttempt ? ` on ${form.secondAttempt}` : ""}.`;
+  }
+  if (outcome === "completed_by_others") {
+    return `Work completed by others${form.secondAttempt ? ` verified ${form.secondAttempt}` : ""}.`;
+  }
+  return `No access${form.firstAttempt ? ` 1st ${form.firstAttempt}` : ""}${form.secondAttempt ? ` / 2nd ${form.secondAttempt}` : ""}.`;
+}
+
+function saveLocalPackageOverride(jobId: string, patch: Record<string, unknown>) {
+  if (typeof window === "undefined" || !jobId) return;
+
+  try {
+    const key = "hpd-job-workflow-overrides-v2";
+    const raw = window.localStorage.getItem(key);
+    const rows = raw ? JSON.parse(raw) : {};
+    rows[jobId] = {
+      ...(rows[jobId] || {}),
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+    window.localStorage.setItem(key, JSON.stringify(rows));
+  } catch {}
+}
+
 export default function PaperworkPage() {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [selectedId, setSelectedId] = useState("");
@@ -278,7 +320,13 @@ export default function PaperworkPage() {
 
     const params = new URLSearchParams(window.location.search);
     const job = params.get("job") || "";
-    const nextOutcome = paperworkOutcomeFromValue(params.get("outcome") || "");
+    const packageParam = String(params.get("package") || params.get("type") || "").toLowerCase();
+    let nextOutcome = paperworkOutcomeFromValue(params.get("outcome") || "");
+
+    if (nextOutcome === "pending") {
+      if (packageParam.includes("no")) nextOutcome = "no_access";
+      else if (packageParam.includes("work")) nextOutcome = "work_completed";
+    }
 
     setSelectedId(job);
     setOutcome(nextOutcome);
@@ -295,7 +343,12 @@ export default function PaperworkPage() {
     if (!selectedId || !jobs.length) return;
     const job = findJob(jobs, selectedId);
     if (!job) return;
-    const selectedOutcome = outcome === "pending" ? paperworkOutcomeFromJob(job) : outcome;
+    const selectedOutcome =
+      outcome === "pending"
+        ? paperworkOutcomeFromJob(job)
+        : isNoWorkOutcome(outcome)
+          ? savedOutcomeForPackage(job, "no_work", outcome)
+          : outcome;
     setOutcome(selectedOutcome);
     setForm(formFromJob(job, selectedOutcome));
   }, [jobs, selectedId]);
@@ -307,7 +360,10 @@ export default function PaperworkPage() {
     const job = findJob(jobs, id);
     if (!job) return;
 
-    const nextOutcome = outcome === "pending" ? paperworkOutcomeFromJob(job) : outcome;
+    const nextOutcome =
+      outcome === "pending"
+        ? paperworkOutcomeFromJob(job)
+        : savedOutcomeForPackage(job, packageTypeForOutcome(outcome), outcome);
     setOutcome(nextOutcome);
     setForm(formFromJob(job, nextOutcome));
   }
@@ -317,21 +373,57 @@ export default function PaperworkPage() {
     setOutcome(nextOutcome);
     setForm((current) => ({
       ...current,
-      amount: isNoWorkOutcome(nextOutcome) ? formatCurrency(NO_WORK_SERVICE_CHARGE) : current.bidAmount || current.amount,
+      amount: isNoWorkOutcome(nextOutcome) ? formatCurrency(noWorkServiceChargeForJob(selectedJob)) : current.bidAmount || current.amount,
       description: invoiceDescriptionForOutcome(selectedJob, nextOutcome),
       affidavitType: affidavitTemplateLabel(nextOutcome),
       affidavitReason: affidavitReasonForOutcome(nextOutcome),
     }));
   }
 
+  function choosePackage(packageType: "work" | "no_work") {
+    const nextOutcome = savedOutcomeForPackage(selectedJob, packageType, outcome);
+    chooseOutcome(nextOutcome);
+  }
+
   function update(key: keyof PackageForm, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  async function markPackageGenerated(jobId: string) {
+    if (!jobId) return "Package generated.";
+
+    const generatedAt = new Date().toISOString();
+    const patch = {
+      ArchivedFromMap: true,
+      archivedFromMap: true,
+      PackageGeneratedAt: generatedAt,
+      packageGeneratedAt: generatedAt,
+      PackageReadyMessage: "Invoice package generated. Send to RER.",
+      packageReadyMessage: "Invoice package generated. Send to RER.",
+    };
+
+    saveLocalPackageOverride(jobId, patch);
+
+    try {
+      const response = await fetch(`${HPD_STATUS_WORKER_URL}/override`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: jobId, patch }),
+      });
+
+      if (!response.ok) throw new Error(await response.text());
+      return "Archived on map. Send to RER.";
+    } catch (error) {
+      console.error(error);
+      return "Downloaded. Archived on this device; server sync needs retry.";
+    }
   }
 
   async function generateAffidavitPdf() {
     const useWorkTemplate = outcome === "work_completed" || outcome === "partial_work_completed";
     const templateUrl = useWorkTemplate ? WORK_AFFIDAVIT_TEMPLATE : NO_WORK_AFFIDAVIT_TEMPLATE;
     const jobId = form.jobId || selectedId || "HPD";
+    const archiveJobId = form.jobId || selectedId;
     const bidValue = amountNumber(form.bidAmount || form.amount);
     const chargeValue = amountNumber(form.amount || form.bidAmount);
     const bidAmount = pdfMoney(bidValue);
@@ -470,7 +562,8 @@ export default function PaperworkPage() {
       anchor.remove();
       URL.revokeObjectURL(href);
 
-      setPdfStatus("Affidavit PDF downloaded.");
+      const archiveMessage = await markPackageGenerated(archiveJobId);
+      setPdfStatus(`Invoice package downloaded. ${archiveMessage}`);
     } catch (error) {
       console.error(error);
       setPdfStatus(error instanceof Error ? error.message : "Could not generate affidavit PDF.");
@@ -478,7 +571,6 @@ export default function PaperworkPage() {
   }
 
   const packageTone = outcome === "work_completed" || outcome === "partial_work_completed" ? "work" : outcome === "pending" ? "pending" : "no-work";
-  const invoiceHref = `/invoice-generator?job=${encodeURIComponent(form.jobId)}&outcome=${encodeURIComponent(outcome)}`;
 
   return (
     <main className="hpd-paperwork-shell">
@@ -631,6 +723,113 @@ export default function PaperworkPage() {
           background: #cbd5e1;
         }
 
+        .paperwork-package-actions {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .package-choice {
+          min-height: 86px;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          background: rgba(255, 255, 255, 0.075);
+          color: #f8fbff;
+          border-radius: 8px;
+          padding: 13px;
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .package-choice strong,
+        .package-choice span {
+          display: block;
+        }
+
+        .package-choice strong {
+          font-size: 16px;
+          line-height: 1.1;
+        }
+
+        .package-choice span {
+          margin-top: 7px;
+          color: #aebbd0;
+          font-size: 12px;
+          line-height: 1.35;
+        }
+
+        .package-choice.active {
+          border-color: transparent;
+          color: #03120b;
+          background: #53e69c;
+        }
+
+        .package-choice.no-work.active {
+          background: #ffd166;
+          color: #151006;
+        }
+
+        .package-choice.active span {
+          color: rgba(3, 18, 11, 0.74);
+        }
+
+        .paperwork-summary-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .paperwork-summary-tile {
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: rgba(255, 255, 255, 0.07);
+          border-radius: 8px;
+          padding: 10px;
+          min-width: 0;
+        }
+
+        .paperwork-summary-tile span,
+        .paperwork-summary-tile small {
+          color: #aebbd0;
+        }
+
+        .paperwork-summary-tile span {
+          display: block;
+          font-size: 10px;
+          font-weight: 950;
+          text-transform: uppercase;
+        }
+
+        .paperwork-summary-tile strong {
+          display: block;
+          margin-top: 5px;
+          overflow-wrap: anywhere;
+        }
+
+        .paperwork-summary-tile small {
+          display: block;
+          margin-top: 4px;
+          line-height: 1.3;
+        }
+
+        .paperwork-advanced {
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.05);
+          overflow: hidden;
+        }
+
+        .paperwork-advanced summary {
+          cursor: pointer;
+          padding: 12px;
+          font-weight: 950;
+          color: #d9e9ff;
+        }
+
+        .paperwork-advanced-body {
+          display: grid;
+          gap: 12px;
+          padding: 0 12px 12px;
+        }
+
         .paperwork-pdf-status {
           margin: 0;
           border: 1px solid rgba(83, 230, 156, 0.28);
@@ -739,6 +938,8 @@ export default function PaperworkPage() {
 
         @media (max-width: 560px) {
           .paperwork-grid,
+          .paperwork-package-actions,
+          .paperwork-summary-grid,
           .preview-row,
           .preview-head {
             grid-template-columns: 1fr;
@@ -780,23 +981,11 @@ export default function PaperworkPage() {
           <div>
             <p>Field paperwork</p>
             <h1>Invoice + Affidavit Package</h1>
-            <p>Pick work completed or no work completed, then print the package from mobile.</p>
+            <p>Select the job, choose one package type, then generate the invoice package.</p>
           </div>
           <nav className="paperwork-nav" aria-label="Paperwork actions">
             <a href="/map">Map</a>
-            <a href={invoiceHref}>Invoice Only</a>
-            <a href={BLANK_WORK_AFFIDAVIT_TEMPLATE} download>
-              Blank Work Template
-            </a>
-            <a href={BLANK_NO_WORK_AFFIDAVIT_TEMPLATE} download>
-              Blank No-Work Template
-            </a>
-            <button className="paperwork-secondary" type="button" onClick={generateAffidavitPdf}>
-              Download Affidavit PDF
-            </button>
-            <button className="paperwork-print" type="button" onClick={() => window.print()}>
-              Print / Save PDF
-            </button>
+            <a href="/outputs">Archive</a>
           </nav>
         </header>
 
@@ -828,17 +1017,46 @@ export default function PaperworkPage() {
             </select>
           </label>
 
-          <label className="paperwork-field">
-            Field Outcome
-            <select value={outcome} onChange={(event) => chooseOutcome(event.target.value)}>
-              {PAPERWORK_OUTCOMES.map((item) => (
-                <option value={item.value} key={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="paperwork-package-actions" aria-label="Package type">
+            <button
+              className={`package-choice ${outcome === "work_completed" || outcome === "partial_work_completed" ? "active" : ""}`}
+              type="button"
+              onClick={() => choosePackage("work")}
+            >
+              <strong>Work Completed</strong>
+              <span>Uses ITB description and work-completed affidavit.</span>
+            </button>
+            <button
+              className={`package-choice no-work ${isNoWorkOutcome(outcome) ? "active" : ""}`}
+              type="button"
+              onClick={() => choosePackage("no_work")}
+            >
+              <strong>No Work Completed</strong>
+              <span>{noWorkSourceLine(outcome, form)}</span>
+            </button>
+          </div>
 
+          <div className="paperwork-summary-grid">
+            <div className="paperwork-summary-tile">
+              <span>Job</span>
+              <strong>{form.jobId || "Select job"}</strong>
+              <small>{form.address || "Address from JSON"}</small>
+            </div>
+            <div className="paperwork-summary-tile">
+              <span>Status</span>
+              <strong>{form.affidavitReason}</strong>
+              <small>{form.sourceStatus || "Choose package"}</small>
+            </div>
+            <div className="paperwork-summary-tile">
+              <span>Charge</span>
+              <strong>{form.amount || "$0.00"}</strong>
+              <small>{isNoWorkOutcome(outcome) ? "Service charge from bid amount" : "Bid amount from ITB/COA"}</small>
+            </div>
+          </div>
+
+          <details className="paperwork-advanced">
+            <summary>Review pulled JSON fields</summary>
+            <div className="paperwork-advanced-body">
           <div className="paperwork-grid">
             <label className="paperwork-field">
               Invoice Number
@@ -947,9 +1165,11 @@ export default function PaperworkPage() {
             Notes / Scope
             <textarea value={form.notes} onChange={(event) => update("notes", event.target.value)} />
           </label>
+            </div>
+          </details>
 
           <button className="paperwork-print" type="button" onClick={generateAffidavitPdf}>
-            Download Filled Affidavit PDF
+            Generate Invoice Package
           </button>
         </section>
 

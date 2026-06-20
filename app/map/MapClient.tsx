@@ -1957,8 +1957,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                       ${overdueLabel ? `<span class="marker-overdue-badge">${overdueLabel}</span>` : ""}
                     </span>
                   </div>`,
-            iconSize: [132, 86],
-            iconAnchor: [66, 43],
+            iconSize: [104, 64],
+            iconAnchor: [52, 32],
             popupAnchor: [0, -18],
           }),
         });
@@ -2064,8 +2064,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     workflowServerSave(key, patch)
       .then(() => {
         setDraftWorkflowSaved(true);
-        setWorkflowViewFilter("archived");
-        showActionNotice("Archived ✓ Moved to Archived view.");
         setWorkflowViewFilter("archived");
         showActionNotice("Archived ✓ Moved to Archived view.");
         setSelected((current) =>
@@ -2615,11 +2613,6 @@ function directionsUrl(job: JobRecord) {
     const query = paperworkQuery(job, outcome);
     const separator = query ? "&" : "";
     return `/paperwork?${query}${separator}doc=${doc}`;
-  }
-
-  function invoiceHref(job: JobRecord) {
-    const outcome = paperworkOutcomeFromValue(workflowStatus(job) || JobStatus.statusLabel(job));
-    return `/invoice-generator?${paperworkQuery(job, outcome)}`;
   }
 
   function currentSelectedIndex() {
@@ -5027,6 +5020,157 @@ return (
             color: #04101f;
             border-color: transparent;
           }
+
+          /* CLEAN_FIELD_MAP_2026 */
+          .map-health-panel,
+          .ai-dispatch-chat,
+          .ai-job-assistant,
+          .status-legend {
+            display: none !important;
+          }
+
+          .compact-job-card {
+            width: 100%;
+            text-align: left;
+            color: inherit;
+            cursor: pointer;
+          }
+
+          .compact-job-card .job-main-row {
+            align-items: flex-start;
+          }
+
+          .compact-job-status {
+            display: grid;
+            gap: 6px;
+            justify-items: end;
+            min-width: 104px;
+          }
+
+          .compact-info-strip {
+            margin-top: 10px;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          }
+
+          .compact-info-strip strong {
+            font-size: 12px !important;
+            line-height: 1.18 !important;
+          }
+
+          .package-ready-card {
+            border-color: rgba(83, 230, 156, 0.32) !important;
+            background: rgba(83, 230, 156, 0.11) !important;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble::before {
+            width: 56px !important;
+            height: 56px !important;
+            opacity: 0.62 !important;
+            animation-duration: 6.5s !important;
+          }
+
+          .maturity-marker-bubble {
+            min-width: 92px !important;
+            max-width: 108px !important;
+            height: 38px !important;
+            padding: 4px 7px !important;
+          }
+
+          .marker-label-main {
+            max-width: 96px !important;
+            font-size: 8.5px !important;
+          }
+
+          .marker-label-date {
+            max-width: 96px !important;
+            font-size: 10px !important;
+          }
+
+          .maturity-marker-bubble.marker-ready-revisit {
+            min-width: 104px !important;
+            max-width: 116px !important;
+            height: 40px !important;
+            animation-duration: 4.8s !important;
+          }
+
+          .maturity-marker-bubble.marker-ready-revisit::before {
+            width: 76px !important;
+            height: 76px !important;
+            box-shadow:
+              0 0 0 7px rgba(83,230,156,0.18),
+              0 0 34px rgba(83,230,156,0.62),
+              0 0 72px rgba(255,209,102,0.34) !important;
+            animation-duration: 4.8s !important;
+          }
+
+          .ready-revisit-alert {
+            animation-duration: 5.8s !important;
+          }
+
+          @keyframes revisitMarkerPulse {
+            0%, 100% {
+              transform: scale(1);
+              filter: brightness(1);
+            }
+            50% {
+              transform: scale(1.045);
+              filter: brightness(1.08);
+            }
+          }
+
+          @keyframes revisitHaloPulse {
+            0%, 100% {
+              transform: translate(-50%, -50%) scale(0.92);
+              opacity: 0.44;
+            }
+            50% {
+              transform: translate(-50%, -50%) scale(1.12);
+              opacity: 0.72;
+            }
+          }
+
+          @keyframes readyAlertPulse {
+            0%, 100% {
+              box-shadow:
+                0 0 0 2px rgba(83,230,156,0.08),
+                0 0 22px rgba(83,230,156,0.18),
+                0 16px 44px rgba(0,0,0,0.46);
+            }
+            50% {
+              box-shadow:
+                0 0 0 5px rgba(83,230,156,0.14),
+                0 0 38px rgba(83,230,156,0.30),
+                0 16px 44px rgba(0,0,0,0.46);
+            }
+          }
+
+          @media (max-width: 720px) {
+            .map-stats {
+              right: 10px !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            }
+
+            .map-stat {
+              padding: 7px !important;
+              border-radius: 10px !important;
+            }
+
+            .map-stat strong {
+              font-size: 14px !important;
+            }
+
+            .map-stat span {
+              font-size: 9px !important;
+            }
+
+            .compact-info-strip {
+              grid-template-columns: 1fr !important;
+            }
+
+            .compact-job-status {
+              min-width: 88px;
+            }
+          }
         `}
         </style>
 
@@ -5349,6 +5493,13 @@ return (
               {workflowLabel(selected) ? (
                 <div className="detail"><span>Field Status</span><strong>{workflowLabel(selected)}</strong></div>
               ) : null}
+              {selected.PackageReadyMessage || selected.packageReadyMessage ? (
+                <div className="detail package-ready-card">
+                  <span>Package Message</span>
+                  <strong>{selected.PackageReadyMessage || selected.packageReadyMessage}</strong>
+                  <small>{displayWorkflowDate(selected.PackageGeneratedAt || selected.packageGeneratedAt)}</small>
+                </div>
+              ) : null}
               {workflowSecondAttemptInfo(selected) ? (
                 <div className={`detail no-access-timer-card ${workflowSecondAttemptInfo(selected)?.ready ? "no-access-ready" : ""}`}>
                   <span>72h No Access Counter</span>
@@ -5523,9 +5674,7 @@ return (
             <div className="card-actions">
               <button type="button" className="secondary" onClick={() => setDrawerOpen(true)}>Details</button>
               <button type="button" className="secondary archive-btn" onClick={() => sendJobToArchive(selected)}>Send to Archive</button>
-              <a href={paperworkHref(selected, "affidavit")}>Affidavit</a>
-              <a href={invoiceHref(selected)}>Invoice</a>
-              <a href={paperworkHref(selected, "package")}>Package</a>
+              <a href={paperworkHref(selected, "package")}>Generate Package</a>
               <a target="_blank" rel="noreferrer" href={directionsUrl(selected)}>Directions</a>
             </div>
 
@@ -5539,151 +5688,29 @@ return (
           ) : null}
 
         {!selectedOnly ? filteredJobs.slice(0, 60).map((job, index) => (
-          <div className={`job-card job-status-card ${JobStatus.statusCardClass(job)}`} key={`${jobKey(job, index)}-${index}`}>
-            <button className="job-card-button" type="button" onClick={() => focusJob(job)}>
-              <div className="job-main-row">
-                <div>
-                  <strong className="job-title">{jobKey(job, index)}</strong>
-                  <p className="job-address">{displayAddress(job)}</p>
-                  <p className="job-sub">{job.borough || "Unknown borough"} · {displayLocation(job) || "Location not listed"}</p>
-                </div>
-                <div style={{ display: "grid", gap: 6, justifyItems: "end" }}>
-                  <span className={`status ${statusClass(job.status)}`}>{JobStatus.statusLabel(job)}</span>
-                  <span className={`maturity-pill ${maturityPriorityClass(job)}`}>{jobCounterLabel(job)}</span>
-                </div>
+          <button
+            className={`job-card compact-job-card job-status-card ${JobStatus.statusCardClass(job)}`}
+            key={`${jobKey(job, index)}-${index}`}
+            type="button"
+            onClick={() => focusJob(job)}
+          >
+            <div className="job-main-row">
+              <div>
+                <strong className="job-title">{jobKey(job, index)}</strong>
+                <p className="job-address">{displayAddress(job)}</p>
+                <p className="job-sub">{job.borough || "Unknown borough"} · {displayLocation(job) || "Location not listed"}</p>
               </div>
-
-              <div className="quick-info-strip">
+              <div className="compact-job-status">
+                <span className={`status ${statusClass(job.status)}`}>{JobStatus.statusLabel(job)}</span>
+                <span className={`maturity-pill ${maturityPriorityClass(job)}`}>{jobCounterLabel(job)}</span>
+              </div>
+            </div>
+            <div className="quick-info-strip compact-info-strip">
               <div><span>Amount</span><strong>{displayAmount(job) || "Not listed"}</strong></div>
-              <div><span>Location</span><strong>{displayLocation(job) || "Not listed"}</strong></div>
-              <div><span>Borough</span><strong>{job?.borough || "Unknown"}</strong></div>
+              <div><span>Window</span><strong>{workWindowInfo(job).statusLabel}</strong></div>
+              <div><span>Action</span><strong>{nextActionInfo(job).label}</strong></div>
             </div>
-            <div className={`next-action-banner ${nextActionInfo(selected).tone}`}>
-              <span>Next Action</span>
-              <strong>{nextActionInfo(selected).label}</strong>
-              <p>{nextActionInfo(selected).detail}</p>
-            </div>
-            <div className="deadline-timeline">
-              <div className="timeline-item">
-                <span>COA</span>
-                <strong>{timelineDateLabel(selected?.AwardDate || selected?.awardDate)}</strong>
-                <small>{timelineMaturityLabel(selected)}</small>
-              </div>
-              <div className="timeline-line" />
-              <div className="timeline-item">
-                <span>Start</span>
-                <strong>{timelineDateLabel(selected?.WorkStartDate || selected?.workStartDate)}</strong>
-                <small>{selected ? workWindowInfo(selected).startLabel : "—"}</small>
-              </div>
-              <div className="timeline-line" />
-              <div className="timeline-item">
-                <span>Complete</span>
-                <strong>{timelineDateLabel(selected?.WorkCompletionDate || selected?.workCompletionDate)}</strong>
-                <small>{timelineOverdueLabel(selected)}</small>
-              </div>
-            </div>
-            <div className="status-actions">
-              <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                🚗 Open Waze
-              </a>
-              <a href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                🗺️ Google Maps
-              </a>
-            </div>
-            <div className="detail-grid">
-                <div className="detail"><span>Amount</span><strong>{displayAmount(job) || money(job) || "Not listed"}</strong></div>
-                <div className="detail"><span>Award</span><strong>{job.AwardDate || job.awardDate || "Not listed"}</strong></div>
-                <div className="detail"><span>Work Start</span><strong>{job.WorkStartDate || job.workStartDate || "Not listed"}</strong></div>
-                <div className="detail"><span>Work Complete</span><strong>{job.WorkCompletionDate || job.workCompletionDate || "Not listed"}</strong></div>
-                <div className={`detail work-window-card ${workWindowInfo(job).statusClass}`}>
-                  <span>Work Window</span>
-                  <strong>{workWindowInfo(job).statusLabel}</strong>
-                  <small>Start: {workWindowInfo(job).startDate} · End: {workWindowInfo(job).endDate}</small>
-                </div>
-                <div className="detail"><span>Due</span><strong>{job.bidDueDate || job.dueDate || "Not listed"}</strong></div>
-                <div className="detail"><span>Docs</span><strong>{[(job.COAFile || job.coaFile) ? "COA ✓" : "", (job.ITBFile || job.itbFile) ? "ITB ✓" : "", (job.PDFFile || job.pdfFile) ? "PDF ✓" : ""].filter(Boolean).join(" ") || "Not listed"}</strong></div>
-              </div>
-            </button>
-
-            <div className="status-actions">
-              <button type="button" onClick={() => pickDraftWorkflow("No Access - 1st Attempt")}>No Access 1st</button>
-              <button type="button" onClick={() => pickDraftWorkflow("No Access - 2nd Attempt")}>No Access 2nd</button>
-              <button type="button" onClick={() => pickDraftWorkflow("Refused Access")}>Refused</button>
-              <button type="button" onClick={() => pickDraftWorkflow("Work Completed")}>Completed</button>
-              <button type="button" onClick={() => pickDraftWorkflow("Partial Work Completed")}>Partial</button>
-              <button type="button" onClick={() => pickDraftWorkflow("Completed by Others")}>Other Done</button>
-              <button type="button" onClick={() => {
-                const key = jobKey(selected);
-                const patch = { __clearWorkflow: true };
-                if (key) {
-                  workflowStorageSave(key, patch);
-                  workflowServerSave(key, patch).catch((error) => {
-                    console.error(error);
-                    alert("Cleared on this device, but server clear failed.");
-                  });
-                }
-                setDraftWorkflowStatus("");
-                setDraftWorkflowDate("");
-                setDraftWorkflowSaved(false);
-                setSelected((current) => current ? ({
-                  ...current,
-                  WorkflowStatus: "",
-                  workflowStatus: "",
-                  FieldOutcome: "",
-                  fieldOutcome: "",
-                  StatusOverride: "",
-                  status: "Pending",
-                  NoAccessFirstAttemptAt: "",
-                  noAccessFirstAttemptAt: "",
-                  NoAccessSecondAttemptAt: "",
-                  noAccessSecondAttemptAt: "",
-                  SecondAttemptAvailableAt: "",
-                  secondAttemptAvailableAt: "",
-                  RefusalDate: "",
-                  refusalDate: "",
-                  VerifiedByOthersDate: "",
-                  verifiedByOthersDate: "",
-                  ActualWorkCompletionDate: "",
-                  actualWorkCompletionDate: "",
-                  ArchivedFromMap: false,
-                  OutcomeLockedAt: "",
-                  outcomeLockedAt: "",
-                } as MappedJob) : current);
-              }}>Clear</button>
-            </div>
-
-            {draftWorkflowStatus ? (
-              <div className="workflow-save-panel">
-                <div className="detail">
-                  <span>Selected Status</span>
-                  <strong>{draftWorkflowStatus}</strong>
-                </div>
-                <label className="workflow-date-input">
-                  Status Date / Time
-                  <input
-                    type="datetime-local"
-                    value={draftWorkflowDate}
-                    onChange={(event) => {
-                      setDraftWorkflowDate(event.target.value);
-                      setDraftWorkflowSaved(false);
-                    }}
-                  />
-                </label>
-                <button type="button" className="save-status-btn" onClick={() => saveDraftWorkflow(job)}>
-                  Save Status
-                </button>
-                {draftWorkflowSaved ? <p className="saved-status-note">Saved ✓ Synced to CSV + Google Drive.</p> : null}
-              </div>
-            ) : null}
-
-            <div className="card-actions">
-              <button className="secondary" type="button" onClick={() => focusJob(job)}>Details</button>
-              <button type="button" className="secondary archive-btn" onClick={() => sendJobToArchive(job)}>Send to Archive</button>
-              <a className="secondary" href={invoiceHref(job)}>Invoice</a>
-              <a className="secondary" href={paperworkHref(job, "package")}>Package</a>
-              <a target="_blank" rel="noreferrer" href={directionsUrl(job)}>Directions</a>
-            </div>
-          </div>
+          </button>
         )) : null}
         </aside>
             {descriptionOpen && selected?.description ? (

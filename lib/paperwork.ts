@@ -11,6 +11,8 @@ export type WorkflowOverrides = Record<string, Record<string, unknown>>;
 
 export const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
 export const NO_WORK_SERVICE_CHARGE = 100;
+export const NO_WORK_LARGE_SERVICE_CHARGE = 300;
+export const NO_WORK_LARGE_JOB_THRESHOLD = 2000;
 
 const WORKFLOW_STORAGE_KEYS = ["hpd-job-workflow-overrides-v2", "hpd-job-workflow-overrides-v1"];
 
@@ -144,6 +146,21 @@ export function getJobAmount(job: PaperworkJob | null | undefined) {
     "Amount",
     "amountValue",
   ]);
+}
+
+export function amountToNumber(value: string | number | undefined | null) {
+  const parsed = Number(String(value ?? "").replace(/[$,\s()]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function noWorkServiceChargeForAmount(value: string | number | undefined | null) {
+  return amountToNumber(value) >= NO_WORK_LARGE_JOB_THRESHOLD
+    ? NO_WORK_LARGE_SERVICE_CHARGE
+    : NO_WORK_SERVICE_CHARGE;
+}
+
+export function noWorkServiceChargeForJob(job: PaperworkJob | null | undefined) {
+  return noWorkServiceChargeForAmount(getJobAmount(job));
 }
 
 export function getJobDate(job: PaperworkJob | null | undefined, kind: "start" | "complete" | "award") {
