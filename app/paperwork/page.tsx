@@ -44,6 +44,10 @@ type PackageForm = {
   fieldDate: string;
   firstAttempt: string;
   secondAttempt: string;
+  deniedName: string;
+  deniedRelationship: string;
+  deniedDescription: string;
+  deniedPhone: string;
   workStart: string;
   workComplete: string;
   signer: string;
@@ -127,6 +131,10 @@ function initialForm(): PackageForm {
     fieldDate: todayIsoDate(),
     firstAttempt: "",
     secondAttempt: "",
+    deniedName: "",
+    deniedRelationship: "",
+    deniedDescription: "",
+    deniedPhone: "",
     workStart: "",
     workComplete: "",
     signer: "",
@@ -143,6 +151,10 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   const verifiedByOthersAt = String(job.VerifiedByOthersDate || job.verifiedByOthersDate || "").trim();
   const actualStartAt = String(job.ActualWorkStartDate || job.actualWorkStartDate || "").trim();
   const actualCompleteAt = String(job.ActualWorkCompletionDate || job.actualWorkCompletionDate || "").trim();
+  const deniedName = String(job.DeniedName || job.deniedName || job.RefusedByName || job.refusedByName || "").trim();
+  const deniedRelationship = String(job.BuildingRelationship || job.buildingRelationship || job.DeniedRelationship || job.deniedRelationship || "").trim();
+  const deniedDescription = String(job.DeniedDescription || job.deniedDescription || job.DescriptionOfIndividual || job.descriptionOfIndividual || "").trim();
+  const deniedPhone = String(job.DeniedPhone || job.deniedPhone || job.RefusedPhone || job.refusedPhone || "").trim();
   const lockedAt = String(job.OutcomeLockedAt || job.outcomeLockedAt || "").trim();
   const sourceStatus = getJobWorkflowStatus(job);
   const fieldDate = lockedAt || secondAttemptAt || refusedAt || verifiedByOthersAt || actualCompleteAt || firstAttemptAt;
@@ -166,6 +178,10 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     fieldDate: displayDate(fieldDate) || todayIsoDate(),
     firstAttempt: displayDate(firstAttemptAt || (outcome === "no_access" ? lockedAt : "")),
     secondAttempt: displayDate(noWorkCompleteAt),
+    deniedName,
+    deniedRelationship,
+    deniedDescription,
+    deniedPhone,
     workStart: displayDate(actualStartAt || getJobDate(job, "start")),
     workComplete: displayDate(outcome === "work_completed" || outcome === "partial_work_completed" ? workCompleteAt : noWorkCompleteAt),
     sourceStatus,
@@ -411,10 +427,10 @@ export default function PaperworkPage() {
         setText("REFUSE DATE", "");
         setText("DENIED DATE", outcome === "refused_access" ? secondAttempt : "");
         setText("DENIED DATE 1", outcome === "refused_access" ? secondAttempt : "");
-        setText("DENIED TEL", "");
-        setText("DENIED NAME", "");
-        setText("Description of individual DENIED", "");
-        setText("BUILDING RELATIONSHIP", "");
+        setText("DENIED TEL", form.deniedPhone);
+        setText("DENIED NAME", form.deniedName);
+        setText("Description of individual DENIED", upper(form.deniedDescription));
+        setText("BUILDING RELATIONSHIP", upper(form.deniedRelationship));
         setText("Sworn to me this", dayOfMonth(secondAttempt));
         setText("day of", monthName(secondAttempt));
         setText("Type or Print Name", signer.toUpperCase());
@@ -897,6 +913,28 @@ export default function PaperworkPage() {
             <label className="paperwork-field">
               No Access 2nd / Refusal Date
               <input value={form.secondAttempt} onChange={(event) => update("secondAttempt", event.target.value)} />
+            </label>
+          </div>
+
+          <div className="paperwork-grid">
+            <label className="paperwork-field">
+              Denied By Name
+              <input value={form.deniedName} onChange={(event) => update("deniedName", event.target.value)} />
+            </label>
+            <label className="paperwork-field">
+              Relationship
+              <input value={form.deniedRelationship} onChange={(event) => update("deniedRelationship", event.target.value)} placeholder="SUPER" />
+            </label>
+          </div>
+
+          <div className="paperwork-grid">
+            <label className="paperwork-field">
+              Individual Description
+              <input value={form.deniedDescription} onChange={(event) => update("deniedDescription", event.target.value)} placeholder="MALE TALL DARK HAIR" />
+            </label>
+            <label className="paperwork-field">
+              Telephone
+              <input value={form.deniedPhone} onChange={(event) => update("deniedPhone", event.target.value)} />
             </label>
           </div>
 
