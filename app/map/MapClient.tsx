@@ -2798,6 +2798,27 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return media.mediaType === "video" ? media.posterDataUrl || "" : media.dataUrl;
   }
 
+  function fieldEvidenceRowsByKind(job: JobRecord | null, kind: FieldMediaKind) {
+    return fieldEvidenceRowsFor(job).filter((media) => media.kind === kind);
+  }
+
+  function latestFieldEvidence(job: JobRecord | null, kind: FieldMediaKind) {
+    return fieldEvidenceRowsByKind(job, kind)[0] || null;
+  }
+
+  function fieldMediaCountLabel(count: number) {
+    return `${count} file${count === 1 ? "" : "s"}`;
+  }
+
+  function fieldMediaStateLabel(job: JobRecord, kind: FieldMediaKind) {
+    const counts = fieldPhotoCountsFor(job);
+    const count = counts[kind] || 0;
+    if (count) return "Saved on job card";
+    if (kind === "before") return "Required before work";
+    if (kind === "after") return "Required when finished";
+    return "Evidence optional";
+  }
+
   function fieldEvidenceKindClass(kind: FieldMediaKind) {
     return kind.replace(/_/g, "-");
   }
@@ -9217,6 +9238,157 @@ return (
             font-size: 12px !important;
           }
 
+          .field-media-console {
+            display: grid !important;
+            gap: 10px !important;
+            padding: 12px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(142, 170, 196, 0.22) !important;
+            background: linear-gradient(180deg, #111923, #0e151f) !important;
+            color: #f8fbff !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+          }
+
+          .field-media-console-head {
+            display: flex !important;
+            align-items: flex-start !important;
+            justify-content: space-between !important;
+            gap: 10px !important;
+          }
+
+          .field-media-console-head span,
+          .field-media-console-head small {
+            color: #aab7c6 !important;
+            font-size: 11px !important;
+            line-height: 1.2 !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+          }
+
+          .field-media-console-head strong {
+            display: block !important;
+            margin-top: 2px !important;
+            color: #f8fbff !important;
+            font-size: 15px !important;
+            line-height: 1.15 !important;
+          }
+
+          .field-media-lanes {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+          }
+
+          .field-media-lane {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 8px !important;
+            padding: 9px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(142, 170, 196, 0.20) !important;
+            background: rgba(248, 250, 252, 0.06) !important;
+          }
+
+          .field-media-lane.before.has-media {
+            border-color: rgba(35, 211, 174, 0.52) !important;
+          }
+
+          .field-media-lane.after.has-media {
+            border-color: rgba(125, 220, 147, 0.52) !important;
+          }
+
+          .field-media-lane.needs-media {
+            border-style: dashed !important;
+          }
+
+          .field-media-preview {
+            position: relative !important;
+            min-height: 118px !important;
+            aspect-ratio: 4 / 3 !important;
+            display: grid !important;
+            place-items: center !important;
+            overflow: hidden !important;
+            border-radius: 10px !important;
+            background:
+              linear-gradient(135deg, rgba(35, 211, 174, 0.12), rgba(77, 162, 255, 0.10)),
+              #08111a !important;
+            color: #e7f0fb !important;
+            font-size: 17px !important;
+            font-weight: 1000 !important;
+          }
+
+          .field-media-preview img {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            display: block !important;
+          }
+
+          .field-media-preview b {
+            position: absolute !important;
+            right: 7px !important;
+            bottom: 7px !important;
+            padding: 4px 7px !important;
+            border-radius: 999px !important;
+            background: rgba(3, 8, 14, 0.82) !important;
+            color: #f8fbff !important;
+            font-size: 9px !important;
+          }
+
+          .field-media-copy {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 2px !important;
+          }
+
+          .field-media-copy span,
+          .field-media-copy small {
+            color: #aab7c6 !important;
+            font-size: 11px !important;
+            line-height: 1.25 !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .field-media-copy strong {
+            color: #ffffff !important;
+            font-size: 18px !important;
+            line-height: 1.05 !important;
+          }
+
+          .field-media-actions {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+            gap: 6px !important;
+          }
+
+          .field-media-actions button {
+            min-height: 38px !important;
+            border-radius: 10px !important;
+            border: 1px solid rgba(142, 170, 196, 0.24) !important;
+            background: rgba(248, 250, 252, 0.10) !important;
+            color: #e7f0fb !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+          }
+
+          .field-media-actions button.primary {
+            border-color: transparent !important;
+            background: linear-gradient(135deg, #23d3ae, #4da2ff) !important;
+            color: #041018 !important;
+          }
+
+          .field-workflow-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 7px !important;
+          }
+
+          .field-workflow-grid div {
+            min-height: 50px !important;
+            padding: 8px !important;
+          }
+
           @media (max-width: 720px) {
             .map-top {
               width: min(282px, calc(100vw - 82px)) !important;
@@ -9231,6 +9403,18 @@ return (
 
             .map-stats {
               width: min(218px, calc(100vw - 94px)) !important;
+            }
+
+            .field-media-lanes {
+              grid-template-columns: 1fr !important;
+            }
+
+            .field-media-preview {
+              min-height: 140px !important;
+            }
+
+            .field-workflow-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             }
           }
         `}
@@ -9662,6 +9846,50 @@ return (
                 <span className="field-timer-pill">{fieldElapsedLabel(selected)}</span>
               </div>
 
+              <div className="field-media-console">
+                <div className="field-media-console-head">
+                  <div>
+                    <span>Field Media</span>
+                    <strong>Before / After Evidence</strong>
+                  </div>
+                  <small>{fieldPhotoCountsFor(selected).images} image(s) / {fieldPhotoCountsFor(selected).videos} video(s)</small>
+                </div>
+
+                <div className="field-media-lanes">
+                  {(["before", "after"] as FieldMediaKind[]).map((kind) => {
+                    const latest = latestFieldEvidence(selected, kind);
+                    const count = fieldPhotoCountsFor(selected)[kind] || 0;
+                    const label = kind === "before" ? "Before" : "After";
+
+                    return (
+                      <section className={`field-media-lane ${fieldEvidenceKindClass(kind)} ${count ? "has-media" : "needs-media"}`} key={kind}>
+                        <div className="field-media-preview">
+                          {latest && fieldEvidencePreview(latest) ? (
+                            <img src={fieldEvidencePreview(latest)} alt="" />
+                          ) : (
+                            <span>{label}</span>
+                          )}
+                          {latest?.mediaType === "video" ? <b>VIDEO</b> : null}
+                        </div>
+                        <div className="field-media-copy">
+                          <span>{label} Media</span>
+                          <strong>{fieldMediaCountLabel(count)}</strong>
+                          <small>{latest ? latest.name : fieldMediaStateLabel(selected, kind)}</small>
+                        </div>
+                        <div className="field-media-actions">
+                          <button type="button" className="primary" onClick={() => requestFieldPhotoCapture(selected, kind, "image/*,video/*")}>
+                            Camera
+                          </button>
+                          <button type="button" onClick={() => requestFieldPhotoCapture(selected, kind, "image/*,video/*", false)}>
+                            Gallery
+                          </button>
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="field-flow-dock" data-field-pane="capture">
                 <button type="button" className={`capture ${fieldFocusPane === "capture" ? "active" : ""}`} onClick={() => focusFieldPane("capture")}>
                   <span className="flow-icon">1</span>
@@ -9711,7 +9939,7 @@ return (
                 </div>
                 {fieldEvidenceRowsFor(selected).length ? (
                   <div className="field-evidence-gallery-grid">
-                    {fieldEvidenceRowsFor(selected).slice(0, 4).map((media) => (
+                    {fieldEvidenceRowsFor(selected).slice(0, 6).map((media) => (
                       <div className={`field-evidence-gallery-item ${fieldEvidenceKindClass(media.kind)} ${media.mediaType}`} key={`gallery-${media.id}`}>
                         <div className="field-evidence-gallery-preview">
                           {fieldEvidencePreview(media) ? (
