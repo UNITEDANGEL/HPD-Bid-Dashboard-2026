@@ -128,11 +128,20 @@ function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
   });
 }
 
-function readFileAsDataUrl(file: File): Promise<string> {
+function readFileAsDataUrl(file: File, fallbackMime = ""): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onerror = () => reject(reader.error || new Error("Could not read evidence file."));
-    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onload = () => {
+      let result = String(reader.result || "");
+      if (fallbackMime && result.startsWith("data:;")) {
+        result = result.replace("data:;", `data:${fallbackMime};`);
+      }
+      if (fallbackMime && result.startsWith("data:application/octet-stream;")) {
+        result = result.replace("data:application/octet-stream;", `data:${fallbackMime};`);
+      }
+      resolve(result);
+    };
     reader.readAsDataURL(file);
   });
 }
@@ -163,13 +172,26 @@ function fileTimestamp(value: string) {
 }
 
 function evidenceFileName(meta: EvidenceStampMeta, mediaType: FieldMediaType, mimeType: string) {
-  const extension = mimeType.includes("quicktime")
+  const normalizedType = String(mimeType || "").toLowerCase();
+  const extension = normalizedType.includes("quicktime")
     ? "mov"
-    : mimeType.includes("mp4")
+    : normalizedType.includes("webm")
+      ? "webm"
+      : normalizedType.includes("3gpp")
+        ? "3gp"
+        : normalizedType.includes("mp4")
       ? "mp4"
-      : mediaType === "video"
-        ? "mp4"
-        : "jpg";
+          : normalizedType.includes("png")
+            ? "png"
+            : normalizedType.includes("webp")
+              ? "webp"
+              : normalizedType.includes("heif")
+                ? "heif"
+                : normalizedType.includes("heic")
+                  ? "heic"
+                  : mediaType === "video"
+                    ? "mp4"
+                    : "jpg";
   const location = meta.location || meta.address || meta.borough || "LOCATION";
   return [
     cleanFilePart(meta.jobId, "OMO"),
@@ -177,6 +199,87 @@ function evidenceFileName(meta: EvidenceStampMeta, mediaType: FieldMediaType, mi
     cleanFilePart(meta.kind.replace(/_/g, "-"), "EVIDENCE"),
     fileTimestamp(meta.capturedAt),
   ].join("_") + `.${extension}`;
+}
+
+function fileExtension(file: File) {
+  return String(file.name || "").split(".").pop()?.toLowerCase() || "";
+}
+
+function mediaTypeForFile(file: File): FieldMediaType | "" {
+  const type = String(file.type || "").toLowerCase();
+  if (type.startsWith("image/")) return "image";
+  if (type.startsWith("video/")) return "video";
+
+  const extension = fileExtension(file);
+  if (["gif", "jpg", "jpeg", "png", "webp", "heic", "heif"].includes(extension)) return "image";
+  if (["3gp", "m4v", "mp4", "mov", "webm"].includes(extension)) return "video";
+
+  return "";
+}
+
+function mimeTypeForFile(file: File, mediaType: FieldMediaType) {
+  const type = String(file.type || "").trim();
+  if (type) return type;
+
+  const extension = fileExtension(file);
+  if (extension === "gif") return "image/gif";
+  if (extension === "jpg" || extension === "jpeg") return "image/jpeg";
+  if (extension === "png") return "image/png";
+  if (extension === "webp") return "image/webp";
+  if (extension === "heic") return "image/heic";
+  if (extension === "heif") return "image/heif";
+  if (extension === "mp4" || extension === "m4v") return "video/mp4";
+  if (extension === "mov") return "video/quicktime";
+  if (extension === "webm") return "video/webm";
+  if (extension === "3gp") return "video/3gpp";
+  if (mediaType === "video") return "video/mp4";
+  return "image/jpeg";
+}
+
+type DetectedMediaFile = {
+  mediaType: FieldMediaType;
+  mimeType: string;
+};
+
+async function sniffMediaFile(file: File): Promise<DetectedMediaFile | null> {
+  try {
+    const bytes = new Uint8Array(await file.slice(0, 24).arrayBuffer());
+    const text = Array.from(bytes)
+      .map((byte) => String.fromCharCode(byte))
+      .join("");
+
+    if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+      return { mediaType: "image", mimeType: "image/jpeg" };
+    }
+    if (bytes[0] === 0x89 && text.slice(1, 4) === "PNG") {
+      return { mediaType: "image", mimeType: "image/png" };
+    }
+    if (text.startsWith("GIF8")) {
+      return { mediaType: "image", mimeType: "image/gif" };
+    }
+    if (text.startsWith("RIFF") && text.slice(8, 12) === "WEBP") {
+      return { mediaType: "image", mimeType: "image/webp" };
+    }
+    if (text.slice(4, 8) === "ftyp") {
+      const brand = text.slice(8, 12).trim().toLowerCase();
+      if (["heic", "heix", "hevc", "hevx", "mif1", "msf1"].includes(brand)) {
+        return { mediaType: "image", mimeType: brand === "mif1" || brand === "msf1" ? "image/heif" : "image/heic" };
+      }
+      if (brand === "qt") return { mediaType: "video", mimeType: "video/quicktime" };
+      if (brand.startsWith("3gp")) return { mediaType: "video", mimeType: "video/3gpp" };
+      return { mediaType: "video", mimeType: "video/mp4" };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+async function detectMediaFile(file: File): Promise<DetectedMediaFile | null> {
+  const mediaType = mediaTypeForFile(file);
+  if (mediaType) return { mediaType, mimeType: mimeTypeForFile(file, mediaType) };
+  return sniffMediaFile(file);
 }
 
 function stampDisplayText(value: string, maxLength = 70) {
@@ -249,8 +352,8 @@ function loadVideo(dataUrl: string): Promise<HTMLVideoElement> {
   });
 }
 
-async function processImageEvidence(file: File, stampMeta: EvidenceStampMeta) {
-  const original = await readFileAsDataUrl(file);
+async function processImageEvidence(file: File, stampMeta: EvidenceStampMeta, mimeType: string) {
+  const original = await readFileAsDataUrl(file, mimeType || "image/jpeg");
 
   try {
     const image = await loadImage(original);
@@ -261,7 +364,7 @@ async function processImageEvidence(file: File, stampMeta: EvidenceStampMeta) {
     canvas.width = width;
     canvas.height = height;
     const context = canvas.getContext("2d");
-    if (!context) return { dataUrl: original, type: file.type, size: file.size };
+    if (!context) return { dataUrl: original, type: mimeType || file.type || "image/jpeg", size: file.size };
     context.drawImage(image, 0, 0, width, height);
     stampEvidenceImage(canvas, context, stampMeta);
     const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
@@ -271,7 +374,7 @@ async function processImageEvidence(file: File, stampMeta: EvidenceStampMeta) {
       size: Math.round((dataUrl.length * 3) / 4),
     };
   } catch {
-    return { dataUrl: original, type: file.type, size: file.size };
+    return { dataUrl: original, type: mimeType || file.type || "image/jpeg", size: file.size };
   }
 }
 
@@ -315,13 +418,15 @@ export async function saveFieldPhotos(
   const store = transaction.objectStore(STORE_NAME);
   const saved: FieldMedia[] = [];
 
-  for (const file of Array.from(files).filter((item) => item.type.startsWith("image/") || item.type.startsWith("video/"))) {
-    if (file.type.startsWith("video/") && file.size > MAX_VIDEO_BYTES) {
+  for (const file of Array.from(files)) {
+    const detected = await detectMediaFile(file);
+    if (!detected) continue;
+    const { mediaType, mimeType } = detected;
+    if (mediaType === "video" && file.size > MAX_VIDEO_BYTES) {
       throw new Error("Video is too large. Keep evidence clips under 90 MB.");
     }
 
     const capturedAt = new Date().toISOString();
-    const mediaType: FieldMediaType = file.type.startsWith("video/") ? "video" : "image";
     const label = meta.label || evidenceLabel(kind);
     const stampMeta: EvidenceStampMeta = {
       jobId: cleanJobId,
@@ -334,8 +439,8 @@ export async function saveFieldPhotos(
     };
     const source =
       mediaType === "image"
-        ? await processImageEvidence(file, stampMeta)
-        : { dataUrl: await readFileAsDataUrl(file), type: file.type || "video/mp4", size: file.size };
+        ? await processImageEvidence(file, stampMeta, mimeType)
+        : { dataUrl: await readFileAsDataUrl(file, mimeType), type: mimeType || "video/mp4", size: file.size };
     const posterDataUrl = mediaType === "video" ? await makeVideoPoster(source.dataUrl) : "";
     const evidenceName = evidenceFileName(stampMeta, mediaType, source.type || file.type || "");
 

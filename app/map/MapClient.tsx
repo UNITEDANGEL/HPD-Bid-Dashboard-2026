@@ -11,10 +11,12 @@ import {
   canStoreFieldPhotos,
   clearFieldEvidence,
   countFieldPhotos,
+  dataUrlToBytes,
   listFieldEvidence,
   saveFieldPhotos,
 } from "../../lib/field-photo-store";
 import { paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
+import { PDFDocument, StandardFonts } from "pdf-lib";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type JobRecord = {
@@ -1290,10 +1292,12 @@ const photoCaptureTargetRef = useRef<{
 const [fieldPhotoCounts, setFieldPhotoCounts] = useState<Record<string, FieldMediaCounts>>({});
 const [fieldEvidenceByJob, setFieldEvidenceByJob] = useState<Record<string, FieldMedia[]>>({});
 const [fieldCaptureAccept, setFieldCaptureAccept] = useState("image/*,video/*");
+const [fieldCaptureCamera, setFieldCaptureCamera] = useState(true);
 const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
   jobKey: string;
   kind: FieldMediaKind;
   accept: string;
+  camera: boolean;
   title: string;
   text: string;
 } | null>(null);
@@ -2389,6 +2393,175 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return kind.replace(/_/g, "-");
   }
 
+  function safePacketFilePart(value: string, fallback = "packet") {
+    const cleaned = String(value || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 54);
+    return cleaned || fallback;
+  }
+
+  function packetFileName(job: JobRecord, suffix = "evidence-packet") {
+    const key = safePacketFilePart(jobKey(job), "OMO");
+    const location = safePacketFilePart(displayLocation(job) || displayAddress(job) || (job as any).borough || "LOCATION", "LOCATION");
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+    return `${key}_${location}_${safePacketFilePart(suffix)}_${stamp}.pdf`;
+  }
+
+  function packetText(value: string, maxLength = 100) {
+    return String(value || "")
+      .replace(/[^\x20-\x7E]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, maxLength);
+  }
+
+  function drawPacketLine(page: any, text: string, x: number, y: number, size = 10) {
+    page.drawText(packetText(text), { x, y, size });
+  }
+
+  async function drawPacketPreview(pdfDoc: PDFDocument, page: any, media: FieldMedia) {
+    const previewDataUrl = media.mediaType === "video" ? media.posterDataUrl : media.dataUrl;
+    const box = { x: 46, y: 138, width: 520, height: 470 };
+
+    if (previewDataUrl) {
+      try {
+        const bytes = dataUrlToBytes(previewDataUrl);
+        const image = previewDataUrl.startsWith("data:image/png") ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
+        const scale = Math.min(box.width / image.width, box.height / image.height, 1);
+        const width = image.width * scale;
+        const height = image.height * scale;
+        const x = box.x + (box.width - width) / 2;
+        const y = box.y + (box.height - height) / 2;
+        page.drawRectangle({ ...box, borderWidth: 1 });
+        page.drawImage(image, { x, y, width, height });
+        return;
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    page.drawRectangle({ ...box, borderWidth: 1 });
+    drawPacketLine(page, media.mediaType === "video" ? "VIDEO FILE ATTACHED" : "IMAGE PREVIEW UNAVAILABLE", 170, 374, 16);
+    drawPacketLine(page, media.name || media.evidenceLabel || "Field evidence", 126, 346, 10);
+  }
+
+  async function downloadTempEvidencePacket(job: MappedJob, openDraftAfter = false) {
+    const key = jobKey(job);
+    if (!key) return;
+
+    const evidenceRows = await listFieldEvidence(key);
+    if (!evidenceRows.length) {
+      showActionNotice("No evidence saved for this job yet. Capture or upload before/after media first.");
+      return;
+    }
+
+    showActionNotice("Building temporary evidence packet...");
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const address = displayAddress(job);
+    const location = displayLocation(job);
+    const generatedAt = new Date().toLocaleString();
+
+    const cover = pdfDoc.addPage([612, 792]);
+    cover.setFont(font);
+    cover.drawText("TEMPORARY FIELD EVIDENCE PACKET", { x: 46, y: 744, size: 17, font: bold });
+    drawPacketLine(cover, `OMO / WORK #: ${key}`, 46, 716, 12);
+    drawPacketLine(cover, `Address: ${address}`, 46, 696, 10);
+    drawPacketLine(cover, `Location: ${location || "Not listed"} - Borough: ${(job as any).borough || "Not listed"}`, 46, 680, 10);
+    drawPacketLine(cover, `Status: ${workflowLabel(job) || JobStatus.statusLabel(job)}`, 46, 660, 10);
+    drawPacketLine(cover, `Generated: ${generatedAt}`, 46, 642, 10);
+    drawPacketLine(cover, `Evidence files: ${evidenceRows.length}`, 46, 616, 11);
+    drawPacketLine(cover, "Attach this PDF to the email draft. Videos are embedded as PDF attachments when supported.", 46, 594, 9);
+
+    evidenceRows.slice(0, 26).forEach((media, index) => {
+      drawPacketLine(
+        cover,
+        `${index + 1}. ${media.evidenceLabel || media.kind} - ${media.mediaType.toUpperCase()} - ${displayWorkflowDate(media.capturedAt)} - ${media.name}`,
+        54,
+        564 - index * 18,
+        8
+      );
+    });
+
+    for (const [index, media] of evidenceRows.entries()) {
+      const page = pdfDoc.addPage([612, 792]);
+      page.setFont(font);
+      const attachmentName = media.name || `${key}-${index + 1}-${media.kind}`;
+
+      try {
+        await pdfDoc.attach(dataUrlToBytes(media.dataUrl), attachmentName, {
+          mimeType: media.type || (media.mediaType === "video" ? "video/mp4" : "image/jpeg"),
+          description: `${media.evidenceLabel || "Field Evidence"} - ${key}`,
+          creationDate: new Date(media.capturedAt),
+          modificationDate: new Date(media.capturedAt),
+        });
+      } catch (error) {
+        console.error(error);
+      }
+
+      page.drawText("FIELD EVIDENCE", { x: 46, y: 744, size: 17, font: bold });
+      drawPacketLine(page, `OMO / WORK #: ${key}`, 46, 718, 11);
+      drawPacketLine(page, `Label: ${media.evidenceLabel || fieldEvidenceLabel(media.kind)}`, 46, 700, 10);
+      drawPacketLine(page, `Media: ${media.mediaType.toUpperCase()} - ${media.name}`, 46, 684, 9);
+      drawPacketLine(page, `Captured: ${displayWorkflowDate(media.capturedAt)}`, 46, 668, 9);
+      drawPacketLine(page, `Address: ${media.address || address}`, 46, 652, 9);
+      drawPacketLine(page, `Location: ${media.location || location || "Not listed"} - Borough: ${media.borough || (job as any).borough || "Not listed"}`, 46, 636, 9);
+      await drawPacketPreview(pdfDoc, page, media);
+      drawPacketLine(page, `PDF attachment: ${attachmentName}`, 46, 96, 9);
+      if (media.mediaType === "video") {
+        drawPacketLine(page, "Open the PDF attachments panel to view/play the original video.", 46, 80, 9);
+      }
+    }
+
+    const bytes = await pdfDoc.save();
+    const pdfBuffer = new ArrayBuffer(bytes.byteLength);
+    new Uint8Array(pdfBuffer).set(bytes);
+    const blob = new Blob([pdfBuffer], { type: "application/pdf" });
+    const fileName = packetFileName(job);
+    const href = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = href;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(href), 30000);
+
+    showActionNotice(`Downloaded temp evidence packet: ${fileName}`);
+    if (openDraftAfter) openEvidenceEmailDraft(job, fileName, evidenceRows.length);
+  }
+
+  function openEvidenceEmailDraft(job: MappedJob, attachmentName = "", evidenceCount = fieldPhotoCountsFor(job).total) {
+    const key = jobKey(job);
+    const savedTo = typeof window !== "undefined" ? window.localStorage.getItem("hpd-evidence-email-to") || "" : "";
+    const savedCc = typeof window !== "undefined" ? window.localStorage.getItem("hpd-evidence-email-cc") || "" : "";
+    const to = window.prompt("Email packet To:", savedTo) || "";
+    if (!to.trim()) return;
+    const cc = window.prompt("CC:", savedCc) || "";
+    window.localStorage.setItem("hpd-evidence-email-to", to.trim());
+    window.localStorage.setItem("hpd-evidence-email-cc", cc.trim());
+
+    const subject = `${key} HPD field evidence packet`;
+    const body = [
+      `Please see attached temporary field evidence packet for OMO / Work #: ${key}.`,
+      "",
+      `Address: ${displayAddress(job)}`,
+      `Location: ${displayLocation(job) || "Not listed"}`,
+      `Borough: ${(job as any).borough || "Not listed"}`,
+      `Status: ${workflowLabel(job) || JobStatus.statusLabel(job)}`,
+      `Evidence files: ${evidenceCount}`,
+      attachmentName ? `Attach downloaded file: ${attachmentName}` : "Attach the downloaded evidence packet PDF.",
+      "",
+      "Note: This browser opened a draft only. Attach the downloaded PDF before sending.",
+    ].join("\n");
+
+    const mailto = `mailto:${encodeURIComponent(to.trim())}?cc=${encodeURIComponent(cc.trim())}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+  }
+
   function fieldPhotoCountsFor(job: JobRecord) {
     const key = jobKey(job);
     const local = key ? fieldPhotoCounts[key] : null;
@@ -2439,7 +2612,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return `${hours}h ${mins}m`;
   }
 
-  function requestFieldPhotoCapture(job: MappedJob, kind: FieldMediaKind, accept = "image/*,video/*") {
+  function requestFieldPhotoCapture(job: MappedJob, kind: FieldMediaKind, accept = "image/*,video/*", useCamera = true) {
     const key = jobKey(job);
     if (!key) return;
     if (!canStoreFieldPhotos()) {
@@ -2448,11 +2621,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     setFieldCaptureAccept(accept);
+    setFieldCaptureCamera(useCamera);
     const nextTarget = { jobKey: key, kind, meta: fieldEvidenceMeta(job, kind) };
     setFieldCaptureGuide({
       jobKey: key,
       kind,
       accept,
+      camera: useCamera,
       title: fieldEvidenceLabel(kind),
       text: fieldCaptureGuideText(kind),
     });
@@ -2461,6 +2636,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     if (fieldPhotoInputRef.current) {
       fieldPhotoInputRef.current.accept = accept;
+      if (useCamera) {
+        fieldPhotoInputRef.current.setAttribute("capture", "environment");
+      } else {
+        fieldPhotoInputRef.current.removeAttribute("capture");
+      }
       fieldPhotoInputRef.current.value = "";
       fieldPhotoInputRef.current.click();
     }
@@ -2473,6 +2653,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     try {
       const saved = await saveFieldPhotos(target.jobKey, target.kind, files, target.meta);
+      if (!saved.length) {
+        showActionNotice("No supported image/video was saved. Try Upload Before/After from your phone gallery.");
+        return;
+      }
+
       const counts = await countFieldPhotos(target.jobKey);
       const evidenceRows = await listFieldEvidence(target.jobKey);
       const capturedAt = new Date().toISOString();
@@ -6544,6 +6729,24 @@ return (
             border-color: rgba(124, 58, 237, 0.24);
           }
 
+          .field-step-actions .packet-job-btn {
+            background: #e8f7ff;
+            color: #0f3b57;
+            border-color: rgba(14, 116, 144, 0.24);
+          }
+
+          .field-step-actions .email-job-btn {
+            background: #e8fff3;
+            color: #0f5132;
+            border-color: rgba(22, 163, 74, 0.24);
+          }
+
+          .field-step-actions .upload-job-btn {
+            background: #f6f0ff;
+            color: #4f35a3;
+            border-color: rgba(124, 58, 237, 0.22);
+          }
+
           /* BALANCED_FIELD_COMMAND_2026 */
           .map-shell,
           .map-shell.full-map-mode {
@@ -6774,6 +6977,24 @@ return (
           }
 
           .field-step-actions .other-done-job-btn {
+            background: #f0edff !important;
+            color: #4f35a3 !important;
+            border-color: #cec5ff !important;
+          }
+
+          .field-step-actions .packet-job-btn {
+            background: #dff3ff !important;
+            color: #0f3b57 !important;
+            border-color: #a9d9ef !important;
+          }
+
+          .field-step-actions .email-job-btn {
+            background: #ddfaec !important;
+            color: #0f5132 !important;
+            border-color: #aee8ca !important;
+          }
+
+          .field-step-actions .upload-job-btn {
             background: #f0edff !important;
             color: #4f35a3 !important;
             border-color: #cec5ff !important;
@@ -7393,7 +7614,7 @@ return (
         className="field-photo-input"
         type="file"
         accept={fieldCaptureAccept}
-        capture="environment"
+        capture={fieldCaptureCamera ? "environment" : undefined}
         multiple
         onChange={handleFieldPhotoInput}
       />
@@ -7737,8 +7958,11 @@ return (
                     <strong>{fieldCaptureGuide.title}</strong>
                     <small>{fieldCaptureGuide.text}</small>
                   </div>
-                  <button type="button" onClick={() => requestFieldPhotoCapture(selected, fieldCaptureGuide.kind, fieldCaptureGuide.accept)}>
-                    Open Camera
+                  <button
+                    type="button"
+                    onClick={() => requestFieldPhotoCapture(selected, fieldCaptureGuide.kind, fieldCaptureGuide.accept, fieldCaptureGuide.camera)}
+                  >
+                    {fieldCaptureGuide.camera ? "Open Camera" : "Open Upload"}
                   </button>
                 </div>
               ) : null}
@@ -7811,6 +8035,18 @@ return (
                 </button>
                 <button type="button" className="reset-job-btn" onClick={() => resetFieldJobForTesting(selected)}>
                   Clear / Pending
+                </button>
+                <button type="button" className="packet-job-btn" onClick={() => downloadTempEvidencePacket(selected)}>
+                  Temp Packet
+                </button>
+                <button type="button" className="email-job-btn" onClick={() => downloadTempEvidencePacket(selected, true)}>
+                  Packet + Email
+                </button>
+                <button type="button" className="upload-job-btn" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*,video/*", false)}>
+                  Upload Before
+                </button>
+                <button type="button" className="upload-job-btn" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*,video/*", false)}>
+                  Upload After
                 </button>
                 <button type="button" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*")}>
                   Before Image
