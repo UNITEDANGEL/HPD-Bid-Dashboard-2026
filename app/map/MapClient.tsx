@@ -3,6 +3,7 @@ const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
 const MAPTILER_ENV_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
 const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
 const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v1";
+const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
 
 
 import * as JobStatus from "../../lib/jobs/status";
@@ -100,12 +101,13 @@ type MapBaseStyleId =
   | "maptiler-basic"
   | "maptiler-outdoor"
   | "maptiler-satellite"
+  | "osm-color"
   | "carto-voyager";
 
 type MapBaseStyle = {
   id: MapBaseStyleId;
   label: string;
-  provider: "maptiler" | "carto";
+  provider: "maptiler" | "osm" | "carto";
   mapId?: string;
   tileUrl?: string;
   attribution: string;
@@ -146,6 +148,14 @@ const MAP_BASE_STYLES: MapBaseStyle[] = [
     maxZoom: 20,
   },
   {
+    id: "osm-color",
+    label: "Color Streets",
+    provider: "osm",
+    tileUrl: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19,
+  },
+  {
     id: "carto-voyager",
     label: "Voyager Backup",
     provider: "carto",
@@ -155,7 +165,7 @@ const MAP_BASE_STYLES: MapBaseStyle[] = [
   },
 ];
 
-const CARTO_VOYAGER_STYLE = MAP_BASE_STYLES.find((style) => style.id === "carto-voyager")!;
+const COLOR_STREETS_STYLE = MAP_BASE_STYLES.find((style) => style.id === "osm-color")!;
 
 function mapBaseStyleById(id: string): MapBaseStyle {
   return MAP_BASE_STYLES.find((style) => style.id === id) || MAP_BASE_STYLES[0];
@@ -163,14 +173,23 @@ function mapBaseStyleById(id: string): MapBaseStyle {
 
 function resolveMapBaseStyle(styleId: MapBaseStyleId, mapTilerKey: string): MapBaseStyle {
   const style = mapBaseStyleById(styleId);
-  return style.provider === "maptiler" && !mapTilerKey.trim() ? CARTO_VOYAGER_STYLE : style;
+  return style.provider === "maptiler" && !mapTilerKey.trim() ? COLOR_STREETS_STYLE : style;
 }
 
 function mapTileUrl(style: MapBaseStyle, mapTilerKey: string) {
   if (style.provider === "maptiler") {
     return `https://api.maptiler.com/maps/${style.mapId}/{z}/{x}/{y}.png?key=${encodeURIComponent(mapTilerKey.trim())}`;
   }
-  return style.tileUrl || CARTO_VOYAGER_STYLE.tileUrl!;
+  return style.tileUrl || COLOR_STREETS_STYLE.tileUrl!;
+}
+
+function escapeMapPopupHtml(value: unknown) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function asArray(value: unknown): JobRecord[] {
@@ -2317,8 +2336,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           setSelected(job);
           setSelectedOnly(true);
           setGeneratedLinks({});
-          setFullMap(false);
-          setDrawerOpen(true);
+          setFullMap(true);
+          setDrawerOpen(false);
+          setMapMenuOpen(false);
 
           setTimeout(() => {
             mapRef.current?.flyTo([Number(job._lat), Number(job._lng)], 16, {
@@ -2327,20 +2347,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             });
           }, 40);
 
-          setTimeout(() => {
-            document.querySelector(".selected-card")?.scrollIntoView({
-              behavior: "smooth",
-              block: "nearest",
-            });
-          }, 160);
         });
 
+        const popupJobId = jobKey(job, index);
         marker.bindPopup(`
-          <div style="min-width:210px">
-            <strong>${jobKey(job, index)}</strong><br/>
-            ${displayAddress(job)}<br/>
-            ${job.borough || ""} ${job.trade ? "· " + job.trade : ""}<br/>
-            ${JobStatus.statusLabel(job)} ${money(job) ? "· " + money(job) : ""}<br/>Award: ${maturityInfo(job).award}<br/>Counter Start: ${maturityInfo(job).maturity}<br/>Counter: ${jobCounterLabel(job)}
+          <div class="field-map-popup">
+            <strong>${escapeMapPopupHtml(popupJobId)}</strong>
+            <span>${escapeMapPopupHtml(displayAddress(job))}</span>
+            <small>${escapeMapPopupHtml((job.borough || "Unknown borough") + (job.trade ? " - " + job.trade : ""))}</small>
+            <small>${escapeMapPopupHtml((workflowLabel(job) || JobStatus.statusLabel(job)) + (money(job) ? " - " + money(job) : ""))}</small>
+            <button type="button" data-map-open-job="${escapeMapPopupHtml(popupJobId)}">Open Job</button>
           </div>
         `);
 
@@ -2411,6 +2427,25 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       cancelled = true;
     };
   }, [mapReady, userLocation, followMyLocation]);
+
+  useEffect(() => {
+    function handlePopupOpen(event: MouseEvent) {
+      const target = event.target as HTMLElement | null;
+      const button = target?.closest?.("[data-map-open-job]") as HTMLElement | null;
+      if (!button) return;
+
+      const id = button.getAttribute("data-map-open-job") || "";
+      const pool = (mappedJobs.length ? mappedJobs : jobs) as MappedJob[];
+      const job = pool.find((row) => String(jobKey(row)).trim() === id.trim());
+      if (!job) return;
+
+      setMapMenuOpen(false);
+      focusJob(job);
+    }
+
+    document.addEventListener("click", handlePopupOpen);
+    return () => document.removeEventListener("click", handlePopupOpen);
+  }, [jobs, mappedJobs]);
 
   useEffect(() => {
     return () => {
@@ -2981,7 +3016,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     try {
       const saved = await saveFieldPhotos(target.jobKey, target.kind, files, target.meta);
       if (!saved.length) {
-        showActionNotice("No supported image/video was saved. Try Upload Before/After from your phone gallery.");
+        showActionNotice("No supported image/video was saved. Try camera again or choose media from your phone gallery.");
         return;
       }
 
@@ -3128,27 +3163,29 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   function finishFieldJob(job: MappedJob, partial = false) {
     const iso = new Date().toISOString();
     const takeAfter = window.confirm(`${partial ? "Mark partial work complete" : "Mark work complete"}? Press OK to capture AFTER images/videos.`);
+    const patch = {
+      WorkflowStatus: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+      workflowStatus: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+      FieldOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+      fieldOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+      StatusOverride: partial ? "Partial Work Completed" : "Work Completed",
+      status: partial ? "Partial Work Completed" : "Work Completed",
+      JobFinishedAt: iso,
+      jobFinishedAt: iso,
+      ActualWorkCompletionDate: iso,
+      actualWorkCompletionDate: iso,
+      OutcomeLockedAt: iso,
+      outcomeLockedAt: iso,
+      AfterPhotosRequestedAt: takeAfter ? iso : "",
+      afterPhotosRequestedAt: takeAfter ? iso : "",
+      ArchivedFromMap: false,
+    };
     saveFieldWorkflowPatch(
       job,
-      {
-        WorkflowStatus: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
-        workflowStatus: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
-        FieldOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
-        fieldOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
-        StatusOverride: partial ? "Partial Work Completed" : "Work Completed",
-        status: partial ? "Partial Work Completed" : "Work Completed",
-        JobFinishedAt: iso,
-        jobFinishedAt: iso,
-        ActualWorkCompletionDate: iso,
-        actualWorkCompletionDate: iso,
-        OutcomeLockedAt: iso,
-        outcomeLockedAt: iso,
-        AfterPhotosRequestedAt: takeAfter ? iso : "",
-        afterPhotosRequestedAt: takeAfter ? iso : "",
-        ArchivedFromMap: false,
-      },
+      patch,
       "Work completed. Generate package when photos are ready."
     );
+    openPaperworkPreviewForStatus(job, patch);
     if (takeAfter) requestFieldPhotoCapture(job, "after", "image/*,video/*");
   }
 
@@ -3158,73 +3195,106 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const available = new Date(when);
     available.setHours(available.getHours() + 72);
     const takeEvidence = window.confirm("No access? Press OK to capture evidence image/video now.");
+    const patch = {
+      WorkflowStatus: "NO_ACCESS_1_WAITING_72H",
+      workflowStatus: "NO_ACCESS_1_WAITING_72H",
+      FieldOutcome: "NO_ACCESS_1_WAITING_72H",
+      fieldOutcome: "NO_ACCESS_1_WAITING_72H",
+      StatusOverride: "No Access 1st - Waiting 72h",
+      status: "No Access 1st - Waiting 72h",
+      NoAccessFirstAttemptAt: iso,
+      noAccessFirstAttemptAt: iso,
+      SecondAttemptAvailableAt: available.toISOString(),
+      secondAttemptAvailableAt: available.toISOString(),
+      OutcomeLockedAt: iso,
+      outcomeLockedAt: iso,
+      ArchivedFromMap: false,
+    };
 
     saveFieldWorkflowPatch(
       job,
-      {
-        WorkflowStatus: "NO_ACCESS_1_WAITING_72H",
-        workflowStatus: "NO_ACCESS_1_WAITING_72H",
-        FieldOutcome: "NO_ACCESS_1_WAITING_72H",
-        fieldOutcome: "NO_ACCESS_1_WAITING_72H",
-        StatusOverride: "No Access 1st - Waiting 72h",
-        status: "No Access 1st - Waiting 72h",
-        NoAccessFirstAttemptAt: iso,
-        noAccessFirstAttemptAt: iso,
-        SecondAttemptAvailableAt: available.toISOString(),
-        secondAttemptAvailableAt: available.toISOString(),
-        OutcomeLockedAt: iso,
-        outcomeLockedAt: iso,
-        ArchivedFromMap: false,
-      },
+      patch,
       "No access saved. 72-hour revisit counter started."
     );
     setWorkflowViewFilter("waiting72");
+    openPaperworkPreviewForStatus(job, patch);
+    if (takeEvidence) requestFieldPhotoCapture(job, "no_access", "image/*,video/*");
+  }
+
+  function markNoAccessSecondAttempt(job: MappedJob) {
+    const iso = new Date().toISOString();
+    const existingFirstAttempt = job.NoAccessFirstAttemptAt || job.noAccessFirstAttemptAt || "";
+    const existingSecondAvailable = job.SecondAttemptAvailableAt || job.secondAttemptAvailableAt || "";
+    const takeEvidence = window.confirm("No access second attempt? Press OK to capture evidence image/video now.");
+    const patch = {
+      WorkflowStatus: "NO_ACCESS_COMPLETE",
+      workflowStatus: "NO_ACCESS_COMPLETE",
+      FieldOutcome: "NO_ACCESS_COMPLETE",
+      fieldOutcome: "NO_ACCESS_COMPLETE",
+      StatusOverride: "No Access Complete",
+      status: "No Access Complete",
+      NoAccessFirstAttemptAt: existingFirstAttempt,
+      noAccessFirstAttemptAt: existingFirstAttempt,
+      SecondAttemptAvailableAt: existingSecondAvailable,
+      secondAttemptAvailableAt: existingSecondAvailable,
+      NoAccessSecondAttemptAt: iso,
+      noAccessSecondAttemptAt: iso,
+      OutcomeLockedAt: iso,
+      outcomeLockedAt: iso,
+      ArchivedFromMap: false,
+    };
+    saveFieldWorkflowPatch(job, patch, "No access second attempt saved. Package preview opened.");
+    openPaperworkPreviewForStatus(job, patch);
     if (takeEvidence) requestFieldPhotoCapture(job, "no_access", "image/*,video/*");
   }
 
   function markRefusedAccess(job: MappedJob) {
     const iso = new Date().toISOString();
     const takeEvidence = window.confirm("Refused access? Press OK to capture evidence image/video now.");
+    const patch = {
+      WorkflowStatus: "REFUSED_ACCESS",
+      workflowStatus: "REFUSED_ACCESS",
+      FieldOutcome: "REFUSED_ACCESS",
+      fieldOutcome: "REFUSED_ACCESS",
+      StatusOverride: "Refused Access",
+      status: "Refused Access",
+      RefusalDate: iso,
+      refusalDate: iso,
+      OutcomeLockedAt: iso,
+      outcomeLockedAt: iso,
+      ArchivedFromMap: false,
+    };
     saveFieldWorkflowPatch(
       job,
-      {
-        WorkflowStatus: "REFUSED_ACCESS",
-        workflowStatus: "REFUSED_ACCESS",
-        FieldOutcome: "REFUSED_ACCESS",
-        fieldOutcome: "REFUSED_ACCESS",
-        StatusOverride: "Refused Access",
-        status: "Refused Access",
-        RefusalDate: iso,
-        refusalDate: iso,
-        OutcomeLockedAt: iso,
-        outcomeLockedAt: iso,
-        ArchivedFromMap: false,
-      },
+      patch,
       "Refused access saved. Evidence can be added to package."
     );
+    openPaperworkPreviewForStatus(job, patch);
     if (takeEvidence) requestFieldPhotoCapture(job, "refused_access", "image/*,video/*");
   }
 
   function markCompletedByOthers(job: MappedJob) {
     const iso = new Date().toISOString();
     const takeEvidence = window.confirm("Completed by others? Press OK to capture evidence image/video now.");
+    const patch = {
+      WorkflowStatus: "COMPLETED_BY_OTHERS",
+      workflowStatus: "COMPLETED_BY_OTHERS",
+      FieldOutcome: "COMPLETED_BY_OTHERS",
+      fieldOutcome: "COMPLETED_BY_OTHERS",
+      StatusOverride: "Completed by Others",
+      status: "Completed by Others",
+      VerifiedByOthersDate: iso,
+      verifiedByOthersDate: iso,
+      OutcomeLockedAt: iso,
+      outcomeLockedAt: iso,
+      ArchivedFromMap: false,
+    };
     saveFieldWorkflowPatch(
       job,
-      {
-        WorkflowStatus: "COMPLETED_BY_OTHERS",
-        workflowStatus: "COMPLETED_BY_OTHERS",
-        FieldOutcome: "COMPLETED_BY_OTHERS",
-        fieldOutcome: "COMPLETED_BY_OTHERS",
-        StatusOverride: "Completed by Others",
-        status: "Completed by Others",
-        VerifiedByOthersDate: iso,
-        verifiedByOthersDate: iso,
-        OutcomeLockedAt: iso,
-        outcomeLockedAt: iso,
-        ArchivedFromMap: false,
-      },
+      patch,
       "Completed by others saved. Evidence can be added to package."
     );
+    openPaperworkPreviewForStatus(job, patch);
     if (takeEvidence) requestFieldPhotoCapture(job, "completed_by_others", "image/*,video/*");
   }
 
@@ -3467,6 +3537,7 @@ function localDatetimeValue(date = new Date()) {
     setSelected((current) => (current && jobKey(current) === key ? applyPatch(current) as MappedJob : current));
     setJobs((rows) => rows.map(applyPatch));
     setMappedJobs((rows) => rows.map(applyPatch));
+    openPaperworkPreviewForStatus(job, patch);
   }
 
 function workflowLabel(job: JobRecord) {
@@ -3837,6 +3908,28 @@ function directionsUrl(job: JobRecord) {
     const query = paperworkQuery(job, outcome);
     const separator = query ? "&" : "";
     return `/paperwork?${query}${separator}doc=${doc}`;
+  }
+
+  function paperworkPreviewHref(job: JobRecord, patch: Record<string, any>, doc: "package" | "affidavit" | "invoice" = "package") {
+    const nextJob = { ...job, ...patch };
+    const outcome = paperworkOutcomeFromValue(
+      patch.WorkflowStatus || patch.workflowStatus || patch.FieldOutcome || patch.fieldOutcome || patch.StatusOverride || patch.status || workflowStatus(nextJob)
+    );
+    const query = paperworkQuery(nextJob, outcome);
+    const separator = query ? "&" : "";
+    return `/paperwork?${query}${separator}doc=${doc}`;
+  }
+
+  function openPaperworkPreviewForStatus(job: JobRecord, patch: Record<string, any>) {
+    const outcome = paperworkOutcomeFromValue(
+      patch.WorkflowStatus || patch.workflowStatus || patch.FieldOutcome || patch.fieldOutcome || patch.StatusOverride || patch.status
+    );
+    if (outcome === "pending") return;
+
+    const href = paperworkPreviewHref(job, patch, "package");
+    setGeneratedLinks({ affidavit: href, invoice: href });
+    window.open(href, "_blank", "noopener,noreferrer");
+    showActionNotice("Status saved. Affidavit + invoice preview opened.");
   }
 
   function currentSelectedIndex() {
@@ -8729,6 +8822,191 @@ return (
               min-height: 36px !important;
             }
           }
+
+          /* FIELD_MAP_REFINEMENT_2026 */
+          .map-node .leaflet-tile {
+            filter: saturate(1.12) contrast(1.08) brightness(0.91) !important;
+          }
+
+          .map-top {
+            width: min(318px, calc(100vw - 74px)) !important;
+            padding: 10px !important;
+            border-radius: 18px !important;
+            background: rgba(14, 20, 27, 0.94) !important;
+          }
+
+          .map-menu-scrim.open {
+            background: rgba(3, 8, 14, 0.18) !important;
+          }
+
+          .map-title-row {
+            grid-template-columns: minmax(0, 1fr) auto !important;
+          }
+
+          .map-title-row .home-btn {
+            display: none !important;
+          }
+
+          .map-title-row h1 {
+            font-size: 15px !important;
+          }
+
+          .map-title-row p {
+            font-size: 10px !important;
+          }
+
+          .map-menu-close {
+            min-width: 34px !important;
+            padding: 0 8px !important;
+            font-size: 0 !important;
+          }
+
+          .map-menu-close::before {
+            content: "x";
+            font-size: 14px;
+          }
+
+          .map-search {
+            grid-template-columns: minmax(0, 1fr) 56px !important;
+          }
+
+          .map-search input,
+          .jobs-toggle,
+          .map-days-filter button,
+          .days-back-control,
+          .map-style-select,
+          .maptiler-key-control {
+            min-height: 36px !important;
+            border-radius: 11px !important;
+          }
+
+          .map-days-filter {
+            grid-template-columns: minmax(0, 1fr) auto auto !important;
+            gap: 6px !important;
+          }
+
+          .map-days-filter .full-btn {
+            display: none !important;
+          }
+
+          .days-back-control {
+            grid-column: 1 / -1 !important;
+          }
+
+          .days-back-control input {
+            font-size: 20px !important;
+          }
+
+          .map-day-presets {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+            margin-top: 7px !important;
+          }
+
+          .map-day-presets button {
+            min-height: 34px !important;
+            border-radius: 11px !important;
+            border: 1px solid rgba(142, 170, 196, 0.24) !important;
+            background: rgba(248, 250, 252, 0.08) !important;
+            color: #dbe7f3 !important;
+            font-size: 12px !important;
+            font-weight: 950 !important;
+          }
+
+          .map-day-presets button.active {
+            background: linear-gradient(135deg, #23d3ae, #4da2ff) !important;
+            color: #031018 !important;
+            border-color: transparent !important;
+          }
+
+          .map-style-panel {
+            grid-template-columns: 1fr !important;
+            gap: 6px !important;
+            margin-top: 7px !important;
+          }
+
+          .map-style-status,
+          .map-style-badge {
+            min-height: 28px !important;
+            justify-content: flex-start !important;
+            font-size: 10px !important;
+          }
+
+          .map-stats {
+            width: min(244px, calc(100vw - 96px)) !important;
+          }
+
+          .field-map-popup {
+            display: grid;
+            gap: 5px;
+            min-width: 190px;
+            max-width: 230px;
+            color: #172033;
+          }
+
+          .field-map-popup strong {
+            font-size: 14px;
+          }
+
+          .field-map-popup span,
+          .field-map-popup small {
+            display: block;
+            line-height: 1.25;
+          }
+
+          .field-map-popup span {
+            font-size: 12px;
+          }
+
+          .field-map-popup small {
+            color: #526276;
+            font-size: 11px;
+          }
+
+          .field-map-popup button {
+            min-height: 34px;
+            border: 0;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #23d3ae, #4da2ff);
+            color: #031018;
+            font-weight: 950;
+          }
+
+          .leaflet-popup-content-wrapper {
+            border-radius: 14px !important;
+            box-shadow: 0 18px 42px rgba(3, 8, 14, 0.26) !important;
+          }
+
+          .leaflet-popup-content {
+            margin: 12px !important;
+          }
+
+          .field-step-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .field-step-actions button {
+            min-height: 52px !important;
+            font-size: 12px !important;
+          }
+
+          @media (max-width: 720px) {
+            .map-top {
+              width: min(304px, calc(100vw - 78px)) !important;
+              padding: 8px !important;
+            }
+
+            .map-menu-fab {
+              min-width: 62px !important;
+              height: 40px !important;
+              font-size: 12px !important;
+            }
+
+            .map-stats {
+              width: min(218px, calc(100vw - 94px)) !important;
+            }
+          }
         `}
         </style>
 
@@ -8808,6 +9086,22 @@ return (
           }}>
             {fullMap ? "Focus On" : "Focus Off"}
           </button>
+        </div>
+
+        <div className="map-day-presets" aria-label="Quick day filters">
+          {MAP_DAYS_PRESETS.map((days) => (
+            <button
+              key={days}
+              className={!mapShowAllDays && mapDaysBackLimit() === Number(days) ? "active" : ""}
+              type="button"
+              onClick={() => {
+                setMapShowAllDays(false);
+                setMapDaysBack(days);
+              }}
+            >
+              {days}d
+            </button>
+          ))}
         </div>
 
         <div className={`map-style-panel ${needsMapTilerKey ? "needs-key" : ""}`}>
@@ -9242,47 +9536,26 @@ return (
                 <button type="button" className="start-job-btn" onClick={() => startFieldJob(selected)}>
                   Start Job
                 </button>
-                <button type="button" className="reset-job-btn" onClick={() => resetFieldJobForTesting(selected)}>
-                  Clear / Pending
-                </button>
-                <button type="button" className="packet-job-btn" onClick={() => { focusFieldPane("package"); downloadTempEvidencePacket(selected); }}>
-                  Temp Packet
-                </button>
-                <button type="button" className="email-job-btn" onClick={() => { focusFieldPane("send"); downloadTempEvidencePacket(selected, true); }}>
-                  Packet + Email
-                </button>
-                <button type="button" className="upload-job-btn" onClick={() => { focusFieldPane("capture"); requestFieldPhotoCapture(selected, "before", "image/*,video/*", false); }}>
-                  Upload Before
-                </button>
-                <button type="button" className="upload-job-btn" onClick={() => { focusFieldPane("capture"); requestFieldPhotoCapture(selected, "after", "image/*,video/*", false); }}>
-                  Upload After
-                </button>
-                <button type="button" onClick={() => { focusFieldPane("capture"); requestFieldPhotoCapture(selected, "before", "image/*"); }}>
-                  Before Image
-                </button>
-                <button type="button" onClick={() => { focusFieldPane("capture"); requestFieldPhotoCapture(selected, "before", "video/*"); }}>
-                  Before Video
-                </button>
                 <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected)}>
-                  Finish Work
-                </button>
-                <button type="button" onClick={() => { focusFieldPane("capture"); requestFieldPhotoCapture(selected, "after", "image/*"); }}>
-                  After Image
-                </button>
-                <button type="button" onClick={() => { focusFieldPane("capture"); requestFieldPhotoCapture(selected, "after", "video/*"); }}>
-                  After Video
+                  Finish Job
                 </button>
                 <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected, true)}>
-                  Partial Finish
+                  Partial Work
                 </button>
                 <button type="button" className="no-access-job-btn" onClick={() => startNoAccessCounter(selected)}>
-                  No Access 72h
+                  No Access 1st
+                </button>
+                <button type="button" className="no-access-job-btn" onClick={() => markNoAccessSecondAttempt(selected)}>
+                  No Access 2nd
                 </button>
                 <button type="button" className="refused-job-btn" onClick={() => markRefusedAccess(selected)}>
-                  Refused Evidence
+                  Refused Access
                 </button>
                 <button type="button" className="other-done-job-btn" onClick={() => markCompletedByOthers(selected)}>
-                  Other Done Evidence
+                  Done by Others
+                </button>
+                <button type="button" className="reset-job-btn" onClick={() => resetFieldJobForTesting(selected)}>
+                  Pending / Clear
                 </button>
               </div>
 
@@ -9320,7 +9593,7 @@ return (
                 <div>
                   <span>Send Package</span>
                   <strong>{fieldPacketRowsFor(selected)[0] ? "Latest packet ready" : "Create packet first"}</strong>
-                  <small>{fieldPacketRowsFor(selected)[0]?.fileName || "Use Packet + Email after evidence is saved."}</small>
+                  <small>{fieldPacketRowsFor(selected)[0]?.fileName || "Generate package preview after evidence is saved."}</small>
                 </div>
                 <button
                   type="button"
