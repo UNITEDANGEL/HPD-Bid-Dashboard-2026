@@ -1,18 +1,19 @@
 ﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
+import {
+  PAPERWORK_OUTCOMES,
+  type PaperworkOutcome,
+  formatCurrency,
+  getJobAddress,
+  getJobAmount,
+  getJobId,
+  invoiceDescriptionForOutcome,
+  paperworkOutcomeFromJob,
+  paperworkOutcomeFromValue,
+} from "../../lib/paperwork";
 
-type JobRecord = {
-  id?: string;
-  address?: string;
-  location?: string;
-  borough?: string;
-  trade?: string;
-  description?: string;
-  bidAmount?: string;
-  amountValue?: number;
-  status?: string;
-};
+type JobRecord = Record<string, unknown>;
 
 function asArray(value: unknown): JobRecord[] {
   if (Array.isArray(value)) return value as JobRecord[];
@@ -31,22 +32,12 @@ function defaultInvoiceNo() {
   return `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`;
 }
 
-function money(job?: JobRecord) {
-  if (!job) return "";
-  if (typeof job.amountValue === "number" && Number.isFinite(job.amountValue) && job.amountValue > 0) {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: 0,
-    }).format(job.amountValue);
-  }
-
-  return job.bidAmount || "";
-}
-
 export default function InvoiceGeneratorPage() {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [selectedId, setSelectedId] = useState("");
+  const [queryJobId, setQueryJobId] = useState("");
+  const [outcome, setOutcome] = useState<PaperworkOutcome>("work_completed");
+  const [loadedQuery, setLoadedQuery] = useState(false);
   const [form, setForm] = useState({
     invoiceNo: defaultInvoiceNo(),
     customer: "HPD / OMO",
@@ -79,25 +70,58 @@ export default function InvoiceGeneratorPage() {
     };
   }, []);
 
-  const selectedJob = useMemo(() => jobs.find((job) => (job.id || "") === selectedId), [jobs, selectedId]);
+  useEffect(() => {
+    if (typeof window === "undefined" || loadedQuery) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const job = params.get("job") || "";
+    const nextOutcome = paperworkOutcomeFromValue(params.get("outcome") || "");
+
+    setQueryJobId(job);
+    setSelectedId(job);
+    setOutcome(nextOutcome === "pending" ? "work_completed" : nextOutcome);
+    setLoadedQuery(true);
+  }, [loadedQuery]);
+
+  useEffect(() => {
+    if (!queryJobId || !jobs.length) return;
+    chooseJob(queryJobId, outcome);
+  }, [jobs, queryJobId]);
+
+  const selectedJob = useMemo(
+    () => jobs.find((job, index) => getJobId(job, String(index)) === selectedId) || null,
+    [jobs, selectedId]
+  );
 
   function update(key: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  function chooseJob(id: string) {
+  function chooseJob(id: string, nextOutcome = outcome) {
     setSelectedId(id);
-    const job = jobs.find((item) => (item.id || "") === id);
+    const job = jobs.find((item, index) => getJobId(item, String(index)) === id);
     if (!job) return;
+    const resolvedOutcome = nextOutcome === "pending" ? paperworkOutcomeFromJob(job) : nextOutcome;
 
     setForm((prev) => ({
       ...prev,
-      jobId: job.id || "",
-      address: job.address || job.location || "",
-      description: job.description || job.trade || prev.description,
-      amount: money(job) || prev.amount,
+      jobId: getJobId(job),
+      address: getJobAddress(job),
+      description: invoiceDescriptionForOutcome(job, resolvedOutcome),
+      amount: formatCurrency(getJobAmount(job)) || prev.amount,
     }));
   }
+
+  function chooseOutcome(value: string) {
+    const nextOutcome = paperworkOutcomeFromValue(value);
+    setOutcome(nextOutcome);
+    setForm((prev) => ({
+      ...prev,
+      description: invoiceDescriptionForOutcome(selectedJob, nextOutcome),
+    }));
+  }
+
+  const paperworkHref = `/paperwork?job=${encodeURIComponent(form.jobId || selectedId)}&outcome=${encodeURIComponent(outcome)}`;
 
   return (
     <main className="hpd-invoice-shell">
@@ -212,6 +236,18 @@ export default function InvoiceGeneratorPage() {
           cursor: pointer;
         }
 
+        .hpd-package-link {
+          display: block;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          background: rgba(255, 255, 255, 0.08);
+          color: #f8fbff;
+          border-radius: 16px;
+          padding: 14px;
+          text-align: center;
+          text-decoration: none;
+          font-weight: 950;
+        }
+
         .hpd-invoice-sheet {
           background: #ffffff;
           color: #111827;
@@ -324,8 +360,19 @@ export default function InvoiceGeneratorPage() {
             <select value={selectedId} onChange={(event) => chooseJob(event.target.value)}>
               <option value="">Manual invoice</option>
               {jobs.slice(0, 500).map((job, index) => (
-                <option value={job.id || String(index)} key={`${job.id || "job"}-${index}`}>
-                  {job.id || `Job ${index + 1}`} â€” {job.address || job.location || job.borough || "No address"}
+                <option value={getJobId(job, String(index))} key={`${getJobId(job, "job")}-${index}`}>
+                  {getJobId(job, `Job ${index + 1}`)} - {getJobAddress(job) || "No address"}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Field Outcome
+            <select value={outcome} onChange={(event) => chooseOutcome(event.target.value)}>
+              {PAPERWORK_OUTCOMES.map((item) => (
+                <option value={item.value} key={item.value}>
+                  {item.label}
                 </option>
               ))}
             </select>
@@ -364,6 +411,10 @@ export default function InvoiceGeneratorPage() {
           <button className="hpd-print-button" type="button" onClick={() => window.print()}>
             Print / Save PDF
           </button>
+
+          <a className="hpd-package-link" href={paperworkHref}>
+            Open affidavit + invoice package
+          </a>
         </section>
 
         <section className="hpd-invoice-preview">
@@ -386,10 +437,10 @@ export default function InvoiceGeneratorPage() {
               <strong>Bill To:</strong> {form.customer}
             </p>
             <p>
-              <strong>Job ID:</strong> {form.jobId || selectedJob?.id || "Not entered"}
+              <strong>Job ID:</strong> {form.jobId || getJobId(selectedJob || undefined) || "Not entered"}
             </p>
             <p>
-              <strong>Address:</strong> {form.address || selectedJob?.address || selectedJob?.location || "Not entered"}
+              <strong>Address:</strong> {form.address || getJobAddress(selectedJob || undefined) || "Not entered"}
             </p>
 
             <div className="hpd-invoice-table">

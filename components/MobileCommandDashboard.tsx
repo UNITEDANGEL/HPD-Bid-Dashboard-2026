@@ -165,6 +165,13 @@ export default function MobileCommandDashboard() {
       icon: "Inv",
     },
     {
+      href: "/paperwork",
+      title: "Paperwork Package",
+      sub: "Prepare invoice plus work completed or no work completed affidavit.",
+      badge: "Ready",
+      icon: "Docs",
+    },
+    {
       href: "/outputs",
       title: "Output Center",
       sub: "Review filled PDFs, invoices, logs, and exports.",
@@ -560,7 +567,7 @@ export default function MobileCommandDashboard() {
           z-index: 20;
           width: min(520px, calc(100% - 24px));
           display: grid;
-          grid-template-columns: repeat(5, 1fr);
+          grid-template-columns: repeat(6, 1fr);
           gap: 4px;
           border: 1px solid var(--hpd-line);
           background: rgba(7, 17, 31, 0.92);
@@ -720,6 +727,7 @@ export default function MobileCommandDashboard() {
         <Link href="/">Home</Link>
         <Link href="/jobs">Jobs</Link>
         <Link href="/map">Map</Link>
+        <Link href="/paperwork">Docs</Link>
         <Link href="/fetcher">Fetch</Link>
         <Link href="/outputs">Files</Link>
       </nav>

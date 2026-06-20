@@ -8,6 +8,10 @@ const tempRoot = path.join(root, ".cloudflare-build");
 const tempApiDir = path.join(tempRoot, "app-api");
 const outDir = path.join(root, "out");
 const outDataDir = path.join(outDir, "data");
+const generatedNextTypeDirs = [
+  path.join(root, ".next", "dev", "types"),
+  path.join(root, ".next", "types"),
+];
 
 function removeIfExists(target) {
   if (fs.existsSync(target)) {
@@ -63,6 +67,7 @@ let movedApi = false;
 try {
   removeIfExists(outDir);
   removeIfExists(tempRoot);
+  generatedNextTypeDirs.forEach(removeIfExists);
 
   // Next static export cannot include dynamic app/api route handlers.
   // Cloudflare serves the matching runtime API from the Pages Functions directory.
@@ -95,6 +100,7 @@ try {
 const requiredFiles = [
   path.join(outDir, "index.html"),
   path.join(outDir, "map", "index.html"),
+  path.join(outDir, "paperwork", "index.html"),
   path.join(outDir, "fetcher", "index.html"),
   path.join(outDir, "data", "COA_Fetcher_2026.json"),
   path.join(outDir, "data", "fetcher_latest_status.json"),

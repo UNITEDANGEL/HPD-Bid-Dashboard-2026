@@ -3,6 +3,7 @@ const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
 
 
 import * as JobStatus from "../../lib/jobs/status";
+import { paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type JobRecord = {
@@ -2590,6 +2591,18 @@ function googleDirectionsUrl(job: JobRecord | null | undefined) {
 
 function directionsUrl(job: JobRecord) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddress(job))}`;
+  }
+
+  function paperworkHref(job: JobRecord, doc: "package" | "affidavit" | "invoice" = "package") {
+    const outcome = paperworkOutcomeFromValue(workflowStatus(job) || JobStatus.statusLabel(job));
+    const query = paperworkQuery(job, outcome);
+    const separator = query ? "&" : "";
+    return `/paperwork?${query}${separator}doc=${doc}`;
+  }
+
+  function invoiceHref(job: JobRecord) {
+    const outcome = paperworkOutcomeFromValue(workflowStatus(job) || JobStatus.statusLabel(job));
+    return `/invoice-generator?${paperworkQuery(job, outcome)}`;
   }
 
   function currentSelectedIndex() {
@@ -5492,8 +5505,9 @@ return (
             <div className="card-actions">
               <button type="button" className="secondary" onClick={() => setDrawerOpen(true)}>Details</button>
               <button type="button" className="secondary archive-btn" onClick={() => sendJobToArchive(selected)}>Send to Archive</button>
-              <button type="button" onClick={() => alert("Affidavit generation is planned for Phase 4. Save field status first.")}>Affidavit</button>
-              <button type="button" onClick={() => alert("Invoice generation is planned for Phase 5. Save field status first.")}>Invoice</button>
+              <a href={paperworkHref(selected, "affidavit")}>Affidavit</a>
+              <a href={invoiceHref(selected)}>Invoice</a>
+              <a href={paperworkHref(selected, "package")}>Package</a>
               <a target="_blank" rel="noreferrer" href={directionsUrl(selected)}>Directions</a>
             </div>
 
@@ -5646,7 +5660,8 @@ return (
             <div className="card-actions">
               <button className="secondary" type="button" onClick={() => focusJob(job)}>Details</button>
               <button type="button" className="secondary archive-btn" onClick={() => sendJobToArchive(job)}>Send to Archive</button>
-              <a className="secondary" href={`/invoice-generator?job=${encodeURIComponent(jobKey(job, index))}`}>Invoice</a>
+              <a className="secondary" href={invoiceHref(job)}>Invoice</a>
+              <a className="secondary" href={paperworkHref(job, "package")}>Package</a>
               <a target="_blank" rel="noreferrer" href={directionsUrl(job)}>Directions</a>
             </div>
           </div>
