@@ -51,7 +51,7 @@ export async function onRequestPost(context) {
       "run-fetcher.yml";
     const branch =
       context.env.GITHUB_FETCHER_BRANCH ||
-      "render-map-upgrade";
+      "main";
     const response = await fetch(
       `https://api.github.com/repos/${repo}/actions/workflows/${workflow}/dispatches`,
       {

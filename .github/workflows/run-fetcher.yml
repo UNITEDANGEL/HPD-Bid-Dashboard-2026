@@ -26,7 +26,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          ref: render-map-upgrade
+          ref: main
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -86,7 +86,7 @@ jobs:
             echo "No fetcher data changes to commit."
           else
             git commit -m "Run built-in fetcher from GitHub Action"
-            git push origin render-map-upgrade
+            git push origin main
           fi
 
 

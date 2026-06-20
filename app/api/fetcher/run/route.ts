@@ -58,7 +58,7 @@ async function dispatchGitHubWorkflow(daysBack: number) {
 
   const repo = process.env.GITHUB_REPOSITORY_FULL_NAME || "UNITEDANGEL/HPD-Bid-Dashboard-2026";
   const workflow = process.env.GITHUB_FETCHER_WORKFLOW || "run-fetcher.yml";
-  const branch = process.env.GITHUB_FETCHER_BRANCH || "render-map-upgrade";
+  const branch = process.env.GITHUB_FETCHER_BRANCH || "main";
   const response = await fetch(`https://api.github.com/repos/${repo}/actions/workflows/${workflow}/dispatches`, {
     method: "POST",
     headers: {
