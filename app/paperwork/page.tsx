@@ -309,6 +309,9 @@ export default function PaperworkPage() {
         setText("Work Description", form.description || form.notes || "Work completed per HPD bid / work order.");
       } else {
         const noWorkReason = form.affidavitReason || affidavitReasonForOutcome(outcome);
+        const fieldDate = form.fieldDate || todayIsoDate();
+        const firstAttempt = form.firstAttempt || fieldDate;
+        const secondAttempt = form.secondAttempt || fieldDate;
         const noWorkDescription = [
           `NO WORK COMPLETED - ${noWorkReason}`,
           form.description,
@@ -317,13 +320,13 @@ export default function PaperworkPage() {
           .filter(Boolean)
           .join("\n\n");
 
-        setText("inaccessibility was due to 1", noWorkReason);
-        setText("inaccessibility was due to 2", form.notes);
+        setText("inaccessibility was due to 1", outcome === "no_access" ? "NO ACCESS TO MAKE REPAIRS" : "");
+        setText("inaccessibility was due to 2", outcome === "no_access" ? form.notes : "");
         setText("COUNTY OF", form.borough || "NEW YORK");
         setText("AMOUNT", amount);
-        setText("ARRIVE DATE", form.firstAttempt || form.fieldDate);
-        setText("REFUSE DATE", outcome === "refused_access" ? form.secondAttempt || form.fieldDate : "");
-        setText("DENIED DATE", outcome === "refused_access" ? form.secondAttempt || form.fieldDate : "");
+        setText("ARRIVE DATE", outcome === "completed_by_others" ? secondAttempt : "");
+        setText("REFUSE DATE", "");
+        setText("DENIED DATE", outcome === "refused_access" ? secondAttempt : "");
         setText("DENIED TEL", "");
         setText("DENIED NAME", "");
         setText("Description of individual DENIED", "");
@@ -331,8 +334,8 @@ export default function PaperworkPage() {
         setText("Type or Print Name", form.signer || "JOTJAGRAJ SINGH");
         setText("State", "NY");
         setText("I swear statement", `I ${form.signer || "JOTJAGRAJ SINGH"} / United Angel Construction Corp.`);
-        setText("START DATE", form.firstAttempt || form.fieldDate);
-        setText("COMPLETE DATE", form.secondAttempt || form.fieldDate);
+        setText("START DATE", outcome === "no_access" ? firstAttempt : "");
+        setText("COMPLETE DATE", outcome === "no_access" ? secondAttempt : "");
         setText("Work Description", noWorkDescription);
       }
 
