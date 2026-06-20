@@ -155,6 +155,28 @@ function loadImage(dataUrl: string): Promise<HTMLImageElement> {
   });
 }
 
+export async function compactImageDataUrl(dataUrl: string, maxSide = 1100, quality = 0.62) {
+  if (!dataUrl || typeof document === "undefined") return dataUrl;
+
+  try {
+    const image = await loadImage(dataUrl);
+    const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) return dataUrl;
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+    return canvas.toDataURL("image/jpeg", quality);
+  } catch {
+    return dataUrl;
+  }
+}
+
 function cleanFilePart(value: string, fallback = "field") {
   const cleaned = String(value || "")
     .toUpperCase()

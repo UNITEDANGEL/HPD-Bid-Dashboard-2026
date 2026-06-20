@@ -10,11 +10,18 @@ import {
   type FieldMediaKind,
   canStoreFieldPhotos,
   clearFieldEvidence,
+  compactImageDataUrl,
   countFieldPhotos,
   dataUrlToBytes,
   listFieldEvidence,
   saveFieldPhotos,
 } from "../../lib/field-photo-store";
+import {
+  type FieldPacket,
+  bytesToDataUrl,
+  listFieldPackets,
+  saveFieldPacket,
+} from "../../lib/field-packet-store";
 import { paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -1291,6 +1298,7 @@ const photoCaptureTargetRef = useRef<{
 } | null>(null);
 const [fieldPhotoCounts, setFieldPhotoCounts] = useState<Record<string, FieldMediaCounts>>({});
 const [fieldEvidenceByJob, setFieldEvidenceByJob] = useState<Record<string, FieldMedia[]>>({});
+const [fieldPacketsByJob, setFieldPacketsByJob] = useState<Record<string, FieldPacket[]>>({});
 const [fieldCaptureAccept, setFieldCaptureAccept] = useState("image/*,video/*");
 const [fieldCaptureCamera, setFieldCaptureCamera] = useState(true);
 const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
@@ -1301,6 +1309,7 @@ const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
   title: string;
   text: string;
 } | null>(null);
+const [fieldFocusPane, setFieldFocusPane] = useState<"capture" | "evidence" | "package" | "send">("capture");
 const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; accuracy?: number; updatedAt: string } | null>(null);
 const [locationStatus, setLocationStatus] = useState("Location off");
 const [followMyLocation, setFollowMyLocation] = useState(false);
@@ -2156,11 +2165,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const key = selected ? jobKey(selected) : "";
     if (!key || !canStoreFieldPhotos()) return;
     let cancelled = false;
-    Promise.all([countFieldPhotos(key), listFieldEvidence(key)])
-      .then(([counts, evidenceRows]) => {
+    Promise.all([countFieldPhotos(key), listFieldEvidence(key), listFieldPackets(key)])
+      .then(([counts, evidenceRows, packets]) => {
         if (!cancelled) {
           setFieldPhotoCounts((current) => ({ ...current, [key]: counts }));
           setFieldEvidenceByJob((current) => ({ ...current, [key]: fieldEvidenceCardRows(evidenceRows) }));
+          setFieldPacketsByJob((current) => ({ ...current, [key]: packets }));
         }
       })
       .catch((error) => console.error(error));
@@ -2393,6 +2403,45 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return kind.replace(/_/g, "-");
   }
 
+  function fieldPacketRowsFor(job: JobRecord | null) {
+    const key = job ? jobKey(job) : "";
+    if (!key) return [] as FieldPacket[];
+    return fieldPacketsByJob[key] || [];
+  }
+
+  function packetSizeLabel(size: number) {
+    const value = Number(size || 0);
+    if (!value) return "0 KB";
+    if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+    return `${(value / 1024 / 1024).toFixed(value > 10 * 1024 * 1024 ? 0 : 1)} MB`;
+  }
+
+  function focusFieldPane(pane: "capture" | "evidence" | "package" | "send") {
+    setFieldFocusPane(pane);
+    window.setTimeout(() => {
+      document.querySelector(`[data-field-pane="${pane}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 40);
+  }
+
+  function downloadStoredPacket(packet: FieldPacket) {
+    const bytes = dataUrlToBytes(packet.dataUrl);
+    const buffer = new ArrayBuffer(bytes.byteLength);
+    new Uint8Array(buffer).set(bytes);
+    const href = URL.createObjectURL(new Blob([buffer], { type: packet.mimeType || "application/pdf" }));
+    const anchor = document.createElement("a");
+    anchor.href = href;
+    anchor.download = packet.fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(href), 30000);
+    showActionNotice(`Downloaded saved packet: ${packet.fileName}`);
+  }
+
+  function emailStoredPacket(job: MappedJob, packet: FieldPacket) {
+    openEvidenceEmailDraft(job, packet.fileName, packet.evidenceCount);
+  }
+
   function safePacketFilePart(value: string, fallback = "packet") {
     const cleaned = String(value || "")
       .toUpperCase()
@@ -2422,7 +2471,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   async function drawPacketPreview(pdfDoc: PDFDocument, page: any, media: FieldMedia) {
-    const previewDataUrl = media.mediaType === "video" ? media.posterDataUrl : media.dataUrl;
+    const rawPreviewDataUrl = media.mediaType === "video" ? media.posterDataUrl : media.dataUrl;
+    const previewDataUrl = rawPreviewDataUrl ? await compactImageDataUrl(rawPreviewDataUrl, media.mediaType === "video" ? 900 : 1100, 0.6) : "";
     const box = { x: 46, y: 138, width: 520, height: 470 };
 
     if (previewDataUrl) {
@@ -2443,7 +2493,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     page.drawRectangle({ ...box, borderWidth: 1 });
-    drawPacketLine(page, media.mediaType === "video" ? "VIDEO FILE ATTACHED" : "IMAGE PREVIEW UNAVAILABLE", 170, 374, 16);
+    drawPacketLine(page, media.mediaType === "video" ? "VIDEO POSTER UNAVAILABLE" : "IMAGE PREVIEW UNAVAILABLE", 170, 374, 16);
     drawPacketLine(page, media.name || media.evidenceLabel || "Field evidence", 126, 346, 10);
   }
 
@@ -2467,21 +2517,22 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     const cover = pdfDoc.addPage([612, 792]);
     cover.setFont(font);
-    cover.drawText("TEMPORARY FIELD EVIDENCE PACKET", { x: 46, y: 744, size: 17, font: bold });
+    cover.drawText("EMAIL-SIZE FIELD EVIDENCE PACKET", { x: 46, y: 744, size: 17, font: bold });
     drawPacketLine(cover, `OMO / WORK #: ${key}`, 46, 716, 12);
     drawPacketLine(cover, `Address: ${address}`, 46, 696, 10);
     drawPacketLine(cover, `Location: ${location || "Not listed"} - Borough: ${(job as any).borough || "Not listed"}`, 46, 680, 10);
     drawPacketLine(cover, `Status: ${workflowLabel(job) || JobStatus.statusLabel(job)}`, 46, 660, 10);
     drawPacketLine(cover, `Generated: ${generatedAt}`, 46, 642, 10);
     drawPacketLine(cover, `Evidence files: ${evidenceRows.length}`, 46, 616, 11);
-    drawPacketLine(cover, "Attach this PDF to the email draft. Videos are embedded as PDF attachments when supported.", 46, 594, 9);
+    drawPacketLine(cover, "Email-size mode: images are compressed; videos are listed with poster frames only.", 46, 594, 9);
+    drawPacketLine(cover, "Keep original videos saved on the phone or future cloud evidence vault.", 46, 580, 9);
 
     evidenceRows.slice(0, 26).forEach((media, index) => {
       drawPacketLine(
         cover,
         `${index + 1}. ${media.evidenceLabel || media.kind} - ${media.mediaType.toUpperCase()} - ${displayWorkflowDate(media.capturedAt)} - ${media.name}`,
         54,
-        564 - index * 18,
+        548 - index * 18,
         8
       );
     });
@@ -2489,18 +2540,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     for (const [index, media] of evidenceRows.entries()) {
       const page = pdfDoc.addPage([612, 792]);
       page.setFont(font);
-      const attachmentName = media.name || `${key}-${index + 1}-${media.kind}`;
-
-      try {
-        await pdfDoc.attach(dataUrlToBytes(media.dataUrl), attachmentName, {
-          mimeType: media.type || (media.mediaType === "video" ? "video/mp4" : "image/jpeg"),
-          description: `${media.evidenceLabel || "Field Evidence"} - ${key}`,
-          creationDate: new Date(media.capturedAt),
-          modificationDate: new Date(media.capturedAt),
-        });
-      } catch (error) {
-        console.error(error);
-      }
 
       page.drawText("FIELD EVIDENCE", { x: 46, y: 744, size: 17, font: bold });
       drawPacketLine(page, `OMO / WORK #: ${key}`, 46, 718, 11);
@@ -2510,17 +2549,45 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       drawPacketLine(page, `Address: ${media.address || address}`, 46, 652, 9);
       drawPacketLine(page, `Location: ${media.location || location || "Not listed"} - Borough: ${media.borough || (job as any).borough || "Not listed"}`, 46, 636, 9);
       await drawPacketPreview(pdfDoc, page, media);
-      drawPacketLine(page, `PDF attachment: ${attachmentName}`, 46, 96, 9);
+      drawPacketLine(page, `Evidence file recorded: ${media.name || `${key}-${index + 1}-${media.kind}`}`, 46, 96, 9);
       if (media.mediaType === "video") {
-        drawPacketLine(page, "Open the PDF attachments panel to view/play the original video.", 46, 80, 9);
+        drawPacketLine(page, "Video original is not embedded in this email-size PDF. Keep original evidence saved.", 46, 80, 9);
       }
     }
 
+    const fileName = packetFileName(job, "email-size-evidence-packet");
     const bytes = await pdfDoc.save();
     const pdfBuffer = new ArrayBuffer(bytes.byteLength);
     new Uint8Array(pdfBuffer).set(bytes);
     const blob = new Blob([pdfBuffer], { type: "application/pdf" });
-    const fileName = packetFileName(job);
+    const imageCount = evidenceRows.filter((media) => media.mediaType === "image").length;
+    const videoCount = evidenceRows.filter((media) => media.mediaType === "video").length;
+    let savedLocally = true;
+
+    try {
+      const savedPacket = await saveFieldPacket({
+        jobId: key,
+        fileName,
+        mimeType: "application/pdf",
+        dataUrl: bytesToDataUrl(new Uint8Array(pdfBuffer), "application/pdf"),
+        size: bytes.byteLength,
+        evidenceCount: evidenceRows.length,
+        imageCount,
+        videoCount,
+        packetType: "email_evidence_pdf",
+        note: "Email-size PDF saved on this device. Videos are listed with poster frames only.",
+      });
+      setFieldPacketsByJob((current) => ({
+        ...current,
+        [key]: [savedPacket, ...(current[key] || [])].sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)),
+      }));
+      focusFieldPane(openDraftAfter ? "send" : "package");
+    } catch (error) {
+      savedLocally = false;
+      console.error(error);
+      showActionNotice("Packet downloaded, but this browser could not save it locally.");
+    }
+
     const href = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = href;
@@ -2530,7 +2597,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(href), 30000);
 
-    showActionNotice(`Downloaded temp evidence packet: ${fileName}`);
+    showActionNotice(`${savedLocally ? "Saved and downloaded" : "Downloaded"} email-size packet: ${fileName} (${packetSizeLabel(bytes.byteLength)}).`);
     if (openDraftAfter) openEvidenceEmailDraft(job, fileName, evidenceRows.length);
   }
 
@@ -2622,6 +2689,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     setFieldCaptureAccept(accept);
     setFieldCaptureCamera(useCamera);
+    setFieldFocusPane("capture");
     const nextTarget = { jobKey: key, kind, meta: fieldEvidenceMeta(job, kind) };
     setFieldCaptureGuide({
       jobKey: key,
@@ -2725,6 +2793,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const videoCount = saved.filter((item) => item.mediaType === "video").length;
       const imageCount = saved.length - videoCount;
       setFieldCaptureGuide(null);
+      focusFieldPane("evidence");
       showActionNotice(`${fieldEvidenceLabel(target.kind)} saved: ${imageCount} image(s), ${videoCount} video(s).`);
     } catch (error) {
       console.error(error);
@@ -2756,6 +2825,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       ArchivedFromMap: false,
     };
     const startedJob = { ...job, ...patch } as MappedJob;
+    setFieldFocusPane("capture");
     setSelectedOnly(true);
     setDrawerOpen(true);
     setFullMap(false);
@@ -2775,6 +2845,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     const resetPatch = clearedFieldWorkflowStatePatch();
     setFieldCaptureGuide(null);
+    setFieldFocusPane("capture");
     photoCaptureTargetRef.current = null;
     setPhotoCaptureTarget(null);
     setDraftWorkflowStatus("");
@@ -6650,6 +6721,113 @@ return (
             border: 1px solid rgba(37, 99, 235, 0.18);
           }
 
+          .field-flow-dock {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 9px;
+            scroll-margin-top: 120px;
+          }
+
+          .field-flow-dock button {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: center;
+            column-gap: 9px;
+            min-height: 72px;
+            padding: 10px;
+            text-align: left;
+            border: 1px solid rgba(126, 146, 169, 0.24);
+            border-radius: 12px;
+            background: #ffffff;
+            color: #172033;
+            box-shadow: 0 10px 22px rgba(31, 47, 70, 0.10);
+            transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+          }
+
+          .field-flow-dock button:hover,
+          .field-flow-dock button.active {
+            transform: translateY(-2px) scale(1.015);
+            box-shadow: 0 16px 32px rgba(31, 47, 70, 0.18);
+          }
+
+          .field-flow-dock .flow-icon {
+            grid-row: span 2;
+            width: 36px;
+            height: 36px;
+            display: grid;
+            place-items: center;
+            border-radius: 999px;
+            color: #061019;
+            font-size: 15px;
+            font-weight: 1000;
+          }
+
+          .field-flow-dock button strong {
+            color: inherit !important;
+            font-size: 13px;
+            line-height: 1.1;
+          }
+
+          .field-flow-dock button small {
+            color: inherit !important;
+            opacity: 0.74;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+            line-height: 1.15;
+          }
+
+          .field-flow-dock .capture {
+            background: #e8fbf4;
+            border-color: rgba(20, 184, 166, 0.28);
+            color: #0f5132;
+          }
+
+          .field-flow-dock .capture .flow-icon {
+            background: #42d6b5;
+          }
+
+          .field-flow-dock .evidence {
+            background: #e8f2ff;
+            border-color: rgba(37, 99, 235, 0.24);
+            color: #123c70;
+          }
+
+          .field-flow-dock .evidence .flow-icon {
+            background: #7db7ff;
+          }
+
+          .field-flow-dock .package {
+            background: #fff5d8;
+            border-color: rgba(217, 119, 6, 0.24);
+            color: #684300;
+          }
+
+          .field-flow-dock .package .flow-icon {
+            background: #f2c86b;
+          }
+
+          .field-flow-dock .send {
+            background: #f0edff;
+            border-color: rgba(124, 58, 237, 0.24);
+            color: #4f35a3;
+          }
+
+          .field-flow-dock .send .flow-icon {
+            background: #a99cff;
+          }
+
+          .field-pane {
+            scroll-margin-top: 130px;
+            transform-origin: center;
+            transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+          }
+
+          .field-pane.is-active {
+            transform: scale(1.012);
+            border-color: rgba(66, 214, 181, 0.44) !important;
+            box-shadow: 0 18px 42px rgba(6, 11, 18, 0.22) !important;
+          }
+
           .field-workflow-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7263,6 +7441,88 @@ return (
             color: #16202b !important;
           }
 
+          .field-packet-vault,
+          .field-send-panel {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(126, 146, 169, 0.24);
+            background: #ffffff;
+            color: #172033;
+          }
+
+          .field-packet-head,
+          .field-send-panel {
+            align-items: center;
+          }
+
+          .field-packet-head,
+          .field-packet-row,
+          .field-send-panel {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto auto;
+            gap: 9px;
+          }
+
+          .field-packet-head small,
+          .field-packet-row span,
+          .field-packet-row small,
+          .field-packet-empty span,
+          .field-send-panel small {
+            color: #5d7088 !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+          }
+
+          .field-packet-list {
+            display: grid;
+            gap: 8px;
+          }
+
+          .field-packet-row {
+            align-items: center;
+            padding: 9px;
+            border-radius: 10px;
+            border: 1px solid rgba(126, 146, 169, 0.22);
+            background: #f8fbfd;
+          }
+
+          .field-packet-row strong {
+            display: block;
+            color: #172033 !important;
+            font-size: 12px !important;
+            line-height: 1.25;
+            overflow-wrap: anywhere;
+          }
+
+          .field-packet-row button,
+          .field-send-panel button {
+            min-height: 40px;
+            border: 0;
+            border-radius: 9px;
+            padding: 0 12px;
+            background: #16202b;
+            color: #f8fafc;
+            font-weight: 950;
+          }
+
+          .field-packet-row button:last-child,
+          .field-send-panel button {
+            background: #0f8d68;
+          }
+
+          .field-packet-empty {
+            display: grid;
+            gap: 3px;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px dashed rgba(126, 146, 169, 0.34);
+            background: #f8fbfd;
+          }
+
           /* FIELD_APP_CLEAN_MAP_2026 */
           .job-drawer.selected-focus .workflow-filter-bar {
             display: none !important;
@@ -7308,6 +7568,61 @@ return (
           .field-workflow-grid div {
             background: #131c26 !important;
             border-color: rgba(248, 250, 252, 0.10) !important;
+          }
+
+          .field-flow-dock button {
+            background: #131c26 !important;
+            color: #f8fafc !important;
+            border-color: rgba(248, 250, 252, 0.12) !important;
+            box-shadow: none !important;
+          }
+
+          .field-flow-dock button.active {
+            border-color: rgba(66, 214, 181, 0.44) !important;
+            box-shadow: 0 16px 34px rgba(6, 11, 18, 0.34) !important;
+          }
+
+          .field-flow-dock .capture {
+            background: linear-gradient(135deg, rgba(66, 214, 181, 0.20), #131c26) !important;
+          }
+
+          .field-flow-dock .evidence {
+            background: linear-gradient(135deg, rgba(125, 183, 255, 0.20), #131c26) !important;
+          }
+
+          .field-flow-dock .package {
+            background: linear-gradient(135deg, rgba(242, 200, 107, 0.22), #131c26) !important;
+          }
+
+          .field-flow-dock .send {
+            background: linear-gradient(135deg, rgba(169, 156, 255, 0.22), #131c26) !important;
+          }
+
+          .field-packet-vault,
+          .field-send-panel {
+            background: #131c26 !important;
+            border-color: rgba(248, 250, 252, 0.12) !important;
+            color: #f8fafc !important;
+          }
+
+          .field-packet-row,
+          .field-packet-empty {
+            background: #1b2633 !important;
+            border-color: rgba(248, 250, 252, 0.12) !important;
+          }
+
+          .field-packet-row strong,
+          .field-packet-empty strong,
+          .field-send-panel strong {
+            color: #f8fafc !important;
+          }
+
+          .field-packet-head small,
+          .field-packet-row span,
+          .field-packet-row small,
+          .field-packet-empty span,
+          .field-send-panel small {
+            color: #aab7c6 !important;
           }
 
           .selected-overview-grid {
@@ -7580,6 +7895,14 @@ return (
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             }
 
+            .field-flow-dock {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .field-flow-dock button {
+              min-height: 68px;
+            }
+
             .field-capture-guide {
               grid-template-columns: 1fr !important;
             }
@@ -7604,6 +7927,17 @@ return (
             .field-evidence-thumb {
               width: 52px;
               height: 48px;
+            }
+
+            .field-packet-head,
+            .field-packet-row,
+            .field-send-panel {
+              grid-template-columns: 1fr !important;
+            }
+
+            .field-packet-row button,
+            .field-send-panel button {
+              width: 100%;
             }
           }
         `}
@@ -7951,8 +8285,31 @@ return (
                 <span className="field-timer-pill">{fieldElapsedLabel(selected)}</span>
               </div>
 
+              <div className="field-flow-dock" data-field-pane="capture">
+                <button type="button" className={`capture ${fieldFocusPane === "capture" ? "active" : ""}`} onClick={() => focusFieldPane("capture")}>
+                  <span className="flow-icon">1</span>
+                  <strong>Capture</strong>
+                  <small>Before / after</small>
+                </button>
+                <button type="button" className={`evidence ${fieldFocusPane === "evidence" ? "active" : ""}`} onClick={() => focusFieldPane("evidence")}>
+                  <span className="flow-icon">2</span>
+                  <strong>Evidence</strong>
+                  <small>Job card</small>
+                </button>
+                <button type="button" className={`package ${fieldFocusPane === "package" ? "active" : ""}`} onClick={() => focusFieldPane("package")}>
+                  <span className="flow-icon">3</span>
+                  <strong>Package</strong>
+                  <small>Saved PDFs</small>
+                </button>
+                <button type="button" className={`send ${fieldFocusPane === "send" ? "active" : ""}`} onClick={() => focusFieldPane("send")}>
+                  <span className="flow-icon">4</span>
+                  <strong>Send</strong>
+                  <small>Email draft</small>
+                </button>
+              </div>
+
               {fieldCaptureGuide && fieldCaptureGuide.jobKey === jobKey(selected) ? (
-                <div className={`field-capture-guide ${fieldEvidenceKindClass(fieldCaptureGuide.kind)}`}>
+                <div className={`field-capture-guide field-pane ${fieldFocusPane === "capture" ? "is-active" : ""} ${fieldEvidenceKindClass(fieldCaptureGuide.kind)}`}>
                   <div>
                     <span>Capture Step</span>
                     <strong>{fieldCaptureGuide.title}</strong>
@@ -7967,7 +8324,7 @@ return (
                 </div>
               ) : null}
 
-              <div className={`field-evidence-gallery ${fieldEvidenceRowsFor(selected).length ? "has-evidence" : "empty"}`}>
+              <div data-field-pane="evidence" className={`field-evidence-gallery field-pane ${fieldFocusPane === "evidence" ? "is-active" : ""} ${fieldEvidenceRowsFor(selected).length ? "has-evidence" : "empty"}`}>
                 <div className="field-evidence-gallery-head">
                   <div>
                     <span>Job Evidence</span>
@@ -8036,31 +8393,31 @@ return (
                 <button type="button" className="reset-job-btn" onClick={() => resetFieldJobForTesting(selected)}>
                   Clear / Pending
                 </button>
-                <button type="button" className="packet-job-btn" onClick={() => downloadTempEvidencePacket(selected)}>
+                <button type="button" className="packet-job-btn" onClick={() => { focusFieldPane("package"); downloadTempEvidencePacket(selected); }}>
                   Temp Packet
                 </button>
-                <button type="button" className="email-job-btn" onClick={() => downloadTempEvidencePacket(selected, true)}>
+                <button type="button" className="email-job-btn" onClick={() => { focusFieldPane("send"); downloadTempEvidencePacket(selected, true); }}>
                   Packet + Email
                 </button>
-                <button type="button" className="upload-job-btn" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*,video/*", false)}>
+                <button type="button" className="upload-job-btn" onClick={() => { focusFieldPane("capture"); requestFieldPhotoCapture(selected, "before", "image/*,video/*", false); }}>
                   Upload Before
                 </button>
-                <button type="button" className="upload-job-btn" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*,video/*", false)}>
+                <button type="button" className="upload-job-btn" onClick={() => { focusFieldPane("capture"); requestFieldPhotoCapture(selected, "after", "image/*,video/*", false); }}>
                   Upload After
                 </button>
-                <button type="button" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*")}>
+                <button type="button" onClick={() => { focusFieldPane("capture"); requestFieldPhotoCapture(selected, "before", "image/*"); }}>
                   Before Image
                 </button>
-                <button type="button" onClick={() => requestFieldPhotoCapture(selected, "before", "video/*")}>
+                <button type="button" onClick={() => { focusFieldPane("capture"); requestFieldPhotoCapture(selected, "before", "video/*"); }}>
                   Before Video
                 </button>
                 <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected)}>
                   Finish Work
                 </button>
-                <button type="button" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*")}>
+                <button type="button" onClick={() => { focusFieldPane("capture"); requestFieldPhotoCapture(selected, "after", "image/*"); }}>
                   After Image
                 </button>
-                <button type="button" onClick={() => requestFieldPhotoCapture(selected, "after", "video/*")}>
+                <button type="button" onClick={() => { focusFieldPane("capture"); requestFieldPhotoCapture(selected, "after", "video/*"); }}>
                   After Video
                 </button>
                 <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected, true)}>
@@ -8074,6 +8431,54 @@ return (
                 </button>
                 <button type="button" className="other-done-job-btn" onClick={() => markCompletedByOthers(selected)}>
                   Other Done Evidence
+                </button>
+              </div>
+
+              <div data-field-pane="package" className={`field-packet-vault field-pane ${fieldFocusPane === "package" ? "is-active" : ""}`}>
+                <div className="field-packet-head">
+                  <div>
+                    <span>Saved Packets</span>
+                    <strong>{fieldPacketRowsFor(selected).length ? `${fieldPacketRowsFor(selected).length} packet(s) saved` : "No packet saved yet"}</strong>
+                  </div>
+                  <small>{fieldPacketRowsFor(selected)[0] ? packetSizeLabel(fieldPacketRowsFor(selected)[0].size) : "Ready"}</small>
+                </div>
+                {fieldPacketRowsFor(selected).length ? (
+                  <div className="field-packet-list">
+                    {fieldPacketRowsFor(selected).slice(0, 3).map((packet) => (
+                      <div className={`field-packet-row ${packet.packetType}`} key={packet.id}>
+                        <div>
+                          <strong>{packet.fileName}</strong>
+                          <span>{packetSizeLabel(packet.size)} - {packet.evidenceCount} evidence file(s) - {displayWorkflowDate(packet.generatedAt)}</span>
+                          <small>{packet.note}</small>
+                        </div>
+                        <button type="button" onClick={() => downloadStoredPacket(packet)}>Download</button>
+                        <button type="button" onClick={() => emailStoredPacket(selected, packet)}>Email</button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="field-packet-empty">
+                    <strong>Generate the email-size packet when evidence is ready.</strong>
+                    <span>Affidavit + invoice packages generated from Paperwork will save here too.</span>
+                  </div>
+                )}
+              </div>
+
+              <div data-field-pane="send" className={`field-send-panel field-pane ${fieldFocusPane === "send" ? "is-active" : ""}`}>
+                <div>
+                  <span>Send Package</span>
+                  <strong>{fieldPacketRowsFor(selected)[0] ? "Latest packet ready" : "Create packet first"}</strong>
+                  <small>{fieldPacketRowsFor(selected)[0]?.fileName || "Use Packet + Email after evidence is saved."}</small>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const latestPacket = fieldPacketRowsFor(selected)[0];
+                    if (latestPacket) emailStoredPacket(selected, latestPacket);
+                    else downloadTempEvidencePacket(selected, true);
+                  }}
+                >
+                  Open Email Draft
                 </button>
               </div>
 

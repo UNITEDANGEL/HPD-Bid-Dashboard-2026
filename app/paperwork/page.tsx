@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { PDFDocument, StandardFonts } from "pdf-lib";
-import { type FieldMedia, dataUrlToBytes, listFieldEvidence } from "../../lib/field-photo-store";
+import { type FieldMedia, compactImageDataUrl, dataUrlToBytes, listFieldEvidence } from "../../lib/field-photo-store";
+import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
 import {
   type PaperworkOutcome,
   HPD_STATUS_WORKER_URL,
@@ -316,7 +317,8 @@ async function appendFieldPhotosToPdf(pdfDoc: PDFDocument, jobId: string) {
 }
 
 async function drawEvidenceMediaPreview(pdfDoc: PDFDocument, page: any, media: FieldMedia) {
-  const previewDataUrl = media.mediaType === "video" ? media.posterDataUrl : media.dataUrl;
+  const rawPreviewDataUrl = media.mediaType === "video" ? media.posterDataUrl : media.dataUrl;
+  const previewDataUrl = rawPreviewDataUrl ? await compactImageDataUrl(rawPreviewDataUrl, media.mediaType === "video" ? 900 : 1100, 0.6) : "";
   const maxWidth = 520;
   const maxHeight = 500;
   const boxX = 46;
@@ -342,20 +344,21 @@ async function drawEvidenceMediaPreview(pdfDoc: PDFDocument, page: any, media: F
   }
 
   page.drawRectangle({ x: boxX, y: boxY, width: maxWidth, height: maxHeight, borderWidth: 1 });
-  drawEvidenceLine(page, media.mediaType === "video" ? "VIDEO FILE ATTACHED TO PDF" : "IMAGE PREVIEW UNAVAILABLE", 150, 376, 18);
+  drawEvidenceLine(page, media.mediaType === "video" ? "VIDEO POSTER UNAVAILABLE" : "IMAGE PREVIEW UNAVAILABLE", 150, 376, 18);
   drawEvidenceLine(page, safePdfText(media.name, 72), 150, 348, 11);
 }
 
 async function appendFieldEvidenceToPdf(pdfDoc: PDFDocument, jobId: string, form: PackageForm) {
-  if (typeof window === "undefined" || !jobId) return { pages: 0, attachments: 0, videos: 0 };
+  if (typeof window === "undefined" || !jobId) return { pages: 0, attachments: 0, images: 0, videos: 0 };
 
   const mediaRows = await listFieldEvidence(jobId);
-  if (!mediaRows.length) return { pages: 0, attachments: 0, videos: 0 };
+  if (!mediaRows.length) return { pages: 0, attachments: 0, images: 0, videos: 0 };
 
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   let pages = 0;
   let attachments = 0;
+  let images = 0;
   let videos = 0;
 
   const indexPage = pdfDoc.addPage([612, 792]);
@@ -365,10 +368,11 @@ async function appendFieldEvidenceToPdf(pdfDoc: PDFDocument, jobId: string, form
   drawEvidenceLine(indexPage, `Address: ${form.address}`, 46, 700, 10);
   drawEvidenceLine(indexPage, `Location: ${form.location || "Not listed"} - Borough: ${form.borough || "Not listed"}`, 46, 684, 10);
   drawEvidenceLine(indexPage, `Total evidence files: ${mediaRows.length}`, 46, 654, 11);
-  drawEvidenceLine(indexPage, "Original images/videos are attached to this PDF when supported by the PDF viewer.", 46, 636, 9);
+  drawEvidenceLine(indexPage, "Email-size mode: images are compressed; videos are listed with poster frames only.", 46, 636, 9);
+  drawEvidenceLine(indexPage, "Keep original videos saved on the phone or future cloud evidence vault.", 46, 620, 9);
 
   mediaRows.slice(0, 24).forEach((media, index) => {
-    const y = 606 - index * 20;
+    const y = 590 - index * 20;
     drawEvidenceLine(
       indexPage,
       `${index + 1}. ${media.evidenceLabel || media.kind} - ${media.mediaType.toUpperCase()} - ${displayDateTime(media.capturedAt)} - ${media.name}`,
@@ -384,22 +388,9 @@ async function appendFieldEvidenceToPdf(pdfDoc: PDFDocument, jobId: string, form
     page.setFont(font);
     const attachmentName = evidenceFileName(jobId, media, index);
     const captured = displayDateTime(media.capturedAt) || media.capturedAt;
-    const mediaBytes = dataUrlToBytes(media.dataUrl);
-    const mediaDate = parseDateValue(media.capturedAt) || new Date();
-
-    try {
-      await pdfDoc.attach(mediaBytes, attachmentName, {
-        mimeType: media.type || (media.mediaType === "video" ? "video/mp4" : "image/jpeg"),
-        description: `${media.evidenceLabel || "Field Evidence"} - ${jobId} - ${captured}`,
-        creationDate: mediaDate,
-        modificationDate: mediaDate,
-      });
-      attachments += 1;
-    } catch (error) {
-      console.error(error);
-    }
 
     if (media.mediaType === "video") videos += 1;
+    else images += 1;
 
     page.drawText("FIELD EVIDENCE", { x: 46, y: 748, size: 18, font: bold });
     drawEvidenceLine(page, `OMO: ${jobId}`, 46, 724, 11);
@@ -411,14 +402,14 @@ async function appendFieldEvidenceToPdf(pdfDoc: PDFDocument, jobId: string, form
 
     await drawEvidenceMediaPreview(pdfDoc, page, media);
 
-    drawEvidenceLine(page, `PDF attachment: ${attachmentName}`, 46, 96, 9);
+    drawEvidenceLine(page, `Evidence file recorded: ${attachmentName}`, 46, 96, 9);
     if (media.mediaType === "video") {
-      drawEvidenceLine(page, "Video evidence is attached to the PDF. Open the PDF attachments panel to view/play it.", 46, 80, 9);
+      drawEvidenceLine(page, "Video original is not embedded in this email-size PDF. Keep original evidence saved.", 46, 80, 9);
     }
     pages += 1;
   }
 
-  return { pages, attachments, videos };
+  return { pages, attachments, images, videos };
 }
 
 function findJob(rows: JobRecord[], id: string) {
@@ -747,10 +738,29 @@ export default function PaperworkPage() {
       const bytes = await pdfDoc.save();
       const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
       const blob = new Blob([buffer], { type: "application/pdf" });
+      const fileName = `${safeFilename(jobId)}-${useWorkTemplate ? "work-completed" : "no-work-completed"}-affidavit.pdf`;
+
+      try {
+        await saveFieldPacket({
+          jobId,
+          fileName,
+          mimeType: "application/pdf",
+          dataUrl: bytesToDataUrl(new Uint8Array(buffer), "application/pdf"),
+          size: bytes.byteLength,
+          evidenceCount: evidencePackage.pages ? Math.max(0, evidencePackage.pages - 1) : 0,
+          imageCount: evidencePackage.images,
+          videoCount: evidencePackage.videos,
+          packetType: "affidavit_invoice_pdf",
+          note: "Affidavit + invoice package saved on this device. Evidence is compressed for email.",
+        });
+      } catch (error) {
+        console.error(error);
+      }
+
       const href = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = href;
-      anchor.download = `${safeFilename(jobId)}-${useWorkTemplate ? "work-completed" : "no-work-completed"}-affidavit.pdf`;
+      anchor.download = fileName;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -758,7 +768,7 @@ export default function PaperworkPage() {
 
       const archiveMessage = await markPackageGenerated(archiveJobId);
       setPdfStatus(
-        `Invoice package downloaded${evidencePackage.pages ? ` with ${evidencePackage.pages} evidence page(s), ${evidencePackage.attachments} attachment(s), ${evidencePackage.videos} video(s)` : ""}. ${archiveMessage}`
+        `Invoice package saved and downloaded${evidencePackage.pages ? ` with ${evidencePackage.pages} evidence page(s), ${evidencePackage.videos} video record(s)` : ""}. ${archiveMessage}`
       );
     } catch (error) {
       console.error(error);
