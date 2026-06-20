@@ -1,6 +1,7 @@
 export type PaperworkOutcome =
   | "pending"
   | "work_completed"
+  | "partial_work_completed"
   | "no_access"
   | "refused_access"
   | "completed_by_others";
@@ -14,6 +15,7 @@ const WORKFLOW_STORAGE_KEYS = ["hpd-job-workflow-overrides-v2", "hpd-job-workflo
 
 export const PAPERWORK_OUTCOMES: { value: PaperworkOutcome; label: string }[] = [
   { value: "work_completed", label: "Work Completed" },
+  { value: "partial_work_completed", label: "Partial Work Completed" },
   { value: "no_access", label: "No Work Completed - No Access" },
   { value: "refused_access", label: "No Work Completed - Refused Access" },
   { value: "completed_by_others", label: "No Work Completed - Completed by Others" },
@@ -170,6 +172,7 @@ export function paperworkOutcomeFromValue(value: unknown): PaperworkOutcome {
   if (!raw) return "pending";
   if (raw.includes("no_access_1") || raw.includes("waiting_72h") || raw.includes("waiting 72")) return "no_access";
   if (raw.includes("no_access_complete")) return "no_access";
+  if (raw.includes("partial_work_completed") || raw.includes("partial work completed")) return "partial_work_completed";
   if (raw.includes("work_completed")) return "work_completed";
   if (raw.includes("refused_access")) return "refused_access";
   if (raw.includes("completed_by_others")) return "completed_by_others";
@@ -192,7 +195,7 @@ export function paperworkOutcomeLabel(outcome: PaperworkOutcome) {
 }
 
 export function affidavitTemplateLabel(outcome: PaperworkOutcome) {
-  if (outcome === "work_completed") return "Work Completed Affidavit";
+  if (outcome === "work_completed" || outcome === "partial_work_completed") return "Work Completed Affidavit";
   if (outcome === "no_access" || outcome === "refused_access" || outcome === "completed_by_others") {
     return "No Work Completed Affidavit";
   }
@@ -214,7 +217,7 @@ export function invoiceDescriptionForOutcome(job: PaperworkJob | null | undefine
     return "No work completed by contractor. Condition was completed by others. See no work completed affidavit.";
   }
 
-  if (outcome === "work_completed") {
+  if (outcome === "work_completed" || outcome === "partial_work_completed") {
     return description || "Work completed per HPD bid / work order.";
   }
 
@@ -225,6 +228,7 @@ export function affidavitReasonForOutcome(outcome: PaperworkOutcome) {
   if (outcome === "no_access") return "NO ACCESS";
   if (outcome === "refused_access") return "REFUSED ACCESS";
   if (outcome === "completed_by_others") return "WORK COMPLETED BY OTHERS";
+  if (outcome === "partial_work_completed") return "PARTIAL WORK COMPLETED";
   if (outcome === "work_completed") return "WORK COMPLETED";
   return "PENDING FIELD OUTCOME";
 }

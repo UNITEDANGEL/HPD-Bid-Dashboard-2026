@@ -136,7 +136,7 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     firstAttempt: displayDate(firstAttemptAt || (outcome === "no_access" ? lockedAt : "")),
     secondAttempt: displayDate(noWorkCompleteAt),
     workStart: displayDate(actualStartAt || getJobDate(job, "start")),
-    workComplete: displayDate(outcome === "work_completed" ? workCompleteAt : noWorkCompleteAt),
+    workComplete: displayDate(outcome === "work_completed" || outcome === "partial_work_completed" ? workCompleteAt : noWorkCompleteAt),
     sourceStatus,
     notes: getJobDescription(job).slice(0, 650),
   };
@@ -252,7 +252,7 @@ export default function PaperworkPage() {
   }
 
   async function generateAffidavitPdf() {
-    const useWorkTemplate = outcome === "work_completed";
+    const useWorkTemplate = outcome === "work_completed" || outcome === "partial_work_completed";
     const templateUrl = useWorkTemplate ? WORK_AFFIDAVIT_TEMPLATE : NO_WORK_AFFIDAVIT_TEMPLATE;
     const jobId = form.jobId || selectedId || "HPD";
     const amount = cleanAmount(form.amount);
@@ -306,8 +306,21 @@ export default function PaperworkPage() {
       check("PERMIT REQUIRED NO");
 
       if (useWorkTemplate) {
-        setText("START DATE", form.workStart || form.fieldDate);
-        setText("COMPLETE DATE", form.workComplete || form.fieldDate);
+        setText("COUNTY OF", form.borough || "NEW YORK");
+        setText("being duly sworn deposes and says", form.signer || "JOTJAGRAJ SINGH / United Angel Construction Corp.");
+        setText("Apt#", form.location);
+        setText("State", "NY");
+        setText("PARTIAL WORK DESC", outcome === "partial_work_completed" ? form.description || form.notes : "");
+        setText("AMOUNT", outcome === "partial_work_completed" ? amount : "");
+        setText("PARTIAL REFUSED AMOUNT", "");
+        setText("relationship to building", "");
+        setText("Description of individual", "");
+        setText("eg malefemale", "");
+        setText("MONTH", "");
+        setText("DAY", "");
+        setText("Type or Print Name", form.signer || "JOTJAGRAJ SINGH");
+        setText("START DATE", outcome === "work_completed" ? form.workStart || form.fieldDate : "");
+        setText("COMPLETE DATE", outcome === "work_completed" ? form.workComplete || form.fieldDate : "");
         setText("Work Description", form.description || form.notes || "Work completed per HPD bid / work order.");
       } else {
         const noWorkReason = form.affidavitReason || affidavitReasonForOutcome(outcome);
@@ -317,13 +330,12 @@ export default function PaperworkPage() {
         const noWorkDescription = [
           `NO WORK COMPLETED - ${noWorkReason}`,
           form.description,
-          form.notes,
         ]
           .filter(Boolean)
           .join("\n\n");
 
         setText("inaccessibility was due to 1", outcome === "no_access" ? "NO ACCESS TO MAKE REPAIRS" : "");
-        setText("inaccessibility was due to 2", outcome === "no_access" ? form.notes : "");
+        setText("inaccessibility was due to 2", outcome === "no_access" ? form.description : "");
         setText("COUNTY OF", form.borough || "NEW YORK");
         setText("AMOUNT", amount);
         setText("ARRIVE DATE", outcome === "completed_by_others" ? secondAttempt : "");
@@ -344,7 +356,18 @@ export default function PaperworkPage() {
       pdfForm.updateFieldAppearances();
       pdfForm.flatten();
 
-      const checkboxPage = pdfDoc.getPages()[useWorkTemplate ? 0 : 2];
+      const pdfPages = pdfDoc.getPages();
+      const checkboxPage = pdfPages[2] || pdfPages[0];
+      if (useWorkTemplate && outcome === "partial_work_completed" && checkboxPage) {
+        const invoiceDate = form.workComplete || form.fieldDate || form.invoiceDate;
+        pdfPages[0]?.drawText(form.workStart || form.fieldDate, { x: 126, y: 481, size: 10 });
+        checkboxPage.drawText(invoiceDate, { x: 411, y: 635, size: 10 });
+        checkboxPage.drawText(form.workStart || form.fieldDate, { x: 411, y: 618, size: 10 });
+        checkboxPage.drawText(form.workComplete || form.fieldDate, { x: 423, y: 595, size: 10 });
+      }
+      if (!useWorkTemplate && outcome !== "no_access" && checkboxPage) {
+        checkboxPage.drawText(form.secondAttempt || form.fieldDate || form.invoiceDate, { x: 411, y: 635, size: 10 });
+      }
       if (checkboxPage) {
         [
           [146, 650],
@@ -374,7 +397,7 @@ export default function PaperworkPage() {
     }
   }
 
-  const packageTone = outcome === "work_completed" ? "work" : outcome === "pending" ? "pending" : "no-work";
+  const packageTone = outcome === "work_completed" || outcome === "partial_work_completed" ? "work" : outcome === "pending" ? "pending" : "no-work";
   const invoiceHref = `/invoice-generator?job=${encodeURIComponent(form.jobId)}&outcome=${encodeURIComponent(outcome)}`;
 
   return (
@@ -843,9 +866,9 @@ export default function PaperworkPage() {
                 <strong>Address:</strong> {[form.address, form.location, form.borough].filter(Boolean).join(" - ") || "Not entered"}
               </p>
               <p>
-                <strong>{outcome === "work_completed" ? "Work status" : "No work reason"}:</strong> {form.affidavitReason}
+                <strong>{outcome === "work_completed" || outcome === "partial_work_completed" ? "Work status" : "No work reason"}:</strong> {form.affidavitReason}
               </p>
-              {outcome === "work_completed" ? (
+              {outcome === "work_completed" || outcome === "partial_work_completed" ? (
                 <p>
                   <strong>Work dates:</strong> {form.workStart || "Start not entered"} to {form.workComplete || "Complete not entered"}
                 </p>

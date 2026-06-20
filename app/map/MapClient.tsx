@@ -2205,6 +2205,23 @@ function localDatetimeValue(date = new Date()) {
         outcomeLockedAt: iso,
       };
     }
+
+    if (draftWorkflowStatus === "Partial Work Completed") {
+      patch = {
+        ...patch,
+        WorkflowStatus: "PARTIAL_WORK_COMPLETED",
+        workflowStatus: "PARTIAL_WORK_COMPLETED",
+        FieldOutcome: "PARTIAL_WORK_COMPLETED",
+        fieldOutcome: "PARTIAL_WORK_COMPLETED",
+        StatusOverride: "Partial Work Completed",
+        status: "Partial Work Completed",
+        ActualWorkCompletionDate: iso,
+        actualWorkCompletionDate: iso,
+        ArchivedFromMap: false,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+      };
+    }
     const key = jobKey(job);
 
     if (key) {
@@ -5437,6 +5454,7 @@ return (
               <button type="button" onClick={() => pickDraftWorkflow("No Access - 2nd Attempt")}>No Access 2nd</button>
               <button type="button" onClick={() => pickDraftWorkflow("Refused Access")}>Refused</button>
               <button type="button" onClick={() => pickDraftWorkflow("Work Completed")}>Completed</button>
+              <button type="button" onClick={() => pickDraftWorkflow("Partial Work Completed")}>Partial</button>
               <button type="button" onClick={() => pickDraftWorkflow("Completed by Others")}>Other Done</button>
               <button type="button" onClick={() => {
                 const key = jobKey(selected);
@@ -5592,6 +5610,7 @@ return (
               <button type="button" onClick={() => pickDraftWorkflow("No Access - 2nd Attempt")}>No Access 2nd</button>
               <button type="button" onClick={() => pickDraftWorkflow("Refused Access")}>Refused</button>
               <button type="button" onClick={() => pickDraftWorkflow("Work Completed")}>Completed</button>
+              <button type="button" onClick={() => pickDraftWorkflow("Partial Work Completed")}>Partial</button>
               <button type="button" onClick={() => pickDraftWorkflow("Completed by Others")}>Other Done</button>
               <button type="button" onClick={() => {
                 const key = jobKey(selected);
