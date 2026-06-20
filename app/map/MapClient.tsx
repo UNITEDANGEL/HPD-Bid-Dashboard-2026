@@ -1370,6 +1370,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const userLocationAccuracyRef = useRef<any>(null);
   const geolocationWatchRef = useRef<number | null>(null);
   const locationAutoStartedRef = useRef(false);
+  const locationOverviewFitRef = useRef(false);
   const markerOverviewTimerRef = useRef<number | null>(null);
   const markerOverviewKeyRef = useRef("");
   const fieldPhotoInputRef = useRef<HTMLInputElement | null>(null);
@@ -2088,17 +2089,23 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     markerOverviewKeyRef.current = "";
   }
 
-  function fitVisibleJobsOnMap(maxZoom = 13) {
+  function fitVisibleJobsOnMap(maxZoom = 13, includeUserLocation = false) {
     const map = mapRef.current;
     if (!map) return;
 
-    const mapped = filteredJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng));
-    if (mapped.length) {
-      const bounds = mapped.map((job) => [Number(job._lat), Number(job._lng)]);
+    const bounds = filteredJobs
+      .filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng))
+      .map((job) => [Number(job._lat), Number(job._lng)] as [number, number]);
+
+    if (includeUserLocation && userLocation) {
+      bounds.push([userLocation.lat, userLocation.lng]);
+    }
+
+    if (bounds.length) {
       map.fitBounds(bounds, {
         animate: true,
         duration: 0.75,
-        padding: [42, 42],
+        padding: [58, 58],
         maxZoom,
       });
       return;
@@ -2115,7 +2122,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setDrawerOpen(false);
     setFullMap(true);
     mapRef.current?.closePopup?.();
-    fitVisibleJobsOnMap();
+    fitVisibleJobsOnMap(userLocation ? 12 : 13, true);
     window.setTimeout(() => mapRef.current?.invalidateSize(), 120);
   }
 
@@ -2460,9 +2467,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           zIndexOffset: 2000,
           icon: L.divIcon({
             className: "user-location-marker",
-            html: '<div class="user-location-dot"><span></span></div>',
-            iconSize: [34, 34],
-            iconAnchor: [17, 17],
+            html: '<div class="user-location-dot"><em>You</em><span></span></div>',
+            iconSize: [64, 64],
+            iconAnchor: [32, 32],
           }),
         }).addTo(map);
       } else {
@@ -2482,8 +2489,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         userLocationAccuracyRef.current.setRadius(Math.max(15, userLocation.accuracy || 25));
       }
 
-      if (followMyLocation) {
-        map.setView(latLng, Math.max(map.getZoom(), 15), { animate: true });
+      if (!locationOverviewFitRef.current && !selectedOnly && !drawerOpen) {
+        locationOverviewFitRef.current = true;
+        fitVisibleJobsOnMap(12, true);
       }
     }
 
@@ -2491,7 +2499,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return () => {
       cancelled = true;
     };
-  }, [mapReady, userLocation, followMyLocation]);
+  }, [mapReady, userLocation, followMyLocation, selectedOnly, drawerOpen, filteredJobs]);
 
   useEffect(() => {
     function handlePopupOpen(event: MouseEvent) {
@@ -3405,6 +3413,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(LOCATION_ALWAYS_STORAGE_KEY, "on");
     }
+    locationOverviewFitRef.current = false;
 
     const options: PositionOptions = {
       enableHighAccuracy: true,
@@ -3419,7 +3428,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         accuracy: position.coords.accuracy,
         updatedAt: new Date().toISOString(),
       });
-      setLocationStatus(`Live location on · ±${Math.round((position.coords.accuracy || 0) * 3.28084)} ft`);
+      setLocationStatus(`Live guide · ±${Math.round((position.coords.accuracy || 0) * 3.28084)} ft`);
     };
 
     const onError = (error: GeolocationPositionError) => {
@@ -3454,6 +3463,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(LOCATION_ALWAYS_STORAGE_KEY, "off");
     }
+    locationOverviewFitRef.current = false;
     setFollowMyLocation(false);
     setLocationStatus(userLocation ? "Location paused" : "Location off");
   }
@@ -7073,28 +7083,76 @@ return (
           }
 
           .user-location-marker {
-            background: transparent;
-            border: 0;
+            background: transparent !important;
+            border: 0 !important;
           }
 
           .user-location-dot {
-            width: 34px;
-            height: 34px;
+            position: relative;
+            width: 64px;
+            height: 64px;
             display: grid;
             place-items: center;
             border-radius: 999px;
             background: rgba(37, 99, 235, 0.14);
-            border: 1px solid rgba(37, 99, 235, 0.25);
-            box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.10);
+            border: 2px solid rgba(255, 255, 255, 0.92);
+            box-shadow:
+              0 0 0 9px rgba(37, 99, 235, 0.16),
+              0 12px 30px rgba(3, 9, 16, 0.32);
+          }
+
+          .user-location-dot::before {
+            content: "";
+            position: absolute;
+            inset: 8px;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.18);
+            animation: userLocationGuidePulse 2.8s ease-out infinite;
+          }
+
+          .user-location-dot em {
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            z-index: 2;
+            transform: translateX(-50%);
+            padding: 3px 7px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.95);
+            color: #ffffff;
+            font-size: 9px;
+            font-style: normal;
+            font-weight: 1000;
+            letter-spacing: 0;
+            box-shadow: 0 8px 18px rgba(3, 9, 16, 0.24);
           }
 
           .user-location-dot span {
-            width: 15px;
-            height: 15px;
+            position: relative;
+            z-index: 1;
+            width: 22px;
+            height: 22px;
             border-radius: 999px;
-            background: #2563eb;
-            border: 3px solid #ffffff;
-            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.32);
+            background: #ef4444;
+            border: 4px solid #ffffff;
+            box-shadow:
+              0 0 0 5px rgba(250, 204, 21, 0.45),
+              0 8px 18px rgba(239, 68, 68, 0.36);
+          }
+
+          @keyframes userLocationGuidePulse {
+            0% {
+              transform: scale(0.78);
+              opacity: 0.75;
+            }
+            70% {
+              transform: scale(1.35);
+              opacity: 0;
+            }
+            100% {
+              transform: scale(1.35);
+              opacity: 0;
+            }
           }
 
           .today-route-card,
@@ -9338,11 +9396,7 @@ return (
           <button type="button" onClick={() => mapRef.current?.zoomIn()}>+</button>
           <button type="button" onClick={() => mapRef.current?.zoomOut()}>−</button>
           <button type="button" onClick={() => {
-            const mapped = filteredJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng));
-            if (mapped.length && mapRef.current) {
-              const bounds = mapped.map((job) => [Number(job._lat), Number(job._lng)]);
-              mapRef.current.fitBounds(bounds, { padding: [34, 34], maxZoom: 15 });
-            }
+            fitVisibleJobsOnMap(userLocation ? 12 : 13, true);
           }}>Fit</button>
           <button
             type="button"
