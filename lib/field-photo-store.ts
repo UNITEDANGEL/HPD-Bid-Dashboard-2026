@@ -435,9 +435,6 @@ export async function saveFieldPhotos(
   const cleanJobId = String(meta.jobId || jobId || "").trim();
   if (!cleanJobId) return [] as FieldMedia[];
 
-  const db = await openDb();
-  const transaction = db.transaction(STORE_NAME, "readwrite");
-  const store = transaction.objectStore(STORE_NAME);
   const saved: FieldMedia[] = [];
 
   for (const file of Array.from(files)) {
@@ -483,17 +480,29 @@ export async function saveFieldPhotos(
       posterDataUrl,
       capturedAt,
     };
-    store.put(evidence);
     saved.push(evidence);
   }
 
-  await new Promise<void>((resolve, reject) => {
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error || new Error("Could not save evidence."));
-    transaction.onabort = () => reject(transaction.error || new Error("Evidence save was aborted."));
-  });
+  if (!saved.length) return saved;
 
-  db.close();
+  const db = await openDb();
+  try {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+
+    saved.forEach((evidence) => {
+      store.put(evidence);
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error || new Error("Could not save evidence."));
+      transaction.onabort = () => reject(transaction.error || new Error("Evidence save was aborted."));
+    });
+  } finally {
+    db.close();
+  }
+
   return saved;
 }
 

@@ -3303,7 +3303,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function finishFieldJob(job: MappedJob, partial = false) {
     const iso = new Date().toISOString();
-    const takeAfter = window.confirm(`${partial ? "Mark partial work complete" : "Mark work complete"}? Press OK to capture AFTER images/videos.`);
     const patch = {
       WorkflowStatus: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
       workflowStatus: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
@@ -3317,17 +3316,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       actualWorkCompletionDate: iso,
       OutcomeLockedAt: iso,
       outcomeLockedAt: iso,
-      AfterPhotosRequestedAt: takeAfter ? iso : "",
-      afterPhotosRequestedAt: takeAfter ? iso : "",
+      AfterPhotosRequestedAt: iso,
+      afterPhotosRequestedAt: iso,
       ArchivedFromMap: false,
     };
+    const nextJob = { ...job, ...patch } as MappedJob;
     saveFieldWorkflowPatch(
       job,
       patch,
-      "Work completed. Generate package when photos are ready."
+      "Work completed. Capture after evidence now."
     );
-    openPaperworkPreviewForStatus(job, patch);
-    if (takeAfter) requestFieldPhotoCapture(job, "after", "image/*,video/*");
+    openPaperworkPreviewForStatus(job, patch, false);
+    requestFieldPhotoCapture(nextJob, "after", "image/*,video/*");
   }
 
   function startNoAccessCounter(job: MappedJob) {
@@ -3335,7 +3335,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const iso = when.toISOString();
     const available = new Date(when);
     available.setHours(available.getHours() + 72);
-    const takeEvidence = window.confirm("No access? Press OK to capture evidence image/video now.");
     const patch = {
       WorkflowStatus: "NO_ACCESS_1_WAITING_72H",
       workflowStatus: "NO_ACCESS_1_WAITING_72H",
@@ -3351,22 +3350,22 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       outcomeLockedAt: iso,
       ArchivedFromMap: false,
     };
+    const nextJob = { ...job, ...patch } as MappedJob;
 
     saveFieldWorkflowPatch(
       job,
       patch,
-      "No access saved. 72-hour revisit counter started."
+      "No access saved. 72-hour revisit counter started. Capture evidence now."
     );
     setWorkflowViewFilter("waiting72");
-    openPaperworkPreviewForStatus(job, patch);
-    if (takeEvidence) requestFieldPhotoCapture(job, "no_access", "image/*,video/*");
+    openPaperworkPreviewForStatus(job, patch, false);
+    requestFieldPhotoCapture(nextJob, "no_access", "image/*,video/*");
   }
 
   function markNoAccessSecondAttempt(job: MappedJob) {
     const iso = new Date().toISOString();
     const existingFirstAttempt = job.NoAccessFirstAttemptAt || job.noAccessFirstAttemptAt || "";
     const existingSecondAvailable = job.SecondAttemptAvailableAt || job.secondAttemptAvailableAt || "";
-    const takeEvidence = window.confirm("No access second attempt? Press OK to capture evidence image/video now.");
     const patch = {
       WorkflowStatus: "NO_ACCESS_COMPLETE",
       workflowStatus: "NO_ACCESS_COMPLETE",
@@ -3384,14 +3383,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       outcomeLockedAt: iso,
       ArchivedFromMap: false,
     };
-    saveFieldWorkflowPatch(job, patch, "No access second attempt saved. Package preview opened.");
-    openPaperworkPreviewForStatus(job, patch);
-    if (takeEvidence) requestFieldPhotoCapture(job, "no_access", "image/*,video/*");
+    const nextJob = { ...job, ...patch } as MappedJob;
+    saveFieldWorkflowPatch(job, patch, "No access second attempt saved. Capture evidence now.");
+    openPaperworkPreviewForStatus(job, patch, false);
+    requestFieldPhotoCapture(nextJob, "no_access", "image/*,video/*");
   }
 
   function markRefusedAccess(job: MappedJob) {
     const iso = new Date().toISOString();
-    const takeEvidence = window.confirm("Refused access? Press OK to capture evidence image/video now.");
     const patch = {
       WorkflowStatus: "REFUSED_ACCESS",
       workflowStatus: "REFUSED_ACCESS",
@@ -3405,18 +3404,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       outcomeLockedAt: iso,
       ArchivedFromMap: false,
     };
+    const nextJob = { ...job, ...patch } as MappedJob;
     saveFieldWorkflowPatch(
       job,
       patch,
-      "Refused access saved. Evidence can be added to package."
+      "Refused access saved. Capture evidence now."
     );
-    openPaperworkPreviewForStatus(job, patch);
-    if (takeEvidence) requestFieldPhotoCapture(job, "refused_access", "image/*,video/*");
+    openPaperworkPreviewForStatus(job, patch, false);
+    requestFieldPhotoCapture(nextJob, "refused_access", "image/*,video/*");
   }
 
   function markCompletedByOthers(job: MappedJob) {
     const iso = new Date().toISOString();
-    const takeEvidence = window.confirm("Completed by others? Press OK to capture evidence image/video now.");
     const patch = {
       WorkflowStatus: "COMPLETED_BY_OTHERS",
       workflowStatus: "COMPLETED_BY_OTHERS",
@@ -3430,13 +3429,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       outcomeLockedAt: iso,
       ArchivedFromMap: false,
     };
+    const nextJob = { ...job, ...patch } as MappedJob;
     saveFieldWorkflowPatch(
       job,
       patch,
-      "Completed by others saved. Evidence can be added to package."
+      "Completed by others saved. Capture evidence now."
     );
-    openPaperworkPreviewForStatus(job, patch);
-    if (takeEvidence) requestFieldPhotoCapture(job, "completed_by_others", "image/*,video/*");
+    openPaperworkPreviewForStatus(job, patch, false);
+    requestFieldPhotoCapture(nextJob, "completed_by_others", "image/*,video/*");
   }
 
   function startLocationTracking() {
@@ -4081,7 +4081,7 @@ function directionsUrl(job: JobRecord) {
     return `/paperwork?${query}${separator}doc=${doc}`;
   }
 
-  function openPaperworkPreviewForStatus(job: JobRecord, patch: Record<string, any>) {
+  function openPaperworkPreviewForStatus(job: JobRecord, patch: Record<string, any>, openPreview = true) {
     const outcome = paperworkOutcomeFromValue(
       patch.WorkflowStatus || patch.workflowStatus || patch.FieldOutcome || patch.fieldOutcome || patch.StatusOverride || patch.status
     );
@@ -4089,8 +4089,12 @@ function directionsUrl(job: JobRecord) {
 
     const href = paperworkPreviewHref(job, patch, "package");
     setGeneratedLinks({ affidavit: href, invoice: href });
-    window.open(href, "_blank", "noopener,noreferrer");
-    showActionNotice("Status saved. Affidavit + invoice preview opened.");
+    if (openPreview) {
+      window.open(href, "_blank", "noopener,noreferrer");
+      showActionNotice("Status saved. Affidavit + invoice preview opened.");
+      return;
+    }
+    showActionNotice("Status saved. Evidence capture is opening. Package preview link is ready.");
   }
 
   function currentSelectedIndex() {
