@@ -3,6 +3,7 @@ const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
 const MAPTILER_ENV_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
 const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
 const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v1";
+const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
 const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
 
 
@@ -1368,6 +1369,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const userLocationMarkerRef = useRef<any>(null);
   const userLocationAccuracyRef = useRef<any>(null);
   const geolocationWatchRef = useRef<number | null>(null);
+  const locationAutoStartedRef = useRef(false);
   const markerOverviewTimerRef = useRef<number | null>(null);
   const markerOverviewKeyRef = useRef("");
   const fieldPhotoInputRef = useRef<HTMLInputElement | null>(null);
@@ -2520,6 +2522,37 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }, []);
 
   useEffect(() => {
+    if (!mapReady || locationAutoStartedRef.current || typeof window === "undefined") return;
+
+    locationAutoStartedRef.current = true;
+    const savedPreference = window.localStorage.getItem(LOCATION_ALWAYS_STORAGE_KEY);
+    if (savedPreference === "off") {
+      setLocationStatus("Location paused");
+      return;
+    }
+
+    window.localStorage.setItem(LOCATION_ALWAYS_STORAGE_KEY, "on");
+
+    const permissions = (navigator as any).permissions;
+    if (permissions?.query) {
+      permissions
+        .query({ name: "geolocation" })
+        .then((permission: PermissionStatus) => {
+          if (permission.state === "denied") {
+            setLocationStatus("Location blocked in Chrome");
+            showActionNotice("Turn on Chrome location permission for this site to see yourself on the map.");
+            return;
+          }
+          startLocationTracking();
+        })
+        .catch(() => startLocationTracking());
+      return;
+    }
+
+    startLocationTracking();
+  }, [mapReady]);
+
+  useEffect(() => {
     const key = selected ? jobKey(selected) : "";
     if (!key || !canStoreFieldPhotos()) return;
     let cancelled = false;
@@ -3369,10 +3402,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       return;
     }
 
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(LOCATION_ALWAYS_STORAGE_KEY, "on");
+    }
+
     const options: PositionOptions = {
       enableHighAccuracy: true,
-      maximumAge: 15000,
-      timeout: 12000,
+      maximumAge: 5000,
+      timeout: 15000,
     };
 
     const onPosition = (position: GeolocationPosition) => {
@@ -3382,17 +3419,27 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         accuracy: position.coords.accuracy,
         updatedAt: new Date().toISOString(),
       });
-      setLocationStatus(`You are on map · ±${Math.round((position.coords.accuracy || 0) * 3.28084)} ft`);
+      setLocationStatus(`Live location on · ±${Math.round((position.coords.accuracy || 0) * 3.28084)} ft`);
     };
 
     const onError = (error: GeolocationPositionError) => {
       console.error(error);
-      setLocationStatus("Location blocked");
-      showActionNotice("Allow location in the browser to show your marker.");
+      if (error.code === error.PERMISSION_DENIED) {
+        setLocationStatus("Location blocked in Chrome");
+        showActionNotice("Chrome blocked location. Open site settings for this page and set Location to Allow.");
+        return;
+      }
+      if (error.code === error.TIMEOUT) {
+        setLocationStatus("Location searching...");
+        showActionNotice("Still looking for GPS. Keep Chrome open and make sure phone location is on.");
+        return;
+      }
+      setLocationStatus("Location unavailable");
+      showActionNotice("Phone location is unavailable right now. Check Chrome and device location settings.");
     };
 
     setFollowMyLocation(true);
-    setLocationStatus("Locating...");
+    setLocationStatus("Live location starting...");
     navigator.geolocation.getCurrentPosition(onPosition, onError, options);
     if (geolocationWatchRef.current === null) {
       geolocationWatchRef.current = navigator.geolocation.watchPosition(onPosition, onError, options);
@@ -3404,6 +3451,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       navigator.geolocation.clearWatch(geolocationWatchRef.current);
     }
     geolocationWatchRef.current = null;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(LOCATION_ALWAYS_STORAGE_KEY, "off");
+    }
     setFollowMyLocation(false);
     setLocationStatus(userLocation ? "Location paused" : "Location off");
   }
@@ -9041,6 +9091,19 @@ return (
             width: min(244px, calc(100vw - 96px)) !important;
           }
 
+          .zoom-panel .live-location-btn.active {
+            background: linear-gradient(135deg, #2563eb, #23d3ae) !important;
+            color: #ffffff !important;
+            border-color: transparent !important;
+            box-shadow: 0 12px 28px rgba(37, 99, 235, 0.24) !important;
+          }
+
+          .location-status-pill.active {
+            background: rgba(239, 246, 255, 0.96) !important;
+            border-color: rgba(37, 99, 235, 0.42) !important;
+            color: #1d4ed8 !important;
+          }
+
           .field-map-popup {
             display: grid;
             gap: 4px;
@@ -9281,8 +9344,13 @@ return (
               mapRef.current.fitBounds(bounds, { padding: [34, 34], maxZoom: 15 });
             }
           }}>Fit</button>
-          <button type="button" title="Show my location" onClick={followMyLocation ? stopLocationTracking : startLocationTracking}>
-            {followMyLocation ? "Pause" : "Me"}
+          <button
+            type="button"
+            className={`live-location-btn ${followMyLocation ? "active" : ""}`}
+            title={followMyLocation ? "Pause live location" : "Start live location"}
+            onClick={followMyLocation ? stopLocationTracking : startLocationTracking}
+          >
+            {followMyLocation ? "Live" : "Me"}
           </button>
         </div>
 
