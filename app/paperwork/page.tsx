@@ -5,9 +5,11 @@ import { PDFDocument } from "pdf-lib";
 import {
   PAPERWORK_OUTCOMES,
   type PaperworkOutcome,
+  NO_WORK_SERVICE_CHARGE,
   affidavitReasonForOutcome,
   affidavitTemplateLabel,
   applySavedWorkflowStatuses,
+  defaultPaperworkInvoiceNo,
   formatCurrency,
   getJobAddress,
   getJobAmount,
@@ -18,6 +20,7 @@ import {
   getJobLocation,
   getJobWorkflowStatus,
   invoiceDescriptionForOutcome,
+  isNoWorkOutcome,
   paperworkOutcomeFromJob,
   paperworkOutcomeFromValue,
 } from "../../lib/paperwork";
@@ -34,6 +37,7 @@ type PackageForm = {
   location: string;
   borough: string;
   amount: string;
+  bidAmount: string;
   description: string;
   affidavitType: string;
   affidavitReason: string;
@@ -69,22 +73,45 @@ function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function defaultInvoiceNo(jobId = "") {
-  const suffix = jobId ? `-${jobId}` : "";
-  return `INV-${todayIsoDate().replace(/-/g, "")}${suffix}`;
+function parseDateValue(value: unknown) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+
+  const dateOnly = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (dateOnly) {
+    const [, year, month, day] = dateOnly;
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
 }
 
 function displayDate(value: unknown) {
   const raw = String(value || "").trim();
   if (!raw) return "";
-  const parsed = new Date(raw);
-  if (Number.isNaN(parsed.getTime())) return raw;
-  return parsed.toLocaleDateString("en-US");
+  const parsed = parseDateValue(raw);
+  if (!parsed) return raw;
+  const month = String(parsed.getMonth() + 1).padStart(2, "0");
+  const day = String(parsed.getDate()).padStart(2, "0");
+  const year = String(parsed.getFullYear()).slice(-2);
+  return `${month}/${day}/${year}`;
+}
+
+function monthName(value: string) {
+  const parsed = parseDateValue(value);
+  return parsed ? parsed.toLocaleString("en-US", { month: "long" }).toUpperCase() : "";
+}
+
+function dayOfMonth(value: string) {
+  const parsed = parseDateValue(value);
+  return parsed ? String(parsed.getDate()).padStart(2, "0") : "";
 }
 
 function initialForm(): PackageForm {
   return {
-    invoiceNo: defaultInvoiceNo(),
+    invoiceNo: defaultPaperworkInvoiceNo(),
     invoiceDate: todayIsoDate(),
     contractor: "United Angel Construction Corp.",
     customer: "HPD / OMO",
@@ -93,6 +120,7 @@ function initialForm(): PackageForm {
     location: "",
     borough: "",
     amount: "",
+    bidAmount: "",
     description: "Select a job and field outcome to prepare paperwork.",
     affidavitType: affidavitTemplateLabel("pending"),
     affidavitReason: affidavitReasonForOutcome("pending"),
@@ -120,15 +148,18 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   const fieldDate = lockedAt || secondAttemptAt || refusedAt || verifiedByOthersAt || actualCompleteAt || firstAttemptAt;
   const noWorkCompleteAt = secondAttemptAt || refusedAt || verifiedByOthersAt || lockedAt;
   const workCompleteAt = actualCompleteAt || lockedAt || getJobDate(job, "complete");
+  const bidAmount = formatCurrency(getJobAmount(job));
+  const chargeAmount = isNoWorkOutcome(outcome) ? formatCurrency(NO_WORK_SERVICE_CHARGE) : bidAmount;
 
   return {
     ...initialForm(),
-    invoiceNo: defaultInvoiceNo(jobId),
+    invoiceNo: defaultPaperworkInvoiceNo(jobId),
     jobId,
     address: getJobAddress(job),
     location: getJobLocation(job),
     borough: getJobBorough(job),
-    amount: formatCurrency(getJobAmount(job)),
+    amount: chargeAmount,
+    bidAmount,
     description: invoiceDescriptionForOutcome(job, outcome),
     affidavitType: affidavitTemplateLabel(outcome),
     affidavitReason: affidavitReasonForOutcome(outcome),
@@ -146,6 +177,35 @@ function cleanAmount(value: string) {
   const cleaned = String(value || "").replace(/[$,\s]/g, "").trim();
   return cleaned || "0";
 }
+
+function amountNumber(value: string) {
+  const parsed = Number(cleanAmount(value).replace(/[()]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function pdfMoney(value: number | string, negativeStyle = false) {
+  const numeric = typeof value === "number" ? value : amountNumber(value);
+  const formatted = Math.abs(numeric).toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+  if (negativeStyle && numeric < 0) return `(${formatted})`;
+  return formatted;
+}
+
+function upper(value: string) {
+  return String(value || "").toUpperCase();
+}
+
+function oathSigner(value: string) {
+  const raw = String(value || "JOTJAGRAJ SINGH").trim();
+  return raw
+    .toLowerCase()
+    .replace(/\b[a-z]/g, (char) => char.toUpperCase());
+}
+
+const WORK_MATERIALS = ["TRASH BAG", "WD 40", "SELF SCREWS", "PLEASE SEE ATTACHED DESCRIPTION", "", "ADJUSTMENTS/ ALIGNMENT"];
+const PARTIAL_MATERIALS = ["TRASH BAG", "WD 40", "SELF SCREWS", "PLEASE SEE ATTACHED DESCRIPTION", "STRIKE PLATE", "ADJUST AND ALIGN"];
 
 function safeFilename(value: string) {
   return String(value || "HPD")
@@ -241,6 +301,7 @@ export default function PaperworkPage() {
     setOutcome(nextOutcome);
     setForm((current) => ({
       ...current,
+      amount: isNoWorkOutcome(nextOutcome) ? formatCurrency(NO_WORK_SERVICE_CHARGE) : current.bidAmount || current.amount,
       description: invoiceDescriptionForOutcome(selectedJob, nextOutcome),
       affidavitType: affidavitTemplateLabel(nextOutcome),
       affidavitReason: affidavitReasonForOutcome(nextOutcome),
@@ -255,7 +316,21 @@ export default function PaperworkPage() {
     const useWorkTemplate = outcome === "work_completed" || outcome === "partial_work_completed";
     const templateUrl = useWorkTemplate ? WORK_AFFIDAVIT_TEMPLATE : NO_WORK_AFFIDAVIT_TEMPLATE;
     const jobId = form.jobId || selectedId || "HPD";
-    const amount = cleanAmount(form.amount);
+    const bidValue = amountNumber(form.bidAmount || form.amount);
+    const chargeValue = amountNumber(form.amount || form.bidAmount);
+    const bidAmount = pdfMoney(bidValue);
+    const chargeAmount = pdfMoney(chargeValue);
+    const changeAmount = outcome === "partial_work_completed"
+      ? pdfMoney(Math.max(0, bidValue - chargeValue))
+      : isNoWorkOutcome(outcome)
+        ? pdfMoney(chargeValue - bidValue, true)
+        : "0.00";
+    const fieldDate = form.fieldDate || form.workComplete || todayIsoDate();
+    const firstAttempt = form.firstAttempt || fieldDate;
+    const secondAttempt = form.secondAttempt || fieldDate;
+    const invoiceDate = useWorkTemplate ? form.workComplete || fieldDate : secondAttempt;
+    const signer = form.signer || "JOTJAGRAJ SINGH";
+    const swornSigner = oathSigner(signer);
 
     setPdfStatus("Preparing affidavit PDF...");
 
@@ -289,68 +364,65 @@ export default function PaperworkPage() {
       };
 
       clearMaterialRows();
+      const materials = outcome === "partial_work_completed" ? PARTIAL_MATERIALS : useWorkTemplate ? WORK_MATERIALS : ["TRASH BAG"];
+      materials.forEach((material, index) => setText(`M${index + 1}`, material));
       setText("OMO", jobId);
       setText("TAX ID", "203444624");
       setText("INVOICE #", form.invoiceNo);
       setText("TRADE", "GENERAL CONSTRUCTION");
-      setText("Boro", form.borough);
-      setText("Apt #", form.location);
-      setText("Building Address", form.address);
-      setText("BID AMOUNT", amount);
-      setText("INCREASE DECREASE AMOUNT", "0");
-      setText("TOTAL CHARGE", amount);
-      setText("NAME Please Print", form.signer || "JOTJAGRAJ SINGH");
+      setText("Boro", upper(form.borough));
+      setText("Apt #", upper(form.location));
+      setText("Building Address", upper(form.address));
+      setText("BID AMOUNT", bidAmount);
+      setText("INCREASE DECREASE AMOUNT", changeAmount);
+      setText("TOTAL CHARGE", chargeAmount);
+      setText("NAME Please Print", signer.toUpperCase());
       setText("TITLE", "VP");
       check("RC MINI NO");
       check("APPROVED INCREASE DECREASE NO");
       check("PERMIT REQUIRED NO");
 
       if (useWorkTemplate) {
-        setText("COUNTY OF", form.borough || "NEW YORK");
-        setText("being duly sworn deposes and says", form.signer || "JOTJAGRAJ SINGH / United Angel Construction Corp.");
-        setText("Apt#", form.location);
+        const workDate = form.workComplete || fieldDate;
+        setText("COUNTY OF", upper(form.borough || "NEW YORK"));
+        setText("being duly sworn deposes and says", `I,  ${swornSigner}/ United Angel Construction Corp`);
+        setText("Apt#", upper(form.location));
         setText("State", "NY");
-        setText("PARTIAL WORK DESC", outcome === "partial_work_completed" ? form.description || form.notes : "");
-        setText("AMOUNT", outcome === "partial_work_completed" ? amount : "");
-        setText("PARTIAL REFUSED AMOUNT", "");
+        setText("PARTIAL WORK DESC", "");
+        setText("AMOUNT", "");
+        setText("PARTIAL REFUSED AMOUNT", outcome === "partial_work_completed" ? chargeAmount : "");
         setText("relationship to building", "");
         setText("Description of individual", "");
         setText("eg malefemale", "");
-        setText("MONTH", "");
-        setText("DAY", "");
-        setText("Type or Print Name", form.signer || "JOTJAGRAJ SINGH");
+        setText("MONTH", monthName(workDate));
+        setText("DAY", dayOfMonth(workDate));
+        setText("Type or Print Name", signer.toUpperCase());
         setText("START DATE", outcome === "work_completed" ? form.workStart || form.fieldDate : "");
         setText("COMPLETE DATE", outcome === "work_completed" ? form.workComplete || form.fieldDate : "");
         setText("Work Description", form.description || form.notes || "Work completed per HPD bid / work order.");
       } else {
         const noWorkReason = form.affidavitReason || affidavitReasonForOutcome(outcome);
-        const fieldDate = form.fieldDate || todayIsoDate();
-        const firstAttempt = form.firstAttempt || fieldDate;
-        const secondAttempt = form.secondAttempt || fieldDate;
-        const noWorkDescription = [
-          `NO WORK COMPLETED - ${noWorkReason}`,
-          form.description,
-        ]
-          .filter(Boolean)
-          .join("\n\n");
 
         setText("inaccessibility was due to 1", outcome === "no_access" ? "NO ACCESS TO MAKE REPAIRS" : "");
-        setText("inaccessibility was due to 2", outcome === "no_access" ? form.description : "");
-        setText("COUNTY OF", form.borough || "NEW YORK");
-        setText("AMOUNT", amount);
+        setText("inaccessibility was due to 2", "");
+        setText("COUNTY OF", upper(form.borough || "NEW YORK"));
+        setText("AMOUNT", chargeAmount);
         setText("ARRIVE DATE", outcome === "completed_by_others" ? secondAttempt : "");
         setText("REFUSE DATE", "");
         setText("DENIED DATE", outcome === "refused_access" ? secondAttempt : "");
+        setText("DENIED DATE 1", outcome === "refused_access" ? secondAttempt : "");
         setText("DENIED TEL", "");
         setText("DENIED NAME", "");
         setText("Description of individual DENIED", "");
         setText("BUILDING RELATIONSHIP", "");
-        setText("Type or Print Name", form.signer || "JOTJAGRAJ SINGH");
+        setText("Sworn to me this", dayOfMonth(secondAttempt));
+        setText("day of", monthName(secondAttempt));
+        setText("Type or Print Name", signer.toUpperCase());
         setText("State", "NY");
-        setText("I swear statement", `I ${form.signer || "JOTJAGRAJ SINGH"} / United Angel Construction Corp.`);
+        setText("I swear statement", `I     ${swornSigner} / United Angel Construction Corp`);
         setText("START DATE", outcome === "no_access" ? firstAttempt : "");
         setText("COMPLETE DATE", outcome === "no_access" ? secondAttempt : "");
-        setText("Work Description", noWorkDescription);
+        setText("Work Description", form.description || noWorkReason, 11);
       }
 
       pdfForm.updateFieldAppearances();
@@ -359,23 +431,15 @@ export default function PaperworkPage() {
       const pdfPages = pdfDoc.getPages();
       const checkboxPage = pdfPages[2] || pdfPages[0];
       if (useWorkTemplate && outcome === "partial_work_completed" && checkboxPage) {
-        const invoiceDate = form.workComplete || form.fieldDate || form.invoiceDate;
         pdfPages[0]?.drawText(form.workStart || form.fieldDate, { x: 126, y: 481, size: 10 });
         checkboxPage.drawText(invoiceDate, { x: 411, y: 635, size: 10 });
         checkboxPage.drawText(form.workStart || form.fieldDate, { x: 411, y: 618, size: 10 });
         checkboxPage.drawText(form.workComplete || form.fieldDate, { x: 423, y: 595, size: 10 });
       }
       if (!useWorkTemplate && outcome !== "no_access" && checkboxPage) {
-        checkboxPage.drawText(form.secondAttempt || form.fieldDate || form.invoiceDate, { x: 411, y: 635, size: 10 });
-      }
-      if (checkboxPage) {
-        [
-          [146, 650],
-          [500, 574],
-          [500, 558],
-        ].forEach(([x, y]) => {
-          checkboxPage.drawText("X", { x, y, size: 10 });
-        });
+        checkboxPage.drawText(secondAttempt, { x: 411, y: 635, size: 10 });
+        checkboxPage.drawText(secondAttempt, { x: 411, y: 618, size: 10 });
+        checkboxPage.drawText(secondAttempt, { x: 423, y: 595, size: 10 });
       }
 
       const bytes = await pdfDoc.save();
@@ -793,9 +857,16 @@ export default function PaperworkPage() {
 
           <div className="paperwork-grid">
             <label className="paperwork-field">
-              Amount
+              Bid Amount
+              <input value={form.bidAmount} onChange={(event) => update("bidAmount", event.target.value)} placeholder="$0.00" />
+            </label>
+            <label className="paperwork-field">
+              Charge Amount
               <input value={form.amount} onChange={(event) => update("amount", event.target.value)} placeholder="$0.00" />
             </label>
+          </div>
+
+          <div className="paperwork-grid">
             <label className="paperwork-field">
               Signer
               <input value={form.signer} onChange={(event) => update("signer", event.target.value)} placeholder="Printed name" />

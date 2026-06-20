@@ -4,13 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import {
   PAPERWORK_OUTCOMES,
   type PaperworkOutcome,
+  NO_WORK_SERVICE_CHARGE,
   applySavedWorkflowStatuses,
+  defaultPaperworkInvoiceNo,
   formatCurrency,
   getJobAddress,
   getJobAmount,
   getJobId,
   getJobWorkflowStatus,
   invoiceDescriptionForOutcome,
+  isNoWorkOutcome,
   paperworkOutcomeFromJob,
   paperworkOutcomeFromValue,
 } from "../../lib/paperwork";
@@ -30,10 +33,6 @@ function asArray(value: unknown): JobRecord[] {
   return [];
 }
 
-function defaultInvoiceNo() {
-  return `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`;
-}
-
 export default function InvoiceGeneratorPage() {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [selectedId, setSelectedId] = useState("");
@@ -41,7 +40,7 @@ export default function InvoiceGeneratorPage() {
   const [outcome, setOutcome] = useState<PaperworkOutcome>("pending");
   const [loadedQuery, setLoadedQuery] = useState(false);
   const [form, setForm] = useState({
-    invoiceNo: defaultInvoiceNo(),
+    invoiceNo: defaultPaperworkInvoiceNo(),
     customer: "HPD / OMO",
     jobId: "",
     address: "",
@@ -109,10 +108,11 @@ export default function InvoiceGeneratorPage() {
     setOutcome(resolvedOutcome);
     setForm((prev) => ({
       ...prev,
+      invoiceNo: defaultPaperworkInvoiceNo(getJobId(job)),
       jobId: getJobId(job),
       address: getJobAddress(job),
       description: invoiceDescriptionForOutcome(job, resolvedOutcome),
-      amount: formatCurrency(getJobAmount(job)) || prev.amount,
+      amount: isNoWorkOutcome(resolvedOutcome) ? formatCurrency(NO_WORK_SERVICE_CHARGE) : formatCurrency(getJobAmount(job)) || prev.amount,
       sourceStatus: getJobWorkflowStatus(job),
     }));
   }
@@ -123,6 +123,7 @@ export default function InvoiceGeneratorPage() {
     setForm((prev) => ({
       ...prev,
       description: invoiceDescriptionForOutcome(selectedJob, nextOutcome),
+      amount: isNoWorkOutcome(nextOutcome) ? formatCurrency(NO_WORK_SERVICE_CHARGE) : selectedJob ? formatCurrency(getJobAmount(selectedJob)) || prev.amount : prev.amount,
     }));
   }
 

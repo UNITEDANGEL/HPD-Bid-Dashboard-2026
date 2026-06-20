@@ -10,6 +10,7 @@ export type PaperworkJob = Record<string, unknown>;
 export type WorkflowOverrides = Record<string, Record<string, unknown>>;
 
 export const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
+export const NO_WORK_SERVICE_CHARGE = 100;
 
 const WORKFLOW_STORAGE_KEYS = ["hpd-job-workflow-overrides-v2", "hpd-job-workflow-overrides-v1"];
 
@@ -194,11 +195,19 @@ export function paperworkOutcomeLabel(outcome: PaperworkOutcome) {
   return PAPERWORK_OUTCOMES.find((item) => item.value === outcome)?.label || "Pending / choose on map";
 }
 
+export function isNoWorkOutcome(outcome: PaperworkOutcome) {
+  return outcome === "no_access" || outcome === "refused_access" || outcome === "completed_by_others";
+}
+
+export function defaultPaperworkInvoiceNo(jobId = "") {
+  const digits = String(jobId || "").match(/\d+/)?.[0] || "";
+  if (digits) return `Q${digits}`;
+  return `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`;
+}
+
 export function affidavitTemplateLabel(outcome: PaperworkOutcome) {
   if (outcome === "work_completed" || outcome === "partial_work_completed") return "Work Completed Affidavit";
-  if (outcome === "no_access" || outcome === "refused_access" || outcome === "completed_by_others") {
-    return "No Work Completed Affidavit";
-  }
+  if (isNoWorkOutcome(outcome)) return "No Work Completed Affidavit";
   return "Choose outcome before affidavit";
 }
 
@@ -206,15 +215,15 @@ export function invoiceDescriptionForOutcome(job: PaperworkJob | null | undefine
   const description = getJobDescription(job);
 
   if (outcome === "no_access") {
-    return "No work completed. No access documented after required attempts. See no work completed affidavit.";
+    return "***************************NO ACCESS******************************************";
   }
 
   if (outcome === "refused_access") {
-    return "No work completed. Access refused by occupant/representative. See no work completed affidavit.";
+    return "***********************REFUSED ACCESS***************************************";
   }
 
   if (outcome === "completed_by_others") {
-    return "No work completed by contractor. Condition was completed by others. See no work completed affidavit.";
+    return "***********************WORK COMPLETED BY OTHERS***************************";
   }
 
   if (outcome === "work_completed" || outcome === "partial_work_completed") {
