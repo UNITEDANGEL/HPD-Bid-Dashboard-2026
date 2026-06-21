@@ -3044,8 +3044,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         title: `${stage} Photo ${number}`,
         text:
           number === 1
-            ? `Take ${stage.toLowerCase()} photo ${number} of ${FIELD_REQUIRED_PHOTOS}. The camera will reopen for the next item.`
-            : `Take ${stage.toLowerCase()} photo ${number} of ${FIELD_REQUIRED_PHOTOS} from another angle. The camera will reopen again.`,
+            ? `Take ${stage.toLowerCase()} photo ${number} of ${FIELD_REQUIRED_PHOTOS}. The next step will be ready after it saves.`
+            : `Take ${stage.toLowerCase()} photo ${number} of ${FIELD_REQUIRED_PHOTOS} from another angle. Then continue to video evidence.`,
         label: `${stage} Photo ${number}`,
       };
     });
@@ -3136,6 +3136,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function canUseInlineCamera() {
     return typeof navigator !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia);
+  }
+
+  function isAndroidChromeCamera() {
+    if (typeof navigator === "undefined") return false;
+    const userAgent = navigator.userAgent || "";
+    return /Android/i.test(userAgent);
+  }
+
+  function useNativeCameraForGuidedCapture() {
+    return isAndroidChromeCamera();
   }
 
   function fieldCameraFileName(target: FieldCaptureTarget, extension: string) {
@@ -3930,6 +3940,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setFieldFocusPane("capture");
     setCaptureGuideForStep(captureJob, nextStep);
     focusFieldMedia(target.kind);
+    if (useNativeCameraForGuidedCapture()) {
+      showActionNotice(`${target.step.title} saved. Tap Take ${nextStep.step}/${nextStep.total} for ${nextStep.title}.`);
+      requestFieldPhotoCapture(captureJob, nextStep.kind, nextStep.accept, nextStep.camera, nextStep, 0, false);
+      return true;
+    }
     showActionNotice(`${target.step.title} captured. Opening ${nextStep.title}. If Chrome does not reopen, tap Take ${nextStep.step}/${nextStep.total}.`);
     requestFieldPhotoCapture(captureJob, nextStep.kind, nextStep.accept, nextStep.camera, nextStep);
     return true;
@@ -3959,7 +3974,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     accept = "image/*,video/*",
     useCamera = true,
     step?: FieldCaptureStep,
-    openDelayMs = 0
+    openDelayMs = 0,
+    autoOpen = true
   ) {
     const key = jobKey(job);
     if (!key) return;
@@ -3990,10 +4006,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     photoCaptureTargetRef.current = nextTarget;
     setPhotoCaptureTarget(nextTarget);
 
-    if (useCamera && canUseInlineCamera()) {
+    if (useCamera && canUseInlineCamera() && !useNativeCameraForGuidedCapture()) {
       void openInlineFieldCamera(nextTarget, accept);
       return;
     }
+
+    if (!autoOpen) return;
 
     const openInput = () => {
       const activeTarget = photoCaptureTargetRef.current;
@@ -4163,10 +4181,15 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     event.target.value = "";
     const targetToken = fieldCaptureTargetToken(target);
-    const hasNextCapture = advanceGuidedEvidenceCapture(target);
+    const shouldAdvanceAfterSave = useNativeCameraForGuidedCapture() && Boolean(target.step);
+    const hasNextCapture = shouldAdvanceAfterSave ? false : advanceGuidedEvidenceCapture(target);
 
     try {
-      await saveCapturedFieldMedia(target, capturedFiles, hasNextCapture);
+      const saved = await saveCapturedFieldMedia(target, capturedFiles, hasNextCapture, shouldAdvanceAfterSave);
+      if (saved && shouldAdvanceAfterSave) {
+        const advanced = advanceGuidedEvidenceCapture(target);
+        if (!advanced) showInlineCaptureComplete(target);
+      }
     } finally {
       const activeTarget = photoCaptureTargetRef.current;
       const activeToken = fieldCaptureTargetToken(activeTarget);
