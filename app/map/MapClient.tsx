@@ -4675,10 +4675,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     saveFieldWorkflowPatch(
       job,
       patch,
-      "Refused access saved. Capture evidence now."
+      "Refused access saved. Opening required photos and videos now."
     );
     openPaperworkPreviewForStatus(job, patch, false);
-    requestFieldPhotoCapture(nextJob, "refused_access", "image/*,video/*");
+    beginGuidedEvidenceCapture(nextJob, "refused_access");
   }
 
   function markCompletedByOthers(job: MappedJob) {
@@ -11589,6 +11589,70 @@ return (
             .field-step-actions .start-job-btn {
               grid-column: auto;
             }
+          }
+
+          /* READABLE_FIELD_CARD_V1_1_3 */
+          .selected-card,
+          .job-drawer.selected-focus .selected-card {
+            background:
+              linear-gradient(180deg, #162232 0%, #101923 100%) !important;
+            color: #f8fafc !important;
+            border-color: rgba(142, 170, 196, 0.34) !important;
+            box-shadow:
+              0 20px 48px rgba(3, 8, 14, 0.42),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .selected-card-head,
+          .job-drawer.selected-focus .selected-card-head {
+            background:
+              linear-gradient(135deg, rgba(35, 211, 174, 0.16), rgba(77, 162, 255, 0.12)),
+              #1c2b3c !important;
+            border-color: rgba(180, 205, 230, 0.18) !important;
+          }
+
+          .selected-card .job-title,
+          .selected-card .job-address,
+          .selected-card .job-sub,
+          .selected-card .selected-section-head strong,
+          .selected-card .field-workflow-head strong {
+            color: #f8fafc !important;
+            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.22);
+          }
+
+          .selected-card .job-address {
+            color: #e5eef8 !important;
+          }
+
+          .selected-card .job-sub,
+          .selected-card .selected-section-head span,
+          .selected-card .field-workflow-head span,
+          .selected-card .field-workflow-head small {
+            color: #b8c7d8 !important;
+          }
+
+          .selected-hero-actions a,
+          .selected-hero-actions button {
+            background: rgba(248, 250, 252, 0.10) !important;
+            color: #f8fafc !important;
+            border-color: rgba(180, 205, 230, 0.22) !important;
+          }
+
+          .selected-hero-actions .selected-primary-action {
+            background: linear-gradient(135deg, #53e69c, #7dd3fc) !important;
+            color: #03120b !important;
+            border-color: transparent !important;
+          }
+
+          .selected-card .selected-chip-stack .status,
+          .selected-card .selected-chip-stack .maturity-pill {
+            box-shadow: 0 10px 20px rgba(3, 8, 14, 0.18) !important;
+          }
+
+          .field-step-actions .refused-job-btn {
+            background: linear-gradient(135deg, #fb7185, #f97316) !important;
+            color: #ffffff !important;
+            border-color: transparent !important;
           }
         `}
         </style>
