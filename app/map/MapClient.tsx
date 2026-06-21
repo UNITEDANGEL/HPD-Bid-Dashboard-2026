@@ -1593,6 +1593,7 @@ const [fieldCameraSession, setFieldCameraSession] = useState<InlineCameraSession
 const [fieldCameraStatus, setFieldCameraStatus] = useState("");
 const [fieldCameraBusy, setFieldCameraBusy] = useState(false);
 const [fieldCameraRecording, setFieldCameraRecording] = useState(false);
+const [fieldCameraStreamTick, setFieldCameraStreamTick] = useState(0);
 const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
   jobKey: string;
   kind: FieldMediaKind;
@@ -1946,14 +1947,10 @@ const [hideCompleted, setHideCompleted] = useState(false);
   }, []);
 
   useEffect(() => {
-    const video = fieldCameraVideoRef.current;
     const stream = fieldCameraStreamRef.current;
-    if (!fieldCameraSession || !video || !stream) return;
-    video.srcObject = stream;
-    video.play().catch(() => {
-      setFieldCameraStatus("Tap the preview if the camera pauses.");
-    });
-  }, [fieldCameraSession]);
+    if (!fieldCameraSession || !stream) return;
+    connectFieldCameraStream(stream);
+  }, [fieldCameraSession, fieldCameraStreamTick]);
 
   useEffect(() => {
     return () => {
@@ -3178,24 +3175,58 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       throw new Error("In-app camera is not available in this browser.");
     }
 
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: {
+    const videoConstraints: MediaTrackConstraints[] = [
+      {
         facingMode: { ideal: "environment" },
         width: { ideal: 1280 },
         height: { ideal: 720 },
       },
-      audio: false,
-    });
+      { facingMode: { ideal: "environment" } },
+      true as unknown as MediaTrackConstraints,
+    ];
+    let stream: MediaStream | null = null;
+    let lastError: unknown = null;
+    for (const video of videoConstraints) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    if (!stream) {
+      const name = lastError instanceof DOMException ? lastError.name : "";
+      if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+        throw new Error("Android blocked camera permission. Allow Camera for this site in Chrome, then tap Start Job again.");
+      }
+      if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+        throw new Error("No Android camera was found by Chrome. Try closing other camera apps and reopen the dashboard.");
+      }
+      throw new Error(lastError instanceof Error ? lastError.message : "Android camera could not open.");
+    }
     fieldCameraStreamRef.current = stream;
+    setFieldCameraStreamTick((tick) => tick + 1);
     return stream;
   }
 
   function connectFieldCameraStream(stream: MediaStream) {
-    if (!fieldCameraVideoRef.current) return;
-    fieldCameraVideoRef.current.srcObject = stream;
-    fieldCameraVideoRef.current.play().catch(() => {
-      setFieldCameraStatus("Tap the preview if the camera pauses.");
-    });
+    const attach = (attempt = 0) => {
+      const video = fieldCameraVideoRef.current;
+      if (!video) {
+        if (attempt < 8) window.setTimeout(() => attach(attempt + 1), 80);
+        return;
+      }
+      video.muted = true;
+      video.playsInline = true;
+      video.setAttribute("playsinline", "true");
+      video.setAttribute("webkit-playsinline", "true");
+      if (video.srcObject !== stream) video.srcObject = stream;
+      video.play().catch((error) => {
+        console.error(error);
+        setFieldCameraStatus("Tap the preview to wake Android camera.");
+      });
+    };
+    attach();
   }
 
   async function openInlineFieldCamera(target: FieldCaptureTarget, accept: string) {
@@ -3208,6 +3239,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     try {
       const stream = await ensureFieldCameraStream();
       connectFieldCameraStream(stream);
+      window.setTimeout(() => connectFieldCameraStream(stream), 160);
       setFieldCameraStatus(mode === "video" ? "Ready. Tap Start Video." : "Ready. Tap Capture Photo.");
     } catch (error) {
       console.error(error);
@@ -3220,12 +3252,26 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   function preferredRecordingMimeType() {
     if (typeof MediaRecorder === "undefined") return "";
     const options = [
-      "video/webm;codecs=vp9",
       "video/webm;codecs=vp8",
       "video/webm",
       "video/mp4",
+      "video/webm;codecs=vp9",
     ];
     return options.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+  }
+
+  async function waitForInlineCameraVideoReady(timeoutMs = 2600) {
+    const stream = fieldCameraStreamRef.current;
+    if (stream) connectFieldCameraStream(stream);
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < timeoutMs) {
+      const video = fieldCameraVideoRef.current;
+      if (video && video.videoWidth > 0 && video.videoHeight > 0 && video.readyState >= 2) {
+        return video;
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 100));
+    }
+    return fieldCameraVideoRef.current;
   }
 
   function fieldEvidenceRowsFor(job: JobRecord | null) {
@@ -4133,19 +4179,21 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   async function captureInlineCameraPhoto() {
     const session = fieldCameraSession;
-    const video = fieldCameraVideoRef.current;
-    if (!session || !video || fieldCameraBusy) return;
-
-    const width = video.videoWidth || 1280;
-    const height = video.videoHeight || 720;
-    if (!width || !height) {
-      showActionNotice("Camera preview is not ready yet. Wait one second and tap Capture Photo again.");
-      return;
-    }
+    if (!session || fieldCameraBusy) return;
 
     setFieldCameraBusy(true);
-    setFieldCameraStatus("Saving photo...");
+    setFieldCameraStatus("Camera waking up...");
     try {
+      const video = await waitForInlineCameraVideoReady();
+      const width = video?.videoWidth || 0;
+      const height = video?.videoHeight || 0;
+      if (!video || !width || !height || video.readyState < 2) {
+        showActionNotice("Android camera preview is not ready. Tap the preview once, then Capture Photo.");
+        setFieldCameraStatus("Tap the preview once, then Capture Photo.");
+        return;
+      }
+
+      setFieldCameraStatus("Saving photo...");
       const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
@@ -4173,6 +4221,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const session = fieldCameraSession;
     const stream = fieldCameraStreamRef.current;
     if (!session || !stream || fieldCameraBusy || fieldCameraRecording) return;
+    if (!stream.getVideoTracks().some((track) => track.readyState === "live")) {
+      setFieldCameraStatus("Android camera paused. Reopening camera...");
+      void openInlineFieldCamera(session.target, session.mode === "video" ? "video/*" : "image/*");
+      return;
+    }
     if (typeof MediaRecorder === "undefined") {
       showActionNotice("Video recording is not supported in this browser. Use Gallery for video.");
       return;
@@ -4182,7 +4235,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     fieldCameraChunksRef.current = [];
     fieldCameraRecordingTargetRef.current = session.target;
     try {
-      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      let recorder: MediaRecorder;
+      try {
+        recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      } catch {
+        recorder = new MediaRecorder(stream);
+      }
       fieldCameraRecorderRef.current = recorder;
       recorder.ondataavailable = (event) => {
         if (event.data?.size) fieldCameraChunksRef.current.push(event.data);
@@ -4190,7 +4248,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       recorder.onstop = () => {
         void finishInlineCameraVideoRecording(recorder.mimeType || mimeType || "video/webm");
       };
-      recorder.start(1000);
+      recorder.start(500);
       setFieldCameraRecording(true);
       setFieldCameraStatus("Recording video...");
     } catch (error) {
@@ -4217,7 +4275,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         setFieldCameraBusy(false);
         setFieldCameraStatus("Video stop failed. Try again.");
       }
-    }, 180);
+    }, 450);
   }
 
   async function finishInlineCameraVideoRecording(mimeType: string) {
