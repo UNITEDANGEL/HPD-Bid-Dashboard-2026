@@ -222,6 +222,9 @@ type FieldCaptureStep = {
   total: number;
 };
 
+const FIELD_REQUIRED_PHOTOS = 2;
+const FIELD_REQUIRED_VIDEOS = 3;
+
 let zipCrcTable: Uint32Array | null = null;
 
 function zipTextBytes(value: string) {
@@ -3002,36 +3005,33 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function guidedCaptureSteps(kind: FieldMediaKind) {
     const stage = fieldStageLabel(kind);
-    const steps: Array<Omit<FieldCaptureStep, "kind" | "step" | "total">> = [
-      {
+    const photoSteps = Array.from({ length: FIELD_REQUIRED_PHOTOS }, (_, index) => {
+      const number = index + 1;
+      return {
         accept: "image/*",
         camera: true,
-        title: `${stage} Photo 1`,
-        text: `Take ${stage.toLowerCase()} photo 1 of 2.`,
-        label: `${stage} Photo 1`,
-      },
-      {
-        accept: "image/*",
-        camera: true,
-        title: `${stage} Photo 2`,
-        text: `Take ${stage.toLowerCase()} photo 2 of 2 from another angle.`,
-        label: `${stage} Photo 2`,
-      },
-      {
+        title: `${stage} Photo ${number}`,
+        text:
+          number === 1
+            ? `Take ${stage.toLowerCase()} photo ${number} of ${FIELD_REQUIRED_PHOTOS}.`
+            : `Take ${stage.toLowerCase()} photo ${number} of ${FIELD_REQUIRED_PHOTOS} from another angle.`,
+        label: `${stage} Photo ${number}`,
+      };
+    });
+    const videoSteps = Array.from({ length: FIELD_REQUIRED_VIDEOS }, (_, index) => {
+      const number = index + 1;
+      return {
         accept: "video/*",
         camera: true,
-        title: `${stage} Video 1`,
-        text: `Take ${stage.toLowerCase()} video 1 of 2. Keep it short so it can be stamped and emailed.`,
-        label: `${stage} Video 1`,
-      },
-      {
-        accept: "video/*",
-        camera: true,
-        title: `${stage} Video 2`,
-        text: `Take ${stage.toLowerCase()} video 2 of 2 from another angle.`,
-        label: `${stage} Video 2`,
-      },
-    ];
+        title: `${stage} Video ${number}`,
+        text:
+          number === 1
+            ? `Take ${stage.toLowerCase()} video ${number} of ${FIELD_REQUIRED_VIDEOS}. Keep it short so it can be stamped and emailed.`
+            : `Take ${stage.toLowerCase()} video ${number} of ${FIELD_REQUIRED_VIDEOS} from another angle.`,
+        label: `${stage} Video ${number}`,
+      };
+    });
+    const steps: Array<Omit<FieldCaptureStep, "kind" | "step" | "total">> = [...photoSteps, ...videoSteps];
 
     return steps.map((step, index) => ({
       ...step,
@@ -3039,6 +3039,22 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       step: index + 1,
       total: steps.length,
     }));
+  }
+
+  function extraVideoCaptureStep(job: MappedJob, kind: FieldMediaKind): FieldCaptureStep {
+    const stage = fieldStageLabel(kind);
+    const savedVideoCount = fieldEvidenceRowsFor(job).filter((media) => media.kind === kind && media.mediaType === "video").length;
+    const number = savedVideoCount + 1;
+    return {
+      kind,
+      accept: "video/*",
+      camera: true,
+      title: `${stage} Video ${number}`,
+      text: `Take another ${stage.toLowerCase()} video angle. It will be labeled and saved with this job.`,
+      label: `${stage} Video ${number}`,
+      step: 1,
+      total: 1,
+    };
   }
 
   function setCaptureGuideForStep(job: MappedJob, step: FieldCaptureStep) {
@@ -3287,10 +3303,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const afterImages = evidenceRows.filter((media) => media.kind === "after" && media.mediaType === "image").length;
         const afterVideos = evidenceRows.filter((media) => media.kind === "after" && media.mediaType === "video").length;
         const missing: string[] = [];
-        if (beforeImages < 2) missing.push(`before photos ${beforeImages}/2`);
-        if (beforeVideos < 2) missing.push(`before videos ${beforeVideos}/2`);
-        if (afterImages < 2) missing.push(`after photos ${afterImages}/2`);
-        if (afterVideos < 2) missing.push(`after videos ${afterVideos}/2`);
+        if (beforeImages < FIELD_REQUIRED_PHOTOS) missing.push(`before photos ${beforeImages}/${FIELD_REQUIRED_PHOTOS}`);
+        if (beforeVideos < FIELD_REQUIRED_VIDEOS) missing.push(`before videos ${beforeVideos}/${FIELD_REQUIRED_VIDEOS}`);
+        if (afterImages < FIELD_REQUIRED_PHOTOS) missing.push(`after photos ${afterImages}/${FIELD_REQUIRED_PHOTOS}`);
+        if (afterVideos < FIELD_REQUIRED_VIDEOS) missing.push(`after videos ${afterVideos}/${FIELD_REQUIRED_VIDEOS}`);
         if (missing.length) {
           showActionNotice(`Full package needs current evidence: ${missing.join(", ")}.`);
           focusFieldPane("capture");
@@ -3797,8 +3813,21 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setFieldFocusPane("capture");
     setCaptureGuideForStep(captureJob, nextStep);
     focusFieldMedia(target.kind);
-    showActionNotice(`${target.step.title} saved. Next: ${nextStep.title}.`);
+    showActionNotice(`${target.step.title} saved. Opening ${nextStep.title}.`);
+    window.setTimeout(() => {
+      const currentCaptureJob = fieldCaptureJobRef.current;
+      if (!currentCaptureJob || jobKey(currentCaptureJob) !== target.jobKey) return;
+      requestFieldPhotoCapture(currentCaptureJob, nextStep.kind, nextStep.accept, nextStep.camera, nextStep);
+    }, 450);
     return true;
+  }
+
+  function captureExtraVideo(job: MappedJob, kind: FieldMediaKind) {
+    const step = extraVideoCaptureStep(job, kind);
+    fieldCaptureQueueRef.current = [];
+    fieldCaptureJobRef.current = job;
+    setCaptureGuideForStep(job, step);
+    requestFieldPhotoCapture(job, kind, step.accept, step.camera, step);
   }
 
   function requestFieldPhotoCapture(
@@ -3931,7 +3960,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         setFieldCaptureGuide(null);
         setFieldFocusPane("evidence");
         focusFieldMedia(target.kind);
-        showActionNotice(`${fieldEvidenceLabel(target.kind)} saved to job card: ${imageCount} image(s), ${videoCount} video(s).`);
+        showActionNotice(
+          target.step
+            ? `${fieldEvidenceLabel(target.kind)} required set saved. Add more videos from the job card if needed.`
+            : `${fieldEvidenceLabel(target.kind)} saved to job card: ${imageCount} image(s), ${videoCount} video(s).`
+        );
       }
     } catch (error) {
       console.error(error);
@@ -10194,7 +10227,7 @@ return (
 
           .field-media-actions {
             display: grid !important;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
             gap: 6px !important;
           }
 
@@ -10714,6 +10747,9 @@ return (
                         <div className="field-media-actions">
                           <button type="button" className="primary" onClick={() => beginGuidedEvidenceCapture(selected, kind)}>
                             Required Set
+                          </button>
+                          <button type="button" onClick={() => captureExtraVideo(selected, kind)}>
+                            Video +
                           </button>
                           <button type="button" onClick={() => requestFieldPhotoCapture(selected, kind, "image/*,video/*", false)}>
                             Gallery
