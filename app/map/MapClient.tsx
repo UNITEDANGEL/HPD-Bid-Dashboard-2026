@@ -3752,8 +3752,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setFieldFocusPane("capture");
     setCaptureGuideForStep(captureJob, nextStep);
     focusFieldMedia(target.kind);
-    showActionNotice(`${target.step.title} saved. Opening ${nextStep.title}. If Chrome does not reopen, tap Take ${nextStep.step}/${nextStep.total}.`);
-    requestFieldPhotoCapture(captureJob, nextStep.kind, nextStep.accept, nextStep.camera, nextStep, 550);
+    showActionNotice(`${target.step.title} captured. Opening ${nextStep.title}. If Chrome does not reopen, tap Take ${nextStep.step}/${nextStep.total}.`);
+    requestFieldPhotoCapture(captureJob, nextStep.kind, nextStep.accept, nextStep.camera, nextStep);
     return true;
   }
 
@@ -3860,7 +3860,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       target.step?.title || "",
       target.meta.label || "",
     ].join("|");
-    let hasNextCapture = false;
+    const hasNextCapture = advanceGuidedEvidenceCapture(target);
 
     try {
       const saved = await saveFieldPhotos(target.jobKey, target.kind, capturedFiles, target.meta);
@@ -3940,7 +3940,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const fallbackVideoNote = unstampedVideoCount
         ? ` ${unstampedVideoCount} video(s) were saved as original files because this phone could not burn the label into them.`
         : "";
-      hasNextCapture = advanceGuidedEvidenceCapture(target);
       if (!hasNextCapture) {
         const captureJob =
           fieldCaptureJobRef.current ||
