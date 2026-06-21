@@ -3213,6 +3213,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return isAndroidChromeCamera();
   }
 
+  function useInlineCameraForCapture(accept: string) {
+    if (!canUseInlineCamera()) return false;
+    if (!useNativeCameraForGuidedCapture()) return true;
+    return String(accept || "").includes("video");
+  }
+
   function fieldCameraFileName(target: FieldCaptureTarget, extension: string) {
     const key = zipSafePart(target.jobKey || target.meta.jobId || "job", "job");
     const label = zipSafePart(target.step?.label || target.meta.label || "evidence", "evidence");
@@ -3820,8 +3826,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   async function runPackagePrimaryAction(job: MappedJob) {
-    showActionNotice("Opening package screen: Generate, Preview, Send.");
-    window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
+    showActionNotice("Opening package screen. It will create the package automatically.");
+    window.open(paperworkAutoPackageHref(job), "_blank", "noopener,noreferrer");
   }
 
   async function shareStoredPackage(job: MappedJob, packet = latestFieldPacket(job, "affidavit_invoice_pdf") || latestFieldPacket(job), downloadFallback = true) {
@@ -4071,7 +4077,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     photoCaptureTargetRef.current = nextTarget;
     setPhotoCaptureTarget(nextTarget);
 
-    if (useCamera && canUseInlineCamera() && !useNativeCameraForGuidedCapture()) {
+    if (useCamera && useInlineCameraForCapture(accept)) {
       void openInlineFieldCamera(nextTarget, accept);
       return;
     }
@@ -5285,6 +5291,11 @@ function directionsUrl(job: JobRecord) {
     const query = paperworkQuery(job, outcome);
     const separator = query ? "&" : "";
     return `/paperwork?${query}${separator}doc=${doc}`;
+  }
+
+  function paperworkAutoPackageHref(job: JobRecord) {
+    const href = paperworkHref(job, "package");
+    return `${href}${href.includes("?") ? "&" : "?"}auto=package`;
   }
 
   function paperworkPreviewHref(job: JobRecord, patch: Record<string, any>, doc: "package" | "affidavit" | "invoice" = "package") {
@@ -11626,7 +11637,7 @@ return (
             </div>
 
             <div className="selected-hero-actions">
-              <a className="selected-primary-action" href={paperworkHref(selected, "package")}>
+              <a className="selected-primary-action" href={paperworkAutoPackageHref(selected)}>
                 Generate Package
               </a>
               <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">

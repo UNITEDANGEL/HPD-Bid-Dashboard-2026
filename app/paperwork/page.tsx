@@ -715,10 +715,12 @@ export default function PaperworkPage() {
   const [outcome, setOutcome] = useState<PaperworkOutcome>("pending");
   const [form, setForm] = useState<PackageForm>(initialForm);
   const [loadedQuery, setLoadedQuery] = useState(false);
+  const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
   const [pdfStatus, setPdfStatus] = useState("");
   const [packagePreview, setPackagePreview] = useState<CompletePackagePreview | null>(null);
   const [packagePreviewOpen, setPackagePreviewOpen] = useState(false);
   const pendingCompletePackageRef = useRef<PendingCompletePackage | null>(null);
+  const autoGenerateStartedRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -755,6 +757,7 @@ export default function PaperworkPage() {
     const params = new URLSearchParams(window.location.search);
     const job = params.get("job") || "";
     const packageParam = String(params.get("package") || params.get("type") || "").toLowerCase();
+    const autoParam = String(params.get("auto") || params.get("generate") || "").toLowerCase();
     let nextOutcome = paperworkOutcomeFromValue(params.get("outcome") || "");
 
     if (nextOutcome === "pending") {
@@ -764,6 +767,7 @@ export default function PaperworkPage() {
 
     setSelectedId(job);
     setOutcome(nextOutcome);
+    setAutoGeneratePackage(["package", "1", "true", "yes"].includes(autoParam));
     setForm((current) => ({
       ...current,
       affidavitType: affidavitTemplateLabel(nextOutcome),
@@ -788,6 +792,17 @@ export default function PaperworkPage() {
   }, [jobs, selectedId]);
 
   const selectedJob = useMemo(() => findJob(jobs, selectedId), [jobs, selectedId]);
+
+  useEffect(() => {
+    if (!autoGeneratePackage || autoGenerateStartedRef.current) return;
+    if (!selectedId || !jobs.length || !selectedJob || !form.jobId) return;
+
+    autoGenerateStartedRef.current = true;
+    setPdfStatus("Auto-generating package from saved evidence...");
+    window.setTimeout(() => {
+      void generateCompletePackage();
+    }, 250);
+  }, [autoGeneratePackage, selectedId, jobs.length, selectedJob, form.jobId]);
 
   function clearPackagePreview() {
     setPackagePreview(null);
