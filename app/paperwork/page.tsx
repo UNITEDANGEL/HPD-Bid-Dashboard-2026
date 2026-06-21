@@ -79,6 +79,7 @@ type CompletePackagePreview = {
   jobId: string;
   applicationFileName: string;
   applicationSize: number;
+  applicationUrl: string;
   applicationMediaCount: number;
   imageCount: number;
   videoCount: number;
@@ -87,6 +88,7 @@ type CompletePackagePreview = {
   pdfFileName: string;
   videoPackageFileName: string;
   videoPackageSize: number;
+  videoPackageUrl: string;
   videoNames: string[];
   videoLinks: Array<{
     name: string;
@@ -724,6 +726,8 @@ export default function PaperworkPage() {
 
   useEffect(() => {
     return () => {
+      if (packagePreview?.applicationUrl) URL.revokeObjectURL(packagePreview.applicationUrl);
+      if (packagePreview?.videoPackageUrl) URL.revokeObjectURL(packagePreview.videoPackageUrl);
       packagePreview?.videoLinks.forEach((link) => URL.revokeObjectURL(link.url));
     };
   }, [packagePreview]);
@@ -1143,6 +1147,8 @@ export default function PaperworkPage() {
 
       const applicationBytes = buildStoredZip(applicationEntries);
       const videoBytes = videoEntries.length ? buildStoredZip(videoEntries) : undefined;
+      const applicationUrl = bytesToObjectUrl(applicationBytes, "application/zip");
+      const videoPackageUrl = videoBytes ? bytesToObjectUrl(videoBytes, "application/zip") : "";
       const imageCount = imageMedia.length;
       const videoCount = videoMedia.length;
       const beforeCount = includedMedia.filter((media) => media.kind === "before").length;
@@ -1211,6 +1217,7 @@ export default function PaperworkPage() {
         jobId: pdf.jobId,
         applicationFileName,
         applicationSize: applicationBytes.byteLength,
+        applicationUrl,
         applicationMediaCount: imageMedia.length,
         imageCount,
         videoCount,
@@ -1219,6 +1226,7 @@ export default function PaperworkPage() {
         pdfFileName: pdf.fileName,
         videoPackageFileName: videoBytes ? videoPackageFileName : "",
         videoPackageSize: videoBytes?.byteLength || 0,
+        videoPackageUrl,
         videoNames,
         videoLinks,
         skippedMediaCount: skippedMedia.length,
@@ -1238,14 +1246,35 @@ export default function PaperworkPage() {
     }
   }
 
+  function canSharePackageFiles(files: File[]) {
+    if (typeof navigator === "undefined" || typeof navigator.share !== "function") return false;
+    if (!navigator.canShare) return true;
+    try {
+      return navigator.canShare({ files });
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
+  }
+
+  function showPackageShareFallback(message: string) {
+    const pending = pendingCompletePackageRef.current;
+    setPackagePreviewOpen(true);
+    setPdfStatus(
+      `${message} Preview is open with ${pending?.videoBytes ? "Application ZIP and Video ZIP" : "Application ZIP"} package buttons.`
+    );
+  }
+
   async function sharePackageFiles(files: File[], title: string, text: string, successMessage: string) {
-    const canShareFiles =
-      typeof navigator !== "undefined" &&
-      typeof navigator.share === "function" &&
-      (!navigator.canShare || navigator.canShare({ files }));
+    const canShareFiles = canSharePackageFiles(files);
 
     if (!canShareFiles) {
-      setPdfStatus("This browser cannot send ZIP files directly. Open this page on mobile Chrome and tap Send.");
+      const canShareSeparately = files.length > 1 && files.some((file) => canSharePackageFiles([file]));
+      showPackageShareFallback(
+        canShareSeparately
+          ? "Android cannot send both ZIPs in one share sheet. Send Application ZIP and Video ZIP one at a time from Preview."
+          : "Android blocked direct ZIP sending."
+      );
       return;
     }
 
@@ -1254,7 +1283,7 @@ export default function PaperworkPage() {
       setPdfStatus(successMessage);
     } catch (error) {
       console.error(error);
-      setPdfStatus("Send was cancelled or blocked. Packages are still ready for review.");
+      showPackageShareFallback("Send was cancelled or blocked.");
     }
   }
 
@@ -1480,6 +1509,41 @@ export default function PaperworkPage() {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 8px;
+        }
+
+        .package-delivery-actions {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+          border: 1px solid rgba(83, 230, 156, 0.22);
+          background: rgba(83, 230, 156, 0.08);
+          border-radius: 8px;
+          padding: 10px;
+        }
+
+        .package-delivery-actions button,
+        .package-delivery-actions a {
+          min-height: 44px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          border: 1px solid rgba(83, 230, 156, 0.38);
+          background: rgba(15, 23, 42, 0.78);
+          color: #dfffea;
+          padding: 0 10px;
+          text-align: center;
+          text-decoration: none;
+          font-size: 12px;
+          font-weight: 950;
+          line-height: 1.2;
+          cursor: pointer;
+        }
+
+        .package-delivery-actions button:first-child {
+          background: #53e69c;
+          color: #03120b;
+          border-color: transparent;
         }
 
         .package-preview-panel {
@@ -1986,6 +2050,7 @@ export default function PaperworkPage() {
           .package-review-grid,
           .package-review-split,
           .package-review-actions,
+          .package-delivery-actions,
           .package-content-row,
           .package-video-item,
           .preview-row,
@@ -2269,6 +2334,24 @@ export default function PaperworkPage() {
                       </div>
                       <b>{packagePreview.videoPackageSize ? packetSizeLabel(packagePreview.videoPackageSize) : "0 KB"}</b>
                     </div>
+                  </div>
+                  <div className="package-delivery-actions">
+                    <button type="button" onClick={sendApplicationPackage}>
+                      Send Application ZIP
+                    </button>
+                    {packagePreview.videoPackageUrl ? (
+                      <button type="button" onClick={sendVideoPackage}>
+                        Send Video ZIP
+                      </button>
+                    ) : null}
+                    <a href={packagePreview.applicationUrl} download={packagePreview.applicationFileName}>
+                      Save Application ZIP
+                    </a>
+                    {packagePreview.videoPackageUrl ? (
+                      <a href={packagePreview.videoPackageUrl} download={packagePreview.videoPackageFileName}>
+                        Save Video ZIP
+                      </a>
+                    ) : null}
                   </div>
                   <div className="package-review-grid">
                     <span>PDF <strong>1</strong></span>

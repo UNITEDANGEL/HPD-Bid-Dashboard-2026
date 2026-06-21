@@ -3321,7 +3321,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const stream = await ensureFieldCameraStream();
       connectFieldCameraStream(stream);
       window.setTimeout(() => connectFieldCameraStream(stream), 160);
-      setFieldCameraStatus(mode === "video" ? "Ready. Tap Start Video." : "Ready. Tap Capture Photo.");
+      setFieldCameraStatus(mode === "video" ? "Video camera is open. Tap Start Video." : "Camera is open. Tap Capture Photo.");
     } catch (error) {
       console.error(error);
       setFieldCameraSession(null);
@@ -3513,6 +3513,29 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(href), 30000);
     showActionNotice(`Downloaded saved packet: ${packet.fileName}`);
+  }
+
+  function downloadBytesFile(bytes: Uint8Array, fileName: string, mimeType = "application/octet-stream", notice?: string) {
+    const href = URL.createObjectURL(bytesToBlob(bytes, mimeType));
+    const anchor = document.createElement("a");
+    anchor.href = href;
+    anchor.download = safeAttachmentName(fileName, "attachment");
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(href), 30000);
+    showActionNotice(notice || `Downloaded package: ${fileName}`);
+  }
+
+  function canShareFieldFiles(files: File[]) {
+    if (typeof navigator === "undefined" || typeof navigator.share !== "function") return false;
+    if (!navigator.canShare) return true;
+    try {
+      return navigator.canShare({ files });
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
   }
 
   function safeAttachmentName(name: string, fallback: string) {
@@ -3770,13 +3793,15 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   async function shareFullPackageBytes(job: MappedJob, pendingPackage: PendingFullPackage) {
     const key = jobKey(job);
     const zipFile = bytesToFile(pendingPackage.bytes, pendingPackage.fileName, "application/zip");
-    const canShareFiles =
-      typeof navigator !== "undefined" &&
-      typeof navigator.share === "function" &&
-      (!navigator.canShare || navigator.canShare({ files: [zipFile] }));
+    const canShareFiles = canShareFieldFiles([zipFile]);
 
     if (!canShareFiles) {
-      showActionNotice("This browser cannot share ZIP files directly. Package is ready; use Chrome share on mobile.");
+      downloadBytesFile(
+        pendingPackage.bytes,
+        pendingPackage.fileName,
+        "application/zip",
+        "Android blocked direct Send. Package saved so you can attach it from Downloads."
+      );
       return;
     }
 
@@ -3789,7 +3814,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       showActionNotice(`Package shared: ${pendingPackage.evidenceCount} media file(s), ${pendingPackage.videoCount} video(s).`);
     } catch (error) {
       console.error(error);
-      showActionNotice("Share was cancelled or blocked. Package is still ready for review.");
+      downloadBytesFile(
+        pendingPackage.bytes,
+        pendingPackage.fileName,
+        "application/zip",
+        "Share was cancelled or blocked. Package saved so you can attach it from Downloads."
+      );
     }
   }
 
@@ -3845,10 +3875,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       dataUrlToFile(packet.dataUrl, packet.fileName, packet.mimeType || (isMediaZip ? "application/zip" : "application/pdf")),
     ];
 
-    const canShareFiles =
-      typeof navigator !== "undefined" &&
-      typeof navigator.share === "function" &&
-      (!navigator.canShare || navigator.canShare({ files }));
+    const canShareFiles = canShareFieldFiles(files);
 
     if (canShareFiles) {
       try {
@@ -3869,13 +3896,15 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       } catch (error) {
         console.error(error);
         if (!downloadFallback) {
-          showActionNotice("Share was cancelled or blocked. Package is still ready in preview.");
+          showActionNotice("Share was cancelled or blocked. Downloading package so you can attach it from Downloads.");
+          downloadStoredPacket(packet);
           return;
         }
         showActionNotice(`Share was cancelled or blocked. Downloading the ${isMediaZip ? "ZIP" : "PDF"} instead.`);
       }
     } else if (!downloadFallback) {
-      showActionNotice("This browser cannot share this package directly. Package is still ready in preview.");
+      showActionNotice("Android blocked direct Send. Downloading package so you can attach it from Downloads.");
+      downloadStoredPacket(packet);
       return;
     }
 
@@ -11014,6 +11043,42 @@ return (
           .map-shell.android-scroll-fix .map-stage {
             height: var(--hpd-visual-height, 100svh) !important;
             min-height: var(--hpd-visual-height, 100svh) !important;
+          }
+
+          .map-shell.android-scroll-fix .inline-camera-shell {
+            padding: 0 !important;
+            place-items: stretch !important;
+            background: #07111f !important;
+            backdrop-filter: none !important;
+          }
+
+          .map-shell.android-scroll-fix .inline-camera-panel {
+            width: 100vw !important;
+            height: var(--hpd-visual-height, 100svh) !important;
+            max-height: none !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            background: #07111f !important;
+            padding: max(10px, env(safe-area-inset-top)) 10px max(14px, env(safe-area-inset-bottom)) !important;
+            align-content: start !important;
+            transition: none !important;
+          }
+
+          .map-shell.android-scroll-fix .inline-camera-preview {
+            min-height: min(58svh, 520px) !important;
+            aspect-ratio: auto !important;
+            border-radius: 12px !important;
+          }
+
+          .map-shell.android-scroll-fix .inline-camera-status {
+            align-items: stretch !important;
+          }
+
+          .map-shell.android-scroll-fix .inline-camera-status span {
+            display: flex !important;
+            align-items: center !important;
+            min-height: 38px !important;
           }
 
           .map-shell.android-scroll-fix.drawer-selected .map-stage,
