@@ -2692,21 +2692,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         });
 
         marker.on("click", () => {
-          setSelected(job);
-          setSelectedOnly(true);
-          setGeneratedLinks({});
-          setFullMap(true);
-          setDrawerOpen(false);
           setMapMenuOpen(false);
-          scheduleMarkerOverviewReturn(popupJobId);
-
-          setTimeout(() => {
-            mapRef.current?.flyTo([Number(job._lat), Number(job._lng)], 16, {
-              animate: true,
-              duration: 0.75,
-            });
-          }, 40);
-
+          focusJob(job);
         });
 
         marker.bindPopup(`
@@ -11660,6 +11647,184 @@ return (
             color: #ffffff !important;
             border-color: transparent !important;
           }
+
+          /* SIMPLE_SITE_PROCEDURE_V1_1_5 */
+          .site-procedure-card {
+            display: grid;
+            gap: 12px;
+            padding: 14px;
+            border-radius: 18px;
+            border: 1px solid rgba(180, 205, 230, 0.20);
+            background:
+              linear-gradient(180deg, rgba(248, 250, 252, 0.10), rgba(248, 250, 252, 0.055)),
+              #142132;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+          }
+
+          .site-procedure-card.is-refused {
+            border-color: rgba(251, 113, 133, 0.34);
+          }
+
+          .site-procedure-card.has-evidence {
+            border-color: rgba(83, 230, 156, 0.34);
+          }
+
+          .job-drawer.selected-focus,
+          .job-drawer.selected-focus.closed,
+          .job-drawer.selected-focus.drawer-hard-hidden {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+            transform: translateY(0) !important;
+          }
+
+          .job-drawer.selected-focus {
+            overflow: auto !important;
+          }
+
+          .selected-card-head {
+            order: 0;
+          }
+
+          .selected-card > .field-workflow-card {
+            order: 1;
+          }
+
+          .selected-hero-actions {
+            order: 2;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          }
+
+          .selected-hero-actions .selected-primary-action {
+            display: none !important;
+          }
+
+          .selected-overview-grid,
+          .selected-alert-grid,
+          .selected-description,
+          .selected-status-panel {
+            order: 3;
+          }
+
+          .site-procedure-head {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: center;
+          }
+
+          .site-procedure-head span,
+          .site-procedure-head small {
+            display: block;
+            color: #b8c7d8 !important;
+            line-height: 1.35;
+          }
+
+          .site-procedure-head span {
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .site-procedure-head strong {
+            display: block;
+            margin-top: 4px;
+            color: #f8fafc !important;
+            font-size: clamp(21px, 6vw, 30px) !important;
+            line-height: 1.05 !important;
+          }
+
+          .site-procedure-head b {
+            min-height: 38px;
+            display: inline-grid;
+            place-items: center;
+            padding: 0 12px;
+            border-radius: 999px;
+            background: rgba(83, 230, 156, 0.16);
+            color: #caffdf;
+            font-size: 12px;
+            white-space: nowrap;
+          }
+
+          .site-procedure-steps,
+          .site-procedure-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .site-procedure-steps span {
+            min-height: 34px;
+            display: grid;
+            place-items: center;
+            border-radius: 999px;
+            background: rgba(248, 250, 252, 0.08);
+            color: #b8c7d8 !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            text-transform: none !important;
+          }
+
+          .site-procedure-steps span.done {
+            background: rgba(83, 230, 156, 0.18);
+            color: #dfffea !important;
+          }
+
+          .site-procedure-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .site-procedure-actions button,
+          .site-procedure-actions a {
+            min-height: 60px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            border: 1px solid rgba(180, 205, 230, 0.22);
+            background: rgba(248, 250, 252, 0.10);
+            color: #f8fafc !important;
+            text-align: center;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 1000;
+            cursor: pointer;
+          }
+
+          .site-procedure-actions .procedure-primary {
+            grid-column: 1 / -1;
+            border-color: transparent;
+            background: linear-gradient(135deg, #53e69c, #7dd3fc) !important;
+            color: #03120b !important;
+            box-shadow: 0 14px 28px rgba(83, 230, 156, 0.18);
+          }
+
+          .site-procedure-actions .refused-job-btn.procedure-primary {
+            background: linear-gradient(135deg, #fb7185, #f97316) !important;
+            color: #ffffff !important;
+          }
+
+          .field-workflow-card > .field-procedure-hero,
+          .field-workflow-card > .field-media-console,
+          .field-workflow-card > .field-flow-dock,
+          .field-workflow-card > .field-workflow-grid,
+          .field-workflow-card > .field-step-actions,
+          .field-workflow-card > .field-packet-vault,
+          .field-workflow-card > .field-send-panel,
+          .field-workflow-card > .field-evidence-gallery,
+          .field-workflow-card > .field-evidence-rail.compact {
+            display: none !important;
+          }
+
+          @media (max-width: 720px) {
+            .site-procedure-head,
+            .site-procedure-actions {
+              grid-template-columns: 1fr;
+            }
+
+            .site-procedure-head b {
+              justify-self: stretch;
+            }
+          }
         `}
         </style>
 
@@ -12156,6 +12321,85 @@ return (
 
               {(() => {
                 const counts = fieldPhotoCountsFor(selected);
+                const status = workflowStatus(selected);
+                const isRefused = status === "REFUSED_ACCESS" || /refused/i.test(workflowLabel(selected) || String(selected.status || ""));
+                const refusedPhotoCount = counts.refused_access;
+                const hasRefusedPhoto = refusedPhotoCount > 0;
+                const preview = fullPackagePreviewFor(selected);
+                const packageReady = Boolean(preview);
+                const nextTitle = isRefused
+                  ? hasRefusedPhoto
+                    ? packageReady
+                      ? "Package ready"
+                      : "Photo saved"
+                    : "Take refused photo"
+                  : "Choose site result";
+                const nextText = isRefused
+                  ? hasRefusedPhoto
+                    ? packageReady
+                      ? "Send the ZIP package when you are ready."
+                      : "Generate the affidavit, invoice, and evidence ZIP."
+                    : "One photo is required for refused access."
+                  : "Tap the field result that happened at the site.";
+
+                return (
+                  <div className={`site-procedure-card ${isRefused ? "is-refused" : ""} ${hasRefusedPhoto ? "has-evidence" : ""} ${packageReady ? "has-package" : ""}`}>
+                    <div className="site-procedure-head">
+                      <div>
+                        <span>Site Procedure</span>
+                        <strong>{nextTitle}</strong>
+                        <small>{nextText}</small>
+                      </div>
+                      <b>{isRefused ? `${refusedPhotoCount}/1 photo` : `${counts.total} file(s)`}</b>
+                    </div>
+                    <div className="site-procedure-steps">
+                      <span className={isRefused ? "done" : ""}>1 Status</span>
+                      <span className={hasRefusedPhoto ? "done" : ""}>2 Photo</span>
+                      <span className={packageReady ? "done" : ""}>3 Package</span>
+                    </div>
+                    <div className="site-procedure-actions">
+                      {!isRefused ? (
+                        <>
+                          <button type="button" className="refused-job-btn procedure-primary" onClick={() => markRefusedAccess(selected)}>
+                            Refused Access
+                          </button>
+                          <button type="button" onClick={() => startFieldJob(selected)}>
+                            Start Job
+                          </button>
+                          <button type="button" onClick={() => startNoAccessCounter(selected)}>
+                            No Access
+                          </button>
+                        </>
+                      ) : !hasRefusedPhoto ? (
+                        <button type="button" className="procedure-primary" onClick={() => captureExtraPhoto(selected, "refused_access")}>
+                          Take Refused Photo
+                        </button>
+                      ) : packageReady ? (
+                        <>
+                          <button type="button" className="procedure-primary" onClick={() => sendFullEvidencePackage(selected)}>
+                            Send ZIP
+                          </button>
+                          <a href={paperworkAutoPackageHref(selected)}>
+                            Review Package
+                          </a>
+                        </>
+                      ) : (
+                        <>
+                          <a className="procedure-primary" href={paperworkAutoPackageHref(selected)}>
+                            Generate Package
+                          </a>
+                          <button type="button" onClick={() => captureExtraPhoto(selected, "refused_access")}>
+                            Retake Photo
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {(() => {
+                const counts = fieldPhotoCountsFor(selected);
                 const activeGuide = fieldCaptureGuide && fieldCaptureGuide.jobKey === jobKey(selected) ? fieldCaptureGuide : null;
                 const stepTitle = activeGuide
                   ? activeGuide.title
@@ -12278,9 +12522,11 @@ return (
                       <button type="button" onClick={() => captureExtraPhoto(selected, fieldCaptureGuide.kind, Boolean(fieldCaptureGuide.partial))}>
                         Add Photo
                       </button>
-                      <button type="button" onClick={() => captureExtraVideo(selected, fieldCaptureGuide.kind, Boolean(fieldCaptureGuide.partial))}>
-                        Add Video
-                      </button>
+                      {fieldCaptureGuide.kind === "refused_access" ? null : (
+                        <button type="button" onClick={() => captureExtraVideo(selected, fieldCaptureGuide.kind, Boolean(fieldCaptureGuide.partial))}>
+                          Add Video
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="primary"
