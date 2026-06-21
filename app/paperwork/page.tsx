@@ -599,6 +599,7 @@ export default function PaperworkPage() {
   const [loadedQuery, setLoadedQuery] = useState(false);
   const [pdfStatus, setPdfStatus] = useState("");
   const [packagePreview, setPackagePreview] = useState<CompletePackagePreview | null>(null);
+  const [packagePreviewOpen, setPackagePreviewOpen] = useState(false);
   const pendingCompletePackageRef = useRef<PendingCompletePackage | null>(null);
 
   useEffect(() => {
@@ -670,7 +671,14 @@ export default function PaperworkPage() {
 
   const selectedJob = useMemo(() => findJob(jobs, selectedId), [jobs, selectedId]);
 
+  function clearPackagePreview() {
+    setPackagePreview(null);
+    setPackagePreviewOpen(false);
+    pendingCompletePackageRef.current = null;
+  }
+
   function chooseJob(id: string) {
+    clearPackagePreview();
     setSelectedId(id);
     const job = findJob(jobs, id);
     if (!job) return;
@@ -684,6 +692,7 @@ export default function PaperworkPage() {
   }
 
   function chooseOutcome(value: string) {
+    clearPackagePreview();
     const nextOutcome = paperworkOutcomeFromValue(value);
     setOutcome(nextOutcome);
     setForm((current) => ({
@@ -701,6 +710,7 @@ export default function PaperworkPage() {
   }
 
   function update(key: keyof PackageForm, value: string) {
+    clearPackagePreview();
     setForm((current) => ({ ...current, [key]: value }));
   }
 
@@ -928,8 +938,7 @@ export default function PaperworkPage() {
       return;
     }
 
-    setPackagePreview(null);
-    pendingCompletePackageRef.current = null;
+    clearPackagePreview();
     setPdfStatus("Generating package: affidavit, invoice, images, and videos...");
 
     const pdf = await generateAffidavitPdf({ downloadPdf: false, markGenerated: false });
@@ -1080,10 +1089,9 @@ export default function PaperworkPage() {
 
       pendingCompletePackageRef.current = { ...preview, applicationBytes, videoBytes };
       setPackagePreview(preview);
+      setPackagePreviewOpen(false);
       const archiveMessage = await markPackageGenerated(pdf.jobId);
-      setPdfStatus(
-        `Packages generated for review: application has PDF + ${imageCount} image(s); video package has ${videoCount} video(s). ${archiveMessage}`
-      );
+      setPdfStatus(`Package Created. Tap Preview, then Send. ${archiveMessage}`);
     } catch (error) {
       console.error(error);
       setPdfStatus(error instanceof Error ? error.message : "Could not generate complete package.");
@@ -1268,6 +1276,23 @@ export default function PaperworkPage() {
           line-height: 1.35;
         }
 
+        .package-created-head {
+          display: flex;
+          align-items: start;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .package-created-head span {
+          flex: 0 0 auto;
+          border-radius: 999px;
+          background: #dfffea;
+          color: #03120b;
+          padding: 7px 10px;
+          font-size: 12px;
+          font-weight: 950;
+        }
+
         .package-review-grid {
           display: grid;
           grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1293,8 +1318,13 @@ export default function PaperworkPage() {
 
         .package-review-actions {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 8px;
+        }
+
+        .package-preview-panel {
+          display: grid;
+          gap: 10px;
         }
 
         .package-review-split {
@@ -1355,6 +1385,77 @@ export default function PaperworkPage() {
           padding: 6px 8px;
           text-decoration: none;
           font-weight: 900;
+        }
+
+        .package-video-preview {
+          display: grid;
+          gap: 9px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          background: rgba(3, 18, 11, 0.18);
+          border-radius: 8px;
+          padding: 10px;
+        }
+
+        .package-video-preview h4,
+        .package-video-preview p {
+          margin: 0;
+        }
+
+        .package-video-preview h4 {
+          color: #ffffff;
+          font-size: 14px;
+        }
+
+        .package-video-list {
+          display: grid;
+          gap: 10px;
+        }
+
+        .package-video-item {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) minmax(160px, 0.85fr);
+          gap: 10px;
+          align-items: center;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.08);
+          padding: 9px;
+        }
+
+        .package-video-item video {
+          width: 100%;
+          max-height: 240px;
+          border-radius: 8px;
+          background: #000000;
+        }
+
+        .package-video-meta {
+          display: grid;
+          gap: 5px;
+          min-width: 0;
+        }
+
+        .package-video-meta strong {
+          color: #ffffff;
+        }
+
+        .package-video-meta span,
+        .package-video-meta small,
+        .package-video-empty {
+          color: #dfffea;
+          overflow-wrap: anywhere;
+          line-height: 1.35;
+        }
+
+        .package-video-meta a {
+          display: inline-flex;
+          width: fit-content;
+          border-radius: 7px;
+          border: 1px solid rgba(83, 230, 156, 0.45);
+          color: #dfffea;
+          padding: 7px 9px;
+          text-decoration: none;
+          font-weight: 950;
         }
 
         .package-review-actions button {
@@ -1655,9 +1756,14 @@ export default function PaperworkPage() {
           .package-review-grid,
           .package-review-split,
           .package-review-actions,
+          .package-video-item,
           .preview-row,
           .preview-head {
             grid-template-columns: 1fr;
+            display: grid;
+          }
+
+          .package-created-head {
             display: grid;
           }
         }
@@ -1883,60 +1989,75 @@ export default function PaperworkPage() {
             </div>
           </details>
 
-          <button className="paperwork-print" type="button" onClick={generateCompletePackage}>
-            Generate Package
-          </button>
+          {!packagePreview ? (
+            <button className="paperwork-print" type="button" onClick={generateCompletePackage}>
+              Generate Package
+            </button>
+          ) : null}
           {packagePreview ? (
             <div className="paperwork-package-review">
-              <div>
-                <h3>Review Package</h3>
-                <p>{packagePreview.note}</p>
+              <div className="package-created-head">
+                <div>
+                  <h3>Package Created</h3>
+                  <p>{packagePreview.note}</p>
+                </div>
+                <span>{packagePreview.videoCount} video(s)</span>
               </div>
-              <div className="package-review-split">
-                <div className="package-review-card">
-                  <h4>Application Package</h4>
-                  <p>{packagePreview.applicationFileName}</p>
-                  <p>{packetSizeLabel(packagePreview.applicationSize)} - affidavit/invoice PDF plus images</p>
+              <div className="package-review-actions package-review-actions-simple">
+                <button type="button" onClick={() => setPackagePreviewOpen(true)} aria-expanded={packagePreviewOpen}>
+                  Preview
+                </button>
+                <button type="button" onClick={sendCompletePackage}>Send</button>
+              </div>
+              {packagePreviewOpen ? (
+                <div className="package-preview-panel">
+                  <div className="package-review-card">
+                    <h4>Application Package</h4>
+                    <p>{packagePreview.applicationFileName}</p>
+                    <p>{packetSizeLabel(packagePreview.applicationSize)} - affidavit/invoice PDF plus images</p>
+                    <p>{packagePreview.pdfFileName}</p>
+                  </div>
                   <div className="package-review-grid">
                     <span>PDF <strong>1</strong></span>
                     <span>Images <strong>{packagePreview.imageCount}</strong></span>
                     <span>Before <strong>{packagePreview.beforeCount}</strong></span>
                     <span>After <strong>{packagePreview.afterCount}</strong></span>
+                    <span>Videos <strong>{packagePreview.videoCount}</strong></span>
                   </div>
-                </div>
-                <div className="package-review-card">
-                  <h4>Video Package</h4>
-                  {packagePreview.videoPackageFileName ? (
-                    <>
-                      <p>{packagePreview.videoPackageFileName}</p>
-                      <p>{packetSizeLabel(packagePreview.videoPackageSize)} - videos only</p>
-                    </>
-                  ) : (
-                    <p>No video package generated.</p>
-                  )}
-                  <div className="package-review-files">
-                    <strong>Video Links</strong>
-                    {packagePreview.videoLinks.length ? (
-                      packagePreview.videoLinks.slice(0, 8).map((video, index) => (
-                        <a href={video.url} download={video.name} target="_blank" rel="noopener noreferrer" key={`${video.name}-${index}`}>
-                          Open Video {index + 1}: {video.name}
-                        </a>
-                      ))
+                  <div className="package-video-preview">
+                    <h4>Video Package</h4>
+                    {packagePreview.videoPackageFileName ? (
+                      <p>{packagePreview.videoPackageFileName} - {packetSizeLabel(packagePreview.videoPackageSize)}</p>
                     ) : (
-                      <span>No video files found for this package.</span>
+                      <p>No video package generated for this OMO.</p>
                     )}
+                    <div className="package-video-list">
+                      {packagePreview.videoLinks.length ? (
+                        packagePreview.videoLinks.map((video, index) => (
+                          <div className="package-video-item" key={`${video.name}-${index}`}>
+                            <video src={video.url} controls preload="metadata" playsInline />
+                            <div className="package-video-meta">
+                              <strong>Video {index + 1}</strong>
+                              <span>{video.name}</span>
+                              <small>{packetSizeLabel(video.size)}</small>
+                              <a href={video.url} download={video.name} target="_blank" rel="noopener noreferrer">
+                                Open / Save Video
+                              </a>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="package-video-empty">
+                          No videos found for this OMO on this phone. Retake or upload the video from the job card, then Generate Package again.
+                        </span>
+                      )}
+                    </div>
                     {packagePreview.skippedMediaCount ? (
-                      <span>{packagePreview.skippedMediaCount} media item(s) were listed in the manifest as not included.</span>
+                      <p>{packagePreview.skippedMediaCount} media item(s) were listed in the manifest as not included.</p>
                     ) : null}
                   </div>
                 </div>
-              </div>
-              <p>Application package includes {packagePreview.pdfFileName} and saved images. Video package is separate for OMO {packagePreview.jobId}.</p>
-              <div className="package-review-actions">
-                <button type="button" onClick={sendCompletePackage}>Send Both</button>
-                <button type="button" onClick={sendApplicationPackage}>Send Application</button>
-                <button type="button" onClick={sendVideoPackage}>Send Video Package</button>
-              </div>
+              ) : null}
             </div>
           ) : null}
         </section>

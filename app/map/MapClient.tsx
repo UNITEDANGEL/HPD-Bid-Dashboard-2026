@@ -3544,7 +3544,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   async function runPackagePrimaryAction(job: MappedJob) {
-    showActionNotice("Opening one package screen: Application Package plus Video Package.");
+    showActionNotice("Opening package screen: Generate, Preview, Send.");
     window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
   }
 
@@ -10845,14 +10845,14 @@ return (
                           <span>{packetSizeLabel(packet.size)} - {fieldPacketSummary(packet)} - {displayWorkflowDate(packet.generatedAt)}</span>
                           <small>{packet.fileName} - {packet.note}</small>
                         </div>
-                        <button type="button" onClick={() => shareStoredPackage(selected, packet, false)}>{packet.packetType === "full_evidence_zip" ? "Send Package" : "Share PDF"}</button>
+                        <button type="button" onClick={() => shareStoredPackage(selected, packet, false)}>{String(packet.mimeType || "").includes("zip") ? "Send" : "Share PDF"}</button>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="field-packet-empty">
                     <strong>Generate Package from paperwork.</strong>
-                    <span>One review screen will create an Application Package and a Video Package.</span>
+                    <span>One package screen will create, preview, and send the application ZIP plus video ZIP.</span>
                   </div>
                 )}
               </div>
@@ -10868,7 +10868,7 @@ return (
                       <span>Send Package</span>
                       <strong>{preview ? "Package review ready" : invoicePacket ? "Ready to generate package" : "Need package PDF"}</strong>
                       <small>
-                        {preview?.fileName || invoicePacket?.fileName || "Tap Generate Package to create affidavit, invoice, images, and videos together."}
+                        {preview?.fileName || invoicePacket?.fileName || "Tap Generate Package to open the package screen."}
                         {videoCount ? preview ? ` ${videoCount} video file(s) are inside the package ZIP.` : ` ${videoCount} video file(s) will be included when you generate the package.` : ""}
                       </small>
                     </div>
@@ -10878,7 +10878,7 @@ return (
                           <span>Review Package</span>
                           <strong>{packetSizeLabel(preview.size)}</strong>
                         </div>
-                        <small>Legacy combined package. Use Generate Package for separate application and video packages.</small>
+                        <small>Old combined package saved. Use Generate Package for the new Preview and Send flow.</small>
                         <div className="field-package-preview-grid">
                           <span>Before <strong>{preview.beforeCount}</strong></span>
                           <span>After <strong>{preview.afterCount}</strong></span>
