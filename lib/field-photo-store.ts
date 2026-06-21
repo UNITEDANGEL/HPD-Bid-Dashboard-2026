@@ -319,6 +319,38 @@ function stampDisplayText(value: string, maxLength = 70) {
     .slice(0, maxLength);
 }
 
+function fittedStampText(context: CanvasRenderingContext2D, value: string, maxWidth: number, fontSize: number, weight = 800) {
+  let text = stampDisplayText(value, 120);
+  let size = fontSize;
+
+  while (size > 10) {
+    context.font = `${weight} ${size}px Arial, sans-serif`;
+    if (context.measureText(text).width <= maxWidth) return { text, size };
+    size -= 1;
+  }
+
+  context.font = `${weight} ${size}px Arial, sans-serif`;
+  while (text.length > 8 && context.measureText(`${text.slice(0, -1)}...`).width > maxWidth) {
+    text = text.slice(0, -1);
+  }
+
+  return { text: text.length > 8 ? `${text}...` : text, size };
+}
+
+function drawFittedStampText(
+  context: CanvasRenderingContext2D,
+  value: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  fontSize: number,
+  weight = 800
+) {
+  const fitted = fittedStampText(context, value, maxWidth, fontSize, weight);
+  context.font = `${weight} ${fitted.size}px Arial, sans-serif`;
+  context.fillText(fitted.text, x, y);
+}
+
 function stampStageTitle(kind: FieldMediaKind, label: string) {
   const titles: Record<FieldMediaKind, string> = {
     before: "BEFORE",
@@ -334,8 +366,8 @@ function stampStageTitle(kind: FieldMediaKind, label: string) {
 function stampEvidenceImage(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, meta: EvidenceStampMeta) {
   const width = canvas.width;
   const height = canvas.height;
-  const location = stampDisplayText([meta.location, meta.borough].filter(Boolean).join(" - ") || meta.address || "Location not listed");
-  const address = stampDisplayText(meta.address || "Address not listed");
+  const location = [meta.location, meta.borough].filter(Boolean).join(" - ") || meta.address || "Location not listed";
+  const address = meta.address || "Address not listed";
   const captured = new Date(meta.capturedAt);
   const capturedLabel = Number.isNaN(captured.getTime())
     ? meta.capturedAt
@@ -345,27 +377,27 @@ function stampEvidenceImage(canvas: HTMLCanvasElement, context: CanvasRenderingC
         year: "numeric",
       });
   const stageLabel = stampStageTitle(meta.kind, meta.label);
-  const topSize = Math.max(28, Math.round(width * 0.055));
-  const subSize = Math.max(13, Math.round(width * 0.022));
-  const lineSize = Math.max(16, Math.round(width * 0.024));
-  const pad = Math.max(14, Math.round(width * 0.022));
-  const topHeight = topSize + subSize + pad * 1.65;
-  const bottomHeight = lineSize * 3.4 + pad * 1.7;
+  const topSize = Math.max(24, Math.round(width * 0.052));
+  const subSize = Math.max(12, Math.round(width * 0.021));
+  const lineSize = Math.max(13, Math.round(width * 0.021));
+  const pad = Math.max(12, Math.round(width * 0.02));
+  const textWidth = width - pad * 2;
+  const topHeight = topSize + subSize + pad * 1.75;
+  const bottomHeight = lineSize * 4.75 + pad * 1.55;
+  const bottomY = height - bottomHeight + pad + lineSize;
+  const lineGap = lineSize * 1.08;
 
   context.save();
   context.fillStyle = "rgba(5, 10, 17, 0.84)";
   context.fillRect(0, 0, width, topHeight);
   context.fillRect(0, height - bottomHeight, width, bottomHeight);
   context.fillStyle = "#ffffff";
-  context.font = `900 ${topSize}px Arial, sans-serif`;
-  context.fillText(stageLabel, pad, pad + topSize * 0.82);
-  context.font = `800 ${subSize}px Arial, sans-serif`;
-  context.fillText(stampDisplayText(meta.label.toUpperCase(), 54), pad, pad + topSize + subSize * 0.95);
-  context.font = `800 ${lineSize}px Arial, sans-serif`;
-  const bottomY = height - bottomHeight + pad + lineSize;
-  context.fillText(`OMO / WORK #: ${stampDisplayText(meta.jobId, 36)}`, pad, bottomY);
-  context.fillText(`LOCATION: ${location}`, pad, bottomY + lineSize * 1.25);
-  context.fillText(`ADDRESS: ${address}  |  DATE: ${capturedLabel}`, pad, bottomY + lineSize * 2.5);
+  drawFittedStampText(context, stageLabel, pad, pad + topSize * 0.82, textWidth, topSize, 900);
+  drawFittedStampText(context, meta.label.toUpperCase(), pad, pad + topSize + subSize * 0.95, textWidth, subSize, 800);
+  drawFittedStampText(context, `OMO / WORK #: ${meta.jobId}`, pad, bottomY, textWidth, lineSize, 800);
+  drawFittedStampText(context, `LOCATION: ${location}`, pad, bottomY + lineGap, textWidth, lineSize, 800);
+  drawFittedStampText(context, `ADDRESS: ${address}`, pad, bottomY + lineGap * 2, textWidth, lineSize, 800);
+  drawFittedStampText(context, `DATE: ${capturedLabel}`, pad, bottomY + lineGap * 3, textWidth, lineSize, 900);
   context.restore();
 }
 

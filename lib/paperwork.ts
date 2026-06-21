@@ -38,6 +38,43 @@ function pick(job: PaperworkJob | null | undefined, keys: string[]) {
   return "";
 }
 
+function boroughFromZip(zip: string) {
+  const value = Number(String(zip || "").trim());
+  if (!Number.isFinite(value)) return "";
+  if (value >= 10001 && value <= 10282) return "Manhattan";
+  if (value >= 10301 && value <= 10314) return "Staten Island";
+  if (value >= 10451 && value <= 10475) return "Bronx";
+  if (value >= 11004 && value <= 11109) return "Queens";
+  if (value >= 11351 && value <= 11697) return "Queens";
+  if (value >= 11201 && value <= 11256) return "Brooklyn";
+  return "";
+}
+
+function boroughFromText(value: string) {
+  const text = String(value || "").toLowerCase();
+  const zip = text.match(/\b(1\d{4})\b/)?.[1] || "";
+  const byZip = boroughFromZip(zip);
+  if (byZip) return byZip;
+
+  if (/\b(brooklyn|bushwick|williamsburg|bedford[-\s]?stuyvesant|crown heights|flatbush|canarsie|bay ridge|bensonhurst|coney island)\b/.test(text)) {
+    return "Brooklyn";
+  }
+  if (/\b(queens|far rockaway|rockaway|jamaica|flushing|corona|elmhurst|astoria|woodside|jackson heights|forest hills|ozone park|richmond hill)\b/.test(text)) {
+    return "Queens";
+  }
+  if (/\b(bronx|mott haven|fordham|morrisania|soundview|throgs neck|riverdale|pelham)\b/.test(text)) {
+    return "Bronx";
+  }
+  if (/\b(manhattan|harlem|washington heights|inwood|lower east side|upper west side|upper east side)\b/.test(text)) {
+    return "Manhattan";
+  }
+  if (/\b(staten island|staten)\b/.test(text)) {
+    return "Staten Island";
+  }
+
+  return "";
+}
+
 function parseOverridePayload(value: unknown): WorkflowOverrides {
   let payload = value;
 
@@ -148,7 +185,15 @@ export function getJobLocation(job: PaperworkJob | null | undefined) {
 }
 
 export function getJobBorough(job: PaperworkJob | null | undefined) {
-  return pick(job, ["borough", "Borough", "Boro", "boro"]);
+  const explicit = pick(job, ["borough", "Borough", "Boro", "boro", "County", "county"]);
+  if (explicit) return explicit.replace(/^boro:\s*/i, "").trim();
+
+  return boroughFromText(
+    [
+      getJobAddress(job),
+      pick(job, ["GeocodeNote", "geocodeNote", "Geocode Address", "GeocodeAddress", "NormalizedAddress", "normalizedAddress"]),
+    ].filter(Boolean).join(" ")
+  );
 }
 
 export function getJobDescription(job: PaperworkJob | null | undefined) {

@@ -13,9 +13,47 @@ const generatedNextTypeDirs = [
   path.join(root, ".next", "types"),
 ];
 
-function removeIfExists(target) {
-  if (fs.existsSync(target)) {
-    fs.rmSync(target, { recursive: true, force: true });
+function isEmptyDirectory(target) {
+  try {
+    return fs.existsSync(target) && fs.statSync(target).isDirectory() && fs.readdirSync(target).length === 0;
+  } catch {
+    return false;
+  }
+}
+
+function removeDirectoryContents(target) {
+  for (const entry of fs.readdirSync(target)) {
+    removeIfExists(path.join(target, entry), { allowEmptyDir: true });
+  }
+}
+
+function removeIfExists(target, options = {}) {
+  if (!fs.existsSync(target)) return;
+
+  try {
+    fs.rmSync(target, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  } catch (error) {
+    const canRetryDirectory =
+      error &&
+      error.code === "EPERM" &&
+      fs.existsSync(target) &&
+      fs.statSync(target).isDirectory();
+
+    if (canRetryDirectory) {
+      removeDirectoryContents(target);
+      try {
+        fs.rmdirSync(target);
+        return;
+      } catch {
+        if (options.allowEmptyDir && isEmptyDirectory(target)) return;
+      }
+    }
+
+    if (options.allowEmptyDir && isEmptyDirectory(target)) {
+      return;
+    }
+
+    throw error;
   }
 }
 
@@ -65,9 +103,9 @@ function restoreApiRouteDirectory(moved) {
 let movedApi = false;
 
 try {
-  removeIfExists(outDir);
-  removeIfExists(tempRoot);
-  generatedNextTypeDirs.forEach(removeIfExists);
+  removeIfExists(outDir, { allowEmptyDir: true });
+  removeIfExists(tempRoot, { allowEmptyDir: true });
+  generatedNextTypeDirs.forEach((dir) => removeIfExists(dir, { allowEmptyDir: true }));
 
   // Next static export cannot include dynamic app/api route handlers.
   // Cloudflare serves the matching runtime API from the Pages Functions directory.
@@ -94,7 +132,7 @@ try {
   }
 } finally {
   restoreApiRouteDirectory(movedApi);
-  removeIfExists(tempRoot);
+  removeIfExists(tempRoot, { allowEmptyDir: true });
 }
 
 const requiredFiles = [
