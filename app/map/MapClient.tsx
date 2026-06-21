@@ -3179,6 +3179,22 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     ].join("|");
   }
 
+  function captureStepMediaNumber(title: string, fallback = 1) {
+    const match = String(title || "").match(/\b(?:photo|image|video)\s+(\d+)\b/i);
+    return match?.[1] || String(fallback);
+  }
+
+  function captureStepTakeLabel(title: string, accept: string, step?: number, total?: number) {
+    const media = String(accept || "").includes("video") ? "video" : "image";
+    const number = captureStepMediaNumber(title, step || 1);
+    const progress = step && total ? ` (${step}/${total})` : "";
+    return `Take ${media} ${number}${progress}`;
+  }
+
+  function captureStepNotice(step: FieldCaptureStep) {
+    return `${captureStepTakeLabel(step.title, step.accept, step.step, step.total)}: ${step.title}`;
+  }
+
   function inlineCameraModeForAccept(accept: string): "photo" | "video" {
     return accept.includes("video") && !accept.includes("image") ? "video" : "photo";
   }
@@ -3988,12 +4004,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     setFieldFocusPane("capture");
     setCaptureGuideForStep(captureJob, nextStep);
-    focusFieldMedia(target.kind);
     if (useNativeCameraForGuidedCapture()) {
-      showActionNotice(`${target.step.title} saved. Tap Take ${nextStep.step}/${nextStep.total} for ${nextStep.title}.`);
-      requestFieldPhotoCapture(captureJob, nextStep.kind, nextStep.accept, nextStep.camera, nextStep, 0, false);
+      showActionNotice(`${target.step.title} saved. Opening ${captureStepNotice(nextStep)}. If camera stays closed, tap the button.`);
+      requestFieldPhotoCapture(captureJob, nextStep.kind, nextStep.accept, nextStep.camera, nextStep, 150, true);
       return true;
     }
+    focusFieldMedia(target.kind);
     showActionNotice(`${target.step.title} captured. Opening ${nextStep.title}. If Chrome does not reopen, tap Take ${nextStep.step}/${nextStep.total}.`);
     requestFieldPhotoCapture(captureJob, nextStep.kind, nextStep.accept, nextStep.camera, nextStep);
     return true;
@@ -11064,6 +11080,9 @@ return (
             box-shadow: none !important;
             backdrop-filter: none !important;
             transform: translateZ(0) !important;
+            transition: none !important;
+            opacity: 1 !important;
+            visibility: visible !important;
             overflow-y: auto !important;
             overflow-x: hidden !important;
             overscroll-behavior-y: contain !important;
@@ -11096,7 +11115,10 @@ return (
           .map-shell.android-scroll-fix.drawer-active .field-media-console,
           .map-shell.android-scroll-fix.drawer-active .selected-status-panel,
           .map-shell.android-scroll-fix.drawer-active .workflow-save-panel,
-          .map-shell.android-scroll-fix.drawer-active .field-send-panel {
+          .map-shell.android-scroll-fix.drawer-active .field-send-panel,
+          .map-shell.android-scroll-fix.drawer-active .field-media-lane,
+          .map-shell.android-scroll-fix.drawer-active .field-capture-guide,
+          .map-shell.android-scroll-fix.drawer-active .action-notice {
             animation: none !important;
             transform: none !important;
             transition: none !important;
@@ -11121,6 +11143,17 @@ return (
           .map-shell.android-scroll-fix.drawer-active .description-head {
             position: static !important;
             background: transparent !important;
+          }
+
+          .map-shell.android-scroll-fix.drawer-active .field-media-lane.just-saved {
+            animation: none !important;
+            background: rgba(248, 250, 252, 0.07) !important;
+            box-shadow: none !important;
+            border-color: rgba(35, 211, 174, 0.42) !important;
+          }
+
+          .map-shell.android-scroll-fix.drawer-active .field-media-lane.just-saved .field-media-preview {
+            box-shadow: none !important;
           }
         `}
         </style>
@@ -11750,7 +11783,12 @@ return (
                       )}
                     >
                       {fieldCaptureGuide.step && fieldCaptureGuide.total
-                        ? `Take ${fieldCaptureGuide.step}/${fieldCaptureGuide.total}`
+                        ? captureStepTakeLabel(
+                            fieldCaptureGuide.title,
+                            fieldCaptureGuide.accept,
+                            fieldCaptureGuide.step,
+                            fieldCaptureGuide.total
+                          )
                         : fieldCaptureGuide.camera ? "Open Camera" : "Open Upload"}
                     </button>
                   )}
