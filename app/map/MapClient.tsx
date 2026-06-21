@@ -3126,12 +3126,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function fieldPacketLabel(packet: FieldPacket) {
+    if (packet.packetType === "application_package_zip") return "Application Package ZIP";
+    if (packet.packetType === "video_package_zip") return "Video Package ZIP";
     if (packet.packetType === "full_evidence_zip") return "Complete Package ZIP";
     if (packet.packetType === "affidavit_invoice_pdf") return "Invoice/Affidavit PDF";
     return "Legacy Evidence PDF";
   }
 
   function fieldPacketSummary(packet: FieldPacket) {
+    if (packet.packetType === "application_package_zip") return `PDF + ${packet.imageCount} image(s)`;
+    if (packet.packetType === "video_package_zip") return `${packet.videoCount} video(s)`;
     if (packet.packetType === "full_evidence_zip") {
       return `${packet.evidenceCount} media file(s) - ${packet.videoCount} video(s)`;
     }
@@ -3536,20 +3540,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function packagePrimaryLabel(job: MappedJob) {
-    return fullPackagePreviewFor(job) ? "Generate Again" : "Generate Package";
+    return "Generate Package";
   }
 
   async function runPackagePrimaryAction(job: MappedJob) {
-    const invoicePacket = latestFieldPacket(job, "affidavit_invoice_pdf");
-
-    if (!invoicePacket) {
-      focusFieldPane("package");
-      showActionNotice("Open paperwork and tap Generate Package to create the affidavit, invoice, images, and videos together.");
-      window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
-      return;
-    }
-
-    await generateFullEvidencePackage(job);
+    showActionNotice("Opening one package screen: Application Package plus Video Package.");
+    window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
   }
 
   async function shareStoredPackage(job: MappedJob, packet = latestFieldPacket(job, "affidavit_invoice_pdf") || latestFieldPacket(job), downloadFallback = true) {
@@ -3562,7 +3558,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       return;
     }
 
-    const isMediaZip = packet.packetType === "full_evidence_zip" || String(packet.mimeType || "").includes("zip");
+    const isMediaZip = String(packet.mimeType || "").includes("zip");
     const files = [
       dataUrlToFile(packet.dataUrl, packet.fileName, packet.mimeType || (isMediaZip ? "application/zip" : "application/pdf")),
     ];
@@ -3575,10 +3571,15 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (canShareFiles) {
       try {
         await navigator.share({
-          title: `${key} HPD ${isMediaZip ? "complete package" : "invoice/affidavit package"}`,
-          text: isMediaZip
-            ? `HPD complete package for ${key}. Includes invoice/affidavit PDF plus original photos and videos.`
-            : `HPD invoice/affidavit package for ${key}. Generate Package creates the complete ZIP with all saved media.`,
+          title: `${key} HPD ${fieldPacketLabel(packet).replace(" ZIP", "").toLowerCase()}`,
+          text:
+            packet.packetType === "video_package_zip"
+              ? `HPD video package for ${key}. Videos only.`
+              : packet.packetType === "application_package_zip"
+                ? `HPD application package for ${key}. Invoice/affidavit PDF plus images.`
+                : isMediaZip
+                  ? `HPD complete package for ${key}. Includes saved evidence files.`
+                  : `HPD invoice/affidavit package for ${key}. Generate Package creates the application and video packages.`,
           files,
         });
         showActionNotice(`Share sheet opened with ${files.length} attachment(s).`);
@@ -10851,7 +10852,7 @@ return (
                 ) : (
                   <div className="field-packet-empty">
                     <strong>Generate Package from paperwork.</strong>
-                    <span>One ZIP will include affidavit, invoice, images, and videos.</span>
+                    <span>One review screen will create an Application Package and a Video Package.</span>
                   </div>
                 )}
               </div>
@@ -10877,7 +10878,7 @@ return (
                           <span>Review Package</span>
                           <strong>{packetSizeLabel(preview.size)}</strong>
                         </div>
-                        <small>Includes invoice/affidavit PDF plus original photos and videos in one ZIP.</small>
+                        <small>Legacy combined package. Use Generate Package for separate application and video packages.</small>
                         <div className="field-package-preview-grid">
                           <span>Before <strong>{preview.beforeCount}</strong></span>
                           <span>After <strong>{preview.afterCount}</strong></span>
@@ -10886,7 +10887,7 @@ return (
                           <span>Application <strong>{preview.hasInvoice ? "PDF" : "No"}</strong></span>
                         </div>
                         <div className="field-package-video-list">
-                          <strong>Videos in ZIP</strong>
+                          <strong>Video files</strong>
                           {preview.videoNames.length ? (
                             preview.videoNames.slice(0, 8).map((name, index) => (
                               <span key={`${name}-${index}`}>{name}</span>

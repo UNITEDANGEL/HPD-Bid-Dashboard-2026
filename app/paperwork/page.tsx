@@ -76,22 +76,31 @@ type GeneratedPdfResult = {
 
 type CompletePackagePreview = {
   jobId: string;
-  fileName: string;
-  size: number;
-  evidenceCount: number;
+  applicationFileName: string;
+  applicationSize: number;
+  applicationMediaCount: number;
   imageCount: number;
   videoCount: number;
   beforeCount: number;
   afterCount: number;
   pdfFileName: string;
+  videoPackageFileName: string;
+  videoPackageSize: number;
   videoNames: string[];
+  videoLinks: Array<{
+    name: string;
+    url: string;
+    size: number;
+  }>;
   skippedMediaCount: number;
-  savedPacketId?: string;
+  applicationPacketId?: string;
+  videoPacketId?: string;
   note: string;
 };
 
 type PendingCompletePackage = CompletePackagePreview & {
-  bytes: Uint8Array;
+  applicationBytes: Uint8Array;
+  videoBytes?: Uint8Array;
 };
 
 type GeneratePdfOptions = {
@@ -456,9 +465,20 @@ function completePackageFileName(form: PackageForm, jobId: string) {
   return `${safeFilename(jobId)}_${location}_complete-package_${stamp}.zip`;
 }
 
+function splitPackageFileName(form: PackageForm, jobId: string, suffix: "application-package" | "video-package") {
+  const location = safeFilename(form.location || form.address || form.borough || "LOCATION");
+  const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  return `${safeFilename(jobId)}_${location}_${suffix}_${stamp}.zip`;
+}
+
 function bytesToFile(bytes: Uint8Array, fileName: string, mimeType = "application/zip") {
   const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
   return new File([buffer], fileName, { type: mimeType });
+}
+
+function bytesToObjectUrl(bytes: Uint8Array, mimeType = "application/octet-stream") {
+  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  return URL.createObjectURL(new Blob([buffer], { type: mimeType }));
 }
 
 function mediaHasPackageBytes(media: FieldMedia) {
@@ -500,6 +520,19 @@ function packageManifestText(
   }
 
   return lines.join("\n");
+}
+
+function videoPackageManifestText(jobId: string, videos: FieldMedia[]) {
+  return [
+    "HPD VIDEO PACKAGE",
+    `OMO / WORK #: ${jobId}`,
+    `Generated: ${new Date().toLocaleString("en-US")}`,
+    "",
+    `VIDEOS INCLUDED (${videos.length})`,
+    ...videos.map((media, index) => {
+      return `- ${String(index + 1).padStart(2, "0")} VIDEO: ${media.name || "unnamed"} | ${media.evidenceLabel || media.kind} | ${packetSizeLabel(media.size)}`;
+    }),
+  ].join("\n");
 }
 
 function findJob(rows: JobRecord[], id: string) {
@@ -567,6 +600,12 @@ export default function PaperworkPage() {
   const [pdfStatus, setPdfStatus] = useState("");
   const [packagePreview, setPackagePreview] = useState<CompletePackagePreview | null>(null);
   const pendingCompletePackageRef = useRef<PendingCompletePackage | null>(null);
+
+  useEffect(() => {
+    return () => {
+      packagePreview?.videoLinks.forEach((link) => URL.revokeObjectURL(link.url));
+    };
+  }, [packagePreview]);
 
   useEffect(() => {
     let cancelled = false;
@@ -917,86 +956,157 @@ export default function PaperworkPage() {
         return;
       }
 
-      const entries: ZipEntry[] = [
+      const imageMedia = includedMedia.filter((media) => media.mediaType === "image");
+      const videoMedia = includedMedia.filter((media) => media.mediaType === "video");
+      const applicationFileName = splitPackageFileName(form, pdf.jobId, "application-package");
+      const videoPackageFileName = splitPackageFileName(form, pdf.jobId, "video-package");
+
+      const applicationEntries: ZipEntry[] = [
         {
           path: `invoice-affidavit-package/${safeAttachmentName(pdf.fileName, "invoice-affidavit.pdf")}`,
           bytes: pdf.bytes,
         },
         {
           path: "PACKAGE-MANIFEST.txt",
-          bytes: zipTextBytes(packageManifestText(pdf.jobId, pdf, includedMedia, skippedMedia)),
+          bytes: zipTextBytes(packageManifestText(pdf.jobId, pdf, imageMedia, skippedMedia.filter((media) => media.mediaType !== "video"))),
         },
       ];
 
-      includedMedia.forEach((media, index) => {
-        entries.push({
+      imageMedia.forEach((media, index) => {
+        applicationEntries.push({
           path: fullPackageMediaPath(pdf.jobId, media, index),
           bytes: dataUrlToBytes(media.dataUrl),
         });
       });
 
-      const zipBytes = buildStoredZip(entries);
-      const imageCount = includedMedia.filter((media) => media.mediaType === "image").length;
-      const videoCount = includedMedia.filter((media) => media.mediaType === "video").length;
+      const videoEntries: ZipEntry[] = videoMedia.length
+        ? [
+            {
+              path: "VIDEO-MANIFEST.txt",
+              bytes: zipTextBytes(videoPackageManifestText(pdf.jobId, videoMedia)),
+            },
+            ...videoMedia.map((media, index) => ({
+              path: fullPackageMediaPath(pdf.jobId, media, index),
+              bytes: dataUrlToBytes(media.dataUrl),
+            })),
+          ]
+        : [];
+
+      const applicationBytes = buildStoredZip(applicationEntries);
+      const videoBytes = videoEntries.length ? buildStoredZip(videoEntries) : undefined;
+      const imageCount = imageMedia.length;
+      const videoCount = videoMedia.length;
       const beforeCount = includedMedia.filter((media) => media.kind === "before").length;
       const afterCount = includedMedia.filter((media) => media.kind === "after").length;
-      const videoNames = includedMedia.filter((media) => media.mediaType === "video").map((media) => media.name || "Video evidence");
-      const fileName = completePackageFileName(form, pdf.jobId);
-      let savedPacketId = "";
+      const videoFiles = videoMedia.map((media, index) => {
+        const fileName = safeAttachmentName(media.name, `${safeFilename(pdf.jobId)}-video-${index + 1}${mediaExtension(media)}`);
+        return bytesToFile(dataUrlToBytes(media.dataUrl), fileName, media.type || "video/mp4");
+      });
+      const videoNames = videoFiles.map((file) => file.name);
+      const videoLinks = videoFiles.map((file) => ({
+        name: file.name,
+        size: file.size,
+        url: URL.createObjectURL(file),
+      }));
+      let applicationPacketId = "";
+      let videoPacketId = "";
       let note = videoCount
-        ? "Package ready for review. Video files are inside the videos folder."
-        : "Package ready for review. No video files were found for this OMO.";
+        ? "Application package and video package are ready in one place."
+        : "Application package is ready. No videos were found for this OMO.";
 
-      if (zipBytes.byteLength <= COMPLETE_PACKAGE_SAVE_LIMIT_BYTES) {
+      if (applicationBytes.byteLength <= COMPLETE_PACKAGE_SAVE_LIMIT_BYTES) {
         try {
-          await clearFieldPackets(pdf.jobId, ["full_evidence_zip"]);
-          const savedPacket = await saveFieldPacket({
+          await clearFieldPackets(pdf.jobId, ["full_evidence_zip", "application_package_zip", "video_package_zip"]);
+          const savedApplicationPacket = await saveFieldPacket({
             jobId: pdf.jobId,
-            fileName,
+            fileName: applicationFileName,
             mimeType: "application/zip",
-            dataUrl: bytesToDataUrl(zipBytes, "application/zip"),
-            size: zipBytes.byteLength,
-            evidenceCount: includedMedia.length,
+            dataUrl: bytesToDataUrl(applicationBytes, "application/zip"),
+            size: applicationBytes.byteLength,
+            evidenceCount: imageMedia.length,
             imageCount,
-            videoCount,
-            packetType: "full_evidence_zip",
-            note: "Complete package: invoice/affidavit PDF plus all saved images and videos.",
+            videoCount: 0,
+            packetType: "application_package_zip",
+            note: "Application package: invoice/affidavit PDF plus all saved images.",
           });
-          savedPacketId = savedPacket.id;
-          note = "Package saved on this phone. Review below, then tap Send Package.";
+          applicationPacketId = savedApplicationPacket.id;
+
+          if (videoBytes && videoBytes.byteLength <= COMPLETE_PACKAGE_SAVE_LIMIT_BYTES) {
+            const savedVideoPacket = await saveFieldPacket({
+              jobId: pdf.jobId,
+              fileName: videoPackageFileName,
+              mimeType: "application/zip",
+              dataUrl: bytesToDataUrl(videoBytes, "application/zip"),
+              size: videoBytes.byteLength,
+              evidenceCount: videoMedia.length,
+              imageCount: 0,
+              videoCount,
+              packetType: "video_package_zip",
+              note: "Video package: all saved videos only.",
+            });
+            videoPacketId = savedVideoPacket.id;
+          }
+
+          note = videoCount
+            ? "Application package and video package saved on this phone."
+            : "Application package saved on this phone. No videos were found.";
         } catch (error) {
           console.error(error);
-          note = "Package ready for review. Browser storage could not save the ZIP, but Send Package can still share it now.";
+          note = "Packages are ready for review. Browser storage could not save every ZIP, but the send buttons can still share them now.";
         }
       } else {
-        note = `Package ready for review. ZIP is ${packetSizeLabel(zipBytes.byteLength)}, so it is held only for Send Package instead of duplicating it in phone storage.`;
+        note = `Application package is ${packetSizeLabel(applicationBytes.byteLength)}, so it is held only for sending instead of duplicating it in phone storage.`;
       }
 
       const preview: CompletePackagePreview = {
         jobId: pdf.jobId,
-        fileName,
-        size: zipBytes.byteLength,
-        evidenceCount: includedMedia.length,
+        applicationFileName,
+        applicationSize: applicationBytes.byteLength,
+        applicationMediaCount: imageMedia.length,
         imageCount,
         videoCount,
         beforeCount,
         afterCount,
         pdfFileName: pdf.fileName,
+        videoPackageFileName: videoBytes ? videoPackageFileName : "",
+        videoPackageSize: videoBytes?.byteLength || 0,
         videoNames,
+        videoLinks,
         skippedMediaCount: skippedMedia.length,
-        savedPacketId: savedPacketId || undefined,
+        applicationPacketId: applicationPacketId || undefined,
+        videoPacketId: videoPacketId || undefined,
         note,
       };
 
-      pendingCompletePackageRef.current = { ...preview, bytes: zipBytes };
+      pendingCompletePackageRef.current = { ...preview, applicationBytes, videoBytes };
       setPackagePreview(preview);
       const archiveMessage = await markPackageGenerated(pdf.jobId);
       setPdfStatus(
-        `Package generated for review: invoice/affidavit PDF, ${imageCount} image(s), ${videoCount} video(s) included. ${archiveMessage}`
+        `Packages generated for review: application has PDF + ${imageCount} image(s); video package has ${videoCount} video(s). ${archiveMessage}`
       );
     } catch (error) {
       console.error(error);
       setPdfStatus(error instanceof Error ? error.message : "Could not generate complete package.");
+    }
+  }
+
+  async function sharePackageFiles(files: File[], title: string, text: string, successMessage: string) {
+    const canShareFiles =
+      typeof navigator !== "undefined" &&
+      typeof navigator.share === "function" &&
+      (!navigator.canShare || navigator.canShare({ files }));
+
+    if (!canShareFiles) {
+      setPdfStatus("This browser cannot send ZIP files directly. Open this page on mobile Chrome and tap Send.");
+      return;
+    }
+
+    try {
+      await navigator.share({ title, text, files });
+      setPdfStatus(successMessage);
+    } catch (error) {
+      console.error(error);
+      setPdfStatus("Send was cancelled or blocked. Packages are still ready for review.");
     }
   }
 
@@ -1007,28 +1117,51 @@ export default function PaperworkPage() {
       return;
     }
 
-    const file = bytesToFile(pending.bytes, pending.fileName, "application/zip");
-    const canShareFiles =
-      typeof navigator !== "undefined" &&
-      typeof navigator.share === "function" &&
-      (!navigator.canShare || navigator.canShare({ files: [file] }));
+    const files = [
+      bytesToFile(pending.applicationBytes, pending.applicationFileName, "application/zip"),
+      ...(pending.videoBytes ? [bytesToFile(pending.videoBytes, pending.videoPackageFileName, "application/zip")] : []),
+    ];
 
-    if (!canShareFiles) {
-      setPdfStatus("This browser cannot send ZIP files directly. Open this page on mobile Chrome and tap Send Package.");
+    await sharePackageFiles(
+      files,
+      `${pending.jobId} HPD packages`,
+      `HPD packages for ${pending.jobId}: application package plus ${pending.videoCount} video(s).`,
+      `Packages sent from share sheet: ${files.map((file) => file.name).join(", ")}`
+    );
+  }
+
+  async function sendApplicationPackage() {
+    const pending = pendingCompletePackageRef.current;
+    if (!pending) {
+      setPdfStatus("Generate Package first, review it, then send.");
       return;
     }
 
-    try {
-      await navigator.share({
-        title: `${pending.jobId} HPD complete package`,
-        text: `HPD complete package for ${pending.jobId}: affidavit/invoice plus ${pending.evidenceCount} saved media file(s).`,
-        files: [file],
-      });
-      setPdfStatus(`Package sent from share sheet: ${pending.fileName}`);
-    } catch (error) {
-      console.error(error);
-      setPdfStatus("Send was cancelled or blocked. Package is still ready for review.");
+    await sharePackageFiles(
+      [bytesToFile(pending.applicationBytes, pending.applicationFileName, "application/zip")],
+      `${pending.jobId} HPD application package`,
+      `HPD application package for ${pending.jobId}: affidavit/invoice plus images.`,
+      `Application package sent: ${pending.applicationFileName}`
+    );
+  }
+
+  async function sendVideoPackage() {
+    const pending = pendingCompletePackageRef.current;
+    if (!pending) {
+      setPdfStatus("Generate Package first, review it, then send.");
+      return;
     }
+    if (!pending.videoBytes) {
+      setPdfStatus("No video package was generated for this OMO.");
+      return;
+    }
+
+    await sharePackageFiles(
+      [bytesToFile(pending.videoBytes, pending.videoPackageFileName, "application/zip")],
+      `${pending.jobId} HPD video package`,
+      `HPD video package for ${pending.jobId}: ${pending.videoCount} video(s).`,
+      `Video package sent: ${pending.videoPackageFileName}`
+    );
   }
 
   const packageTone = outcome === "work_completed" || outcome === "partial_work_completed" ? "work" : outcome === "pending" ? "pending" : "no-work";
@@ -1160,26 +1293,68 @@ export default function PaperworkPage() {
 
         .package-review-actions {
           display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
         }
 
-        .package-review-files {
+        .package-review-split {
           display: grid;
-          gap: 6px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .package-review-card {
+          display: grid;
+          gap: 9px;
           border: 1px solid rgba(255, 255, 255, 0.14);
           background: rgba(3, 18, 11, 0.18);
           border-radius: 8px;
           padding: 10px;
         }
 
-        .package-review-files strong,
-        .package-review-files span {
+        .package-review-card h4,
+        .package-review-card p {
+          margin: 0;
+        }
+
+        .package-review-card h4 {
+          color: #ffffff;
+          font-size: 14px;
+        }
+
+        .package-review-card p {
+          color: #cfe7da;
+          font-size: 12px;
+          line-height: 1.35;
           overflow-wrap: anywhere;
         }
 
-        .package-review-files span {
+        .package-review-files {
+          display: grid;
+          gap: 6px;
+        }
+
+        .package-review-files strong,
+        .package-review-files span,
+        .package-review-files a {
+          overflow-wrap: anywhere;
+        }
+
+        .package-review-files span,
+        .package-review-files a {
           color: #dfffea;
           font-size: 12px;
           line-height: 1.3;
+        }
+
+        .package-review-files a {
+          display: inline-flex;
+          width: fit-content;
+          border-radius: 7px;
+          border: 1px solid rgba(83, 230, 156, 0.35);
+          padding: 6px 8px;
+          text-decoration: none;
+          font-weight: 900;
         }
 
         .package-review-actions button {
@@ -1478,6 +1653,8 @@ export default function PaperworkPage() {
           .paperwork-package-actions,
           .paperwork-summary-grid,
           .package-review-grid,
+          .package-review-split,
+          .package-review-actions,
           .preview-row,
           .preview-head {
             grid-template-columns: 1fr;
@@ -1713,32 +1890,52 @@ export default function PaperworkPage() {
             <div className="paperwork-package-review">
               <div>
                 <h3>Review Package</h3>
-                <p>{packagePreview.fileName}</p>
-                <p>{packetSizeLabel(packagePreview.size)} - {packagePreview.note}</p>
+                <p>{packagePreview.note}</p>
               </div>
-              <div className="package-review-grid">
-                <span>PDF <strong>1</strong></span>
-                <span>Images <strong>{packagePreview.imageCount}</strong></span>
-                <span>Videos <strong>{packagePreview.videoCount}</strong></span>
-                <span>Before <strong>{packagePreview.beforeCount}</strong></span>
-                <span>After <strong>{packagePreview.afterCount}</strong></span>
+              <div className="package-review-split">
+                <div className="package-review-card">
+                  <h4>Application Package</h4>
+                  <p>{packagePreview.applicationFileName}</p>
+                  <p>{packetSizeLabel(packagePreview.applicationSize)} - affidavit/invoice PDF plus images</p>
+                  <div className="package-review-grid">
+                    <span>PDF <strong>1</strong></span>
+                    <span>Images <strong>{packagePreview.imageCount}</strong></span>
+                    <span>Before <strong>{packagePreview.beforeCount}</strong></span>
+                    <span>After <strong>{packagePreview.afterCount}</strong></span>
+                  </div>
+                </div>
+                <div className="package-review-card">
+                  <h4>Video Package</h4>
+                  {packagePreview.videoPackageFileName ? (
+                    <>
+                      <p>{packagePreview.videoPackageFileName}</p>
+                      <p>{packetSizeLabel(packagePreview.videoPackageSize)} - videos only</p>
+                    </>
+                  ) : (
+                    <p>No video package generated.</p>
+                  )}
+                  <div className="package-review-files">
+                    <strong>Video Links</strong>
+                    {packagePreview.videoLinks.length ? (
+                      packagePreview.videoLinks.slice(0, 8).map((video, index) => (
+                        <a href={video.url} download={video.name} target="_blank" rel="noopener noreferrer" key={`${video.name}-${index}`}>
+                          Open Video {index + 1}: {video.name}
+                        </a>
+                      ))
+                    ) : (
+                      <span>No video files found for this package.</span>
+                    )}
+                    {packagePreview.skippedMediaCount ? (
+                      <span>{packagePreview.skippedMediaCount} media item(s) were listed in the manifest as not included.</span>
+                    ) : null}
+                  </div>
+                </div>
               </div>
-              <div className="package-review-files">
-                <strong>Videos in ZIP</strong>
-                {packagePreview.videoNames.length ? (
-                  packagePreview.videoNames.slice(0, 8).map((name, index) => (
-                    <span key={`${name}-${index}`}>{name}</span>
-                  ))
-                ) : (
-                  <span>No video files found in this package.</span>
-                )}
-                {packagePreview.skippedMediaCount ? (
-                  <span>{packagePreview.skippedMediaCount} media item(s) were listed in the manifest as not included.</span>
-                ) : null}
-              </div>
-              <p>Includes {packagePreview.pdfFileName} plus all saved media for OMO {packagePreview.jobId}.</p>
+              <p>Application package includes {packagePreview.pdfFileName} and saved images. Video package is separate for OMO {packagePreview.jobId}.</p>
               <div className="package-review-actions">
-                <button type="button" onClick={sendCompletePackage}>Send Package</button>
+                <button type="button" onClick={sendCompletePackage}>Send Both</button>
+                <button type="button" onClick={sendApplicationPackage}>Send Application</button>
+                <button type="button" onClick={sendVideoPackage}>Send Video Package</button>
               </div>
             </div>
           ) : null}
