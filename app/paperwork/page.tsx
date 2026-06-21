@@ -61,6 +61,7 @@ const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-completed-affidavit.pdf";
 const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-completed-affidavit.pdf";
 const COMPLETE_PACKAGE_SAVE_LIMIT_BYTES = 35 * 1024 * 1024;
 const AFFIDAVIT_NOTARY_COUNTY = "QUEENS";
+const REFUSED_ACCESS_DESCRIPTION_EXAMPLE = "MALE, TALL, DARK HAIR";
 
 type ZipEntry = {
   path: string;
@@ -241,6 +242,14 @@ function refusedAccessRelationship(job: JobRecord, outcome: PaperworkOutcome) {
   ]);
   if (explicit) return explicit;
   return outcome === "refused_access" ? "SUPER" : "";
+}
+
+function refusedAccessDescription(value: string) {
+  return String(value || "").trim();
+}
+
+function refusedAccessNeedsDescription(outcome: PaperworkOutcome, form: PackageForm) {
+  return outcome === "refused_access" && !refusedAccessDescription(form.deniedDescription);
 }
 
 function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
@@ -987,6 +996,11 @@ export default function PaperworkPage() {
     const invoiceDate = useWorkTemplate ? activeForm.workComplete || fieldDate : secondAttempt;
     const signer = activeForm.signer || "JOTJAGRAJ SINGH";
     const swornSigner = oathSigner(signer);
+
+    if (refusedAccessNeedsDescription(outcome, activeForm)) {
+      setPdfStatus(`Refused access needs section 7b description of the person. Enter what you observed, for example: ${REFUSED_ACCESS_DESCRIPTION_EXAMPLE}.`);
+      return null;
+    }
 
     setPdfStatus(downloadPdf ? "Preparing affidavit PDF..." : "Preparing invoice/affidavit for package...");
 
@@ -2158,6 +2172,50 @@ export default function PaperworkPage() {
           font-weight: 850;
         }
 
+        .refused-access-required {
+          display: grid;
+          gap: 12px;
+          border: 1px solid rgba(255, 209, 102, 0.34);
+          background:
+            linear-gradient(135deg, rgba(255, 209, 102, 0.14), rgba(255, 255, 255, 0.055)),
+            rgba(255, 255, 255, 0.05);
+          border-radius: 12px;
+          padding: 13px;
+        }
+
+        .refused-access-required.ready {
+          border-color: rgba(83, 230, 156, 0.34);
+          background:
+            linear-gradient(135deg, rgba(83, 230, 156, 0.14), rgba(255, 255, 255, 0.055)),
+            rgba(255, 255, 255, 0.05);
+        }
+
+        .refused-access-required span,
+        .refused-access-required small {
+          display: block;
+          color: #ffe8a3;
+          line-height: 1.35;
+        }
+
+        .refused-access-required.ready span,
+        .refused-access-required.ready small {
+          color: #caffdf;
+        }
+
+        .refused-access-required span {
+          font-size: 11px;
+          font-weight: 950;
+          text-transform: uppercase;
+        }
+
+        .refused-access-required strong {
+          display: block;
+          margin-top: 4px;
+          color: #ffffff;
+          font-size: 16px;
+          line-height: 1.15;
+        }
+
         .paperwork-sheet {
           background: #ffffff;
           color: #111827;
@@ -2505,6 +2563,24 @@ export default function PaperworkPage() {
               <small>{isNoWorkOutcome(outcome) ? "Service charge from bid amount" : "Bid amount from ITB/COA"}</small>
             </div>
           </div>
+
+          {outcome === "refused_access" ? (
+            <div className={`refused-access-required ${refusedAccessNeedsDescription(outcome, form) ? "needs-description" : "ready"}`}>
+              <div>
+                <span>Section 7b Required</span>
+                <strong>{refusedAccessNeedsDescription(outcome, form) ? "Describe the person who refused access" : "Person description recorded"}</strong>
+                <small>Use the JSON value when it exists. If it is missing, enter exactly what you observed in the field.</small>
+              </div>
+              <label className="paperwork-field">
+                Description of Individual
+                <input
+                  value={form.deniedDescription}
+                  onChange={(event) => update("deniedDescription", event.target.value)}
+                  placeholder={`Example: ${REFUSED_ACCESS_DESCRIPTION_EXAMPLE}`}
+                />
+              </label>
+            </div>
+          ) : null}
 
           <details className="paperwork-advanced">
             <summary>Review pulled JSON fields</summary>
