@@ -3752,8 +3752,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setFieldFocusPane("capture");
     setCaptureGuideForStep(captureJob, nextStep);
     focusFieldMedia(target.kind);
-    showActionNotice(`${target.step.title} captured. Opening ${nextStep.title}.`);
-    requestFieldPhotoCapture(captureJob, nextStep.kind, nextStep.accept, nextStep.camera, nextStep);
+    showActionNotice(`${target.step.title} saved. Opening ${nextStep.title}. If Chrome does not reopen, tap Take ${nextStep.step}/${nextStep.total}.`);
+    requestFieldPhotoCapture(captureJob, nextStep.kind, nextStep.accept, nextStep.camera, nextStep, 550);
     return true;
   }
 
@@ -3780,7 +3780,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     kind: FieldMediaKind,
     accept = "image/*,video/*",
     useCamera = true,
-    step?: FieldCaptureStep
+    step?: FieldCaptureStep,
+    openDelayMs = 0
   ) {
     const key = jobKey(job);
     if (!key) return;
@@ -3796,6 +3797,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const title = step?.title || fieldEvidenceLabel(kind);
     const text = step?.text || fieldCaptureGuideText(kind);
     const nextTarget = { jobKey: key, kind, meta: fieldEvidenceMeta(job, kind, step?.label), step };
+    const nextTargetToken = [
+      nextTarget.jobKey,
+      nextTarget.kind,
+      nextTarget.step?.title || "",
+      nextTarget.meta.label || "",
+    ].join("|");
     setFieldCaptureGuide({
       jobKey: key,
       kind,
@@ -3810,7 +3817,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     photoCaptureTargetRef.current = nextTarget;
     setPhotoCaptureTarget(nextTarget);
 
-    if (fieldPhotoInputRef.current) {
+    const openInput = () => {
+      const activeTarget = photoCaptureTargetRef.current;
+      const activeToken = activeTarget
+        ? [
+            activeTarget.jobKey,
+            activeTarget.kind,
+            activeTarget.step?.title || "",
+            activeTarget.meta.label || "",
+          ].join("|")
+        : "";
+      if (activeToken !== nextTargetToken || !fieldPhotoInputRef.current) return;
+
       fieldPhotoInputRef.current.accept = accept;
       fieldPhotoInputRef.current.multiple = !useCamera;
       if (useCamera) {
@@ -3820,6 +3838,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       }
       fieldPhotoInputRef.current.value = "";
       fieldPhotoInputRef.current.click();
+    };
+
+    if (openDelayMs > 0 && typeof window !== "undefined") {
+      window.setTimeout(openInput, openDelayMs);
+    } else {
+      openInput();
     }
   }
 
@@ -3836,7 +3860,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       target.step?.title || "",
       target.meta.label || "",
     ].join("|");
-    const hasNextCapture = advanceGuidedEvidenceCapture(target);
+    let hasNextCapture = false;
 
     try {
       const saved = await saveFieldPhotos(target.jobKey, target.kind, capturedFiles, target.meta);
@@ -3916,6 +3940,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const fallbackVideoNote = unstampedVideoCount
         ? ` ${unstampedVideoCount} video(s) were saved as original files because this phone could not burn the label into them.`
         : "";
+      hasNextCapture = advanceGuidedEvidenceCapture(target);
       if (!hasNextCapture) {
         const captureJob =
           fieldCaptureJobRef.current ||
