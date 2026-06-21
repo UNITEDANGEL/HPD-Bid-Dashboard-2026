@@ -200,6 +200,8 @@ type FullPackagePreview = {
   beforeCount: number;
   afterCount: number;
   hasInvoice: boolean;
+  videoNames: string[];
+  skippedMediaCount: number;
   generatedAt: string;
   savedPacketId?: string;
   note: string;
@@ -3162,9 +3164,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       beforeCount: counts.before,
       afterCount: counts.after,
       hasInvoice: Boolean(latestFieldPacket(job, "affidavit_invoice_pdf")),
+      videoNames: [],
+      skippedMediaCount: 0,
       generatedAt: packet.generatedAt,
       savedPacketId: packet.id,
-      note: packet.note || "Saved media package preview is ready.",
+      note: packet.note || "Saved complete package is ready.",
     } satisfies FullPackagePreview;
   }
 
@@ -3263,6 +3267,47 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return `${key}_${location}_${safePacketFilePart(suffix)}_${stamp}.zip`;
   }
 
+  function mediaHasPackageBytes(media: FieldMedia) {
+    const dataUrl = String(media.dataUrl || "");
+    const commaIndex = dataUrl.indexOf(",");
+    return dataUrl.startsWith("data:") && commaIndex > 0 && dataUrl.slice(commaIndex + 1).trim().length > 0;
+  }
+
+  function fullPackageManifestText(
+    key: string,
+    invoicePacket: FieldPacket,
+    includedMedia: FieldMedia[],
+    skippedMedia: FieldMedia[]
+  ) {
+    const lines = [
+      "HPD COMPLETE PACKAGE",
+      `OMO / WORK #: ${key}`,
+      `Generated: ${new Date().toLocaleString("en-US")}`,
+      "",
+      "PDF",
+      `- ${invoicePacket.fileName} (${packetSizeLabel(invoicePacket.size)})`,
+      "",
+      `MEDIA INCLUDED (${includedMedia.length})`,
+      ...includedMedia.map((media, index) => {
+        const label = media.mediaType === "video" ? "VIDEO" : "IMAGE";
+        return `- ${String(index + 1).padStart(2, "0")} ${label}: ${media.name || "unnamed"} | ${media.evidenceLabel || media.kind} | ${packetSizeLabel(media.size)}`;
+      }),
+    ];
+
+    if (skippedMedia.length) {
+      lines.push(
+        "",
+        `MEDIA NOT INCLUDED (${skippedMedia.length})`,
+        ...skippedMedia.map((media, index) => {
+          const label = media.mediaType === "video" ? "VIDEO" : "IMAGE";
+          return `- ${String(index + 1).padStart(2, "0")} ${label}: ${media.name || "unnamed"} had no original bytes saved in browser storage.`;
+        })
+      );
+    }
+
+    return lines.join("\n");
+  }
+
   function mediaExtension(media: FieldMedia) {
     const fromName = String(media.name || "").match(/\.[a-z0-9]{2,5}$/i)?.[0];
     if (fromName) return fromName.toLowerCase();
@@ -3279,11 +3324,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function fullPackageMediaPath(key: string, media: FieldMedia, index: number) {
+    const mediaFolder = media.mediaType === "video" ? "videos" : "images";
     const folder = fieldEvidenceKindClass(media.kind || "general");
     const label = zipSafePart(media.evidenceLabel || fieldEvidenceLabel(media.kind || "general"), "evidence");
     const fallbackName = `${safePacketFilePart(key)}-${String(index + 1).padStart(2, "0")}-${folder}${mediaExtension(media)}`;
     const fileName = safeAttachmentName(media.name, fallbackName);
-    return `media-package/${folder}/${String(index + 1).padStart(2, "0")}-${label}-${fileName}`;
+    return `${mediaFolder}/${folder}/${String(index + 1).padStart(2, "0")}-${label}-${fileName}`;
   }
 
   async function generateFullEvidencePackage(job: MappedJob) {
@@ -3293,7 +3339,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     try {
       const invoicePacket = latestFieldPacket(job, "affidavit_invoice_pdf");
       if (!invoicePacket) {
-        showActionNotice("Generate the invoice/affidavit PDF first, then preview the complete package.");
+        showActionNotice("Open paperwork and tap Generate Package to create the complete package.");
         window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
         return;
       }
@@ -3305,15 +3351,29 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         return;
       }
 
+      const includedMedia = evidenceRows.filter(mediaHasPackageBytes);
+      const skippedMedia = evidenceRows.filter((media) => !mediaHasPackageBytes(media));
+      const skippedVideos = skippedMedia.filter((media) => media.mediaType === "video");
+      if (skippedVideos.length) {
+        showActionNotice(`${skippedVideos.length} saved video(s) had no original video bytes. Retake or re-upload the video, then Generate Package again.`);
+        focusFieldPane("capture");
+        return;
+      }
+      if (!includedMedia.length) {
+        showActionNotice("No package-ready image or video bytes were found. Retake or upload evidence from the job card.");
+        focusFieldPane("capture");
+        return;
+      }
+
       const workflowValue = String(job.WorkflowStatus || job.workflowStatus || job.FieldOutcome || job.fieldOutcome || "").toUpperCase();
       const needsFullBeforeAfter =
         workflowValue.includes("WORK_COMPLETED") ||
         workflowValue.includes("PARTIAL_WORK_COMPLETED");
       if (needsFullBeforeAfter) {
-        const beforeImages = evidenceRows.filter((media) => media.kind === "before" && media.mediaType === "image").length;
-        const beforeVideos = evidenceRows.filter((media) => media.kind === "before" && media.mediaType === "video").length;
-        const afterImages = evidenceRows.filter((media) => media.kind === "after" && media.mediaType === "image").length;
-        const afterVideos = evidenceRows.filter((media) => media.kind === "after" && media.mediaType === "video").length;
+        const beforeImages = includedMedia.filter((media) => media.kind === "before" && media.mediaType === "image").length;
+        const beforeVideos = includedMedia.filter((media) => media.kind === "before" && media.mediaType === "video").length;
+        const afterImages = includedMedia.filter((media) => media.kind === "after" && media.mediaType === "image").length;
+        const afterVideos = includedMedia.filter((media) => media.kind === "after" && media.mediaType === "video").length;
         const missing: string[] = [];
         if (beforeImages < FIELD_REQUIRED_PHOTOS) missing.push(`before photos ${beforeImages}/${FIELD_REQUIRED_PHOTOS}`);
         if (beforeVideos < FIELD_REQUIRED_VIDEOS) missing.push(`before videos ${beforeVideos}/${FIELD_REQUIRED_VIDEOS}`);
@@ -3328,18 +3388,20 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       showActionNotice("Generating complete package...");
       const fileName = zipPacketFileName(job);
-      const mediaManifest = evidenceRows.map((media, index) => ({
+      const mediaManifest = includedMedia.map((media, index) => ({
         path: fullPackageMediaPath(key, media, index),
         media,
       }));
       const entries: ZipEntry[] = [];
 
-      if (invoicePacket) {
-        entries.push({
-          path: `invoice-affidavit-package/${safeAttachmentName(invoicePacket.fileName, "affidavit-invoice.pdf")}`,
-          bytes: dataUrlToBytes(invoicePacket.dataUrl),
-        });
-      }
+      entries.push({
+        path: `invoice-affidavit-package/${safeAttachmentName(invoicePacket.fileName, "affidavit-invoice.pdf")}`,
+        bytes: dataUrlToBytes(invoicePacket.dataUrl),
+      });
+      entries.push({
+        path: "PACKAGE-MANIFEST.txt",
+        bytes: zipTextBytes(fullPackageManifestText(key, invoicePacket, includedMedia, skippedMedia)),
+      });
 
       mediaManifest.forEach(({ path, media }) => {
         if (!media.dataUrl) return;
@@ -3350,12 +3412,15 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       });
 
       const zipBytes = buildStoredZip(entries);
-      const imageCount = evidenceRows.filter((media) => media.mediaType === "image").length;
-      const videoCount = evidenceRows.filter((media) => media.mediaType === "video").length;
-      const beforeCount = evidenceRows.filter((media) => media.kind === "before").length;
-      const afterCount = evidenceRows.filter((media) => media.kind === "after").length;
+      const imageCount = includedMedia.filter((media) => media.mediaType === "image").length;
+      const videoCount = includedMedia.filter((media) => media.mediaType === "video").length;
+      const beforeCount = includedMedia.filter((media) => media.kind === "before").length;
+      const afterCount = includedMedia.filter((media) => media.kind === "after").length;
+      const videoNames = includedMedia.filter((media) => media.mediaType === "video").map((media) => media.name || "Video evidence");
       let savedPacketId = "";
-      let note = "Package ready for review. Tap Send Package to share the ZIP.";
+      let note = videoCount
+        ? "Package ready for review. Video files are inside the videos folder."
+        : "Package ready for review. No video files were found for this OMO.";
 
       if (zipBytes.byteLength <= FULL_PACKAGE_SAVE_LIMIT_BYTES) {
         try {
@@ -3366,7 +3431,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             mimeType: "application/zip",
             dataUrl: bytesToDataUrl(zipBytes, "application/zip"),
             size: zipBytes.byteLength,
-            evidenceCount: evidenceRows.length,
+            evidenceCount: includedMedia.length,
             imageCount,
             videoCount,
             packetType: "full_evidence_zip",
@@ -3393,12 +3458,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         jobKey: key,
         fileName,
         size: zipBytes.byteLength,
-        evidenceCount: evidenceRows.length,
+        evidenceCount: includedMedia.length,
         imageCount,
         videoCount,
         beforeCount,
         afterCount,
         hasInvoice: true,
+        videoNames,
+        skippedMediaCount: skippedMedia.length,
         generatedAt: new Date().toISOString(),
         savedPacketId: savedPacketId || undefined,
         note,
@@ -3490,7 +3557,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (!key) return;
 
     if (!packet) {
-      showActionNotice("Generate the invoice/affidavit PDF first, then preview the complete package.");
+      showActionNotice("Open paperwork and tap Generate Package to create the complete package.");
       window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
       return;
     }
@@ -8715,6 +8782,32 @@ return (
             font-size: 10px;
           }
 
+          .field-package-video-list {
+            display: grid;
+            gap: 5px;
+            padding: 9px;
+            border-radius: 8px;
+            background: #ffffff;
+            border: 1px solid rgba(126, 146, 169, 0.22);
+          }
+
+          .field-package-video-list strong,
+          .field-package-video-list span {
+            overflow-wrap: anywhere;
+          }
+
+          .field-package-video-list strong {
+            color: #172033 !important;
+            font-size: 11px !important;
+          }
+
+          .field-package-video-list span {
+            color: #31526f !important;
+            font-size: 11px !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+          }
+
           .field-packet-empty {
             display: grid;
             gap: 3px;
@@ -10791,6 +10884,19 @@ return (
                           <span>Photos <strong>{preview.imageCount}</strong></span>
                           <span>Videos <strong>{preview.videoCount}</strong></span>
                           <span>Application <strong>{preview.hasInvoice ? "PDF" : "No"}</strong></span>
+                        </div>
+                        <div className="field-package-video-list">
+                          <strong>Videos in ZIP</strong>
+                          {preview.videoNames.length ? (
+                            preview.videoNames.slice(0, 8).map((name, index) => (
+                              <span key={`${name}-${index}`}>{name}</span>
+                            ))
+                          ) : (
+                            <span>No video files found in this package.</span>
+                          )}
+                          {preview.skippedMediaCount ? (
+                            <span>{preview.skippedMediaCount} media item(s) were listed in the manifest as not included.</span>
+                          ) : null}
                         </div>
                         <small>{preview.note}</small>
                       </div>

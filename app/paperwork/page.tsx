@@ -84,6 +84,8 @@ type CompletePackagePreview = {
   beforeCount: number;
   afterCount: number;
   pdfFileName: string;
+  videoNames: string[];
+  skippedMediaCount: number;
   savedPacketId?: string;
   note: string;
 };
@@ -440,11 +442,12 @@ function fieldEvidenceKindClass(kind = "general") {
 }
 
 function fullPackageMediaPath(jobId: string, media: FieldMedia, index: number) {
+  const mediaFolder = media.mediaType === "video" ? "videos" : "images";
   const folder = fieldEvidenceKindClass(media.kind || "general");
   const label = zipSafePart(media.evidenceLabel || "Field Evidence", "evidence");
   const fallbackName = `${safeFilename(jobId)}-${String(index + 1).padStart(2, "0")}-${folder}${mediaExtension(media)}`;
   const fileName = safeAttachmentName(media.name, fallbackName);
-  return `media-package/${folder}/${String(index + 1).padStart(2, "0")}-${label}-${fileName}`;
+  return `${mediaFolder}/${folder}/${String(index + 1).padStart(2, "0")}-${label}-${fileName}`;
 }
 
 function completePackageFileName(form: PackageForm, jobId: string) {
@@ -456,6 +459,47 @@ function completePackageFileName(form: PackageForm, jobId: string) {
 function bytesToFile(bytes: Uint8Array, fileName: string, mimeType = "application/zip") {
   const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
   return new File([buffer], fileName, { type: mimeType });
+}
+
+function mediaHasPackageBytes(media: FieldMedia) {
+  const dataUrl = String(media.dataUrl || "");
+  const commaIndex = dataUrl.indexOf(",");
+  return dataUrl.startsWith("data:") && commaIndex > 0 && dataUrl.slice(commaIndex + 1).trim().length > 0;
+}
+
+function packageManifestText(
+  jobId: string,
+  pdf: GeneratedPdfResult,
+  includedMedia: FieldMedia[],
+  skippedMedia: FieldMedia[]
+) {
+  const lines = [
+    "HPD COMPLETE PACKAGE",
+    `OMO / WORK #: ${jobId}`,
+    `Generated: ${new Date().toLocaleString("en-US")}`,
+    "",
+    "PDF",
+    `- ${pdf.fileName} (${packetSizeLabel(pdf.size)})`,
+    "",
+    `MEDIA INCLUDED (${includedMedia.length})`,
+    ...includedMedia.map((media, index) => {
+      const label = media.mediaType === "video" ? "VIDEO" : "IMAGE";
+      return `- ${String(index + 1).padStart(2, "0")} ${label}: ${media.name || "unnamed"} | ${media.evidenceLabel || media.kind} | ${packetSizeLabel(media.size)}`;
+    }),
+  ];
+
+  if (skippedMedia.length) {
+    lines.push(
+      "",
+      `MEDIA NOT INCLUDED (${skippedMedia.length})`,
+      ...skippedMedia.map((media, index) => {
+        const label = media.mediaType === "video" ? "VIDEO" : "IMAGE";
+        return `- ${String(index + 1).padStart(2, "0")} ${label}: ${media.name || "unnamed"} had no original bytes saved in browser storage.`;
+      })
+    );
+  }
+
+  return lines.join("\n");
 }
 
 function findJob(rows: JobRecord[], id: string) {
@@ -859,15 +903,32 @@ export default function PaperworkPage() {
         return;
       }
 
+      const includedMedia = evidenceRows.filter(mediaHasPackageBytes);
+      const skippedMedia = evidenceRows.filter((media) => !mediaHasPackageBytes(media));
+      const skippedVideos = skippedMedia.filter((media) => media.mediaType === "video");
+      if (skippedVideos.length) {
+        setPdfStatus(
+          `${skippedVideos.length} saved video(s) had no original video bytes in browser storage, so I stopped the package instead of sending it without video. Retake or re-upload the video from the job card, then Generate Package again.`
+        );
+        return;
+      }
+      if (!includedMedia.length) {
+        setPdfStatus("No package-ready image or video bytes were found for this OMO. Retake or upload evidence from the job card.");
+        return;
+      }
+
       const entries: ZipEntry[] = [
         {
           path: `invoice-affidavit-package/${safeAttachmentName(pdf.fileName, "invoice-affidavit.pdf")}`,
           bytes: pdf.bytes,
         },
+        {
+          path: "PACKAGE-MANIFEST.txt",
+          bytes: zipTextBytes(packageManifestText(pdf.jobId, pdf, includedMedia, skippedMedia)),
+        },
       ];
 
-      evidenceRows.forEach((media, index) => {
-        if (!media.dataUrl) return;
+      includedMedia.forEach((media, index) => {
         entries.push({
           path: fullPackageMediaPath(pdf.jobId, media, index),
           bytes: dataUrlToBytes(media.dataUrl),
@@ -875,13 +936,16 @@ export default function PaperworkPage() {
       });
 
       const zipBytes = buildStoredZip(entries);
-      const imageCount = evidenceRows.filter((media) => media.mediaType === "image").length;
-      const videoCount = evidenceRows.filter((media) => media.mediaType === "video").length;
-      const beforeCount = evidenceRows.filter((media) => media.kind === "before").length;
-      const afterCount = evidenceRows.filter((media) => media.kind === "after").length;
+      const imageCount = includedMedia.filter((media) => media.mediaType === "image").length;
+      const videoCount = includedMedia.filter((media) => media.mediaType === "video").length;
+      const beforeCount = includedMedia.filter((media) => media.kind === "before").length;
+      const afterCount = includedMedia.filter((media) => media.kind === "after").length;
+      const videoNames = includedMedia.filter((media) => media.mediaType === "video").map((media) => media.name || "Video evidence");
       const fileName = completePackageFileName(form, pdf.jobId);
       let savedPacketId = "";
-      let note = "Package ready for review. Tap Send Package when it looks correct.";
+      let note = videoCount
+        ? "Package ready for review. Video files are inside the videos folder."
+        : "Package ready for review. No video files were found for this OMO.";
 
       if (zipBytes.byteLength <= COMPLETE_PACKAGE_SAVE_LIMIT_BYTES) {
         try {
@@ -892,7 +956,7 @@ export default function PaperworkPage() {
             mimeType: "application/zip",
             dataUrl: bytesToDataUrl(zipBytes, "application/zip"),
             size: zipBytes.byteLength,
-            evidenceCount: evidenceRows.length,
+            evidenceCount: includedMedia.length,
             imageCount,
             videoCount,
             packetType: "full_evidence_zip",
@@ -912,12 +976,14 @@ export default function PaperworkPage() {
         jobId: pdf.jobId,
         fileName,
         size: zipBytes.byteLength,
-        evidenceCount: evidenceRows.length,
+        evidenceCount: includedMedia.length,
         imageCount,
         videoCount,
         beforeCount,
         afterCount,
         pdfFileName: pdf.fileName,
+        videoNames,
+        skippedMediaCount: skippedMedia.length,
         savedPacketId: savedPacketId || undefined,
         note,
       };
@@ -926,7 +992,7 @@ export default function PaperworkPage() {
       setPackagePreview(preview);
       const archiveMessage = await markPackageGenerated(pdf.jobId);
       setPdfStatus(
-        `Package generated for review: invoice/affidavit PDF, ${imageCount} image(s), ${videoCount} video(s). ${archiveMessage}`
+        `Package generated for review: invoice/affidavit PDF, ${imageCount} image(s), ${videoCount} video(s) included. ${archiveMessage}`
       );
     } catch (error) {
       console.error(error);
@@ -1094,6 +1160,26 @@ export default function PaperworkPage() {
 
         .package-review-actions {
           display: grid;
+        }
+
+        .package-review-files {
+          display: grid;
+          gap: 6px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          background: rgba(3, 18, 11, 0.18);
+          border-radius: 8px;
+          padding: 10px;
+        }
+
+        .package-review-files strong,
+        .package-review-files span {
+          overflow-wrap: anywhere;
+        }
+
+        .package-review-files span {
+          color: #dfffea;
+          font-size: 12px;
+          line-height: 1.3;
         }
 
         .package-review-actions button {
@@ -1636,6 +1722,19 @@ export default function PaperworkPage() {
                 <span>Videos <strong>{packagePreview.videoCount}</strong></span>
                 <span>Before <strong>{packagePreview.beforeCount}</strong></span>
                 <span>After <strong>{packagePreview.afterCount}</strong></span>
+              </div>
+              <div className="package-review-files">
+                <strong>Videos in ZIP</strong>
+                {packagePreview.videoNames.length ? (
+                  packagePreview.videoNames.slice(0, 8).map((name, index) => (
+                    <span key={`${name}-${index}`}>{name}</span>
+                  ))
+                ) : (
+                  <span>No video files found in this package.</span>
+                )}
+                {packagePreview.skippedMediaCount ? (
+                  <span>{packagePreview.skippedMediaCount} media item(s) were listed in the manifest as not included.</span>
+                ) : null}
               </div>
               <p>Includes {packagePreview.pdfFileName} plus all saved media for OMO {packagePreview.jobId}.</p>
               <div className="package-review-actions">
