@@ -104,6 +104,8 @@ type CompletePackagePreview = {
 type PendingCompletePackage = CompletePackagePreview & {
   applicationBytes: Uint8Array;
   videoBytes?: Uint8Array;
+  applicationShareFiles: File[];
+  videoShareFiles: File[];
 };
 
 type GeneratePdfOptions = {
@@ -1153,6 +1155,12 @@ export default function PaperworkPage() {
       const videoCount = videoMedia.length;
       const beforeCount = includedMedia.filter((media) => media.kind === "before").length;
       const afterCount = includedMedia.filter((media) => media.kind === "after").length;
+      const pdfShareFile = bytesToFile(pdf.bytes, pdf.fileName, "application/pdf");
+      const imageShareFiles = imageMedia.map((media, index) => {
+        const fileName = safeAttachmentName(media.name, `${safeFilename(pdf.jobId)}-image-${index + 1}${mediaExtension(media)}`);
+        return bytesToFile(dataUrlToBytes(media.dataUrl), fileName, media.type || "image/jpeg");
+      });
+      const applicationShareFiles = [pdfShareFile, ...imageShareFiles];
       const videoFiles = videoMedia.map((media, index) => {
         const fileName = safeAttachmentName(media.name, `${safeFilename(pdf.jobId)}-video-${index + 1}${mediaExtension(media)}`);
         return bytesToFile(dataUrlToBytes(media.dataUrl), fileName, media.type || "video/mp4");
@@ -1235,7 +1243,7 @@ export default function PaperworkPage() {
         note,
       };
 
-      pendingCompletePackageRef.current = { ...preview, applicationBytes, videoBytes };
+      pendingCompletePackageRef.current = { ...preview, applicationBytes, videoBytes, applicationShareFiles, videoShareFiles: videoFiles };
       setPackagePreview(preview);
       setPackagePreviewOpen(false);
       const archiveMessage = await markPackageGenerated(pdf.jobId);
@@ -1257,11 +1265,15 @@ export default function PaperworkPage() {
     }
   }
 
+  function isAndroidShareBrowser() {
+    return typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent || "");
+  }
+
   function showPackageShareFallback(message: string) {
     const pending = pendingCompletePackageRef.current;
     setPackagePreviewOpen(true);
     setPdfStatus(
-      `${message} Preview is open with ${pending?.videoBytes ? "Application ZIP and Video ZIP" : "Application ZIP"} package buttons.`
+      `${message} Preview is open with ${pending?.videoShareFiles.length ? "Application Files and Video Files" : "Application Files"} send buttons.`
     );
   }
 
@@ -1272,8 +1284,8 @@ export default function PaperworkPage() {
       const canShareSeparately = files.length > 1 && files.some((file) => canSharePackageFiles([file]));
       showPackageShareFallback(
         canShareSeparately
-          ? "Android cannot send both ZIPs in one share sheet. Send Application ZIP and Video ZIP one at a time from Preview."
-          : "Android blocked direct ZIP sending."
+          ? "Android cannot send all attachments in one share sheet. Send Application Files and Video Files one at a time from Preview."
+          : "Android blocked direct sending."
       );
       return;
     }
@@ -1287,10 +1299,36 @@ export default function PaperworkPage() {
     }
   }
 
+  async function shareAndroidEvidenceFiles(
+    files: File[],
+    title: string,
+    text: string,
+    successMessage: string,
+    emptyMessage: string
+  ) {
+    if (!files.length) {
+      setPdfStatus(emptyMessage);
+      return;
+    }
+
+    await sharePackageFiles(files, title, text, successMessage);
+  }
+
   async function sendCompletePackage() {
     const pending = pendingCompletePackageRef.current;
     if (!pending) {
       setPdfStatus("Generate Package first, review it, then send.");
+      return;
+    }
+
+    if (isAndroidShareBrowser()) {
+      await shareAndroidEvidenceFiles(
+        [...pending.applicationShareFiles, ...pending.videoShareFiles],
+        `${pending.jobId} HPD evidence package`,
+        `HPD evidence for ${pending.jobId}: affidavit/invoice PDF, images, and ${pending.videoCount} video(s).`,
+        `Android share opened with affidavit/invoice, ${pending.imageCount} image(s), and ${pending.videoCount} video(s).`,
+        "No application or video files were generated. Generate Package again."
+      );
       return;
     }
 
@@ -1314,6 +1352,17 @@ export default function PaperworkPage() {
       return;
     }
 
+    if (isAndroidShareBrowser()) {
+      await shareAndroidEvidenceFiles(
+        pending.applicationShareFiles,
+        `${pending.jobId} HPD application files`,
+        `HPD application files for ${pending.jobId}: affidavit/invoice PDF plus labeled images.`,
+        `Android share opened with application files: PDF plus ${pending.imageCount} image(s).`,
+        "No application files were generated. Generate Package again."
+      );
+      return;
+    }
+
     await sharePackageFiles(
       [bytesToFile(pending.applicationBytes, pending.applicationFileName, "application/zip")],
       `${pending.jobId} HPD application package`,
@@ -1330,6 +1379,17 @@ export default function PaperworkPage() {
     }
     if (!pending.videoBytes) {
       setPdfStatus("No video package was generated for this OMO.");
+      return;
+    }
+
+    if (isAndroidShareBrowser()) {
+      await shareAndroidEvidenceFiles(
+        pending.videoShareFiles,
+        `${pending.jobId} HPD video files`,
+        `HPD video files for ${pending.jobId}: ${pending.videoCount} labeled video(s).`,
+        `Android share opened with ${pending.videoCount} video file(s).`,
+        "No video files were generated for this OMO."
+      );
       return;
     }
 
@@ -2337,11 +2397,11 @@ export default function PaperworkPage() {
                   </div>
                   <div className="package-delivery-actions">
                     <button type="button" onClick={sendApplicationPackage}>
-                      Send Application ZIP
+                      Send Application Files
                     </button>
                     {packagePreview.videoPackageUrl ? (
                       <button type="button" onClick={sendVideoPackage}>
-                        Send Video ZIP
+                        Send Video Files
                       </button>
                     ) : null}
                     <a href={packagePreview.applicationUrl} download={packagePreview.applicationFileName}>

@@ -1556,6 +1556,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const fieldCameraRecorderRef = useRef<MediaRecorder | null>(null);
   const fieldCameraRecordingTargetRef = useRef<FieldCaptureTarget | null>(null);
   const fieldCameraChunksRef = useRef<Blob[]>([]);
+  const fieldCameraRecordingStartedAtRef = useRef(0);
 
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
@@ -3227,6 +3228,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function stopFieldCameraStream() {
     fieldCameraRecorderRef.current = null;
+    fieldCameraRecordingStartedAtRef.current = 0;
     fieldCameraStreamRef.current?.getTracks().forEach((track) => track.stop());
     fieldCameraStreamRef.current = null;
     if (fieldCameraVideoRef.current) {
@@ -3242,6 +3244,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setFieldCameraStatus("");
     fieldCameraRecordingTargetRef.current = null;
     fieldCameraChunksRef.current = [];
+    fieldCameraRecordingStartedAtRef.current = 0;
     photoCaptureTargetRef.current = null;
     setPhotoCaptureTarget(null);
   }
@@ -4357,6 +4360,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const mimeType = preferredRecordingMimeType();
     fieldCameraChunksRef.current = [];
     fieldCameraRecordingTargetRef.current = session.target;
+    fieldCameraRecordingStartedAtRef.current = Date.now();
     try {
       let recorder: MediaRecorder;
       try {
@@ -4379,26 +4383,27 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       showActionNotice(error instanceof Error ? error.message : "Video recording could not start.");
       fieldCameraRecordingTargetRef.current = null;
       fieldCameraChunksRef.current = [];
+      fieldCameraRecordingStartedAtRef.current = 0;
     }
   }
 
   function stopInlineCameraVideoRecording() {
     const recorder = fieldCameraRecorderRef.current;
-    if (!recorder || recorder.state === "inactive") return;
+    if (!recorder || recorder.state === "inactive" || fieldCameraBusy) return;
     setFieldCameraBusy(true);
     setFieldCameraStatus("Saving video...");
-    try {
-      recorder.requestData();
-    } catch {}
+    const elapsed = Date.now() - fieldCameraRecordingStartedAtRef.current;
+    const waitForEnoughVideo = Math.max(0, 1100 - elapsed);
     window.setTimeout(() => {
       try {
+        recorder.requestData();
         if (recorder.state !== "inactive") recorder.stop();
       } catch (error) {
         console.error(error);
         setFieldCameraBusy(false);
         setFieldCameraStatus("Video stop failed. Try again.");
       }
-    }, 450);
+    }, waitForEnoughVideo + 180);
   }
 
   async function finishInlineCameraVideoRecording(mimeType: string) {
@@ -4407,6 +4412,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     fieldCameraRecorderRef.current = null;
     fieldCameraRecordingTargetRef.current = null;
     fieldCameraChunksRef.current = [];
+    fieldCameraRecordingStartedAtRef.current = 0;
     setFieldCameraRecording(false);
 
     if (!target || !chunks.length) {
@@ -11269,7 +11275,7 @@ return (
             <div className="inline-camera-actions">
               {fieldCameraSession.mode === "video" ? (
                 fieldCameraRecording ? (
-                  <button className="danger" type="button" onClick={stopInlineCameraVideoRecording}>
+                  <button className="danger" type="button" onClick={stopInlineCameraVideoRecording} disabled={fieldCameraBusy}>
                     Stop & Save Video
                   </button>
                 ) : (
