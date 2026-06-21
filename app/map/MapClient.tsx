@@ -11774,9 +11774,18 @@ return (
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
+          .site-procedure-scenarios {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .site-procedure-package-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            padding-top: 2px;
+          }
+
           .site-procedure-actions button,
           .site-procedure-actions a {
-            min-height: 60px;
+            min-height: 56px;
             display: grid;
             place-items: center;
             border-radius: 14px;
@@ -11798,9 +11807,38 @@ return (
             box-shadow: 0 14px 28px rgba(83, 230, 156, 0.18);
           }
 
+          .site-procedure-scenarios .procedure-primary {
+            grid-column: auto;
+          }
+
+          .site-procedure-scenarios .finish-job-btn {
+            background: rgba(83, 230, 156, 0.16) !important;
+            border-color: rgba(83, 230, 156, 0.34) !important;
+          }
+
+          .site-procedure-scenarios .no-access-job-btn {
+            background: rgba(251, 191, 36, 0.16) !important;
+            border-color: rgba(251, 191, 36, 0.34) !important;
+          }
+
           .site-procedure-actions .refused-job-btn.procedure-primary {
             background: linear-gradient(135deg, #fb7185, #f97316) !important;
             color: #ffffff !important;
+          }
+
+          .site-procedure-scenarios .refused-job-btn {
+            background: rgba(251, 113, 133, 0.18) !important;
+            border-color: rgba(251, 113, 133, 0.38) !important;
+          }
+
+          .site-procedure-scenarios .other-done-job-btn {
+            background: rgba(168, 85, 247, 0.16) !important;
+            border-color: rgba(168, 85, 247, 0.34) !important;
+          }
+
+          .site-procedure-scenarios .reset-job-btn {
+            background: rgba(148, 163, 184, 0.14) !important;
+            border-color: rgba(148, 163, 184, 0.28) !important;
           }
 
           .field-workflow-card > .field-procedure-hero,
@@ -11816,9 +11854,12 @@ return (
           }
 
           @media (max-width: 720px) {
-            .site-procedure-head,
-            .site-procedure-actions {
+            .site-procedure-head {
               grid-template-columns: 1fr;
+            }
+
+            .site-procedure-package-actions {
+              grid-template-columns: 1fr !important;
             }
 
             .site-procedure-head b {
@@ -12333,14 +12374,14 @@ return (
                       ? "Package ready"
                       : "Photo saved"
                     : "Take refused photo"
-                  : "Choose site result";
+                  : "Pick field scenario";
                 const nextText = isRefused
                   ? hasRefusedPhoto
                     ? packageReady
                       ? "Send the ZIP package when you are ready."
                       : "Generate the affidavit, invoice, and evidence ZIP."
                     : "One photo is required for refused access."
-                  : "Tap the field result that happened at the site.";
+                  : "Choose the exact result from the site: start work, no access, refused access, partial, complete, or done by others.";
 
                 return (
                   <div className={`site-procedure-card ${isRefused ? "is-refused" : ""} ${hasRefusedPhoto ? "has-evidence" : ""} ${packageReady ? "has-package" : ""}`}>
@@ -12357,43 +12398,59 @@ return (
                       <span className={hasRefusedPhoto ? "done" : ""}>2 Photo</span>
                       <span className={packageReady ? "done" : ""}>3 Package</span>
                     </div>
-                    <div className="site-procedure-actions">
-                      {!isRefused ? (
-                        <>
-                          <button type="button" className="refused-job-btn procedure-primary" onClick={() => markRefusedAccess(selected)}>
-                            Refused Access
-                          </button>
-                          <button type="button" onClick={() => startFieldJob(selected)}>
-                            Start Job
-                          </button>
-                          <button type="button" onClick={() => startNoAccessCounter(selected)}>
-                            No Access
-                          </button>
-                        </>
-                      ) : !hasRefusedPhoto ? (
-                        <button type="button" className="procedure-primary" onClick={() => captureExtraPhoto(selected, "refused_access")}>
-                          Take Refused Photo
-                        </button>
-                      ) : packageReady ? (
-                        <>
-                          <button type="button" className="procedure-primary" onClick={() => sendFullEvidencePackage(selected)}>
-                            Send ZIP
-                          </button>
-                          <a href={paperworkAutoPackageHref(selected)}>
-                            Review Package
-                          </a>
-                        </>
-                      ) : (
-                        <>
-                          <a className="procedure-primary" href={paperworkAutoPackageHref(selected)}>
-                            Generate Package
-                          </a>
-                          <button type="button" onClick={() => captureExtraPhoto(selected, "refused_access")}>
-                            Retake Photo
-                          </button>
-                        </>
-                      )}
+                    <div className="site-procedure-actions site-procedure-scenarios">
+                      <button type="button" className="start-job-btn procedure-primary" onClick={() => startFieldJob(selected)}>
+                        Start Job
+                      </button>
+                      <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected)}>
+                        Work Completed
+                      </button>
+                      <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected, true)}>
+                        Partial Work
+                      </button>
+                      <button type="button" className="no-access-job-btn" onClick={() => startNoAccessCounter(selected)}>
+                        No Access 1st
+                      </button>
+                      <button type="button" className="no-access-job-btn" onClick={() => markNoAccessSecondAttempt(selected)}>
+                        No Access 2nd
+                      </button>
+                      <button type="button" className="refused-job-btn" onClick={() => markRefusedAccess(selected)}>
+                        Refused Access
+                      </button>
+                      <button type="button" className="other-done-job-btn" onClick={() => markCompletedByOthers(selected)}>
+                        Done by Others
+                      </button>
+                      <button type="button" className="reset-job-btn" onClick={() => resetFieldJobForTesting(selected)}>
+                        Pending / Clear
+                      </button>
                     </div>
+                    {isRefused ? (
+                      <div className="site-procedure-actions site-procedure-package-actions">
+                        {!hasRefusedPhoto ? (
+                          <button type="button" className="procedure-primary" onClick={() => captureExtraPhoto(selected, "refused_access")}>
+                            Take Refused Photo
+                          </button>
+                        ) : packageReady ? (
+                          <>
+                            <button type="button" className="procedure-primary" onClick={() => sendFullEvidencePackage(selected)}>
+                              Send ZIP
+                            </button>
+                            <a href={paperworkAutoPackageHref(selected)}>
+                              Review Package
+                            </a>
+                          </>
+                        ) : (
+                          <>
+                            <a className="procedure-primary" href={paperworkAutoPackageHref(selected)}>
+                              Generate Package
+                            </a>
+                            <button type="button" onClick={() => captureExtraPhoto(selected, "refused_access")}>
+                              Retake Photo
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 );
               })()}
