@@ -17,7 +17,6 @@ import {
   type FieldMediaKind,
   canStoreFieldPhotos,
   clearFieldEvidence,
-  compactImageDataUrl,
   countFieldPhotos,
   dataUrlToBytes,
   listFieldEvidence,
@@ -31,7 +30,6 @@ import {
   saveFieldPacket,
 } from "../../lib/field-packet-store";
 import { paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
-import { PDFDocument, StandardFonts } from "pdf-lib";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type JobRecord = {
@@ -3125,6 +3123,20 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return packets.find((packet) => packet.packetType === packetType) || null;
   }
 
+  function fieldPacketLabel(packet: FieldPacket) {
+    if (packet.packetType === "full_evidence_zip") return "Media Package ZIP";
+    if (packet.packetType === "affidavit_invoice_pdf") return "Invoice/Affidavit PDF";
+    return "Legacy Evidence PDF";
+  }
+
+  function fieldPacketSummary(packet: FieldPacket) {
+    if (packet.packetType === "full_evidence_zip") {
+      return `${packet.evidenceCount} media file(s) - ${packet.videoCount} video(s)`;
+    }
+    if (packet.packetType === "affidavit_invoice_pdf") return "Paperwork PDF";
+    return `${packet.evidenceCount} evidence file(s)`;
+  }
+
   function fullPackagePreviewFor(job: JobRecord | null) {
     const key = job ? jobKey(job) : "";
     if (!key || !job) return null;
@@ -3152,7 +3164,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       hasInvoice: Boolean(latestFieldPacket(job, "affidavit_invoice_pdf")),
       generatedAt: packet.generatedAt,
       savedPacketId: packet.id,
-      note: packet.note || "Saved full package preview is ready.",
+      note: packet.note || "Saved media package preview is ready.",
     } satisfies FullPackagePreview;
   }
 
@@ -3248,8 +3260,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return new File([bytesToBlob(bytes, mimeType)], safeAttachmentName(fileName, "attachment"), { type: mimeType });
   }
 
-  function zipPacketFileName(job: JobRecord, suffix = "full-evidence-package") {
-    return packetFileName(job, suffix).replace(/\.pdf$/i, ".zip");
+  function zipPacketFileName(job: JobRecord, suffix = "media-package") {
+    const key = safePacketFilePart(jobKey(job), "OMO");
+    const location = safePacketFilePart(displayLocation(job) || displayAddress(job) || (job as any).borough || "LOCATION", "LOCATION");
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+    return `${key}_${location}_${safePacketFilePart(suffix)}_${stamp}.zip`;
   }
 
   function mediaExtension(media: FieldMedia) {
@@ -3272,7 +3287,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const label = zipSafePart(media.evidenceLabel || fieldEvidenceLabel(media.kind || "general"), "evidence");
     const fallbackName = `${safePacketFilePart(key)}-${String(index + 1).padStart(2, "0")}-${folder}${mediaExtension(media)}`;
     const fileName = safeAttachmentName(media.name, fallbackName);
-    return `media/${folder}/${String(index + 1).padStart(2, "0")}-${label}-${fileName}`;
+    return `media-package/${folder}/${String(index + 1).padStart(2, "0")}-${label}-${fileName}`;
   }
 
   async function generateFullEvidencePackage(job: MappedJob) {
@@ -3282,7 +3297,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     try {
       const invoicePacket = latestFieldPacket(job, "affidavit_invoice_pdf");
       if (!invoicePacket) {
-        showActionNotice("Generate the affidavit + invoice PDF first, then build the Full Package.");
+        showActionNotice("Draft the invoice/affidavit PDF first, then build the Media Package.");
         window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
         return;
       }
@@ -3315,7 +3330,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         }
       }
 
-      showActionNotice("Building full package preview...");
+      showActionNotice("Building media package preview...");
       const fileName = zipPacketFileName(job);
       const mediaManifest = evidenceRows.map((media, index) => ({
         path: fullPackageMediaPath(key, media, index),
@@ -3325,7 +3340,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       if (invoicePacket) {
         entries.push({
-          path: `documents/${safeAttachmentName(invoicePacket.fileName, "affidavit-invoice.pdf")}`,
+          path: `invoice-affidavit-package/${safeAttachmentName(invoicePacket.fileName, "affidavit-invoice.pdf")}`,
           bytes: dataUrlToBytes(invoicePacket.dataUrl),
         });
       }
@@ -3344,7 +3359,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const beforeCount = evidenceRows.filter((media) => media.kind === "before").length;
       const afterCount = evidenceRows.filter((media) => media.kind === "after").length;
       let savedPacketId = "";
-      let note = "Preview ready. Tap Send Full Package to share the ZIP.";
+      let note = "Media package preview ready. Tap Send Media Package to share the ZIP.";
 
       if (zipBytes.byteLength <= FULL_PACKAGE_SAVE_LIMIT_BYTES) {
         try {
@@ -3359,7 +3374,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             imageCount,
             videoCount,
             packetType: "full_evidence_zip",
-            note: "Full ZIP package with affidavit/invoice, original images, and original videos.",
+            note: "Media Package ZIP with original photos/videos plus the invoice/affidavit PDF.",
           });
           savedPacketId = savedPacket.id;
           setFieldPacketsByJob((current) => ({
@@ -3369,13 +3384,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               ...(current[key] || []).filter((packet) => packet.packetType !== "full_evidence_zip"),
             ].sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)),
           }));
-          note = "Preview ready and saved on this phone. Tap Send Full Package.";
+          note = "Media package preview saved on this phone. Tap Send Media Package.";
         } catch (error) {
           console.error(error);
-          note = "Preview ready. Browser storage could not save the ZIP, but Send Full Package can still share it now.";
+          note = "Media package preview ready. Browser storage could not save the ZIP, but Send Media Package can still share it now.";
         }
       } else {
-        note = `Preview ready. ZIP is ${packetSizeLabel(zipBytes.byteLength)}, so it is held for Send Full Package instead of duplicating it in phone storage.`;
+        note = `Media package preview ready. ZIP is ${packetSizeLabel(zipBytes.byteLength)}, so it is held for Send Media Package instead of duplicating it in phone storage.`;
       }
 
       const preview: FullPackagePreview = {
@@ -3396,7 +3411,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       pendingFullPackageRef.current = { ...preview, bytes: zipBytes };
       setFullPackagePreview(preview);
       focusFieldPane("send");
-      showActionNotice(`Full package preview ready: ${beforeCount} before, ${afterCount} after, ${videoCount} video(s).`);
+      showActionNotice(`Media package preview ready: ${beforeCount} before, ${afterCount} after, ${videoCount} video(s).`);
     } catch (error) {
       console.error(error);
       showActionNotice(error instanceof Error ? error.message : "Full package build failed. Try again.");
@@ -3412,20 +3427,20 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       (!navigator.canShare || navigator.canShare({ files: [zipFile] }));
 
     if (!canShareFiles) {
-      showActionNotice("This browser cannot share ZIP files directly. Package preview is ready; use Chrome share on mobile.");
+      showActionNotice("This browser cannot share ZIP files directly. Media package preview is ready; use Chrome share on mobile.");
       return;
     }
 
     try {
       await navigator.share({
-        title: `${key} HPD full package`,
-        text: `Full HPD package for ${key}: affidavit, invoice, ${pendingPackage.evidenceCount} evidence file(s), ${pendingPackage.videoCount} video(s).`,
+        title: `${key} HPD media package`,
+        text: `HPD media package for ${key}: invoice/affidavit PDF plus ${pendingPackage.evidenceCount} original media file(s), including ${pendingPackage.videoCount} video(s).`,
         files: [zipFile],
       });
-      showActionNotice(`Full package shared: ${pendingPackage.evidenceCount} evidence file(s), ${pendingPackage.videoCount} video(s).`);
+      showActionNotice(`Media package shared: ${pendingPackage.evidenceCount} media file(s), ${pendingPackage.videoCount} video(s).`);
     } catch (error) {
       console.error(error);
-      showActionNotice("Share was cancelled or blocked. Package preview is still ready.");
+      showActionNotice("Share was cancelled or blocked. Media package preview is still ready.");
     }
   }
 
@@ -3435,7 +3450,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     const preview = fullPackagePreviewFor(job);
     if (!preview) {
-      showActionNotice("Tap Full Package first to build the preview.");
+      showActionNotice("Tap Preview Media Package first to build the ZIP.");
       focusFieldPane("send");
       return;
     }
@@ -3454,13 +3469,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       return;
     }
 
-    showActionNotice("Package preview expired. Tap Full Package again, then Send Full Package.");
+    showActionNotice("Media package preview expired. Tap Preview Media Package again, then Send Media Package.");
   }
 
   function packagePrimaryLabel(job: MappedJob) {
-    if (!latestFieldPacket(job, "affidavit_invoice_pdf")) return "Draft Invoice Package";
-    if (!fullPackagePreviewFor(job)) return "Preview Full Package";
-    return "Send Full Package";
+    if (!latestFieldPacket(job, "affidavit_invoice_pdf")) return "Draft Invoice/Affidavit";
+    if (!fullPackagePreviewFor(job)) return "Preview Media Package";
+    return "Send Media Package";
   }
 
   async function runPackagePrimaryAction(job: MappedJob) {
@@ -3469,7 +3484,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     if (!invoicePacket) {
       focusFieldPane("package");
-      showActionNotice("Draft the affidavit + invoice first. Return here, then tap Preview Full Package.");
+      showActionNotice("Draft the invoice/affidavit first. Return here, then tap Preview Media Package.");
       window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
       return;
     }
@@ -3487,22 +3502,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (!key) return;
 
     if (!packet) {
-      showActionNotice("Generate the affidavit + invoice package first, then share attachments.");
+      showActionNotice("Draft the invoice/affidavit PDF first, then build the Media Package ZIP.");
       window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
       return;
     }
 
-    const isFullZip = packet.packetType === "full_evidence_zip" || String(packet.mimeType || "").includes("zip");
-    const videos = isFullZip ? [] : (await listFieldEvidence(key)).filter((media) => media.mediaType === "video" && media.dataUrl);
+    const isMediaZip = packet.packetType === "full_evidence_zip" || String(packet.mimeType || "").includes("zip");
     const files = [
-      dataUrlToFile(packet.dataUrl, packet.fileName, packet.mimeType || (isFullZip ? "application/zip" : "application/pdf")),
-      ...videos.map((video, index) =>
-        dataUrlToFile(
-          video.dataUrl,
-          video.name || `${safePacketFilePart(key)}-video-${index + 1}.mp4`,
-          video.type || "video/mp4"
-        )
-      ),
+      dataUrlToFile(packet.dataUrl, packet.fileName, packet.mimeType || (isMediaZip ? "application/zip" : "application/pdf")),
     ];
 
     const canShareFiles =
@@ -3513,8 +3520,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (canShareFiles) {
       try {
         await navigator.share({
-          title: `${key} HPD package`,
-          text: `HPD package for ${key}. Includes ${packet.fileName}${videos.length ? ` and ${videos.length} original video file(s)` : ""}.`,
+          title: `${key} HPD ${isMediaZip ? "media package" : "invoice/affidavit package"}`,
+          text: isMediaZip
+            ? `HPD media package for ${key}. Includes invoice/affidavit PDF plus original photos and videos.`
+            : `HPD invoice/affidavit package for ${key}. Media files belong in the Media Package ZIP.`,
           files,
         });
         showActionNotice(`Share sheet opened with ${files.length} attachment(s).`);
@@ -3525,11 +3534,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           showActionNotice("Share was cancelled or blocked. Package is still ready in preview.");
           return;
         }
-        showActionNotice(`Share was cancelled or blocked. Downloading the ${isFullZip ? "ZIP" : "PDF"} instead.`);
+        showActionNotice(`Share was cancelled or blocked. Downloading the ${isMediaZip ? "ZIP" : "PDF"} instead.`);
       }
-    } else if (videos.length) {
-      showActionNotice(downloadFallback ? "This browser cannot attach files directly. PDF will download; original videos stay saved in the job card." : "This browser cannot attach files directly. Package is still ready in preview.");
-      if (!downloadFallback) return;
     } else if (!downloadFallback) {
       showActionNotice("This browser cannot share this package directly. Package is still ready in preview.");
       return;
@@ -3545,156 +3551,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       .replace(/^-+|-+$/g, "")
       .slice(0, 54);
     return cleaned || fallback;
-  }
-
-  function packetFileName(job: JobRecord, suffix = "evidence-packet") {
-    const key = safePacketFilePart(jobKey(job), "OMO");
-    const location = safePacketFilePart(displayLocation(job) || displayAddress(job) || (job as any).borough || "LOCATION", "LOCATION");
-    const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
-    return `${key}_${location}_${safePacketFilePart(suffix)}_${stamp}.pdf`;
-  }
-
-  function packetText(value: string, maxLength = 100) {
-    return String(value || "")
-      .replace(/[^\x20-\x7E]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, maxLength);
-  }
-
-  function drawPacketLine(page: any, text: string, x: number, y: number, size = 10) {
-    page.drawText(packetText(text), { x, y, size });
-  }
-
-  async function drawPacketPreview(pdfDoc: PDFDocument, page: any, media: FieldMedia) {
-    const rawPreviewDataUrl = media.mediaType === "video" ? media.posterDataUrl : media.dataUrl;
-    const previewDataUrl = rawPreviewDataUrl ? await compactImageDataUrl(rawPreviewDataUrl, media.mediaType === "video" ? 900 : 1100, 0.6) : "";
-    const box = { x: 46, y: 138, width: 520, height: 470 };
-
-    if (previewDataUrl) {
-      try {
-        const bytes = dataUrlToBytes(previewDataUrl);
-        const image = previewDataUrl.startsWith("data:image/png") ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
-        const scale = Math.min(box.width / image.width, box.height / image.height, 1);
-        const width = image.width * scale;
-        const height = image.height * scale;
-        const x = box.x + (box.width - width) / 2;
-        const y = box.y + (box.height - height) / 2;
-        page.drawRectangle({ ...box, borderWidth: 1 });
-        page.drawImage(image, { x, y, width, height });
-        return;
-      } catch (error) {
-        console.error(error);
-      }
-    }
-
-    page.drawRectangle({ ...box, borderWidth: 1 });
-    drawPacketLine(page, media.mediaType === "video" ? "VIDEO POSTER UNAVAILABLE" : "IMAGE PREVIEW UNAVAILABLE", 170, 374, 16);
-    drawPacketLine(page, media.name || media.evidenceLabel || "Field evidence", 126, 346, 10);
-  }
-
-  async function downloadTempEvidencePacket(job: MappedJob, openDraftAfter = false) {
-    const key = jobKey(job);
-    if (!key) return;
-
-    const evidenceRows = await listFieldEvidence(key);
-    if (!evidenceRows.length) {
-      showActionNotice("No evidence saved for this job yet. Capture or upload before/after media first.");
-      return;
-    }
-
-    showActionNotice("Building temporary evidence packet...");
-    const pdfDoc = await PDFDocument.create();
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    const address = displayAddress(job);
-    const location = displayLocation(job);
-    const generatedAt = new Date().toLocaleString();
-
-    const cover = pdfDoc.addPage([612, 792]);
-    cover.setFont(font);
-    cover.drawText("EMAIL-SIZE FIELD EVIDENCE PACKET", { x: 46, y: 744, size: 17, font: bold });
-    drawPacketLine(cover, `OMO / WORK #: ${key}`, 46, 716, 12);
-    drawPacketLine(cover, `Address: ${address}`, 46, 696, 10);
-    drawPacketLine(cover, `Location: ${location || "Not listed"} - Borough: ${(job as any).borough || "Not listed"}`, 46, 680, 10);
-    drawPacketLine(cover, `Status: ${workflowLabel(job) || JobStatus.statusLabel(job)}`, 46, 660, 10);
-    drawPacketLine(cover, `Generated: ${generatedAt}`, 46, 642, 10);
-    drawPacketLine(cover, `Evidence files: ${evidenceRows.length}`, 46, 616, 11);
-    drawPacketLine(cover, "Email-size mode: images are compressed; videos are listed with poster frames only.", 46, 594, 9);
-    drawPacketLine(cover, "Keep original videos saved on the phone or future cloud evidence vault.", 46, 580, 9);
-
-    evidenceRows.slice(0, 26).forEach((media, index) => {
-      drawPacketLine(
-        cover,
-        `${index + 1}. ${media.evidenceLabel || media.kind} - ${media.mediaType.toUpperCase()} - ${displayWorkflowDate(media.capturedAt)} - ${media.name}`,
-        54,
-        548 - index * 18,
-        8
-      );
-    });
-
-    for (const [index, media] of evidenceRows.entries()) {
-      const page = pdfDoc.addPage([612, 792]);
-      page.setFont(font);
-
-      page.drawText("FIELD EVIDENCE", { x: 46, y: 744, size: 17, font: bold });
-      drawPacketLine(page, `OMO / WORK #: ${key}`, 46, 718, 11);
-      drawPacketLine(page, `Label: ${media.evidenceLabel || fieldEvidenceLabel(media.kind)}`, 46, 700, 10);
-      drawPacketLine(page, `Media: ${media.mediaType.toUpperCase()} - ${media.name}`, 46, 684, 9);
-      drawPacketLine(page, `Captured: ${displayWorkflowDate(media.capturedAt)}`, 46, 668, 9);
-      drawPacketLine(page, `Address: ${media.address || address}`, 46, 652, 9);
-      drawPacketLine(page, `Location: ${media.location || location || "Not listed"} - Borough: ${media.borough || (job as any).borough || "Not listed"}`, 46, 636, 9);
-      await drawPacketPreview(pdfDoc, page, media);
-      drawPacketLine(page, `Evidence file recorded: ${media.name || `${key}-${index + 1}-${media.kind}`}`, 46, 96, 9);
-      if (media.mediaType === "video") {
-        drawPacketLine(page, "Video original is not embedded in this email-size PDF. Keep original evidence saved.", 46, 80, 9);
-      }
-    }
-
-    const fileName = packetFileName(job, "email-size-evidence-packet");
-    const bytes = await pdfDoc.save();
-    const pdfBuffer = new ArrayBuffer(bytes.byteLength);
-    new Uint8Array(pdfBuffer).set(bytes);
-    const blob = new Blob([pdfBuffer], { type: "application/pdf" });
-    const imageCount = evidenceRows.filter((media) => media.mediaType === "image").length;
-    const videoCount = evidenceRows.filter((media) => media.mediaType === "video").length;
-    let savedLocally = true;
-
-    try {
-      const savedPacket = await saveFieldPacket({
-        jobId: key,
-        fileName,
-        mimeType: "application/pdf",
-        dataUrl: bytesToDataUrl(new Uint8Array(pdfBuffer), "application/pdf"),
-        size: bytes.byteLength,
-        evidenceCount: evidenceRows.length,
-        imageCount,
-        videoCount,
-        packetType: "email_evidence_pdf",
-        note: "Email-size PDF saved on this device. Videos are listed with poster frames only.",
-      });
-      setFieldPacketsByJob((current) => ({
-        ...current,
-        [key]: [savedPacket, ...(current[key] || [])].sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)),
-      }));
-      focusFieldPane(openDraftAfter ? "send" : "package");
-    } catch (error) {
-      savedLocally = false;
-      console.error(error);
-      showActionNotice("Packet downloaded, but this browser could not save it locally.");
-    }
-
-    const href = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = href;
-    anchor.download = fileName;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(href), 30000);
-
-    showActionNotice(`${savedLocally ? "Saved and downloaded" : "Downloaded"} email-size packet: ${fileName} (${packetSizeLabel(bytes.byteLength)}).`);
-    if (openDraftAfter) openEvidenceEmailDraft(job, fileName, evidenceRows.length, videoCount, "email_evidence_pdf");
   }
 
   function openEvidenceEmailDraft(
@@ -3714,9 +3570,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     window.localStorage.setItem("hpd-evidence-email-cc", cc.trim());
 
     const isInvoicePacket = packetType === "affidavit_invoice_pdf";
-    const isFullZip = packetType === "full_evidence_zip";
-    const packageLabel = isFullZip ? "full evidence ZIP package" : isInvoicePacket ? "affidavit and invoice package" : "field evidence packet";
-    const attachmentLabel = isFullZip ? "Attach full package ZIP" : "Attach package PDF";
+    const isMediaZip = packetType === "full_evidence_zip";
+    const packageLabel = isMediaZip ? "media package ZIP" : isInvoicePacket ? "invoice and affidavit package PDF" : "field evidence packet";
+    const attachmentLabel = isMediaZip ? "Attach media package ZIP" : isInvoicePacket ? "Attach invoice/affidavit PDF" : "Attach package PDF";
     const subject = `${key} HPD ${packageLabel}`;
     const body = [
       `Please see attached ${packageLabel} for OMO / Work #: ${key}.`,
@@ -3728,8 +3584,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       `Evidence files: ${evidenceCount}`,
       `Video files: ${videoCount}`,
       attachmentName ? `${attachmentLabel}: ${attachmentName}` : `${attachmentLabel}: attach the downloaded package.`,
-      isFullZip ? "The ZIP contains the affidavit/invoice PDF plus original photos and videos." : "",
-      !isFullZip && videoCount ? "Attach original video file(s) separately or use Share Attachments from the job card." : "",
+      isMediaZip ? "The ZIP contains the invoice/affidavit PDF plus original photos and videos in the media package folder." : "",
+      isInvoicePacket ? "Photos and videos are not inside this PDF. Build the Media Package ZIP for original media files." : "",
       "",
       "Note: This browser opened a draft only. Email drafts cannot auto-attach files. Use Share from the job card when available, or attach the downloaded files before sending.",
     ].filter(Boolean).join("\n");
@@ -4836,7 +4692,7 @@ function directionsUrl(job: JobRecord) {
     setGeneratedLinks({ affidavit: href, invoice: href });
     if (openPreview) {
       window.open(href, "_blank", "noopener,noreferrer");
-      showActionNotice("Status saved. Affidavit + invoice preview opened.");
+      showActionNotice("Status saved. Invoice/affidavit preview opened.");
       return;
     }
     showActionNotice("Status saved. Evidence capture is opening. Package preview link is ready.");
@@ -10716,7 +10572,7 @@ return (
 
             <div className="selected-hero-actions">
               <a className="selected-primary-action" href={paperworkHref(selected, "package")}>
-                Draft Invoice Package
+                Draft Invoice/Affidavit
               </a>
               <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
                 Waze
@@ -10935,7 +10791,7 @@ return (
               <div data-field-pane="package" className={`field-packet-vault field-pane ${fieldFocusPane === "package" ? "is-active" : ""}`}>
                 <div className="field-packet-head">
                   <div>
-                    <span>Saved Packets</span>
+                    <span>Saved Packages</span>
                     <strong>{fieldPacketRowsFor(selected).length ? `${fieldPacketRowsFor(selected).length} packet(s) saved` : "No packet saved yet"}</strong>
                   </div>
                   <small>{fieldPacketRowsFor(selected)[0] ? packetSizeLabel(fieldPacketRowsFor(selected)[0].size) : "Ready"}</small>
@@ -10945,19 +10801,19 @@ return (
                     {fieldPacketRowsFor(selected).slice(0, 3).map((packet) => (
                       <div className={`field-packet-row ${packet.packetType}`} key={packet.id}>
                         <div>
-                          <strong>{packet.fileName}</strong>
-                          <span>{packetSizeLabel(packet.size)} - {packet.evidenceCount} evidence file(s) - {displayWorkflowDate(packet.generatedAt)}</span>
-                          <small>{packet.note}</small>
+                          <strong>{fieldPacketLabel(packet)}</strong>
+                          <span>{packetSizeLabel(packet.size)} - {fieldPacketSummary(packet)} - {displayWorkflowDate(packet.generatedAt)}</span>
+                          <small>{packet.fileName} - {packet.note}</small>
                         </div>
-                        <button type="button" onClick={() => shareStoredPackage(selected, packet, false)}>{packet.packetType === "full_evidence_zip" ? "Send" : "Share"}</button>
+                        <button type="button" onClick={() => shareStoredPackage(selected, packet, false)}>{packet.packetType === "full_evidence_zip" ? "Send Media" : "Share PDF"}</button>
                         <button type="button" onClick={() => emailStoredPacket(selected, packet)}>Draft</button>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="field-packet-empty">
-                    <strong>Build the invoice PDF, then Full Package.</strong>
-                    <span>The full package adds every original photo/video angle into one ZIP.</span>
+                    <strong>Draft invoice/affidavit PDF, then Media Package.</strong>
+                    <span>The media package ZIP adds every original photo and video angle.</span>
                   </div>
                 )}
               </div>
@@ -10971,24 +10827,24 @@ return (
                   <div data-field-pane="send" className={`field-send-panel field-pane ${fieldFocusPane === "send" ? "is-active" : ""}`}>
                     <div>
                       <span>Send Package</span>
-                      <strong>{preview ? "Preview ready" : invoicePacket ? "Ready for full package" : "Need affidavit + invoice"}</strong>
+                      <strong>{preview ? "Media package ready" : invoicePacket ? "Ready for media package" : "Need invoice/affidavit"}</strong>
                       <small>
-                        {preview?.fileName || invoicePacket?.fileName || "Generate Invoice Package first."}
-                        {videoCount ? preview ? ` ${videoCount} video file(s) are inside the ZIP.` : ` ${videoCount} video file(s) will be included.` : ""}
+                        {preview?.fileName || invoicePacket?.fileName || "Draft invoice/affidavit PDF first."}
+                        {videoCount ? preview ? ` ${videoCount} video file(s) are inside the Media Package ZIP.` : ` ${videoCount} video file(s) will be included in Media Package.` : ""}
                       </small>
                     </div>
                     {preview ? (
                       <div className="field-package-preview">
                         <div>
-                          <span>Package Preview</span>
+                          <span>Media Package Preview</span>
                           <strong>{packetSizeLabel(preview.size)}</strong>
                         </div>
                         <div className="field-package-preview-grid">
                           <span>Before <strong>{preview.beforeCount}</strong></span>
                           <span>After <strong>{preview.afterCount}</strong></span>
-                          <span>Images <strong>{preview.imageCount}</strong></span>
+                          <span>Photos <strong>{preview.imageCount}</strong></span>
                           <span>Videos <strong>{preview.videoCount}</strong></span>
-                          <span>Affidavit <strong>{preview.hasInvoice ? "Yes" : "No"}</strong></span>
+                          <span>PDF <strong>{preview.hasInvoice ? "Yes" : "No"}</strong></span>
                         </div>
                         <small>{preview.note}</small>
                       </div>
