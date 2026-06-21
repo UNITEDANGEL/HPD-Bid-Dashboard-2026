@@ -1578,6 +1578,7 @@ const [fullPackagePreview, setFullPackagePreview] = useState<FullPackagePreview 
 const pendingFullPackageRef = useRef<PendingFullPackage | null>(null);
 const [fieldCaptureAccept, setFieldCaptureAccept] = useState("image/*,video/*");
 const [fieldCaptureCamera, setFieldCaptureCamera] = useState(true);
+const [fieldCaptureMultiple, setFieldCaptureMultiple] = useState(false);
 const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
   jobKey: string;
   kind: FieldMediaKind;
@@ -3813,12 +3814,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setFieldFocusPane("capture");
     setCaptureGuideForStep(captureJob, nextStep);
     focusFieldMedia(target.kind);
-    showActionNotice(`${target.step.title} saved. Opening ${nextStep.title}.`);
-    window.setTimeout(() => {
-      const currentCaptureJob = fieldCaptureJobRef.current;
-      if (!currentCaptureJob || jobKey(currentCaptureJob) !== target.jobKey) return;
-      requestFieldPhotoCapture(currentCaptureJob, nextStep.kind, nextStep.accept, nextStep.camera, nextStep);
-    }, 450);
+    showActionNotice(`${target.step.title} captured. Opening ${nextStep.title}.`);
+    requestFieldPhotoCapture(captureJob, nextStep.kind, nextStep.accept, nextStep.camera, nextStep);
     return true;
   }
 
@@ -3846,6 +3843,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     setFieldCaptureAccept(accept);
     setFieldCaptureCamera(useCamera);
+    setFieldCaptureMultiple(!useCamera);
     setFieldFocusPane("capture");
     const title = step?.title || fieldEvidenceLabel(kind);
     const text = step?.text || fieldCaptureGuideText(kind);
@@ -3866,6 +3864,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     if (fieldPhotoInputRef.current) {
       fieldPhotoInputRef.current.accept = accept;
+      fieldPhotoInputRef.current.multiple = !useCamera;
       if (useCamera) {
         fieldPhotoInputRef.current.setAttribute("capture", "environment");
       } else {
@@ -3879,10 +3878,20 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   async function handleFieldPhotoInput(event: ChangeEvent<HTMLInputElement>) {
     const files = event.target.files;
     const target = photoCaptureTargetRef.current || photoCaptureTarget;
-    if (!files?.length || !target) return;
+    const capturedFiles = files ? Array.from(files) : [];
+    if (!capturedFiles.length || !target) return;
+
+    event.target.value = "";
+    const targetToken = [
+      target.jobKey,
+      target.kind,
+      target.step?.title || "",
+      target.meta.label || "",
+    ].join("|");
+    const hasNextCapture = advanceGuidedEvidenceCapture(target);
 
     try {
-      const saved = await saveFieldPhotos(target.jobKey, target.kind, files, target.meta);
+      const saved = await saveFieldPhotos(target.jobKey, target.kind, capturedFiles, target.meta);
       if (!saved.length) {
         showActionNotice("No supported image/video was saved. Try camera again or choose media from your phone gallery.");
         return;
@@ -3955,7 +3964,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       });
       const videoCount = saved.filter((item) => item.mediaType === "video").length;
       const imageCount = saved.length - videoCount;
-      const hasNextCapture = advanceGuidedEvidenceCapture(target);
       if (!hasNextCapture) {
         setFieldCaptureGuide(null);
         setFieldFocusPane("evidence");
@@ -3970,9 +3978,19 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       console.error(error);
       showActionNotice(error instanceof Error ? error.message : "Evidence save failed. Try again.");
     } finally {
-      photoCaptureTargetRef.current = null;
-      setPhotoCaptureTarget(null);
-      event.target.value = "";
+      const activeTarget = photoCaptureTargetRef.current;
+      const activeToken = activeTarget
+        ? [
+            activeTarget.jobKey,
+            activeTarget.kind,
+            activeTarget.step?.title || "",
+            activeTarget.meta.label || "",
+          ].join("|")
+        : "";
+      if (activeToken === targetToken) {
+        photoCaptureTargetRef.current = null;
+        setPhotoCaptureTarget(null);
+      }
     }
   }
 
@@ -8480,11 +8498,15 @@ return (
             grid-template-columns: minmax(0, 1fr) auto;
             gap: 10px;
             align-items: center;
+            position: sticky;
+            top: 8px;
+            z-index: 16;
             padding: 10px;
             border-radius: 8px;
             border: 1px solid #d7a83d;
             background: linear-gradient(135deg, #fff7df, #e8f7ff);
             color: #16202b;
+            box-shadow: 0 18px 42px rgba(5, 11, 20, 0.34);
           }
 
           .field-capture-guide span,
@@ -8502,12 +8524,14 @@ return (
           }
 
           .field-capture-guide button {
-            min-height: 42px;
+            min-height: 50px;
+            min-width: 132px;
             border: 0;
             border-radius: 8px;
             background: #16202b;
             color: #f8fafc;
             padding: 0 13px;
+            font-size: 13px;
             font-weight: 950;
           }
 
@@ -10294,7 +10318,7 @@ return (
         type="file"
         accept={fieldCaptureAccept}
         capture={fieldCaptureCamera ? "environment" : undefined}
-        multiple
+        multiple={fieldCaptureMultiple}
         onChange={handleFieldPhotoInput}
       />
 
