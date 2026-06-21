@@ -215,6 +215,34 @@ function initialForm(): PackageForm {
   };
 }
 
+function cleanRefusedName(value: string) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (/^(super|superintendent|building super|unknown|n\/a|na|none)$/i.test(raw)) return "";
+  return raw;
+}
+
+function refusedAccessRelationship(job: JobRecord, outcome: PaperworkOutcome) {
+  const explicit = jobText(job, [
+    "RelationshipToBuilding",
+    "relationshipToBuilding",
+    "BuildingRelationship",
+    "buildingRelationship",
+    "DeniedRelationship",
+    "deniedRelationship",
+    "RefusedRelationship",
+    "refusedRelationship",
+    "RefusedByRelationship",
+    "refusedByRelationship",
+    "DeniedByRelationship",
+    "deniedByRelationship",
+    "IndividualRelationship",
+    "individualRelationship",
+  ]);
+  if (explicit) return explicit;
+  return outcome === "refused_access" ? "SUPER" : "";
+}
+
 function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   const jobId = getJobId(job);
   const firstAttemptAt = String(job.NoAccessFirstAttemptAt || job.noAccessFirstAttemptAt || "").trim();
@@ -224,10 +252,57 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   const actualStartAt = String(job.ActualWorkStartDate || job.actualWorkStartDate || "").trim();
   const actualCompleteAt = String(job.ActualWorkCompletionDate || job.actualWorkCompletionDate || "").trim();
   const lastEvidenceAt = String(job.LastEvidenceCapturedAt || job.lastEvidenceCapturedAt || "").trim();
-  const deniedName = String(job.DeniedName || job.deniedName || job.RefusedByName || job.refusedByName || "").trim();
-  const deniedRelationship = String(job.BuildingRelationship || job.buildingRelationship || job.DeniedRelationship || job.deniedRelationship || "").trim();
-  const deniedDescription = String(job.DeniedDescription || job.deniedDescription || job.DescriptionOfIndividual || job.descriptionOfIndividual || "").trim();
-  const deniedPhone = String(job.DeniedPhone || job.deniedPhone || job.RefusedPhone || job.refusedPhone || "").trim();
+  const deniedName = cleanRefusedName(jobText(job, [
+    "DeniedName",
+    "deniedName",
+    "DeniedByName",
+    "deniedByName",
+    "RefusedByName",
+    "refusedByName",
+    "AccessDeniedByName",
+    "accessDeniedByName",
+    "SuperName",
+    "superName",
+    "BuildingSuperName",
+    "buildingSuperName",
+    "SuperintendentName",
+    "superintendentName",
+    "OwnerEmployeeName",
+    "ownerEmployeeName",
+    "AgentName",
+    "agentName",
+  ]));
+  const deniedRelationship = refusedAccessRelationship(job, outcome);
+  const deniedDescription = jobText(job, [
+    "DeniedDescription",
+    "deniedDescription",
+    "DeniedByDescription",
+    "deniedByDescription",
+    "RefusedByDescription",
+    "refusedByDescription",
+    "DescriptionOfIndividual",
+    "descriptionOfIndividual",
+    "IndividualDescription",
+    "individualDescription",
+    "PersonDescription",
+    "personDescription",
+  ]);
+  const deniedPhone = jobText(job, [
+    "DeniedPhone",
+    "deniedPhone",
+    "DeniedByPhone",
+    "deniedByPhone",
+    "RefusedPhone",
+    "refusedPhone",
+    "RefusedByPhone",
+    "refusedByPhone",
+    "IndividualPhone",
+    "individualPhone",
+    "SuperPhone",
+    "superPhone",
+    "SuperintendentPhone",
+    "superintendentPhone",
+  ]);
   const lockedAt = String(job.OutcomeLockedAt || job.outcomeLockedAt || "").trim();
   const sourceStatus = getJobWorkflowStatus(job);
   const fieldDate = lastEvidenceAt || lockedAt || secondAttemptAt || refusedAt || verifiedByOthersAt || actualCompleteAt || firstAttemptAt;
@@ -984,6 +1059,11 @@ export default function PaperworkPage() {
         setText("Work Description", activeForm.description || activeForm.notes || "Work completed per HPD bid / work order.");
       } else {
         const noWorkReason = activeForm.affidavitReason || affidavitReasonForOutcome(outcome);
+        const isRefusedAccess = outcome === "refused_access";
+        const deniedName = isRefusedAccess ? cleanRefusedName(activeForm.deniedName) : "";
+        const deniedRelationship = isRefusedAccess ? activeForm.deniedRelationship || "SUPER" : "";
+        const deniedDescription = isRefusedAccess ? activeForm.deniedDescription : "";
+        const deniedPhone = isRefusedAccess ? activeForm.deniedPhone : "";
 
         setText("inaccessibility was due to 1", outcome === "no_access" ? "NO ACCESS TO MAKE REPAIRS" : "");
         setText("inaccessibility was due to 2", "");
@@ -991,12 +1071,12 @@ export default function PaperworkPage() {
         setText("AMOUNT", chargeAmount);
         setText("ARRIVE DATE", outcome === "completed_by_others" ? secondAttempt : "");
         setText("REFUSE DATE", "");
-        setText("DENIED DATE", outcome === "refused_access" ? secondAttempt : "");
-        setText("DENIED DATE 1", outcome === "refused_access" ? secondAttempt : "");
-        setText("DENIED TEL", activeForm.deniedPhone);
-        setText("DENIED NAME", activeForm.deniedName);
-        setText("Description of individual DENIED", upper(activeForm.deniedDescription));
-        setText("BUILDING RELATIONSHIP", upper(activeForm.deniedRelationship));
+        setText("DENIED DATE", isRefusedAccess ? secondAttempt : "");
+        // Section 7 refused access: 7a name/relationship, 7b description, 7c telephone.
+        setText("DENIED TEL", deniedPhone);
+        setText("DENIED NAME", upper(deniedName));
+        setText("Description of individual DENIED", upper(deniedDescription));
+        setText("BUILDING RELATIONSHIP", upper(deniedRelationship));
         setText("Sworn to me this", dayOfMonth(secondAttempt));
         setText("day of", monthName(secondAttempt));
         setText("Type or Print Name", signer.toUpperCase());
