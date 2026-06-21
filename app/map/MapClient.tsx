@@ -3086,7 +3086,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function guidedCaptureSteps(kind: FieldMediaKind) {
     const stage = fieldStageLabel(kind);
-    const photoSteps = Array.from({ length: FIELD_REQUIRED_PHOTOS }, (_, index) => {
+    const requiredPhotos = kind === "refused_access" ? 1 : FIELD_REQUIRED_PHOTOS;
+    const requiredVideos = kind === "refused_access" ? 0 : FIELD_REQUIRED_VIDEOS;
+    const photoSteps = Array.from({ length: requiredPhotos }, (_, index) => {
       const number = index + 1;
       return {
         accept: "image/*",
@@ -3094,12 +3096,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         title: `${stage} Photo ${number}`,
         text:
           number === 1
-            ? `Take ${stage.toLowerCase()} photo ${number} of ${FIELD_REQUIRED_PHOTOS}. The next step will be ready after it saves.`
-            : `Take ${stage.toLowerCase()} photo ${number} of ${FIELD_REQUIRED_PHOTOS} from another angle. Then continue to video evidence.`,
+            ? requiredPhotos === 1
+              ? `Take one ${stage.toLowerCase()} photo. It will be stamped, labeled, and saved to this job.`
+              : `Take ${stage.toLowerCase()} photo ${number} of ${requiredPhotos}. The next step will be ready after it saves.`
+            : `Take ${stage.toLowerCase()} photo ${number} of ${requiredPhotos} from another angle. Then continue to video evidence.`,
         label: `${stage} Photo ${number}`,
       };
     });
-    const videoSteps = Array.from({ length: FIELD_REQUIRED_VIDEOS }, (_, index) => {
+    const videoSteps = Array.from({ length: requiredVideos }, (_, index) => {
       const number = index + 1;
       return {
         accept: "video/*",
@@ -3107,8 +3111,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         title: `${stage} Video ${number}`,
         text:
           number === 1
-            ? `Take ${stage.toLowerCase()} video ${number} of ${FIELD_REQUIRED_VIDEOS}. Keep it short so it can be stamped and emailed.`
-            : `Take ${stage.toLowerCase()} video ${number} of ${FIELD_REQUIRED_VIDEOS} from another angle. Then choose done or add more.`,
+            ? `Take ${stage.toLowerCase()} video ${number} of ${requiredVideos}. Keep it short so it can be stamped and emailed.`
+            : `Take ${stage.toLowerCase()} video ${number} of ${requiredVideos} from another angle. Then choose done or add more.`,
         label: `${stage} Video ${number}`,
       };
     });
@@ -4006,6 +4010,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         ? "Default before set saved. Add more angles if needed, or start the job timer now."
         : kind === "after"
           ? "Default after set saved. Add more angles if needed, or complete the job and generate the package."
+          : kind === "refused_access"
+            ? "One refused-access photo saved. Add another photo if needed, or generate the package."
           : "Evidence saved. Add more angles if needed.";
 
     setFieldFocusPane("capture");

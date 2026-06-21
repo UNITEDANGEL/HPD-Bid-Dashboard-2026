@@ -2216,6 +2216,17 @@ export default function PaperworkPage() {
           line-height: 1.15;
         }
 
+        .refused-description-default {
+          min-height: 46px;
+          border: 0;
+          border-radius: 10px;
+          background: #ffd166;
+          color: #151006;
+          font-size: 13px;
+          font-weight: 950;
+          cursor: pointer;
+        }
+
         .paperwork-sheet {
           background: #ffffff;
           color: #111827;
@@ -2578,6 +2589,9 @@ export default function PaperworkPage() {
                   onChange={(event) => update("deniedDescription", event.target.value)}
                   placeholder={`Example: ${REFUSED_ACCESS_DESCRIPTION_EXAMPLE}`}
                 />
+                <button type="button" className="refused-description-default" onClick={() => update("deniedDescription", REFUSED_ACCESS_DESCRIPTION_EXAMPLE)}>
+                  Use Male Tall Dark Hair
+                </button>
               </label>
             </div>
           ) : null}
