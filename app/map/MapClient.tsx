@@ -222,6 +222,18 @@ type FieldCaptureStep = {
   total: number;
 };
 
+type FieldCaptureTarget = {
+  jobKey: string;
+  kind: FieldMediaKind;
+  meta: FieldEvidenceMeta;
+  step?: FieldCaptureStep;
+};
+
+type InlineCameraSession = {
+  target: FieldCaptureTarget;
+  mode: "photo" | "video";
+};
+
 const FIELD_REQUIRED_PHOTOS = 2;
 const FIELD_REQUIRED_VIDEOS = 2;
 
@@ -1539,6 +1551,11 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const markerOverviewTimerRef = useRef<number | null>(null);
   const markerOverviewKeyRef = useRef("");
   const fieldPhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const fieldCameraVideoRef = useRef<HTMLVideoElement | null>(null);
+  const fieldCameraStreamRef = useRef<MediaStream | null>(null);
+  const fieldCameraRecorderRef = useRef<MediaRecorder | null>(null);
+  const fieldCameraRecordingTargetRef = useRef<FieldCaptureTarget | null>(null);
+  const fieldCameraChunksRef = useRef<Blob[]>([]);
 
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
@@ -1559,18 +1576,8 @@ const [draftWorkflowDate, setDraftWorkflowDate] = useState("");
 const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<"active" | "waiting72" | "ready2" | "final" | "archived" | "all">("active");
 const [countdownTick, setCountdownTick] = useState(0);
-const [photoCaptureTarget, setPhotoCaptureTarget] = useState<{
-  jobKey: string;
-  kind: FieldMediaKind;
-  meta: FieldEvidenceMeta;
-  step?: FieldCaptureStep;
-} | null>(null);
-const photoCaptureTargetRef = useRef<{
-  jobKey: string;
-  kind: FieldMediaKind;
-  meta: FieldEvidenceMeta;
-  step?: FieldCaptureStep;
-} | null>(null);
+const [photoCaptureTarget, setPhotoCaptureTarget] = useState<FieldCaptureTarget | null>(null);
+const photoCaptureTargetRef = useRef<FieldCaptureTarget | null>(null);
 const fieldCaptureQueueRef = useRef<FieldCaptureStep[]>([]);
 const fieldCaptureJobRef = useRef<MappedJob | null>(null);
 const fieldCapturePartialRef = useRef(false);
@@ -1582,6 +1589,10 @@ const pendingFullPackageRef = useRef<PendingFullPackage | null>(null);
 const [fieldCaptureAccept, setFieldCaptureAccept] = useState("image/*,video/*");
 const [fieldCaptureCamera, setFieldCaptureCamera] = useState(true);
 const [fieldCaptureMultiple, setFieldCaptureMultiple] = useState(false);
+const [fieldCameraSession, setFieldCameraSession] = useState<InlineCameraSession | null>(null);
+const [fieldCameraStatus, setFieldCameraStatus] = useState("");
+const [fieldCameraBusy, setFieldCameraBusy] = useState(false);
+const [fieldCameraRecording, setFieldCameraRecording] = useState(false);
 const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
   jobKey: string;
   kind: FieldMediaKind;
@@ -1931,6 +1942,22 @@ const [hideCompleted, setHideCompleted] = useState(false);
     window.addEventListener("hpd-open-touch-info", handleTouchInfo as EventListener);
     return () => {
       window.removeEventListener("hpd-open-touch-info", handleTouchInfo as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    const video = fieldCameraVideoRef.current;
+    const stream = fieldCameraStreamRef.current;
+    if (!fieldCameraSession || !video || !stream) return;
+    video.srcObject = stream;
+    video.play().catch(() => {
+      setFieldCameraStatus("Tap the preview if the camera pauses.");
+    });
+  }, [fieldCameraSession]);
+
+  useEffect(() => {
+    return () => {
+      stopFieldCameraStream();
     };
   }, []);
 
@@ -3096,6 +3123,111 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     });
   }
 
+  function fieldCaptureTargetToken(target: FieldCaptureTarget | null) {
+    if (!target) return "";
+    return [
+      target.jobKey,
+      target.kind,
+      target.step?.title || "",
+      target.meta.label || "",
+    ].join("|");
+  }
+
+  function inlineCameraModeForAccept(accept: string): "photo" | "video" {
+    return accept.includes("video") && !accept.includes("image") ? "video" : "photo";
+  }
+
+  function canUseInlineCamera() {
+    return typeof navigator !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia);
+  }
+
+  function fieldCameraFileName(target: FieldCaptureTarget, extension: string) {
+    const key = zipSafePart(target.jobKey || target.meta.jobId || "job", "job");
+    const label = zipSafePart(target.step?.label || target.meta.label || "evidence", "evidence");
+    return `${key}-${label}-${new Date().toISOString().slice(0, 10)}.${extension}`;
+  }
+
+  function stopFieldCameraStream() {
+    fieldCameraRecorderRef.current = null;
+    fieldCameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    fieldCameraStreamRef.current = null;
+    if (fieldCameraVideoRef.current) {
+      fieldCameraVideoRef.current.srcObject = null;
+    }
+    setFieldCameraRecording(false);
+  }
+
+  function closeInlineFieldCamera() {
+    stopFieldCameraStream();
+    setFieldCameraSession(null);
+    setFieldCameraBusy(false);
+    setFieldCameraStatus("");
+    fieldCameraRecordingTargetRef.current = null;
+    fieldCameraChunksRef.current = [];
+    photoCaptureTargetRef.current = null;
+    setPhotoCaptureTarget(null);
+  }
+
+  async function ensureFieldCameraStream() {
+    const existing = fieldCameraStreamRef.current;
+    if (existing && existing.getVideoTracks().some((track) => track.readyState === "live")) {
+      return existing;
+    }
+
+    if (!canUseInlineCamera()) {
+      throw new Error("In-app camera is not available in this browser.");
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    });
+    fieldCameraStreamRef.current = stream;
+    return stream;
+  }
+
+  function connectFieldCameraStream(stream: MediaStream) {
+    if (!fieldCameraVideoRef.current) return;
+    fieldCameraVideoRef.current.srcObject = stream;
+    fieldCameraVideoRef.current.play().catch(() => {
+      setFieldCameraStatus("Tap the preview if the camera pauses.");
+    });
+  }
+
+  async function openInlineFieldCamera(target: FieldCaptureTarget, accept: string) {
+    const mode = inlineCameraModeForAccept(accept);
+    setFieldCameraSession({ target, mode });
+    setFieldCameraBusy(false);
+    setFieldCameraRecording(false);
+    setFieldCameraStatus(mode === "video" ? "Opening video camera..." : "Opening photo camera...");
+
+    try {
+      const stream = await ensureFieldCameraStream();
+      connectFieldCameraStream(stream);
+      setFieldCameraStatus(mode === "video" ? "Ready. Tap Start Video." : "Ready. Tap Capture Photo.");
+    } catch (error) {
+      console.error(error);
+      setFieldCameraSession(null);
+      setFieldCameraStatus("");
+      showActionNotice(error instanceof Error ? error.message : "Camera could not open. Use the Take button again or Gallery.");
+    }
+  }
+
+  function preferredRecordingMimeType() {
+    if (typeof MediaRecorder === "undefined") return "";
+    const options = [
+      "video/webm;codecs=vp9",
+      "video/webm;codecs=vp8",
+      "video/webm",
+      "video/mp4",
+    ];
+    return options.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+  }
+
   function fieldEvidenceRowsFor(job: JobRecord | null) {
     const key = job ? jobKey(job) : "";
     if (!key) return [] as FieldMedia[];
@@ -3797,12 +3929,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const title = step?.title || fieldEvidenceLabel(kind);
     const text = step?.text || fieldCaptureGuideText(kind);
     const nextTarget = { jobKey: key, kind, meta: fieldEvidenceMeta(job, kind, step?.label), step };
-    const nextTargetToken = [
-      nextTarget.jobKey,
-      nextTarget.kind,
-      nextTarget.step?.title || "",
-      nextTarget.meta.label || "",
-    ].join("|");
+    const nextTargetToken = fieldCaptureTargetToken(nextTarget);
     setFieldCaptureGuide({
       jobKey: key,
       kind,
@@ -3817,16 +3944,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     photoCaptureTargetRef.current = nextTarget;
     setPhotoCaptureTarget(nextTarget);
 
+    if (useCamera && canUseInlineCamera()) {
+      void openInlineFieldCamera(nextTarget, accept);
+      return;
+    }
+
     const openInput = () => {
       const activeTarget = photoCaptureTargetRef.current;
-      const activeToken = activeTarget
-        ? [
-            activeTarget.jobKey,
-            activeTarget.kind,
-            activeTarget.step?.title || "",
-            activeTarget.meta.label || "",
-          ].join("|")
-        : "";
+      const activeToken = fieldCaptureTargetToken(activeTarget);
       if (activeToken !== nextTargetToken || !fieldPhotoInputRef.current) return;
 
       fieldPhotoInputRef.current.accept = accept;
@@ -3847,26 +3972,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
   }
 
-  async function handleFieldPhotoInput(event: ChangeEvent<HTMLInputElement>) {
-    const files = event.target.files;
-    const target = photoCaptureTargetRef.current || photoCaptureTarget;
-    const capturedFiles = files ? Array.from(files) : [];
-    if (!capturedFiles.length || !target) return;
-
-    event.target.value = "";
-    const targetToken = [
-      target.jobKey,
-      target.kind,
-      target.step?.title || "",
-      target.meta.label || "",
-    ].join("|");
-    const hasNextCapture = advanceGuidedEvidenceCapture(target);
-
+  async function saveCapturedFieldMedia(target: FieldCaptureTarget, capturedFiles: File[], hasNextCapture: boolean) {
     try {
       const saved = await saveFieldPhotos(target.jobKey, target.kind, capturedFiles, target.meta);
       if (!saved.length) {
         showActionNotice("No supported image/video was saved. Try camera again or choose media from your phone gallery.");
-        return;
+        return false;
       }
 
       invalidateFullPackagePreview(target.jobKey);
@@ -3957,23 +4068,149 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             : `${fieldEvidenceLabel(target.kind)} saved to job card: ${imageCount} image(s), ${videoCount} video(s).${fallbackVideoNote}`
         );
       }
+      return true;
     } catch (error) {
       console.error(error);
       showActionNotice(error instanceof Error ? error.message : "Evidence save failed. Try again.");
+      return false;
+    }
+  }
+
+  async function handleFieldPhotoInput(event: ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files;
+    const target = photoCaptureTargetRef.current || photoCaptureTarget;
+    const capturedFiles = files ? Array.from(files) : [];
+    if (!capturedFiles.length || !target) return;
+
+    event.target.value = "";
+    const targetToken = fieldCaptureTargetToken(target);
+    const hasNextCapture = advanceGuidedEvidenceCapture(target);
+
+    try {
+      await saveCapturedFieldMedia(target, capturedFiles, hasNextCapture);
     } finally {
       const activeTarget = photoCaptureTargetRef.current;
-      const activeToken = activeTarget
-        ? [
-            activeTarget.jobKey,
-            activeTarget.kind,
-            activeTarget.step?.title || "",
-            activeTarget.meta.label || "",
-          ].join("|")
-        : "";
+      const activeToken = fieldCaptureTargetToken(activeTarget);
       if (activeToken === targetToken) {
         photoCaptureTargetRef.current = null;
         setPhotoCaptureTarget(null);
       }
+    }
+  }
+
+  async function captureInlineCameraPhoto() {
+    const session = fieldCameraSession;
+    const video = fieldCameraVideoRef.current;
+    if (!session || !video || fieldCameraBusy) return;
+
+    const width = video.videoWidth || 1280;
+    const height = video.videoHeight || 720;
+    if (!width || !height) {
+      showActionNotice("Camera preview is not ready yet. Wait one second and tap Capture Photo again.");
+      return;
+    }
+
+    setFieldCameraBusy(true);
+    setFieldCameraStatus("Saving photo...");
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("Could not capture camera frame.");
+      context.drawImage(video, 0, 0, width, height);
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+      if (!blob) throw new Error("Could not create photo file.");
+
+      const file = new File([blob], fieldCameraFileName(session.target, "jpg"), {
+        type: "image/jpeg",
+        lastModified: Date.now(),
+      });
+      const hasNextCapture = advanceGuidedEvidenceCapture(session.target);
+      const saved = await saveCapturedFieldMedia(session.target, [file], hasNextCapture);
+      if (!hasNextCapture) closeInlineFieldCamera();
+      else if (saved) setFieldCameraStatus("Saved. Next camera step ready.");
+    } catch (error) {
+      console.error(error);
+      showActionNotice(error instanceof Error ? error.message : "Photo capture failed. Try again.");
+      setFieldCameraStatus("Photo capture failed. Try again.");
+    } finally {
+      setFieldCameraBusy(false);
+    }
+  }
+
+  function startInlineCameraVideoRecording() {
+    const session = fieldCameraSession;
+    const stream = fieldCameraStreamRef.current;
+    if (!session || !stream || fieldCameraBusy || fieldCameraRecording) return;
+    if (typeof MediaRecorder === "undefined") {
+      showActionNotice("Video recording is not supported in this browser. Use Gallery for video.");
+      return;
+    }
+
+    const mimeType = preferredRecordingMimeType();
+    fieldCameraChunksRef.current = [];
+    fieldCameraRecordingTargetRef.current = session.target;
+    try {
+      const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+      fieldCameraRecorderRef.current = recorder;
+      recorder.ondataavailable = (event) => {
+        if (event.data?.size) fieldCameraChunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        void finishInlineCameraVideoRecording(recorder.mimeType || mimeType || "video/webm");
+      };
+      recorder.start(1000);
+      setFieldCameraRecording(true);
+      setFieldCameraStatus("Recording video...");
+    } catch (error) {
+      console.error(error);
+      showActionNotice(error instanceof Error ? error.message : "Video recording could not start.");
+      fieldCameraRecordingTargetRef.current = null;
+      fieldCameraChunksRef.current = [];
+    }
+  }
+
+  function stopInlineCameraVideoRecording() {
+    const recorder = fieldCameraRecorderRef.current;
+    if (!recorder || recorder.state === "inactive") return;
+    setFieldCameraBusy(true);
+    setFieldCameraStatus("Saving video...");
+    recorder.stop();
+  }
+
+  async function finishInlineCameraVideoRecording(mimeType: string) {
+    const target = fieldCameraRecordingTargetRef.current;
+    const chunks = fieldCameraChunksRef.current;
+    fieldCameraRecorderRef.current = null;
+    fieldCameraRecordingTargetRef.current = null;
+    fieldCameraChunksRef.current = [];
+    setFieldCameraRecording(false);
+
+    if (!target || !chunks.length) {
+      setFieldCameraBusy(false);
+      setFieldCameraStatus("No video was recorded. Try again.");
+      return;
+    }
+
+    try {
+      const type = mimeType || chunks[0]?.type || "video/webm";
+      const blob = new Blob(chunks, { type });
+      const extension = type.includes("mp4") ? "mp4" : "webm";
+      const file = new File([blob], fieldCameraFileName(target, extension), {
+        type,
+        lastModified: Date.now(),
+      });
+      const hasNextCapture = advanceGuidedEvidenceCapture(target);
+      const saved = await saveCapturedFieldMedia(target, [file], hasNextCapture);
+      if (!hasNextCapture) closeInlineFieldCamera();
+      else if (saved) setFieldCameraStatus("Saved. Next camera step ready.");
+    } catch (error) {
+      console.error(error);
+      showActionNotice(error instanceof Error ? error.message : "Video save failed. Try again.");
+      setFieldCameraStatus("Video save failed. Try again.");
+    } finally {
+      setFieldCameraBusy(false);
     }
   }
 
@@ -10385,6 +10622,137 @@ return (
             padding: 8px !important;
           }
 
+          .inline-camera-shell {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 5000 !important;
+            display: grid !important;
+            place-items: center !important;
+            padding: 14px !important;
+            background: rgba(3, 8, 14, 0.78) !important;
+            backdrop-filter: blur(10px) !important;
+          }
+
+          .inline-camera-panel {
+            width: min(760px, 100%) !important;
+            max-height: calc(100vh - 28px) !important;
+            display: grid !important;
+            gap: 12px !important;
+            padding: 12px !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(142, 170, 196, 0.28) !important;
+            background: #0b1220 !important;
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42) !important;
+          }
+
+          .inline-camera-head,
+          .inline-camera-status,
+          .inline-camera-actions {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 10px !important;
+          }
+
+          .inline-camera-head div {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 2px !important;
+          }
+
+          .inline-camera-head span,
+          .inline-camera-status span {
+            color: #9fb0c4 !important;
+            font-size: 12px !important;
+            font-weight: 800 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .inline-camera-head strong {
+            color: #ffffff !important;
+            font-size: 18px !important;
+            line-height: 1.1 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .inline-camera-preview {
+            position: relative !important;
+            overflow: hidden !important;
+            border-radius: 14px !important;
+            background: #020617 !important;
+            aspect-ratio: 4 / 3 !important;
+            border: 1px solid rgba(142, 170, 196, 0.22) !important;
+          }
+
+          .inline-camera-preview video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            display: block !important;
+          }
+
+          .inline-camera-preview.recording {
+            box-shadow: inset 0 0 0 3px rgba(239, 68, 68, 0.85) !important;
+          }
+
+          .inline-camera-rec {
+            position: absolute !important;
+            left: 12px !important;
+            top: 12px !important;
+            padding: 7px 10px !important;
+            border-radius: 999px !important;
+            background: #ef4444 !important;
+            color: #ffffff !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+          }
+
+          .inline-camera-status strong {
+            min-width: 54px !important;
+            text-align: center !important;
+            padding: 7px 10px !important;
+            border-radius: 999px !important;
+            background: rgba(35, 211, 174, 0.16) !important;
+            color: #7ff8df !important;
+            font-size: 13px !important;
+            font-weight: 1000 !important;
+          }
+
+          .inline-camera-head button,
+          .inline-camera-actions button {
+            min-height: 46px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(142, 170, 196, 0.28) !important;
+            background: rgba(248, 250, 252, 0.10) !important;
+            color: #eff6ff !important;
+            font-size: 13px !important;
+            font-weight: 1000 !important;
+            padding: 0 14px !important;
+          }
+
+          .inline-camera-actions {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) minmax(110px, 0.35fr) !important;
+          }
+
+          .inline-camera-actions .primary {
+            border-color: transparent !important;
+            background: linear-gradient(135deg, #23d3ae, #4da2ff) !important;
+            color: #041018 !important;
+          }
+
+          .inline-camera-actions .danger {
+            border-color: transparent !important;
+            background: linear-gradient(135deg, #ef4444, #f97316) !important;
+            color: #ffffff !important;
+          }
+
+          .inline-camera-actions button:disabled,
+          .inline-camera-head button:disabled {
+            opacity: 0.48 !important;
+          }
+
           @media (max-width: 720px) {
             .map-top {
               width: min(282px, calc(100vw - 82px)) !important;
@@ -10412,6 +10780,24 @@ return (
             .field-workflow-grid {
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             }
+
+            .inline-camera-shell {
+              padding: 8px !important;
+            }
+
+            .inline-camera-panel {
+              width: 100% !important;
+              max-height: calc(100vh - 16px) !important;
+              border-radius: 16px !important;
+            }
+
+            .inline-camera-preview {
+              aspect-ratio: 3 / 4 !important;
+            }
+
+            .inline-camera-actions {
+              grid-template-columns: 1fr !important;
+            }
           }
         `}
         </style>
@@ -10425,6 +10811,67 @@ return (
         multiple={fieldCaptureMultiple}
         onChange={handleFieldPhotoInput}
       />
+
+      {fieldCameraSession ? (
+        <div className="inline-camera-shell" role="dialog" aria-modal="true" aria-label="Field evidence camera">
+          <div className="inline-camera-panel">
+            <div className="inline-camera-head">
+              <div>
+                <span>{fieldCameraSession.mode === "video" ? "Video Evidence" : "Photo Evidence"}</span>
+                <strong>{fieldCameraSession.target.step?.title || fieldCameraSession.target.meta.label || "Field Evidence"}</strong>
+              </div>
+              <button type="button" onClick={closeInlineFieldCamera} disabled={fieldCameraRecording}>
+                Close
+              </button>
+            </div>
+            <div className={`inline-camera-preview ${fieldCameraRecording ? "recording" : ""}`}>
+              <video ref={fieldCameraVideoRef} playsInline muted autoPlay />
+              {fieldCameraRecording ? <span className="inline-camera-rec">Recording</span> : null}
+            </div>
+            <div className="inline-camera-status">
+              <span>{fieldCameraStatus || "Camera ready."}</span>
+              {fieldCameraSession.target.step?.total ? (
+                <strong>{fieldCameraSession.target.step.step}/{fieldCameraSession.target.step.total}</strong>
+              ) : null}
+            </div>
+            <div className="inline-camera-actions">
+              {fieldCameraSession.mode === "video" ? (
+                fieldCameraRecording ? (
+                  <button className="danger" type="button" onClick={stopInlineCameraVideoRecording}>
+                    Stop & Save Video
+                  </button>
+                ) : (
+                  <button className="primary" type="button" onClick={startInlineCameraVideoRecording} disabled={fieldCameraBusy}>
+                    Start Video
+                  </button>
+                )
+              ) : (
+                <button className="primary" type="button" onClick={captureInlineCameraPhoto} disabled={fieldCameraBusy}>
+                  Capture Photo
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  closeInlineFieldCamera();
+                  if (selected && fieldCameraSession) {
+                    requestFieldPhotoCapture(
+                      selected,
+                      fieldCameraSession.target.kind,
+                      fieldCameraSession.target.step?.accept || fieldCaptureAccept,
+                      false,
+                      fieldCameraSession.target.step
+                    );
+                  }
+                }}
+                disabled={fieldCameraRecording || fieldCameraBusy}
+              >
+                Gallery
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <button className="map-menu-fab" type="button" aria-label="Open map menu" onClick={openMapMenu}>
         <span className="map-menu-fab-icon" aria-hidden="true">
