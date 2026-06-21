@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { PDFDocument, StandardFonts } from "pdf-lib";
-import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { PDFDocument } from "pdf-lib";
+import { bytesToDataUrl, clearFieldPackets, saveFieldPacket } from "../../lib/field-packet-store";
+import { type FieldMedia, dataUrlToBytes, listFieldEvidence } from "../../lib/field-photo-store";
 import {
   type PaperworkOutcome,
   HPD_STATUS_WORKER_URL,
@@ -58,6 +59,43 @@ type PackageForm = {
 
 const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-completed-affidavit.pdf";
 const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-completed-affidavit.pdf";
+const COMPLETE_PACKAGE_SAVE_LIMIT_BYTES = 35 * 1024 * 1024;
+
+type ZipEntry = {
+  path: string;
+  bytes: Uint8Array;
+};
+
+type GeneratedPdfResult = {
+  jobId: string;
+  fileName: string;
+  bytes: Uint8Array;
+  dataUrl: string;
+  size: number;
+};
+
+type CompletePackagePreview = {
+  jobId: string;
+  fileName: string;
+  size: number;
+  evidenceCount: number;
+  imageCount: number;
+  videoCount: number;
+  beforeCount: number;
+  afterCount: number;
+  pdfFileName: string;
+  savedPacketId?: string;
+  note: string;
+};
+
+type PendingCompletePackage = CompletePackagePreview & {
+  bytes: Uint8Array;
+};
+
+type GeneratePdfOptions = {
+  downloadPdf?: boolean;
+  markGenerated?: boolean;
+};
 
 function asArray(value: unknown): JobRecord[] {
   if (Array.isArray(value)) return value as JobRecord[];
@@ -243,6 +281,183 @@ function safeFilename(value: string) {
     .slice(0, 80);
 }
 
+function packetSizeLabel(size: number) {
+  const value = Number(size || 0);
+  if (!value) return "0 KB";
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+  return `${(value / 1024 / 1024).toFixed(value > 10 * 1024 * 1024 ? 0 : 1)} MB`;
+}
+
+function zipTextBytes(value: string) {
+  return new TextEncoder().encode(value);
+}
+
+function zipSafePart(value: string, fallback = "file") {
+  const cleaned = String(value || "")
+    .replace(/[^\x20-\x7E]+/g, " ")
+    .replace(/[^a-z0-9._-]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 90);
+  return cleaned || fallback;
+}
+
+let zipCrcTable: Uint32Array | null = null;
+
+function zipCrc32(bytes: Uint8Array) {
+  if (!zipCrcTable) {
+    zipCrcTable = new Uint32Array(256);
+    for (let index = 0; index < 256; index += 1) {
+      let crc = index;
+      for (let bit = 0; bit < 8; bit += 1) {
+        crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
+      }
+      zipCrcTable[index] = crc >>> 0;
+    }
+  }
+
+  let crc = 0xffffffff;
+  for (let index = 0; index < bytes.length; index += 1) {
+    crc = zipCrcTable[(crc ^ bytes[index]) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function zipDosTimeDate(date = new Date()) {
+  const year = Math.max(1980, date.getFullYear());
+  return {
+    dosTime: (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2),
+    dosDate: ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate(),
+  };
+}
+
+function concatZipChunks(chunks: Uint8Array[]) {
+  const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const output = new Uint8Array(total);
+  let offset = 0;
+  chunks.forEach((chunk) => {
+    output.set(chunk, offset);
+    offset += chunk.length;
+  });
+  return output;
+}
+
+function buildStoredZip(entries: ZipEntry[]) {
+  const chunks: Uint8Array[] = [];
+  const centralChunks: Uint8Array[] = [];
+  const { dosTime, dosDate } = zipDosTimeDate();
+  let localOffset = 0;
+
+  entries.forEach((entry) => {
+    const path = entry.path.split("/").map((part) => zipSafePart(part, "item")).join("/");
+    const nameBytes = zipTextBytes(path);
+    const bytes = entry.bytes;
+    const crc = zipCrc32(bytes);
+
+    const localHeader = new Uint8Array(30 + nameBytes.length);
+    const localView = new DataView(localHeader.buffer);
+    localView.setUint32(0, 0x04034b50, true);
+    localView.setUint16(4, 20, true);
+    localView.setUint16(6, 0, true);
+    localView.setUint16(8, 0, true);
+    localView.setUint16(10, dosTime, true);
+    localView.setUint16(12, dosDate, true);
+    localView.setUint32(14, crc, true);
+    localView.setUint32(18, bytes.length, true);
+    localView.setUint32(22, bytes.length, true);
+    localView.setUint16(26, nameBytes.length, true);
+    localView.setUint16(28, 0, true);
+    localHeader.set(nameBytes, 30);
+
+    const centralHeader = new Uint8Array(46 + nameBytes.length);
+    const centralView = new DataView(centralHeader.buffer);
+    centralView.setUint32(0, 0x02014b50, true);
+    centralView.setUint16(4, 20, true);
+    centralView.setUint16(6, 20, true);
+    centralView.setUint16(8, 0, true);
+    centralView.setUint16(10, 0, true);
+    centralView.setUint16(12, dosTime, true);
+    centralView.setUint16(14, dosDate, true);
+    centralView.setUint32(16, crc, true);
+    centralView.setUint32(20, bytes.length, true);
+    centralView.setUint32(24, bytes.length, true);
+    centralView.setUint16(28, nameBytes.length, true);
+    centralView.setUint16(30, 0, true);
+    centralView.setUint16(32, 0, true);
+    centralView.setUint16(34, 0, true);
+    centralView.setUint16(36, 0, true);
+    centralView.setUint32(38, 0, true);
+    centralView.setUint32(42, localOffset, true);
+    centralHeader.set(nameBytes, 46);
+
+    chunks.push(localHeader, bytes);
+    centralChunks.push(centralHeader);
+    localOffset += localHeader.length + bytes.length;
+  });
+
+  const centralOffset = localOffset;
+  centralChunks.forEach((chunk) => chunks.push(chunk));
+  const centralSize = centralChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+
+  const end = new Uint8Array(22);
+  const endView = new DataView(end.buffer);
+  endView.setUint32(0, 0x06054b50, true);
+  endView.setUint16(8, entries.length, true);
+  endView.setUint16(10, entries.length, true);
+  endView.setUint32(12, centralSize, true);
+  endView.setUint32(16, centralOffset, true);
+  chunks.push(end);
+
+  return concatZipChunks(chunks);
+}
+
+function safeAttachmentName(name: string, fallback: string) {
+  return String(name || fallback)
+    .split(/[\\/]/)
+    .pop()
+    ?.replace(/[^a-z0-9._-]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120) || fallback;
+}
+
+function mediaExtension(media: FieldMedia) {
+  const name = String(media.name || "");
+  const match = name.match(/\.[a-z0-9]+$/i);
+  if (match) return match[0].toLowerCase();
+  const type = String(media.type || "").toLowerCase();
+  if (type.includes("quicktime")) return ".mov";
+  if (type.includes("webm")) return ".webm";
+  if (type.includes("3gpp")) return ".3gp";
+  if (type.includes("mp4")) return ".mp4";
+  if (type.includes("png")) return ".png";
+  if (type.includes("webp")) return ".webp";
+  if (type.includes("heic")) return ".heic";
+  if (type.includes("heif")) return ".heif";
+  return media.mediaType === "video" ? ".mp4" : ".jpg";
+}
+
+function fieldEvidenceKindClass(kind = "general") {
+  return kind.replace(/_/g, "-");
+}
+
+function fullPackageMediaPath(jobId: string, media: FieldMedia, index: number) {
+  const folder = fieldEvidenceKindClass(media.kind || "general");
+  const label = zipSafePart(media.evidenceLabel || "Field Evidence", "evidence");
+  const fallbackName = `${safeFilename(jobId)}-${String(index + 1).padStart(2, "0")}-${folder}${mediaExtension(media)}`;
+  const fileName = safeAttachmentName(media.name, fallbackName);
+  return `media-package/${folder}/${String(index + 1).padStart(2, "0")}-${label}-${fileName}`;
+}
+
+function completePackageFileName(form: PackageForm, jobId: string) {
+  const location = safeFilename(form.location || form.address || form.borough || "LOCATION");
+  const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  return `${safeFilename(jobId)}_${location}_complete-package_${stamp}.zip`;
+}
+
+function bytesToFile(bytes: Uint8Array, fileName: string, mimeType = "application/zip") {
+  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  return new File([buffer], fileName, { type: mimeType });
+}
+
 function findJob(rows: JobRecord[], id: string) {
   const target = id.trim().toLowerCase();
   if (!target) return null;
@@ -306,6 +521,8 @@ export default function PaperworkPage() {
   const [form, setForm] = useState<PackageForm>(initialForm);
   const [loadedQuery, setLoadedQuery] = useState(false);
   const [pdfStatus, setPdfStatus] = useState("");
+  const [packagePreview, setPackagePreview] = useState<CompletePackagePreview | null>(null);
+  const pendingCompletePackageRef = useRef<PendingCompletePackage | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -434,7 +651,9 @@ export default function PaperworkPage() {
     }
   }
 
-  async function generateAffidavitPdf() {
+  async function generateAffidavitPdf(options: GeneratePdfOptions = {}): Promise<GeneratedPdfResult | null> {
+    const downloadPdf = options.downloadPdf !== false;
+    const markGenerated = options.markGenerated !== false;
     const useWorkTemplate = outcome === "work_completed" || outcome === "partial_work_completed";
     const templateUrl = useWorkTemplate ? WORK_AFFIDAVIT_TEMPLATE : NO_WORK_AFFIDAVIT_TEMPLATE;
     const jobId = form.jobId || selectedId || "HPD";
@@ -455,7 +674,7 @@ export default function PaperworkPage() {
     const signer = form.signer || "JOTJAGRAJ SINGH";
     const swornSigner = oathSigner(signer);
 
-    setPdfStatus("Preparing affidavit PDF...");
+    setPdfStatus(downloadPdf ? "Preparing affidavit PDF..." : "Preparing invoice/affidavit for package...");
 
     try {
       const response = await fetch(templateUrl, { cache: "no-store" });
@@ -567,7 +786,8 @@ export default function PaperworkPage() {
 
       const bytes = await pdfDoc.save();
       const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
-      const blob = new Blob([buffer], { type: "application/pdf" });
+      const pdfBytes = new Uint8Array(buffer);
+      const dataUrl = bytesToDataUrl(pdfBytes, "application/pdf");
       const fileName = `${safeFilename(jobId)}-${useWorkTemplate ? "work-completed" : "no-work-completed"}-affidavit.pdf`;
 
       try {
@@ -575,34 +795,173 @@ export default function PaperworkPage() {
           jobId,
           fileName,
           mimeType: "application/pdf",
-          dataUrl: bytesToDataUrl(new Uint8Array(buffer), "application/pdf"),
+          dataUrl,
           size: bytes.byteLength,
           evidenceCount: 0,
           imageCount: 0,
           videoCount: 0,
           packetType: "affidavit_invoice_pdf",
-          note: "Invoice/affidavit PDF saved on this device. Photos/videos belong in the Media Package ZIP.",
+          note: "Invoice/affidavit PDF saved on this device and included when you generate the complete package.",
         });
       } catch (error) {
         console.error(error);
       }
 
-      const href = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = href;
-      anchor.download = fileName;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(href);
+      if (downloadPdf) {
+        const blob = new Blob([buffer], { type: "application/pdf" });
+        const href = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = href;
+        anchor.download = fileName;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(href);
+      }
 
-      const archiveMessage = await markPackageGenerated(archiveJobId);
-      setPdfStatus(
-        `Invoice/affidavit package saved and downloaded. Build the Media Package ZIP from the map to include photos/videos. ${archiveMessage}`
-      );
+      if (markGenerated) {
+        const archiveMessage = await markPackageGenerated(archiveJobId);
+        setPdfStatus(`Invoice/affidavit PDF saved${downloadPdf ? " and downloaded" : ""}. ${archiveMessage}`);
+      }
+
+      return {
+        jobId,
+        fileName,
+        bytes: pdfBytes,
+        dataUrl,
+        size: bytes.byteLength,
+      };
     } catch (error) {
       console.error(error);
       setPdfStatus(error instanceof Error ? error.message : "Could not generate affidavit PDF.");
+      return null;
+    }
+  }
+
+  async function generateCompletePackage() {
+    const jobId = form.jobId || selectedId;
+    if (!jobId) {
+      setPdfStatus("Select a job before generating the package.");
+      return;
+    }
+
+    setPackagePreview(null);
+    pendingCompletePackageRef.current = null;
+    setPdfStatus("Generating package: affidavit, invoice, images, and videos...");
+
+    const pdf = await generateAffidavitPdf({ downloadPdf: false, markGenerated: false });
+    if (!pdf) return;
+
+    try {
+      const evidenceRows = await listFieldEvidence(pdf.jobId);
+      if (!evidenceRows.length) {
+        setPdfStatus("Invoice/affidavit PDF was created, but no saved images or videos were found for this OMO on this device.");
+        return;
+      }
+
+      const entries: ZipEntry[] = [
+        {
+          path: `invoice-affidavit-package/${safeAttachmentName(pdf.fileName, "invoice-affidavit.pdf")}`,
+          bytes: pdf.bytes,
+        },
+      ];
+
+      evidenceRows.forEach((media, index) => {
+        if (!media.dataUrl) return;
+        entries.push({
+          path: fullPackageMediaPath(pdf.jobId, media, index),
+          bytes: dataUrlToBytes(media.dataUrl),
+        });
+      });
+
+      const zipBytes = buildStoredZip(entries);
+      const imageCount = evidenceRows.filter((media) => media.mediaType === "image").length;
+      const videoCount = evidenceRows.filter((media) => media.mediaType === "video").length;
+      const beforeCount = evidenceRows.filter((media) => media.kind === "before").length;
+      const afterCount = evidenceRows.filter((media) => media.kind === "after").length;
+      const fileName = completePackageFileName(form, pdf.jobId);
+      let savedPacketId = "";
+      let note = "Package ready for review. Tap Send Package when it looks correct.";
+
+      if (zipBytes.byteLength <= COMPLETE_PACKAGE_SAVE_LIMIT_BYTES) {
+        try {
+          await clearFieldPackets(pdf.jobId, ["full_evidence_zip"]);
+          const savedPacket = await saveFieldPacket({
+            jobId: pdf.jobId,
+            fileName,
+            mimeType: "application/zip",
+            dataUrl: bytesToDataUrl(zipBytes, "application/zip"),
+            size: zipBytes.byteLength,
+            evidenceCount: evidenceRows.length,
+            imageCount,
+            videoCount,
+            packetType: "full_evidence_zip",
+            note: "Complete package: invoice/affidavit PDF plus all saved images and videos.",
+          });
+          savedPacketId = savedPacket.id;
+          note = "Package saved on this phone. Review below, then tap Send Package.";
+        } catch (error) {
+          console.error(error);
+          note = "Package ready for review. Browser storage could not save the ZIP, but Send Package can still share it now.";
+        }
+      } else {
+        note = `Package ready for review. ZIP is ${packetSizeLabel(zipBytes.byteLength)}, so it is held only for Send Package instead of duplicating it in phone storage.`;
+      }
+
+      const preview: CompletePackagePreview = {
+        jobId: pdf.jobId,
+        fileName,
+        size: zipBytes.byteLength,
+        evidenceCount: evidenceRows.length,
+        imageCount,
+        videoCount,
+        beforeCount,
+        afterCount,
+        pdfFileName: pdf.fileName,
+        savedPacketId: savedPacketId || undefined,
+        note,
+      };
+
+      pendingCompletePackageRef.current = { ...preview, bytes: zipBytes };
+      setPackagePreview(preview);
+      const archiveMessage = await markPackageGenerated(pdf.jobId);
+      setPdfStatus(
+        `Package generated for review: invoice/affidavit PDF, ${imageCount} image(s), ${videoCount} video(s). ${archiveMessage}`
+      );
+    } catch (error) {
+      console.error(error);
+      setPdfStatus(error instanceof Error ? error.message : "Could not generate complete package.");
+    }
+  }
+
+  async function sendCompletePackage() {
+    const pending = pendingCompletePackageRef.current;
+    if (!pending) {
+      setPdfStatus("Generate Package first, review it, then send.");
+      return;
+    }
+
+    const file = bytesToFile(pending.bytes, pending.fileName, "application/zip");
+    const canShareFiles =
+      typeof navigator !== "undefined" &&
+      typeof navigator.share === "function" &&
+      (!navigator.canShare || navigator.canShare({ files: [file] }));
+
+    if (!canShareFiles) {
+      setPdfStatus("This browser cannot send ZIP files directly. Open this page on mobile Chrome and tap Send Package.");
+      return;
+    }
+
+    try {
+      await navigator.share({
+        title: `${pending.jobId} HPD complete package`,
+        text: `HPD complete package for ${pending.jobId}: affidavit/invoice plus ${pending.evidenceCount} saved media file(s).`,
+        files: [file],
+      });
+      setPdfStatus(`Package sent from share sheet: ${pending.fileName}`);
+    } catch (error) {
+      console.error(error);
+      setPdfStatus("Send was cancelled or blocked. Package is still ready for review.");
     }
   }
 
@@ -689,6 +1048,62 @@ export default function PaperworkPage() {
           background: #53e69c;
           color: #03120b;
           border-color: transparent;
+        }
+
+        .paperwork-package-review {
+          display: grid;
+          gap: 12px;
+          border: 1px solid rgba(83, 230, 156, 0.3);
+          background: rgba(83, 230, 156, 0.1);
+          border-radius: 8px;
+          padding: 13px;
+        }
+
+        .paperwork-package-review h3,
+        .paperwork-package-review p {
+          margin: 0;
+        }
+
+        .paperwork-package-review p {
+          color: #cfe7da;
+          line-height: 1.35;
+        }
+
+        .package-review-grid {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .package-review-grid span {
+          display: grid;
+          gap: 4px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          background: rgba(255, 255, 255, 0.08);
+          border-radius: 8px;
+          padding: 9px;
+          color: #aebbd0;
+          font-size: 11px;
+          font-weight: 850;
+        }
+
+        .package-review-grid strong {
+          color: #ffffff;
+          font-size: 18px;
+        }
+
+        .package-review-actions {
+          display: grid;
+        }
+
+        .package-review-actions button {
+          min-height: 48px;
+          border: 0;
+          border-radius: 8px;
+          background: #53e69c;
+          color: #03120b;
+          font-weight: 950;
+          cursor: pointer;
         }
 
         .paperwork-card,
@@ -976,6 +1391,7 @@ export default function PaperworkPage() {
           .paperwork-grid,
           .paperwork-package-actions,
           .paperwork-summary-grid,
+          .package-review-grid,
           .preview-row,
           .preview-head {
             grid-template-columns: 1fr;
@@ -1204,9 +1620,29 @@ export default function PaperworkPage() {
             </div>
           </details>
 
-          <button className="paperwork-print" type="button" onClick={generateAffidavitPdf}>
-            Generate Invoice/Affidavit PDF
+          <button className="paperwork-print" type="button" onClick={generateCompletePackage}>
+            Generate Package
           </button>
+          {packagePreview ? (
+            <div className="paperwork-package-review">
+              <div>
+                <h3>Review Package</h3>
+                <p>{packagePreview.fileName}</p>
+                <p>{packetSizeLabel(packagePreview.size)} - {packagePreview.note}</p>
+              </div>
+              <div className="package-review-grid">
+                <span>PDF <strong>1</strong></span>
+                <span>Images <strong>{packagePreview.imageCount}</strong></span>
+                <span>Videos <strong>{packagePreview.videoCount}</strong></span>
+                <span>Before <strong>{packagePreview.beforeCount}</strong></span>
+                <span>After <strong>{packagePreview.afterCount}</strong></span>
+              </div>
+              <p>Includes {packagePreview.pdfFileName} plus all saved media for OMO {packagePreview.jobId}.</p>
+              <div className="package-review-actions">
+                <button type="button" onClick={sendCompletePackage}>Send Package</button>
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <section className="paperwork-preview">

@@ -3124,7 +3124,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function fieldPacketLabel(packet: FieldPacket) {
-    if (packet.packetType === "full_evidence_zip") return "Media Package ZIP";
+    if (packet.packetType === "full_evidence_zip") return "Complete Package ZIP";
     if (packet.packetType === "affidavit_invoice_pdf") return "Invoice/Affidavit PDF";
     return "Legacy Evidence PDF";
   }
@@ -3256,7 +3256,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return new File([bytesToBlob(bytes, mimeType)], safeAttachmentName(fileName, "attachment"), { type: mimeType });
   }
 
-  function zipPacketFileName(job: JobRecord, suffix = "media-package") {
+  function zipPacketFileName(job: JobRecord, suffix = "complete-package") {
     const key = safePacketFilePart(jobKey(job), "OMO");
     const location = safePacketFilePart(displayLocation(job) || displayAddress(job) || (job as any).borough || "LOCATION", "LOCATION");
     const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
@@ -3326,7 +3326,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         }
       }
 
-      showActionNotice("Building media package preview...");
+      showActionNotice("Generating complete package...");
       const fileName = zipPacketFileName(job);
       const mediaManifest = evidenceRows.map((media, index) => ({
         path: fullPackageMediaPath(key, media, index),
@@ -3355,7 +3355,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const beforeCount = evidenceRows.filter((media) => media.kind === "before").length;
       const afterCount = evidenceRows.filter((media) => media.kind === "after").length;
       let savedPacketId = "";
-      let note = "Complete package preview ready. Tap Send Videos + Application to share the ZIP.";
+      let note = "Package ready for review. Tap Send Package to share the ZIP.";
 
       if (zipBytes.byteLength <= FULL_PACKAGE_SAVE_LIMIT_BYTES) {
         try {
@@ -3370,7 +3370,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             imageCount,
             videoCount,
             packetType: "full_evidence_zip",
-            note: "Media Package ZIP with original photos/videos plus the invoice/affidavit PDF.",
+            note: "Complete package: invoice/affidavit PDF plus all saved images and videos.",
           });
           savedPacketId = savedPacket.id;
           setFieldPacketsByJob((current) => ({
@@ -3380,13 +3380,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               ...(current[key] || []).filter((packet) => packet.packetType !== "full_evidence_zip"),
             ].sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)),
           }));
-          note = "Complete package preview saved on this phone. Tap Send Videos + Application.";
+          note = "Package saved on this phone. Review below, then tap Send Package.";
         } catch (error) {
           console.error(error);
-          note = "Complete package preview ready. Browser storage could not save the ZIP, but Send Videos + Application can still share it now.";
+          note = "Package ready for review. Browser storage could not save the ZIP, but Send Package can still share it now.";
         }
       } else {
-        note = `Complete package preview ready. ZIP is ${packetSizeLabel(zipBytes.byteLength)}, so it is held for Send Videos + Application instead of duplicating it in phone storage.`;
+        note = `Package ready for review. ZIP is ${packetSizeLabel(zipBytes.byteLength)}, so it is held for Send Package instead of duplicating it in phone storage.`;
       }
 
       const preview: FullPackagePreview = {
@@ -3407,7 +3407,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       pendingFullPackageRef.current = { ...preview, bytes: zipBytes };
       setFullPackagePreview(preview);
       focusFieldPane("send");
-      showActionNotice(`Complete package preview ready: ${beforeCount} before, ${afterCount} after, ${videoCount} video(s).`);
+      showActionNotice(`Package generated for review: ${beforeCount} before, ${afterCount} after, ${videoCount} video(s).`);
     } catch (error) {
       console.error(error);
       showActionNotice(error instanceof Error ? error.message : "Full package build failed. Try again.");
@@ -3423,20 +3423,20 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       (!navigator.canShare || navigator.canShare({ files: [zipFile] }));
 
     if (!canShareFiles) {
-      showActionNotice("This browser cannot share ZIP files directly. Complete package preview is ready; use Chrome share on mobile.");
+      showActionNotice("This browser cannot share ZIP files directly. Package is ready; use Chrome share on mobile.");
       return;
     }
 
     try {
       await navigator.share({
-        title: `${key} HPD media package`,
-        text: `HPD media package for ${key}: invoice/affidavit PDF plus ${pendingPackage.evidenceCount} original media file(s), including ${pendingPackage.videoCount} video(s).`,
+        title: `${key} HPD complete package`,
+        text: `HPD complete package for ${key}: invoice/affidavit PDF plus ${pendingPackage.evidenceCount} original media file(s), including ${pendingPackage.videoCount} video(s).`,
         files: [zipFile],
       });
-      showActionNotice(`Complete package shared: ${pendingPackage.evidenceCount} media file(s), ${pendingPackage.videoCount} video(s).`);
+      showActionNotice(`Package shared: ${pendingPackage.evidenceCount} media file(s), ${pendingPackage.videoCount} video(s).`);
     } catch (error) {
       console.error(error);
-      showActionNotice("Share was cancelled or blocked. Complete package preview is still ready.");
+      showActionNotice("Share was cancelled or blocked. Package is still ready for review.");
     }
   }
 
@@ -3446,7 +3446,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     const preview = fullPackagePreviewFor(job);
     if (!preview) {
-      showActionNotice("Tap Preview first to build the complete package.");
+      showActionNotice("Tap Generate Package first, review it, then send.");
       focusFieldPane("send");
       return;
     }
@@ -3465,11 +3465,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       return;
     }
 
-    showActionNotice("Complete package preview expired. Tap Preview again, then Send Videos + Application.");
+    showActionNotice("Package review expired. Tap Generate Package again, then Send Package.");
   }
 
   function packagePrimaryLabel(job: MappedJob) {
-    return fullPackagePreviewFor(job) ? "Preview Again" : "Preview";
+    return fullPackagePreviewFor(job) ? "Generate Again" : "Generate Package";
   }
 
   async function runPackagePrimaryAction(job: MappedJob) {
@@ -3477,7 +3477,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     if (!invoicePacket) {
       focusFieldPane("package");
-      showActionNotice("Generate the invoice/affidavit PDF first. Return here, then tap Preview to build the complete package.");
+      showActionNotice("Open paperwork and tap Generate Package to create the affidavit, invoice, images, and videos together.");
       window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
       return;
     }
@@ -3508,10 +3508,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (canShareFiles) {
       try {
         await navigator.share({
-          title: `${key} HPD ${isMediaZip ? "media package" : "invoice/affidavit package"}`,
+          title: `${key} HPD ${isMediaZip ? "complete package" : "invoice/affidavit package"}`,
           text: isMediaZip
-            ? `HPD media package for ${key}. Includes invoice/affidavit PDF plus original photos and videos.`
-            : `HPD invoice/affidavit package for ${key}. Media files belong in the Media Package ZIP.`,
+            ? `HPD complete package for ${key}. Includes invoice/affidavit PDF plus original photos and videos.`
+            : `HPD invoice/affidavit package for ${key}. Generate Package creates the complete ZIP with all saved media.`,
           files,
         });
         showActionNotice(`Share sheet opened with ${files.length} attachment(s).`);
@@ -10518,7 +10518,7 @@ return (
 
             <div className="selected-hero-actions">
               <a className="selected-primary-action" href={paperworkHref(selected, "package")}>
-                Invoice/Affidavit PDF
+                Generate Package
               </a>
               <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
                 Waze
@@ -10606,7 +10606,7 @@ return (
                 <button type="button" className={`send ${fieldFocusPane === "send" ? "active" : ""}`} onClick={() => focusFieldPane("send")}>
                   <span className="flow-icon">4</span>
                   <strong>Send</strong>
-                  <small>Email draft</small>
+                  <small>Review / send</small>
                 </button>
               </div>
 
@@ -10757,8 +10757,8 @@ return (
                   </div>
                 ) : (
                   <div className="field-packet-empty">
-                    <strong>Generate invoice/affidavit PDF, then Preview.</strong>
-                    <span>The media package ZIP adds every original photo and video angle.</span>
+                    <strong>Generate Package from paperwork.</strong>
+                    <span>One ZIP will include affidavit, invoice, images, and videos.</span>
                   </div>
                 )}
               </div>
@@ -10772,16 +10772,16 @@ return (
                   <div data-field-pane="send" className={`field-send-panel field-pane ${fieldFocusPane === "send" ? "is-active" : ""}`}>
                     <div>
                       <span>Send Package</span>
-                      <strong>{preview ? "Complete package preview ready" : invoicePacket ? "Ready to preview complete package" : "Need invoice/affidavit"}</strong>
+                      <strong>{preview ? "Package review ready" : invoicePacket ? "Ready to generate package" : "Need package PDF"}</strong>
                       <small>
-                        {preview?.fileName || invoicePacket?.fileName || "Generate invoice/affidavit PDF first."}
-                        {videoCount ? preview ? ` ${videoCount} video file(s) are inside the complete package ZIP.` : ` ${videoCount} video file(s) will be included when you tap Preview.` : ""}
+                        {preview?.fileName || invoicePacket?.fileName || "Tap Generate Package to create affidavit, invoice, images, and videos together."}
+                        {videoCount ? preview ? ` ${videoCount} video file(s) are inside the package ZIP.` : ` ${videoCount} video file(s) will be included when you generate the package.` : ""}
                       </small>
                     </div>
                     {preview ? (
                       <div className="field-package-preview">
                         <div>
-                          <span>Complete Package Preview</span>
+                          <span>Review Package</span>
                           <strong>{packetSizeLabel(preview.size)}</strong>
                         </div>
                         <small>Includes invoice/affidavit PDF plus original photos and videos in one ZIP.</small>
@@ -10804,7 +10804,7 @@ return (
                       </button>
                       {preview ? (
                         <button type="button" onClick={() => sendFullEvidencePackage(selected)}>
-                          Send Videos + Application
+                          Send Package
                         </button>
                       ) : null}
                     </div>
