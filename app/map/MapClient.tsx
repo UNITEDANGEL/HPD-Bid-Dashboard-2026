@@ -3972,7 +3972,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
   }
 
-  async function saveCapturedFieldMedia(target: FieldCaptureTarget, capturedFiles: File[], hasNextCapture: boolean) {
+  async function saveCapturedFieldMedia(
+    target: FieldCaptureTarget,
+    capturedFiles: File[],
+    hasNextCapture: boolean,
+    deferCompleteGuide = false
+  ) {
     try {
       const saved = await saveFieldPhotos(target.jobKey, target.kind, capturedFiles, target.meta);
       if (!saved.length) {
@@ -4051,7 +4056,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const fallbackVideoNote = unstampedVideoCount
         ? ` ${unstampedVideoCount} video(s) were saved as original files because this phone could not burn the label into them.`
         : "";
-      if (!hasNextCapture) {
+      if (!hasNextCapture && !deferCompleteGuide) {
         const captureJob =
           fieldCaptureJobRef.current ||
           (selected && jobKey(selected) === target.jobKey ? (selected as MappedJob) : null);
@@ -4074,6 +4079,34 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       showActionNotice(error instanceof Error ? error.message : "Evidence save failed. Try again.");
       return false;
     }
+  }
+
+  function showInlineCaptureComplete(target: FieldCaptureTarget) {
+    const captureJob =
+      fieldCaptureJobRef.current ||
+      (selected && jobKey(selected) === target.jobKey ? (selected as MappedJob) : null);
+    if (captureJob) {
+      setCaptureCompleteGuide(captureJob, target.kind, fieldCapturePartialRef.current);
+    } else {
+      setFieldCaptureGuide(null);
+      setFieldFocusPane("evidence");
+    }
+    focusFieldMedia(target.kind);
+    showActionNotice(`${fieldEvidenceLabel(target.kind)} required set saved. Add more, or tap done to continue.`);
+  }
+
+  async function saveInlineCameraFile(target: FieldCaptureTarget, file: File) {
+    const saved = await saveCapturedFieldMedia(target, [file], false, true);
+    if (!saved) return false;
+
+    const hasNextCapture = advanceGuidedEvidenceCapture(target);
+    if (!hasNextCapture) {
+      showInlineCaptureComplete(target);
+      closeInlineFieldCamera();
+    } else {
+      setFieldCameraStatus("Saved. Next camera step ready.");
+    }
+    return true;
   }
 
   async function handleFieldPhotoInput(event: ChangeEvent<HTMLInputElement>) {
@@ -4126,10 +4159,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         type: "image/jpeg",
         lastModified: Date.now(),
       });
-      const hasNextCapture = advanceGuidedEvidenceCapture(session.target);
-      const saved = await saveCapturedFieldMedia(session.target, [file], hasNextCapture);
-      if (!hasNextCapture) closeInlineFieldCamera();
-      else if (saved) setFieldCameraStatus("Saved. Next camera step ready.");
+      await saveInlineCameraFile(session.target, file);
     } catch (error) {
       console.error(error);
       showActionNotice(error instanceof Error ? error.message : "Photo capture failed. Try again.");
@@ -4176,7 +4206,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (!recorder || recorder.state === "inactive") return;
     setFieldCameraBusy(true);
     setFieldCameraStatus("Saving video...");
-    recorder.stop();
+    try {
+      recorder.requestData();
+    } catch {}
+    window.setTimeout(() => {
+      try {
+        if (recorder.state !== "inactive") recorder.stop();
+      } catch (error) {
+        console.error(error);
+        setFieldCameraBusy(false);
+        setFieldCameraStatus("Video stop failed. Try again.");
+      }
+    }, 180);
   }
 
   async function finishInlineCameraVideoRecording(mimeType: string) {
@@ -4201,10 +4242,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         type,
         lastModified: Date.now(),
       });
-      const hasNextCapture = advanceGuidedEvidenceCapture(target);
-      const saved = await saveCapturedFieldMedia(target, [file], hasNextCapture);
-      if (!hasNextCapture) closeInlineFieldCamera();
-      else if (saved) setFieldCameraStatus("Saved. Next camera step ready.");
+      await saveInlineCameraFile(target, file);
     } catch (error) {
       console.error(error);
       showActionNotice(error instanceof Error ? error.message : "Video save failed. Try again.");

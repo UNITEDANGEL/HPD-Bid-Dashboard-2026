@@ -576,7 +576,9 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
 
   const original = await readFileAsDataUrl(file, mimeType || "video/mp4");
   const video = await loadVideo(original);
-  const duration = Number.isFinite(video.duration) ? video.duration : 0;
+  const rawDuration = Number.isFinite(video.duration) ? video.duration : 0;
+  const hasKnownDuration = rawDuration > 0;
+  const duration = hasKnownDuration ? rawDuration : 6;
   if (duration > MAX_STAMPED_VIDEO_SECONDS) {
     throw new Error(`Video is too long to stamp on this phone. Keep clips under ${MAX_STAMPED_VIDEO_SECONDS} seconds.`);
   }
@@ -619,7 +621,7 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
   };
 
   const recorded = new Promise<Blob>((resolve, reject) => {
-    const maxMs = Math.max(8000, (duration || MAX_STAMPED_VIDEO_SECONDS) * 1000 + 6000);
+    const maxMs = Math.max(8000, duration * 1000 + 6000);
     const timeout = window.setTimeout(() => {
       drawing = false;
       try {
@@ -662,7 +664,11 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
     });
     try {
       await video.play();
-      await Promise.race([ended, recorded.then(() => undefined)]);
+      const shortUnknownDurationWait = new Promise<void>((resolve) => window.setTimeout(resolve, duration * 1000));
+      await Promise.race([
+        hasKnownDuration ? ended : shortUnknownDurationWait,
+        recorded.then(() => undefined),
+      ]);
     } catch {
       drawing = false;
       if (frameId) {
