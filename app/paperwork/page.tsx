@@ -2186,6 +2186,139 @@ export default function PaperworkPage() {
           }
         }
 
+        /* VISUAL_FLOW_V1_1_PACKAGE */
+        .paperwork-print {
+          min-height: 58px;
+          font-size: 17px;
+          border-radius: 12px;
+          box-shadow: 0 16px 36px rgba(83, 230, 156, 0.20);
+        }
+
+        .paperwork-package-review {
+          gap: 16px;
+          border-color: rgba(83, 230, 156, 0.30);
+          background:
+            linear-gradient(180deg, rgba(16, 28, 48, 0.98), rgba(8, 13, 24, 0.98)),
+            #101c30;
+          padding: 18px;
+        }
+
+        .package-created-head {
+          align-items: center;
+          padding: 14px;
+          border: 1px solid rgba(83, 230, 156, 0.22);
+          border-radius: 12px;
+          background: rgba(83, 230, 156, 0.08);
+        }
+
+        .package-created-head h3 {
+          margin-top: 4px;
+          font-size: clamp(28px, 8vw, 44px);
+          line-height: 1;
+        }
+
+        .package-created-head > span:last-child {
+          min-height: 42px;
+          display: inline-flex;
+          align-items: center;
+          background: #53e69c;
+          color: #03120b;
+        }
+
+        .package-main-actions {
+          gap: 10px;
+        }
+
+        .package-main-actions button {
+          min-height: 62px;
+          border-radius: 12px;
+          font-size: 16px;
+        }
+
+        .package-main-actions button:first-child {
+          background: #e0f2fe;
+          color: #07111f;
+        }
+
+        .package-main-actions button:last-child {
+          background: linear-gradient(135deg, #53e69c, #7dd3fc);
+          color: #03120b;
+          box-shadow: 0 16px 34px rgba(83, 230, 156, 0.22);
+        }
+
+        .package-preview-panel {
+          gap: 14px;
+        }
+
+        .package-content-row {
+          border-radius: 12px;
+          padding: 14px;
+        }
+
+        .package-content-row.primary-package-row {
+          border-color: rgba(83, 230, 156, 0.56);
+          background:
+            linear-gradient(135deg, rgba(83, 230, 156, 0.18), rgba(125, 211, 252, 0.10)),
+            rgba(255, 255, 255, 0.05);
+        }
+
+        .package-content-row.primary-package-row strong {
+          font-size: 15px;
+        }
+
+        .package-primary-delivery {
+          grid-template-columns: 1.35fr 0.85fr;
+          padding: 12px;
+          border-radius: 12px;
+        }
+
+        .package-primary-delivery button,
+        .package-primary-delivery a {
+          min-height: 58px;
+          border-radius: 12px;
+          font-size: 14px;
+        }
+
+        .package-backup-details {
+          border: 1px solid rgba(148, 163, 184, 0.20);
+          border-radius: 12px;
+          background: rgba(255, 255, 255, 0.045);
+          overflow: hidden;
+        }
+
+        .package-backup-details summary {
+          cursor: pointer;
+          padding: 12px 14px;
+          color: #bfdbfe;
+          font-size: 12px;
+          font-weight: 950;
+          text-transform: uppercase;
+        }
+
+        .package-secondary-delivery {
+          margin: 0 12px 12px;
+          border-color: rgba(147, 197, 253, 0.20);
+          background: rgba(147, 197, 253, 0.06);
+        }
+
+        @media (max-width: 560px) {
+          .paperwork-package-review {
+            padding: 14px;
+          }
+
+          .package-main-actions,
+          .package-primary-delivery,
+          .package-secondary-delivery {
+            grid-template-columns: 1fr;
+          }
+
+          .package-main-actions button,
+          .package-primary-delivery button,
+          .package-primary-delivery a {
+            min-height: 58px;
+          }
+        }
+
         @media print {
           .paperwork-top,
           .paperwork-card {
@@ -2422,9 +2555,9 @@ export default function PaperworkPage() {
                 </div>
                 <span>{packagePreview.imageCount} image(s) / {packagePreview.videoCount} video(s)</span>
               </div>
-              <div className="package-review-actions package-review-actions-simple">
+              <div className="package-review-actions package-review-actions-simple package-main-actions">
                 <button type="button" onClick={() => setPackagePreviewOpen(true)} aria-expanded={packagePreviewOpen}>
-                  Preview
+                  Preview Package
                 </button>
                 <button type="button" onClick={sendCompletePackage}>Send ZIP</button>
               </div>
@@ -2464,33 +2597,38 @@ export default function PaperworkPage() {
                       <b>{packagePreview.videoPackageSize ? packetSizeLabel(packagePreview.videoPackageSize) : "0 KB"}</b>
                     </div>
                   </div>
-                  <div className="package-delivery-actions">
+                  <div className="package-delivery-actions package-primary-delivery">
                     <button type="button" onClick={sendCompletePackage}>
                       Send Complete ZIP
                     </button>
                     <a href={packagePreview.completeUrl} download={packagePreview.completeFileName}>
                       Save Complete ZIP
                     </a>
-                    <button type="button" onClick={sendApplicationPackage}>
-                      Send Application ZIP
-                    </button>
-                    {packagePreview.videoPackageUrl ? (
-                      <button type="button" onClick={sendVideoPackage}>
-                        Send Video ZIP
-                      </button>
-                    ) : null}
-                    <a href={packagePreview.applicationUrl} download={packagePreview.applicationFileName}>
-                      Save Application ZIP
-                    </a>
-                    {packagePreview.videoPackageUrl ? (
-                      <a href={packagePreview.videoPackageUrl} download={packagePreview.videoPackageFileName}>
-                        Save Video ZIP
-                      </a>
-                    ) : null}
-                    <button type="button" className="package-backup-send" onClick={sendEvidenceFilesBackup}>
-                      Backup: Send Files
-                    </button>
                   </div>
+                  <details className="package-backup-details">
+                    <summary>Backup / separate files</summary>
+                    <div className="package-delivery-actions package-secondary-delivery">
+                      <button type="button" onClick={sendApplicationPackage}>
+                        Send Application ZIP
+                      </button>
+                      {packagePreview.videoPackageUrl ? (
+                        <button type="button" onClick={sendVideoPackage}>
+                          Send Video ZIP
+                        </button>
+                      ) : null}
+                      <a href={packagePreview.applicationUrl} download={packagePreview.applicationFileName}>
+                        Save Application ZIP
+                      </a>
+                      {packagePreview.videoPackageUrl ? (
+                        <a href={packagePreview.videoPackageUrl} download={packagePreview.videoPackageFileName}>
+                          Save Video ZIP
+                        </a>
+                      ) : null}
+                      <button type="button" className="package-backup-send" onClick={sendEvidenceFilesBackup}>
+                        Backup: Send Files
+                      </button>
+                    </div>
+                  </details>
                   <div className="package-review-grid">
                     <span>PDF <strong>1</strong></span>
                     <span>Images <strong>{packagePreview.imageCount}</strong></span>

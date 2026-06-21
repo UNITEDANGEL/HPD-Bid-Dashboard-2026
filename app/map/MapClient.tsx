@@ -11237,6 +11237,359 @@ return (
           .map-shell.android-scroll-fix.drawer-active .field-media-lane.just-saved .field-media-preview {
             box-shadow: none !important;
           }
+
+          /* VISUAL_FLOW_V1_1_JOB_CARD */
+          .job-drawer.selected-focus {
+            background:
+              linear-gradient(180deg, rgba(17, 25, 34, 0.98), rgba(12, 20, 31, 0.98)),
+              #111922 !important;
+          }
+
+          .selected-card {
+            background:
+              linear-gradient(180deg, #f8fbfd 0%, #edf4f8 100%) !important;
+            border-color: rgba(106, 130, 154, 0.26) !important;
+          }
+
+          .selected-card-head {
+            border-radius: 14px !important;
+            background:
+              linear-gradient(135deg, rgba(35, 211, 174, 0.13), rgba(77, 162, 255, 0.10)),
+              #ffffff !important;
+            border: 1px solid rgba(106, 130, 154, 0.18) !important;
+          }
+
+          .selected-hero-actions {
+            grid-template-columns: 1.45fr 0.75fr 0.75fr 0.75fr !important;
+          }
+
+          .selected-hero-actions a,
+          .selected-hero-actions button {
+            border-radius: 14px !important;
+            transition:
+              transform 180ms ease,
+              box-shadow 180ms ease,
+              background-color 180ms ease !important;
+          }
+
+          .selected-hero-actions a:active,
+          .selected-hero-actions button:active,
+          .field-flow-dock button:active,
+          .field-step-actions button:active,
+          .package-delivery-actions button:active,
+          .package-main-actions button:active {
+            transform: scale(0.985) !important;
+          }
+
+          .field-workflow-card {
+            gap: 12px !important;
+            border-radius: 18px !important;
+            background:
+              linear-gradient(180deg, #172231, #111923) !important;
+            border-color: rgba(142, 170, 196, 0.24) !important;
+            color: #f8fafc !important;
+          }
+
+          .field-workflow-head {
+            order: 0;
+            padding: 14px !important;
+            border-radius: 14px !important;
+            background: rgba(248, 250, 252, 0.07) !important;
+            border: 1px solid rgba(248, 250, 252, 0.10) !important;
+          }
+
+          .field-workflow-head span,
+          .field-workflow-head small,
+          .field-workflow-card span,
+          .field-workflow-card small {
+            color: #aab7c6 !important;
+          }
+
+          .field-workflow-head strong,
+          .field-workflow-card strong {
+            color: #f8fafc !important;
+          }
+
+          .field-procedure-hero {
+            order: 1;
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: center;
+            min-height: 104px;
+            padding: 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(125, 211, 252, 0.22);
+            background:
+              linear-gradient(135deg, rgba(35, 211, 174, 0.16), rgba(77, 162, 255, 0.14)),
+              rgba(248, 250, 252, 0.06);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            animation: fieldProcedureIn 260ms ease-out;
+          }
+
+          .field-procedure-hero.capture {
+            border-color: rgba(35, 211, 174, 0.34);
+          }
+
+          .field-procedure-hero.evidence {
+            border-color: rgba(77, 162, 255, 0.34);
+          }
+
+          .field-procedure-hero.package {
+            border-color: rgba(250, 204, 21, 0.34);
+          }
+
+          .field-procedure-hero.send {
+            border-color: rgba(168, 85, 247, 0.34);
+          }
+
+          .field-procedure-step {
+            width: 54px;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #23d3ae, #4da2ff);
+            color: #031018;
+            font-size: 24px;
+            font-weight: 1000;
+            box-shadow: 0 14px 28px rgba(35, 211, 174, 0.18);
+          }
+
+          .field-procedure-copy {
+            min-width: 0;
+            display: grid;
+            gap: 4px;
+          }
+
+          .field-procedure-copy span {
+            color: #8edfd1 !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .field-procedure-copy strong {
+            font-size: clamp(20px, 5.6vw, 30px) !important;
+            line-height: 1.02 !important;
+            overflow-wrap: anywhere;
+          }
+
+          .field-procedure-copy small {
+            color: #d7e4f0 !important;
+            font-size: 13px !important;
+            line-height: 1.35 !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+          }
+
+          .field-procedure-stats {
+            display: grid;
+            gap: 6px;
+            justify-items: end;
+          }
+
+          .field-procedure-stats span {
+            min-height: 30px;
+            display: inline-grid;
+            place-items: center;
+            padding: 0 10px;
+            border-radius: 999px;
+            background: rgba(248, 250, 252, 0.10);
+            color: #e5f3ff !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            text-transform: none !important;
+          }
+
+          @keyframes fieldProcedureIn {
+            0% {
+              opacity: 0;
+              transform: translateY(10px) scale(0.99);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+
+          .field-flow-dock {
+            order: 2;
+            gap: 8px !important;
+            padding: 6px;
+            border-radius: 16px;
+            background: rgba(3, 8, 14, 0.24);
+            border: 1px solid rgba(248, 250, 252, 0.08);
+          }
+
+          .field-flow-dock button {
+            min-height: 76px !important;
+            border-radius: 13px !important;
+            box-shadow: none !important;
+            opacity: 0.76;
+          }
+
+          .field-flow-dock button.active {
+            opacity: 1;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 16px 34px rgba(3, 8, 14, 0.24) !important;
+          }
+
+          .field-flow-dock .flow-icon {
+            width: 38px !important;
+            height: 38px !important;
+          }
+
+          .field-step-actions {
+            order: 3;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 9px !important;
+          }
+
+          .field-step-actions .start-job-btn {
+            grid-column: 1 / -1;
+            min-height: 68px !important;
+            font-size: 18px !important;
+          }
+
+          .field-step-actions button {
+            border-radius: 14px !important;
+          }
+
+          .field-workflow-card:not(:has(.field-flow-dock .capture.active)) .field-step-actions,
+          .field-workflow-card:not(:has(.field-flow-dock .capture.active)) .field-media-console,
+          .field-workflow-card:not(:has(.field-flow-dock .capture.active)) .field-workflow-grid {
+            display: none !important;
+          }
+
+          .field-media-console {
+            order: 4;
+            border-radius: 16px !important;
+            background:
+              linear-gradient(180deg, #101a27, #0d1520) !important;
+          }
+
+          .field-media-lane {
+            border-radius: 14px !important;
+          }
+
+          .field-media-preview {
+            border-radius: 12px !important;
+          }
+
+          .field-media-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .field-media-actions button {
+            min-height: 44px !important;
+            border-radius: 12px !important;
+          }
+
+          .field-capture-guide,
+          .field-evidence-gallery,
+          .field-packet-vault,
+          .field-send-panel {
+            order: 4;
+          }
+
+          .field-pane:not(.is-active) {
+            display: none !important;
+          }
+
+          .field-pane.is-active {
+            display: grid !important;
+            transform: none !important;
+            animation: fieldPaneOpen 260ms ease-out;
+          }
+
+          @keyframes fieldPaneOpen {
+            0% {
+              opacity: 0;
+              transform: translateY(12px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .field-capture-guide,
+          .field-evidence-gallery,
+          .field-packet-vault,
+          .field-send-panel {
+            border-radius: 16px !important;
+            background:
+              linear-gradient(180deg, rgba(248, 250, 252, 0.08), rgba(248, 250, 252, 0.04)) !important;
+            border: 1px solid rgba(142, 170, 196, 0.22) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+          }
+
+          .field-capture-guide button,
+          .field-send-panel button,
+          .field-packet-row button {
+            min-height: 58px !important;
+            border-radius: 14px !important;
+            font-size: 15px !important;
+          }
+
+          .field-workflow-grid {
+            order: 5;
+          }
+
+          .field-evidence-rail.compact {
+            display: none !important;
+          }
+
+          @media (max-width: 720px) {
+            .selected-card {
+              gap: 12px !important;
+              padding: 12px !important;
+            }
+
+            .selected-card-head {
+              padding: 12px !important;
+            }
+
+            .selected-hero-actions {
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            }
+
+            .selected-hero-actions .selected-primary-action {
+              grid-column: 1 / -1;
+            }
+
+            .field-procedure-hero {
+              grid-template-columns: auto minmax(0, 1fr);
+              min-height: 112px;
+            }
+
+            .field-procedure-stats {
+              grid-column: 1 / -1;
+              display: flex;
+              justify-content: stretch;
+            }
+
+            .field-procedure-stats span {
+              flex: 1 1 0;
+            }
+
+            .field-flow-dock {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .field-flow-dock button {
+              min-height: 78px !important;
+            }
+
+            .field-step-actions {
+              grid-template-columns: 1fr !important;
+            }
+
+            .field-step-actions .start-job-btn {
+              grid-column: auto;
+            }
+          }
         `}
         </style>
 
@@ -11730,6 +12083,45 @@ return (
                 </div>
                 <span className="field-timer-pill">{fieldElapsedLabel(selected)}</span>
               </div>
+
+              {(() => {
+                const counts = fieldPhotoCountsFor(selected);
+                const activeGuide = fieldCaptureGuide && fieldCaptureGuide.jobKey === jobKey(selected) ? fieldCaptureGuide : null;
+                const stepTitle = activeGuide
+                  ? activeGuide.title
+                  : fieldFocusPane === "capture"
+                    ? "Choose the field outcome"
+                    : fieldFocusPane === "evidence"
+                      ? "Review saved evidence"
+                      : fieldFocusPane === "package"
+                        ? "Create the package"
+                        : "Preview and send";
+                const stepText = activeGuide
+                  ? activeGuide.text
+                  : fieldFocusPane === "capture"
+                    ? "Start Job opens the required before photos and videos. No access, refused access, and done by others save the status for paperwork."
+                    : fieldFocusPane === "evidence"
+                      ? "Confirm the saved images and videos are labeled before generating the package."
+                      : fieldFocusPane === "package"
+                        ? "Generate Package opens the paperwork screen with the complete ZIP."
+                        : "Review the complete ZIP, then send the city package.";
+                const stepNumber = fieldFocusPane === "capture" ? "1" : fieldFocusPane === "evidence" ? "2" : fieldFocusPane === "package" ? "3" : "4";
+
+                return (
+                  <div className={`field-procedure-hero ${fieldFocusPane}`}>
+                    <div className="field-procedure-step">{stepNumber}</div>
+                    <div className="field-procedure-copy">
+                      <span>Current Step</span>
+                      <strong>{stepTitle}</strong>
+                      <small>{stepText}</small>
+                    </div>
+                    <div className="field-procedure-stats">
+                      <span>{counts.images} images</span>
+                      <span>{counts.videos} videos</span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="field-media-console" data-field-media-console="true">
                 <div className="field-media-console-head">
