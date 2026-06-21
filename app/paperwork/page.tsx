@@ -60,6 +60,7 @@ type PackageForm = {
 const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-completed-affidavit.pdf";
 const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-completed-affidavit.pdf";
 const COMPLETE_PACKAGE_SAVE_LIMIT_BYTES = 35 * 1024 * 1024;
+const AFFIDAVIT_NOTARY_COUNTY = "QUEENS";
 
 type ZipEntry = {
   path: string;
@@ -939,7 +940,7 @@ export default function PaperworkPage() {
 
       if (useWorkTemplate) {
         const workDate = activeForm.workComplete || fieldDate;
-        setText("COUNTY OF", upper(borough || "NEW YORK"), 9);
+        setText("COUNTY OF", AFFIDAVIT_NOTARY_COUNTY, 9);
         setText("being duly sworn deposes and says", `I,  ${swornSigner}/ United Angel Construction Corp`);
         setText("Apt#", upper(activeForm.location));
         setText("State", "NY");
@@ -960,7 +961,7 @@ export default function PaperworkPage() {
 
         setText("inaccessibility was due to 1", outcome === "no_access" ? "NO ACCESS TO MAKE REPAIRS" : "");
         setText("inaccessibility was due to 2", "");
-        setText("COUNTY OF", upper(borough || "NEW YORK"), 9);
+        setText("COUNTY OF", AFFIDAVIT_NOTARY_COUNTY, 9);
         setText("AMOUNT", chargeAmount);
         setText("ARRIVE DATE", outcome === "completed_by_others" ? secondAttempt : "");
         setText("REFUSE DATE", "");
