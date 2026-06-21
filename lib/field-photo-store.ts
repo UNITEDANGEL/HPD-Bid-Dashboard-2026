@@ -400,7 +400,7 @@ async function processImageEvidence(file: File, stampMeta: EvidenceStampMeta, mi
   }
 }
 
-async function makeVideoPoster(dataUrl: string) {
+async function makeVideoPoster(dataUrl: string, stampMeta: EvidenceStampMeta) {
   try {
     const video = await loadVideo(dataUrl);
     const width = Math.max(1, video.videoWidth || 640);
@@ -412,6 +412,7 @@ async function makeVideoPoster(dataUrl: string) {
     const context = canvas.getContext("2d");
     if (!context) return "";
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    stampEvidenceImage(canvas, context, stampMeta);
     return canvas.toDataURL("image/jpeg", 0.7);
   } catch {
     return "";
@@ -460,7 +461,7 @@ export async function saveFieldPhotos(
       mediaType === "image"
         ? await processImageEvidence(file, stampMeta, mimeType)
         : { dataUrl: await readFileAsDataUrl(file, mimeType), type: mimeType || "video/mp4", size: file.size };
-    const posterDataUrl = mediaType === "video" ? await makeVideoPoster(source.dataUrl) : "";
+    const posterDataUrl = mediaType === "video" ? await makeVideoPoster(source.dataUrl, stampMeta) : "";
     const evidenceName = evidenceFileName(stampMeta, mediaType, source.type || file.type || "");
 
     const evidence: FieldMedia = {

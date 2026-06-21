@@ -3117,17 +3117,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return new File([bytesToBlob(bytes, mimeType)], safeAttachmentName(fileName, "attachment"), { type: mimeType });
   }
 
-  function downloadBytesAsFile(bytes: Uint8Array, fileName: string, mimeType = "application/octet-stream") {
-    const href = URL.createObjectURL(bytesToBlob(bytes, mimeType));
-    const anchor = document.createElement("a");
-    anchor.href = href;
-    anchor.download = fileName;
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-    window.setTimeout(() => URL.revokeObjectURL(href), 30000);
-  }
-
   function zipPacketFileName(job: JobRecord, suffix = "full-evidence-package") {
     return packetFileName(job, suffix).replace(/\.pdf$/i, ".zip");
   }
@@ -3155,103 +3144,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return `media/${folder}/${String(index + 1).padStart(2, "0")}-${label}-${fileName}`;
   }
 
-  async function buildFullEvidenceIndexPdf(job: MappedJob, evidenceRows: FieldMedia[], invoicePacket: FieldPacket | null) {
-    const key = jobKey(job);
-    const pdfDoc = await PDFDocument.create();
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    const address = displayAddress(job);
-    const location = displayLocation(job);
-    const generatedAt = new Date().toLocaleString();
-    const imageCount = evidenceRows.filter((media) => media.mediaType === "image").length;
-    const videoCount = evidenceRows.filter((media) => media.mediaType === "video").length;
-    const kindCounts = evidenceRows.reduce((counts, media) => {
-      counts[media.kind || "general"] = (counts[media.kind || "general"] || 0) + 1;
-      return counts;
-    }, emptyFieldMediaCounts());
-
-    const cover = pdfDoc.addPage([612, 792]);
-    cover.setFont(font);
-    cover.drawText("FULL EVIDENCE PACKAGE INDEX", { x: 46, y: 744, size: 17, font: bold });
-    drawPacketLine(cover, `OMO / WORK #: ${key}`, 46, 716, 12);
-    drawPacketLine(cover, `Address: ${address}`, 46, 696, 10);
-    drawPacketLine(cover, `Location: ${location || "Not listed"} - Borough: ${(job as any).borough || "Not listed"}`, 46, 680, 10);
-    drawPacketLine(cover, `Status: ${workflowLabel(job) || JobStatus.statusLabel(job)}`, 46, 660, 10);
-    drawPacketLine(cover, `Generated: ${generatedAt}`, 46, 642, 10);
-    drawPacketLine(cover, `Evidence files: ${evidenceRows.length} total - ${imageCount} image(s) - ${videoCount} video(s)`, 46, 616, 11);
-    drawPacketLine(cover, `Before: ${kindCounts.before}  After: ${kindCounts.after}  No Access: ${kindCounts.no_access}`, 46, 596, 9);
-    drawPacketLine(cover, `Refused: ${kindCounts.refused_access}  Done By Others: ${kindCounts.completed_by_others}  General: ${kindCounts.general}`, 46, 580, 9);
-    drawPacketLine(cover, invoicePacket ? `Affidavit + invoice PDF included: ${invoicePacket.fileName}` : "Affidavit + invoice PDF not found. Generate Invoice Package and rebuild before sending.", 46, 558, 8);
-    drawPacketLine(cover, "Original image and video files are included in the ZIP under the media folders.", 46, 540, 8);
-
-    evidenceRows.slice(0, 24).forEach((media, index) => {
-      drawPacketLine(
-        cover,
-        `${index + 1}. ${media.evidenceLabel || media.kind} - ${media.mediaType.toUpperCase()} - ${displayWorkflowDate(media.capturedAt)} - ${media.name}`,
-        54,
-        508 - index * 17,
-        8
-      );
-    });
-    if (evidenceRows.length > 24) {
-      drawPacketLine(cover, `${evidenceRows.length - 24} more evidence file(s) are listed in media-index.json.`, 54, 92, 8);
-    }
-
-    for (const [index, media] of evidenceRows.entries()) {
-      const page = pdfDoc.addPage([612, 792]);
-      page.setFont(font);
-
-      page.drawText("FIELD EVIDENCE PREVIEW", { x: 46, y: 744, size: 17, font: bold });
-      drawPacketLine(page, `OMO / WORK #: ${key}`, 46, 718, 11);
-      drawPacketLine(page, `Label: ${media.evidenceLabel || fieldEvidenceLabel(media.kind)}`, 46, 700, 10);
-      drawPacketLine(page, `Media: ${media.mediaType.toUpperCase()} - ${media.name}`, 46, 684, 9);
-      drawPacketLine(page, `Captured: ${displayWorkflowDate(media.capturedAt)}`, 46, 668, 9);
-      drawPacketLine(page, `Address: ${media.address || address}`, 46, 652, 9);
-      drawPacketLine(page, `Location: ${media.location || location || "Not listed"} - Borough: ${media.borough || (job as any).borough || "Not listed"}`, 46, 636, 9);
-      await drawPacketPreview(pdfDoc, page, media);
-      drawPacketLine(page, `Original file in ZIP: ${fullPackageMediaPath(key, media, index)}`, 46, 96, 8);
-      if (media.mediaType === "video") {
-        drawPacketLine(page, "This page shows the poster frame. The original video file is included in the ZIP.", 46, 80, 8);
-      }
-    }
-
-    return pdfDoc.save();
-  }
-
-  function buildFullPackageReadme(job: MappedJob, fileName: string, evidenceRows: FieldMedia[], invoicePacket: FieldPacket | null) {
-    const key = jobKey(job);
-    const imageCount = evidenceRows.filter((media) => media.mediaType === "image").length;
-    const videoCount = evidenceRows.filter((media) => media.mediaType === "video").length;
-    return [
-      "HPD FULL EVIDENCE PACKAGE",
-      "",
-      `Package: ${fileName}`,
-      `OMO / Work #: ${key}`,
-      `Address: ${displayAddress(job)}`,
-      `Location: ${displayLocation(job) || "Not listed"}`,
-      `Borough: ${(job as any).borough || "Not listed"}`,
-      `Status: ${workflowLabel(job) || JobStatus.statusLabel(job)}`,
-      `Generated: ${new Date().toLocaleString()}`,
-      "",
-      `Evidence files: ${evidenceRows.length}`,
-      `Images: ${imageCount}`,
-      `Videos: ${videoCount}`,
-      "",
-      "Contents:",
-      "- documents/evidence-index.pdf: printable evidence index with preview pages.",
-      invoicePacket
-        ? `- documents/${safeAttachmentName(invoicePacket.fileName, "affidavit-invoice.pdf")}: affidavit and invoice PDF.`
-        : "- Affidavit and invoice PDF was not saved yet. Generate Invoice Package, then rebuild this Full Package before sending.",
-      "- media/before: original before photos and videos.",
-      "- media/after: original after photos and videos.",
-      "- media/no-access, media/refused-access, media/completed-by-others: original outcome evidence.",
-      "- media-index.json: machine-readable file list and metadata.",
-      "",
-      "Email note:",
-      "Browser email drafts cannot auto-attach files. Use the Share button from the job card when available, or attach this ZIP manually.",
-    ].join("\n");
-  }
-
   async function generateFullEvidencePackage(job: MappedJob) {
     const key = jobKey(job);
     if (!key) return;
@@ -3277,48 +3169,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         path: fullPackageMediaPath(key, media, index),
         media,
       }));
-      const indexPdfBytes = await buildFullEvidenceIndexPdf(job, evidenceRows, invoicePacket);
-      const entries: ZipEntry[] = [
-        { path: "README.txt", bytes: zipTextBytes(buildFullPackageReadme(job, fileName, evidenceRows, invoicePacket)) },
-        { path: "documents/evidence-index.pdf", bytes: indexPdfBytes },
-        {
-          path: "media-index.json",
-          bytes: zipTextBytes(JSON.stringify({
-            version: 1,
-            packageType: "full_evidence_zip",
-            generatedAt: new Date().toISOString(),
-            job: {
-              omo: key,
-              address: displayAddress(job),
-              location: displayLocation(job),
-              borough: (job as any).borough || "",
-              status: workflowLabel(job) || JobStatus.statusLabel(job),
-            },
-            affidavitInvoice: invoicePacket
-              ? {
-                  fileName: invoicePacket.fileName,
-                  generatedAt: invoicePacket.generatedAt,
-                  size: invoicePacket.size,
-                }
-              : null,
-            evidence: mediaManifest.map(({ path, media }) => ({
-              path,
-              id: media.id,
-              kind: media.kind,
-              label: media.evidenceLabel || fieldEvidenceLabel(media.kind),
-              mediaType: media.mediaType,
-              name: media.name,
-              type: media.type,
-              size: media.size,
-              capturedAt: media.capturedAt,
-              address: media.address,
-              location: media.location,
-              borough: media.borough,
-              outcome: media.outcome,
-            })),
-          }, null, 2)),
-        },
-      ];
+      const entries: ZipEntry[] = [];
 
       if (invoicePacket) {
         entries.push({
@@ -3355,7 +3206,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             imageCount,
             videoCount,
             packetType: "full_evidence_zip",
-            note: "Full ZIP package with evidence index, affidavit/invoice if available, original images, and original videos.",
+            note: "Full ZIP package with affidavit/invoice, original images, and original videos.",
           });
           savedPacketId = savedPacket.id;
           setFieldPacketsByJob((current) => ({
@@ -3696,7 +3547,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       `Evidence files: ${evidenceCount}`,
       `Video files: ${videoCount}`,
       attachmentName ? `${attachmentLabel}: ${attachmentName}` : `${attachmentLabel}: attach the downloaded package.`,
-      isFullZip ? "The ZIP contains the evidence index, original photos, and original videos." : "",
+      isFullZip ? "The ZIP contains the affidavit/invoice PDF plus original photos and videos." : "",
       !isFullZip && videoCount ? "Attach original video file(s) separately or use Share Attachments from the job card." : "",
       "",
       "Note: This browser opened a draft only. Email drafts cannot auto-attach files. Use Share from the job card when available, or attach the downloaded files before sending.",
