@@ -26,6 +26,7 @@ import {
 import {
   type FieldPacket,
   bytesToDataUrl,
+  clearFieldPackets,
   listFieldPackets,
   saveFieldPacket,
 } from "../../lib/field-packet-store";
@@ -208,6 +209,17 @@ type FullPackagePreview = {
 
 type PendingFullPackage = FullPackagePreview & {
   bytes: Uint8Array;
+};
+
+type FieldCaptureStep = {
+  kind: FieldMediaKind;
+  accept: string;
+  camera: boolean;
+  title: string;
+  text: string;
+  label: string;
+  step: number;
+  total: number;
 };
 
 let zipCrcTable: Uint32Array | null = null;
@@ -1546,12 +1558,16 @@ const [photoCaptureTarget, setPhotoCaptureTarget] = useState<{
   jobKey: string;
   kind: FieldMediaKind;
   meta: FieldEvidenceMeta;
+  step?: FieldCaptureStep;
 } | null>(null);
 const photoCaptureTargetRef = useRef<{
   jobKey: string;
   kind: FieldMediaKind;
   meta: FieldEvidenceMeta;
+  step?: FieldCaptureStep;
 } | null>(null);
+const fieldCaptureQueueRef = useRef<FieldCaptureStep[]>([]);
+const fieldCaptureJobRef = useRef<MappedJob | null>(null);
 const [fieldPhotoCounts, setFieldPhotoCounts] = useState<Record<string, FieldMediaCounts>>({});
 const [fieldEvidenceByJob, setFieldEvidenceByJob] = useState<Record<string, FieldMedia[]>>({});
 const [fieldPacketsByJob, setFieldPacketsByJob] = useState<Record<string, FieldPacket[]>>({});
@@ -1566,6 +1582,9 @@ const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
   camera: boolean;
   title: string;
   text: string;
+  label?: string;
+  step?: number;
+  total?: number;
 } | null>(null);
 const [fieldFocusPane, setFieldFocusPane] = useState<"capture" | "evidence" | "package" | "send">("capture");
 const [fieldMediaFlashKind, setFieldMediaFlashKind] = useState<FieldMediaKind | "">("");
@@ -2837,6 +2856,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     workflowStorageSave(key, nextPatch);
     applyWorkflowPatchToState(key, nextPatch);
     setDraftWorkflowSaved(true);
+    invalidateFullPackagePreview(key, true);
 
     workflowServerSave(key, nextPatch)
       .then(() => showActionNotice(notice))
@@ -2945,14 +2965,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return labels[kind];
   }
 
-  function fieldEvidenceMeta(job: MappedJob, kind: FieldMediaKind): FieldEvidenceMeta {
+  function fieldEvidenceMeta(job: MappedJob, kind: FieldMediaKind, label?: string): FieldEvidenceMeta {
     return {
       jobId: jobKey(job),
       address: displayAddress(job),
       location: displayLocation(job),
       borough: job.borough || "",
       outcome: workflowLabel(job) || JobStatus.statusLabel(job),
-      label: fieldEvidenceLabel(kind),
+      label: label || fieldEvidenceLabel(kind),
     };
   }
 
@@ -2966,6 +2986,75 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       general: "Capture field evidence now for this job package.",
     };
     return labels[kind];
+  }
+
+  function fieldStageLabel(kind: FieldMediaKind) {
+    const labels: Record<FieldMediaKind, string> = {
+      before: "Before",
+      after: "After",
+      no_access: "No Access",
+      refused_access: "Refused Access",
+      completed_by_others: "Done By Others",
+      general: "Field",
+    };
+    return labels[kind];
+  }
+
+  function guidedCaptureSteps(kind: FieldMediaKind) {
+    const stage = fieldStageLabel(kind);
+    const steps: Array<Omit<FieldCaptureStep, "kind" | "step" | "total">> = [
+      {
+        accept: "image/*",
+        camera: true,
+        title: `${stage} Photo 1`,
+        text: `Take ${stage.toLowerCase()} photo 1 of 2.`,
+        label: `${stage} Photo 1`,
+      },
+      {
+        accept: "image/*",
+        camera: true,
+        title: `${stage} Photo 2`,
+        text: `Take ${stage.toLowerCase()} photo 2 of 2 from another angle.`,
+        label: `${stage} Photo 2`,
+      },
+      {
+        accept: "video/*",
+        camera: true,
+        title: `${stage} Video 1`,
+        text: `Take ${stage.toLowerCase()} video 1 of 2. Keep it short so it can be stamped and emailed.`,
+        label: `${stage} Video 1`,
+      },
+      {
+        accept: "video/*",
+        camera: true,
+        title: `${stage} Video 2`,
+        text: `Take ${stage.toLowerCase()} video 2 of 2 from another angle.`,
+        label: `${stage} Video 2`,
+      },
+    ];
+
+    return steps.map((step, index) => ({
+      ...step,
+      kind,
+      step: index + 1,
+      total: steps.length,
+    }));
+  }
+
+  function setCaptureGuideForStep(job: MappedJob, step: FieldCaptureStep) {
+    const key = jobKey(job);
+    if (!key) return;
+    setFieldCaptureGuide({
+      jobKey: key,
+      kind: step.kind,
+      accept: step.accept,
+      camera: step.camera,
+      title: step.title,
+      text: step.text,
+      label: step.label,
+      step: step.step,
+      total: step.total,
+    });
   }
 
   function fieldEvidenceRowsFor(job: JobRecord | null) {
@@ -3028,6 +3117,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (!packet) return null;
 
     const counts = fieldPhotoCountsFor(job);
+    const evidenceRows = fieldEvidenceRowsFor(job);
+    const latestEvidenceAt = evidenceRows.reduce((latest, media) => {
+      return media.capturedAt > latest ? media.capturedAt : latest;
+    }, "");
+    if (!evidenceRows.length || !counts.total || (latestEvidenceAt && packet.generatedAt < latestEvidenceAt)) return null;
+
     return {
       jobKey: key,
       fileName: packet.fileName,
@@ -3042,6 +3137,25 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       savedPacketId: packet.id,
       note: packet.note || "Saved full package preview is ready.",
     } satisfies FullPackagePreview;
+  }
+
+  function invalidateFullPackagePreview(key: string, clearStored = false) {
+    pendingFullPackageRef.current = null;
+    setFullPackagePreview((current) => (current?.jobKey === key ? null : current));
+    setFieldPacketsByJob((current) => {
+      const rows = current[key] || [];
+      if (!rows.length) return current;
+      const filtered = clearStored
+        ? []
+        : rows.filter((packet) => packet.packetType === "affidavit_invoice_pdf");
+      return { ...current, [key]: filtered };
+    });
+
+    if (clearStored) {
+      return clearFieldPackets(key).catch((error) => console.error(error));
+    }
+
+    return clearFieldPackets(key, ["full_evidence_zip", "email_evidence_pdf"]).catch((error) => console.error(error));
   }
 
   function packetSizeLabel(size: number) {
@@ -3163,6 +3277,27 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         return;
       }
 
+      const workflowValue = String(job.WorkflowStatus || job.workflowStatus || job.FieldOutcome || job.fieldOutcome || "").toUpperCase();
+      const needsFullBeforeAfter =
+        workflowValue.includes("WORK_COMPLETED") ||
+        workflowValue.includes("PARTIAL_WORK_COMPLETED");
+      if (needsFullBeforeAfter) {
+        const beforeImages = evidenceRows.filter((media) => media.kind === "before" && media.mediaType === "image").length;
+        const beforeVideos = evidenceRows.filter((media) => media.kind === "before" && media.mediaType === "video").length;
+        const afterImages = evidenceRows.filter((media) => media.kind === "after" && media.mediaType === "image").length;
+        const afterVideos = evidenceRows.filter((media) => media.kind === "after" && media.mediaType === "video").length;
+        const missing: string[] = [];
+        if (beforeImages < 2) missing.push(`before photos ${beforeImages}/2`);
+        if (beforeVideos < 2) missing.push(`before videos ${beforeVideos}/2`);
+        if (afterImages < 2) missing.push(`after photos ${afterImages}/2`);
+        if (afterVideos < 2) missing.push(`after videos ${afterVideos}/2`);
+        if (missing.length) {
+          showActionNotice(`Full package needs current evidence: ${missing.join(", ")}.`);
+          focusFieldPane("capture");
+          return;
+        }
+      }
+
       showActionNotice("Building full package preview...");
       const fileName = zipPacketFileName(job);
       const mediaManifest = evidenceRows.map((media, index) => ({
@@ -3196,6 +3331,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       if (zipBytes.byteLength <= FULL_PACKAGE_SAVE_LIMIT_BYTES) {
         try {
+          await clearFieldPackets(key, ["full_evidence_zip"]);
           const savedPacket = await saveFieldPacket({
             jobId: key,
             fileName,
@@ -3211,7 +3347,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           savedPacketId = savedPacket.id;
           setFieldPacketsByJob((current) => ({
             ...current,
-            [key]: [savedPacket, ...(current[key] || [])].sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)),
+            [key]: [
+              savedPacket,
+              ...(current[key] || []).filter((packet) => packet.packetType !== "full_evidence_zip"),
+            ].sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)),
           }));
           note = "Preview ready and saved on this phone. Tap Send Full Package.";
         } catch (error) {
@@ -3299,6 +3438,31 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     showActionNotice("Package preview expired. Tap Full Package again, then Send Full Package.");
+  }
+
+  function packagePrimaryLabel(job: MappedJob) {
+    if (!latestFieldPacket(job, "affidavit_invoice_pdf")) return "Draft Invoice Package";
+    if (!fullPackagePreviewFor(job)) return "Preview Full Package";
+    return "Send Full Package";
+  }
+
+  async function runPackagePrimaryAction(job: MappedJob) {
+    const invoicePacket = latestFieldPacket(job, "affidavit_invoice_pdf");
+    const preview = fullPackagePreviewFor(job);
+
+    if (!invoicePacket) {
+      focusFieldPane("package");
+      showActionNotice("Draft the affidavit + invoice first. Return here, then tap Preview Full Package.");
+      window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    if (!preview) {
+      await generateFullEvidencePackage(job);
+      return;
+    }
+
+    await sendFullEvidencePackage(job);
   }
 
   async function shareStoredPackage(job: MappedJob, packet = latestFieldPacket(job, "affidavit_invoice_pdf") || latestFieldPacket(job), downloadFallback = true) {
@@ -3607,7 +3771,43 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return `${hours}h ${mins}m`;
   }
 
-  function requestFieldPhotoCapture(job: MappedJob, kind: FieldMediaKind, accept = "image/*,video/*", useCamera = true) {
+  function beginGuidedEvidenceCapture(job: MappedJob, kind: FieldMediaKind) {
+    const steps = guidedCaptureSteps(kind);
+    const firstStep = steps[0];
+    if (!firstStep) return;
+
+    fieldCaptureJobRef.current = job;
+    fieldCaptureQueueRef.current = steps.slice(1);
+    setCaptureGuideForStep(job, firstStep);
+    requestFieldPhotoCapture(job, kind, firstStep.accept, firstStep.camera, firstStep);
+  }
+
+  function advanceGuidedEvidenceCapture(target: { jobKey: string; kind: FieldMediaKind; step?: FieldCaptureStep }) {
+    if (!target.step) return false;
+
+    const nextStep = fieldCaptureQueueRef.current.shift();
+    const captureJob = fieldCaptureJobRef.current;
+    if (!nextStep || !captureJob || jobKey(captureJob) !== target.jobKey) {
+      fieldCaptureQueueRef.current = [];
+      fieldCaptureJobRef.current = null;
+      setFieldCaptureGuide(null);
+      return false;
+    }
+
+    setFieldFocusPane("capture");
+    setCaptureGuideForStep(captureJob, nextStep);
+    focusFieldMedia(target.kind);
+    showActionNotice(`${target.step.title} saved. Next: ${nextStep.title}.`);
+    return true;
+  }
+
+  function requestFieldPhotoCapture(
+    job: MappedJob,
+    kind: FieldMediaKind,
+    accept = "image/*,video/*",
+    useCamera = true,
+    step?: FieldCaptureStep
+  ) {
     const key = jobKey(job);
     if (!key) return;
     if (!canStoreFieldPhotos()) {
@@ -3618,14 +3818,19 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setFieldCaptureAccept(accept);
     setFieldCaptureCamera(useCamera);
     setFieldFocusPane("capture");
-    const nextTarget = { jobKey: key, kind, meta: fieldEvidenceMeta(job, kind) };
+    const title = step?.title || fieldEvidenceLabel(kind);
+    const text = step?.text || fieldCaptureGuideText(kind);
+    const nextTarget = { jobKey: key, kind, meta: fieldEvidenceMeta(job, kind, step?.label), step };
     setFieldCaptureGuide({
       jobKey: key,
       kind,
       accept,
       camera: useCamera,
-      title: fieldEvidenceLabel(kind),
-      text: fieldCaptureGuideText(kind),
+      title,
+      text,
+      label: step?.label,
+      step: step?.step,
+      total: step?.total,
     });
     photoCaptureTargetRef.current = nextTarget;
     setPhotoCaptureTarget(nextTarget);
@@ -3654,6 +3859,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         return;
       }
 
+      invalidateFullPackagePreview(target.jobKey);
       const counts = await countFieldPhotos(target.jobKey);
       const evidenceRows = await listFieldEvidence(target.jobKey);
       const capturedAt = new Date().toISOString();
@@ -3720,10 +3926,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       });
       const videoCount = saved.filter((item) => item.mediaType === "video").length;
       const imageCount = saved.length - videoCount;
-      setFieldCaptureGuide(null);
-      setFieldFocusPane("evidence");
-      focusFieldMedia(target.kind);
-      showActionNotice(`${fieldEvidenceLabel(target.kind)} saved to job card: ${imageCount} image(s), ${videoCount} video(s).`);
+      const hasNextCapture = advanceGuidedEvidenceCapture(target);
+      if (!hasNextCapture) {
+        setFieldCaptureGuide(null);
+        setFieldFocusPane("evidence");
+        focusFieldMedia(target.kind);
+        showActionNotice(`${fieldEvidenceLabel(target.kind)} saved to job card: ${imageCount} image(s), ${videoCount} video(s).`);
+      }
     } catch (error) {
       console.error(error);
       showActionNotice(error instanceof Error ? error.message : "Evidence save failed. Try again.");
@@ -3763,7 +3972,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       patch,
       "Job started. Before evidence capture is open."
     );
-    requestFieldPhotoCapture(startedJob, "before", "image/*,video/*");
+    beginGuidedEvidenceCapture(startedJob, "before");
   }
 
   async function resetFieldJobForTesting(job: MappedJob) {
@@ -3775,6 +3984,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const resetPatch = clearedFieldWorkflowStatePatch();
     setFieldCaptureGuide(null);
     setFieldFocusPane("capture");
+    fieldCaptureQueueRef.current = [];
+    fieldCaptureJobRef.current = null;
     photoCaptureTargetRef.current = null;
     setPhotoCaptureTarget(null);
     setDraftWorkflowStatus("");
@@ -3786,9 +3997,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     applyWorkflowPatchToState(key, resetPatch);
 
     try {
+      const clearedPackets = await invalidateFullPackagePreview(key, true);
       const cleared = canStoreFieldPhotos() ? await clearFieldEvidence(key) : 0;
       await workflowServerSave(key, { __clearWorkflow: true, updatedAt: resetPatch.updatedAt });
-      showActionNotice(`Job reset to Pending. Cleared ${cleared} evidence file(s).`);
+      showActionNotice(`Job reset to Pending. Cleared ${cleared} evidence file(s) and ${clearedPackets || 0} packet(s).`);
     } catch (error) {
       console.error(error);
       showActionNotice("Reset on this phone. Server sync needs retry.");
@@ -3821,7 +4033,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       "Work completed. Capture after evidence now."
     );
     openPaperworkPreviewForStatus(job, patch, false);
-    requestFieldPhotoCapture(nextJob, "after", "image/*,video/*");
+    beginGuidedEvidenceCapture(nextJob, "after");
   }
 
   function startNoAccessCounter(job: MappedJob) {
@@ -4159,6 +4371,7 @@ function localDatetimeValue(date = new Date()) {
 
     if (key) {
       workflowStorageSave(key, patch);
+      invalidateFullPackagePreview(key, true);
       workflowServerSave(key, patch)
         .then(() => {
           setDraftWorkflowSaved(true);
@@ -10446,7 +10659,7 @@ return (
 
             <div className="selected-hero-actions">
               <a className="selected-primary-action" href={paperworkHref(selected, "package")}>
-                Generate Invoice Package
+                Draft Invoice Package
               </a>
               <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
                 Waze
@@ -10499,8 +10712,8 @@ return (
                           <small>{latest ? latest.name : fieldMediaStateLabel(selected, kind)}</small>
                         </div>
                         <div className="field-media-actions">
-                          <button type="button" className="primary" onClick={() => requestFieldPhotoCapture(selected, kind, "image/*,video/*")}>
-                            Camera
+                          <button type="button" className="primary" onClick={() => beginGuidedEvidenceCapture(selected, kind)}>
+                            Required Set
                           </button>
                           <button type="button" onClick={() => requestFieldPhotoCapture(selected, kind, "image/*,video/*", false)}>
                             Gallery
@@ -10544,9 +10757,28 @@ return (
                   </div>
                   <button
                     type="button"
-                    onClick={() => requestFieldPhotoCapture(selected, fieldCaptureGuide.kind, fieldCaptureGuide.accept, fieldCaptureGuide.camera)}
+                    onClick={() => requestFieldPhotoCapture(
+                      selected,
+                      fieldCaptureGuide.kind,
+                      fieldCaptureGuide.accept,
+                      fieldCaptureGuide.camera,
+                      fieldCaptureGuide.step && fieldCaptureGuide.total
+                        ? {
+                            kind: fieldCaptureGuide.kind,
+                            accept: fieldCaptureGuide.accept,
+                            camera: fieldCaptureGuide.camera,
+                            title: fieldCaptureGuide.title,
+                            text: fieldCaptureGuide.text,
+                            label: fieldCaptureGuide.label || fieldCaptureGuide.title,
+                            step: fieldCaptureGuide.step,
+                            total: fieldCaptureGuide.total,
+                          }
+                        : undefined
+                    )}
                   >
-                    {fieldCaptureGuide.camera ? "Open Camera" : "Open Upload"}
+                    {fieldCaptureGuide.step && fieldCaptureGuide.total
+                      ? `Take ${fieldCaptureGuide.step}/${fieldCaptureGuide.total}`
+                      : fieldCaptureGuide.camera ? "Open Camera" : "Open Upload"}
                   </button>
                 </div>
               ) : null}
@@ -10704,12 +10936,9 @@ return (
                     <div className="field-send-actions single">
                       <button
                         type="button"
-                        onClick={() => {
-                          if (preview) sendFullEvidencePackage(selected);
-                          else generateFullEvidencePackage(selected);
-                        }}
+                        onClick={() => runPackagePrimaryAction(selected)}
                       >
-                        {preview ? "Send Full Package" : "Full Package"}
+                        {packagePrimaryLabel(selected)}
                       </button>
                     </div>
                   </div>

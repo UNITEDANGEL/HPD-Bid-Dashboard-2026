@@ -124,3 +124,30 @@ export async function listFieldPackets(jobId: string) {
     .filter((packet) => packet.jobId === cleanJobId)
     .sort((a, b) => b.generatedAt.localeCompare(a.generatedAt));
 }
+
+export async function clearFieldPackets(jobId: string, packetTypes?: FieldPacketType[]) {
+  const cleanJobId = String(jobId || "").trim();
+  if (!cleanJobId || !hasIndexedDb()) return 0;
+
+  const rows = await listFieldPackets(cleanJobId);
+  const packetTypeSet = packetTypes?.length ? new Set(packetTypes) : null;
+  const rowsToDelete = packetTypeSet ? rows.filter((packet) => packetTypeSet.has(packet.packetType)) : rows;
+  if (!rowsToDelete.length) return 0;
+
+  const db = await openDb();
+  const transaction = db.transaction(STORE_NAME, "readwrite");
+  const store = transaction.objectStore(STORE_NAME);
+
+  rowsToDelete.forEach((packet) => {
+    store.delete(packet.id);
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error || new Error("Could not clear packets."));
+    transaction.onabort = () => reject(transaction.error || new Error("Packet clear was aborted."));
+  });
+
+  db.close();
+  return rowsToDelete.length;
+}

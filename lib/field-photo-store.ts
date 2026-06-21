@@ -220,10 +220,12 @@ function evidenceFileName(meta: EvidenceStampMeta, mediaType: FieldMediaType, mi
                     ? "mp4"
                     : "jpg";
   const location = meta.location || meta.address || meta.borough || "LOCATION";
+  const label = meta.label || meta.kind.replace(/_/g, "-") || "EVIDENCE";
   return [
     cleanFilePart(meta.jobId, "OMO"),
     cleanFilePart(location, "LOCATION"),
-    cleanFilePart(meta.kind.replace(/_/g, "-"), "EVIDENCE"),
+    cleanFilePart(label, "EVIDENCE"),
+    mediaType === "video" ? "VIDEO" : "PHOTO",
     fileTimestamp(meta.capturedAt),
   ].join("_") + `.${extension}`;
 }
@@ -396,6 +398,9 @@ function loadVideo(dataUrl: string): Promise<HTMLVideoElement> {
 function stampedVideoMimeType() {
   if (typeof MediaRecorder === "undefined") return "";
   const candidates = [
+    "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+    "video/mp4;codecs=h264,aac",
+    "video/mp4",
     "video/webm;codecs=vp9,opus",
     "video/webm;codecs=vp8,opus",
     "video/webm;codecs=vp9",
@@ -670,7 +675,8 @@ export async function saveFieldPhotos(
     }
 
     const capturedAt = new Date().toISOString();
-    const label = meta.label || evidenceLabel(kind);
+    const defaultLabel = `${evidenceLabel(kind)} ${mediaType === "video" ? "Video" : "Photo"}`;
+    const label = meta.label || defaultLabel;
     const stampMeta: EvidenceStampMeta = {
       jobId: cleanJobId,
       kind,
