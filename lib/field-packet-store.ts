@@ -1,4 +1,4 @@
-export type FieldPacketType = "email_evidence_pdf" | "affidavit_invoice_pdf";
+export type FieldPacketType = "email_evidence_pdf" | "affidavit_invoice_pdf" | "full_evidence_zip";
 
 export type FieldPacket = {
   id: string;

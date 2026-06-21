@@ -6,6 +6,7 @@ const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v1";
 const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
 const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
 const USER_LOCATION_OVERVIEW_ZOOM = 12;
+const FULL_PACKAGE_SAVE_LIMIT_BYTES = 35 * 1024 * 1024;
 
 
 import * as JobStatus from "../../lib/jobs/status";
@@ -183,6 +184,133 @@ function mapTileUrl(style: MapBaseStyle, mapTilerKey: string) {
     return `https://api.maptiler.com/maps/${style.mapId}/{z}/{x}/{y}.png?key=${encodeURIComponent(mapTilerKey.trim())}`;
   }
   return style.tileUrl || COLOR_STREETS_STYLE.tileUrl!;
+}
+
+type ZipEntry = {
+  path: string;
+  bytes: Uint8Array;
+};
+
+let zipCrcTable: Uint32Array | null = null;
+
+function zipTextBytes(value: string) {
+  return new TextEncoder().encode(value);
+}
+
+function zipSafePart(value: string, fallback = "file") {
+  const cleaned = String(value || "")
+    .replace(/[^\x20-\x7E]+/g, " ")
+    .replace(/[^a-z0-9._-]+/gi, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 90);
+  return cleaned || fallback;
+}
+
+function zipCrc32(bytes: Uint8Array) {
+  if (!zipCrcTable) {
+    zipCrcTable = new Uint32Array(256);
+    for (let index = 0; index < 256; index += 1) {
+      let crc = index;
+      for (let bit = 0; bit < 8; bit += 1) {
+        crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
+      }
+      zipCrcTable[index] = crc >>> 0;
+    }
+  }
+
+  let crc = 0xffffffff;
+  for (let index = 0; index < bytes.length; index += 1) {
+    crc = zipCrcTable[(crc ^ bytes[index]) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function zipDosTimeDate(date = new Date()) {
+  const year = Math.max(1980, date.getFullYear());
+  return {
+    dosTime: (date.getHours() << 11) | (date.getMinutes() << 5) | Math.floor(date.getSeconds() / 2),
+    dosDate: ((year - 1980) << 9) | ((date.getMonth() + 1) << 5) | date.getDate(),
+  };
+}
+
+function concatZipChunks(chunks: Uint8Array[]) {
+  const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const output = new Uint8Array(total);
+  let offset = 0;
+  chunks.forEach((chunk) => {
+    output.set(chunk, offset);
+    offset += chunk.length;
+  });
+  return output;
+}
+
+function buildStoredZip(entries: ZipEntry[]) {
+  const chunks: Uint8Array[] = [];
+  const centralChunks: Uint8Array[] = [];
+  const { dosTime, dosDate } = zipDosTimeDate();
+  let localOffset = 0;
+
+  entries.forEach((entry) => {
+    const path = entry.path.split("/").map((part) => zipSafePart(part, "item")).join("/");
+    const nameBytes = zipTextBytes(path);
+    const bytes = entry.bytes;
+    const crc = zipCrc32(bytes);
+
+    const localHeader = new Uint8Array(30 + nameBytes.length);
+    const localView = new DataView(localHeader.buffer);
+    localView.setUint32(0, 0x04034b50, true);
+    localView.setUint16(4, 20, true);
+    localView.setUint16(6, 0, true);
+    localView.setUint16(8, 0, true);
+    localView.setUint16(10, dosTime, true);
+    localView.setUint16(12, dosDate, true);
+    localView.setUint32(14, crc, true);
+    localView.setUint32(18, bytes.length, true);
+    localView.setUint32(22, bytes.length, true);
+    localView.setUint16(26, nameBytes.length, true);
+    localView.setUint16(28, 0, true);
+    localHeader.set(nameBytes, 30);
+
+    const centralHeader = new Uint8Array(46 + nameBytes.length);
+    const centralView = new DataView(centralHeader.buffer);
+    centralView.setUint32(0, 0x02014b50, true);
+    centralView.setUint16(4, 20, true);
+    centralView.setUint16(6, 20, true);
+    centralView.setUint16(8, 0, true);
+    centralView.setUint16(10, 0, true);
+    centralView.setUint16(12, dosTime, true);
+    centralView.setUint16(14, dosDate, true);
+    centralView.setUint32(16, crc, true);
+    centralView.setUint32(20, bytes.length, true);
+    centralView.setUint32(24, bytes.length, true);
+    centralView.setUint16(28, nameBytes.length, true);
+    centralView.setUint16(30, 0, true);
+    centralView.setUint16(32, 0, true);
+    centralView.setUint16(34, 0, true);
+    centralView.setUint16(36, 0, true);
+    centralView.setUint32(38, 0, true);
+    centralView.setUint32(42, localOffset, true);
+    centralHeader.set(nameBytes, 46);
+
+    chunks.push(localHeader, bytes);
+    centralChunks.push(centralHeader);
+    localOffset += localHeader.length + bytes.length;
+  });
+
+  const centralOffset = localOffset;
+  const centralSize = centralChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const endHeader = new Uint8Array(22);
+  const endView = new DataView(endHeader.buffer);
+  endView.setUint32(0, 0x06054b50, true);
+  endView.setUint16(4, 0, true);
+  endView.setUint16(6, 0, true);
+  endView.setUint16(8, entries.length, true);
+  endView.setUint16(10, entries.length, true);
+  endView.setUint32(12, centralSize, true);
+  endView.setUint32(16, centralOffset, true);
+  endView.setUint16(20, 0, true);
+
+  return concatZipChunks([...chunks, ...centralChunks, endHeader]);
 }
 
 function escapeMapPopupHtml(value: unknown) {
@@ -2933,6 +3061,296 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return new File([dataUrlToBlob(dataUrl, mimeType)], safeAttachmentName(fileName, "attachment"), { type: mimeType });
   }
 
+  function bytesToBlob(bytes: Uint8Array, mimeType = "application/octet-stream") {
+    const buffer = new ArrayBuffer(bytes.byteLength);
+    new Uint8Array(buffer).set(bytes);
+    return new Blob([buffer], { type: mimeType });
+  }
+
+  function bytesToFile(bytes: Uint8Array, fileName: string, mimeType = "application/octet-stream") {
+    return new File([bytesToBlob(bytes, mimeType)], safeAttachmentName(fileName, "attachment"), { type: mimeType });
+  }
+
+  function downloadBytesAsFile(bytes: Uint8Array, fileName: string, mimeType = "application/octet-stream") {
+    const href = URL.createObjectURL(bytesToBlob(bytes, mimeType));
+    const anchor = document.createElement("a");
+    anchor.href = href;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => URL.revokeObjectURL(href), 30000);
+  }
+
+  function zipPacketFileName(job: JobRecord, suffix = "full-evidence-package") {
+    return packetFileName(job, suffix).replace(/\.pdf$/i, ".zip");
+  }
+
+  function mediaExtension(media: FieldMedia) {
+    const fromName = String(media.name || "").match(/\.[a-z0-9]{2,5}$/i)?.[0];
+    if (fromName) return fromName.toLowerCase();
+    const type = String(media.type || "").toLowerCase();
+    if (type.includes("quicktime")) return ".mov";
+    if (type.includes("webm")) return ".webm";
+    if (type.includes("3gpp")) return ".3gp";
+    if (type.includes("mp4")) return ".mp4";
+    if (type.includes("png")) return ".png";
+    if (type.includes("webp")) return ".webp";
+    if (type.includes("heic")) return ".heic";
+    if (type.includes("heif")) return ".heif";
+    return media.mediaType === "video" ? ".mp4" : ".jpg";
+  }
+
+  function fullPackageMediaPath(key: string, media: FieldMedia, index: number) {
+    const folder = fieldEvidenceKindClass(media.kind || "general");
+    const label = zipSafePart(media.evidenceLabel || fieldEvidenceLabel(media.kind || "general"), "evidence");
+    const fallbackName = `${safePacketFilePart(key)}-${String(index + 1).padStart(2, "0")}-${folder}${mediaExtension(media)}`;
+    const fileName = safeAttachmentName(media.name, fallbackName);
+    return `media/${folder}/${String(index + 1).padStart(2, "0")}-${label}-${fileName}`;
+  }
+
+  async function buildFullEvidenceIndexPdf(job: MappedJob, evidenceRows: FieldMedia[], invoicePacket: FieldPacket | null) {
+    const key = jobKey(job);
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const bold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const address = displayAddress(job);
+    const location = displayLocation(job);
+    const generatedAt = new Date().toLocaleString();
+    const imageCount = evidenceRows.filter((media) => media.mediaType === "image").length;
+    const videoCount = evidenceRows.filter((media) => media.mediaType === "video").length;
+    const kindCounts = evidenceRows.reduce((counts, media) => {
+      counts[media.kind || "general"] = (counts[media.kind || "general"] || 0) + 1;
+      return counts;
+    }, emptyFieldMediaCounts());
+
+    const cover = pdfDoc.addPage([612, 792]);
+    cover.setFont(font);
+    cover.drawText("FULL EVIDENCE PACKAGE INDEX", { x: 46, y: 744, size: 17, font: bold });
+    drawPacketLine(cover, `OMO / WORK #: ${key}`, 46, 716, 12);
+    drawPacketLine(cover, `Address: ${address}`, 46, 696, 10);
+    drawPacketLine(cover, `Location: ${location || "Not listed"} - Borough: ${(job as any).borough || "Not listed"}`, 46, 680, 10);
+    drawPacketLine(cover, `Status: ${workflowLabel(job) || JobStatus.statusLabel(job)}`, 46, 660, 10);
+    drawPacketLine(cover, `Generated: ${generatedAt}`, 46, 642, 10);
+    drawPacketLine(cover, `Evidence files: ${evidenceRows.length} total - ${imageCount} image(s) - ${videoCount} video(s)`, 46, 616, 11);
+    drawPacketLine(cover, `Before: ${kindCounts.before}  After: ${kindCounts.after}  No Access: ${kindCounts.no_access}`, 46, 596, 9);
+    drawPacketLine(cover, `Refused: ${kindCounts.refused_access}  Done By Others: ${kindCounts.completed_by_others}  General: ${kindCounts.general}`, 46, 580, 9);
+    drawPacketLine(cover, invoicePacket ? `Affidavit + invoice PDF included: ${invoicePacket.fileName}` : "Affidavit + invoice PDF not found. Generate Invoice Package and rebuild before sending.", 46, 558, 8);
+    drawPacketLine(cover, "Original image and video files are included in the ZIP under the media folders.", 46, 540, 8);
+
+    evidenceRows.slice(0, 24).forEach((media, index) => {
+      drawPacketLine(
+        cover,
+        `${index + 1}. ${media.evidenceLabel || media.kind} - ${media.mediaType.toUpperCase()} - ${displayWorkflowDate(media.capturedAt)} - ${media.name}`,
+        54,
+        508 - index * 17,
+        8
+      );
+    });
+    if (evidenceRows.length > 24) {
+      drawPacketLine(cover, `${evidenceRows.length - 24} more evidence file(s) are listed in media-index.json.`, 54, 92, 8);
+    }
+
+    for (const [index, media] of evidenceRows.entries()) {
+      const page = pdfDoc.addPage([612, 792]);
+      page.setFont(font);
+
+      page.drawText("FIELD EVIDENCE PREVIEW", { x: 46, y: 744, size: 17, font: bold });
+      drawPacketLine(page, `OMO / WORK #: ${key}`, 46, 718, 11);
+      drawPacketLine(page, `Label: ${media.evidenceLabel || fieldEvidenceLabel(media.kind)}`, 46, 700, 10);
+      drawPacketLine(page, `Media: ${media.mediaType.toUpperCase()} - ${media.name}`, 46, 684, 9);
+      drawPacketLine(page, `Captured: ${displayWorkflowDate(media.capturedAt)}`, 46, 668, 9);
+      drawPacketLine(page, `Address: ${media.address || address}`, 46, 652, 9);
+      drawPacketLine(page, `Location: ${media.location || location || "Not listed"} - Borough: ${media.borough || (job as any).borough || "Not listed"}`, 46, 636, 9);
+      await drawPacketPreview(pdfDoc, page, media);
+      drawPacketLine(page, `Original file in ZIP: ${fullPackageMediaPath(key, media, index)}`, 46, 96, 8);
+      if (media.mediaType === "video") {
+        drawPacketLine(page, "This page shows the poster frame. The original video file is included in the ZIP.", 46, 80, 8);
+      }
+    }
+
+    return pdfDoc.save();
+  }
+
+  function buildFullPackageReadme(job: MappedJob, fileName: string, evidenceRows: FieldMedia[], invoicePacket: FieldPacket | null) {
+    const key = jobKey(job);
+    const imageCount = evidenceRows.filter((media) => media.mediaType === "image").length;
+    const videoCount = evidenceRows.filter((media) => media.mediaType === "video").length;
+    return [
+      "HPD FULL EVIDENCE PACKAGE",
+      "",
+      `Package: ${fileName}`,
+      `OMO / Work #: ${key}`,
+      `Address: ${displayAddress(job)}`,
+      `Location: ${displayLocation(job) || "Not listed"}`,
+      `Borough: ${(job as any).borough || "Not listed"}`,
+      `Status: ${workflowLabel(job) || JobStatus.statusLabel(job)}`,
+      `Generated: ${new Date().toLocaleString()}`,
+      "",
+      `Evidence files: ${evidenceRows.length}`,
+      `Images: ${imageCount}`,
+      `Videos: ${videoCount}`,
+      "",
+      "Contents:",
+      "- documents/evidence-index.pdf: printable evidence index with preview pages.",
+      invoicePacket
+        ? `- documents/${safeAttachmentName(invoicePacket.fileName, "affidavit-invoice.pdf")}: affidavit and invoice PDF.`
+        : "- Affidavit and invoice PDF was not saved yet. Generate Invoice Package, then rebuild this Full Package before sending.",
+      "- media/before: original before photos and videos.",
+      "- media/after: original after photos and videos.",
+      "- media/no-access, media/refused-access, media/completed-by-others: original outcome evidence.",
+      "- media-index.json: machine-readable file list and metadata.",
+      "",
+      "Email note:",
+      "Browser email drafts cannot auto-attach files. Use the Share button from the job card when available, or attach this ZIP manually.",
+    ].join("\n");
+  }
+
+  async function generateFullEvidencePackage(job: MappedJob, shareAfter = false) {
+    const key = jobKey(job);
+    if (!key) return;
+
+    try {
+      const evidenceRows = await listFieldEvidence(key);
+      if (!evidenceRows.length) {
+        showActionNotice("No field media saved yet. Capture before/after photos or videos first.");
+        focusFieldPane("capture");
+        return;
+      }
+
+      showActionNotice("Building full package with original media...");
+      const invoicePacket = latestFieldPacket(job, "affidavit_invoice_pdf");
+      const fileName = zipPacketFileName(job);
+      const mediaManifest = evidenceRows.map((media, index) => ({
+        path: fullPackageMediaPath(key, media, index),
+        media,
+      }));
+      const indexPdfBytes = await buildFullEvidenceIndexPdf(job, evidenceRows, invoicePacket);
+      const entries: ZipEntry[] = [
+        { path: "README.txt", bytes: zipTextBytes(buildFullPackageReadme(job, fileName, evidenceRows, invoicePacket)) },
+        { path: "documents/evidence-index.pdf", bytes: indexPdfBytes },
+        {
+          path: "media-index.json",
+          bytes: zipTextBytes(JSON.stringify({
+            version: 1,
+            packageType: "full_evidence_zip",
+            generatedAt: new Date().toISOString(),
+            job: {
+              omo: key,
+              address: displayAddress(job),
+              location: displayLocation(job),
+              borough: (job as any).borough || "",
+              status: workflowLabel(job) || JobStatus.statusLabel(job),
+            },
+            affidavitInvoice: invoicePacket
+              ? {
+                  fileName: invoicePacket.fileName,
+                  generatedAt: invoicePacket.generatedAt,
+                  size: invoicePacket.size,
+                }
+              : null,
+            evidence: mediaManifest.map(({ path, media }) => ({
+              path,
+              id: media.id,
+              kind: media.kind,
+              label: media.evidenceLabel || fieldEvidenceLabel(media.kind),
+              mediaType: media.mediaType,
+              name: media.name,
+              type: media.type,
+              size: media.size,
+              capturedAt: media.capturedAt,
+              address: media.address,
+              location: media.location,
+              borough: media.borough,
+              outcome: media.outcome,
+            })),
+          }, null, 2)),
+        },
+      ];
+
+      if (invoicePacket) {
+        entries.push({
+          path: `documents/${safeAttachmentName(invoicePacket.fileName, "affidavit-invoice.pdf")}`,
+          bytes: dataUrlToBytes(invoicePacket.dataUrl),
+        });
+      }
+
+      mediaManifest.forEach(({ path, media }) => {
+        if (!media.dataUrl) return;
+        entries.push({
+          path,
+          bytes: dataUrlToBytes(media.dataUrl),
+        });
+      });
+
+      const zipBytes = buildStoredZip(entries);
+      const imageCount = evidenceRows.filter((media) => media.mediaType === "image").length;
+      const videoCount = evidenceRows.filter((media) => media.mediaType === "video").length;
+      let savedLocally = false;
+      let saveSkipped = "";
+
+      if (zipBytes.byteLength <= FULL_PACKAGE_SAVE_LIMIT_BYTES) {
+        try {
+          const savedPacket = await saveFieldPacket({
+            jobId: key,
+            fileName,
+            mimeType: "application/zip",
+            dataUrl: bytesToDataUrl(zipBytes, "application/zip"),
+            size: zipBytes.byteLength,
+            evidenceCount: evidenceRows.length,
+            imageCount,
+            videoCount,
+            packetType: "full_evidence_zip",
+            note: "Full ZIP package with evidence index, affidavit/invoice if available, original images, and original videos.",
+          });
+          savedLocally = true;
+          setFieldPacketsByJob((current) => ({
+            ...current,
+            [key]: [savedPacket, ...(current[key] || [])].sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)),
+          }));
+        } catch (error) {
+          console.error(error);
+          saveSkipped = " Browser storage could not save the ZIP, but the download is ready.";
+        }
+      } else {
+        saveSkipped = ` ZIP is ${packetSizeLabel(zipBytes.byteLength)}, so it downloaded without duplicating it in phone storage.`;
+      }
+
+      focusFieldPane("package");
+
+      if (shareAfter) {
+        const zipFile = bytesToFile(zipBytes, fileName, "application/zip");
+        const canShareFiles =
+          typeof navigator !== "undefined" &&
+          typeof navigator.share === "function" &&
+          (!navigator.canShare || navigator.canShare({ files: [zipFile] }));
+
+        if (canShareFiles) {
+          try {
+            await navigator.share({
+              title: `${key} HPD full package`,
+              text: `Full HPD evidence package for ${key}: ${evidenceRows.length} file(s), ${videoCount} video(s).`,
+              files: [zipFile],
+            });
+            showActionNotice(`Full package shared: ${evidenceRows.length} evidence file(s), ${videoCount} video(s).${savedLocally ? " Saved on this phone." : saveSkipped}`);
+            return;
+          } catch (error) {
+            console.error(error);
+            showActionNotice("Share was cancelled or blocked. Downloading full package instead.");
+          }
+        } else {
+          showActionNotice("This browser cannot share ZIP files directly. Downloading full package instead.");
+        }
+      }
+
+      downloadBytesAsFile(zipBytes, fileName, "application/zip");
+      showActionNotice(`${savedLocally ? "Saved and downloaded" : "Downloaded"} full package: ${imageCount} image(s), ${videoCount} video(s).${invoicePacket ? "" : " Generate Invoice Package, then rebuild to include affidavit/invoice."}${saveSkipped}`);
+    } catch (error) {
+      console.error(error);
+      showActionNotice(error instanceof Error ? error.message : "Full package build failed. Try again.");
+    }
+  }
+
   async function shareStoredPackage(job: MappedJob, packet = latestFieldPacket(job, "affidavit_invoice_pdf") || latestFieldPacket(job)) {
     const key = jobKey(job);
     if (!key) return;
@@ -2943,9 +3361,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       return;
     }
 
-    const videos = (await listFieldEvidence(key)).filter((media) => media.mediaType === "video" && media.dataUrl);
+    const isFullZip = packet.packetType === "full_evidence_zip" || String(packet.mimeType || "").includes("zip");
+    const videos = isFullZip ? [] : (await listFieldEvidence(key)).filter((media) => media.mediaType === "video" && media.dataUrl);
     const files = [
-      dataUrlToFile(packet.dataUrl, packet.fileName, packet.mimeType || "application/pdf"),
+      dataUrlToFile(packet.dataUrl, packet.fileName, packet.mimeType || (isFullZip ? "application/zip" : "application/pdf")),
       ...videos.map((video, index) =>
         dataUrlToFile(
           video.dataUrl,
@@ -2971,7 +3390,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         return;
       } catch (error) {
         console.error(error);
-        showActionNotice("Share was cancelled or blocked. Downloading the PDF instead.");
+        showActionNotice(`Share was cancelled or blocked. Downloading the ${isFullZip ? "ZIP" : "PDF"} instead.`);
       }
     } else if (videos.length) {
       showActionNotice("This browser cannot attach files directly. PDF will download; original videos stay saved in the job card.");
@@ -3156,9 +3575,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     window.localStorage.setItem("hpd-evidence-email-cc", cc.trim());
 
     const isInvoicePacket = packetType === "affidavit_invoice_pdf";
-    const subject = `${key} HPD ${isInvoicePacket ? "affidavit and invoice package" : "field evidence packet"}`;
+    const isFullZip = packetType === "full_evidence_zip";
+    const packageLabel = isFullZip ? "full evidence ZIP package" : isInvoicePacket ? "affidavit and invoice package" : "field evidence packet";
+    const attachmentLabel = isFullZip ? "Attach full package ZIP" : "Attach package PDF";
+    const subject = `${key} HPD ${packageLabel}`;
     const body = [
-      `Please see attached ${isInvoicePacket ? "affidavit and invoice package" : "field evidence packet"} for OMO / Work #: ${key}.`,
+      `Please see attached ${packageLabel} for OMO / Work #: ${key}.`,
       "",
       `Address: ${displayAddress(job)}`,
       `Location: ${displayLocation(job) || "Not listed"}`,
@@ -3166,10 +3588,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       `Status: ${workflowLabel(job) || JobStatus.statusLabel(job)}`,
       `Evidence files: ${evidenceCount}`,
       `Video files: ${videoCount}`,
-      attachmentName ? `Attach package PDF: ${attachmentName}` : "Attach the downloaded package PDF.",
-      videoCount ? "Attach original video file(s) separately or use Share Attachments from the job card." : "",
+      attachmentName ? `${attachmentLabel}: ${attachmentName}` : `${attachmentLabel}: attach the downloaded package.`,
+      isFullZip ? "The ZIP contains the evidence index, original photos, and original videos." : "",
+      !isFullZip && videoCount ? "Attach original video file(s) separately or use Share Attachments from the job card." : "",
       "",
-      "Note: This browser opened a draft only. Email drafts cannot auto-attach files. Use Share Attachments for the PDF/video files, or attach the downloaded files before sending.",
+      "Note: This browser opened a draft only. Email drafts cannot auto-attach files. Use Share from the job card when available, or attach the downloaded files before sending.",
     ].filter(Boolean).join("\n");
 
     const mailto = `mailto:${encodeURIComponent(to.trim())}?cc=${encodeURIComponent(cc.trim())}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -8143,7 +8566,7 @@ return (
 
           .field-send-actions {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 8px;
           }
 
@@ -8199,6 +8622,19 @@ return (
           .field-packet-row button:nth-of-type(2),
           .field-send-actions button:first-child {
             background: #155eef;
+          }
+
+          .field-send-actions button:nth-child(2) {
+            background: #0f8d68;
+          }
+
+          .field-send-actions button:nth-child(3) {
+            background: #16202b;
+          }
+
+          .field-packet-row.full_evidence_zip {
+            border-color: rgba(21, 94, 239, 0.34);
+            background: #f1f7ff;
           }
 
           .field-packet-empty {
@@ -8296,6 +8732,11 @@ return (
           .field-packet-empty {
             background: #1b2633 !important;
             border-color: rgba(248, 250, 252, 0.12) !important;
+          }
+
+          .field-packet-row.full_evidence_zip {
+            background: #16283d !important;
+            border-color: rgba(125, 183, 255, 0.36) !important;
           }
 
           .field-packet-row strong,
@@ -10063,7 +10504,7 @@ return (
                 <button type="button" className={`package ${fieldFocusPane === "package" ? "active" : ""}`} onClick={() => focusFieldPane("package")}>
                   <span className="flow-icon">3</span>
                   <strong>Package</strong>
-                  <small>Saved PDFs</small>
+                  <small>PDFs / ZIPs</small>
                 </button>
                 <button type="button" className={`send ${fieldFocusPane === "send" ? "active" : ""}`} onClick={() => focusFieldPane("send")}>
                   <span className="flow-icon">4</span>
@@ -10202,29 +10643,44 @@ return (
                   </div>
                 ) : (
                   <div className="field-packet-empty">
-                    <strong>Generate the affidavit + invoice package first.</strong>
-                    <span>Paperwork saves the PDF here; Share Attachments can include original videos.</span>
+                    <strong>Build the invoice PDF, then Full Package.</strong>
+                    <span>The full package adds every original photo/video angle into one ZIP.</span>
                   </div>
                 )}
               </div>
 
               {(() => {
+                const fullPackage = latestFieldPacket(selected, "full_evidence_zip");
                 const invoicePacket = latestFieldPacket(selected, "affidavit_invoice_pdf");
                 const latestPacket = latestFieldPacket(selected);
-                const packetForDraft = invoicePacket || latestPacket;
                 const videoCount = fieldPhotoCountsFor(selected).videos;
 
                 return (
                   <div data-field-pane="send" className={`field-send-panel field-pane ${fieldFocusPane === "send" ? "is-active" : ""}`}>
                     <div>
                       <span>Send Package</span>
-                      <strong>{invoicePacket ? "Affidavit + invoice ready" : latestPacket ? "Evidence packet only" : "Need affidavit + invoice"}</strong>
+                      <strong>{fullPackage ? "Full package ready" : invoicePacket ? "Affidavit + invoice ready" : latestPacket ? "Evidence packet only" : "Need affidavit + invoice"}</strong>
                       <small>
-                        {invoicePacket?.fileName || latestPacket?.fileName || "Generate Invoice Package first."}
-                        {videoCount ? ` ${videoCount} original video file(s) can be shared separately.` : ""}
+                        {fullPackage?.fileName || invoicePacket?.fileName || latestPacket?.fileName || "Generate Invoice Package first."}
+                        {videoCount ? fullPackage ? ` ${videoCount} video file(s) are inside the ZIP.` : ` ${videoCount} original video file(s) need the full package.` : ""}
                       </small>
                     </div>
                     <div className="field-send-actions">
+                      <button
+                        type="button"
+                        onClick={() => generateFullEvidencePackage(selected)}
+                      >
+                        Full Package
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (fullPackage) shareStoredPackage(selected, fullPackage);
+                          else generateFullEvidencePackage(selected, true);
+                        }}
+                      >
+                        Share Full
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
@@ -10232,16 +10688,7 @@ return (
                           else window.open(paperworkHref(selected, "package"), "_blank", "noopener,noreferrer");
                         }}
                       >
-                        {invoicePacket ? "Share Attachments" : "Generate Invoice Package"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (packetForDraft) emailStoredPacket(selected, packetForDraft);
-                          else window.open(paperworkHref(selected, "package"), "_blank", "noopener,noreferrer");
-                        }}
-                      >
-                        {packetForDraft ? "Open Draft" : "Open Builder"}
+                        {invoicePacket ? "Share Invoice" : "Invoice PDF"}
                       </button>
                     </div>
                   </div>
