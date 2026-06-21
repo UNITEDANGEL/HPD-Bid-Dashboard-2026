@@ -377,8 +377,14 @@ function loadVideo(dataUrl: string): Promise<HTMLVideoElement> {
     video.preload = "metadata";
     video.playsInline = true;
     video.onloadeddata = () => {
+      const targetTime = Math.min(0.35, video.duration || 0);
+      if (targetTime <= 0.04) {
+        window.clearTimeout(timeout);
+        resolve(video);
+        return;
+      }
       try {
-        video.currentTime = Math.min(0.35, video.duration || 0);
+        video.currentTime = targetTime;
       } catch {
         window.clearTimeout(timeout);
         resolve(video);
@@ -393,6 +399,7 @@ function loadVideo(dataUrl: string): Promise<HTMLVideoElement> {
       reject(new Error("Could not load video evidence."));
     };
     video.src = dataUrl;
+    video.load();
   });
 }
 
@@ -422,6 +429,11 @@ function blobToDataUrl(blob: Blob): Promise<string> {
 
 function seekVideo(video: HTMLVideoElement, seconds: number) {
   return new Promise<void>((resolve, reject) => {
+    if (Math.abs((video.currentTime || 0) - seconds) < 0.04) {
+      window.requestAnimationFrame(() => resolve());
+      return;
+    }
+
     const timeout = window.setTimeout(() => {
       cleanup();
       reject(new Error("Video seek timed out."));
@@ -448,6 +460,32 @@ function seekVideo(video: HTMLVideoElement, seconds: number) {
       resolve();
     }
   });
+}
+
+function waitForVideoFrame(ms: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function recordStampedVideoBySeeking(
+  video: HTMLVideoElement,
+  canvas: HTMLCanvasElement,
+  context: CanvasRenderingContext2D,
+  stampMeta: EvidenceStampMeta,
+  duration: number
+) {
+  const seconds = Math.max(2, Math.min(Number.isFinite(duration) && duration > 0 ? duration : 6, 30));
+  const fps = 6;
+  const frameCount = Math.max(12, Math.ceil(seconds * fps));
+  const frameDelay = Math.round(1000 / fps);
+
+  for (let index = 0; index < frameCount; index += 1) {
+    const progress = frameCount <= 1 ? 0 : index / (frameCount - 1);
+    const targetSecond = Math.max(0, Math.min(seconds * progress, Math.max(0, (duration || seconds) - 0.08)));
+    await seekVideo(video, targetSecond);
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    stampEvidenceImage(canvas, context, stampMeta);
+    await waitForVideoFrame(frameDelay);
+  }
 }
 
 type DecodedImageEvidence = {
@@ -525,8 +563,11 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
     throw new Error("This browser cannot stamp videos from the camera. Try Chrome mobile.");
   }
 
-  const sourceStream = (video as HTMLVideoElement & { captureStream?: () => MediaStream }).captureStream?.();
-  sourceStream?.getAudioTracks().forEach((track) => captureStream.addTrack(track));
+  let sourceStream: MediaStream | undefined;
+  try {
+    sourceStream = (video as HTMLVideoElement & { captureStream?: () => MediaStream }).captureStream?.();
+    sourceStream?.getAudioTracks().forEach((track) => captureStream.addTrack(track));
+  } catch {}
 
   const chunks: BlobPart[] = [];
   const recorder = new MediaRecorder(captureStream, {
@@ -535,10 +576,11 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
   });
 
   let frameId = 0;
-  let stopped = false;
+  let drawing = false;
+  let recordingStopped = false;
 
   const drawFrame = () => {
-    if (stopped) return;
+    if (!drawing) return;
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     stampEvidenceImage(canvas, context, stampMeta);
     frameId = window.requestAnimationFrame(drawFrame);
@@ -547,7 +589,7 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
   const recorded = new Promise<Blob>((resolve, reject) => {
     const maxMs = Math.max(8000, (duration || MAX_STAMPED_VIDEO_SECONDS) * 1000 + 6000);
     const timeout = window.setTimeout(() => {
-      stopped = true;
+      drawing = false;
       try {
         if (recorder.state !== "inactive") recorder.stop();
       } catch {}
@@ -563,7 +605,8 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
     };
     recorder.onstop = () => {
       window.clearTimeout(timeout);
-      stopped = true;
+      drawing = false;
+      recordingStopped = true;
       const blob = new Blob(chunks, { type: recorder.mimeType || recordingMimeType || "video/webm" });
       if (!blob.size) {
         reject(new Error("Stamped video was empty. Try recording a shorter clip."));
@@ -576,6 +619,7 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
   stampEvidenceImage(canvas, context, stampMeta);
   recorder.start(500);
+  drawing = true;
   drawFrame();
 
   try {
@@ -584,8 +628,17 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
     const ended = new Promise<void>((resolve) => {
       video.addEventListener("ended", () => resolve(), { once: true });
     });
-    await video.play();
-    await Promise.race([ended, recorded.then(() => undefined)]);
+    try {
+      await video.play();
+      await Promise.race([ended, recorded.then(() => undefined)]);
+    } catch {
+      drawing = false;
+      if (frameId) {
+        window.cancelAnimationFrame(frameId);
+        frameId = 0;
+      }
+      await recordStampedVideoBySeeking(video, canvas, context, stampMeta, duration);
+    }
     if (recorder.state !== "inactive") recorder.stop();
     const blob = await recorded;
     const dataUrl = await blobToDataUrl(blob);
@@ -595,10 +648,10 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
       size: blob.size,
     };
   } finally {
-    stopped = true;
+    drawing = false;
     if (frameId) window.cancelAnimationFrame(frameId);
     try {
-      if (recorder.state !== "inactive") recorder.stop();
+      if (!recordingStopped && recorder.state !== "inactive") recorder.stop();
     } catch {}
     video.pause();
     video.removeAttribute("src");
