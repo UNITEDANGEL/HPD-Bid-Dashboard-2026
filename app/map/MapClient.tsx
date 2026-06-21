@@ -2864,6 +2864,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return fieldPacketsByJob[key] || [];
   }
 
+  function latestFieldPacket(job: JobRecord | null, packetType?: FieldPacket["packetType"]) {
+    const packets = fieldPacketRowsFor(job);
+    if (!packetType) return packets[0] || null;
+    return packets.find((packet) => packet.packetType === packetType) || null;
+  }
+
   function packetSizeLabel(size: number) {
     const value = Number(size || 0);
     if (!value) return "0 KB";
@@ -2892,10 +2898,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function downloadStoredPacket(packet: FieldPacket) {
-    const bytes = dataUrlToBytes(packet.dataUrl);
-    const buffer = new ArrayBuffer(bytes.byteLength);
-    new Uint8Array(buffer).set(bytes);
-    const href = URL.createObjectURL(new Blob([buffer], { type: packet.mimeType || "application/pdf" }));
+    const href = URL.createObjectURL(dataUrlToBlob(packet.dataUrl, packet.mimeType || "application/pdf"));
     const anchor = document.createElement("a");
     anchor.href = href;
     anchor.download = packet.fileName;
@@ -2907,7 +2910,74 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function emailStoredPacket(job: MappedJob, packet: FieldPacket) {
-    openEvidenceEmailDraft(job, packet.fileName, packet.evidenceCount);
+    openEvidenceEmailDraft(job, packet.fileName, packet.evidenceCount, packet.videoCount, packet.packetType);
+  }
+
+  function safeAttachmentName(name: string, fallback: string) {
+    return String(name || fallback)
+      .split(/[\\/]/)
+      .pop()
+      ?.replace(/[^a-z0-9._-]+/gi, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 120) || fallback;
+  }
+
+  function dataUrlToBlob(dataUrl: string, mimeType = "application/octet-stream") {
+    const bytes = dataUrlToBytes(dataUrl);
+    const buffer = new ArrayBuffer(bytes.byteLength);
+    new Uint8Array(buffer).set(bytes);
+    return new Blob([buffer], { type: mimeType });
+  }
+
+  function dataUrlToFile(dataUrl: string, fileName: string, mimeType = "application/octet-stream") {
+    return new File([dataUrlToBlob(dataUrl, mimeType)], safeAttachmentName(fileName, "attachment"), { type: mimeType });
+  }
+
+  async function shareStoredPackage(job: MappedJob, packet = latestFieldPacket(job, "affidavit_invoice_pdf") || latestFieldPacket(job)) {
+    const key = jobKey(job);
+    if (!key) return;
+
+    if (!packet) {
+      showActionNotice("Generate the affidavit + invoice package first, then share attachments.");
+      window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    const videos = (await listFieldEvidence(key)).filter((media) => media.mediaType === "video" && media.dataUrl);
+    const files = [
+      dataUrlToFile(packet.dataUrl, packet.fileName, packet.mimeType || "application/pdf"),
+      ...videos.map((video, index) =>
+        dataUrlToFile(
+          video.dataUrl,
+          video.name || `${safePacketFilePart(key)}-video-${index + 1}.mp4`,
+          video.type || "video/mp4"
+        )
+      ),
+    ];
+
+    const canShareFiles =
+      typeof navigator !== "undefined" &&
+      typeof navigator.share === "function" &&
+      (!navigator.canShare || navigator.canShare({ files }));
+
+    if (canShareFiles) {
+      try {
+        await navigator.share({
+          title: `${key} HPD package`,
+          text: `HPD package for ${key}. Includes ${packet.fileName}${videos.length ? ` and ${videos.length} original video file(s)` : ""}.`,
+          files,
+        });
+        showActionNotice(`Share sheet opened with ${files.length} attachment(s).`);
+        return;
+      } catch (error) {
+        console.error(error);
+        showActionNotice("Share was cancelled or blocked. Downloading the PDF instead.");
+      }
+    } else if (videos.length) {
+      showActionNotice("This browser cannot attach files directly. PDF will download; original videos stay saved in the job card.");
+    }
+
+    downloadStoredPacket(packet);
   }
 
   function safePacketFilePart(value: string, fallback = "packet") {
@@ -3066,10 +3136,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     window.setTimeout(() => URL.revokeObjectURL(href), 30000);
 
     showActionNotice(`${savedLocally ? "Saved and downloaded" : "Downloaded"} email-size packet: ${fileName} (${packetSizeLabel(bytes.byteLength)}).`);
-    if (openDraftAfter) openEvidenceEmailDraft(job, fileName, evidenceRows.length);
+    if (openDraftAfter) openEvidenceEmailDraft(job, fileName, evidenceRows.length, videoCount, "email_evidence_pdf");
   }
 
-  function openEvidenceEmailDraft(job: MappedJob, attachmentName = "", evidenceCount = fieldPhotoCountsFor(job).total) {
+  function openEvidenceEmailDraft(
+    job: MappedJob,
+    attachmentName = "",
+    evidenceCount = fieldPhotoCountsFor(job).total,
+    videoCount = fieldPhotoCountsFor(job).videos,
+    packetType: FieldPacket["packetType"] | "" = ""
+  ) {
     const key = jobKey(job);
     const savedTo = typeof window !== "undefined" ? window.localStorage.getItem("hpd-evidence-email-to") || "" : "";
     const savedCc = typeof window !== "undefined" ? window.localStorage.getItem("hpd-evidence-email-cc") || "" : "";
@@ -3079,19 +3155,22 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     window.localStorage.setItem("hpd-evidence-email-to", to.trim());
     window.localStorage.setItem("hpd-evidence-email-cc", cc.trim());
 
-    const subject = `${key} HPD field evidence packet`;
+    const isInvoicePacket = packetType === "affidavit_invoice_pdf";
+    const subject = `${key} HPD ${isInvoicePacket ? "affidavit and invoice package" : "field evidence packet"}`;
     const body = [
-      `Please see attached temporary field evidence packet for OMO / Work #: ${key}.`,
+      `Please see attached ${isInvoicePacket ? "affidavit and invoice package" : "field evidence packet"} for OMO / Work #: ${key}.`,
       "",
       `Address: ${displayAddress(job)}`,
       `Location: ${displayLocation(job) || "Not listed"}`,
       `Borough: ${(job as any).borough || "Not listed"}`,
       `Status: ${workflowLabel(job) || JobStatus.statusLabel(job)}`,
       `Evidence files: ${evidenceCount}`,
-      attachmentName ? `Attach downloaded file: ${attachmentName}` : "Attach the downloaded evidence packet PDF.",
+      `Video files: ${videoCount}`,
+      attachmentName ? `Attach package PDF: ${attachmentName}` : "Attach the downloaded package PDF.",
+      videoCount ? "Attach original video file(s) separately or use Share Attachments from the job card." : "",
       "",
-      "Note: This browser opened a draft only. Attach the downloaded PDF before sending.",
-    ].join("\n");
+      "Note: This browser opened a draft only. Email drafts cannot auto-attach files. Use Share Attachments for the PDF/video files, or attach the downloaded files before sending.",
+    ].filter(Boolean).join("\n");
 
     const mailto = `mailto:${encodeURIComponent(to.trim())}?cc=${encodeURIComponent(cc.trim())}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     window.location.href = mailto;
@@ -8049,11 +8128,23 @@ return (
           }
 
           .field-packet-head,
-          .field-packet-row,
-          .field-send-panel {
+          .field-packet-row {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) auto auto;
             gap: 9px;
+          }
+
+          .field-packet-head {
+            grid-template-columns: minmax(0, 1fr) auto;
+          }
+
+          .field-packet-row {
+            grid-template-columns: minmax(0, 1fr) auto auto auto;
+          }
+
+          .field-send-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
           }
 
           .field-packet-head small,
@@ -8103,6 +8194,11 @@ return (
           .field-packet-row button:last-child,
           .field-send-panel button {
             background: #0f8d68;
+          }
+
+          .field-packet-row button:nth-of-type(2),
+          .field-send-actions button:first-child {
+            background: #155eef;
           }
 
           .field-packet-empty {
@@ -8522,7 +8618,8 @@ return (
 
             .field-packet-head,
             .field-packet-row,
-            .field-send-panel {
+            .field-send-panel,
+            .field-send-actions {
               grid-template-columns: 1fr !important;
             }
 
@@ -10098,35 +10195,58 @@ return (
                           <small>{packet.note}</small>
                         </div>
                         <button type="button" onClick={() => downloadStoredPacket(packet)}>Download</button>
-                        <button type="button" onClick={() => emailStoredPacket(selected, packet)}>Email</button>
+                        <button type="button" onClick={() => shareStoredPackage(selected, packet)}>Share</button>
+                        <button type="button" onClick={() => emailStoredPacket(selected, packet)}>Draft</button>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="field-packet-empty">
-                    <strong>Generate the email-size packet when evidence is ready.</strong>
-                    <span>Affidavit + invoice packages generated from Paperwork will save here too.</span>
+                    <strong>Generate the affidavit + invoice package first.</strong>
+                    <span>Paperwork saves the PDF here; Share Attachments can include original videos.</span>
                   </div>
                 )}
               </div>
 
-              <div data-field-pane="send" className={`field-send-panel field-pane ${fieldFocusPane === "send" ? "is-active" : ""}`}>
-                <div>
-                  <span>Send Package</span>
-                  <strong>{fieldPacketRowsFor(selected)[0] ? "Latest packet ready" : "Create packet first"}</strong>
-                  <small>{fieldPacketRowsFor(selected)[0]?.fileName || "Generate package preview after evidence is saved."}</small>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const latestPacket = fieldPacketRowsFor(selected)[0];
-                    if (latestPacket) emailStoredPacket(selected, latestPacket);
-                    else downloadTempEvidencePacket(selected, true);
-                  }}
-                >
-                  Open Email Draft
-                </button>
-              </div>
+              {(() => {
+                const invoicePacket = latestFieldPacket(selected, "affidavit_invoice_pdf");
+                const latestPacket = latestFieldPacket(selected);
+                const packetForDraft = invoicePacket || latestPacket;
+                const videoCount = fieldPhotoCountsFor(selected).videos;
+
+                return (
+                  <div data-field-pane="send" className={`field-send-panel field-pane ${fieldFocusPane === "send" ? "is-active" : ""}`}>
+                    <div>
+                      <span>Send Package</span>
+                      <strong>{invoicePacket ? "Affidavit + invoice ready" : latestPacket ? "Evidence packet only" : "Need affidavit + invoice"}</strong>
+                      <small>
+                        {invoicePacket?.fileName || latestPacket?.fileName || "Generate Invoice Package first."}
+                        {videoCount ? ` ${videoCount} original video file(s) can be shared separately.` : ""}
+                      </small>
+                    </div>
+                    <div className="field-send-actions">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (invoicePacket) shareStoredPackage(selected, invoicePacket);
+                          else window.open(paperworkHref(selected, "package"), "_blank", "noopener,noreferrer");
+                        }}
+                      >
+                        {invoicePacket ? "Share Attachments" : "Generate Invoice Package"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (packetForDraft) emailStoredPacket(selected, packetForDraft);
+                          else window.open(paperworkHref(selected, "package"), "_blank", "noopener,noreferrer");
+                        }}
+                      >
+                        {packetForDraft ? "Open Draft" : "Open Builder"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <div className="field-evidence-rail compact">
                 <div className="field-evidence-head">
