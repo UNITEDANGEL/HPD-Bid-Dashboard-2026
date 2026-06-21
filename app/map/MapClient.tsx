@@ -3294,7 +3294,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       `MEDIA INCLUDED (${includedMedia.length})`,
       ...includedMedia.map((media, index) => {
         const label = media.mediaType === "video" ? "VIDEO" : "IMAGE";
-        return `- ${String(index + 1).padStart(2, "0")} ${label}: ${media.name || "unnamed"} | ${media.evidenceLabel || media.kind} | ${packetSizeLabel(media.size)}`;
+        const stamp = media.mediaType === "video" ? (media.stamped === false ? "ORIGINAL VIDEO" : "STAMPED VIDEO") : "STAMPED IMAGE";
+        return `- ${String(index + 1).padStart(2, "0")} ${label}: ${media.name || "unnamed"} | ${media.evidenceLabel || media.kind} | ${stamp} | ${packetSizeLabel(media.size)}`;
       }),
     ];
 
@@ -3835,14 +3836,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       });
       const videoCount = saved.filter((item) => item.mediaType === "video").length;
       const imageCount = saved.length - videoCount;
+      const unstampedVideoCount = saved.filter((item) => item.mediaType === "video" && item.stamped === false).length;
+      const fallbackVideoNote = unstampedVideoCount
+        ? ` ${unstampedVideoCount} video(s) were saved as original files because this phone could not burn the label into them.`
+        : "";
       if (!hasNextCapture) {
         setFieldCaptureGuide(null);
         setFieldFocusPane("evidence");
         focusFieldMedia(target.kind);
         showActionNotice(
           target.step
-            ? `${fieldEvidenceLabel(target.kind)} required set saved. Add more videos from the job card if needed.`
-            : `${fieldEvidenceLabel(target.kind)} saved to job card: ${imageCount} image(s), ${videoCount} video(s).`
+            ? `${fieldEvidenceLabel(target.kind)} required set saved.${fallbackVideoNote} Add more videos from the job card if needed.`
+            : `${fieldEvidenceLabel(target.kind)} saved to job card: ${imageCount} image(s), ${videoCount} video(s).${fallbackVideoNote}`
         );
       }
     } catch (error) {

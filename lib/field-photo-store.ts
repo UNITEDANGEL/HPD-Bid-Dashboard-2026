@@ -35,6 +35,7 @@ export type FieldMedia = {
   posterDataUrl?: string;
   capturedAt: string;
   stamped?: boolean;
+  stampError?: string;
 };
 
 export type FieldPhoto = FieldMedia;
@@ -456,6 +457,14 @@ type DecodedImageEvidence = {
   close?: () => void;
 };
 
+type ProcessedEvidenceSource = {
+  dataUrl: string;
+  type: string;
+  size: number;
+  stamped?: boolean;
+  stampError?: string;
+};
+
 async function decodeImageEvidence(file: File, dataUrl: string): Promise<DecodedImageEvidence> {
   let imageError: unknown = null;
 
@@ -599,6 +608,26 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
   }
 }
 
+async function processVideoEvidenceWithFallback(file: File, stampMeta: EvidenceStampMeta, mimeType: string) {
+  try {
+    const stamped = await processVideoEvidence(file, stampMeta, mimeType);
+    return {
+      ...stamped,
+      stamped: true,
+      stampError: "",
+    };
+  } catch (error) {
+    console.warn("Video stamp failed; saving original video for package.", error);
+    return {
+      dataUrl: await readFileAsDataUrl(file, mimeType || file.type || "video/mp4"),
+      type: mimeType || file.type || "video/mp4",
+      size: file.size,
+      stamped: false,
+      stampError: error instanceof Error ? error.message : "Video stamp failed.",
+    };
+  }
+}
+
 async function processImageEvidence(file: File, stampMeta: EvidenceStampMeta, mimeType: string) {
   const original = await readFileAsDataUrl(file, mimeType || "image/jpeg");
   let decoded: DecodedImageEvidence | null = null;
@@ -686,10 +715,10 @@ export async function saveFieldPhotos(
       borough: String(meta.borough || "").trim(),
       capturedAt,
     };
-    const source =
+    const source: ProcessedEvidenceSource =
       mediaType === "image"
         ? await processImageEvidence(file, stampMeta, mimeType)
-        : await processVideoEvidence(file, stampMeta, mimeType);
+        : await processVideoEvidenceWithFallback(file, stampMeta, mimeType);
     const posterDataUrl = mediaType === "video" ? await makeVideoPoster(source.dataUrl, stampMeta) : "";
     const evidenceName = evidenceFileName(stampMeta, mediaType, source.type || file.type || "");
 
@@ -709,7 +738,8 @@ export async function saveFieldPhotos(
       dataUrl: source.dataUrl,
       posterDataUrl,
       capturedAt,
-      stamped: true,
+      stamped: source.stamped !== false,
+      stampError: source.stampError || "",
     };
     saved.push(evidence);
   }

@@ -504,7 +504,8 @@ function packageManifestText(
     `MEDIA INCLUDED (${includedMedia.length})`,
     ...includedMedia.map((media, index) => {
       const label = media.mediaType === "video" ? "VIDEO" : "IMAGE";
-      return `- ${String(index + 1).padStart(2, "0")} ${label}: ${media.name || "unnamed"} | ${media.evidenceLabel || media.kind} | ${packetSizeLabel(media.size)}`;
+      const stamp = media.mediaType === "video" ? (media.stamped === false ? "ORIGINAL VIDEO" : "STAMPED VIDEO") : "STAMPED IMAGE";
+      return `- ${String(index + 1).padStart(2, "0")} ${label}: ${media.name || "unnamed"} | ${media.evidenceLabel || media.kind} | ${stamp} | ${packetSizeLabel(media.size)}`;
     }),
   ];
 
@@ -530,7 +531,8 @@ function videoPackageManifestText(jobId: string, videos: FieldMedia[]) {
     "",
     `VIDEOS INCLUDED (${videos.length})`,
     ...videos.map((media, index) => {
-      return `- ${String(index + 1).padStart(2, "0")} VIDEO: ${media.name || "unnamed"} | ${media.evidenceLabel || media.kind} | ${packetSizeLabel(media.size)}`;
+      const stamp = media.stamped === false ? "ORIGINAL VIDEO - label is in filename and manifest" : "STAMPED VIDEO";
+      return `- ${String(index + 1).padStart(2, "0")} VIDEO: ${media.name || "unnamed"} | ${media.evidenceLabel || media.kind} | ${stamp} | ${packetSizeLabel(media.size)}`;
     }),
   ].join("\n");
 }
