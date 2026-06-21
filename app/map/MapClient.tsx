@@ -1594,6 +1594,7 @@ const [fieldCameraStatus, setFieldCameraStatus] = useState("");
 const [fieldCameraBusy, setFieldCameraBusy] = useState(false);
 const [fieldCameraRecording, setFieldCameraRecording] = useState(false);
 const [fieldCameraStreamTick, setFieldCameraStreamTick] = useState(0);
+const [androidScrollFix, setAndroidScrollFix] = useState(false);
 const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
   jobKey: string;
   kind: FieldMediaKind;
@@ -1958,6 +1959,30 @@ const [hideCompleted, setHideCompleted] = useState(false);
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const isAndroid = /Android/i.test(window.navigator.userAgent || "");
+    setAndroidScrollFix(isAndroid);
+
+    const updateViewportHeight = () => {
+      const height = window.visualViewport?.height || window.innerHeight;
+      document.documentElement.style.setProperty("--hpd-visual-height", `${Math.max(320, Math.round(height))}px`);
+    };
+
+    updateViewportHeight();
+    window.addEventListener("resize", updateViewportHeight);
+    window.visualViewport?.addEventListener("resize", updateViewportHeight);
+    window.visualViewport?.addEventListener("scroll", updateViewportHeight);
+
+    return () => {
+      window.removeEventListener("resize", updateViewportHeight);
+      window.visualViewport?.removeEventListener("resize", updateViewportHeight);
+      window.visualViewport?.removeEventListener("scroll", updateViewportHeight);
+      document.documentElement.style.removeProperty("--hpd-visual-height");
+    };
+  }, []);
+
 const [mapDaysBack, setMapDaysBack] = useState("90");
 const [mapShowAllDays, setMapShowAllDays] = useState(false);
 const [mapBaseStyle, setMapBaseStyle] = useState<MapBaseStyleId>("maptiler-streets");
@@ -2003,7 +2028,23 @@ function closeMapMenu() {
   setTimeout(() => mapRef.current?.invalidateSize(), 240);
 }
 
+function mapOverlayTouchTarget(target: EventTarget | null) {
+  if (!(target instanceof Element)) return false;
+
+  return Boolean(
+    target.closest(
+      ".job-drawer, .map-top, .map-menu-fab, .map-menu-scrim, .zoom-panel, .location-status-pill, button, a, input, select, textarea, summary, details"
+    )
+  );
+}
+
 function handleMapTouchStart(event: any) {
+  if (mapOverlayTouchTarget(event.target)) {
+    mapSwipeStartXRef.current = null;
+    mapSwipeStartYRef.current = null;
+    return;
+  }
+
   const touch = event.touches?.[0];
   if (!touch) return;
 
@@ -2012,6 +2053,12 @@ function handleMapTouchStart(event: any) {
 }
 
 function handleMapTouchEnd(event: any) {
+  if (mapOverlayTouchTarget(event.target)) {
+    mapSwipeStartXRef.current = null;
+    mapSwipeStartYRef.current = null;
+    return;
+  }
+
   const startX = mapSwipeStartXRef.current;
   const startY = mapSwipeStartYRef.current;
   const touch = event.changedTouches?.[0];
@@ -2119,7 +2166,7 @@ function handleMapTouchEnd(event: any) {
   useEffect(() => {
     if (selected) {
       window.setTimeout(() => {
-        selectedCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        selectedCardRef.current?.scrollIntoView({ behavior: androidScrollFix ? "auto" : "smooth", block: "start" });
       }, 80);
     }
   }, [selected]);
@@ -2385,7 +2432,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   useEffect(() => {
     if (selected) {
       window.setTimeout(() => {
-        selectedCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        selectedCardRef.current?.scrollIntoView({ behavior: androidScrollFix ? "auto" : "smooth", block: "start" });
       }, 80);
     }
   }, [selected]);
@@ -2475,7 +2522,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   useEffect(() => {
     if (selected) {
       window.setTimeout(() => {
-        selectedCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        selectedCardRef.current?.scrollIntoView({ behavior: androidScrollFix ? "auto" : "smooth", block: "start" });
       }, 80);
     }
   }, [selected]);
@@ -2590,7 +2637,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   useEffect(() => {
     if (selected) {
       window.setTimeout(() => {
-        selectedCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        selectedCardRef.current?.scrollIntoView({ behavior: androidScrollFix ? "auto" : "smooth", block: "start" });
       }, 80);
     }
   }, [selected]);
@@ -5290,6 +5337,12 @@ function directionsUrl(job: JobRecord) {
   }
 
   function handleSelectedTouchStart(event: any) {
+    if (mapOverlayTouchTarget(event.target) && (event.target as Element | null)?.closest?.("button, a, input, select, textarea, summary, details")) {
+      swipeStartXRef.current = null;
+      swipeStartYRef.current = null;
+      return;
+    }
+
     const touch = event.touches?.[0];
     if (!touch) return;
 
@@ -5310,8 +5363,9 @@ function directionsUrl(job: JobRecord) {
     const dx = touch.clientX - startX;
     const dy = touch.clientY - startY;
 
-    if (Math.abs(dx) < 55) return;
-    if (Math.abs(dy) > 75) return;
+    if (androidScrollFix && Math.abs(dy) > 28) return;
+    if (Math.abs(dx) < (androidScrollFix ? 82 : 55)) return;
+    if (Math.abs(dy) > (androidScrollFix ? 42 : 75)) return;
 
     if (dx < 0) {
       selectAdjacentJob("next");
@@ -5432,7 +5486,7 @@ function directionsUrl(job: JobRecord) {
 
 return (
     <main
-      className={`map-shell ${fullMap ? "full-map-mode" : ""}`}
+      className={`map-shell ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""}`}
       onTouchStart={handleMapTouchStart}
       onTouchEnd={handleMapTouchEnd}
     >
@@ -10917,6 +10971,81 @@ return (
             .inline-camera-actions {
               grid-template-columns: 1fr !important;
             }
+          }
+
+          .map-shell.android-scroll-fix,
+          .map-shell.android-scroll-fix.full-map-mode {
+            height: var(--hpd-visual-height, 100svh) !important;
+            min-height: var(--hpd-visual-height, 100svh) !important;
+            overflow: hidden !important;
+            overscroll-behavior: none !important;
+            touch-action: auto !important;
+          }
+
+          .map-shell.android-scroll-fix .map-stage {
+            height: var(--hpd-visual-height, 100svh) !important;
+            min-height: var(--hpd-visual-height, 100svh) !important;
+          }
+
+          .map-shell.android-scroll-fix.drawer-selected .map-stage,
+          .map-shell.android-scroll-fix.drawer-selected .map-node,
+          .map-shell.android-scroll-fix.drawer-selected .leaflet-container {
+            touch-action: none !important;
+          }
+
+          .map-shell.android-scroll-fix .job-drawer {
+            left: 6px !important;
+            right: 6px !important;
+            bottom: max(6px, env(safe-area-inset-bottom)) !important;
+            max-height: min(72svh, calc(var(--hpd-visual-height, 100svh) - 78px)) !important;
+            overflow-y: scroll !important;
+            overflow-x: hidden !important;
+            overscroll-behavior-y: contain !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+            scroll-behavior: auto !important;
+            padding-bottom: max(18px, env(safe-area-inset-bottom)) !important;
+            contain: layout paint !important;
+          }
+
+          .map-shell.android-scroll-fix .job-drawer.selected-focus {
+            max-height: min(92svh, calc(var(--hpd-visual-height, 100svh) - 14px)) !important;
+          }
+
+          .map-shell.android-scroll-fix .job-drawer.closed {
+            overflow: hidden !important;
+            touch-action: none !important;
+          }
+
+          .map-shell.android-scroll-fix .drawer-head,
+          .map-shell.android-scroll-fix .workflow-filter-bar {
+            position: sticky !important;
+            z-index: 30 !important;
+            transform: translateZ(0) !important;
+          }
+
+          .map-shell.android-scroll-fix .drawer-head {
+            top: 0 !important;
+          }
+
+          .map-shell.android-scroll-fix .workflow-filter-bar {
+            top: 52px !important;
+          }
+
+          .map-shell.android-scroll-fix .selected-card,
+          .map-shell.android-scroll-fix .field-media-console,
+          .map-shell.android-scroll-fix .field-capture-guide,
+          .map-shell.android-scroll-fix .field-evidence-gallery,
+          .map-shell.android-scroll-fix .field-packet-vault,
+          .map-shell.android-scroll-fix .field-send-panel,
+          .map-shell.android-scroll-fix .selected-description,
+          .map-shell.android-scroll-fix .more-job-details {
+            touch-action: pan-y !important;
+            overscroll-behavior: contain !important;
+          }
+
+          .map-shell.android-scroll-fix .selected-description {
+            max-height: none !important;
           }
         `}
         </style>
