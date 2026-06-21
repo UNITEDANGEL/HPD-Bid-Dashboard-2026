@@ -1560,6 +1560,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
   const [selected, setSelected] = useState<MappedJob | null>(null);
+  const jobDrawerRef = useRef<HTMLElement | null>(null);
   const selectedCardRef = useRef<HTMLDivElement | null>(null);
   const swipeStartXRef = useRef<number | null>(null);
   const swipeStartYRef = useRef<number | null>(null);
@@ -2028,6 +2029,15 @@ function closeMapMenu() {
   setTimeout(() => mapRef.current?.invalidateSize(), 240);
 }
 
+function positionSelectedCardInDrawer() {
+  if (androidScrollFix && jobDrawerRef.current) {
+    jobDrawerRef.current.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    return;
+  }
+
+  selectedCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function mapOverlayTouchTarget(target: EventTarget | null) {
   if (!(target instanceof Element)) return false;
 
@@ -2165,9 +2175,7 @@ function handleMapTouchEnd(event: any) {
   // Apply saved workflow statuses after jobs load from static data.
   useEffect(() => {
     if (selected) {
-      window.setTimeout(() => {
-        selectedCardRef.current?.scrollIntoView({ behavior: androidScrollFix ? "auto" : "smooth", block: "start" });
-      }, 80);
+      window.setTimeout(positionSelectedCardInDrawer, 80);
     }
   }, [selected]);
 
@@ -2431,9 +2439,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   useEffect(() => {
     if (selected) {
-      window.setTimeout(() => {
-        selectedCardRef.current?.scrollIntoView({ behavior: androidScrollFix ? "auto" : "smooth", block: "start" });
-      }, 80);
+      window.setTimeout(positionSelectedCardInDrawer, 80);
     }
   }, [selected]);
 
@@ -2521,9 +2527,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   useEffect(() => {
     if (selected) {
-      window.setTimeout(() => {
-        selectedCardRef.current?.scrollIntoView({ behavior: androidScrollFix ? "auto" : "smooth", block: "start" });
-      }, 80);
+      window.setTimeout(positionSelectedCardInDrawer, 80);
     }
   }, [selected]);
 
@@ -2636,9 +2640,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   useEffect(() => {
     if (selected) {
-      window.setTimeout(() => {
-        selectedCardRef.current?.scrollIntoView({ behavior: androidScrollFix ? "auto" : "smooth", block: "start" });
-      }, 80);
+      window.setTimeout(positionSelectedCardInDrawer, 80);
     }
   }, [selected]);
 
@@ -5487,8 +5489,8 @@ function directionsUrl(job: JobRecord) {
 return (
     <main
       className={`map-shell ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""}`}
-      onTouchStart={handleMapTouchStart}
-      onTouchEnd={handleMapTouchEnd}
+      onTouchStart={androidScrollFix ? undefined : handleMapTouchStart}
+      onTouchEnd={androidScrollFix ? undefined : handleMapTouchEnd}
     >
       <style jsx global>{`
         html,
@@ -11047,6 +11049,79 @@ return (
           .map-shell.android-scroll-fix .selected-description {
             max-height: none !important;
           }
+
+          .map-shell.android-scroll-fix.drawer-active .job-drawer {
+            position: fixed !important;
+            z-index: 4600 !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: var(--hpd-visual-height, 100svh) !important;
+            max-height: none !important;
+            min-height: 0 !important;
+            border-radius: 0 !important;
+            border: 0 !important;
+            background: #0d1622 !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            transform: translateZ(0) !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            overscroll-behavior-y: contain !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+            scroll-behavior: auto !important;
+            contain: none !important;
+            padding: max(10px, env(safe-area-inset-top)) 10px max(26px, env(safe-area-inset-bottom)) !important;
+          }
+
+          .map-shell.android-scroll-fix.drawer-active .job-drawer.selected-focus {
+            height: var(--hpd-visual-height, 100svh) !important;
+            max-height: none !important;
+          }
+
+          .map-shell.android-scroll-fix.drawer-active .drawer-head,
+          .map-shell.android-scroll-fix.drawer-active .workflow-filter-bar {
+            position: static !important;
+            transform: none !important;
+            top: auto !important;
+            backdrop-filter: none !important;
+          }
+
+          .map-shell.android-scroll-fix.drawer-selected .workflow-filter-bar {
+            display: none !important;
+          }
+
+          .map-shell.android-scroll-fix.drawer-active .selected-card,
+          .map-shell.android-scroll-fix.drawer-active .job-card,
+          .map-shell.android-scroll-fix.drawer-active .field-media-console,
+          .map-shell.android-scroll-fix.drawer-active .selected-status-panel,
+          .map-shell.android-scroll-fix.drawer-active .workflow-save-panel,
+          .map-shell.android-scroll-fix.drawer-active .field-send-panel {
+            animation: none !important;
+            transform: none !important;
+            transition: none !important;
+            will-change: auto !important;
+          }
+
+          .map-shell.android-scroll-fix.drawer-active .selected-card:active,
+          .map-shell.android-scroll-fix.drawer-active .job-card:active {
+            transform: none !important;
+          }
+
+          .map-shell.android-scroll-fix.drawer-active .field-media-console,
+          .map-shell.android-scroll-fix.drawer-active .field-evidence-gallery,
+          .map-shell.android-scroll-fix.drawer-active .field-packet-vault,
+          .map-shell.android-scroll-fix.drawer-active .field-send-panel,
+          .map-shell.android-scroll-fix.drawer-active .selected-description,
+          .map-shell.android-scroll-fix.drawer-active .more-job-details {
+            max-height: none !important;
+            overflow: visible !important;
+          }
+
+          .map-shell.android-scroll-fix.drawer-active .description-head {
+            position: static !important;
+            background: transparent !important;
+          }
         `}
         </style>
 
@@ -11288,7 +11363,10 @@ return (
         </div>
       </section>
 
-      <aside className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""} ${fullMap && !drawerOpen ? "drawer-hard-hidden" : ""}`}>
+      <aside
+        ref={jobDrawerRef}
+        className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""} ${fullMap && !drawerOpen ? "drawer-hard-hidden" : ""}`}
+      >
         <div className="drawer-head">
           <strong>{selectedOnly && selected ? jobKey(selected) : `${filteredJobs.length} jobs`}</strong>          {selectedOnly ? (
             <button
@@ -11496,10 +11574,11 @@ return (
 
         {selected ? (
           <div
+            ref={selectedCardRef}
             key={jobKey(selected)}
             className={`selected-card job-status-card ${JobStatus.statusCardClass(selected)} swipe-enabled-card`}
-            onTouchStart={handleSelectedTouchStart}
-            onTouchEnd={handleSelectedTouchEnd}
+            onTouchStart={androidScrollFix ? undefined : handleSelectedTouchStart}
+            onTouchEnd={androidScrollFix ? undefined : handleSelectedTouchEnd}
           >
             <div className="selected-card-head">
               <div className="selected-title-block">
