@@ -223,7 +223,7 @@ type FieldCaptureStep = {
 };
 
 const FIELD_REQUIRED_PHOTOS = 2;
-const FIELD_REQUIRED_VIDEOS = 3;
+const FIELD_REQUIRED_VIDEOS = 2;
 
 let zipCrcTable: Uint32Array | null = null;
 
@@ -1152,6 +1152,8 @@ function workflowLabel(job: JobRecord) {
     NO_ACCESS_COMPLETE: "No Access Complete",
     REFUSED_ACCESS: "Refused Access",
     COMPLETED_BY_OTHERS: "Completed by Others",
+    BEFORE_EVIDENCE: "Before Evidence",
+    AFTER_EVIDENCE: "After Evidence",
     WORK_STARTED: "Work Started",
     WORK_COMPLETED: "Work Completed",
     PARTIAL_WORK_COMPLETED: "Partial Work Completed",
@@ -1571,6 +1573,7 @@ const photoCaptureTargetRef = useRef<{
 } | null>(null);
 const fieldCaptureQueueRef = useRef<FieldCaptureStep[]>([]);
 const fieldCaptureJobRef = useRef<MappedJob | null>(null);
+const fieldCapturePartialRef = useRef(false);
 const [fieldPhotoCounts, setFieldPhotoCounts] = useState<Record<string, FieldMediaCounts>>({});
 const [fieldEvidenceByJob, setFieldEvidenceByJob] = useState<Record<string, FieldMedia[]>>({});
 const [fieldPacketsByJob, setFieldPacketsByJob] = useState<Record<string, FieldPacket[]>>({});
@@ -1589,6 +1592,9 @@ const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
   label?: string;
   step?: number;
   total?: number;
+  complete?: boolean;
+  completeAction?: "start_work" | "finish_work" | "capture_only";
+  partial?: boolean;
 } | null>(null);
 const [fieldFocusPane, setFieldFocusPane] = useState<"capture" | "evidence" | "package" | "send">("capture");
 const [fieldMediaFlashKind, setFieldMediaFlashKind] = useState<FieldMediaKind | "">("");
@@ -2982,8 +2988,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function fieldCaptureGuideText(kind: FieldMediaKind) {
     const labels: Record<FieldMediaKind, string> = {
-      before: "Capture before work evidence now. It will be labeled and saved on this job card.",
-      after: "Capture after work evidence now. It will be added to this job package.",
+      before: "Capture the default before set: 2 photos and 2 videos. You can add more before starting work.",
+      after: "Capture the default after set: 2 photos and 2 videos. You can add more before completing the job.",
       no_access: "Capture no-access evidence now for the 72-hour record.",
       refused_access: "Capture refused-access evidence now for the affidavit package.",
       completed_by_others: "Capture completed-by-others evidence now for the affidavit package.",
@@ -3014,8 +3020,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         title: `${stage} Photo ${number}`,
         text:
           number === 1
-            ? `Take ${stage.toLowerCase()} photo ${number} of ${FIELD_REQUIRED_PHOTOS}.`
-            : `Take ${stage.toLowerCase()} photo ${number} of ${FIELD_REQUIRED_PHOTOS} from another angle.`,
+            ? `Take ${stage.toLowerCase()} photo ${number} of ${FIELD_REQUIRED_PHOTOS}. The camera will reopen for the next item.`
+            : `Take ${stage.toLowerCase()} photo ${number} of ${FIELD_REQUIRED_PHOTOS} from another angle. The camera will reopen again.`,
         label: `${stage} Photo ${number}`,
       };
     });
@@ -3028,7 +3034,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         text:
           number === 1
             ? `Take ${stage.toLowerCase()} video ${number} of ${FIELD_REQUIRED_VIDEOS}. Keep it short so it can be stamped and emailed.`
-            : `Take ${stage.toLowerCase()} video ${number} of ${FIELD_REQUIRED_VIDEOS} from another angle.`,
+            : `Take ${stage.toLowerCase()} video ${number} of ${FIELD_REQUIRED_VIDEOS} from another angle. Then choose done or add more.`,
         label: `${stage} Video ${number}`,
       };
     });
@@ -3053,6 +3059,22 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       title: `${stage} Video ${number}`,
       text: `Take another ${stage.toLowerCase()} video angle. It will be labeled and saved with this job.`,
       label: `${stage} Video ${number}`,
+      step: 1,
+      total: 1,
+    };
+  }
+
+  function extraPhotoCaptureStep(job: MappedJob, kind: FieldMediaKind): FieldCaptureStep {
+    const stage = fieldStageLabel(kind);
+    const savedPhotoCount = fieldEvidenceRowsFor(job).filter((media) => media.kind === kind && media.mediaType === "image").length;
+    const number = savedPhotoCount + 1;
+    return {
+      kind,
+      accept: "image/*",
+      camera: true,
+      title: `${stage} Photo ${number}`,
+      text: `Take another ${stage.toLowerCase()} photo angle. It will be labeled and saved with this job.`,
+      label: `${stage} Photo ${number}`,
       step: 1,
       total: 1,
     };
@@ -3660,15 +3682,54 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return `${hours}h ${mins}m`;
   }
 
-  function beginGuidedEvidenceCapture(job: MappedJob, kind: FieldMediaKind) {
+  function beginGuidedEvidenceCapture(job: MappedJob, kind: FieldMediaKind, options: { partial?: boolean } = {}) {
     const steps = guidedCaptureSteps(kind);
     const firstStep = steps[0];
     if (!firstStep) return;
 
     fieldCaptureJobRef.current = job;
+    fieldCapturePartialRef.current = Boolean(options.partial);
     fieldCaptureQueueRef.current = steps.slice(1);
     setCaptureGuideForStep(job, firstStep);
     requestFieldPhotoCapture(job, kind, firstStep.accept, firstStep.camera, firstStep);
+  }
+
+  function setCaptureCompleteGuide(job: MappedJob, kind: FieldMediaKind, partial = false) {
+    const key = jobKey(job);
+    if (!key) return;
+
+    const action =
+      kind === "before"
+        ? "start_work"
+        : kind === "after"
+          ? "finish_work"
+          : "capture_only";
+    const title =
+      kind === "before"
+        ? "Before Evidence Saved"
+        : kind === "after"
+          ? "After Evidence Saved"
+          : `${fieldStageLabel(kind)} Evidence Saved`;
+    const text =
+      kind === "before"
+        ? "Default before set saved. Add more angles if needed, or start the job timer now."
+        : kind === "after"
+          ? "Default after set saved. Add more angles if needed, or complete the job and generate the package."
+          : "Evidence saved. Add more angles if needed.";
+
+    setFieldFocusPane("capture");
+    setFieldCaptureGuide({
+      jobKey: key,
+      kind,
+      accept: "image/*,video/*",
+      camera: true,
+      title,
+      text,
+      label: title,
+      complete: true,
+      completeAction: action,
+      partial,
+    });
   }
 
   function advanceGuidedEvidenceCapture(target: { jobKey: string; kind: FieldMediaKind; step?: FieldCaptureStep }) {
@@ -3676,10 +3737,15 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     const nextStep = fieldCaptureQueueRef.current.shift();
     const captureJob = fieldCaptureJobRef.current;
-    if (!nextStep || !captureJob || jobKey(captureJob) !== target.jobKey) {
+    if (!captureJob || jobKey(captureJob) !== target.jobKey) {
       fieldCaptureQueueRef.current = [];
       fieldCaptureJobRef.current = null;
       setFieldCaptureGuide(null);
+      return false;
+    }
+
+    if (!nextStep) {
+      fieldCaptureQueueRef.current = [];
       return false;
     }
 
@@ -3691,10 +3757,20 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return true;
   }
 
-  function captureExtraVideo(job: MappedJob, kind: FieldMediaKind) {
+  function captureExtraPhoto(job: MappedJob, kind: FieldMediaKind, partial = false) {
+    const step = extraPhotoCaptureStep(job, kind);
+    fieldCaptureQueueRef.current = [];
+    fieldCaptureJobRef.current = job;
+    fieldCapturePartialRef.current = partial;
+    setCaptureGuideForStep(job, step);
+    requestFieldPhotoCapture(job, kind, step.accept, step.camera, step);
+  }
+
+  function captureExtraVideo(job: MappedJob, kind: FieldMediaKind, partial = false) {
     const step = extraVideoCaptureStep(job, kind);
     fieldCaptureQueueRef.current = [];
     fieldCaptureJobRef.current = job;
+    fieldCapturePartialRef.current = partial;
     setCaptureGuideForStep(job, step);
     requestFieldPhotoCapture(job, kind, step.accept, step.camera, step);
   }
@@ -3841,12 +3917,19 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         ? ` ${unstampedVideoCount} video(s) were saved as original files because this phone could not burn the label into them.`
         : "";
       if (!hasNextCapture) {
-        setFieldCaptureGuide(null);
-        setFieldFocusPane("evidence");
+        const captureJob =
+          fieldCaptureJobRef.current ||
+          (selected && jobKey(selected) === target.jobKey ? (selected as MappedJob) : null);
+        if (captureJob) {
+          setCaptureCompleteGuide(captureJob, target.kind, fieldCapturePartialRef.current);
+        } else {
+          setFieldCaptureGuide(null);
+          setFieldFocusPane("evidence");
+        }
         focusFieldMedia(target.kind);
         showActionNotice(
           target.step
-            ? `${fieldEvidenceLabel(target.kind)} required set saved.${fallbackVideoNote} Add more videos from the job card if needed.`
+            ? `${fieldEvidenceLabel(target.kind)} required set saved.${fallbackVideoNote} Add more, or tap done to continue.`
             : `${fieldEvidenceLabel(target.kind)} saved to job card: ${imageCount} image(s), ${videoCount} video(s).${fallbackVideoNote}`
         );
       }
@@ -3870,7 +3953,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
   }
 
-  function startFieldJob(job: MappedJob) {
+  function clearGuidedCaptureState() {
+    setFieldCaptureGuide(null);
+    fieldCaptureQueueRef.current = [];
+    fieldCaptureJobRef.current = null;
+    fieldCapturePartialRef.current = false;
+    photoCaptureTargetRef.current = null;
+    setPhotoCaptureTarget(null);
+  }
+
+  function completeBeforeEvidenceAndStartWork(job: MappedJob) {
     const iso = new Date().toISOString();
     const patch = {
       WorkflowStatus: "WORK_STARTED",
@@ -3889,7 +3981,32 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       beforePhotosRequestedAt: iso,
       ArchivedFromMap: false,
     };
-    const startedJob = { ...job, ...patch } as MappedJob;
+    setFieldFocusPane("capture");
+    setSelectedOnly(true);
+    setDrawerOpen(true);
+    setFullMap(false);
+    clearGuidedCaptureState();
+    saveFieldWorkflowPatch(
+      job,
+      patch,
+      "Before evidence done. Job timer started."
+    );
+  }
+
+  function startFieldJob(job: MappedJob) {
+    const iso = new Date().toISOString();
+    const patch = {
+      WorkflowStatus: "BEFORE_EVIDENCE",
+      workflowStatus: "BEFORE_EVIDENCE",
+      FieldOutcome: "BEFORE_EVIDENCE",
+      fieldOutcome: "BEFORE_EVIDENCE",
+      StatusOverride: "Before Evidence",
+      status: "Before Evidence",
+      BeforePhotosRequestedAt: iso,
+      beforePhotosRequestedAt: iso,
+      ArchivedFromMap: false,
+    };
+    const captureJob = { ...job, ...patch } as MappedJob;
     setFieldFocusPane("capture");
     setSelectedOnly(true);
     setDrawerOpen(true);
@@ -3897,9 +4014,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     saveFieldWorkflowPatch(
       job,
       patch,
-      "Job started. Before evidence capture is open."
+      "Start job: capture 2 before photos and 2 before videos."
     );
-    beginGuidedEvidenceCapture(startedJob, "before");
+    beginGuidedEvidenceCapture(captureJob, "before");
   }
 
   async function resetFieldJobForTesting(job: MappedJob) {
@@ -3913,6 +4030,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setFieldFocusPane("capture");
     fieldCaptureQueueRef.current = [];
     fieldCaptureJobRef.current = null;
+    fieldCapturePartialRef.current = false;
     photoCaptureTargetRef.current = null;
     setPhotoCaptureTarget(null);
     setDraftWorkflowStatus("");
@@ -3934,7 +4052,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
   }
 
-  function finishFieldJob(job: MappedJob, partial = false) {
+  function completeAfterEvidenceAndFinishJob(job: MappedJob, partial = false) {
     const iso = new Date().toISOString();
     const patch = {
       WorkflowStatus: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
@@ -3953,14 +4071,44 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       afterPhotosRequestedAt: iso,
       ArchivedFromMap: false,
     };
-    const nextJob = { ...job, ...patch } as MappedJob;
+    setFieldFocusPane("package");
+    clearGuidedCaptureState();
     saveFieldWorkflowPatch(
       job,
       patch,
-      "Work completed. Capture after evidence now."
+      partial ? "After evidence done. Partial work completed." : "After evidence done. Work completed."
     );
     openPaperworkPreviewForStatus(job, patch, false);
-    beginGuidedEvidenceCapture(nextJob, "after");
+  }
+
+  function finishFieldJob(job: MappedJob, partial = false) {
+    const iso = new Date().toISOString();
+    const patch = {
+      WorkflowStatus: "AFTER_EVIDENCE",
+      workflowStatus: "AFTER_EVIDENCE",
+      FieldOutcome: "AFTER_EVIDENCE",
+      fieldOutcome: "AFTER_EVIDENCE",
+      StatusOverride: partial ? "After Evidence - Partial" : "After Evidence",
+      status: partial ? "After Evidence - Partial" : "After Evidence",
+      PendingCompletionOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+      pendingCompletionOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+      AfterPhotosRequestedAt: iso,
+      afterPhotosRequestedAt: iso,
+      ArchivedFromMap: false,
+    };
+    const captureJob = { ...job, ...patch } as MappedJob;
+    setFieldFocusPane("capture");
+    setSelectedOnly(true);
+    setDrawerOpen(true);
+    setFullMap(false);
+    saveFieldWorkflowPatch(
+      job,
+      patch,
+      partial
+        ? "Partial finish: capture 2 after photos and 2 after videos."
+        : "Finish job: capture 2 after photos and 2 after videos."
+    );
+    beginGuidedEvidenceCapture(captureJob, "after", { partial });
   }
 
   function startNoAccessCounter(job: MappedJob) {
@@ -4332,6 +4480,8 @@ function workflowLabel(job: JobRecord) {
     NO_ACCESS_COMPLETE: "No Access Complete",
     REFUSED_ACCESS: "Refused Access",
     COMPLETED_BY_OTHERS: "Completed by Others",
+    BEFORE_EVIDENCE: "Before Evidence",
+    AFTER_EVIDENCE: "After Evidence",
     WORK_STARTED: "Work Started",
     WORK_COMPLETED: "Work Completed",
     PARTIAL_WORK_COMPLETED: "Partial Work Completed",
@@ -8411,6 +8561,27 @@ return (
             font-weight: 950;
           }
 
+          .field-capture-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .field-capture-actions button {
+            min-width: 0;
+            white-space: normal;
+            line-height: 1.1;
+            padding: 9px 10px;
+            background: #f8fafc;
+            color: #16202b;
+            border: 1px solid rgba(22, 32, 43, 0.18);
+          }
+
+          .field-capture-actions button.primary {
+            background: #16202b;
+            color: #f8fafc;
+          }
+
           .field-evidence-gallery {
             display: grid;
             gap: 10px;
@@ -9220,7 +9391,15 @@ return (
               min-height: 68px;
             }
 
+            .field-media-actions {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
             .field-capture-guide {
+              grid-template-columns: 1fr !important;
+            }
+
+            .field-capture-actions {
               grid-template-columns: 1fr !important;
             }
 
@@ -10152,7 +10331,7 @@ return (
 
           .field-media-actions {
             display: grid !important;
-            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
             gap: 6px !important;
           }
 
@@ -10673,6 +10852,9 @@ return (
                           <button type="button" className="primary" onClick={() => beginGuidedEvidenceCapture(selected, kind)}>
                             Required Set
                           </button>
+                          <button type="button" onClick={() => captureExtraPhoto(selected, kind)}>
+                            Photo +
+                          </button>
                           <button type="button" onClick={() => captureExtraVideo(selected, kind)}>
                             Video +
                           </button>
@@ -10716,31 +10898,64 @@ return (
                     <strong>{fieldCaptureGuide.title}</strong>
                     <small>{fieldCaptureGuide.text}</small>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => requestFieldPhotoCapture(
-                      selected,
-                      fieldCaptureGuide.kind,
-                      fieldCaptureGuide.accept,
-                      fieldCaptureGuide.camera,
-                      fieldCaptureGuide.step && fieldCaptureGuide.total
-                        ? {
-                            kind: fieldCaptureGuide.kind,
-                            accept: fieldCaptureGuide.accept,
-                            camera: fieldCaptureGuide.camera,
-                            title: fieldCaptureGuide.title,
-                            text: fieldCaptureGuide.text,
-                            label: fieldCaptureGuide.label || fieldCaptureGuide.title,
-                            step: fieldCaptureGuide.step,
-                            total: fieldCaptureGuide.total,
+                  {fieldCaptureGuide.complete ? (
+                    <div className="field-capture-actions">
+                      <button type="button" onClick={() => captureExtraPhoto(selected, fieldCaptureGuide.kind, Boolean(fieldCaptureGuide.partial))}>
+                        Add Photo
+                      </button>
+                      <button type="button" onClick={() => captureExtraVideo(selected, fieldCaptureGuide.kind, Boolean(fieldCaptureGuide.partial))}>
+                        Add Video
+                      </button>
+                      <button
+                        type="button"
+                        className="primary"
+                        onClick={() => {
+                          if (fieldCaptureGuide.completeAction === "start_work") {
+                            completeBeforeEvidenceAndStartWork(selected);
+                            return;
                           }
-                        : undefined
-                    )}
-                  >
-                    {fieldCaptureGuide.step && fieldCaptureGuide.total
-                      ? `Take ${fieldCaptureGuide.step}/${fieldCaptureGuide.total}`
-                      : fieldCaptureGuide.camera ? "Open Camera" : "Open Upload"}
-                  </button>
+                          if (fieldCaptureGuide.completeAction === "finish_work") {
+                            completeAfterEvidenceAndFinishJob(selected, Boolean(fieldCaptureGuide.partial));
+                            return;
+                          }
+                          clearGuidedCaptureState();
+                          setFieldFocusPane("evidence");
+                        }}
+                      >
+                        {fieldCaptureGuide.completeAction === "start_work"
+                          ? "Before Done / Start Work"
+                          : fieldCaptureGuide.completeAction === "finish_work"
+                            ? fieldCaptureGuide.partial ? "After Done / Partial" : "After Done / Complete"
+                            : "Done"}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => requestFieldPhotoCapture(
+                        selected,
+                        fieldCaptureGuide.kind,
+                        fieldCaptureGuide.accept,
+                        fieldCaptureGuide.camera,
+                        fieldCaptureGuide.step && fieldCaptureGuide.total
+                          ? {
+                              kind: fieldCaptureGuide.kind,
+                              accept: fieldCaptureGuide.accept,
+                              camera: fieldCaptureGuide.camera,
+                              title: fieldCaptureGuide.title,
+                              text: fieldCaptureGuide.text,
+                              label: fieldCaptureGuide.label || fieldCaptureGuide.title,
+                              step: fieldCaptureGuide.step,
+                              total: fieldCaptureGuide.total,
+                            }
+                          : undefined
+                      )}
+                    >
+                      {fieldCaptureGuide.step && fieldCaptureGuide.total
+                        ? `Take ${fieldCaptureGuide.step}/${fieldCaptureGuide.total}`
+                        : fieldCaptureGuide.camera ? "Open Camera" : "Open Upload"}
+                    </button>
+                  )}
                 </div>
               ) : null}
 
