@@ -34,6 +34,7 @@ export type FieldMedia = {
   dataUrl: string;
   posterDataUrl?: string;
   capturedAt: string;
+  stamped?: boolean;
 };
 
 export type FieldPhoto = FieldMedia;
@@ -315,6 +316,18 @@ function stampDisplayText(value: string, maxLength = 70) {
     .slice(0, maxLength);
 }
 
+function stampStageTitle(kind: FieldMediaKind, label: string) {
+  const titles: Record<FieldMediaKind, string> = {
+    before: "BEFORE",
+    after: "AFTER",
+    no_access: "NO ACCESS",
+    refused_access: "REFUSED ACCESS",
+    completed_by_others: "DONE BY OTHERS",
+    general: "FIELD EVIDENCE",
+  };
+  return titles[kind] || stampDisplayText(label.toUpperCase(), 28) || "FIELD EVIDENCE";
+}
+
 function stampEvidenceImage(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, meta: EvidenceStampMeta) {
   const width = canvas.width;
   const height = canvas.height;
@@ -328,19 +341,23 @@ function stampEvidenceImage(canvas: HTMLCanvasElement, context: CanvasRenderingC
         day: "2-digit",
         year: "numeric",
       });
-  const topSize = Math.max(22, Math.round(width * 0.035));
+  const stageLabel = stampStageTitle(meta.kind, meta.label);
+  const topSize = Math.max(28, Math.round(width * 0.055));
+  const subSize = Math.max(13, Math.round(width * 0.022));
   const lineSize = Math.max(16, Math.round(width * 0.024));
   const pad = Math.max(14, Math.round(width * 0.022));
-  const topHeight = topSize + pad * 1.4;
+  const topHeight = topSize + subSize + pad * 1.65;
   const bottomHeight = lineSize * 3.4 + pad * 1.7;
 
   context.save();
-  context.fillStyle = "rgba(5, 10, 17, 0.78)";
+  context.fillStyle = "rgba(5, 10, 17, 0.84)";
   context.fillRect(0, 0, width, topHeight);
   context.fillRect(0, height - bottomHeight, width, bottomHeight);
   context.fillStyle = "#ffffff";
   context.font = `900 ${topSize}px Arial, sans-serif`;
-  context.fillText(stampDisplayText(meta.label.toUpperCase(), 42), pad, pad + topSize * 0.82);
+  context.fillText(stageLabel, pad, pad + topSize * 0.82);
+  context.font = `800 ${subSize}px Arial, sans-serif`;
+  context.fillText(stampDisplayText(meta.label.toUpperCase(), 54), pad, pad + topSize + subSize * 0.95);
   context.font = `800 ${lineSize}px Arial, sans-serif`;
   const bottomY = height - bottomHeight + pad + lineSize;
   context.fillText(`OMO / WORK #: ${stampDisplayText(meta.jobId, 36)}`, pad, bottomY);
@@ -425,6 +442,42 @@ function seekVideo(video: HTMLVideoElement, seconds: number) {
       resolve();
     }
   });
+}
+
+type DecodedImageEvidence = {
+  source: CanvasImageSource;
+  width: number;
+  height: number;
+  close?: () => void;
+};
+
+async function decodeImageEvidence(file: File, dataUrl: string): Promise<DecodedImageEvidence> {
+  let imageError: unknown = null;
+
+  try {
+    const image = await loadImage(dataUrl);
+    return {
+      source: image,
+      width: image.width,
+      height: image.height,
+    };
+  } catch (error) {
+    imageError = error;
+  }
+
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(file);
+      return {
+        source: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        close: () => bitmap.close(),
+      };
+    } catch {}
+  }
+
+  throw imageError instanceof Error ? imageError : new Error("Could not load image evidence.");
 }
 
 async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mimeType: string) {
@@ -543,18 +596,19 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
 
 async function processImageEvidence(file: File, stampMeta: EvidenceStampMeta, mimeType: string) {
   const original = await readFileAsDataUrl(file, mimeType || "image/jpeg");
+  let decoded: DecodedImageEvidence | null = null;
 
   try {
-    const image = await loadImage(original);
-    const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(image.width, image.height));
-    const width = Math.max(1, Math.round(image.width * scale));
-    const height = Math.max(1, Math.round(image.height * scale));
+    decoded = await decodeImageEvidence(file, original);
+    const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(decoded.width, decoded.height));
+    const width = Math.max(1, Math.round(decoded.width * scale));
+    const height = Math.max(1, Math.round(decoded.height * scale));
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
     const context = canvas.getContext("2d");
-    if (!context) return { dataUrl: original, type: mimeType || file.type || "image/jpeg", size: file.size };
-    context.drawImage(image, 0, 0, width, height);
+    if (!context) throw new Error("Could not create image label canvas.");
+    context.drawImage(decoded.source, 0, 0, width, height);
     stampEvidenceImage(canvas, context, stampMeta);
     const dataUrl = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
     return {
@@ -562,8 +616,10 @@ async function processImageEvidence(file: File, stampMeta: EvidenceStampMeta, mi
       type: "image/jpeg",
       size: Math.round((dataUrl.length * 3) / 4),
     };
-  } catch {
-    return { dataUrl: original, type: mimeType || file.type || "image/jpeg", size: file.size };
+  } catch (error) {
+    throw new Error(error instanceof Error ? `Image label could not be burned in: ${error.message}` : "Image label could not be burned in.");
+  } finally {
+    decoded?.close?.();
   }
 }
 
@@ -647,6 +703,7 @@ export async function saveFieldPhotos(
       dataUrl: source.dataUrl,
       posterDataUrl,
       capturedAt,
+      stamped: true,
     };
     saved.push(evidence);
   }

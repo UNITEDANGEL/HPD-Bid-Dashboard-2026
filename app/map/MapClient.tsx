@@ -3644,7 +3644,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   async function handleFieldPhotoInput(event: ChangeEvent<HTMLInputElement>) {
     const files = event.target.files;
-    const target = photoCaptureTarget || photoCaptureTargetRef.current;
+    const target = photoCaptureTargetRef.current || photoCaptureTarget;
     if (!files?.length || !target) return;
 
     try {
