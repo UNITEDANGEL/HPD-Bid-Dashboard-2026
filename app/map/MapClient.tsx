@@ -3473,9 +3473,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function packagePrimaryLabel(job: MappedJob) {
-    if (!latestFieldPacket(job, "affidavit_invoice_pdf")) return "Draft Invoice/Affidavit";
-    if (!fullPackagePreviewFor(job)) return "Preview Media Package";
-    return "Send Media Package";
+    return "Draft";
   }
 
   async function runPackagePrimaryAction(job: MappedJob) {
@@ -3484,7 +3482,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     if (!invoicePacket) {
       focusFieldPane("package");
-      showActionNotice("Draft the invoice/affidavit first. Return here, then tap Preview Media Package.");
+      showActionNotice("Draft the invoice/affidavit PDF first. Return here, then tap Draft to preview the complete package.");
       window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
       return;
     }
@@ -3494,7 +3492,19 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       return;
     }
 
-    await sendFullEvidencePackage(job);
+    focusFieldPane("send");
+    showActionNotice("Complete package draft preview is ready below. Use Email Draft or Send Videos + Application.");
+  }
+
+  function draftCompletePackageEmail(job: MappedJob) {
+    const preview = fullPackagePreviewFor(job);
+    if (!preview) {
+      showActionNotice("Tap Draft first to build the complete package preview.");
+      focusFieldPane("send");
+      return;
+    }
+
+    openEvidenceEmailDraft(job, preview.fileName, preview.evidenceCount, preview.videoCount, "full_evidence_zip");
   }
 
   async function shareStoredPackage(job: MappedJob, packet = latestFieldPacket(job, "affidavit_invoice_pdf") || latestFieldPacket(job), downloadFallback = true) {
@@ -10827,35 +10837,46 @@ return (
                   <div data-field-pane="send" className={`field-send-panel field-pane ${fieldFocusPane === "send" ? "is-active" : ""}`}>
                     <div>
                       <span>Send Package</span>
-                      <strong>{preview ? "Media package ready" : invoicePacket ? "Ready for media package" : "Need invoice/affidavit"}</strong>
+                      <strong>{preview ? "Complete package draft ready" : invoicePacket ? "Ready to draft complete package" : "Need invoice/affidavit"}</strong>
                       <small>
                         {preview?.fileName || invoicePacket?.fileName || "Draft invoice/affidavit PDF first."}
-                        {videoCount ? preview ? ` ${videoCount} video file(s) are inside the Media Package ZIP.` : ` ${videoCount} video file(s) will be included in Media Package.` : ""}
+                        {videoCount ? preview ? ` ${videoCount} video file(s) are inside the complete package ZIP.` : ` ${videoCount} video file(s) will be included when you tap Draft.` : ""}
                       </small>
                     </div>
                     {preview ? (
                       <div className="field-package-preview">
                         <div>
-                          <span>Media Package Preview</span>
+                          <span>Complete Package Preview</span>
                           <strong>{packetSizeLabel(preview.size)}</strong>
                         </div>
+                        <small>Includes invoice/affidavit PDF plus original photos and videos in one ZIP.</small>
                         <div className="field-package-preview-grid">
                           <span>Before <strong>{preview.beforeCount}</strong></span>
                           <span>After <strong>{preview.afterCount}</strong></span>
                           <span>Photos <strong>{preview.imageCount}</strong></span>
                           <span>Videos <strong>{preview.videoCount}</strong></span>
-                          <span>PDF <strong>{preview.hasInvoice ? "Yes" : "No"}</strong></span>
+                          <span>Application <strong>{preview.hasInvoice ? "PDF" : "No"}</strong></span>
                         </div>
                         <small>{preview.note}</small>
                       </div>
                     ) : null}
-                    <div className="field-send-actions single">
+                    <div className={`field-send-actions ${preview ? "" : "single"}`}>
                       <button
                         type="button"
                         onClick={() => runPackagePrimaryAction(selected)}
                       >
                         {packagePrimaryLabel(selected)}
                       </button>
+                      {preview ? (
+                        <>
+                          <button type="button" onClick={() => draftCompletePackageEmail(selected)}>
+                            Email Draft
+                          </button>
+                          <button type="button" onClick={() => sendFullEvidencePackage(selected)}>
+                            Send Videos + Application
+                          </button>
+                        </>
+                      ) : null}
                     </div>
                   </div>
                 );
