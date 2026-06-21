@@ -3226,10 +3226,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     showActionNotice(`Downloaded saved packet: ${packet.fileName}`);
   }
 
-  function emailStoredPacket(job: MappedJob, packet: FieldPacket) {
-    openEvidenceEmailDraft(job, packet.fileName, packet.evidenceCount, packet.videoCount, packet.packetType);
-  }
-
   function safeAttachmentName(name: string, fallback: string) {
     return String(name || fallback)
       .split(/[\\/]/)
@@ -3297,7 +3293,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     try {
       const invoicePacket = latestFieldPacket(job, "affidavit_invoice_pdf");
       if (!invoicePacket) {
-        showActionNotice("Draft the invoice/affidavit PDF first, then build the Media Package.");
+        showActionNotice("Generate the invoice/affidavit PDF first, then preview the complete package.");
         window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
         return;
       }
@@ -3359,7 +3355,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const beforeCount = evidenceRows.filter((media) => media.kind === "before").length;
       const afterCount = evidenceRows.filter((media) => media.kind === "after").length;
       let savedPacketId = "";
-      let note = "Media package preview ready. Tap Send Media Package to share the ZIP.";
+      let note = "Complete package preview ready. Tap Send Videos + Application to share the ZIP.";
 
       if (zipBytes.byteLength <= FULL_PACKAGE_SAVE_LIMIT_BYTES) {
         try {
@@ -3384,13 +3380,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               ...(current[key] || []).filter((packet) => packet.packetType !== "full_evidence_zip"),
             ].sort((a, b) => b.generatedAt.localeCompare(a.generatedAt)),
           }));
-          note = "Media package preview saved on this phone. Tap Send Media Package.";
+          note = "Complete package preview saved on this phone. Tap Send Videos + Application.";
         } catch (error) {
           console.error(error);
-          note = "Media package preview ready. Browser storage could not save the ZIP, but Send Media Package can still share it now.";
+          note = "Complete package preview ready. Browser storage could not save the ZIP, but Send Videos + Application can still share it now.";
         }
       } else {
-        note = `Media package preview ready. ZIP is ${packetSizeLabel(zipBytes.byteLength)}, so it is held for Send Media Package instead of duplicating it in phone storage.`;
+        note = `Complete package preview ready. ZIP is ${packetSizeLabel(zipBytes.byteLength)}, so it is held for Send Videos + Application instead of duplicating it in phone storage.`;
       }
 
       const preview: FullPackagePreview = {
@@ -3411,7 +3407,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       pendingFullPackageRef.current = { ...preview, bytes: zipBytes };
       setFullPackagePreview(preview);
       focusFieldPane("send");
-      showActionNotice(`Media package preview ready: ${beforeCount} before, ${afterCount} after, ${videoCount} video(s).`);
+      showActionNotice(`Complete package preview ready: ${beforeCount} before, ${afterCount} after, ${videoCount} video(s).`);
     } catch (error) {
       console.error(error);
       showActionNotice(error instanceof Error ? error.message : "Full package build failed. Try again.");
@@ -3427,7 +3423,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       (!navigator.canShare || navigator.canShare({ files: [zipFile] }));
 
     if (!canShareFiles) {
-      showActionNotice("This browser cannot share ZIP files directly. Media package preview is ready; use Chrome share on mobile.");
+      showActionNotice("This browser cannot share ZIP files directly. Complete package preview is ready; use Chrome share on mobile.");
       return;
     }
 
@@ -3437,10 +3433,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         text: `HPD media package for ${key}: invoice/affidavit PDF plus ${pendingPackage.evidenceCount} original media file(s), including ${pendingPackage.videoCount} video(s).`,
         files: [zipFile],
       });
-      showActionNotice(`Media package shared: ${pendingPackage.evidenceCount} media file(s), ${pendingPackage.videoCount} video(s).`);
+      showActionNotice(`Complete package shared: ${pendingPackage.evidenceCount} media file(s), ${pendingPackage.videoCount} video(s).`);
     } catch (error) {
       console.error(error);
-      showActionNotice("Share was cancelled or blocked. Media package preview is still ready.");
+      showActionNotice("Share was cancelled or blocked. Complete package preview is still ready.");
     }
   }
 
@@ -3450,7 +3446,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     const preview = fullPackagePreviewFor(job);
     if (!preview) {
-      showActionNotice("Tap Preview Media Package first to build the ZIP.");
+      showActionNotice("Tap Preview first to build the complete package.");
       focusFieldPane("send");
       return;
     }
@@ -3469,42 +3465,24 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       return;
     }
 
-    showActionNotice("Media package preview expired. Tap Preview Media Package again, then Send Media Package.");
+    showActionNotice("Complete package preview expired. Tap Preview again, then Send Videos + Application.");
   }
 
   function packagePrimaryLabel(job: MappedJob) {
-    return "Draft";
+    return fullPackagePreviewFor(job) ? "Preview Again" : "Preview";
   }
 
   async function runPackagePrimaryAction(job: MappedJob) {
     const invoicePacket = latestFieldPacket(job, "affidavit_invoice_pdf");
-    const preview = fullPackagePreviewFor(job);
 
     if (!invoicePacket) {
       focusFieldPane("package");
-      showActionNotice("Draft the invoice/affidavit PDF first. Return here, then tap Draft to preview the complete package.");
+      showActionNotice("Generate the invoice/affidavit PDF first. Return here, then tap Preview to build the complete package.");
       window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
       return;
     }
 
-    if (!preview) {
-      await generateFullEvidencePackage(job);
-      return;
-    }
-
-    focusFieldPane("send");
-    showActionNotice("Complete package draft preview is ready below. Use Email Draft or Send Videos + Application.");
-  }
-
-  function draftCompletePackageEmail(job: MappedJob) {
-    const preview = fullPackagePreviewFor(job);
-    if (!preview) {
-      showActionNotice("Tap Draft first to build the complete package preview.");
-      focusFieldPane("send");
-      return;
-    }
-
-    openEvidenceEmailDraft(job, preview.fileName, preview.evidenceCount, preview.videoCount, "full_evidence_zip");
+    await generateFullEvidencePackage(job);
   }
 
   async function shareStoredPackage(job: MappedJob, packet = latestFieldPacket(job, "affidavit_invoice_pdf") || latestFieldPacket(job), downloadFallback = true) {
@@ -3512,7 +3490,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (!key) return;
 
     if (!packet) {
-      showActionNotice("Draft the invoice/affidavit PDF first, then build the Media Package ZIP.");
+      showActionNotice("Generate the invoice/affidavit PDF first, then preview the complete package.");
       window.open(paperworkHref(job, "package"), "_blank", "noopener,noreferrer");
       return;
     }
@@ -3561,47 +3539,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       .replace(/^-+|-+$/g, "")
       .slice(0, 54);
     return cleaned || fallback;
-  }
-
-  function openEvidenceEmailDraft(
-    job: MappedJob,
-    attachmentName = "",
-    evidenceCount = fieldPhotoCountsFor(job).total,
-    videoCount = fieldPhotoCountsFor(job).videos,
-    packetType: FieldPacket["packetType"] | "" = ""
-  ) {
-    const key = jobKey(job);
-    const savedTo = typeof window !== "undefined" ? window.localStorage.getItem("hpd-evidence-email-to") || "" : "";
-    const savedCc = typeof window !== "undefined" ? window.localStorage.getItem("hpd-evidence-email-cc") || "" : "";
-    const to = window.prompt("Email packet To:", savedTo) || "";
-    if (!to.trim()) return;
-    const cc = window.prompt("CC:", savedCc) || "";
-    window.localStorage.setItem("hpd-evidence-email-to", to.trim());
-    window.localStorage.setItem("hpd-evidence-email-cc", cc.trim());
-
-    const isInvoicePacket = packetType === "affidavit_invoice_pdf";
-    const isMediaZip = packetType === "full_evidence_zip";
-    const packageLabel = isMediaZip ? "media package ZIP" : isInvoicePacket ? "invoice and affidavit package PDF" : "field evidence packet";
-    const attachmentLabel = isMediaZip ? "Attach media package ZIP" : isInvoicePacket ? "Attach invoice/affidavit PDF" : "Attach package PDF";
-    const subject = `${key} HPD ${packageLabel}`;
-    const body = [
-      `Please see attached ${packageLabel} for OMO / Work #: ${key}.`,
-      "",
-      `Address: ${displayAddress(job)}`,
-      `Location: ${displayLocation(job) || "Not listed"}`,
-      `Borough: ${(job as any).borough || "Not listed"}`,
-      `Status: ${workflowLabel(job) || JobStatus.statusLabel(job)}`,
-      `Evidence files: ${evidenceCount}`,
-      `Video files: ${videoCount}`,
-      attachmentName ? `${attachmentLabel}: ${attachmentName}` : `${attachmentLabel}: attach the downloaded package.`,
-      isMediaZip ? "The ZIP contains the invoice/affidavit PDF plus original photos and videos in the media package folder." : "",
-      isInvoicePacket ? "Photos and videos are not inside this PDF. Build the Media Package ZIP for original media files." : "",
-      "",
-      "Note: This browser opened a draft only. Email drafts cannot auto-attach files. Use Share from the job card when available, or attach the downloaded files before sending.",
-    ].filter(Boolean).join("\n");
-
-    const mailto = `mailto:${encodeURIComponent(to.trim())}?cc=${encodeURIComponent(cc.trim())}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
   }
 
   function fieldPhotoCountsFor(job: JobRecord) {
@@ -8655,7 +8592,7 @@ return (
           }
 
           .field-packet-row {
-            grid-template-columns: minmax(0, 1fr) auto auto;
+            grid-template-columns: minmax(0, 1fr) auto;
           }
 
           .field-send-actions {
@@ -8666,6 +8603,10 @@ return (
 
           .field-send-actions.single {
             grid-template-columns: 1fr;
+          }
+
+          .field-send-actions.two {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
           .field-packet-head small,
@@ -8717,17 +8658,12 @@ return (
             background: #0f8d68;
           }
 
-          .field-packet-row button:nth-of-type(2),
           .field-send-actions button:first-child {
             background: #155eef;
           }
 
           .field-send-actions button:nth-child(2) {
             background: #0f8d68;
-          }
-
-          .field-send-actions button:nth-child(3) {
-            background: #16202b;
           }
 
           .field-packet-row.full_evidence_zip {
@@ -10582,7 +10518,7 @@ return (
 
             <div className="selected-hero-actions">
               <a className="selected-primary-action" href={paperworkHref(selected, "package")}>
-                Draft Invoice/Affidavit
+                Invoice/Affidavit PDF
               </a>
               <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
                 Waze
@@ -10815,14 +10751,13 @@ return (
                           <span>{packetSizeLabel(packet.size)} - {fieldPacketSummary(packet)} - {displayWorkflowDate(packet.generatedAt)}</span>
                           <small>{packet.fileName} - {packet.note}</small>
                         </div>
-                        <button type="button" onClick={() => shareStoredPackage(selected, packet, false)}>{packet.packetType === "full_evidence_zip" ? "Send Media" : "Share PDF"}</button>
-                        <button type="button" onClick={() => emailStoredPacket(selected, packet)}>Draft</button>
+                        <button type="button" onClick={() => shareStoredPackage(selected, packet, false)}>{packet.packetType === "full_evidence_zip" ? "Send Package" : "Share PDF"}</button>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="field-packet-empty">
-                    <strong>Draft invoice/affidavit PDF, then Media Package.</strong>
+                    <strong>Generate invoice/affidavit PDF, then Preview.</strong>
                     <span>The media package ZIP adds every original photo and video angle.</span>
                   </div>
                 )}
@@ -10837,10 +10772,10 @@ return (
                   <div data-field-pane="send" className={`field-send-panel field-pane ${fieldFocusPane === "send" ? "is-active" : ""}`}>
                     <div>
                       <span>Send Package</span>
-                      <strong>{preview ? "Complete package draft ready" : invoicePacket ? "Ready to draft complete package" : "Need invoice/affidavit"}</strong>
+                      <strong>{preview ? "Complete package preview ready" : invoicePacket ? "Ready to preview complete package" : "Need invoice/affidavit"}</strong>
                       <small>
-                        {preview?.fileName || invoicePacket?.fileName || "Draft invoice/affidavit PDF first."}
-                        {videoCount ? preview ? ` ${videoCount} video file(s) are inside the complete package ZIP.` : ` ${videoCount} video file(s) will be included when you tap Draft.` : ""}
+                        {preview?.fileName || invoicePacket?.fileName || "Generate invoice/affidavit PDF first."}
+                        {videoCount ? preview ? ` ${videoCount} video file(s) are inside the complete package ZIP.` : ` ${videoCount} video file(s) will be included when you tap Preview.` : ""}
                       </small>
                     </div>
                     {preview ? (
@@ -10860,7 +10795,7 @@ return (
                         <small>{preview.note}</small>
                       </div>
                     ) : null}
-                    <div className={`field-send-actions ${preview ? "" : "single"}`}>
+                    <div className={`field-send-actions ${preview ? "two" : "single"}`}>
                       <button
                         type="button"
                         onClick={() => runPackagePrimaryAction(selected)}
@@ -10868,14 +10803,9 @@ return (
                         {packagePrimaryLabel(selected)}
                       </button>
                       {preview ? (
-                        <>
-                          <button type="button" onClick={() => draftCompletePackageEmail(selected)}>
-                            Email Draft
-                          </button>
-                          <button type="button" onClick={() => sendFullEvidencePackage(selected)}>
-                            Send Videos + Application
-                          </button>
-                        </>
+                        <button type="button" onClick={() => sendFullEvidencePackage(selected)}>
+                          Send Videos + Application
+                        </button>
                       ) : null}
                     </div>
                   </div>
