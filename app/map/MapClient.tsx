@@ -98,6 +98,23 @@ type MappedJob = JobRecord & {
   _source?: "stored" | "geocoded";
 };
 
+type ClusterJobItem = {
+  job: MappedJob;
+  index: number;
+  lat: number;
+  lng: number;
+};
+
+type ClusterSheetState = {
+  title: string;
+  label: string;
+  items: ClusterJobItem[];
+  lat: number;
+  lng: number;
+  readyCount: number;
+  worstOverdue: number;
+};
+
 type MapBaseStyleId =
   | "maptiler-streets"
   | "maptiler-basic"
@@ -764,6 +781,10 @@ function markerOverdueLabel(job: JobRecord) {
   const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const diffDays = Math.round((todayOnly.getTime() - endDate.getTime()) / 86400000);
   return diffDays > 0 ? `OD ${diffDays}d` : "";
+}
+function markerOverdueDays(job: JobRecord) {
+  const match = markerOverdueLabel(job).match(/(\d+)/);
+  return match ? Number(match[1]) : 0;
 }
 function markerPulseClass(job: JobRecord) {
   const status = workflowStatus(job) || legacyWorkflowKind(job);
@@ -1691,6 +1712,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
   const [selected, setSelected] = useState<MappedJob | null>(null);
+  const [clusterSheet, setClusterSheet] = useState<ClusterSheetState | null>(null);
   const refusedDescriptionDraftsRef = useRef<Record<string, RefusedDescriptorChoices>>({});
   const jobDrawerRef = useRef<HTMLElement | null>(null);
   const selectedCardRef = useRef<HTMLDivElement | null>(null);
@@ -2513,6 +2535,65 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     map.setView([40.7128, -74.006], 10, { animate: true });
   }
 
+  function clusterPriorityScore(job: MappedJob) {
+    const bucket = workflowViewBucket(job);
+    const overdue = markerOverdueDays(job);
+    const work = String(workWindowInfo(job).statusLabel || "").toLowerCase();
+    let score = overdue * 100;
+    if (bucket === "ready2") score += 100000;
+    if (work.includes("overdue")) score += 5000;
+    if (work.includes("due today")) score += 3500;
+    if (bucket === "waiting72") score += 1500;
+    if (bucket === "final" || bucket === "archived") score -= 5000;
+    return score;
+  }
+
+  function clusterJobReason(job: MappedJob) {
+    const bucket = workflowViewBucket(job);
+    if (bucket === "ready2") return "Ready 2nd attempt";
+    const overdue = markerOverdueLabel(job);
+    if (overdue) return overdue;
+    return workWindowInfo(job).statusLabel || nextActionInfo(job).label;
+  }
+
+  function sortedClusterItems(items: ClusterJobItem[]) {
+    return [...items].sort((a, b) => {
+      const score = clusterPriorityScore(b.job) - clusterPriorityScore(a.job);
+      if (score !== 0) return score;
+      return String(jobKey(a.job, a.index)).localeCompare(String(jobKey(b.job, b.index)));
+    });
+  }
+
+  function openClusterSheet(items: ClusterJobItem[], lat: number, lng: number, label: string, readyCount: number, worstOverdue: number) {
+    const sortedItems = sortedClusterItems(items);
+    setClusterSheet({
+      title: `${items.length} job${items.length === 1 ? "" : "s"}`,
+      label,
+      items: sortedItems,
+      lat,
+      lng,
+      readyCount,
+      worstOverdue,
+    });
+    setSelected(null);
+    setSelectedOnly(false);
+    setGeneratedLinks({});
+    setDescriptionOpen(false);
+    setDrawerOpen(true);
+    setFullMap(true);
+    setMapMenuOpen(false);
+    setActionNotice("");
+    mapRef.current?.panTo([lat, lng], { animate: true, duration: 0.45 });
+    window.setTimeout(() => mapRef.current?.invalidateSize(), 120);
+  }
+
+  function closeClusterSheet() {
+    setClusterSheet(null);
+    setDrawerOpen(false);
+    setFullMap(true);
+    window.setTimeout(() => mapRef.current?.invalidateSize(), 120);
+  }
+
   function centerMapOnUserLocation(location = userLocation) {
     const map = mapRef.current;
     if (!map || !location) return false;
@@ -2526,6 +2607,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function showMyLocationOverview() {
     clearMarkerOverviewReturn();
+    setClusterSheet(null);
     setSelectedOnly(false);
     setSelected(null);
     setGeneratedLinks({});
@@ -2545,6 +2627,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function returnToMapOverview() {
+    setClusterSheet(null);
     setSelectedOnly(false);
     setSelected(null);
     setGeneratedLinks({});
@@ -2803,7 +2886,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       layer.clearLayers();
 
       const bounds: [number, number][] = [];
-      const plottedItems: Array<{ job: MappedJob; index: number; lat: number; lng: number }> = [];
+      const plottedItems: ClusterJobItem[] = [];
 
       filteredJobs.forEach((job, index) => {
         if (!Number.isFinite(job._lat) || !Number.isFinite(job._lng)) return;
@@ -2840,26 +2923,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       renderItems.forEach((item) => {
         if (item.kind === "cluster") {
-          const clusterItems = item.items as Array<{ job: MappedJob; index: number; lat: number; lng: number }>;
+          const clusterItems = item.items as ClusterJobItem[];
           const worstOverdue = clusterItems.reduce((worst, current) => {
-            const match = markerOverdueLabel(current.job).match(/(\d+)/);
-            const days = match ? Number(match[1]) : 0;
+            const days = markerOverdueDays(current.job);
             return days > worst ? days : worst;
           }, 0);
           const readyCount = clusterItems.filter((current) => workflowViewBucket(current.job) === "ready2").length;
           const statusClass = readyCount ? "cluster-ready" : worstOverdue ? "cluster-overdue" : "cluster-normal";
           const clusterLabel = readyCount ? `${readyCount} ready` : worstOverdue ? `OD ${worstOverdue}d` : "mapped";
-          const clusterTitle = `${clusterItems.length} job${clusterItems.length === 1 ? "" : "s"}`;
-          const popupRows = clusterItems
-            .slice()
-            .sort((a, b) => {
-              const aDays = Number(markerOverdueLabel(a.job).match(/(\d+)/)?.[1] || 0);
-              const bDays = Number(markerOverdueLabel(b.job).match(/(\d+)/)?.[1] || 0);
-              return bDays - aDays;
-            })
-            .slice(0, 6)
-            .map((current) => `<span>${escapeMapPopupHtml(jobKey(current.job, current.index))} - ${escapeMapPopupHtml(markerOverdueLabel(current.job) || markerAwardCounter(current.job).main)}</span>`)
-            .join("");
           const marker = L.marker([item.lat, item.lng], {
             icon: L.divIcon({
               className: "maturity-map-marker",
@@ -2874,17 +2945,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           });
 
           marker.on("click", () => {
-            setMapMenuOpen(false);
-            map.setView([item.lat, item.lng], Math.max(13, Math.min(15, zoomLevel + 3)), { animate: true });
+            openClusterSheet(clusterItems, item.lat, item.lng, clusterLabel, readyCount, worstOverdue);
           });
 
-          marker.bindPopup(`
-            <div class="field-map-popup">
-              <strong>${escapeMapPopupHtml(clusterTitle)}</strong>
-              <span>${escapeMapPopupHtml(clusterLabel)}</span>
-              ${popupRows}
-            </div>
-          `);
           marker.addTo(layer);
           return;
         }
@@ -3113,6 +3176,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function showReadyRevisitJobs() {
     setWorkflowViewFilter("ready2");
+    setClusterSheet(null);
     setSelectedOnly(false);
     setSelected(null);
     setDrawerOpen(false);
@@ -5590,6 +5654,7 @@ function shouldShowOnActiveMap(job: JobRecord) {
 
 function focusJob(job: MappedJob) {
     clearMarkerOverviewReturn();
+    setClusterSheet(null);
     setSelected(job);
           setSelectedOnly(true);
           setGeneratedLinks({});
@@ -5697,6 +5762,7 @@ function directionsUrl(job: JobRecord) {
     if (!nextJob) return;
 
     clearMarkerOverviewReturn();
+    setClusterSheet(null);
     setSelected(nextJob);
     setSelectedOnly(true);
     setDrawerOpen(true);
@@ -6390,6 +6456,114 @@ return (
           border-radius: 999px;
           padding: 8px 11px;
           font-weight: 950;
+        }
+
+        .drawer-head-actions {
+          display: flex;
+          align-items: center;
+          gap: 7px;
+        }
+
+        .job-drawer.cluster-focus {
+          max-height: min(58dvh, 520px);
+          background:
+            linear-gradient(180deg, rgba(8, 16, 30, 0.96), rgba(5, 10, 20, 0.98)) !important;
+          border-top: 1px solid rgba(255, 255, 255, 0.14);
+          box-shadow: 0 -22px 60px rgba(0, 0, 0, 0.34);
+        }
+
+        .cluster-dispatch-sheet {
+          display: grid;
+          gap: 11px;
+          padding-bottom: max(10px, env(safe-area-inset-bottom));
+        }
+
+        .cluster-sheet-hero {
+          display: grid;
+          gap: 4px;
+          padding: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.13);
+          border-radius: 18px;
+          background:
+            radial-gradient(circle at top left, rgba(71, 163, 255, 0.18), transparent 48%),
+            rgba(255, 255, 255, 0.06);
+        }
+
+        .cluster-sheet-hero span,
+        .cluster-sheet-hero small,
+        .cluster-job-row small {
+          color: #aebbd0;
+          font-size: 11px;
+          font-weight: 900;
+          letter-spacing: 0;
+        }
+
+        .cluster-sheet-hero strong {
+          color: #ffffff;
+          font-size: 24px;
+          line-height: 1;
+          letter-spacing: 0;
+        }
+
+        .cluster-sheet-list {
+          display: grid;
+          gap: 8px;
+        }
+
+        .cluster-job-row {
+          width: 100%;
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 10px;
+          padding: 12px;
+          border-radius: 17px;
+          border: 1px solid rgba(255, 255, 255, 0.13);
+          background: rgba(255, 255, 255, 0.07);
+          color: #f8fbff;
+          text-align: left;
+        }
+
+        .cluster-job-row strong,
+        .cluster-job-row span,
+        .cluster-job-row small {
+          display: block;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .cluster-job-row strong {
+          font-size: 16px;
+          font-weight: 1000;
+          line-height: 1;
+        }
+
+        .cluster-job-row span {
+          margin-top: 4px;
+          color: #eef6ff;
+          font-size: 13px;
+          font-weight: 850;
+        }
+
+        .cluster-job-row b {
+          min-width: 72px;
+          padding: 7px 9px;
+          border-radius: 999px;
+          background: #fee2e2;
+          color: #991b1b;
+          font-size: 11px;
+          line-height: 1;
+          text-align: center;
+          white-space: nowrap;
+        }
+
+        .cluster-sheet-more {
+          color: #aebbd0;
+          font-size: 11px;
+          font-weight: 850;
+          text-align: center;
         }
 
         .job-status-card {
@@ -12728,6 +12902,41 @@ return (
               0 16px 34px rgba(15, 23, 42, 0.26) !important;
           }
 
+          /* CLUSTER_DISPATCH_SHEET_2026 */
+          .job-drawer.cluster-focus {
+            background:
+              linear-gradient(180deg, rgba(8, 16, 30, 0.96), rgba(5, 10, 20, 0.98)) !important;
+            color: #f8fbff !important;
+            border-color: rgba(255, 255, 255, 0.16) !important;
+          }
+
+          .job-drawer.cluster-focus .drawer-head strong {
+            color: #ffffff !important;
+          }
+
+          .job-drawer.cluster-focus .cluster-job-row {
+            background: rgba(255, 255, 255, 0.07) !important;
+            color: #f8fbff !important;
+            border-color: rgba(255, 255, 255, 0.14) !important;
+          }
+
+          .job-drawer.cluster-focus .cluster-job-row strong {
+            color: #ffffff !important;
+          }
+
+          .job-drawer.cluster-focus .cluster-job-row span {
+            color: #eef6ff !important;
+          }
+
+          .job-drawer.cluster-focus .cluster-job-row small {
+            color: #aebbd0 !important;
+          }
+
+          .job-drawer.cluster-focus .cluster-job-row b {
+            background: #fee2e2 !important;
+            color: #991b1b !important;
+          }
+
           /* MAP_SIGNAL_MARKERS_2026 */
           .maturity-map-marker .map-signal-marker {
             min-width: 116px !important;
@@ -13348,13 +13557,30 @@ return (
 
       <aside
         ref={jobDrawerRef}
-        className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""} ${fullMap && !drawerOpen ? "drawer-hard-hidden" : ""}`}
+        className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""} ${clusterSheet ? "cluster-focus" : ""} ${fullMap && !drawerOpen ? "drawer-hard-hidden" : ""}`}
       >
         <div className="drawer-head">
-          <strong>{selectedOnly && selected ? jobKey(selected) : `${filteredJobs.length} jobs`}</strong>          {selectedOnly ? (
+          <strong>{clusterSheet ? clusterSheet.title : selectedOnly && selected ? jobKey(selected) : `${filteredJobs.length} jobs`}</strong>
+          {clusterSheet ? (
+            <div className="drawer-head-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  mapRef.current?.flyTo([clusterSheet.lat, clusterSheet.lng], 14, { animate: true, duration: 0.65 });
+                  window.setTimeout(() => mapRef.current?.invalidateSize(), 120);
+                }}
+              >
+                Zoom In
+              </button>
+              <button type="button" onClick={closeClusterSheet}>
+                Close
+              </button>
+            </div>
+          ) : selectedOnly ? (
             <button
               type="button"
               onClick={() => {
+                setClusterSheet(null);
                 setSelectedOnly(false);
                 setSelected(null);
                 setGeneratedLinks({});
@@ -13375,7 +13601,7 @@ return (
           ) : null}
         </div>
 
-        <div className="workflow-filter-bar">
+        {!clusterSheet ? <div className="workflow-filter-bar">
           <button type="button" className={workflowViewFilter === "active" ? "active" : ""} onClick={() => setWorkflowViewFilter("active")}>
             Active
           </button>
@@ -13394,10 +13620,47 @@ return (
           <button type="button" className={workflowViewFilter === "all" ? "active" : ""} onClick={() => setWorkflowViewFilter("all")}>
             All
           </button>
-        </div>
-        {actionNotice ? <div className="action-notice">{actionNotice}</div> : null}
+        </div> : null}
+        {actionNotice && !clusterSheet ? <div className="action-notice">{actionNotice}</div> : null}
 
-        {!selectedOnly ? (
+        {clusterSheet ? (
+          <section className="cluster-dispatch-sheet">
+            <div className="cluster-sheet-hero">
+              <span>Map Cluster</span>
+              <strong>{clusterSheet.label}</strong>
+              <small>
+                {clusterSheet.readyCount
+                  ? `${clusterSheet.readyCount} ready 2nd attempt job(s)`
+                  : clusterSheet.worstOverdue
+                    ? `Worst overdue: ${clusterSheet.worstOverdue} day(s)`
+                    : "Jobs grouped in this area"}
+              </small>
+            </div>
+            <div className="cluster-sheet-list">
+              {clusterSheet.items.slice(0, 24).map((item) => {
+                const job = item.job;
+                return (
+                  <button
+                    className={`cluster-job-row job-status-card ${JobStatus.statusCardClass(job)}`}
+                    key={`${jobKey(job, item.index)}-${item.index}`}
+                    type="button"
+                    onClick={() => focusJob(job)}
+                  >
+                    <div>
+                      <strong>{jobKey(job, item.index)}</strong>
+                      <span>{displayAddress(job)}</span>
+                      <small>{job.borough || "Unknown borough"} · {displayLocation(job) || "Location not listed"}</small>
+                    </div>
+                    <b>{clusterJobReason(job)}</b>
+                  </button>
+                );
+              })}
+            </div>
+            {clusterSheet.items.length > 24 ? (
+              <small className="cluster-sheet-more">Showing first 24 priority jobs in this cluster.</small>
+            ) : null}
+          </section>
+        ) : !selectedOnly ? (
           <>
         <section className="today-route-card">
           <div>
@@ -13547,7 +13810,7 @@ return (
         </section>
           </>
         ) : null}
-        {jobs.filter((job) => workflowViewBucket(job) === "ready2").length > 0 ? (
+        {jobs.filter((job) => workflowViewBucket(job) === "ready2").length > 0 && !clusterSheet ? (
           <div className="ready-revisit-alert">
             <strong>REVISIT READY</strong>
             <span>{jobs.filter((job) => workflowViewBucket(job) === "ready2").length} job(s) need 2nd attempt now.</span>
