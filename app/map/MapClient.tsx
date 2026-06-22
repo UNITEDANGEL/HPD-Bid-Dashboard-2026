@@ -2803,12 +2803,96 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       layer.clearLayers();
 
       const bounds: [number, number][] = [];
+      const plottedItems: Array<{ job: MappedJob; index: number; lat: number; lng: number }> = [];
 
       filteredJobs.forEach((job, index) => {
         if (!Number.isFinite(job._lat) || !Number.isFinite(job._lng)) return;
 
         const lat = Number(job._lat);
         const lng = Number(job._lng);
+        bounds.push([lat, lng]);
+        plottedItems.push({ job, index, lat, lng });
+      });
+
+      const renderItems: any[] = markerOverview
+        ? Array.from(
+            plottedItems.reduce((clusters, item) => {
+              const point = map.latLngToLayerPoint([item.lat, item.lng]);
+              const key = `${Math.floor(point.x / 82)}:${Math.floor(point.y / 74)}`;
+              const cluster = clusters.get(key) || { items: [] as typeof plottedItems, latTotal: 0, lngTotal: 0 };
+              cluster.items.push(item);
+              cluster.latTotal += item.lat;
+              cluster.lngTotal += item.lng;
+              clusters.set(key, cluster);
+              return clusters;
+            }, new Map<string, { items: typeof plottedItems; latTotal: number; lngTotal: number }>())
+          ).map(([key, cluster]) => {
+            if (cluster.items.length === 1) return { kind: "job", ...cluster.items[0] };
+            return {
+              kind: "cluster",
+              key,
+              items: cluster.items,
+              lat: cluster.latTotal / cluster.items.length,
+              lng: cluster.lngTotal / cluster.items.length,
+            };
+          })
+        : plottedItems.map((item) => ({ kind: "job", ...item }));
+
+      renderItems.forEach((item) => {
+        if (item.kind === "cluster") {
+          const clusterItems = item.items as Array<{ job: MappedJob; index: number; lat: number; lng: number }>;
+          const worstOverdue = clusterItems.reduce((worst, current) => {
+            const match = markerOverdueLabel(current.job).match(/(\d+)/);
+            const days = match ? Number(match[1]) : 0;
+            return days > worst ? days : worst;
+          }, 0);
+          const readyCount = clusterItems.filter((current) => workflowViewBucket(current.job) === "ready2").length;
+          const statusClass = readyCount ? "cluster-ready" : worstOverdue ? "cluster-overdue" : "cluster-normal";
+          const clusterLabel = readyCount ? `${readyCount} ready` : worstOverdue ? `OD ${worstOverdue}d` : "mapped";
+          const clusterTitle = `${clusterItems.length} job${clusterItems.length === 1 ? "" : "s"}`;
+          const popupRows = clusterItems
+            .slice()
+            .sort((a, b) => {
+              const aDays = Number(markerOverdueLabel(a.job).match(/(\d+)/)?.[1] || 0);
+              const bDays = Number(markerOverdueLabel(b.job).match(/(\d+)/)?.[1] || 0);
+              return bDays - aDays;
+            })
+            .slice(0, 6)
+            .map((current) => `<span>${escapeMapPopupHtml(jobKey(current.job, current.index))} - ${escapeMapPopupHtml(markerOverdueLabel(current.job) || markerAwardCounter(current.job).main)}</span>`)
+            .join("");
+          const marker = L.marker([item.lat, item.lng], {
+            icon: L.divIcon({
+              className: "maturity-map-marker",
+              html: `<div class="map-cluster-marker ${statusClass}">
+                      <span>${clusterItems.length}</span>
+                      <strong>${escapeMarkerHtml(clusterLabel)}</strong>
+                    </div>`,
+              iconSize: [76, 58],
+              iconAnchor: [38, 29],
+              popupAnchor: [0, -18],
+            }),
+          });
+
+          marker.on("click", () => {
+            setMapMenuOpen(false);
+            map.setView([item.lat, item.lng], Math.max(13, Math.min(15, zoomLevel + 3)), { animate: true });
+          });
+
+          marker.bindPopup(`
+            <div class="field-map-popup">
+              <strong>${escapeMapPopupHtml(clusterTitle)}</strong>
+              <span>${escapeMapPopupHtml(clusterLabel)}</span>
+              ${popupRows}
+            </div>
+          `);
+          marker.addTo(layer);
+          return;
+        }
+
+        const job = item.job as MappedJob;
+        const index = Number(item.index || 0);
+        const lat = Number(item.lat);
+        const lng = Number(item.lng);
 
         const color = (job.status || "").toLowerCase().includes("award")
           ? "#53e69c"
@@ -2864,7 +2948,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         `);
 
         marker.addTo(layer);
-        bounds.push([lat, lng]);
       });
 
       if (bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
@@ -12689,6 +12772,94 @@ return (
             border-radius: 4px;
             opacity: 0.92;
             z-index: -1;
+          }
+
+          .maturity-map-marker .map-cluster-marker {
+            min-width: 72px !important;
+            min-height: 52px !important;
+            display: grid !important;
+            place-items: center !important;
+            align-content: center !important;
+            gap: 2px !important;
+            padding: 6px 9px !important;
+            border: 2px solid rgba(255, 255, 255, 0.96) !important;
+            border-radius: 18px !important;
+            background:
+              linear-gradient(180deg, rgba(15, 23, 42, 0.93), rgba(30, 41, 59, 0.88)) !important;
+            color: #ffffff !important;
+            box-shadow:
+              0 0 0 3px rgba(15, 23, 42, 0.12),
+              0 14px 30px rgba(15, 23, 42, 0.30) !important;
+            text-align: center !important;
+            position: relative !important;
+            overflow: visible !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            bottom: -7px;
+            width: 14px;
+            height: 14px;
+            border-right: 2px solid rgba(255, 255, 255, 0.96);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.96);
+            background: inherit;
+            transform: translateX(-50%) rotate(45deg);
+            border-radius: 4px;
+            z-index: -1;
+          }
+
+          .maturity-map-marker .map-cluster-marker span {
+            display: block !important;
+            color: #ffffff !important;
+            font-size: 23px !important;
+            font-weight: 1000 !important;
+            line-height: 0.95 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker strong {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-height: 16px !important;
+            padding: 3px 7px !important;
+            border-radius: 999px !important;
+            background: rgba(255, 255, 255, 0.14) !important;
+            color: #e2e8f0 !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-overdue {
+            border-color: rgba(254, 226, 226, 0.98) !important;
+            box-shadow:
+              0 0 0 3px rgba(255, 255, 255, 0.78),
+              0 0 0 7px rgba(220, 38, 38, 0.10),
+              0 14px 30px rgba(127, 29, 29, 0.22) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-overdue strong {
+            background: #fee2e2 !important;
+            color: #991b1b !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-ready {
+            background:
+              linear-gradient(180deg, rgba(20, 83, 45, 0.94), rgba(22, 101, 52, 0.88)) !important;
+            box-shadow:
+              0 0 0 3px rgba(255, 255, 255, 0.82),
+              0 0 0 7px rgba(34, 197, 94, 0.16),
+              0 14px 30px rgba(20, 83, 45, 0.25) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-ready strong {
+            background: #bbf7d0 !important;
+            color: #14532d !important;
           }
 
           .maturity-map-marker .map-signal-marker.marker-overview {
