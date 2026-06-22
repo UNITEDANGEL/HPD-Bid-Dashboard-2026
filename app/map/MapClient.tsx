@@ -2818,7 +2818,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         ? Array.from(
             plottedItems.reduce((clusters, item) => {
               const point = map.latLngToLayerPoint([item.lat, item.lng]);
-              const key = `${Math.floor(point.x / 82)}:${Math.floor(point.y / 74)}`;
+              const key = `${Math.floor(point.x / 116)}:${Math.floor(point.y / 96)}`;
               const cluster = clusters.get(key) || { items: [] as typeof plottedItems, latTotal: 0, lngTotal: 0 };
               cluster.items.push(item);
               cluster.latTotal += item.lat;
