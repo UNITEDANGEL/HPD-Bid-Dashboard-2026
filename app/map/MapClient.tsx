@@ -3571,6 +3571,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (packet.packetType === "application_package_zip") return `PDF + ${packet.imageCount} image(s)`;
     if (packet.packetType === "video_package_zip") return `${packet.videoCount} video(s)`;
     if (packet.packetType === "full_evidence_zip") {
+      if (!packet.evidenceCount) return "PDF-only ZIP";
       return `${packet.evidenceCount} media file(s) - ${packet.videoCount} video(s)`;
     }
     if (packet.packetType === "affidavit_invoice_pdf") return "Paperwork PDF";
@@ -3590,7 +3591,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const latestEvidenceAt = evidenceRows.reduce((latest, media) => {
       return media.capturedAt > latest ? media.capturedAt : latest;
     }, "");
-    if (!evidenceRows.length || !counts.total || (latestEvidenceAt && packet.generatedAt < latestEvidenceAt)) return null;
+    const isPdfOnlyPackage = !packet.evidenceCount && canGeneratePdfOnlyPackage(job);
+    if ((!isPdfOnlyPackage && (!evidenceRows.length || !counts.total)) || (latestEvidenceAt && packet.generatedAt < latestEvidenceAt)) return null;
 
     return {
       jobKey: key,
@@ -3734,6 +3736,24 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return dataUrl.startsWith("data:") && commaIndex > 0 && dataUrl.slice(commaIndex + 1).trim().length > 0;
   }
 
+  function canGeneratePdfOnlyPackage(job: JobRecord) {
+    const raw = [
+      (job as any).WorkflowStatus,
+      (job as any).workflowStatus,
+      (job as any).FieldOutcome,
+      (job as any).fieldOutcome,
+      (job as any).StatusOverride,
+      (job as any).status,
+    ].join(" ").toUpperCase();
+    const normalized = raw.replace(/[^A-Z0-9]+/g, "_");
+    const isRefused = normalized.includes("REFUSED_ACCESS") || normalized.includes("REFUSED");
+    const isFinalNoAccess =
+      normalized.includes("NO_ACCESS_COMPLETE") ||
+      normalized.includes("NO_ACCESS_2") ||
+      normalized.includes("NO_ACCESS_SECOND");
+    return isRefused || isFinalNoAccess;
+  }
+
   function fullPackageManifestText(
     key: string,
     invoicePacket: FieldPacket,
@@ -3807,7 +3827,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       }
 
       const evidenceRows = await listFieldEvidence(key);
-      if (!evidenceRows.length) {
+      const allowPdfOnlyPackage = canGeneratePdfOnlyPackage(job);
+      if (!evidenceRows.length && !allowPdfOnlyPackage) {
         showActionNotice("No field media saved yet. Capture before/after photos or videos first.");
         focusFieldPane("capture");
         return;
@@ -3816,12 +3837,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const includedMedia = evidenceRows.filter(mediaHasPackageBytes);
       const skippedMedia = evidenceRows.filter((media) => !mediaHasPackageBytes(media));
       const skippedVideos = skippedMedia.filter((media) => media.mediaType === "video");
-      if (skippedVideos.length) {
+      if (skippedVideos.length && !allowPdfOnlyPackage) {
         showActionNotice(`${skippedVideos.length} saved video(s) had no original video bytes. Retake or re-upload the video, then Generate Package again.`);
         focusFieldPane("capture");
         return;
       }
-      if (!includedMedia.length) {
+      if (!includedMedia.length && !allowPdfOnlyPackage) {
         showActionNotice("No package-ready image or video bytes were found. Retake or upload evidence from the job card.");
         focusFieldPane("capture");
         return;
@@ -3880,9 +3901,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const afterCount = includedMedia.filter((media) => media.kind === "after").length;
       const videoNames = includedMedia.filter((media) => media.mediaType === "video").map((media) => media.name || "Video evidence");
       let savedPacketId = "";
-      let note = videoCount
-        ? "Package ready for review. Video files are inside the videos folder."
-        : "Package ready for review. No video files were found for this OMO.";
+      let note = includedMedia.length
+        ? videoCount
+          ? "Package ready for review. Video files are inside the videos folder."
+          : "Package ready for review. No video files were found for this OMO."
+        : "PDF-only package ready for review. No images or videos were attached.";
 
       if (zipBytes.byteLength <= FULL_PACKAGE_SAVE_LIMIT_BYTES) {
         try {
@@ -3897,7 +3920,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             imageCount,
             videoCount,
             packetType: "full_evidence_zip",
-            note: "Complete package: invoice/affidavit PDF plus all saved images and videos.",
+            note: includedMedia.length
+              ? "Complete package: invoice/affidavit PDF plus all saved images and videos."
+              : "PDF-only package: invoice/affidavit PDF with no attached images or videos.",
           });
           savedPacketId = savedPacket.id;
           setFieldPacketsByJob((current) => ({
@@ -4757,9 +4782,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   function startNoAccessCounter(job: MappedJob) {
     const existingSecondAttempt = workflowSecondAttemptInfo(job);
     if (existingSecondAttempt && !existingSecondAttempt.ready) {
-      showActionNotice(`No Access 1st is already saved. Opening evidence photo. Wait ${existingSecondAttempt.hoursLeft}h before 2nd attempt.`);
+      showActionNotice(`No Access 1st is already saved. Evidence is optional. Wait ${existingSecondAttempt.hoursLeft}h before 2nd attempt.`);
       setWorkflowViewFilter("waiting72");
-      captureExtraPhoto(job, "no_access");
       return;
     }
     if (existingSecondAttempt?.ready) {
@@ -4789,14 +4813,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       outcomeLockedAt: iso,
       ArchivedFromMap: false,
     };
-    const nextJob = { ...job, ...patch } as MappedJob;
     saveFieldWorkflowPatch(
       job,
       patch,
-      "No access 1st saved. Opening evidence photo. 2nd attempt unlocks after 72 hours."
+      "No access 1st saved. Evidence is optional. 2nd attempt unlocks after 72 hours."
     );
     setWorkflowViewFilter("waiting72");
-    captureExtraPhoto(nextJob, "no_access");
   }
 
   function markNoAccessSecondAttempt(job: MappedJob) {
@@ -4834,10 +4856,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       outcomeLockedAt: iso,
       ArchivedFromMap: false,
     };
-    const nextJob = { ...job, ...patch } as MappedJob;
-    saveFieldWorkflowPatch(job, patch, "No access second attempt saved. Capture final evidence photo now.");
+    saveFieldWorkflowPatch(job, patch, "No access second attempt saved. Evidence is optional; generate package or add photo/video.");
     openPaperworkPreviewForStatus(job, patch, false);
-    captureExtraPhoto(nextJob, "no_access");
   }
 
   function markRefusedAccess(job: MappedJob) {
@@ -4861,14 +4881,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       ArchivedFromMap: false,
       ...refusedDescriptionPatch(description),
     };
-    const nextJob = { ...job, ...patch } as MappedJob;
     saveFieldWorkflowPatch(
       job,
       patch,
-      "Refused access saved. Opening the required photo now."
+      "Refused access saved. Evidence is optional; generate package or add photo/video."
     );
     openPaperworkPreviewForStatus(job, patch, false);
-    beginGuidedEvidenceCapture(nextJob, "refused_access");
   }
 
   function markCompletedByOthers(job: MappedJob) {
@@ -13347,27 +13365,19 @@ return (
                 const finalOutcome = isNoAccessSecond || isRefused || isCompletedByOthers || isWorkCompleted || isPartialWork;
                 const refusedPhotoCount = counts.refused_access;
                 const hasRefusedPhoto = refusedPhotoCount > 0;
-                const noAccessSecondAttemptAt = parseWorkflowTimestamp(selected.NoAccessSecondAttemptAt || selected.noAccessSecondAttemptAt);
-                const noAccessEvidenceCapturedAt = parseWorkflowTimestamp(selected.NoAccessEvidenceCapturedAt || selected.noAccessEvidenceCapturedAt);
-                const noAccessFirstPhotoMissing = noAccessWaiting && counts.no_access === 0;
-                const hasNoAccessSecondPhoto =
-                  !isNoAccessSecond ||
-                  Boolean(
-                    noAccessSecondAttemptAt &&
-                    noAccessEvidenceCapturedAt &&
-                    noAccessEvidenceCapturedAt.getTime() >= noAccessSecondAttemptAt.getTime()
-                  );
-                const needsNoAccessSecondPhoto = isNoAccessSecond && !hasNoAccessSecondPhoto;
+                const hasOptionalNoWorkEvidence = isRefused || isNoAccessSecond;
+                const optionalNoWorkEvidenceKind: FieldMediaKind = isNoAccessSecond ? "no_access" : isRefused ? "refused_access" : "general";
                 const preview = fullPackagePreviewFor(selected);
                 const packageReady = Boolean(preview);
-                const evidenceReady = packageReady || counts.total > 0;
+                const evidenceReady = packageReady || counts.total > 0 || hasOptionalNoWorkEvidence;
                 const quickEvidenceKind: FieldMediaKind = isNoAccess ? "no_access" : isCompletedByOthers ? "completed_by_others" : "general";
                 const needsQuickEvidence =
                   finalOutcome &&
+                  !hasOptionalNoWorkEvidence &&
                   !isRefused &&
                   !isWorkCompleted &&
                   !isPartialWork &&
-                  (counts.total === 0 || needsNoAccessSecondPhoto);
+                  counts.total === 0;
                 const refusedChoices = refusedDescriptionChoices(selected);
                 const refusedDescription = refusedDescriptionFromChoices(refusedChoices);
                 const nextTitle = isRefused
@@ -13375,7 +13385,7 @@ return (
                     ? packageReady
                     ? "Package ready"
                     : "Photo saved"
-                  : "Take refused photo"
+                  : "Ready to package"
                   : noAccessReadyForSecond
                     ? "Ready for 2nd attempt"
                     : noAccessWaiting
@@ -13386,24 +13396,20 @@ return (
                     ? packageReady
                       ? "Send the ZIP package when you are ready."
                       : "Generate the affidavit, invoice, and evidence ZIP."
-                    : "One photo is required for refused access."
+                    : "Photo or video is optional. Generate the affidavit/invoice now, or add evidence first."
                   : noAccessReadyForSecond
                     ? "Tap No Access 2nd to record the final attempt and capture evidence."
                     : noAccessWaiting
-                      ? noAccessFirstPhotoMissing
-                        ? `Take the 1st photo now. The 2nd attempt unlocks ${displayWorkflowDate(secondAttemptInfo?.available.toISOString())}.`
-                        : `1st photo saved. The 2nd attempt unlocks ${displayWorkflowDate(secondAttemptInfo?.available.toISOString())}.`
+                      ? `Evidence is optional. The 2nd attempt unlocks ${displayWorkflowDate(secondAttemptInfo?.available.toISOString())}.`
                       : "Choose the exact result from the site: start work, no access, refused access, partial, complete, or done by others.";
                 const packageTitle = packageReady
                   ? "Ready to send"
-                  : isRefused && !hasRefusedPhoto
-                    ? "Evidence needed"
-                    : noAccessWaiting
-                    ? noAccessFirstPhotoMissing ? "1st photo needed" : "Wait 72 hours"
-                    : noAccessReadyForSecond
-                      ? "2nd attempt ready"
-                    : needsNoAccessSecondPhoto
-                      ? "2nd photo needed"
+                  : hasOptionalNoWorkEvidence
+                    ? "Generate package"
+                  : noAccessWaiting
+                    ? "Wait 72 hours"
+                  : noAccessReadyForSecond
+                    ? "2nd attempt ready"
                     : needsQuickEvidence
                     ? "Evidence needed"
                     : isBeforeEvidence
@@ -13415,16 +13421,12 @@ return (
                           : "Pick outcome first";
                 const packageText = packageReady
                   ? "Review the ZIP, then send it."
-                  : isRefused && !hasRefusedPhoto
-                    ? "Take one refused-access photo before package review."
+                  : hasOptionalNoWorkEvidence
+                    ? "Evidence is optional for this package. Add photo/video if you want, or generate affidavit/invoice now."
                     : noAccessWaiting
-                      ? noAccessFirstPhotoMissing
-                        ? `Take the 1st no-access photo now. Package stays locked until ${secondAttemptInfo?.label}.`
-                        : `First photo saved. Package stays locked until ${secondAttemptInfo?.label}.`
+                      ? `Evidence is optional. Final package stays locked until ${secondAttemptInfo?.label}.`
                     : noAccessReadyForSecond
                       ? "Use No Access 2nd, then capture evidence and generate the package."
-                    : needsNoAccessSecondPhoto
-                      ? "Capture the 2nd no-access photo before generating the package."
                     : needsQuickEvidence
                       ? "Take site evidence first, then generate the package."
                     : isBeforeEvidence
@@ -13443,7 +13445,7 @@ return (
                         <strong>{nextTitle}</strong>
                         <small>{nextText}</small>
                       </div>
-                      <b>{isRefused ? `${refusedPhotoCount}/1 photo` : `${counts.total} file(s)`}</b>
+                      <b>{isRefused ? `${counts.refused_access} optional` : `${counts.total} file(s)`}</b>
                     </div>
                     <div className="site-procedure-steps">
                       <span className={outcomeChosen ? "done" : ""}>1 Outcome</span>
@@ -13559,17 +13561,11 @@ return (
                               Send ZIP
                             </button>
                           </>
-                        ) : isRefused && !hasRefusedPhoto ? (
-                          <button type="button" className="procedure-primary" onClick={() => captureExtraPhoto(selected, "refused_access")}>
-                            Take Refused Photo
-                          </button>
                         ) : noAccessWaiting ? (
                           <>
-                            {noAccessFirstPhotoMissing ? (
-                              <button type="button" className="procedure-primary" onClick={() => captureExtraPhoto(selected, "no_access")}>
-                                Take 1st Photo
-                              </button>
-                            ) : null}
+                            <button type="button" onClick={() => requestFieldPhotoCapture(selected, "no_access", "image/*,video/*")}>
+                              Add Evidence
+                            </button>
                             <button type="button" className="procedure-muted" disabled>
                               {secondAttemptInfo?.label || "Wait 72h"}
                             </button>
@@ -13578,20 +13574,27 @@ return (
                           <button type="button" className="procedure-primary" onClick={() => markNoAccessSecondAttempt(selected)}>
                             No Access 2nd Ready
                           </button>
+                        ) : hasOptionalNoWorkEvidence ? (
+                          <>
+                            <button type="button" onClick={() => requestFieldPhotoCapture(selected, optionalNoWorkEvidenceKind, "image/*,video/*")}>
+                              Add Evidence
+                            </button>
+                            <a className="procedure-primary" href={paperworkAutoPackageHref(selected)}>
+                              Generate Package
+                            </a>
+                          </>
                         ) : needsQuickEvidence ? (
                           <>
                             <button
                               type="button"
                               className="procedure-primary"
-                              onClick={() => needsNoAccessSecondPhoto ? captureExtraPhoto(selected, "no_access") : requestFieldPhotoCapture(selected, quickEvidenceKind, "image/*,video/*")}
+                              onClick={() => requestFieldPhotoCapture(selected, quickEvidenceKind, "image/*,video/*")}
                             >
-                              {needsNoAccessSecondPhoto ? "Take 2nd Photo" : "Take Evidence"}
+                              Take Evidence
                             </button>
-                            {needsNoAccessSecondPhoto ? null : (
-                              <a href={paperworkAutoPackageHref(selected)}>
-                                Generate Package
-                              </a>
-                            )}
+                            <a href={paperworkAutoPackageHref(selected)}>
+                              Generate Package
+                            </a>
                           </>
                         ) : isBeforeEvidence ? (
                           <>

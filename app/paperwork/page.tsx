@@ -1251,7 +1251,8 @@ export default function PaperworkPage() {
 
     try {
       const evidenceRows = await listFieldEvidence(jobId);
-      if (!evidenceRows.length) {
+      const allowPdfOnlyPackage = outcome === "refused_access" || outcome === "no_access";
+      if (!evidenceRows.length && !allowPdfOnlyPackage) {
         setPdfStatus("No saved images or videos were found for this OMO on this device. Capture evidence first, then Generate Package.");
         return;
       }
@@ -1259,13 +1260,13 @@ export default function PaperworkPage() {
       const includedMedia = evidenceRows.filter(mediaHasPackageBytes);
       const skippedMedia = evidenceRows.filter((media) => !mediaHasPackageBytes(media));
       const skippedVideos = skippedMedia.filter((media) => media.mediaType === "video");
-      if (skippedVideos.length) {
+      if (skippedVideos.length && !allowPdfOnlyPackage) {
         setPdfStatus(
           `${skippedVideos.length} saved video(s) had no original video bytes in browser storage, so I stopped the package instead of sending it without video. Retake or re-upload the video from the job card, then Generate Package again.`
         );
         return;
       }
-      if (!includedMedia.length) {
+      if (!includedMedia.length && !allowPdfOnlyPackage) {
         setPdfStatus("No package-ready image or video bytes were found for this OMO. Retake or upload evidence from the job card.");
         return;
       }
@@ -1361,9 +1362,11 @@ export default function PaperworkPage() {
       let applicationPacketId = "";
       let videoPacketId = "";
       let completeStored = false;
-      let note = videoCount
-        ? "Complete ZIP is ready with the affidavit/invoice, images, and videos."
-        : "Complete ZIP is ready with the affidavit/invoice and images. No videos were found for this OMO.";
+      let note = includedMedia.length
+        ? videoCount
+          ? "Complete ZIP is ready with the affidavit/invoice, images, and videos."
+          : "Complete ZIP is ready with the affidavit/invoice and images. No videos were found for this OMO."
+        : "PDF-only ZIP is ready with the affidavit/invoice. No images or videos were attached.";
 
       if (applicationBytes.byteLength <= COMPLETE_PACKAGE_SAVE_LIMIT_BYTES) {
         try {
@@ -1379,7 +1382,9 @@ export default function PaperworkPage() {
               imageCount,
               videoCount,
               packetType: "full_evidence_zip",
-              note: "Complete ZIP package: invoice/affidavit PDF plus all saved images and videos.",
+              note: includedMedia.length
+                ? "Complete ZIP package: invoice/affidavit PDF plus all saved images and videos."
+                : "PDF-only ZIP package: invoice/affidavit PDF with no attached images or videos.",
             });
             completeStored = Boolean(savedCompletePacket.id);
           }
@@ -1394,7 +1399,9 @@ export default function PaperworkPage() {
             imageCount,
             videoCount: 0,
             packetType: "application_package_zip",
-            note: "Application package: invoice/affidavit PDF plus all saved images.",
+            note: imageMedia.length
+              ? "Application package: invoice/affidavit PDF plus all saved images."
+              : "Application package: invoice/affidavit PDF only.",
           });
           applicationPacketId = savedApplicationPacket.id;
 
@@ -1415,9 +1422,11 @@ export default function PaperworkPage() {
           }
 
           if (completeStored) {
-            note = videoCount
-              ? "Complete ZIP saved on this phone with application and video ZIP backups."
-              : "Complete ZIP saved on this phone. No videos were found.";
+            note = includedMedia.length
+              ? videoCount
+                ? "Complete ZIP saved on this phone with application and video ZIP backups."
+                : "Complete ZIP saved on this phone. No videos were found."
+              : "PDF-only ZIP saved on this phone. No images or videos were attached.";
           } else {
             note = `Complete ZIP is ${packetSizeLabel(completeBytes.byteLength)}, so it is ready for Send but not duplicated in phone storage.`;
           }
