@@ -115,6 +115,19 @@ type ClusterSheetState = {
   worstOverdue: number;
 };
 
+type UserLocationState = {
+  lat: number;
+  lng: number;
+  accuracy?: number;
+  updatedAt: string;
+};
+
+type MapJobBriefState = {
+  job: MappedJob;
+  index?: number;
+  openedAt: string;
+};
+
 type MapBaseStyleId =
   | "maptiler-streets"
   | "maptiler-basic"
@@ -1713,6 +1726,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
   const [selected, setSelected] = useState<MappedJob | null>(null);
   const [clusterSheet, setClusterSheet] = useState<ClusterSheetState | null>(null);
+  const [mapJobBrief, setMapJobBrief] = useState<MapJobBriefState | null>(null);
   const refusedDescriptionDraftsRef = useRef<Record<string, RefusedDescriptorChoices>>({});
   const jobDrawerRef = useRef<HTMLElement | null>(null);
   const selectedCardRef = useRef<HTMLDivElement | null>(null);
@@ -1729,6 +1743,7 @@ const [touchInfoText, setTouchInfoText] = useState("");
 const [draftWorkflowStatus, setDraftWorkflowStatus] = useState("");
 const [draftWorkflowDate, setDraftWorkflowDate] = useState("");
 const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
+const [visitStatusDate, setVisitStatusDate] = useState("");
 const [workflowViewFilter, setWorkflowViewFilter] = useState<"active" | "waiting72" | "ready2" | "final" | "archived" | "all">("active");
 const [countdownTick, setCountdownTick] = useState(0);
 const [mapZoom, setMapZoom] = useState(10);
@@ -1767,7 +1782,7 @@ const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
 } | null>(null);
 const [fieldFocusPane, setFieldFocusPane] = useState<"capture" | "evidence" | "package" | "send">("capture");
 const [fieldMediaFlashKind, setFieldMediaFlashKind] = useState<FieldMediaKind | "">("");
-const [userLocation, setUserLocation] = useState<{ lat: number; lng: number; accuracy?: number; updatedAt: string } | null>(null);
+const [userLocation, setUserLocation] = useState<UserLocationState | null>(null);
 const [locationStatus, setLocationStatus] = useState("Location off");
 const [followMyLocation, setFollowMyLocation] = useState(false);
   const [search, setSearch] = useState("");
@@ -1830,22 +1845,8 @@ const openDispatchJob = (jobId: string) => {
     setActionNotice(`Could not find ${jobId}.`);
     return;
   }
-  clearMarkerOverviewReturn();
-  setSelected(job);
-  setSelectedOnly(true);
-  setDrawerOpen(true);
-  setFullMap(false);
-  setGeneratedLinks({});
-  setDescriptionOpen(false);
+  focusJob(job);
   setActionNotice(`Opened ${jobId}.`);
-  if (Number.isFinite(job._lat) && Number.isFinite(job._lng)) {
-    window.setTimeout(() => {
-      mapRef.current?.panTo([Number(job._lat), Number(job._lng)], {
-        animate: true,
-        duration: 0.5,
-      });
-    }, 40);
-  }
 };
 const runDispatchChat = (text?: string) => {
   const question = String(text || dispatchQuestion || "").trim();
@@ -1972,21 +1973,7 @@ const jobAssistantLineForAi = (job: JobRecord, index: number) => {
   return `${index + 1}. ${jobKey(job)} — ${dueText} — ${status} — ${(job as any).borough || "Unknown"} — ${address}${amount ? ` — ${amount}` : ""}`;
 };
 const openAssistantJob = (job: MappedJob) => {
-  clearMarkerOverviewReturn();
-  setSelected(job);
-  setSelectedOnly(true);
-  setDrawerOpen(true);
-  setFullMap(false);
-  setGeneratedLinks({});
-  setDescriptionOpen(false);
-  if (Number.isFinite(job._lat) && Number.isFinite(job._lng)) {
-    window.setTimeout(() => {
-      mapRef.current?.panTo([Number(job._lat), Number(job._lng)], {
-        animate: true,
-        duration: 0.5,
-      });
-    }, 40);
-  }
+  focusJob(job);
 };
 const runJobAssistant = (questionText?: string) => {
   const question = String(questionText || aiQuestion || "").trim();
@@ -2570,6 +2557,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function openClusterSheet(items: ClusterJobItem[], lat: number, lng: number, label: string, readyCount: number, worstOverdue: number) {
     const sortedItems = sortedClusterItems(items);
+    setMapJobBrief(null);
     setClusterSheet({
       title: `${items.length} job${items.length === 1 ? "" : "s"}`,
       label,
@@ -2593,9 +2581,111 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function closeClusterSheet() {
     setClusterSheet(null);
+    setMapJobBrief(null);
     setDrawerOpen(false);
     setFullMap(true);
     window.setTimeout(() => mapRef.current?.invalidateSize(), 120);
+  }
+
+  function jobLatLng(job: JobRecord | null | undefined) {
+    if (!job) return null;
+    const lat = toNumber((job as any)._lat ?? (job as any).Latitude ?? (job as any).latitude ?? (job as any).lat);
+    const lng = toNumber((job as any)._lng ?? (job as any).Longitude ?? (job as any).longitude ?? (job as any).lng ?? (job as any).lon);
+    if (lat === null || lng === null) return null;
+    return { lat, lng };
+  }
+
+  function distanceMiles(from: UserLocationState, to: { lat: number; lng: number }) {
+    const radiusMiles = 3958.8;
+    const toRad = (value: number) => (value * Math.PI) / 180;
+    const dLat = toRad(to.lat - from.lat);
+    const dLng = toRad(to.lng - from.lng);
+    const lat1 = toRad(from.lat);
+    const lat2 = toRad(to.lat);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    return radiusMiles * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function jobDistanceLabel(job: JobRecord | null | undefined) {
+    const coords = jobLatLng(job);
+    if (!coords) return "No map location";
+    if (!userLocation) return "Turn on location for distance";
+    const miles = distanceMiles(userLocation, coords);
+    if (miles < 0.1) return "You are here";
+    if (miles < 10) return `${miles.toFixed(1)} mi away`;
+    return `${Math.round(miles)} mi away`;
+  }
+
+  function mapBriefText(job: JobRecord) {
+    const summary = descriptionSummary(job);
+    if (summary && summary !== "No description available.") return summary;
+    return nextActionInfo(job).detail;
+  }
+
+  function openMapJobBrief(job: MappedJob, index?: number) {
+    clearMarkerOverviewReturn();
+    setClusterSheet(null);
+    setSelected(null);
+    setSelectedOnly(false);
+    setGeneratedLinks({});
+    setDescriptionOpen(false);
+    setDrawerOpen(false);
+    setFullMap(true);
+    setMapMenuOpen(false);
+    setActionNotice("");
+    setMapJobBrief({ job, index, openedAt: new Date().toISOString() });
+
+    const coords = jobLatLng(job);
+    if (coords && mapRef.current) {
+      const nextZoom = Math.max(Number(mapZoom || 0), 15);
+      mapRef.current.flyTo([coords.lat, coords.lng], Math.min(nextZoom, 16), {
+        animate: true,
+        duration: 0.55,
+      });
+    }
+
+    if (!userLocation) startLocationTracking();
+    window.setTimeout(() => mapRef.current?.invalidateSize(), 120);
+  }
+
+  function closeMapJobBrief() {
+    setMapJobBrief(null);
+    mapRef.current?.closePopup?.();
+  }
+
+  function setWorkflowVisitDate(value: string) {
+    setVisitStatusDate(value);
+    setDraftWorkflowDate(value);
+    setDraftWorkflowSaved(false);
+  }
+
+  function setWorkflowVisitDateToNow() {
+    setWorkflowVisitDate(localDatetimeValue());
+  }
+
+  function workflowVisitDateValue() {
+    return visitStatusDate || draftWorkflowDate || localDatetimeValue();
+  }
+
+  function workflowActionDate() {
+    const value = workflowVisitDateValue();
+    if (!visitStatusDate || !draftWorkflowDate) setWorkflowVisitDate(value);
+    const parsed = new Date(isoFromLocalDatetime(value));
+    return Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  }
+
+  function workflowActionIso() {
+    return workflowActionDate().toISOString();
+  }
+
+  function openArrivedJob(job: MappedJob) {
+    setWorkflowVisitDateToNow();
+    setMapJobBrief(null);
+    focusJob(job);
+    setFieldFocusPane("capture");
+    showActionNotice("Arrived. Confirm the status date, then choose what happened at the site.");
   }
 
   function centerMapOnUserLocation(location = userLocation) {
@@ -2611,6 +2701,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function showMyLocationOverview() {
     clearMarkerOverviewReturn();
+    setMapJobBrief(null);
     setClusterSheet(null);
     setSelectedOnly(false);
     setSelected(null);
@@ -2631,6 +2722,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function returnToMapOverview() {
+    setMapJobBrief(null);
     setClusterSheet(null);
     setSelectedOnly(false);
     setSelected(null);
@@ -3001,7 +3093,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
         marker.on("click", () => {
           setMapMenuOpen(false);
-          focusJob(job);
+          openMapJobBrief(job, index);
         });
 
         marker.bindPopup(`
@@ -3097,12 +3189,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       setMapMenuOpen(false);
       clearMarkerOverviewReturn();
-      focusJob(job);
+      openMapJobBrief(job);
     }
 
     document.addEventListener("click", handlePopupOpen);
     return () => document.removeEventListener("click", handlePopupOpen);
-  }, [jobs, mappedJobs]);
+  }, [jobs, mappedJobs, mapZoom, userLocation]);
 
   useEffect(() => {
     return () => {
@@ -4798,7 +4890,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function completeBeforeEvidenceAndStartWork(job: MappedJob) {
-    const iso = new Date().toISOString();
+    const iso = workflowActionIso();
     const patch = {
       WorkflowStatus: "WORK_STARTED",
       workflowStatus: "WORK_STARTED",
@@ -4829,7 +4921,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function startFieldJob(job: MappedJob) {
-    const iso = new Date().toISOString();
+    const iso = workflowActionIso();
     const patch = {
       WorkflowStatus: "BEFORE_EVIDENCE",
       workflowStatus: "BEFORE_EVIDENCE",
@@ -4873,6 +4965,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setPhotoCaptureTarget(null);
     setDraftWorkflowStatus("");
     setDraftWorkflowDate("");
+    setVisitStatusDate("");
     setDraftWorkflowSaved(false);
     setFieldPhotoCounts((current) => ({ ...current, [key]: emptyFieldMediaCounts() }));
     setFieldEvidenceByJob((current) => ({ ...current, [key]: [] }));
@@ -4891,7 +4984,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function completeAfterEvidenceAndFinishJob(job: MappedJob, partial = false) {
-    const iso = new Date().toISOString();
+    const iso = workflowActionIso();
     const patch = {
       WorkflowStatus: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
       workflowStatus: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
@@ -4922,7 +5015,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function finishFieldJob(job: MappedJob, partial = false) {
-    const iso = new Date().toISOString();
+    const iso = workflowActionIso();
     const patch = {
       WorkflowStatus: "AFTER_EVIDENCE",
       workflowStatus: "AFTER_EVIDENCE",
@@ -4964,7 +5057,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       return;
     }
 
-    const when = new Date();
+    const when = workflowActionDate();
     const iso = when.toISOString();
     const available = new Date(when);
     available.setHours(available.getHours() + 72);
@@ -5006,7 +5099,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       return;
     }
 
-    const iso = new Date().toISOString();
+    const iso = workflowActionIso();
     const existingFirstAttempt = job.NoAccessFirstAttemptAt || job.noAccessFirstAttemptAt || "";
     const existingSecondAvailable = job.SecondAttemptAvailableAt || job.secondAttemptAvailableAt || secondAttemptInfo.available.toISOString();
     const patch = {
@@ -5033,7 +5126,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function markRefusedAccess(job: MappedJob) {
-    const iso = new Date().toISOString();
+    const iso = workflowActionIso();
     const description =
       refusedDescriptionValue(job) ||
       refusedDescriptionFromChoices(refusedDescriptionChoices(job));
@@ -5062,7 +5155,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function markCompletedByOthers(job: MappedJob) {
-    const iso = new Date().toISOString();
+    const iso = workflowActionIso();
     const patch = {
       WorkflowStatus: "COMPLETED_BY_OTHERS",
       workflowStatus: "COMPLETED_BY_OTHERS",
@@ -5184,8 +5277,9 @@ function localDatetimeValue(date = new Date()) {
   }
 
   function pickDraftWorkflow(status: string) {
+    const nextDate = workflowVisitDateValue();
     setDraftWorkflowStatus(status);
-    setDraftWorkflowDate(localDatetimeValue());
+    setWorkflowVisitDate(nextDate);
     setDraftWorkflowSaved(false);
   }
 
@@ -5195,7 +5289,8 @@ function localDatetimeValue(date = new Date()) {
       return;
     }
 
-    const when = new Date(isoFromLocalDatetime(draftWorkflowDate));
+    const selectedDate = draftWorkflowDate || visitStatusDate || localDatetimeValue();
+    const when = new Date(isoFromLocalDatetime(selectedDate));
     const iso = when.toISOString();
     const available = new Date(when);
     available.setHours(available.getHours() + 72);
@@ -5661,7 +5756,13 @@ function shouldShowOnActiveMap(job: JobRecord) {
 
 function focusJob(job: MappedJob) {
     clearMarkerOverviewReturn();
+    setMapJobBrief(null);
     setClusterSheet(null);
+    const nextVisitDate = localDatetimeValue();
+    setVisitStatusDate(nextVisitDate);
+    setDraftWorkflowDate(nextVisitDate);
+    setDraftWorkflowSaved(false);
+    setFieldFocusPane("capture");
     setSelected(job);
           setSelectedOnly(true);
           setGeneratedLinks({});
@@ -13710,6 +13811,213 @@ return (
             }
           }
 
+          .map-job-brief-card {
+            position: absolute !important;
+            z-index: 880 !important;
+            left: 50% !important;
+            bottom: calc(env(safe-area-inset-bottom) + 92px) !important;
+            width: min(460px, calc(100vw - 22px)) !important;
+            max-height: min(52dvh, 370px) !important;
+            overflow: auto !important;
+            transform: translateX(-50%) !important;
+            display: grid !important;
+            gap: 10px !important;
+            padding: 13px !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(159, 176, 196, 0.28) !important;
+            background: linear-gradient(180deg, rgba(9, 17, 30, 0.96), rgba(18, 27, 42, 0.94)) !important;
+            color: #f8fbff !important;
+            box-shadow: 0 22px 62px rgba(0, 0, 0, 0.38) !important;
+            backdrop-filter: blur(18px) saturate(1.08) !important;
+          }
+
+          .map-job-brief-head {
+            display: flex !important;
+            align-items: start !important;
+            justify-content: space-between !important;
+            gap: 12px !important;
+          }
+
+          .map-job-brief-head div {
+            display: grid !important;
+            min-width: 0 !important;
+            gap: 3px !important;
+          }
+
+          .map-job-brief-head span,
+          .map-job-brief-grid small,
+          .site-visit-date-card label span,
+          .site-visit-date-card small {
+            color: #9fb0c4 !important;
+            font-size: 10px !important;
+            font-weight: 950 !important;
+            line-height: 1.1 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-job-brief-head strong {
+            color: #ffffff !important;
+            font-size: 25px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .map-job-brief-head button,
+          .map-job-brief-actions button,
+          .map-job-brief-actions a,
+          .site-visit-date-card button {
+            min-height: 40px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(226, 232, 240, 0.18) !important;
+            background: rgba(248, 250, 252, 0.09) !important;
+            color: #eef6ff !important;
+            font-size: 12px !important;
+            font-weight: 950 !important;
+            line-height: 1.05 !important;
+            letter-spacing: 0 !important;
+            white-space: normal !important;
+            text-align: center !important;
+          }
+
+          .map-job-brief-address {
+            margin: 0 !important;
+            color: #e8f1ff !important;
+            font-size: 15px !important;
+            font-weight: 850 !important;
+            line-height: 1.22 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .map-job-brief-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 7px !important;
+          }
+
+          .map-job-brief-grid span {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 4px !important;
+            padding: 9px !important;
+            border-radius: 13px !important;
+            background: rgba(255, 255, 255, 0.07) !important;
+            border: 1px solid rgba(226, 232, 240, 0.10) !important;
+          }
+
+          .map-job-brief-grid strong {
+            color: #ffffff !important;
+            font-size: 13px !important;
+            line-height: 1.12 !important;
+            font-weight: 1000 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .map-job-brief-summary {
+            margin: 0 !important;
+            color: #cbd8e8 !important;
+            font-size: 13px !important;
+            line-height: 1.35 !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 3 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+          }
+
+          .map-job-brief-actions {
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 7px !important;
+          }
+
+          .map-job-brief-actions .primary,
+          .site-visit-date-card button {
+            background: linear-gradient(135deg, #34d399, #60a5fa) !important;
+            color: #07131f !important;
+            border-color: rgba(255, 255, 255, 0.36) !important;
+            box-shadow: 0 14px 30px rgba(37, 99, 235, 0.22) !important;
+          }
+
+          .map-job-brief-actions .primary {
+            grid-column: span 2 !important;
+          }
+
+          .site-visit-date-card {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 8px !important;
+            align-items: end !important;
+            padding: 11px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(96, 165, 250, 0.22) !important;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.78), rgba(30, 41, 59, 0.62)) !important;
+            color: #f8fbff !important;
+          }
+
+          .site-visit-date-card label {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 6px !important;
+          }
+
+          .site-visit-date-card input {
+            width: 100% !important;
+            min-height: 42px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(226, 232, 240, 0.18) !important;
+            background: rgba(8, 13, 20, 0.72) !important;
+            color: #ffffff !important;
+            padding: 0 10px !important;
+            font-size: 15px !important;
+            font-weight: 900 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .site-visit-date-card small {
+            grid-column: 1 / -1 !important;
+            text-transform: none !important;
+            color: #b9c8db !important;
+          }
+
+          .map-shell.drawer-selected .map-stats,
+          .map-shell.drawer-selected .status-legend,
+          .map-shell.drawer-selected .zoom-panel,
+          .map-shell.drawer-selected .location-status-pill {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+          }
+
+          @media (max-width: 520px) {
+            .map-job-brief-card {
+              bottom: calc(env(safe-area-inset-bottom) + 92px) !important;
+              width: calc(100vw - 18px) !important;
+              max-height: min(48dvh, 340px) !important;
+              padding: 12px !important;
+            }
+
+            .map-job-brief-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .map-job-brief-grid span:last-child {
+              grid-column: 1 / -1 !important;
+            }
+
+            .map-job-brief-actions {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .map-job-brief-actions .primary {
+              grid-column: 1 / -1 !important;
+            }
+          }
+
           @keyframes signalOverduePulse {
             0%, 100% {
               opacity: 0.24;
@@ -13959,6 +14267,52 @@ return (
         <div className={`location-status-pill ${userLocation ? "active" : ""}`}>
           <span>{locationStatus}</span>
         </div>
+
+        {mapJobBrief ? (
+          <section className="map-job-brief-card" aria-label="Map job brief">
+            <div className="map-job-brief-head">
+              <div>
+                <span>Selected Site</span>
+                <strong>{jobKey(mapJobBrief.job, mapJobBrief.index)}</strong>
+              </div>
+              <button type="button" onClick={closeMapJobBrief} aria-label="Close job brief">
+                Close
+              </button>
+            </div>
+            <p className="map-job-brief-address">{displayAddress(mapJobBrief.job)}</p>
+            <div className="map-job-brief-grid">
+              <span>
+                <small>Distance</small>
+                <strong>{jobDistanceLabel(mapJobBrief.job)}</strong>
+              </span>
+              <span>
+                <small>Status</small>
+                <strong>{workflowLabel(mapJobBrief.job) || JobStatus.statusLabel(mapJobBrief.job)}</strong>
+              </span>
+              <span>
+                <small>Work Window</small>
+                <strong>{workWindowInfo(mapJobBrief.job).statusLabel}</strong>
+              </span>
+            </div>
+            <p className="map-job-brief-summary">{mapBriefText(mapJobBrief.job)}</p>
+            <div className="map-job-brief-actions">
+              {!userLocation ? (
+                <button type="button" onClick={startLocationTracking}>
+                  Start Location
+                </button>
+              ) : null}
+              <a href={wazeDirectionsUrl(mapJobBrief.job)} target="_blank" rel="noopener noreferrer" onClick={() => showActionNotice("Opening guide. Tap Arrived when you reach the site.")}>
+                Guide There
+              </a>
+              <a href={directionsUrl(mapJobBrief.job)} target="_blank" rel="noopener noreferrer">
+                Google
+              </a>
+              <button type="button" className="primary" onClick={() => openArrivedJob(mapJobBrief.job)}>
+                Arrived / Update Status
+              </button>
+            </div>
+          </section>
+        ) : null}
       </section>
 
       <aside
@@ -14050,7 +14404,7 @@ return (
                     className={`cluster-job-row job-status-card ${JobStatus.statusCardClass(job)}`}
                     key={`${jobKey(job, item.index)}-${item.index}`}
                     type="button"
-                    onClick={() => focusJob(job)}
+                    onClick={() => openMapJobBrief(job, item.index)}
                   >
                     <div>
                       <strong>{jobKey(job, item.index)}</strong>
@@ -14421,6 +14775,20 @@ return (
                       <div className="site-section-head">
                         <span>Outcome</span>
                         <strong>Choose the field path</strong>
+                      </div>
+                      <div className="site-visit-date-card">
+                        <label>
+                          <span>Status date / time</span>
+                          <input
+                            type="datetime-local"
+                            value={workflowVisitDateValue()}
+                            onChange={(event) => setWorkflowVisitDate(event.target.value)}
+                          />
+                        </label>
+                        <button type="button" onClick={setWorkflowVisitDateToNow}>
+                          Now
+                        </button>
+                        <small>Used for affidavit dates, invoice dates, and the No Access 72-hour counter.</small>
                       </div>
                       <div className="site-option-group">
                         <div className="site-option-title">
@@ -15172,8 +15540,7 @@ return (
                     type="datetime-local"
                     value={draftWorkflowDate}
                     onChange={(event) => {
-                      setDraftWorkflowDate(event.target.value);
-                      setDraftWorkflowSaved(false);
+                      setWorkflowVisitDate(event.target.value);
                     }}
                   />
                 </label>
