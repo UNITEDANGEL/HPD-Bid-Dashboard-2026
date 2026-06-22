@@ -63,6 +63,7 @@ const COMPLETE_PACKAGE_SAVE_LIMIT_BYTES = 35 * 1024 * 1024;
 const AFFIDAVIT_NOTARY_COUNTY = "QUEENS";
 const REFUSED_ACCESS_DESCRIPTION_EXAMPLE = "MALE, TALL, DARK HAIR";
 const NO_WORK_COMPLETED_BY_OTHERS_LINE_5_DATE = { x: 272, y: 245, size: 10 } as const;
+const INVOICE_APT_LOCATION_WIDGET = { x: 131.695, y: 550.582, shiftY: 5 } as const;
 
 type ZipEntry = {
   path: string;
@@ -119,6 +120,30 @@ type GeneratePdfOptions = {
   markGenerated?: boolean;
   formOverride?: PackageForm;
 };
+
+function shiftInvoiceAptLocationWidget(pdfForm: any) {
+  try {
+    const field = pdfForm.getTextField("Apt #");
+    const widgets = field?.acroField?.getWidgets?.() || [];
+
+    widgets.forEach((widget: any) => {
+      const rect = widget?.getRectangle?.();
+      if (!rect) return;
+
+      const isInvoiceAptLocation =
+        Math.abs(rect.x - INVOICE_APT_LOCATION_WIDGET.x) < 2 &&
+        Math.abs(rect.y - INVOICE_APT_LOCATION_WIDGET.y) < 3;
+      if (!isInvoiceAptLocation) return;
+
+      widget.setRectangle({
+        x: rect.x,
+        y: rect.y + INVOICE_APT_LOCATION_WIDGET.shiftY,
+        width: rect.width,
+        height: rect.height,
+      });
+    });
+  } catch {}
+}
 
 function asArray(value: unknown): JobRecord[] {
   if (Array.isArray(value)) return value as JobRecord[];
@@ -1013,6 +1038,7 @@ export default function PaperworkPage() {
 
       const pdfDoc = await PDFDocument.load(await response.arrayBuffer());
       const pdfForm = pdfDoc.getForm();
+      shiftInvoiceAptLocationWidget(pdfForm);
 
       const setText = (name: string, value: string, fontSize = name === "Work Description" ? 8 : 10) => {
         try {
