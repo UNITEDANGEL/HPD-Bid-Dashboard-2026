@@ -229,6 +229,22 @@ type FieldCaptureTarget = {
   step?: FieldCaptureStep;
 };
 
+type RefusedDescriptorKey = "gender" | "height" | "hair";
+
+type RefusedDescriptorChoices = Record<RefusedDescriptorKey, string>;
+
+const REFUSED_DESCRIPTION_DEFAULT: RefusedDescriptorChoices = {
+  gender: "MALE",
+  height: "TALL",
+  hair: "DARK HAIR",
+};
+
+const REFUSED_DESCRIPTION_GROUPS: Array<{ key: RefusedDescriptorKey; label: string; options: string[] }> = [
+  { key: "gender", label: "Gender", options: ["MALE", "FEMALE"] },
+  { key: "height", label: "Height", options: ["TALL", "SHORT"] },
+  { key: "hair", label: "Hair", options: ["DARK HAIR", "LIGHT HAIR"] },
+];
+
 type InlineCameraSession = {
   target: FieldCaptureTarget;
   mode: "photo" | "video";
@@ -1179,6 +1195,59 @@ function workflowLabel(job: JobRecord) {
   return labels[status] || "";
 }
 
+function refusedDescriptionValue(job: JobRecord | null | undefined) {
+  if (!job) return "";
+  return String(
+    job.DeniedDescription ||
+      job.deniedDescription ||
+      job.RefusedAccessDescription ||
+      job.refusedAccessDescription ||
+      job.DeniedByDescription ||
+      job.deniedByDescription ||
+      job.RefusedByDescription ||
+      job.refusedByDescription ||
+      job.DescriptionOfIndividual ||
+      job.descriptionOfIndividual ||
+      job.IndividualDescription ||
+      job.individualDescription ||
+      job.PersonDescription ||
+      job.personDescription ||
+      ""
+  ).trim();
+}
+
+function refusedDescriptionChoices(job: JobRecord | null | undefined): RefusedDescriptorChoices {
+  const raw = refusedDescriptionValue(job).toUpperCase();
+  return {
+    gender: raw.includes("FEMALE") ? "FEMALE" : REFUSED_DESCRIPTION_DEFAULT.gender,
+    height: raw.includes("SHORT") ? "SHORT" : REFUSED_DESCRIPTION_DEFAULT.height,
+    hair: raw.includes("LIGHT") ? "LIGHT HAIR" : REFUSED_DESCRIPTION_DEFAULT.hair,
+  };
+}
+
+function refusedDescriptionFromChoices(choices: RefusedDescriptorChoices) {
+  return `${choices.gender}, ${choices.height}, ${choices.hair}`;
+}
+
+function refusedDescriptionPatch(description: string) {
+  return {
+    DeniedDescription: description,
+    deniedDescription: description,
+    RefusedAccessDescription: description,
+    refusedAccessDescription: description,
+    DeniedByDescription: description,
+    deniedByDescription: description,
+    RefusedByDescription: description,
+    refusedByDescription: description,
+    DescriptionOfIndividual: description,
+    descriptionOfIndividual: description,
+    IndividualDescription: description,
+    individualDescription: description,
+    PersonDescription: description,
+    personDescription: description,
+  };
+}
+
 function parseJobDate(value?: string) {
   const raw = String(value || "").trim();
   if (!raw) return null;
@@ -1561,6 +1630,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
   const [selected, setSelected] = useState<MappedJob | null>(null);
+  const refusedDescriptionDraftsRef = useRef<Record<string, RefusedDescriptorChoices>>({});
   const jobDrawerRef = useRef<HTMLElement | null>(null);
   const selectedCardRef = useRef<HTMLDivElement | null>(null);
   const swipeStartXRef = useRef<number | null>(null);
@@ -2935,6 +3005,24 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         console.error(error);
         showActionNotice("Saved on this phone. Server sync needs retry.");
       });
+  }
+
+  function saveRefusedDescriptionChoice(job: MappedJob, descriptorKey: RefusedDescriptorKey, value: string) {
+    const jobId = jobKey(job);
+    if (!jobId) return;
+
+    const nextChoices = {
+      ...(refusedDescriptionDraftsRef.current[jobId] || refusedDescriptionChoices(job)),
+      [descriptorKey]: value,
+    };
+    const description = refusedDescriptionFromChoices(nextChoices);
+    refusedDescriptionDraftsRef.current[jobId] = nextChoices;
+
+    saveFieldWorkflowPatch(
+      job,
+      refusedDescriptionPatch(description),
+      `Refused description saved: ${description}`
+    );
   }
 
   function clearedFieldWorkflowStatePatch() {
@@ -4506,6 +4594,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const confirmed = window.confirm("Reset this job to Pending and clear saved test evidence on this phone?");
     if (!confirmed) return;
 
+    delete refusedDescriptionDraftsRef.current[key];
     const resetPatch = clearedFieldWorkflowStatePatch();
     setFieldCaptureGuide(null);
     setFieldFocusPane("capture");
@@ -4659,6 +4748,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function markRefusedAccess(job: MappedJob) {
     const iso = new Date().toISOString();
+    const description =
+      refusedDescriptionValue(job) ||
+      refusedDescriptionFromChoices(refusedDescriptionChoices(job));
     const patch = {
       WorkflowStatus: "REFUSED_ACCESS",
       workflowStatus: "REFUSED_ACCESS",
@@ -4673,12 +4765,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       OutcomeLockedAt: iso,
       outcomeLockedAt: iso,
       ArchivedFromMap: false,
+      ...refusedDescriptionPatch(description),
     };
     const nextJob = { ...job, ...patch } as MappedJob;
     saveFieldWorkflowPatch(
       job,
       patch,
-      "Refused access saved. Opening required photos and videos now."
+      "Refused access saved. Opening the required photo now."
     );
     openPaperworkPreviewForStatus(job, patch, false);
     beginGuidedEvidenceCapture(nextJob, "refused_access");
@@ -4873,6 +4966,9 @@ function localDatetimeValue(date = new Date()) {
     }
 
     if (draftWorkflowStatus === "Refused Access") {
+      const description =
+        refusedDescriptionValue(job) ||
+        refusedDescriptionFromChoices(refusedDescriptionChoices(job));
       patch = {
         ...patch,
         WorkflowStatus: "REFUSED_ACCESS",
@@ -4884,6 +4980,7 @@ function localDatetimeValue(date = new Date()) {
         ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
+        ...refusedDescriptionPatch(description),
       };
     }
 
@@ -11654,6 +11751,16 @@ return (
             box-shadow: 0 10px 20px rgba(3, 8, 14, 0.18) !important;
           }
 
+          .selected-card .selected-chip-stack .status {
+            max-width: 100% !important;
+            min-width: 112px !important;
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            text-align: center !important;
+            line-height: 1.15 !important;
+          }
+
           .field-step-actions .refused-job-btn {
             background: linear-gradient(135deg, #fb7185, #f97316) !important;
             color: #ffffff !important;
@@ -11713,9 +11820,13 @@ return (
 
           .selected-overview-grid,
           .selected-alert-grid,
-          .selected-description,
-          .selected-status-panel {
+          .selected-description {
             order: 3;
+          }
+
+          .selected-status-panel,
+          .workflow-save-panel {
+            display: none !important;
           }
 
           .site-procedure-head {
@@ -11894,6 +12005,7 @@ return (
 
           .site-procedure-actions button,
           .site-procedure-actions a {
+            min-width: 0;
             min-height: 56px;
             display: grid;
             align-content: center;
@@ -11909,20 +12021,26 @@ return (
             font-size: 15px;
             font-weight: 1000;
             cursor: pointer;
+            overflow-wrap: anywhere;
+            text-wrap: balance;
           }
 
           .site-procedure-actions button strong,
           .site-procedure-actions a strong {
+            max-width: 100%;
             color: inherit !important;
             font-size: 14px !important;
             line-height: 1.1 !important;
+            overflow-wrap: anywhere;
           }
 
           .site-procedure-actions button small,
           .site-procedure-actions a small {
+            max-width: 100%;
             color: rgba(232, 241, 250, 0.72) !important;
             font-size: 11px !important;
             line-height: 1.15 !important;
+            overflow-wrap: anywhere;
           }
 
           .site-procedure-package-actions button,
@@ -11995,6 +12113,70 @@ return (
             color: #cbd5e1 !important;
           }
 
+          .refused-description-picker {
+            display: grid;
+            gap: 9px;
+            padding: 10px;
+            border-radius: 13px;
+            border: 1px solid rgba(251, 113, 133, 0.28);
+            background:
+              linear-gradient(135deg, rgba(251, 113, 133, 0.12), rgba(249, 115, 22, 0.08)),
+              rgba(3, 8, 14, 0.18);
+          }
+
+          .refused-description-head {
+            display: grid;
+            gap: 3px;
+          }
+
+          .refused-description-head span,
+          .refused-description-row span {
+            color: #fecdd3 !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            line-height: 1.2 !important;
+            text-transform: uppercase !important;
+          }
+
+          .refused-description-head strong {
+            color: #ffffff !important;
+            font-size: 15px !important;
+            line-height: 1.2 !important;
+            overflow-wrap: anywhere;
+          }
+
+          .refused-description-row {
+            display: grid;
+            grid-template-columns: 70px minmax(0, 1fr);
+            gap: 8px;
+            align-items: center;
+          }
+
+          .refused-description-row div {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+          }
+
+          .refused-description-row button {
+            min-width: 0;
+            min-height: 36px;
+            border-radius: 999px;
+            border: 1px solid rgba(251, 113, 133, 0.30);
+            background: rgba(248, 250, 252, 0.08);
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 1000;
+            cursor: pointer;
+            overflow-wrap: anywhere;
+          }
+
+          .refused-description-row button.active {
+            border-color: transparent;
+            background: linear-gradient(135deg, #fb7185, #f97316);
+            color: #ffffff;
+          }
+
           .field-workflow-card > .field-procedure-hero,
           .field-workflow-card > .field-media-console,
           .field-workflow-card > .field-flow-dock,
@@ -12020,12 +12202,30 @@ return (
               grid-template-columns: 1fr !important;
             }
 
+            .site-procedure-scenarios.work-path {
+              grid-template-columns: 1fr !important;
+            }
+
+            .site-procedure-scenarios.no-work-path {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .site-procedure-actions button,
+            .site-procedure-actions a {
+              min-height: 52px;
+              padding: 8px;
+            }
+
             .site-package-strip {
               grid-template-columns: 1fr;
             }
 
             .site-procedure-head b {
               justify-self: stretch;
+            }
+
+            .refused-description-row {
+              grid-template-columns: 1fr;
             }
           }
         `}
@@ -12547,6 +12747,8 @@ return (
                 const evidenceReady = packageReady || counts.total > 0;
                 const quickEvidenceKind: FieldMediaKind = isNoAccess ? "no_access" : isCompletedByOthers ? "completed_by_others" : "general";
                 const needsQuickEvidence = finalOutcome && !isRefused && !isWorkCompleted && !isPartialWork && counts.total === 0;
+                const refusedChoices = refusedDescriptionChoices(selected);
+                const refusedDescription = refusedDescriptionFromChoices(refusedChoices);
                 const nextTitle = isRefused
                   ? hasRefusedPhoto
                     ? packageReady
@@ -12652,6 +12854,31 @@ return (
                             <small>Evidence</small>
                           </button>
                         </div>
+                        {isRefused ? (
+                          <div className="refused-description-picker">
+                            <div className="refused-description-head">
+                              <span>Refused person description</span>
+                              <strong>{refusedDescription}</strong>
+                            </div>
+                            {REFUSED_DESCRIPTION_GROUPS.map((group) => (
+                              <div className="refused-description-row" key={group.key}>
+                                <span>{group.label}</span>
+                                <div>
+                                  {group.options.map((option) => (
+                                    <button
+                                      type="button"
+                                      className={refusedChoices[group.key] === option ? "active" : ""}
+                                      onClick={() => saveRefusedDescriptionChoice(selected, group.key, option)}
+                                      key={option}
+                                    >
+                                      {option.replace(" HAIR", "")}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                       <div className="site-procedure-actions site-reset-actions">
                         <button type="button" className="reset-job-btn" onClick={() => resetFieldJobForTesting(selected)}>

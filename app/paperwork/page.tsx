@@ -287,6 +287,8 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     "deniedDescription",
     "DeniedByDescription",
     "deniedByDescription",
+    "RefusedAccessDescription",
+    "refusedAccessDescription",
     "RefusedByDescription",
     "refusedByDescription",
     "DescriptionOfIndividual",
