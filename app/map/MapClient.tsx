@@ -1477,18 +1477,23 @@ function displayWorkflowDate(value?: string) {
   });
 }
 
-function workflowSecondAttemptInfo(job: JobRecord) {
+const NO_ACCESS_SECOND_ATTEMPT_WAIT_MS = 72 * 60 * 60 * 1000;
+
+function parseWorkflowTimestamp(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function workflowSecondAttemptInfo(job: JobRecord, now = new Date()) {
   const firstRaw = (job as any).NoAccessFirstAttemptAt || (job as any).noAccessFirstAttemptAt;
   const availableRaw = (job as any).SecondAttemptAvailableAt || (job as any).secondAttemptAvailableAt;
 
-  if (!firstRaw || !availableRaw) return null;
+  const first = parseWorkflowTimestamp(firstRaw);
+  if (!first) return null;
 
-  const first = new Date(firstRaw);
-  const available = new Date(availableRaw);
+  const available = parseWorkflowTimestamp(availableRaw) || new Date(first.getTime() + NO_ACCESS_SECOND_ATTEMPT_WAIT_MS);
 
-  if (Number.isNaN(first.getTime()) || Number.isNaN(available.getTime())) return null;
-
-  const now = new Date();
   const msLeft = available.getTime() - now.getTime();
   const hoursLeft = Math.max(0, Math.ceil(msLeft / 3600000));
 
@@ -4684,6 +4689,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function startNoAccessCounter(job: MappedJob) {
+    const existingSecondAttempt = workflowSecondAttemptInfo(job);
+    if (existingSecondAttempt && !existingSecondAttempt.ready) {
+      showActionNotice(`No Access 1st is already saved. Wait ${existingSecondAttempt.hoursLeft}h before 2nd attempt.`);
+      setWorkflowViewFilter("waiting72");
+      return;
+    }
+    if (existingSecondAttempt?.ready) {
+      showActionNotice("72-hour counter is ready. Tap No Access 2nd to capture final evidence.");
+      setWorkflowViewFilter("ready2");
+      return;
+    }
+
     const when = new Date();
     const iso = when.toISOString();
     const available = new Date(when);
@@ -4705,22 +4722,30 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       outcomeLockedAt: iso,
       ArchivedFromMap: false,
     };
-    const nextJob = { ...job, ...patch } as MappedJob;
-
     saveFieldWorkflowPatch(
       job,
       patch,
-      "No access saved. 72-hour revisit counter started. Capture evidence now."
+      "No access 1st saved. 72-hour counter started. Evidence unlocks after 2nd attempt."
     );
     setWorkflowViewFilter("waiting72");
-    openPaperworkPreviewForStatus(job, patch, false);
-    requestFieldPhotoCapture(nextJob, "no_access", "image/*,video/*");
   }
 
   function markNoAccessSecondAttempt(job: MappedJob) {
+    const secondAttemptInfo = workflowSecondAttemptInfo(job);
+    if (!secondAttemptInfo) {
+      showActionNotice("Save No Access 1st first. The 72-hour counter must start before 2nd attempt.");
+      setWorkflowViewFilter("waiting72");
+      return;
+    }
+    if (!secondAttemptInfo.ready) {
+      showActionNotice(`No Access 2nd is locked. Wait ${secondAttemptInfo.hoursLeft}h before camera opens.`);
+      setWorkflowViewFilter("waiting72");
+      return;
+    }
+
     const iso = new Date().toISOString();
     const existingFirstAttempt = job.NoAccessFirstAttemptAt || job.noAccessFirstAttemptAt || "";
-    const existingSecondAvailable = job.SecondAttemptAvailableAt || job.secondAttemptAvailableAt || "";
+    const existingSecondAvailable = job.SecondAttemptAvailableAt || job.secondAttemptAvailableAt || secondAttemptInfo.available.toISOString();
     const patch = {
       WorkflowStatus: "NO_ACCESS_COMPLETE",
       workflowStatus: "NO_ACCESS_COMPLETE",
@@ -12738,8 +12763,12 @@ return (
                 const pendingCompletionOutcome = String(selected.PendingCompletionOutcome || selected.pendingCompletionOutcome || "").toUpperCase();
                 const isPendingPartial = isAfterEvidence && pendingCompletionOutcome === "PARTIAL_WORK_COMPLETED";
                 const isPartialWork = status === "PARTIAL_WORK_COMPLETED" || isPendingPartial || /partial/i.test(labelText);
+                const secondAttemptInfo = workflowSecondAttemptInfo(selected);
+                const noAccessSecondLocked = !secondAttemptInfo?.ready;
+                const noAccessWaiting = isNoAccessFirst && Boolean(secondAttemptInfo) && !secondAttemptInfo?.ready;
+                const noAccessReadyForSecond = isNoAccessFirst && Boolean(secondAttemptInfo?.ready);
                 const outcomeChosen = isBeforeEvidence || isAfterEvidence || isNoAccess || isRefused || isCompletedByOthers || isWorkCompleted || isPartialWork;
-                const finalOutcome = isNoAccess || isRefused || isCompletedByOthers || isWorkCompleted || isPartialWork;
+                const finalOutcome = isNoAccessSecond || isRefused || isCompletedByOthers || isWorkCompleted || isPartialWork;
                 const refusedPhotoCount = counts.refused_access;
                 const hasRefusedPhoto = refusedPhotoCount > 0;
                 const preview = fullPackagePreviewFor(selected);
@@ -12752,21 +12781,33 @@ return (
                 const nextTitle = isRefused
                   ? hasRefusedPhoto
                     ? packageReady
-                      ? "Package ready"
-                      : "Photo saved"
-                    : "Take refused photo"
-                  : "Pick field scenario";
+                    ? "Package ready"
+                    : "Photo saved"
+                  : "Take refused photo"
+                  : noAccessReadyForSecond
+                    ? "Ready for 2nd attempt"
+                    : noAccessWaiting
+                      ? "72h counter running"
+                      : "Pick field scenario";
                 const nextText = isRefused
                   ? hasRefusedPhoto
                     ? packageReady
                       ? "Send the ZIP package when you are ready."
                       : "Generate the affidavit, invoice, and evidence ZIP."
                     : "One photo is required for refused access."
-                  : "Choose the exact result from the site: start work, no access, refused access, partial, complete, or done by others.";
+                  : noAccessReadyForSecond
+                    ? "Tap No Access 2nd to record the final attempt and capture evidence."
+                    : noAccessWaiting
+                      ? `Evidence is locked until ${displayWorkflowDate(secondAttemptInfo?.available.toISOString())}.`
+                      : "Choose the exact result from the site: start work, no access, refused access, partial, complete, or done by others.";
                 const packageTitle = packageReady
                   ? "Ready to send"
                   : isRefused && !hasRefusedPhoto
                     ? "Evidence needed"
+                    : noAccessWaiting
+                    ? "Wait 72 hours"
+                    : noAccessReadyForSecond
+                      ? "2nd attempt ready"
                     : needsQuickEvidence
                     ? "Evidence needed"
                     : isBeforeEvidence
@@ -12780,6 +12821,10 @@ return (
                   ? "Review the ZIP, then send it."
                   : isRefused && !hasRefusedPhoto
                     ? "Take one refused-access photo before package review."
+                    : noAccessWaiting
+                      ? `No camera or package until the counter expires: ${secondAttemptInfo?.label}.`
+                    : noAccessReadyForSecond
+                      ? "Use No Access 2nd, then capture evidence and generate the package."
                     : needsQuickEvidence
                       ? "Take site evidence first, then generate the package."
                     : isBeforeEvidence
@@ -12841,9 +12886,15 @@ return (
                             <strong>No Access 1st</strong>
                             <small>Start 72h</small>
                           </button>
-                          <button type="button" className={`no-access-job-btn ${isNoAccessSecond ? "is-active" : ""}`} onClick={() => markNoAccessSecondAttempt(selected)}>
+                          <button
+                            type="button"
+                            className={`no-access-job-btn ${isNoAccessSecond ? "is-active" : ""}`}
+                            onClick={() => markNoAccessSecondAttempt(selected)}
+                            disabled={noAccessSecondLocked}
+                            title={secondAttemptInfo ? secondAttemptInfo.ready ? "Ready for 2nd attempt" : secondAttemptInfo.label : "Save No Access 1st first"}
+                          >
                             <strong>No Access 2nd</strong>
-                            <small>Final no access</small>
+                            <small>{secondAttemptInfo ? secondAttemptInfo.ready ? "Ready now" : secondAttemptInfo.label : "Save 1st first"}</small>
                           </button>
                           <button type="button" className={`refused-job-btn ${isRefused ? "is-active" : ""}`} onClick={() => markRefusedAccess(selected)}>
                             <strong>Refused Access</strong>
@@ -12911,6 +12962,14 @@ return (
                         ) : isRefused && !hasRefusedPhoto ? (
                           <button type="button" className="procedure-primary" onClick={() => captureExtraPhoto(selected, "refused_access")}>
                             Take Refused Photo
+                          </button>
+                        ) : noAccessWaiting ? (
+                          <button type="button" className="procedure-muted" disabled>
+                            {secondAttemptInfo?.label || "Wait 72h"}
+                          </button>
+                        ) : noAccessReadyForSecond ? (
+                          <button type="button" className="procedure-primary" onClick={() => markNoAccessSecondAttempt(selected)}>
+                            No Access 2nd Ready
                           </button>
                         ) : needsQuickEvidence ? (
                           <>
@@ -13216,7 +13275,13 @@ return (
                 <button type="button" className="no-access-job-btn" onClick={() => startNoAccessCounter(selected)}>
                   No Access 1st
                 </button>
-                <button type="button" className="no-access-job-btn" onClick={() => markNoAccessSecondAttempt(selected)}>
+                <button
+                  type="button"
+                  className="no-access-job-btn"
+                  onClick={() => markNoAccessSecondAttempt(selected)}
+                  disabled={!workflowSecondAttemptInfo(selected)?.ready}
+                  title={workflowSecondAttemptInfo(selected)?.ready ? "Ready for 2nd attempt" : workflowSecondAttemptInfo(selected)?.label || "Save No Access 1st first"}
+                >
                   No Access 2nd
                 </button>
                 <button type="button" className="refused-job-btn" onClick={() => markRefusedAccess(selected)}>

@@ -64,6 +64,12 @@ const AFFIDAVIT_NOTARY_COUNTY = "QUEENS";
 const REFUSED_ACCESS_DESCRIPTION_EXAMPLE = "MALE, TALL, DARK HAIR";
 const NO_WORK_COMPLETED_BY_OTHERS_LINE_5_DATE = { x: 272, y: 245, size: 10 } as const;
 const INVOICE_APT_LOCATION_WIDGET = { x: 131.695, y: 550.582, shiftY: 5 } as const;
+const NO_ACCESS_AFFIDAVIT_DATE_WIDGETS = [
+  { field: "START DATE", x: 466.421, y: 299.317, shiftY: 4 },
+  { field: "START DATE", x: 483.644, y: 284.65, shiftY: 4 },
+  { field: "COMPLETE DATE", x: 144.282, y: 285.36, shiftY: 4 },
+  { field: "COMPLETE DATE", x: 143.989, y: 271.614, shiftY: 4 },
+] as const;
 
 type ZipEntry = {
   path: string;
@@ -143,6 +149,32 @@ function shiftInvoiceAptLocationWidget(pdfForm: any) {
       });
     });
   } catch {}
+}
+
+function shiftNoAccessAffidavitDateWidgets(pdfForm: any) {
+  NO_ACCESS_AFFIDAVIT_DATE_WIDGETS.forEach((target) => {
+    try {
+      const field = pdfForm.getTextField(target.field);
+      const widgets = field?.acroField?.getWidgets?.() || [];
+
+      widgets.forEach((widget: any) => {
+        const rect = widget?.getRectangle?.();
+        if (!rect) return;
+
+        const isTargetWidget =
+          Math.abs(rect.x - target.x) < 2 &&
+          Math.abs(rect.y - target.y) < 3;
+        if (!isTargetWidget) return;
+
+        widget.setRectangle({
+          x: rect.x,
+          y: rect.y + target.shiftY,
+          width: rect.width,
+          height: rect.height,
+        });
+      });
+    } catch {}
+  });
 }
 
 function asArray(value: unknown): JobRecord[] {
@@ -1039,6 +1071,9 @@ export default function PaperworkPage() {
       const pdfDoc = await PDFDocument.load(await response.arrayBuffer());
       const pdfForm = pdfDoc.getForm();
       shiftInvoiceAptLocationWidget(pdfForm);
+      if (!useWorkTemplate && outcome === "no_access") {
+        shiftNoAccessAffidavitDateWidgets(pdfForm);
+      }
 
       const setText = (name: string, value: string, fontSize = name === "Work Description" ? 8 : 10) => {
         try {
