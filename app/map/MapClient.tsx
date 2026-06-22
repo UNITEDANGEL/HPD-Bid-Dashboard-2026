@@ -4481,6 +4481,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       fieldOutcome: "BEFORE_EVIDENCE",
       StatusOverride: "Before Evidence",
       status: "Before Evidence",
+      PendingCompletionOutcome: "",
+      pendingCompletionOutcome: "",
       BeforePhotosRequestedAt: iso,
       beforePhotosRequestedAt: iso,
       ArchivedFromMap: false,
@@ -4548,6 +4550,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       outcomeLockedAt: iso,
       AfterPhotosRequestedAt: iso,
       afterPhotosRequestedAt: iso,
+      PendingCompletionOutcome: "",
+      pendingCompletionOutcome: "",
       ArchivedFromMap: false,
     };
     setFieldFocusPane("package");
@@ -4606,6 +4610,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       noAccessFirstAttemptAt: iso,
       SecondAttemptAvailableAt: available.toISOString(),
       secondAttemptAvailableAt: available.toISOString(),
+      PendingCompletionOutcome: "",
+      pendingCompletionOutcome: "",
       OutcomeLockedAt: iso,
       outcomeLockedAt: iso,
       ArchivedFromMap: false,
@@ -4639,6 +4645,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       secondAttemptAvailableAt: existingSecondAvailable,
       NoAccessSecondAttemptAt: iso,
       noAccessSecondAttemptAt: iso,
+      PendingCompletionOutcome: "",
+      pendingCompletionOutcome: "",
       OutcomeLockedAt: iso,
       outcomeLockedAt: iso,
       ArchivedFromMap: false,
@@ -4660,6 +4668,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       status: "Refused Access",
       RefusalDate: iso,
       refusalDate: iso,
+      PendingCompletionOutcome: "",
+      pendingCompletionOutcome: "",
       OutcomeLockedAt: iso,
       outcomeLockedAt: iso,
       ArchivedFromMap: false,
@@ -4685,6 +4695,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       status: "Completed by Others",
       VerifiedByOthersDate: iso,
       verifiedByOthersDate: iso,
+      PendingCompletionOutcome: "",
+      pendingCompletionOutcome: "",
       OutcomeLockedAt: iso,
       outcomeLockedAt: iso,
       ArchivedFromMap: false,
@@ -11749,7 +11761,7 @@ return (
           .site-procedure-steps,
           .site-procedure-actions {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 8px;
           }
 
@@ -11770,6 +11782,71 @@ return (
             color: #dfffea !important;
           }
 
+          .site-procedure-steps span.ready {
+            background: rgba(125, 211, 252, 0.18);
+            color: #d8f4ff !important;
+          }
+
+          .site-procedure-stage {
+            display: grid;
+            gap: 9px;
+            padding: 10px;
+            border-radius: 15px;
+            background: rgba(3, 8, 14, 0.16);
+            border: 1px solid rgba(180, 205, 230, 0.12);
+          }
+
+          .site-section-head {
+            display: grid;
+            gap: 2px;
+          }
+
+          .site-section-head span,
+          .site-section-head small {
+            color: #aab7c6 !important;
+            font-size: 11px !important;
+            line-height: 1.35;
+          }
+
+          .site-section-head span {
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .site-section-head strong {
+            color: #f8fafc !important;
+            font-size: 17px !important;
+            line-height: 1.15 !important;
+          }
+
+          .site-option-group {
+            display: grid;
+            gap: 8px;
+            padding: 9px;
+            border-radius: 13px;
+            border: 1px solid rgba(180, 205, 230, 0.11);
+            background: rgba(248, 250, 252, 0.045);
+          }
+
+          .site-option-title {
+            display: grid;
+            gap: 2px;
+          }
+
+          .site-option-title span {
+            color: #f8fafc !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+            line-height: 1.2;
+          }
+
+          .site-option-title small {
+            color: #9fb0c4 !important;
+            font-size: 11px !important;
+            line-height: 1.3;
+          }
+
           .site-procedure-actions {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
@@ -11778,16 +11855,51 @@ return (
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
           }
 
+          .site-procedure-scenarios.work-path {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          }
+
+          .site-reset-actions {
+            grid-template-columns: 1fr !important;
+          }
+
           .site-procedure-package-actions {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             padding-top: 2px;
+          }
+
+          .site-package-stage {
+            background:
+              linear-gradient(135deg, rgba(83, 230, 156, 0.10), rgba(125, 211, 252, 0.08)),
+              rgba(3, 8, 14, 0.15);
+          }
+
+          .site-package-strip {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+          }
+
+          .site-package-strip span {
+            min-height: 30px;
+            display: grid;
+            place-items: center;
+            border-radius: 999px;
+            background: rgba(248, 250, 252, 0.08);
+            color: #c8d5e4 !important;
+            font-size: 11px !important;
+            font-weight: 900 !important;
+            text-align: center;
           }
 
           .site-procedure-actions button,
           .site-procedure-actions a {
             min-height: 56px;
             display: grid;
-            place-items: center;
+            align-content: center;
+            justify-items: start;
+            gap: 3px;
+            padding: 9px 10px;
             border-radius: 14px;
             border: 1px solid rgba(180, 205, 230, 0.22);
             background: rgba(248, 250, 252, 0.10);
@@ -11797,6 +11909,30 @@ return (
             font-size: 15px;
             font-weight: 1000;
             cursor: pointer;
+          }
+
+          .site-procedure-actions button strong,
+          .site-procedure-actions a strong {
+            color: inherit !important;
+            font-size: 14px !important;
+            line-height: 1.1 !important;
+          }
+
+          .site-procedure-actions button small,
+          .site-procedure-actions a small {
+            color: rgba(232, 241, 250, 0.72) !important;
+            font-size: 11px !important;
+            line-height: 1.15 !important;
+          }
+
+          .site-procedure-package-actions button,
+          .site-procedure-package-actions a {
+            justify-items: center;
+          }
+
+          .site-procedure-actions button:disabled {
+            cursor: default;
+            opacity: 0.72;
           }
 
           .site-procedure-actions .procedure-primary {
@@ -11809,6 +11945,13 @@ return (
 
           .site-procedure-scenarios .procedure-primary {
             grid-column: auto;
+          }
+
+          .site-procedure-actions .is-active {
+            border-color: rgba(255, 255, 255, 0.52) !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+              0 12px 24px rgba(3, 8, 14, 0.26) !important;
           }
 
           .site-procedure-scenarios .finish-job-btn {
@@ -11841,6 +11984,17 @@ return (
             border-color: rgba(148, 163, 184, 0.28) !important;
           }
 
+          .site-procedure-package-actions .send-package-btn {
+            background: linear-gradient(135deg, #38bdf8, #53e69c) !important;
+          }
+
+          .site-procedure-package-actions .procedure-muted {
+            grid-column: 1 / -1;
+            justify-items: center;
+            background: rgba(148, 163, 184, 0.12) !important;
+            color: #cbd5e1 !important;
+          }
+
           .field-workflow-card > .field-procedure-hero,
           .field-workflow-card > .field-media-console,
           .field-workflow-card > .field-flow-dock,
@@ -11858,8 +12012,16 @@ return (
               grid-template-columns: 1fr;
             }
 
+            .site-procedure-steps {
+              grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+
             .site-procedure-package-actions {
               grid-template-columns: 1fr !important;
+            }
+
+            .site-package-strip {
+              grid-template-columns: 1fr;
             }
 
             .site-procedure-head b {
@@ -12363,11 +12525,28 @@ return (
               {(() => {
                 const counts = fieldPhotoCountsFor(selected);
                 const status = workflowStatus(selected);
-                const isRefused = status === "REFUSED_ACCESS" || /refused/i.test(workflowLabel(selected) || String(selected.status || ""));
+                const normalizedStatus = status.replace(/[^A-Z0-9]+/g, "_");
+                const labelText = workflowLabel(selected) || String(selected.status || "");
+                const isRefused = status === "REFUSED_ACCESS" || /refused/i.test(labelText);
+                const isNoAccessFirst = status === "NO_ACCESS_1_WAITING_72H" || /NO_ACCESS_(1|1ST)/.test(normalizedStatus);
+                const isNoAccessSecond = status === "NO_ACCESS_COMPLETE" || (/NO_ACCESS/.test(normalizedStatus) && /(^|_)2(ND)?(_|$)|SECOND|COMPLETE/.test(normalizedStatus));
+                const isNoAccess = isNoAccessFirst || isNoAccessSecond;
+                const isCompletedByOthers = status === "COMPLETED_BY_OTHERS" || /completed by others/i.test(labelText);
+                const isBeforeEvidence = status === "BEFORE_EVIDENCE";
+                const isAfterEvidence = status === "AFTER_EVIDENCE";
+                const isWorkCompleted = status === "WORK_COMPLETED" || (/work completed/i.test(labelText) && !/partial/i.test(labelText));
+                const pendingCompletionOutcome = String(selected.PendingCompletionOutcome || selected.pendingCompletionOutcome || "").toUpperCase();
+                const isPendingPartial = isAfterEvidence && pendingCompletionOutcome === "PARTIAL_WORK_COMPLETED";
+                const isPartialWork = status === "PARTIAL_WORK_COMPLETED" || isPendingPartial || /partial/i.test(labelText);
+                const outcomeChosen = isBeforeEvidence || isAfterEvidence || isNoAccess || isRefused || isCompletedByOthers || isWorkCompleted || isPartialWork;
+                const finalOutcome = isNoAccess || isRefused || isCompletedByOthers || isWorkCompleted || isPartialWork;
                 const refusedPhotoCount = counts.refused_access;
                 const hasRefusedPhoto = refusedPhotoCount > 0;
                 const preview = fullPackagePreviewFor(selected);
                 const packageReady = Boolean(preview);
+                const evidenceReady = packageReady || counts.total > 0;
+                const quickEvidenceKind: FieldMediaKind = isNoAccess ? "no_access" : isCompletedByOthers ? "completed_by_others" : "general";
+                const needsQuickEvidence = finalOutcome && !isRefused && !isWorkCompleted && !isPartialWork && counts.total === 0;
                 const nextTitle = isRefused
                   ? hasRefusedPhoto
                     ? packageReady
@@ -12382,6 +12561,32 @@ return (
                       : "Generate the affidavit, invoice, and evidence ZIP."
                     : "One photo is required for refused access."
                   : "Choose the exact result from the site: start work, no access, refused access, partial, complete, or done by others.";
+                const packageTitle = packageReady
+                  ? "Ready to send"
+                  : isRefused && !hasRefusedPhoto
+                    ? "Evidence needed"
+                    : needsQuickEvidence
+                    ? "Evidence needed"
+                    : isBeforeEvidence
+                      ? "Finish after work"
+                      : isAfterEvidence
+                        ? "Complete capture"
+                        : finalOutcome
+                          ? "Generate package"
+                          : "Pick outcome first";
+                const packageText = packageReady
+                  ? "Review the ZIP, then send it."
+                  : isRefused && !hasRefusedPhoto
+                    ? "Take one refused-access photo before package review."
+                    : needsQuickEvidence
+                      ? "Take site evidence first, then generate the package."
+                    : isBeforeEvidence
+                      ? "After work is done, tap Finish Job or Partial Work."
+                      : isAfterEvidence
+                        ? "Finish the after evidence guide below to unlock the package."
+                        : finalOutcome
+                          ? "Create the invoice, affidavit, and evidence package."
+                          : "Choose what happened at the site first.";
 
                 return (
                   <div className={`site-procedure-card ${isRefused ? "is-refused" : ""} ${hasRefusedPhoto ? "has-evidence" : ""} ${packageReady ? "has-package" : ""}`}>
@@ -12394,63 +12599,130 @@ return (
                       <b>{isRefused ? `${refusedPhotoCount}/1 photo` : `${counts.total} file(s)`}</b>
                     </div>
                     <div className="site-procedure-steps">
-                      <span className={isRefused ? "done" : ""}>1 Status</span>
-                      <span className={hasRefusedPhoto ? "done" : ""}>2 Photo</span>
+                      <span className={outcomeChosen ? "done" : ""}>1 Outcome</span>
+                      <span className={evidenceReady ? "done" : ""}>2 Evidence</span>
                       <span className={packageReady ? "done" : ""}>3 Package</span>
+                      <span className={packageReady ? "ready" : ""}>4 Send</span>
                     </div>
-                    <div className="site-procedure-actions site-procedure-scenarios">
-                      <button type="button" className="start-job-btn procedure-primary" onClick={() => startFieldJob(selected)}>
-                        Start Job
-                      </button>
-                      <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected)}>
-                        Work Completed
-                      </button>
-                      <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected, true)}>
-                        Partial Work
-                      </button>
-                      <button type="button" className="no-access-job-btn" onClick={() => startNoAccessCounter(selected)}>
-                        No Access 1st
-                      </button>
-                      <button type="button" className="no-access-job-btn" onClick={() => markNoAccessSecondAttempt(selected)}>
-                        No Access 2nd
-                      </button>
-                      <button type="button" className="refused-job-btn" onClick={() => markRefusedAccess(selected)}>
-                        Refused Access
-                      </button>
-                      <button type="button" className="other-done-job-btn" onClick={() => markCompletedByOthers(selected)}>
-                        Done by Others
-                      </button>
-                      <button type="button" className="reset-job-btn" onClick={() => resetFieldJobForTesting(selected)}>
-                        Pending / Clear
-                      </button>
-                    </div>
-                    {isRefused ? (
-                      <div className="site-procedure-actions site-procedure-package-actions">
-                        {!hasRefusedPhoto ? (
-                          <button type="button" className="procedure-primary" onClick={() => captureExtraPhoto(selected, "refused_access")}>
-                            Take Refused Photo
+                    <div className="site-procedure-stage">
+                      <div className="site-section-head">
+                        <span>Outcome</span>
+                        <strong>Choose the field path</strong>
+                      </div>
+                      <div className="site-option-group">
+                        <div className="site-option-title">
+                          <span>Work completed affidavit</span>
+                          <small>Start job, collect before evidence, then finish as completed or partial.</small>
+                        </div>
+                        <div className="site-procedure-actions site-procedure-scenarios work-path">
+                          <button type="button" className={`start-job-btn procedure-primary ${isBeforeEvidence ? "is-active" : ""}`} onClick={() => startFieldJob(selected)}>
+                            <strong>Start Job</strong>
+                            <small>Before evidence</small>
                           </button>
-                        ) : packageReady ? (
+                        <button type="button" className={`finish-job-btn ${(isAfterEvidence && !isPartialWork) || isWorkCompleted ? "is-active" : ""}`} onClick={() => finishFieldJob(selected)}>
+                            <strong>Finish Job</strong>
+                            <small>Work completed</small>
+                          </button>
+                          <button type="button" className={`finish-job-btn ${isPartialWork ? "is-active" : ""}`} onClick={() => finishFieldJob(selected, true)}>
+                            <strong>Partial Work</strong>
+                            <small>Partial completed</small>
+                          </button>
+                        </div>
+                      </div>
+                      <div className="site-option-group">
+                        <div className="site-option-title">
+                          <span>No work completed affidavit</span>
+                          <small>Pick the exact no-work reason and capture evidence.</small>
+                        </div>
+                        <div className="site-procedure-actions site-procedure-scenarios no-work-path">
+                          <button type="button" className={`no-access-job-btn ${isNoAccessFirst ? "is-active" : ""}`} onClick={() => startNoAccessCounter(selected)}>
+                            <strong>No Access 1st</strong>
+                            <small>Start 72h</small>
+                          </button>
+                          <button type="button" className={`no-access-job-btn ${isNoAccessSecond ? "is-active" : ""}`} onClick={() => markNoAccessSecondAttempt(selected)}>
+                            <strong>No Access 2nd</strong>
+                            <small>Final no access</small>
+                          </button>
+                          <button type="button" className={`refused-job-btn ${isRefused ? "is-active" : ""}`} onClick={() => markRefusedAccess(selected)}>
+                            <strong>Refused Access</strong>
+                            <small>One photo</small>
+                          </button>
+                          <button type="button" className={`other-done-job-btn ${isCompletedByOthers ? "is-active" : ""}`} onClick={() => markCompletedByOthers(selected)}>
+                            <strong>Done by Others</strong>
+                            <small>Evidence</small>
+                          </button>
+                        </div>
+                      </div>
+                      <div className="site-procedure-actions site-reset-actions">
+                        <button type="button" className="reset-job-btn" onClick={() => resetFieldJobForTesting(selected)}>
+                          <strong>Pending / Clear</strong>
+                          <small>Testing reset</small>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="site-procedure-stage site-package-stage">
+                      <div className="site-section-head">
+                        <span>Package</span>
+                        <strong>{packageTitle}</strong>
+                        <small>{packageText}</small>
+                      </div>
+                      <div className="site-package-strip">
+                        <span>{counts.images} image(s)</span>
+                        <span>{counts.videos} video(s)</span>
+                        <span>{packageReady ? "Package ready" : "No package yet"}</span>
+                      </div>
+                      <div className="site-procedure-actions site-procedure-package-actions">
+                        {packageReady ? (
                           <>
-                            <button type="button" className="procedure-primary" onClick={() => sendFullEvidencePackage(selected)}>
-                              Send ZIP
-                            </button>
                             <a href={paperworkAutoPackageHref(selected)}>
                               Review Package
                             </a>
+                            <button type="button" className="procedure-primary send-package-btn" onClick={() => sendFullEvidencePackage(selected)}>
+                              Send ZIP
+                            </button>
                           </>
-                        ) : (
+                        ) : isRefused && !hasRefusedPhoto ? (
+                          <button type="button" className="procedure-primary" onClick={() => captureExtraPhoto(selected, "refused_access")}>
+                            Take Refused Photo
+                          </button>
+                        ) : needsQuickEvidence ? (
+                          <>
+                            <button type="button" className="procedure-primary" onClick={() => requestFieldPhotoCapture(selected, quickEvidenceKind, "image/*,video/*")}>
+                              Take Evidence
+                            </button>
+                            <a href={paperworkAutoPackageHref(selected)}>
+                              Generate Package
+                            </a>
+                          </>
+                        ) : isBeforeEvidence ? (
+                          <>
+                            <button type="button" className="procedure-primary" onClick={() => finishFieldJob(selected)}>
+                              Finish Job
+                            </button>
+                            <button type="button" onClick={() => finishFieldJob(selected, true)}>
+                              Partial Work
+                            </button>
+                          </>
+                        ) : isAfterEvidence ? (
+                          <button type="button" className="procedure-muted" disabled>
+                            Finish Capture Below
+                          </button>
+                        ) : finalOutcome ? (
                           <>
                             <a className="procedure-primary" href={paperworkAutoPackageHref(selected)}>
                               Generate Package
                             </a>
-                            <button type="button" onClick={() => captureExtraPhoto(selected, "refused_access")}>
-                              Retake Photo
-                            </button>
+                            <a href={paperworkAutoPackageHref(selected)}>
+                              Review
+                            </a>
                           </>
+                        ) : (
+                          <button type="button" className="procedure-muted" disabled>
+                            Pick Scenario First
+                          </button>
                         )}
                       </div>
-                    ) : null}
+                    </div>
                   </div>
                 );
               })()}
