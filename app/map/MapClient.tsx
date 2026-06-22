@@ -2185,12 +2185,16 @@ function closeMapMenu() {
 }
 
 function positionSelectedCardInDrawer() {
-  if (androidScrollFix && jobDrawerRef.current) {
-    jobDrawerRef.current.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  if (jobDrawerRef.current) {
+    jobDrawerRef.current.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: androidScrollFix ? "auto" : "smooth",
+    });
     return;
   }
 
-  selectedCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  selectedCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function mapOverlayTouchTarget(target: EventTarget | null) {
@@ -13304,6 +13308,154 @@ return (
             font-size: 21px !important;
           }
 
+          /* CLEAN_SELECTED_JOB_CARD_2026 */
+          .job-drawer.selected-focus {
+            padding-top: 10px !important;
+            z-index: 1500 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 45 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 10px !important;
+            min-height: 48px !important;
+            padding: 8px 0 10px !important;
+            margin-bottom: 8px !important;
+            background:
+              linear-gradient(180deg, rgba(7, 13, 24, 0.98), rgba(7, 13, 24, 0.88)) !important;
+            border-bottom: 1px solid rgba(180, 205, 230, 0.12) !important;
+            backdrop-filter: blur(14px) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head strong {
+            color: #f8fafc !important;
+            font-size: 18px !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head button {
+            min-height: 38px !important;
+            padding: 0 12px !important;
+            border-radius: 999px !important;
+            background: rgba(248, 250, 252, 0.10) !important;
+            color: #f8fafc !important;
+            border-color: rgba(180, 205, 230, 0.18) !important;
+            font-size: 12px !important;
+            white-space: nowrap !important;
+          }
+
+          .job-drawer.selected-focus .workflow-filter-bar {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .selected-card {
+            gap: 12px !important;
+            padding: 12px !important;
+            margin-top: 10px !important;
+            scroll-margin-top: 76px !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-head {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 10px !important;
+            align-items: stretch !important;
+            padding: 14px !important;
+            border-radius: 18px !important;
+            overflow: hidden !important;
+          }
+
+          .job-drawer.selected-focus .selected-title-block {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 0 !important;
+          }
+
+          .selected-card-eyebrow {
+            display: inline-flex !important;
+            width: max-content !important;
+            max-width: 100% !important;
+            min-height: 22px !important;
+            align-items: center !important;
+            padding: 0 9px !important;
+            margin-bottom: 8px !important;
+            border-radius: 999px !important;
+            background: rgba(125, 211, 252, 0.16) !important;
+            color: #c8efff !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+            white-space: nowrap !important;
+          }
+
+          .job-drawer.selected-focus .selected-card .job-title {
+            display: block !important;
+            margin: 0 !important;
+            color: #ffffff !important;
+            font-size: 30px !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .job-drawer.selected-focus .selected-card .job-address {
+            margin: 8px 0 0 !important;
+            color: #ecf6ff !important;
+            font-size: 17px !important;
+            line-height: 1.18 !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere !important;
+            max-width: 100% !important;
+          }
+
+          .job-drawer.selected-focus .selected-card .job-sub {
+            margin: 7px 0 0 !important;
+            color: #b7c8dc !important;
+            font-size: 13px !important;
+            line-height: 1.22 !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .job-drawer.selected-focus .selected-chip-stack {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            justify-items: stretch !important;
+            justify-content: flex-start !important;
+            align-items: stretch !important;
+            gap: 7px !important;
+            min-width: 0 !important;
+          }
+
+          .job-drawer.selected-focus .selected-chip-stack .status,
+          .job-drawer.selected-focus .selected-chip-stack .maturity-pill {
+            min-width: 0 !important;
+            min-height: 34px !important;
+            max-width: 100% !important;
+            padding: 8px 10px !important;
+            border-radius: 999px !important;
+            font-size: 12px !important;
+            line-height: 1.1 !important;
+            white-space: normal !important;
+          }
+
+          @media (max-width: 380px) {
+            .job-drawer.selected-focus .selected-card .job-title {
+              font-size: 26px !important;
+            }
+
+            .job-drawer.selected-focus .selected-card .job-address {
+              font-size: 15px !important;
+            }
+          }
+
           @keyframes signalOverduePulse {
             0%, 100% {
               opacity: 0.24;
@@ -13560,7 +13712,7 @@ return (
         className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""} ${clusterSheet ? "cluster-focus" : ""} ${fullMap && !drawerOpen ? "drawer-hard-hidden" : ""}`}
       >
         <div className="drawer-head">
-          <strong>{clusterSheet ? clusterSheet.title : selectedOnly && selected ? jobKey(selected) : `${filteredJobs.length} jobs`}</strong>
+          <strong>{clusterSheet ? clusterSheet.title : selectedOnly && selected ? "Job Card" : `${filteredJobs.length} jobs`}</strong>
           {clusterSheet ? (
             <div className="drawer-head-actions">
               <button
@@ -13828,6 +13980,7 @@ return (
           >
             <div className="selected-card-head">
               <div className="selected-title-block">
+                <span className="selected-card-eyebrow">Selected job</span>
                 <strong className="job-title">{jobKey(selected)}</strong>
                 <p className="job-address">{displayAddress(selected)}</p>
                 <p className="job-sub">{selected.borough || "Unknown borough"} · {displayLocation(selected) || "Location not listed"}</p>
