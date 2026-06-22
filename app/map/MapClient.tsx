@@ -3810,7 +3810,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   function focusFieldPane(pane: "capture" | "evidence" | "package" | "send") {
     setFieldFocusPane(pane);
     window.setTimeout(() => {
-      document.querySelector(`[data-field-pane="${pane}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const workflowCard =
+        document.querySelector(".job-drawer.selected-focus .field-workflow-card") ||
+        document.querySelector(`[data-field-pane="${pane}"]`);
+      workflowCard?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 40);
   }
 
@@ -12347,6 +12350,75 @@ return (
             color: #d8f4ff !important;
           }
 
+          .site-procedure-steps button {
+            min-width: 0;
+            min-height: 58px;
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 16px;
+            border: 1px solid rgba(180, 205, 230, 0.18);
+            background: rgba(248, 250, 252, 0.07);
+            color: #d7e3f1;
+            cursor: pointer;
+            text-align: left;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+          }
+
+          .site-procedure-steps button > span {
+            width: 30px;
+            height: 30px;
+            min-height: 30px;
+            padding: 0;
+            display: grid;
+            place-items: center;
+            border-radius: 999px;
+            background: rgba(148, 163, 184, 0.16);
+            color: #dbeafe !important;
+            font-size: 13px !important;
+            font-weight: 1000 !important;
+            line-height: 1 !important;
+          }
+
+          .site-procedure-steps button > strong {
+            min-width: 0;
+            color: inherit !important;
+            font-size: 12px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+            overflow-wrap: anywhere;
+          }
+
+          .site-procedure-steps button.done {
+            border-color: rgba(83, 230, 156, 0.32);
+            background: rgba(83, 230, 156, 0.11);
+            color: #eafff1;
+          }
+
+          .site-procedure-steps button.done > span {
+            background: rgba(83, 230, 156, 0.22);
+            color: #dfffea !important;
+          }
+
+          .site-procedure-steps button.ready,
+          .site-procedure-steps button.active {
+            border-color: rgba(125, 211, 252, 0.48);
+            background:
+              linear-gradient(135deg, rgba(125, 211, 252, 0.17), rgba(83, 230, 156, 0.10)),
+              rgba(248, 250, 252, 0.08);
+            color: #ffffff;
+            box-shadow:
+              inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+              0 12px 24px rgba(3, 8, 14, 0.18);
+          }
+
+          .site-procedure-steps button.active > span {
+            background: #7dd3fc;
+            color: #082f49 !important;
+          }
+
           .site-procedure-stage {
             display: grid;
             gap: 9px;
@@ -12354,6 +12426,75 @@ return (
             border-radius: 15px;
             background: rgba(3, 8, 14, 0.16);
             border: 1px solid rgba(180, 205, 230, 0.12);
+          }
+
+          .site-wizard-panel {
+            display: none !important;
+          }
+
+          .site-wizard-panel.is-active {
+            display: grid !important;
+            animation: procedurePanelOpen 220ms ease-out;
+          }
+
+          @keyframes procedurePanelOpen {
+            0% {
+              opacity: 0;
+              transform: translateY(8px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .site-evidence-stage {
+            background:
+              linear-gradient(135deg, rgba(125, 211, 252, 0.08), rgba(251, 191, 36, 0.08)),
+              rgba(3, 8, 14, 0.16);
+          }
+
+          .site-send-stage {
+            background:
+              linear-gradient(135deg, rgba(56, 189, 248, 0.10), rgba(83, 230, 156, 0.10)),
+              rgba(3, 8, 14, 0.16);
+          }
+
+          .site-evidence-count-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .site-evidence-count-grid button {
+            min-width: 0;
+            min-height: 112px;
+            display: grid;
+            align-content: center;
+            justify-items: start;
+            gap: 5px;
+            padding: 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(180, 205, 230, 0.18);
+            background: rgba(248, 250, 252, 0.08);
+            color: #f8fafc;
+            cursor: pointer;
+            text-align: left;
+          }
+
+          .site-evidence-count-grid button span,
+          .site-evidence-count-grid button small {
+            color: #b8c7d8 !important;
+            font-size: 11px !important;
+            line-height: 1.15 !important;
+            font-weight: 900 !important;
+          }
+
+          .site-evidence-count-grid button strong {
+            color: #ffffff !important;
+            font-size: 36px !important;
+            line-height: 0.95 !important;
+            font-weight: 1000 !important;
           }
 
           .site-section-head {
@@ -12647,8 +12788,42 @@ return (
               grid-template-columns: repeat(4, minmax(0, 1fr));
             }
 
+            .site-procedure-steps button {
+              min-height: 54px;
+              grid-template-columns: 1fr;
+              justify-items: center;
+              text-align: center;
+              gap: 5px;
+              padding: 7px 4px;
+            }
+
+            .site-procedure-steps button > span {
+              width: 26px;
+              height: 26px;
+              min-height: 26px;
+              font-size: 12px !important;
+            }
+
+            .site-procedure-steps button > strong {
+              font-size: 10px !important;
+            }
+
             .site-procedure-package-actions {
               grid-template-columns: 1fr !important;
+            }
+
+            .site-evidence-count-grid {
+              grid-template-columns: 1fr !important;
+            }
+
+            .site-evidence-count-grid button {
+              min-height: 86px;
+              grid-template-columns: minmax(0, 1fr) auto;
+              align-items: center;
+            }
+
+            .site-evidence-count-grid button small {
+              grid-column: 1 / -1;
             }
 
             .site-procedure-scenarios.work-path {
@@ -13354,10 +13529,89 @@ return (
           }
 
           .job-drawer.selected-focus .selected-card {
+            display: grid !important;
             gap: 12px !important;
             padding: 12px !important;
             margin-top: 10px !important;
             scroll-margin-top: 76px !important;
+          }
+
+          .job-drawer.selected-focus .field-workflow-card {
+            order: 1 !important;
+            margin-top: 0 !important;
+            scroll-margin-top: 84px !important;
+          }
+
+          .job-drawer.selected-focus .field-workflow-head {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            gap: 10px !important;
+            min-height: auto !important;
+            padding: 12px !important;
+            border-radius: 18px !important;
+          }
+
+          .job-drawer.selected-focus .field-workflow-head span {
+            font-size: 11px !important;
+            line-height: 1.1 !important;
+          }
+
+          .job-drawer.selected-focus .field-workflow-head strong {
+            font-size: 22px !important;
+            line-height: 1.08 !important;
+          }
+
+          .job-drawer.selected-focus .field-timer-pill {
+            min-height: 38px !important;
+            padding: 0 13px !important;
+            border-radius: 999px !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+            white-space: nowrap !important;
+          }
+
+          .job-drawer.selected-focus .site-procedure-head {
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .site-procedure-head strong {
+            font-size: 26px !important;
+            line-height: 1.02 !important;
+          }
+
+          .job-drawer.selected-focus .site-procedure-head small {
+            font-size: 12px !important;
+            line-height: 1.28 !important;
+          }
+
+          .job-drawer.selected-focus .site-procedure-head b {
+            min-height: 34px !important;
+            font-size: 12px !important;
+          }
+
+          .job-drawer.selected-focus .selected-hero-actions {
+            order: 2 !important;
+          }
+
+          .job-drawer.selected-focus .selected-overview-grid {
+            order: 3 !important;
+          }
+
+          .job-drawer.selected-focus .selected-alert-grid {
+            order: 4 !important;
+          }
+
+          .job-drawer.selected-focus .selected-description {
+            order: 5 !important;
+          }
+
+          .job-drawer.selected-focus .more-job-details {
+            order: 6 !important;
+          }
+
+          .job-drawer.selected-focus .generated-output-links {
+            order: 7 !important;
           }
 
           .job-drawer.selected-focus .selected-card-head {
@@ -13962,7 +14216,7 @@ return (
         </section>
           </>
         ) : null}
-        {jobs.filter((job) => workflowViewBucket(job) === "ready2").length > 0 && !clusterSheet ? (
+        {jobs.filter((job) => workflowViewBucket(job) === "ready2").length > 0 && !clusterSheet && !selectedOnly ? (
           <div className="ready-revisit-alert">
             <strong>REVISIT READY</strong>
             <span>{jobs.filter((job) => workflowViewBucket(job) === "ready2").length} job(s) need 2nd attempt now.</span>
@@ -14065,6 +14319,7 @@ return (
                 const hasOptionalNoWorkEvidence = isRefused || isNoAccessSecond;
                 const optionalNoWorkEvidenceKind: FieldMediaKind = isNoAccessSecond ? "no_access" : isRefused ? "refused_access" : "general";
                 const preview = fullPackagePreviewFor(selected);
+                const invoicePacket = latestFieldPacket(selected, "affidavit_invoice_pdf");
                 const packageReady = Boolean(preview);
                 const evidenceReady = packageReady || counts.total > 0 || hasOptionalNoWorkEvidence;
                 const quickEvidenceKind: FieldMediaKind = isNoAccess ? "no_access" : isCompletedByOthers ? "completed_by_others" : "general";
@@ -14135,7 +14390,7 @@ return (
                           : "Choose what happened at the site first.";
 
                 return (
-                  <div className={`site-procedure-card ${isRefused ? "is-refused" : ""} ${hasRefusedPhoto ? "has-evidence" : ""} ${packageReady ? "has-package" : ""}`}>
+                  <div className={`site-procedure-card procedure-${fieldFocusPane} ${isRefused ? "is-refused" : ""} ${hasRefusedPhoto ? "has-evidence" : ""} ${packageReady ? "has-package" : ""}`}>
                     <div className="site-procedure-head">
                       <div>
                         <span>Site Procedure</span>
@@ -14145,12 +14400,24 @@ return (
                       <b>{isRefused ? `${counts.refused_access} optional` : `${counts.total} file(s)`}</b>
                     </div>
                     <div className="site-procedure-steps">
-                      <span className={outcomeChosen ? "done" : ""}>1 Outcome</span>
-                      <span className={evidenceReady ? "done" : ""}>2 Evidence</span>
-                      <span className={packageReady ? "done" : ""}>3 Package</span>
-                      <span className={packageReady ? "ready" : ""}>4 Send</span>
+                      <button type="button" className={`${fieldFocusPane === "capture" ? "active" : ""} ${outcomeChosen ? "done" : ""}`} onClick={() => focusFieldPane("capture")}>
+                        <span>1</span>
+                        <strong>Outcome</strong>
+                      </button>
+                      <button type="button" className={`${fieldFocusPane === "evidence" ? "active" : ""} ${evidenceReady ? "done" : ""}`} onClick={() => focusFieldPane("evidence")}>
+                        <span>2</span>
+                        <strong>Evidence</strong>
+                      </button>
+                      <button type="button" className={`${fieldFocusPane === "package" ? "active" : ""} ${packageReady ? "done" : ""}`} onClick={() => focusFieldPane("package")}>
+                        <span>3</span>
+                        <strong>Package</strong>
+                      </button>
+                      <button type="button" className={`${fieldFocusPane === "send" ? "active" : ""} ${packageReady ? "ready" : ""}`} onClick={() => focusFieldPane("send")}>
+                        <span>4</span>
+                        <strong>Send</strong>
+                      </button>
                     </div>
-                    <div className="site-procedure-stage">
+                    <div className={`site-procedure-stage site-wizard-panel ${fieldFocusPane === "capture" ? "is-active" : ""}`} data-field-pane="capture">
                       <div className="site-section-head">
                         <span>Outcome</span>
                         <strong>Choose the field path</strong>
@@ -14237,7 +14504,39 @@ return (
                         </button>
                       </div>
                     </div>
-                    <div className="site-procedure-stage site-package-stage">
+                    <div className={`site-procedure-stage site-wizard-panel site-evidence-stage ${fieldFocusPane === "evidence" ? "is-active" : ""}`} data-field-pane="evidence">
+                      <div className="site-section-head">
+                        <span>Evidence</span>
+                        <strong>{fieldCaptureGuide?.jobKey === jobKey(selected) ? fieldCaptureGuide.title : "Capture or review media"}</strong>
+                        <small>{fieldCaptureGuide?.jobKey === jobKey(selected) ? fieldCaptureGuide.text : "Use required sets for work jobs. For no access or refused access, evidence is optional but can be added here."}</small>
+                      </div>
+                      <div className="site-evidence-count-grid">
+                        <button type="button" onClick={() => beginGuidedEvidenceCapture(selected, "before")}>
+                          <span>Before</span>
+                          <strong>{counts.before}</strong>
+                          <small>2 photos + 2 videos</small>
+                        </button>
+                        <button type="button" onClick={() => beginGuidedEvidenceCapture(selected, "after")}>
+                          <span>After</span>
+                          <strong>{counts.after}</strong>
+                          <small>2 photos + 2 videos</small>
+                        </button>
+                        <button type="button" onClick={() => requestFieldPhotoCapture(selected, optionalNoWorkEvidenceKind, "image/*,video/*")}>
+                          <span>No Work</span>
+                          <strong>{counts.no_access + counts.refused_access + counts.completed_by_others + counts.general}</strong>
+                          <small>Photo or video</small>
+                        </button>
+                      </div>
+                      <div className="site-procedure-actions site-procedure-package-actions">
+                        <button type="button" onClick={() => focusFieldPane("capture")}>
+                          Back to Outcome
+                        </button>
+                        <button type="button" className="procedure-primary" onClick={() => focusFieldPane("package")}>
+                          Package Step
+                        </button>
+                      </div>
+                    </div>
+                    <div className={`site-procedure-stage site-wizard-panel site-package-stage ${fieldFocusPane === "package" ? "is-active" : ""}`} data-field-pane="package">
                       <div className="site-section-head">
                         <span>Package</span>
                         <strong>{packageTitle}</strong>
@@ -14319,6 +14618,39 @@ return (
                           <button type="button" className="procedure-muted" disabled>
                             Pick Scenario First
                           </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className={`site-procedure-stage site-wizard-panel site-send-stage ${fieldFocusPane === "send" ? "is-active" : ""}`} data-field-pane="send">
+                      <div className="site-section-head">
+                        <span>Preview and Send</span>
+                        <strong>{packageReady ? "Package review ready" : invoicePacket ? "PDF ready, ZIP needed" : "Generate package first"}</strong>
+                        <small>{preview?.fileName || invoicePacket?.fileName || "Create the affidavit/invoice package, then return here to send the complete ZIP."}</small>
+                      </div>
+                      <div className="site-package-strip">
+                        <span>{preview ? packetSizeLabel(preview.size) : "No ZIP yet"}</span>
+                        <span>{preview ? `${preview.imageCount} image(s)` : `${counts.images} image(s)`}</span>
+                        <span>{preview ? `${preview.videoCount} video(s)` : `${counts.videos} video(s)`}</span>
+                      </div>
+                      <div className="site-procedure-actions site-procedure-package-actions">
+                        {packageReady ? (
+                          <>
+                            <a href={paperworkAutoPackageHref(selected)}>
+                              Preview Package
+                            </a>
+                            <button type="button" className="procedure-primary send-package-btn" onClick={() => sendFullEvidencePackage(selected)}>
+                              Send ZIP
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button type="button" className="procedure-primary" onClick={() => runPackagePrimaryAction(selected)}>
+                              Generate Package
+                            </button>
+                            <button type="button" className="procedure-muted" disabled>
+                              Send after preview
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
