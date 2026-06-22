@@ -2799,24 +2799,29 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const overdueLabel = markerOverdueLabel(job);
         const noAccessTimerLabel = markerNoAccessTimerHtml(job);
         const markerDetail = markerDetailed ? markerDetailLabel(job) : "";
+        const hasOverdue = Boolean(overdueLabel);
         const markerMode = markerDetailed ? "marker-detailed" : markerExpanded ? "marker-expanded" : "marker-compact";
-        const iconSize: [number, number] = markerDetailed
+        const baseIconSize: [number, number] = markerDetailed
           ? [190, noAccessTimerLabel ? 104 : 88]
           : markerExpanded
             ? [166, noAccessTimerLabel ? 92 : 78]
             : [noAccessTimerLabel ? 142 : 116, noAccessTimerLabel ? 78 : 64];
+        const iconSize: [number, number] = [
+          baseIconSize[0] + (hasOverdue ? 20 : 0),
+          baseIconSize[1] + (hasOverdue ? 18 : 0),
+        ];
         const iconAnchor: [number, number] = [Math.round(iconSize[0] / 2), Math.round(iconSize[1] / 2)];
         const popupJobId = jobKey(job, index);
 
         const marker = L.marker([lat, lng], {
           icon: L.divIcon({
             className: "maturity-map-marker",
-            html: `<div class="maturity-marker-bubble readable-map-marker ${markerMode} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${markerColor}">
+            html: `<div class="maturity-marker-bubble readable-map-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${hasOverdue ? "#ef4444" : markerColor}">
                     <strong>${markerReadableLabelHtml(job, markerExpanded)}</strong>
                     <span class="marker-counter-row">
                       ${markerExpanded ? `<span class="marker-md-badge">${escapeMarkerHtml(awardCounter.badge)}</span>` : ""}
                       ${startCounterLabel ? `<span class="marker-start-badge">${escapeMarkerHtml(startCounterLabel)}</span>` : ""}
-                      ${overdueLabel ? `<span class="marker-overdue-badge">${overdueLabel}</span>` : ""}
+                      ${overdueLabel ? `<span class="marker-overdue-badge">${escapeMarkerHtml(overdueLabel)}</span>` : ""}
                     </span>
                     ${noAccessTimerLabel}
                     ${markerDetail ? `<span class="marker-address-mini">${escapeMarkerHtml(markerDetail)}</span>` : ""}
@@ -12402,6 +12407,19 @@ return (
               0 14px 30px rgba(15, 23, 42, 0.24) !important;
             text-align: center !important;
             transform-origin: center center;
+            transition:
+              transform 180ms ease,
+              filter 180ms ease,
+              box-shadow 180ms ease,
+              background 180ms ease !important;
+            position: relative !important;
+            overflow: visible !important;
+          }
+
+          .maturity-map-marker .readable-map-marker:hover {
+            transform: translateY(-2px) scale(1.05) !important;
+            filter: saturate(1.06) contrast(1.03);
+            z-index: 2;
           }
 
           .maturity-map-marker .readable-map-marker strong {
@@ -12476,6 +12494,7 @@ return (
             justify-content: center !important;
             gap: 4px !important;
             min-height: 0 !important;
+            flex-wrap: wrap !important;
           }
 
           .maturity-map-marker .readable-map-marker .marker-md-badge,
@@ -12499,6 +12518,62 @@ return (
           .maturity-map-marker .readable-map-marker .marker-start-badge {
             background: #dbeafe !important;
             color: #1e3a8a !important;
+          }
+
+          .maturity-map-marker .readable-map-marker .marker-overdue-badge {
+            min-height: 24px !important;
+            padding: 5px 11px !important;
+            background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+            color: #ffffff !important;
+            font-size: 14px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+              0 8px 18px rgba(185, 28, 28, 0.34) !important;
+          }
+
+          .maturity-map-marker .readable-map-marker.marker-expanded .marker-overdue-badge,
+          .maturity-map-marker .readable-map-marker.marker-detailed .marker-overdue-badge {
+            min-height: 29px !important;
+            padding: 6px 14px !important;
+            font-size: 17px !important;
+          }
+
+          .maturity-map-marker .readable-map-marker.marker-has-overdue {
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(255, 247, 247, 0.98)) !important;
+            border-color: #ef4444 !important;
+            box-shadow:
+              0 0 0 4px rgba(255, 255, 255, 0.94),
+              0 0 0 10px rgba(239, 68, 68, 0.16),
+              0 18px 38px rgba(127, 29, 29, 0.28) !important;
+          }
+
+          .maturity-map-marker .readable-map-marker.marker-has-overdue::after {
+            content: "";
+            position: absolute;
+            inset: -9px;
+            border-radius: inherit;
+            border: 2px solid rgba(239, 68, 68, 0.28);
+            opacity: 0.72;
+            animation: overdueMarkerBreath 3.6s ease-in-out infinite;
+            pointer-events: none;
+          }
+
+          .maturity-map-marker .readable-map-marker.marker-has-overdue .marker-label-main {
+            color: #7f1d1d !important;
+          }
+
+          @keyframes overdueMarkerBreath {
+            0%, 100% {
+              transform: scale(0.96);
+              opacity: 0.28;
+            }
+            50% {
+              transform: scale(1.08);
+              opacity: 0.78;
+            }
           }
 
           .maturity-map-marker .readable-map-marker .marker-no-access-timer {
