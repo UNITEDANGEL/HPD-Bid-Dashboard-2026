@@ -1,123 +1,57 @@
-﻿Fetcher run started: 2026-06-19T16:51:53.806Z
+Fetcher run started: 2026-06-22T23:38:39.841Z
 Google auth files validated as JSON.
-Credentials file exists. Starting 14-day fetcher pipeline.
+Credentials file exists. Starting 1-day fetcher pipeline.
 
 ========== Install Python fetcher dependencies ==========
 $ python -m pip install --quiet requests tqdm PyPDF2 google-api-python-client google-auth-oauthlib google-auth-httplib2
 
-[notice] A new release of pip is available: 25.0.1 -> 26.1.2
-[notice] To update, run: python.exe -m pip install --upgrade pip
+========== Run Gmail fetcher for last 1 days ==========
+$ python FetchrMatcherV5.py --update --days 1
 
+=== FETCHR MATCHER V5 START (Last 1 Days) ===
 
-========== Run Gmail fetcher for last 14 days ==========
-$ python FetchrMatcherV5.py --update --days 14
-
-=== FETCHR MATCHER V5 START (Last 14 Days) ===
-
-ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
+Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/06/05 before:2026/06/20
-COA items parsed (latest per OMO): 20
-ITB items parsed (latest per OMO): 20
-Final JobRows: 20
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/06/21 before:2026/06/23
+COA items parsed (latest per OMO): 2
+ITB items parsed (latest per OMO): 2
+Final JobRows: 2
 
-CSV saved -> C:\dev\Node_Dashboard_Live\mereged_data_csv_2025\COA_Fetcher_2026.csv
-JSON saved -> C:\dev\Node_Dashboard_Live\mereged_data_csv_2025\COA_Fetcher_2026.json
+CSV saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.csv
+JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.json
 
 === FETCHR MATCHER V5 DONE ===
 
-
-Downloading COA messages:   0%|          | 0/23 [00:00<?, ?it/s]
-Downloading COA messages:   4%|â–         | 1/23 [00:00<00:04,  5.15it/s]
-Downloading COA messages:   9%|â–Š         | 2/23 [00:00<00:03,  5.58it/s]
-Downloading COA messages:  13%|â–ˆâ–Ž        | 3/23 [00:00<00:03,  6.09it/s]
-Downloading COA messages:  17%|â–ˆâ–‹        | 4/23 [00:00<00:03,  5.92it/s]
-Downloading COA messages:  22%|â–ˆâ–ˆâ–       | 5/23 [00:00<00:02,  6.07it/s]
-Downloading COA messages:  26%|â–ˆâ–ˆâ–Œ       | 6/23 [00:01<00:03,  5.56it/s]
-Downloading COA messages:  30%|â–ˆâ–ˆâ–ˆ       | 7/23 [00:01<00:02,  5.83it/s]
-Downloading COA messages:  35%|â–ˆâ–ˆâ–ˆâ–      | 8/23 [00:01<00:02,  5.37it/s]
-Downloading COA messages:  39%|â–ˆâ–ˆâ–ˆâ–‰      | 9/23 [00:01<00:02,  5.15it/s]
-Downloading COA messages:  43%|â–ˆâ–ˆâ–ˆâ–ˆâ–Ž     | 10/23 [00:01<00:02,  5.17it/s]
-Downloading COA messages:  48%|â–ˆâ–ˆâ–ˆâ–ˆâ–Š     | 11/23 [00:02<00:02,  5.34it/s]
-Downloading COA messages:  52%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–    | 12/23 [00:02<00:01,  5.68it/s]
-Downloading COA messages:  57%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–‹    | 13/23 [00:02<00:01,  5.69it/s]
-Downloading COA messages:  61%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ    | 14/23 [00:02<00:01,  5.87it/s]
-Downloading COA messages:  65%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–Œ   | 15/23 [00:02<00:01,  4.73it/s]
-Downloading COA messages:  70%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–‰   | 16/23 [00:02<00:01,  5.10it/s]
-Downloading COA messages:  74%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–  | 17/23 [00:03<00:01,  5.10it/s]
-Downloading COA messages:  78%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–Š  | 18/23 [00:03<00:00,  5.07it/s]
-Downloading COA messages:  83%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–Ž | 19/23 [00:03<00:00,  5.30it/s]
-Downloading COA messages:  87%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–‹ | 20/23 [00:03<00:00,  5.53it/s]
-Downloading COA messages:  91%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–| 21/23 [00:03<00:00,  5.81it/s]
-Downloading COA messages:  96%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–Œ| 22/23 [00:03<00:00,  5.97it/s]
-Downloading COA messages: 100%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ| 23/23 [00:04<00:00,  5.25it/s]
-Downloading COA messages: 100%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ| 23/23 [00:04<00:00,  5.44it/s]
-
-Geocoding COA addresses:   0%|          | 0/20 [00:00<?, ?it/s]
-Geocoding COA addresses: 100%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ| 20/20 [00:00<?, ?it/s]
-
-Fetching ITBs for COA OMOs:   0%|          | 0/20 [00:00<?, ?it/s]
-Fetching ITBs for COA OMOs:   5%|â–Œ         | 1/20 [00:01<00:25,  1.35s/it]
-Fetching ITBs for COA OMOs:  10%|â–ˆ         | 2/20 [00:02<00:20,  1.16s/it]
-Fetching ITBs for COA OMOs:  15%|â–ˆâ–Œ        | 3/20 [00:03<00:17,  1.05s/it]
-Fetching ITBs for COA OMOs:  20%|â–ˆâ–ˆ        | 4/20 [00:04<00:14,  1.08it/s]
-Fetching ITBs for COA OMOs:  25%|â–ˆâ–ˆâ–Œ       | 5/20 [00:04<00:12,  1.18it/s]
-Fetching ITBs for COA OMOs:  30%|â–ˆâ–ˆâ–ˆ       | 6/20 [00:05<00:11,  1.17it/s]
-Fetching ITBs for COA OMOs:  35%|â–ˆâ–ˆâ–ˆâ–Œ      | 7/20 [00:06<00:12,  1.08it/s]
-Fetching ITBs for COA OMOs:  40%|â–ˆâ–ˆâ–ˆâ–ˆ      | 8/20 [00:07<00:10,  1.13it/s]
-Fetching ITBs for COA OMOs:  45%|â–ˆâ–ˆâ–ˆâ–ˆâ–Œ     | 9/20 [00:08<00:09,  1.19it/s]
-Fetching ITBs for COA OMOs:  50%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆ     | 10/20 [00:09<00:08,  1.18it/s]
-Fetching ITBs for COA OMOs:  55%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–Œ    | 11/20 [00:09<00:07,  1.23it/s]
-Fetching ITBs for COA OMOs:  60%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ    | 12/20 [00:10<00:06,  1.25it/s]
-Fetching ITBs for COA OMOs:  65%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–Œ   | 13/20 [00:11<00:05,  1.20it/s]
-Fetching ITBs for COA OMOs:  70%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ   | 14/20 [00:12<00:04,  1.28it/s]
-Fetching ITBs for COA OMOs:  75%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–Œ  | 15/20 [00:13<00:04,  1.04it/s]
-Fetching ITBs for COA OMOs:  80%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ  | 16/20 [00:14<00:03,  1.10it/s]
-Fetching ITBs for COA OMOs:  85%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–Œ | 17/20 [00:15<00:03,  1.01s/it]
-Fetching ITBs for COA OMOs:  90%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ | 18/20 [00:16<00:01,  1.08it/s]
-Fetching ITBs for COA OMOs:  95%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–Œ| 19/20 [00:17<00:00,  1.13it/s]
-Fetching ITBs for COA OMOs: 100%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ| 20/20 [00:17<00:00,  1.18it/s]
-Fetching ITBs for COA OMOs: 100%|â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ| 20/20 [00:17<00:00,  1.12it/s]
+Downloading COA messages:   0%|          | 0/2 [00:00<?, ?it/s]Downloading COA messages:  50%|█████     | 1/2 [00:00<00:00,  8.86it/s]Downloading COA messages: 100%|██████████| 2/2 [00:00<00:00,  9.44it/s]
+Geocoding COA addresses:   0%|          | 0/2 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 2/2 [00:00<00:00, 42799.02it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/2 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  50%|█████     | 1/2 [00:00<00:00,  1.46it/s]Fetching ITBs for COA OMOs: 100%|██████████| 2/2 [00:01<00:00,  1.61it/s]Fetching ITBs for COA OMOs: 100%|██████████| 2/2 [00:01<00:00,  1.59it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
 Safe merge complete
-Master before: 514
-Incoming rows: 324
-Added new OMOs: 5
-Skipped existing OMOs: 319
+Master before: 519
+Incoming rows: 2
+Added new OMOs: 2
+Skipped existing OMOs: 0
 Updated existing OMOs: 0
-Need geocode: 5
+Need geocode: 2
 Missing ITB: 0
-Missing description: 4
-Master after: 519
+Missing description: 2
+Master after: 521
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
 
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 15
-FAILED EQ29600 108-43 48 AVENUE, 11368
-FAILED EQ27758 3052 BRIGHTON 1 STREET, 11235
-FAILED EQ28868 202 WEST 146 STREET, 10039
-FAILED EQ27680 621 EAST 170 STREET, 10456
-FAILED EQ29302 558 EAST 2 STREET, 11218
-FAILED EQ25568 230 EAST 173 STREET, 10457
-FAILED EQ27441 89-04 148 STREET, 11435
-FAILED EQ29106 11-40 44 DRIVE, 11101
-FAILED EQ28830 71-27 65 STREET, 11385
-FAILED EQ29728 147-41 76 AVENUE, 11367
-OK EQ30558 189 FILLMORE STREET, 10301 40.6436528 -74.0949691
-FAILED EQ30624 35-19 147 STREET, 11354
-OK EQ30536 58-35 GRANGER STREET, 11368 40.7383004 -73.854045
-FAILED EQ29889 225 BEACH 19 STREET, 11691
-FAILED EQ30155 1742 EAST 172 STREET, 10472
+Need geocode: 2
+OK EQ30935 165 EAST 205 STREET, 10458 40.875479 -73.885472 NYC_PLANNING_OK
+OK EQ31289 560 ISHAM STREET, 10034 40.867384 -73.919645 NYC_PLANNING_OK
 Geocoded: 2
-Failed: 13
+Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
 
@@ -141,49 +75,32 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 4
-DESCRIPTION OK EQ30558 EQ30558_061026044928.pdf
-DESCRIPTION OK EQ30536 EQ30536_061126010114.pdf
-DESCRIPTION OK EQ29889 EQ29889_061126010423.pdf
-DESCRIPTION OK EQ30155 EQ30155_061026050202.pdf
-Descriptions patched: 4
+Matched ITBs needing description: 2
+DESCRIPTION OK EQ30935 EQ30935_062226054118.pdf
+DESCRIPTION OK EQ31289 EQ31289_062226035704.pdf
+Descriptions patched: 2
 Missing PDF: 0
 Failed: 0
-Backup: data\COA_Fetcher_2026.before_deep_description_recovery.json
+Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'EQ30558', 'Address': '189 FILLMORE STREET, 10301', 'RecoveredFrom': 'EQ30558_061026044928.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION â€“ â€œ ESSENTIAL SERVICE WORK â€œ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOOR TO ADHERE TO LOCAL LAW 111 OF 2018. AT BUILDING ENTRANCE DOOR INSTALL NEW PASS'}
-{'OMO': 'EQ30536', 'Address': '58-35 GRANGER STREET, 11368', 'RecoveredFrom': 'EQ30536_061126010114.pdf', 'Preview': ': BUILDING ENTRANCE DOOR 1ST STORY, PUBLIC HALL RE-AL IGN DOOR TO DOOR FRAME NYC HPD EMERGENCY OPERATIONS DIVISION â€“ ESSENTIAL S ERVICE WORK MAKE ALL NECESSARY ADJUSTMENTS/ ALIGNMENT TO DOOR T O ENSURE DOOR IS PROPERLY S'}
-{'OMO': 'EQ29889', 'Address': '225 BEACH 19 STREET, 11691', 'RecoveredFrom': 'EQ29889_061126010423.pdf', 'Preview': ': UNCLOG VANITY AND REPLACE WASTE LINE NYC HPD EMERGENCY OPERATIONS DIVISION â€“ â€œESSENTIAL SERVICE WORK â€œ AT BATHROOM- REPAIR THE DEFECTIVE CLOGGED DRAIN LINE / WASTE LIN E UNDER VANITY SINK SO THAT IT WILL NOT LEAK. SNAK'}
-{'OMO': 'EQ30155', 'Address': '1742 EAST 172 STREET, 10472', 'RecoveredFrom': 'EQ30155_061026050202.pdf', 'Preview': ': DOOR ( BLDG VESTIBULE ) INSTALL MORTISE LOCK -NYC HPD EMERGENCY OPERATIONS DIVISION â€“ â€œESSENTIAL SERVICE WORK- LOCATION : BLDG VESTIBULE *MAKE ALL NECESSARY REPAIRS TO PROPERLY REMOVE THE DEFECTIVE MORTISE LOCK AND REP'}
+{'OMO': 'EQ30935', 'Address': '165 EAST 205 STREET, 10458', 'RecoveredFrom': 'EQ30935_062226054118.pdf', 'Preview': '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to abide by the HPD Open Market Order Bid Terms and Conditions an d In addition, yo'}
+{'OMO': 'EQ31289', 'Address': '560 ISHAM STREET, 10034', 'RecoveredFrom': 'EQ31289_062226035704.pdf', 'Preview': '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to abide by the HPD Open Market Order Bid Terms and Conditions an d In addition, yo'}
 
 
 ========== Verify mapping ==========
 $ node check-local-mapping.js
-Raw JSON rows: 519
-2026 rows: 468
-2026 rows with any Latitude/Longitude: 455
-2026 rows with valid NYC coordinates: 455
-2026 rows NOT valid mapped: 13
+Raw JSON rows: 521
+2026 rows: 470
+2026 rows with any Latitude/Longitude: 470
+2026 rows with valid NYC coordinates: 470
+2026 rows NOT valid mapped: 0
 
 Not mapped sample:
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ (index) â”‚ OMO       â”‚ Address                         â”‚ AwardDate  â”‚ WorkStartDate â”‚ Latitude â”‚ Longitude â”‚ Geocode      â”‚ MissingITBReason â”‚ Status    â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â”‚ 0       â”‚ 'EQ29600' â”‚ '108-43 48 AVENUE, 11368'       â”‚ '06/01/26' â”‚ '6/1/26'      â”‚ ''       â”‚ ''        â”‚ 'OSM_FAILED' â”‚ ''               â”‚ 'MATCHED' â”‚
-â”‚ 1       â”‚ 'EQ27758' â”‚ '3052 BRIGHTON 1 STREET, 11235' â”‚ '06/01/26' â”‚ '5/29/26'     â”‚ ''       â”‚ ''        â”‚ 'OSM_FAILED' â”‚ ''               â”‚ 'MATCHED' â”‚
-â”‚ 2       â”‚ 'EQ28868' â”‚ '202 WEST 146 STREET, 10039'    â”‚ '05/27/26' â”‚ '5/28/26'     â”‚ ''       â”‚ ''        â”‚ 'OSM_FAILED' â”‚ ''               â”‚ 'MATCHED' â”‚
-â”‚ 3       â”‚ 'EQ27680' â”‚ '621 EAST 170 STREET, 10456'    â”‚ '05/26/26' â”‚ '5/26/26'     â”‚ ''       â”‚ ''        â”‚ 'OSM_FAILED' â”‚ ''               â”‚ 'MATCHED' â”‚
-â”‚ 4       â”‚ 'EQ29302' â”‚ '558 EAST 2 STREET, 11218'      â”‚ '06/03/26' â”‚ '6/4/26'      â”‚ ''       â”‚ ''        â”‚ 'OSM_FAILED' â”‚ ''               â”‚ 'MATCHED' â”‚
-â”‚ 5       â”‚ 'EQ25568' â”‚ '230 EAST 173 STREET, 10457'    â”‚ '06/02/26' â”‚ '6/3/26'      â”‚ ''       â”‚ ''        â”‚ 'OSM_FAILED' â”‚ ''               â”‚ 'MATCHED' â”‚
-â”‚ 6       â”‚ 'EQ27441' â”‚ '89-04 148 STREET, 11435'       â”‚ '06/02/26' â”‚ '6/2/26'      â”‚ ''       â”‚ ''        â”‚ 'OSM_FAILED' â”‚ ''               â”‚ 'MATCHED' â”‚
-â”‚ 7       â”‚ 'EQ29106' â”‚ '11-40 44 DRIVE, 11101'         â”‚ '06/02/26' â”‚ '6/3/26'      â”‚ ''       â”‚ ''        â”‚ 'OSM_FAILED' â”‚ ''               â”‚ 'MATCHED' â”‚
-â”‚ 8       â”‚ 'EQ28830' â”‚ '71-27 65 STREET, 11385'        â”‚ '06/04/26' â”‚ '6/4/26'      â”‚ ''       â”‚ ''        â”‚ 'OSM_FAILED' â”‚ ''               â”‚ 'MATCHED' â”‚
-â”‚ 9       â”‚ 'EQ29728' â”‚ '147-41 76 AVENUE, 11367'       â”‚ '06/08/26' â”‚ '6/8/26'      â”‚ ''       â”‚ ''        â”‚ 'OSM_FAILED' â”‚ ''               â”‚ 'MATCHED' â”‚
-â”‚ 10      â”‚ 'EQ30624' â”‚ '35-19 147 STREET, 11354'       â”‚ '06/12/26' â”‚ '6/15/26'     â”‚ ''       â”‚ ''        â”‚ 'OSM_FAILED' â”‚ ''               â”‚ 'MATCHED' â”‚
-â”‚ 11      â”‚ 'EQ29889' â”‚ '225 BEACH 19 STREET, 11691'    â”‚ '06/12/26' â”‚ '6/12/26'     â”‚ ''       â”‚ ''        â”‚ 'OSM_FAILED' â”‚ ''               â”‚ 'MATCHED' â”‚
-â”‚ 12      â”‚ 'EQ30155' â”‚ '1742 EAST 172 STREET, 10472'   â”‚ '06/12/26' â”‚ '6/15/26'     â”‚ ''       â”‚ ''        â”‚ 'OSM_FAILED' â”‚ ''               â”‚ 'MATCHED' â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
 
 
 ========== Verify descriptions ==========
@@ -192,45 +109,41 @@ Bad/boilerplate descriptions: 0
 Missing descriptions: 0
 
 Bad sample:
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ (index) â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
 
 Missing sample:
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ (index) â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
 
 
 ========== Verify missing ITB ==========
 $ node export-missing-itb.js
-Total jobs: 519
+Total jobs: 521
 Missing ITB jobs: 0
 Exported: ./data/missing_itb_jobs_2026.csv
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚ (index) â”‚
-â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
 
 
-Fetcher run finished: 2026-06-19T16:53:11.658Z
+Fetcher run finished: 2026-06-22T23:38:52.435Z
 {
-  "fetchedCoaItems": 20,
-  "fetchedItbItems": 20,
-  "fetchedFinalJobRows": 20,
-  "addedNewOmos": 5,
-  "skippedExistingOmos": 319,
-  "rawRows": 519,
-  "rows2026": 468,
-  "mapped2026": 455,
-  "notMapped2026": 13,
+  "fetchedCoaItems": 2,
+  "fetchedItbItems": 2,
+  "fetchedFinalJobRows": 2,
+  "addedNewOmos": 2,
+  "skippedExistingOmos": 0,
+  "rawRows": 521,
+  "rows2026": 470,
+  "mapped2026": 470,
+  "notMapped2026": 0,
   "badDescriptions": 0,
   "missingDescriptions": 0,
   "missingItbJobs": 0
 }
-
-========== Repair missing geocodes ==========
-Patched missing coordinates with NYC Planning GeoSearch: 13
-2026 rows NOT valid mapped: 0

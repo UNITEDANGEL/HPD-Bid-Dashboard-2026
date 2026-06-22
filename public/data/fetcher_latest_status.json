@@ -1,23 +1,22 @@
 {
   "state": "complete",
-  "startedAt": "2026-06-19T16:51:53.806Z",
-  "finishedAt": "2026-06-19T16:53:11.658Z",
+  "startedAt": "2026-06-22T23:38:39.841Z",
+  "finishedAt": "2026-06-22T23:38:52.435Z",
   "ok": true,
   "error": "",
   "summary": {
-    "fetchedCoaItems": 20,
-    "fetchedItbItems": 20,
-    "fetchedFinalJobRows": 20,
-    "addedNewOmos": 5,
-    "skippedExistingOmos": 319,
-    "rawRows": 519,
-    "rows2026": 468,
-    "mapped2026": 468,
+    "fetchedCoaItems": 2,
+    "fetchedItbItems": 2,
+    "fetchedFinalJobRows": 2,
+    "addedNewOmos": 2,
+    "skippedExistingOmos": 0,
+    "rawRows": 521,
+    "rows2026": 470,
+    "mapped2026": 470,
     "notMapped2026": 0,
     "badDescriptions": 0,
     "missingDescriptions": 0,
     "missingItbJobs": 0
   },
-  "logPath": "data/fetcher_latest_run.log",
-  "geocodeFixedAt": "2026-06-19T17:23:52.772Z"
+  "logPath": "data/fetcher_latest_run.log"
 }
