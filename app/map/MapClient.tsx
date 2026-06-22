@@ -800,37 +800,49 @@ function escapeMarkerHtml(value: unknown) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-function markerStatusLabel(job: JobRecord) {
-  const counter = jobCounterInfo(job);
-  return workflowLabel(job) || counter.label || JobStatus.statusLabel(job) || "";
+function markerAwardCounter(job: JobRecord) {
+  const raw = (job as any).AwardDate || (job as any).awardDate || (job as any)["Award Date"] || "";
+  const awardDate = parseJobDate(raw);
+  if (!awardDate) {
+    return {
+      main: "MD ?",
+      badge: "AWD ?",
+      detail: "Award date missing",
+    };
+  }
+
+  const diff = daysBetween(awardDate, dateOnly(new Date()));
+  const shortDate = shortJobDate(raw);
+  return {
+    main: diff >= 0 ? `MD ${diff}D` : `AWD IN ${Math.abs(diff)}D`,
+    badge: `AWD ${shortDate}`,
+    detail: diff >= 0 ? `${diff} days since award` : `Award starts in ${Math.abs(diff)} days`,
+  };
+}
+function markerStartCounterLabel(job: JobRecord) {
+  const raw = (job as any).WorkStartDate || (job as any).workStartDate || (job as any)["Work Start Date"] || "";
+  const startDate = parseJobDate(raw);
+  if (!startDate) return "START ?";
+
+  const diff = daysBetween(startDate, dateOnly(new Date()));
+  if (diff > 0) return `START +${diff}D`;
+  if (diff === 0) return "START TODAY";
+  return `START IN ${Math.abs(diff)}D`;
 }
 function markerReadableLabelHtml(job: JobRecord, expanded: boolean) {
-  const id = jobKey(job) || "JOB";
-  const status = markerStatusLabel(job);
-  const subLabel = status && status !== id ? status : "";
+  const award = markerAwardCounter(job);
+  const start = markerStartCounterLabel(job);
   return `
-    <span class="marker-label-main">${escapeMarkerHtml(id)}</span>
-    ${expanded && subLabel ? `<span class="marker-label-date">${escapeMarkerHtml(subLabel)}</span>` : ""}
+    <span class="marker-label-main">${escapeMarkerHtml(award.main)}</span>
+    ${expanded ? `<span class="marker-label-date">${escapeMarkerHtml(start)}</span>` : ""}
   `;
 }
 function markerDetailLabel(job: JobRecord) {
+  const id = jobKey(job);
   const location =
     String((job as any).location || (job as any).Location || (job as any).apt || (job as any)["Apt #"] || "").trim();
   const borough = String((job as any).borough || (job as any).Boro || (job as any).Borough || "").trim();
-  return [borough, location].filter(Boolean).join(" / ");
-}
-function markerMaturityLabel(job: JobRecord) {
-  const awardRaw =
-    (job as any).AwardDate ||
-    (job as any).awardDate ||
-    (job as any)["Award Date"] ||
-    "";
-  const awardDate = markerDateValue(awardRaw);
-  if (!awardDate) return "";
-  const today = new Date();
-  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const diffDays = Math.round((todayOnly.getTime() - awardDate.getTime()) / 86400000);
-  return diffDays >= 0 ? `MD ${diffDays}d` : "";
+  return [id, borough, location].filter(Boolean).join(" - ");
 }
 function markerNoAccessTimerHtml(job: JobRecord) {
   const second = workflowSecondAttemptInfo(job);
@@ -2782,7 +2794,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
         const info = maturityInfo(job);
         const markerColor = JobStatus.statusColor(job);
-        const maturityLabel = markerMaturityLabel(job);
+        const awardCounter = markerAwardCounter(job);
+        const startCounterLabel = markerStartCounterLabel(job);
         const overdueLabel = markerOverdueLabel(job);
         const noAccessTimerLabel = markerNoAccessTimerHtml(job);
         const markerDetail = markerDetailed ? markerDetailLabel(job) : "";
@@ -2801,7 +2814,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             html: `<div class="maturity-marker-bubble readable-map-marker ${markerMode} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${markerColor}">
                     <strong>${markerReadableLabelHtml(job, markerExpanded)}</strong>
                     <span class="marker-counter-row">
-                      ${maturityLabel ? `<span class="marker-md-badge">${maturityLabel}</span>` : ""}
+                      ${markerExpanded ? `<span class="marker-md-badge">${escapeMarkerHtml(awardCounter.badge)}</span>` : ""}
+                      ${startCounterLabel ? `<span class="marker-start-badge">${escapeMarkerHtml(startCounterLabel)}</span>` : ""}
                       ${overdueLabel ? `<span class="marker-overdue-badge">${overdueLabel}</span>` : ""}
                     </span>
                     ${noAccessTimerLabel}
@@ -5787,6 +5801,7 @@ return (
         }
 
         .marker-md-badge,
+        .marker-start-badge,
         .marker-overdue-badge,
         .marker-no-access-timer {
           display: inline-flex;
@@ -5804,6 +5819,11 @@ return (
         .marker-md-badge {
           background: rgba(255, 255, 255, 0.14);
           color: #f8fbff;
+        }
+
+        .marker-start-badge {
+          background: rgba(125, 211, 252, 0.18);
+          color: #e0f2fe;
         }
 
         .marker-overdue-badge {
@@ -12459,6 +12479,7 @@ return (
           }
 
           .maturity-map-marker .readable-map-marker .marker-md-badge,
+          .maturity-map-marker .readable-map-marker .marker-start-badge,
           .maturity-map-marker .readable-map-marker .marker-overdue-badge,
           .maturity-map-marker .readable-map-marker .marker-no-access-timer {
             min-height: 16px !important;
@@ -12468,6 +12489,16 @@ return (
             line-height: 1 !important;
             font-weight: 1000 !important;
             letter-spacing: 0 !important;
+          }
+
+          .maturity-map-marker .readable-map-marker .marker-md-badge {
+            background: #e0f2fe !important;
+            color: #075985 !important;
+          }
+
+          .maturity-map-marker .readable-map-marker .marker-start-badge {
+            background: #dbeafe !important;
+            color: #1e3a8a !important;
           }
 
           .maturity-map-marker .readable-map-marker .marker-no-access-timer {
