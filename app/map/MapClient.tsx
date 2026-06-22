@@ -829,13 +829,28 @@ function markerStartCounterLabel(job: JobRecord) {
   if (diff === 0) return "START TODAY";
   return `START IN ${Math.abs(diff)}D`;
 }
-function markerSignalLabelHtml(job: JobRecord, options: { expanded: boolean; detailed: boolean; overdueLabel: string; noAccessTimerLabel: string }) {
+function markerSignalLabelHtml(
+  job: JobRecord,
+  options: { overview: boolean; expanded: boolean; detailed: boolean; overdueLabel: string; noAccessTimerLabel: string }
+) {
   const award = markerAwardCounter(job);
   const start = markerStartCounterLabel(job);
   const id = jobKey(job);
   const main = options.overdueLabel || award.main;
   const eyebrow = options.overdueLabel ? "OVERDUE" : options.noAccessTimerLabel ? "NO ACCESS" : "MATURITY";
   const footer = options.detailed ? markerDetailLabel(job) : options.expanded ? [id, award.badge].filter(Boolean).join(" - ") : id;
+
+  if (options.overview) {
+    const tag = options.overdueLabel ? "OD" : options.noAccessTimerLabel ? "NA" : "MD";
+    const overviewMain = options.overdueLabel
+      ? options.overdueLabel.replace(/^OD\s+/i, "")
+      : award.main.replace(/^MD\s*/i, "").replace(/^AWD IN\s*/i, "IN ");
+
+    return `
+      <span class="signal-eyebrow">${escapeMarkerHtml(tag)}</span>
+      <strong class="signal-main">${escapeMarkerHtml(overviewMain)}</strong>
+    `;
+  }
 
   return `
     <span class="signal-eyebrow">${escapeMarkerHtml(eyebrow)}</span>
@@ -2781,6 +2796,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const map = mapRef.current;
       const layer = markerLayerRef.current;
       const zoomLevel = Number(mapZoom || map.getZoom?.() || 10);
+      const markerOverview = zoomLevel < 13;
       const markerExpanded = zoomLevel >= 15;
       const markerDetailed = zoomLevel >= 17;
 
@@ -2805,15 +2821,17 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const overdueLabel = markerOverdueLabel(job);
         const noAccessTimerLabel = markerNoAccessTimerHtml(job);
         const hasOverdue = Boolean(overdueLabel);
-        const markerMode = markerDetailed ? "marker-detailed" : markerExpanded ? "marker-expanded" : "marker-compact";
+        const markerMode = markerDetailed ? "marker-detailed" : markerExpanded ? "marker-expanded" : markerOverview ? "marker-overview" : "marker-compact";
         const baseIconSize: [number, number] = markerDetailed
           ? [184, noAccessTimerLabel ? 132 : 116]
           : markerExpanded
             ? [158, noAccessTimerLabel ? 114 : 98]
-            : [noAccessTimerLabel ? 132 : 116, noAccessTimerLabel ? 96 : 84];
+            : markerOverview
+              ? [hasOverdue ? 58 : 52, 48]
+              : [hasOverdue ? 104 : 92, noAccessTimerLabel ? 72 : 62];
         const iconSize: [number, number] = [
-          baseIconSize[0] + (hasOverdue ? 18 : 0),
-          baseIconSize[1] + (hasOverdue ? 14 : 0),
+          baseIconSize[0] + (hasOverdue && !markerOverview ? 8 : 0),
+          baseIconSize[1] + (hasOverdue && !markerOverview ? 6 : 0),
         ];
         const iconAnchor: [number, number] = [Math.round(iconSize[0] / 2), Math.round(iconSize[1] / 2)];
         const popupJobId = jobKey(job, index);
@@ -2822,7 +2840,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           icon: L.divIcon({
             className: "maturity-map-marker",
             html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${hasOverdue ? "#ef4444" : markerColor}">
-                    ${markerSignalLabelHtml(job, { expanded: markerExpanded, detailed: markerDetailed, overdueLabel, noAccessTimerLabel })}
+                    ${markerSignalLabelHtml(job, { overview: markerOverview, expanded: markerExpanded, detailed: markerDetailed, overdueLabel, noAccessTimerLabel })}
                   </div>`,
             iconSize,
             iconAnchor,
@@ -12673,6 +12691,79 @@ return (
             z-index: -1;
           }
 
+          .maturity-map-marker .map-signal-marker.marker-overview {
+            min-width: 52px !important;
+            min-height: 42px !important;
+            padding: 4px 6px 5px !important;
+            gap: 1px !important;
+            border-width: 2px !important;
+            border-radius: 15px !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96)) !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.92),
+              0 8px 18px rgba(15, 23, 42, 0.22) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview::after {
+            bottom: -5px;
+            width: 10px;
+            height: 10px;
+            border-width: 2px;
+            border-radius: 3px;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-eyebrow {
+            min-height: 11px !important;
+            padding: 1px 4px !important;
+            font-size: 7px !important;
+            background: #e2e8f0 !important;
+            color: #334155 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-main {
+            font-size: 14px !important;
+            line-height: 0.95 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-start,
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-footer,
+          .maturity-map-marker .map-signal-marker.marker-overview .marker-no-access-timer {
+            display: none !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-compact {
+            min-width: 88px !important;
+            min-height: 58px !important;
+            padding: 6px 8px 7px !important;
+            gap: 2px !important;
+            border-width: 2px !important;
+            border-radius: 17px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-compact::after {
+            bottom: -7px;
+            width: 14px;
+            height: 14px;
+            border-width: 2px;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-eyebrow {
+            min-height: 13px !important;
+            padding: 2px 6px !important;
+            font-size: 8px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-main {
+            font-size: 20px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-start {
+            min-height: 16px !important;
+            padding: 3px 7px !important;
+            font-size: 8px !important;
+          }
+
           .maturity-map-marker .map-signal-marker:hover {
             transform: translateY(-3px) scale(1.05) !important;
             filter: saturate(1.08) contrast(1.04);
@@ -12774,44 +12865,63 @@ return (
           .maturity-map-marker .map-signal-marker.marker-has-overdue {
             border-color: #ef4444 !important;
             background:
-              linear-gradient(180deg, #ef4444, #b91c1c) !important;
-            color: #ffffff !important;
+              linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(255, 241, 242, 0.97)) !important;
+            color: #0f172a !important;
             box-shadow:
-              0 0 0 4px rgba(255, 255, 255, 0.96),
-              0 0 0 11px rgba(239, 68, 68, 0.18),
-              0 18px 42px rgba(127, 29, 29, 0.36) !important;
+              0 0 0 3px rgba(255, 255, 255, 0.95),
+              0 0 0 7px rgba(239, 68, 68, 0.10),
+              0 14px 30px rgba(127, 29, 29, 0.20) !important;
           }
 
-          .maturity-map-marker .map-signal-marker.marker-has-overdue::before {
+          .maturity-map-marker .map-signal-marker.marker-has-overdue.marker-expanded::before,
+          .maturity-map-marker .map-signal-marker.marker-has-overdue.marker-detailed::before {
             content: "";
             position: absolute;
-            inset: -11px;
-            border: 2px solid rgba(239, 68, 68, 0.32);
+            inset: -8px;
+            border: 2px solid rgba(239, 68, 68, 0.20);
             border-radius: 25px;
             animation: signalOverduePulse 3.4s ease-in-out infinite;
             pointer-events: none;
           }
 
           .maturity-map-marker .map-signal-marker.marker-has-overdue .signal-eyebrow {
-            background: rgba(255, 255, 255, 0.22) !important;
-            color: #ffffff !important;
+            background: #fee2e2 !important;
+            color: #991b1b !important;
           }
 
           .maturity-map-marker .map-signal-marker.marker-has-overdue .signal-main {
-            color: #ffffff !important;
-            font-size: 31px !important;
-            text-shadow: 0 2px 8px rgba(69, 10, 10, 0.38);
+            color: #991b1b !important;
+            font-size: 28px !important;
+            text-shadow: none;
           }
 
           .maturity-map-marker .map-signal-marker.marker-has-overdue.marker-expanded .signal-main,
           .maturity-map-marker .map-signal-marker.marker-has-overdue.marker-detailed .signal-main {
-            font-size: 36px !important;
+            font-size: 32px !important;
           }
 
           .maturity-map-marker .map-signal-marker.marker-has-overdue .signal-start,
           .maturity-map-marker .map-signal-marker.marker-has-overdue .signal-footer {
-            background: rgba(255, 255, 255, 0.18) !important;
-            color: #fff7ed !important;
+            background: #ffe4e6 !important;
+            color: #9f1239 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-overdue.marker-overview {
+            min-width: 56px !important;
+            min-height: 42px !important;
+            border-color: #dc2626 !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.94),
+              0 0 0 5px rgba(220, 38, 38, 0.10),
+              0 8px 18px rgba(127, 29, 29, 0.16) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-overdue.marker-overview .signal-main {
+            font-size: 14px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-overdue.marker-compact .signal-main {
+            font-size: 21px !important;
           }
 
           @keyframes signalOverduePulse {
