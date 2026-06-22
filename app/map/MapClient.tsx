@@ -800,11 +800,24 @@ function escapeMarkerHtml(value: unknown) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-function markerWorkflowLabelHtml(job: JobRecord) {
+function markerStatusLabel(job: JobRecord) {
   const counter = jobCounterInfo(job);
-  const workflow = workflowLabel(job);
-  const label = workflow || counter.label || jobKey(job);
-  return escapeMarkerHtml(label);
+  return workflowLabel(job) || counter.label || JobStatus.statusLabel(job) || "";
+}
+function markerReadableLabelHtml(job: JobRecord, expanded: boolean) {
+  const id = jobKey(job) || "JOB";
+  const status = markerStatusLabel(job);
+  const subLabel = status && status !== id ? status : "";
+  return `
+    <span class="marker-label-main">${escapeMarkerHtml(id)}</span>
+    ${expanded && subLabel ? `<span class="marker-label-date">${escapeMarkerHtml(subLabel)}</span>` : ""}
+  `;
+}
+function markerDetailLabel(job: JobRecord) {
+  const location =
+    String((job as any).location || (job as any).Location || (job as any).apt || (job as any)["Apt #"] || "").trim();
+  const borough = String((job as any).borough || (job as any).Boro || (job as any).Borough || "").trim();
+  return [borough, location].filter(Boolean).join(" / ");
 }
 function markerMaturityLabel(job: JobRecord) {
   const awardRaw =
@@ -1631,6 +1644,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const locationOverviewFitRef = useRef(false);
   const markerOverviewTimerRef = useRef<number | null>(null);
   const markerOverviewKeyRef = useRef("");
+  const markerAutoFitKeyRef = useRef("");
   const fieldPhotoInputRef = useRef<HTMLInputElement | null>(null);
   const fieldCameraVideoRef = useRef<HTMLVideoElement | null>(null);
   const fieldCameraStreamRef = useRef<MediaStream | null>(null);
@@ -1660,6 +1674,7 @@ const [draftWorkflowDate, setDraftWorkflowDate] = useState("");
 const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<"active" | "waiting72" | "ready2" | "final" | "archived" | "all">("active");
 const [countdownTick, setCountdownTick] = useState(0);
+const [mapZoom, setMapZoom] = useState(10);
 const [photoCaptureTarget, setPhotoCaptureTarget] = useState<FieldCaptureTarget | null>(null);
 const photoCaptureTargetRef = useRef<FieldCaptureTarget | null>(null);
 const fieldCaptureQueueRef = useRef<FieldCaptureStep[]>([]);
@@ -2400,6 +2415,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     );
   }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays]);
 
+  const markerAutoFitKey = useMemo(() => {
+    return filteredJobs
+      .filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng))
+      .map((job, index) => `${jobKey(job, index)}:${Number(job._lat).toFixed(5)}:${Number(job._lng).toFixed(5)}`)
+      .join("|") || "empty";
+  }, [filteredJobs]);
+
   const plottedCount = mappedJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng)).length;
 
   const mapDateCounts = useMemo(() => {
@@ -2635,6 +2657,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
         mapRef.current = map;
         markerLayerRef.current = markerLayer;
+        setMapZoom(map.getZoom());
+        map.on("zoomend", () => {
+          setMapZoom(map.getZoom());
+        });
 
         setMapReady(true);
 
@@ -2734,6 +2760,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const L = await import("leaflet");
       const map = mapRef.current;
       const layer = markerLayerRef.current;
+      const zoomLevel = Number(mapZoom || map.getZoom?.() || 10);
+      const markerExpanded = zoomLevel >= 15;
+      const markerDetailed = zoomLevel >= 17;
 
       layer.clearLayers();
 
@@ -2756,21 +2785,30 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const maturityLabel = markerMaturityLabel(job);
         const overdueLabel = markerOverdueLabel(job);
         const noAccessTimerLabel = markerNoAccessTimerHtml(job);
+        const markerDetail = markerDetailed ? markerDetailLabel(job) : "";
+        const markerMode = markerDetailed ? "marker-detailed" : markerExpanded ? "marker-expanded" : "marker-compact";
+        const iconSize: [number, number] = markerDetailed
+          ? [190, noAccessTimerLabel ? 104 : 88]
+          : markerExpanded
+            ? [166, noAccessTimerLabel ? 92 : 78]
+            : [noAccessTimerLabel ? 142 : 116, noAccessTimerLabel ? 78 : 64];
+        const iconAnchor: [number, number] = [Math.round(iconSize[0] / 2), Math.round(iconSize[1] / 2)];
         const popupJobId = jobKey(job, index);
 
         const marker = L.marker([lat, lng], {
           icon: L.divIcon({
             className: "maturity-map-marker",
-            html: `<div class="maturity-marker-bubble maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${markerColor}">
-                    <strong>${markerWorkflowLabelHtml(job)}</strong>
+            html: `<div class="maturity-marker-bubble readable-map-marker ${markerMode} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${markerColor}">
+                    <strong>${markerReadableLabelHtml(job, markerExpanded)}</strong>
                     <span class="marker-counter-row">
                       ${maturityLabel ? `<span class="marker-md-badge">${maturityLabel}</span>` : ""}
                       ${overdueLabel ? `<span class="marker-overdue-badge">${overdueLabel}</span>` : ""}
                     </span>
                     ${noAccessTimerLabel}
+                    ${markerDetail ? `<span class="marker-address-mini">${escapeMarkerHtml(markerDetail)}</span>` : ""}
                   </div>`,
-            iconSize: noAccessTimerLabel ? [136, 76] : [104, 64],
-            iconAnchor: noAccessTimerLabel ? [68, 38] : [52, 32],
+            iconSize,
+            iconAnchor,
             popupAnchor: [0, -18],
           }),
         });
@@ -2794,12 +2832,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         bounds.push([lat, lng]);
       });
 
-      if (bounds.length) {
+      if (bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
+        markerAutoFitKeyRef.current = markerAutoFitKey;
         map.fitBounds(bounds, {
           padding: [34, 34],
           maxZoom: 15,
         });
-      } else {
+      } else if (!bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
+        markerAutoFitKeyRef.current = markerAutoFitKey;
         map.setView([40.7128, -74.006], 10);
       }
 
@@ -2807,7 +2847,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     drawMarkers();
-  }, [mapReady, filteredJobs, countdownTick]);
+  }, [mapReady, filteredJobs, countdownTick, mapZoom, markerAutoFitKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -12316,6 +12356,153 @@ return (
             .refused-description-row {
               grid-template-columns: 1fr;
             }
+          }
+
+          /* READABLE_MAP_MARKERS_2026 */
+          .maturity-map-marker {
+            overflow: visible !important;
+          }
+
+          .maturity-map-marker .readable-map-marker {
+            min-width: 112px !important;
+            max-width: none !important;
+            height: auto !important;
+            min-height: 54px !important;
+            display: grid !important;
+            place-items: center !important;
+            align-content: center !important;
+            gap: 3px !important;
+            padding: 7px 10px !important;
+            border-width: 3px !important;
+            border-radius: 14px !important;
+            background: rgba(255, 255, 255, 0.97) !important;
+            color: #111827 !important;
+            box-shadow:
+              0 0 0 3px rgba(255, 255, 255, 0.85),
+              0 14px 30px rgba(15, 23, 42, 0.24) !important;
+            text-align: center !important;
+            transform-origin: center center;
+          }
+
+          .maturity-map-marker .readable-map-marker strong {
+            display: grid !important;
+            gap: 2px !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            color: #111827 !important;
+            line-height: 1 !important;
+            text-align: center !important;
+            white-space: normal !important;
+          }
+
+          .maturity-map-marker .readable-map-marker .marker-label-main {
+            display: block !important;
+            max-width: none !important;
+            color: #07111f !important;
+            font-size: 15px !important;
+            font-weight: 1000 !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+          }
+
+          .maturity-map-marker .readable-map-marker .marker-label-date {
+            display: block !important;
+            max-width: 142px !important;
+            color: #334155 !important;
+            font-size: 10px !important;
+            font-weight: 950 !important;
+            line-height: 1.05 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .readable-map-marker.marker-compact {
+            min-width: 104px !important;
+            min-height: 46px !important;
+            border-radius: 999px !important;
+            padding: 6px 11px !important;
+          }
+
+          .maturity-map-marker .readable-map-marker.marker-expanded {
+            min-width: 150px !important;
+            min-height: 64px !important;
+          }
+
+          .maturity-map-marker .readable-map-marker.marker-detailed {
+            min-width: 174px !important;
+            min-height: 78px !important;
+            border-radius: 16px !important;
+          }
+
+          .maturity-map-marker .readable-map-marker.marker-expanded .marker-label-main,
+          .maturity-map-marker .readable-map-marker.marker-detailed .marker-label-main {
+            font-size: 18px !important;
+          }
+
+          .maturity-map-marker .readable-map-marker.marker-detailed .marker-label-date {
+            max-width: 166px !important;
+            font-size: 11px !important;
+          }
+
+          .maturity-map-marker .readable-map-marker .marker-counter-row {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 4px !important;
+            min-height: 0 !important;
+          }
+
+          .maturity-map-marker .readable-map-marker .marker-md-badge,
+          .maturity-map-marker .readable-map-marker .marker-overdue-badge,
+          .maturity-map-marker .readable-map-marker .marker-no-access-timer {
+            min-height: 16px !important;
+            padding: 3px 7px !important;
+            border-radius: 999px !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .maturity-map-marker .readable-map-marker .marker-no-access-timer {
+            min-width: 74px !important;
+            margin-top: 1px !important;
+            background: #fbbf24 !important;
+            color: #111827 !important;
+            box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.12) !important;
+          }
+
+          .maturity-map-marker .readable-map-marker .marker-no-access-timer.is-ready {
+            background: #22c55e !important;
+            color: #052e16 !important;
+          }
+
+          .maturity-map-marker .readable-map-marker .marker-address-mini {
+            display: block !important;
+            max-width: 166px !important;
+            color: #475569 !important;
+            font-size: 9px !important;
+            font-weight: 850 !important;
+            line-height: 1.05 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .readable-map-marker.marker-ready-revisit {
+            background: linear-gradient(135deg, #bbf7d0, #fef3c7) !important;
+            border-color: #22c55e !important;
+            box-shadow:
+              0 0 0 4px rgba(255, 255, 255, 0.92),
+              0 0 0 9px rgba(34, 197, 94, 0.18),
+              0 16px 34px rgba(15, 23, 42, 0.26) !important;
           }
         `}
         </style>
