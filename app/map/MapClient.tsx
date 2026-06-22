@@ -819,6 +819,13 @@ function markerMaturityLabel(job: JobRecord) {
   const diffDays = Math.round((todayOnly.getTime() - awardDate.getTime()) / 86400000);
   return diffDays >= 0 ? `MD ${diffDays}d` : "";
 }
+function markerNoAccessTimerHtml(job: JobRecord) {
+  const second = workflowSecondAttemptInfo(job);
+  if (!second) return "";
+  const label = second.ready ? "2ND READY" : second.label.replace("REVISIT IN", "2ND IN");
+  const className = second.ready ? "is-ready" : "is-waiting";
+  return `<span class="marker-no-access-timer ${className}">${escapeMarkerHtml(label)}</span>`;
+}
 function cacheKey(job: JobRecord) {
   return `hpd_geo_${jobKey(job)}_${cleanAddress(job)}`.toLowerCase();
 }
@@ -2748,6 +2755,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const markerColor = JobStatus.statusColor(job);
         const maturityLabel = markerMaturityLabel(job);
         const overdueLabel = markerOverdueLabel(job);
+        const noAccessTimerLabel = markerNoAccessTimerHtml(job);
         const popupJobId = jobKey(job, index);
 
         const marker = L.marker([lat, lng], {
@@ -2759,9 +2767,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                       ${maturityLabel ? `<span class="marker-md-badge">${maturityLabel}</span>` : ""}
                       ${overdueLabel ? `<span class="marker-overdue-badge">${overdueLabel}</span>` : ""}
                     </span>
+                    ${noAccessTimerLabel}
                   </div>`,
-            iconSize: [104, 64],
-            iconAnchor: [52, 32],
+            iconSize: noAccessTimerLabel ? [136, 76] : [104, 64],
+            iconAnchor: noAccessTimerLabel ? [68, 38] : [52, 32],
             popupAnchor: [0, -18],
           }),
         });
@@ -4691,8 +4700,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   function startNoAccessCounter(job: MappedJob) {
     const existingSecondAttempt = workflowSecondAttemptInfo(job);
     if (existingSecondAttempt && !existingSecondAttempt.ready) {
-      showActionNotice(`No Access 1st is already saved. Wait ${existingSecondAttempt.hoursLeft}h before 2nd attempt.`);
+      showActionNotice(`No Access 1st is already saved. Opening evidence photo. Wait ${existingSecondAttempt.hoursLeft}h before 2nd attempt.`);
       setWorkflowViewFilter("waiting72");
+      captureExtraPhoto(job, "no_access");
       return;
     }
     if (existingSecondAttempt?.ready) {
@@ -4722,12 +4732,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       outcomeLockedAt: iso,
       ArchivedFromMap: false,
     };
+    const nextJob = { ...job, ...patch } as MappedJob;
     saveFieldWorkflowPatch(
       job,
       patch,
-      "No access 1st saved. 72-hour counter started. Evidence unlocks after 2nd attempt."
+      "No access 1st saved. Opening evidence photo. 2nd attempt unlocks after 72 hours."
     );
     setWorkflowViewFilter("waiting72");
+    captureExtraPhoto(nextJob, "no_access");
   }
 
   function markNoAccessSecondAttempt(job: MappedJob) {
@@ -4766,9 +4778,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       ArchivedFromMap: false,
     };
     const nextJob = { ...job, ...patch } as MappedJob;
-    saveFieldWorkflowPatch(job, patch, "No access second attempt saved. Capture evidence now.");
+    saveFieldWorkflowPatch(job, patch, "No access second attempt saved. Capture final evidence photo now.");
     openPaperworkPreviewForStatus(job, patch, false);
-    requestFieldPhotoCapture(nextJob, "no_access", "image/*,video/*");
+    captureExtraPhoto(nextJob, "no_access");
   }
 
   function markRefusedAccess(job: MappedJob) {
@@ -5724,6 +5736,58 @@ return (
           line-height: 1;
           font-weight: 1000;
           letter-spacing: -0.04em;
+        }
+
+        .marker-counter-row {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 3px;
+          min-height: 10px;
+        }
+
+        .marker-md-badge,
+        .marker-overdue-badge,
+        .marker-no-access-timer {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 999px;
+          padding: 2px 5px;
+          font-size: 8px;
+          line-height: 1;
+          font-weight: 950;
+          letter-spacing: 0;
+          white-space: nowrap;
+        }
+
+        .marker-md-badge {
+          background: rgba(255, 255, 255, 0.14);
+          color: #f8fbff;
+        }
+
+        .marker-overdue-badge {
+          background: #ff4d5f;
+          color: #fff;
+        }
+
+        .marker-no-access-timer {
+          margin-top: 2px;
+          min-width: 58px;
+          background: #f6c85f;
+          color: #111827;
+          box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.82);
+        }
+
+        .marker-no-access-timer.is-ready {
+          background: #53e69c;
+          color: #062018;
+          animation: noAccessTimerReadyPulse 1.8s ease-in-out infinite;
+        }
+
+        @keyframes noAccessTimerReadyPulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.08); }
         }
 
         .maturity-marker-bubble.status-marker-completed {
@@ -12724,9 +12788,32 @@ return (
             </div>
 
             <div className="selected-hero-actions">
-              <a className="selected-primary-action" href={paperworkAutoPackageHref(selected)}>
-                Generate Package
-              </a>
+              {(() => {
+                const selectedNoAccessInfo = workflowSecondAttemptInfo(selected);
+                const selectedIsNoAccessFirst = workflowStatus(selected) === "NO_ACCESS_1_WAITING_72H";
+
+                if (selectedIsNoAccessFirst && selectedNoAccessInfo?.ready) {
+                  return (
+                    <button type="button" className="selected-primary-action" onClick={() => markNoAccessSecondAttempt(selected)}>
+                      No Access 2nd Ready
+                    </button>
+                  );
+                }
+
+                if (selectedIsNoAccessFirst) {
+                  return (
+                    <button type="button" className="selected-primary-action" disabled>
+                      {selectedNoAccessInfo?.label || "Wait 72h"}
+                    </button>
+                  );
+                }
+
+                return (
+                  <a className="selected-primary-action" href={paperworkAutoPackageHref(selected)}>
+                    Generate Package
+                  </a>
+                );
+              })()}
               <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
                 Waze
               </a>
@@ -12771,11 +12858,27 @@ return (
                 const finalOutcome = isNoAccessSecond || isRefused || isCompletedByOthers || isWorkCompleted || isPartialWork;
                 const refusedPhotoCount = counts.refused_access;
                 const hasRefusedPhoto = refusedPhotoCount > 0;
+                const noAccessSecondAttemptAt = parseWorkflowTimestamp(selected.NoAccessSecondAttemptAt || selected.noAccessSecondAttemptAt);
+                const noAccessEvidenceCapturedAt = parseWorkflowTimestamp(selected.NoAccessEvidenceCapturedAt || selected.noAccessEvidenceCapturedAt);
+                const noAccessFirstPhotoMissing = noAccessWaiting && counts.no_access === 0;
+                const hasNoAccessSecondPhoto =
+                  !isNoAccessSecond ||
+                  Boolean(
+                    noAccessSecondAttemptAt &&
+                    noAccessEvidenceCapturedAt &&
+                    noAccessEvidenceCapturedAt.getTime() >= noAccessSecondAttemptAt.getTime()
+                  );
+                const needsNoAccessSecondPhoto = isNoAccessSecond && !hasNoAccessSecondPhoto;
                 const preview = fullPackagePreviewFor(selected);
                 const packageReady = Boolean(preview);
                 const evidenceReady = packageReady || counts.total > 0;
                 const quickEvidenceKind: FieldMediaKind = isNoAccess ? "no_access" : isCompletedByOthers ? "completed_by_others" : "general";
-                const needsQuickEvidence = finalOutcome && !isRefused && !isWorkCompleted && !isPartialWork && counts.total === 0;
+                const needsQuickEvidence =
+                  finalOutcome &&
+                  !isRefused &&
+                  !isWorkCompleted &&
+                  !isPartialWork &&
+                  (counts.total === 0 || needsNoAccessSecondPhoto);
                 const refusedChoices = refusedDescriptionChoices(selected);
                 const refusedDescription = refusedDescriptionFromChoices(refusedChoices);
                 const nextTitle = isRefused
@@ -12798,16 +12901,20 @@ return (
                   : noAccessReadyForSecond
                     ? "Tap No Access 2nd to record the final attempt and capture evidence."
                     : noAccessWaiting
-                      ? `Evidence is locked until ${displayWorkflowDate(secondAttemptInfo?.available.toISOString())}.`
+                      ? noAccessFirstPhotoMissing
+                        ? `Take the 1st photo now. The 2nd attempt unlocks ${displayWorkflowDate(secondAttemptInfo?.available.toISOString())}.`
+                        : `1st photo saved. The 2nd attempt unlocks ${displayWorkflowDate(secondAttemptInfo?.available.toISOString())}.`
                       : "Choose the exact result from the site: start work, no access, refused access, partial, complete, or done by others.";
                 const packageTitle = packageReady
                   ? "Ready to send"
                   : isRefused && !hasRefusedPhoto
                     ? "Evidence needed"
                     : noAccessWaiting
-                    ? "Wait 72 hours"
+                    ? noAccessFirstPhotoMissing ? "1st photo needed" : "Wait 72 hours"
                     : noAccessReadyForSecond
                       ? "2nd attempt ready"
+                    : needsNoAccessSecondPhoto
+                      ? "2nd photo needed"
                     : needsQuickEvidence
                     ? "Evidence needed"
                     : isBeforeEvidence
@@ -12822,9 +12929,13 @@ return (
                   : isRefused && !hasRefusedPhoto
                     ? "Take one refused-access photo before package review."
                     : noAccessWaiting
-                      ? `No camera or package until the counter expires: ${secondAttemptInfo?.label}.`
+                      ? noAccessFirstPhotoMissing
+                        ? `Take the 1st no-access photo now. Package stays locked until ${secondAttemptInfo?.label}.`
+                        : `First photo saved. Package stays locked until ${secondAttemptInfo?.label}.`
                     : noAccessReadyForSecond
                       ? "Use No Access 2nd, then capture evidence and generate the package."
+                    : needsNoAccessSecondPhoto
+                      ? "Capture the 2nd no-access photo before generating the package."
                     : needsQuickEvidence
                       ? "Take site evidence first, then generate the package."
                     : isBeforeEvidence
@@ -12964,21 +13075,34 @@ return (
                             Take Refused Photo
                           </button>
                         ) : noAccessWaiting ? (
-                          <button type="button" className="procedure-muted" disabled>
-                            {secondAttemptInfo?.label || "Wait 72h"}
-                          </button>
+                          <>
+                            {noAccessFirstPhotoMissing ? (
+                              <button type="button" className="procedure-primary" onClick={() => captureExtraPhoto(selected, "no_access")}>
+                                Take 1st Photo
+                              </button>
+                            ) : null}
+                            <button type="button" className="procedure-muted" disabled>
+                              {secondAttemptInfo?.label || "Wait 72h"}
+                            </button>
+                          </>
                         ) : noAccessReadyForSecond ? (
                           <button type="button" className="procedure-primary" onClick={() => markNoAccessSecondAttempt(selected)}>
                             No Access 2nd Ready
                           </button>
                         ) : needsQuickEvidence ? (
                           <>
-                            <button type="button" className="procedure-primary" onClick={() => requestFieldPhotoCapture(selected, quickEvidenceKind, "image/*,video/*")}>
-                              Take Evidence
+                            <button
+                              type="button"
+                              className="procedure-primary"
+                              onClick={() => needsNoAccessSecondPhoto ? captureExtraPhoto(selected, "no_access") : requestFieldPhotoCapture(selected, quickEvidenceKind, "image/*,video/*")}
+                            >
+                              {needsNoAccessSecondPhoto ? "Take 2nd Photo" : "Take Evidence"}
                             </button>
-                            <a href={paperworkAutoPackageHref(selected)}>
-                              Generate Package
-                            </a>
+                            {needsNoAccessSecondPhoto ? null : (
+                              <a href={paperworkAutoPackageHref(selected)}>
+                                Generate Package
+                              </a>
+                            )}
                           </>
                         ) : isBeforeEvidence ? (
                           <>
