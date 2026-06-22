@@ -62,6 +62,7 @@ const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-completed-affidavit.pdf";
 const COMPLETE_PACKAGE_SAVE_LIMIT_BYTES = 35 * 1024 * 1024;
 const AFFIDAVIT_NOTARY_COUNTY = "QUEENS";
 const REFUSED_ACCESS_DESCRIPTION_EXAMPLE = "MALE, TALL, DARK HAIR";
+const NO_WORK_COMPLETED_BY_OTHERS_LINE_5_DATE = { x: 272, y: 245, size: 10 } as const;
 
 type ZipEntry = {
   path: string;
@@ -1085,7 +1086,7 @@ export default function PaperworkPage() {
         setText("inaccessibility was due to 2", "");
         setText("COUNTY OF", AFFIDAVIT_NOTARY_COUNTY, 9);
         setText("AMOUNT", chargeAmount);
-        setText("ARRIVE DATE", outcome === "completed_by_others" ? secondAttempt : "");
+        setText("ARRIVE DATE", "");
         setText("REFUSE DATE", "");
         setText("DENIED DATE", isRefusedAccess ? secondAttempt : "");
         // Section 7 refused access: 7a name/relationship, 7b description, 7c telephone.
@@ -1108,6 +1109,9 @@ export default function PaperworkPage() {
 
       const pdfPages = pdfDoc.getPages();
       const checkboxPage = pdfPages[2] || pdfPages[0];
+      if (!useWorkTemplate && outcome === "completed_by_others" && pdfPages[0]) {
+        pdfPages[0].drawText(secondAttempt, NO_WORK_COMPLETED_BY_OTHERS_LINE_5_DATE);
+      }
       if (useWorkTemplate && outcome === "partial_work_completed" && checkboxPage) {
         pdfPages[0]?.drawText(activeForm.workStart || activeForm.fieldDate, { x: 126, y: 481, size: 10 });
         checkboxPage.drawText(invoiceDate, { x: 411, y: 635, size: 10 });
