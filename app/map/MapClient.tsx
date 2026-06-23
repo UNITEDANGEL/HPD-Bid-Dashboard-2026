@@ -14937,6 +14937,62 @@ return (
             display: none !important;
           }
 
+          .field-mission-quick-actions {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+          }
+
+          .field-mission-quick-actions button {
+            min-height: 74px !important;
+            border-radius: 20px !important;
+            border: 1px solid rgba(148, 163, 184, 0.28) !important;
+            color: #f8fafc !important;
+            display: grid !important;
+            align-content: center !important;
+            gap: 4px !important;
+            padding: 12px !important;
+            text-align: left !important;
+            box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18) !important;
+          }
+
+          .field-mission-quick-actions strong {
+            font-size: 21px !important;
+            line-height: 1 !important;
+          }
+
+          .field-mission-quick-actions small {
+            font-size: 12px !important;
+            line-height: 1.05 !important;
+            color: rgba(248, 250, 252, 0.76) !important;
+            text-transform: uppercase !important;
+            font-weight: 900 !important;
+          }
+
+          .field-mission-quick-actions .quick-start {
+            background: linear-gradient(135deg, rgba(52, 211, 153, 0.95), rgba(56, 189, 248, 0.92)) !important;
+            color: #06131f !important;
+          }
+
+          .field-mission-quick-actions .quick-start small {
+            color: rgba(6, 19, 31, 0.72) !important;
+          }
+
+          .field-mission-quick-actions .quick-no-access {
+            background: rgba(250, 204, 21, 0.22) !important;
+            border-color: rgba(250, 204, 21, 0.44) !important;
+          }
+
+          .field-mission-quick-actions .quick-refused {
+            background: rgba(248, 113, 113, 0.24) !important;
+            border-color: rgba(248, 113, 113, 0.44) !important;
+          }
+
+          .field-mission-quick-actions .quick-other {
+            background: rgba(168, 85, 247, 0.24) !important;
+            border-color: rgba(196, 181, 253, 0.40) !important;
+          }
+
           .job-drawer.selected-focus .field-mission-date-row,
           .job-drawer.selected-focus .field-mission-stats {
             display: none !important;
@@ -15933,12 +15989,28 @@ return (
                         <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => runPackagePrimaryAction(selected)}>
                           {generateWithoutMediaLabel}
                         </button>
-                      ) : (
-                        <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => focusFieldPane("capture")}>
-                          Pick Scenario
-                        </button>
-                      )}
+                      ) : null}
                     </div>
+                    {!outcomeChosen && !packageReady ? (
+                      <div className="field-mission-quick-actions" aria-label="Quick field outcome choices">
+                        <button type="button" className="quick-start" onClick={() => startFieldJob(selected)}>
+                          <strong>Start Job</strong>
+                          <small>before media</small>
+                        </button>
+                        <button type="button" className="quick-no-access" onClick={() => startNoAccessCounter(selected)}>
+                          <strong>No Access</strong>
+                          <small>1st attempt</small>
+                        </button>
+                        <button type="button" className="quick-refused" onClick={() => markRefusedAccess(selected)}>
+                          <strong>Refused</strong>
+                          <small>access denied</small>
+                        </button>
+                        <button type="button" className="quick-other" onClick={() => markCompletedByOthers(selected)}>
+                          <strong>Others</strong>
+                          <small>work done</small>
+                        </button>
+                      </div>
+                    ) : null}
                     {finalOutcome && !packageReady ? (
                       <div className="field-mission-choice-row" aria-label="Optional media package choices">
                         <button type="button" onClick={() => requestFieldPhotoCapture(selected, finalOutcome && !hasOptionalNoWorkEvidence ? quickEvidenceKind : optionalNoWorkEvidenceKind, "image/*,video/*")}>
