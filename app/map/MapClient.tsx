@@ -3902,10 +3902,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   function focusFieldPane(pane: "capture" | "evidence" | "package" | "send") {
     setFieldFocusPane(pane);
     window.setTimeout(() => {
-      const workflowCard =
-        document.querySelector(".job-drawer.selected-focus .field-workflow-card") ||
-        document.querySelector(`[data-field-pane="${pane}"]`);
-      workflowCard?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const targetPane =
+        document.querySelector(`.job-drawer.selected-focus .site-procedure-stage[data-field-pane="${pane}"]`) ||
+        document.querySelector(`.job-drawer.selected-focus .field-pane[data-field-pane="${pane}"]`) ||
+        document.querySelector(`[data-field-pane="${pane}"]`) ||
+        document.querySelector(".job-drawer.selected-focus .field-workflow-card");
+      targetPane?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 40);
   }
 
@@ -13638,7 +13640,7 @@ return (
           }
 
           .job-drawer.selected-focus .field-workflow-card {
-            order: 1 !important;
+            order: 0 !important;
             margin-top: 0 !important;
             scroll-margin-top: 84px !important;
           }
@@ -13670,6 +13672,10 @@ return (
             font-size: 12px !important;
             line-height: 1 !important;
             white-space: nowrap !important;
+          }
+
+          .job-drawer.selected-focus .field-workflow-card > .field-workflow-head {
+            display: none !important;
           }
 
           .job-drawer.selected-focus .site-procedure-head {
@@ -13716,6 +13722,7 @@ return (
           }
 
           .job-drawer.selected-focus .selected-card-head {
+            order: 1 !important;
             display: grid !important;
             grid-template-columns: minmax(0, 1fr) !important;
             gap: 10px !important;
@@ -13799,6 +13806,349 @@ return (
             font-size: 12px !important;
             line-height: 1.1 !important;
             white-space: normal !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode {
+            display: grid !important;
+            gap: 12px !important;
+            padding: 14px !important;
+            border-radius: 22px !important;
+            border: 1px solid rgba(148, 163, 184, 0.24) !important;
+            background:
+              radial-gradient(circle at top left, rgba(14, 165, 233, 0.18), transparent 34%),
+              linear-gradient(155deg, rgba(15, 23, 42, 0.98), rgba(24, 35, 54, 0.96) 54%, rgba(12, 18, 31, 0.98)) !important;
+            color: #f8fafc !important;
+            box-shadow: 0 22px 52px rgba(0, 0, 0, 0.30) !important;
+            overflow: hidden !important;
+          }
+
+          .field-mission-topline,
+          .field-mission-main,
+          .field-mission-date-row,
+          .field-mission-primary-row,
+          .field-mission-actions,
+          .field-mission-stats,
+          .field-mission-rail {
+            min-width: 0 !important;
+          }
+
+          .field-mission-topline {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 10px !important;
+          }
+
+          .field-mission-topline span,
+          .field-mission-route span,
+          .field-mission-date-row label span,
+          .field-mission-counter span,
+          .field-mission-stats small {
+            color: #9ed8ff !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .field-mission-topline span {
+            white-space: nowrap !important;
+          }
+
+          .field-mission-topline b {
+            min-height: 28px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 11px !important;
+            border-radius: 999px !important;
+            background: rgba(14, 165, 233, 0.18) !important;
+            color: #e0f2fe !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+            white-space: nowrap !important;
+          }
+
+          .field-mission-main {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: stretch !important;
+            gap: 12px !important;
+          }
+
+          .field-mission-jobline {
+            display: grid !important;
+            gap: 4px !important;
+            padding: 10px 11px !important;
+            border-radius: 16px !important;
+            background: rgba(56, 189, 248, 0.10) !important;
+            border: 1px solid rgba(125, 211, 252, 0.18) !important;
+          }
+
+          .field-mission-jobline strong {
+            color: #ffffff !important;
+            font-size: 24px !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .field-mission-jobline span {
+            color: #d8e7f8 !important;
+            font-size: 14px !important;
+            line-height: 1.18 !important;
+            letter-spacing: 0 !important;
+            text-transform: none !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .field-mission-main > div:first-child {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 7px !important;
+          }
+
+          .field-mission-main strong {
+            color: #ffffff !important;
+            font-size: clamp(24px, 7.5vw, 38px) !important;
+            line-height: 1.02 !important;
+            letter-spacing: 0 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .field-mission-main small {
+            color: #d8e7f8 !important;
+            font-size: 14px !important;
+            line-height: 1.32 !important;
+            letter-spacing: 0 !important;
+            text-transform: none !important;
+          }
+
+          .field-mission-counter {
+            display: grid !important;
+            align-content: center !important;
+            justify-items: end !important;
+            min-width: 96px !important;
+            gap: 6px !important;
+            padding: 10px !important;
+            border-radius: 18px !important;
+            background: rgba(248, 250, 252, 0.08) !important;
+            border: 1px solid rgba(226, 232, 240, 0.11) !important;
+          }
+
+          .field-mission-counter b {
+            color: #ffffff !important;
+            font-size: 15px !important;
+            line-height: 1.05 !important;
+            text-align: right !important;
+          }
+
+          .field-mission-route {
+            display: grid !important;
+            gap: 5px !important;
+            padding: 11px !important;
+            border-radius: 16px !important;
+            background: rgba(2, 6, 23, 0.26) !important;
+            border: 1px solid rgba(148, 163, 184, 0.16) !important;
+          }
+
+          .field-mission-route strong {
+            color: #f8fafc !important;
+            font-size: 14px !important;
+            line-height: 1.28 !important;
+            letter-spacing: 0 !important;
+            text-transform: none !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .field-mission-date-row {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 9px !important;
+            align-items: end !important;
+          }
+
+          .field-mission-date-row label {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 6px !important;
+          }
+
+          .field-mission-date-row input {
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 48px !important;
+            padding: 0 12px !important;
+            border-radius: 15px !important;
+            border: 1px solid rgba(186, 230, 253, 0.22) !important;
+            background: rgba(15, 23, 42, 0.82) !important;
+            color: #f8fafc !important;
+            font-size: 15px !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .field-mission-date-row button,
+          .field-mission-actions a,
+          .field-mission-actions button {
+            min-height: 44px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(148, 163, 184, 0.22) !important;
+            background: rgba(248, 250, 252, 0.10) !important;
+            color: #f8fafc !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+            font-weight: 950 !important;
+            letter-spacing: 0 !important;
+            text-decoration: none !important;
+          }
+
+          .field-mission-date-row button {
+            width: 64px !important;
+          }
+
+          .field-mission-stats {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .field-mission-stats span {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 5px !important;
+            padding: 10px !important;
+            border-radius: 15px !important;
+            background: rgba(248, 250, 252, 0.08) !important;
+            border: 1px solid rgba(148, 163, 184, 0.12) !important;
+          }
+
+          .field-mission-stats strong {
+            color: #ffffff !important;
+            font-size: 14px !important;
+            line-height: 1.05 !important;
+            letter-spacing: 0 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .field-mission-primary {
+            width: 100% !important;
+            min-height: 58px !important;
+            border: 0 !important;
+            border-radius: 18px !important;
+            background: linear-gradient(135deg, #38bdf8, #22c55e) !important;
+            color: #05212d !important;
+            font-size: 18px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            box-shadow: 0 18px 34px rgba(34, 197, 94, 0.18), 0 12px 30px rgba(14, 165, 233, 0.16) !important;
+          }
+
+          .field-mission-primary.waiting,
+          .field-mission-primary:disabled {
+            background: rgba(148, 163, 184, 0.26) !important;
+            color: #e2e8f0 !important;
+            box-shadow: none !important;
+          }
+
+          .field-mission-actions {
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .field-mission-actions a,
+          .field-mission-actions button {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 8px !important;
+            white-space: nowrap !important;
+          }
+
+          .field-mission-rail {
+            display: grid !important;
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+
+          .field-mission-rail span {
+            min-width: 0 !important;
+            min-height: 48px !important;
+            display: grid !important;
+            align-content: center !important;
+            justify-items: center !important;
+            gap: 3px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(148, 163, 184, 0.14) !important;
+            background: rgba(15, 23, 42, 0.42) !important;
+            color: #cbd5e1 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 950 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+          }
+
+          .field-mission-rail b {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 20px !important;
+            height: 20px !important;
+            border-radius: 999px !important;
+            background: rgba(148, 163, 184, 0.22) !important;
+            color: inherit !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+          }
+
+          .field-mission-rail .done {
+            background: rgba(34, 197, 94, 0.12) !important;
+            border-color: rgba(34, 197, 94, 0.24) !important;
+            color: #bbf7d0 !important;
+          }
+
+          .field-mission-rail .done b {
+            background: #22c55e !important;
+            color: #052e16 !important;
+          }
+
+          .field-mission-rail .active {
+            background: rgba(56, 189, 248, 0.16) !important;
+            border-color: rgba(125, 211, 252, 0.36) !important;
+            color: #e0f2fe !important;
+            box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.16) !important;
+          }
+
+          .field-mission-rail .active b {
+            background: #38bdf8 !important;
+            color: #082f49 !important;
+          }
+
+          @media (max-width: 420px) {
+            .field-mission-main {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .field-mission-counter {
+              justify-items: start !important;
+              min-width: 0 !important;
+            }
+
+            .field-mission-counter b {
+              text-align: left !important;
+            }
+
+            .field-mission-actions {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .field-mission-rail span {
+              font-size: 9px !important;
+            }
           }
 
           @media (max-width: 380px) {
@@ -14015,6 +14365,21 @@ return (
 
             .map-job-brief-actions .primary {
               grid-column: 1 / -1 !important;
+            }
+
+            .site-visit-date-card {
+              grid-template-columns: minmax(0, 1fr) !important;
+              align-items: stretch !important;
+            }
+
+            .site-visit-date-card input {
+              min-width: 0 !important;
+              font-size: 14px !important;
+            }
+
+            .site-visit-date-card button {
+              width: 100% !important;
+              min-height: 40px !important;
             }
           }
 
@@ -14742,8 +15107,149 @@ return (
                         : finalOutcome
                           ? "Create the invoice, affidavit, and evidence package."
                           : "Choose what happened at the site first.";
+                const activeGuide = fieldCaptureGuide && fieldCaptureGuide.jobKey === jobKey(selected) ? fieldCaptureGuide : null;
+                const missionStep = packageReady ? 5 : finalOutcome ? 4 : outcomeChosen ? 3 : 2;
+                const missionStepClass = (step: number) => (
+                  step < missionStep ? "done" : step === missionStep ? "active" : "pending"
+                );
+                const missionTitle = packageReady
+                  ? "Package ready to send"
+                  : noAccessWaiting
+                    ? "72h no-access clock running"
+                    : noAccessReadyForSecond
+                      ? "Second attempt ready"
+                      : activeGuide
+                        ? activeGuide.title
+                        : isBeforeEvidence
+                          ? "Capture before evidence"
+                          : isAfterEvidence
+                            ? isPendingPartial ? "Capture after for partial work" : "Capture after evidence"
+                            : finalOutcome
+                              ? "Generate the city package"
+                              : "Pick the field scenario";
+                const missionText = packageReady
+                  ? "Preview is ready. Send the complete ZIP when you are satisfied."
+                  : noAccessWaiting
+                    ? `First no-access saved. The second attempt unlocks ${displayWorkflowDate(secondAttemptInfo?.available.toISOString())}.`
+                    : noAccessReadyForSecond
+                      ? "Record No Access 2nd now, then generate the affidavit and invoice package."
+                      : activeGuide
+                        ? activeGuide.text
+                        : isBeforeEvidence
+                          ? "Continue the before photo/video set, then start the work timer."
+                          : isAfterEvidence
+                            ? "Continue the after photo/video set, then complete or partial the job."
+                            : finalOutcome
+                              ? "Create the affidavit, invoice, images, and video package in one place."
+                              : "Confirm the status date, choose what happened at the site, then the next step opens.";
+                const missionPackageLabel = packageReady
+                  ? packetSizeLabel(preview.size)
+                  : noAccessWaiting
+                    ? secondAttemptInfo?.label || "Waiting"
+                    : invoicePacket
+                      ? "PDF ready"
+                      : "Not generated";
+                const missionDistanceLabel = jobDistanceLabel(selected) === "Turn on location for distance"
+                  ? "Location off"
+                  : jobDistanceLabel(selected);
 
                 return (
+                  <>
+                  <section className={`field-mission-mode mission-step-${missionStep}`} data-field-mission-mode="true" aria-label="Field mission mode">
+                    <div className="field-mission-topline">
+                      <span>Field Mission Mode</span>
+                      <b>{missionDistanceLabel}</b>
+                    </div>
+                    <div className="field-mission-jobline">
+                      <strong>{jobKey(selected)}</strong>
+                      <span>{displayAddress(selected)}</span>
+                    </div>
+                    <div className="field-mission-main">
+                      <div>
+                        <strong>{missionTitle}</strong>
+                        <small>{missionText}</small>
+                      </div>
+                      <div className="field-mission-counter">
+                        <span>Counter</span>
+                        <b>{jobCounterLabel(selected)}</b>
+                      </div>
+                    </div>
+                    <div className="field-mission-primary-row">
+                      {packageReady ? (
+                        <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => sendFullEvidencePackage(selected)}>
+                          Send ZIP
+                        </button>
+                      ) : noAccessWaiting ? (
+                        <button type="button" className="field-mission-primary waiting" data-field-mission-primary="true" disabled>
+                          {secondAttemptInfo?.label || "Wait 72h"}
+                        </button>
+                      ) : noAccessReadyForSecond ? (
+                        <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => markNoAccessSecondAttempt(selected)}>
+                          Save No Access 2nd
+                        </button>
+                      ) : isBeforeEvidence ? (
+                        <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => beginGuidedEvidenceCapture(selected, "before")}>
+                          Continue Before
+                        </button>
+                      ) : isAfterEvidence ? (
+                        <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => beginGuidedEvidenceCapture(selected, "after", { partial: isPendingPartial })}>
+                          Continue After
+                        </button>
+                      ) : finalOutcome ? (
+                        <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => runPackagePrimaryAction(selected)}>
+                          Generate Package
+                        </button>
+                      ) : (
+                        <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => focusFieldPane("capture")}>
+                          Pick Scenario
+                        </button>
+                      )}
+                    </div>
+                    <div className="field-mission-route">
+                      <span>Site brief</span>
+                      <strong>{mapBriefText(selected)}</strong>
+                    </div>
+                    <div className="field-mission-date-row">
+                      <label>
+                        <span>Status date</span>
+                        <input
+                          type="datetime-local"
+                          value={workflowVisitDateValue()}
+                          onChange={(event) => setWorkflowVisitDate(event.target.value)}
+                        />
+                      </label>
+                      <button type="button" onClick={setWorkflowVisitDateToNow}>
+                        Now
+                      </button>
+                    </div>
+                    <div className="field-mission-stats">
+                      <span><small>Timer</small><strong>{fieldElapsedLabel(selected)}</strong></span>
+                      <span><small>Media</small><strong>{counts.images} / {counts.videos}</strong></span>
+                      <span><small>Package</small><strong>{missionPackageLabel}</strong></span>
+                    </div>
+                    <div className="field-mission-actions">
+                      <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                        Guide
+                      </a>
+                      <a href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                        Map
+                      </a>
+                      <button type="button" onClick={() => focusFieldPane("evidence")}>
+                        Evidence
+                      </button>
+                      <button type="button" onClick={() => focusFieldPane(packageReady ? "send" : "package")}>
+                        {packageReady ? "Preview" : "Package"}
+                      </button>
+                    </div>
+                    <div className="field-mission-rail" aria-label="Mission progress">
+                      <span className={missionStepClass(1)}><b>1</b>Arrive</span>
+                      <span className={missionStepClass(2)}><b>2</b>Status</span>
+                      <span className={missionStepClass(3)}><b>3</b>Evidence</span>
+                      <span className={missionStepClass(4)}><b>4</b>Package</span>
+                      <span className={missionStepClass(5)}><b>5</b>Send</span>
+                    </div>
+                  </section>
+
                   <div className={`site-procedure-card procedure-${fieldFocusPane} ${isRefused ? "is-refused" : ""} ${hasRefusedPhoto ? "has-evidence" : ""} ${packageReady ? "has-package" : ""}`}>
                     <div className="site-procedure-head">
                       <div>
@@ -15023,6 +15529,7 @@ return (
                       </div>
                     </div>
                   </div>
+                  </>
                 );
               })()}
 
