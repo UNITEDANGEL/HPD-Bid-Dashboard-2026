@@ -2548,6 +2548,256 @@ export default function PaperworkPage() {
           }
         }
 
+        /* SIMPLE_PACKAGE_UI_V1_2 */
+        .paperwork-wrap {
+          gap: 16px;
+        }
+
+        .paperwork-top {
+          border-radius: 18px;
+        }
+
+        .paperwork-card {
+          border-radius: 20px;
+          padding: 16px;
+        }
+
+        .paperwork-package-badge {
+          min-height: 38px;
+          display: inline-flex;
+          align-items: center;
+          width: max-content;
+          max-width: 100%;
+          padding: 0 12px;
+          border-radius: 999px;
+        }
+
+        .paperwork-source-status,
+        .paperwork-pdf-status {
+          border-radius: 14px;
+          padding: 12px 13px;
+          line-height: 1.35;
+        }
+
+        .paperwork-package-actions {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+
+        .package-choice {
+          min-height: 72px;
+          border-radius: 16px;
+          padding: 14px;
+        }
+
+        .package-choice strong {
+          font-size: 20px;
+        }
+
+        .paperwork-summary-grid {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+
+        .paperwork-summary-tile {
+          min-height: 76px;
+          border-radius: 16px;
+          padding: 13px;
+        }
+
+        .paperwork-summary-tile strong {
+          font-size: 21px;
+          line-height: 1.08;
+        }
+
+        .refused-access-required {
+          border-radius: 16px;
+          padding: 14px;
+        }
+
+        .paperwork-field input,
+        .paperwork-field textarea,
+        .paperwork-field select {
+          min-height: 50px;
+          border-radius: 14px;
+          font-size: 16px;
+        }
+
+        .paperwork-print {
+          min-height: 70px;
+          border-radius: 18px;
+          font-size: 20px;
+        }
+
+        .paperwork-package-review {
+          border-radius: 22px;
+          padding: 16px;
+          background:
+            linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(9, 15, 25, 0.98)),
+            #0f172a;
+        }
+
+        .package-created-head {
+          grid-template-columns: 1fr;
+          align-items: start;
+          gap: 10px;
+          border-radius: 18px;
+          padding: 15px;
+          background:
+            linear-gradient(135deg, rgba(52, 211, 153, 0.16), rgba(56, 189, 248, 0.12)),
+            rgba(248, 250, 252, 0.04);
+        }
+
+        .package-created-head h3 {
+          font-size: clamp(34px, 10vw, 54px);
+        }
+
+        .package-created-head p {
+          font-size: 14px;
+          line-height: 1.38;
+        }
+
+        .package-created-head > span:last-child {
+          justify-self: start;
+          min-height: 40px;
+          border-radius: 999px;
+          padding: 0 13px;
+        }
+
+        .package-main-actions {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+
+        .package-main-actions button {
+          min-height: 72px;
+          border-radius: 18px;
+          font-size: 20px;
+        }
+
+        .package-preview-panel {
+          border-radius: 18px;
+          padding: 0;
+        }
+
+        .package-content-list {
+          gap: 10px;
+        }
+
+        .package-content-row {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 8px;
+          border-radius: 16px;
+          padding: 14px;
+        }
+
+        .package-content-row strong {
+          font-size: 16px;
+          line-height: 1.2;
+          overflow-wrap: anywhere;
+        }
+
+        .package-content-row b {
+          justify-self: start;
+          min-height: 32px;
+          display: inline-flex;
+          align-items: center;
+          padding: 0 10px;
+          border-radius: 999px;
+        }
+
+        .package-primary-delivery,
+        .package-secondary-delivery {
+          grid-template-columns: 1fr;
+          gap: 10px;
+          border-radius: 16px;
+        }
+
+        .package-primary-delivery button,
+        .package-primary-delivery a,
+        .package-secondary-delivery button,
+        .package-secondary-delivery a {
+          min-height: 64px;
+          border-radius: 16px;
+          font-size: 16px;
+        }
+
+        .package-backup-details {
+          border-radius: 16px;
+        }
+
+        .package-video-preview {
+          border-radius: 16px;
+        }
+
+        .package-video-list {
+          gap: 10px;
+        }
+
+        .package-video-item {
+          border-radius: 16px;
+          padding: 10px;
+        }
+
+        @media (max-width: 720px) {
+          .hpd-paperwork-shell {
+            width: 100%;
+            max-width: 100vw;
+            overflow-x: hidden;
+            padding-inline: 12px;
+          }
+
+          .paperwork-wrap {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            grid-template-columns: minmax(0, 1fr);
+          }
+
+          .paperwork-top {
+            min-width: 0;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 12px;
+          }
+
+          .paperwork-top > div,
+          .paperwork-card,
+          .paperwork-package-review,
+          .package-created-head,
+          .package-content-row {
+            min-width: 0;
+          }
+
+          .paperwork-top h1 {
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            font-size: clamp(32px, 10vw, 44px);
+            line-height: 1.04;
+          }
+
+          .paperwork-top p {
+            max-width: 100%;
+            overflow-wrap: anywhere;
+          }
+
+          .paperwork-nav {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            justify-content: stretch;
+          }
+
+          .paperwork-nav a {
+            min-width: 0;
+            text-align: center;
+          }
+
+          .package-created-head h3 {
+            font-size: clamp(30px, 10vw, 44px);
+          }
+        }
+
         @media print {
           .paperwork-top,
           .paperwork-card {

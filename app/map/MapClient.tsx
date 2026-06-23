@@ -14426,6 +14426,400 @@ return (
               transform: scale(1.08);
             }
           }
+
+          /* SIMPLE_FIELD_UI_V1_2 */
+          .job-drawer.selected-focus {
+            padding-inline: 10px !important;
+            background:
+              linear-gradient(180deg, rgba(12, 18, 29, 0.98), rgba(15, 23, 42, 0.98)) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head {
+            min-height: 56px !important;
+            padding: 10px 2px 12px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head strong {
+            font-size: 20px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head button {
+            min-height: 44px !important;
+            padding: 0 15px !important;
+            border-radius: 14px !important;
+          }
+
+          .job-drawer.selected-focus .selected-card {
+            gap: 14px !important;
+            padding: 0 0 18px !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode {
+            padding: 18px !important;
+            border-radius: 24px !important;
+            border-color: rgba(148, 163, 184, 0.32) !important;
+            background:
+              linear-gradient(160deg, rgba(20, 31, 46, 0.98), rgba(15, 23, 42, 0.98) 58%, rgba(10, 18, 28, 0.98)) !important;
+            box-shadow: 0 24px 58px rgba(0, 0, 0, 0.34) !important;
+          }
+
+          .field-mission-topline {
+            padding-bottom: 2px !important;
+          }
+
+          .field-mission-topline span {
+            color: #7dd3fc !important;
+            font-size: 12px !important;
+          }
+
+          .field-mission-topline b {
+            min-height: 34px !important;
+            padding-inline: 13px !important;
+            background: rgba(20, 184, 166, 0.18) !important;
+            color: #ccfbf1 !important;
+          }
+
+          .field-mission-jobline {
+            padding: 13px !important;
+            border-radius: 18px !important;
+            background: rgba(248, 250, 252, 0.075) !important;
+          }
+
+          .field-mission-jobline strong {
+            font-size: clamp(28px, 8.5vw, 42px) !important;
+          }
+
+          .field-mission-jobline span {
+            font-size: 16px !important;
+            line-height: 1.22 !important;
+          }
+
+          .field-mission-main {
+            grid-template-columns: minmax(0, 1fr) !important;
+          }
+
+          .field-mission-main strong {
+            font-size: clamp(30px, 9vw, 46px) !important;
+            line-height: 1 !important;
+          }
+
+          .field-mission-main small {
+            font-size: 15px !important;
+            line-height: 1.4 !important;
+          }
+
+          .field-mission-counter {
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            justify-items: stretch !important;
+            min-width: 0 !important;
+            padding: 12px 13px !important;
+            border-radius: 18px !important;
+          }
+
+          .field-mission-counter b {
+            text-align: right !important;
+            font-size: 18px !important;
+          }
+
+          .field-mission-primary {
+            min-height: 72px !important;
+            border-radius: 18px !important;
+            font-size: 21px !important;
+            background: linear-gradient(135deg, #34d399, #38bdf8) !important;
+            color: #05131c !important;
+            box-shadow: 0 18px 42px rgba(45, 212, 191, 0.24) !important;
+          }
+
+          .field-mission-choice-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+          }
+
+          .field-mission-choice-row button,
+          .field-mission-actions a,
+          .field-mission-actions button {
+            min-height: 54px !important;
+            border-radius: 16px !important;
+            font-size: 14px !important;
+            background: rgba(248, 250, 252, 0.10) !important;
+          }
+
+          .field-mission-choice-row button.strong {
+            background: linear-gradient(135deg, #facc15, #38bdf8) !important;
+            color: #07111f !important;
+          }
+
+          .field-mission-route {
+            display: none !important;
+          }
+
+          .field-mission-date-row,
+          .field-mission-stats {
+            border-radius: 18px !important;
+            background: rgba(248, 250, 252, 0.07) !important;
+          }
+
+          .field-mission-stats {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .field-mission-stats span {
+            min-height: 58px !important;
+            border-radius: 15px !important;
+            background: rgba(15, 23, 42, 0.58) !important;
+          }
+
+          .field-mission-rail {
+            gap: 6px !important;
+          }
+
+          .field-mission-rail span {
+            min-height: 42px !important;
+            border-radius: 999px !important;
+            font-size: 10px !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-head,
+          .field-procedure-hero,
+          .field-flow-dock {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .selected-hero-actions {
+            order: 8 !important;
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+            padding: 8px !important;
+            border-radius: 18px !important;
+            background: rgba(248, 250, 252, 0.055) !important;
+          }
+
+          .job-drawer.selected-focus .selected-hero-actions a,
+          .job-drawer.selected-focus .selected-hero-actions button {
+            min-height: 48px !important;
+            border-radius: 14px !important;
+            font-size: 12px !important;
+          }
+
+          .job-drawer.selected-focus .selected-hero-actions .selected-primary-action {
+            background: rgba(52, 211, 153, 0.16) !important;
+          }
+
+          .site-procedure-card {
+            padding: 16px !important;
+            border-radius: 24px !important;
+            background:
+              linear-gradient(180deg, rgba(248, 250, 252, 0.08), rgba(248, 250, 252, 0.045)),
+              #101827 !important;
+            border-color: rgba(148, 163, 184, 0.26) !important;
+            box-shadow: 0 22px 48px rgba(0, 0, 0, 0.28) !important;
+          }
+
+          .site-procedure-head {
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 10px !important;
+          }
+
+          .site-procedure-head strong {
+            font-size: clamp(28px, 8vw, 42px) !important;
+            line-height: 1 !important;
+          }
+
+          .site-procedure-head small {
+            font-size: 14px !important;
+            line-height: 1.4 !important;
+          }
+
+          .site-procedure-head b {
+            justify-self: start !important;
+            min-height: 38px !important;
+            padding-inline: 13px !important;
+          }
+
+          .site-procedure-steps {
+            position: sticky !important;
+            top: 56px !important;
+            z-index: 12 !important;
+            padding: 7px !important;
+            border-radius: 18px !important;
+            background: rgba(8, 13, 22, 0.88) !important;
+            backdrop-filter: blur(14px) !important;
+          }
+
+          .site-procedure-steps button {
+            min-height: 58px !important;
+            border-radius: 14px !important;
+          }
+
+          .site-procedure-steps button > strong {
+            font-size: 12px !important;
+          }
+
+          .site-wizard-panel {
+            padding: 14px !important;
+            border-radius: 20px !important;
+            background: rgba(15, 23, 42, 0.70) !important;
+          }
+
+          .site-section-head strong,
+          .site-option-title span {
+            font-size: 20px !important;
+            line-height: 1.1 !important;
+          }
+
+          .site-option-group {
+            padding: 12px !important;
+            border-radius: 20px !important;
+            background: rgba(248, 250, 252, 0.055) !important;
+          }
+
+          .site-procedure-scenarios {
+            gap: 10px !important;
+          }
+
+          .site-procedure-scenarios.work-path {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .site-procedure-scenarios.work-path .start-job-btn {
+            grid-column: 1 / -1 !important;
+          }
+
+          .site-procedure-scenarios.no-work-path {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .site-procedure-actions button,
+          .site-procedure-actions a,
+          .site-evidence-count-grid button {
+            min-height: 74px !important;
+            border-radius: 18px !important;
+            padding: 12px !important;
+            font-size: 15px !important;
+          }
+
+          .site-procedure-actions button strong,
+          .site-procedure-actions a strong,
+          .site-evidence-count-grid button strong {
+            font-size: 18px !important;
+          }
+
+          .site-procedure-actions button small,
+          .site-procedure-actions a small,
+          .site-evidence-count-grid button small {
+            font-size: 12px !important;
+            line-height: 1.2 !important;
+          }
+
+          .site-procedure-actions .procedure-primary,
+          .site-procedure-scenarios .start-job-btn {
+            background: linear-gradient(135deg, #34d399, #60a5fa) !important;
+            color: #06131f !important;
+          }
+
+          .site-procedure-scenarios .finish-job-btn {
+            background: rgba(96, 165, 250, 0.18) !important;
+          }
+
+          .site-procedure-scenarios .no-access-job-btn {
+            background: rgba(250, 204, 21, 0.16) !important;
+          }
+
+          .site-procedure-scenarios .refused-job-btn {
+            background: rgba(248, 113, 113, 0.17) !important;
+          }
+
+          .site-procedure-scenarios .other-done-job-btn {
+            background: rgba(168, 85, 247, 0.18) !important;
+          }
+
+          .site-reset-actions {
+            opacity: 0.72 !important;
+          }
+
+          .field-media-console {
+            border-radius: 18px !important;
+            background: rgba(15, 23, 42, 0.62) !important;
+            border-color: rgba(148, 163, 184, 0.22) !important;
+          }
+
+          .field-media-lanes {
+            gap: 10px !important;
+          }
+
+          .field-capture-guide {
+            padding: 16px !important;
+            border-radius: 22px !important;
+          }
+
+          .field-capture-guide strong {
+            font-size: clamp(24px, 7vw, 36px) !important;
+          }
+
+          .field-capture-guide small {
+            font-size: 14px !important;
+            line-height: 1.4 !important;
+          }
+
+          .field-capture-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .field-capture-actions .primary {
+            grid-column: 1 / -1 !important;
+          }
+
+          .field-capture-actions button {
+            min-height: 62px !important;
+            border-radius: 17px !important;
+          }
+
+          .more-job-details {
+            border-radius: 18px !important;
+            background: rgba(248, 250, 252, 0.055) !important;
+          }
+
+          .more-job-details summary {
+            min-height: 52px !important;
+            display: flex !important;
+            align-items: center !important;
+            padding-inline: 14px !important;
+            color: #dbeafe !important;
+            font-weight: 950 !important;
+          }
+
+          @media (max-width: 520px) {
+            .job-drawer.selected-focus {
+              padding-inline: 8px !important;
+            }
+
+            .field-mission-mode,
+            .site-procedure-card {
+              border-radius: 22px !important;
+            }
+
+            .field-mission-choice-row,
+            .field-mission-actions,
+            .field-mission-stats,
+            .site-procedure-scenarios.work-path,
+            .site-procedure-scenarios.no-work-path,
+            .site-evidence-count-grid,
+            .site-procedure-package-actions {
+              grid-template-columns: 1fr !important;
+            }
+
+            .site-procedure-actions button,
+            .site-procedure-actions a,
+            .site-evidence-count-grid button {
+              min-height: 70px !important;
+            }
+          }
         `}
         </style>
 
