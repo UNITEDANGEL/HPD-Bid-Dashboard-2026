@@ -355,7 +355,7 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     "individualDescription",
     "PersonDescription",
     "personDescription",
-  ]);
+  ]) || (outcome === "refused_access" ? REFUSED_ACCESS_DESCRIPTION_EXAMPLE : "");
   const deniedPhone = jobText(job, [
     "DeniedPhone",
     "deniedPhone",
