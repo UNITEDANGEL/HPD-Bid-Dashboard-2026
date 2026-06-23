@@ -5827,6 +5827,11 @@ function directionsUrl(job: JobRecord) {
     return `${href}${href.includes("?") ? "&" : "?"}auto=package`;
   }
 
+  function paperworkAutoPdfOnlyHref(job: JobRecord) {
+    const href = paperworkAutoPackageHref(job);
+    return `${href}${href.includes("?") ? "&" : "?"}media=none`;
+  }
+
   function paperworkPreviewHref(job: JobRecord, patch: Record<string, any>, doc: "package" | "affidavit" | "invoice" = "package") {
     const nextJob = { ...job, ...patch };
     const outcome = paperworkOutcomeFromValue(
@@ -14063,7 +14068,8 @@ return (
             gap: 8px !important;
           }
 
-          .field-mission-choice-row button {
+          .field-mission-choice-row button,
+          .field-mission-choice-row a {
             min-height: 46px !important;
             padding: 0 10px !important;
             border-radius: 15px !important;
@@ -14074,9 +14080,15 @@ return (
             line-height: 1.05 !important;
             font-weight: 950 !important;
             letter-spacing: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            text-decoration: none !important;
           }
 
-          .field-mission-choice-row button.strong {
+          .field-mission-choice-row button.strong,
+          .field-mission-choice-row a.strong {
             background: rgba(34, 197, 94, 0.18) !important;
             border-color: rgba(74, 222, 128, 0.34) !important;
             color: #dcfce7 !important;
@@ -14540,6 +14552,7 @@ return (
           }
 
           .field-mission-choice-row button,
+          .field-mission-choice-row a,
           .field-mission-actions a,
           .field-mission-actions button {
             min-height: 54px !important;
@@ -14548,7 +14561,8 @@ return (
             background: rgba(248, 250, 252, 0.10) !important;
           }
 
-          .field-mission-choice-row button.strong {
+          .field-mission-choice-row button.strong,
+          .field-mission-choice-row a.strong {
             background: linear-gradient(135deg, #facc15, #38bdf8) !important;
             color: #07111f !important;
           }
@@ -15640,14 +15654,14 @@ return (
                         </button>
                       )}
                     </div>
-                    {canGenerateWithoutMedia && !packageReady ? (
+                    {finalOutcome && !packageReady ? (
                       <div className="field-mission-choice-row" aria-label="Optional media package choices">
-                        <button type="button" onClick={() => requestFieldPhotoCapture(selected, optionalNoWorkEvidenceKind, "image/*,video/*")}>
+                        <button type="button" onClick={() => requestFieldPhotoCapture(selected, finalOutcome && !hasOptionalNoWorkEvidence ? quickEvidenceKind : optionalNoWorkEvidenceKind, "image/*,video/*")}>
                           Add Media First
                         </button>
-                        <button type="button" className="strong" onClick={() => runPackagePrimaryAction(selected)}>
-                          No Media Package
-                        </button>
+                        <a className="strong" href={paperworkAutoPdfOnlyHref(selected)}>
+                          Affidavit + Invoice Only
+                        </a>
                       </div>
                     ) : null}
                     <div className="field-mission-route">
@@ -15966,9 +15980,9 @@ return (
                             <button type="button" className="procedure-primary" onClick={() => runPackagePrimaryAction(selected)}>
                               {generateWithoutMediaLabel}
                             </button>
-                            <button type="button" className="procedure-muted" disabled>
-                              Send after preview
-                            </button>
+                            <a href={paperworkAutoPdfOnlyHref(selected)}>
+                              Affidavit + Invoice Only
+                            </a>
                           </>
                         )}
                       </div>

@@ -868,6 +868,7 @@ export default function PaperworkPage() {
   const [form, setForm] = useState<PackageForm>(initialForm);
   const [loadedQuery, setLoadedQuery] = useState(false);
   const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
+  const [includePackageMedia, setIncludePackageMedia] = useState(true);
   const [pdfStatus, setPdfStatus] = useState("");
   const [packagePreview, setPackagePreview] = useState<CompletePackagePreview | null>(null);
   const [packagePreviewOpen, setPackagePreviewOpen] = useState(false);
@@ -913,6 +914,7 @@ export default function PaperworkPage() {
     const job = params.get("job") || "";
     const packageParam = String(params.get("package") || params.get("type") || "").toLowerCase();
     const autoParam = String(params.get("auto") || params.get("generate") || "").toLowerCase();
+    const mediaParam = String(params.get("media") || params.get("evidence") || "").toLowerCase();
     let nextOutcome = paperworkOutcomeFromValue(params.get("outcome") || "");
 
     if (nextOutcome === "pending") {
@@ -922,6 +924,7 @@ export default function PaperworkPage() {
 
     setSelectedId(job);
     setOutcome(nextOutcome);
+    setIncludePackageMedia(!["none", "no", "0", "false", "pdf", "pdf-only"].includes(mediaParam));
     setAutoGeneratePackage(["package", "1", "true", "yes"].includes(autoParam));
     setForm((current) => ({
       ...current,
@@ -1239,7 +1242,7 @@ export default function PaperworkPage() {
     }
   }
 
-  async function generateCompletePackage() {
+  async function generateCompletePackage(includeMediaOverride = includePackageMedia) {
     const jobId = form.jobId || selectedId;
     if (!jobId) {
       setPdfStatus("Select a job before generating the package.");
@@ -1247,15 +1250,19 @@ export default function PaperworkPage() {
     }
 
     clearPackagePreview();
-    const allowPdfOnlyPackage = outcome === "refused_access" || outcome === "no_access";
+    const includeMedia = Boolean(includeMediaOverride);
+    setIncludePackageMedia(includeMedia);
+    const allowPdfOnlyPackage = !includeMedia || outcome === "refused_access" || outcome === "no_access";
     setPdfStatus(
-      allowPdfOnlyPackage
-        ? "Generating package: affidavit and invoice. Images and videos are optional for this outcome."
+      !includeMedia
+        ? "Generating affidavit and invoice only. No images or videos will be attached."
+        : allowPdfOnlyPackage
+          ? "Generating package: affidavit and invoice. Images and videos are optional for this outcome."
         : "Generating package: affidavit, invoice, images, and videos..."
     );
 
     try {
-      const evidenceRows = await listFieldEvidence(jobId);
+      const evidenceRows = includeMedia ? await listFieldEvidence(jobId) : [];
       if (!evidenceRows.length && !allowPdfOnlyPackage) {
         setPdfStatus("No saved images or videos were found for this OMO on this device. Capture evidence first, then Generate Package.");
         return;
@@ -2629,6 +2636,31 @@ export default function PaperworkPage() {
           font-size: 20px;
         }
 
+        .paperwork-generate-choice {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+
+        .paperwork-generate-choice .paperwork-print,
+        .paperwork-generate-choice .paperwork-secondary {
+          width: 100%;
+          min-height: 70px;
+          border-radius: 18px;
+          font-size: 20px;
+        }
+
+        .paperwork-generate-choice small {
+          color: #aebbd0;
+          line-height: 1.35;
+        }
+
+        .paperwork-pdf-only {
+          background: rgba(250, 204, 21, 0.16);
+          border-color: rgba(250, 204, 21, 0.32);
+          color: #fef3c7;
+        }
+
         .paperwork-package-review {
           border-radius: 22px;
           padding: 16px;
@@ -3041,9 +3073,15 @@ export default function PaperworkPage() {
           </details>
 
           {!packagePreview ? (
-            <button className="paperwork-print" type="button" onClick={generateCompletePackage}>
-              Generate Package
-            </button>
+            <div className="paperwork-generate-choice" aria-label="Package media choice">
+              <button className="paperwork-print" type="button" onClick={() => generateCompletePackage(true)}>
+                Generate Full Package
+              </button>
+              <button className="paperwork-secondary paperwork-pdf-only" type="button" onClick={() => generateCompletePackage(false)}>
+                Affidavit + Invoice Only
+              </button>
+              <small>Use the second button when you want no images or videos attached.</small>
+            </div>
           ) : null}
           {packagePreview ? (
             <div className="paperwork-package-review">
