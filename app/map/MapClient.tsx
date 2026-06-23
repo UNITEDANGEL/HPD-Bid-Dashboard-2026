@@ -4227,7 +4227,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       pendingFullPackageRef.current = { ...preview, bytes: zipBytes };
       setFullPackagePreview(preview);
       focusFieldPane("send");
-      showActionNotice(`Package generated for review: ${beforeCount} before, ${afterCount} after, ${videoCount} video(s).`);
+      showActionNotice(
+        includedMedia.length
+          ? `Package generated for review: ${beforeCount} before, ${afterCount} after, ${videoCount} video(s).`
+          : "PDF-only package generated for review with no images or videos."
+      );
     } catch (error) {
       console.error(error);
       showActionNotice(error instanceof Error ? error.message : "Full package build failed. Try again.");
@@ -14053,6 +14057,31 @@ return (
             box-shadow: none !important;
           }
 
+          .field-mission-choice-row {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .field-mission-choice-row button {
+            min-height: 46px !important;
+            padding: 0 10px !important;
+            border-radius: 15px !important;
+            border: 1px solid rgba(125, 211, 252, 0.20) !important;
+            background: rgba(248, 250, 252, 0.09) !important;
+            color: #e8f4ff !important;
+            font-size: 13px !important;
+            line-height: 1.05 !important;
+            font-weight: 950 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .field-mission-choice-row button.strong {
+            background: rgba(34, 197, 94, 0.18) !important;
+            border-color: rgba(74, 222, 128, 0.34) !important;
+            color: #dcfce7 !important;
+          }
+
           .field-mission-actions {
             display: grid !important;
             grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
@@ -14144,6 +14173,10 @@ return (
 
             .field-mission-actions {
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .field-mission-choice-row {
+              grid-template-columns: minmax(0, 1fr) !important;
             }
 
             .field-mission-rail span {
@@ -15040,6 +15073,10 @@ return (
                 const preview = fullPackagePreviewFor(selected);
                 const invoicePacket = latestFieldPacket(selected, "affidavit_invoice_pdf");
                 const packageReady = Boolean(preview);
+                const canGenerateWithoutMedia = canGeneratePdfOnlyPackage(selected);
+                const generateWithoutMediaLabel = canGenerateWithoutMedia && counts.total === 0
+                  ? "Generate Without Media"
+                  : "Generate Package";
                 const evidenceReady = packageReady || counts.total > 0 || hasOptionalNoWorkEvidence;
                 const quickEvidenceKind: FieldMediaKind = isNoAccess ? "no_access" : isCompletedByOthers ? "completed_by_others" : "general";
                 const needsQuickEvidence =
@@ -15140,12 +15177,16 @@ return (
                           : isAfterEvidence
                             ? "Continue the after photo/video set, then complete or partial the job."
                             : finalOutcome
-                              ? "Create the affidavit, invoice, images, and video package in one place."
+                              ? canGenerateWithoutMedia && counts.total === 0
+                                ? "Generate the affidavit/invoice ZIP now without images, or add optional evidence first."
+                                : "Create the affidavit, invoice, images, and video package in one place."
                               : "Confirm the status date, choose what happened at the site, then the next step opens.";
                 const missionPackageLabel = packageReady
                   ? packetSizeLabel(preview.size)
                   : noAccessWaiting
                     ? secondAttemptInfo?.label || "Waiting"
+                    : canGenerateWithoutMedia && counts.total === 0
+                      ? "Media optional"
                     : invoicePacket
                       ? "PDF ready"
                       : "Not generated";
@@ -15197,7 +15238,7 @@ return (
                         </button>
                       ) : finalOutcome ? (
                         <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => runPackagePrimaryAction(selected)}>
-                          Generate Package
+                          {generateWithoutMediaLabel}
                         </button>
                       ) : (
                         <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => focusFieldPane("capture")}>
@@ -15205,6 +15246,16 @@ return (
                         </button>
                       )}
                     </div>
+                    {canGenerateWithoutMedia && !packageReady ? (
+                      <div className="field-mission-choice-row" aria-label="Optional media package choices">
+                        <button type="button" onClick={() => requestFieldPhotoCapture(selected, optionalNoWorkEvidenceKind, "image/*,video/*")}>
+                          Add Media First
+                        </button>
+                        <button type="button" className="strong" onClick={() => runPackagePrimaryAction(selected)}>
+                          No Media Package
+                        </button>
+                      </div>
+                    ) : null}
                     <div className="field-mission-route">
                       <span>Site brief</span>
                       <strong>{mapBriefText(selected)}</strong>
@@ -15447,10 +15498,10 @@ return (
                         ) : hasOptionalNoWorkEvidence ? (
                           <>
                             <button type="button" onClick={() => requestFieldPhotoCapture(selected, optionalNoWorkEvidenceKind, "image/*,video/*")}>
-                              Add Evidence
+                              Add Optional Media
                             </button>
                             <a className="procedure-primary" href={paperworkAutoPackageHref(selected)}>
-                              Generate Package
+                              {counts.total === 0 ? "Generate Without Media" : "Generate Package"}
                             </a>
                           </>
                         ) : needsQuickEvidence ? (
@@ -15519,7 +15570,7 @@ return (
                         ) : (
                           <>
                             <button type="button" className="procedure-primary" onClick={() => runPackagePrimaryAction(selected)}>
-                              Generate Package
+                              {generateWithoutMediaLabel}
                             </button>
                             <button type="button" className="procedure-muted" disabled>
                               Send after preview

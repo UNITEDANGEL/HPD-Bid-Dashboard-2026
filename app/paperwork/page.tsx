@@ -953,7 +953,7 @@ export default function PaperworkPage() {
     if (!selectedId || !jobs.length || !selectedJob || !form.jobId) return;
 
     autoGenerateStartedRef.current = true;
-    setPdfStatus("Auto-generating package from saved evidence...");
+    setPdfStatus("Auto-generating package. Refused/no-access can be created without images or videos.");
     window.setTimeout(() => {
       void generateCompletePackage();
     }, 250);
@@ -1247,11 +1247,15 @@ export default function PaperworkPage() {
     }
 
     clearPackagePreview();
-    setPdfStatus("Generating package: affidavit, invoice, images, and videos...");
+    const allowPdfOnlyPackage = outcome === "refused_access" || outcome === "no_access";
+    setPdfStatus(
+      allowPdfOnlyPackage
+        ? "Generating package: affidavit and invoice. Images and videos are optional for this outcome."
+        : "Generating package: affidavit, invoice, images, and videos..."
+    );
 
     try {
       const evidenceRows = await listFieldEvidence(jobId);
-      const allowPdfOnlyPackage = outcome === "refused_access" || outcome === "no_access";
       if (!evidenceRows.length && !allowPdfOnlyPackage) {
         setPdfStatus("No saved images or videos were found for this OMO on this device. Capture evidence first, then Generate Package.");
         return;
@@ -1467,7 +1471,7 @@ export default function PaperworkPage() {
       setPackagePreview(preview);
       setPackagePreviewOpen(false);
       const archiveMessage = await markPackageGenerated(pdf.jobId);
-      setPdfStatus(`Package Created. Tap Preview, then Send. ${archiveMessage}`);
+      setPdfStatus(`${includedMedia.length ? "Package Created" : "PDF-only Package Created"}. Tap Preview, then Send. ${archiveMessage}`);
     } catch (error) {
       console.error(error);
       setPdfStatus(error instanceof Error ? error.message : "Could not generate complete package.");
