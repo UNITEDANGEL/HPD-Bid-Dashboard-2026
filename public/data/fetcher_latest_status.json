@@ -1,7 +1,7 @@
 {
   "state": "complete",
-  "startedAt": "2026-06-25T12:23:30.304Z",
-  "finishedAt": "2026-06-25T12:23:52.624Z",
+  "startedAt": "2026-06-26T12:13:05.040Z",
+  "finishedAt": "2026-06-26T12:13:29.438Z",
   "ok": true,
   "error": "",
   "summary": {
@@ -10,9 +10,9 @@
     "fetchedFinalJobRows": 16,
     "addedNewOmos": 3,
     "skippedExistingOmos": 13,
-    "rawRows": 527,
-    "rows2026": 476,
-    "mapped2026": 476,
+    "rawRows": 530,
+    "rows2026": 479,
+    "mapped2026": 479,
     "notMapped2026": 0,
     "badDescriptions": 0,
     "missingDescriptions": 0,
