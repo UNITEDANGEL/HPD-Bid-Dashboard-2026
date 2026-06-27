@@ -108,6 +108,8 @@ type JobRecord = {
   lon?: number | string;
 };
 
+type WorkflowViewFilter = "active" | "appointments" | "waiting72" | "ready2" | "final" | "archived" | "all";
+
 type ItbSourceManifestEntry = {
   page?: number;
   pageImage?: string;
@@ -1301,14 +1303,18 @@ function appointmentMarkerTimeLabel(date: Date, now = new Date()) {
     .toUpperCase();
   const today = dateOnly(now).getTime();
   const appointmentDay = dateOnly(date).getTime();
-  if (appointmentDay > today) return `TMR ${time}`;
+  if (appointmentDay > today) {
+    const dayDiff = Math.round((appointmentDay - today) / 86400000);
+    if (dayDiff === 1) return `TMR ${time}`;
+    return date.toLocaleDateString("en-US", { month: "numeric", day: "numeric" });
+  }
   return time;
 }
 function markerAppointmentLabelText(job: JobRecord, now = new Date()) {
   const date = appointmentDate(job);
   if (!date) return "";
   const diff = date.getTime() - now.getTime();
-  if (diff < -APPOINTMENT_DUE_GRACE_MS || diff > APPOINTMENT_REMINDER_WINDOW_MS) return "";
+  if (diff < -APPOINTMENT_DUE_GRACE_MS) return "";
 
   if (diff <= 0) return "APPT NOW";
   return `APPT ${appointmentMarkerTimeLabel(date, now)}`;
@@ -1319,11 +1325,17 @@ function markerAppointmentReminderHtml(job: JobRecord, now = new Date()) {
   const date = appointmentDate(job);
   const diff = date ? date.getTime() - now.getTime() : 1;
 
-  const className = diff <= 0 ? "is-due" : "is-soon";
+  const className = diff <= 0 ? "is-due" : diff <= APPOINTMENT_REMINDER_WINDOW_MS ? "is-soon" : "is-scheduled";
   return `<span class="marker-appointment-badge ${className}">${escapeMarkerHtml(label)}</span>`;
 }
 function hasUpcomingAppointment(job: JobRecord) {
   return Boolean(markerAppointmentReminderHtml(job));
+}
+function hasPendingUpcomingAppointment(job: JobRecord) {
+  if (!hasUpcomingAppointment(job)) return false;
+  if (workflowViewBucket(job) !== "active") return false;
+  const statusKind = JobStatus.statusKind(job);
+  return statusKind === "pending" || statusKind === "none";
 }
 function cacheKey(job: JobRecord) {
   return `hpd_geo_${jobKey(job)}_${cleanAddress(job)}`.toLowerCase();
@@ -2030,6 +2042,22 @@ const CLOSED_WORKFLOW_STATUSES = new Set([
   "ARCHIVED",
 ]);
 
+const ARCHIVED_WORKFLOW_STATUSES = new Set([
+  "NO_ACCESS_COMPLETE",
+  "REFUSED_ACCESS",
+  "COMPLETED_BY_OTHERS",
+  "WORK_COMPLETED",
+  "PARTIAL_WORK_COMPLETED",
+  "ARCHIVED",
+]);
+
+const FINAL_REVIEW_WORKFLOW_STATUSES = new Set([
+  "PACKAGE_REVIEW",
+  "SENT_TO_REVIEWER",
+  "APPROVED_BY_YOU",
+  "SENT_TO_HPD",
+]);
+
 function workflowViewBucket(job: JobRecord) {
   const status = workflowStatus(job) || legacyWorkflowKind(job);
   const archived = Boolean((job as any).ArchivedFromMap || (job as any).archivedFromMap);
@@ -2044,26 +2072,25 @@ function workflowViewBucket(job: JobRecord) {
     return info?.ready ? "ready2" : "waiting72";
   }
 
-  if (
-    status === "NO_ACCESS_COMPLETE" ||
-    status === "REFUSED_ACCESS" ||
-    status === "COMPLETED_BY_OTHERS" ||
-    status === "WORK_COMPLETED" ||
-    status === "PARTIAL_WORK_COMPLETED"
-  ) {
+  if (ARCHIVED_WORKFLOW_STATUSES.has(status)) {
+    return "archived";
+  }
+
+  if (FINAL_REVIEW_WORKFLOW_STATUSES.has(status)) {
     return "final";
   }
 
   return "active";
 }
 
-function shouldShowForWorkflowView(job: JobRecord, view: "active" | "waiting72" | "ready2" | "final" | "archived" | "all") {
+function shouldShowForWorkflowView(job: JobRecord, view: WorkflowViewFilter) {
   if (view === "all") return true;
+  if (view === "appointments") return hasPendingUpcomingAppointment(job);
   return workflowViewBucket(job) === view;
 }
 
 function shouldShowOnActiveMap(job: JobRecord) {
-  return workflowViewBucket(job) === "active" || workflowViewBucket(job) === "waiting72" || workflowViewBucket(job) === "ready2" || workflowViewBucket(job) === "final";
+  return workflowViewBucket(job) === "active";
 }
 
 function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overrides: Record<string, any>): T[] {
@@ -2119,6 +2146,11 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
         CompletedByOthersEvidenceCapturedAt: "",
         completedByOthersEvidenceCapturedAt: "",
         ArchivedFromMap: false,
+        archivedFromMap: false,
+        ArchivedAt: "",
+        archivedAt: "",
+        ArchiveReason: "",
+        archiveReason: "",
       } as T;
     }
     return { ...row, ...patch } as T;
@@ -2171,7 +2203,7 @@ const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
 const [visitStatusDate, setVisitStatusDate] = useState("");
 const [appointmentDraft, setAppointmentDraft] = useState("");
 const [appointmentSaving, setAppointmentSaving] = useState(false);
-const [workflowViewFilter, setWorkflowViewFilter] = useState<"active" | "waiting72" | "ready2" | "final" | "archived" | "all">("active");
+const [workflowViewFilter, setWorkflowViewFilter] = useState<WorkflowViewFilter>("active");
 const [countdownTick, setCountdownTick] = useState(0);
 const [mapZoom, setMapZoom] = useState(10);
 const [photoCaptureTarget, setPhotoCaptureTarget] = useState<FieldCaptureTarget | null>(null);
@@ -2696,7 +2728,7 @@ function handleMapTouchEnd(event: any) {
     const omo = String(params.get("omo") || params.get("job") || params.get("q") || "")
       .trim()
       .replace(/^omo\s*[:#-]?\s*/i, "");
-    if (view === "archived" || view === "active" || view === "waiting72" || view === "ready2" || view === "final" || view === "all") {
+    if (view === "archived" || view === "active" || view === "appointments" || view === "waiting72" || view === "ready2" || view === "final" || view === "all") {
       setWorkflowViewFilter(view);
     }
     if (omo) {
@@ -2883,9 +2915,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           return (age !== null && age >= 0 && age <= limit) || hasUpcomingAppointment(job);
         });
 
-    if (!needle) return dateFiltered;
+    const workflowFiltered = dateFiltered.filter((job) => shouldShowForWorkflowView(job, workflowViewFilter));
 
-    return dateFiltered.filter((job) =>
+    if (!needle) return workflowFiltered;
+
+    return workflowFiltered.filter((job) =>
       [
         job.id,
         job.omo,
@@ -2909,7 +2943,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         .toLowerCase()
         .includes(needle)
     );
-  }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays, countdownTick]);
+  }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays, workflowViewFilter, countdownTick]);
 
   useEffect(() => {
     if (!urlOmoRequest || !filteredJobs.length) return;
@@ -3565,6 +3599,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const overdueLabel = markerOverdueLabel(job);
         const noAccessTimerLabel = markerNoAccessTimerHtml(job);
         const appointmentLabel = markerAppointmentReminderHtml(job);
+        const pendingAppointmentPulse = hasPendingUpcomingAppointment(job);
         const hasOverdue = Boolean(overdueLabel);
         const markerMode = markerDetailed ? "marker-detailed" : markerExpanded ? "marker-expanded" : markerOverview ? "marker-overview" : "marker-compact";
         const baseIconSize: [number, number] = markerDetailed
@@ -3584,7 +3619,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const marker = L.marker([lat, lng], {
           icon: L.divIcon({
             className: "maturity-map-marker",
-            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${hasOverdue ? "#ef4444" : appointmentLabel ? "#f59e0b" : markerColor}">
+            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} ${pendingAppointmentPulse ? "marker-pending-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${hasOverdue ? "#ef4444" : appointmentLabel ? "#f59e0b" : markerColor}">
                     ${markerSignalLabelHtml(job, { overview: markerOverview, expanded: markerExpanded, detailed: markerDetailed, overdueLabel, noAccessTimerLabel, appointmentLabel })}
                   </div>`,
             iconSize,
@@ -3770,6 +3805,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         body: `${readyCount} no-access job(s) are ready for second attempt.`,
       });
     }
+  }, [jobs, countdownTick]);
+
+  const pendingAppointmentMapCount = useMemo(() => {
+    return jobs.filter((job) => hasPendingUpcomingAppointment(job)).length;
   }, [jobs, countdownTick]);
 
   const upcomingAppointmentJobs = useMemo<MappedJob[]>(() => {
@@ -4027,7 +4066,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     );
   }
 
-  function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, notice: string) {
+function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, notice: string) {
     const key = jobKey(job);
     if (!key) return;
 
@@ -4047,6 +4086,28 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         console.error(error);
         showActionNotice("Saved on this phone. Server sync needs retry.");
       });
+  }
+
+  function archiveCloseoutFields(iso: string) {
+    return {
+      ArchivedFromMap: true,
+      archivedFromMap: true,
+      ArchivedAt: iso,
+      archivedAt: iso,
+      ArchiveReason: "Closed status",
+      archiveReason: "Closed status",
+    };
+  }
+
+  function activeWorkflowArchiveFields() {
+    return {
+      ArchivedFromMap: false,
+      archivedFromMap: false,
+      ArchivedAt: "",
+      archivedAt: "",
+      ArchiveReason: "",
+      archiveReason: "",
+    };
   }
 
   function saveRefusedDescriptionChoice(job: MappedJob, descriptorKey: RefusedDescriptorKey, value: string) {
@@ -4136,6 +4197,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       OutcomeLockedAt: "",
       outcomeLockedAt: "",
       ArchivedFromMap: false,
+      archivedFromMap: false,
+      ArchivedAt: "",
+      archivedAt: "",
+      ArchiveReason: "",
+      archiveReason: "",
       updatedAt: new Date().toISOString(),
     };
   }
@@ -4727,7 +4793,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       normalized.includes("NO_ACCESS_COMPLETE") ||
       normalized.includes("NO_ACCESS_2") ||
       normalized.includes("NO_ACCESS_SECOND");
-    return isRefused || isFinalNoAccess;
+    const isCompletedByOthers = normalized.includes("COMPLETED_BY_OTHERS");
+    const isWorkCompleted =
+      normalized.includes("WORK_COMPLETED") ||
+      normalized.includes("PARTIAL_WORK_COMPLETED") ||
+      normalized.includes("WORK_COMPLETED_BY_OTHERS");
+    return isRefused || isFinalNoAccess || isCompletedByOthers || isWorkCompleted;
   }
 
   function fullPackageManifestText(
@@ -5622,7 +5693,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       actualWorkStartDate: iso,
       BeforePhotosRequestedAt: iso,
       beforePhotosRequestedAt: iso,
-      ArchivedFromMap: false,
+      ...activeWorkflowArchiveFields(),
     };
     setFieldFocusPane("capture");
     setSelectedOnly(true);
@@ -5649,7 +5720,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       pendingCompletionOutcome: "",
       BeforePhotosRequestedAt: iso,
       beforePhotosRequestedAt: iso,
-      ArchivedFromMap: false,
+      ...activeWorkflowArchiveFields(),
     };
     const captureJob = { ...job, ...patch } as MappedJob;
     setFieldFocusPane("capture");
@@ -5718,46 +5789,49 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       afterPhotosRequestedAt: iso,
       PendingCompletionOutcome: "",
       pendingCompletionOutcome: "",
-      ArchivedFromMap: false,
+      ...archiveCloseoutFields(iso),
     };
     setFieldFocusPane("package");
     clearGuidedCaptureState();
     saveFieldWorkflowPatch(
       job,
       patch,
-      partial ? "After evidence done. Partial work completed." : "After evidence done. Work completed."
+      partial ? "Partial work completed and archived. Media is optional." : "Work completed and archived. Media is optional."
     );
+    setWorkflowViewFilter("archived");
     openPaperworkPreviewForStatus(job, patch, false);
   }
 
   function finishFieldJob(job: MappedJob, partial = false) {
     const iso = workflowActionIso();
     const patch = {
-      WorkflowStatus: "AFTER_EVIDENCE",
-      workflowStatus: "AFTER_EVIDENCE",
-      FieldOutcome: "AFTER_EVIDENCE",
-      fieldOutcome: "AFTER_EVIDENCE",
-      StatusOverride: partial ? "After Evidence - Partial" : "After Evidence",
-      status: partial ? "After Evidence - Partial" : "After Evidence",
-      PendingCompletionOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
-      pendingCompletionOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
-      AfterPhotosRequestedAt: iso,
-      afterPhotosRequestedAt: iso,
-      ArchivedFromMap: false,
+      WorkflowStatus: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+      workflowStatus: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+      FieldOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+      fieldOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+      StatusOverride: partial ? "Partial Work Completed" : "Work Completed",
+      status: partial ? "Partial Work Completed" : "Work Completed",
+      JobFinishedAt: iso,
+      jobFinishedAt: iso,
+      ActualWorkCompletionDate: iso,
+      actualWorkCompletionDate: iso,
+      OutcomeLockedAt: iso,
+      outcomeLockedAt: iso,
+      PendingCompletionOutcome: "",
+      pendingCompletionOutcome: "",
+      ...archiveCloseoutFields(iso),
     };
-    const captureJob = { ...job, ...patch } as MappedJob;
-    setFieldFocusPane("capture");
-    setSelectedOnly(true);
-    setDrawerOpen(true);
-    setFullMap(false);
+    setFieldFocusPane("package");
+    clearGuidedCaptureState();
     saveFieldWorkflowPatch(
       job,
       patch,
       partial
-        ? "Partial finish: capture 2 after photos and 2 after videos."
-        : "Finish job: capture 2 after photos and 2 after videos."
+        ? "Partial work completed and archived. Add media only if you want."
+        : "Work completed and archived. Add media only if you want."
     );
-    beginGuidedEvidenceCapture(captureJob, "after", { partial });
+    setWorkflowViewFilter("archived");
+    openPaperworkPreviewForStatus(job, patch, false);
   }
 
   function startNoAccessCounter(job: MappedJob) {
@@ -5792,7 +5866,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       pendingCompletionOutcome: "",
       OutcomeLockedAt: iso,
       outcomeLockedAt: iso,
-      ArchivedFromMap: false,
+      ...activeWorkflowArchiveFields(),
     };
     saveFieldWorkflowPatch(
       job,
@@ -5835,9 +5909,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       pendingCompletionOutcome: "",
       OutcomeLockedAt: iso,
       outcomeLockedAt: iso,
-      ArchivedFromMap: false,
+      ...archiveCloseoutFields(iso),
     };
-    saveFieldWorkflowPatch(job, patch, "No access second attempt saved. Evidence is optional; generate package or add photo/video.");
+    saveFieldWorkflowPatch(job, patch, "No access second attempt saved and archived. Evidence is optional.");
+    setWorkflowViewFilter("archived");
     openPaperworkPreviewForStatus(job, patch, false);
   }
 
@@ -5859,14 +5934,15 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       pendingCompletionOutcome: "",
       OutcomeLockedAt: iso,
       outcomeLockedAt: iso,
-      ArchivedFromMap: false,
+      ...archiveCloseoutFields(iso),
       ...refusedDescriptionPatch(description),
     };
     saveFieldWorkflowPatch(
       job,
       patch,
-      "Refused access saved. Evidence is optional; generate package or add photo/video."
+      "Refused access saved and archived. Evidence is optional."
     );
+    setWorkflowViewFilter("archived");
     openPaperworkPreviewForStatus(job, patch, false);
   }
 
@@ -5885,16 +5961,15 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       pendingCompletionOutcome: "",
       OutcomeLockedAt: iso,
       outcomeLockedAt: iso,
-      ArchivedFromMap: false,
+      ...archiveCloseoutFields(iso),
     };
-    const nextJob = { ...job, ...patch } as MappedJob;
     saveFieldWorkflowPatch(
       job,
       patch,
-      "Completed by others saved. Capture evidence now."
+      "Completed by others saved and archived. Evidence is optional."
     );
+    setWorkflowViewFilter("archived");
     openPaperworkPreviewForStatus(job, patch, false);
-    requestFieldPhotoCapture(nextJob, "completed_by_others", "image/*,video/*");
   }
 
   function startLocationTracking() {
@@ -6031,9 +6106,9 @@ function localDatetimeValue(date = new Date()) {
         noAccessFirstAttemptAt: iso,
         SecondAttemptAvailableAt: available.toISOString(),
         secondAttemptAvailableAt: available.toISOString(),
-        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
+        ...activeWorkflowArchiveFields(),
       };
     }
 
@@ -6054,9 +6129,9 @@ function localDatetimeValue(date = new Date()) {
         secondAttemptAvailableAt: existingSecondAvailable,
         NoAccessSecondAttemptAt: iso,
         noAccessSecondAttemptAt: iso,
-        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
+        ...archiveCloseoutFields(iso),
       };
     }
 
@@ -6072,9 +6147,9 @@ function localDatetimeValue(date = new Date()) {
         fieldOutcome: "REFUSED_ACCESS",
         RefusalDate: iso,
         refusalDate: iso,
-        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
+        ...archiveCloseoutFields(iso),
         ...refusedDescriptionPatch(description),
       };
     }
@@ -6088,9 +6163,9 @@ function localDatetimeValue(date = new Date()) {
         fieldOutcome: "COMPLETED_BY_OTHERS",
         VerifiedByOthersDate: iso,
         verifiedByOthersDate: iso,
-        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
+        ...archiveCloseoutFields(iso),
       };
     }
 
@@ -6103,9 +6178,9 @@ function localDatetimeValue(date = new Date()) {
         fieldOutcome: "WORK_COMPLETED",
         ActualWorkCompletionDate: iso,
         actualWorkCompletionDate: iso,
-        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
+        ...archiveCloseoutFields(iso),
       };
     }
 
@@ -6120,9 +6195,9 @@ function localDatetimeValue(date = new Date()) {
         status: "Partial Work Completed",
         ActualWorkCompletionDate: iso,
         actualWorkCompletionDate: iso,
-        ArchivedFromMap: false,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
+        ...archiveCloseoutFields(iso),
       };
     }
     const key = jobKey(job);
@@ -6130,10 +6205,15 @@ function localDatetimeValue(date = new Date()) {
     if (key) {
       workflowStorageSave(key, patch);
       invalidateFullPackagePreview(key, true);
+      if (patch.ArchivedFromMap || patch.archivedFromMap) {
+        setWorkflowViewFilter("archived");
+      }
       workflowServerSave(key, patch)
         .then(() => {
           setDraftWorkflowSaved(true);
-          showActionNotice("Saved ✓ Status synced to CSV + Google Drive.");
+          const archived = Boolean(patch.ArchivedFromMap || patch.archivedFromMap);
+          if (archived) setWorkflowViewFilter("archived");
+          showActionNotice(archived ? "Saved ✓ Status synced and archived from active map." : "Saved ✓ Status synced to CSV + Google Drive.");
         })
         .catch((error) => {
           console.error(error);
@@ -6453,26 +6533,25 @@ function workflowViewBucket(job: JobRecord) {
     return info?.ready ? "ready2" : "waiting72";
   }
 
-  if (
-    status === "NO_ACCESS_COMPLETE" ||
-    status === "REFUSED_ACCESS" ||
-    status === "COMPLETED_BY_OTHERS" ||
-    status === "WORK_COMPLETED" ||
-    status === "PARTIAL_WORK_COMPLETED"
-  ) {
+  if (ARCHIVED_WORKFLOW_STATUSES.has(status)) {
+    return "archived";
+  }
+
+  if (FINAL_REVIEW_WORKFLOW_STATUSES.has(status)) {
     return "final";
   }
 
   return "active";
 }
 
-function shouldShowForWorkflowView(job: JobRecord, view: "active" | "waiting72" | "ready2" | "final" | "archived" | "all") {
+function shouldShowForWorkflowView(job: JobRecord, view: WorkflowViewFilter) {
   if (view === "all") return true;
+  if (view === "appointments") return hasPendingUpcomingAppointment(job);
   return workflowViewBucket(job) === view;
 }
 
 function shouldShowOnActiveMap(job: JobRecord) {
-  return workflowViewBucket(job) === "active" || workflowViewBucket(job) === "waiting72" || workflowViewBucket(job) === "ready2" || workflowViewBucket(job) === "final";
+  return workflowViewBucket(job) === "active";
 }
 
 function focusJob(job: MappedJob) {
@@ -6570,7 +6649,7 @@ function directionsUrl(job: JobRecord) {
       showActionNotice("Status saved. Invoice/affidavit preview opened.");
       return;
     }
-    showActionNotice("Status saved. Evidence capture is opening. Package preview link is ready.");
+    showActionNotice("Status saved. Package preview link is ready. Media is optional.");
   }
 
   function currentSelectedIndex() {
@@ -14463,9 +14542,64 @@ return (
               0 14px 30px rgba(120, 53, 15, 0.22) !important;
           }
 
+          .maturity-map-marker .map-signal-marker.marker-pending-appointment {
+            --marker-glow-core: rgba(251, 191, 36, 0.46);
+            --marker-ring: rgba(251, 191, 36, 0.28);
+            --marker-glow: rgba(245, 158, 11, 0.86);
+            --marker-glow-wide: rgba(245, 158, 11, 0.36);
+            border-color: #f59e0b !important;
+            background:
+              linear-gradient(180deg, rgba(255, 251, 235, 0.99), rgba(254, 243, 199, 0.98)) !important;
+            animation: pendingAppointmentMarkerPulse 1.65s ease-in-out infinite !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-pending-appointment::before {
+            display: block !important;
+            width: 96px !important;
+            height: 96px !important;
+            background: radial-gradient(circle, rgba(251, 191, 36, 0.56), transparent 64%) !important;
+            box-shadow:
+              0 0 0 10px rgba(251, 191, 36, 0.20),
+              0 0 42px rgba(245, 158, 11, 0.72),
+              0 0 92px rgba(217, 119, 6, 0.32) !important;
+            animation: pendingAppointmentHaloPulse 1.65s ease-out infinite !important;
+          }
+
           @keyframes appointmentMarkerPulse {
             0%, 100% { transform: scale(1); }
             50% { transform: scale(1.06); }
+          }
+
+          @keyframes pendingAppointmentMarkerPulse {
+            0%, 100% {
+              filter: saturate(1) brightness(1);
+              box-shadow:
+                0 0 0 3px rgba(255, 255, 255, 0.96),
+                0 0 0 7px rgba(251, 191, 36, 0.16),
+                0 14px 30px rgba(120, 53, 15, 0.22);
+            }
+            50% {
+              filter: saturate(1.12) brightness(1.04);
+              box-shadow:
+                0 0 0 4px rgba(255, 255, 255, 0.98),
+                0 0 0 12px rgba(251, 191, 36, 0.28),
+                0 18px 38px rgba(120, 53, 15, 0.30);
+            }
+          }
+
+          @keyframes pendingAppointmentHaloPulse {
+            0% {
+              transform: translate(-50%, -50%) scale(0.78);
+              opacity: 0.52;
+            }
+            55% {
+              transform: translate(-50%, -50%) scale(1.2);
+              opacity: 0.94;
+            }
+            100% {
+              transform: translate(-50%, -50%) scale(1.34);
+              opacity: 0;
+            }
           }
 
           .maturity-map-marker .map-signal-marker.marker-has-overdue {
@@ -16412,6 +16546,49 @@ return (
               top: 70px !important;
             }
           }
+
+          .job-drawer.selected-focus,
+          .selected-focus-advanced {
+            box-sizing: border-box !important;
+            width: min(500px, calc(100vw - 16px)) !important;
+            max-width: calc(100vw - 16px) !important;
+          }
+
+          .job-drawer.selected-focus {
+            left: 8px !important;
+            right: auto !important;
+            transform: none !important;
+          }
+
+          .job-drawer.selected-focus .selected-card {
+            padding: 12px !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-head {
+            padding: 12px !important;
+            gap: 10px !important;
+          }
+
+          .job-drawer.selected-focus .selected-card .job-title {
+            font-size: clamp(22px, 5.8vw, 30px) !important;
+            line-height: 1.02 !important;
+          }
+
+          .job-drawer.selected-focus .selected-card .job-address {
+            font-size: clamp(13px, 3.4vw, 17px) !important;
+            line-height: 1.22 !important;
+          }
+
+          @media (max-width: 700px) {
+            .job-drawer.selected-focus,
+            .selected-focus-advanced {
+              left: 8px !important;
+              right: 8px !important;
+              width: auto !important;
+              max-width: none !important;
+              transform: none !important;
+            }
+          }
         `}
         </style>
 
@@ -16749,6 +16926,9 @@ return (
           <button type="button" className={workflowViewFilter === "active" ? "active" : ""} onClick={() => setWorkflowViewFilter("active")}>
             Active
           </button>
+          <button type="button" className={workflowViewFilter === "appointments" ? "active" : ""} onClick={() => setWorkflowViewFilter("appointments")}>
+            Appts{pendingAppointmentMapCount ? ` ${pendingAppointmentMapCount}` : ""}
+          </button>
           <button type="button" className={workflowViewFilter === "waiting72" ? "active" : ""} onClick={() => setWorkflowViewFilter("waiting72")}>
             Waiting 72h
           </button>
@@ -17054,8 +17234,16 @@ return (
                 const finalOutcome = isNoAccessSecond || isRefused || isCompletedByOthers || isWorkCompleted || isPartialWork;
                 const refusedPhotoCount = counts.refused_access;
                 const hasRefusedPhoto = refusedPhotoCount > 0;
-                const hasOptionalNoWorkEvidence = isRefused || isNoAccessSecond;
-                const optionalNoWorkEvidenceKind: FieldMediaKind = isNoAccessSecond ? "no_access" : isRefused ? "refused_access" : "general";
+                const hasOptionalNoWorkEvidence = isRefused || isNoAccessSecond || isCompletedByOthers || isWorkCompleted || isPartialWork;
+                const optionalNoWorkEvidenceKind: FieldMediaKind = isNoAccessSecond
+                  ? "no_access"
+                  : isRefused
+                    ? "refused_access"
+                    : isCompletedByOthers
+                      ? "completed_by_others"
+                      : isWorkCompleted || isPartialWork
+                        ? "after"
+                        : "general";
                 const preview = fullPackagePreviewFor(selected);
                 const invoicePacket = latestFieldPacket(selected, "affidavit_invoice_pdf");
                 const packageReady = Boolean(preview);
@@ -17121,7 +17309,7 @@ return (
                       ? `Evidence is optional. Final package stays locked until ${secondAttemptInfo?.label}.`
                     : noAccessReadyForSecond
                       ? "Use No Access 2nd, then capture evidence and generate the package."
-                    : needsQuickEvidence
+                      : needsQuickEvidence
                       ? "Take site evidence first, then generate the package."
                     : isBeforeEvidence
                       ? "After work is done, tap Finish Job or Partial Work."
@@ -17408,7 +17596,7 @@ return (
                       <div className="site-option-group">
                         <div className="site-option-title">
                           <span>Work completed affidavit</span>
-                          <small>Start job, collect before evidence, then finish as completed or partial.</small>
+                          <small>Save completed now; media is optional for now.</small>
                         </div>
                         <div className="site-procedure-actions site-procedure-scenarios work-path">
                           <button type="button" className={`start-job-btn procedure-primary ${isBeforeEvidence ? "is-active" : ""}`} onClick={() => startFieldJob(selected)}>
@@ -17417,18 +17605,18 @@ return (
                           </button>
                         <button type="button" className={`finish-job-btn ${(isAfterEvidence && !isPartialWork) || isWorkCompleted ? "is-active" : ""}`} onClick={() => finishFieldJob(selected)}>
                             <strong>Finish Job</strong>
-                            <small>Work completed</small>
+                            <small>No media needed</small>
                           </button>
                           <button type="button" className={`finish-job-btn ${isPartialWork ? "is-active" : ""}`} onClick={() => finishFieldJob(selected, true)}>
                             <strong>Partial Work</strong>
-                            <small>Partial completed</small>
+                            <small>No media needed</small>
                           </button>
                         </div>
                       </div>
                       <div className="site-option-group">
                         <div className="site-option-title">
                           <span>No work completed affidavit</span>
-                          <small>Pick the exact no-work reason and capture evidence.</small>
+                          <small>Pick the exact no-work reason; media is optional.</small>
                         </div>
                         <div className="site-procedure-actions site-procedure-scenarios no-work-path">
                           <button type="button" className={`no-access-job-btn ${isNoAccessFirst ? "is-active" : ""}`} onClick={() => startNoAccessCounter(selected)}>
@@ -17447,11 +17635,11 @@ return (
                           </button>
                           <button type="button" className={`refused-job-btn ${isRefused ? "is-active" : ""}`} onClick={() => markRefusedAccess(selected)}>
                             <strong>Refused Access</strong>
-                            <small>One photo</small>
+                            <small>Media optional</small>
                           </button>
                           <button type="button" className={`other-done-job-btn ${isCompletedByOthers ? "is-active" : ""}`} onClick={() => markCompletedByOthers(selected)}>
                             <strong>Done by Others</strong>
-                            <small>Evidence</small>
+                            <small>Media optional</small>
                           </button>
                         </div>
                         {isRefused ? (
@@ -17657,7 +17845,7 @@ return (
                 const stepText = activeGuide
                   ? activeGuide.text
                   : fieldFocusPane === "capture"
-                    ? "Start Job opens the required before photos and videos. No access, refused access, and done by others save the status for paperwork."
+                    ? "Start Job opens before media. No access, refused access, done by others, and completed work archive from the active map; media is optional."
                     : fieldFocusPane === "evidence"
                       ? "Confirm the saved images and videos are labeled before generating the package."
                       : fieldFocusPane === "package"
