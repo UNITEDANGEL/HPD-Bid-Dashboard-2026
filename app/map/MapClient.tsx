@@ -811,6 +811,72 @@ function googleCalendarAppointmentHref(job: JobRecord, draftLocalValue: string) 
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
+
+function calendarTextEscape(value: unknown) {
+  return String(value || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/\r?\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;")
+    .trim();
+}
+
+function calendarAlertDownloadHref(job: JobRecord, draftLocalValue: string) {
+  const start = appointmentDateFromLocalValue(draftLocalValue) || appointmentDate(job);
+  if (!start) return "";
+
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  const contact = tenantContactInfo(job);
+  const key = jobKey(job);
+  const address = displayAddress(job);
+  const location = contact.apartment || displayLocation(job) || "Not listed";
+  const description = [
+    `HPD work order: ${key}`,
+    `Address: ${address}`,
+    `Apartment / location: ${location}`,
+    `Tenant: ${contact.name || "Not listed"}`,
+    `Phone: ${contact.phone || "Not listed"}`,
+    `Dashboard: https://hpd-bid-dashboard-2026.pages.dev/map/?omo=${encodeURIComponent(key)}&view=all`,
+    "",
+    "Page 3 description:",
+    displayDescription(job).replace(/\s+/g, " ").slice(0, 900) || "Not listed",
+  ].join("\n");
+  const stamp = calendarDateStamp(new Date());
+  const uid = `${String(key).replace(/[^a-z0-9-]+/gi, "-")}-${calendarDateStamp(start)}@hpd-bid-dashboard-2026`;
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//HPD Bid Dashboard//Appointment Alert//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${stamp}`,
+    `DTSTART:${calendarDateStamp(start)}`,
+    `DTEND:${calendarDateStamp(end)}`,
+    `SUMMARY:${calendarTextEscape(`HPD appointment ${key}`)}`,
+    `LOCATION:${calendarTextEscape([address, location === "Not listed" ? "" : location].filter(Boolean).join(" - "))}`,
+    `DESCRIPTION:${calendarTextEscape(description)}`,
+    "BEGIN:VALARM",
+    "ACTION:DISPLAY",
+    `DESCRIPTION:${calendarTextEscape(`HPD appointment tomorrow: ${key}`)}`,
+    "TRIGGER:-P1D",
+    "END:VALARM",
+    "BEGIN:VALARM",
+    "ACTION:DISPLAY",
+    `DESCRIPTION:${calendarTextEscape(`HPD appointment in 1 hour: ${key}`)}`,
+    "TRIGGER:-PT1H",
+    "END:VALARM",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ];
+
+  return `data:text/calendar;charset=utf-8,${encodeURIComponent(lines.join("\r\n"))}`;
+}
+
+function appointmentCalendarFileName(job: JobRecord) {
+  return `HPD-${String(jobKey(job)).replace(/[^a-z0-9-]+/gi, "-")}-appointment.ics`;
+}
 function descriptionStatusLabel(job: JobRecord | null | undefined) {
   const text = displayDescription(job);
   if (!text) return "Description missing";
@@ -1198,18 +1264,34 @@ function markerNoAccessTimerHtml(job: JobRecord) {
   const className = second.ready ? "is-ready" : "is-waiting";
   return `<span class="marker-no-access-timer ${className}">${escapeMarkerHtml(label)}</span>`;
 }
-function markerAppointmentReminderHtml(job: JobRecord, now = new Date()) {
+function appointmentMarkerTimeLabel(date: Date, now = new Date()) {
+  const time = date
+    .toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    })
+    .replace(":00", "")
+    .replace(/\s+/g, "")
+    .toUpperCase();
+  const today = dateOnly(now).getTime();
+  const appointmentDay = dateOnly(date).getTime();
+  if (appointmentDay > today) return `TMR ${time}`;
+  return time;
+}
+function markerAppointmentLabelText(job: JobRecord, now = new Date()) {
   const date = appointmentDate(job);
   if (!date) return "";
   const diff = date.getTime() - now.getTime();
   if (diff < -APPOINTMENT_DUE_GRACE_MS || diff > APPOINTMENT_REMINDER_WINDOW_MS) return "";
 
-  let label = "APPT NOW";
-  if (diff > 60 * 60 * 1000) {
-    label = `APPT ${Math.ceil(diff / 3600000)}H`;
-  } else if (diff > 0) {
-    label = `APPT ${Math.max(1, Math.ceil(diff / 60000))}M`;
-  }
+  if (diff <= 0) return "APPT NOW";
+  return `APPT ${appointmentMarkerTimeLabel(date, now)}`;
+}
+function markerAppointmentReminderHtml(job: JobRecord, now = new Date()) {
+  const label = markerAppointmentLabelText(job, now);
+  if (!label) return "";
+  const date = appointmentDate(job);
+  const diff = date ? date.getTime() - now.getTime() : 1;
 
   const className = diff <= 0 ? "is-due" : "is-soon";
   return `<span class="marker-appointment-badge ${className}">${escapeMarkerHtml(label)}</span>`;
@@ -3399,10 +3481,22 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             const days = markerOverdueDays(current.job);
             return days > worst ? days : worst;
           }, 0);
-          const appointmentCount = clusterItems.filter((current) => hasUpcomingAppointment(current.job)).length;
+          const appointmentItems = clusterItems
+            .filter((current) => hasUpcomingAppointment(current.job))
+            .sort((a, b) => (appointmentDate(a.job)?.getTime() || 0) - (appointmentDate(b.job)?.getTime() || 0));
+          const appointmentCount = appointmentItems.length;
           const readyCount = clusterItems.filter((current) => workflowViewBucket(current.job) === "ready2").length;
           const statusClass = appointmentCount ? "cluster-appointment" : readyCount ? "cluster-ready" : worstOverdue ? "cluster-overdue" : "cluster-normal";
-          const clusterLabel = appointmentCount ? `${appointmentCount} appt` : readyCount ? `${readyCount} ready` : worstOverdue ? `OD ${worstOverdue}d` : "mapped";
+          const clusterLabel =
+            appointmentCount === 1
+              ? markerAppointmentLabelText(appointmentItems[0].job)
+              : appointmentCount
+                ? `${appointmentCount} appts`
+                : readyCount
+                  ? `${readyCount} ready`
+                  : worstOverdue
+                    ? `OD ${worstOverdue}d`
+                    : "mapped";
           const marker = L.marker([item.lat, item.lng], {
             icon: L.divIcon({
               className: "maturity-map-marker",
@@ -3833,6 +3927,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const info = appointmentStatusInfo(job);
     const savedIso = appointmentIso(job);
     const calendarHref = googleCalendarAppointmentHref(job, appointmentDraft);
+    const calendarAlertHref = calendarAlertDownloadHref(job, appointmentDraft);
     const draftDate = appointmentDateFromLocalValue(appointmentDraft);
 
     return (
@@ -3873,6 +3968,19 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             }}
           >
             Google Calendar
+          </a>
+          <a
+            href={calendarAlertHref || undefined}
+            download={appointmentCalendarFileName(job)}
+            className={calendarAlertHref ? "alert-link" : "disabled"}
+            onClick={(event) => {
+              if (!calendarAlertHref) {
+                event.preventDefault();
+                alert("Choose an appointment date and time first.");
+              }
+            }}
+          >
+            Calendar Alert
           </a>
           {savedIso ? (
             <button type="button" className="quiet" onClick={() => clearJobAppointment(job)} disabled={appointmentSaving}>
@@ -14941,12 +15049,12 @@ return (
 
           .job-appointment-actions {
             display: grid !important;
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)) !important;
             gap: 8px !important;
           }
 
           .job-appointment-actions.has-clear {
-            grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.25fr) minmax(0, 0.7fr) !important;
+            grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)) !important;
           }
 
           .job-appointment-actions button,
@@ -14970,6 +15078,12 @@ return (
             background: rgba(34, 197, 94, 0.18) !important;
             border-color: rgba(34, 197, 94, 0.36) !important;
             color: #dcfce7 !important;
+          }
+
+          .job-appointment-actions .alert-link {
+            background: rgba(251, 191, 36, 0.20) !important;
+            border-color: rgba(251, 191, 36, 0.42) !important;
+            color: #fef3c7 !important;
           }
 
           .job-appointment-actions .quiet {
