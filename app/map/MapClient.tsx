@@ -1,5 +1,7 @@
 ﻿"use client";
 const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
+const HPD_TENANT_CONTACT_EMAIL = "AtkinsKi@hpd.nyc.gov";
+const HPD_TENANT_CONTACT_ATTENTION = "Kizzy Atkins / K. Atkins";
 const MAPTILER_ENV_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
 const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
 const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v1";
@@ -579,6 +581,38 @@ function cleanTenantContactName(raw: unknown) {
   if (!name || /^(T|TENANT|JOHN DOE|N\/A|NA|UNKNOWN)$/i.test(name)) return "";
   return name;
 }
+function tenantContactRequestEmailHref(job: JobRecord, apartment: string) {
+  const key = jobKey(job);
+  const address = displayAddress(job);
+  const location = apartment || displayLocation(job) || "Not listed";
+  const awardDate = String((job as any).AwardDate || (job as any).awardDate || (job as any)["Award Date"] || "Not listed").trim();
+  const startDate = String((job as any).StartDate || (job as any).startDate || (job as any)["Start Date"] || "Not listed").trim();
+  const completionDate = String(
+    (job as any).CompletionDate || (job as any).completionDate || (job as any)["Completion Date"] || "Not listed"
+  ).trim();
+  const description = displayDescription(job).replace(/\s+/g, " ").slice(0, 800) || "Not listed";
+  const mapUrl = `https://hpd-bid-dashboard-2026.pages.dev/map/?omo=${encodeURIComponent(key)}&view=all`;
+  const subject = `Tenant contact request - ${key} - ${address}`;
+  const body = [
+    `Hi ${HPD_TENANT_CONTACT_ATTENTION},`,
+    "",
+    "Please provide tenant contact information so we can schedule access for this HPD work order.",
+    "",
+    `OMO: ${key}`,
+    `Address: ${address}`,
+    `Apartment / location: ${location}`,
+    `Award date: ${awardDate}`,
+    `Work window: ${startDate} to ${completionDate}`,
+    `Map link: ${mapUrl}`,
+    "",
+    "Page 3 description:",
+    description,
+    "",
+    "Thank you.",
+  ].join("\n");
+
+  return `mailto:${HPD_TENANT_CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
 function tenantContactInfo(job: JobRecord | null | undefined) {
   if (!job) {
     return {
@@ -591,6 +625,7 @@ function tenantContactInfo(job: JobRecord | null | undefined) {
       status: "No tenant contact listed",
       actionHref: "",
       smsHref: "",
+      emailHref: "",
     };
   }
 
@@ -624,6 +659,7 @@ function tenantContactInfo(job: JobRecord | null | undefined) {
     /\b(public|hallway|hall way|vestibule|lobby|stair|cellar|basement|boiler|bulkhead|roof|yard|common area)\b/i.test(apartment);
   const appointmentNeeded = commonArea ? false : explicitNeeded === true || explicitNeeded === "true" || Boolean(apartment || name || phone);
   const cleanPhone = phone.replace(/[^\d+]/g, "");
+  const emailHref = !commonArea && !cleanPhone ? tenantContactRequestEmailHref(job, apartment) : "";
 
   return {
     accessType: commonArea ? "common_area" : appointmentNeeded ? "apartment" : "unknown",
@@ -639,6 +675,7 @@ function tenantContactInfo(job: JobRecord | null | undefined) {
         : "Request contact information from HPD",
     actionHref: cleanPhone ? `tel:${cleanPhone}` : "",
     smsHref: cleanPhone ? `sms:${cleanPhone}` : "",
+    emailHref,
   };
 }
 function descriptionStatusLabel(job: JobRecord | null | undefined) {
@@ -16495,10 +16532,11 @@ return (
                               <strong>{missionTenantContact.apartment || displayLocation(selected) || "Not listed"}</strong>
                             </div>
                           </div>
-                          {missionTenantContact.actionHref || missionTenantContact.smsHref ? (
+                          {missionTenantContact.actionHref || missionTenantContact.smsHref || missionTenantContact.emailHref ? (
                             <div className="tenant-contact-actions">
                               {missionTenantContact.actionHref ? <a href={missionTenantContact.actionHref}>Call Tenant</a> : null}
                               {missionTenantContact.smsHref ? <a href={missionTenantContact.smsHref}>Text Tenant</a> : null}
+                              {missionTenantContact.emailHref ? <a href={missionTenantContact.emailHref}>Email HPD</a> : null}
                             </div>
                           ) : null}
                         </>
@@ -17410,10 +17448,11 @@ return (
                             <strong>{contact.apartment || displayLocation(selected) || "Not listed"}</strong>
                           </div>
                         </div>
-                        {contact.actionHref || contact.smsHref ? (
+                        {contact.actionHref || contact.smsHref || contact.emailHref ? (
                           <div className="tenant-contact-actions">
                             {contact.actionHref ? <a href={contact.actionHref}>Call Tenant</a> : null}
                             {contact.smsHref ? <a href={contact.smsHref}>Text Tenant</a> : null}
+                            {contact.emailHref ? <a href={contact.emailHref}>Email HPD</a> : null}
                           </div>
                         ) : null}
                       </>
