@@ -7562,6 +7562,10 @@ return (
           .itb-source-modal {
             position: fixed;
             inset: 0;
+            width: 100vw;
+            max-width: 100vw;
+            box-sizing: border-box;
+            overflow: hidden;
             z-index: 210000;
             background: #06101f;
             color: #f8fbff;
@@ -7584,8 +7588,13 @@ return (
             grid-template-columns: minmax(0, 1fr) auto;
             align-items: center;
             gap: 12px;
+            min-width: 0;
             padding: 8px 0 12px;
             border-bottom: 1px solid rgba(255,255,255,.14);
+          }
+
+          .itb-source-modal-head > div {
+            min-width: 0;
           }
 
           .description-modal-head strong {
@@ -7600,6 +7609,7 @@ return (
             font-size: 20px;
             line-height: 1.1;
             letter-spacing: 0;
+            overflow-wrap: anywhere;
           }
 
           .description-modal-head span {
@@ -7617,6 +7627,7 @@ return (
             font-size: 12px;
             line-height: 1.3;
             letter-spacing: 0;
+            overflow-wrap: anywhere;
           }
 
           .itb-source-modal-actions {
@@ -7625,6 +7636,7 @@ return (
             justify-content: flex-end;
             gap: 8px;
             flex-wrap: wrap;
+            min-width: 0;
           }
 
           .description-modal-head button {
@@ -7643,6 +7655,7 @@ return (
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            min-width: 0;
             border: 0;
             border-radius: 999px;
             padding: 0 14px;
@@ -7653,6 +7666,8 @@ return (
             font-weight: 1000;
             letter-spacing: 0;
             text-decoration: none;
+            text-align: center;
+            white-space: normal;
           }
 
           .itb-source-modal-actions .primary {
@@ -7669,6 +7684,7 @@ return (
           .itb-source-modal-body {
             overflow: auto;
             -webkit-overflow-scrolling: touch;
+            min-width: 0;
             padding: 12px 0 28px;
             display: grid;
             justify-items: center;
@@ -7735,13 +7751,21 @@ return (
               gap: 8px;
             }
 
+            .itb-source-modal-head strong {
+              font-size: 18px;
+              line-height: 1.18;
+            }
+
             .itb-source-modal-actions {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
               justify-content: stretch;
+              width: 100%;
             }
 
             .itb-source-modal-actions a,
             .itb-source-modal-actions button {
-              flex: 1 1 112px;
+              width: 100%;
               padding: 0 10px;
             }
 
