@@ -13939,6 +13939,45 @@ return (
             overflow-wrap: anywhere !important;
           }
 
+          .field-page3-description {
+            display: grid !important;
+            gap: 7px !important;
+            padding: 12px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(125, 211, 252, 0.22) !important;
+            background: rgba(2, 6, 23, 0.32) !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.06) !important;
+          }
+
+          .field-page3-description span {
+            color: #9ed8ff !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .field-page3-description p {
+            margin: 0 !important;
+            max-height: min(18dvh, 168px) !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            color: #f8fafc !important;
+            font-size: 15px !important;
+            line-height: 1.36 !important;
+            font-weight: 780 !important;
+            letter-spacing: 0 !important;
+            text-transform: none !important;
+            white-space: pre-wrap !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .field-page3-description.is-missing {
+            border-color: rgba(248, 113, 113, 0.24) !important;
+            background: rgba(127, 29, 29, 0.18) !important;
+          }
+
           .field-mission-main > div:first-child {
             min-width: 0 !important;
             display: grid !important;
@@ -15969,6 +16008,7 @@ return (
                 const missionDistanceLabel = jobDistanceLabel(selected) === "Turn on location for distance"
                   ? "Location off"
                   : jobDistanceLabel(selected);
+                const missionDescription = displayDescription(selected);
 
                 return (
                   <>
@@ -15980,6 +16020,10 @@ return (
                     <div className="field-mission-jobline">
                       <strong>{jobKey(selected)}</strong>
                       <span>{displayAddress(selected)}</span>
+                    </div>
+                    <div className={`field-page3-description ${missionDescription ? "" : "is-missing"}`} aria-label="Page 3 job description">
+                      <span>Page 3 Description</span>
+                      <p>{missionDescription || "No page 3 description found for this job."}</p>
                     </div>
                     <div className="field-mission-main">
                       <div>
