@@ -86,6 +86,12 @@ type JobRecord = {
   ItbTenantName?: string;
   ItbTenantPhone?: string;
   ItbTenantContactStatus?: string;
+  AppointmentAt?: string;
+  appointmentAt?: string;
+  AppointmentUpdatedAt?: string;
+  appointmentUpdatedAt?: string;
+  AppointmentReminderStatus?: string;
+  appointmentReminderStatus?: string;
   description?: string;
   JobDescription?: string;
   Job_Description?: string;
@@ -677,6 +683,133 @@ function tenantContactInfo(job: JobRecord | null | undefined) {
     smsHref: cleanPhone ? `sms:${cleanPhone}` : "",
     emailHref,
   };
+}
+const APPOINTMENT_REMINDER_WINDOW_MS = 24 * 60 * 60 * 1000;
+const APPOINTMENT_DUE_GRACE_MS = 60 * 60 * 1000;
+
+function appointmentLocalInputValueFromDate(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function appointmentDefaultLocalValue(now = new Date()) {
+  const next = new Date(now);
+  next.setHours(next.getHours() + 2, 0, 0, 0);
+  return appointmentLocalInputValueFromDate(next);
+}
+
+function appointmentDateFromLocalValue(value: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function appointmentIsoFromLocalValue(value: string) {
+  return appointmentDateFromLocalValue(value)?.toISOString() || "";
+}
+
+function appointmentIso(job: JobRecord | null | undefined) {
+  if (!job) return "";
+  const raw = String(
+    (job as any).AppointmentAt ||
+      (job as any).appointmentAt ||
+      (job as any).TenantAppointmentAt ||
+      (job as any).tenantAppointmentAt ||
+      (job as any).AppointmentDateTime ||
+      (job as any).appointmentDateTime ||
+      ""
+  ).trim();
+  if (!raw) return "";
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
+function appointmentDate(job: JobRecord | null | undefined) {
+  const iso = appointmentIso(job);
+  if (!iso) return null;
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function appointmentDraftValue(job: JobRecord | null | undefined) {
+  const date = appointmentDate(job);
+  return date ? appointmentLocalInputValueFromDate(date) : "";
+}
+
+function appointmentStatusInfo(job: JobRecord | null | undefined, now = new Date()) {
+  const date = appointmentDate(job);
+  if (!date) {
+    return {
+      tone: "empty",
+      label: "No appointment",
+      detail: "Set a tenant appointment date and save it to this work order.",
+    };
+  }
+
+  const diff = date.getTime() - now.getTime();
+  const when = displayWorkflowDate(date.toISOString());
+
+  if (diff < -APPOINTMENT_DUE_GRACE_MS) {
+    return { tone: "past", label: "Past appointment", detail: `Was ${when}` };
+  }
+  if (diff <= 0) {
+    return { tone: "due", label: "Due now", detail: when };
+  }
+  if (diff <= 60 * 60 * 1000) {
+    const minutes = Math.max(1, Math.ceil(diff / 60000));
+    return { tone: "soon", label: `In ${minutes} min`, detail: when };
+  }
+  if (diff <= APPOINTMENT_REMINDER_WINDOW_MS) {
+    const hours = Math.max(1, Math.ceil(diff / 3600000));
+    return { tone: "soon", label: `In ${hours} hr`, detail: when };
+  }
+  return { tone: "scheduled", label: "Scheduled", detail: when };
+}
+
+function calendarDateStamp(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return [
+    date.getUTCFullYear(),
+    pad(date.getUTCMonth() + 1),
+    pad(date.getUTCDate()),
+    "T",
+    pad(date.getUTCHours()),
+    pad(date.getUTCMinutes()),
+    pad(date.getUTCSeconds()),
+    "Z",
+  ].join("");
+}
+
+function googleCalendarAppointmentHref(job: JobRecord, draftLocalValue: string) {
+  const start = appointmentDateFromLocalValue(draftLocalValue) || appointmentDate(job);
+  if (!start) return "";
+
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  const contact = tenantContactInfo(job);
+  const key = jobKey(job);
+  const address = displayAddress(job);
+  const location = contact.apartment || displayLocation(job) || "Not listed";
+  const description = displayDescription(job).replace(/\s+/g, " ").slice(0, 900) || "Not listed";
+  const details = [
+    `HPD work order: ${key}`,
+    `Address: ${address}`,
+    `Apartment / location: ${location}`,
+    `Tenant: ${contact.name || "Not listed"}`,
+    `Phone: ${contact.phone || "Not listed"}`,
+    `Dashboard: https://hpd-bid-dashboard-2026.pages.dev/map/?omo=${encodeURIComponent(key)}&view=all`,
+    "",
+    "Page 3 description:",
+    description,
+  ].join("\n");
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: `HPD appointment ${key}`,
+    dates: `${calendarDateStamp(start)}/${calendarDateStamp(end)}`,
+    details,
+    location: [address, location === "Not listed" ? "" : location].filter(Boolean).join(" - "),
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 function descriptionStatusLabel(job: JobRecord | null | undefined) {
   const text = displayDescription(job);
@@ -1902,6 +2035,8 @@ const [draftWorkflowStatus, setDraftWorkflowStatus] = useState("");
 const [draftWorkflowDate, setDraftWorkflowDate] = useState("");
 const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
 const [visitStatusDate, setVisitStatusDate] = useState("");
+const [appointmentDraft, setAppointmentDraft] = useState("");
+const [appointmentSaving, setAppointmentSaving] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<"active" | "waiting72" | "ready2" | "final" | "archived" | "all">("active");
 const [countdownTick, setCountdownTick] = useState(0);
 const [mapZoom, setMapZoom] = useState(10);
@@ -2495,6 +2630,14 @@ function handleMapTouchEnd(event: any) {
       window.setTimeout(positionSelectedCardInDrawer, 80);
     }
   }, [selected]);
+
+  useEffect(() => {
+    if (!selected) {
+      setAppointmentDraft("");
+      return;
+    }
+    setAppointmentDraft(appointmentDraftValue(selected) || appointmentDefaultLocalValue());
+  }, [selected ? jobKey(selected) : "", selected?.AppointmentAt, selected?.appointmentAt]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -3481,6 +3624,66 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
   }, [jobs, countdownTick]);
 
+  const upcomingAppointmentJobs = useMemo<MappedJob[]>(() => {
+    const baseRows = (mappedJobs.length ? mappedJobs : jobs) as MappedJob[];
+    const baseByKey = new Map<string, MappedJob>();
+    [...filteredJobs, ...baseRows].forEach((job) => {
+      const key = jobKey(job);
+      if (key && !baseByKey.has(key)) baseByKey.set(key, job);
+    });
+    const overrideRows = Object.entries(serverWorkflowOverrides).map(([key, patch]) => {
+      const base = baseByKey.get(key) || ({ id: key, omo: key } as MappedJob);
+      return { ...base, ...(patch || {}), id: base.id || key, omo: base.omo || key } as MappedJob;
+    });
+    const rows = [
+      ...(selected ? [selected] : []),
+      ...filteredJobs,
+      ...overrideRows,
+      ...baseRows,
+    ];
+    const now = new Date();
+    const seen = new Set<string>();
+
+    return rows
+      .filter((job) => {
+        const key = jobKey(job);
+        if (!key || seen.has(key)) return false;
+        const date = appointmentDate(job);
+        if (!date) return false;
+        const diff = date.getTime() - now.getTime();
+        if (diff < -APPOINTMENT_DUE_GRACE_MS || diff > APPOINTMENT_REMINDER_WINDOW_MS) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => {
+        const left = appointmentDate(a)?.getTime() || 0;
+        const right = appointmentDate(b)?.getTime() || 0;
+        return left - right;
+      })
+      .slice(0, 6);
+  }, [selected, filteredJobs, jobs, mappedJobs, serverWorkflowOverrides, countdownTick]);
+
+  const primaryAppointmentJob = upcomingAppointmentJobs[0] || null;
+
+  useEffect(() => {
+    if (!primaryAppointmentJob || typeof window === "undefined") return;
+    const iso = appointmentIso(primaryAppointmentJob);
+    if (!iso) return;
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const noticeKey = `hpd-appointment-notice-${todayKey}-${jobKey(primaryAppointmentJob)}-${iso}`;
+    if (window.localStorage.getItem(noticeKey)) return;
+
+    window.localStorage.setItem(noticeKey, "1");
+    const info = appointmentStatusInfo(primaryAppointmentJob);
+    showActionNotice(`Upcoming appointment: ${jobKey(primaryAppointmentJob)} ${info.label}.`);
+
+    if ("Notification" in window && window.Notification.permission === "granted") {
+      new window.Notification("HPD appointment reminder", {
+        body: `${jobKey(primaryAppointmentJob)} ${info.detail} - ${displayAddress(primaryAppointmentJob)}`,
+      });
+    }
+  }, [primaryAppointmentJob ? jobKey(primaryAppointmentJob) : "", primaryAppointmentJob ? appointmentIso(primaryAppointmentJob) : "", countdownTick]);
+
   function showReadyRevisitJobs() {
     setWorkflowViewFilter("ready2");
     setClusterSheet(null);
@@ -3523,9 +3726,139 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function applyWorkflowPatchToState(key: string, patch: Record<string, any>) {
     const applyPatch = (row: any) => (jobKey(row) === key ? { ...row, ...patch } : row);
+    setServerWorkflowOverrides((current) => {
+      const next = { ...current };
+      if (patch.__clearWorkflow) {
+        delete next[key];
+      } else {
+        next[key] = { ...(next[key] || {}), ...patch };
+      }
+      return next;
+    });
     setSelected((current) => (current && jobKey(current) === key ? (applyPatch(current) as MappedJob) : current));
     setJobs((rows) => rows.map(applyPatch));
     setMappedJobs((rows) => rows.map(applyPatch));
+  }
+
+  function saveJobAppointment(job: MappedJob) {
+    const key = jobKey(job);
+    const iso = appointmentIsoFromLocalValue(appointmentDraft);
+    if (!key) return;
+    if (!iso) {
+      alert("Choose an appointment date and time first.");
+      return;
+    }
+
+    const updatedAt = new Date().toISOString();
+    const patch = {
+      AppointmentAt: iso,
+      appointmentAt: iso,
+      AppointmentReminderStatus: "scheduled",
+      appointmentReminderStatus: "scheduled",
+      AppointmentUpdatedAt: updatedAt,
+      appointmentUpdatedAt: updatedAt,
+      updatedAt,
+    };
+
+    setAppointmentSaving(true);
+    workflowStorageSave(key, patch);
+    applyWorkflowPatchToState(key, patch);
+
+    workflowServerSave(key, patch)
+      .then(() => showActionNotice(`Appointment saved for ${key}: ${displayWorkflowDate(iso)}.`))
+      .catch((error) => {
+        console.error(error);
+        showActionNotice("Appointment saved on this device. Server sync needs retry.");
+      })
+      .finally(() => setAppointmentSaving(false));
+  }
+
+  function clearJobAppointment(job: MappedJob) {
+    const key = jobKey(job);
+    if (!key) return;
+
+    const updatedAt = new Date().toISOString();
+    const patch = {
+      AppointmentAt: "",
+      appointmentAt: "",
+      TenantAppointmentAt: "",
+      tenantAppointmentAt: "",
+      AppointmentDateTime: "",
+      appointmentDateTime: "",
+      AppointmentReminderStatus: "",
+      appointmentReminderStatus: "",
+      AppointmentUpdatedAt: updatedAt,
+      appointmentUpdatedAt: updatedAt,
+      updatedAt,
+    };
+
+    setAppointmentSaving(true);
+    setAppointmentDraft(appointmentDefaultLocalValue());
+    workflowStorageSave(key, patch);
+    applyWorkflowPatchToState(key, patch);
+
+    workflowServerSave(key, patch)
+      .then(() => showActionNotice(`Appointment cleared for ${key}.`))
+      .catch((error) => {
+        console.error(error);
+        showActionNotice("Appointment cleared here. Server sync needs retry.");
+      })
+      .finally(() => setAppointmentSaving(false));
+  }
+
+  function renderJobAppointmentCard(job: MappedJob, mode: "mission" | "selected" = "selected") {
+    const info = appointmentStatusInfo(job);
+    const savedIso = appointmentIso(job);
+    const calendarHref = googleCalendarAppointmentHref(job, appointmentDraft);
+    const draftDate = appointmentDateFromLocalValue(appointmentDraft);
+
+    return (
+      <div className={`job-appointment-card appointment-${info.tone} ${mode === "mission" ? "mission-appointment" : ""}`} aria-label="Job appointment reminder">
+        <div className="job-appointment-head">
+          <span>Appointment</span>
+          <strong>{info.label}</strong>
+        </div>
+        <label className="job-appointment-input">
+          <span>Date / time</span>
+          <input
+            type="datetime-local"
+            value={appointmentDraft}
+            onChange={(event) => setAppointmentDraft(event.target.value)}
+          />
+        </label>
+        <small>
+          {savedIso
+            ? `Saved reminder: ${info.detail}`
+            : draftDate
+              ? `Ready to save: ${displayWorkflowDate(draftDate.toISOString())}`
+              : "Choose a date/time to save a reminder and open Google Calendar."}
+        </small>
+        <div className={`job-appointment-actions ${savedIso ? "has-clear" : ""}`}>
+          <button type="button" onClick={() => saveJobAppointment(job)} disabled={appointmentSaving}>
+            {appointmentSaving ? "Saving" : "Save"}
+          </button>
+          <a
+            href={calendarHref || undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={calendarHref ? "" : "disabled"}
+            onClick={(event) => {
+              if (!calendarHref) {
+                event.preventDefault();
+                alert("Choose an appointment date and time first.");
+              }
+            }}
+          >
+            Google Calendar
+          </a>
+          {savedIso ? (
+            <button type="button" className="quiet" onClick={() => clearJobAppointment(job)} disabled={appointmentSaving}>
+              Clear
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
   }
 
   function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, notice: string) {
@@ -8411,6 +8744,55 @@ return (
             padding: 7px 10px;
           }
 
+          .appointment-reminder-alert {
+            position: fixed;
+            z-index: 1401;
+            left: 50%;
+            top: 238px;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: calc(100vw - 20px);
+            padding: 10px 12px;
+            border-radius: 18px;
+            border: 1px solid rgba(251, 191, 36, 0.54);
+            background:
+              radial-gradient(circle at top left, rgba(251, 191, 36, 0.26), transparent 38%),
+              linear-gradient(135deg, rgba(28, 20, 7, 0.96), rgba(22, 39, 62, 0.94));
+            color: #fff7ed;
+            box-shadow:
+              0 0 0 4px rgba(251,191,36,0.12),
+              0 0 34px rgba(251,191,36,0.22),
+              0 16px 44px rgba(0,0,0,0.50);
+          }
+
+          .appointment-reminder-alert strong {
+            color: #fde68a;
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            white-space: nowrap;
+          }
+
+          .appointment-reminder-alert span {
+            min-width: 0;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+
+          .appointment-reminder-alert button {
+            border: 0;
+            border-radius: 999px;
+            background: #fbbf24;
+            color: #1c1407;
+            font-size: 12px;
+            font-weight: 950;
+            padding: 7px 10px;
+          }
+
           @keyframes readyAlertPulse {
             0%, 100% {
               box-shadow:
@@ -8437,6 +8819,16 @@ return (
               max-width: 155px;
               overflow: hidden;
               text-overflow: ellipsis;
+            }
+
+            .appointment-reminder-alert {
+              top: 225px;
+              gap: 7px;
+              padding: 8px 9px;
+            }
+
+            .appointment-reminder-alert span {
+              max-width: 150px;
             }
           }
           /* MOBILE_SPACE_UPGRADE_2026 */
@@ -14439,8 +14831,137 @@ return (
             text-decoration: none !important;
           }
 
+          .job-appointment-card {
+            display: grid !important;
+            gap: 9px !important;
+            margin-top: 10px !important;
+            padding: 12px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(96, 165, 250, 0.30) !important;
+            background:
+              radial-gradient(circle at top right, rgba(96, 165, 250, 0.18), transparent 42%),
+              rgba(15, 23, 42, 0.42) !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.06) !important;
+          }
+
+          .job-appointment-card.appointment-soon,
+          .job-appointment-card.appointment-due {
+            border-color: rgba(251, 191, 36, 0.52) !important;
+            background:
+              radial-gradient(circle at top right, rgba(251, 191, 36, 0.24), transparent 44%),
+              rgba(69, 26, 3, 0.28) !important;
+          }
+
+          .job-appointment-card.appointment-past {
+            border-color: rgba(248, 113, 113, 0.42) !important;
+            background:
+              radial-gradient(circle at top right, rgba(248, 113, 113, 0.20), transparent 44%),
+              rgba(69, 10, 10, 0.24) !important;
+          }
+
+          .job-appointment-head {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 10px !important;
+          }
+
+          .job-appointment-head span,
+          .job-appointment-input span {
+            color: #bfdbfe !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-appointment-head strong {
+            color: #ffffff !important;
+            font-size: 14px !important;
+            line-height: 1.14 !important;
+            font-weight: 1000 !important;
+            text-align: right !important;
+          }
+
+          .job-appointment-input {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 6px !important;
+          }
+
+          .job-appointment-input input {
+            width: 100% !important;
+            min-height: 42px !important;
+            border-radius: 10px !important;
+            border: 1px solid rgba(191, 219, 254, 0.24) !important;
+            background: rgba(2, 6, 23, 0.45) !important;
+            color: #f8fafc !important;
+            padding: 0 10px !important;
+            font-size: 14px !important;
+            font-weight: 850 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-appointment-card small {
+            color: #dbeafe !important;
+            font-size: 12px !important;
+            line-height: 1.32 !important;
+            font-weight: 760 !important;
+          }
+
+          .job-appointment-actions {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .job-appointment-actions.has-clear {
+            grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.25fr) minmax(0, 0.7fr) !important;
+          }
+
+          .job-appointment-actions button,
+          .job-appointment-actions a {
+            min-height: 38px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 999px !important;
+            border: 1px solid rgba(96, 165, 250, 0.36) !important;
+            background: rgba(37, 99, 235, 0.20) !important;
+            color: #dbeafe !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-decoration: none !important;
+            cursor: pointer !important;
+          }
+
+          .job-appointment-actions button:first-child {
+            background: rgba(34, 197, 94, 0.18) !important;
+            border-color: rgba(34, 197, 94, 0.36) !important;
+            color: #dcfce7 !important;
+          }
+
+          .job-appointment-actions .quiet {
+            background: rgba(148, 163, 184, 0.14) !important;
+            border-color: rgba(148, 163, 184, 0.24) !important;
+            color: #e2e8f0 !important;
+          }
+
+          .job-appointment-actions button:disabled,
+          .job-appointment-actions a.disabled {
+            opacity: 0.55 !important;
+            cursor: not-allowed !important;
+          }
+
           @media (max-width: 520px) {
             .tenant-contact-grid {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .job-appointment-actions,
+            .job-appointment-actions.has-clear {
               grid-template-columns: minmax(0, 1fr) !important;
             }
           }
@@ -15995,6 +16516,18 @@ return (
         ) : null}
       </section>
 
+      {primaryAppointmentJob && !clusterSheet && !selectedOnly ? (
+        <div className="appointment-reminder-alert">
+          <strong>APPOINTMENT</strong>
+          <span>
+            {jobKey(primaryAppointmentJob)} {appointmentStatusInfo(primaryAppointmentJob).label} - {displayAddress(primaryAppointmentJob)}
+          </span>
+          <button type="button" onClick={() => focusJob(primaryAppointmentJob)}>
+            Open
+          </button>
+        </div>
+      ) : null}
+
       <aside
         ref={jobDrawerRef}
         className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""} ${clusterSheet ? "cluster-focus" : ""} ${fullMap && !drawerOpen ? "drawer-hard-hidden" : ""}`}
@@ -16542,6 +17075,7 @@ return (
                         </>
                       ) : null}
                     </div>
+                    {renderJobAppointmentCard(selected, "mission")}
                     <div className="field-mission-main">
                       <div>
                         <strong>{missionTitle}</strong>
@@ -17458,6 +17992,7 @@ return (
                       </>
                     ) : null}
                   </div>
+                  {renderJobAppointmentCard(selected)}
                 </>
               );
             })()}
