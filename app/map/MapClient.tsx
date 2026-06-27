@@ -574,6 +574,11 @@ function displayDescription(job: JobRecord | null | undefined) {
     .replace(/[ \t]{2,}/g, " ")
     .trim();
 }
+function cleanTenantContactName(raw: unknown) {
+  const name = String(raw || "").trim();
+  if (!name || /^(T|TENANT|JOHN DOE|N\/A|NA|UNKNOWN)$/i.test(name)) return "";
+  return name;
+}
 function tenantContactInfo(job: JobRecord | null | undefined) {
   if (!job) {
     return {
@@ -599,13 +604,13 @@ function tenantContactInfo(job: JobRecord | null | undefined) {
       (job as any).location ||
       ""
   ).trim();
-  const name = String(
+  const name = cleanTenantContactName(
     (job as any).ItbTenantName ||
       (job as any).itbTenantName ||
       (job as any).TenantName ||
       (job as any).tenantName ||
       ""
-  ).trim();
+  );
   const phone = String(
     (job as any).ItbTenantPhone ||
       (job as any).itbTenantPhone ||
@@ -631,7 +636,7 @@ function tenantContactInfo(job: JobRecord | null | undefined) {
       ? "Public/common area - no tenant contact needed"
       : phone
         ? "Ready to call or text for appointment"
-        : "Apartment access - tenant phone needed",
+        : "Request contact information from HPD",
     actionHref: cleanPhone ? `tel:${cleanPhone}` : "",
     smsHref: cleanPhone ? `sms:${cleanPhone}` : "",
   };

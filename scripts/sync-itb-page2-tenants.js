@@ -355,7 +355,7 @@ function applyTenantContact(job, contact) {
   job.ItbTenantContactStatus = contact.appointmentNeeded
     ? contact.phone
       ? "CONTACT_FOUND"
-      : "CONTACT_NEEDED"
+      : "REQUEST_HPD_CONTACT"
     : "COMMON_AREA_NO_TENANT";
 
   if (shouldReplaceTenantName(job.TenantName, contact.name)) job.TenantName = contact.name;
