@@ -4,11 +4,30 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 type JobRecord = {
+  OMO?: string;
+  Job_ID?: string;
+  "Job ID"?: string;
   id?: string;
+  omo?: string;
+  jobId?: string;
   address?: string;
+  Address?: string;
+  BuildingAddress?: string;
+  "Building Address"?: string;
   location?: string;
+  Location?: string;
   borough?: string;
+  Borough?: string;
   status?: string;
+  StatusOverride?: string;
+  WorkflowStatus?: string;
+  FieldOutcome?: string;
+  trade?: string;
+  Trade?: string;
+  AwardDate?: string;
+  awardDate?: string;
+  BidAmount?: string;
+  bidAmount?: string;
   latitude?: number | string;
   longitude?: number | string;
   lat?: number | string;
@@ -36,13 +55,100 @@ function hasCoord(job: JobRecord) {
 }
 
 function isFinalStatus(job: JobRecord) {
-  const status = String(job.status || "").toLowerCase();
+  const status = jobStatus(job).toLowerCase();
   return status.includes("completed") || status.includes("no access") || status.includes("refused");
+}
+
+function firstValue(job: JobRecord, keys: Array<keyof JobRecord | string>) {
+  for (const key of keys) {
+    const value = (job as Record<string, unknown>)[key];
+    if (value !== undefined && value !== null && String(value).trim()) return String(value).trim();
+  }
+  return "";
+}
+
+function jobId(job: JobRecord) {
+  return firstValue(job, ["OMO", "omo", "id", "jobId", "Job_ID", "Job ID"]);
+}
+
+function jobAddress(job: JobRecord) {
+  return firstValue(job, ["BuildingAddress", "Building Address", "Address", "address", "Location", "location"]);
+}
+
+function jobStatus(job: JobRecord) {
+  return firstValue(job, ["WorkflowStatus", "FieldOutcome", "StatusOverride", "status"]) || "Pending";
+}
+
+function jobBorough(job: JobRecord) {
+  return firstValue(job, ["Borough", "borough"]);
+}
+
+function jobTrade(job: JobRecord) {
+  return firstValue(job, ["Trade", "trade"]);
+}
+
+function jobAmount(job: JobRecord) {
+  return firstValue(job, ["BidAmount", "bidAmount"]);
+}
+
+function jobAwardDate(job: JobRecord) {
+  return firstValue(job, ["AwardDate", "awardDate"]);
+}
+
+function normalizeOmoSearch(value: string) {
+  return String(value || "")
+    .trim()
+    .replace(/^omo\s*[:#-]?\s*/i, "")
+    .trim();
+}
+
+function compactSearch(value: string) {
+  return normalizeOmoSearch(value).toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function jobSearchRank(job: JobRecord, query: string) {
+  const compactQuery = compactSearch(query);
+  if (!compactQuery) return 0;
+
+  const compactId = compactSearch(jobId(job));
+  if (compactId === compactQuery) return 0;
+  if (compactId.startsWith(compactQuery)) return 1;
+  if (compactId.includes(compactQuery)) return 2;
+
+  const text = [
+    jobId(job),
+    jobAddress(job),
+    jobBorough(job),
+    jobTrade(job),
+    jobStatus(job),
+    jobAwardDate(job),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (text.includes(normalizeOmoSearch(query).toLowerCase())) return 3;
+  if (text.replace(/[^a-z0-9]+/g, "").includes(compactQuery)) return 4;
+  return Number.POSITIVE_INFINITY;
+}
+
+function jobMapHref(job: JobRecord) {
+  const id = jobId(job);
+  return id ? `/map?omo=${encodeURIComponent(id)}&view=all` : "/map";
+}
+
+function jobPackageHref(job: JobRecord, packageType?: "work" | "no_work") {
+  const id = jobId(job);
+  const params = new URLSearchParams();
+  if (id) params.set("job", id);
+  if (packageType) params.set("package", packageType);
+  const query = params.toString();
+  return query ? `/paperwork?${query}` : "/paperwork";
 }
 
 export default function MobileCommandDashboard() {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [loadState, setLoadState] = useState("Loading jobs...");
+  const [omoQuery, setOmoQuery] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +185,20 @@ export default function MobileCommandDashboard() {
       final,
     };
   }, [jobs]);
+
+  const omoResults = useMemo(() => {
+    const query = omoQuery.trim();
+    if (!query) return [];
+
+    return jobs
+      .map((job) => ({ job, rank: jobSearchRank(job, query) }))
+      .filter((item) => Number.isFinite(item.rank) && jobId(item.job))
+      .sort((a, b) => a.rank - b.rank || jobId(a.job).localeCompare(jobId(b.job)))
+      .map((item) => item.job)
+      .slice(0, 5);
+  }, [jobs, omoQuery]);
+
+  const selectedOmoJob = omoResults[0] || null;
 
   return (
     <main className="hpd-home-shell">
@@ -219,6 +339,156 @@ export default function MobileCommandDashboard() {
           border-color: rgba(255, 209, 102, 0.32);
         }
 
+        .hpd-omo-panel {
+          border: 1px solid rgba(71, 163, 255, 0.34);
+          background: linear-gradient(180deg, rgba(20, 45, 74, 0.98), rgba(13, 26, 46, 0.96));
+          border-radius: 8px;
+          padding: 14px;
+          margin-bottom: 12px;
+          box-shadow: 0 18px 54px rgba(0, 0, 0, 0.22);
+        }
+
+        .hpd-omo-head {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          margin-bottom: 10px;
+        }
+
+        .hpd-omo-head strong {
+          font-size: 18px;
+          line-height: 1;
+        }
+
+        .hpd-omo-head span {
+          color: var(--hpd-gold);
+          font-size: 11px;
+          font-weight: 950;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+
+        .hpd-omo-input {
+          width: 100%;
+          min-height: 58px;
+          border: 1px solid rgba(255, 209, 102, 0.46);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.96);
+          color: #07111f;
+          padding: 0 14px;
+          font-size: 22px;
+          font-weight: 950;
+          letter-spacing: 0;
+          outline: none;
+        }
+
+        .hpd-omo-input:focus {
+          border-color: var(--hpd-gold);
+          box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.16);
+        }
+
+        .hpd-omo-result {
+          margin-top: 10px;
+          display: grid;
+          gap: 10px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 8px;
+          padding: 12px;
+          background: rgba(0, 0, 0, 0.18);
+        }
+
+        .hpd-omo-result h2,
+        .hpd-omo-result p {
+          margin: 0;
+        }
+
+        .hpd-omo-result h2 {
+          font-size: 30px;
+          line-height: 0.95;
+        }
+
+        .hpd-omo-result p {
+          color: var(--hpd-muted);
+          font-size: 13px;
+          line-height: 1.35;
+        }
+
+        .hpd-omo-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+        }
+
+        .hpd-omo-meta span {
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.08);
+          padding: 6px 8px;
+          color: #dbeafe;
+          font-size: 11px;
+          font-weight: 900;
+        }
+
+        .hpd-omo-meta span.final {
+          border-color: rgba(255, 209, 102, 0.36);
+          color: #ffe8a3;
+        }
+
+        .hpd-omo-actions {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .hpd-omo-actions a {
+          min-height: 48px;
+          display: grid;
+          place-items: center;
+          border-radius: 8px;
+          font-weight: 950;
+          text-align: center;
+        }
+
+        .hpd-omo-map {
+          background: var(--hpd-blue);
+          color: #03101f;
+        }
+
+        .hpd-omo-package {
+          border: 1px solid var(--hpd-line);
+          background: rgba(255, 255, 255, 0.1);
+        }
+
+        .hpd-omo-quick-list {
+          display: grid;
+          gap: 6px;
+        }
+
+        .hpd-omo-quick-list button {
+          width: 100%;
+          min-height: 40px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.07);
+          color: var(--hpd-text);
+          text-align: left;
+          padding: 8px 10px;
+          font: inherit;
+          font-size: 12px;
+          font-weight: 850;
+        }
+
+        .hpd-omo-empty {
+          margin: 10px 0 0;
+          border: 1px solid rgba(255, 209, 102, 0.32);
+          border-radius: 8px;
+          padding: 10px;
+          color: #ffe8a3;
+          font-size: 13px;
+          font-weight: 850;
+        }
+
         .hpd-mini-stats {
           display: grid;
           grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -300,7 +570,8 @@ export default function MobileCommandDashboard() {
 
         @media (max-width: 560px) {
           .hpd-package-options,
-          .hpd-secondary-actions {
+          .hpd-secondary-actions,
+          .hpd-omo-actions {
             grid-template-columns: 1fr;
           }
 
@@ -317,6 +588,57 @@ export default function MobileCommandDashboard() {
         </div>
         <span className="hpd-live-pill">Live</span>
       </header>
+
+      <section className="hpd-omo-panel" aria-label="OMO command search">
+        <div className="hpd-omo-head">
+          <strong>OMO Search</strong>
+          <span>{selectedOmoJob ? jobStatus(selectedOmoJob) : "Fast find"}</span>
+        </div>
+        <input
+          className="hpd-omo-input"
+          value={omoQuery}
+          onChange={(event) => setOmoQuery(event.target.value.toUpperCase())}
+          placeholder="EQ24929"
+          aria-label="OMO search"
+          inputMode="search"
+          autoComplete="off"
+        />
+
+        {selectedOmoJob ? (
+          <div className="hpd-omo-result">
+            <div>
+              <h2>{jobId(selectedOmoJob)}</h2>
+              <p>{jobAddress(selectedOmoJob) || jobBorough(selectedOmoJob) || "No address listed"}</p>
+            </div>
+            <div className="hpd-omo-meta">
+              <span className={isFinalStatus(selectedOmoJob) ? "final" : ""}>{jobStatus(selectedOmoJob)}</span>
+              {jobBorough(selectedOmoJob) ? <span>{jobBorough(selectedOmoJob)}</span> : null}
+              {jobTrade(selectedOmoJob) ? <span>{jobTrade(selectedOmoJob)}</span> : null}
+              {jobAmount(selectedOmoJob) ? <span>{jobAmount(selectedOmoJob)}</span> : null}
+              {jobAwardDate(selectedOmoJob) ? <span>{jobAwardDate(selectedOmoJob)}</span> : null}
+            </div>
+            <div className="hpd-omo-actions">
+              <Link className="hpd-omo-map" href={jobMapHref(selectedOmoJob)}>
+                Open on Map
+              </Link>
+              <Link className="hpd-omo-package" href={jobPackageHref(selectedOmoJob)}>
+                Package
+              </Link>
+            </div>
+            {omoResults.length > 1 ? (
+              <div className="hpd-omo-quick-list" aria-label="Other OMO matches">
+                {omoResults.slice(1, 4).map((job) => (
+                  <button key={jobId(job)} type="button" onClick={() => setOmoQuery(jobId(job))}>
+                    {jobId(job)} - {jobAddress(job) || jobBorough(job) || jobStatus(job)}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : omoQuery.trim() ? (
+          <p className="hpd-omo-empty">No matching work order found.</p>
+        ) : null}
+      </section>
 
       <section className="hpd-package-panel">
         <h2>Generate Invoice Package</h2>

@@ -1786,6 +1786,7 @@ const [userLocation, setUserLocation] = useState<UserLocationState | null>(null)
 const [locationStatus, setLocationStatus] = useState("Location off");
 const [followMyLocation, setFollowMyLocation] = useState(false);
   const [search, setSearch] = useState("");
+  const [urlOmoRequest, setUrlOmoRequest] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
 const [actionNotice, setActionNotice] = useState("");
 const [dispatchQuestion, setDispatchQuestion] = useState("");
@@ -2263,9 +2264,21 @@ function handleMapTouchEnd(event: any) {
   }, []);
   // MAP_VIEW_QUERY_SUPPORT
   useEffect(() => {
-    const view = new URLSearchParams(window.location.search).get("view");
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get("view");
+    const omo = String(params.get("omo") || params.get("job") || params.get("q") || "")
+      .trim()
+      .replace(/^omo\s*[:#-]?\s*/i, "");
     if (view === "archived" || view === "active" || view === "waiting72" || view === "ready2" || view === "final" || view === "all") {
       setWorkflowViewFilter(view);
+    }
+    if (omo) {
+      setSearch(omo.toUpperCase());
+      setUrlOmoRequest(omo);
+      setMapShowAllDays(true);
+      setWorkflowViewFilter("all");
+      setDrawerOpen(true);
+      setActionNotice(`Searching OMO ${omo.toUpperCase()}.`);
     }
   }, []);
 
@@ -2462,6 +2475,20 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         .includes(needle)
     );
   }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays]);
+
+  useEffect(() => {
+    if (!urlOmoRequest || !filteredJobs.length) return;
+
+    const target = urlOmoRequest.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const match =
+      filteredJobs.find((job) => String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "") === target) ||
+      filteredJobs[0];
+    if (!match) return;
+
+    focusJob(match);
+    setUrlOmoRequest("");
+    setActionNotice(`Opened ${jobKey(match)} from OMO search.`);
+  }, [urlOmoRequest, filteredJobs]);
 
   const markerAutoFitKey = useMemo(() => {
     return filteredJobs
