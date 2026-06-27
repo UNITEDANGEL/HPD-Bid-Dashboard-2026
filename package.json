@@ -9,6 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "build:cloudflare": "node scripts/build-cloudflare-pages.js",
+    "render:itb-pages": "node scripts/render-itb-page3-assets.js",
     "start": "next start",
     "lint": "next typegen && tsc --noEmit",
     "export": "next build",

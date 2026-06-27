@@ -92,6 +92,14 @@ type JobRecord = {
   lon?: number | string;
 };
 
+type ItbSourceManifestEntry = {
+  page?: number;
+  pageImage?: string;
+  pdf?: string;
+  sourceFile?: string;
+  sourceMatch?: string;
+};
+
 type MappedJob = JobRecord & {
   _lat?: number;
   _lng?: number;
@@ -576,7 +584,7 @@ function cleanDocumentFileName(raw: unknown) {
 function documentStem(fileName: string) {
   return fileName.replace(/\.[^.]+$/, "");
 }
-function itbSourceFor(job: JobRecord | null | undefined) {
+function itbSourceFor(job: JobRecord | null | undefined, manifest: Record<string, ItbSourceManifestEntry> = {}) {
   if (!job) return null;
   const fileName = cleanDocumentFileName(
     (job as any).ITBFile ||
@@ -587,13 +595,19 @@ function itbSourceFor(job: JobRecord | null | undefined) {
   );
   if (!fileName) return null;
 
+  const manifestEntry = manifest[fileName] || manifest[fileName.toLowerCase()];
   const encodedFile = encodeURIComponent(fileName);
   const encodedStem = encodeURIComponent(documentStem(fileName));
+  const page = Number(manifestEntry?.page || 3) || 3;
+  const pdfDownloadUrl = manifestEntry?.pdf || "";
   return {
     fileName,
-    pageImageUrl: `/documents/itb-pages/${encodedStem}-p3.png`,
-    pdfUrl: `/documents/itb/${encodedFile}#page=3`,
-    pdfDownloadUrl: `/documents/itb/${encodedFile}`,
+    page,
+    pageImageUrl: manifestEntry?.pageImage || `/documents/itb-pages/${encodedStem}-p3.png`,
+    pagePublished: Boolean(manifestEntry?.pageImage),
+    pdfPublished: Boolean(pdfDownloadUrl),
+    pdfUrl: pdfDownloadUrl ? `${pdfDownloadUrl}#page=${page}` : `/documents/itb/${encodedFile}#page=${page}`,
+    pdfDownloadUrl: pdfDownloadUrl || `/documents/itb/${encodedFile}`,
   };
 }
 function getBestVoice() {
@@ -1769,6 +1783,7 @@ const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidav
 const [descriptionOpen, setDescriptionOpen] = useState(false);
 const [itbSourceOpen, setItbSourceOpen] = useState(false);
 const [itbSourceImageFailed, setItbSourceImageFailed] = useState("");
+const [itbSourceManifest, setItbSourceManifest] = useState<Record<string, ItbSourceManifestEntry>>({});
 const [touchInfoOpen, setTouchInfoOpen] = useState(false);
 const [touchInfoTitle, setTouchInfoTitle] = useState("");
 const [touchInfoText, setTouchInfoText] = useState("");
@@ -2820,6 +2835,28 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       window.setTimeout(positionSelectedCardInDrawer, 80);
     }
   }, [selected]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadItbSourceManifest() {
+      try {
+        const response = await fetch("/data/itb_source_manifest.json", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (cancelled) return;
+        const entries = data?.entries && typeof data.entries === "object" ? data.entries : {};
+        setItbSourceManifest(entries);
+      } catch {
+        if (!cancelled) setItbSourceManifest({});
+      }
+    }
+
+    loadItbSourceManifest();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -16206,7 +16243,7 @@ return (
                   ? "Location off"
                   : jobDistanceLabel(selected);
                 const missionDescription = displayDescription(selected);
-                const missionItbSource = itbSourceFor(selected);
+                const missionItbSource = itbSourceFor(selected, itbSourceManifest);
 
                 return (
                   <>
@@ -16230,7 +16267,7 @@ return (
                               setItbSourceOpen(true);
                             }}
                           >
-                            View ITB Page
+                            View Source Page
                           </button>
                         ) : (
                           <small>No ITB PDF</small>
@@ -17227,23 +17264,30 @@ return (
           </div>
         ) : null}
         {itbSourceOpen && selected ? (() => {
-          const source = itbSourceFor(selected);
+          const source = itbSourceFor(selected, itbSourceManifest);
           const imageFailed = Boolean(source && itbSourceImageFailed === source.pageImageUrl);
 
           return (
-            <div className="itb-source-modal" role="dialog" aria-modal="true" aria-label="Original ITB page 3">
+            <div className="itb-source-modal" role="dialog" aria-modal="true" aria-label="Original ITB source page">
               <div className="itb-source-modal-head">
                 <div>
-                  <strong>{jobKey(selected)} Original ITB Page 3</strong>
+                  <strong>
+                    {jobKey(selected)} {source?.page === 3 ? "Original ITB Page 3" : `Original Source Page ${source?.page || 3}`}
+                  </strong>
                   <span>{source?.fileName || "No ITB file listed"} · {displayAddress(selected)}</span>
                 </div>
                 <div className="itb-source-modal-actions">
                   {source ? (
-                    <a className="primary" target="_blank" rel="noreferrer" href={source.pdfUrl}>
-                      Open PDF Page 3
+                    <a className="primary" target="_blank" rel="noreferrer" href={source.pageImageUrl}>
+                      Open Page Image
                     </a>
                   ) : null}
-                  {source ? (
+                  {source?.pdfPublished ? (
+                    <a target="_blank" rel="noreferrer" href={source.pdfUrl}>
+                      PDF Page {source.page}
+                    </a>
+                  ) : null}
+                  {source?.pdfPublished ? (
                     <a target="_blank" rel="noreferrer" href={source.pdfDownloadUrl}>
                       Full PDF
                     </a>
@@ -17257,7 +17301,7 @@ return (
                   <img
                     className="itb-source-page-image"
                     src={source.pageImageUrl}
-                    alt={`Original ITB page 3 for ${jobKey(selected)}`}
+                    alt={`Original source page ${source.page} for ${jobKey(selected)}`}
                     onError={() => setItbSourceImageFailed(source.pageImageUrl)}
                   />
                 ) : (
