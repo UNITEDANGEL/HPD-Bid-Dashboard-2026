@@ -78,6 +78,12 @@ type JobRecord = {
   contractor?: string;
   owner?: string;
   ItbPage3Description?: string;
+  ItbTenantAccessType?: string;
+  ItbTenantAppointmentNeeded?: boolean | string;
+  ItbTenantApartment?: string;
+  ItbTenantName?: string;
+  ItbTenantPhone?: string;
+  ItbTenantContactStatus?: string;
   description?: string;
   JobDescription?: string;
   Job_Description?: string;
@@ -567,6 +573,68 @@ function displayDescription(job: JobRecord | null | undefined) {
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]{2,}/g, " ")
     .trim();
+}
+function tenantContactInfo(job: JobRecord | null | undefined) {
+  if (!job) {
+    return {
+      accessType: "unknown",
+      appointmentNeeded: false,
+      label: "Tenant Contact",
+      name: "",
+      phone: "",
+      apartment: "",
+      status: "No tenant contact listed",
+      actionHref: "",
+      smsHref: "",
+    };
+  }
+
+  const accessType = String((job as any).ItbTenantAccessType || (job as any).itbTenantAccessType || "").toLowerCase();
+  const explicitNeeded = (job as any).ItbTenantAppointmentNeeded ?? (job as any).itbTenantAppointmentNeeded;
+  const apartment = String(
+    (job as any).ItbTenantApartment ||
+      (job as any).itbTenantApartment ||
+      (job as any).ApartmentUnit ||
+      (job as any).Location ||
+      (job as any).location ||
+      ""
+  ).trim();
+  const name = String(
+    (job as any).ItbTenantName ||
+      (job as any).itbTenantName ||
+      (job as any).TenantName ||
+      (job as any).tenantName ||
+      ""
+  ).trim();
+  const phone = String(
+    (job as any).ItbTenantPhone ||
+      (job as any).itbTenantPhone ||
+      (job as any).TenantPhone ||
+      (job as any).tenantPhone ||
+      (job as any).phone ||
+      ""
+  ).trim();
+  const commonArea =
+    accessType === "common_area" ||
+    /\b(public|hallway|hall way|vestibule|lobby|stair|cellar|basement|boiler|bulkhead|roof|yard|common area)\b/i.test(apartment);
+  const appointmentNeeded = commonArea ? false : explicitNeeded === true || explicitNeeded === "true" || Boolean(apartment || name || phone);
+  const cleanPhone = phone.replace(/[^\d+]/g, "");
+
+  return {
+    accessType: commonArea ? "common_area" : appointmentNeeded ? "apartment" : "unknown",
+    appointmentNeeded,
+    label: commonArea ? "No Tenant Appointment" : "Tenant Contact",
+    name,
+    phone,
+    apartment,
+    status: commonArea
+      ? "Public/common area - no tenant contact needed"
+      : phone
+        ? "Ready to call or text for appointment"
+        : "Apartment access - tenant phone needed",
+    actionHref: cleanPhone ? `tel:${cleanPhone}` : "",
+    smsHref: cleanPhone ? `sms:${cleanPhone}` : "",
+  };
 }
 function descriptionStatusLabel(job: JobRecord | null | undefined) {
   const text = displayDescription(job);
@@ -14241,6 +14309,100 @@ return (
             background: rgba(127, 29, 29, 0.18) !important;
           }
 
+          .tenant-contact-card {
+            display: grid !important;
+            gap: 8px !important;
+            padding: 12px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(34, 197, 94, 0.26) !important;
+            background: rgba(6, 78, 59, 0.2) !important;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.06) !important;
+          }
+
+          .tenant-contact-card.no-appointment {
+            border-color: rgba(148, 163, 184, 0.2) !important;
+            background: rgba(15, 23, 42, 0.38) !important;
+          }
+
+          .tenant-contact-head {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 10px !important;
+          }
+
+          .tenant-contact-head span,
+          .tenant-contact-row span {
+            color: #86efac !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .tenant-contact-card.no-appointment .tenant-contact-head span,
+          .tenant-contact-card.no-appointment .tenant-contact-row span {
+            color: #cbd5e1 !important;
+          }
+
+          .tenant-contact-head strong {
+            color: #ffffff !important;
+            font-size: 14px !important;
+            line-height: 1.15 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-align: right !important;
+          }
+
+          .tenant-contact-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .tenant-contact-row {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 4px !important;
+          }
+
+          .tenant-contact-row strong {
+            color: #f8fafc !important;
+            font-size: 14px !important;
+            line-height: 1.18 !important;
+            font-weight: 900 !important;
+            letter-spacing: 0 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .tenant-contact-actions {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .tenant-contact-actions a {
+            min-height: 38px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 999px !important;
+            border: 1px solid rgba(34, 197, 94, 0.34) !important;
+            background: rgba(34, 197, 94, 0.16) !important;
+            color: #dcfce7 !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-decoration: none !important;
+          }
+
+          @media (max-width: 520px) {
+            .tenant-contact-grid {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+          }
+
           .field-mission-main > div:first-child {
             min-width: 0 !important;
             display: grid !important;
@@ -16272,6 +16434,7 @@ return (
                   ? "Location off"
                   : jobDistanceLabel(selected);
                 const missionDescription = displayDescription(selected);
+                const missionTenantContact = tenantContactInfo(selected);
                 const missionItbSource = itbSourceFor(selected, itbSourceManifest);
 
                 return (
@@ -16305,6 +16468,36 @@ return (
                         )}
                       </div>
                       <p>{missionDescription || "No page 3 description found for this job."}</p>
+                    </div>
+                    <div className={`tenant-contact-card ${missionTenantContact.appointmentNeeded ? "" : "no-appointment"}`} aria-label="Tenant appointment contact">
+                      <div className="tenant-contact-head">
+                        <span>{missionTenantContact.label}</span>
+                        <strong>{missionTenantContact.status}</strong>
+                      </div>
+                      {missionTenantContact.appointmentNeeded ? (
+                        <>
+                          <div className="tenant-contact-grid">
+                            <div className="tenant-contact-row">
+                              <span>Name</span>
+                              <strong>{missionTenantContact.name || "Not listed"}</strong>
+                            </div>
+                            <div className="tenant-contact-row">
+                              <span>Phone</span>
+                              <strong>{missionTenantContact.phone || "Not listed"}</strong>
+                            </div>
+                            <div className="tenant-contact-row">
+                              <span>Apt</span>
+                              <strong>{missionTenantContact.apartment || displayLocation(selected) || "Not listed"}</strong>
+                            </div>
+                          </div>
+                          {missionTenantContact.actionHref || missionTenantContact.smsHref ? (
+                            <div className="tenant-contact-actions">
+                              {missionTenantContact.actionHref ? <a href={missionTenantContact.actionHref}>Call Tenant</a> : null}
+                              {missionTenantContact.smsHref ? <a href={missionTenantContact.smsHref}>Text Tenant</a> : null}
+                            </div>
+                          ) : null}
+                        </>
+                      ) : null}
                     </div>
                     <div className="field-mission-main">
                       <div>
@@ -17163,29 +17356,67 @@ return (
               </div>
             ) : null}
 
-            {displayDescription(selected) ? (
-              <div className="selected-description clean-description-card">
-                <div className="description-head">
-                  <span>Job Description</span>
-                  <strong>{descriptionStatusLabel(selected)}</strong>
-                </div>
-                <p>{descriptionSummary(selected)}</p>
-                <div className="description-inline-actions">
-                  <button type="button" onClick={() => setDescriptionOpen(true)}>Open</button>
-                  <button type="button" onClick={() => speakText(descriptionSummary(selected), "summary")}>Summary</button>
-                  <button type="button" onClick={() => speakText(displayDescription(selected), "full")}>Read Full</button>
-                  <button type="button" onClick={stopSpeaking}>Stop</button>
-                </div>
-              </div>
-            ) : (
-              <div className="selected-description missing-description-box">
-                <div className="description-head">
-                  <span>Job Description</span>
-                  <strong>Missing</strong>
-                </div>
-                <p>No job description was found for this row. Check ITB/COA source.</p>
-              </div>
-            )}
+            {(() => {
+              const contact = tenantContactInfo(selected);
+
+              return (
+                <>
+                  {displayDescription(selected) ? (
+                    <div className="selected-description clean-description-card">
+                      <div className="description-head">
+                        <span>Job Description</span>
+                        <strong>{descriptionStatusLabel(selected)}</strong>
+                      </div>
+                      <p>{descriptionSummary(selected)}</p>
+                      <div className="description-inline-actions">
+                        <button type="button" onClick={() => setDescriptionOpen(true)}>Open</button>
+                        <button type="button" onClick={() => speakText(descriptionSummary(selected), "summary")}>Summary</button>
+                        <button type="button" onClick={() => speakText(displayDescription(selected), "full")}>Read Full</button>
+                        <button type="button" onClick={stopSpeaking}>Stop</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="selected-description missing-description-box">
+                      <div className="description-head">
+                        <span>Job Description</span>
+                        <strong>Missing</strong>
+                      </div>
+                      <p>No job description was found for this row. Check ITB/COA source.</p>
+                    </div>
+                  )}
+                  <div className={`tenant-contact-card ${contact.appointmentNeeded ? "" : "no-appointment"}`} aria-label="Tenant appointment contact">
+                    <div className="tenant-contact-head">
+                      <span>{contact.label}</span>
+                      <strong>{contact.status}</strong>
+                    </div>
+                    {contact.appointmentNeeded ? (
+                      <>
+                        <div className="tenant-contact-grid">
+                          <div className="tenant-contact-row">
+                            <span>Name</span>
+                            <strong>{contact.name || "Not listed"}</strong>
+                          </div>
+                          <div className="tenant-contact-row">
+                            <span>Phone</span>
+                            <strong>{contact.phone || "Not listed"}</strong>
+                          </div>
+                          <div className="tenant-contact-row">
+                            <span>Apt</span>
+                            <strong>{contact.apartment || displayLocation(selected) || "Not listed"}</strong>
+                          </div>
+                        </div>
+                        {contact.actionHref || contact.smsHref ? (
+                          <div className="tenant-contact-actions">
+                            {contact.actionHref ? <a href={contact.actionHref}>Call Tenant</a> : null}
+                            {contact.smsHref ? <a href={contact.smsHref}>Text Tenant</a> : null}
+                          </div>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </div>
+                </>
+              );
+            })()}
 
             <div className="selected-status-panel">
               <div className="selected-section-head">
