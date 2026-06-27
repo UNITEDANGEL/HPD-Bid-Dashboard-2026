@@ -1153,6 +1153,13 @@ function markerDateValue(value: any) {
   if (Number.isNaN(parsed.getTime())) return null;
   return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
 }
+function markerAwardDateValue(job: JobRecord) {
+  return markerDateValue((job as any).AwardDate || (job as any).awardDate || (job as any)["Award Date"] || "");
+}
+function markerWorkDateBeforeAward(job: JobRecord, workDate: Date) {
+  const awardDate = markerAwardDateValue(job);
+  return Boolean(awardDate && dateOnly(workDate).getTime() < dateOnly(awardDate).getTime());
+}
 function markerOverdueLabel(job: JobRecord) {
   const endRaw =
     (job as any).WorkCompletionDate ||
@@ -1161,6 +1168,7 @@ function markerOverdueLabel(job: JobRecord) {
     "";
   const endDate = markerDateValue(endRaw);
   if (!endDate) return "";
+  if (markerWorkDateBeforeAward(job, endDate)) return "";
   const today = new Date();
   const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const diffDays = Math.round((todayOnly.getTime() - endDate.getTime()) / 86400000);
@@ -1227,7 +1235,8 @@ function markerAwardCounter(job: JobRecord) {
 function markerStartCounterLabel(job: JobRecord) {
   const raw = (job as any).WorkStartDate || (job as any).workStartDate || (job as any)["Work Start Date"] || "";
   const startDate = parseJobDate(raw);
-  if (!startDate) return "START ?";
+  if (!startDate) return "";
+  if (markerWorkDateBeforeAward(job, startDate)) return "";
 
   const diff = daysBetween(startDate, dateOnly(new Date()));
   if (diff > 0) return `START +${diff}D`;
@@ -1261,7 +1270,7 @@ function markerSignalLabelHtml(
   return `
     <span class="signal-eyebrow">${escapeMarkerHtml(eyebrow)}</span>
     <strong class="signal-main">${escapeMarkerHtml(main)}</strong>
-    <span class="signal-start">${escapeMarkerHtml(start)}</span>
+    ${start ? `<span class="signal-start">${escapeMarkerHtml(start)}</span>` : ""}
     ${options.noAccessTimerLabel ? options.noAccessTimerLabel : ""}
     ${options.appointmentLabel ? options.appointmentLabel : ""}
     ${footer ? `<span class="signal-footer">${escapeMarkerHtml(footer)}</span>` : ""}
