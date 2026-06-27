@@ -2,6 +2,7 @@
 const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
 const HPD_TENANT_CONTACT_EMAIL = "AtkinsKi@hpd.nyc.gov";
 const HPD_TENANT_CONTACT_ATTENTION = "Kizzy Atkins / K. Atkins";
+const APPOINTMENT_ALERT_EMAIL = "uac525@gmail.com";
 const MAPTILER_ENV_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
 const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
 const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v1";
@@ -796,6 +797,7 @@ function googleCalendarAppointmentHref(job: JobRecord, draftLocalValue: string) 
     `Apartment / location: ${location}`,
     `Tenant: ${contact.name || "Not listed"}`,
     `Phone: ${contact.phone || "Not listed"}`,
+    `Requested alerts: email ${APPOINTMENT_ALERT_EMAIL} 1 day and 2 hours before`,
     `Dashboard: https://hpd-bid-dashboard-2026.pages.dev/map/?omo=${encodeURIComponent(key)}&view=all`,
     "",
     "Page 3 description:",
@@ -836,6 +838,7 @@ function calendarAlertDownloadHref(job: JobRecord, draftLocalValue: string) {
     `Apartment / location: ${location}`,
     `Tenant: ${contact.name || "Not listed"}`,
     `Phone: ${contact.phone || "Not listed"}`,
+    `Requested alerts: email ${APPOINTMENT_ALERT_EMAIL} 1 day and 2 hours before`,
     `Dashboard: https://hpd-bid-dashboard-2026.pages.dev/map/?omo=${encodeURIComponent(key)}&view=all`,
     "",
     "Page 3 description:",
@@ -858,14 +861,28 @@ function calendarAlertDownloadHref(job: JobRecord, draftLocalValue: string) {
     `LOCATION:${calendarTextEscape([address, location === "Not listed" ? "" : location].filter(Boolean).join(" - "))}`,
     `DESCRIPTION:${calendarTextEscape(description)}`,
     "BEGIN:VALARM",
+    "ACTION:EMAIL",
+    `ATTENDEE:mailto:${APPOINTMENT_ALERT_EMAIL}`,
+    `SUMMARY:${calendarTextEscape(`HPD appointment tomorrow: ${key}`)}`,
+    `DESCRIPTION:${calendarTextEscape(`HPD appointment tomorrow for ${key} at ${displayAddress(job)}. Open the dashboard to confirm access and route.`)}`,
+    "TRIGGER:-P1D",
+    "END:VALARM",
+    "BEGIN:VALARM",
+    "ACTION:EMAIL",
+    `ATTENDEE:mailto:${APPOINTMENT_ALERT_EMAIL}`,
+    `SUMMARY:${calendarTextEscape(`HPD appointment in 2 hours: ${key}`)}`,
+    `DESCRIPTION:${calendarTextEscape(`HPD appointment in 2 hours for ${key} at ${displayAddress(job)}. Open the dashboard to confirm access and route.`)}`,
+    "TRIGGER:-PT2H",
+    "END:VALARM",
+    "BEGIN:VALARM",
     "ACTION:DISPLAY",
     `DESCRIPTION:${calendarTextEscape(`HPD appointment tomorrow: ${key}`)}`,
     "TRIGGER:-P1D",
     "END:VALARM",
     "BEGIN:VALARM",
     "ACTION:DISPLAY",
-    `DESCRIPTION:${calendarTextEscape(`HPD appointment in 1 hour: ${key}`)}`,
-    "TRIGGER:-PT1H",
+    `DESCRIPTION:${calendarTextEscape(`HPD appointment in 2 hours: ${key}`)}`,
+    "TRIGGER:-PT2H",
     "END:VALARM",
     "END:VEVENT",
     "END:VCALENDAR",
@@ -3870,8 +3887,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const patch = {
       AppointmentAt: iso,
       appointmentAt: iso,
-      AppointmentReminderStatus: "scheduled",
-      appointmentReminderStatus: "scheduled",
+      AppointmentAlertEmail: APPOINTMENT_ALERT_EMAIL,
+      appointmentAlertEmail: APPOINTMENT_ALERT_EMAIL,
+      AppointmentReminderStatus: "email_alerts_1d_2h",
+      appointmentReminderStatus: "email_alerts_1d_2h",
       AppointmentUpdatedAt: updatedAt,
       appointmentUpdatedAt: updatedAt,
       updatedAt,
@@ -3902,6 +3921,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       tenantAppointmentAt: "",
       AppointmentDateTime: "",
       appointmentDateTime: "",
+      AppointmentAlertEmail: "",
+      appointmentAlertEmail: "",
       AppointmentReminderStatus: "",
       appointmentReminderStatus: "",
       AppointmentUpdatedAt: updatedAt,
@@ -3946,10 +3967,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         </label>
         <small>
           {savedIso
-            ? `Saved reminder: ${info.detail}`
+            ? `Saved reminder: ${info.detail} - email alerts to ${APPOINTMENT_ALERT_EMAIL} 1 day and 2 hours before`
             : draftDate
               ? `Ready to save: ${displayWorkflowDate(draftDate.toISOString())}`
-              : "Choose a date/time to save a reminder and open Google Calendar."}
+              : `Choose a date/time to save and create email alerts for ${APPOINTMENT_ALERT_EMAIL}.`}
         </small>
         <div className={`job-appointment-actions ${savedIso ? "has-clear" : ""}`}>
           <button type="button" onClick={() => saveJobAppointment(job)} disabled={appointmentSaving}>
@@ -3980,7 +4001,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               }
             }}
           >
-            Calendar Alert
+            Email Alert
           </a>
           {savedIso ? (
             <button type="button" className="quiet" onClick={() => clearJobAppointment(job)} disabled={appointmentSaving}>
