@@ -77,6 +77,7 @@ type JobRecord = {
   phone?: string;
   contractor?: string;
   owner?: string;
+  ItbPage3Description?: string;
   description?: string;
   JobDescription?: string;
   Job_Description?: string;
@@ -550,6 +551,8 @@ function displayLocation(job: JobRecord | null | undefined) {
 function displayDescription(job: JobRecord | null | undefined) {
   if (!job) return "";
   const raw =
+    (job as any).ItbPage3Description ||
+    (job as any).itbPage3Description ||
     (job as any).description ||
     (job as any).JobDescription ||
     (job as any).Job_Description ||
@@ -569,8 +572,8 @@ function descriptionStatusLabel(job: JobRecord | null | undefined) {
   const text = displayDescription(job);
   if (!text) return "Description missing";
   if (text.length < 40) return "Description short - check source";
-  if (/confirmation of award/i.test(text) && !/essential service|repair|replace|install|remove|restore/i.test(text)) {
-    return "Description may need review";
+  if (/confirmation of award/i.test(text)) {
+    return "Needs ITB page 3 review";
   }
   return "Description ready";
 }
@@ -580,9 +583,6 @@ function cleanDocumentFileName(raw: unknown) {
   const fileName = value.split(/[\\/]/).pop()?.trim() || "";
   if (!/\.pdf$/i.test(fileName)) return "";
   return fileName;
-}
-function documentStem(fileName: string) {
-  return fileName.replace(/\.[^.]+$/, "");
 }
 function itbSourceFor(job: JobRecord | null | undefined, manifest: Record<string, ItbSourceManifestEntry> = {}) {
   if (!job) return null;
@@ -597,14 +597,15 @@ function itbSourceFor(job: JobRecord | null | undefined, manifest: Record<string
 
   const manifestEntry = manifest[fileName] || manifest[fileName.toLowerCase()];
   const encodedFile = encodeURIComponent(fileName);
-  const encodedStem = encodeURIComponent(documentStem(fileName));
   const page = Number(manifestEntry?.page || 3) || 3;
   const pdfDownloadUrl = manifestEntry?.pdf || "";
+  const pageImageUrl = manifestEntry?.pageImage || "";
   return {
     fileName,
     page,
-    pageImageUrl: manifestEntry?.pageImage || `/documents/itb-pages/${encodedStem}-p3.png`,
-    pagePublished: Boolean(manifestEntry?.pageImage),
+    pageImageUrl,
+    pagePublished: Boolean(pageImageUrl),
+    itbPage3Published: Boolean(pageImageUrl && page === 3),
     pdfPublished: Boolean(pdfDownloadUrl),
     pdfUrl: pdfDownloadUrl ? `${pdfDownloadUrl}#page=${page}` : `/documents/itb/${encodedFile}#page=${page}`,
     pdfDownloadUrl: pdfDownloadUrl || `/documents/itb/${encodedFile}`,
@@ -2846,7 +2847,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const data = await response.json();
         if (cancelled) return;
         const entries = data?.entries && typeof data.entries === "object" ? data.entries : {};
-        setItbSourceManifest(entries);
+        const normalizedEntries: Record<string, ItbSourceManifestEntry> = { ...entries };
+        for (const [key, entry] of Object.entries(entries)) {
+          normalizedEntries[key.toLowerCase()] = entry as ItbSourceManifestEntry;
+        }
+        setItbSourceManifest(normalizedEntries);
       } catch {
         if (!cancelled) setItbSourceManifest({});
       }
@@ -16259,7 +16264,7 @@ return (
                     <div className={`field-page3-description ${missionDescription ? "" : "is-missing"}`} aria-label="Page 3 job description">
                       <div className="field-page3-description-head">
                         <span>Page 3 Description</span>
-                        {missionItbSource ? (
+                        {missionItbSource?.itbPage3Published ? (
                           <button
                             type="button"
                             onClick={() => {
@@ -16267,8 +16272,10 @@ return (
                               setItbSourceOpen(true);
                             }}
                           >
-                            View Source Page
+                            View ITB Page 3
                           </button>
+                        ) : missionItbSource ? (
+                          <small>Needs ITB Page 3</small>
                         ) : (
                           <small>No ITB PDF</small>
                         )}
@@ -17265,19 +17272,19 @@ return (
         ) : null}
         {itbSourceOpen && selected ? (() => {
           const source = itbSourceFor(selected, itbSourceManifest);
-          const imageFailed = Boolean(source && itbSourceImageFailed === source.pageImageUrl);
+          const imageFailed = Boolean(source?.pageImageUrl && itbSourceImageFailed === source.pageImageUrl);
 
           return (
             <div className="itb-source-modal" role="dialog" aria-modal="true" aria-label="Original ITB source page">
               <div className="itb-source-modal-head">
                 <div>
                   <strong>
-                    {jobKey(selected)} {source?.page === 3 ? "Original ITB Page 3" : `Original Source Page ${source?.page || 3}`}
+                    {jobKey(selected)} Original ITB Page 3
                   </strong>
                   <span>{source?.fileName || "No ITB file listed"} · {displayAddress(selected)}</span>
                 </div>
                 <div className="itb-source-modal-actions">
-                  {source ? (
+                  {source?.itbPage3Published ? (
                     <a className="primary" target="_blank" rel="noreferrer" href={source.pageImageUrl}>
                       Open Page Image
                     </a>
@@ -17297,19 +17304,19 @@ return (
               </div>
 
               <div className="itb-source-modal-body">
-                {source && !imageFailed ? (
+                {source?.itbPage3Published && !imageFailed ? (
                   <img
                     className="itb-source-page-image"
                     src={source.pageImageUrl}
-                    alt={`Original source page ${source.page} for ${jobKey(selected)}`}
+                    alt={`Original ITB page 3 for ${jobKey(selected)}`}
                     onError={() => setItbSourceImageFailed(source.pageImageUrl)}
                   />
                 ) : (
                   <div className="itb-source-missing">
-                    <strong>Original ITB page image is not published yet.</strong>
+                    <strong>Original ITB page 3 is not published yet.</strong>
                     <span>
                       {source
-                        ? `The job references ${source.fileName}. Publish that PDF/page image to show the exact ITB page here.`
+                        ? `The job references ${source.fileName}. Import the true ITB from Gmail or the ITB archive to show the exact page 3 job description here.`
                         : "This job does not list an ITB PDF filename in the dashboard data."}
                     </span>
                   </div>

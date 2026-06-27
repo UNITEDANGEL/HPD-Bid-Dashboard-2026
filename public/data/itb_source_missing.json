@@ -1,5 +1,84 @@
 {
-  "generatedAt": "2026-06-27T15:35:39.670Z",
-  "missing": [],
+  "generatedAt": "2026-06-27T15:52:31.143Z",
+  "missing": [
+    {
+      "fileName": "EO29204_041924015633 2970, WEST 27 STREET.pdf",
+      "omo": "EO29204",
+      "reason": "No confirmed ITB source PDF with page 3 was found.",
+      "rejected": []
+    },
+    {
+      "fileName": "EO17794_010424093220 141, MAC DONOUGH STREET.pdf",
+      "omo": "EO17794",
+      "reason": "No confirmed ITB source PDF with page 3 was found.",
+      "rejected": []
+    },
+    {
+      "fileName": "EQ30587_062226020124.pdf",
+      "omo": "EQ30587",
+      "reason": "No confirmed ITB source PDF with page 3 was found.",
+      "rejected": []
+    },
+    {
+      "fileName": "EQ31364_062226121545.pdf",
+      "omo": "EQ31364",
+      "reason": "No confirmed ITB source PDF with page 3 was found.",
+      "rejected": []
+    },
+    {
+      "fileName": "EQ31394_062326040705.pdf",
+      "omo": "EQ31394",
+      "reason": "No confirmed ITB source PDF with page 3 was found.",
+      "rejected": []
+    },
+    {
+      "fileName": "EQ31423_062326013000.pdf",
+      "omo": "EQ31423",
+      "reason": "No confirmed ITB source PDF with page 3 was found.",
+      "rejected": []
+    },
+    {
+      "fileName": "EQ30530_061826021850.pdf",
+      "omo": "EQ30530",
+      "reason": "No confirmed ITB source PDF with page 3 was found.",
+      "rejected": []
+    },
+    {
+      "fileName": "EQ31457_062426085014.pdf",
+      "omo": "EQ31457",
+      "reason": "No confirmed ITB source PDF with page 3 was found.",
+      "rejected": []
+    },
+    {
+      "fileName": "EQ30394_062426012231.pdf",
+      "omo": "EQ30394",
+      "reason": "No confirmed ITB source PDF with page 3 was found.",
+      "rejected": []
+    },
+    {
+      "fileName": "EQ30401_062526120455.pdf",
+      "omo": "EQ30401",
+      "reason": "No confirmed ITB source PDF with page 3 was found.",
+      "rejected": []
+    },
+    {
+      "fileName": "EQ31761_062526092043.pdf",
+      "omo": "EQ31761",
+      "reason": "No confirmed ITB source PDF with page 3 was found.",
+      "rejected": []
+    },
+    {
+      "fileName": "EQ30559_062526112614.pdf",
+      "omo": "EQ30559",
+      "reason": "No confirmed ITB source PDF with page 3 was found.",
+      "rejected": []
+    },
+    {
+      "fileName": "EQ31642_062426015050.pdf",
+      "omo": "EQ31642",
+      "reason": "No confirmed ITB source PDF with page 3 was found.",
+      "rejected": []
+    }
+  ],
   "failed": []
 }

@@ -134,27 +134,6 @@ function renderSinglePage(pdftoppm, inputPdf, assetStem, renderPage) {
   return generatedFile;
 }
 
-function renderBestVisiblePage(pdftoppm, inputPdf, assetStem, candidatePages) {
-  const rendered = [];
-  try {
-    for (const candidatePage of candidatePages) {
-      const generatedFile = renderSinglePage(pdftoppm, inputPdf, `${assetStem}-candidate`, candidatePage);
-      rendered.push({
-        page: candidatePage,
-        file: generatedFile,
-        bytes: fs.statSync(generatedFile).size,
-      });
-    }
-
-    rendered.sort((a, b) => b.bytes - a.bytes || a.page - b.page);
-    return rendered[0] || null;
-  } finally {
-    for (const item of rendered.slice(1)) {
-      fs.rmSync(item.file, { force: true });
-    }
-  }
-}
-
 function uniqueExistingDirectories(paths) {
   const seen = new Set();
   const out = [];
@@ -171,8 +150,8 @@ function uniqueExistingDirectories(paths) {
 const sourceDirs = uniqueExistingDirectories([
   process.env.HPD_ITB_PDF_DIR,
   path.join(projectRoot, "Scripts", "Diagnostics script", "ITB_Downloads_V5"),
-  path.join(projectRoot, "Scripts", "Diagnostics script", "COA_Downloads_V5"),
-  path.join(projectRoot, "COA_PDFs"),
+  path.join(projectRoot, "Scripts", "Diagnostics script", "ITB_Downloads_V6"),
+  path.join(projectRoot, "Invitations_to_Bid"),
 ]);
 
 if (!sourceDirs.length) {
@@ -210,21 +189,66 @@ for (const source of sourceFiles) {
   if (!existing || source.dirIndex < existing.dirIndex) exactFiles.set(source.baseLower, source);
 }
 
-function findSource(ref) {
-  const exact = exactFiles.get(ref.fileName.toLowerCase());
-  if (exact) return { ...exact, sourceMatch: "exact" };
+const pdfinfo = resolvePopplerTool("pdfinfo");
+const pdftoppm = resolvePopplerTool("pdftoppm");
+const pageCountCache = new Map();
+
+function cachedPdfPageCount(inputPdf) {
+  if (!pageCountCache.has(inputPdf)) {
+    pageCountCache.set(inputPdf, readPdfPageCount(pdfinfo, inputPdf));
+  }
+  return pageCountCache.get(inputPdf) || 0;
+}
+
+function withPageCount(source) {
+  if (!source) return null;
+  return {
+    ...source,
+    pageCount: cachedPdfPageCount(source.filePath),
+  };
+}
+
+function findUsableSource(ref) {
+  const rejected = [];
+  const exact = withPageCount(exactFiles.get(ref.fileName.toLowerCase()));
+
+  if (exact) {
+    if (exact.pageCount >= page) return { source: { ...exact, sourceMatch: "exact" }, rejected };
+    rejected.push({
+      filePath: exact.filePath,
+      pageCount: exact.pageCount,
+      reason: `source has fewer than ${page} pages`,
+    });
+  }
 
   const omo = ref.omo || (ref.fileName.match(/[A-Z]{2}\d{5}/i) || [""])[0].toUpperCase();
   const candidates = sourceFiles
     .filter((source) => omo && source.baseName.toUpperCase().includes(omo))
     .sort((a, b) => a.dirIndex - b.dirIndex || a.baseName.localeCompare(b.baseName));
 
-  if (candidates[0]) return { ...candidates[0], sourceMatch: "omo" };
-  return null;
+  for (const candidate of candidates) {
+    if (exact && candidate.filePath === exact.filePath) continue;
+    const candidateWithPages = withPageCount(candidate);
+    if (!candidateWithPages) continue;
+    if (candidateWithPages.pageCount >= page) {
+      return {
+        source: {
+          ...candidateWithPages,
+          sourceMatch: exact ? "omo-after-short-exact" : "omo",
+        },
+        rejected,
+      };
+    }
+    rejected.push({
+      filePath: candidateWithPages.filePath,
+      pageCount: candidateWithPages.pageCount,
+      reason: `source has fewer than ${page} pages`,
+    });
+  }
+
+  return { source: null, rejected };
 }
 
-const pdftoppm = resolvePopplerTool("pdftoppm");
-const pdfinfo = resolvePopplerTool("pdfinfo");
 const manifest = {
   generatedAt: new Date().toISOString(),
   page,
@@ -246,39 +270,26 @@ const failed = [];
 const referencedPageFiles = new Set();
 
 for (const ref of refs.values()) {
-  const source = findSource(ref);
-  let renderPage = page;
-  let candidatePages = [page];
-  if (source) {
-    const pageCount = readPdfPageCount(pdfinfo, source.filePath);
-    if (pageCount > 0 && pageCount < page) {
-      candidatePages = Array.from({ length: pageCount }, (_, index) => index + 1);
-      renderPage = candidatePages[candidatePages.length - 1];
-    }
-  }
+  const { source, rejected } = findUsableSource(ref);
+  const renderPage = page;
 
   const assetStem = safeAssetStem(ref.fileName);
   const pageFileName = `${assetStem}-p${renderPage}.png`;
   const pageFilePath = path.join(outputDir, pageFileName);
 
-  if (!source && !fileExists(pageFilePath)) {
+  if (!source) {
     manifest.summary.missingSource += 1;
-    missing.push(ref);
+    missing.push({
+      ...ref,
+      reason: `No confirmed ITB source PDF with page ${page} was found.`,
+      rejected,
+    });
     continue;
   }
 
   try {
-    if (source && (force || candidatePages.length > 1 || !fileExists(pageFilePath))) {
-      let generatedFile = "";
-      if (candidatePages.length > 1) {
-        const best = renderBestVisiblePage(pdftoppm, source.filePath, assetStem, candidatePages);
-        if (!best) throw new Error(`No visible page could be rendered for ${ref.fileName}`);
-        renderPage = best.page;
-        generatedFile = best.file;
-      } else {
-        generatedFile = renderSinglePage(pdftoppm, source.filePath, assetStem, renderPage);
-      }
-
+    if (force || !fileExists(pageFilePath)) {
+      const generatedFile = renderSinglePage(pdftoppm, source.filePath, assetStem, renderPage);
       const finalPageFileName = `${assetStem}-p${renderPage}.png`;
       const finalPageFilePath = path.join(outputDir, finalPageFileName);
       fs.rmSync(finalPageFilePath, { force: true });
@@ -329,12 +340,6 @@ if (!process.argv.includes("--no-clean")) {
     }
   }
 }
-
-const lowerCaseEntries = {};
-for (const [fileName, entry] of Object.entries(manifest.entries)) {
-  lowerCaseEntries[fileName.toLowerCase()] = entry;
-}
-manifest.entries = { ...manifest.entries, ...lowerCaseEntries };
 
 fs.writeFileSync(manifestFile, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 fs.writeFileSync(missingFile, `${JSON.stringify({ generatedAt: manifest.generatedAt, missing, failed }, null, 2)}\n`, "utf8");
