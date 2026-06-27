@@ -566,6 +566,36 @@ function descriptionStatusLabel(job: JobRecord | null | undefined) {
   }
   return "Description ready";
 }
+function cleanDocumentFileName(raw: unknown) {
+  const value = String(raw || "").trim();
+  if (!value) return "";
+  const fileName = value.split(/[\\/]/).pop()?.trim() || "";
+  if (!/\.pdf$/i.test(fileName)) return "";
+  return fileName;
+}
+function documentStem(fileName: string) {
+  return fileName.replace(/\.[^.]+$/, "");
+}
+function itbSourceFor(job: JobRecord | null | undefined) {
+  if (!job) return null;
+  const fileName = cleanDocumentFileName(
+    (job as any).ITBFile ||
+      (job as any).itbFile ||
+      (job as any)["ITB File"] ||
+      (job as any).PDFFile ||
+      (job as any).pdfFile
+  );
+  if (!fileName) return null;
+
+  const encodedFile = encodeURIComponent(fileName);
+  const encodedStem = encodeURIComponent(documentStem(fileName));
+  return {
+    fileName,
+    pageImageUrl: `/documents/itb-pages/${encodedStem}-p3.png`,
+    pdfUrl: `/documents/itb/${encodedFile}#page=3`,
+    pdfDownloadUrl: `/documents/itb/${encodedFile}`,
+  };
+}
 function getBestVoice() {
   if (typeof window === "undefined") return null;
   if (!("speechSynthesis" in window)) return null;
@@ -1737,6 +1767,8 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
 const [selectedOnly, setSelectedOnly] = useState(false);
 const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
 const [descriptionOpen, setDescriptionOpen] = useState(false);
+const [itbSourceOpen, setItbSourceOpen] = useState(false);
+const [itbSourceImageFailed, setItbSourceImageFailed] = useState("");
 const [touchInfoOpen, setTouchInfoOpen] = useState(false);
 const [touchInfoTitle, setTouchInfoTitle] = useState("");
 const [touchInfoText, setTouchInfoText] = useState("");
@@ -7485,10 +7517,30 @@ return (
             padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
           }
 
+          .itb-source-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 210000;
+            background: #06101f;
+            color: #f8fbff;
+            display: grid;
+            grid-template-rows: auto 1fr;
+            padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+          }
+
           .description-modal-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 12px;
+            padding: 8px 0 12px;
+            border-bottom: 1px solid rgba(255,255,255,.14);
+          }
+
+          .itb-source-modal-head {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
             gap: 12px;
             padding: 8px 0 12px;
             border-bottom: 1px solid rgba(255,255,255,.14);
@@ -7500,12 +7552,37 @@ return (
             letter-spacing: -0.04em;
           }
 
+          .itb-source-modal-head strong {
+            display: block;
+            color: #ffffff;
+            font-size: 20px;
+            line-height: 1.1;
+            letter-spacing: 0;
+          }
+
           .description-modal-head span {
             display: block;
             margin-top: 4px;
             color: #aebbd0;
             font-size: 12px;
             line-height: 1.3;
+          }
+
+          .itb-source-modal-head span {
+            display: block;
+            margin-top: 4px;
+            color: #aebbd0;
+            font-size: 12px;
+            line-height: 1.3;
+            letter-spacing: 0;
+          }
+
+          .itb-source-modal-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+            flex-wrap: wrap;
           }
 
           .description-modal-head button {
@@ -7518,10 +7595,76 @@ return (
             font-weight: 1000;
           }
 
+          .itb-source-modal-actions a,
+          .itb-source-modal-actions button {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            border-radius: 999px;
+            padding: 0 14px;
+            background: rgba(248,250,252,.12);
+            color: #f8fbff;
+            font-size: 12px;
+            line-height: 1;
+            font-weight: 1000;
+            letter-spacing: 0;
+            text-decoration: none;
+          }
+
+          .itb-source-modal-actions .primary {
+            background: linear-gradient(135deg, #42e8f3, #47a3ff);
+            color: #04111f;
+          }
+
           .description-modal-body {
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             padding: 16px 2px 28px;
+          }
+
+          .itb-source-modal-body {
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 12px 0 28px;
+            display: grid;
+            justify-items: center;
+          }
+
+          .itb-source-page-image {
+            width: min(100%, 980px);
+            height: auto;
+            border-radius: 10px;
+            background: #ffffff;
+            box-shadow: 0 18px 60px rgba(0,0,0,.45);
+          }
+
+          .itb-source-missing {
+            width: min(100%, 720px);
+            display: grid;
+            gap: 10px;
+            align-content: center;
+            margin-top: 24px;
+            padding: 18px;
+            border-radius: 16px;
+            border: 1px solid rgba(248, 113, 113, 0.28);
+            background: rgba(127, 29, 29, 0.18);
+          }
+
+          .itb-source-missing strong {
+            color: #ffffff;
+            font-size: 18px;
+            line-height: 1.2;
+            letter-spacing: 0;
+          }
+
+          .itb-source-missing span {
+            color: #fecaca;
+            font-size: 13px;
+            line-height: 1.4;
+            letter-spacing: 0;
+            overflow-wrap: anywhere;
           }
 
           .description-modal-body h2 {
@@ -7540,6 +7683,26 @@ return (
           }
 
           @media (max-width: 700px) {
+            .itb-source-modal {
+              padding-left: 8px;
+              padding-right: 8px;
+            }
+
+            .itb-source-modal-head {
+              grid-template-columns: minmax(0, 1fr);
+              gap: 8px;
+            }
+
+            .itb-source-modal-actions {
+              justify-content: stretch;
+            }
+
+            .itb-source-modal-actions a,
+            .itb-source-modal-actions button {
+              flex: 1 1 112px;
+              padding: 0 10px;
+            }
+
             .description-modal-body p {
               font-size: 18px !important;
               line-height: 1.65 !important;
@@ -13949,6 +14112,14 @@ return (
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.06) !important;
           }
 
+          .field-page3-description-head {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 10px !important;
+            min-width: 0 !important;
+          }
+
           .field-page3-description span {
             color: #9ed8ff !important;
             font-size: 11px !important;
@@ -13956,6 +14127,32 @@ return (
             font-weight: 1000 !important;
             letter-spacing: 0 !important;
             text-transform: uppercase !important;
+          }
+
+          .field-page3-description button,
+          .field-page3-description small {
+            min-height: 32px !important;
+            border-radius: 999px !important;
+            padding: 0 11px !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+          }
+
+          .field-page3-description button {
+            border: 1px solid rgba(125, 211, 252, 0.34) !important;
+            background: rgba(14, 165, 233, 0.18) !important;
+            color: #e0f2fe !important;
+          }
+
+          .field-page3-description small {
+            display: inline-flex !important;
+            align-items: center !important;
+            color: #fecaca !important;
+            border: 1px solid rgba(248, 113, 113, 0.24) !important;
+            background: rgba(127, 29, 29, 0.18) !important;
           }
 
           .field-page3-description p {
@@ -16009,6 +16206,7 @@ return (
                   ? "Location off"
                   : jobDistanceLabel(selected);
                 const missionDescription = displayDescription(selected);
+                const missionItbSource = itbSourceFor(selected);
 
                 return (
                   <>
@@ -16022,7 +16220,22 @@ return (
                       <span>{displayAddress(selected)}</span>
                     </div>
                     <div className={`field-page3-description ${missionDescription ? "" : "is-missing"}`} aria-label="Page 3 job description">
-                      <span>Page 3 Description</span>
+                      <div className="field-page3-description-head">
+                        <span>Page 3 Description</span>
+                        {missionItbSource ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setItbSourceImageFailed("");
+                              setItbSourceOpen(true);
+                            }}
+                          >
+                            View ITB Page
+                          </button>
+                        ) : (
+                          <small>No ITB PDF</small>
+                        )}
+                      </div>
                       <p>{missionDescription || "No page 3 description found for this job."}</p>
                     </div>
                     <div className="field-mission-main">
@@ -17013,6 +17226,54 @@ return (
             </div>
           </div>
         ) : null}
+        {itbSourceOpen && selected ? (() => {
+          const source = itbSourceFor(selected);
+          const imageFailed = Boolean(source && itbSourceImageFailed === source.pageImageUrl);
+
+          return (
+            <div className="itb-source-modal" role="dialog" aria-modal="true" aria-label="Original ITB page 3">
+              <div className="itb-source-modal-head">
+                <div>
+                  <strong>{jobKey(selected)} Original ITB Page 3</strong>
+                  <span>{source?.fileName || "No ITB file listed"} · {displayAddress(selected)}</span>
+                </div>
+                <div className="itb-source-modal-actions">
+                  {source ? (
+                    <a className="primary" target="_blank" rel="noreferrer" href={source.pdfUrl}>
+                      Open PDF Page 3
+                    </a>
+                  ) : null}
+                  {source ? (
+                    <a target="_blank" rel="noreferrer" href={source.pdfDownloadUrl}>
+                      Full PDF
+                    </a>
+                  ) : null}
+                  <button type="button" onClick={() => setItbSourceOpen(false)}>Close</button>
+                </div>
+              </div>
+
+              <div className="itb-source-modal-body">
+                {source && !imageFailed ? (
+                  <img
+                    className="itb-source-page-image"
+                    src={source.pageImageUrl}
+                    alt={`Original ITB page 3 for ${jobKey(selected)}`}
+                    onError={() => setItbSourceImageFailed(source.pageImageUrl)}
+                  />
+                ) : (
+                  <div className="itb-source-missing">
+                    <strong>Original ITB page image is not published yet.</strong>
+                    <span>
+                      {source
+                        ? `The job references ${source.fileName}. Publish that PDF/page image to show the exact ITB page here.`
+                        : "This job does not list an ITB PDF filename in the dashboard data."}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })() : null}
       </main>
   );
 }
