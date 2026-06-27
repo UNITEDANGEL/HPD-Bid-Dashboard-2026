@@ -1153,7 +1153,7 @@ function markerStartCounterLabel(job: JobRecord) {
 }
 function markerSignalLabelHtml(
   job: JobRecord,
-  options: { overview: boolean; expanded: boolean; detailed: boolean; overdueLabel: string; noAccessTimerLabel: string }
+  options: { overview: boolean; expanded: boolean; detailed: boolean; overdueLabel: string; noAccessTimerLabel: string; appointmentLabel: string }
 ) {
   const award = markerAwardCounter(job);
   const start = markerStartCounterLabel(job);
@@ -1171,6 +1171,7 @@ function markerSignalLabelHtml(
     return `
       <span class="signal-eyebrow">${escapeMarkerHtml(tag)}</span>
       <strong class="signal-main">${escapeMarkerHtml(overviewMain)}</strong>
+      ${options.appointmentLabel ? options.appointmentLabel : ""}
     `;
   }
 
@@ -1179,6 +1180,7 @@ function markerSignalLabelHtml(
     <strong class="signal-main">${escapeMarkerHtml(main)}</strong>
     <span class="signal-start">${escapeMarkerHtml(start)}</span>
     ${options.noAccessTimerLabel ? options.noAccessTimerLabel : ""}
+    ${options.appointmentLabel ? options.appointmentLabel : ""}
     ${footer ? `<span class="signal-footer">${escapeMarkerHtml(footer)}</span>` : ""}
   `;
 }
@@ -1195,6 +1197,25 @@ function markerNoAccessTimerHtml(job: JobRecord) {
   const label = second.ready ? "2ND READY" : second.label.replace("REVISIT IN", "2ND IN");
   const className = second.ready ? "is-ready" : "is-waiting";
   return `<span class="marker-no-access-timer ${className}">${escapeMarkerHtml(label)}</span>`;
+}
+function markerAppointmentReminderHtml(job: JobRecord, now = new Date()) {
+  const date = appointmentDate(job);
+  if (!date) return "";
+  const diff = date.getTime() - now.getTime();
+  if (diff < -APPOINTMENT_DUE_GRACE_MS || diff > APPOINTMENT_REMINDER_WINDOW_MS) return "";
+
+  let label = "APPT NOW";
+  if (diff > 60 * 60 * 1000) {
+    label = `APPT ${Math.ceil(diff / 3600000)}H`;
+  } else if (diff > 0) {
+    label = `APPT ${Math.max(1, Math.ceil(diff / 60000))}M`;
+  }
+
+  const className = diff <= 0 ? "is-due" : "is-soon";
+  return `<span class="marker-appointment-badge ${className}">${escapeMarkerHtml(label)}</span>`;
+}
+function hasUpcomingAppointment(job: JobRecord) {
+  return Boolean(markerAppointmentReminderHtml(job));
 }
 function cacheKey(job: JobRecord) {
   return `hpd_geo_${jobKey(job)}_${cleanAddress(job)}`.toLowerCase();
@@ -3378,9 +3399,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             const days = markerOverdueDays(current.job);
             return days > worst ? days : worst;
           }, 0);
+          const appointmentCount = clusterItems.filter((current) => hasUpcomingAppointment(current.job)).length;
           const readyCount = clusterItems.filter((current) => workflowViewBucket(current.job) === "ready2").length;
-          const statusClass = readyCount ? "cluster-ready" : worstOverdue ? "cluster-overdue" : "cluster-normal";
-          const clusterLabel = readyCount ? `${readyCount} ready` : worstOverdue ? `OD ${worstOverdue}d` : "mapped";
+          const statusClass = appointmentCount ? "cluster-appointment" : readyCount ? "cluster-ready" : worstOverdue ? "cluster-overdue" : "cluster-normal";
+          const clusterLabel = appointmentCount ? `${appointmentCount} appt` : readyCount ? `${readyCount} ready` : worstOverdue ? `OD ${worstOverdue}d` : "mapped";
           const marker = L.marker([item.lat, item.lng], {
             icon: L.divIcon({
               className: "maturity-map-marker",
@@ -3417,15 +3439,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const markerColor = JobStatus.statusColor(job);
         const overdueLabel = markerOverdueLabel(job);
         const noAccessTimerLabel = markerNoAccessTimerHtml(job);
+        const appointmentLabel = markerAppointmentReminderHtml(job);
         const hasOverdue = Boolean(overdueLabel);
         const markerMode = markerDetailed ? "marker-detailed" : markerExpanded ? "marker-expanded" : markerOverview ? "marker-overview" : "marker-compact";
         const baseIconSize: [number, number] = markerDetailed
-          ? [184, noAccessTimerLabel ? 132 : 116]
+          ? [184, noAccessTimerLabel || appointmentLabel ? 142 : 116]
           : markerExpanded
-            ? [158, noAccessTimerLabel ? 114 : 98]
+            ? [158, noAccessTimerLabel || appointmentLabel ? 124 : 98]
             : markerOverview
-              ? [hasOverdue ? 58 : 52, 48]
-              : [hasOverdue ? 104 : 92, noAccessTimerLabel ? 72 : 62];
+              ? [hasOverdue || appointmentLabel ? 66 : 52, appointmentLabel ? 58 : 48]
+              : [hasOverdue ? 104 : 92, noAccessTimerLabel || appointmentLabel ? 82 : 62];
         const iconSize: [number, number] = [
           baseIconSize[0] + (hasOverdue && !markerOverview ? 8 : 0),
           baseIconSize[1] + (hasOverdue && !markerOverview ? 6 : 0),
@@ -3436,8 +3459,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const marker = L.marker([lat, lng], {
           icon: L.divIcon({
             className: "maturity-map-marker",
-            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${hasOverdue ? "#ef4444" : markerColor}">
-                    ${markerSignalLabelHtml(job, { overview: markerOverview, expanded: markerExpanded, detailed: markerDetailed, overdueLabel, noAccessTimerLabel })}
+            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${hasOverdue ? "#ef4444" : appointmentLabel ? "#f59e0b" : markerColor}">
+                    ${markerSignalLabelHtml(job, { overview: markerOverview, expanded: markerExpanded, detailed: markerDetailed, overdueLabel, noAccessTimerLabel, appointmentLabel })}
                   </div>`,
             iconSize,
             iconAnchor,
@@ -8744,55 +8767,6 @@ return (
             padding: 7px 10px;
           }
 
-          .appointment-reminder-alert {
-            position: fixed;
-            z-index: 1401;
-            left: 50%;
-            top: 238px;
-            transform: translateX(-50%);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            max-width: calc(100vw - 20px);
-            padding: 10px 12px;
-            border-radius: 18px;
-            border: 1px solid rgba(251, 191, 36, 0.54);
-            background:
-              radial-gradient(circle at top left, rgba(251, 191, 36, 0.26), transparent 38%),
-              linear-gradient(135deg, rgba(28, 20, 7, 0.96), rgba(22, 39, 62, 0.94));
-            color: #fff7ed;
-            box-shadow:
-              0 0 0 4px rgba(251,191,36,0.12),
-              0 0 34px rgba(251,191,36,0.22),
-              0 16px 44px rgba(0,0,0,0.50);
-          }
-
-          .appointment-reminder-alert strong {
-            color: #fde68a;
-            font-size: 12px;
-            letter-spacing: 0.08em;
-            white-space: nowrap;
-          }
-
-          .appointment-reminder-alert span {
-            min-width: 0;
-            font-size: 12px;
-            font-weight: 800;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-
-          .appointment-reminder-alert button {
-            border: 0;
-            border-radius: 999px;
-            background: #fbbf24;
-            color: #1c1407;
-            font-size: 12px;
-            font-weight: 950;
-            padding: 7px 10px;
-          }
-
           @keyframes readyAlertPulse {
             0%, 100% {
               box-shadow:
@@ -8821,15 +8795,6 @@ return (
               text-overflow: ellipsis;
             }
 
-            .appointment-reminder-alert {
-              top: 225px;
-              gap: 7px;
-              padding: 8px 9px;
-            }
-
-            .appointment-reminder-alert span {
-              max-width: 150px;
-            }
           }
           /* MOBILE_SPACE_UPGRADE_2026 */
           .map-filter-row,
@@ -14120,6 +14085,20 @@ return (
             color: #14532d !important;
           }
 
+          .maturity-map-marker .map-cluster-marker.cluster-appointment {
+            background:
+              linear-gradient(180deg, rgba(120, 53, 15, 0.95), rgba(146, 64, 14, 0.90)) !important;
+            box-shadow:
+              0 0 0 3px rgba(255, 255, 255, 0.84),
+              0 0 0 7px rgba(251, 191, 36, 0.18),
+              0 14px 30px rgba(120, 53, 15, 0.27) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-appointment strong {
+            background: #fef3c7 !important;
+            color: #92400e !important;
+          }
+
           .maturity-map-marker .map-signal-marker.marker-overview {
             min-width: 52px !important;
             min-height: 42px !important;
@@ -14159,6 +14138,19 @@ return (
           .maturity-map-marker .map-signal-marker.marker-overview .signal-footer,
           .maturity-map-marker .map-signal-marker.marker-overview .marker-no-access-timer {
             display: none !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .marker-appointment-badge {
+            position: absolute !important;
+            right: -14px !important;
+            top: -12px !important;
+            min-height: 17px !important;
+            min-width: 42px !important;
+            padding: 3px 6px !important;
+            font-size: 8px !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.96),
+              0 8px 18px rgba(120, 53, 15, 0.25) !important;
           }
 
           .maturity-map-marker .map-signal-marker.marker-compact {
@@ -14289,6 +14281,43 @@ return (
           .maturity-map-marker .map-signal-marker .marker-no-access-timer.is-ready {
             background: #22c55e !important;
             color: #052e16 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-appointment-badge {
+            min-height: 20px !important;
+            min-width: 78px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 4px 9px !important;
+            margin: 0 !important;
+            border-radius: 999px !important;
+            background: #fbbf24 !important;
+            color: #1c1407 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+            box-shadow: inset 0 0 0 1px rgba(120, 53, 15, 0.16) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-appointment-badge.is-due {
+            background: #fb923c !important;
+            color: #431407 !important;
+            animation: appointmentMarkerPulse 1.8s ease-in-out infinite;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-appointment {
+            box-shadow:
+              0 0 0 3px rgba(255, 255, 255, 0.95),
+              0 0 0 7px rgba(251, 191, 36, 0.14),
+              0 14px 30px rgba(120, 53, 15, 0.22) !important;
+          }
+
+          @keyframes appointmentMarkerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.06); }
           }
 
           .maturity-map-marker .map-signal-marker.marker-has-overdue {
@@ -16515,18 +16544,6 @@ return (
           </section>
         ) : null}
       </section>
-
-      {primaryAppointmentJob && !clusterSheet && !selectedOnly ? (
-        <div className="appointment-reminder-alert">
-          <strong>APPOINTMENT</strong>
-          <span>
-            {jobKey(primaryAppointmentJob)} {appointmentStatusInfo(primaryAppointmentJob).label} - {displayAddress(primaryAppointmentJob)}
-          </span>
-          <button type="button" onClick={() => focusJob(primaryAppointmentJob)}>
-            Open
-          </button>
-        </div>
-      ) : null}
 
       <aside
         ref={jobDrawerRef}
