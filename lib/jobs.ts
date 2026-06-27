@@ -3,6 +3,8 @@ import path from "path";
 import Papa from "papaparse";
 import type { JobRecord } from "./types";
 
+let publicJobOverlay: Map<string, Record<string, unknown>> | null = null;
+
 function pick(row: Record<string, string>, keys: string[]) {
   for (const key of keys) {
     const value = row[key];
@@ -11,6 +13,32 @@ function pick(row: Record<string, string>, keys: string[]) {
     }
   }
   return "";
+}
+
+function stringValue(value: unknown) {
+  return value === undefined || value === null ? "" : String(value).trim();
+}
+
+function readPublicJobOverlay() {
+  if (publicJobOverlay) return publicJobOverlay;
+
+  publicJobOverlay = new Map();
+  const jsonPath = path.resolve(process.cwd(), "public", "data", "COA_Fetcher_2026.json");
+  if (!fs.existsSync(jsonPath)) return publicJobOverlay;
+
+  try {
+    const rows = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
+    if (Array.isArray(rows)) {
+      rows.forEach((row) => {
+        const key = stringValue(row?.OMO || row?.id || row?.omo);
+        if (key) publicJobOverlay!.set(key.toLowerCase(), row);
+      });
+    }
+  } catch {
+    publicJobOverlay = new Map();
+  }
+
+  return publicJobOverlay;
 }
 
 function parseAmount(value: string) {
@@ -37,6 +65,7 @@ function resolveCsvPath() {
 
 function normalizeJob(row: Record<string, string>, index: number): JobRecord {
   const id = pick(row, ["OMO", "Job ID", "job_id", "id", "omo", "EQ No", "eq_no"]) || `JOB-${index + 1}`;
+  const overlay = readPublicJobOverlay().get(id.toLowerCase()) || {};
   const borough = pick(row, ["Borough", "Boro", "borough", "County", "county"]);
   const status = pick(row, ["Status", "status", "job_status", "Job Status", "state"]) || "Pending";
   const address = pick(row, [
@@ -62,8 +91,11 @@ function normalizeJob(row: Record<string, string>, index: number): JobRecord {
     "Summary",
     "JobDescription",
   ]);
-  const tenantName = pick(row, ["TenantName", "Tenant", "tenant_name"]);
-  const tenantPhone = pick(row, ["TenantPhone", "Phone", "phone"]);
+  const tenantName = pick(row, ["TenantName", "Tenant", "tenant_name"]) || stringValue(overlay.TenantName);
+  const tenantPhone = pick(row, ["TenantPhone", "Phone", "phone"]) || stringValue(overlay.TenantPhone);
+  const itbTenantName = stringValue(overlay.ItbTenantName);
+  const itbTenantPhone = stringValue(overlay.ItbTenantPhone);
+  const itbTenantAppointmentNeeded = overlay.ItbTenantAppointmentNeeded === true || overlay.ItbTenantAppointmentNeeded === "true";
   const location = pick(row, ["Location", "location"]);
   const latitude = pick(row, ["Latitude", "latitude"]);
   const longitude = pick(row, ["Longitude", "longitude"]);
@@ -82,13 +114,19 @@ function normalizeJob(row: Record<string, string>, index: number): JobRecord {
     description,
     tenantName,
     tenantPhone,
+    itbTenantAccessType: stringValue(overlay.ItbTenantAccessType),
+    itbTenantAppointmentNeeded,
+    itbTenantApartment: stringValue(overlay.ItbTenantApartment),
+    itbTenantName,
+    itbTenantPhone,
+    itbTenantContactStatus: stringValue(overlay.ItbTenantContactStatus),
     location,
     latitude,
     longitude,
     hasMap: Boolean(latitude && longitude),
     coaFile,
     itbFile,
-    raw: row,
+    raw: { ...row, ...Object.fromEntries(Object.entries(overlay).map(([key, value]) => [key, stringValue(value)])) },
   };
 }
 

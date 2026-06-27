@@ -477,6 +477,58 @@ select {
   line-height: 1.6;
 }
 
+.tenant-contact-card {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(245, 158, 11, 0.34);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.tenant-contact-card.no-appointment {
+  border-color: rgba(34, 197, 94, 0.28);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.tenant-contact-head,
+.tenant-contact-grid > div {
+  display: grid;
+  gap: 6px;
+}
+
+.tenant-contact-head span,
+.tenant-contact-grid span {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.tenant-contact-head strong,
+.tenant-contact-grid strong {
+  color: var(--text-strong);
+}
+
+.tenant-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.tenant-contact-grid > div {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.tenant-contact-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
 .page-stack {
   display: grid;
   gap: 18px;

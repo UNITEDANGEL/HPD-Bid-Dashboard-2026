@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { tenantContactInfo } from "../lib/tenantContact";
 
 type JobRecord = {
+  [key: string]: unknown;
   OMO?: string;
   Job_ID?: string;
   "Job ID"?: string;
@@ -28,6 +30,14 @@ type JobRecord = {
   awardDate?: string;
   BidAmount?: string;
   bidAmount?: string;
+  ItbTenantAccessType?: string;
+  ItbTenantAppointmentNeeded?: boolean | string;
+  ItbTenantApartment?: string;
+  ItbTenantName?: string;
+  ItbTenantPhone?: string;
+  ItbTenantContactStatus?: string;
+  TenantName?: string;
+  TenantPhone?: string;
   latitude?: number | string;
   longitude?: number | string;
   lat?: number | string;
@@ -199,6 +209,7 @@ export default function MobileCommandDashboard() {
   }, [jobs, omoQuery]);
 
   const selectedOmoJob = omoResults[0] || null;
+  const selectedOmoContact = tenantContactInfo(selectedOmoJob);
 
   return (
     <main className="hpd-home-shell">
@@ -435,6 +446,84 @@ export default function MobileCommandDashboard() {
           color: #ffe8a3;
         }
 
+        .hpd-tenant-contact {
+          border: 1px solid rgba(255, 209, 102, 0.34);
+          border-radius: 8px;
+          padding: 10px;
+          background: rgba(255, 209, 102, 0.08);
+          display: grid;
+          gap: 9px;
+        }
+
+        .hpd-tenant-contact.no-appointment {
+          border-color: rgba(83, 230, 156, 0.28);
+          background: rgba(83, 230, 156, 0.08);
+        }
+
+        .hpd-tenant-contact-head {
+          display: grid;
+          gap: 4px;
+        }
+
+        .hpd-tenant-contact-head span,
+        .hpd-tenant-field span {
+          color: var(--hpd-muted);
+          font-size: 10px;
+          font-weight: 950;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
+        .hpd-tenant-contact-head strong,
+        .hpd-tenant-field strong {
+          color: var(--hpd-text);
+          font-size: 13px;
+        }
+
+        .hpd-tenant-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 6px;
+        }
+
+        .hpd-tenant-field {
+          display: grid;
+          gap: 3px;
+          min-width: 0;
+          border-radius: 8px;
+          padding: 8px;
+          background: rgba(255, 255, 255, 0.07);
+        }
+
+        .hpd-tenant-field strong {
+          overflow-wrap: anywhere;
+        }
+
+        .hpd-tenant-actions {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 6px;
+        }
+
+        .hpd-tenant-actions a {
+          min-height: 42px;
+          display: grid;
+          place-items: center;
+          border-radius: 8px;
+          border: 1px solid var(--hpd-line);
+          background: rgba(255, 255, 255, 0.1);
+          color: var(--hpd-text);
+          text-align: center;
+          font-size: 12px;
+          font-weight: 950;
+        }
+
+        .hpd-tenant-actions a.email-hpd {
+          border: 0;
+          background: var(--hpd-gold);
+          color: #241300;
+        }
+
         .hpd-omo-actions {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -571,7 +660,9 @@ export default function MobileCommandDashboard() {
         @media (max-width: 560px) {
           .hpd-package-options,
           .hpd-secondary-actions,
-          .hpd-omo-actions {
+          .hpd-omo-actions,
+          .hpd-tenant-grid,
+          .hpd-tenant-actions {
             grid-template-columns: 1fr;
           }
 
@@ -616,6 +707,28 @@ export default function MobileCommandDashboard() {
               {jobTrade(selectedOmoJob) ? <span>{jobTrade(selectedOmoJob)}</span> : null}
               {jobAmount(selectedOmoJob) ? <span>{jobAmount(selectedOmoJob)}</span> : null}
               {jobAwardDate(selectedOmoJob) ? <span>{jobAwardDate(selectedOmoJob)}</span> : null}
+            </div>
+            <div className={`hpd-tenant-contact ${selectedOmoContact.appointmentNeeded ? "" : "no-appointment"}`}>
+              <div className="hpd-tenant-contact-head">
+                <span>{selectedOmoContact.label}</span>
+                <strong>{selectedOmoContact.status}</strong>
+              </div>
+              {selectedOmoContact.appointmentNeeded ? (
+                <>
+                  <div className="hpd-tenant-grid">
+                    <div className="hpd-tenant-field"><span>Name</span><strong>{selectedOmoContact.name || "Not listed"}</strong></div>
+                    <div className="hpd-tenant-field"><span>Phone</span><strong>{selectedOmoContact.phone || "Not listed"}</strong></div>
+                    <div className="hpd-tenant-field"><span>Apt</span><strong>{selectedOmoContact.apartment || firstValue(selectedOmoJob, ["Location", "location"]) || "Not listed"}</strong></div>
+                  </div>
+                  {selectedOmoContact.actionHref || selectedOmoContact.smsHref || selectedOmoContact.emailHref ? (
+                    <div className="hpd-tenant-actions">
+                      {selectedOmoContact.actionHref ? <a href={selectedOmoContact.actionHref}>Call</a> : null}
+                      {selectedOmoContact.smsHref ? <a href={selectedOmoContact.smsHref}>Text</a> : null}
+                      {selectedOmoContact.emailHref ? <a className="email-hpd" href={selectedOmoContact.emailHref}>Email HPD</a> : null}
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
             </div>
             <div className="hpd-omo-actions">
               <Link className="hpd-omo-map" href={jobMapHref(selectedOmoJob)}>

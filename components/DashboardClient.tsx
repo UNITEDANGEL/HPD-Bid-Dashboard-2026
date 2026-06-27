@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { StatusBadge } from "./StatusBadge";
+import { tenantContactInfo } from "../lib/tenantContact";
 import type { JobRecord } from "../lib/types";
 type Props = {
   jobs: JobRecord[];
@@ -93,6 +94,7 @@ export function DashboardClient({ jobs, title, subtitle }: Props) {
   const itbCount = filteredJobs.filter((job) => Boolean(job.itbFile)).length;
   const phoneCount = filteredJobs.filter((job) => Boolean(job.tenantPhone)).length;
   const mapUrl = selected ? buildStaticMap(selected) : "";
+  const selectedContact = tenantContactInfo(selected);
   return (
     <div style={shell}>
       <section style={topHero}>
@@ -401,10 +403,32 @@ export function DashboardClient({ jobs, title, subtitle }: Props) {
                   <div style={detailCell}><strong>Borough</strong><span>{selected.borough || "Not listed"}</span></div>
                   <div style={detailCell}><strong>Award</strong><span>{selected.awardDate || "Not listed"}</span></div>
                   <div style={detailCell}><strong>Bid</strong><span>{formatCurrency(selected.amountValue, selected.bidAmount)}</span></div>
-                  <div style={detailCell}><strong>Tenant</strong><span>{selected.tenantName || "Not listed"}</span></div>
-                  <div style={detailCell}><strong>Phone</strong><span>{selected.tenantPhone || "Not listed"}</span></div>
+                  <div style={detailCell}><strong>Tenant</strong><span>{selectedContact.name || "Not listed"}</span></div>
+                  <div style={detailCell}><strong>Phone</strong><span>{selectedContact.phone || "Not listed"}</span></div>
                   <div style={detailCell}><strong>COA</strong><span>{selected.coaFile || "Not matched"}</span></div>
                   <div style={detailCell}><strong>ITB</strong><span>{selected.itbFile || "Not matched"}</span></div>
+                </div>
+                <div style={tenantCard(selectedContact.appointmentNeeded)}>
+                  <div style={tenantCardHead}>
+                    <span>{selectedContact.label}</span>
+                    <strong>{selectedContact.status}</strong>
+                  </div>
+                  {selectedContact.appointmentNeeded ? (
+                    <>
+                      <div style={tenantGrid}>
+                        <div style={tenantCell}><span>Name</span><strong>{selectedContact.name || "Not listed"}</strong></div>
+                        <div style={tenantCell}><span>Phone</span><strong>{selectedContact.phone || "Not listed"}</strong></div>
+                        <div style={tenantCell}><span>Apt</span><strong>{selectedContact.apartment || selected.location || "Not listed"}</strong></div>
+                      </div>
+                      {selectedContact.actionHref || selectedContact.smsHref || selectedContact.emailHref ? (
+                        <div style={tenantActions}>
+                          {selectedContact.actionHref ? <a href={selectedContact.actionHref} style={secondaryButtonLink}>Call Tenant</a> : null}
+                          {selectedContact.smsHref ? <a href={selectedContact.smsHref} style={secondaryButtonLink}>Text Tenant</a> : null}
+                          {selectedContact.emailHref ? <a href={selectedContact.emailHref} style={primaryButtonLink}>Email HPD</a> : null}
+                        </div>
+                      ) : null}
+                    </>
+                  ) : null}
                 </div>
                 <div style={descriptionCard}>
                   <strong>Description</strong>
@@ -733,6 +757,37 @@ const descriptionCard: React.CSSProperties = {
   padding: 16,
   borderRadius: 16,
   background: "rgba(255,255,255,0.05)",
+};
+const tenantCard = (appointmentNeeded: boolean): React.CSSProperties => ({
+  marginTop: 18,
+  padding: 16,
+  borderRadius: 16,
+  border: appointmentNeeded ? "1px solid rgba(251,191,36,0.34)" : "1px solid rgba(34,197,94,0.28)",
+  background: appointmentNeeded ? "rgba(251,191,36,0.10)" : "rgba(34,197,94,0.10)",
+});
+const tenantCardHead: React.CSSProperties = {
+  display: "grid",
+  gap: 6,
+};
+const tenantGrid: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "1fr",
+  gap: 10,
+  marginTop: 14,
+};
+const tenantCell: React.CSSProperties = {
+  display: "grid",
+  gap: 5,
+  padding: "10px 12px",
+  borderRadius: 12,
+  background: "rgba(255,255,255,0.06)",
+  color: "#dcecff",
+};
+const tenantActions: React.CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+  marginTop: 14,
 };
 const sideActions: React.CSSProperties = {
   display: "flex",

@@ -5,9 +5,11 @@ export async function generateStaticParams() {
     .map((job: any) => String(job.OMO || job.id || "").trim())
     .filter(Boolean)
     .map((id: string) => ({ id }));
-}import Link from "next/link";
+}
+import Link from "next/link";
 import { StatusBadge } from "../../../components/StatusBadge";
 import { getJobById } from "../../../lib/jobs";
+import { tenantContactInfo } from "../../../lib/tenantContact";
 
 function mapsHref(latitude: string, longitude: string, address: string) {
   const query = latitude && longitude ? `${latitude},${longitude}` : address;
@@ -41,6 +43,7 @@ export default async function JobDetailPage({
   }
 
   const openMapsLink = mapsHref(job.latitude, job.longitude, job.address || job.location);
+  const contact = tenantContactInfo(job);
 
   return (
     <div className="page-stack">
@@ -85,11 +88,11 @@ export default async function JobDetailPage({
           </div>
           <div>
             <strong>Tenant</strong>
-            <span>{job.tenantName || "Not listed"}</span>
+            <span>{contact.name || "Not listed"}</span>
           </div>
           <div>
             <strong>Phone</strong>
-            <span>{job.tenantPhone || "Not listed"}</span>
+            <span>{contact.phone || "Not listed"}</span>
           </div>
           <div>
             <strong>COA File</strong>
@@ -107,6 +110,38 @@ export default async function JobDetailPage({
             <strong>Longitude</strong>
             <span>{job.longitude || "Not listed"}</span>
           </div>
+        </div>
+
+        <div className={`tenant-contact-card ${contact.appointmentNeeded ? "" : "no-appointment"}`}>
+          <div className="tenant-contact-head">
+            <span>{contact.label}</span>
+            <strong>{contact.status}</strong>
+          </div>
+          {contact.appointmentNeeded ? (
+            <>
+              <div className="tenant-contact-grid">
+                <div>
+                  <span>Name</span>
+                  <strong>{contact.name || "Not listed"}</strong>
+                </div>
+                <div>
+                  <span>Phone</span>
+                  <strong>{contact.phone || "Not listed"}</strong>
+                </div>
+                <div>
+                  <span>Apt</span>
+                  <strong>{contact.apartment || job.location || "Not listed"}</strong>
+                </div>
+              </div>
+              {contact.actionHref || contact.smsHref || contact.emailHref ? (
+                <div className="tenant-contact-actions">
+                  {contact.actionHref ? <a href={contact.actionHref} className="secondary-link">Call Tenant</a> : null}
+                  {contact.smsHref ? <a href={contact.smsHref} className="secondary-link">Text Tenant</a> : null}
+                  {contact.emailHref ? <a href={contact.emailHref} className="primary-link">Email HPD</a> : null}
+                </div>
+              ) : null}
+            </>
+          ) : null}
         </div>
 
         <div className="description-card">

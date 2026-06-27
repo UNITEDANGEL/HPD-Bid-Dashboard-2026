@@ -10,6 +10,12 @@ export type JobRecord = {
   description: string;
   tenantName: string;
   tenantPhone: string;
+  itbTenantAccessType: string;
+  itbTenantAppointmentNeeded: boolean;
+  itbTenantApartment: string;
+  itbTenantName: string;
+  itbTenantPhone: string;
+  itbTenantContactStatus: string;
   location: string;
   latitude: string;
   longitude: string;
