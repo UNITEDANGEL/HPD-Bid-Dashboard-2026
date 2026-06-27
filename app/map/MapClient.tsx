@@ -1925,13 +1925,18 @@ function workWindowInfo(job: JobRecord) {
     (job as any).workCompletionDate ||
     (job as any)["Work Completion Date"] ||
     "";
-  const start = parseJobDate(startRaw);
-  const end = parseJobDate(endRaw);
+  const parsedStart = parseJobDate(startRaw);
+  const parsedEnd = parseJobDate(endRaw);
+  const startBeforeAward = Boolean(parsedStart && markerWorkDateBeforeAward(job, parsedStart));
+  const endBeforeAward = Boolean(parsedEnd && markerWorkDateBeforeAward(job, parsedEnd));
+  const hasBadWorkWindow = startBeforeAward || endBeforeAward;
+  const start = startBeforeAward ? null : parsedStart;
+  const end = endBeforeAward ? null : parsedEnd;
   const today = dateOnly(new Date());
   let startLabel = "Start not listed";
   let endLabel = "End not listed";
-  let statusLabel = "Work window not listed";
-  let statusClass = "neutral";
+  let statusLabel = hasBadWorkWindow ? "Check work dates" : "Work window not listed";
+  let statusClass = hasBadWorkWindow ? "warning" : "neutral";
   if (start) {
     const startDiff = daysBetween(today, start);
     if (startDiff > 0) startLabel = `Starts in ${startDiff} day${startDiff === 1 ? "" : "s"}`;
@@ -1960,8 +1965,8 @@ function workWindowInfo(job: JobRecord) {
   return {
     startRaw,
     endRaw,
-    startDate: shortJobDate(startRaw),
-    endDate: shortJobDate(endRaw),
+    startDate: startBeforeAward ? "Check date" : shortJobDate(startRaw),
+    endDate: endBeforeAward ? "Check date" : shortJobDate(endRaw),
     startLabel,
     endLabel,
     statusLabel,
@@ -6354,13 +6359,18 @@ function workWindowInfo(job: JobRecord) {
     (job as any).workCompletionDate ||
     (job as any)["Work Completion Date"] ||
     "";
-  const start = parseJobDate(startRaw);
-  const end = parseJobDate(endRaw);
+  const parsedStart = parseJobDate(startRaw);
+  const parsedEnd = parseJobDate(endRaw);
+  const startBeforeAward = Boolean(parsedStart && markerWorkDateBeforeAward(job, parsedStart));
+  const endBeforeAward = Boolean(parsedEnd && markerWorkDateBeforeAward(job, parsedEnd));
+  const hasBadWorkWindow = startBeforeAward || endBeforeAward;
+  const start = startBeforeAward ? null : parsedStart;
+  const end = endBeforeAward ? null : parsedEnd;
   const today = dateOnly(new Date());
   let startLabel = "Start not listed";
   let endLabel = "End not listed";
-  let statusLabel = "Work window not listed";
-  let statusClass = "neutral";
+  let statusLabel = hasBadWorkWindow ? "Check work dates" : "Work window not listed";
+  let statusClass = hasBadWorkWindow ? "warning" : "neutral";
   if (start) {
     const startDiff = daysBetween(today, start);
     if (startDiff > 0) startLabel = `Starts in ${startDiff} day${startDiff === 1 ? "" : "s"}`;
@@ -6389,8 +6399,8 @@ function workWindowInfo(job: JobRecord) {
   return {
     startRaw,
     endRaw,
-    startDate: shortJobDate(startRaw),
-    endDate: shortJobDate(endRaw),
+    startDate: startBeforeAward ? "Check date" : shortJobDate(startRaw),
+    endDate: endBeforeAward ? "Check date" : shortJobDate(endRaw),
     startLabel,
     endLabel,
     statusLabel,
