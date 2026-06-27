@@ -2767,7 +2767,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       ? rows
       : rows.filter((job) => {
           const age = mapDateAgeDays(job);
-          return age !== null && age >= 0 && age <= limit;
+          return (age !== null && age >= 0 && age <= limit) || hasUpcomingAppointment(job);
         });
 
     if (!needle) return dateFiltered;
@@ -2796,7 +2796,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         .toLowerCase()
         .includes(needle)
     );
-  }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays]);
+  }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays, countdownTick]);
 
   useEffect(() => {
     if (!urlOmoRequest || !filteredJobs.length) return;
