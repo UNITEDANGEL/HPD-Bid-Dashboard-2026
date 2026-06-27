@@ -173,6 +173,18 @@ function normalizeUnit(value) {
     .toUpperCase();
 }
 
+function isLikelyApartmentUnit(value) {
+  const raw = String(value || "").trim();
+  const unit = normalizeUnit(raw);
+  if (!unit || unit.length > 8) return false;
+  if (isCommonLocation(raw)) return false;
+  if (/\b(FAX|PHONE|TEL|PROCUREMENT|SPECIALIST)\b/i.test(raw) || /\(\d{3}\)|\d{3}[-.\s]\d{3}[-.\s]\d{4}/.test(raw)) {
+    return false;
+  }
+
+  return /^[A-Z]?\d{1,4}[A-Z]?$/i.test(unit) || /^[A-Z]{1,2}\d{1,3}[A-Z]?$/i.test(unit);
+}
+
 function isPlaceholderName(value) {
   return !value || /^(T|TENANT|JOHN DOE|N\/A|NA|UNKNOWN)$/i.test(String(value).trim());
 }
@@ -316,6 +328,40 @@ function parseTenantContact(flatText, job) {
   };
 }
 
+function fallbackTenantContact(job) {
+  const locationRaw = String(job.Location || job.location || job.ApartmentUnit || "").trim();
+  const apartment = isLikelyApartmentUnit(locationRaw) ? normalizeUnit(locationRaw) : "";
+  const commonArea = appointmentNotNeeded(job, apartment) || isCommonLocation(locationRaw);
+  const phone = commonArea ? "" : String(job.TenantPhone || job.tenantPhone || "").trim();
+  const name = commonArea || isPlaceholderName(job.TenantName) ? "" : String(job.TenantName || "").trim();
+
+  return {
+    accessType: commonArea ? "common_area" : "apartment",
+    appointmentNeeded: !commonArea,
+    apartment: commonArea ? "" : apartment,
+    name,
+    phone,
+    source: "ITB_PAGE_2_MISSING",
+  };
+}
+
+function applyTenantContact(job, contact) {
+  job.ItbTenantAccessType = contact.accessType;
+  job.ItbTenantAppointmentNeeded = contact.appointmentNeeded;
+  job.ItbTenantApartment = contact.apartment;
+  job.ItbTenantName = contact.name;
+  job.ItbTenantPhone = contact.phone;
+  job.ItbTenantContactSource = contact.source;
+  job.ItbTenantContactStatus = contact.appointmentNeeded
+    ? contact.phone
+      ? "CONTACT_FOUND"
+      : "CONTACT_NEEDED"
+    : "COMMON_AREA_NO_TENANT";
+
+  if (shouldReplaceTenantName(job.TenantName, contact.name)) job.TenantName = contact.name;
+  if (contact.phone) job.TenantPhone = contact.phone;
+}
+
 function main() {
   const jobs = JSON.parse(fs.readFileSync(dataFile, "utf8"));
   const manifest = JSON.parse(fs.readFileSync(manifestFile, "utf8"));
@@ -335,7 +381,13 @@ function main() {
     const fileName = String(job.ITBFile || job.itbFile || "").trim();
     const entry = entries[fileName];
     if (!entry?.sourceFile || !fs.existsSync(entry.sourceFile)) {
+      const contact = fallbackTenantContact(job);
+      applyTenantContact(job, contact);
       stats.missingSource += 1;
+      stats.updated += 1;
+      if (contact.appointmentNeeded) stats.appointmentNeeded += 1;
+      if (contact.name || contact.phone) stats.contactFound += 1;
+      if (contact.accessType === "common_area") stats.commonArea += 1;
       continue;
     }
 
@@ -346,20 +398,7 @@ function main() {
     }
 
     const contact = parseTenantContact(flatText, job);
-    job.ItbTenantAccessType = contact.accessType;
-    job.ItbTenantAppointmentNeeded = contact.appointmentNeeded;
-    job.ItbTenantApartment = contact.apartment;
-    job.ItbTenantName = contact.name;
-    job.ItbTenantPhone = contact.phone;
-    job.ItbTenantContactSource = contact.source;
-    job.ItbTenantContactStatus = contact.appointmentNeeded
-      ? contact.phone
-        ? "CONTACT_FOUND"
-        : "CONTACT_NEEDED"
-      : "COMMON_AREA_NO_TENANT";
-
-    if (shouldReplaceTenantName(job.TenantName, contact.name)) job.TenantName = contact.name;
-    if (contact.phone) job.TenantPhone = contact.phone;
+    applyTenantContact(job, contact);
 
     stats.updated += 1;
     if (contact.appointmentNeeded) stats.appointmentNeeded += 1;

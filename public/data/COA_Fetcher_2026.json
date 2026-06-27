@@ -17414,7 +17414,14 @@
     "Boro": "Brooklyn",
     "boro": "Brooklyn",
     "BoroughSource": "ZIP_CODE_CORRECTED",
-    "boroughSource": "ZIP_CODE_CORRECTED"
+    "boroughSource": "ZIP_CODE_CORRECTED",
+    "ItbTenantAccessType": "apartment",
+    "ItbTenantAppointmentNeeded": true,
+    "ItbTenantApartment": "511",
+    "ItbTenantName": "",
+    "ItbTenantPhone": "",
+    "ItbTenantContactSource": "ITB_PAGE_2_MISSING",
+    "ItbTenantContactStatus": "CONTACT_NEEDED"
   },
   {
     "OMO": "EQ25189",
@@ -17732,7 +17739,14 @@
     "Boro": "Brooklyn",
     "boro": "Brooklyn",
     "BoroughSource": "ZIP_CODE_CORRECTED",
-    "boroughSource": "ZIP_CODE_CORRECTED"
+    "boroughSource": "ZIP_CODE_CORRECTED",
+    "ItbTenantAccessType": "apartment",
+    "ItbTenantAppointmentNeeded": true,
+    "ItbTenantApartment": "3A",
+    "ItbTenantName": "",
+    "ItbTenantPhone": "",
+    "ItbTenantContactSource": "ITB_PAGE_2_MISSING",
+    "ItbTenantContactStatus": "CONTACT_NEEDED"
   },
   {
     "OMO": "EQ25386",
@@ -25788,7 +25802,14 @@
     "DescriptionRecoveredFromFile": "EQ30587_062226020124.pdf",
     "descriptionRecoveredFromFile": "EQ30587_062226020124.pdf",
     "DescriptionRecoveryReason": "",
-    "descriptionRecoveryReason": ""
+    "descriptionRecoveryReason": "",
+    "ItbTenantAccessType": "common_area",
+    "ItbTenantAppointmentNeeded": false,
+    "ItbTenantApartment": "",
+    "ItbTenantName": "",
+    "ItbTenantPhone": "",
+    "ItbTenantContactSource": "ITB_PAGE_2_MISSING",
+    "ItbTenantContactStatus": "COMMON_AREA_NO_TENANT"
   },
   {
     "OMO": "EQ31364",
@@ -25837,7 +25858,14 @@
     "DescriptionRecoveredFromFile": "EQ31364_062226121545.pdf",
     "descriptionRecoveredFromFile": "EQ31364_062226121545.pdf",
     "DescriptionRecoveryReason": "",
-    "descriptionRecoveryReason": ""
+    "descriptionRecoveryReason": "",
+    "ItbTenantAccessType": "common_area",
+    "ItbTenantAppointmentNeeded": false,
+    "ItbTenantApartment": "",
+    "ItbTenantName": "",
+    "ItbTenantPhone": "",
+    "ItbTenantContactSource": "ITB_PAGE_2_MISSING",
+    "ItbTenantContactStatus": "COMMON_AREA_NO_TENANT"
   },
   {
     "OMO": "EQ31134",
@@ -25945,7 +25973,14 @@
     "DescriptionRecoveredFromFile": "EQ31394_062326040705.pdf",
     "descriptionRecoveredFromFile": "EQ31394_062326040705.pdf",
     "DescriptionRecoveryReason": "",
-    "descriptionRecoveryReason": ""
+    "descriptionRecoveryReason": "",
+    "ItbTenantAccessType": "apartment",
+    "ItbTenantAppointmentNeeded": true,
+    "ItbTenantApartment": "3A",
+    "ItbTenantName": "",
+    "ItbTenantPhone": "(929) 669-6990",
+    "ItbTenantContactSource": "ITB_PAGE_2_MISSING",
+    "ItbTenantContactStatus": "CONTACT_FOUND"
   },
   {
     "OMO": "EQ31423",
@@ -25994,7 +26029,14 @@
     "DescriptionRecoveredFromFile": "EQ31423_062326013000.pdf",
     "descriptionRecoveredFromFile": "EQ31423_062326013000.pdf",
     "DescriptionRecoveryReason": "",
-    "descriptionRecoveryReason": ""
+    "descriptionRecoveryReason": "",
+    "ItbTenantAccessType": "common_area",
+    "ItbTenantAppointmentNeeded": false,
+    "ItbTenantApartment": "",
+    "ItbTenantName": "",
+    "ItbTenantPhone": "",
+    "ItbTenantContactSource": "ITB_PAGE_2_MISSING",
+    "ItbTenantContactStatus": "COMMON_AREA_NO_TENANT"
   },
   {
     "OMO": "EQ30530",
@@ -26043,7 +26085,14 @@
     "DescriptionRecoveredFromFile": "EQ30530_061826021850.pdf",
     "descriptionRecoveredFromFile": "EQ30530_061826021850.pdf",
     "DescriptionRecoveryReason": "",
-    "descriptionRecoveryReason": ""
+    "descriptionRecoveryReason": "",
+    "ItbTenantAccessType": "common_area",
+    "ItbTenantAppointmentNeeded": false,
+    "ItbTenantApartment": "",
+    "ItbTenantName": "",
+    "ItbTenantPhone": "",
+    "ItbTenantContactSource": "ITB_PAGE_2_MISSING",
+    "ItbTenantContactStatus": "COMMON_AREA_NO_TENANT"
   },
   {
     "OMO": "EQ25609",
@@ -26151,7 +26200,14 @@
     "DescriptionRecoveredFromFile": "EQ31457_062426085014.pdf",
     "descriptionRecoveredFromFile": "EQ31457_062426085014.pdf",
     "DescriptionRecoveryReason": "",
-    "descriptionRecoveryReason": ""
+    "descriptionRecoveryReason": "",
+    "ItbTenantAccessType": "apartment",
+    "ItbTenantAppointmentNeeded": true,
+    "ItbTenantApartment": "J6",
+    "ItbTenantName": "",
+    "ItbTenantPhone": "(718) 484-4743",
+    "ItbTenantContactSource": "ITB_PAGE_2_MISSING",
+    "ItbTenantContactStatus": "CONTACT_FOUND"
   },
   {
     "OMO": "EQ30394",
@@ -26200,7 +26256,14 @@
     "DescriptionRecoveredFromFile": "EQ30394_062426012231.pdf",
     "descriptionRecoveredFromFile": "EQ30394_062426012231.pdf",
     "DescriptionRecoveryReason": "",
-    "descriptionRecoveryReason": ""
+    "descriptionRecoveryReason": "",
+    "ItbTenantAccessType": "apartment",
+    "ItbTenantAppointmentNeeded": true,
+    "ItbTenantApartment": "2B",
+    "ItbTenantName": "",
+    "ItbTenantPhone": "(347) 232-0533",
+    "ItbTenantContactSource": "ITB_PAGE_2_MISSING",
+    "ItbTenantContactStatus": "CONTACT_FOUND"
   },
   {
     "OMO": "EQ30401",
@@ -26249,7 +26312,14 @@
     "DescriptionRecoveredFromFile": "EQ30401_062526120455.pdf",
     "descriptionRecoveredFromFile": "EQ30401_062526120455.pdf",
     "DescriptionRecoveryReason": "",
-    "descriptionRecoveryReason": ""
+    "descriptionRecoveryReason": "",
+    "ItbTenantAccessType": "common_area",
+    "ItbTenantAppointmentNeeded": false,
+    "ItbTenantApartment": "",
+    "ItbTenantName": "",
+    "ItbTenantPhone": "",
+    "ItbTenantContactSource": "ITB_PAGE_2_MISSING",
+    "ItbTenantContactStatus": "COMMON_AREA_NO_TENANT"
   },
   {
     "OMO": "EQ31761",
@@ -26298,7 +26368,14 @@
     "DescriptionRecoveredFromFile": "EQ31761_062526092043.pdf",
     "descriptionRecoveredFromFile": "EQ31761_062526092043.pdf",
     "DescriptionRecoveryReason": "",
-    "descriptionRecoveryReason": ""
+    "descriptionRecoveryReason": "",
+    "ItbTenantAccessType": "common_area",
+    "ItbTenantAppointmentNeeded": false,
+    "ItbTenantApartment": "",
+    "ItbTenantName": "",
+    "ItbTenantPhone": "",
+    "ItbTenantContactSource": "ITB_PAGE_2_MISSING",
+    "ItbTenantContactStatus": "COMMON_AREA_NO_TENANT"
   },
   {
     "OMO": "EQ30559",
@@ -26347,7 +26424,14 @@
     "DescriptionRecoveredFromFile": "EQ30559_062526112614.pdf",
     "descriptionRecoveredFromFile": "EQ30559_062526112614.pdf",
     "DescriptionRecoveryReason": "",
-    "descriptionRecoveryReason": ""
+    "descriptionRecoveryReason": "",
+    "ItbTenantAccessType": "common_area",
+    "ItbTenantAppointmentNeeded": false,
+    "ItbTenantApartment": "",
+    "ItbTenantName": "",
+    "ItbTenantPhone": "",
+    "ItbTenantContactSource": "ITB_PAGE_2_MISSING",
+    "ItbTenantContactStatus": "COMMON_AREA_NO_TENANT"
   },
   {
     "OMO": "EQ31642",
@@ -26396,6 +26480,13 @@
     "DescriptionRecoveredFromFile": "EQ31642_062426015050.pdf",
     "descriptionRecoveredFromFile": "EQ31642_062426015050.pdf",
     "DescriptionRecoveryReason": "",
-    "descriptionRecoveryReason": ""
+    "descriptionRecoveryReason": "",
+    "ItbTenantAccessType": "apartment",
+    "ItbTenantAppointmentNeeded": true,
+    "ItbTenantApartment": "N4",
+    "ItbTenantName": "",
+    "ItbTenantPhone": "(646) 548-4284",
+    "ItbTenantContactSource": "ITB_PAGE_2_MISSING",
+    "ItbTenantContactStatus": "CONTACT_FOUND"
   }
 ]
