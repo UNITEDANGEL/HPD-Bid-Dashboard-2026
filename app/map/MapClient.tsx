@@ -2106,6 +2106,10 @@ function parseWorkflowTimestamp(value: unknown) {
 }
 
 function workflowSecondAttemptInfo(job: JobRecord, now = new Date()) {
+  const status = directWorkflowStatus(job) || legacyWorkflowKind(job);
+  const secondAttemptRaw = (job as any).NoAccessSecondAttemptAt || (job as any).noAccessSecondAttemptAt;
+  if (secondAttemptRaw || CLOSED_WORKFLOW_STATUSES.has(status)) return null;
+
   const firstRaw = (job as any).NoAccessFirstAttemptAt || (job as any).noAccessFirstAttemptAt;
   const availableRaw = (job as any).SecondAttemptAvailableAt || (job as any).secondAttemptAvailableAt;
 
