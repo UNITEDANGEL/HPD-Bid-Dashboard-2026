@@ -1,4 +1,4 @@
-Fetcher run started: 2026-06-27T11:28:21.735Z
+Fetcher run started: 2026-06-28T11:48:08.544Z
 Google auth files validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
 
@@ -14,7 +14,7 @@ $ python FetchrMatcherV5.py --update --days 14
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/06/13 before:2026/06/28
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/06/14 before:2026/06/29
 COA items parsed (latest per OMO): 15
 ITB items parsed (latest per OMO): 15
 Final JobRows: 15
@@ -24,22 +24,22 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/15 [00:00<?, ?it/s]Downloading COA messages:   7%|▋         | 1/15 [00:00<00:02,  6.74it/s]Downloading COA messages:  20%|██        | 3/15 [00:00<00:01,  9.26it/s]Downloading COA messages:  33%|███▎      | 5/15 [00:00<00:01,  9.16it/s]Downloading COA messages:  47%|████▋     | 7/15 [00:00<00:00,  9.92it/s]Downloading COA messages:  53%|█████▎    | 8/15 [00:00<00:00,  8.74it/s]Downloading COA messages:  60%|██████    | 9/15 [00:01<00:00,  8.83it/s]Downloading COA messages:  67%|██████▋   | 10/15 [00:01<00:00,  8.05it/s]Downloading COA messages:  73%|███████▎  | 11/15 [00:01<00:00,  7.50it/s]Downloading COA messages:  80%|████████  | 12/15 [00:01<00:00,  7.78it/s]Downloading COA messages:  93%|█████████▎| 14/15 [00:01<00:00,  7.76it/s]Downloading COA messages: 100%|██████████| 15/15 [00:01<00:00,  7.99it/s]Downloading COA messages: 100%|██████████| 15/15 [00:01<00:00,  8.31it/s]
-Geocoding COA addresses:   0%|          | 0/15 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 15/15 [00:00<00:00, 322638.77it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/15 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   7%|▋         | 1/15 [00:00<00:09,  1.51it/s]Fetching ITBs for COA OMOs:  13%|█▎        | 2/15 [00:01<00:06,  1.86it/s]Fetching ITBs for COA OMOs:  20%|██        | 3/15 [00:01<00:05,  2.08it/s]Fetching ITBs for COA OMOs:  27%|██▋       | 4/15 [00:02<00:05,  1.96it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 5/15 [00:02<00:04,  2.15it/s]Fetching ITBs for COA OMOs:  40%|████      | 6/15 [00:03<00:04,  1.90it/s]Fetching ITBs for COA OMOs:  47%|████▋     | 7/15 [00:03<00:03,  2.03it/s]Fetching ITBs for COA OMOs:  53%|█████▎    | 8/15 [00:03<00:03,  2.10it/s]Fetching ITBs for COA OMOs:  60%|██████    | 9/15 [00:04<00:02,  2.23it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 10/15 [00:04<00:02,  2.30it/s]Fetching ITBs for COA OMOs:  73%|███████▎  | 11/15 [00:05<00:01,  2.28it/s]Fetching ITBs for COA OMOs:  80%|████████  | 12/15 [00:05<00:01,  2.42it/s]Fetching ITBs for COA OMOs:  87%|████████▋ | 13/15 [00:06<00:00,  2.34it/s]Fetching ITBs for COA OMOs:  93%|█████████▎| 14/15 [00:06<00:00,  2.47it/s]Fetching ITBs for COA OMOs: 100%|██████████| 15/15 [00:06<00:00,  2.47it/s]Fetching ITBs for COA OMOs: 100%|██████████| 15/15 [00:06<00:00,  2.21it/s]
+Downloading COA messages:   0%|          | 0/15 [00:00<?, ?it/s]Downloading COA messages:   7%|▋         | 1/15 [00:00<00:02,  5.02it/s]Downloading COA messages:  20%|██        | 3/15 [00:00<00:01,  8.08it/s]Downloading COA messages:  33%|███▎      | 5/15 [00:00<00:01,  6.73it/s]Downloading COA messages:  47%|████▋     | 7/15 [00:00<00:01,  7.73it/s]Downloading COA messages:  53%|█████▎    | 8/15 [00:01<00:00,  7.49it/s]Downloading COA messages:  60%|██████    | 9/15 [00:01<00:00,  7.61it/s]Downloading COA messages:  67%|██████▋   | 10/15 [00:01<00:00,  7.84it/s]Downloading COA messages:  73%|███████▎  | 11/15 [00:01<00:00,  6.90it/s]Downloading COA messages:  80%|████████  | 12/15 [00:01<00:00,  7.41it/s]Downloading COA messages:  93%|█████████▎| 14/15 [00:02<00:00,  6.18it/s]Downloading COA messages: 100%|██████████| 15/15 [00:02<00:00,  7.08it/s]
+Geocoding COA addresses:   0%|          | 0/15 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 15/15 [00:00<00:00, 240131.91it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/15 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   7%|▋         | 1/15 [00:00<00:07,  1.76it/s]Fetching ITBs for COA OMOs:  13%|█▎        | 2/15 [00:01<00:06,  1.90it/s]Fetching ITBs for COA OMOs:  20%|██        | 3/15 [00:01<00:06,  1.90it/s]Fetching ITBs for COA OMOs:  27%|██▋       | 4/15 [00:02<00:05,  1.97it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 5/15 [00:02<00:04,  2.08it/s]Fetching ITBs for COA OMOs:  40%|████      | 6/15 [00:03<00:04,  1.86it/s]Fetching ITBs for COA OMOs:  47%|████▋     | 7/15 [00:03<00:04,  1.97it/s]Fetching ITBs for COA OMOs:  53%|█████▎    | 8/15 [00:04<00:03,  2.03it/s]Fetching ITBs for COA OMOs:  60%|██████    | 9/15 [00:04<00:02,  2.05it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 10/15 [00:04<00:02,  2.13it/s]Fetching ITBs for COA OMOs:  73%|███████▎  | 11/15 [00:05<00:01,  2.12it/s]Fetching ITBs for COA OMOs:  80%|████████  | 12/15 [00:05<00:01,  2.18it/s]Fetching ITBs for COA OMOs:  87%|████████▋ | 13/15 [00:06<00:00,  2.19it/s]Fetching ITBs for COA OMOs:  93%|█████████▎| 14/15 [00:06<00:00,  2.23it/s]Fetching ITBs for COA OMOs: 100%|██████████| 15/15 [00:07<00:00,  2.00it/s]Fetching ITBs for COA OMOs: 100%|██████████| 15/15 [00:07<00:00,  2.04it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
 Safe merge complete
-Master before: 530
+Master before: 534
 Incoming rows: 15
-Added new OMOs: 4
-Skipped existing OMOs: 11
+Added new OMOs: 0
+Skipped existing OMOs: 15
 Updated existing OMOs: 0
-Need geocode: 4
+Need geocode: 0
 Missing ITB: 0
-Missing description: 4
+Missing description: 0
 Master after: 534
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
@@ -47,12 +47,8 @@ Report: ./data/safe_7day_merge_report.json
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 4
-OK EQ30401 537 WEST 149 STREET, 10031 40.828619 -73.947166 NYC_PLANNING_OK
-OK EQ31761 47-22 45 STREET, 11377 40.740623 -73.920346 NYC_PLANNING_OK
-OK EQ30559 2995 BOTANICAL SQUARE, 10458 40.867744 -73.881911 NYC_PLANNING_OK
-OK EQ31642 1267 SHERIDAN AVENUE, 10456 40.835592 -73.915439 NYC_PLANNING_OK
-Geocoded: 4
+Need geocode: 0
+Geocoded: 0
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -77,21 +73,13 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 4
-DESCRIPTION OK EQ30401 EQ30401_062526120455.pdf
-DESCRIPTION OK EQ31761 EQ31761_062526092043.pdf
-DESCRIPTION OK EQ30559 EQ30559_062526112614.pdf
-DESCRIPTION OK EQ31642 EQ31642_062426015050.pdf
-Descriptions patched: 4
+Matched ITBs needing description: 0
+Descriptions patched: 0
 Missing PDF: 0
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'EQ30401', 'Address': '537 WEST 149 STREET, 10031', 'RecoveredFrom': 'EQ30401_062526120455.pdf', 'Preview': ': AT 1ST STORY PUBLIC HALL FIRE DOOR AT EAST AND WEST SECTION, MAKE DOORS ARE SELF CLOSING. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK AT 1ST STORY PUBLIC HALL FIRE DOOR AT EAST AND WEST SECTION, ADJ'}
-{'OMO': 'EQ31761', 'Address': '47-22 45 STREET, 11377', 'RecoveredFrom': 'EQ31761_062526092043.pdf', 'Preview': 'FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS  Provide/Install   Abate   Remove   Delead   Painting/SPP   Repair   Replace   APPLIANCES: STOVE: REFRIGERATOR:  '}
-{'OMO': 'EQ30559', 'Address': '2995 BOTANICAL SQUARE, 10458', 'RecoveredFrom': 'EQ30559_062526112614.pdf', 'Preview': ': LOCATION : AT SECOND STORY STAIRCASE PUBLIC HALL -NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK- LOCATION: AT SECOND STORY STAIRCASE MAKE ALL NECESSARY REPAIRS TO REPAIRS TO REPLACED C RACKED MARBLE S'}
-{'OMO': 'EQ31642', 'Address': '1267 SHERIDAN AVENUE, 10456', 'RecoveredFrom': 'EQ31642_062426015050.pdf', 'Preview': ': DEFECTIVE HINGES IN THE ENTRANCE LOCATED AT AP T N4, 1st STORY. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ INSTALL NEW SELF CLOSING HINGES. MAKE ALL ADJUSTMEN TS AND ALIGNMENTS TO ENSURE DOOR IS '}
 
 
 ========== Verify mapping ==========
@@ -138,13 +126,13 @@ Exported: ./data/missing_itb_jobs_2026.csv
 └─────────┘
 
 
-Fetcher run finished: 2026-06-27T11:28:45.172Z
+Fetcher run finished: 2026-06-28T11:48:30.412Z
 {
   "fetchedCoaItems": 15,
   "fetchedItbItems": 15,
   "fetchedFinalJobRows": 15,
-  "addedNewOmos": 4,
-  "skippedExistingOmos": 11,
+  "addedNewOmos": 0,
+  "skippedExistingOmos": 15,
   "rawRows": 534,
   "rows2026": 483,
   "mapped2026": 483,
