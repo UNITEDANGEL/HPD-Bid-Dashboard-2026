@@ -7676,6 +7676,17 @@ function directionsUrl(job: JobRecord) {
       .map(([key, patch]) => ({ ...selected, ...(patch || {}), id: selected.id || key, omo: selected.omo || key, OMO: key } as JobRecord));
     const rows: JobRecord[] = [...overrideRows, ...localOverrideRows, selected, ...filteredJobs, ...mappedJobs, ...jobs];
     const matchingRows = rows.filter((job) => normalizeKey(jobKey(job)) === selectedKey);
+    const closedOverrideRow = matchingRows.find((job) => {
+      const status = workflowStatus(job) || legacyWorkflowKind(job);
+      return Boolean(
+        (job as any).NoAccessSecondAttemptAt ||
+          (job as any).noAccessSecondAttemptAt ||
+          (job as any).ArchivedFromMap ||
+          (job as any).archivedFromMap ||
+          CLOSED_WORKFLOW_STATUSES.has(status)
+      );
+    });
+    if (closedOverrideRow) return closedOverrideRow;
     return matchingRows.find((job) => workflowSecondAttemptInfo(job)) || matchingRows[0] || selected;
   }, [selected, filteredJobs, mappedJobs, jobs, serverWorkflowOverrides, countdownTick]);
   const selectedNoAccessTimerBucket = selectedNoAccessTimerJob ? workflowViewBucket(selectedNoAccessTimerJob) : "";
