@@ -16167,6 +16167,8 @@ return (
           }
 
           .map-job-brief-close {
+            grid-column: 3 !important;
+            grid-row: 1 !important;
             min-width: 58px !important;
             padding: 0 10px !important;
           }
@@ -16197,7 +16199,7 @@ return (
             font-weight: 780 !important;
             line-height: 1.34 !important;
             display: -webkit-box !important;
-            -webkit-line-clamp: 4 !important;
+            -webkit-line-clamp: 3 !important;
             -webkit-box-orient: vertical !important;
             overflow: hidden !important;
           }
@@ -16318,8 +16320,18 @@ return (
 
             .map-job-brief-status-pill {
               grid-column: 1 / -1 !important;
+              grid-row: 2 !important;
               justify-content: start !important;
               max-width: none !important;
+            }
+
+            .map-job-brief-close {
+              grid-column: 2 !important;
+              grid-row: 1 !important;
+            }
+
+            .map-job-brief-summary-block p {
+              -webkit-line-clamp: 2 !important;
             }
 
             .map-job-brief-grid {
@@ -18946,6 +18958,15 @@ return (
               <span>Short Summary</span>
               <p>{mapBriefText(briefJob)}</p>
             </div>
+            <a
+              className="map-job-brief-directions"
+              href={directionsUrl(briefJob)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => showActionNotice("Opening directions. Tap Update Status when you reach the site.")}
+            >
+              Directions
+            </a>
             <div className="map-job-brief-grid">
               <span>
                 <small>Distance</small>
@@ -18960,15 +18981,6 @@ return (
                 <strong>{secondarySignalValue}</strong>
               </span>
             </div>
-            <a
-              className="map-job-brief-directions"
-              href={directionsUrl(briefJob)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => showActionNotice("Opening directions. Tap Update Status when you reach the site.")}
-            >
-              Directions
-            </a>
             <div className="map-job-brief-actions">
               {!userLocation ? (
                 <button type="button" onClick={startLocationTracking}>
