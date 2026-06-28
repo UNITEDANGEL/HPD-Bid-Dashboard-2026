@@ -2215,6 +2215,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const markerOverviewTimerRef = useRef<number | null>(null);
   const markerOverviewKeyRef = useRef("");
   const markerAutoFitKeyRef = useRef("");
+  const appointmentAlertTestTriggeredRef = useRef("");
   const fieldPhotoInputRef = useRef<HTMLInputElement | null>(null);
   const fieldCameraVideoRef = useRef<HTMLVideoElement | null>(null);
   const fieldCameraStreamRef = useRef<MediaStream | null>(null);
@@ -4049,6 +4050,20 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       })
       .catch(() => showFallbackAlert("Notification permission could not be opened, so this is the in-app fallback alert."));
   }
+
+  useEffect(() => {
+    if (!selected || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const shouldTestAlert = params.get("testAlert") === "1" || params.get("alertTest") === "1";
+    if (!shouldTestAlert) return;
+
+    const token = `${jobKey(selected)}:${appointmentIso(selected)}:${appointmentDraft}`;
+    if (appointmentAlertTestTriggeredRef.current === token) return;
+    appointmentAlertTestTriggeredRef.current = token;
+
+    const timer = window.setTimeout(() => enableAppointmentBrowserAlerts(selected), 650);
+    return () => window.clearTimeout(timer);
+  }, [selected, appointmentDraft]);
 
   function applyWorkflowPatchToState(key: string, patch: Record<string, any>) {
     const applyPatch = (row: any) => (jobKey(row) === key ? { ...row, ...patch } : row);
