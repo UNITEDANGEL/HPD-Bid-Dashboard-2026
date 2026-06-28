@@ -21797,12 +21797,14 @@ return (
                       camera: false,
                       title: `${label} Image Upload`,
                       text: `Upload a ${label.toLowerCase()} image. It will be labeled and saved with this job.`,
+                      label: photoStep.label.replace("Photo", "Uploaded Image"),
                     };
                     const uploadVideoStep = {
                       ...videoStep,
                       camera: false,
                       title: `${label} Video Upload`,
                       text: `Upload a ${label.toLowerCase()} video. It will be labeled and saved with this job.`,
+                      label: videoStep.label.replace("Video", "Uploaded Video"),
                     };
 
                     return (
@@ -21825,13 +21827,13 @@ return (
                             Take Image
                           </button>
                           <button type="button" onClick={() => requestFieldPhotoCapture(selected, kind, "image/*", false, uploadPhotoStep)}>
-                            Upload Image
+                            Upload Labeled Image
                           </button>
                           <button type="button" onClick={() => requestFieldPhotoCapture(selected, kind, "video/*", true, videoStep)}>
                             Take Video
                           </button>
                           <button type="button" onClick={() => requestFieldPhotoCapture(selected, kind, "video/*", false, uploadVideoStep)}>
-                            Upload Video
+                            Upload Labeled Video
                           </button>
                         </div>
                       </section>
