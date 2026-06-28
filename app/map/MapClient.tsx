@@ -4133,8 +4133,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return (
       <div className={`job-appointment-card appointment-${info.tone} ${mode === "mission" ? "mission-appointment" : ""}`} aria-label="Job appointment reminder">
         <div className="job-appointment-head">
-          <span>Appointment</span>
+          <span>Schedule Appointment</span>
           <strong>{info.label}</strong>
+        </div>
+        <div className="job-appointment-banner">
+          <span>{jobKey(job)}</span>
+          <strong>{savedIso ? "Tenant visit saved" : "Pick tenant access time"}</strong>
+          <small>Email alerts go to {APPOINTMENT_ALERT_EMAIL}: 1 day and 2 hours before.</small>
         </div>
         <label className="job-appointment-input">
           <span>Date / time</span>
@@ -4153,7 +4158,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         </small>
         <div className={`job-appointment-actions ${savedIso ? "has-clear" : ""}`}>
           <button type="button" onClick={() => saveJobAppointment(job)} disabled={appointmentSaving}>
-            {appointmentSaving ? "Saving" : "Save"}
+            {appointmentSaving ? "Saving" : "Save Appointment"}
           </button>
           <a
             href={calendarHref || undefined}
@@ -7001,6 +7006,12 @@ function directionsUrl(job: JobRecord) {
   const dashboardView = dashboardViewCopy[workflowViewFilter];
   const dashboardSubtitle = search.trim() ? `Search: ${search.trim()}` : dashboardView.detail;
   const dashboardDataStatus = health.totalIssues ? `${health.totalIssues} data checks` : "Data clean";
+  const mapBoardModes: Array<{ view: WorkflowViewFilter; label: string; count: number }> = [
+    { view: "appointments", label: "Appointments", count: pendingAppointmentMapCount },
+    { view: "active", label: "Active", count: workflowDashboardCounts.active },
+    { view: "ready2", label: "Ready 2nd", count: readySecondCount },
+    { view: "all", label: "All", count: workflowDashboardCounts.all },
+  ];
   const quickWorkflowOptions = [
     { value: "No Access - 1st Attempt", label: "No Access 1st", tone: "waiting" },
     { value: "No Access - 2nd Attempt", label: "No Access 2nd", tone: "archive" },
@@ -7009,6 +7020,24 @@ function directionsUrl(job: JobRecord) {
     { value: "Partial Work Completed", label: "Partial", tone: "partial" },
     { value: "Completed by Others", label: "Other Done", tone: "other" },
   ];
+
+  function switchMapBoard(view: WorkflowViewFilter) {
+    setWorkflowViewFilter(view);
+    setClusterSheet(null);
+    setSelectedOnly(false);
+    setSelected(null);
+    setDrawerOpen(false);
+    setUrlOmoRequest("");
+    setSearch("");
+    setMapShowAllDays(view === "all" || view === "appointments");
+    setMapMenuOpen(false);
+    setActionNotice(`${dashboardViewCopy[view].label} map view.`);
+
+    window.requestAnimationFrame(() => {
+      mapRef.current?.invalidateSize();
+      fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true);
+    });
+  }
 
 return (
     <main
@@ -15490,6 +15519,40 @@ return (
             text-align: right !important;
           }
 
+          .job-appointment-banner {
+            display: grid !important;
+            gap: 3px !important;
+            padding: 10px !important;
+            border-radius: 14px !important;
+            background:
+              linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(34, 197, 94, 0.12)),
+              rgba(248, 250, 252, 0.07) !important;
+            border: 1px solid rgba(147, 197, 253, 0.20) !important;
+          }
+
+          .job-appointment-banner span {
+            color: #93c5fd !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-appointment-banner strong {
+            color: #ffffff !important;
+            font-size: 18px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-appointment-banner small {
+            color: #dbeafe !important;
+            font-size: 11px !important;
+            line-height: 1.24 !important;
+            font-weight: 820 !important;
+          }
+
           .job-appointment-input {
             min-width: 0 !important;
             display: grid !important;
@@ -17805,29 +17868,142 @@ return (
 
           /* CLEAN_MAP_HEADER_2026 */
           .map-cockpit {
-            width: min(330px, calc(100vw - 20px)) !important;
-            padding: 9px !important;
-            gap: 7px !important;
-            border-radius: 19px !important;
+            width: min(392px, calc(100vw - 20px)) !important;
+            padding: 10px !important;
+            gap: 8px !important;
+            border-radius: 20px !important;
+            background:
+              linear-gradient(145deg, rgba(248, 250, 252, 0.94), rgba(226, 232, 240, 0.88)) !important;
+            color: #0f172a !important;
+            border-color: rgba(15, 23, 42, 0.14) !important;
+            box-shadow:
+              0 22px 54px rgba(15, 23, 42, 0.24),
+              inset 0 1px 0 rgba(255, 255, 255, 0.74) !important;
           }
 
-          .map-cockpit-summary {
-            padding-bottom: 0 !important;
-            border-bottom: 0 !important;
+          .map-command-banner {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            gap: 10px !important;
           }
 
-          .map-cockpit-summary strong {
-            font-size: 21px !important;
+          .map-command-banner div {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 2px !important;
           }
 
-          .map-cockpit-summary small {
+          .map-command-banner span {
+            color: #0284c7 !important;
             font-size: 10px !important;
-            padding: 4px 7px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-command-banner strong {
+            color: #0f172a !important;
+            font-size: 24px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-command-banner small {
+            color: #475569 !important;
+            font-size: 11px !important;
+            line-height: 1.18 !important;
+            font-weight: 850 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-command-banner button {
+            min-height: 38px !important;
+            padding: 0 13px !important;
+            border-radius: 999px !important;
+            border: 0 !important;
+            background: linear-gradient(135deg, #0f172a, #0369a1) !important;
+            color: #ffffff !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+            box-shadow: 0 10px 24px rgba(2, 132, 199, 0.22) !important;
+          }
+
+          .map-board-switcher {
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+
+          .map-board-switcher button {
+            min-width: 0 !important;
+            min-height: 45px !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            gap: 5px !important;
+            padding: 7px 8px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            background: rgba(255, 255, 255, 0.72) !important;
+            color: #0f172a !important;
+            box-shadow: none !important;
+          }
+
+          .map-board-switcher button span {
+            min-width: 0 !important;
+            color: #334155 !important;
+            font-size: 10px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-align: left !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-board-switcher button b {
+            min-width: 24px !important;
+            min-height: 24px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 999px !important;
+            background: #e2e8f0 !important;
+            color: #0f172a !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-board-switcher button.active {
+            border-color: rgba(14, 165, 233, 0.35) !important;
+            background: linear-gradient(135deg, #dff7ff, #dcfce7) !important;
+            box-shadow: 0 10px 22px rgba(14, 165, 233, 0.16) !important;
+          }
+
+          .map-board-switcher button.active span,
+          .map-board-switcher button.active b {
+            color: #082f49 !important;
           }
 
           .map-cockpit-actions button {
-            min-height: 37px !important;
-            border-radius: 13px !important;
+            min-height: 35px !important;
+            border-radius: 12px !important;
+            background: rgba(15, 23, 42, 0.06) !important;
+            color: #0f172a !important;
+            border-color: rgba(15, 23, 42, 0.10) !important;
+          }
+
+          .map-cockpit-actions button.active,
+          .map-cockpit-actions button.primary {
+            background: #0f172a !important;
+            color: #ffffff !important;
+            box-shadow: none !important;
           }
 
           .map-cockpit-lens {
@@ -17893,30 +18069,56 @@ return (
               top: calc(env(safe-area-inset-top) + 58px) !important;
               left: 8px !important;
               width: calc(100vw - 16px) !important;
-              padding: 8px !important;
-              gap: 6px !important;
-              border-radius: 18px !important;
+              padding: 7px !important;
+              gap: 5px !important;
+              border-radius: 17px !important;
             }
 
-            .map-cockpit-summary {
+            .map-command-banner {
               grid-template-columns: minmax(0, 1fr) auto !important;
-              align-items: center !important;
-              gap: 4px 8px !important;
-              padding-bottom: 0 !important;
-              border-bottom: 0 !important;
+              gap: 7px !important;
             }
 
-            .map-cockpit-summary span {
-              grid-column: 1 / -1 !important;
+            .map-command-banner span {
               font-size: 9px !important;
             }
 
-            .map-cockpit-summary strong {
+            .map-command-banner strong {
               font-size: 19px !important;
             }
 
-            .map-cockpit-summary small {
-              padding: 4px 6px !important;
+            .map-command-banner small {
+              font-size: 9px !important;
+            }
+
+            .map-command-banner button {
+              min-height: 34px !important;
+              padding: 0 10px !important;
+              font-size: 10px !important;
+            }
+
+            .map-board-switcher {
+              gap: 4px !important;
+            }
+
+            .map-board-switcher button {
+              min-height: 36px !important;
+              grid-template-columns: 1fr !important;
+              justify-items: center !important;
+              gap: 2px !important;
+              padding: 5px 4px !important;
+              border-radius: 11px !important;
+            }
+
+            .map-board-switcher button span {
+              max-width: 100% !important;
+              font-size: 8px !important;
+              text-align: center !important;
+            }
+
+            .map-board-switcher button b {
+              min-width: 21px !important;
+              min-height: 18px !important;
               font-size: 10px !important;
             }
 
@@ -18200,10 +18402,28 @@ return (
         <div ref={mapNode} className="map-node" />
 
         <section className={`map-cockpit ${mapMenuOpen ? "panel-open" : ""}`} aria-label="Map controls">
-          <div className="map-cockpit-summary">
-            <span>{dashboardView.label}</span>
-            <strong>{filteredJobs.length} visible</strong>
-            <small>{visibleMappedCount} mapped · {activeMapBaseStyle.label}</small>
+          <div className="map-command-banner" aria-label="Schedule board banner">
+            <div>
+              <span>Schedule Board</span>
+              <strong>{dashboardView.label}</strong>
+              <small>{filteredJobs.length} visible · {visibleMappedCount} mapped · {activeMapBaseStyle.label}</small>
+            </div>
+            <button type="button" onClick={() => switchMapBoard("appointments")}>
+              Schedule
+            </button>
+          </div>
+          <div className="map-board-switcher" aria-label="Switch map board">
+            {mapBoardModes.map((mode) => (
+              <button
+                key={mode.view}
+                type="button"
+                className={workflowViewFilter === mode.view ? "active" : ""}
+                onClick={() => switchMapBoard(mode.view)}
+              >
+                <span>{mode.label}</span>
+                <b>{mode.count}</b>
+              </button>
+            ))}
           </div>
           <div className="map-cockpit-actions" aria-label="Quick map actions">
             <button
@@ -18225,20 +18445,6 @@ return (
             <button type="button" onClick={() => fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true)}>
               Fit Job
             </button>
-          </div>
-          <div className="map-cockpit-lens" aria-label="Field workload lens">
-            <span>
-              <b>{pendingAppointmentMapCount}</b>
-              <small>Appts</small>
-            </span>
-            <span>
-              <b>{readySecondCount}</b>
-              <small>Ready 2nd</small>
-            </span>
-            <span>
-              <b>{missingGeoCount}</b>
-              <small>Need geo</small>
-            </span>
           </div>
         </section>
 
