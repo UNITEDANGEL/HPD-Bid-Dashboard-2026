@@ -1210,6 +1210,9 @@ function markerWorkDateBeforeAward(job: JobRecord, workDate: Date) {
   const awardDate = markerAwardDateValue(job);
   return Boolean(awardDate && dateOnly(workDate).getTime() < dateOnly(awardDate).getTime());
 }
+function overdueDaysLabel(days: number) {
+  return `${days} day${days === 1 ? "" : "s"}`;
+}
 function markerOverdueLabel(job: JobRecord) {
   const endRaw =
     (job as any).WorkCompletionDate ||
@@ -1222,7 +1225,7 @@ function markerOverdueLabel(job: JobRecord) {
   const today = new Date();
   const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const diffDays = Math.round((todayOnly.getTime() - endDate.getTime()) / 86400000);
-  return diffDays > 0 ? `OD ${diffDays}d` : "";
+  return diffDays > 0 ? overdueDaysLabel(diffDays) : "";
 }
 function markerOverdueDays(job: JobRecord) {
   const match = markerOverdueLabel(job).match(/(\d+)/);
@@ -1293,6 +1296,13 @@ function markerStartCounterLabel(job: JobRecord) {
   if (diff === 0) return "START TODAY";
   return `START IN ${Math.abs(diff)}D`;
 }
+function markerAddressLabel(job: JobRecord) {
+  const address = displayAddress(job)
+    .replace(/\s*,?\s*(NY|NEW YORK)?\s+\d{5}(?:-\d{4})?\s*$/i, "")
+    .replace(/\s*,\s*$/, "")
+    .trim();
+  return address || "Address not listed";
+}
 function markerSignalLabelHtml(
   job: JobRecord,
   options: { overview: boolean; expanded: boolean; detailed: boolean; overdueLabel: string; noAccessTimerLabel: string; appointmentLabel: string }
@@ -1300,27 +1310,24 @@ function markerSignalLabelHtml(
   const award = markerAwardCounter(job);
   const start = markerStartCounterLabel(job);
   const id = jobKey(job);
-  const main = options.overdueLabel || award.main;
-  const eyebrow = options.overdueLabel ? "OVERDUE" : options.noAccessTimerLabel ? "NO ACCESS" : "MATURITY";
-  const footer = options.detailed ? markerDetailLabel(job) : options.expanded ? [id, award.badge].filter(Boolean).join(" - ") : id;
+  const address = markerAddressLabel(job);
+  const daySignal = options.overdueLabel || (options.noAccessTimerLabel ? "No access" : award.main.replace(/^MD\s*/i, "").replace(/^AWD IN\s*/i, "Award in "));
+  const footer = options.detailed ? markerDetailLabel(job) : options.expanded ? award.badge : "";
 
   if (options.overview) {
-    const tag = options.overdueLabel ? "OD" : options.noAccessTimerLabel ? "NA" : "MD";
-    const overviewMain = options.overdueLabel
-      ? options.overdueLabel.replace(/^OD\s+/i, "")
-      : award.main.replace(/^MD\s*/i, "").replace(/^AWD IN\s*/i, "IN ");
-
     return `
-      <span class="signal-eyebrow">${escapeMarkerHtml(tag)}</span>
-      <strong class="signal-main">${escapeMarkerHtml(overviewMain)}</strong>
+      <span class="signal-eyebrow">${escapeMarkerHtml(daySignal)}</span>
+      <strong class="signal-main">${escapeMarkerHtml(id)}</strong>
+      <span class="signal-address">${escapeMarkerHtml(address)}</span>
       ${options.appointmentLabel ? options.appointmentLabel : ""}
     `;
   }
 
   return `
-    <span class="signal-eyebrow">${escapeMarkerHtml(eyebrow)}</span>
-    <strong class="signal-main">${escapeMarkerHtml(main)}</strong>
-    ${start ? `<span class="signal-start">${escapeMarkerHtml(start)}</span>` : ""}
+    <span class="signal-eyebrow">${escapeMarkerHtml(daySignal)}</span>
+    <strong class="signal-main">${escapeMarkerHtml(id)}</strong>
+    <span class="signal-address">${escapeMarkerHtml(address)}</span>
+    ${start && !options.overdueLabel ? `<span class="signal-start">${escapeMarkerHtml(start)}</span>` : ""}
     ${options.noAccessTimerLabel ? options.noAccessTimerLabel : ""}
     ${options.appointmentLabel ? options.appointmentLabel : ""}
     ${footer ? `<span class="signal-footer">${escapeMarkerHtml(footer)}</span>` : ""}
@@ -1853,7 +1860,7 @@ function markerWorkWindowLabel(job: JobRecord) {
   const text = String(info.statusLabel || "").toLowerCase();
   if (text.includes("overdue by")) {
     const match = info.statusLabel.match(/overdue by\s+(\d+)/i);
-    return match ? `OD ${match[1]}d` : "OVERDUE";
+    return match ? overdueDaysLabel(Number(match[1])) : "Overdue";
   }
   if (text.includes("due today")) return "DUE TODAY";
   if (text.includes("due in")) {
@@ -1974,7 +1981,7 @@ function timelineOverdueLabel(job: JobRecord | null | undefined) {
   const today = dateOnly(new Date());
   const diff = daysBetween(date, today);
   if (diff > 180) return "Check date";
-  if (diff > 0) return `OD ${diff}d`;
+  if (diff > 0) return overdueDaysLabel(diff);
   if (diff === 0) return "Due today";
   return `Due ${Math.abs(diff)}d`;
 }
@@ -2476,7 +2483,7 @@ const jobAssistantLineForAi = (job: JobRecord, index: number) => {
     second?.ready ? "READY 2ND ATTEMPT" :
     second ? second.label :
     due === null ? "No due date" :
-    due > 0 ? `OD ${due}d` :
+    due > 0 ? overdueDaysLabel(due) :
     due === 0 ? "Due today" :
     `Due in ${Math.abs(due)}d`;
   return `${index + 1}. ${jobKey(job)} — ${dueText} — ${status} — ${(job as any).borough || "Unknown"} — ${address}${amount ? ` — ${amount}` : ""}`;
@@ -3651,7 +3658,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                 : readyCount
                   ? `${readyCount} ready`
                   : worstOverdue
-                    ? `OD ${worstOverdue}d`
+                    ? overdueDaysLabel(worstOverdue)
                     : "mapped";
           const marker = L.marker([item.lat, item.lng], {
             icon: L.divIcon({
@@ -3694,12 +3701,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const hasOverdue = Boolean(overdueLabel);
         const markerMode = markerDetailed ? "marker-detailed" : markerExpanded ? "marker-expanded" : markerOverview ? "marker-overview" : "marker-compact";
         const baseIconSize: [number, number] = markerDetailed
-          ? [184, noAccessTimerLabel || appointmentLabel ? 142 : 116]
+          ? [218, noAccessTimerLabel || appointmentLabel ? 156 : 132]
           : markerExpanded
-            ? [158, noAccessTimerLabel || appointmentLabel ? 124 : 98]
+            ? [198, noAccessTimerLabel || appointmentLabel ? 142 : 116]
             : markerOverview
-              ? [hasOverdue || appointmentLabel ? 112 : 74, appointmentLabel ? 86 : 60]
-              : [hasOverdue ? 104 : 92, noAccessTimerLabel || appointmentLabel ? 82 : 62];
+              ? [hasOverdue || appointmentLabel ? 154 : 132, appointmentLabel ? 106 : 88]
+              : [hasOverdue ? 148 : 132, noAccessTimerLabel || appointmentLabel ? 104 : 84];
         const iconSize: [number, number] = [
           baseIconSize[0] + (hasOverdue && !markerOverview ? 8 : 0),
           baseIconSize[1] + (hasOverdue && !markerOverview ? 6 : 0),
@@ -6533,7 +6540,7 @@ function markerWorkWindowLabel(job: JobRecord) {
   const text = String(info.statusLabel || "").toLowerCase();
   if (text.includes("overdue by")) {
     const match = info.statusLabel.match(/overdue by\s+(\d+)/i);
-    return match ? `OD ${match[1]}d` : "OVERDUE";
+    return match ? overdueDaysLabel(Number(match[1])) : "Overdue";
   }
   if (text.includes("due today")) return "DUE TODAY";
   if (text.includes("due in")) {
@@ -6654,7 +6661,7 @@ function timelineOverdueLabel(job: JobRecord | null | undefined) {
   const today = dateOnly(new Date());
   const diff = daysBetween(date, today);
   if (diff > 180) return "Check date";
-  if (diff > 0) return `OD ${diff}d`;
+  if (diff > 0) return overdueDaysLabel(diff);
   if (diff === 0) return "Due today";
   return `Due ${Math.abs(diff)}d`;
 }
@@ -7025,7 +7032,7 @@ function directionsUrl(job: JobRecord) {
 
     const overdue = pool.filter((job) => {
       const label = timelineOverdueLabel(job);
-      return /^OD\s+\d+d$/i.test(label);
+      return /^\d+\s+days?$/i.test(label);
     });
 
     const totalIssues = blankBorough.length + missingCoords.length + badDescriptions.length + suspiciousQueens.length + checkDate.length;
@@ -14735,6 +14742,19 @@ return (
             white-space: nowrap !important;
           }
 
+          .maturity-map-marker .map-signal-marker .signal-address {
+            display: block !important;
+            max-width: 178px !important;
+            color: #334155 !important;
+            font-size: 10px !important;
+            font-weight: 950 !important;
+            line-height: 1.05 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
           .maturity-map-marker .map-signal-marker .signal-start {
             display: inline-flex !important;
             align-items: center !important;
@@ -17774,16 +17794,21 @@ return (
 
           .maturity-map-marker .map-signal-marker.marker-overview {
             border-radius: 16px !important;
-            min-width: 92px !important;
-            min-height: 68px !important;
+            min-width: 138px !important;
+            min-height: 82px !important;
             padding: 8px 10px !important;
           }
 
           .maturity-map-marker .map-signal-marker.marker-overview .signal-main {
-            font-size: 22px !important;
+            font-size: 20px !important;
             white-space: nowrap !important;
             overflow: visible !important;
             text-overflow: clip !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-address {
+            max-width: 132px !important;
+            font-size: 8px !important;
           }
 
           .maturity-map-marker .maturity-marker-bubble.map-signal-marker,
@@ -17815,12 +17840,12 @@ return (
           }
 
           .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-has-overdue.marker-overview {
-            min-width: 112px !important;
-            min-height: 68px !important;
+            min-width: 150px !important;
+            min-height: 84px !important;
           }
 
           .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-has-overdue.marker-overview .signal-main {
-            font-size: 22px !important;
+            font-size: 20px !important;
           }
 
           .maturity-map-marker .map-signal-marker .marker-appointment-badge,
@@ -17836,6 +17861,73 @@ return (
             box-shadow:
               0 0 0 3px rgba(255, 255, 255, 0.72),
               0 18px 36px rgba(15, 23, 42, 0.30) !important;
+          }
+
+          /* DISPATCH_MARKER_LABELS_2026 */
+          .maturity-map-marker .map-signal-marker {
+            border-radius: 8px !important;
+            gap: 3px !important;
+            padding: 8px 10px !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 250, 252, 0.97)) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-expanded {
+            min-width: 190px !important;
+            min-height: 112px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-detailed {
+            min-width: 208px !important;
+            min-height: 126px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .signal-eyebrow {
+            background: #e2e8f0 !important;
+            color: #243244 !important;
+            letter-spacing: 0 !important;
+            text-transform: none !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .signal-main,
+          .maturity-map-marker .map-signal-marker.marker-expanded .signal-main,
+          .maturity-map-marker .map-signal-marker.marker-detailed .signal-main,
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-main {
+            color: #0f172a !important;
+            font-size: 22px !important;
+            line-height: 0.95 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-overdue .signal-main,
+          .maturity-map-marker .map-signal-marker.marker-has-overdue.marker-expanded .signal-main,
+          .maturity-map-marker .map-signal-marker.marker-has-overdue.marker-detailed .signal-main,
+          .maturity-map-marker .map-signal-marker.marker-has-overdue.marker-overview .signal-main {
+            color: #7f1d1d !important;
+            font-size: 22px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-overdue .signal-eyebrow {
+            background: #fee2e2 !important;
+            color: #991b1b !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .signal-address,
+          .maturity-map-marker .map-signal-marker.marker-has-overdue .signal-address {
+            display: block !important;
+            max-width: 172px !important;
+            color: #334155 !important;
+            background: transparent !important;
+            font-size: 10px !important;
+            font-weight: 950 !important;
+            line-height: 1.05 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-address {
+            max-width: 132px !important;
+            font-size: 8px !important;
           }
 
           /* MAP_VISUAL_POLISH_2026 */
@@ -19272,45 +19364,6 @@ return (
             </div>
 
             {renderAppointmentHero(selected)}
-
-            <div className="selected-hero-actions">
-              {(() => {
-                const selectedNoAccessInfo = workflowSecondAttemptInfo(selected);
-                const selectedIsNoAccessFirst = workflowStatus(selected) === "NO_ACCESS_1_WAITING_72H";
-
-                if (selectedIsNoAccessFirst && selectedNoAccessInfo?.ready) {
-                  return (
-                    <button type="button" className="selected-primary-action" onClick={() => markNoAccessSecondAttempt(selected)}>
-                      No Access 2nd Ready
-                    </button>
-                  );
-                }
-
-                if (selectedIsNoAccessFirst) {
-                  return (
-                    <button type="button" className="selected-primary-action" disabled>
-                      {selectedNoAccessInfo?.label || "Wait 72h"}
-                    </button>
-                  );
-                }
-
-                return (
-                  <a className="selected-primary-action" href={paperworkAutoPackageHref(selected)}>
-                    Generate Package
-                  </a>
-                );
-              })()}
-              <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                Waze
-              </a>
-              <a href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                Map
-              </a>
-              <button type="button" onClick={() => sendJobToArchive(selected)}>
-                Archive
-              </button>
-            </div>
-
             <div className="field-workflow-card">
               <div className="field-workflow-head">
                 <div>
