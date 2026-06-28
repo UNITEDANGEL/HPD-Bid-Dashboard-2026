@@ -2320,6 +2320,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const markerOverviewKeyRef = useRef("");
   const markerAutoFitKeyRef = useRef("");
   const appointmentAlertTestTriggeredRef = useRef("");
+  const noAccessReadyAlertSeenRef = useRef<Record<string, string>>({});
   const fieldPhotoInputRef = useRef<HTMLInputElement | null>(null);
   const fieldCameraVideoRef = useRef<HTMLVideoElement | null>(null);
   const fieldCameraStreamRef = useRef<MediaStream | null>(null);
@@ -4189,6 +4190,46 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return jobs.filter((job) => isNoAccessTwentyFourHourAlert(job));
   }, [jobs, countdownTick]);
 
+  const noAccessReadyJobs = useMemo<MappedJob[]>(() => {
+    const baseRows = (mappedJobs.length ? mappedJobs : jobs) as MappedJob[];
+    const baseByKey = new Map<string, MappedJob>();
+    [...filteredJobs, ...baseRows].forEach((job) => {
+      const key = jobKey(job);
+      if (key && !baseByKey.has(key)) baseByKey.set(key, job);
+    });
+    const serverRows = Object.entries(serverWorkflowOverrides).map(([key, patch]) => {
+      const base = baseByKey.get(key) || ({ id: key, omo: key, OMO: key } as MappedJob);
+      return { ...base, ...(patch || {}), id: base.id || key, omo: base.omo || key, OMO: (base as any).OMO || key } as MappedJob;
+    });
+    const localRows = Object.entries(readWorkflowOverrides()).map(([key, patch]) => {
+      const base = baseByKey.get(key) || ({ id: key, omo: key, OMO: key } as MappedJob);
+      return { ...base, ...(patch || {}), id: base.id || key, omo: base.omo || key, OMO: (base as any).OMO || key } as MappedJob;
+    });
+    const rows = [
+      ...(selected ? [selected] : []),
+      ...filteredJobs,
+      ...serverRows,
+      ...localRows,
+      ...baseRows,
+    ];
+    const seen = new Set<string>();
+
+    return rows
+      .filter((job) => {
+        const key = jobKey(job);
+        if (!key || seen.has(key)) return false;
+        if (!workflowSecondAttemptInfo(job)?.ready) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => {
+        const left = workflowSecondAttemptInfo(a)?.available.getTime() || 0;
+        const right = workflowSecondAttemptInfo(b)?.available.getTime() || 0;
+        return left - right;
+      })
+      .slice(0, 12);
+  }, [selected, filteredJobs, jobs, mappedJobs, serverWorkflowOverrides, countdownTick]);
+
   const nearbyNoAccessSoonJobs = useMemo(() => {
     if (!userLocation) return [];
     return noAccessSoonJobs
@@ -4200,21 +4241,32 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }, [noAccessSoonJobs, userLocation]);
 
   useEffect(() => {
-    const readyCount = jobs.filter((job) => workflowViewBucket(job) === "ready2").length;
+    const readyCount = noAccessReadyJobs.length;
     if (!readyCount || typeof window === "undefined") return;
     const todayKey = new Date().toISOString().slice(0, 10);
-    const noticeKey = `hpd-ready2-notice-${todayKey}`;
-    if (window.localStorage.getItem(noticeKey) === String(readyCount)) return;
+    const readyKey = noAccessReadyJobs
+      .map((job) => {
+        const second = workflowSecondAttemptInfo(job);
+        return `${jobKey(job)}:${second?.available.toISOString() || "ready"}`;
+      })
+      .sort()
+      .join("|");
+    if (noAccessReadyAlertSeenRef.current.readyKey === readyKey) return;
 
-    window.localStorage.setItem(noticeKey, String(readyCount));
-    showActionNotice(`${readyCount} job(s) are ready for 2nd attempt today.`);
+    noAccessReadyAlertSeenRef.current.readyKey = readyKey;
+    const noticeKey = `hpd-ready2-notice-${todayKey}-${readyKey}`;
+    if (window.localStorage.getItem(noticeKey)) return;
+
+    window.localStorage.setItem(noticeKey, "1");
+    const firstJob = noAccessReadyJobs[0];
+    showActionNotice(`72h ready: ${jobKey(firstJob)} is ready for 2nd attempt now.`);
 
     if ("Notification" in window && window.Notification.permission === "granted") {
       new window.Notification("HPD jobs ready", {
-        body: `${readyCount} no-access job(s) are ready for second attempt.`,
+        body: `${readyCount} no-access job(s) are ready for second attempt. First: ${jobKey(firstJob)} - ${displayAddress(firstJob)}`,
       });
     }
-  }, [jobs, countdownTick]);
+  }, [noAccessReadyJobs, countdownTick]);
 
   useEffect(() => {
     const soonCount = noAccessSoonJobs.length;
@@ -7545,7 +7597,7 @@ function directionsUrl(job: JobRecord) {
   const todayPriorityJobs = [...dispatchJobPool()]
     .sort((a, b) => dispatchUrgencyScore(b) - dispatchUrgencyScore(a))
     .slice(0, 3);
-  const readySecondCount = health.readySecond.length;
+  const readySecondCount = noAccessReadyJobs.length || health.readySecond.length;
   const workflowDashboardCounts = useMemo(() => {
     const rows = (mappedJobs.length ? mappedJobs : jobs) as MappedJob[];
     const counts: Record<WorkflowViewFilter, number> = {
@@ -20169,10 +20221,21 @@ return (
 
           .job-card-72h-counter.is-soon {
             background: linear-gradient(135deg, #fb923c, #fef3c7) !important;
+            animation: noAccessTimerReadyPulse 1.5s ease-in-out infinite !important;
           }
 
           .job-card-72h-counter.is-ready {
             background: linear-gradient(135deg, #22c55e, #bbf7d0) !important;
+            border-color: rgba(5, 46, 22, 0.28) !important;
+            animation: noAccessTimerReadyPulse 1.35s ease-in-out infinite !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(255, 255, 255, 0.48),
+              0 0 0 4px rgba(34, 197, 94, 0.2),
+              0 16px 34px rgba(22, 101, 52, 0.35) !important;
+          }
+
+          .job-card-72h-counter.is-ready strong {
+            color: #052e16 !important;
           }
 
           .job-card-72h-counter.is-ready span,
@@ -21697,13 +21760,16 @@ return (
                 </button>
               </div>
               {selectedNoAccessTimerInfo ? (
-                <div className={`job-card-72h-counter ${selectedNoAccessTimerInfo.ready ? "is-ready" : selectedNoAccessTimerInfo.within24 ? "is-soon" : "is-waiting"}`} role="status" aria-label="72 hour no access counter">
+                <div className={`job-card-72h-counter ${selectedNoAccessTimerInfo.ready ? "is-ready" : selectedNoAccessTimerInfo.within24 ? "is-soon" : "is-waiting"}`} role="status" aria-live="polite" aria-label="72 hour no access counter">
                   <span>72H Counter</span>
-                  <strong>{selectedNoAccessTimerInfo.ready ? "REVISIT NOW" : selectedNoAccessTimerInfo.label}</strong>
+                  <strong>{selectedNoAccessTimerInfo.ready ? "READY 2ND NOW" : selectedNoAccessTimerInfo.label}</strong>
                   <small>
-                    1st: {displayWorkflowDate(selectedNoAccessTimerJob?.NoAccessFirstAttemptAt || selectedNoAccessTimerJob?.noAccessFirstAttemptAt)}
+                    {selectedNoAccessTimerInfo.ready ? "Matured: " : "1st: "}
+                    {selectedNoAccessTimerInfo.ready
+                      ? displayWorkflowDate(selectedNoAccessTimerJob?.SecondAttemptAvailableAt || selectedNoAccessTimerJob?.secondAttemptAvailableAt || selectedNoAccessTimerInfo.available.toISOString())
+                      : displayWorkflowDate(selectedNoAccessTimerJob?.NoAccessFirstAttemptAt || selectedNoAccessTimerJob?.noAccessFirstAttemptAt)}
                     {" | "}
-                    2nd unlock: {displayWorkflowDate(selectedNoAccessTimerJob?.SecondAttemptAvailableAt || selectedNoAccessTimerJob?.secondAttemptAvailableAt || selectedNoAccessTimerInfo.available.toISOString())}
+                    {selectedNoAccessTimerInfo.ready ? "Use No Access 2nd" : `2nd unlock: ${displayWorkflowDate(selectedNoAccessTimerJob?.SecondAttemptAvailableAt || selectedNoAccessTimerJob?.secondAttemptAvailableAt || selectedNoAccessTimerInfo.available.toISOString())}`}
                   </small>
                 </div>
               ) : null}
@@ -21974,10 +22040,10 @@ return (
         </section>
           </>
         ) : null}
-        {jobs.filter((job) => workflowViewBucket(job) === "ready2").length > 0 && !clusterSheet && !selectedOnly ? (
+        {readySecondCount > 0 && !clusterSheet && !selectedOnly ? (
           <div className="ready-revisit-alert">
             <strong>REVISIT READY</strong>
-            <span>{jobs.filter((job) => workflowViewBucket(job) === "ready2").length} job(s) need 2nd attempt now.</span>
+            <span>{readySecondCount} job(s) need 2nd attempt now.</span>
             <button type="button" onClick={showReadyRevisitJobs}>Show Ready</button>
           </div>
         ) : null}
