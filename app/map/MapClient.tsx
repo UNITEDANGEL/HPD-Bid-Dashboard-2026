@@ -7574,7 +7574,7 @@ function directionsUrl(job: JobRecord) {
   const dashboardSubtitle = search.trim() ? `Search: ${search.trim()}` : dashboardView.detail;
   const dashboardDataStatus = health.totalIssues ? `${health.totalIssues} data checks` : "Data clean";
   const locationBlocked = locationBlockedByBrowser();
-  const showLocationHelpCard = locationHelpOpen || (locationBlocked && !userLocation);
+  const showLocationHelpCard = locationHelpOpen;
   const mapBoardModes: Array<{ view: WorkflowViewFilter; label: string; count: number }> = [
     { view: "active", label: "Active", count: workflowDashboardCounts.active },
     { view: "pending", label: "Pending", count: workflowDashboardCounts.pending },
