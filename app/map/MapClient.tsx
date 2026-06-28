@@ -14554,6 +14554,35 @@ return (
             line-height: 1.3;
           }
 
+          .site-outcome-summary-card {
+            display: grid;
+            gap: 4px;
+            padding: 12px;
+            border-radius: 15px;
+            border: 1px solid rgba(96, 165, 250, 0.22);
+            background: rgba(59, 130, 246, 0.10);
+          }
+
+          .site-outcome-summary-card > span {
+            color: #93c5fd;
+            text-transform: uppercase;
+            font-size: 10px;
+            font-weight: 1000;
+            letter-spacing: 0;
+          }
+
+          .site-outcome-summary-card > strong {
+            color: #f8fafc;
+            font-size: 18px;
+            line-height: 1.1;
+          }
+
+          .site-outcome-summary-card > small {
+            color: #cbd5e1;
+            font-size: 12px;
+            font-weight: 850;
+          }
+
           .site-procedure-actions {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
@@ -22168,55 +22197,10 @@ return (
                         </button>
                         <small>Used for affidavit dates, invoice dates, and the No Access 72-hour counter.</small>
                       </div>
-                      <div className="site-option-group">
-                        <div className="site-option-title">
-                          <span>Completed Work affidavit</span>
-                          <small>Save completed status date; media can be added before review.</small>
-                        </div>
-                        <div className="site-procedure-actions site-procedure-scenarios work-path">
-                          <button type="button" className={`start-job-btn procedure-primary ${isBeforeEvidence ? "is-active" : ""}`} onClick={() => startFieldJob(selected)}>
-                            <strong>Start Job</strong>
-                            <small>Before evidence</small>
-                          </button>
-                        <button type="button" className={`finish-job-btn ${(isAfterEvidence && !isPartialWork) || isWorkCompleted ? "is-active" : ""}`} onClick={() => finishFieldJob(selected)}>
-                            <strong>Completed Work</strong>
-                            <small>Save status date</small>
-                          </button>
-                          <button type="button" className={`finish-job-btn ${isPartialWork ? "is-active" : ""}`} onClick={() => finishFieldJob(selected, true)}>
-                            <strong>Partial Work</strong>
-                            <small>No media needed</small>
-                          </button>
-                        </div>
-                      </div>
-                      <div className="site-option-group">
-                        <div className="site-option-title">
-                          <span>No work completed affidavit</span>
-                          <small>Pick the exact no-work reason; media is optional.</small>
-                        </div>
-                        <div className="site-procedure-actions site-procedure-scenarios no-work-path">
-                          <button type="button" className={`no-access-job-btn ${isNoAccessFirst ? "is-active" : ""}`} onClick={() => startNoAccessCounter(selected)}>
-                            <strong>No Access 1st</strong>
-                            <small>Start 72h</small>
-                          </button>
-                          <button
-                            type="button"
-                            className={`no-access-job-btn ${isNoAccessSecond ? "is-active" : ""}`}
-                            onClick={() => markNoAccessSecondAttempt(selected)}
-                            disabled={noAccessSecondLocked}
-                            title={secondAttemptInfo ? secondAttemptInfo.ready ? "Ready for 2nd attempt" : secondAttemptInfo.label : "Save No Access 1st first"}
-                          >
-                            <strong>No Access 2nd</strong>
-                            <small>{secondAttemptInfo ? secondAttemptInfo.ready ? "Ready now" : secondAttemptInfo.label : "Save 1st first"}</small>
-                          </button>
-                          <button type="button" className={`refused-job-btn ${isRefused ? "is-active" : ""}`} onClick={() => markRefusedAccess(selected)}>
-                            <strong>Refused Access</strong>
-                            <small>Media optional</small>
-                          </button>
-                          <button type="button" className={`other-done-job-btn ${isCompletedByOthers ? "is-active" : ""}`} onClick={() => markCompletedByOthers(selected)}>
-                            <strong>Done by Others</strong>
-                            <small>Media optional</small>
-                          </button>
-                        </div>
+                      <div className="site-outcome-summary-card">
+                        <span>Current field outcome</span>
+                        <strong>{workflowLabel(selected) || "Pending"}</strong>
+                        <small>{missionStatusDateLabel}</small>
                         {isRefused ? (
                           <div className="refused-description-picker">
                             <div className="refused-description-head">
@@ -22415,31 +22399,6 @@ return (
                           </>
                         )}
                       </div>
-                      </div>
-                    </div>
-                    <div className="field-completion-flow-card" data-field-completion-flow="true">
-                      <div className="field-completion-flow-head">
-                        <div>
-                          <span>Field Ready Flow</span>
-                          <strong>{packageReviewApproved ? "Review approved" : isWorkCompleted ? "Completed Work saved" : "Ready for field"}</strong>
-                        </div>
-                        <small>{fieldPackageReviewStatusLabel(selected)}</small>
-                      </div>
-                      <div className="field-completion-flow-actions">
-                        <button type="button" className="start-work-flow" onClick={() => startFieldJob(selected)}>
-                          <strong>Start Job</strong>
-                          <small>Before media</small>
-                        </button>
-                        <button type="button" className="complete-work-flow" onClick={() => finishFieldJob(selected)}>
-                          <strong>Completed Work</strong>
-                          <small>{missionStatusDateLabel}</small>
-                        </button>
-                      </div>
-                      <div className="field-completion-flow-steps" aria-label="Field package readiness">
-                        <span className={counts.before ? "done" : "pending"}>Before <strong>{counts.before}</strong></span>
-                        <span className={counts.after ? "done" : "pending"}>After <strong>{counts.after}</strong></span>
-                        <span className={packageReady ? "done" : "pending"}>ZIP <strong>{packageReady ? "Ready" : "Needed"}</strong></span>
-                        <span className={packageReviewApproved ? "done" : "pending"}>Review <strong>{packageReviewApproved ? "Approved" : "Pending"}</strong></span>
                       </div>
                     </div>
                   </>
