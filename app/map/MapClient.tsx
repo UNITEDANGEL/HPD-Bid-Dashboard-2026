@@ -4005,8 +4005,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     const key = job ? jobKey(job) : "";
     const savedInfo = job ? appointmentStatusInfo(job) : null;
+    const savedDate = appointmentDate(job);
     const draftDate = appointmentDateFromLocalValue(appointmentDraft);
-    const when = savedInfo?.detail || (draftDate ? displayWorkflowDate(draftDate.toISOString()) : "test appointment");
+    const activeDate = savedDate || draftDate;
+    const when = activeDate ? displayWorkflowDate(activeDate.toISOString()) : savedInfo?.detail || "test appointment";
     const body = key
       ? `${key}: ${when}. App alerts work while this dashboard is open.`
       : `${when}. App alerts work while this dashboard is open.`;
