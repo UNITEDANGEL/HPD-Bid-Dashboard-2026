@@ -111,7 +111,16 @@ type JobRecord = {
   lon?: number | string;
 };
 
-type WorkflowViewFilter = "active" | "appointments" | "waiting72" | "ready2" | "final" | "archived" | "all";
+type WorkflowViewFilter =
+  | "active"
+  | "pending"
+  | "appointments"
+  | "waiting72"
+  | "noaccess24"
+  | "ready2"
+  | "final"
+  | "archived"
+  | "all";
 
 type ItbSourceManifestEntry = {
   page?: number;
@@ -1256,6 +1265,7 @@ function markerPulseClass(job: JobRecord) {
   const status = workflowStatus(job) || legacyWorkflowKind(job);
   const second = workflowSecondAttemptInfo(job);
   if (second?.ready) return "marker-pulse-ready";
+  if (second?.within24) return "marker-pulse-soon";
   if (second && !second.ready) return "marker-pulse-waiting";
   if (
     status === "WORK_COMPLETED" ||
@@ -1271,6 +1281,7 @@ function markerPulseClass(job: JobRecord) {
 function markerUrgencyClass(job: JobRecord) {
   const second = workflowSecondAttemptInfo(job);
   if (second?.ready) return "marker-urgent-ready";
+  if (second?.within24) return "marker-urgent-soon24";
   if (markerOverdueLabel(job)) return "marker-urgent-overdue";
   const work = workWindowInfo(job);
   if (String(work.statusLabel || "").toLowerCase().includes("due today")) return "marker-urgent-today";
@@ -1340,6 +1351,7 @@ function markerSignalLabelHtml(
       <span class="signal-eyebrow">${escapeMarkerHtml(daySignal)}</span>
       <strong class="signal-main">${escapeMarkerHtml(id)}</strong>
       <span class="signal-address">${escapeMarkerHtml(address)}</span>
+      ${options.noAccessTimerLabel ? options.noAccessTimerLabel : ""}
       ${options.appointmentLabel ? options.appointmentLabel : ""}
     `;
   }
@@ -1364,8 +1376,8 @@ function markerDetailLabel(job: JobRecord) {
 function markerNoAccessTimerHtml(job: JobRecord) {
   const second = workflowSecondAttemptInfo(job);
   if (!second) return "";
-  const label = second.ready ? "2ND READY" : second.label.replace("REVISIT IN", "2ND IN");
-  const className = second.ready ? "is-ready" : "is-waiting";
+  const label = second.ready ? "READY 2ND" : `T-${second.hoursLeft}H`;
+  const className = second.ready ? "is-ready" : second.within24 ? "is-soon" : "is-waiting";
   return `<span class="marker-no-access-timer ${className}">${escapeMarkerHtml(label)}</span>`;
 }
 function appointmentMarkerTimeLabel(date: Date, now = new Date()) {
@@ -2101,8 +2113,24 @@ function workflowSecondAttemptInfo(job: JobRecord, now = new Date()) {
     available,
     ready: msLeft <= 0,
     hoursLeft,
-    label: msLeft <= 0 ? "REVISIT NOW" : `REVISIT IN ${hoursLeft}H`,
+    within24: msLeft > 0 && hoursLeft <= 24,
+    label: msLeft <= 0 ? "REVISIT NOW" : `T-${hoursLeft}H TO 2ND`,
   };
+}
+
+function isNoAccessTwentyFourHourAlert(job: JobRecord) {
+  const second = workflowSecondAttemptInfo(job);
+  return Boolean(second && !second.ready && second.within24);
+}
+
+function directWorkflowStatus(job: JobRecord) {
+  return String(
+    (job as any).WorkflowStatus ||
+      (job as any).workflowStatus ||
+      (job as any).FieldOutcome ||
+      (job as any).fieldOutcome ||
+      ""
+  ).toUpperCase();
 }
 
 const CLOSED_WORKFLOW_STATUSES = new Set([
@@ -2134,6 +2162,40 @@ const FINAL_REVIEW_WORKFLOW_STATUSES = new Set([
   "SENT_TO_HPD",
 ]);
 
+function isPendingWorkflowJob(job: JobRecord) {
+  const workflow = directWorkflowStatus(job);
+  if (workflow && workflow !== "PENDING" && workflow !== "READY" && workflow !== "NOT_STARTED") return false;
+
+  if (
+    (job as any).JobStartedAt ||
+    (job as any).jobStartedAt ||
+    (job as any).ActualWorkStartDate ||
+    (job as any).actualWorkStartDate ||
+    (job as any).JobFinishedAt ||
+    (job as any).jobFinishedAt ||
+    (job as any).ActualWorkCompletionDate ||
+    (job as any).actualWorkCompletionDate
+  ) {
+    return false;
+  }
+
+  const label = [
+    workflow,
+    (job as any).StatusOverride,
+    (job as any).status,
+    JobStatus.statusLabel(job),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (/no access|refused|complete|completed|partial|done|started|evidence|package|sent|approved|archive/.test(label)) {
+    return false;
+  }
+
+  return !label || /pending|award|awarded|open|assigned|ready|not started/.test(label);
+}
+
 function workflowViewBucket(job: JobRecord) {
   const status = workflowStatus(job) || legacyWorkflowKind(job);
   const archived = Boolean((job as any).ArchivedFromMap || (job as any).archivedFromMap);
@@ -2156,13 +2218,20 @@ function workflowViewBucket(job: JobRecord) {
     return "final";
   }
 
+  if (isPendingWorkflowJob(job)) {
+    return "pending";
+  }
+
   return "active";
 }
 
 function shouldShowForWorkflowView(job: JobRecord, view: WorkflowViewFilter) {
   if (view === "all") return true;
   if (view === "appointments") return hasPendingUpcomingAppointment(job);
-  return workflowViewBucket(job) === view;
+  if (view === "noaccess24") return isNoAccessTwentyFourHourAlert(job);
+  const bucket = workflowViewBucket(job);
+  if (view === "active") return bucket === "active" || bucket === "pending";
+  return bucket === view;
 }
 
 function shouldShowOnActiveMap(job: JobRecord) {
@@ -2847,8 +2916,10 @@ function handleMapTouchEnd(event: any) {
     const requestedWorkflowView: WorkflowViewFilter | "" =
       view === "archived" ||
       view === "active" ||
+      view === "pending" ||
       view === "appointments" ||
       view === "waiting72" ||
+      view === "noaccess24" ||
       view === "ready2" ||
       view === "final" ||
       view === "all"
@@ -2860,6 +2931,15 @@ function handleMapTouchEnd(event: any) {
     }
     if (requestedWorkflowView) {
       setWorkflowViewFilter(requestedWorkflowView);
+      if (
+        requestedWorkflowView === "all" ||
+        requestedWorkflowView === "appointments" ||
+        requestedWorkflowView === "waiting72" ||
+        requestedWorkflowView === "noaccess24" ||
+        requestedWorkflowView === "ready2"
+      ) {
+        setMapShowAllDays(true);
+      }
     }
     if (omo) {
       setSearch(omo.toUpperCase());
@@ -3729,7 +3809,19 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             .sort((a, b) => (appointmentDate(a.job)?.getTime() || 0) - (appointmentDate(b.job)?.getTime() || 0));
           const appointmentCount = appointmentItems.length;
           const readyCount = clusterItems.filter((current) => workflowViewBucket(current.job) === "ready2").length;
-          const statusClass = appointmentCount ? "cluster-appointment" : readyCount ? "cluster-ready" : worstOverdue ? "cluster-overdue" : "cluster-normal";
+          const soonNoAccessCount = clusterItems.filter((current) => isNoAccessTwentyFourHourAlert(current.job)).length;
+          const pendingCount = clusterItems.filter((current) => workflowViewBucket(current.job) === "pending").length;
+          const statusClass = appointmentCount
+            ? "cluster-appointment"
+            : readyCount
+              ? "cluster-ready"
+              : soonNoAccessCount
+                ? "cluster-noaccess-soon"
+                : pendingCount
+                  ? "cluster-pending"
+                  : worstOverdue
+                    ? "cluster-overdue"
+                    : "cluster-normal";
           const clusterLabel =
             appointmentCount === 1
               ? markerAppointmentLabelText(appointmentItems[0].job)
@@ -3737,9 +3829,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                 ? `${appointmentCount} appts`
                 : readyCount
                   ? `${readyCount} ready`
-                  : worstOverdue
-                    ? overdueDaysLabel(worstOverdue)
-                    : "mapped";
+                  : soonNoAccessCount
+                    ? `${soonNoAccessCount} T-24`
+                    : pendingCount
+                      ? `${pendingCount} pending`
+                      : worstOverdue
+                        ? overdueDaysLabel(worstOverdue)
+                        : "mapped";
           const marker = L.marker([item.lat, item.lng], {
             icon: L.divIcon({
               className: "maturity-map-marker",
@@ -3776,6 +3872,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const markerColor = JobStatus.statusColor(job);
         const overdueLabel = markerOverdueLabel(job);
         const noAccessTimerLabel = markerNoAccessTimerHtml(job);
+        const noAccessSoon = isNoAccessTwentyFourHourAlert(job);
+        const noAccessReady = workflowViewBucket(job) === "ready2";
         const appointmentLabel = markerAppointmentReminderHtml(job);
         const pendingAppointmentPulse = hasPendingUpcomingAppointment(job);
         const hasOverdue = Boolean(overdueLabel);
@@ -3785,7 +3883,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           : markerExpanded
             ? [198, noAccessTimerLabel || appointmentLabel ? 142 : 116]
             : markerOverview
-              ? [hasOverdue || appointmentLabel ? 154 : 132, appointmentLabel ? 106 : 88]
+              ? [hasOverdue || appointmentLabel || noAccessTimerLabel ? 154 : 132, appointmentLabel || noAccessTimerLabel ? 106 : 88]
               : [hasOverdue ? 148 : 132, noAccessTimerLabel || appointmentLabel ? 104 : 84];
         const iconSize: [number, number] = [
           baseIconSize[0] + (hasOverdue && !markerOverview ? 8 : 0),
@@ -3798,7 +3896,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           title: `${popupJobId} ${displayAddress(job)}`,
           icon: L.divIcon({
             className: "maturity-map-marker",
-            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} ${pendingAppointmentPulse ? "marker-pending-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${hasOverdue ? "#ef4444" : appointmentLabel ? "#f59e0b" : markerColor}">
+            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} ${noAccessTimerLabel ? "marker-has-no-access" : ""} ${noAccessSoon ? "marker-no-access-soon" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} ${pendingAppointmentPulse ? "marker-pending-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${noAccessReady ? "marker-ready-revisit" : ""}" style="border-color:${hasOverdue ? "#ef4444" : noAccessSoon ? "#f97316" : appointmentLabel ? "#f59e0b" : noAccessReady ? "#22c55e" : markerColor}">
                     ${markerSignalLabelHtml(job, { overview: markerOverview, expanded: markerExpanded, detailed: markerDetailed, overdueLabel, noAccessTimerLabel, appointmentLabel })}
                   </div>`,
             iconSize,
@@ -3962,6 +4060,20 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     };
   }, [selected]);
 
+  const noAccessSoonJobs = useMemo(() => {
+    return jobs.filter((job) => isNoAccessTwentyFourHourAlert(job));
+  }, [jobs, countdownTick]);
+
+  const nearbyNoAccessSoonJobs = useMemo(() => {
+    if (!userLocation) return [];
+    return noAccessSoonJobs
+      .filter((job) => {
+        const coords = jobLatLng(job);
+        return Boolean(coords && distanceMiles(userLocation, coords) <= 1.25);
+      })
+      .slice(0, 5);
+  }, [noAccessSoonJobs, userLocation]);
+
   useEffect(() => {
     const readyCount = jobs.filter((job) => workflowViewBucket(job) === "ready2").length;
     if (!readyCount || typeof window === "undefined") return;
@@ -3978,6 +4090,42 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       });
     }
   }, [jobs, countdownTick]);
+
+  useEffect(() => {
+    const soonCount = noAccessSoonJobs.length;
+    if (!soonCount || typeof window === "undefined") return;
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const soonKey = noAccessSoonJobs.map((job) => jobKey(job)).sort().join("-");
+    const noticeKey = `hpd-noaccess-24h-notice-${todayKey}-${soonKey}`;
+    if (window.localStorage.getItem(noticeKey)) return;
+
+    window.localStorage.setItem(noticeKey, "1");
+    showActionNotice(`${soonCount} no-access job(s) are inside T-24. Open the T-24 layer to plan the revisit.`);
+
+    if ("Notification" in window && window.Notification.permission === "granted") {
+      new window.Notification("HPD no-access T-24", {
+        body: `${soonCount} no-access job(s) have less than 24 hours before the second attempt window.`,
+      });
+    }
+  }, [noAccessSoonJobs]);
+
+  useEffect(() => {
+    if (!nearbyNoAccessSoonJobs.length || typeof window === "undefined") return;
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const nearbyKey = nearbyNoAccessSoonJobs.map((job) => jobKey(job)).sort().join("-");
+    const noticeKey = `hpd-nearby-noaccess-t24-${todayKey}-${nearbyKey}`;
+    if (window.localStorage.getItem(noticeKey)) return;
+
+    window.localStorage.setItem(noticeKey, "1");
+    const firstJob = nearbyNoAccessSoonJobs[0];
+    showActionNotice(`${jobKey(firstJob)} is nearby and inside T-24 for No Access. Check the T-24 layer.`);
+
+    if ("Notification" in window && window.Notification.permission === "granted") {
+      new window.Notification("Nearby HPD revisit", {
+        body: `${jobKey(firstJob)} is nearby and inside the No Access T-24 window.`,
+      });
+    }
+  }, [nearbyNoAccessSoonJobs]);
 
   const pendingAppointmentMapCount = useMemo(() => {
     return jobs.filter((job) => hasPendingUpcomingAppointment(job)).length;
@@ -6933,13 +7081,20 @@ function workflowViewBucket(job: JobRecord) {
     return "final";
   }
 
+  if (isPendingWorkflowJob(job)) {
+    return "pending";
+  }
+
   return "active";
 }
 
 function shouldShowForWorkflowView(job: JobRecord, view: WorkflowViewFilter) {
   if (view === "all") return true;
   if (view === "appointments") return hasPendingUpcomingAppointment(job);
-  return workflowViewBucket(job) === view;
+  if (view === "noaccess24") return isNoAccessTwentyFourHourAlert(job);
+  const bucket = workflowViewBucket(job);
+  if (view === "active") return bucket === "active" || bucket === "pending";
+  return bucket === view;
 }
 
 function shouldShowOnActiveMap(job: JobRecord) {
@@ -7242,8 +7397,10 @@ function directionsUrl(job: JobRecord) {
     const rows = (mappedJobs.length ? mappedJobs : jobs) as MappedJob[];
     const counts: Record<WorkflowViewFilter, number> = {
       active: 0,
+      pending: 0,
       appointments: 0,
       waiting72: 0,
+      noaccess24: 0,
       ready2: 0,
       final: 0,
       archived: 0,
@@ -7251,8 +7408,10 @@ function directionsUrl(job: JobRecord) {
     };
 
     rows.forEach((job) => {
-      const bucket = workflowViewBucket(job) as Exclude<WorkflowViewFilter, "appointments" | "all">;
+      const bucket = workflowViewBucket(job) as Exclude<WorkflowViewFilter, "appointments" | "noaccess24" | "all">;
       counts[bucket] += 1;
+      if (bucket === "pending") counts.active += 1;
+      if (isNoAccessTwentyFourHourAlert(job)) counts.noaccess24 += 1;
       if (hasPendingUpcomingAppointment(job)) counts.appointments += 1;
     });
 
@@ -7262,8 +7421,10 @@ function directionsUrl(job: JobRecord) {
   const visibleMappedCount = filteredJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng)).length;
   const dashboardViewCopy: Record<WorkflowViewFilter, { label: string; detail: string }> = {
     active: { label: "Active Work", detail: "Pending work orders on the clean map." },
+    pending: { label: "Pending Map", detail: "Only jobs that still need field attention." },
     appointments: { label: "Appointments", detail: "Tenant visits and reminders." },
     waiting72: { label: "72 Hour Wait", detail: "First no-access attempts still cooling down." },
+    noaccess24: { label: "No Access T-24", detail: "No-access jobs inside the 24-hour warning window." },
     ready2: { label: "Ready 2nd", detail: "Jobs ready for revisit now." },
     final: { label: "Review", detail: "Packages moving through review." },
     archived: { label: "Archive", detail: "Closed work kept off the clean map." },
@@ -7271,8 +7432,10 @@ function directionsUrl(job: JobRecord) {
   };
   const mapReturnCopy: Record<WorkflowViewFilter, { label: string; detail: string }> = {
     active: { label: "Active Map", detail: "Back to clean pending jobs" },
+    pending: { label: "Pending Map", detail: "Back to pending work orders" },
     appointments: { label: "Appointments Map", detail: "Back to upcoming visits" },
     waiting72: { label: "72h Map", detail: "Back to no-access timers" },
+    noaccess24: { label: "T-24 Map", detail: "Back to 24-hour no-access alerts" },
     ready2: { label: "Ready 2nd Map", detail: "Back to revisit queue" },
     final: { label: "Review Map", detail: "Back to final status jobs" },
     archived: { label: "Archive Map", detail: "Back to closed jobs" },
@@ -7284,8 +7447,10 @@ function directionsUrl(job: JobRecord) {
   const dashboardDataStatus = health.totalIssues ? `${health.totalIssues} data checks` : "Data clean";
   const mapBoardModes: Array<{ view: WorkflowViewFilter; label: string; count: number }> = [
     { view: "active", label: "Active", count: workflowDashboardCounts.active },
+    { view: "pending", label: "Pending", count: workflowDashboardCounts.pending },
     { view: "appointments", label: "Appts", count: pendingAppointmentMapCount },
     { view: "waiting72", label: "72h", count: workflowDashboardCounts.waiting72 },
+    { view: "noaccess24", label: "T-24", count: workflowDashboardCounts.noaccess24 },
     { view: "ready2", label: "Ready 2nd", count: readySecondCount },
     { view: "archived", label: "Archive", count: workflowDashboardCounts.archived },
     { view: "all", label: "All", count: workflowDashboardCounts.all },
@@ -7307,7 +7472,13 @@ function directionsUrl(job: JobRecord) {
     setDrawerOpen(false);
     setUrlOmoRequest("");
     setSearch("");
-    setMapShowAllDays(view === "all" || view === "appointments");
+    setMapShowAllDays(
+      view === "all" ||
+        view === "appointments" ||
+        view === "waiting72" ||
+        view === "noaccess24" ||
+        view === "ready2"
+    );
     setMapMenuOpen(false);
     setActionNotice(`${dashboardViewCopy[view].label} map view.`);
 
@@ -7419,6 +7590,12 @@ return (
           background: #53e69c;
           color: #062018;
           animation: noAccessTimerReadyPulse 1.8s ease-in-out infinite;
+        }
+
+        .marker-no-access-timer.is-soon {
+          background: #fb923c;
+          color: #431407;
+          animation: noAccessTimerReadyPulse 1.35s ease-in-out infinite;
         }
 
         @keyframes noAccessTimerReadyPulse {
@@ -9469,6 +9646,28 @@ return (
             padding: 7px 10px;
           }
 
+          .ready-revisit-alert.no-access-soon-alert {
+            top: 238px;
+            border-color: rgba(249, 115, 22, 0.54);
+            background:
+              radial-gradient(circle at top left, rgba(249, 115, 22, 0.28), transparent 38%),
+              linear-gradient(135deg, rgba(67, 20, 7, 0.96), rgba(124, 45, 18, 0.94));
+            color: #fff7ed;
+            box-shadow:
+              0 0 0 4px rgba(249, 115, 22, 0.13),
+              0 0 38px rgba(249, 115, 22, 0.28),
+              0 16px 44px rgba(0,0,0,0.46);
+          }
+
+          .ready-revisit-alert.no-access-soon-alert strong {
+            color: #fed7aa;
+          }
+
+          .ready-revisit-alert.no-access-soon-alert button {
+            background: #fb923c;
+            color: #431407;
+          }
+
           @keyframes readyAlertPulse {
             0%, 100% {
               box-shadow:
@@ -10450,6 +10649,26 @@ return (
           .ready-revisit-alert button {
             background: #dcfce7 !important;
             color: #14532d !important;
+          }
+
+          .ready-revisit-alert.no-access-soon-alert {
+            background: #fff7ed !important;
+            color: #7c2d12 !important;
+            border-color: rgba(249, 115, 22, 0.32) !important;
+            box-shadow: 0 16px 36px rgba(154, 52, 18, 0.16) !important;
+          }
+
+          .ready-revisit-alert.no-access-soon-alert strong {
+            color: #c2410c !important;
+          }
+
+          .ready-revisit-alert.no-access-soon-alert span {
+            color: #9a3412 !important;
+          }
+
+          .ready-revisit-alert.no-access-soon-alert button {
+            background: #fed7aa !important;
+            color: #7c2d12 !important;
           }
 
           .field-photo-input {
@@ -14712,6 +14931,11 @@ return (
             color: #052e16 !important;
           }
 
+          .maturity-map-marker .readable-map-marker .marker-no-access-timer.is-soon {
+            background: #fb923c !important;
+            color: #431407 !important;
+          }
+
           .maturity-map-marker .readable-map-marker .marker-address-mini {
             display: block !important;
             max-width: 166px !important;
@@ -14903,6 +15127,34 @@ return (
             color: #14532d !important;
           }
 
+          .maturity-map-marker .map-cluster-marker.cluster-noaccess-soon {
+            background:
+              linear-gradient(180deg, rgba(154, 52, 18, 0.96), rgba(234, 88, 12, 0.90)) !important;
+            box-shadow:
+              0 0 0 3px rgba(255, 255, 255, 0.84),
+              0 0 0 8px rgba(249, 115, 22, 0.22),
+              0 14px 30px rgba(154, 52, 18, 0.28) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-noaccess-soon strong {
+            background: #fed7aa !important;
+            color: #7c2d12 !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-pending {
+            background:
+              linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(51, 65, 85, 0.90)) !important;
+            box-shadow:
+              0 0 0 3px rgba(255, 255, 255, 0.80),
+              0 0 0 7px rgba(148, 163, 184, 0.18),
+              0 14px 30px rgba(15, 23, 42, 0.25) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-pending strong {
+            background: #e2e8f0 !important;
+            color: #0f172a !important;
+          }
+
           .maturity-map-marker .map-cluster-marker.cluster-appointment {
             background:
               linear-gradient(180deg, rgba(120, 53, 15, 0.95), rgba(146, 64, 14, 0.90)) !important;
@@ -14953,8 +15205,7 @@ return (
           }
 
           .maturity-map-marker .map-signal-marker.marker-overview .signal-start,
-          .maturity-map-marker .map-signal-marker.marker-overview .signal-footer,
-          .maturity-map-marker .map-signal-marker.marker-overview .marker-no-access-timer {
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-footer {
             display: none !important;
           }
 
@@ -15114,6 +15365,14 @@ return (
             color: #052e16 !important;
           }
 
+          .maturity-map-marker .map-signal-marker .marker-no-access-timer.is-soon {
+            background: #fb923c !important;
+            color: #431407 !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(67, 20, 7, 0.18),
+              0 0 0 2px rgba(255, 255, 255, 0.92) !important;
+          }
+
           .maturity-map-marker .map-signal-marker .marker-appointment-badge {
             min-height: 20px !important;
             min-width: 78px !important;
@@ -15144,6 +15403,32 @@ return (
               0 0 0 3px rgba(255, 255, 255, 0.95),
               0 0 0 7px rgba(251, 191, 36, 0.14),
               0 14px 30px rgba(120, 53, 15, 0.22) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-no-access {
+            box-shadow:
+              0 0 0 3px rgba(255, 255, 255, 0.94),
+              0 0 0 7px rgba(251, 191, 36, 0.13),
+              0 14px 30px rgba(120, 53, 15, 0.20) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-no-access-soon {
+            border-color: #f97316 !important;
+            background:
+              linear-gradient(180deg, rgba(255, 247, 237, 0.99), rgba(254, 215, 170, 0.98)) !important;
+            animation: pendingAppointmentMarkerPulse 1.55s ease-in-out infinite !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-no-access-soon::before {
+            display: block !important;
+            width: 98px !important;
+            height: 98px !important;
+            background: radial-gradient(circle, rgba(249, 115, 22, 0.48), transparent 64%) !important;
+            box-shadow:
+              0 0 0 10px rgba(249, 115, 22, 0.18),
+              0 0 44px rgba(234, 88, 12, 0.64),
+              0 0 92px rgba(154, 52, 18, 0.28) !important;
+            animation: pendingAppointmentHaloPulse 1.55s ease-out infinite !important;
           }
 
           .maturity-map-marker .map-signal-marker.marker-pending-appointment {
@@ -19964,6 +20249,14 @@ return (
             color: #064e3b !important;
           }
 
+          .job-drawer.selected-focus .field-mission-alert.soon {
+            border-color: rgba(249, 115, 22, 0.34) !important;
+            border-left-color: #f97316 !important;
+            background: #fff7ed !important;
+            color: #7c2d12 !important;
+            box-shadow: 0 12px 24px rgba(154, 52, 18, 0.10) !important;
+          }
+
           .job-drawer.selected-focus .field-mission-alert.archived {
             border-color: rgba(15, 23, 42, 0.18) !important;
             border-left-color: #0f172a !important;
@@ -20367,6 +20660,15 @@ return (
             </button>
             <button
               type="button"
+              className={`dispatch-kpi ${workflowViewFilter === "pending" ? "active" : ""}`}
+              onClick={() => setWorkflowViewFilter("pending")}
+            >
+              <span>Pending</span>
+              <strong>{workflowDashboardCounts.pending}</strong>
+              <small>needs attention</small>
+            </button>
+            <button
+              type="button"
               className={`dispatch-kpi is-alert ${workflowViewFilter === "appointments" ? "active" : ""}`}
               onClick={() => setWorkflowViewFilter("appointments")}
             >
@@ -20382,6 +20684,15 @@ return (
               <span>Ready 2nd</span>
               <strong>{readySecondCount}</strong>
               <small>revisit now</small>
+            </button>
+            <button
+              type="button"
+              className={`dispatch-kpi is-alert ${workflowViewFilter === "noaccess24" ? "active" : ""}`}
+              onClick={() => setWorkflowViewFilter("noaccess24")}
+            >
+              <span>No Access T-24</span>
+              <strong>{workflowDashboardCounts.noaccess24}</strong>
+              <small>watch window</small>
             </button>
             <button
               type="button"
@@ -20747,11 +21058,17 @@ return (
           <button type="button" className={workflowViewFilter === "active" ? "active" : ""} onClick={() => setWorkflowViewFilter("active")}>
             Active
           </button>
+          <button type="button" className={workflowViewFilter === "pending" ? "active" : ""} onClick={() => setWorkflowViewFilter("pending")}>
+            Pending{workflowDashboardCounts.pending ? ` ${workflowDashboardCounts.pending}` : ""}
+          </button>
           <button type="button" className={workflowViewFilter === "appointments" ? "active" : ""} onClick={() => setWorkflowViewFilter("appointments")}>
             Appts{pendingAppointmentMapCount ? ` ${pendingAppointmentMapCount}` : ""}
           </button>
           <button type="button" className={workflowViewFilter === "waiting72" ? "active" : ""} onClick={() => setWorkflowViewFilter("waiting72")}>
             Waiting 72h
+          </button>
+          <button type="button" className={workflowViewFilter === "noaccess24" ? "active" : ""} onClick={() => setWorkflowViewFilter("noaccess24")}>
+            T-24{workflowDashboardCounts.noaccess24 ? ` ${workflowDashboardCounts.noaccess24}` : ""}
           </button>
           <button type="button" className={workflowViewFilter === "ready2" ? "active" : ""} onClick={() => setWorkflowViewFilter("ready2")}>
             Ready 2nd
@@ -20962,6 +21279,13 @@ return (
             <button type="button" onClick={showReadyRevisitJobs}>Show Ready</button>
           </div>
         ) : null}
+        {noAccessSoonJobs.length > 0 && !clusterSheet && !selectedOnly ? (
+          <div className="ready-revisit-alert no-access-soon-alert">
+            <strong>T-24 NO ACCESS</strong>
+            <span>{noAccessSoonJobs.length} job(s) are inside 24 hours before the 2nd attempt window.</span>
+            <button type="button" onClick={() => switchMapBoard("noaccess24")}>Show T-24</button>
+          </div>
+        ) : null}
 
         {selected ? (
           <div
@@ -21020,6 +21344,7 @@ return (
                 const secondAttemptInfo = workflowSecondAttemptInfo(selected);
                 const noAccessSecondLocked = !secondAttemptInfo?.ready;
                 const noAccessWaiting = isNoAccessFirst && Boolean(secondAttemptInfo) && !secondAttemptInfo?.ready;
+                const noAccessSoonForSecond = noAccessWaiting && Boolean(secondAttemptInfo?.within24);
                 const noAccessReadyForSecond = isNoAccessFirst && Boolean(secondAttemptInfo?.ready);
                 const outcomeChosen = isBeforeEvidence || isAfterEvidence || isNoAccess || isRefused || isCompletedByOthers || isWorkCompleted || isPartialWork;
                 const finalOutcome = isNoAccessSecond || isRefused || isCompletedByOthers || isWorkCompleted || isPartialWork;
@@ -21316,15 +21641,17 @@ return (
                       </button>
                     </div>
                     {isNoAccessFirst || isNoAccessSecond ? (
-                      <div className={`field-mission-alert ${isNoAccessSecond ? "archived" : noAccessReadyForSecond ? "ready" : "waiting"}`} aria-label="No access workflow alert">
-                        <span>{isNoAccessSecond ? "Archived No Access" : noAccessReadyForSecond ? "Ready for 2nd Attempt" : "72h No Access Alert"}</span>
-                        <strong>{isNoAccessSecond ? "No Access complete" : noAccessReadyForSecond ? "Tap No Access 2nd now" : "Waiting before 2nd attempt"}</strong>
+                      <div className={`field-mission-alert ${isNoAccessSecond ? "archived" : noAccessReadyForSecond ? "ready" : noAccessSoonForSecond ? "soon" : "waiting"}`} aria-label="No access workflow alert">
+                        <span>{isNoAccessSecond ? "Archived No Access" : noAccessReadyForSecond ? "Ready for 2nd Attempt" : noAccessSoonForSecond ? "T-24 No Access Alert" : "72h No Access Alert"}</span>
+                        <strong>{isNoAccessSecond ? "No Access complete" : noAccessReadyForSecond ? "Tap No Access 2nd now" : noAccessSoonForSecond ? `${secondAttemptInfo?.label} remaining` : "Waiting before 2nd attempt"}</strong>
                         <small>
                           {isNoAccessSecond
                             ? "This work order is closed and belongs on the Archive map."
                             : noAccessReadyForSecond
                               ? "The 72-hour counter is complete. Save No Access 2nd to archive it."
-                              : `This work order is off the Active map and waiting until ${secondAttemptInfo ? displayWorkflowDate(secondAttemptInfo.available.toISOString()) : "the 72h timer finishes"}.`}
+                              : noAccessSoonForSecond
+                                ? `This job is back on the T-24 layer. If you are nearby, plan the revisit before ${secondAttemptInfo ? displayWorkflowDate(secondAttemptInfo.available.toISOString()) : "the timer finishes"}.`
+                                : `This work order is off the Active map and waiting until ${secondAttemptInfo ? displayWorkflowDate(secondAttemptInfo.available.toISOString()) : "the 72h timer finishes"}.`}
                         </small>
                       </div>
                     ) : null}
@@ -21383,7 +21710,7 @@ return (
                           Add Media First
                         </button>
                         <a className="strong" href={paperworkAutoPdfOnlyHref(selected)}>
-                          Affidavit + Invoice Only
+                          Affidavit + Invoice No Media
                         </a>
                       </div>
                     ) : null}
@@ -21701,7 +22028,7 @@ return (
                               {generateWithoutMediaLabel}
                             </button>
                             <a href={paperworkAutoPdfOnlyHref(selected)}>
-                              Affidavit + Invoice Only
+                              Affidavit + Invoice No Media
                             </a>
                           </>
                         )}
@@ -22000,39 +22327,6 @@ return (
                   <span>Finished</span>
                   <strong>{displayWorkflowDate(selected.JobFinishedAt || selected.jobFinishedAt || selected.ActualWorkCompletionDate || selected.actualWorkCompletionDate)}</strong>
                 </div>
-              </div>
-
-              <div className="field-step-actions">
-                <button type="button" className="start-job-btn" onClick={() => startFieldJob(selected)}>
-                  Start Job
-                </button>
-                <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected)}>
-                  Completed Work
-                </button>
-                <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected, true)}>
-                  Partial Work
-                </button>
-                <button type="button" className="no-access-job-btn" onClick={() => startNoAccessCounter(selected)}>
-                  No Access 1st
-                </button>
-                <button
-                  type="button"
-                  className="no-access-job-btn"
-                  onClick={() => markNoAccessSecondAttempt(selected)}
-                  disabled={!workflowSecondAttemptInfo(selected)?.ready}
-                  title={workflowSecondAttemptInfo(selected)?.ready ? "Ready for 2nd attempt" : workflowSecondAttemptInfo(selected)?.label || "Save No Access 1st first"}
-                >
-                  No Access 2nd
-                </button>
-                <button type="button" className="refused-job-btn" onClick={() => markRefusedAccess(selected)}>
-                  Refused Access
-                </button>
-                <button type="button" className="other-done-job-btn" onClick={() => markCompletedByOthers(selected)}>
-                  Done by Others
-                </button>
-                <button type="button" className="reset-job-btn" onClick={() => resetFieldJobForTesting(selected)}>
-                  Pending / Clear
-                </button>
               </div>
 
               <div data-field-pane="package" className={`field-packet-vault field-pane ${fieldFocusPane === "package" ? "is-active" : ""}`}>
