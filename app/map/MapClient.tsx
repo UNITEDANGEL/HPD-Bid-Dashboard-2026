@@ -15020,6 +15020,50 @@ return (
             white-space: nowrap !important;
           }
 
+          .job-drawer.selected-focus .job-card-head-actions {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 7px !important;
+            min-width: 0 !important;
+          }
+
+          .job-drawer.selected-focus .route-head-button {
+            min-height: 38px !important;
+            min-width: 0 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            padding: 0 9px !important;
+            border-radius: 999px !important;
+            border: 1px solid rgba(255, 255, 255, 0.22) !important;
+            color: #063346 !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+            text-decoration: none !important;
+            white-space: nowrap !important;
+          }
+
+          .job-drawer.selected-focus .route-head-button img {
+            width: 20px !important;
+            height: 20px !important;
+            flex: 0 0 20px !important;
+            border-radius: 5px !important;
+            background: rgba(255, 255, 255, 0.88) !important;
+            object-fit: contain !important;
+          }
+
+          .job-drawer.selected-focus .route-head-button.waze {
+            background: linear-gradient(135deg, #dff8ff, #67e8f9) !important;
+          }
+
+          .job-drawer.selected-focus .route-head-button.google {
+            background: linear-gradient(135deg, #fef3c7, #bbf7d0) !important;
+          }
+
           .job-drawer.selected-focus .workflow-filter-bar {
             display: none !important;
           }
@@ -19214,13 +19258,20 @@ return (
                 Close
               </button>
             </div>
-          ) : selectedOnly ? (
-            <button
-              type="button"
-              onClick={showCleanMapView}
-            >
-              Map View
-            </button>
+          ) : selectedOnly && selected ? (
+            <div className="drawer-head-actions job-card-head-actions" aria-label="Job card route actions">
+              <a className="route-head-button waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer" aria-label="Open Waze directions">
+                <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
+                <span>Waze</span>
+              </a>
+              <a className="route-head-button google" href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer" aria-label="Open Google Maps directions">
+                <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
+                <span>Google</span>
+              </a>
+              <button type="button" onClick={showCleanMapView}>
+                Close
+              </button>
+            </div>
           ) : null}
         </div>
 
@@ -19654,16 +19705,6 @@ return (
                     <div className="field-mission-jobline">
                       <strong>{jobKey(selected)}</strong>
                       <span>{displayAddress(selected)}</span>
-                    </div>
-                    <div className="field-mission-directions direction-choice-row" aria-label="Directions options">
-                      <a className="direction-provider-button waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                        <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
-                        <span>Waze</span>
-                      </a>
-                      <a className="direction-provider-button google" href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                        <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
-                        <span>Google Maps</span>
-                      </a>
                     </div>
                     <div className={`field-page3-description ${missionDescription ? "" : "is-missing"}`} aria-label="Page 3 job description">
                       <div className="field-page3-description-head">
