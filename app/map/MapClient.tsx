@@ -7603,6 +7603,14 @@ function directionsUrl(job: JobRecord) {
     workflowViewFilter === "waiting72" ||
     workflowViewFilter === "noaccess24" ||
     workflowViewFilter === "ready2";
+  const selectedNoAccessTimerJob = useMemo(() => {
+    if (!selected) return null;
+    const selectedKey = String(jobKey(selected)).toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const rows: JobRecord[] = [selected, ...filteredJobs, ...mappedJobs, ...jobs];
+    const matchingRows = rows.filter((job) => String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "") === selectedKey);
+    return matchingRows.find((job) => workflowSecondAttemptInfo(job)) || matchingRows[0] || selected;
+  }, [selected, filteredJobs, mappedJobs, jobs, countdownTick]);
+  const selectedNoAccessTimerInfo = selectedNoAccessTimerJob ? workflowSecondAttemptInfo(selectedNoAccessTimerJob) : null;
   const showLocationHelpCard = locationHelpOpen;
   const mapBoardModes: Array<{ view: WorkflowViewFilter; label: string; count: number }> = [
     { view: "active", label: "Active", count: workflowDashboardCounts.active },
@@ -20102,6 +20110,69 @@ return (
             box-shadow: 0 12px 22px rgba(15, 23, 42, 0.18) !important;
           }
 
+          .job-card-72h-counter {
+            min-width: 0 !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 0.58fr) minmax(0, 1fr) !important;
+            align-items: center !important;
+            gap: 5px 8px !important;
+            min-height: 58px !important;
+            padding: 8px 10px !important;
+            border-radius: 16px !important;
+            background: linear-gradient(135deg, #facc15, #fed7aa) !important;
+            color: #111827 !important;
+            border: 1px solid rgba(120, 53, 15, 0.18) !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(255, 255, 255, 0.42),
+              0 12px 26px rgba(120, 53, 15, 0.22) !important;
+          }
+
+          .job-card-72h-counter span {
+            color: #713f12 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-card-72h-counter strong {
+            min-width: 0 !important;
+            color: #111827 !important;
+            font-size: 24px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            text-align: right !important;
+          }
+
+          .job-card-72h-counter small {
+            grid-column: 1 / -1 !important;
+            color: #431407 !important;
+            font-size: 10px !important;
+            line-height: 1.12 !important;
+            font-weight: 900 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .job-card-72h-counter.is-soon {
+            background: linear-gradient(135deg, #fb923c, #fef3c7) !important;
+          }
+
+          .job-card-72h-counter.is-ready {
+            background: linear-gradient(135deg, #22c55e, #bbf7d0) !important;
+          }
+
+          .job-card-72h-counter.is-ready span,
+          .job-card-72h-counter.is-ready small {
+            color: #052e16 !important;
+          }
+
           .job-card-field-action-dock {
             display: grid !important;
             grid-template-columns: minmax(0, 1.48fr) minmax(0, 0.74fr) minmax(0, 0.92fr) !important;
@@ -21618,6 +21689,17 @@ return (
                   Map
                 </button>
               </div>
+              {selectedNoAccessTimerInfo ? (
+                <div className={`job-card-72h-counter ${selectedNoAccessTimerInfo.ready ? "is-ready" : selectedNoAccessTimerInfo.within24 ? "is-soon" : "is-waiting"}`} role="status" aria-label="72 hour no access counter">
+                  <span>72H Counter</span>
+                  <strong>{selectedNoAccessTimerInfo.ready ? "REVISIT NOW" : selectedNoAccessTimerInfo.label}</strong>
+                  <small>
+                    1st: {displayWorkflowDate(selectedNoAccessTimerJob?.NoAccessFirstAttemptAt || selectedNoAccessTimerJob?.noAccessFirstAttemptAt)}
+                    {" | "}
+                    2nd unlock: {displayWorkflowDate(selectedNoAccessTimerJob?.SecondAttemptAvailableAt || selectedNoAccessTimerJob?.secondAttemptAvailableAt || selectedNoAccessTimerInfo.available.toISOString())}
+                  </small>
+                </div>
+              ) : null}
               <div className="job-card-field-action-dock" aria-label="Job card primary actions">
                 <button type="button" className="route-head-arrived" onClick={() => openArrivedJob(selected)}>
                   Arrived / Status
