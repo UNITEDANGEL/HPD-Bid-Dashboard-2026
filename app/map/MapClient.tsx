@@ -21069,6 +21069,49 @@ return (
             font-weight: 850 !important;
           }
 
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting {
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-mission-alert.waiting {
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            gap: 4px 10px !important;
+            padding: 10px 11px !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-mission-alert.waiting span,
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-mission-alert.waiting small {
+            grid-column: 1 / -1 !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-mission-alert.waiting strong {
+            font-size: 17px !important;
+            line-height: 1.05 !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-mission-alert.waiting::after {
+            content: attr(data-timer-label);
+            min-height: 34px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 10px !important;
+            border-radius: 999px !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            white-space: nowrap !important;
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.16) !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-mission-actions,
+          .job-drawer.selected-focus .site-procedure-card.no-access-waiting-procedure {
+            display: none !important;
+          }
+
           .job-drawer.selected-focus .job-appointment-card.mission-appointment {
             padding: 10px !important;
             border-radius: 17px !important;
@@ -22440,7 +22483,7 @@ return (
 
                 return (
                   <>
-                  <section className={`field-mission-mode mission-step-${missionStep}`} data-field-mission-mode="true" aria-label="Field mission mode">
+                  <section className={`field-mission-mode mission-step-${missionStep} ${noAccessWaiting ? "is-no-access-waiting" : ""}`} data-field-mission-mode="true" aria-label="Field mission mode">
                     <div className="field-mission-topline">
                       <span>Job Card Workflow</span>
                       <b>{missionDistanceLabel}</b>
@@ -22590,7 +22633,11 @@ return (
                       </button>
                     </div>
                     {isNoAccessFirst || isNoAccessSecond ? (
-                      <div className={`field-mission-alert ${isNoAccessSecond ? "archived" : noAccessReadyForSecond ? "ready" : noAccessSoonForSecond ? "soon" : "waiting"}`} aria-label="No access workflow alert">
+                      <div
+                        className={`field-mission-alert ${isNoAccessSecond ? "archived" : noAccessReadyForSecond ? "ready" : noAccessSoonForSecond ? "soon" : "waiting"}`}
+                        data-timer-label={noAccessWaiting ? secondAttemptInfo?.label || "" : ""}
+                        aria-label="No access workflow alert"
+                      >
                         <span>{isNoAccessSecond ? "Archived No Access" : noAccessReadyForSecond ? "Ready for 2nd Attempt" : noAccessSoonForSecond ? "T-24 No Access Alert" : "72h No Access Alert"}</span>
                         <strong>{isNoAccessSecond ? "No Access complete" : noAccessReadyForSecond ? "Tap No Access 2nd now" : noAccessSoonForSecond ? `${secondAttemptInfo?.label} remaining` : "Waiting before 2nd attempt"}</strong>
                         <small>
@@ -22604,57 +22651,57 @@ return (
                         </small>
                       </div>
                     ) : null}
-                    {renderJobAppointmentCard(selected, "mission")}
-                    <div className="field-mission-main">
-                      <div>
-                        <strong>{missionTitle}</strong>
-                        <small>{missionText}</small>
-                      </div>
-                      {!selectedNoAccessTimerInfo ? (
-                        <div className="field-mission-counter">
-                          <span>Counter</span>
-                          <b>{jobCounterLabel(selected)}</b>
+                    {noAccessWaiting && !appointmentIso(selected) ? null : renderJobAppointmentCard(selected, "mission")}
+                    {!noAccessWaiting ? (
+                      <>
+                        <div className="field-mission-main">
+                          <div>
+                            <strong>{missionTitle}</strong>
+                            <small>{missionText}</small>
+                          </div>
+                          {!selectedNoAccessTimerInfo ? (
+                            <div className="field-mission-counter">
+                              <span>Counter</span>
+                              <b>{jobCounterLabel(selected)}</b>
+                            </div>
+                          ) : null}
                         </div>
-                      ) : null}
-                    </div>
-                    <div className="field-mission-primary-row">
-                      {packageReady ? (
-                        <button
-                          type="button"
-                          className="field-mission-primary"
-                          data-field-mission-primary="true"
-                          onClick={() => {
-                            if (packageReviewApproved) {
-                              void sendFullEvidencePackage(selected);
-                              return;
-                            }
-                            approveFullPackageReview(selected);
-                          }}
-                        >
-                          {packageReviewApproved ? "Send ZIP" : "Approve Review"}
-                        </button>
-                      ) : noAccessWaiting ? (
-                        <button type="button" className="field-mission-primary waiting" data-field-mission-primary="true" disabled>
-                          {secondAttemptInfo?.label || "Wait 72h"}
-                        </button>
-                      ) : noAccessReadyForSecond ? (
-                        <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => markNoAccessSecondAttempt(selected)}>
-                          Save No Access 2nd
-                        </button>
-                      ) : isBeforeEvidence ? (
-                        <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => beginGuidedEvidenceCapture(selected, "before")}>
-                          Continue Before
-                        </button>
-                      ) : isAfterEvidence ? (
-                        <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => beginGuidedEvidenceCapture(selected, "after", { partial: isPendingPartial })}>
-                          Continue After
-                        </button>
-                      ) : finalOutcome ? (
-                        <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => runPackagePrimaryAction(selected)}>
-                          {generateWithoutMediaLabel}
-                        </button>
-                      ) : null}
-                    </div>
+                        <div className="field-mission-primary-row">
+                          {packageReady ? (
+                            <button
+                              type="button"
+                              className="field-mission-primary"
+                              data-field-mission-primary="true"
+                              onClick={() => {
+                                if (packageReviewApproved) {
+                                  void sendFullEvidencePackage(selected);
+                                  return;
+                                }
+                                approveFullPackageReview(selected);
+                              }}
+                            >
+                              {packageReviewApproved ? "Send ZIP" : "Approve Review"}
+                            </button>
+                          ) : noAccessReadyForSecond ? (
+                            <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => markNoAccessSecondAttempt(selected)}>
+                              Save No Access 2nd
+                            </button>
+                          ) : isBeforeEvidence ? (
+                            <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => beginGuidedEvidenceCapture(selected, "before")}>
+                              Continue Before
+                            </button>
+                          ) : isAfterEvidence ? (
+                            <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => beginGuidedEvidenceCapture(selected, "after", { partial: isPendingPartial })}>
+                              Continue After
+                            </button>
+                          ) : finalOutcome ? (
+                            <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => runPackagePrimaryAction(selected)}>
+                              {generateWithoutMediaLabel}
+                            </button>
+                          ) : null}
+                        </div>
+                      </>
+                    ) : null}
                     {finalOutcome && !packageReady ? (
                       <div className="field-mission-choice-row" aria-label="Optional media package choices">
                         <button type="button" onClick={() => requestFieldPhotoCapture(selected, finalOutcome && !hasOptionalNoWorkEvidence ? quickEvidenceKind : optionalNoWorkEvidenceKind, "image/*,video/*")}>
@@ -22691,7 +22738,7 @@ return (
                     </div>
                   </section>
 
-                  <div className={`site-procedure-card procedure-${fieldFocusPane} ${isRefused ? "is-refused" : ""} ${hasRefusedPhoto ? "has-evidence" : ""} ${packageReady ? "has-package" : ""}`}>
+                  <div className={`site-procedure-card procedure-${fieldFocusPane} ${isRefused ? "is-refused" : ""} ${hasRefusedPhoto ? "has-evidence" : ""} ${packageReady ? "has-package" : ""} ${noAccessWaiting ? "no-access-waiting-procedure" : ""}`}>
                     <div className="site-procedure-head">
                       <div>
                         <span>Site Procedure</span>
