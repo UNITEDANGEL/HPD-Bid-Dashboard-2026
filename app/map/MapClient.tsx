@@ -9,6 +9,10 @@ const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v2";
 const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
 const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
 const USER_LOCATION_OVERVIEW_ZOOM = 12;
+const USER_LOCATION_NEARBY_RADIUS_MILES = 2.5;
+const USER_LOCATION_CONTEXT_JOB_LIMIT = 12;
+const MAP_LAYER_OVERVIEW_ZOOM = 13;
+const MAP_SINGLE_JOB_OVERVIEW_ZOOM = 13;
 const FULL_PACKAGE_SAVE_LIMIT_BYTES = 35 * 1024 * 1024;
 
 
@@ -3244,6 +3248,25 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         };
   }
 
+  function locationMapFitOptions(maxZoom = USER_LOCATION_OVERVIEW_ZOOM, duration = 0.75) {
+    const mobileMap = typeof window !== "undefined" && window.innerWidth <= 720;
+    return mobileMap
+      ? {
+          animate: true,
+          duration,
+          paddingTopLeft: [72, 235] as [number, number],
+          paddingBottomRight: [72, 138] as [number, number],
+          maxZoom,
+        }
+      : {
+          animate: true,
+          duration,
+          paddingTopLeft: [92, 92] as [number, number],
+          paddingBottomRight: [340, 110] as [number, number],
+          maxZoom,
+        };
+  }
+
   function nudgeSingleMarkerIntoTapZone(latLng: [number, number], delay = 220) {
     if (typeof window === "undefined" || window.innerWidth > 720) return;
 
@@ -3264,21 +3287,33 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const map = mapRef.current;
     if (!map) return;
 
-    const bounds = filteredJobs
+    const jobBounds = filteredJobs
       .filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng))
       .map((job) => [Number(job._lat), Number(job._lng)] as [number, number]);
+    const bounds = [...jobBounds];
 
     if (includeUserLocation && userLocation) {
-      bounds.push([userLocation.lat, userLocation.lng]);
+      const userPoint: [number, number] = [userLocation.lat, userLocation.lng];
+      const locationAwareZoom = Math.min(maxZoom, USER_LOCATION_OVERVIEW_ZOOM);
+      const contextBounds = [userPoint, ...jobBounds];
+
+      if (contextBounds.length > 1) {
+        map.fitBounds(contextBounds, locationMapFitOptions(locationAwareZoom));
+        return;
+      }
+
+      map.flyTo(userPoint, locationAwareZoom, { animate: true, duration: 0.65 });
+      return;
     }
 
     if (bounds.length) {
-      if (bounds.length === 1 && typeof window !== "undefined" && window.innerWidth <= 720) {
-        map.setView(bounds[0], maxZoom, { animate: true, duration: 0.75 });
+      if (bounds.length === 1) {
+        const singleZoom = Math.min(maxZoom, MAP_SINGLE_JOB_OVERVIEW_ZOOM);
+        map.setView(bounds[0], singleZoom, { animate: true, duration: 0.75 });
         nudgeSingleMarkerIntoTapZone(bounds[0]);
         return;
       }
-      map.fitBounds(bounds, mapFitOptions(maxZoom));
+      map.fitBounds(bounds, mapFitOptions(Math.min(maxZoom, MAP_LAYER_OVERVIEW_ZOOM)));
       return;
     }
 
@@ -3354,7 +3389,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return { lat, lng };
   }
 
-  function distanceMiles(from: UserLocationState, to: { lat: number; lng: number }) {
+  function distanceMiles(from: { lat: number; lng: number }, to: { lat: number; lng: number }) {
     const radiusMiles = 3958.8;
     const toRad = (value: number) => (value * Math.PI) / 180;
     const dLat = toRad(to.lat - from.lat);
@@ -3365,6 +3400,24 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
       Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
     return radiusMiles * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function nearbyJobBoundsForLocation(
+    location: { lat: number; lng: number },
+    radiusMiles = USER_LOCATION_NEARBY_RADIUS_MILES,
+    limit = USER_LOCATION_CONTEXT_JOB_LIMIT
+  ) {
+    return filteredJobs
+      .map((job) => {
+        const coords = jobLatLng(job);
+        if (!coords) return null;
+        return { coords, miles: distanceMiles(location, coords) };
+      })
+      .filter((item): item is { coords: { lat: number; lng: number }; miles: number } => Boolean(item))
+      .filter((item) => item.miles <= radiusMiles)
+      .sort((a, b) => a.miles - b.miles)
+      .slice(0, limit)
+      .map((item) => [item.coords.lat, item.coords.lng] as [number, number]);
   }
 
   function jobDistanceLabel(job: JobRecord | null | undefined) {
@@ -3451,10 +3504,15 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const map = mapRef.current;
     if (!map || !location) return false;
 
-    map.flyTo([location.lat, location.lng], USER_LOCATION_OVERVIEW_ZOOM, {
-      animate: true,
-      duration: 0.75,
-    });
+    const userPoint: [number, number] = [location.lat, location.lng];
+    const nearbyBounds = nearbyJobBoundsForLocation(location);
+
+    if (nearbyBounds.length) {
+      map.fitBounds([userPoint, ...nearbyBounds], locationMapFitOptions(USER_LOCATION_OVERVIEW_ZOOM));
+      return true;
+    }
+
+    map.flyTo(userPoint, USER_LOCATION_OVERVIEW_ZOOM, { animate: true, duration: 0.75 });
     return true;
   }
 
@@ -3471,7 +3529,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     mapRef.current?.closePopup?.();
 
     if (centerMapOnUserLocation()) {
-      showActionNotice("Centered on your location with a wider map view.");
+      const nearbyCount = userLocation ? nearbyJobBoundsForLocation(userLocation).length : 0;
+      showActionNotice(
+        nearbyCount
+          ? `Centered on you with ${nearbyCount} nearby job${nearbyCount === 1 ? "" : "s"}.`
+          : "Centered on your location with a wider map view."
+      );
     } else {
       startLocationTracking();
       showActionNotice("Starting location. The map will center on you with a wider view.");
@@ -3920,13 +3983,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       if (bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
         markerAutoFitKeyRef.current = markerAutoFitKey;
-        if (bounds.length === 1 && typeof window !== "undefined" && window.innerWidth <= 720) {
-          map.setView(bounds[0], 15, { animate: true, duration: 0.5 });
+        if (userLocation && !selectedOnly && !drawerOpen) {
+          fitVisibleJobsOnMap(USER_LOCATION_OVERVIEW_ZOOM, true);
+          setTimeout(() => map.invalidateSize(), 250);
+          return;
+        }
+        if (bounds.length === 1) {
+          map.setView(bounds[0], MAP_SINGLE_JOB_OVERVIEW_ZOOM, { animate: true, duration: 0.5 });
           nudgeSingleMarkerIntoTapZone(bounds[0], 260);
           setTimeout(() => map.invalidateSize(), 250);
           return;
         }
-        map.fitBounds(bounds, mapFitOptions(15, 0.5));
+        map.fitBounds(bounds, mapFitOptions(MAP_LAYER_OVERVIEW_ZOOM, 0.5));
       } else if (!bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
         markerAutoFitKeyRef.current = markerAutoFitKey;
         map.setView([40.7128, -74.006], 10);
@@ -3936,7 +4004,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     drawMarkers();
-  }, [mapReady, filteredJobs, countdownTick, mapZoom, markerAutoFitKey]);
+  }, [mapReady, filteredJobs, countdownTick, mapZoom, markerAutoFitKey, userLocation, selectedOnly, drawerOpen]);
 
   useEffect(() => {
     let cancelled = false;
