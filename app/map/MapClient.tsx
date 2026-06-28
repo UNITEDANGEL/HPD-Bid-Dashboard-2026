@@ -19101,7 +19101,7 @@ return (
 
           .job-drawer.selected-focus .appointment-hero-contact {
             display: grid !important;
-            grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.3fr) minmax(52px, 0.55fr) !important;
+            grid-template-columns: minmax(0, 1fr) minmax(64px, 0.42fr) !important;
             gap: 7px !important;
           }
 
@@ -19132,6 +19132,16 @@ return (
             font-weight: 1000 !important;
             letter-spacing: 0 !important;
             overflow-wrap: anywhere !important;
+          }
+
+          .job-drawer.selected-focus .appointment-hero-contact div:first-child {
+            grid-column: 1 / -1 !important;
+            min-height: 52px !important;
+          }
+
+          .job-drawer.selected-focus .appointment-hero-contact div:first-child strong {
+            font-size: 15px !important;
+            line-height: 1.06 !important;
           }
 
           .job-drawer.selected-focus .appointment-hero-contact div:nth-child(2) {
@@ -19184,7 +19194,7 @@ return (
             }
 
             .job-drawer.selected-focus .appointment-hero-contact {
-              grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.34fr) minmax(48px, 0.52fr) !important;
+              grid-template-columns: minmax(0, 1fr) minmax(56px, 0.4fr) !important;
               gap: 6px !important;
             }
 
