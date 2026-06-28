@@ -18689,7 +18689,7 @@ return (
           .job-drawer.selected-focus .job-card-head-actions {
             width: 100% !important;
             display: grid !important;
-            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr) minmax(0, 1.25fr) minmax(0, 0.82fr) !important;
             gap: 7px !important;
           }
 
@@ -18714,6 +18714,11 @@ return (
             white-space: normal !important;
             overflow-wrap: anywhere !important;
             box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18) !important;
+          }
+
+          .job-drawer.selected-focus .route-head-button span {
+            min-width: 0 !important;
+            white-space: nowrap !important;
           }
 
           .job-drawer.selected-focus .route-head-button img {
@@ -18809,6 +18814,7 @@ return (
 
           @media (max-width: 390px) {
             .job-drawer.selected-focus .job-card-head-actions {
+              grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.12fr) minmax(0, 1.3fr) minmax(0, 0.78fr) !important;
               gap: 5px !important;
             }
 
@@ -18816,8 +18822,15 @@ return (
             .job-drawer.selected-focus .route-head-arrived,
             .job-drawer.selected-focus .job-card-head-actions button {
               min-height: 42px !important;
-              padding: 0 5px !important;
-              font-size: 10px !important;
+              gap: 4px !important;
+              padding: 0 4px !important;
+              font-size: 9px !important;
+            }
+
+            .job-drawer.selected-focus .route-head-button img {
+              width: 17px !important;
+              height: 17px !important;
+              flex-basis: 17px !important;
             }
 
             .job-drawer.selected-focus .selected-card-head {
