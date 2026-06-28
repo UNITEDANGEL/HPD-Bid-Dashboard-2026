@@ -19158,6 +19158,30 @@ return (
               0 18px 42px rgba(127, 29, 29, 0.36) !important;
           }
 
+          .location-status-pill.timer-layer-location-pill {
+            top: calc(env(safe-area-inset-top) + 62px) !important;
+            bottom: auto !important;
+            left: 10px !important;
+            z-index: 17 !important;
+            min-height: 30px !important;
+            max-width: 132px !important;
+            gap: 5px !important;
+            padding: 0 7px !important;
+            font-size: 9px !important;
+            box-shadow:
+              0 0 0 2px rgba(251, 146, 60, 0.12),
+              0 8px 18px rgba(127, 29, 29, 0.22) !important;
+          }
+
+          .location-status-pill.timer-layer-location-pill span {
+            max-width: 84px !important;
+          }
+
+          .location-status-pill.timer-layer-location-pill b {
+            padding: 3px 6px !important;
+            font-size: 8px !important;
+          }
+
           .location-help-card {
             position: absolute !important;
             z-index: 18 !important;
@@ -19259,7 +19283,8 @@ return (
           .location-help-card.compact-location-help-card {
             left: auto !important;
             right: 8px !important;
-            bottom: calc(env(safe-area-inset-bottom) + 78px) !important;
+            top: calc(env(safe-area-inset-top) + 62px) !important;
+            bottom: auto !important;
             width: min(250px, calc(100vw - 98px)) !important;
             min-height: 0 !important;
             display: grid !important;
@@ -21467,7 +21492,7 @@ return (
 
         <button
           type="button"
-          className={`location-status-pill ${userLocation ? "active" : ""} ${locationBlocked ? "blocked" : ""}`}
+          className={`location-status-pill ${userLocation ? "active" : ""} ${locationBlocked ? "blocked" : ""} ${timerMapLayerActive ? "timer-layer-location-pill" : ""}`}
           onClick={showMyLocationOverview}
           aria-live="polite"
         >
