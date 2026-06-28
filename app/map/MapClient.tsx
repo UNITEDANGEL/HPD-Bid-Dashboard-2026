@@ -2711,6 +2711,24 @@ function showCleanMapView() {
   }, 280);
 }
 
+function openMapLayersFromJobCard() {
+  setClusterSheet(null);
+  setMapJobBrief(null);
+  setSelectedOnly(false);
+  setSelected(null);
+  setGeneratedLinks({});
+  setDescriptionOpen(false);
+  setDrawerOpen(false);
+  setFullMap(true);
+  setMapMenuOpen(true);
+  setActionNotice("Layers open. Choose Soft Map, Satellite, or another map style.");
+
+  window.requestAnimationFrame(() => {
+    mapRef.current?.invalidateSize();
+    fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true);
+  });
+}
+
 function positionSelectedCardInDrawer() {
   if (jobDrawerRef.current) {
     jobDrawerRef.current.scrollTo({
@@ -4016,7 +4034,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 }
   function showActionNotice(text: string) {
     setActionNotice(text);
-    window.setTimeout(() => setActionNotice(""), 3600);
+    window.setTimeout(() => setActionNotice(""), 5600);
   }
 
   function enableAppointmentBrowserAlerts(job?: MappedJob | null) {
@@ -5981,7 +5999,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
   async function resetFieldJobForTesting(job: MappedJob) {
     const key = jobKey(job);
     if (!key) return;
-    const confirmed = window.confirm("Reset this job to Pending and clear saved test evidence on this phone?");
+    const confirmed = window.confirm("Clear this job status and move it back to Pending? This also clears saved test evidence on this phone.");
     if (!confirmed) return;
 
     delete refusedDescriptionDraftsRef.current[key];
@@ -6080,12 +6098,12 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
   function startNoAccessCounter(job: MappedJob) {
     const existingSecondAttempt = workflowSecondAttemptInfo(job);
     if (existingSecondAttempt && !existingSecondAttempt.ready) {
-      showActionNotice(`No Access 1st is already saved. Evidence is optional. Wait ${existingSecondAttempt.hoursLeft}h before 2nd attempt.`);
+      showActionNotice(`No Access 1st already saved. This job is on the 72h map. 2nd attempt unlocks in ${existingSecondAttempt.hoursLeft}h.`);
       setWorkflowViewFilter("waiting72");
       return;
     }
     if (existingSecondAttempt?.ready) {
-      showActionNotice("72-hour counter is ready. Tap No Access 2nd to capture final evidence.");
+      showActionNotice("72h complete. This job is on Ready 2nd. Tap No Access 2nd, then it moves to Archive.");
       setWorkflowViewFilter("ready2");
       return;
     }
@@ -6114,7 +6132,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     saveFieldWorkflowPatch(
       job,
       patch,
-      "No access 1st saved. Evidence is optional. 2nd attempt unlocks after 72 hours."
+      `No Access 1st saved. Moved off Active map to 72h map. 2nd unlocks ${displayWorkflowDate(available.toISOString())}.`
     );
     setWorkflowViewFilter("waiting72");
   }
@@ -6154,7 +6172,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       outcomeLockedAt: iso,
       ...archiveCloseoutFields(iso),
     };
-    saveFieldWorkflowPatch(job, patch, "No access second attempt saved and archived. Evidence is optional.");
+    saveFieldWorkflowPatch(job, patch, "No Access 2nd saved and archived. Open Archive map to review closed work.");
     setWorkflowViewFilter("archived");
     openPaperworkPreviewForStatus(job, patch, false);
   }
@@ -7123,9 +7141,11 @@ function directionsUrl(job: JobRecord) {
   const dashboardSubtitle = search.trim() ? `Search: ${search.trim()}` : dashboardView.detail;
   const dashboardDataStatus = health.totalIssues ? `${health.totalIssues} data checks` : "Data clean";
   const mapBoardModes: Array<{ view: WorkflowViewFilter; label: string; count: number }> = [
-    { view: "appointments", label: "Appointments", count: pendingAppointmentMapCount },
     { view: "active", label: "Active", count: workflowDashboardCounts.active },
+    { view: "appointments", label: "Appts", count: pendingAppointmentMapCount },
+    { view: "waiting72", label: "72h", count: workflowDashboardCounts.waiting72 },
     { view: "ready2", label: "Ready 2nd", count: readySecondCount },
+    { view: "archived", label: "Archive", count: workflowDashboardCounts.archived },
     { view: "all", label: "All", count: workflowDashboardCounts.all },
   ];
   const quickWorkflowOptions = [
@@ -19169,6 +19189,26 @@ return (
           }
 
           /* JOB_CARD_WORKFLOW_CLEANUP_2026 */
+          .action-notice {
+            max-width: min(520px, calc(100vw - 24px)) !important;
+            padding: 13px 16px !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(34, 197, 94, 0.34) !important;
+            border-left: 5px solid #22c55e !important;
+            background:
+              linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(20, 83, 45, 0.94)) !important;
+            color: #ffffff !important;
+            font-size: 14px !important;
+            line-height: 1.25 !important;
+            font-weight: 950 !important;
+            letter-spacing: 0 !important;
+            text-align: left !important;
+          }
+
+          .map-board-switcher {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          }
+
           .job-drawer.selected-focus .quick-status-console,
           .job-drawer.selected-focus .selected-overview-grid {
             display: none !important;
@@ -19432,6 +19472,105 @@ return (
           .job-drawer.selected-focus .field-status-action-grid button:disabled {
             opacity: 0.56 !important;
             filter: grayscale(0.28) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-map-tools {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-map-tools button {
+            min-width: 0 !important;
+            min-height: 54px !important;
+            display: grid !important;
+            align-content: center !important;
+            gap: 4px !important;
+            padding: 9px !important;
+            border-radius: 15px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            text-align: left !important;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-map-tools button strong {
+            color: inherit !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-map-tools button small {
+            color: inherit !important;
+            opacity: 0.78 !important;
+            font-size: 10px !important;
+            line-height: 1.05 !important;
+            font-weight: 900 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-map-tools .status-layers {
+            background: #e0f2fe !important;
+            color: #075985 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-map-tools .status-archive-map {
+            background: #0f172a !important;
+            color: #ffffff !important;
+          }
+
+          .job-drawer.selected-focus .field-status-map-tools .status-clear {
+            background: #fff7ed !important;
+            color: #9a3412 !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-alert {
+            display: grid !important;
+            gap: 5px !important;
+            padding: 12px !important;
+            border-radius: 17px !important;
+            border: 1px solid rgba(245, 158, 11, 0.28) !important;
+            border-left: 5px solid #f59e0b !important;
+            background: #fffbeb !important;
+            color: #78350f !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-alert.ready {
+            border-color: rgba(34, 197, 94, 0.32) !important;
+            border-left-color: #22c55e !important;
+            background: #ecfdf5 !important;
+            color: #064e3b !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-alert.archived {
+            border-color: rgba(15, 23, 42, 0.18) !important;
+            border-left-color: #0f172a !important;
+            background: #f8fafc !important;
+            color: #0f172a !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-alert span {
+            color: inherit !important;
+            opacity: 0.78 !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-alert strong {
+            color: inherit !important;
+            font-size: 18px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-alert small {
+            color: inherit !important;
+            opacity: 0.88 !important;
+            font-size: 12px !important;
+            line-height: 1.25 !important;
+            font-weight: 850 !important;
           }
 
           .job-drawer.selected-focus .job-appointment-card.mission-appointment {
@@ -19937,6 +20076,20 @@ return (
               onClick={() => updateMapBaseStyle("maptiler-satellite")}
             >
               Sat
+            </button>
+            <button
+              type="button"
+              className={mapMenuOpen ? "active" : ""}
+              onClick={openMapMenu}
+            >
+              Layers
+            </button>
+            <button
+              type="button"
+              className={workflowViewFilter === "archived" ? "active" : ""}
+              onClick={() => switchMapBoard("archived")}
+            >
+              Archive
             </button>
             <button type="button" onClick={() => fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true)}>
               Fit Job
@@ -20644,18 +20797,16 @@ return (
                         <strong>No Access 1st</strong>
                         <small>Start 72h</small>
                       </button>
-                      {secondAttemptInfo ? (
-                        <button
-                          type="button"
-                          className={`status-no-access ${isNoAccessSecond ? "active" : ""}`}
-                          onClick={() => markNoAccessSecondAttempt(selected)}
-                          disabled={noAccessSecondLocked}
-                          title={secondAttemptInfo.ready ? "Ready for 2nd attempt" : secondAttemptInfo.label}
-                        >
-                          <strong>No Access 2nd</strong>
-                          <small>{secondAttemptInfo.ready ? "Ready now" : secondAttemptInfo.label}</small>
-                        </button>
-                      ) : null}
+                      <button
+                        type="button"
+                        className={`status-no-access ${isNoAccessSecond ? "active" : ""}`}
+                        onClick={() => markNoAccessSecondAttempt(selected)}
+                        disabled={!secondAttemptInfo?.ready}
+                        title={secondAttemptInfo ? secondAttemptInfo.ready ? "Ready for 2nd attempt" : secondAttemptInfo.label : "Save No Access 1st first"}
+                      >
+                        <strong>No Access 2nd</strong>
+                        <small>{secondAttemptInfo ? secondAttemptInfo.ready ? "Ready now" : secondAttemptInfo.label : "Save 1st first"}</small>
+                      </button>
                       <button type="button" className={`status-refused ${isRefused ? "active" : ""}`} onClick={() => markRefusedAccess(selected)}>
                         <strong>Refused</strong>
                         <small>Access denied</small>
@@ -20665,6 +20816,33 @@ return (
                         <small>Close job</small>
                       </button>
                     </div>
+                    <div className="field-status-map-tools" aria-label="Map and status utility actions">
+                      <button type="button" className="status-layers" onClick={openMapLayersFromJobCard}>
+                        <strong>Layers</strong>
+                        <small>{activeMapBaseStyle.label}</small>
+                      </button>
+                      <button type="button" className="status-archive-map" onClick={() => switchMapBoard("archived")}>
+                        <strong>Archive Map</strong>
+                        <small>{workflowDashboardCounts.archived} closed</small>
+                      </button>
+                      <button type="button" className="status-clear" onClick={() => resetFieldJobForTesting(selected)}>
+                        <strong>Clear Status</strong>
+                        <small>Back to pending</small>
+                      </button>
+                    </div>
+                    {isNoAccessFirst || isNoAccessSecond ? (
+                      <div className={`field-mission-alert ${isNoAccessSecond ? "archived" : noAccessReadyForSecond ? "ready" : "waiting"}`} aria-label="No access workflow alert">
+                        <span>{isNoAccessSecond ? "Archived No Access" : noAccessReadyForSecond ? "Ready for 2nd Attempt" : "72h No Access Alert"}</span>
+                        <strong>{isNoAccessSecond ? "No Access complete" : noAccessReadyForSecond ? "Tap No Access 2nd now" : "Waiting before 2nd attempt"}</strong>
+                        <small>
+                          {isNoAccessSecond
+                            ? "This work order is closed and belongs on the Archive map."
+                            : noAccessReadyForSecond
+                              ? "The 72-hour counter is complete. Save No Access 2nd to archive it."
+                              : `This work order is off the Active map and waiting until ${secondAttemptInfo ? displayWorkflowDate(secondAttemptInfo.available.toISOString()) : "the 72h timer finishes"}.`}
+                        </small>
+                      </div>
+                    ) : null}
                     {renderJobAppointmentCard(selected, "mission")}
                     <div className="field-mission-main">
                       <div>
