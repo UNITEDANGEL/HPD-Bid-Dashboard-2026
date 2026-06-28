@@ -19168,6 +19168,295 @@ return (
             color: #f8fafc !important;
           }
 
+          /* JOB_CARD_WORKFLOW_CLEANUP_2026 */
+          .job-drawer.selected-focus .quick-status-console,
+          .job-drawer.selected-focus .selected-overview-grid {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .field-workflow-card {
+            order: -5 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+          }
+
+          .job-drawer.selected-focus .field-workflow-card > .field-workflow-head {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode {
+            gap: 10px !important;
+            padding: 10px !important;
+            border-radius: 20px !important;
+            background: #ffffff !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            color: #0f172a !important;
+            box-shadow: 0 16px 38px rgba(15, 23, 42, 0.12) !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-topline span,
+          .job-drawer.selected-focus .field-mission-date-row label span,
+          .job-drawer.selected-focus .field-mission-status-head span,
+          .job-drawer.selected-focus .field-mission-route span,
+          .job-drawer.selected-focus .field-mission-counter span,
+          .job-drawer.selected-focus .field-mission-stats small {
+            color: #475569 !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-topline b {
+            background: #e0f2fe !important;
+            border: 1px solid rgba(14, 165, 233, 0.18) !important;
+            color: #075985 !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-jobline {
+            padding: 12px !important;
+            border-radius: 17px !important;
+            background: linear-gradient(135deg, #0f172a, #155e75 58%, #0f766e) !important;
+            border: 1px solid rgba(20, 184, 166, 0.24) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-jobline strong {
+            color: #ffffff !important;
+            font-size: 28px !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-jobline span,
+          .job-drawer.selected-focus .field-mission-jobline small {
+            color: #d7fff1 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-jobline small {
+            font-size: 12px !important;
+            line-height: 1.2 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description {
+            padding: 12px !important;
+            border-radius: 17px !important;
+            background: #f8fafc !important;
+            border: 1px solid rgba(14, 165, 233, 0.18) !important;
+            border-left: 5px solid #0ea5e9 !important;
+            box-shadow: none !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description span {
+            color: #075985 !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description p {
+            max-height: min(22dvh, 162px) !important;
+            color: #0f172a !important;
+            font-size: 14px !important;
+            line-height: 1.34 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description button {
+            background: #0f172a !important;
+            border-color: #0f172a !important;
+            color: #ffffff !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-card {
+            gap: 9px !important;
+            padding: 12px !important;
+            border-radius: 18px !important;
+            background:
+              linear-gradient(135deg, #0f172a, #164e63 56%, #0f766e) !important;
+            border: 1px solid rgba(153, 246, 228, 0.24) !important;
+            color: #ffffff !important;
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18) !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-head span,
+          .job-drawer.selected-focus .tenant-contact-row span {
+            color: #99f6e4 !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-head strong,
+          .job-drawer.selected-focus .tenant-contact-row strong {
+            color: #ffffff !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-grid {
+            grid-template-columns: minmax(0, 1fr) minmax(72px, 0.42fr) !important;
+            gap: 7px !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-row {
+            min-height: 54px !important;
+            padding: 9px !important;
+            border-radius: 14px !important;
+            background: rgba(255, 255, 255, 0.10) !important;
+            border: 1px solid rgba(255, 255, 255, 0.10) !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-row:first-child {
+            grid-column: 1 / -1 !important;
+            background: rgba(255, 255, 255, 0.14) !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-row:first-child strong {
+            font-size: 17px !important;
+            line-height: 1.05 !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-actions {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-actions a {
+            min-height: 50px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(255, 255, 255, 0.16) !important;
+            background: linear-gradient(135deg, #14532d, #16a34a) !important;
+            color: #ffffff !important;
+            font-size: 14px !important;
+            line-height: 1 !important;
+            box-shadow: 0 10px 20px rgba(6, 78, 59, 0.24) !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-actions a:nth-child(2) {
+            background: linear-gradient(135deg, #075985, #2563eb) !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-actions a:nth-child(3) {
+            grid-column: 1 / -1 !important;
+            background: linear-gradient(135deg, #334155, #0f172a) !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-date-row {
+            padding: 9px !important;
+            border-radius: 16px !important;
+            background: #f8fafc !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-date-row input {
+            color: #0f172a !important;
+            background: #ffffff !important;
+            border-color: rgba(15, 23, 42, 0.14) !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-date-row button {
+            background: #0f172a !important;
+            border-color: #0f172a !important;
+            color: #ffffff !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-status-head {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 9px !important;
+            min-width: 0 !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-status-head strong {
+            color: #0f172a !important;
+            font-size: 16px !important;
+            line-height: 1.05 !important;
+            text-align: right !important;
+          }
+
+          .job-drawer.selected-focus .field-status-action-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-action-grid button {
+            min-width: 0 !important;
+            min-height: 62px !important;
+            display: grid !important;
+            align-content: center !important;
+            gap: 4px !important;
+            padding: 10px !important;
+            border-radius: 15px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            color: #ffffff !important;
+            text-align: left !important;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-action-grid button strong {
+            color: inherit !important;
+            font-size: 15px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-action-grid button small {
+            color: rgba(255, 255, 255, 0.84) !important;
+            font-size: 11px !important;
+            line-height: 1.1 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-action-grid .status-start {
+            background: linear-gradient(135deg, #047857, #22c55e) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-action-grid .status-finish {
+            background: linear-gradient(135deg, #1d4ed8, #0ea5e9) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-action-grid .status-partial {
+            background: linear-gradient(135deg, #6d28d9, #a855f7) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-action-grid .status-no-access {
+            background: linear-gradient(135deg, #92400e, #f59e0b) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-action-grid .status-refused {
+            background: linear-gradient(135deg, #991b1b, #ef4444) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-action-grid .status-other {
+            background: linear-gradient(135deg, #334155, #0f172a) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-action-grid button.active {
+            outline: 3px solid rgba(15, 23, 42, 0.22) !important;
+            outline-offset: 2px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-action-grid button:disabled {
+            opacity: 0.56 !important;
+            filter: grayscale(0.28) !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-card.mission-appointment {
+            padding: 10px !important;
+            border-radius: 17px !important;
+            box-shadow: none !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-main,
+          .job-drawer.selected-focus .field-mission-route,
+          .job-drawer.selected-focus .field-mission-stats,
+          .job-drawer.selected-focus .field-mission-actions,
+          .job-drawer.selected-focus .field-mission-rail {
+            background: #f8fafc !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            color: #0f172a !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-main strong,
+          .job-drawer.selected-focus .field-mission-route strong,
+          .job-drawer.selected-focus .field-mission-stats strong,
+          .job-drawer.selected-focus .field-mission-stats b {
+            color: #0f172a !important;
+          }
+
           @media (max-width: 390px) {
             .job-card-field-title-copy strong {
               font-size: 27px !important;
@@ -20087,7 +20376,6 @@ return (
               </div>
             </div>
 
-            {renderAppointmentHero(selected)}
             <div className="field-workflow-card">
               <div className="field-workflow-head">
                 <div>
@@ -20262,16 +20550,17 @@ return (
                   <>
                   <section className={`field-mission-mode mission-step-${missionStep}`} data-field-mission-mode="true" aria-label="Field mission mode">
                     <div className="field-mission-topline">
-                      <span>Field Mission Mode</span>
+                      <span>Job Card Workflow</span>
                       <b>{missionDistanceLabel}</b>
                     </div>
                     <div className="field-mission-jobline">
                       <strong>{jobKey(selected)}</strong>
                       <span>{displayAddress(selected)}</span>
+                      <small>{selected.borough || "Unknown borough"} · {displayLocation(selected) || "Location not listed"} · {jobCounterLabel(selected)}</small>
                     </div>
                     <div className={`field-page3-description ${missionDescription ? "" : "is-missing"}`} aria-label="Page 3 job description">
                       <div className="field-page3-description-head">
-                        <span>Page 3 Description</span>
+                        <span>ITB Page 3 Scope</span>
                         {missionItbSource?.itbPage3Published ? (
                           <button
                             type="button"
@@ -20314,12 +20603,67 @@ return (
                           {missionTenantContact.actionHref || missionTenantContact.smsHref || missionTenantContact.emailHref ? (
                             <div className="tenant-contact-actions">
                               {missionTenantContact.actionHref ? <a href={missionTenantContact.actionHref}>Call Tenant</a> : null}
-                              {missionTenantContact.smsHref ? <a href={missionTenantContact.smsHref}>Text Tenant</a> : null}
+                              {missionTenantContact.smsHref ? <a href={missionTenantContact.smsHref}>Text Message</a> : null}
                               {missionTenantContact.emailHref ? <a href={missionTenantContact.emailHref}>Email HPD</a> : null}
                             </div>
                           ) : null}
                         </>
                       ) : null}
+                    </div>
+                    <div className="field-mission-date-row">
+                      <label>
+                        <span>Status date</span>
+                        <input
+                          type="datetime-local"
+                          value={workflowVisitDateValue()}
+                          onChange={(event) => setWorkflowVisitDate(event.target.value)}
+                        />
+                      </label>
+                      <button type="button" onClick={setWorkflowVisitDateToNow}>
+                        Now
+                      </button>
+                    </div>
+                    <div className="field-mission-status-head">
+                      <span>Pick status</span>
+                      <strong>{workflowLabel(selected) || "Pending"}</strong>
+                    </div>
+                    <div className="field-status-action-grid" aria-label="Status and workflow actions">
+                      <button type="button" className={`status-start ${isBeforeEvidence ? "active" : ""}`} onClick={() => startFieldJob(selected)}>
+                        <strong>Start Job</strong>
+                        <small>Begin work</small>
+                      </button>
+                      <button type="button" className={`status-finish ${isWorkCompleted ? "active" : ""}`} onClick={() => finishFieldJob(selected)}>
+                        <strong>Finish Job</strong>
+                        <small>Completed</small>
+                      </button>
+                      <button type="button" className={`status-partial ${isPartialWork ? "active" : ""}`} onClick={() => finishFieldJob(selected, true)}>
+                        <strong>Partial Work</strong>
+                        <small>Some work done</small>
+                      </button>
+                      <button type="button" className={`status-no-access ${isNoAccessFirst ? "active" : ""}`} onClick={() => startNoAccessCounter(selected)}>
+                        <strong>No Access 1st</strong>
+                        <small>Start 72h</small>
+                      </button>
+                      {secondAttemptInfo ? (
+                        <button
+                          type="button"
+                          className={`status-no-access ${isNoAccessSecond ? "active" : ""}`}
+                          onClick={() => markNoAccessSecondAttempt(selected)}
+                          disabled={noAccessSecondLocked}
+                          title={secondAttemptInfo.ready ? "Ready for 2nd attempt" : secondAttemptInfo.label}
+                        >
+                          <strong>No Access 2nd</strong>
+                          <small>{secondAttemptInfo.ready ? "Ready now" : secondAttemptInfo.label}</small>
+                        </button>
+                      ) : null}
+                      <button type="button" className={`status-refused ${isRefused ? "active" : ""}`} onClick={() => markRefusedAccess(selected)}>
+                        <strong>Refused</strong>
+                        <small>Access denied</small>
+                      </button>
+                      <button type="button" className={`status-other ${isCompletedByOthers ? "active" : ""}`} onClick={() => markCompletedByOthers(selected)}>
+                        <strong>Done by Others</strong>
+                        <small>Close job</small>
+                      </button>
                     </div>
                     {renderJobAppointmentCard(selected, "mission")}
                     <div className="field-mission-main">
@@ -20359,26 +20703,6 @@ return (
                         </button>
                       ) : null}
                     </div>
-                    {!outcomeChosen && !packageReady ? (
-                      <div className="field-mission-quick-actions" aria-label="Quick field outcome choices">
-                        <button type="button" className="quick-start" onClick={() => startFieldJob(selected)}>
-                          <strong>Start Job</strong>
-                          <small>before media</small>
-                        </button>
-                        <button type="button" className="quick-no-access" onClick={() => startNoAccessCounter(selected)}>
-                          <strong>No Access</strong>
-                          <small>1st attempt</small>
-                        </button>
-                        <button type="button" className="quick-refused" onClick={() => markRefusedAccess(selected)}>
-                          <strong>Refused</strong>
-                          <small>access denied</small>
-                        </button>
-                        <button type="button" className="quick-other" onClick={() => markCompletedByOthers(selected)}>
-                          <strong>Others</strong>
-                          <small>work done</small>
-                        </button>
-                      </div>
-                    ) : null}
                     {finalOutcome && !packageReady ? (
                       <div className="field-mission-choice-row" aria-label="Optional media package choices">
                         <button type="button" onClick={() => requestFieldPhotoCapture(selected, finalOutcome && !hasOptionalNoWorkEvidence ? quickEvidenceKind : optionalNoWorkEvidenceKind, "image/*,video/*")}>
@@ -20392,19 +20716,6 @@ return (
                     <div className="field-mission-route">
                       <span>Site brief</span>
                       <strong>{mapBriefText(selected)}</strong>
-                    </div>
-                    <div className="field-mission-date-row">
-                      <label>
-                        <span>Status date</span>
-                        <input
-                          type="datetime-local"
-                          value={workflowVisitDateValue()}
-                          onChange={(event) => setWorkflowVisitDate(event.target.value)}
-                        />
-                      </label>
-                      <button type="button" onClick={setWorkflowVisitDateToNow}>
-                        Now
-                      </button>
                     </div>
                     <div className="field-mission-stats">
                       <span><small>Timer</small><strong>{fieldElapsedLabel(selected)}</strong></span>
@@ -21172,70 +21483,6 @@ return (
               ) : null}
               </div>
             ) : null}
-
-            {(() => {
-              const contact = tenantContactInfo(selected);
-
-              return (
-                <>
-                  {displayDescription(selected) ? (
-                    <div className="selected-description clean-description-card">
-                      <div className="description-head">
-                        <span>Job Description</span>
-                        <strong>{descriptionStatusLabel(selected)}</strong>
-                      </div>
-                      <p>{descriptionSummary(selected)}</p>
-                      <div className="description-inline-actions">
-                        <button type="button" onClick={() => setDescriptionOpen(true)}>Open</button>
-                        <button type="button" onClick={() => speakText(descriptionSummary(selected), "summary")}>Summary</button>
-                        <button type="button" onClick={() => speakText(displayDescription(selected), "full")}>Read Full</button>
-                        <button type="button" onClick={stopSpeaking}>Stop</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="selected-description missing-description-box">
-                      <div className="description-head">
-                        <span>Job Description</span>
-                        <strong>Missing</strong>
-                      </div>
-                      <p>No job description was found for this row. Check ITB/COA source.</p>
-                    </div>
-                  )}
-                  <div className={`tenant-contact-card ${contact.appointmentNeeded ? "" : "no-appointment"}`} aria-label="Tenant appointment contact">
-                    <div className="tenant-contact-head">
-                      <span>{contact.label}</span>
-                      <strong>{contact.status}</strong>
-                    </div>
-                    {contact.appointmentNeeded ? (
-                      <>
-                        <div className="tenant-contact-grid">
-                          <div className="tenant-contact-row">
-                            <span>Name</span>
-                            <strong>{contact.name || "Not listed"}</strong>
-                          </div>
-                          <div className="tenant-contact-row">
-                            <span>Phone</span>
-                            <strong>{contact.phone || "Not listed"}</strong>
-                          </div>
-                          <div className="tenant-contact-row">
-                            <span>Apt</span>
-                            <strong>{contact.apartment || displayLocation(selected) || "Not listed"}</strong>
-                          </div>
-                        </div>
-                        {contact.actionHref || contact.smsHref || contact.emailHref ? (
-                          <div className="tenant-contact-actions">
-                            {contact.actionHref ? <a href={contact.actionHref}>Call Tenant</a> : null}
-                            {contact.smsHref ? <a href={contact.smsHref}>Text Tenant</a> : null}
-                            {contact.emailHref ? <a href={contact.emailHref}>Email HPD</a> : null}
-                          </div>
-                        ) : null}
-                      </>
-                    ) : null}
-                  </div>
-                  {renderJobAppointmentCard(selected)}
-                </>
-              );
-            })()}
 
             <div className="selected-status-panel quick-status-console">
               <div className="selected-section-head">
