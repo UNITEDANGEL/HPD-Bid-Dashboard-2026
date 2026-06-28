@@ -7605,11 +7605,18 @@ function directionsUrl(job: JobRecord) {
     workflowViewFilter === "ready2";
   const selectedNoAccessTimerJob = useMemo(() => {
     if (!selected) return null;
-    const selectedKey = String(jobKey(selected)).toLowerCase().replace(/[^a-z0-9]+/g, "");
-    const rows: JobRecord[] = [selected, ...filteredJobs, ...mappedJobs, ...jobs];
-    const matchingRows = rows.filter((job) => String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "") === selectedKey);
+    const normalizeKey = (value: unknown) => String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const selectedKey = normalizeKey(jobKey(selected));
+    const overrideRows = Object.entries(serverWorkflowOverrides)
+      .filter(([key, patch]) => normalizeKey(key) === selectedKey || normalizeKey(jobKey(patch as JobRecord)) === selectedKey)
+      .map(([key, patch]) => ({ ...selected, ...(patch || {}), id: selected.id || key, omo: selected.omo || key, OMO: key } as JobRecord));
+    const localOverrideRows = Object.entries(readWorkflowOverrides())
+      .filter(([key, patch]) => normalizeKey(key) === selectedKey || normalizeKey(jobKey(patch as JobRecord)) === selectedKey)
+      .map(([key, patch]) => ({ ...selected, ...(patch || {}), id: selected.id || key, omo: selected.omo || key, OMO: key } as JobRecord));
+    const rows: JobRecord[] = [...overrideRows, ...localOverrideRows, selected, ...filteredJobs, ...mappedJobs, ...jobs];
+    const matchingRows = rows.filter((job) => normalizeKey(jobKey(job)) === selectedKey);
     return matchingRows.find((job) => workflowSecondAttemptInfo(job)) || matchingRows[0] || selected;
-  }, [selected, filteredJobs, mappedJobs, jobs, countdownTick]);
+  }, [selected, filteredJobs, mappedJobs, jobs, serverWorkflowOverrides, countdownTick]);
   const selectedNoAccessTimerInfo = selectedNoAccessTimerJob ? workflowSecondAttemptInfo(selectedNoAccessTimerJob) : null;
   const showLocationHelpCard = locationHelpOpen;
   const mapBoardModes: Array<{ view: WorkflowViewFilter; label: string; count: number }> = [
