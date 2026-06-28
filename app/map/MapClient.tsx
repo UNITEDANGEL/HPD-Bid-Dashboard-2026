@@ -19372,11 +19372,65 @@ return (
             background: linear-gradient(135deg, #334155, #0f172a) !important;
           }
 
+          .job-drawer.selected-focus .field-status-date-card {
+            display: grid !important;
+            gap: 9px !important;
+            padding: 12px !important;
+            border-radius: 18px !important;
+            background:
+              linear-gradient(180deg, #f8fafc, #ffffff) !important;
+            border: 1px solid rgba(14, 165, 233, 0.20) !important;
+            border-left: 5px solid #0ea5e9 !important;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-date-head {
+            display: grid !important;
+            grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr) !important;
+            align-items: center !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-date-head span {
+            color: #0369a1 !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-status-date-head strong {
+            color: #0f172a !important;
+            font-size: 15px !important;
+            line-height: 1.1 !important;
+            font-weight: 1000 !important;
+            text-align: right !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-date-card > small {
+            color: #475569 !important;
+            font-size: 12px !important;
+            line-height: 1.24 !important;
+            font-weight: 850 !important;
+            letter-spacing: 0 !important;
+          }
+
           .job-drawer.selected-focus .field-mission-date-row {
             padding: 9px !important;
             border-radius: 16px !important;
-            background: #f8fafc !important;
+            background: #eef9ff !important;
             border: 1px solid rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-date-row label span {
+            color: #075985 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
           }
 
           .job-drawer.selected-focus .field-mission-date-row input {
@@ -19438,6 +19492,23 @@ return (
             font-size: 11px !important;
             line-height: 1.1 !important;
             font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-action-grid::before {
+            content: "Every button below saves the status date above";
+            grid-column: 1 / -1 !important;
+            min-height: 30px !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 10px !important;
+            border-radius: 999px !important;
+            background: #ecfeff !important;
+            border: 1px solid rgba(14, 165, 233, 0.18) !important;
+            color: #075985 !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
           }
 
           .job-drawer.selected-focus .field-status-action-grid .status-start {
@@ -20698,6 +20769,11 @@ return (
                 const missionDescription = displayDescription(selected);
                 const missionTenantContact = tenantContactInfo(selected);
                 const missionItbSource = itbSourceFor(selected, itbSourceManifest);
+                const missionStatusDateValue = workflowVisitDateValue();
+                const missionStatusDate = new Date(isoFromLocalDatetime(missionStatusDateValue));
+                const missionStatusDateLabel = Number.isNaN(missionStatusDate.getTime())
+                  ? "Choose date"
+                  : displayWorkflowDate(missionStatusDate.toISOString());
 
                 return (
                   <>
@@ -20763,18 +20839,31 @@ return (
                         </>
                       ) : null}
                     </div>
-                    <div className="field-mission-date-row">
-                      <label>
-                        <span>Status date</span>
-                        <input
-                          type="datetime-local"
-                          value={workflowVisitDateValue()}
-                          onChange={(event) => setWorkflowVisitDate(event.target.value)}
-                        />
-                      </label>
-                      <button type="button" onClick={setWorkflowVisitDateToNow}>
-                        Now
-                      </button>
+                    <div className="field-status-date-card" aria-label="Status date used for all workflow buttons">
+                      <div className="field-status-date-head">
+                        <span>Status date / time</span>
+                        <strong>{missionStatusDateLabel}</strong>
+                      </div>
+                      <div className="field-mission-date-row">
+                        <label>
+                          <span>Add or edit date for next status</span>
+                          <input
+                            type="datetime-local"
+                            value={missionStatusDateValue}
+                            onChange={(event) => setWorkflowVisitDate(event.target.value)}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setWorkflowVisitDateToNow();
+                            showActionNotice("Status date set to now. The next status button will save this date.");
+                          }}
+                        >
+                          Now
+                        </button>
+                      </div>
+                      <small>No Access 1st/2nd, Refused, Start, Finish, Partial, and Done by Others all save this date.</small>
                     </div>
                     <div className="field-mission-status-head">
                       <span>Pick status</span>
