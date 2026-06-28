@@ -1581,10 +1581,11 @@ function jobCounterInfo(job: JobRecord) {
 
     if (hoursLeft !== null) {
       if (hoursLeft > 0) {
+        const label = `T-${hoursLeft}H TO 2ND`;
         return {
           mode: "noAccess72",
-          label: `REVISIT IN ${hoursLeft}H`,
-          detail: `REVISIT IN ${hoursLeft}H`,
+          label,
+          detail: label,
           ready: false,
         };
       }
@@ -7056,7 +7057,7 @@ function secondAttemptInfo(job: JobRecord) {
     available,
     ready: msLeft <= 0,
     hoursLeft,
-    label: msLeft <= 0 ? "REVISIT NOW" : `REVISIT IN ${hoursLeft}H`,
+    label: msLeft <= 0 ? "REVISIT NOW" : `T-${hoursLeft}H TO 2ND`,
   };
 }
 function workflowViewBucket(job: JobRecord) {
