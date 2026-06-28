@@ -2738,6 +2738,10 @@ function handleMapTouchEnd(event: any) {
       view === "all"
         ? view
         : "";
+    const dashboardRequested = params.get("dashboard") === "1" || params.get("panel") === "dashboard";
+    if (dashboardRequested) {
+      setMapMenuOpen(true);
+    }
     if (requestedWorkflowView) {
       setWorkflowViewFilter(requestedWorkflowView);
     }
@@ -6942,6 +6946,40 @@ function directionsUrl(job: JobRecord) {
     .sort((a, b) => dispatchUrgencyScore(b) - dispatchUrgencyScore(a))
     .slice(0, 3);
   const readySecondCount = health.readySecond.length;
+  const workflowDashboardCounts = useMemo(() => {
+    const rows = (mappedJobs.length ? mappedJobs : jobs) as MappedJob[];
+    const counts: Record<WorkflowViewFilter, number> = {
+      active: 0,
+      appointments: 0,
+      waiting72: 0,
+      ready2: 0,
+      final: 0,
+      archived: 0,
+      all: rows.length,
+    };
+
+    rows.forEach((job) => {
+      const bucket = workflowViewBucket(job) as Exclude<WorkflowViewFilter, "appointments" | "all">;
+      counts[bucket] += 1;
+      if (hasPendingUpcomingAppointment(job)) counts.appointments += 1;
+    });
+
+    return counts;
+  }, [jobs, mappedJobs, countdownTick]);
+  const missingGeoCount = Math.max(0, jobs.length - plottedCount);
+  const visibleMappedCount = filteredJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng)).length;
+  const dashboardViewCopy: Record<WorkflowViewFilter, { label: string; detail: string }> = {
+    active: { label: "Active Dispatch", detail: "Pending work orders on the clean map." },
+    appointments: { label: "Appointment Board", detail: "Scheduled tenant visits and reminders." },
+    waiting72: { label: "Waiting 72 Hours", detail: "First no-access attempts still cooling down." },
+    ready2: { label: "Second Attempt Ready", detail: "Jobs ready for revisit now." },
+    final: { label: "Final Review", detail: "Packages moving through review and HPD send-off." },
+    archived: { label: "Archive", detail: "Closed work kept off the clean map." },
+    all: { label: "All Work Orders", detail: "Every job, including closed and pending items." },
+  };
+  const dashboardView = dashboardViewCopy[workflowViewFilter];
+  const dashboardSubtitle = search.trim() ? `Search: ${search.trim()}` : dashboardView.detail;
+  const dashboardDataStatus = health.totalIssues ? `${health.totalIssues} data checks` : "Data clean";
 
 return (
     <main
@@ -16830,6 +16868,355 @@ return (
               transform: none !important;
             }
           }
+
+          /* DISPATCH_DASHBOARD_UPGRADE_2026 */
+          .map-top {
+            width: min(430px, calc(100vw - 72px)) !important;
+            padding: 11px !important;
+            gap: 10px !important;
+            border-radius: 22px !important;
+            background: rgba(250, 252, 254, 0.97) !important;
+            border: 1px solid rgba(128, 150, 174, 0.34) !important;
+            box-shadow: 0 24px 64px rgba(20, 32, 48, 0.24) !important;
+            color: #162235 !important;
+          }
+
+          .map-title-row {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            gap: 10px !important;
+          }
+
+          .map-title-row h1 {
+            color: #162235 !important;
+            font-size: 20px !important;
+            line-height: 1.05 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-title-row p {
+            color: #5d7088 !important;
+            font-size: 11px !important;
+            line-height: 1.25 !important;
+          }
+
+          .dispatch-dashboard-card {
+            display: grid !important;
+            gap: 11px !important;
+            padding: 13px !important;
+            border-radius: 20px !important;
+            color: #f8fbff !important;
+            background:
+              linear-gradient(145deg, rgba(17, 27, 43, 0.98), rgba(22, 58, 82, 0.96) 58%, rgba(13, 108, 82, 0.92)),
+              #142033 !important;
+            border: 1px solid rgba(255, 255, 255, 0.16) !important;
+            box-shadow: 0 18px 42px rgba(20, 32, 48, 0.22) !important;
+            overflow: hidden !important;
+          }
+
+          .dispatch-dashboard-head {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: start !important;
+            gap: 10px !important;
+          }
+
+          .dispatch-dashboard-copy {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 4px !important;
+          }
+
+          .dispatch-dashboard-copy span,
+          .dispatch-dashboard-copy small,
+          .dispatch-dashboard-count small,
+          .dispatch-kpi span,
+          .dispatch-kpi small,
+          .dispatch-dashboard-strip span {
+            letter-spacing: 0 !important;
+          }
+
+          .dispatch-dashboard-copy span {
+            color: #8ee9d4 !important;
+            font-size: 11px !important;
+            font-weight: 950 !important;
+            text-transform: uppercase !important;
+          }
+
+          .dispatch-dashboard-copy strong {
+            color: #ffffff !important;
+            font-size: 24px !important;
+            line-height: 1.02 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .dispatch-dashboard-copy small {
+            color: #c6d7e8 !important;
+            font-size: 12px !important;
+            line-height: 1.35 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .dispatch-dashboard-count {
+            min-width: 74px !important;
+            display: grid !important;
+            justify-items: center !important;
+            gap: 3px !important;
+            padding: 9px 10px !important;
+            border-radius: 16px !important;
+            background: rgba(255, 255, 255, 0.12) !important;
+            border: 1px solid rgba(255, 255, 255, 0.16) !important;
+          }
+
+          .dispatch-dashboard-count span {
+            color: #ffffff !important;
+            font-size: 26px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .dispatch-dashboard-count small {
+            color: #c7d7e8 !important;
+            font-size: 10px !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+          }
+
+          .dispatch-kpi-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .dispatch-kpi {
+            min-width: 0 !important;
+            min-height: 78px !important;
+            display: grid !important;
+            align-content: center !important;
+            gap: 4px !important;
+            text-align: left !important;
+            border-radius: 16px !important;
+            padding: 10px !important;
+            border: 1px solid rgba(255, 255, 255, 0.16) !important;
+            background: rgba(255, 255, 255, 0.10) !important;
+            color: #f8fbff !important;
+            box-shadow: none !important;
+          }
+
+          .dispatch-kpi span {
+            color: #c9d9ea !important;
+            font-size: 10px !important;
+            font-weight: 950 !important;
+            text-transform: uppercase !important;
+          }
+
+          .dispatch-kpi strong {
+            color: #ffffff !important;
+            font-size: 24px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .dispatch-kpi small {
+            color: #b9cbde !important;
+            font-size: 10px !important;
+            line-height: 1.18 !important;
+            font-weight: 850 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .dispatch-kpi.active {
+            background: linear-gradient(135deg, #baf7db, #a7d8ff) !important;
+            color: #092033 !important;
+            border-color: rgba(255, 255, 255, 0.42) !important;
+          }
+
+          .dispatch-kpi.active span,
+          .dispatch-kpi.active strong,
+          .dispatch-kpi.active small {
+            color: #092033 !important;
+          }
+
+          .dispatch-kpi.is-alert strong {
+            color: #fde68a !important;
+          }
+
+          .dispatch-kpi.is-ready strong {
+            color: #86efac !important;
+          }
+
+          .dispatch-kpi.is-missing strong {
+            color: #fca5a5 !important;
+          }
+
+          .dispatch-dashboard-strip {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+          }
+
+          .dispatch-dashboard-strip span {
+            min-height: 28px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            padding: 0 9px !important;
+            border-radius: 999px !important;
+            background: rgba(255, 255, 255, 0.10) !important;
+            color: #d5e4f3 !important;
+            font-size: 10px !important;
+            font-weight: 900 !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .map-search {
+            grid-template-columns: minmax(0, 1fr) 62px !important;
+          }
+
+          .map-search input,
+          .jobs-toggle,
+          .map-days-filter button,
+          .days-back-control,
+          .map-style-select,
+          .maptiler-key-control {
+            min-height: 42px !important;
+            border-radius: 14px !important;
+          }
+
+          .map-search input {
+            background: #ffffff !important;
+            color: #162235 !important;
+            border-color: rgba(128, 150, 174, 0.32) !important;
+            font-size: 14px !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+          }
+
+          .jobs-toggle {
+            background: linear-gradient(135deg, #22c55e, #38bdf8) !important;
+            color: #082033 !important;
+            border: 0 !important;
+            box-shadow: 0 12px 26px rgba(34, 197, 94, 0.20) !important;
+          }
+
+          .map-days-filter {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) repeat(2, auto) !important;
+            gap: 6px !important;
+          }
+
+          .days-back-control {
+            grid-column: auto !important;
+            background: #ffffff !important;
+            color: #162235 !important;
+            border-color: rgba(128, 150, 174, 0.30) !important;
+          }
+
+          .days-back-control span {
+            color: #5d7088 !important;
+            font-size: 9px !important;
+          }
+
+          .days-back-control input {
+            color: #162235 !important;
+            font-size: 16px !important;
+          }
+
+          .map-day-presets {
+            grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+            gap: 5px !important;
+            margin-top: 0 !important;
+          }
+
+          .map-day-presets button {
+            min-height: 32px !important;
+            border-radius: 10px !important;
+            background: #ffffff !important;
+            color: #30465d !important;
+            border: 1px solid rgba(128, 150, 174, 0.30) !important;
+          }
+
+          .map-day-presets button.active,
+          .map-filter-row button.active {
+            background: linear-gradient(135deg, #baf7db, #a7d8ff) !important;
+            color: #092033 !important;
+            border-color: rgba(55, 120, 160, 0.20) !important;
+          }
+
+          .map-style-panel {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 7px !important;
+            margin-top: 0 !important;
+          }
+
+          .map-style-status,
+          .map-style-badge {
+            grid-column: 1 / -1 !important;
+            min-height: 30px !important;
+            justify-content: flex-start !important;
+            border-radius: 12px !important;
+            background: #eef9f5 !important;
+            color: #0f6b55 !important;
+            border-color: rgba(28, 156, 122, 0.20) !important;
+          }
+
+          .map-style-select,
+          .maptiler-key-control {
+            background: #ffffff !important;
+            color: #162235 !important;
+            border-color: rgba(128, 150, 174, 0.30) !important;
+          }
+
+          .map-style-select span,
+          .maptiler-key-control span {
+            color: #5d7088 !important;
+          }
+
+          .map-style-select select,
+          .maptiler-key-control input {
+            color: #162235 !important;
+          }
+
+          @media (max-width: 520px) {
+            .map-top {
+              width: min(386px, calc(100vw - 56px)) !important;
+              padding: 9px !important;
+              gap: 8px !important;
+            }
+
+            .dispatch-dashboard-card {
+              padding: 11px !important;
+              border-radius: 18px !important;
+            }
+
+            .dispatch-dashboard-copy strong {
+              font-size: 21px !important;
+            }
+
+            .dispatch-dashboard-count {
+              min-width: 64px !important;
+              padding: 8px !important;
+            }
+
+            .dispatch-dashboard-count span {
+              font-size: 23px !important;
+            }
+
+            .dispatch-kpi {
+              min-height: 70px !important;
+              padding: 9px !important;
+            }
+
+            .dispatch-kpi strong {
+              font-size: 21px !important;
+            }
+
+            .map-days-filter {
+              grid-template-columns: minmax(0, 1fr) repeat(2, auto) !important;
+            }
+          }
         `}
         </style>
 
@@ -16922,7 +17309,7 @@ return (
       <header className={`map-top ${mapMenuOpen ? "open" : ""}`}>
         <div className="map-title-row">
           <div>
-            <h1>Map</h1>
+            <h1>HPD Dashboard</h1>
             <p>{mapDateFilterLabel()} - {filteredJobs.length} visible - {activeMapBaseStyle.label}</p>
           </div>
           <a className="home-btn" href="/">Home</a>
@@ -16930,6 +17317,65 @@ return (
             Close
           </button>
         </div>
+
+        <section className="dispatch-dashboard-card" aria-label="Dispatch dashboard summary">
+          <div className="dispatch-dashboard-head">
+            <div className="dispatch-dashboard-copy">
+              <span>Dispatch Dashboard</span>
+              <strong>{dashboardView.label}</strong>
+              <small>{dashboardSubtitle}</small>
+            </div>
+            <div className="dispatch-dashboard-count" aria-label={`${filteredJobs.length} visible jobs`}>
+              <span>{filteredJobs.length}</span>
+              <small>Visible</small>
+            </div>
+          </div>
+
+          <div className="dispatch-kpi-grid">
+            <button
+              type="button"
+              className={`dispatch-kpi ${workflowViewFilter === "active" ? "active" : ""}`}
+              onClick={() => setWorkflowViewFilter("active")}
+            >
+              <span>Active</span>
+              <strong>{workflowDashboardCounts.active}</strong>
+              <small>clean map work</small>
+            </button>
+            <button
+              type="button"
+              className={`dispatch-kpi is-alert ${workflowViewFilter === "appointments" ? "active" : ""}`}
+              onClick={() => setWorkflowViewFilter("appointments")}
+            >
+              <span>Appointments</span>
+              <strong>{pendingAppointmentMapCount}</strong>
+              <small>due reminders</small>
+            </button>
+            <button
+              type="button"
+              className={`dispatch-kpi is-ready ${workflowViewFilter === "ready2" ? "active" : ""}`}
+              onClick={() => setWorkflowViewFilter("ready2")}
+            >
+              <span>Ready 2nd</span>
+              <strong>{readySecondCount}</strong>
+              <small>revisit now</small>
+            </button>
+            <button
+              type="button"
+              className="dispatch-kpi is-missing"
+              onClick={() => setActionNotice(`${missingGeoCount} job(s) need coordinates before mapping.`)}
+            >
+              <span>Need Geo</span>
+              <strong>{missingGeoCount}</strong>
+              <small>{visibleMappedCount} visible mapped</small>
+            </button>
+          </div>
+
+          <div className="dispatch-dashboard-strip">
+            <span>{mapDateFilterLabel()}</span>
+            <span>{activeMapBaseStyle.label}</span>
+            <span>{dashboardDataStatus}</span>
+          </div>
+        </section>
 
         <div className="map-search">
           <input
