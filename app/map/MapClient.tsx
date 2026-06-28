@@ -3123,6 +3123,24 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     markerOverviewKeyRef.current = "";
   }
 
+  function mapFitOptions(maxZoom = 13, duration = 0.75) {
+    const mobileMap = typeof window !== "undefined" && window.innerWidth <= 720;
+    return mobileMap
+      ? {
+          animate: true,
+          duration,
+          paddingTopLeft: [58, 310] as [number, number],
+          paddingBottomRight: [58, 88] as [number, number],
+          maxZoom,
+        }
+      : {
+          animate: true,
+          duration,
+          padding: [58, 58] as [number, number],
+          maxZoom,
+        };
+  }
+
   function fitVisibleJobsOnMap(maxZoom = 13, includeUserLocation = false) {
     const map = mapRef.current;
     if (!map) return;
@@ -3136,12 +3154,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     if (bounds.length) {
-      map.fitBounds(bounds, {
-        animate: true,
-        duration: 0.75,
-        padding: [58, 58],
-        maxZoom,
-      });
+      map.fitBounds(bounds, mapFitOptions(maxZoom));
       return;
     }
 
@@ -3765,10 +3778,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       if (bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
         markerAutoFitKeyRef.current = markerAutoFitKey;
-        map.fitBounds(bounds, {
-          padding: [34, 34],
-          maxZoom: 15,
-        });
+        map.fitBounds(bounds, mapFitOptions(15, 0.5));
       } else if (!bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
         markerAutoFitKeyRef.current = markerAutoFitKey;
         map.setView([40.7128, -74.006], 10);
