@@ -17862,12 +17862,31 @@ return (
               top: calc(env(safe-area-inset-top) + 58px) !important;
               left: 8px !important;
               width: calc(100vw - 16px) !important;
-              padding: 9px !important;
-              gap: 7px !important;
+              padding: 8px !important;
+              gap: 6px !important;
+              border-radius: 18px !important;
+            }
+
+            .map-cockpit-summary {
+              grid-template-columns: minmax(0, 1fr) auto !important;
+              align-items: center !important;
+              gap: 4px 8px !important;
+              padding-bottom: 0 !important;
+              border-bottom: 0 !important;
+            }
+
+            .map-cockpit-summary span {
+              grid-column: 1 / -1 !important;
+              font-size: 9px !important;
             }
 
             .map-cockpit-summary strong {
               font-size: 19px !important;
+            }
+
+            .map-cockpit-summary small {
+              padding: 4px 6px !important;
+              font-size: 10px !important;
             }
 
             .map-cockpit-actions {
@@ -17881,21 +17900,7 @@ return (
             }
 
             .map-cockpit-lens {
-              gap: 5px !important;
-            }
-
-            .map-cockpit-lens span {
-              min-height: 40px !important;
-              padding: 6px !important;
-              border-radius: 12px !important;
-            }
-
-            .map-cockpit-lens b {
-              font-size: 17px !important;
-            }
-
-            .map-cockpit-lens small {
-              font-size: 8px !important;
+              display: none !important;
             }
 
             .map-stage::before {
