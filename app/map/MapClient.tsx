@@ -1267,7 +1267,8 @@ function markerOverdueDays(job: JobRecord) {
 }
 function markerPulseClass(job: JobRecord) {
   const status = workflowStatus(job) || legacyWorkflowKind(job);
-  const second = workflowSecondAttemptInfo(job);
+  const bucket = workflowViewBucket(job);
+  const second = bucket === "ready2" || bucket === "waiting72" ? workflowSecondAttemptInfo(job) : null;
   if (second?.ready) return "marker-pulse-ready";
   if (second?.within24) return "marker-pulse-soon";
   if (second && !second.ready) return "marker-pulse-waiting";
@@ -1283,7 +1284,8 @@ function markerPulseClass(job: JobRecord) {
   return "";
 }
 function markerUrgencyClass(job: JobRecord) {
-  const second = workflowSecondAttemptInfo(job);
+  const bucket = workflowViewBucket(job);
+  const second = bucket === "ready2" || bucket === "waiting72" ? workflowSecondAttemptInfo(job) : null;
   if (second?.ready) return "marker-urgent-ready";
   if (second?.within24) return "marker-urgent-soon24";
   if (markerOverdueLabel(job)) return "marker-urgent-overdue";
@@ -1378,6 +1380,8 @@ function markerDetailLabel(job: JobRecord) {
   return [id, borough, location].filter(Boolean).join(" - ");
 }
 function markerNoAccessTimerHtml(job: JobRecord) {
+  const bucket = workflowViewBucket(job);
+  if (bucket !== "ready2" && bucket !== "waiting72") return "";
   const second = workflowSecondAttemptInfo(job);
   if (!second) return "";
   const label = second.ready ? "READY 2ND" : second.label;
@@ -7670,7 +7674,11 @@ function directionsUrl(job: JobRecord) {
     const matchingRows = rows.filter((job) => normalizeKey(jobKey(job)) === selectedKey);
     return matchingRows.find((job) => workflowSecondAttemptInfo(job)) || matchingRows[0] || selected;
   }, [selected, filteredJobs, mappedJobs, jobs, serverWorkflowOverrides, countdownTick]);
-  const selectedNoAccessTimerInfo = selectedNoAccessTimerJob ? workflowSecondAttemptInfo(selectedNoAccessTimerJob) : null;
+  const selectedNoAccessTimerBucket = selectedNoAccessTimerJob ? workflowViewBucket(selectedNoAccessTimerJob) : "";
+  const selectedNoAccessTimerInfo =
+    selectedNoAccessTimerJob && (selectedNoAccessTimerBucket === "ready2" || selectedNoAccessTimerBucket === "waiting72")
+      ? workflowSecondAttemptInfo(selectedNoAccessTimerJob)
+      : null;
   const showLocationHelpCard = locationHelpOpen;
   const mapBoardModes: Array<{ view: WorkflowViewFilter; label: string; count: number }> = [
     { view: "active", label: "Active", count: workflowDashboardCounts.active },
