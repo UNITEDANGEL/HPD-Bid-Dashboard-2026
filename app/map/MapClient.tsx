@@ -4395,6 +4395,27 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       });
   }
 
+  function saveFieldPackageReviewPatch(job: MappedJob, patch: Record<string, any>, notice: string) {
+    const key = jobKey(job);
+    if (!key) return;
+
+    const nextPatch = {
+      ...patch,
+      updatedAt: new Date().toISOString(),
+    };
+
+    workflowStorageSave(key, nextPatch);
+    applyWorkflowPatchToState(key, nextPatch);
+    setDraftWorkflowSaved(true);
+
+    workflowServerSave(key, nextPatch)
+      .then(() => showActionNotice(notice))
+      .catch((error) => {
+        console.error(error);
+        showActionNotice("Review approval saved on this phone. Server sync needs retry.");
+      });
+  }
+
   function archiveCloseoutFields(iso: string) {
     return {
       ArchivedFromMap: true,
@@ -4501,6 +4522,14 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       packageGeneratedAt: "",
       PackageReadyMessage: "",
       packageReadyMessage: "",
+      PackageReviewStatus: "",
+      packageReviewStatus: "",
+      PackageReviewApprovedAt: "",
+      packageReviewApprovedAt: "",
+      PackageReviewApprovedBy: "",
+      packageReviewApprovedBy: "",
+      PackageReadyToSend: false,
+      packageReadyToSend: false,
       OutcomeLockedAt: "",
       outcomeLockedAt: "",
       ArchivedFromMap: false,
@@ -4956,6 +4985,21 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     } satisfies FullPackagePreview;
   }
 
+  function fieldPackageReviewApprovedAt(job: JobRecord | null) {
+    if (!job) return "";
+    return String(
+      (job as any).PackageReviewApprovedAt ||
+      (job as any).packageReviewApprovedAt ||
+      ""
+    );
+  }
+
+  function fieldPackageReviewStatusLabel(job: JobRecord | null) {
+    const approvedAt = fieldPackageReviewApprovedAt(job);
+    if (approvedAt) return `Approved ${displayWorkflowDate(approvedAt)}`;
+    return "Review pending";
+  }
+
   function invalidateFullPackagePreview(key: string, clearStored = false) {
     pendingFullPackageRef.current = null;
     setFullPackagePreview((current) => (current?.jobKey === key ? null : current));
@@ -5370,6 +5414,12 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       return;
     }
 
+    if (!fieldPackageReviewApprovedAt(job)) {
+      showActionNotice("Review the ZIP, then tap Approve Review before sending.");
+      focusFieldPane("send");
+      return;
+    }
+
     const savedPacket = preview.savedPacketId
       ? fieldPacketRowsFor(job).find((packet) => packet.id === preview.savedPacketId)
       : latestFieldPacket(job, "full_evidence_zip");
@@ -5385,6 +5435,41 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     }
 
     showActionNotice("Package review expired. Tap Generate Package again, then Send Package.");
+  }
+
+  function approveFullPackageReview(job: MappedJob) {
+    const key = jobKey(job);
+    if (!key) return;
+
+    const preview = fullPackagePreviewFor(job);
+    if (!preview) {
+      showActionNotice("Generate the complete package first. Then review and approve it.");
+      focusFieldPane("send");
+      return;
+    }
+
+    const iso = workflowActionIso();
+    saveFieldPackageReviewPatch(
+      job,
+      {
+        PackageReviewStatus: "APPROVED_READY_TO_SEND",
+        packageReviewStatus: "APPROVED_READY_TO_SEND",
+        PackageReviewApprovedAt: iso,
+        packageReviewApprovedAt: iso,
+        PackageReviewApprovedBy: "Field user",
+        packageReviewApprovedBy: "Field user",
+        PackageReadyToSend: true,
+        packageReadyToSend: true,
+        PackageReadyMessage: "Review approved. Ready to send.",
+        packageReadyMessage: "Review approved. Ready to send.",
+        PackageGeneratedAt: preview.generatedAt,
+        packageGeneratedAt: preview.generatedAt,
+        PackageFileName: preview.fileName,
+        packageFileName: preview.fileName,
+      },
+      `Package review approved for ${key}. Ready to send.`
+    );
+    setFieldFocusPane("send");
   }
 
   function packagePrimaryLabel(job: MappedJob) {
@@ -6103,7 +6188,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     saveFieldWorkflowPatch(
       job,
       patch,
-      partial ? "Partial work completed and archived. Media is optional." : "Work completed and archived. Media is optional."
+      partial ? "Partial work saved with the selected status date and archived. Review package before sending." : "Completed Work saved with the selected status date and archived. Review package before sending."
     );
     setWorkflowViewFilter("archived");
     openPaperworkPreviewForStatus(job, patch, false);
@@ -6134,8 +6219,8 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       job,
       patch,
       partial
-        ? "Partial work completed and archived. Add media only if you want."
-        : "Work completed and archived. Add media only if you want."
+        ? "Partial work saved with the selected status date and archived. Review package before sending."
+        : "Completed Work saved with the selected status date and archived. Review package before sending."
     );
     setWorkflowViewFilter("archived");
     openPaperworkPreviewForStatus(job, patch, false);
@@ -10566,6 +10651,109 @@ return (
             border: 1px solid rgba(37, 99, 235, 0.18);
           }
 
+          .field-completion-flow-card {
+            display: grid;
+            gap: 10px;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(15, 141, 104, 0.22);
+            background:
+              linear-gradient(135deg, rgba(232, 251, 244, 0.92), rgba(241, 247, 255, 0.96));
+            color: #172033;
+          }
+
+          .field-completion-flow-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px;
+          }
+
+          .field-completion-flow-head strong {
+            display: block;
+            margin-top: 2px;
+            font-size: 16px;
+            line-height: 1.1;
+          }
+
+          .field-completion-flow-head small {
+            padding: 5px 8px;
+            border-radius: 999px;
+            background: #ffffff;
+            color: #0f5132 !important;
+            border: 1px solid rgba(15, 141, 104, 0.18);
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap;
+          }
+
+          .field-completion-flow-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .field-completion-flow-actions button {
+            min-height: 56px;
+            display: grid;
+            align-content: center;
+            gap: 2px;
+            border: 0;
+            border-radius: 10px;
+            padding: 9px 10px;
+            text-align: left;
+            color: #061019;
+            font-weight: 1000;
+          }
+
+          .field-completion-flow-actions button strong,
+          .field-completion-flow-actions button small {
+            color: inherit !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+          }
+
+          .field-completion-flow-actions .start-work-flow {
+            background: linear-gradient(135deg, #6ee7b7, #93c5fd);
+          }
+
+          .field-completion-flow-actions .complete-work-flow {
+            background: linear-gradient(135deg, #f2c86b, #86efac);
+          }
+
+          .field-completion-flow-steps {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 7px;
+          }
+
+          .field-completion-flow-steps span {
+            min-height: 42px;
+            display: grid;
+            align-content: center;
+            gap: 2px;
+            padding: 7px;
+            border-radius: 9px;
+            background: #ffffff;
+            border: 1px solid rgba(126, 146, 169, 0.22);
+            color: #5d7088 !important;
+            text-transform: none !important;
+            letter-spacing: 0 !important;
+            line-height: 1.1;
+          }
+
+          .field-completion-flow-steps span.done {
+            border-color: rgba(15, 141, 104, 0.30);
+            background: #ecfdf5;
+            color: #0f5132 !important;
+          }
+
+          .field-completion-flow-steps strong {
+            color: #172033 !important;
+            font-size: 12px;
+            overflow-wrap: anywhere;
+          }
+
           .field-flow-dock {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -11447,7 +11635,7 @@ return (
 
           .field-package-preview-grid {
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 7px;
           }
 
@@ -11461,6 +11649,21 @@ return (
             background: #ffffff;
             border: 1px solid rgba(126, 146, 169, 0.22);
             font-size: 10px;
+          }
+
+          .field-send-actions.three {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+
+          .field-send-actions .approve-review-btn {
+            background: #0f8d68;
+          }
+
+          .field-send-actions button:disabled,
+          .site-procedure-package-actions button:disabled {
+            opacity: 0.58;
+            cursor: not-allowed;
+            filter: grayscale(0.2);
           }
 
           .field-package-video-list {
@@ -20833,6 +21036,8 @@ return (
                 const preview = fullPackagePreviewFor(selected);
                 const invoicePacket = latestFieldPacket(selected, "affidavit_invoice_pdf");
                 const packageReady = Boolean(preview);
+                const packageReviewApprovedAt = fieldPackageReviewApprovedAt(selected);
+                const packageReviewApproved = Boolean(packageReviewApprovedAt);
                 const canGenerateWithoutMedia = canGeneratePdfOnlyPackage(selected);
                 const generateWithoutMediaLabel = canGenerateWithoutMedia && counts.total === 0
                   ? "Generate Without Media"
@@ -20881,7 +21086,7 @@ return (
                     : needsQuickEvidence
                     ? "Evidence needed"
                     : isBeforeEvidence
-                      ? "Finish after work"
+                      ? "Complete after work"
                       : isAfterEvidence
                         ? "Complete capture"
                         : finalOutcome
@@ -20898,7 +21103,7 @@ return (
                       : needsQuickEvidence
                       ? "Take site evidence first, then generate the package."
                     : isBeforeEvidence
-                      ? "After work is done, tap Finish Job or Partial Work."
+                      ? "After work is done, tap Completed Work or Partial Work."
                       : isAfterEvidence
                         ? "Finish the after evidence guide below to unlock the package."
                         : finalOutcome
@@ -20910,7 +21115,7 @@ return (
                   step < missionStep ? "done" : step === missionStep ? "active" : "pending"
                 );
                 const missionTitle = packageReady
-                  ? "Package ready to send"
+                  ? packageReviewApproved ? "Package approved to send" : "Package ready for review"
                   : noAccessWaiting
                     ? "72h no-access clock running"
                     : noAccessReadyForSecond
@@ -20925,7 +21130,9 @@ return (
                               ? "Generate the city package"
                               : "Pick the field scenario";
                 const missionText = packageReady
-                  ? "Preview is ready. Send the complete ZIP when you are satisfied."
+                  ? packageReviewApproved
+                    ? "Review approved. The complete ZIP is ready to send."
+                    : "Review the complete ZIP, then approve it before sending."
                   : noAccessWaiting
                     ? `First no-access saved. The second attempt unlocks ${displayWorkflowDate(secondAttemptInfo?.available.toISOString())}.`
                     : noAccessReadyForSecond
@@ -21050,7 +21257,7 @@ return (
                           Now
                         </button>
                       </div>
-                      <small>No Access 1st/2nd, Refused, Start, Finish, Partial, and Done by Others all save this date.</small>
+                    <small>No Access 1st/2nd, Refused, Start, Completed Work, Partial, and Done by Others all save this date.</small>
                     </div>
                     <div className="field-mission-status-head">
                       <span>Pick status</span>
@@ -21062,8 +21269,8 @@ return (
                         <small>Begin work</small>
                       </button>
                       <button type="button" className={`status-finish ${isWorkCompleted ? "active" : ""}`} onClick={() => finishFieldJob(selected)}>
-                        <strong>Finish Job</strong>
-                        <small>Completed</small>
+                        <strong>Completed Work</strong>
+                        <small>Save complete date</small>
                       </button>
                       <button type="button" className={`status-partial ${isPartialWork ? "active" : ""}`} onClick={() => finishFieldJob(selected, true)}>
                         <strong>Partial Work</strong>
@@ -21132,8 +21339,19 @@ return (
                     </div>
                     <div className="field-mission-primary-row">
                       {packageReady ? (
-                        <button type="button" className="field-mission-primary" data-field-mission-primary="true" onClick={() => sendFullEvidencePackage(selected)}>
-                          Send ZIP
+                        <button
+                          type="button"
+                          className="field-mission-primary"
+                          data-field-mission-primary="true"
+                          onClick={() => {
+                            if (packageReviewApproved) {
+                              void sendFullEvidencePackage(selected);
+                              return;
+                            }
+                            approveFullPackageReview(selected);
+                          }}
+                        >
+                          {packageReviewApproved ? "Send ZIP" : "Approve Review"}
                         </button>
                       ) : noAccessWaiting ? (
                         <button type="button" className="field-mission-primary waiting" data-field-mission-primary="true" disabled>
@@ -21241,8 +21459,8 @@ return (
                       </div>
                       <div className="site-option-group">
                         <div className="site-option-title">
-                          <span>Work completed affidavit</span>
-                          <small>Save completed now; media is optional for now.</small>
+                          <span>Completed Work affidavit</span>
+                          <small>Save completed status date; media can be added before review.</small>
                         </div>
                         <div className="site-procedure-actions site-procedure-scenarios work-path">
                           <button type="button" className={`start-job-btn procedure-primary ${isBeforeEvidence ? "is-active" : ""}`} onClick={() => startFieldJob(selected)}>
@@ -21250,8 +21468,8 @@ return (
                             <small>Before evidence</small>
                           </button>
                         <button type="button" className={`finish-job-btn ${(isAfterEvidence && !isPartialWork) || isWorkCompleted ? "is-active" : ""}`} onClick={() => finishFieldJob(selected)}>
-                            <strong>Finish Job</strong>
-                            <small>No media needed</small>
+                            <strong>Completed Work</strong>
+                            <small>Save status date</small>
                           </button>
                           <button type="button" className={`finish-job-btn ${isPartialWork ? "is-active" : ""}`} onClick={() => finishFieldJob(selected, true)}>
                             <strong>Partial Work</strong>
@@ -21370,7 +21588,15 @@ return (
                             <a href={paperworkAutoPackageHref(selected)}>
                               Review Package
                             </a>
-                            <button type="button" className="procedure-primary send-package-btn" onClick={() => sendFullEvidencePackage(selected)}>
+                            <button type="button" onClick={() => approveFullPackageReview(selected)}>
+                              {packageReviewApproved ? "Review Approved" : "Approve Review"}
+                            </button>
+                            <button
+                              type="button"
+                              className="procedure-primary send-package-btn"
+                              onClick={() => sendFullEvidencePackage(selected)}
+                              disabled={!packageReviewApproved}
+                            >
                               Send ZIP
                             </button>
                           </>
@@ -21412,7 +21638,7 @@ return (
                         ) : isBeforeEvidence ? (
                           <>
                             <button type="button" className="procedure-primary" onClick={() => finishFieldJob(selected)}>
-                              Finish Job
+                              Completed Work
                             </button>
                             <button type="button" onClick={() => finishFieldJob(selected, true)}>
                               Partial Work
@@ -21455,7 +21681,15 @@ return (
                             <a href={paperworkAutoPackageHref(selected)}>
                               Preview Package
                             </a>
-                            <button type="button" className="procedure-primary send-package-btn" onClick={() => sendFullEvidencePackage(selected)}>
+                            <button type="button" onClick={() => approveFullPackageReview(selected)}>
+                              {packageReviewApproved ? "Review Approved" : "Approve Review"}
+                            </button>
+                            <button
+                              type="button"
+                              className="procedure-primary send-package-btn"
+                              onClick={() => sendFullEvidencePackage(selected)}
+                              disabled={!packageReviewApproved}
+                            >
                               Send ZIP
                             </button>
                           </>
@@ -21470,8 +21704,33 @@ return (
                           </>
                         )}
                       </div>
+                      </div>
                     </div>
-                  </div>
+                    <div className="field-completion-flow-card" data-field-completion-flow="true">
+                      <div className="field-completion-flow-head">
+                        <div>
+                          <span>Field Ready Flow</span>
+                          <strong>{packageReviewApproved ? "Review approved" : isWorkCompleted ? "Completed Work saved" : "Ready for field"}</strong>
+                        </div>
+                        <small>{fieldPackageReviewStatusLabel(selected)}</small>
+                      </div>
+                      <div className="field-completion-flow-actions">
+                        <button type="button" className="start-work-flow" onClick={() => startFieldJob(selected)}>
+                          <strong>Start Job</strong>
+                          <small>Before media</small>
+                        </button>
+                        <button type="button" className="complete-work-flow" onClick={() => finishFieldJob(selected)}>
+                          <strong>Completed Work</strong>
+                          <small>{missionStatusDateLabel}</small>
+                        </button>
+                      </div>
+                      <div className="field-completion-flow-steps" aria-label="Field package readiness">
+                        <span className={counts.before ? "done" : "pending"}>Before <strong>{counts.before}</strong></span>
+                        <span className={counts.after ? "done" : "pending"}>After <strong>{counts.after}</strong></span>
+                        <span className={packageReady ? "done" : "pending"}>ZIP <strong>{packageReady ? "Ready" : "Needed"}</strong></span>
+                        <span className={packageReviewApproved ? "done" : "pending"}>Review <strong>{packageReviewApproved ? "Approved" : "Pending"}</strong></span>
+                      </div>
+                    </div>
                   </>
                 );
               })()}
@@ -21529,6 +21788,20 @@ return (
                     const latest = latestFieldEvidence(selected, kind);
                     const count = fieldPhotoCountsFor(selected)[kind] || 0;
                     const label = kind === "before" ? "Before" : "After";
+                    const photoStep = extraPhotoCaptureStep(selected, kind);
+                    const videoStep = extraVideoCaptureStep(selected, kind);
+                    const uploadPhotoStep = {
+                      ...photoStep,
+                      camera: false,
+                      title: `${label} Image Upload`,
+                      text: `Upload a ${label.toLowerCase()} image. It will be labeled and saved with this job.`,
+                    };
+                    const uploadVideoStep = {
+                      ...videoStep,
+                      camera: false,
+                      title: `${label} Video Upload`,
+                      text: `Upload a ${label.toLowerCase()} video. It will be labeled and saved with this job.`,
+                    };
 
                     return (
                       <section className={`field-media-lane ${fieldEvidenceKindClass(kind)} ${count ? "has-media" : "needs-media"} ${fieldMediaFlashKind === kind ? "just-saved" : ""}`} key={kind}>
@@ -21546,17 +21819,17 @@ return (
                           <small>{latest ? latest.name : fieldMediaStateLabel(selected, kind)}</small>
                         </div>
                         <div className="field-media-actions">
-                          <button type="button" className="primary" onClick={() => beginGuidedEvidenceCapture(selected, kind)}>
-                            Required Set
+                          <button type="button" className="primary" onClick={() => requestFieldPhotoCapture(selected, kind, "image/*", true, photoStep)}>
+                            Take Image
                           </button>
-                          <button type="button" onClick={() => captureExtraPhoto(selected, kind)}>
-                            Photo +
+                          <button type="button" onClick={() => requestFieldPhotoCapture(selected, kind, "image/*", false, uploadPhotoStep)}>
+                            Upload Image
                           </button>
-                          <button type="button" onClick={() => captureExtraVideo(selected, kind)}>
-                            Video +
+                          <button type="button" onClick={() => requestFieldPhotoCapture(selected, kind, "video/*", true, videoStep)}>
+                            Take Video
                           </button>
-                          <button type="button" onClick={() => requestFieldPhotoCapture(selected, kind, "image/*,video/*", false)}>
-                            Gallery
+                          <button type="button" onClick={() => requestFieldPhotoCapture(selected, kind, "video/*", false, uploadVideoStep)}>
+                            Upload Video
                           </button>
                         </div>
                       </section>
@@ -21624,7 +21897,7 @@ return (
                         {fieldCaptureGuide.completeAction === "start_work"
                           ? "Before Done / Start Work"
                           : fieldCaptureGuide.completeAction === "finish_work"
-                            ? fieldCaptureGuide.partial ? "After Done / Partial" : "After Done / Complete"
+                            ? fieldCaptureGuide.partial ? "After Done / Partial" : "After Done / Completed Work"
                             : "Done"}
                       </button>
                     </div>
@@ -21730,7 +22003,7 @@ return (
                   Start Job
                 </button>
                 <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected)}>
-                  Finish Job
+                  Completed Work
                 </button>
                 <button type="button" className="finish-job-btn" onClick={() => finishFieldJob(selected, true)}>
                   Partial Work
@@ -21791,12 +22064,14 @@ return (
                 const invoicePacket = latestFieldPacket(selected, "affidavit_invoice_pdf");
                 const preview = fullPackagePreviewFor(selected);
                 const videoCount = fieldPhotoCountsFor(selected).videos;
+                const packageReviewApprovedAt = fieldPackageReviewApprovedAt(selected);
+                const packageReviewApproved = Boolean(packageReviewApprovedAt);
 
                 return (
                   <div data-field-pane="send" className={`field-send-panel field-pane ${fieldFocusPane === "send" ? "is-active" : ""}`}>
                     <div>
                       <span>Send Package</span>
-                      <strong>{preview ? "Package review ready" : invoicePacket ? "Ready to generate package" : "Need package PDF"}</strong>
+                      <strong>{packageReviewApproved ? "Review approved, ready to send" : preview ? "Review package before sending" : invoicePacket ? "Ready to generate package" : "Need package PDF"}</strong>
                       <small>
                         {preview?.fileName || invoicePacket?.fileName || "Tap Generate Package to open the package screen."}
                         {videoCount ? preview ? ` ${videoCount} video file(s) are inside the package ZIP.` : ` ${videoCount} video file(s) will be included when you generate the package.` : ""}
@@ -21808,13 +22083,14 @@ return (
                           <span>Review Package</span>
                           <strong>{packetSizeLabel(preview.size)}</strong>
                         </div>
-                        <small>Old combined package saved. Use Generate Package for the new Preview and Send flow.</small>
+                        <small>{packageReviewApproved ? `Approved ${displayWorkflowDate(packageReviewApprovedAt)}.` : "Review invoice, affidavit, images, videos, and ZIP before approval."}</small>
                         <div className="field-package-preview-grid">
                           <span>Before <strong>{preview.beforeCount}</strong></span>
                           <span>After <strong>{preview.afterCount}</strong></span>
                           <span>Photos <strong>{preview.imageCount}</strong></span>
                           <span>Videos <strong>{preview.videoCount}</strong></span>
                           <span>Application <strong>{preview.hasInvoice ? "PDF" : "No"}</strong></span>
+                          <span>Review <strong>{packageReviewApproved ? "Approved" : "Pending"}</strong></span>
                         </div>
                         <div className="field-package-video-list">
                           <strong>Video files</strong>
@@ -21832,7 +22108,7 @@ return (
                         <small>{preview.note}</small>
                       </div>
                     ) : null}
-                    <div className={`field-send-actions ${preview ? "two" : "single"}`}>
+                    <div className={`field-send-actions ${preview ? "three" : "single"}`}>
                       <button
                         type="button"
                         onClick={() => runPackagePrimaryAction(selected)}
@@ -21840,9 +22116,14 @@ return (
                         {packagePrimaryLabel(selected)}
                       </button>
                       {preview ? (
-                        <button type="button" onClick={() => sendFullEvidencePackage(selected)}>
-                          Send Package
-                        </button>
+                        <>
+                          <button type="button" className="approve-review-btn" onClick={() => approveFullPackageReview(selected)}>
+                            {packageReviewApproved ? "Review Approved" : "Approve Review"}
+                          </button>
+                          <button type="button" onClick={() => sendFullEvidencePackage(selected)} disabled={!packageReviewApproved}>
+                            Send Package
+                          </button>
+                        </>
                       ) : null}
                     </div>
                   </div>
