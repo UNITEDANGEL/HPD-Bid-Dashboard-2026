@@ -4166,8 +4166,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const draftDate = appointmentDateFromLocalValue(appointmentDraft);
     const savedExpired = Boolean(savedDate && savedDate.getTime() <= Date.now());
     const visibleDate = savedExpired ? draftDate || savedDate : savedDate || draftDate;
-    const calendarHref = googleCalendarAppointmentHref(job, appointmentDraft);
-    const calendarAlertHref = calendarAlertDownloadHref(job, appointmentDraft);
     const reminderInfo = appointmentReminderSetupInfo(job, appointmentDraft);
     const showHero = Boolean(savedIso) || contact.appointmentNeeded;
 
@@ -4204,50 +4202,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             <span>Apt</span>
             <strong>{aptLabel}</strong>
           </div>
-        </div>
-        <div className="appointment-hero-actions">
-          {contact.actionHref ? <a href={contact.actionHref}>Call</a> : null}
-          {contact.smsHref ? <a href={contact.smsHref}>Text</a> : null}
-          {contact.emailHref && !contact.phone ? <a href={contact.emailHref}>Request Info</a> : null}
-          <a
-            href={calendarHref || undefined}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={calendarHref ? "" : "disabled"}
-            onClick={(event) => {
-              if (!calendarHref) {
-                event.preventDefault();
-                alert("Choose an appointment date and time first.");
-              } else {
-                showActionNotice("Finish adding this event in Google Calendar to activate reminders.");
-              }
-            }}
-          >
-            Calendar
-          </a>
-          <a
-            href={calendarAlertHref || undefined}
-            download={appointmentCalendarFileName(job)}
-            className={calendarAlertHref ? "alert-link" : "disabled"}
-            onClick={(event) => {
-              if (!calendarAlertHref) {
-                event.preventDefault();
-                alert("Choose an appointment date and time first.");
-              } else {
-                showActionNotice("Import the downloaded .ics file into Calendar to activate alerts.");
-              }
-            }}
-          >
-            Download Alerts
-          </a>
-          <button type="button" onClick={() => enableAppointmentBrowserAlerts(job)}>
-            Test Alert
-          </button>
-          {!savedIso ? (
-            <button type="button" onClick={() => saveJobAppointment(job)} disabled={appointmentSaving}>
-              {appointmentSaving ? "Saving" : "Save Time"}
-            </button>
-          ) : null}
         </div>
       </section>
     );
