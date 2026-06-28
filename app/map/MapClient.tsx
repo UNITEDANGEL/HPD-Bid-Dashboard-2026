@@ -5,7 +5,7 @@ const HPD_TENANT_CONTACT_ATTENTION = "Kizzy Atkins / K. Atkins";
 const APPOINTMENT_ALERT_EMAIL = "uac525@gmail.com";
 const MAPTILER_ENV_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
 const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
-const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v1";
+const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v2";
 const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
 const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
 const USER_LOCATION_OVERVIEW_ZOOM = 12;
@@ -175,7 +175,7 @@ type MapBaseStyle = {
 const MAP_BASE_STYLES: MapBaseStyle[] = [
   {
     id: "maptiler-streets",
-    label: "MapTiler Streets",
+    label: "Detailed Map",
     provider: "maptiler",
     mapId: "streets-v4",
     attribution: '&copy; MapTiler &copy; OpenStreetMap contributors',
@@ -207,7 +207,7 @@ const MAP_BASE_STYLES: MapBaseStyle[] = [
   },
   {
     id: "osm-color",
-    label: "Color Streets",
+    label: "Open Map",
     provider: "osm",
     tileUrl: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: '&copy; OpenStreetMap contributors',
@@ -215,7 +215,7 @@ const MAP_BASE_STYLES: MapBaseStyle[] = [
   },
   {
     id: "carto-voyager",
-    label: "Voyager Backup",
+    label: "Soft Map",
     provider: "carto",
     tileUrl: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
     attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
@@ -223,22 +223,22 @@ const MAP_BASE_STYLES: MapBaseStyle[] = [
   },
 ];
 
-const COLOR_STREETS_STYLE = MAP_BASE_STYLES.find((style) => style.id === "osm-color")!;
+const SOFT_MAP_STYLE = MAP_BASE_STYLES.find((style) => style.id === "carto-voyager")!;
 
 function mapBaseStyleById(id: string): MapBaseStyle {
-  return MAP_BASE_STYLES.find((style) => style.id === id) || MAP_BASE_STYLES[0];
+  return MAP_BASE_STYLES.find((style) => style.id === id) || SOFT_MAP_STYLE;
 }
 
 function resolveMapBaseStyle(styleId: MapBaseStyleId, mapTilerKey: string): MapBaseStyle {
   const style = mapBaseStyleById(styleId);
-  return style.provider === "maptiler" && !mapTilerKey.trim() ? COLOR_STREETS_STYLE : style;
+  return style.provider === "maptiler" && !mapTilerKey.trim() ? SOFT_MAP_STYLE : style;
 }
 
 function mapTileUrl(style: MapBaseStyle, mapTilerKey: string) {
   if (style.provider === "maptiler") {
     return `https://api.maptiler.com/maps/${style.mapId}/{z}/{x}/{y}.png?key=${encodeURIComponent(mapTilerKey.trim())}`;
   }
-  return style.tileUrl || COLOR_STREETS_STYLE.tileUrl!;
+  return style.tileUrl || SOFT_MAP_STYLE.tileUrl!;
 }
 
 type ZipEntry = {
@@ -2588,10 +2588,10 @@ const [hideCompleted, setHideCompleted] = useState(false);
 
 const [mapDaysBack, setMapDaysBack] = useState("90");
 const [mapShowAllDays, setMapShowAllDays] = useState(false);
-const [mapBaseStyle, setMapBaseStyle] = useState<MapBaseStyleId>("maptiler-streets");
+const [mapBaseStyle, setMapBaseStyle] = useState<MapBaseStyleId>("carto-voyager");
 const [mapTilerKey, setMapTilerKey] = useState(MAPTILER_ENV_KEY);
 const [mapTileStatus, setMapTileStatus] = useState(
-  MAPTILER_ENV_KEY ? "MapTiler env key ready." : "MapTiler selected. Add key to load it."
+  "Soft Map selected."
 );
   const [fullMap, setFullMap] = useState(false);
 const requestedMapBaseStyle = mapBaseStyleById(mapBaseStyle);
@@ -2612,7 +2612,7 @@ function updateMapBaseStyle(styleId: MapBaseStyleId) {
 function updateMapTilerKey(value: string) {
   const next = value.trim();
   setMapTilerKey(next);
-  setMapTileStatus(next ? "MapTiler key saved on this device." : "MapTiler key removed. Voyager is showing.");
+  setMapTileStatus(next ? "MapTiler key saved on this device." : "MapTiler key removed. Soft Map is showing.");
   try {
     if (next) window.localStorage.setItem(MAPTILER_KEY_STORAGE_KEY, next);
     else window.localStorage.removeItem(MAPTILER_KEY_STORAGE_KEY);
@@ -3493,7 +3493,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         if (cancelled || tileLoaded) return;
         tileLoaded = true;
         if (requestedStyle.provider === "maptiler" && style.provider === "carto") {
-          setMapTileStatus("MapTiler needs a key. Voyager backup is showing.");
+          setMapTileStatus("MapTiler needs a key. Soft Map is showing.");
         } else {
           setMapTileStatus(`${style.label} loaded.`);
         }
@@ -3502,7 +3502,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       tileLayer.on("tileerror", () => {
         tileErrorCount += 1;
         if (tileErrorCount < 3 || cancelled) return;
-        setMapTileStatus(`${style.label} could not load. Voyager backup is showing.`);
+        setMapTileStatus(`${style.label} could not load. Soft Map is showing.`);
         if (style.provider === "maptiler") {
           setMapBaseStyle("carto-voyager");
         }
@@ -3512,7 +3512,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       mapTileLayerRef.current = tileLayer;
 
       if (requestedStyle.provider === "maptiler" && style.provider === "carto") {
-        setMapTileStatus("MapTiler needs a key. Voyager backup is showing.");
+        setMapTileStatus("MapTiler needs a key. Soft Map is showing.");
       } else {
         setMapTileStatus(`${style.label} loading...`);
       }
@@ -17654,7 +17654,7 @@ return (
           }
 
           .map-cockpit-actions {
-            grid-template-columns: 1.05fr 1.05fr 0.9fr 0.9fr 1fr !important;
+            grid-template-columns: 1.2fr 0.85fr 1fr !important;
           }
 
           .map-cockpit-actions button {
@@ -17801,6 +17801,37 @@ return (
             box-shadow:
               0 0 0 2px rgba(255, 255, 255, 0.95),
               0 8px 18px rgba(120, 53, 15, 0.20) !important;
+          }
+
+          /* CLEAN_MAP_HEADER_2026 */
+          .map-cockpit {
+            width: min(330px, calc(100vw - 20px)) !important;
+            padding: 9px !important;
+            gap: 7px !important;
+            border-radius: 19px !important;
+          }
+
+          .map-cockpit-summary {
+            padding-bottom: 0 !important;
+            border-bottom: 0 !important;
+          }
+
+          .map-cockpit-summary strong {
+            font-size: 21px !important;
+          }
+
+          .map-cockpit-summary small {
+            font-size: 10px !important;
+            padding: 4px 7px !important;
+          }
+
+          .map-cockpit-actions button {
+            min-height: 37px !important;
+            border-radius: 13px !important;
+          }
+
+          .map-cockpit-lens {
+            display: none !important;
           }
 
           @media (max-width: 520px) {
@@ -18115,9 +18146,6 @@ return (
           <button className={mapShowAllDays ? "active" : ""} type="button" onClick={() => setMapShowAllDays(true)}>
             All {mapDateCounts.all}
           </button>
-          <button className="full-btn" type="button" onClick={showCleanMapView}>
-            Full Map
-          </button>
         </div>
 
         <div className="map-day-presets" aria-label="Quick day filters">
@@ -18180,17 +18208,10 @@ return (
           <div className="map-cockpit-actions" aria-label="Quick map actions">
             <button
               type="button"
-              className={activeMapBaseStyle.id === "osm-color" ? "active" : ""}
-              onClick={() => updateMapBaseStyle("osm-color")}
-            >
-              Street
-            </button>
-            <button
-              type="button"
               className={activeMapBaseStyle.id === "carto-voyager" ? "active" : ""}
               onClick={() => updateMapBaseStyle("carto-voyager")}
             >
-              Soft
+              Soft Map
             </button>
             <button
               type="button"
@@ -18202,10 +18223,7 @@ return (
               Sat
             </button>
             <button type="button" onClick={() => fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true)}>
-              Fit
-            </button>
-            <button type="button" className="primary" onClick={showCleanMapView}>
-              Full
+              Fit Job
             </button>
           </div>
           <div className="map-cockpit-lens" aria-label="Field workload lens">
