@@ -6980,6 +6980,14 @@ function directionsUrl(job: JobRecord) {
   const dashboardView = dashboardViewCopy[workflowViewFilter];
   const dashboardSubtitle = search.trim() ? `Search: ${search.trim()}` : dashboardView.detail;
   const dashboardDataStatus = health.totalIssues ? `${health.totalIssues} data checks` : "Data clean";
+  const quickWorkflowOptions = [
+    { value: "No Access - 1st Attempt", label: "No Access 1st", tone: "waiting" },
+    { value: "No Access - 2nd Attempt", label: "No Access 2nd", tone: "archive" },
+    { value: "Refused Access", label: "Refused", tone: "danger" },
+    { value: "Work Completed", label: "Completed", tone: "success" },
+    { value: "Partial Work Completed", label: "Partial", tone: "partial" },
+    { value: "Completed by Others", label: "Other Done", tone: "other" },
+  ];
 
 return (
     <main
@@ -17189,6 +17197,169 @@ return (
             color: #162235 !important;
           }
 
+          .quick-status-console {
+            order: 4 !important;
+            display: grid !important;
+            gap: 10px !important;
+            margin-top: 0 !important;
+            padding: 12px !important;
+            border-radius: 20px !important;
+            background:
+              linear-gradient(145deg, rgba(18, 30, 46, 0.96), rgba(20, 47, 58, 0.94)),
+              #121f2f !important;
+            border: 1px solid rgba(125, 211, 252, 0.22) !important;
+            color: #f8fafc !important;
+            box-shadow: 0 18px 38px rgba(3, 8, 14, 0.28) !important;
+          }
+
+          .quick-status-console .selected-section-head {
+            margin: 0 !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            gap: 8px !important;
+          }
+
+          .quick-status-console .selected-section-head span {
+            color: #7dd3fc !important;
+            font-size: 11px !important;
+            letter-spacing: 0 !important;
+          }
+
+          .quick-status-console .selected-section-head strong {
+            max-width: 158px !important;
+            color: #ffffff !important;
+            font-size: 13px !important;
+            line-height: 1.12 !important;
+            text-align: right !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .quick-status-controls {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+            gap: 8px !important;
+          }
+
+          .quick-status-select,
+          .quick-status-date {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 5px !important;
+            color: #c7d7e8 !important;
+            font-size: 10px !important;
+            font-weight: 950 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0 !important;
+          }
+
+          .quick-status-select select,
+          .quick-status-date input {
+            width: 100% !important;
+            min-height: 44px !important;
+            min-width: 0 !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(180, 205, 230, 0.22) !important;
+            background: rgba(248, 250, 252, 0.10) !important;
+            color: #ffffff !important;
+            padding: 0 10px !important;
+            font-size: 13px !important;
+            font-weight: 900 !important;
+            outline: 0 !important;
+          }
+
+          .quick-status-select option {
+            color: #172033 !important;
+          }
+
+          .quick-status-console .selected-status-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 7px !important;
+          }
+
+          .quick-status-console .quick-status-button {
+            min-height: 48px !important;
+            border-radius: 15px !important;
+            padding: 7px !important;
+            border: 1px solid rgba(180, 205, 230, 0.20) !important;
+            background: rgba(248, 250, 252, 0.09) !important;
+            color: #eff6ff !important;
+            box-shadow: none !important;
+            font-size: 11px !important;
+            font-weight: 950 !important;
+            line-height: 1.08 !important;
+            white-space: normal !important;
+          }
+
+          .quick-status-console .quick-status-button.active {
+            background: linear-gradient(135deg, #bbf7d0, #bae6fd) !important;
+            color: #082033 !important;
+            border-color: rgba(255, 255, 255, 0.48) !important;
+            box-shadow: 0 12px 26px rgba(56, 189, 248, 0.20) !important;
+          }
+
+          .quick-status-console .tone-danger {
+            border-color: rgba(248, 113, 113, 0.36) !important;
+          }
+
+          .quick-status-console .tone-success {
+            border-color: rgba(74, 222, 128, 0.34) !important;
+          }
+
+          .quick-status-console .tone-archive,
+          .quick-status-console .tone-other {
+            border-color: rgba(196, 181, 253, 0.30) !important;
+          }
+
+          .quick-status-save-row {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 8px !important;
+            align-items: stretch !important;
+          }
+
+          .quick-status-console .save-status-btn,
+          .quick-status-clear {
+            min-height: 48px !important;
+            border-radius: 15px !important;
+            font-size: 13px !important;
+            font-weight: 1000 !important;
+          }
+
+          .quick-status-console .save-status-btn {
+            border: 0 !important;
+            background: linear-gradient(135deg, #34d399, #38bdf8) !important;
+            color: #06131f !important;
+            box-shadow: 0 16px 34px rgba(45, 212, 191, 0.22) !important;
+          }
+
+          .quick-status-console .save-status-btn:disabled {
+            opacity: 0.58 !important;
+            filter: grayscale(0.35) !important;
+            box-shadow: none !important;
+          }
+
+          .quick-status-clear {
+            padding: 0 12px !important;
+            border: 1px solid rgba(248, 250, 252, 0.14) !important;
+            background: rgba(248, 250, 252, 0.08) !important;
+            color: #dbeafe !important;
+          }
+
+          .quick-status-note,
+          .saved-status-note {
+            margin: 0 !important;
+            color: #b8c7d8 !important;
+            font-size: 11px !important;
+            line-height: 1.28 !important;
+          }
+
+          .saved-status-note {
+            color: #bbf7d0 !important;
+            font-weight: 900 !important;
+          }
+
           @media (max-width: 520px) {
             .map-top {
               left: 6px !important;
@@ -17230,6 +17401,22 @@ return (
 
             .map-days-filter {
               grid-template-columns: minmax(0, 1fr) repeat(2, auto) !important;
+            }
+
+            .quick-status-controls {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .quick-status-console .selected-status-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .quick-status-save-row {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .quick-status-clear {
+              min-height: 42px !important;
             }
           }
         `}
@@ -19060,30 +19247,36 @@ return (
               );
             })()}
 
-            <div className="selected-status-panel">
+            <div className="selected-status-panel quick-status-console">
               <div className="selected-section-head">
-                <span>Update Status</span>
-                <strong>{draftWorkflowStatus || workflowLabel(selected) || "Choose field outcome"}</strong>
+                <span>Status + Time</span>
+                <strong>{draftWorkflowStatus || workflowLabel(selected) || "Choose status"}</strong>
               </div>
-              <div className="selected-status-grid">
-                <button type="button" onClick={() => pickDraftWorkflow("No Access - 1st Attempt")}>No Access 1st</button>
-                <button type="button" onClick={() => pickDraftWorkflow("No Access - 2nd Attempt")}>No Access 2nd</button>
-                <button type="button" onClick={() => pickDraftWorkflow("Refused Access")}>Refused</button>
-                <button type="button" onClick={() => pickDraftWorkflow("Work Completed")}>Completed</button>
-                <button type="button" onClick={() => pickDraftWorkflow("Partial Work Completed")}>Partial</button>
-                <button type="button" onClick={() => pickDraftWorkflow("Completed by Others")}>Other Done</button>
-                <button type="button" onClick={() => resetFieldJobForTesting(selected)}>Clear</button>
-              </div>
-            </div>
-
-            {draftWorkflowStatus ? (
-              <div className="workflow-save-panel">
-                <div className="detail">
-                  <span>Selected Status</span>
-                  <strong>{draftWorkflowStatus}</strong>
-                </div>
-                <label className="workflow-date-input">
-                  Status Date / Time
+              <div className="quick-status-controls">
+                <label className="quick-status-select">
+                  <span>Status</span>
+                  <select
+                    value={draftWorkflowStatus}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      if (value) {
+                        pickDraftWorkflow(value);
+                      } else {
+                        setDraftWorkflowStatus("");
+                        setDraftWorkflowSaved(false);
+                      }
+                    }}
+                  >
+                    <option value="">Choose status...</option>
+                    {quickWorkflowOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="workflow-date-input quick-status-date">
+                  <span>Status Date / Time</span>
                   <input
                     type="datetime-local"
                     value={draftWorkflowDate}
@@ -19092,12 +19285,39 @@ return (
                     }}
                   />
                 </label>
-                <button type="button" className="save-status-btn" onClick={() => saveDraftWorkflow(selected)}>
-                  Save Status
-                </button>
-                {draftWorkflowSaved ? <p className="saved-status-note">Saved ✓ Synced to CSV + Google Drive.</p> : null}
               </div>
-            ) : null}
+              <div className="selected-status-grid">
+                {quickWorkflowOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`quick-status-button tone-${option.tone} ${draftWorkflowStatus === option.value ? "active" : ""}`}
+                    onClick={() => pickDraftWorkflow(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <div className="quick-status-save-row">
+                <button
+                  type="button"
+                  className="save-status-btn"
+                  disabled={!draftWorkflowStatus}
+                  onClick={() => saveDraftWorkflow(selected)}
+                >
+                  {draftWorkflowStatus ? "Save Status + Time" : "Choose Status First"}
+                </button>
+                <button type="button" className="quick-status-clear" onClick={() => resetFieldJobForTesting(selected)}>
+                  Clear Test
+                </button>
+              </div>
+              <p className="quick-status-note">
+                {draftWorkflowStatus
+                  ? "Date/time will be saved with this status. Closed outcomes move to Archive."
+                  : "Pick a status or use a quick button, then save with date/time."}
+              </p>
+              {draftWorkflowSaved ? <p className="saved-status-note">Saved. Status synced and map updated.</p> : null}
+            </div>
 
             <details className="more-job-details">
               <summary>More job details</summary>
