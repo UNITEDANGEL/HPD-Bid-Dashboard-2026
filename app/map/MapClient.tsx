@@ -3743,6 +3743,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const popupJobId = jobKey(job, index);
 
         const marker = L.marker([lat, lng], {
+          title: `${popupJobId} ${displayAddress(job)}`,
           icon: L.divIcon({
             className: "maturity-map-marker",
             html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} ${pendingAppointmentPulse ? "marker-pending-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${workflowViewBucket(job) === "ready2" ? "marker-ready-revisit" : ""}" style="border-color:${hasOverdue ? "#ef4444" : appointmentLabel ? "#f59e0b" : markerColor}">
@@ -3756,18 +3757,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
         marker.on("click", () => {
           setMapMenuOpen(false);
-          openMapJobBrief(job, index);
+          focusJob(job);
         });
-
-        marker.bindPopup(`
-          <div class="field-map-popup">
-            <strong>${escapeMapPopupHtml(popupJobId)}</strong>
-            <span>${escapeMapPopupHtml(displayAddress(job))}</span>
-            <small>${escapeMapPopupHtml((job.borough || "Unknown borough") + (job.trade ? " - " + job.trade : ""))}</small>
-            <small>${escapeMapPopupHtml((workflowLabel(job) || JobStatus.statusLabel(job)) + (money(job) ? " - " + money(job) : ""))}</small>
-            <button type="button" data-map-open-job="${escapeMapPopupHtml(popupJobId)}">Open Job</button>
-          </div>
-        `);
 
         marker.addTo(layer);
       });
@@ -3852,7 +3843,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       setMapMenuOpen(false);
       clearMarkerOverviewReturn();
-      openMapJobBrief(job);
+      focusJob(job);
     }
 
     document.addEventListener("click", handlePopupOpen);
@@ -6819,6 +6810,7 @@ function focusJob(job: MappedJob) {
     clearMarkerOverviewReturn();
     setMapJobBrief(null);
     setClusterSheet(null);
+    mapRef.current?.closePopup?.();
     const nextVisitDate = localDatetimeValue();
     setVisitStatusDate(nextVisitDate);
     setDraftWorkflowDate(nextVisitDate);
@@ -20500,7 +20492,7 @@ return (
                     className={`cluster-job-row job-status-card ${JobStatus.statusCardClass(job)}`}
                     key={`${jobKey(job, item.index)}-${item.index}`}
                     type="button"
-                    onClick={() => openMapJobBrief(job, item.index)}
+                    onClick={() => focusJob(job)}
                   >
                     <div>
                       <strong>{jobKey(job, item.index)}</strong>
