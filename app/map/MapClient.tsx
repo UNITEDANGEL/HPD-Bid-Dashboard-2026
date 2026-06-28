@@ -2680,6 +2680,7 @@ const runJobAssistant = (questionText?: string) => {
 const [serverWorkflowOverrides, setServerWorkflowOverrides] = useState<Record<string, any>>({});
   const [mapReady, setMapReady] = useState(false);
   const [mapMenuOpen, setMapMenuOpen] = useState(false);
+  const [mapBoardOpen, setMapBoardOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
 const [hideCompleted, setHideCompleted] = useState(false);
@@ -2788,6 +2789,7 @@ function showCleanMapView() {
   setDrawerOpen(false);
   setFullMap(true);
   setMapMenuOpen(false);
+  setMapBoardOpen(false);
 
   window.requestAnimationFrame(() => {
     mapRef.current?.invalidateSize();
@@ -2809,6 +2811,7 @@ function openMapLayersFromJobCard() {
   setDrawerOpen(false);
   setFullMap(true);
   setMapMenuOpen(true);
+  setMapBoardOpen(true);
   setActionNotice("Layers open. Choose Soft, Open, Light, Night, Satellite, or another map style.");
 
   window.requestAnimationFrame(() => {
@@ -2929,6 +2932,7 @@ function handleMapTouchEnd(event: any) {
     const dashboardRequested = params.get("dashboard") === "1" || params.get("panel") === "dashboard";
     if (dashboardRequested) {
       setMapMenuOpen(true);
+      setMapBoardOpen(true);
     }
     if (requestedWorkflowView) {
       setWorkflowViewFilter(requestedWorkflowView);
@@ -7468,9 +7472,11 @@ function directionsUrl(job: JobRecord) {
   function switchMapBoard(view: WorkflowViewFilter) {
     setWorkflowViewFilter(view);
     setClusterSheet(null);
+    setMapJobBrief(null);
     setSelectedOnly(false);
     setSelected(null);
     setDrawerOpen(false);
+    setFullMap(true);
     setUrlOmoRequest("");
     setSearch("");
     setMapShowAllDays(
@@ -7481,6 +7487,7 @@ function directionsUrl(job: JobRecord) {
         view === "ready2"
     );
     setMapMenuOpen(false);
+    setMapBoardOpen(false);
     setActionNotice(`${dashboardViewCopy[view].label} map view.`);
 
     window.requestAnimationFrame(() => {
@@ -18933,6 +18940,65 @@ return (
             box-shadow: 0 10px 24px rgba(2, 132, 199, 0.22) !important;
           }
 
+          .map-command-buttons {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 6px !important;
+          }
+
+          .map-command-buttons .map-board-toggle {
+            background: linear-gradient(135deg, #065f46, #0f766e) !important;
+          }
+
+          .map-cockpit.board-collapsed {
+            left: calc(env(safe-area-inset-left) + 58px) !important;
+            top: calc(env(safe-area-inset-top) + 12px) !important;
+            width: min(286px, calc(100vw - 76px)) !important;
+            padding: 8px 10px !important;
+            gap: 0 !important;
+            border-radius: 999px !important;
+            background: rgba(248, 250, 252, 0.96) !important;
+            box-shadow:
+              0 10px 28px rgba(15, 23, 42, 0.20),
+              inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
+          }
+
+          .map-cockpit.board-collapsed .map-command-banner {
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 8px !important;
+          }
+
+          .map-cockpit.board-collapsed .map-command-banner span {
+            font-size: 8px !important;
+          }
+
+          .map-cockpit.board-collapsed .map-command-banner strong {
+            font-size: 15px !important;
+            line-height: 1 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-cockpit.board-collapsed .map-command-banner small,
+          .map-cockpit.board-collapsed .map-command-buttons button:not(.map-board-toggle),
+          .map-cockpit.board-collapsed .map-board-switcher,
+          .map-cockpit.board-collapsed .map-cockpit-actions {
+            display: none !important;
+          }
+
+          .map-cockpit.board-collapsed .map-command-buttons .map-board-toggle {
+            min-height: 34px !important;
+            padding: 0 12px !important;
+            font-size: 11px !important;
+            box-shadow: 0 8px 18px rgba(6, 95, 70, 0.18) !important;
+          }
+
+          .map-cockpit.board-open {
+            transform: translateY(0) !important;
+          }
+
           .map-board-switcher {
             display: grid !important;
             grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
@@ -20456,6 +20522,29 @@ return (
               border-radius: 17px !important;
             }
 
+            .map-cockpit.board-collapsed {
+              top: calc(env(safe-area-inset-top) + 9px) !important;
+              left: 58px !important;
+              width: calc(100vw - 72px) !important;
+              min-height: 46px !important;
+              padding: 6px 8px !important;
+              border-radius: 999px !important;
+            }
+
+            .map-cockpit.board-collapsed .map-command-banner {
+              gap: 6px !important;
+            }
+
+            .map-cockpit.board-collapsed .map-command-banner strong {
+              font-size: 14px !important;
+            }
+
+            .map-cockpit.board-collapsed .map-command-buttons .map-board-toggle {
+              min-height: 32px !important;
+              padding: 0 10px !important;
+              font-size: 10px !important;
+            }
+
             .map-command-banner {
               grid-template-columns: minmax(0, 1fr) auto !important;
               gap: 7px !important;
@@ -20653,7 +20742,7 @@ return (
             <button
               type="button"
               className={`dispatch-kpi ${workflowViewFilter === "active" ? "active" : ""}`}
-              onClick={() => setWorkflowViewFilter("active")}
+              onClick={() => switchMapBoard("active")}
             >
               <span>Active</span>
               <strong>{workflowDashboardCounts.active}</strong>
@@ -20662,7 +20751,7 @@ return (
             <button
               type="button"
               className={`dispatch-kpi ${workflowViewFilter === "pending" ? "active" : ""}`}
-              onClick={() => setWorkflowViewFilter("pending")}
+              onClick={() => switchMapBoard("pending")}
             >
               <span>Pending</span>
               <strong>{workflowDashboardCounts.pending}</strong>
@@ -20671,7 +20760,7 @@ return (
             <button
               type="button"
               className={`dispatch-kpi is-alert ${workflowViewFilter === "appointments" ? "active" : ""}`}
-              onClick={() => setWorkflowViewFilter("appointments")}
+              onClick={() => switchMapBoard("appointments")}
             >
               <span>Appointments</span>
               <strong>{pendingAppointmentMapCount}</strong>
@@ -20680,7 +20769,7 @@ return (
             <button
               type="button"
               className={`dispatch-kpi is-ready ${workflowViewFilter === "ready2" ? "active" : ""}`}
-              onClick={() => setWorkflowViewFilter("ready2")}
+              onClick={() => switchMapBoard("ready2")}
             >
               <span>Ready 2nd</span>
               <strong>{readySecondCount}</strong>
@@ -20689,7 +20778,7 @@ return (
             <button
               type="button"
               className={`dispatch-kpi is-alert ${workflowViewFilter === "noaccess24" ? "active" : ""}`}
-              onClick={() => setWorkflowViewFilter("noaccess24")}
+              onClick={() => switchMapBoard("noaccess24")}
             >
               <span>No Access T-24</span>
               <strong>{workflowDashboardCounts.noaccess24}</strong>
@@ -20801,16 +20890,26 @@ return (
       <section className="map-stage">
         <div ref={mapNode} className="map-node" />
 
-        <section className={`map-cockpit ${mapMenuOpen ? "panel-open" : ""}`} aria-label="Map controls">
+        <section className={`map-cockpit ${mapMenuOpen ? "panel-open" : ""} ${mapBoardOpen ? "board-open" : "board-collapsed"}`} aria-label="Map controls">
           <div className="map-command-banner" aria-label="Schedule board banner">
             <div>
               <span>Schedule Board</span>
               <strong>{dashboardView.label}</strong>
               <small>{filteredJobs.length} visible · {visibleMappedCount} mapped · {activeMapBaseStyle.label}</small>
             </div>
-            <button type="button" onClick={() => switchMapBoard("appointments")}>
-              Schedule
-            </button>
+            <div className="map-command-buttons">
+              <button
+                type="button"
+                className="map-board-toggle"
+                aria-expanded={mapBoardOpen}
+                onClick={() => setMapBoardOpen((open) => !open)}
+              >
+                {mapBoardOpen ? "Hide" : "Layers"}
+              </button>
+              <button type="button" onClick={() => switchMapBoard("appointments")}>
+                Schedule
+              </button>
+            </div>
           </div>
           <div className="map-board-switcher" aria-label="Switch map board">
             {mapBoardModes.map((mode) => (
@@ -21056,31 +21155,31 @@ return (
         </div>
 
         {!clusterSheet ? <div className="workflow-filter-bar">
-          <button type="button" className={workflowViewFilter === "active" ? "active" : ""} onClick={() => setWorkflowViewFilter("active")}>
+          <button type="button" className={workflowViewFilter === "active" ? "active" : ""} onClick={() => switchMapBoard("active")}>
             Active
           </button>
-          <button type="button" className={workflowViewFilter === "pending" ? "active" : ""} onClick={() => setWorkflowViewFilter("pending")}>
+          <button type="button" className={workflowViewFilter === "pending" ? "active" : ""} onClick={() => switchMapBoard("pending")}>
             Pending{workflowDashboardCounts.pending ? ` ${workflowDashboardCounts.pending}` : ""}
           </button>
-          <button type="button" className={workflowViewFilter === "appointments" ? "active" : ""} onClick={() => setWorkflowViewFilter("appointments")}>
+          <button type="button" className={workflowViewFilter === "appointments" ? "active" : ""} onClick={() => switchMapBoard("appointments")}>
             Appts{pendingAppointmentMapCount ? ` ${pendingAppointmentMapCount}` : ""}
           </button>
-          <button type="button" className={workflowViewFilter === "waiting72" ? "active" : ""} onClick={() => setWorkflowViewFilter("waiting72")}>
+          <button type="button" className={workflowViewFilter === "waiting72" ? "active" : ""} onClick={() => switchMapBoard("waiting72")}>
             Waiting 72h
           </button>
-          <button type="button" className={workflowViewFilter === "noaccess24" ? "active" : ""} onClick={() => setWorkflowViewFilter("noaccess24")}>
+          <button type="button" className={workflowViewFilter === "noaccess24" ? "active" : ""} onClick={() => switchMapBoard("noaccess24")}>
             T-24{workflowDashboardCounts.noaccess24 ? ` ${workflowDashboardCounts.noaccess24}` : ""}
           </button>
-          <button type="button" className={workflowViewFilter === "ready2" ? "active" : ""} onClick={() => setWorkflowViewFilter("ready2")}>
+          <button type="button" className={workflowViewFilter === "ready2" ? "active" : ""} onClick={() => switchMapBoard("ready2")}>
             Ready 2nd
           </button>
-          <button type="button" className={workflowViewFilter === "final" ? "active" : ""} onClick={() => setWorkflowViewFilter("final")}>
+          <button type="button" className={workflowViewFilter === "final" ? "active" : ""} onClick={() => switchMapBoard("final")}>
             Final Status
           </button>
-          <button type="button" className={workflowViewFilter === "archived" ? "active" : ""} onClick={() => setWorkflowViewFilter("archived")}>
+          <button type="button" className={workflowViewFilter === "archived" ? "active" : ""} onClick={() => switchMapBoard("archived")}>
             Archived
           </button>
-          <button type="button" className={workflowViewFilter === "all" ? "active" : ""} onClick={() => setWorkflowViewFilter("all")}>
+          <button type="button" className={workflowViewFilter === "all" ? "active" : ""} onClick={() => switchMapBoard("all")}>
             All
           </button>
         </div> : null}
