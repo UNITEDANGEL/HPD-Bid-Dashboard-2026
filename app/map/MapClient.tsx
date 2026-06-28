@@ -35,6 +35,9 @@ import {
 import { paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 
+const WAZE_LOGO_URL = "https://www.google.com/s2/favicons?domain=waze.com&sz=64";
+const GOOGLE_MAPS_LOGO_URL = "https://www.google.com/s2/favicons?domain=maps.google.com&sz=64";
+
 type JobRecord = {
   [key: string]: any;
   id?: string;
@@ -15159,6 +15162,13 @@ return (
             box-shadow: 0 16px 34px rgba(34, 197, 94, 0.22) !important;
           }
 
+          .job-drawer.selected-focus .job-card-route-strip {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 9px !important;
+            min-width: 0 !important;
+          }
+
           .job-drawer.selected-focus .selected-title-block {
             min-width: 0 !important;
             display: grid !important;
@@ -16285,22 +16295,52 @@ return (
             overflow-wrap: anywhere !important;
           }
 
-          .map-job-brief-directions {
+          .direction-choice-row {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 9px !important;
+            min-width: 0 !important;
+          }
+
+          .direction-provider-button {
             min-height: 64px !important;
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
+            gap: 9px !important;
             border-radius: 8px !important;
             border: 1px solid rgba(255, 255, 255, 0.42) !important;
-            background: linear-gradient(135deg, #fbbf24 0%, #22c55e 100%) !important;
+            background: rgba(248, 250, 252, 0.10) !important;
             color: #101820 !important;
-            box-shadow: 0 18px 38px rgba(34, 197, 94, 0.26) !important;
-            font-size: 20px !important;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.22) !important;
+            font-size: 17px !important;
             font-weight: 1000 !important;
             line-height: 1 !important;
             letter-spacing: 0 !important;
             text-align: center !important;
             text-decoration: none !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .direction-provider-button img {
+            width: 26px !important;
+            height: 26px !important;
+            flex: 0 0 26px !important;
+            border-radius: 7px !important;
+            background: rgba(255, 255, 255, 0.88) !important;
+            object-fit: contain !important;
+            box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.10) !important;
+          }
+
+          .direction-provider-button.waze {
+            background: linear-gradient(135deg, #dff8ff 0%, #4fd4ff 100%) !important;
+            color: #062336 !important;
+          }
+
+          .direction-provider-button.google {
+            background: linear-gradient(135deg, #fef3c7 0%, #86efac 100%) !important;
+            color: #102016 !important;
           }
 
           .map-job-brief-actions {
@@ -16413,9 +16453,9 @@ return (
               grid-template-columns: minmax(0, 1fr) !important;
             }
 
-            .map-job-brief-directions {
+            .map-job-brief-directions .direction-provider-button {
               min-height: 66px !important;
-              font-size: 21px !important;
+              font-size: 16px !important;
             }
 
             .site-visit-date-card {
@@ -19097,15 +19137,28 @@ return (
               <span>Short Summary</span>
               <p>{mapBriefText(briefJob)}</p>
             </div>
-            <a
-              className="map-job-brief-directions"
-              href={directionsUrl(briefJob)}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => showActionNotice("Opening directions. Tap Update Status when you reach the site.")}
-            >
-              Directions
-            </a>
+            <div className="direction-choice-row map-job-brief-directions" aria-label="Directions options">
+              <a
+                className="direction-provider-button waze"
+                href={wazeDirectionsUrl(briefJob)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => showActionNotice("Opening Waze. Tap Update Status when you reach the site.")}
+              >
+                <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
+                <span>Waze</span>
+              </a>
+              <a
+                className="direction-provider-button google"
+                href={directionsUrl(briefJob)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => showActionNotice("Opening Google Maps. Tap Update Status when you reach the site.")}
+              >
+                <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
+                <span>Google Maps</span>
+              </a>
+            </div>
             <div className="map-job-brief-grid">
               <span>
                 <small>Distance</small>
@@ -19415,6 +19468,16 @@ return (
                 <button type="button" className="job-card-arrived-action" onClick={() => openArrivedJob(selected)}>
                   Arrived / Update Status
                 </button>
+              </div>
+              <div className="job-card-route-strip" aria-label="Directions options">
+                <a className="direction-provider-button waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                  <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
+                  <span>Waze</span>
+                </a>
+                <a className="direction-provider-button google" href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                  <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
+                  <span>Google Maps</span>
+                </a>
               </div>
             </div>
 
@@ -19743,11 +19806,13 @@ return (
                       <span><small>Package</small><strong>{missionPackageLabel}</strong></span>
                     </div>
                     <div className="field-mission-actions">
-                      <a href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                        Guide
+                      <a className="direction-provider-button waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                        <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
+                        <span>Waze</span>
                       </a>
-                      <a href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                        Map
+                      <a className="direction-provider-button google" href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                        <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
+                        <span>Google</span>
                       </a>
                       <button type="button" onClick={() => focusFieldPane("evidence")}>
                         Evidence
