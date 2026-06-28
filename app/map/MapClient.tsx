@@ -19111,13 +19111,15 @@ return (
             gap: 5px !important;
             padding: 9px !important;
             border-radius: 14px !important;
-            background: #f8fafc !important;
-            border: 1px solid rgba(15, 23, 42, 0.08) !important;
-            box-shadow: none !important;
+            background: linear-gradient(145deg, #0f172a, #164e63) !important;
+            border: 1px solid rgba(125, 211, 252, 0.22) !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.08),
+              0 10px 22px rgba(15, 23, 42, 0.16) !important;
           }
 
           .job-drawer.selected-focus .appointment-hero-contact span {
-            color: #64748b !important;
+            color: #99f6e4 !important;
             font-size: 9px !important;
             line-height: 1 !important;
             font-weight: 1000 !important;
@@ -19126,7 +19128,7 @@ return (
           }
 
           .job-drawer.selected-focus .appointment-hero-contact strong {
-            color: #0f172a !important;
+            color: #ffffff !important;
             font-size: 13px !important;
             line-height: 1.08 !important;
             font-weight: 1000 !important;
@@ -19137,6 +19139,8 @@ return (
           .job-drawer.selected-focus .appointment-hero-contact div:first-child {
             grid-column: 1 / -1 !important;
             min-height: 52px !important;
+            background: linear-gradient(135deg, #101f33, #155e75 58%, #0f766e) !important;
+            border-color: rgba(153, 246, 228, 0.24) !important;
           }
 
           .job-drawer.selected-focus .appointment-hero-contact div:first-child strong {
@@ -19145,18 +19149,23 @@ return (
           }
 
           .job-drawer.selected-focus .appointment-hero-contact div:nth-child(2) {
-            background: #ecfeff !important;
-            border-color: rgba(20, 184, 166, 0.16) !important;
+            background: linear-gradient(135deg, #063b45, #0f766e) !important;
+            border-color: rgba(45, 212, 191, 0.28) !important;
           }
 
           .job-drawer.selected-focus .appointment-hero-contact div:nth-child(2) strong {
-            color: #0f766e !important;
+            color: #ccfbf1 !important;
             font-size: 12px !important;
             white-space: nowrap !important;
           }
 
           .job-drawer.selected-focus .appointment-hero-contact div:nth-child(3) {
-            background: #f1f5f9 !important;
+            background: linear-gradient(135deg, #111827, #334155) !important;
+            border-color: rgba(148, 163, 184, 0.26) !important;
+          }
+
+          .job-drawer.selected-focus .appointment-hero-contact div:nth-child(3) strong {
+            color: #f8fafc !important;
           }
 
           @media (max-width: 390px) {
