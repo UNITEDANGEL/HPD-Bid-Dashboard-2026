@@ -689,6 +689,7 @@ function tenantContactInfo(job: JobRecord | null | undefined) {
 }
 const APPOINTMENT_REMINDER_WINDOW_MS = 24 * 60 * 60 * 1000;
 const APPOINTMENT_DUE_GRACE_MS = 60 * 60 * 1000;
+const APPOINTMENT_TWO_HOUR_REMINDER_MS = 2 * 60 * 60 * 1000;
 
 function appointmentLocalInputValueFromDate(date: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -767,6 +768,52 @@ function appointmentStatusInfo(job: JobRecord | null | undefined, now = new Date
     return { tone: "soon", label: `In ${hours} hr`, detail: when };
   }
   return { tone: "scheduled", label: "Scheduled", detail: when };
+}
+
+function appointmentReminderSetupInfo(job: JobRecord | null | undefined, draftLocalValue: string, now = new Date()) {
+  const date = appointmentDateFromLocalValue(draftLocalValue) || appointmentDate(job);
+  if (!date) {
+    return {
+      tone: "needs-time",
+      title: "Reminder not ready",
+      detail: "Choose a future appointment time, then add it to Google Calendar or download the alert file.",
+    };
+  }
+
+  const diff = date.getTime() - now.getTime();
+  const oneDayAt = new Date(date.getTime() - APPOINTMENT_REMINDER_WINDOW_MS);
+  const twoHourAt = new Date(date.getTime() - APPOINTMENT_TWO_HOUR_REMINDER_MS);
+  const appointmentLabel = displayWorkflowDate(date.toISOString());
+
+  if (diff <= 0) {
+    return {
+      tone: "missed",
+      title: "Reminder window passed",
+      detail: `Appointment was ${appointmentLabel}. Reschedule to a future time, then add Calendar/alert file.`,
+    };
+  }
+
+  if (diff <= APPOINTMENT_TWO_HOUR_REMINDER_MS) {
+    return {
+      tone: "urgent",
+      title: "Set alert now",
+      detail: `Appointment is ${appointmentLabel}. The 2-hour alert window has already passed or is due now.`,
+    };
+  }
+
+  if (diff <= APPOINTMENT_REMINDER_WINDOW_MS) {
+    return {
+      tone: "soon",
+      title: "Calendar setup required",
+      detail: `Dashboard saved. Add Calendar/alert file now; 2-hour alert is due ${displayWorkflowDate(twoHourAt.toISOString())}.`,
+    };
+  }
+
+  return {
+    tone: "ready",
+    title: "Calendar setup required",
+    detail: `Dashboard saved. Add Calendar/alert file for alerts at ${displayWorkflowDate(oneDayAt.toISOString())} and ${displayWorkflowDate(twoHourAt.toISOString())}.`,
+  };
 }
 
 function calendarDateStamp(date: Date) {
@@ -3953,6 +4000,41 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     window.setTimeout(() => setActionNotice(""), 3600);
   }
 
+  function enableAppointmentBrowserAlerts(job?: MappedJob | null) {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      showActionNotice("This browser does not support app alerts. Use Google Calendar or Download Alerts.");
+      return;
+    }
+
+    const sendTestAlert = () => {
+      const key = job ? jobKey(job) : "";
+      new window.Notification("HPD appointment alerts enabled", {
+        body: key ? `${key}: app alerts can show while this dashboard is open.` : "App alerts can show while this dashboard is open.",
+      });
+      showActionNotice("App alert test sent. Keep this dashboard open for browser alerts.");
+    };
+
+    if (window.Notification.permission === "granted") {
+      sendTestAlert();
+      return;
+    }
+
+    if (window.Notification.permission === "denied") {
+      showActionNotice("Browser alerts are blocked. Allow notifications for this site in Chrome settings.");
+      return;
+    }
+
+    window.Notification.requestPermission()
+      .then((permission) => {
+        if (permission === "granted") {
+          sendTestAlert();
+        } else {
+          showActionNotice("App alerts were not enabled. Use Google Calendar or Download Alerts.");
+        }
+      })
+      .catch(() => showActionNotice("Could not enable app alerts. Use Google Calendar or Download Alerts."));
+  }
+
   function applyWorkflowPatchToState(key: string, patch: Record<string, any>) {
     const applyPatch = (row: any) => (jobKey(row) === key ? { ...row, ...patch } : row);
     setServerWorkflowOverrides((current) => {
@@ -3977,6 +4059,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       alert("Choose an appointment date and time first.");
       return;
     }
+    const appointmentAt = new Date(iso);
+    const reminderInfo = appointmentReminderSetupInfo(job, appointmentDraft);
+    if (appointmentAt.getTime() <= Date.now()) {
+      alert("Choose a future appointment time. This appointment is already past, so reminders cannot fire.");
+      return;
+    }
 
     const updatedAt = new Date().toISOString();
     const patch = {
@@ -3996,7 +4084,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     applyWorkflowPatchToState(key, patch);
 
     workflowServerSave(key, patch)
-      .then(() => showActionNotice(`Appointment saved for ${key}: ${displayWorkflowDate(iso)}.`))
+      .then(() => showActionNotice(`Appointment saved for ${key}: ${displayWorkflowDate(iso)}. ${reminderInfo.title}.`))
       .catch((error) => {
         console.error(error);
         showActionNotice("Appointment saved on this device. Server sync needs retry.");
@@ -4048,15 +4136,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const visibleDate = savedDate || draftDate;
     const calendarHref = googleCalendarAppointmentHref(job, appointmentDraft);
     const calendarAlertHref = calendarAlertDownloadHref(job, appointmentDraft);
+    const reminderInfo = appointmentReminderSetupInfo(job, appointmentDraft);
     const showHero = Boolean(savedIso) || contact.appointmentNeeded;
 
     if (!showHero) return null;
 
     const title = savedIso ? info.label : "Appointment Needed";
     const detail = savedIso
-      ? info.detail
+      ? `${info.detail}. ${reminderInfo.title}.`
       : visibleDate
-        ? `Ready to save: ${displayWorkflowDate(visibleDate.toISOString())}`
+        ? `${displayWorkflowDate(visibleDate.toISOString())}. ${reminderInfo.title}.`
         : "Pick a date and time below.";
     const phoneLabel = contact.phone || "No phone listed";
     const aptLabel = contact.apartment || displayLocation(job) || "Not listed";
@@ -4095,6 +4184,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               if (!calendarHref) {
                 event.preventDefault();
                 alert("Choose an appointment date and time first.");
+              } else {
+                showActionNotice("Finish adding this event in Google Calendar to activate reminders.");
               }
             }}
           >
@@ -4108,11 +4199,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               if (!calendarAlertHref) {
                 event.preventDefault();
                 alert("Choose an appointment date and time first.");
+              } else {
+                showActionNotice("Import the downloaded .ics file into Calendar to activate alerts.");
               }
             }}
           >
-            Alerts
+            Download Alerts
           </a>
+          <button type="button" onClick={() => enableAppointmentBrowserAlerts(job)}>
+            App Alert
+          </button>
           {!savedIso ? (
             <button type="button" onClick={() => saveJobAppointment(job)} disabled={appointmentSaving}>
               {appointmentSaving ? "Saving" : "Save Time"}
@@ -4129,17 +4225,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const calendarHref = googleCalendarAppointmentHref(job, appointmentDraft);
     const calendarAlertHref = calendarAlertDownloadHref(job, appointmentDraft);
     const draftDate = appointmentDateFromLocalValue(appointmentDraft);
+    const reminderInfo = appointmentReminderSetupInfo(job, appointmentDraft);
 
     return (
-      <div className={`job-appointment-card appointment-${info.tone} ${mode === "mission" ? "mission-appointment" : ""}`} aria-label="Job appointment reminder">
+      <div className={`job-appointment-card appointment-${info.tone} reminder-${reminderInfo.tone} ${mode === "mission" ? "mission-appointment" : ""}`} aria-label="Job appointment reminder">
         <div className="job-appointment-head">
           <span>Schedule Appointment</span>
           <strong>{info.label}</strong>
         </div>
         <div className="job-appointment-banner">
           <span>{jobKey(job)}</span>
-          <strong>{savedIso ? "Tenant visit saved" : "Pick tenant access time"}</strong>
-          <small>Email alerts go to {APPOINTMENT_ALERT_EMAIL}: 1 day and 2 hours before.</small>
+          <strong>{reminderInfo.title}</strong>
+          <small>{reminderInfo.detail}</small>
         </div>
         <label className="job-appointment-input">
           <span>Date / time</span>
@@ -4151,10 +4248,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         </label>
         <small>
           {savedIso
-            ? `Saved reminder: ${info.detail} - email alerts to ${APPOINTMENT_ALERT_EMAIL} 1 day and 2 hours before`
+            ? `Saved in dashboard: ${info.detail}. Email reminders require Google Calendar or the downloaded .ics alert file; app alerts need browser permission.`
             : draftDate
-              ? `Ready to save: ${displayWorkflowDate(draftDate.toISOString())}`
-              : `Choose a date/time to save and create email alerts for ${APPOINTMENT_ALERT_EMAIL}.`}
+              ? `Ready to save: ${displayWorkflowDate(draftDate.toISOString())}. Then add it to Calendar or download alerts.`
+              : "Choose a future date/time first."}
         </small>
         <div className={`job-appointment-actions ${savedIso ? "has-clear" : ""}`}>
           <button type="button" onClick={() => saveJobAppointment(job)} disabled={appointmentSaving}>
@@ -4169,6 +4266,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               if (!calendarHref) {
                 event.preventDefault();
                 alert("Choose an appointment date and time first.");
+              } else {
+                showActionNotice("Finish adding this event in Google Calendar to activate reminders.");
               }
             }}
           >
@@ -4182,11 +4281,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               if (!calendarAlertHref) {
                 event.preventDefault();
                 alert("Choose an appointment date and time first.");
+              } else {
+                showActionNotice("Import the downloaded .ics file into Calendar to activate alerts.");
               }
             }}
           >
-            Email Alert
+            Download Alerts
           </a>
+          <button type="button" className="quiet" onClick={() => enableAppointmentBrowserAlerts(job)}>
+            App Alert
+          </button>
           {savedIso ? (
             <button type="button" className="quiet" onClick={() => clearJobAppointment(job)} disabled={appointmentSaving}>
               Clear
@@ -15494,6 +15598,21 @@ return (
               rgba(69, 10, 10, 0.24) !important;
           }
 
+          .job-appointment-card.reminder-missed,
+          .job-appointment-card.reminder-urgent {
+            border-color: rgba(248, 113, 113, 0.62) !important;
+            background:
+              radial-gradient(circle at top right, rgba(248, 113, 113, 0.24), transparent 45%),
+              rgba(69, 10, 10, 0.30) !important;
+          }
+
+          .job-appointment-card.reminder-soon {
+            border-color: rgba(251, 191, 36, 0.58) !important;
+            background:
+              radial-gradient(circle at top right, rgba(251, 191, 36, 0.22), transparent 45%),
+              rgba(69, 26, 3, 0.28) !important;
+          }
+
           .job-appointment-head {
             display: flex !important;
             align-items: center !important;
@@ -15528,6 +15647,21 @@ return (
               linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(34, 197, 94, 0.12)),
               rgba(248, 250, 252, 0.07) !important;
             border: 1px solid rgba(147, 197, 253, 0.20) !important;
+          }
+
+          .job-appointment-card.reminder-missed .job-appointment-banner,
+          .job-appointment-card.reminder-urgent .job-appointment-banner {
+            background:
+              linear-gradient(135deg, rgba(239, 68, 68, 0.20), rgba(251, 191, 36, 0.12)),
+              rgba(248, 250, 252, 0.07) !important;
+            border-color: rgba(248, 113, 113, 0.28) !important;
+          }
+
+          .job-appointment-card.reminder-soon .job-appointment-banner {
+            background:
+              linear-gradient(135deg, rgba(251, 191, 36, 0.20), rgba(14, 165, 233, 0.12)),
+              rgba(248, 250, 252, 0.07) !important;
+            border-color: rgba(251, 191, 36, 0.30) !important;
           }
 
           .job-appointment-banner span {
