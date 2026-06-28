@@ -2207,20 +2207,20 @@ function workflowViewBucket(job: JobRecord) {
 
   if (archived) return "archived";
 
-  const secondAttempt = workflowSecondAttemptInfo(job);
-  if (secondAttempt) return secondAttempt.ready ? "ready2" : "waiting72";
-
-  if (status === "NO_ACCESS_1_WAITING_72H") {
-    const info = workflowSecondAttemptInfo(job);
-    return info?.ready ? "ready2" : "waiting72";
-  }
-
   if (ARCHIVED_WORKFLOW_STATUSES.has(status)) {
     return "archived";
   }
 
   if (FINAL_REVIEW_WORKFLOW_STATUSES.has(status)) {
     return "final";
+  }
+
+  const secondAttempt = workflowSecondAttemptInfo(job);
+  if (secondAttempt) return secondAttempt.ready ? "ready2" : "waiting72";
+
+  if (status === "NO_ACCESS_1_WAITING_72H") {
+    const info = workflowSecondAttemptInfo(job);
+    return info?.ready ? "ready2" : "waiting72";
   }
 
   if (isPendingWorkflowJob(job)) {
@@ -4218,6 +4218,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       .filter((job) => {
         const key = jobKey(job);
         if (!key || seen.has(key)) return false;
+        if (workflowViewBucket(job) !== "ready2") return false;
         if (!workflowSecondAttemptInfo(job)?.ready) return false;
         seen.add(key);
         return true;
