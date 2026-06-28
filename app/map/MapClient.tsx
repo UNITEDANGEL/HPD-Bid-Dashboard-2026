@@ -2631,6 +2631,27 @@ function closeMapMenu() {
   setTimeout(() => mapRef.current?.invalidateSize(), 240);
 }
 
+function showCleanMapView() {
+  setClusterSheet(null);
+  setMapJobBrief(null);
+  setSelectedOnly(false);
+  setSelected(null);
+  setGeneratedLinks({});
+  setDescriptionOpen(false);
+  setDrawerOpen(false);
+  setFullMap(true);
+  setMapMenuOpen(false);
+
+  window.requestAnimationFrame(() => {
+    mapRef.current?.invalidateSize();
+    fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true);
+  });
+
+  window.setTimeout(() => {
+    mapRef.current?.invalidateSize();
+  }, 280);
+}
+
 function positionSelectedCardInDrawer() {
   if (jobDrawerRef.current) {
     jobDrawerRef.current.scrollTo({
@@ -17364,6 +17385,159 @@ return (
             font-weight: 900 !important;
           }
 
+          /* FIELD_MAP_COCKPIT_2026 */
+          .map-node::after {
+            content: "" !important;
+            position: absolute !important;
+            inset: 0 !important;
+            pointer-events: none !important;
+            z-index: 2 !important;
+            background:
+              linear-gradient(180deg, rgba(6, 16, 31, 0.16), transparent 22%, transparent 72%, rgba(6, 16, 31, 0.18)),
+              radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.12), transparent 26%) !important;
+          }
+
+          .map-node .leaflet-tile {
+            filter: saturate(1.14) contrast(1.08) brightness(0.96) !important;
+          }
+
+          .map-cockpit {
+            position: absolute !important;
+            z-index: 12 !important;
+            left: calc(env(safe-area-inset-left) + 10px) !important;
+            top: calc(env(safe-area-inset-top) + 60px) !important;
+            width: min(348px, calc(100vw - 20px)) !important;
+            display: grid !important;
+            gap: 8px !important;
+            padding: 10px !important;
+            border-radius: 18px !important;
+            background: rgba(10, 19, 31, 0.84) !important;
+            border: 1px solid rgba(226, 232, 240, 0.20) !important;
+            box-shadow: 0 18px 48px rgba(3, 8, 14, 0.30) !important;
+            backdrop-filter: blur(16px) saturate(1.08) !important;
+            color: #f8fafc !important;
+            transition: opacity 180ms ease, transform 180ms ease !important;
+          }
+
+          .map-cockpit.panel-open,
+          .map-shell.drawer-selected .map-cockpit {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            transform: translateY(-8px) !important;
+          }
+
+          .map-cockpit-summary {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 2px 10px !important;
+            align-items: end !important;
+          }
+
+          .map-cockpit-summary span {
+            grid-column: 1 / -1 !important;
+            color: #93c5fd !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-cockpit-summary strong {
+            color: #ffffff !important;
+            font-size: 21px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-cockpit-summary small {
+            color: #c6d7e8 !important;
+            font-size: 11px !important;
+            font-weight: 850 !important;
+            text-align: right !important;
+          }
+
+          .map-cockpit-actions {
+            display: grid !important;
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+
+          .map-cockpit-actions button {
+            min-height: 38px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(226, 232, 240, 0.16) !important;
+            background: rgba(248, 250, 252, 0.09) !important;
+            color: #eff6ff !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            box-shadow: none !important;
+            padding: 0 5px !important;
+          }
+
+          .map-cockpit-actions button.active,
+          .map-cockpit-actions button.primary {
+            background: linear-gradient(135deg, #bbf7d0, #bae6fd) !important;
+            color: #082033 !important;
+            border-color: rgba(255, 255, 255, 0.42) !important;
+          }
+
+          .map-cockpit-actions button:disabled {
+            opacity: 0.46 !important;
+            filter: grayscale(0.4) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker {
+            border-width: 2px !important;
+            border-radius: 15px !important;
+            background: rgba(255, 255, 255, 0.96) !important;
+            color: #0f172a !important;
+            box-shadow:
+              0 0 0 3px rgba(255, 255, 255, 0.70),
+              0 16px 32px rgba(15, 23, 42, 0.26) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .signal-eyebrow {
+            color: #2563eb !important;
+            font-size: 9px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .signal-main {
+            color: #0f172a !important;
+            font-size: 18px !important;
+            line-height: 0.98 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview {
+            border-radius: 999px !important;
+            min-width: 54px !important;
+            min-height: 48px !important;
+            padding: 6px 8px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-main {
+            font-size: 15px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-appointment-badge,
+          .maturity-map-marker .map-signal-marker .marker-no-access-timer {
+            border-radius: 999px !important;
+            font-size: 9px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker {
+            border-radius: 18px !important;
+            box-shadow:
+              0 0 0 3px rgba(255, 255, 255, 0.72),
+              0 18px 36px rgba(15, 23, 42, 0.30) !important;
+          }
+
           @media (max-width: 520px) {
             .map-top {
               left: 6px !important;
@@ -17417,6 +17591,28 @@ return (
 
             .quick-status-save-row {
               grid-template-columns: minmax(0, 1fr) auto !important;
+            }
+
+            .map-cockpit {
+              top: calc(env(safe-area-inset-top) + 58px) !important;
+              left: 8px !important;
+              width: calc(100vw - 16px) !important;
+              padding: 9px !important;
+              gap: 7px !important;
+            }
+
+            .map-cockpit-summary strong {
+              font-size: 19px !important;
+            }
+
+            .map-cockpit-actions {
+              gap: 5px !important;
+            }
+
+            .map-cockpit-actions button {
+              min-height: 36px !important;
+              border-radius: 11px !important;
+              font-size: 10px !important;
             }
           }
         `}
@@ -17614,13 +17810,8 @@ return (
           <button className={mapShowAllDays ? "active" : ""} type="button" onClick={() => setMapShowAllDays(true)}>
             All {mapDateCounts.all}
           </button>
-          <button className="full-btn" type="button" onClick={() => {
-            setFullMap((v) => !v);
-            setDrawerOpen(false);
-            setTimeout(() => mapRef.current?.invalidateSize(), 100);
-            setTimeout(() => mapRef.current?.invalidateSize(), 400);
-          }}>
-            {fullMap ? "Focus On" : "Focus Off"}
+          <button className="full-btn" type="button" onClick={showCleanMapView}>
+            Full Map
           </button>
         </div>
 
@@ -17674,6 +17865,45 @@ return (
 
       <section className="map-stage">
         <div ref={mapNode} className="map-node" />
+
+        <section className={`map-cockpit ${mapMenuOpen ? "panel-open" : ""}`} aria-label="Map controls">
+          <div className="map-cockpit-summary">
+            <span>{dashboardView.label}</span>
+            <strong>{filteredJobs.length} visible</strong>
+            <small>{visibleMappedCount} mapped · {activeMapBaseStyle.label}</small>
+          </div>
+          <div className="map-cockpit-actions" aria-label="Quick map actions">
+            <button
+              type="button"
+              className={activeMapBaseStyle.id === "osm-color" ? "active" : ""}
+              onClick={() => updateMapBaseStyle("osm-color")}
+            >
+              Street
+            </button>
+            <button
+              type="button"
+              className={activeMapBaseStyle.id === "carto-voyager" ? "active" : ""}
+              onClick={() => updateMapBaseStyle("carto-voyager")}
+            >
+              Soft
+            </button>
+            <button
+              type="button"
+              className={mapBaseStyle === "maptiler-satellite" && mapTilerKeyReady ? "active" : ""}
+              disabled={!mapTilerKeyReady}
+              title={mapTilerKeyReady ? "Satellite map" : "Add MapTiler key to enable satellite"}
+              onClick={() => updateMapBaseStyle("maptiler-satellite")}
+            >
+              Sat
+            </button>
+            <button type="button" onClick={() => fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true)}>
+              Fit
+            </button>
+            <button type="button" className="primary" onClick={showCleanMapView}>
+              Full
+            </button>
+          </div>
+        </section>
 
         <div className="map-stats">
           <div className="map-stat">
@@ -17789,24 +18019,9 @@ return (
           ) : selectedOnly ? (
             <button
               type="button"
-              onClick={() => {
-                setClusterSheet(null);
-                setSelectedOnly(false);
-                setSelected(null);
-                setGeneratedLinks({});
-                setDescriptionOpen(false);
-                setDrawerOpen(false);
-                setFullMap(true);
-                window.requestAnimationFrame(() => {
-                  document.querySelector(".map-stage")?.classList.add("map-focus-boost");
-                  setTimeout(() => {
-                    document.querySelector(".map-stage")?.classList.remove("map-focus-boost");
-                    mapRef.current?.invalidateSize();
-                  }, 320);
-                });
-              }}
+              onClick={showCleanMapView}
             >
-              Back to List
+              Map View
             </button>
           ) : null}
         </div>
