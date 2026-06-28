@@ -2728,14 +2728,24 @@ function handleMapTouchEnd(event: any) {
     const omo = String(params.get("omo") || params.get("job") || params.get("q") || "")
       .trim()
       .replace(/^omo\s*[:#-]?\s*/i, "");
-    if (view === "archived" || view === "active" || view === "appointments" || view === "waiting72" || view === "ready2" || view === "final" || view === "all") {
-      setWorkflowViewFilter(view);
+    const requestedWorkflowView: WorkflowViewFilter | "" =
+      view === "archived" ||
+      view === "active" ||
+      view === "appointments" ||
+      view === "waiting72" ||
+      view === "ready2" ||
+      view === "final" ||
+      view === "all"
+        ? view
+        : "";
+    if (requestedWorkflowView) {
+      setWorkflowViewFilter(requestedWorkflowView);
     }
     if (omo) {
       setSearch(omo.toUpperCase());
       setUrlOmoRequest(omo);
       setMapShowAllDays(true);
-      setWorkflowViewFilter("all");
+      setWorkflowViewFilter(requestedWorkflowView || "all");
       setDrawerOpen(true);
       setActionNotice(`Searching OMO ${omo.toUpperCase()}.`);
     }
@@ -3995,6 +4005,90 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         showActionNotice("Appointment cleared here. Server sync needs retry.");
       })
       .finally(() => setAppointmentSaving(false));
+  }
+
+  function renderAppointmentHero(job: MappedJob) {
+    const contact = tenantContactInfo(job);
+    const info = appointmentStatusInfo(job);
+    const savedIso = appointmentIso(job);
+    const savedDate = appointmentDate(job);
+    const draftDate = appointmentDateFromLocalValue(appointmentDraft);
+    const visibleDate = savedDate || draftDate;
+    const calendarHref = googleCalendarAppointmentHref(job, appointmentDraft);
+    const calendarAlertHref = calendarAlertDownloadHref(job, appointmentDraft);
+    const showHero = Boolean(savedIso) || contact.appointmentNeeded;
+
+    if (!showHero) return null;
+
+    const title = savedIso ? info.label : "Appointment Needed";
+    const detail = savedIso
+      ? info.detail
+      : visibleDate
+        ? `Ready to save: ${displayWorkflowDate(visibleDate.toISOString())}`
+        : "Pick a date and time below.";
+    const phoneLabel = contact.phone || "No phone listed";
+    const aptLabel = contact.apartment || displayLocation(job) || "Not listed";
+
+    return (
+      <section className={`appointment-hero appointment-${info.tone} ${savedIso ? "has-appointment" : "needs-appointment"}`} aria-label="Appointment mission">
+        <div className="appointment-hero-main">
+          <span>Appointment Mission</span>
+          <strong>{title}</strong>
+          <small>{detail}</small>
+        </div>
+        <div className="appointment-hero-contact">
+          <div>
+            <span>Tenant</span>
+            <strong>{contact.name || "Not listed"}</strong>
+          </div>
+          <div>
+            <span>Phone</span>
+            <strong>{phoneLabel}</strong>
+          </div>
+          <div>
+            <span>Apt</span>
+            <strong>{aptLabel}</strong>
+          </div>
+        </div>
+        <div className="appointment-hero-actions">
+          {contact.actionHref ? <a href={contact.actionHref}>Call</a> : null}
+          {contact.smsHref ? <a href={contact.smsHref}>Text</a> : null}
+          {contact.emailHref && !contact.phone ? <a href={contact.emailHref}>Request Info</a> : null}
+          <a
+            href={calendarHref || undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={calendarHref ? "" : "disabled"}
+            onClick={(event) => {
+              if (!calendarHref) {
+                event.preventDefault();
+                alert("Choose an appointment date and time first.");
+              }
+            }}
+          >
+            Calendar
+          </a>
+          <a
+            href={calendarAlertHref || undefined}
+            download={appointmentCalendarFileName(job)}
+            className={calendarAlertHref ? "alert-link" : "disabled"}
+            onClick={(event) => {
+              if (!calendarAlertHref) {
+                event.preventDefault();
+                alert("Choose an appointment date and time first.");
+              }
+            }}
+          >
+            Alerts
+          </a>
+          {!savedIso ? (
+            <button type="button" onClick={() => saveJobAppointment(job)} disabled={appointmentSaving}>
+              {appointmentSaving ? "Saving" : "Save Time"}
+            </button>
+          ) : null}
+        </div>
+      </section>
+    );
   }
 
   function renderJobAppointmentCard(job: MappedJob, mode: "mission" | "selected" = "selected") {
@@ -15142,6 +15236,133 @@ return (
             text-decoration: none !important;
           }
 
+          .appointment-hero {
+            display: grid !important;
+            gap: 11px !important;
+            margin: 4px 0 12px !important;
+            padding: 14px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(251, 191, 36, 0.45) !important;
+            background:
+              linear-gradient(135deg, rgba(69, 26, 3, 0.92), rgba(15, 23, 42, 0.94)),
+              radial-gradient(circle at top right, rgba(251, 191, 36, 0.28), transparent 46%) !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.08),
+              0 18px 36px rgba(15, 23, 42, 0.20) !important;
+          }
+
+          .appointment-hero.needs-appointment {
+            border-color: rgba(96, 165, 250, 0.42) !important;
+            background:
+              linear-gradient(135deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.92)),
+              radial-gradient(circle at top right, rgba(96, 165, 250, 0.22), transparent 46%) !important;
+          }
+
+          .appointment-hero-main {
+            display: grid !important;
+            gap: 5px !important;
+          }
+
+          .appointment-hero-main span,
+          .appointment-hero-contact span {
+            color: #fde68a !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .appointment-hero.needs-appointment .appointment-hero-main span,
+          .appointment-hero.needs-appointment .appointment-hero-contact span {
+            color: #bfdbfe !important;
+          }
+
+          .appointment-hero-main strong {
+            color: #ffffff !important;
+            font-size: clamp(28px, 7vw, 42px) !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .appointment-hero-main small {
+            color: #fef3c7 !important;
+            font-size: 14px !important;
+            line-height: 1.25 !important;
+            font-weight: 850 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .appointment-hero-contact {
+            display: grid !important;
+            grid-template-columns: 1.2fr 1fr 0.7fr !important;
+            gap: 8px !important;
+          }
+
+          .appointment-hero-contact div {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 4px !important;
+            padding: 9px !important;
+            border-radius: 12px !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .appointment-hero-contact strong {
+            color: #f8fafc !important;
+            font-size: 14px !important;
+            line-height: 1.12 !important;
+            font-weight: 950 !important;
+            letter-spacing: 0 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .appointment-hero-actions {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .appointment-hero-actions a,
+          .appointment-hero-actions button {
+            min-height: 40px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 10px !important;
+            border-radius: 999px !important;
+            border: 1px solid rgba(251, 191, 36, 0.36) !important;
+            background: rgba(251, 191, 36, 0.16) !important;
+            color: #fef3c7 !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-decoration: none !important;
+            cursor: pointer !important;
+          }
+
+          .appointment-hero-actions a:first-child,
+          .appointment-hero-actions button {
+            border-color: rgba(34, 197, 94, 0.38) !important;
+            background: rgba(34, 197, 94, 0.18) !important;
+            color: #dcfce7 !important;
+          }
+
+          .appointment-hero-actions .alert-link {
+            border-color: rgba(96, 165, 250, 0.36) !important;
+            background: rgba(37, 99, 235, 0.18) !important;
+            color: #dbeafe !important;
+          }
+
+          .appointment-hero-actions .disabled,
+          .appointment-hero-actions button:disabled {
+            opacity: 0.56 !important;
+            cursor: not-allowed !important;
+          }
+
           .job-appointment-card {
             display: grid !important;
             gap: 9px !important;
@@ -15273,6 +15494,19 @@ return (
           }
 
           @media (max-width: 520px) {
+            .appointment-hero {
+              padding: 12px !important;
+              border-radius: 14px !important;
+            }
+
+            .appointment-hero-contact {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .appointment-hero-actions {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
             .tenant-contact-grid {
               grid-template-columns: minmax(0, 1fr) !important;
             }
@@ -17162,6 +17396,8 @@ return (
                 <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{jobCounterLabel(selected)}</span>
               </div>
             </div>
+
+            {renderAppointmentHero(selected)}
 
             <div className="selected-hero-actions">
               {(() => {
