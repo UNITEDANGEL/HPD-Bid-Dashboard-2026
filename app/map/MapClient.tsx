@@ -17198,18 +17198,22 @@ return (
           }
 
           .quick-status-console {
-            order: 4 !important;
+            order: -1 !important;
             display: grid !important;
-            gap: 10px !important;
+            gap: 8px !important;
             margin-top: 0 !important;
-            padding: 12px !important;
-            border-radius: 20px !important;
+            padding: 10px !important;
+            border-radius: 18px !important;
             background:
               linear-gradient(145deg, rgba(18, 30, 46, 0.96), rgba(20, 47, 58, 0.94)),
               #121f2f !important;
             border: 1px solid rgba(125, 211, 252, 0.22) !important;
             color: #f8fafc !important;
             box-shadow: 0 18px 38px rgba(3, 8, 14, 0.28) !important;
+          }
+
+          .job-drawer.selected-focus .appointment-hero {
+            order: -2 !important;
           }
 
           .quick-status-console .selected-section-head {
@@ -17245,7 +17249,7 @@ return (
           .quick-status-date {
             min-width: 0 !important;
             display: grid !important;
-            gap: 5px !important;
+            gap: 4px !important;
             color: #c7d7e8 !important;
             font-size: 10px !important;
             font-weight: 950 !important;
@@ -17256,14 +17260,14 @@ return (
           .quick-status-select select,
           .quick-status-date input {
             width: 100% !important;
-            min-height: 44px !important;
+            min-height: 40px !important;
             min-width: 0 !important;
             border-radius: 14px !important;
             border: 1px solid rgba(180, 205, 230, 0.22) !important;
             background: rgba(248, 250, 252, 0.10) !important;
             color: #ffffff !important;
             padding: 0 10px !important;
-            font-size: 13px !important;
+            font-size: 12px !important;
             font-weight: 900 !important;
             outline: 0 !important;
           }
@@ -17279,14 +17283,14 @@ return (
           }
 
           .quick-status-console .quick-status-button {
-            min-height: 48px !important;
-            border-radius: 15px !important;
-            padding: 7px !important;
+            min-height: 42px !important;
+            border-radius: 13px !important;
+            padding: 6px !important;
             border: 1px solid rgba(180, 205, 230, 0.20) !important;
             background: rgba(248, 250, 252, 0.09) !important;
             color: #eff6ff !important;
             box-shadow: none !important;
-            font-size: 11px !important;
+            font-size: 10px !important;
             font-weight: 950 !important;
             line-height: 1.08 !important;
             white-space: normal !important;
@@ -17321,9 +17325,9 @@ return (
 
           .quick-status-console .save-status-btn,
           .quick-status-clear {
-            min-height: 48px !important;
-            border-radius: 15px !important;
-            font-size: 13px !important;
+            min-height: 44px !important;
+            border-radius: 14px !important;
+            font-size: 12px !important;
             font-weight: 1000 !important;
           }
 
@@ -17404,19 +17408,15 @@ return (
             }
 
             .quick-status-controls {
-              grid-template-columns: minmax(0, 1fr) !important;
+              grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
             }
 
             .quick-status-console .selected-status-grid {
-              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
             }
 
             .quick-status-save-row {
-              grid-template-columns: minmax(0, 1fr) !important;
-            }
-
-            .quick-status-clear {
-              min-height: 42px !important;
+              grid-template-columns: minmax(0, 1fr) auto !important;
             }
           }
         `}
