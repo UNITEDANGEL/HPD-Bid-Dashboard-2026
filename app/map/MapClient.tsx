@@ -1584,37 +1584,10 @@ function jobCounterInfo(job: JobRecord) {
   const second = workflowSecondAttemptInfo(job);
 
   if (second) {
-    const availableAt = (job as any).SecondAttemptAvailableAt || (job as any).secondAttemptAvailableAt;
-    const hoursLeft = hoursBetweenNow(availableAt);
-
-    if (hoursLeft !== null) {
-      if (hoursLeft > 0) {
-        const label = `T-${hoursLeft}H TO 2ND`;
-        return {
-          mode: "noAccess72",
-          label,
-          detail: label,
-          ready: false,
-        };
-      }
-
-      const overdueHours = Math.abs(hoursLeft);
-      const label = overdueHours <= 72
-        ? `REVISIT -${overdueHours}H`
-        : `REVISIT -${Math.ceil(overdueHours / 24)}D`;
-
-      return {
-        mode: "noAccess72",
-        label,
-        detail: label,
-        ready: true,
-      };
-    }
-
     return {
       mode: "noAccess72",
-      label: "REVISIT ?",
-      detail: "REVISIT ?",
+      label: second.ready ? "READY 2ND" : second.label,
+      detail: second.ready ? "READY 2ND" : second.label,
       ready: second.ready,
     };
   }
@@ -7279,7 +7252,7 @@ function secondAttemptInfo(job: JobRecord) {
     available,
     ready: msLeft <= 0,
     hoursLeft,
-    label: msLeft <= 0 ? "REVISIT NOW" : `T-${hoursLeft}H TO 2ND`,
+    label: msLeft <= 0 ? "REVISIT NOW" : noAccessRemainingLabel(hoursLeft),
   };
 }
 function workflowViewBucket(job: JobRecord) {
