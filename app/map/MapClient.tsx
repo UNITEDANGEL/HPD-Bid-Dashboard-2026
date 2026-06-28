@@ -3141,6 +3141,22 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         };
   }
 
+  function nudgeSingleMarkerIntoTapZone(latLng: [number, number], delay = 220) {
+    if (typeof window === "undefined" || window.innerWidth > 720) return;
+
+    window.setTimeout(() => {
+      const map = mapRef.current;
+      if (!map) return;
+
+      const point = map.latLngToContainerPoint(latLng);
+      const targetY = Math.min(window.innerHeight - 132, 356);
+      const deltaY = point.y - targetY;
+      if (Number.isFinite(deltaY) && Math.abs(deltaY) > 8) {
+        map.panBy([0, deltaY], { animate: true, duration: 0.35 });
+      }
+    }, delay);
+  }
+
   function fitVisibleJobsOnMap(maxZoom = 13, includeUserLocation = false) {
     const map = mapRef.current;
     if (!map) return;
@@ -3154,6 +3170,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     if (bounds.length) {
+      if (bounds.length === 1 && typeof window !== "undefined" && window.innerWidth <= 720) {
+        map.setView(bounds[0], maxZoom, { animate: true, duration: 0.75 });
+        nudgeSingleMarkerIntoTapZone(bounds[0]);
+        return;
+      }
       map.fitBounds(bounds, mapFitOptions(maxZoom));
       return;
     }
@@ -3778,6 +3799,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       if (bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
         markerAutoFitKeyRef.current = markerAutoFitKey;
+        if (bounds.length === 1 && typeof window !== "undefined" && window.innerWidth <= 720) {
+          map.setView(bounds[0], 15, { animate: true, duration: 0.5 });
+          nudgeSingleMarkerIntoTapZone(bounds[0], 260);
+          setTimeout(() => map.invalidateSize(), 250);
+          return;
+        }
         map.fitBounds(bounds, mapFitOptions(15, 0.5));
       } else if (!bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
         markerAutoFitKeyRef.current = markerAutoFitKey;
