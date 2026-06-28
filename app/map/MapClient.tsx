@@ -3649,7 +3649,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           : markerExpanded
             ? [158, noAccessTimerLabel || appointmentLabel ? 124 : 98]
             : markerOverview
-              ? [hasOverdue || appointmentLabel ? 66 : 52, appointmentLabel ? 58 : 48]
+              ? [hasOverdue || appointmentLabel ? 112 : 74, appointmentLabel ? 86 : 60]
               : [hasOverdue ? 104 : 92, noAccessTimerLabel || appointmentLabel ? 82 : 62];
         const iconSize: [number, number] = [
           baseIconSize[0] + (hasOverdue && !markerOverview ? 8 : 0),
@@ -17513,14 +17513,17 @@ return (
           }
 
           .maturity-map-marker .map-signal-marker.marker-overview {
-            border-radius: 999px !important;
-            min-width: 54px !important;
-            min-height: 48px !important;
-            padding: 6px 8px !important;
+            border-radius: 16px !important;
+            min-width: 92px !important;
+            min-height: 68px !important;
+            padding: 8px 10px !important;
           }
 
           .maturity-map-marker .map-signal-marker.marker-overview .signal-main {
-            font-size: 15px !important;
+            font-size: 22px !important;
+            white-space: nowrap !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
           }
 
           .maturity-map-marker .map-signal-marker .marker-appointment-badge,
