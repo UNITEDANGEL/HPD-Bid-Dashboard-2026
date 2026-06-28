@@ -2315,6 +2315,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const geolocationWatchRef = useRef<number | null>(null);
   const locationAutoStartedRef = useRef(false);
   const locationOverviewFitRef = useRef(false);
+  const actionNoticeTimerRef = useRef<number | null>(null);
   const markerOverviewTimerRef = useRef<number | null>(null);
   const markerOverviewKeyRef = useRef("");
   const markerAutoFitKeyRef = useRef("");
@@ -2394,6 +2395,7 @@ const [fieldFocusPane, setFieldFocusPane] = useState<"capture" | "evidence" | "p
 const [fieldMediaFlashKind, setFieldMediaFlashKind] = useState<FieldMediaKind | "">("");
 const [userLocation, setUserLocation] = useState<UserLocationState | null>(null);
 const [locationStatus, setLocationStatus] = useState("Location off");
+const [locationHelpOpen, setLocationHelpOpen] = useState(false);
 const [followMyLocation, setFollowMyLocation] = useState(false);
   const [search, setSearch] = useState("");
   const [urlOmoRequest, setUrlOmoRequest] = useState("");
@@ -3516,6 +3518,25 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return true;
   }
 
+  function locationBlockedByBrowser() {
+    const status = locationStatus.toLowerCase();
+    return status.includes("blocked") || status.includes("denied");
+  }
+
+  function showLocationBlockedHelp() {
+    setFollowMyLocation(false);
+    setLocationStatus("Location blocked in Chrome");
+    setLocationHelpOpen(true);
+    fitVisibleJobsOnMap(MAP_LAYER_OVERVIEW_ZOOM, false);
+    showActionNotice("Location blocked. Allow Location for this site, then tap Retry GPS.");
+  }
+
+  function fitLayerWhileLocationBlocked() {
+    setLocationHelpOpen(false);
+    fitVisibleJobsOnMap(MAP_LAYER_OVERVIEW_ZOOM, false);
+    showActionNotice("Fitted the current layer. GPS still needs Chrome Location allowed.");
+  }
+
   function showMyLocationOverview() {
     clearMarkerOverviewReturn();
     setMapJobBrief(null);
@@ -3528,7 +3549,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setFullMap(true);
     mapRef.current?.closePopup?.();
 
+    if (!userLocation && locationBlockedByBrowser()) {
+      showLocationBlockedHelp();
+      return;
+    }
+
     if (centerMapOnUserLocation()) {
+      setLocationHelpOpen(false);
       const nearbyCount = userLocation ? nearbyJobBoundsForLocation(userLocation).length : 0;
       showActionNotice(
         nearbyCount
@@ -3536,6 +3563,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           : "Centered on your location with a wider map view."
       );
     } else {
+      setLocationHelpOpen(false);
       startLocationTracking();
       showActionNotice("Starting location. The map will center on you with a wider view.");
     }
@@ -4102,8 +4130,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         .query({ name: "geolocation" })
         .then((permission: PermissionStatus) => {
           if (permission.state === "denied") {
-            setLocationStatus("Location blocked in Chrome");
-            showActionNotice("Turn on Chrome location permission for this site to see yourself on the map.");
+            showLocationBlockedHelp();
             return;
           }
           startLocationTracking();
@@ -4301,7 +4328,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 }
   function showActionNotice(text: string) {
     setActionNotice(text);
-    window.setTimeout(() => setActionNotice(""), 5600);
+    if (actionNoticeTimerRef.current !== null) {
+      window.clearTimeout(actionNoticeTimerRef.current);
+    }
+    actionNoticeTimerRef.current = window.setTimeout(() => {
+      setActionNotice("");
+      actionNoticeTimerRef.current = null;
+    }, 5600);
   }
 
   function enableAppointmentBrowserAlerts(job?: MappedJob | null) {
@@ -6604,6 +6637,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     };
 
     const onPosition = (position: GeolocationPosition) => {
+      setLocationHelpOpen(false);
       setUserLocation({
         lat: position.coords.latitude,
         lng: position.coords.longitude,
@@ -6616,25 +6650,46 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     const onError = (error: GeolocationPositionError) => {
       console.error(error);
       if (error.code === error.PERMISSION_DENIED) {
-        setLocationStatus("Location blocked in Chrome");
-        showActionNotice("Chrome blocked location. Open site settings for this page and set Location to Allow.");
+        showLocationBlockedHelp();
         return;
       }
       if (error.code === error.TIMEOUT) {
         setLocationStatus("Location searching...");
+        setLocationHelpOpen(true);
         showActionNotice("Still looking for GPS. Keep Chrome open and make sure phone location is on.");
         return;
       }
       setLocationStatus("Location unavailable");
+      setLocationHelpOpen(true);
       showActionNotice("Phone location is unavailable right now. Check Chrome and device location settings.");
     };
 
-    setFollowMyLocation(true);
-    setLocationStatus("Live location starting...");
-    navigator.geolocation.getCurrentPosition(onPosition, onError, options);
-    if (geolocationWatchRef.current === null) {
-      geolocationWatchRef.current = navigator.geolocation.watchPosition(onPosition, onError, options);
+    const requestPosition = () => {
+      setLocationHelpOpen(false);
+      setFollowMyLocation(true);
+      setLocationStatus("Live location starting...");
+      navigator.geolocation.getCurrentPosition(onPosition, onError, options);
+      if (geolocationWatchRef.current === null) {
+        geolocationWatchRef.current = navigator.geolocation.watchPosition(onPosition, onError, options);
+      }
+    };
+
+    const permissions = (navigator as any).permissions;
+    if (permissions?.query) {
+      permissions
+        .query({ name: "geolocation" })
+        .then((permission: PermissionStatus) => {
+          if (permission.state === "denied") {
+            showLocationBlockedHelp();
+            return;
+          }
+          requestPosition();
+        })
+        .catch(requestPosition);
+      return;
     }
+
+    requestPosition();
   }
 
   function sendJobToArchive(job: MappedJob) {
@@ -7518,6 +7573,8 @@ function directionsUrl(job: JobRecord) {
   const mapReturnView = mapReturnCopy[workflowViewFilter];
   const dashboardSubtitle = search.trim() ? `Search: ${search.trim()}` : dashboardView.detail;
   const dashboardDataStatus = health.totalIssues ? `${health.totalIssues} data checks` : "Data clean";
+  const locationBlocked = locationBlockedByBrowser();
+  const showLocationHelpCard = locationHelpOpen || (locationBlocked && !userLocation);
   const mapBoardModes: Array<{ view: WorkflowViewFilter; label: string; count: number }> = [
     { view: "active", label: "Active", count: workflowDashboardCounts.active },
     { view: "pending", label: "Pending", count: workflowDashboardCounts.pending },
@@ -17088,7 +17145,8 @@ return (
           .map-shell.drawer-selected .map-stats,
           .map-shell.drawer-selected .status-legend,
           .map-shell.drawer-selected .zoom-panel,
-          .map-shell.drawer-selected .location-status-pill {
+          .map-shell.drawer-selected .location-status-pill,
+          .map-shell.drawer-selected .location-help-card {
             opacity: 0 !important;
             visibility: hidden !important;
             pointer-events: none !important;
@@ -17098,6 +17156,7 @@ return (
           .map-shell.map-brief-open .status-legend,
           .map-shell.map-brief-open .zoom-panel,
           .map-shell.map-brief-open .location-status-pill,
+          .map-shell.map-brief-open .location-help-card,
           .map-shell.map-brief-open .action-notice {
             opacity: 0 !important;
             visibility: hidden !important;
@@ -18893,12 +18952,146 @@ return (
           }
 
           .location-status-pill {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            min-height: 38px !important;
+            max-width: min(360px, calc(100vw - 24px)) !important;
+            padding: 0 12px !important;
+            cursor: pointer !important;
+            font-family: inherit !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+            text-align: left !important;
             border-radius: 999px !important;
             background: rgba(8, 13, 20, 0.82) !important;
             color: #eef6ff !important;
             border: 1px solid rgba(226, 232, 240, 0.16) !important;
             box-shadow: 0 16px 42px rgba(3, 8, 14, 0.30) !important;
             backdrop-filter: blur(16px) saturate(1.04) !important;
+          }
+
+          .location-status-pill span {
+            min-width: 0 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+
+          .location-status-pill b {
+            color: #431407 !important;
+            background: #fed7aa !important;
+            border-radius: 999px !important;
+            padding: 4px 8px !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+          }
+
+          .location-status-pill.blocked {
+            color: #fff7ed !important;
+            background: linear-gradient(135deg, rgba(127, 29, 29, 0.92), rgba(154, 52, 18, 0.88)) !important;
+            border-color: rgba(251, 146, 60, 0.58) !important;
+            box-shadow:
+              0 0 0 3px rgba(251, 146, 60, 0.16),
+              0 18px 42px rgba(127, 29, 29, 0.36) !important;
+          }
+
+          .location-help-card {
+            position: absolute !important;
+            z-index: 18 !important;
+            left: 12px !important;
+            bottom: 96px !important;
+            width: min(390px, calc(100vw - 24px)) !important;
+            display: grid !important;
+            gap: 10px !important;
+            padding: 13px !important;
+            color: #fff7ed !important;
+            border-radius: 20px !important;
+            border: 1px solid rgba(251, 146, 60, 0.42) !important;
+            background:
+              radial-gradient(circle at top left, rgba(251, 146, 60, 0.26), transparent 42%),
+              linear-gradient(145deg, rgba(69, 26, 3, 0.95), rgba(15, 23, 42, 0.92)) !important;
+            box-shadow:
+              0 0 0 3px rgba(251, 146, 60, 0.12),
+              0 20px 56px rgba(3, 8, 14, 0.52) !important;
+            backdrop-filter: blur(18px) saturate(1.05) !important;
+          }
+
+          .location-help-card span {
+            color: #fdba74 !important;
+            text-transform: uppercase !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .location-help-card strong {
+            color: #ffffff !important;
+            display: block !important;
+            margin-top: 2px !important;
+            font-size: 18px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+          }
+
+          .location-help-card small {
+            color: #ffedd5 !important;
+            display: block !important;
+            margin-top: 5px !important;
+            font-size: 12px !important;
+            line-height: 1.32 !important;
+            font-weight: 800 !important;
+          }
+
+          .location-help-actions {
+            display: grid !important;
+            grid-template-columns: 1.1fr 1fr 0.7fr !important;
+            gap: 8px !important;
+          }
+
+          .location-help-actions button {
+            min-height: 42px !important;
+            border: 1px solid rgba(255, 255, 255, 0.20) !important;
+            border-radius: 14px !important;
+            color: #431407 !important;
+            background: linear-gradient(135deg, #fed7aa, #fef3c7) !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+            font-family: inherit !important;
+          }
+
+          .location-help-actions button:nth-child(2) {
+            color: #082f49 !important;
+            background: linear-gradient(135deg, #bae6fd, #bbf7d0) !important;
+          }
+
+          .location-help-actions button:nth-child(3) {
+            color: #ffedd5 !important;
+            background: rgba(255, 255, 255, 0.10) !important;
+          }
+
+          @media (width <= 700px) {
+            .location-help-card {
+              left: 8px !important;
+              right: 8px !important;
+              bottom: 102px !important;
+              width: auto !important;
+              padding: 12px !important;
+              border-radius: 18px !important;
+            }
+
+            .location-help-card strong {
+              font-size: 17px !important;
+            }
+
+            .location-help-actions {
+              grid-template-columns: 1fr 1fr !important;
+            }
+
+            .location-help-actions button:nth-child(3) {
+              grid-column: 1 / -1 !important;
+              min-height: 36px !important;
+            }
           }
 
           .maturity-map-marker .map-signal-marker {
@@ -21021,8 +21214,8 @@ return (
             >
               Layers
             </button>
-            <button type="button" onClick={() => fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true)}>
-              Fit Job
+            <button type="button" onClick={() => fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : MAP_LAYER_OVERVIEW_ZOOM, Boolean(userLocation))}>
+              Fit Layer
             </button>
           </div>
         </section>
@@ -21054,7 +21247,7 @@ return (
           <button type="button" onClick={() => mapRef.current?.zoomIn()}>+</button>
           <button type="button" onClick={() => mapRef.current?.zoomOut()}>−</button>
           <button type="button" onClick={() => {
-            fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true);
+            fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : MAP_LAYER_OVERVIEW_ZOOM, Boolean(userLocation));
           }}>Fit</button>
           <button
             type="button"
@@ -21066,9 +21259,30 @@ return (
           </button>
         </div>
 
-        <div className={`location-status-pill ${userLocation ? "active" : ""}`}>
+        <button
+          type="button"
+          className={`location-status-pill ${userLocation ? "active" : ""} ${locationBlocked ? "blocked" : ""}`}
+          onClick={showMyLocationOverview}
+          aria-live="polite"
+        >
           <span>{locationStatus}</span>
-        </div>
+          {locationBlocked ? <b>Fix</b> : null}
+        </button>
+
+        {showLocationHelpCard ? (
+          <section className="location-help-card" role="status" aria-label="Location help">
+            <div>
+              <span>GPS blocked</span>
+              <strong>Allow Location to use Me</strong>
+              <small>Chrome is not sharing your current position. I fitted the active layer so the map still works.</small>
+            </div>
+            <div className="location-help-actions">
+              <button type="button" onClick={startLocationTracking}>Retry GPS</button>
+              <button type="button" onClick={fitLayerWhileLocationBlocked}>Fit Layer</button>
+              <button type="button" onClick={() => setLocationHelpOpen(false)}>Hide</button>
+            </div>
+          </section>
+        ) : null}
 
         {mapJobBrief ? (() => {
           const briefJob = mapJobBrief.job;
