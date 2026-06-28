@@ -163,6 +163,8 @@ type MapBaseStyleId =
   | "maptiler-outdoor"
   | "maptiler-satellite"
   | "osm-color"
+  | "carto-light"
+  | "carto-dark"
   | "carto-voyager";
 
 type MapBaseStyle = {
@@ -214,6 +216,22 @@ const MAP_BASE_STYLES: MapBaseStyle[] = [
     provider: "osm",
     tileUrl: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19,
+  },
+  {
+    id: "carto-light",
+    label: "Light Map",
+    provider: "carto",
+    tileUrl: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+    maxZoom: 19,
+  },
+  {
+    id: "carto-dark",
+    label: "Night Map",
+    provider: "carto",
+    tileUrl: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
     maxZoom: 19,
   },
   {
@@ -2721,7 +2739,7 @@ function openMapLayersFromJobCard() {
   setDrawerOpen(false);
   setFullMap(true);
   setMapMenuOpen(true);
-  setActionNotice("Layers open. Choose Soft Map, Satellite, or another map style.");
+  setActionNotice("Layers open. Choose Soft, Open, Light, Night, Satellite, or another map style.");
 
   window.requestAnimationFrame(() => {
     mapRef.current?.invalidateSize();
@@ -19075,7 +19093,16 @@ return (
             white-space: nowrap !important;
           }
 
-          .job-card-map-return-rail {
+          .job-card-map-return-row {
+            width: 100% !important;
+            min-width: 0 !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.82fr) !important;
+            gap: 7px !important;
+          }
+
+          .job-card-map-return-rail,
+          .job-card-map-layers-rail {
             width: 100% !important;
             min-width: 0 !important;
             min-height: 52px !important;
@@ -19093,7 +19120,13 @@ return (
             box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18) !important;
           }
 
-          .job-card-map-return-rail span {
+          .job-card-map-layers-rail {
+            background: linear-gradient(135deg, #ecfeff, #dcfce7) !important;
+            border-color: rgba(153, 246, 228, 0.78) !important;
+          }
+
+          .job-card-map-return-rail span,
+          .job-card-map-layers-rail span {
             grid-row: 1 / 3 !important;
             min-height: 34px !important;
             display: inline-flex !important;
@@ -19110,8 +19143,14 @@ return (
             white-space: nowrap !important;
           }
 
+          .job-card-map-layers-rail span {
+            background: #0f766e !important;
+          }
+
           .job-card-map-return-rail strong,
-          .job-card-map-return-rail small {
+          .job-card-map-return-rail small,
+          .job-card-map-layers-rail strong,
+          .job-card-map-layers-rail small {
             min-width: 0 !important;
             overflow: hidden !important;
             text-overflow: ellipsis !important;
@@ -19119,14 +19158,16 @@ return (
             letter-spacing: 0 !important;
           }
 
-          .job-card-map-return-rail strong {
+          .job-card-map-return-rail strong,
+          .job-card-map-layers-rail strong {
             color: #0f172a !important;
             font-size: 14px !important;
             line-height: 1.05 !important;
             font-weight: 1000 !important;
           }
 
-          .job-card-map-return-rail small {
+          .job-card-map-return-rail small,
+          .job-card-map-layers-rail small {
             color: #475569 !important;
             font-size: 11px !important;
             line-height: 1.05 !important;
@@ -19807,24 +19848,33 @@ return (
               font-size: 9px !important;
             }
 
-            .job-card-map-return-rail {
+            .job-card-map-return-row {
+              grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr) !important;
+              gap: 6px !important;
+            }
+
+            .job-card-map-return-rail,
+            .job-card-map-layers-rail {
               min-height: 49px !important;
               gap: 2px 7px !important;
               padding: 8px !important;
               border-radius: 14px !important;
             }
 
-            .job-card-map-return-rail span {
+            .job-card-map-return-rail span,
+            .job-card-map-layers-rail span {
               min-height: 32px !important;
               padding: 0 9px !important;
               font-size: 11px !important;
             }
 
-            .job-card-map-return-rail strong {
+            .job-card-map-return-rail strong,
+            .job-card-map-layers-rail strong {
               font-size: 13px !important;
             }
 
-            .job-card-map-return-rail small {
+            .job-card-map-return-rail small,
+            .job-card-map-layers-rail small {
               font-size: 10px !important;
             }
 
@@ -20268,12 +20318,17 @@ return (
             </button>
             <button
               type="button"
-              className={mapBaseStyle === "maptiler-satellite" && mapTilerKeyReady ? "active" : ""}
-              disabled={!mapTilerKeyReady}
-              title={mapTilerKeyReady ? "Satellite map" : "Add MapTiler key to enable satellite"}
-              onClick={() => updateMapBaseStyle("maptiler-satellite")}
+              className={activeMapBaseStyle.id === "osm-color" ? "active" : ""}
+              onClick={() => updateMapBaseStyle("osm-color")}
             >
-              Sat
+              Open
+            </button>
+            <button
+              type="button"
+              className={activeMapBaseStyle.id === "carto-dark" ? "active" : ""}
+              onClick={() => updateMapBaseStyle("carto-dark")}
+            >
+              Night
             </button>
             <button
               type="button"
@@ -20281,13 +20336,6 @@ return (
               onClick={openMapMenu}
             >
               Layers
-            </button>
-            <button
-              type="button"
-              className={workflowViewFilter === "archived" ? "active" : ""}
-              onClick={() => switchMapBoard("archived")}
-            >
-              Archive
             </button>
             <button type="button" onClick={() => fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true)}>
               Fit Job
@@ -20454,11 +20502,18 @@ return (
                   <span>Google</span>
                 </a>
               </div>
-              <button type="button" className="job-card-map-return-rail" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
-                <span>Back to Map</span>
-                <strong>{mapReturnView.label}</strong>
-                <small>{mapReturnView.detail}</small>
-              </button>
+              <div className="job-card-map-return-row" aria-label="Fast map return actions">
+                <button type="button" className="job-card-map-return-rail" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
+                  <span>Back</span>
+                  <strong>{mapReturnView.label}</strong>
+                  <small>{mapReturnView.detail}</small>
+                </button>
+                <button type="button" className="job-card-map-layers-rail" onClick={openMapLayersFromJobCard} aria-label="Back to map layers">
+                  <span>Layers</span>
+                  <strong>Map Styles</strong>
+                  <small>{activeMapBaseStyle.label}</small>
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -21039,8 +21094,8 @@ return (
                     </div>
                     <div className="field-status-map-tools" aria-label="Map and status utility actions">
                       <button type="button" className="status-layers" onClick={openMapLayersFromJobCard}>
-                        <strong>Layers</strong>
-                        <small>{activeMapBaseStyle.label}</small>
+                        <strong>Map Layers</strong>
+                        <small>Back to map</small>
                       </button>
                       <button type="button" className="status-archive-map" onClick={() => switchMapBoard("archived")}>
                         <strong>Archive Map</strong>
