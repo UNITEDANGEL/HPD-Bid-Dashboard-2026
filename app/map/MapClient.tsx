@@ -3989,14 +3989,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               ? "marker-overview"
               : "marker-compact";
         const baseIconSize: [number, number] = markerDetailed
-          ? [226, noAccessTimerLabel || appointmentLabel ? 166 : 132]
+          ? [252, noAccessTimerLabel || appointmentLabel ? 184 : 132]
           : markerExpanded
-            ? [206, noAccessTimerLabel || appointmentLabel ? 152 : 116]
+            ? [236, noAccessTimerLabel || appointmentLabel ? 170 : 116]
             : noAccessTimerFocus
-              ? [206, 150]
+              ? [252, 184]
             : markerOverview
-              ? [hasOverdue || appointmentLabel || noAccessTimerLabel ? 154 : 132, appointmentLabel || noAccessTimerLabel ? 106 : 88]
-              : [hasOverdue ? 148 : 132, noAccessTimerLabel || appointmentLabel ? 104 : 84];
+              ? [hasOverdue || appointmentLabel || noAccessTimerLabel ? 188 : 132, appointmentLabel || noAccessTimerLabel ? 126 : 88]
+              : [hasOverdue ? 148 : noAccessTimerLabel ? 176 : 132, noAccessTimerLabel || appointmentLabel ? 118 : 84];
         const iconSize: [number, number] = [
           baseIconSize[0] + (hasOverdue && !markerOverview ? 8 : 0),
           baseIconSize[1] + (hasOverdue && !markerOverview ? 6 : 0),
@@ -7815,10 +7815,22 @@ return (
 
         .marker-no-access-timer {
           margin-top: 2px;
-          min-width: 58px;
+          min-width: 112px;
+          min-height: 32px;
+          padding: 5px 10px;
           background: #f6c85f;
           color: #111827;
           box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.82);
+        }
+
+        .marker-no-access-timer b {
+          font-size: 9px;
+          line-height: 1;
+        }
+
+        .marker-no-access-timer strong {
+          font-size: 14px;
+          line-height: 1;
         }
 
         .marker-no-access-timer.is-waiting {
@@ -15630,17 +15642,30 @@ return (
           }
 
           .maturity-map-marker .map-signal-marker .marker-no-access-timer {
-            min-height: 20px !important;
-            min-width: 82px !important;
-            padding: 4px 9px !important;
+            display: inline-grid !important;
+            min-height: 50px !important;
+            min-width: 172px !important;
+            place-items: center !important;
+            gap: 3px !important;
+            padding: 8px 14px !important;
             margin: 0 !important;
-            border-radius: 999px !important;
+            border-radius: 14px !important;
             background: #fbbf24 !important;
             color: #111827 !important;
-            font-size: 10px !important;
+            font-size: 13px !important;
             font-weight: 1000 !important;
             letter-spacing: 0 !important;
             box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.12) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-no-access-timer b {
+            font-size: 10px !important;
+            line-height: 1 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-no-access-timer strong {
+            font-size: 19px !important;
+            line-height: 1 !important;
           }
 
           .maturity-map-marker .map-signal-marker .marker-no-access-timer.is-ready {
@@ -18941,11 +18966,11 @@ return (
           }
 
           .maturity-map-marker .map-signal-marker.marker-timer-focus {
-            min-width: 196px !important;
-            min-height: 138px !important;
-            padding: 8px 10px 10px !important;
-            gap: 5px !important;
-            border-radius: 14px !important;
+            min-width: 236px !important;
+            min-height: 164px !important;
+            padding: 10px 12px 12px !important;
+            gap: 7px !important;
+            border-radius: 16px !important;
             background:
               linear-gradient(180deg, #ffffff, #fff8eb) !important;
             box-shadow:
@@ -18962,20 +18987,20 @@ return (
           }
 
           .maturity-map-marker .map-signal-marker.marker-timer-focus .signal-address {
-            max-width: 176px !important;
+            max-width: 212px !important;
             color: #1f2937 !important;
-            font-size: 10px !important;
+            font-size: 11px !important;
           }
 
           .maturity-map-marker .map-signal-marker .marker-no-access-timer {
             display: inline-grid !important;
-            min-width: 132px !important;
-            min-height: 38px !important;
+            min-width: 174px !important;
+            min-height: 52px !important;
             place-items: center !important;
-            gap: 2px !important;
-            padding: 5px 10px !important;
+            gap: 3px !important;
+            padding: 8px 14px !important;
             margin: 1px auto 0 !important;
-            border-radius: 12px !important;
+            border-radius: 14px !important;
             background: #facc15 !important;
             color: #111827 !important;
             box-shadow:
@@ -18986,7 +19011,7 @@ return (
           .maturity-map-marker .map-signal-marker .marker-no-access-timer b {
             display: block !important;
             color: #713f12 !important;
-            font-size: 8px !important;
+            font-size: 10px !important;
             line-height: 1 !important;
             font-weight: 1000 !important;
             letter-spacing: 0 !important;
@@ -18995,7 +19020,7 @@ return (
           .maturity-map-marker .map-signal-marker .marker-no-access-timer strong {
             display: block !important;
             color: #111827 !important;
-            font-size: 13px !important;
+            font-size: 19px !important;
             line-height: 1 !important;
             font-weight: 1000 !important;
             letter-spacing: 0 !important;
@@ -22192,10 +22217,10 @@ return (
                     ? "Package ready"
                     : "Photo saved"
                   : "Ready to package"
-                  : noAccessReadyForSecond
-                    ? "Ready for 2nd attempt"
-                    : noAccessWaiting
-                      ? "72h counter running"
+                      : noAccessReadyForSecond
+                        ? "Ready for 2nd attempt"
+                        : noAccessWaiting
+                      ? "No Access 1st saved"
                       : "Pick field scenario";
                 const nextText = isRefused
                   ? hasRefusedPhoto
@@ -22250,7 +22275,7 @@ return (
                 const missionTitle = packageReady
                   ? packageReviewApproved ? "Package approved to send" : "Package ready for review"
                   : noAccessWaiting
-                    ? "72h no-access clock running"
+                    ? "Waiting for 2nd attempt"
                     : noAccessReadyForSecond
                       ? "Second attempt ready"
                       : activeGuide
@@ -22312,7 +22337,10 @@ return (
                     <div className="field-mission-jobline">
                       <strong>{jobKey(selected)}</strong>
                       <span>{displayAddress(selected)}</span>
-                      <small>{selected.borough || "Unknown borough"} · {displayLocation(selected) || "Location not listed"} · {jobCounterLabel(selected)}</small>
+                      <small>
+                        {selected.borough || "Unknown borough"} · {displayLocation(selected) || "Location not listed"} ·{" "}
+                        {selectedNoAccessTimerInfo ? (selectedNoAccessTimerInfo.ready ? "READY 2ND" : selectedNoAccessTimerInfo.label) : jobCounterLabel(selected)}
+                      </small>
                     </div>
                     <div className={`field-page3-description ${missionDescription ? "" : "is-missing"}`} aria-label="Page 3 job description">
                       <div className="field-page3-description-head">
@@ -22467,10 +22495,12 @@ return (
                         <strong>{missionTitle}</strong>
                         <small>{missionText}</small>
                       </div>
-                      <div className="field-mission-counter">
-                        <span>Counter</span>
-                        <b>{jobCounterLabel(selected)}</b>
-                      </div>
+                      {!selectedNoAccessTimerInfo ? (
+                        <div className="field-mission-counter">
+                          <span>Counter</span>
+                          <b>{jobCounterLabel(selected)}</b>
+                        </div>
+                      ) : null}
                     </div>
                     <div className="field-mission-primary-row">
                       {packageReady ? (
@@ -23221,7 +23251,7 @@ return (
               </div>
             </div>
 
-            {(selected.PackageReadyMessage || selected.packageReadyMessage || workflowSecondAttemptInfo(selected) || selected.RefusalDate || selected.refusalDate) ? (
+            {(selected.PackageReadyMessage || selected.packageReadyMessage || selected.RefusalDate || selected.refusalDate) ? (
               <div className="selected-alert-grid">
                 {selected.PackageReadyMessage || selected.packageReadyMessage ? (
                   <div className="selected-alert-card package-ready-card">
@@ -23230,20 +23260,6 @@ return (
                     <small>{displayWorkflowDate(selected.PackageGeneratedAt || selected.packageGeneratedAt)}</small>
                   </div>
                 ) : null}
-              {workflowSecondAttemptInfo(selected) ? (
-                  <div className={`selected-alert-card no-access-timer-card ${workflowSecondAttemptInfo(selected)?.ready ? "no-access-ready" : ""}`}>
-                  <span>72h No Access Counter</span>
-                  <strong>
-                    {workflowSecondAttemptInfo(selected)?.ready
-                      ? "REVISIT NOW - READY FOR 2ND ATTEMPT" : workflowSecondAttemptInfo(selected)?.label}
-                  </strong>
-                  <small>
-                    1st Attempt: {displayWorkflowDate(selected.NoAccessFirstAttemptAt || selected.noAccessFirstAttemptAt)}
-                    {" · "}
-                    Maturity: {displayWorkflowDate(selected.SecondAttemptAvailableAt || selected.secondAttemptAvailableAt)}
-                  </small>
-                </div>
-              ) : null}
               {selected.RefusalDate || selected.refusalDate ? (
                   <div className="selected-alert-card">
                     <span>Refused Access Date</span>
