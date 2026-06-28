@@ -7599,6 +7599,10 @@ function directionsUrl(job: JobRecord) {
   const dashboardSubtitle = search.trim() ? `Search: ${search.trim()}` : dashboardView.detail;
   const dashboardDataStatus = health.totalIssues ? `${health.totalIssues} data checks` : "Data clean";
   const locationBlocked = locationBlockedByBrowser();
+  const timerMapLayerActive =
+    workflowViewFilter === "waiting72" ||
+    workflowViewFilter === "noaccess24" ||
+    workflowViewFilter === "ready2";
   const showLocationHelpCard = locationHelpOpen;
   const mapBoardModes: Array<{ view: WorkflowViewFilter; label: string; count: number }> = [
     { view: "active", label: "Active", count: workflowDashboardCounts.active },
@@ -19252,6 +19256,50 @@ return (
             }
           }
 
+          .location-help-card.compact-location-help-card {
+            left: auto !important;
+            right: 8px !important;
+            bottom: calc(env(safe-area-inset-bottom) + 78px) !important;
+            width: min(250px, calc(100vw - 98px)) !important;
+            min-height: 0 !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 6px !important;
+            padding: 8px !important;
+            border-radius: 15px !important;
+            box-shadow:
+              0 0 0 2px rgba(251, 146, 60, 0.14),
+              0 12px 28px rgba(3, 8, 14, 0.36) !important;
+          }
+
+          .location-help-card.compact-location-help-card span {
+            font-size: 8px !important;
+          }
+
+          .location-help-card.compact-location-help-card strong {
+            margin-top: 0 !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+          }
+
+          .location-help-card.compact-location-help-card small {
+            display: none !important;
+          }
+
+          .location-help-card.compact-location-help-card .location-help-actions {
+            grid-template-columns: 1fr 1fr 0.7fr !important;
+            gap: 5px !important;
+          }
+
+          .location-help-card.compact-location-help-card .location-help-actions button,
+          .location-help-card.compact-location-help-card .location-help-actions button:nth-child(3) {
+            grid-column: auto !important;
+            min-height: 30px !important;
+            padding: 0 6px !important;
+            border-radius: 10px !important;
+            font-size: 10px !important;
+          }
+
           .maturity-map-marker .map-signal-marker {
             border-width: 3px !important;
             border-radius: 20px !important;
@@ -21428,7 +21476,7 @@ return (
         </button>
 
         {showLocationHelpCard ? (
-          <section className="location-help-card" role="status" aria-label="Location help">
+          <section className={`location-help-card ${timerMapLayerActive ? "compact-location-help-card" : ""}`} role="status" aria-label="Location help">
             <div>
               <span>GPS blocked</span>
               <strong>Allow Location to use Me</strong>
