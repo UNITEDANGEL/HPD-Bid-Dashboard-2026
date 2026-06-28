@@ -7725,7 +7725,7 @@ function directionsUrl(job: JobRecord) {
 
 return (
     <main
-      className={`map-shell ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""} ${mapJobBrief ? "map-brief-open" : ""}`}
+      className={`map-shell ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""} ${mapJobBrief ? "map-brief-open" : ""} ${timerMapLayerActive ? "timer-map-layer" : ""}`}
       onTouchStart={androidScrollFix ? undefined : handleMapTouchStart}
       onTouchEnd={androidScrollFix ? undefined : handleMapTouchEnd}
     >
@@ -19195,6 +19195,10 @@ return (
               0 16px 42px rgba(3, 8, 14, 0.32),
               inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
             backdrop-filter: blur(16px) saturate(1.04) !important;
+          }
+
+          .map-shell.timer-map-layer .map-stats {
+            display: none !important;
           }
 
           .map-stat {
