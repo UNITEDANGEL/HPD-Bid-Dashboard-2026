@@ -2105,6 +2105,15 @@ function parseWorkflowTimestamp(value: unknown) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function noAccessRemainingLabel(hoursLeft: number) {
+  if (hoursLeft <= 0) return "READY NOW";
+  const days = Math.floor(hoursLeft / 24);
+  const hours = hoursLeft % 24;
+  if (days && hours) return `T-${days}D ${hours}H LEFT`;
+  if (days) return `T-${days}D LEFT`;
+  return `T-${hoursLeft}H LEFT`;
+}
+
 function workflowSecondAttemptInfo(job: JobRecord, now = new Date()) {
   const status = directWorkflowStatus(job) || legacyWorkflowKind(job);
   const secondAttemptRaw = (job as any).NoAccessSecondAttemptAt || (job as any).noAccessSecondAttemptAt;
@@ -2127,7 +2136,7 @@ function workflowSecondAttemptInfo(job: JobRecord, now = new Date()) {
     ready: msLeft <= 0,
     hoursLeft,
     within24: msLeft > 0 && hoursLeft <= 24,
-    label: msLeft <= 0 ? "REVISIT NOW" : `T-${hoursLeft}H TO 2ND`,
+    label: msLeft <= 0 ? "REVISIT NOW" : noAccessRemainingLabel(hoursLeft),
   };
 }
 
@@ -7839,6 +7848,15 @@ return (
           box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.82);
         }
 
+        .marker-no-access-timer.is-waiting {
+          animation: noAccessTimeRemainingPulse 1.65s ease-in-out infinite;
+        }
+
+        .marker-no-access-timer.is-waiting strong {
+          display: inline-block;
+          animation: noAccessTimeTextPulse 1.15s ease-in-out infinite;
+        }
+
         .marker-no-access-timer.is-ready {
           background: #53e69c;
           color: #062018;
@@ -7854,6 +7872,16 @@ return (
         @keyframes noAccessTimerReadyPulse {
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.08); }
+        }
+
+        @keyframes noAccessTimeRemainingPulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.82); }
+          50% { transform: scale(1.045); box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.42); }
+        }
+
+        @keyframes noAccessTimeTextPulse {
+          0%, 100% { transform: scale(1); filter: brightness(1); }
+          50% { transform: scale(1.08); filter: brightness(1.14); }
         }
 
         .maturity-marker-bubble.status-marker-completed {
@@ -20230,6 +20258,7 @@ return (
             overflow: hidden !important;
             text-overflow: ellipsis !important;
             text-align: right !important;
+            transform-origin: right center !important;
           }
 
           .job-card-72h-counter small {
@@ -20241,6 +20270,14 @@ return (
             white-space: nowrap !important;
             overflow: hidden !important;
             text-overflow: ellipsis !important;
+          }
+
+          .job-card-72h-counter.is-waiting {
+            animation: noAccessTimeRemainingPulse 1.85s ease-in-out infinite !important;
+          }
+
+          .job-card-72h-counter.is-waiting strong {
+            animation: noAccessTimeTextPulse 1.18s ease-in-out infinite !important;
           }
 
           .job-card-72h-counter.is-soon {
@@ -21788,12 +21825,12 @@ return (
                   <span>72H Counter</span>
                   <strong>{selectedNoAccessTimerInfo.ready ? "READY 2ND NOW" : selectedNoAccessTimerInfo.label}</strong>
                   <small>
-                    {selectedNoAccessTimerInfo.ready ? "Matured: " : "1st: "}
+                    {selectedNoAccessTimerInfo.ready ? "Matured: " : "Remaining: "}
                     {selectedNoAccessTimerInfo.ready
                       ? displayWorkflowDate(selectedNoAccessTimerJob?.SecondAttemptAvailableAt || selectedNoAccessTimerJob?.secondAttemptAvailableAt || selectedNoAccessTimerInfo.available.toISOString())
-                      : displayWorkflowDate(selectedNoAccessTimerJob?.NoAccessFirstAttemptAt || selectedNoAccessTimerJob?.noAccessFirstAttemptAt)}
+                      : selectedNoAccessTimerInfo.label}
                     {" | "}
-                    {selectedNoAccessTimerInfo.ready ? "Use No Access 2nd" : `2nd unlock: ${displayWorkflowDate(selectedNoAccessTimerJob?.SecondAttemptAvailableAt || selectedNoAccessTimerJob?.secondAttemptAvailableAt || selectedNoAccessTimerInfo.available.toISOString())}`}
+                    {selectedNoAccessTimerInfo.ready ? "Use No Access 2nd" : `Unlock: ${displayWorkflowDate(selectedNoAccessTimerJob?.SecondAttemptAvailableAt || selectedNoAccessTimerJob?.secondAttemptAvailableAt || selectedNoAccessTimerInfo.available.toISOString())}`}
                   </small>
                 </div>
               ) : null}
