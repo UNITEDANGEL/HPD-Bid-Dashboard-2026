@@ -15162,13 +15162,6 @@ return (
             box-shadow: 0 16px 34px rgba(34, 197, 94, 0.22) !important;
           }
 
-          .job-drawer.selected-focus .job-card-route-strip {
-            display: grid !important;
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-            gap: 9px !important;
-            min-width: 0 !important;
-          }
-
           .job-drawer.selected-focus .selected-title-block {
             min-width: 0 !important;
             display: grid !important;
@@ -16965,8 +16958,17 @@ return (
             font-size: 24px !important;
           }
 
+          .job-drawer.selected-focus .field-mission-directions {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-directions .direction-provider-button {
+            min-height: 58px !important;
+          }
+
           .job-drawer.selected-focus .field-mission-actions {
-            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             gap: 7px !important;
           }
 
@@ -19469,16 +19471,6 @@ return (
                   Arrived / Update Status
                 </button>
               </div>
-              <div className="job-card-route-strip" aria-label="Directions options">
-                <a className="direction-provider-button waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                  <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
-                  <span>Waze</span>
-                </a>
-                <a className="direction-provider-button google" href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                  <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
-                  <span>Google Maps</span>
-                </a>
-              </div>
             </div>
 
             {renderAppointmentHero(selected)}
@@ -19663,6 +19655,16 @@ return (
                       <strong>{jobKey(selected)}</strong>
                       <span>{displayAddress(selected)}</span>
                     </div>
+                    <div className="field-mission-directions direction-choice-row" aria-label="Directions options">
+                      <a className="direction-provider-button waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                        <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
+                        <span>Waze</span>
+                      </a>
+                      <a className="direction-provider-button google" href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                        <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
+                        <span>Google Maps</span>
+                      </a>
+                    </div>
                     <div className={`field-page3-description ${missionDescription ? "" : "is-missing"}`} aria-label="Page 3 job description">
                       <div className="field-page3-description-head">
                         <span>Page 3 Description</span>
@@ -19806,14 +19808,6 @@ return (
                       <span><small>Package</small><strong>{missionPackageLabel}</strong></span>
                     </div>
                     <div className="field-mission-actions">
-                      <a className="direction-provider-button waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                        <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
-                        <span>Waze</span>
-                      </a>
-                      <a className="direction-provider-button google" href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer">
-                        <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
-                        <span>Google</span>
-                      </a>
                       <button type="button" onClick={() => focusFieldPane("evidence")}>
                         Evidence
                       </button>
