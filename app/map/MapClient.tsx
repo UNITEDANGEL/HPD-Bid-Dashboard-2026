@@ -2956,18 +2956,25 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays, workflowViewFilter, countdownTick]);
 
   useEffect(() => {
-    if (!urlOmoRequest || !filteredJobs.length) return;
+    if (!urlOmoRequest) return;
 
     const target = urlOmoRequest.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const fallbackRows: MappedJob[] = mappedJobs.length
+      ? mappedJobs
+      : jobs.map((job) => {
+          const coords = getStoredCoords(job);
+          return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" } : { ...job };
+        });
+    const searchRows = filteredJobs.length ? filteredJobs : fallbackRows;
     const match =
-      filteredJobs.find((job) => String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "") === target) ||
-      filteredJobs[0];
+      searchRows.find((job) => String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "") === target) ||
+      searchRows[0];
     if (!match) return;
 
     focusJob(match);
     setUrlOmoRequest("");
     setActionNotice(`Opened ${jobKey(match)} from OMO search.`);
-  }, [urlOmoRequest, filteredJobs]);
+  }, [urlOmoRequest, filteredJobs, jobs, mappedJobs]);
 
   const markerAutoFitKey = useMemo(() => {
     return filteredJobs
