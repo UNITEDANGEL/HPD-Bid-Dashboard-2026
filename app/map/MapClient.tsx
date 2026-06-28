@@ -4001,15 +4001,28 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function enableAppointmentBrowserAlerts(job?: MappedJob | null) {
-    if (typeof window === "undefined" || !("Notification" in window)) {
-      showActionNotice("This browser does not support app alerts. Use Google Calendar or Download Alerts.");
+    if (typeof window === "undefined") return;
+
+    const key = job ? jobKey(job) : "";
+    const savedInfo = job ? appointmentStatusInfo(job) : null;
+    const draftDate = appointmentDateFromLocalValue(appointmentDraft);
+    const when = savedInfo?.detail || (draftDate ? displayWorkflowDate(draftDate.toISOString()) : "test appointment");
+    const body = key
+      ? `${key}: ${when}. App alerts work while this dashboard is open.`
+      : `${when}. App alerts work while this dashboard is open.`;
+    const showFallbackAlert = (reason: string) => {
+      window.alert(`HPD appointment alert test\n\n${body}\n\n${reason}`);
+      showActionNotice("Test alert shown. Use Google Calendar or Download Alerts for phone/email reminders.");
+    };
+
+    if (!("Notification" in window)) {
+      showFallbackAlert("This browser cannot show system notifications, so this is the in-app fallback alert.");
       return;
     }
 
     const sendTestAlert = () => {
-      const key = job ? jobKey(job) : "";
       new window.Notification("HPD appointment alerts enabled", {
-        body: key ? `${key}: app alerts can show while this dashboard is open.` : "App alerts can show while this dashboard is open.",
+        body,
       });
       showActionNotice("App alert test sent. Keep this dashboard open for browser alerts.");
     };
@@ -4020,7 +4033,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     if (window.Notification.permission === "denied") {
-      showActionNotice("Browser alerts are blocked. Allow notifications for this site in Chrome settings.");
+      showFallbackAlert("Browser notifications are blocked. Allow notifications for this site to get system alerts.");
       return;
     }
 
@@ -4029,10 +4042,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         if (permission === "granted") {
           sendTestAlert();
         } else {
-          showActionNotice("App alerts were not enabled. Use Google Calendar or Download Alerts.");
+          showFallbackAlert("Notification permission was not enabled, so this is the in-app fallback alert.");
         }
       })
-      .catch(() => showActionNotice("Could not enable app alerts. Use Google Calendar or Download Alerts."));
+      .catch(() => showFallbackAlert("Notification permission could not be opened, so this is the in-app fallback alert."));
   }
 
   function applyWorkflowPatchToState(key: string, patch: Record<string, any>) {
@@ -4207,7 +4220,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             Download Alerts
           </a>
           <button type="button" onClick={() => enableAppointmentBrowserAlerts(job)}>
-            App Alert
+            Test Alert
           </button>
           {!savedIso ? (
             <button type="button" onClick={() => saveJobAppointment(job)} disabled={appointmentSaving}>
@@ -4289,7 +4302,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             Download Alerts
           </a>
           <button type="button" className="quiet" onClick={() => enableAppointmentBrowserAlerts(job)}>
-            App Alert
+            Test Alert
           </button>
           {savedIso ? (
             <button type="button" className="quiet" onClick={() => clearJobAppointment(job)} disabled={appointmentSaving}>
