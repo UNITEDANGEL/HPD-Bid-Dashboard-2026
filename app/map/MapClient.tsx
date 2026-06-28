@@ -6805,6 +6805,10 @@ function focusJob(job: MappedJob) {
           setFullMap(false);
           setDrawerOpen(true);
 
+    window.requestAnimationFrame(() => {
+      positionSelectedCardInDrawer();
+    });
+
     if (Number.isFinite(job._lat) && Number.isFinite(job._lng) && mapRef.current) {
       mapRef.current.flyTo([Number(job._lat), Number(job._lng)], 16, {
         animate: true,
@@ -18656,17 +18660,186 @@ return (
             color: #334155 !important;
           }
 
-          @media (max-width: 520px) {
-            .job-drawer.selected-focus .drawer-head strong {
-              font-size: 24px !important;
+          /* JOB_CARD_ENTRY_FIT_2026 */
+          .job-drawer.selected-focus {
+            animation: jobCardEnter 190ms cubic-bezier(0.2, 0.8, 0.2, 1) both !important;
+            transform-origin: top center !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            align-items: stretch !important;
+            gap: 8px !important;
+            min-height: 0 !important;
+            padding: 10px !important;
+            margin-bottom: 8px !important;
+            border-radius: 18px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head strong {
+            min-width: 0 !important;
+            font-size: 19px !important;
+            line-height: 1.05 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .job-drawer.selected-focus .job-card-head-actions {
+            width: 100% !important;
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 7px !important;
+          }
+
+          .job-drawer.selected-focus .route-head-button,
+          .job-drawer.selected-focus .route-head-arrived,
+          .job-drawer.selected-focus .job-card-head-actions button {
+            min-width: 0 !important;
+            min-height: 44px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 5px !important;
+            padding: 0 7px !important;
+            border-radius: 11px !important;
+            border: 1px solid rgba(255, 255, 255, 0.28) !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            line-height: 1.05 !important;
+            letter-spacing: 0 !important;
+            text-align: center !important;
+            text-decoration: none !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere !important;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18) !important;
+          }
+
+          .job-drawer.selected-focus .route-head-button img {
+            width: 19px !important;
+            height: 19px !important;
+            flex: 0 0 19px !important;
+          }
+
+          .job-drawer.selected-focus .route-head-arrived {
+            background: linear-gradient(135deg, #fbbf24, #22c55e) !important;
+            color: #07131f !important;
+          }
+
+          .job-drawer.selected-focus .selected-card {
+            gap: 9px !important;
+            padding: 10px !important;
+            margin-top: 0 !important;
+            animation: selectedCardEnter 210ms cubic-bezier(0.2, 0.8, 0.2, 1) both !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-head {
+            order: -5 !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 9px !important;
+            align-items: start !important;
+            padding: 12px !important;
+            border-radius: 16px !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-head .job-title {
+            font-size: 28px !important;
+            line-height: 0.98 !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-head .job-address {
+            font-size: 15px !important;
+            line-height: 1.16 !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-head .job-sub {
+            font-size: 12px !important;
+            line-height: 1.18 !important;
+          }
+
+          .job-drawer.selected-focus .selected-chip-stack {
+            justify-content: flex-start !important;
+          }
+
+          .job-drawer.selected-focus .job-card-command-strip {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .appointment-hero {
+            order: -4 !important;
+          }
+
+          .job-drawer.selected-focus .quick-status-console {
+            order: -3 !important;
+          }
+
+          .job-drawer.selected-focus .field-workflow-card {
+            order: -2 !important;
+          }
+
+          @keyframes jobCardEnter {
+            from {
+              opacity: 0;
+              transform: translateY(9px) scale(0.985);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+
+          @keyframes selectedCardEnter {
+            from {
+              opacity: 0;
+              transform: translateY(6px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .job-drawer.selected-focus,
+            .job-drawer.selected-focus .selected-card {
+              animation: none !important;
+            }
+          }
+
+          @media (max-width: 390px) {
+            .job-drawer.selected-focus .job-card-head-actions {
+              gap: 5px !important;
+            }
+
+            .job-drawer.selected-focus .route-head-button,
+            .job-drawer.selected-focus .route-head-arrived,
+            .job-drawer.selected-focus .job-card-head-actions button {
+              min-height: 42px !important;
+              padding: 0 5px !important;
+              font-size: 10px !important;
+            }
+
+            .job-drawer.selected-focus .selected-card-head {
+              grid-template-columns: minmax(0, 1fr) !important;
             }
 
             .job-drawer.selected-focus .selected-card-head .job-title {
-              font-size: 30px !important;
+              font-size: 24px !important;
+            }
+          }
+
+          @media (max-width: 520px) {
+            .job-drawer.selected-focus .drawer-head strong {
+              font-size: 18px !important;
+            }
+
+            .job-drawer.selected-focus .selected-card-head .job-title {
+              font-size: 26px !important;
             }
 
             .job-drawer.selected-focus .selected-card-head .job-address {
-              font-size: 17px !important;
+              font-size: 15px !important;
             }
 
             .job-drawer.selected-focus .selected-overview-grid {
@@ -19242,7 +19415,7 @@ return (
         className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""} ${clusterSheet ? "cluster-focus" : ""} ${fullMap && !drawerOpen ? "drawer-hard-hidden" : ""}`}
       >
         <div className="drawer-head">
-          <strong>{clusterSheet ? clusterSheet.title : selectedOnly && selected ? "Job Card" : `${filteredJobs.length} jobs`}</strong>
+          <strong>{clusterSheet ? clusterSheet.title : selectedOnly && selected ? `Job ${jobKey(selected)}` : `${filteredJobs.length} jobs`}</strong>
           {clusterSheet ? (
             <div className="drawer-head-actions">
               <button
@@ -19259,7 +19432,7 @@ return (
               </button>
             </div>
           ) : selectedOnly && selected ? (
-            <div className="drawer-head-actions job-card-head-actions" aria-label="Job card route actions">
+            <div className="drawer-head-actions job-card-head-actions" aria-label="Job card primary actions">
               <a className="route-head-button waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer" aria-label="Open Waze directions">
                 <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
                 <span>Waze</span>
@@ -19268,6 +19441,9 @@ return (
                 <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
                 <span>Google</span>
               </a>
+              <button type="button" className="route-head-arrived" onClick={() => openArrivedJob(selected)}>
+                Arrived / Status
+              </button>
               <button type="button" onClick={showCleanMapView}>
                 Close
               </button>
