@@ -17578,6 +17578,231 @@ return (
               0 18px 36px rgba(15, 23, 42, 0.30) !important;
           }
 
+          /* MAP_VISUAL_POLISH_2026 */
+          .map-stage::before {
+            content: "" !important;
+            position: absolute !important;
+            inset: 10px !important;
+            z-index: 3 !important;
+            pointer-events: none !important;
+            border: 1px solid rgba(248, 250, 252, 0.22) !important;
+            border-radius: 24px !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(15, 23, 42, 0.08),
+              inset 0 0 42px rgba(8, 13, 20, 0.10) !important;
+          }
+
+          .map-node {
+            background: #cbd5e1 !important;
+          }
+
+          .map-node::after {
+            background:
+              linear-gradient(180deg, rgba(6, 16, 31, 0.20), transparent 20%, transparent 68%, rgba(6, 16, 31, 0.22)),
+              linear-gradient(90deg, rgba(15, 23, 42, 0.14), transparent 28%, transparent 72%, rgba(15, 23, 42, 0.12)) !important;
+          }
+
+          .map-node .leaflet-tile {
+            filter: saturate(1.18) contrast(1.08) brightness(0.98) !important;
+          }
+
+          .map-node .leaflet-control-attribution {
+            margin: 0 8px 8px 0 !important;
+            padding: 3px 7px !important;
+            border-radius: 999px !important;
+            background: rgba(248, 250, 252, 0.82) !important;
+            color: #334155 !important;
+            font-size: 10px !important;
+            font-weight: 800 !important;
+            backdrop-filter: blur(10px) !important;
+          }
+
+          .map-cockpit {
+            width: min(378px, calc(100vw - 20px)) !important;
+            padding: 12px !important;
+            gap: 10px !important;
+            border-radius: 22px !important;
+            background:
+              linear-gradient(145deg, rgba(8, 15, 26, 0.93), rgba(22, 36, 54, 0.90) 58%, rgba(18, 89, 90, 0.82)) !important;
+            border-color: rgba(226, 232, 240, 0.26) !important;
+            box-shadow:
+              0 22px 58px rgba(3, 8, 14, 0.36),
+              inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+          }
+
+          .map-cockpit-summary {
+            padding-bottom: 8px !important;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.13) !important;
+          }
+
+          .map-cockpit-summary span {
+            color: #67e8f9 !important;
+            font-size: 10px !important;
+          }
+
+          .map-cockpit-summary strong {
+            font-size: 25px !important;
+          }
+
+          .map-cockpit-summary small {
+            align-self: center !important;
+            padding: 5px 8px !important;
+            border-radius: 999px !important;
+            background: rgba(248, 250, 252, 0.09) !important;
+            border: 1px solid rgba(226, 232, 240, 0.12) !important;
+            color: #d9e8f7 !important;
+          }
+
+          .map-cockpit-actions {
+            grid-template-columns: 1.05fr 1.05fr 0.9fr 0.9fr 1fr !important;
+          }
+
+          .map-cockpit-actions button {
+            min-height: 40px !important;
+            border-radius: 14px !important;
+            background: rgba(248, 250, 252, 0.10) !important;
+            border-color: rgba(226, 232, 240, 0.18) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .map-cockpit-actions button.active,
+          .map-cockpit-actions button.primary {
+            background: linear-gradient(135deg, #cffafe, #bbf7d0) !important;
+            box-shadow: 0 10px 22px rgba(45, 212, 191, 0.20) !important;
+          }
+
+          .map-cockpit-lens {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 7px !important;
+          }
+
+          .map-cockpit-lens span {
+            min-width: 0 !important;
+            min-height: 46px !important;
+            display: grid !important;
+            align-content: center !important;
+            gap: 2px !important;
+            padding: 8px !important;
+            border-radius: 15px !important;
+            background: rgba(248, 250, 252, 0.085) !important;
+            border: 1px solid rgba(226, 232, 240, 0.13) !important;
+          }
+
+          .map-cockpit-lens b {
+            color: #ffffff !important;
+            font-size: 20px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-cockpit-lens small {
+            color: #bad0e8 !important;
+            font-size: 9px !important;
+            line-height: 1.05 !important;
+            font-weight: 950 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-stats {
+            width: min(328px, calc(100vw - 112px)) !important;
+            padding: 7px !important;
+            border-radius: 18px !important;
+            background: rgba(8, 13, 20, 0.80) !important;
+            border: 1px solid rgba(226, 232, 240, 0.14) !important;
+            box-shadow:
+              0 16px 42px rgba(3, 8, 14, 0.32),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+            backdrop-filter: blur(16px) saturate(1.04) !important;
+          }
+
+          .map-stat {
+            min-height: 48px !important;
+            display: grid !important;
+            align-content: center !important;
+            border-radius: 13px !important;
+            border-color: rgba(226, 232, 240, 0.12) !important;
+            background: rgba(248, 250, 252, 0.08) !important;
+          }
+
+          .map-stat strong {
+            color: #ffffff !important;
+            font-size: 18px !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-stat span {
+            color: #cbd5e1 !important;
+            font-size: 9px !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .zoom-panel {
+            border-radius: 18px !important;
+            box-shadow:
+              0 16px 42px rgba(3, 8, 14, 0.32),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .zoom-panel button {
+            font-weight: 1000 !important;
+          }
+
+          .location-status-pill {
+            border-radius: 999px !important;
+            background: rgba(8, 13, 20, 0.82) !important;
+            color: #eef6ff !important;
+            border: 1px solid rgba(226, 232, 240, 0.16) !important;
+            box-shadow: 0 16px 42px rgba(3, 8, 14, 0.30) !important;
+            backdrop-filter: blur(16px) saturate(1.04) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker {
+            border-width: 3px !important;
+            border-radius: 20px !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(248, 250, 252, 0.97)) !important;
+            box-shadow:
+              0 0 0 4px rgba(255, 255, 255, 0.86),
+              0 18px 44px rgba(15, 23, 42, 0.30),
+              inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-overdue {
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(255, 241, 242, 0.98)) !important;
+            box-shadow:
+              0 0 0 4px rgba(255, 255, 255, 0.92),
+              0 0 0 10px rgba(220, 38, 38, 0.13),
+              0 20px 48px rgba(127, 29, 29, 0.30),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .signal-eyebrow {
+            min-height: 18px !important;
+            padding: 4px 8px !important;
+            background: #e0f2fe !important;
+            color: #075985 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-overdue .signal-eyebrow {
+            background: #fee2e2 !important;
+            color: #991b1b !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-appointment-badge {
+            background: #fde68a !important;
+            color: #713f12 !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.95),
+              0 8px 18px rgba(120, 53, 15, 0.20) !important;
+          }
+
           @media (max-width: 520px) {
             .map-top {
               left: 6px !important;
@@ -17653,6 +17878,41 @@ return (
               min-height: 36px !important;
               border-radius: 11px !important;
               font-size: 10px !important;
+            }
+
+            .map-cockpit-lens {
+              gap: 5px !important;
+            }
+
+            .map-cockpit-lens span {
+              min-height: 40px !important;
+              padding: 6px !important;
+              border-radius: 12px !important;
+            }
+
+            .map-cockpit-lens b {
+              font-size: 17px !important;
+            }
+
+            .map-cockpit-lens small {
+              font-size: 8px !important;
+            }
+
+            .map-stage::before {
+              inset: 7px !important;
+              border-radius: 20px !important;
+            }
+
+            .map-stats {
+              width: min(258px, calc(100vw - 90px)) !important;
+              padding: 5px !important;
+              border-radius: 15px !important;
+            }
+
+            .map-stat {
+              min-height: 40px !important;
+              padding: 6px !important;
+              border-radius: 11px !important;
             }
           }
         `}
@@ -17942,6 +18202,20 @@ return (
             <button type="button" className="primary" onClick={showCleanMapView}>
               Full
             </button>
+          </div>
+          <div className="map-cockpit-lens" aria-label="Field workload lens">
+            <span>
+              <b>{pendingAppointmentMapCount}</b>
+              <small>Appts</small>
+            </span>
+            <span>
+              <b>{readySecondCount}</b>
+              <small>Ready 2nd</small>
+            </span>
+            <span>
+              <b>{missingGeoCount}</b>
+              <small>Need geo</small>
+            </span>
           </div>
         </section>
 
