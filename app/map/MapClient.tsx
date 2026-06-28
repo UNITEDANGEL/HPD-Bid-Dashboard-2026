@@ -7137,7 +7137,17 @@ function directionsUrl(job: JobRecord) {
     archived: { label: "Archive", detail: "Closed work kept off the clean map." },
     all: { label: "All Work Orders", detail: "Every job, including closed and pending items." },
   };
+  const mapReturnCopy: Record<WorkflowViewFilter, { label: string; detail: string }> = {
+    active: { label: "Active Map", detail: "Back to clean pending jobs" },
+    appointments: { label: "Appointments Map", detail: "Back to upcoming visits" },
+    waiting72: { label: "72h Map", detail: "Back to no-access timers" },
+    ready2: { label: "Ready 2nd Map", detail: "Back to revisit queue" },
+    final: { label: "Review Map", detail: "Back to final status jobs" },
+    archived: { label: "Archive Map", detail: "Back to closed jobs" },
+    all: { label: "All Map", detail: "Back to every work order" },
+  };
   const dashboardView = dashboardViewCopy[workflowViewFilter];
+  const mapReturnView = mapReturnCopy[workflowViewFilter];
   const dashboardSubtitle = search.trim() ? `Search: ${search.trim()}` : dashboardView.detail;
   const dashboardDataStatus = health.totalIssues ? `${health.totalIssues} data checks` : "Data clean";
   const mapBoardModes: Array<{ view: WorkflowViewFilter; label: string; count: number }> = [
@@ -18987,6 +18997,15 @@ return (
             box-shadow: none !important;
           }
 
+          .job-card-map-back-pill {
+            min-width: 56px !important;
+            min-height: 42px !important;
+            background: #ffffff !important;
+            border-color: rgba(255, 255, 255, 0.82) !important;
+            color: #0f172a !important;
+            box-shadow: 0 12px 22px rgba(15, 23, 42, 0.18) !important;
+          }
+
           .job-card-field-action-dock {
             display: grid !important;
             grid-template-columns: minmax(0, 1.48fr) minmax(0, 0.74fr) minmax(0, 0.92fr) !important;
@@ -19025,6 +19044,64 @@ return (
             font-size: 10px !important;
             line-height: 1 !important;
             white-space: nowrap !important;
+          }
+
+          .job-card-map-return-rail {
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 52px !important;
+            display: grid !important;
+            grid-template-columns: auto minmax(0, 1fr) !important;
+            grid-template-rows: auto auto !important;
+            align-items: center !important;
+            gap: 3px 9px !important;
+            padding: 9px 10px !important;
+            border-radius: 16px !important;
+            background: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.86) !important;
+            color: #0f172a !important;
+            text-align: left !important;
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18) !important;
+          }
+
+          .job-card-map-return-rail span {
+            grid-row: 1 / 3 !important;
+            min-height: 34px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 11px !important;
+            border-radius: 999px !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+          }
+
+          .job-card-map-return-rail strong,
+          .job-card-map-return-rail small {
+            min-width: 0 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-card-map-return-rail strong {
+            color: #0f172a !important;
+            font-size: 14px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-card-map-return-rail small {
+            color: #475569 !important;
+            font-size: 11px !important;
+            line-height: 1.05 !important;
+            font-weight: 900 !important;
           }
 
           .job-drawer.selected-focus .selected-card-head {
@@ -19701,6 +19778,27 @@ return (
               font-size: 9px !important;
             }
 
+            .job-card-map-return-rail {
+              min-height: 49px !important;
+              gap: 2px 7px !important;
+              padding: 8px !important;
+              border-radius: 14px !important;
+            }
+
+            .job-card-map-return-rail span {
+              min-height: 32px !important;
+              padding: 0 9px !important;
+              font-size: 11px !important;
+            }
+
+            .job-card-map-return-rail strong {
+              font-size: 13px !important;
+            }
+
+            .job-card-map-return-rail small {
+              font-size: 10px !important;
+            }
+
             .job-drawer.selected-focus .appointment-hero-contact {
               grid-template-columns: minmax(0, 1fr) minmax(56px, 0.4fr) !important;
               gap: 6px !important;
@@ -20310,8 +20408,8 @@ return (
                     <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{jobCounterLabel(selected)}</span>
                   </div>
                 </div>
-                <button type="button" className="job-card-close-pill" onClick={showCleanMapView}>
-                  Close
+                <button type="button" className="job-card-close-pill job-card-map-back-pill" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
+                  Map
                 </button>
               </div>
               <div className="job-card-field-action-dock" aria-label="Job card primary actions">
@@ -20327,6 +20425,11 @@ return (
                   <span>Google</span>
                 </a>
               </div>
+              <button type="button" className="job-card-map-return-rail" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
+                <span>Back to Map</span>
+                <strong>{mapReturnView.label}</strong>
+                <small>{mapReturnView.detail}</small>
+              </button>
             </div>
           ) : (
             <>
@@ -20592,7 +20695,7 @@ return (
               </div>
               <div className="job-card-command-strip" aria-label="Job card quick actions">
                 <button type="button" className="job-card-close-action" onClick={showCleanMapView}>
-                  Close Job Card
+                  Back to Map
                 </button>
                 <button type="button" className="job-card-arrived-action" onClick={() => openArrivedJob(selected)}>
                   Arrived / Update Status
