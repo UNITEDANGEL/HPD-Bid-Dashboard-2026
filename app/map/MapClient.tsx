@@ -735,8 +735,9 @@ function appointmentDate(job: JobRecord | null | undefined) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function appointmentDraftValue(job: JobRecord | null | undefined) {
+function appointmentDraftValue(job: JobRecord | null | undefined, now = new Date()) {
   const date = appointmentDate(job);
+  if (date && date.getTime() <= now.getTime()) return "";
   return date ? appointmentLocalInputValueFromDate(date) : "";
 }
 
@@ -4163,7 +4164,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const savedIso = appointmentIso(job);
     const savedDate = appointmentDate(job);
     const draftDate = appointmentDateFromLocalValue(appointmentDraft);
-    const visibleDate = savedDate || draftDate;
+    const savedExpired = Boolean(savedDate && savedDate.getTime() <= Date.now());
+    const visibleDate = savedExpired ? draftDate || savedDate : savedDate || draftDate;
     const calendarHref = googleCalendarAppointmentHref(job, appointmentDraft);
     const calendarAlertHref = calendarAlertDownloadHref(job, appointmentDraft);
     const reminderInfo = appointmentReminderSetupInfo(job, appointmentDraft);
@@ -4173,7 +4175,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     const title = savedIso ? info.label : "Appointment Needed";
     const detail = savedIso
-      ? `${info.detail}. ${reminderInfo.title}.`
+      ? savedExpired
+        ? `${info.detail}. Save a new future time below.`
+        : `${info.detail}. ${reminderInfo.title}.`
       : visibleDate
         ? `${displayWorkflowDate(visibleDate.toISOString())}. ${reminderInfo.title}.`
         : "Pick a date and time below.";
@@ -4252,13 +4256,22 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   function renderJobAppointmentCard(job: MappedJob, mode: "mission" | "selected" = "selected") {
     const info = appointmentStatusInfo(job);
     const savedIso = appointmentIso(job);
+    const savedDate = appointmentDate(job);
     const calendarHref = googleCalendarAppointmentHref(job, appointmentDraft);
     const calendarAlertHref = calendarAlertDownloadHref(job, appointmentDraft);
     const draftDate = appointmentDateFromLocalValue(appointmentDraft);
     const reminderInfo = appointmentReminderSetupInfo(job, appointmentDraft);
+    const savedExpired = Boolean(savedDate && savedDate.getTime() <= Date.now());
+    const appointmentSupportText = savedIso
+      ? savedExpired
+        ? `Expired appointment: ${info.detail}. New time ready: ${draftDate ? displayWorkflowDate(draftDate.toISOString()) : "choose a future time"}. Tap Replace Appointment, then add Calendar or Download Alerts.`
+        : `Saved appointment: ${info.detail}. Add it to Google Calendar or download the .ics file for phone/email reminders.`
+      : draftDate
+        ? `Ready to save: ${displayWorkflowDate(draftDate.toISOString())}. Then add it to Calendar or download alerts.`
+        : "Choose a future date/time first.";
 
     return (
-      <div className={`job-appointment-card appointment-${info.tone} reminder-${reminderInfo.tone} ${mode === "mission" ? "mission-appointment" : ""}`} aria-label="Job appointment reminder">
+      <div className={`job-appointment-card appointment-${info.tone} reminder-${reminderInfo.tone} ${savedExpired ? "appointment-expired" : ""} ${mode === "mission" ? "mission-appointment" : ""}`} aria-label="Job appointment reminder">
         <div className="job-appointment-head">
           <span>Schedule Appointment</span>
           <strong>{info.label}</strong>
@@ -4276,16 +4289,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             onChange={(event) => setAppointmentDraft(event.target.value)}
           />
         </label>
-        <small>
-          {savedIso
-            ? `Saved in dashboard: ${info.detail}. Email reminders require Google Calendar or the downloaded .ics alert file; app alerts need browser permission.`
-            : draftDate
-              ? `Ready to save: ${displayWorkflowDate(draftDate.toISOString())}. Then add it to Calendar or download alerts.`
-              : "Choose a future date/time first."}
-        </small>
+        <small>{appointmentSupportText}</small>
         <div className={`job-appointment-actions ${savedIso ? "has-clear" : ""}`}>
           <button type="button" onClick={() => saveJobAppointment(job)} disabled={appointmentSaving}>
-            {appointmentSaving ? "Saving" : "Save Appointment"}
+            {appointmentSaving ? "Saving" : savedExpired ? "Replace Appointment" : "Save Appointment"}
           </button>
           <a
             href={calendarHref || undefined}
@@ -18172,6 +18179,236 @@ return (
 
           .map-cockpit-lens {
             display: none !important;
+          }
+
+          /* FIELD_APP_SELECTED_REFRESH_2026 */
+          .job-drawer.selected-focus {
+            background:
+              linear-gradient(180deg, rgba(248, 251, 255, 0.98), rgba(236, 248, 243, 0.98)) !important;
+            border: 1px solid rgba(20, 83, 45, 0.18) !important;
+            color: #0f172a !important;
+            box-shadow: 0 26px 70px rgba(15, 23, 42, 0.30) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 8 !important;
+            background:
+              linear-gradient(135deg, #0f172a, #164e63 58%, #0f766e) !important;
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+            color: #ffffff !important;
+            box-shadow: 0 18px 38px rgba(15, 23, 42, 0.26) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head strong {
+            color: #ffffff !important;
+            font-size: 26px !important;
+            line-height: 1.05 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head button {
+            background: #ecfdf5 !important;
+            color: #064e3b !important;
+            border-color: rgba(16, 185, 129, 0.28) !important;
+          }
+
+          .job-drawer.selected-focus .selected-card {
+            background: #ffffff !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            border-radius: 22px !important;
+            color: #0f172a !important;
+            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12) !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-head {
+            background:
+              linear-gradient(135deg, #102033, #155e75 56%, #0f766e) !important;
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+            border-radius: 18px !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-head .job-title,
+          .job-drawer.selected-focus .selected-card-head .job-address,
+          .job-drawer.selected-focus .selected-card-head .job-sub {
+            color: #ffffff !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-head .job-title {
+            font-size: 34px !important;
+            line-height: 1 !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-head .job-address {
+            font-size: 18px !important;
+            line-height: 1.2 !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-head .job-sub {
+            color: #d7fff1 !important;
+          }
+
+          .job-drawer.selected-focus .selected-chip-stack .status,
+          .job-drawer.selected-focus .selected-chip-stack .maturity-pill {
+            background: rgba(236, 253, 245, 0.16) !important;
+            border: 1px solid rgba(209, 250, 229, 0.26) !important;
+            color: #ecfdf5 !important;
+          }
+
+          .job-drawer.selected-focus .selected-overview-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 10px !important;
+          }
+
+          .job-drawer.selected-focus .overview-tile,
+          .job-drawer.selected-focus .selected-alert-card,
+          .job-drawer.selected-focus .clean-description-card,
+          .job-drawer.selected-focus .tenant-contact-card,
+          .job-drawer.selected-focus .more-job-details,
+          .job-drawer.selected-focus .detail {
+            background: #ffffff !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            border-radius: 18px !important;
+            color: #0f172a !important;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .job-drawer.selected-focus .overview-tile span,
+          .job-drawer.selected-focus .selected-alert-card span,
+          .job-drawer.selected-focus .description-head span,
+          .job-drawer.selected-focus .tenant-contact-head span,
+          .job-drawer.selected-focus .tenant-contact-row span,
+          .job-drawer.selected-focus .detail span {
+            color: #64748b !important;
+          }
+
+          .job-drawer.selected-focus .overview-tile strong,
+          .job-drawer.selected-focus .selected-alert-card strong,
+          .job-drawer.selected-focus .description-head strong,
+          .job-drawer.selected-focus .tenant-contact-head strong,
+          .job-drawer.selected-focus .tenant-contact-row strong,
+          .job-drawer.selected-focus .detail strong {
+            color: #0f172a !important;
+          }
+
+          .job-drawer.selected-focus .appointment-hero {
+            background:
+              linear-gradient(135deg, #0f172a, #155e75 54%, #0f766e) !important;
+            border: 1px solid rgba(20, 184, 166, 0.28) !important;
+            border-radius: 22px !important;
+            box-shadow: 0 20px 48px rgba(15, 23, 42, 0.20) !important;
+          }
+
+          .job-drawer.selected-focus .appointment-hero.appointment-past,
+          .job-drawer.selected-focus .appointment-hero.appointment-due {
+            background:
+              linear-gradient(135deg, #3f1d14, #9a3412 54%, #0f172a) !important;
+            border-color: rgba(251, 146, 60, 0.42) !important;
+          }
+
+          .job-drawer.selected-focus .appointment-hero-contact div {
+            border-radius: 14px !important;
+            background: rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .job-drawer.selected-focus .appointment-hero-actions a,
+          .job-drawer.selected-focus .appointment-hero-actions button {
+            border-radius: 14px !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-card {
+            background: #ffffff !important;
+            border: 1px solid rgba(14, 165, 233, 0.20) !important;
+            border-radius: 22px !important;
+            color: #0f172a !important;
+            box-shadow: 0 18px 42px rgba(15, 23, 42, 0.10) !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-card.appointment-expired {
+            background:
+              linear-gradient(180deg, #fff7ed, #ffffff) !important;
+            border-color: rgba(249, 115, 22, 0.42) !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-head span,
+          .job-drawer.selected-focus .job-appointment-card small,
+          .job-drawer.selected-focus .job-appointment-input span {
+            color: #64748b !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-head strong,
+          .job-drawer.selected-focus .job-appointment-banner strong {
+            color: #0f172a !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-banner {
+            background: #eef9ff !important;
+            border: 1px solid rgba(14, 165, 233, 0.18) !important;
+            border-radius: 16px !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-card.appointment-expired .job-appointment-banner {
+            background: #ffedd5 !important;
+            border-color: rgba(249, 115, 22, 0.22) !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-banner span {
+            color: #0369a1 !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-card.appointment-expired .job-appointment-banner span {
+            color: #9a3412 !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-input input {
+            background: #ffffff !important;
+            border: 1px solid rgba(15, 23, 42, 0.16) !important;
+            color: #0f172a !important;
+            border-radius: 14px !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-actions button,
+          .job-drawer.selected-focus .job-appointment-actions a {
+            border-radius: 14px !important;
+            min-height: 44px !important;
+            box-shadow: none !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-actions button:first-child {
+            background: linear-gradient(135deg, #16a34a, #0ea5e9) !important;
+            border-color: transparent !important;
+            color: #ffffff !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-actions .alert-link {
+            background: #fef3c7 !important;
+            border-color: rgba(217, 119, 6, 0.24) !important;
+            color: #78350f !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-actions .quiet {
+            background: #f1f5f9 !important;
+            border-color: rgba(15, 23, 42, 0.12) !important;
+            color: #334155 !important;
+          }
+
+          @media (max-width: 520px) {
+            .job-drawer.selected-focus .drawer-head strong {
+              font-size: 24px !important;
+            }
+
+            .job-drawer.selected-focus .selected-card-head .job-title {
+              font-size: 30px !important;
+            }
+
+            .job-drawer.selected-focus .selected-card-head .job-address {
+              font-size: 17px !important;
+            }
+
+            .job-drawer.selected-focus .selected-overview-grid {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
           }
 
           @media (max-width: 520px) {
