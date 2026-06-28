@@ -21074,10 +21074,29 @@ return (
           }
 
           .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-mission-alert.waiting {
+            order: 4 !important;
             grid-template-columns: minmax(0, 1fr) auto !important;
             align-items: center !important;
             gap: 4px 10px !important;
             padding: 10px 11px !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-status-date-card {
+            order: 5 !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-mission-status-head,
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-status-action-grid {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-status-map-tools {
+            order: 6 !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-status-map-tools .status-archive-map {
+            display: none !important;
           }
 
           .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-mission-alert.waiting span,
@@ -21108,7 +21127,12 @@ return (
           }
 
           .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting .field-mission-actions,
-          .job-drawer.selected-focus .site-procedure-card.no-access-waiting-procedure {
+          .job-drawer.selected-focus .site-procedure-card.no-access-waiting-procedure,
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting ~ .field-procedure-hero,
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting ~ .field-media-console,
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting ~ .field-flow-dock,
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting ~ .field-evidence-gallery,
+          .job-drawer.selected-focus .field-mission-mode.is-no-access-waiting ~ .field-workflow-grid {
             display: none !important;
           }
 
