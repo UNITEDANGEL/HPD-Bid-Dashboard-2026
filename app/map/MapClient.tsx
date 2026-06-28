@@ -21786,7 +21786,9 @@ return (
                   <p>{displayAddress(selected)}</p>
                   <div className="job-card-field-metas" aria-label="Job status summary">
                     <span className={`status ${statusClass(selected.status)}`}>{JobStatus.statusLabel(selected)}</span>
-                    <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{jobCounterLabel(selected)}</span>
+                    <span className={`maturity-pill ${maturityPriorityClass(selectedNoAccessTimerJob || selected)}`}>
+                      {selectedNoAccessTimerInfo ? (selectedNoAccessTimerInfo.ready ? "READY 2ND" : selectedNoAccessTimerInfo.label) : jobCounterLabel(selected)}
+                    </span>
                   </div>
                 </div>
                 <button type="button" className="job-card-close-pill job-card-map-back-pill" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
@@ -22106,7 +22108,9 @@ return (
               </div>
               <div className="selected-chip-stack">
                 <span className={`status ${statusClass(selected.status)}`}>{JobStatus.statusLabel(selected)}</span>
-                <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{jobCounterLabel(selected)}</span>
+                <span className={`maturity-pill ${maturityPriorityClass(selectedNoAccessTimerJob || selected)}`}>
+                  {selectedNoAccessTimerInfo ? (selectedNoAccessTimerInfo.ready ? "READY 2ND" : selectedNoAccessTimerInfo.label) : jobCounterLabel(selected)}
+                </span>
               </div>
               <div className="job-card-command-strip" aria-label="Job card quick actions">
                 <button type="button" className="job-card-close-action" onClick={showCleanMapView}>
