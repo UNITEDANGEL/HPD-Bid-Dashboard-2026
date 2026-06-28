@@ -16078,35 +16078,36 @@ return (
             z-index: 880 !important;
             left: 50% !important;
             bottom: calc(env(safe-area-inset-bottom) + 92px) !important;
-            width: min(460px, calc(100vw - 22px)) !important;
-            max-height: min(52dvh, 370px) !important;
+            width: min(500px, calc(100vw - 22px)) !important;
+            max-height: min(62dvh, 520px) !important;
             overflow: auto !important;
             transform: translateX(-50%) !important;
             display: grid !important;
-            gap: 10px !important;
-            padding: 13px !important;
-            border-radius: 18px !important;
-            border: 1px solid rgba(159, 176, 196, 0.28) !important;
-            background: linear-gradient(180deg, rgba(9, 17, 30, 0.96), rgba(18, 27, 42, 0.94)) !important;
+            gap: 11px !important;
+            padding: 12px !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(226, 232, 240, 0.18) !important;
+            background: linear-gradient(180deg, rgba(12, 18, 28, 0.98), rgba(24, 28, 35, 0.96)) !important;
             color: #f8fbff !important;
-            box-shadow: 0 22px 62px rgba(0, 0, 0, 0.38) !important;
+            box-shadow: 0 22px 62px rgba(0, 0, 0, 0.42) !important;
             backdrop-filter: blur(18px) saturate(1.08) !important;
           }
 
           .map-job-brief-head {
-            display: flex !important;
-            align-items: start !important;
-            justify-content: space-between !important;
-            gap: 12px !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto auto !important;
+            align-items: center !important;
+            gap: 8px !important;
           }
 
-          .map-job-brief-head div {
+          .map-job-brief-title {
             display: grid !important;
             min-width: 0 !important;
             gap: 3px !important;
           }
 
           .map-job-brief-head span,
+          .map-job-brief-summary-block span,
           .map-job-brief-grid small,
           .site-visit-date-card label span,
           .site-visit-date-card small {
@@ -16120,16 +16121,34 @@ return (
 
           .map-job-brief-head strong {
             color: #ffffff !important;
-            font-size: 25px !important;
+            font-size: 27px !important;
             line-height: 1 !important;
             font-weight: 1000 !important;
             letter-spacing: 0 !important;
             overflow-wrap: anywhere !important;
           }
 
-          .map-job-brief-head button,
+          .map-job-brief-status-pill {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-height: 34px !important;
+            max-width: 150px !important;
+            padding: 7px 9px !important;
+            border-radius: 999px !important;
+            border: 1px solid rgba(251, 191, 36, 0.34) !important;
+            background: rgba(251, 191, 36, 0.14) !important;
+            color: #fde68a !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            line-height: 1.05 !important;
+            text-align: center !important;
+            text-transform: uppercase !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .map-job-brief-close,
           .map-job-brief-actions button,
-          .map-job-brief-actions a,
           .site-visit-date-card button {
             min-height: 40px !important;
             display: inline-flex !important;
@@ -16147,6 +16166,11 @@ return (
             text-align: center !important;
           }
 
+          .map-job-brief-close {
+            min-width: 58px !important;
+            padding: 0 10px !important;
+          }
+
           .map-job-brief-address {
             margin: 0 !important;
             color: #e8f1ff !important;
@@ -16154,6 +16178,28 @@ return (
             font-weight: 850 !important;
             line-height: 1.22 !important;
             overflow-wrap: anywhere !important;
+          }
+
+          .map-job-brief-summary-block {
+            display: grid !important;
+            gap: 6px !important;
+            padding: 11px 12px !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(251, 191, 36, 0.18) !important;
+            border-left: 4px solid #fbbf24 !important;
+            background: rgba(255, 255, 255, 0.075) !important;
+          }
+
+          .map-job-brief-summary-block p {
+            margin: 0 !important;
+            color: #f3f7fc !important;
+            font-size: 14px !important;
+            font-weight: 780 !important;
+            line-height: 1.34 !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 4 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
           }
 
           .map-job-brief-grid {
@@ -16167,7 +16213,7 @@ return (
             display: grid !important;
             gap: 4px !important;
             padding: 9px !important;
-            border-radius: 13px !important;
+            border-radius: 8px !important;
             background: rgba(255, 255, 255, 0.07) !important;
             border: 1px solid rgba(226, 232, 240, 0.10) !important;
           }
@@ -16180,33 +16226,36 @@ return (
             overflow-wrap: anywhere !important;
           }
 
-          .map-job-brief-summary {
-            margin: 0 !important;
-            color: #cbd8e8 !important;
-            font-size: 13px !important;
-            line-height: 1.35 !important;
-            display: -webkit-box !important;
-            -webkit-line-clamp: 3 !important;
-            -webkit-box-orient: vertical !important;
-            overflow: hidden !important;
+          .map-job-brief-directions {
+            min-height: 64px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(255, 255, 255, 0.42) !important;
+            background: linear-gradient(135deg, #fbbf24 0%, #22c55e 100%) !important;
+            color: #101820 !important;
+            box-shadow: 0 18px 38px rgba(34, 197, 94, 0.26) !important;
+            font-size: 20px !important;
+            font-weight: 1000 !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+            text-align: center !important;
+            text-decoration: none !important;
           }
 
           .map-job-brief-actions {
             display: grid !important;
-            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-            gap: 7px !important;
+            grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)) !important;
+            gap: 8px !important;
           }
 
           .map-job-brief-actions .primary,
           .site-visit-date-card button {
-            background: linear-gradient(135deg, #34d399, #60a5fa) !important;
-            color: #07131f !important;
+            background: linear-gradient(135deg, #38bdf8, #2dd4bf) !important;
+            color: #06131d !important;
             border-color: rgba(255, 255, 255, 0.36) !important;
             box-shadow: 0 14px 30px rgba(37, 99, 235, 0.22) !important;
-          }
-
-          .map-job-brief-actions .primary {
-            grid-column: span 2 !important;
           }
 
           .site-visit-date-card {
@@ -16257,10 +16306,20 @@ return (
 
           @media (max-width: 520px) {
             .map-job-brief-card {
-              bottom: calc(env(safe-area-inset-bottom) + 92px) !important;
+              bottom: calc(env(safe-area-inset-bottom) + 84px) !important;
               width: calc(100vw - 18px) !important;
-              max-height: min(48dvh, 340px) !important;
+              max-height: min(58dvh, 470px) !important;
               padding: 12px !important;
+            }
+
+            .map-job-brief-head {
+              grid-template-columns: minmax(0, 1fr) auto !important;
+            }
+
+            .map-job-brief-status-pill {
+              grid-column: 1 / -1 !important;
+              justify-content: start !important;
+              max-width: none !important;
             }
 
             .map-job-brief-grid {
@@ -16272,11 +16331,12 @@ return (
             }
 
             .map-job-brief-actions {
-              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              grid-template-columns: minmax(0, 1fr) !important;
             }
 
-            .map-job-brief-actions .primary {
-              grid-column: 1 / -1 !important;
+            .map-job-brief-directions {
+              min-height: 66px !important;
+              font-size: 21px !important;
             }
 
             .site-visit-date-card {
@@ -18858,51 +18918,73 @@ return (
           <span>{locationStatus}</span>
         </div>
 
-        {mapJobBrief ? (
+        {mapJobBrief ? (() => {
+          const briefJob = mapJobBrief.job;
+          const contact = tenantContactInfo(briefJob);
+          const appointmentInfo = appointmentStatusInfo(briefJob);
+          const hasAppointment = Boolean(appointmentIso(briefJob));
+          const tenantSignal = contact.appointmentNeeded
+            ? contact.phone || contact.status
+            : contact.status;
+          const secondarySignalLabel = hasAppointment ? "Appointment" : contact.appointmentNeeded ? "Tenant" : "Site Type";
+          const secondarySignalValue = hasAppointment ? appointmentInfo.label : tenantSignal;
+
+          return (
           <section className="map-job-brief-card" aria-label="Map job brief">
             <div className="map-job-brief-head">
-              <div>
-                <span>Selected Site</span>
-                <strong>{jobKey(mapJobBrief.job, mapJobBrief.index)}</strong>
+              <div className="map-job-brief-title">
+                <span>Work Order</span>
+                <strong>{jobKey(briefJob, mapJobBrief.index)}</strong>
               </div>
-              <button type="button" onClick={closeMapJobBrief} aria-label="Close job brief">
+              <span className="map-job-brief-status-pill">{workflowLabel(briefJob) || JobStatus.statusLabel(briefJob)}</span>
+              <button className="map-job-brief-close" type="button" onClick={closeMapJobBrief} aria-label="Close job brief">
                 Close
               </button>
             </div>
-            <p className="map-job-brief-address">{displayAddress(mapJobBrief.job)}</p>
+            <p className="map-job-brief-address">{displayAddress(briefJob)}</p>
+            <div className="map-job-brief-summary-block">
+              <span>Short Summary</span>
+              <p>{mapBriefText(briefJob)}</p>
+            </div>
             <div className="map-job-brief-grid">
               <span>
                 <small>Distance</small>
-                <strong>{jobDistanceLabel(mapJobBrief.job)}</strong>
+                <strong>{jobDistanceLabel(briefJob)}</strong>
               </span>
               <span>
-                <small>Status</small>
-                <strong>{workflowLabel(mapJobBrief.job) || JobStatus.statusLabel(mapJobBrief.job)}</strong>
+                <small>Next Step</small>
+                <strong>{nextActionInfo(briefJob).label}</strong>
               </span>
               <span>
-                <small>Work Window</small>
-                <strong>{workWindowInfo(mapJobBrief.job).statusLabel}</strong>
+                <small>{secondarySignalLabel}</small>
+                <strong>{secondarySignalValue}</strong>
               </span>
             </div>
-            <p className="map-job-brief-summary">{mapBriefText(mapJobBrief.job)}</p>
+            <a
+              className="map-job-brief-directions"
+              href={directionsUrl(briefJob)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => showActionNotice("Opening directions. Tap Update Status when you reach the site.")}
+            >
+              Directions
+            </a>
             <div className="map-job-brief-actions">
               {!userLocation ? (
                 <button type="button" onClick={startLocationTracking}>
-                  Start Location
+                  Start GPS
                 </button>
               ) : null}
-              <a href={wazeDirectionsUrl(mapJobBrief.job)} target="_blank" rel="noopener noreferrer" onClick={() => showActionNotice("Opening guide. Tap Arrived when you reach the site.")}>
-                Guide There
-              </a>
-              <a href={directionsUrl(mapJobBrief.job)} target="_blank" rel="noopener noreferrer">
-                Google
-              </a>
-              <button type="button" className="primary" onClick={() => openArrivedJob(mapJobBrief.job)}>
-                Arrived / Update Status
+              <button type="button" onClick={() => focusJob(briefJob)}>
+                Open Job Card
+              </button>
+              <button type="button" className="primary" onClick={() => openArrivedJob(briefJob)}>
+                Update Status
               </button>
             </div>
           </section>
-        ) : null}
+          );
+        })() : null}
       </section>
 
       <aside
