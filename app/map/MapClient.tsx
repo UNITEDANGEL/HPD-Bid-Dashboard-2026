@@ -16871,6 +16871,9 @@ return (
 
           /* DISPATCH_DASHBOARD_UPGRADE_2026 */
           .map-top {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
             width: min(430px, calc(100vw - 72px)) !important;
             padding: 11px !important;
             gap: 10px !important;
@@ -16879,6 +16882,7 @@ return (
             border: 1px solid rgba(128, 150, 174, 0.34) !important;
             box-shadow: 0 24px 64px rgba(20, 32, 48, 0.24) !important;
             color: #162235 !important;
+            overflow-y: auto !important;
           }
 
           .map-title-row {
@@ -16902,6 +16906,9 @@ return (
           }
 
           .dispatch-dashboard-card {
+            flex: 0 0 auto !important;
+            height: auto !important;
+            max-height: none !important;
             display: grid !important;
             gap: 11px !important;
             padding: 13px !important;
@@ -16912,7 +16919,7 @@ return (
               #142033 !important;
             border: 1px solid rgba(255, 255, 255, 0.16) !important;
             box-shadow: 0 18px 42px rgba(20, 32, 48, 0.22) !important;
-            overflow: hidden !important;
+            overflow: visible !important;
           }
 
           .dispatch-dashboard-head {
