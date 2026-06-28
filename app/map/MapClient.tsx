@@ -13666,7 +13666,6 @@ return (
           }
 
           .field-workflow-card:not(:has(.field-flow-dock .capture.active)) .field-step-actions,
-          .field-workflow-card:not(:has(.field-flow-dock .capture.active)) .field-media-console,
           .field-workflow-card:not(:has(.field-flow-dock .capture.active)) .field-workflow-grid {
             display: none !important;
           }
@@ -14423,7 +14422,6 @@ return (
           }
 
           .field-workflow-card > .field-procedure-hero,
-          .field-workflow-card > .field-media-console,
           .field-workflow-card > .field-flow-dock,
           .field-workflow-card > .field-workflow-grid,
           .field-workflow-card > .field-step-actions,
@@ -15357,6 +15355,10 @@ return (
 
           .job-drawer.selected-focus .workflow-filter-bar {
             display: none !important;
+          }
+
+          .field-workflow-card > .field-media-console {
+            display: grid !important;
           }
 
           .job-drawer.selected-focus .selected-card {
