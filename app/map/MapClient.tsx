@@ -2818,8 +2818,24 @@ function openMapLayersFromJobCard() {
 }
 
 function positionSelectedCardInDrawer() {
-  if (jobDrawerRef.current) {
-    jobDrawerRef.current.scrollTo({
+  const drawer = jobDrawerRef.current;
+  if (drawer) {
+    const descriptionTarget = drawer.querySelector<HTMLElement>("[data-job-card-description-focus='true']");
+    if (descriptionTarget) {
+      const drawerRect = drawer.getBoundingClientRect();
+      const targetRect = descriptionTarget.getBoundingClientRect();
+      const stickyHead = drawer.querySelector<HTMLElement>(".selected-job-drawer-head");
+      const headHeight = stickyHead?.offsetHeight || 0;
+      const top = drawer.scrollTop + targetRect.top - drawerRect.top - headHeight - 8;
+      drawer.scrollTo({
+        top: Math.max(0, top),
+        left: 0,
+        behavior: androidScrollFix ? "auto" : "smooth",
+      });
+      return;
+    }
+
+    drawer.scrollTo({
       top: 0,
       left: 0,
       behavior: androidScrollFix ? "auto" : "smooth",
@@ -3004,9 +3020,10 @@ function handleMapTouchEnd(event: any) {
   }, [serverWorkflowOverrides, jobs.length, mappedJobs.length]);
   // Apply saved workflow statuses after jobs load from static data.
   useEffect(() => {
-    if (selected) {
-      window.setTimeout(positionSelectedCardInDrawer, 80);
-    }
+    if (!selected) return;
+
+    window.setTimeout(positionSelectedCardInDrawer, 80);
+    window.setTimeout(positionSelectedCardInDrawer, 260);
   }, [selected]);
 
   useEffect(() => {
@@ -21154,6 +21171,96 @@ return (
             }
           }
 
+          /* JOB_CARD_DESCRIPTION_FOCUS_FIX_2026 */
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+            margin-bottom: 6px !important;
+            padding: 7px !important;
+            border-radius: 16px !important;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22) !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-sheet-head {
+            gap: 6px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-row {
+            gap: 7px !important;
+            align-items: center !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy {
+            gap: 1px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy strong {
+            font-size: 24px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy p {
+            margin-top: 1px !important;
+            font-size: 12px !important;
+            line-height: 1.12 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .job-card-map-back-pill {
+            min-width: 52px !important;
+            min-height: 34px !important;
+            padding: 0 10px !important;
+            font-size: 12px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-72h-counter,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-map-return-row {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-field-action-dock {
+            grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.74fr) minmax(0, 0.8fr) !important;
+            gap: 6px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button {
+            min-height: 40px !important;
+            border-radius: 13px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived {
+            font-size: 11px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button {
+            flex-direction: row !important;
+            gap: 5px !important;
+            padding: 5px 7px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button img {
+            width: 18px !important;
+            height: 18px !important;
+            flex-basis: 18px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button span {
+            font-size: 10px !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description[data-job-card-description-focus="true"] {
+            scroll-margin-top: 8px !important;
+            border-left-width: 7px !important;
+            box-shadow:
+              0 0 0 3px rgba(14, 165, 233, 0.14),
+              0 14px 30px rgba(15, 23, 42, 0.12) !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description[data-job-card-description-focus="true"] p {
+            max-height: min(30dvh, 230px) !important;
+          }
+
           @media (max-width: 520px) {
             .map-top {
               left: 6px !important;
@@ -22346,7 +22453,11 @@ return (
                         {selectedNoAccessTimerInfo ? (selectedNoAccessTimerInfo.ready ? "READY 2ND" : selectedNoAccessTimerInfo.label) : jobCounterLabel(selected)}
                       </small>
                     </div>
-                    <div className={`field-page3-description ${missionDescription ? "" : "is-missing"}`} aria-label="Page 3 job description">
+                    <div
+                      className={`field-page3-description ${missionDescription ? "" : "is-missing"}`}
+                      data-job-card-description-focus="true"
+                      aria-label="Page 3 job description"
+                    >
                       <div className="field-page3-description-head">
                         <span>ITB Page 3 Scope</span>
                         {missionItbSource?.itbPage3Published ? (
