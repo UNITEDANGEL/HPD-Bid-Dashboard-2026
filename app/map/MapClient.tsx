@@ -17526,6 +17526,43 @@ return (
             text-overflow: clip !important;
           }
 
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-expanded,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-detailed,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-has-overdue.marker-expanded,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-has-overdue.marker-detailed,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-has-overdue.marker-overview {
+            width: auto !important;
+            max-width: none !important;
+            height: auto !important;
+            overflow: visible !important;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker .signal-main,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-expanded .signal-main,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-detailed .signal-main,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview .signal-main,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-has-overdue .signal-main,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-has-overdue.marker-expanded .signal-main,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-has-overdue.marker-detailed .signal-main,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-has-overdue.marker-overview .signal-main {
+            width: auto !important;
+            max-width: none !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            white-space: nowrap !important;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-has-overdue.marker-overview {
+            min-width: 112px !important;
+            min-height: 68px !important;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-has-overdue.marker-overview .signal-main {
+            font-size: 22px !important;
+          }
+
           .maturity-map-marker .map-signal-marker .marker-appointment-badge,
           .maturity-map-marker .map-signal-marker .marker-no-access-timer {
             border-radius: 999px !important;
