@@ -7143,7 +7143,7 @@ function directionsUrl(job: JobRecord) {
 
 return (
     <main
-      className={`map-shell ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""}`}
+      className={`map-shell ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""} ${mapJobBrief ? "map-brief-open" : ""}`}
       onTouchStart={androidScrollFix ? undefined : handleMapTouchStart}
       onTouchEnd={androidScrollFix ? undefined : handleMapTouchEnd}
     >
@@ -16326,11 +16326,21 @@ return (
             pointer-events: none !important;
           }
 
+          .map-shell.map-brief-open .map-stats,
+          .map-shell.map-brief-open .status-legend,
+          .map-shell.map-brief-open .zoom-panel,
+          .map-shell.map-brief-open .location-status-pill,
+          .map-shell.map-brief-open .action-notice {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+          }
+
           @media (max-width: 520px) {
             .map-job-brief-card {
-              bottom: calc(env(safe-area-inset-bottom) + 84px) !important;
+              bottom: calc(env(safe-area-inset-bottom) + 18px) !important;
               width: calc(100vw - 18px) !important;
-              max-height: min(58dvh, 470px) !important;
+              max-height: min(70dvh, 520px) !important;
               padding: 12px !important;
             }
 
