@@ -15122,6 +15122,43 @@ return (
             overflow: hidden !important;
           }
 
+          .job-drawer.selected-focus .job-card-command-strip {
+            order: 2 !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr) !important;
+            gap: 9px !important;
+            padding: 0 2px !important;
+            min-width: 0 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-command-strip button {
+            min-height: 52px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 8px !important;
+            border: 1px solid rgba(226, 232, 240, 0.16) !important;
+            font-size: 14px !important;
+            font-weight: 1000 !important;
+            line-height: 1.05 !important;
+            letter-spacing: 0 !important;
+            text-align: center !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .job-drawer.selected-focus .job-card-close-action {
+            background: rgba(248, 250, 252, 0.10) !important;
+            color: #e2e8f0 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-arrived-action {
+            background: linear-gradient(135deg, #fbbf24, #22c55e) !important;
+            color: #07131f !important;
+            border-color: rgba(255, 255, 255, 0.38) !important;
+            box-shadow: 0 16px 34px rgba(34, 197, 94, 0.22) !important;
+          }
+
           .job-drawer.selected-focus .selected-title-block {
             min-width: 0 !important;
             display: grid !important;
@@ -19370,6 +19407,14 @@ return (
               <div className="selected-chip-stack">
                 <span className={`status ${statusClass(selected.status)}`}>{JobStatus.statusLabel(selected)}</span>
                 <span className={`maturity-pill ${maturityPriorityClass(selected)}`}>{jobCounterLabel(selected)}</span>
+              </div>
+              <div className="job-card-command-strip" aria-label="Job card quick actions">
+                <button type="button" className="job-card-close-action" onClick={showCleanMapView}>
+                  Close Job Card
+                </button>
+                <button type="button" className="job-card-arrived-action" onClick={() => openArrivedJob(selected)}>
+                  Arrived / Update Status
+                </button>
               </div>
             </div>
 
