@@ -1347,7 +1347,7 @@ function markerSignalLabelHtml(
   const start = markerStartCounterLabel(job);
   const id = jobKey(job);
   const address = markerAddressLabel(job);
-  const daySignal = options.overdueLabel || (options.noAccessTimerLabel ? "No access" : award.main.replace(/^MD\s*/i, "").replace(/^AWD IN\s*/i, "Award in "));
+  const daySignal = options.overdueLabel || (options.noAccessTimerLabel ? "72h no access" : award.main.replace(/^MD\s*/i, "").replace(/^AWD IN\s*/i, "Award in "));
   const footer = options.detailed ? markerDetailLabel(job) : options.expanded ? award.badge : "";
 
   if (options.overview) {
@@ -1380,9 +1380,9 @@ function markerDetailLabel(job: JobRecord) {
 function markerNoAccessTimerHtml(job: JobRecord) {
   const second = workflowSecondAttemptInfo(job);
   if (!second) return "";
-  const label = second.ready ? "READY 2ND" : `T-${second.hoursLeft}H`;
+  const label = second.ready ? "READY 2ND" : second.label;
   const className = second.ready ? "is-ready" : second.within24 ? "is-soon" : "is-waiting";
-  return `<span class="marker-no-access-timer ${className}">${escapeMarkerHtml(label)}</span>`;
+  return `<span class="marker-no-access-timer ${className}"><b>72H CLOCK</b><strong>${escapeMarkerHtml(label)}</strong></span>`;
 }
 function appointmentMarkerTimeLabel(date: Date, now = new Date()) {
   const time = date
@@ -3859,6 +3859,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       const bounds: [number, number][] = [];
       const plottedItems: ClusterJobItem[] = [];
+      const showIndividualNoAccessTimers =
+        workflowViewFilter === "waiting72" ||
+        workflowViewFilter === "noaccess24" ||
+        workflowViewFilter === "ready2";
 
       filteredJobs.forEach((job, index) => {
         if (!Number.isFinite(job._lat) || !Number.isFinite(job._lng)) return;
@@ -3869,7 +3873,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         plottedItems.push({ job, index, lat, lng });
       });
 
-      const renderItems: any[] = markerOverview
+      const renderItems: any[] = markerOverview && !showIndividualNoAccessTimers
         ? Array.from(
             plottedItems.reduce((clusters, item) => {
               const point = map.latLngToLayerPoint([item.lat, item.lng]);
@@ -3906,6 +3910,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           const appointmentCount = appointmentItems.length;
           const readyCount = clusterItems.filter((current) => workflowViewBucket(current.job) === "ready2").length;
           const soonNoAccessCount = clusterItems.filter((current) => isNoAccessTwentyFourHourAlert(current.job)).length;
+          const waitingNoAccessItems = clusterItems
+            .map((current) => ({ ...current, second: workflowSecondAttemptInfo(current.job) }))
+            .filter((current) => current.second && !current.second.ready && !current.second.within24)
+            .sort((a, b) => (a.second?.hoursLeft || 9999) - (b.second?.hoursLeft || 9999));
+          const waitingNoAccessCount = waitingNoAccessItems.length;
+          const waitingNoAccessLabel = waitingNoAccessItems[0]?.second?.label.replace(" TO 2ND", "") || "";
           const pendingCount = clusterItems.filter((current) => workflowViewBucket(current.job) === "pending").length;
           const statusClass = appointmentCount
             ? "cluster-appointment"
@@ -3913,11 +3923,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               ? "cluster-ready"
               : soonNoAccessCount
                 ? "cluster-noaccess-soon"
-                : pendingCount
-                  ? "cluster-pending"
-                  : worstOverdue
-                    ? "cluster-overdue"
-                    : "cluster-normal";
+                : waitingNoAccessCount
+                  ? "cluster-noaccess-waiting"
+                  : pendingCount
+                    ? "cluster-pending"
+                    : worstOverdue
+                      ? "cluster-overdue"
+                      : "cluster-normal";
           const clusterLabel =
             appointmentCount === 1
               ? markerAppointmentLabelText(appointmentItems[0].job)
@@ -3927,11 +3939,15 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                   ? `${readyCount} ready`
                   : soonNoAccessCount
                     ? `${soonNoAccessCount} T-24`
-                    : pendingCount
-                      ? `${pendingCount} pending`
-                      : worstOverdue
-                        ? overdueDaysLabel(worstOverdue)
-                        : "mapped";
+                    : waitingNoAccessCount
+                      ? waitingNoAccessCount === 1
+                        ? waitingNoAccessLabel
+                        : `${waitingNoAccessCount} clocks`
+                      : pendingCount
+                        ? `${pendingCount} pending`
+                        : worstOverdue
+                          ? overdueDaysLabel(worstOverdue)
+                          : "mapped";
           const marker = L.marker([item.lat, item.lng], {
             icon: L.divIcon({
               className: "maturity-map-marker",
@@ -3970,14 +3986,23 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const noAccessTimerLabel = markerNoAccessTimerHtml(job);
         const noAccessSoon = isNoAccessTwentyFourHourAlert(job);
         const noAccessReady = workflowViewBucket(job) === "ready2";
+        const noAccessTimerFocus = Boolean(noAccessTimerLabel) && showIndividualNoAccessTimers;
         const appointmentLabel = markerAppointmentReminderHtml(job);
         const pendingAppointmentPulse = hasPendingUpcomingAppointment(job);
         const hasOverdue = Boolean(overdueLabel);
-        const markerMode = markerDetailed ? "marker-detailed" : markerExpanded ? "marker-expanded" : markerOverview ? "marker-overview" : "marker-compact";
+        const markerMode = markerDetailed
+          ? "marker-detailed"
+          : markerExpanded || noAccessTimerFocus
+            ? `marker-expanded${noAccessTimerFocus ? " marker-timer-focus" : ""}`
+            : markerOverview
+              ? "marker-overview"
+              : "marker-compact";
         const baseIconSize: [number, number] = markerDetailed
-          ? [218, noAccessTimerLabel || appointmentLabel ? 156 : 132]
+          ? [226, noAccessTimerLabel || appointmentLabel ? 166 : 132]
           : markerExpanded
-            ? [198, noAccessTimerLabel || appointmentLabel ? 142 : 116]
+            ? [206, noAccessTimerLabel || appointmentLabel ? 152 : 116]
+            : noAccessTimerFocus
+              ? [206, 150]
             : markerOverview
               ? [hasOverdue || appointmentLabel || noAccessTimerLabel ? 154 : 132, appointmentLabel || noAccessTimerLabel ? 106 : 88]
               : [hasOverdue ? 148 : 132, noAccessTimerLabel || appointmentLabel ? 104 : 84];
@@ -4032,7 +4057,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     drawMarkers();
-  }, [mapReady, filteredJobs, countdownTick, mapZoom, markerAutoFitKey, userLocation, selectedOnly, drawerOpen]);
+  }, [mapReady, filteredJobs, countdownTick, mapZoom, markerAutoFitKey, userLocation, selectedOnly, drawerOpen, workflowViewFilter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -18738,6 +18763,20 @@ return (
               0 18px 36px rgba(15, 23, 42, 0.30) !important;
           }
 
+          .maturity-map-marker .map-cluster-marker.cluster-noaccess-waiting {
+            background:
+              linear-gradient(180deg, rgba(120, 53, 15, 0.96), rgba(217, 119, 6, 0.90)) !important;
+            box-shadow:
+              0 0 0 3px rgba(255, 255, 255, 0.84),
+              0 0 0 8px rgba(245, 158, 11, 0.20),
+              0 14px 30px rgba(120, 53, 15, 0.26) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-noaccess-waiting strong {
+            background: #fef3c7 !important;
+            color: #78350f !important;
+          }
+
           /* DISPATCH_MARKER_LABELS_2026 */
           .maturity-map-marker .map-signal-marker {
             border-radius: 8px !important;
@@ -18803,6 +18842,96 @@ return (
           .maturity-map-marker .map-signal-marker.marker-overview .signal-address {
             max-width: 132px !important;
             font-size: 8px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-timer-focus {
+            min-width: 196px !important;
+            min-height: 138px !important;
+            padding: 8px 10px 10px !important;
+            gap: 5px !important;
+            border-radius: 14px !important;
+            background:
+              linear-gradient(180deg, #ffffff, #fff8eb) !important;
+            box-shadow:
+              0 0 0 3px rgba(255, 255, 255, 0.95),
+              0 0 0 9px rgba(245, 158, 11, 0.18),
+              0 18px 38px rgba(120, 53, 15, 0.28) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-timer-focus .signal-eyebrow {
+            background: #ffedd5 !important;
+            color: #7c2d12 !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-timer-focus .signal-address {
+            max-width: 176px !important;
+            color: #1f2937 !important;
+            font-size: 10px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-no-access-timer {
+            display: inline-grid !important;
+            min-width: 132px !important;
+            min-height: 38px !important;
+            place-items: center !important;
+            gap: 2px !important;
+            padding: 5px 10px !important;
+            margin: 1px auto 0 !important;
+            border-radius: 12px !important;
+            background: #facc15 !important;
+            color: #111827 !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(17, 24, 39, 0.16),
+              0 7px 16px rgba(120, 53, 15, 0.18) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-no-access-timer b {
+            display: block !important;
+            color: #713f12 !important;
+            font-size: 8px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-no-access-timer strong {
+            display: block !important;
+            color: #111827 !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-no-access-timer.is-soon {
+            background: #fb923c !important;
+            color: #431407 !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(67, 20, 7, 0.18),
+              0 0 0 3px rgba(251, 146, 60, 0.22),
+              0 8px 18px rgba(154, 52, 18, 0.22) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-no-access-timer.is-ready {
+            background: #22c55e !important;
+            color: #052e16 !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(5, 46, 22, 0.16),
+              0 0 0 3px rgba(34, 197, 94, 0.24),
+              0 8px 18px rgba(20, 83, 45, 0.24) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-no-access-timer.is-soon b,
+          .maturity-map-marker .map-signal-marker .marker-no-access-timer.is-soon strong {
+            color: #431407 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-no-access-timer.is-ready b,
+          .maturity-map-marker .map-signal-marker .marker-no-access-timer.is-ready strong {
+            color: #052e16 !important;
           }
 
           /* MAP_VISUAL_POLISH_2026 */
