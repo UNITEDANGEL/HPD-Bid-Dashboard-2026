@@ -6969,11 +6969,11 @@ function directionsUrl(job: JobRecord) {
   const missingGeoCount = Math.max(0, jobs.length - plottedCount);
   const visibleMappedCount = filteredJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng)).length;
   const dashboardViewCopy: Record<WorkflowViewFilter, { label: string; detail: string }> = {
-    active: { label: "Active Dispatch", detail: "Pending work orders on the clean map." },
-    appointments: { label: "Appointment Board", detail: "Scheduled tenant visits and reminders." },
-    waiting72: { label: "Waiting 72 Hours", detail: "First no-access attempts still cooling down." },
-    ready2: { label: "Second Attempt Ready", detail: "Jobs ready for revisit now." },
-    final: { label: "Final Review", detail: "Packages moving through review and HPD send-off." },
+    active: { label: "Active Work", detail: "Pending work orders on the clean map." },
+    appointments: { label: "Appointments", detail: "Tenant visits and reminders." },
+    waiting72: { label: "72 Hour Wait", detail: "First no-access attempts still cooling down." },
+    ready2: { label: "Ready 2nd", detail: "Jobs ready for revisit now." },
+    final: { label: "Review", detail: "Packages moving through review." },
     archived: { label: "Archive", detail: "Closed work kept off the clean map." },
     all: { label: "All Work Orders", detail: "Every job, including closed and pending items." },
   };
@@ -16874,10 +16874,10 @@ return (
             display: flex !important;
             flex-direction: column !important;
             align-items: stretch !important;
-            width: min(430px, calc(100vw - 72px)) !important;
-            padding: 11px !important;
-            gap: 10px !important;
-            border-radius: 22px !important;
+            width: min(440px, calc(100vw - 36px)) !important;
+            padding: 10px !important;
+            gap: 8px !important;
+            border-radius: 20px !important;
             background: rgba(250, 252, 254, 0.97) !important;
             border: 1px solid rgba(128, 150, 174, 0.34) !important;
             box-shadow: 0 24px 64px rgba(20, 32, 48, 0.24) !important;
@@ -16910,9 +16910,9 @@ return (
             height: auto !important;
             max-height: none !important;
             display: grid !important;
-            gap: 11px !important;
-            padding: 13px !important;
-            border-radius: 20px !important;
+            gap: 8px !important;
+            padding: 10px !important;
+            border-radius: 18px !important;
             color: #f8fbff !important;
             background:
               linear-gradient(145deg, rgba(17, 27, 43, 0.98), rgba(22, 58, 82, 0.96) 58%, rgba(13, 108, 82, 0.92)),
@@ -16926,13 +16926,13 @@ return (
             display: grid !important;
             grid-template-columns: minmax(0, 1fr) auto !important;
             align-items: start !important;
-            gap: 10px !important;
+            gap: 8px !important;
           }
 
           .dispatch-dashboard-copy {
             min-width: 0 !important;
             display: grid !important;
-            gap: 4px !important;
+            gap: 2px !important;
           }
 
           .dispatch-dashboard-copy span,
@@ -16946,7 +16946,7 @@ return (
 
           .dispatch-dashboard-copy span {
             color: #8ee9d4 !important;
-            font-size: 11px !important;
+            font-size: 10px !important;
             font-weight: 950 !important;
             text-transform: uppercase !important;
           }
@@ -16961,32 +16961,32 @@ return (
 
           .dispatch-dashboard-copy small {
             color: #c6d7e8 !important;
-            font-size: 12px !important;
-            line-height: 1.35 !important;
+            font-size: 11px !important;
+            line-height: 1.22 !important;
             overflow-wrap: anywhere !important;
           }
 
           .dispatch-dashboard-count {
-            min-width: 74px !important;
+            min-width: 62px !important;
             display: grid !important;
             justify-items: center !important;
-            gap: 3px !important;
-            padding: 9px 10px !important;
-            border-radius: 16px !important;
+            gap: 2px !important;
+            padding: 8px 9px !important;
+            border-radius: 15px !important;
             background: rgba(255, 255, 255, 0.12) !important;
             border: 1px solid rgba(255, 255, 255, 0.16) !important;
           }
 
           .dispatch-dashboard-count span {
             color: #ffffff !important;
-            font-size: 26px !important;
+            font-size: 24px !important;
             line-height: 1 !important;
             font-weight: 1000 !important;
           }
 
           .dispatch-dashboard-count small {
             color: #c7d7e8 !important;
-            font-size: 10px !important;
+            font-size: 9px !important;
             font-weight: 900 !important;
             text-transform: uppercase !important;
           }
@@ -16994,18 +16994,18 @@ return (
           .dispatch-kpi-grid {
             display: grid !important;
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-            gap: 8px !important;
+            gap: 6px !important;
           }
 
           .dispatch-kpi {
             min-width: 0 !important;
-            min-height: 78px !important;
+            min-height: 58px !important;
             display: grid !important;
             align-content: center !important;
-            gap: 4px !important;
+            gap: 2px !important;
             text-align: left !important;
-            border-radius: 16px !important;
-            padding: 10px !important;
+            border-radius: 14px !important;
+            padding: 8px !important;
             border: 1px solid rgba(255, 255, 255, 0.16) !important;
             background: rgba(255, 255, 255, 0.10) !important;
             color: #f8fbff !important;
@@ -17014,14 +17014,14 @@ return (
 
           .dispatch-kpi span {
             color: #c9d9ea !important;
-            font-size: 10px !important;
+            font-size: 9px !important;
             font-weight: 950 !important;
             text-transform: uppercase !important;
           }
 
           .dispatch-kpi strong {
             color: #ffffff !important;
-            font-size: 24px !important;
+            font-size: 22px !important;
             line-height: 1 !important;
             font-weight: 1000 !important;
             letter-spacing: 0 !important;
@@ -17029,8 +17029,8 @@ return (
 
           .dispatch-kpi small {
             color: #b9cbde !important;
-            font-size: 10px !important;
-            line-height: 1.18 !important;
+            font-size: 9px !important;
+            line-height: 1.1 !important;
             font-weight: 850 !important;
             overflow-wrap: anywhere !important;
           }
@@ -17061,25 +17061,28 @@ return (
 
           .dispatch-dashboard-strip {
             display: flex !important;
-            flex-wrap: wrap !important;
-            gap: 6px !important;
+            flex-wrap: nowrap !important;
+            gap: 5px !important;
+            overflow-x: auto !important;
+            padding-bottom: 1px !important;
           }
 
           .dispatch-dashboard-strip span {
-            min-height: 28px !important;
+            min-height: 24px !important;
             display: inline-flex !important;
             align-items: center !important;
-            padding: 0 9px !important;
+            flex: 0 0 auto !important;
+            padding: 0 8px !important;
             border-radius: 999px !important;
             background: rgba(255, 255, 255, 0.10) !important;
             color: #d5e4f3 !important;
-            font-size: 10px !important;
+            font-size: 9px !important;
             font-weight: 900 !important;
             border: 1px solid rgba(255, 255, 255, 0.12) !important;
           }
 
           .map-search {
-            grid-template-columns: minmax(0, 1fr) 62px !important;
+            grid-template-columns: minmax(0, 1fr) 68px !important;
           }
 
           .map-search input,
@@ -17088,7 +17091,7 @@ return (
           .days-back-control,
           .map-style-select,
           .maptiler-key-control {
-            min-height: 42px !important;
+            min-height: 40px !important;
             border-radius: 14px !important;
           }
 
@@ -17188,36 +17191,41 @@ return (
 
           @media (max-width: 520px) {
             .map-top {
-              width: min(386px, calc(100vw - 56px)) !important;
-              padding: 9px !important;
-              gap: 8px !important;
-            }
-
-            .dispatch-dashboard-card {
-              padding: 11px !important;
+              left: 6px !important;
+              width: calc(100vw - 18px) !important;
+              padding: 8px !important;
+              gap: 7px !important;
               border-radius: 18px !important;
             }
 
+            .dispatch-dashboard-card {
+              padding: 9px !important;
+              gap: 7px !important;
+              border-radius: 17px !important;
+            }
+
             .dispatch-dashboard-copy strong {
-              font-size: 21px !important;
-            }
-
-            .dispatch-dashboard-count {
-              min-width: 64px !important;
-              padding: 8px !important;
-            }
-
-            .dispatch-dashboard-count span {
               font-size: 23px !important;
             }
 
+            .dispatch-dashboard-count {
+              min-width: 58px !important;
+              padding: 7px !important;
+              border-radius: 14px !important;
+            }
+
+            .dispatch-dashboard-count span {
+              font-size: 22px !important;
+            }
+
             .dispatch-kpi {
-              min-height: 70px !important;
-              padding: 9px !important;
+              min-height: 55px !important;
+              padding: 7px !important;
+              border-radius: 13px !important;
             }
 
             .dispatch-kpi strong {
-              font-size: 21px !important;
+              font-size: 20px !important;
             }
 
             .map-days-filter {
