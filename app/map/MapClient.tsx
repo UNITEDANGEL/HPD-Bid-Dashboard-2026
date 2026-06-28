@@ -18381,10 +18381,22 @@ return (
             color: #ffffff !important;
           }
 
+          .job-drawer.selected-focus .job-appointment-actions a:not(.alert-link) {
+            background: #e0f2fe !important;
+            border-color: rgba(2, 132, 199, 0.22) !important;
+            color: #075985 !important;
+          }
+
           .job-drawer.selected-focus .job-appointment-actions .alert-link {
             background: #fef3c7 !important;
             border-color: rgba(217, 119, 6, 0.24) !important;
             color: #78350f !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-actions a.disabled {
+            background: #e2e8f0 !important;
+            border-color: rgba(100, 116, 139, 0.16) !important;
+            color: #64748b !important;
           }
 
           .job-drawer.selected-focus .job-appointment-actions .quiet {
