@@ -5387,6 +5387,20 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       const target =
         document.querySelector(".job-drawer.selected-focus [data-field-work-choice='true']") ||
         document.querySelector(".job-drawer.selected-focus .field-status-action-grid");
+      const drawer = jobDrawerRef.current;
+      if (target instanceof HTMLElement && drawer) {
+        const drawerRect = drawer.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const stickyHead = drawer.querySelector<HTMLElement>(".selected-job-drawer-head");
+        const headHeight = stickyHead?.offsetHeight || 0;
+        const top = drawer.scrollTop + targetRect.top - drawerRect.top - headHeight - 10;
+        drawer.scrollTo({
+          top: Math.max(0, top),
+          left: 0,
+          behavior: androidScrollFix ? "auto" : "smooth",
+        });
+        return;
+      }
       target?.scrollIntoView({ behavior: androidScrollFix ? "auto" : "smooth", block: "start" });
     }, 60);
   }
@@ -21155,6 +21169,11 @@ return (
             border-left-color: #22c55e !important;
           }
 
+          .job-drawer.selected-focus .field-work-choice-card.start {
+            gap: 8px !important;
+            padding: 10px !important;
+          }
+
           .job-drawer.selected-focus .field-work-choice-head {
             display: grid !important;
             gap: 3px !important;
@@ -21183,6 +21202,15 @@ return (
             font-weight: 850 !important;
           }
 
+          .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-head strong {
+            font-size: 16px !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-head small {
+            font-size: 11px !important;
+            line-height: 1.16 !important;
+          }
+
           .job-drawer.selected-focus .field-work-choice-grid {
             display: grid !important;
             grid-template-columns: minmax(0, 1fr) !important;
@@ -21200,6 +21228,12 @@ return (
             border-radius: 16px !important;
             background: rgba(248, 250, 252, 0.92) !important;
             border: 1px solid rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-section {
+            gap: 6px !important;
+            padding: 8px !important;
+            border-radius: 14px !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-section-head {
@@ -21224,6 +21258,14 @@ return (
             text-transform: uppercase !important;
           }
 
+          .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-section-head strong {
+            font-size: 12px !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-section-head small {
+            font-size: 9px !important;
+          }
+
           .job-drawer.selected-focus .field-work-choice-grid button {
             min-width: 0 !important;
             min-height: 58px !important;
@@ -21243,6 +21285,16 @@ return (
             padding: 9px 10px !important;
           }
 
+          .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-grid.compact {
+            gap: 6px !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-grid.compact button {
+            min-height: 48px !important;
+            padding: 8px !important;
+            border-radius: 13px !important;
+          }
+
           .job-drawer.selected-focus .field-work-choice-grid button strong {
             color: inherit !important;
             font-size: 15px !important;
@@ -21250,11 +21302,19 @@ return (
             font-weight: 1000 !important;
           }
 
+          .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-grid.compact button strong {
+            font-size: 14px !important;
+          }
+
           .job-drawer.selected-focus .field-work-choice-grid button small {
             color: rgba(255, 255, 255, 0.86) !important;
             font-size: 11px !important;
             line-height: 1.08 !important;
             font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-grid.compact button small {
+            font-size: 10px !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-grid .choice-camera {
@@ -21273,6 +21333,10 @@ return (
             grid-column: 1 / -1 !important;
           }
 
+          .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-grid.compact .choice-skip {
+            min-height: 44px !important;
+          }
+
           .job-drawer.selected-focus .field-work-choice-close {
             min-height: 38px !important;
             border-radius: 999px !important;
@@ -21281,6 +21345,10 @@ return (
             color: #334155 !important;
             font-size: 12px !important;
             font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-close {
+            min-height: 34px !important;
           }
 
           .job-drawer.selected-focus .field-status-map-tools {
@@ -22997,8 +23065,8 @@ return (
                                   <small>Auto-label</small>
                                 </button>
                                 <button type="button" className="choice-skip" onClick={() => startFieldJobWithoutMedia(selected)}>
-                                  <strong>Start Without Before Media</strong>
-                                  <small>Timer starts now</small>
+                                  <strong>Start No Media</strong>
+                                  <small>Before skipped - timer starts</small>
                                 </button>
                               </div>
                             </div>
@@ -23017,8 +23085,8 @@ return (
                                   <small>Auto-label</small>
                                 </button>
                                 <button type="button" className="choice-skip" onClick={() => finishFieldJob(selected)}>
-                                  <strong>Finish Without After Media</strong>
-                                  <small>Saves completed</small>
+                                  <strong>Finish No Media</strong>
+                                  <small>After skipped - saves completed</small>
                                 </button>
                               </div>
                             </div>
