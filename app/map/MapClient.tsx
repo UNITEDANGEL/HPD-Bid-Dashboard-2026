@@ -5382,6 +5382,15 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     }, 40);
   }
 
+  function focusFieldWorkChoice() {
+    window.setTimeout(() => {
+      const target =
+        document.querySelector(".job-drawer.selected-focus [data-field-work-choice='true']") ||
+        document.querySelector(".job-drawer.selected-focus .field-status-action-grid");
+      target?.scrollIntoView({ behavior: androidScrollFix ? "auto" : "smooth", block: "start" });
+    }, 60);
+  }
+
   function focusFieldMedia(kind?: FieldMediaKind) {
     if (kind) {
       setFieldMediaFlashKind(kind);
@@ -6440,7 +6449,8 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setSelectedOnly(true);
     setDrawerOpen(true);
     setFullMap(false);
-    showActionNotice("Start Job: choose camera, upload labeled media, or continue without media.");
+    focusFieldWorkChoice();
+    showActionNotice("Start Job: choose before media first, then after media or finish when the work is done.");
   }
 
   function openFinishJobChoices(job: MappedJob, partial = false) {
@@ -6451,6 +6461,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setSelectedOnly(true);
     setDrawerOpen(true);
     setFullMap(false);
+    focusFieldWorkChoice();
     showActionNotice(partial ? "Partial Work: choose after media, upload media, or save partial without media." : "Completed Work: choose after media, upload media, or finish without media.");
   }
 
@@ -21178,6 +21189,41 @@ return (
             gap: 8px !important;
           }
 
+          .job-drawer.selected-focus .field-work-choice-grid.compact {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-section {
+            display: grid !important;
+            gap: 8px !important;
+            padding: 10px !important;
+            border-radius: 16px !important;
+            background: rgba(248, 250, 252, 0.92) !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-section-head {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-section-head strong {
+            color: #0f172a !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-section-head small {
+            color: #64748b !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+          }
+
           .job-drawer.selected-focus .field-work-choice-grid button {
             min-width: 0 !important;
             min-height: 58px !important;
@@ -21190,6 +21236,11 @@ return (
             color: #ffffff !important;
             text-align: left !important;
             box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12) !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-grid.compact button {
+            min-height: 54px !important;
+            padding: 9px 10px !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-grid button strong {
@@ -21216,6 +21267,10 @@ return (
 
           .job-drawer.selected-focus .field-work-choice-grid .choice-skip {
             background: linear-gradient(135deg, #334155, #0f172a) !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-grid.compact .choice-skip {
+            grid-column: 1 / -1 !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-close {
@@ -22911,31 +22966,63 @@ return (
                       </button>
                     </div>
                     {activeWorkChoice ? (
-                      <section className={`field-work-choice-card ${activeWorkChoice.phase}`} aria-label={activeWorkChoice.phase === "start" ? "Start job media options" : "Finish job media options"}>
+                      <section
+                        className={`field-work-choice-card ${activeWorkChoice.phase}`}
+                        data-field-work-choice="true"
+                        aria-label={activeWorkChoice.phase === "start" ? "Start job workflow media options" : "Finish job media options"}
+                      >
                         <div className="field-work-choice-head">
-                          <span>{activeWorkChoice.phase === "start" ? "Start Job" : finishChoicePartial ? "Partial Work" : "Completed Work"}</span>
-                          <strong>{activeWorkChoice.phase === "start" ? "Choose before media path" : "Choose after media path"}</strong>
+                          <span>{activeWorkChoice.phase === "start" ? "Start Job Flow" : finishChoicePartial ? "Partial Work" : "Completed Work"}</span>
+                          <strong>{activeWorkChoice.phase === "start" ? "Before and after options" : "Choose after media path"}</strong>
                           <small>
                             {activeWorkChoice.phase === "start"
-                              ? "Camera, gallery upload, or start the timer without media."
+                              ? "Do before media first. When work is done, use the after buttons below or finish without media."
                               : "Camera, gallery upload, or save the final status without media."}
                           </small>
                         </div>
                         {activeWorkChoice.phase === "start" ? (
-                          <div className="field-work-choice-grid">
-                            <button type="button" className="choice-camera" onClick={() => startFieldJob(selected)}>
-                              <strong>Take Before Media</strong>
-                              <small>Camera opens now</small>
-                            </button>
-                            <button type="button" className="choice-upload" onClick={() => uploadBeforeAndStartJob(selected)}>
-                              <strong>Upload Before Media</strong>
-                              <small>Auto-label to this OMO</small>
-                            </button>
-                            <button type="button" className="choice-skip" onClick={() => startFieldJobWithoutMedia(selected)}>
-                              <strong>Start Without Media</strong>
-                              <small>Timer starts now</small>
-                            </button>
-                          </div>
+                          <>
+                            <div className="field-work-choice-section">
+                              <div className="field-work-choice-section-head">
+                                <strong>1. Before Media</strong>
+                                <small>Start work</small>
+                              </div>
+                              <div className="field-work-choice-grid compact">
+                                <button type="button" className="choice-camera" onClick={() => startFieldJob(selected)}>
+                                  <strong>Take Before</strong>
+                                  <small>Camera opens</small>
+                                </button>
+                                <button type="button" className="choice-upload" onClick={() => uploadBeforeAndStartJob(selected)}>
+                                  <strong>Upload Before</strong>
+                                  <small>Auto-label</small>
+                                </button>
+                                <button type="button" className="choice-skip" onClick={() => startFieldJobWithoutMedia(selected)}>
+                                  <strong>Start Without Before Media</strong>
+                                  <small>Timer starts now</small>
+                                </button>
+                              </div>
+                            </div>
+                            <div className="field-work-choice-section">
+                              <div className="field-work-choice-section-head">
+                                <strong>2. After Media / Finish</strong>
+                                <small>When done</small>
+                              </div>
+                              <div className="field-work-choice-grid compact">
+                                <button type="button" className="choice-camera" onClick={() => finishFieldJobWithMedia(selected)}>
+                                  <strong>Take After</strong>
+                                  <small>Camera opens</small>
+                                </button>
+                                <button type="button" className="choice-upload" onClick={() => uploadAfterAndFinishJob(selected)}>
+                                  <strong>Upload After</strong>
+                                  <small>Auto-label</small>
+                                </button>
+                                <button type="button" className="choice-skip" onClick={() => finishFieldJob(selected)}>
+                                  <strong>Finish Without After Media</strong>
+                                  <small>Saves completed</small>
+                                </button>
+                              </div>
+                            </div>
+                          </>
                         ) : (
                           <div className="field-work-choice-grid">
                             <button type="button" className="choice-camera" onClick={() => finishFieldJobWithMedia(selected, finishChoicePartial)}>
