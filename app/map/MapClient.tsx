@@ -5383,26 +5383,44 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
   }
 
   function focusFieldWorkChoice() {
-    window.setTimeout(() => {
-      const target =
-        document.querySelector(".job-drawer.selected-focus [data-field-work-choice='true']") ||
-        document.querySelector(".job-drawer.selected-focus .field-status-action-grid");
-      const drawer = jobDrawerRef.current;
-      if (target instanceof HTMLElement && drawer) {
-        const drawerRect = drawer.getBoundingClientRect();
-        const targetRect = target.getBoundingClientRect();
-        const stickyHead = drawer.querySelector<HTMLElement>(".selected-job-drawer-head");
-        const headHeight = stickyHead?.offsetHeight || 0;
-        const top = drawer.scrollTop + targetRect.top - drawerRect.top - headHeight - 10;
-        drawer.scrollTo({
-          top: Math.max(0, top),
-          left: 0,
-          behavior: androidScrollFix ? "auto" : "smooth",
-        });
-        return;
+    const findScrollContainer = (target: HTMLElement) => {
+      let node = target.parentElement;
+      while (node && node !== document.body) {
+        const style = window.getComputedStyle(node);
+        const scrollable = /(auto|scroll|overlay)/.test(style.overflowY);
+        if (scrollable && node.scrollHeight > node.clientHeight + 4) return node;
+        node = node.parentElement;
       }
-      target?.scrollIntoView({ behavior: androidScrollFix ? "auto" : "smooth", block: "start" });
-    }, 60);
+      return jobDrawerRef.current ||
+        (document.scrollingElement instanceof HTMLElement ? document.scrollingElement : document.documentElement);
+    };
+
+    const positionChoice = (requireChoice: boolean) => {
+      const choice = document.querySelector(".job-drawer.selected-focus [data-field-work-choice='true']");
+      if (requireChoice && !(choice instanceof HTMLElement)) return;
+      const target =
+        choice ||
+        document.querySelector(".job-drawer.selected-focus .field-status-action-grid");
+      if (!(target instanceof HTMLElement)) return;
+
+      const container = findScrollContainer(target);
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const stickyHead =
+        jobDrawerRef.current?.querySelector<HTMLElement>(".selected-job-drawer-head") ||
+        document.querySelector<HTMLElement>(".job-drawer.selected-focus .selected-job-drawer-head");
+      const headHeight = stickyHead?.offsetHeight || 0;
+      const top = container.scrollTop + targetRect.top - containerRect.top - headHeight - 10;
+      container.scrollTo({
+        top: Math.max(0, top),
+        left: 0,
+        behavior: androidScrollFix ? "auto" : "smooth",
+      });
+    };
+
+    window.setTimeout(() => positionChoice(false), 80);
+    window.setTimeout(() => positionChoice(true), 260);
+    window.setTimeout(() => positionChoice(true), 700);
   }
 
   function focusFieldMedia(kind?: FieldMediaKind) {
