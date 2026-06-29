@@ -2368,6 +2368,11 @@ const [fieldCameraBusy, setFieldCameraBusy] = useState(false);
 const [fieldCameraRecording, setFieldCameraRecording] = useState(false);
 const [fieldCameraStreamTick, setFieldCameraStreamTick] = useState(0);
 const [androidScrollFix, setAndroidScrollFix] = useState(false);
+const [fieldWorkChoice, setFieldWorkChoice] = useState<{
+  jobKey: string;
+  phase: "start" | "finish";
+  partial?: boolean;
+} | null>(null);
 const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
   jobKey: string;
   kind: FieldMediaKind;
@@ -6030,6 +6035,26 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     requestFieldPhotoCapture(job, kind, step.accept, step.camera, step);
   }
 
+  function uploadFieldEvidenceStep(job: MappedJob, kind: FieldMediaKind, partial = false) {
+    const stage = fieldStageLabel(kind);
+    const step: FieldCaptureStep = {
+      kind,
+      accept: "image/*,video/*",
+      camera: false,
+      title: `${stage} Media Upload`,
+      text: `Upload one or more ${stage.toLowerCase()} images or videos. They will be labeled and saved with this job.`,
+      label: `${stage} Uploaded Media`,
+      step: 1,
+      total: 1,
+    };
+
+    fieldCaptureQueueRef.current = [];
+    fieldCaptureJobRef.current = job;
+    fieldCapturePartialRef.current = partial;
+    setCaptureGuideForStep(job, step);
+    requestFieldPhotoCapture(job, kind, step.accept, false, step);
+  }
+
   function requestFieldPhotoCapture(
     job: MappedJob,
     kind: FieldMediaKind,
@@ -6407,6 +6432,44 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setPhotoCaptureTarget(null);
   }
 
+  function openStartJobChoices(job: MappedJob) {
+    const key = jobKey(job);
+    if (!key) return;
+    setFieldWorkChoice({ jobKey: key, phase: "start" });
+    setFieldFocusPane("capture");
+    setSelectedOnly(true);
+    setDrawerOpen(true);
+    setFullMap(false);
+    showActionNotice("Start Job: choose camera, upload labeled media, or continue without media.");
+  }
+
+  function openFinishJobChoices(job: MappedJob, partial = false) {
+    const key = jobKey(job);
+    if (!key) return;
+    setFieldWorkChoice({ jobKey: key, phase: "finish", partial });
+    setFieldFocusPane("capture");
+    setSelectedOnly(true);
+    setDrawerOpen(true);
+    setFullMap(false);
+    showActionNotice(partial ? "Partial Work: choose after media, upload media, or save partial without media." : "Completed Work: choose after media, upload media, or finish without media.");
+  }
+
+  function beforeEvidencePatch(iso: string) {
+    return {
+      WorkflowStatus: "BEFORE_EVIDENCE",
+      workflowStatus: "BEFORE_EVIDENCE",
+      FieldOutcome: "BEFORE_EVIDENCE",
+      fieldOutcome: "BEFORE_EVIDENCE",
+      StatusOverride: "Before Evidence",
+      status: "Before Evidence",
+      PendingCompletionOutcome: "",
+      pendingCompletionOutcome: "",
+      BeforePhotosRequestedAt: iso,
+      beforePhotosRequestedAt: iso,
+      ...activeWorkflowArchiveFields(),
+    };
+  }
+
   function completeBeforeEvidenceAndStartWork(job: MappedJob) {
     const iso = workflowActionIso();
     const patch = {
@@ -6430,6 +6493,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setSelectedOnly(true);
     setDrawerOpen(true);
     setFullMap(false);
+    setFieldWorkChoice(null);
     clearGuidedCaptureState();
     saveFieldWorkflowPatch(
       job,
@@ -6440,30 +6504,72 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
 
   function startFieldJob(job: MappedJob) {
     const iso = workflowActionIso();
-    const patch = {
-      WorkflowStatus: "BEFORE_EVIDENCE",
-      workflowStatus: "BEFORE_EVIDENCE",
-      FieldOutcome: "BEFORE_EVIDENCE",
-      fieldOutcome: "BEFORE_EVIDENCE",
-      StatusOverride: "Before Evidence",
-      status: "Before Evidence",
-      PendingCompletionOutcome: "",
-      pendingCompletionOutcome: "",
-      BeforePhotosRequestedAt: iso,
-      beforePhotosRequestedAt: iso,
-      ...activeWorkflowArchiveFields(),
-    };
+    const patch = beforeEvidencePatch(iso);
     const captureJob = { ...job, ...patch } as MappedJob;
     setFieldFocusPane("capture");
     setSelectedOnly(true);
     setDrawerOpen(true);
     setFullMap(false);
+    setFieldWorkChoice(null);
     saveFieldWorkflowPatch(
       job,
       patch,
       "Start job: capture 2 before photos and 2 before videos."
     );
     beginGuidedEvidenceCapture(captureJob, "before");
+  }
+
+  function uploadBeforeAndStartJob(job: MappedJob) {
+    const iso = workflowActionIso();
+    const patch = {
+      ...beforeEvidencePatch(iso),
+      BeforeMediaChoice: "Upload",
+      beforeMediaChoice: "Upload",
+    };
+    const captureJob = { ...job, ...patch } as MappedJob;
+    setFieldFocusPane("capture");
+    setSelectedOnly(true);
+    setDrawerOpen(true);
+    setFullMap(false);
+    setFieldWorkChoice(null);
+    saveFieldWorkflowPatch(
+      job,
+      patch,
+      "Start job: upload before image/video. The file will be labeled to this work order."
+    );
+    uploadFieldEvidenceStep(captureJob, "before");
+  }
+
+  function startFieldJobWithoutMedia(job: MappedJob) {
+    const iso = workflowActionIso();
+    const patch = {
+      WorkflowStatus: "WORK_STARTED",
+      workflowStatus: "WORK_STARTED",
+      FieldOutcome: "WORK_STARTED",
+      fieldOutcome: "WORK_STARTED",
+      StatusOverride: "Work Started",
+      status: "Work Started",
+      JobStartedAt: iso,
+      jobStartedAt: iso,
+      FieldTimerStartedAt: iso,
+      fieldTimerStartedAt: iso,
+      ActualWorkStartDate: iso,
+      actualWorkStartDate: iso,
+      BeforeMediaChoice: "Skipped",
+      beforeMediaChoice: "Skipped",
+      BeforeMediaSkippedAt: iso,
+      beforeMediaSkippedAt: iso,
+      PendingCompletionOutcome: "",
+      pendingCompletionOutcome: "",
+      ...activeWorkflowArchiveFields(),
+    };
+    setFieldFocusPane("capture");
+    setSelectedOnly(true);
+    setDrawerOpen(true);
+    setFullMap(false);
+    setFieldWorkChoice(null);
+    clearGuidedCaptureState();
+    saveFieldWorkflowPatch(job, patch, "Job started without before media. You can upload labeled evidence later if needed.");
   }
 
   async function resetFieldJobForTesting(job: MappedJob) {
@@ -6475,6 +6581,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     delete refusedDescriptionDraftsRef.current[key];
     const resetPatch = clearedFieldWorkflowStatePatch();
     setFieldCaptureGuide(null);
+    setFieldWorkChoice(null);
     setFieldFocusPane("capture");
     fieldCaptureQueueRef.current = [];
     fieldCaptureJobRef.current = null;
@@ -6523,6 +6630,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       ...archiveCloseoutFields(iso),
     };
     setFieldFocusPane("package");
+    setFieldWorkChoice(null);
     clearGuidedCaptureState();
     saveFieldWorkflowPatch(
       job,
@@ -6531,6 +6639,60 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     );
     setWorkflowViewFilter("archived");
     openPaperworkPreviewForStatus(job, patch, false);
+  }
+
+  function afterEvidencePatch(iso: string, partial = false) {
+    return {
+      WorkflowStatus: "AFTER_EVIDENCE",
+      workflowStatus: "AFTER_EVIDENCE",
+      FieldOutcome: "AFTER_EVIDENCE",
+      fieldOutcome: "AFTER_EVIDENCE",
+      StatusOverride: "After Evidence",
+      status: "After Evidence",
+      PendingCompletionOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+      pendingCompletionOutcome: partial ? "PARTIAL_WORK_COMPLETED" : "WORK_COMPLETED",
+      AfterPhotosRequestedAt: iso,
+      afterPhotosRequestedAt: iso,
+      ...activeWorkflowArchiveFields(),
+    };
+  }
+
+  function finishFieldJobWithMedia(job: MappedJob, partial = false) {
+    const iso = workflowActionIso();
+    const patch = afterEvidencePatch(iso, partial);
+    const captureJob = { ...job, ...patch } as MappedJob;
+    setFieldFocusPane("capture");
+    setSelectedOnly(true);
+    setDrawerOpen(true);
+    setFullMap(false);
+    setFieldWorkChoice(null);
+    saveFieldWorkflowPatch(
+      job,
+      patch,
+      partial ? "Partial work: capture after media before saving final status." : "Completed work: capture after media before saving final status."
+    );
+    beginGuidedEvidenceCapture(captureJob, "after", { partial });
+  }
+
+  function uploadAfterAndFinishJob(job: MappedJob, partial = false) {
+    const iso = workflowActionIso();
+    const patch = {
+      ...afterEvidencePatch(iso, partial),
+      AfterMediaChoice: "Upload",
+      afterMediaChoice: "Upload",
+    };
+    const captureJob = { ...job, ...patch } as MappedJob;
+    setFieldFocusPane("capture");
+    setSelectedOnly(true);
+    setDrawerOpen(true);
+    setFullMap(false);
+    setFieldWorkChoice(null);
+    saveFieldWorkflowPatch(
+      job,
+      patch,
+      partial ? "Partial work: upload after media. The file will be labeled to this work order." : "Completed work: upload after media. The file will be labeled to this work order."
+    );
+    uploadFieldEvidenceStep(captureJob, "after", partial);
   }
 
   function finishFieldJob(job: MappedJob, partial = false) {
@@ -6548,11 +6710,16 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       actualWorkCompletionDate: iso,
       OutcomeLockedAt: iso,
       outcomeLockedAt: iso,
+      AfterMediaChoice: "Skipped",
+      afterMediaChoice: "Skipped",
+      AfterMediaSkippedAt: iso,
+      afterMediaSkippedAt: iso,
       PendingCompletionOutcome: "",
       pendingCompletionOutcome: "",
       ...archiveCloseoutFields(iso),
     };
     setFieldFocusPane("package");
+    setFieldWorkChoice(null);
     clearGuidedCaptureState();
     saveFieldWorkflowPatch(
       job,
@@ -20962,6 +21129,105 @@ return (
             filter: grayscale(0.28) !important;
           }
 
+          .job-drawer.selected-focus .field-work-choice-card {
+            display: grid !important;
+            gap: 10px !important;
+            padding: 12px !important;
+            border-radius: 18px !important;
+            background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            border-left: 6px solid #0ea5e9 !important;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.10) !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-card.finish {
+            border-left-color: #22c55e !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-head {
+            display: grid !important;
+            gap: 3px !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-head span {
+            color: #0369a1 !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-head strong {
+            color: #0f172a !important;
+            font-size: 18px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-head small {
+            color: #475569 !important;
+            font-size: 12px !important;
+            line-height: 1.25 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-grid {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-grid button {
+            min-width: 0 !important;
+            min-height: 58px !important;
+            display: grid !important;
+            align-content: center !important;
+            gap: 4px !important;
+            padding: 10px 12px !important;
+            border-radius: 15px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            color: #ffffff !important;
+            text-align: left !important;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12) !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-grid button strong {
+            color: inherit !important;
+            font-size: 15px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-grid button small {
+            color: rgba(255, 255, 255, 0.86) !important;
+            font-size: 11px !important;
+            line-height: 1.08 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-grid .choice-camera {
+            background: linear-gradient(135deg, #047857, #22c55e) !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-grid .choice-upload {
+            background: linear-gradient(135deg, #075985, #2563eb) !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-grid .choice-skip {
+            background: linear-gradient(135deg, #334155, #0f172a) !important;
+          }
+
+          .job-drawer.selected-focus .field-work-choice-close {
+            min-height: 38px !important;
+            border-radius: 999px !important;
+            background: #eef2f7 !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            color: #334155 !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+          }
+
           .job-drawer.selected-focus .field-status-map-tools {
             display: grid !important;
             grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
@@ -22504,6 +22770,8 @@ return (
                 const missionStatusDateLabel = Number.isNaN(missionStatusDate.getTime())
                   ? "Choose date"
                   : displayWorkflowDate(missionStatusDate.toISOString());
+                const activeWorkChoice = fieldWorkChoice?.jobKey === jobKey(selected) ? fieldWorkChoice : null;
+                const finishChoicePartial = Boolean(activeWorkChoice?.partial);
 
                 return (
                   <>
@@ -22607,17 +22875,17 @@ return (
                       <strong>{workflowLabel(selected) || "Pending"}</strong>
                     </div>
                     <div className="field-status-action-grid" aria-label="Status and workflow actions">
-                      <button type="button" className={`status-start ${isBeforeEvidence ? "active" : ""}`} onClick={() => startFieldJob(selected)}>
+                      <button type="button" className={`status-start ${isBeforeEvidence ? "active" : ""}`} onClick={() => openStartJobChoices(selected)}>
                         <strong>Start Job</strong>
-                        <small>Begin work</small>
+                        <small>Choose media path</small>
                       </button>
-                      <button type="button" className={`status-finish ${isWorkCompleted ? "active" : ""}`} onClick={() => finishFieldJob(selected)}>
+                      <button type="button" className={`status-finish ${isWorkCompleted ? "active" : ""}`} onClick={() => openFinishJobChoices(selected)}>
                         <strong>Completed Work</strong>
-                        <small>Save complete date</small>
+                        <small>Choose after path</small>
                       </button>
-                      <button type="button" className={`status-partial ${isPartialWork ? "active" : ""}`} onClick={() => finishFieldJob(selected, true)}>
+                      <button type="button" className={`status-partial ${isPartialWork ? "active" : ""}`} onClick={() => openFinishJobChoices(selected, true)}>
                         <strong>Partial Work</strong>
-                        <small>Some work done</small>
+                        <small>Choose after path</small>
                       </button>
                       <button type="button" className={`status-no-access ${isNoAccessFirst ? "active" : ""}`} onClick={() => startNoAccessCounter(selected)}>
                         <strong>No Access 1st</strong>
@@ -22642,6 +22910,53 @@ return (
                         <small>Close job</small>
                       </button>
                     </div>
+                    {activeWorkChoice ? (
+                      <section className={`field-work-choice-card ${activeWorkChoice.phase}`} aria-label={activeWorkChoice.phase === "start" ? "Start job media options" : "Finish job media options"}>
+                        <div className="field-work-choice-head">
+                          <span>{activeWorkChoice.phase === "start" ? "Start Job" : finishChoicePartial ? "Partial Work" : "Completed Work"}</span>
+                          <strong>{activeWorkChoice.phase === "start" ? "Choose before media path" : "Choose after media path"}</strong>
+                          <small>
+                            {activeWorkChoice.phase === "start"
+                              ? "Camera, gallery upload, or start the timer without media."
+                              : "Camera, gallery upload, or save the final status without media."}
+                          </small>
+                        </div>
+                        {activeWorkChoice.phase === "start" ? (
+                          <div className="field-work-choice-grid">
+                            <button type="button" className="choice-camera" onClick={() => startFieldJob(selected)}>
+                              <strong>Take Before Media</strong>
+                              <small>Camera opens now</small>
+                            </button>
+                            <button type="button" className="choice-upload" onClick={() => uploadBeforeAndStartJob(selected)}>
+                              <strong>Upload Before Media</strong>
+                              <small>Auto-label to this OMO</small>
+                            </button>
+                            <button type="button" className="choice-skip" onClick={() => startFieldJobWithoutMedia(selected)}>
+                              <strong>Start Without Media</strong>
+                              <small>Timer starts now</small>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="field-work-choice-grid">
+                            <button type="button" className="choice-camera" onClick={() => finishFieldJobWithMedia(selected, finishChoicePartial)}>
+                              <strong>Take After Media</strong>
+                              <small>Camera opens now</small>
+                            </button>
+                            <button type="button" className="choice-upload" onClick={() => uploadAfterAndFinishJob(selected, finishChoicePartial)}>
+                              <strong>Upload After Media</strong>
+                              <small>Auto-label to this OMO</small>
+                            </button>
+                            <button type="button" className="choice-skip" onClick={() => finishFieldJob(selected, finishChoicePartial)}>
+                              <strong>{finishChoicePartial ? "Save Partial No Media" : "Finish Without Media"}</strong>
+                              <small>Generate package next</small>
+                            </button>
+                          </div>
+                        )}
+                        <button type="button" className="field-work-choice-close" onClick={() => setFieldWorkChoice(null)}>
+                          Close Choices
+                        </button>
+                      </section>
+                    ) : null}
                     <div className="field-status-map-tools" aria-label="Map and status utility actions">
                       <button type="button" className="status-layers" onClick={openMapLayersFromJobCard}>
                         <strong>Map Layers</strong>
@@ -22943,10 +23258,10 @@ return (
                           </>
                         ) : isBeforeEvidence ? (
                           <>
-                            <button type="button" className="procedure-primary" onClick={() => finishFieldJob(selected)}>
+                            <button type="button" className="procedure-primary" onClick={() => openFinishJobChoices(selected)}>
                               Completed Work
                             </button>
-                            <button type="button" onClick={() => finishFieldJob(selected, true)}>
+                            <button type="button" onClick={() => openFinishJobChoices(selected, true)}>
                               Partial Work
                             </button>
                           </>
