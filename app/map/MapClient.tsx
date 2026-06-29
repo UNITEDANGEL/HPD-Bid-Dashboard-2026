@@ -21304,13 +21304,16 @@ return (
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-grid.compact {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
             gap: 6px !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-grid.compact button {
-            min-height: 48px !important;
-            padding: 8px !important;
+            min-height: 50px !important;
+            padding: 7px 5px !important;
             border-radius: 13px !important;
+            gap: 3px !important;
+            text-align: center !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-grid button strong {
@@ -21321,7 +21324,7 @@ return (
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-grid.compact button strong {
-            font-size: 14px !important;
+            font-size: 13px !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-grid button small {
@@ -21332,7 +21335,7 @@ return (
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-grid.compact button small {
-            font-size: 10px !important;
+            font-size: 9px !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-grid .choice-camera {
@@ -21352,7 +21355,8 @@ return (
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-grid.compact .choice-skip {
-            min-height: 44px !important;
+            grid-column: auto !important;
+            min-height: 50px !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-close {
@@ -23075,16 +23079,16 @@ return (
                               </div>
                               <div className="field-work-choice-grid compact">
                                 <button type="button" className="choice-camera" onClick={() => startFieldJob(selected)}>
-                                  <strong>Take Before</strong>
-                                  <small>Camera opens</small>
+                                  <strong>Take</strong>
+                                  <small>Camera</small>
                                 </button>
                                 <button type="button" className="choice-upload" onClick={() => uploadBeforeAndStartJob(selected)}>
-                                  <strong>Upload Before</strong>
+                                  <strong>Upload</strong>
                                   <small>Auto-label</small>
                                 </button>
                                 <button type="button" className="choice-skip" onClick={() => startFieldJobWithoutMedia(selected)}>
-                                  <strong>Start No Media</strong>
-                                  <small>Before skipped - timer starts</small>
+                                  <strong>No Media</strong>
+                                  <small>Start timer</small>
                                 </button>
                               </div>
                             </div>
@@ -23095,16 +23099,16 @@ return (
                               </div>
                               <div className="field-work-choice-grid compact">
                                 <button type="button" className="choice-camera" onClick={() => finishFieldJobWithMedia(selected)}>
-                                  <strong>Take After</strong>
-                                  <small>Camera opens</small>
+                                  <strong>Take</strong>
+                                  <small>Camera</small>
                                 </button>
                                 <button type="button" className="choice-upload" onClick={() => uploadAfterAndFinishJob(selected)}>
-                                  <strong>Upload After</strong>
+                                  <strong>Upload</strong>
                                   <small>Auto-label</small>
                                 </button>
                                 <button type="button" className="choice-skip" onClick={() => finishFieldJob(selected)}>
-                                  <strong>Finish No Media</strong>
-                                  <small>After skipped - saves completed</small>
+                                  <strong>Finish</strong>
+                                  <small>No media</small>
                                 </button>
                               </div>
                             </div>
