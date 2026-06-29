@@ -21188,8 +21188,8 @@ return (
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start {
-            gap: 8px !important;
-            padding: 10px !important;
+            gap: 6px !important;
+            padding: 9px !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-head {
@@ -21221,12 +21221,12 @@ return (
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-head strong {
-            font-size: 16px !important;
+            font-size: 15px !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-head small {
-            font-size: 11px !important;
-            line-height: 1.16 !important;
+            font-size: 10px !important;
+            line-height: 1.1 !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-grid {
@@ -21249,9 +21249,9 @@ return (
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-section {
-            gap: 6px !important;
-            padding: 8px !important;
-            border-radius: 14px !important;
+            gap: 5px !important;
+            padding: 7px !important;
+            border-radius: 13px !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-section-head {
@@ -21277,7 +21277,7 @@ return (
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-section-head strong {
-            font-size: 12px !important;
+            font-size: 11px !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-section-head small {
@@ -21309,9 +21309,9 @@ return (
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-grid.compact button {
-            min-height: 50px !important;
-            padding: 7px 5px !important;
-            border-radius: 13px !important;
+            min-height: 46px !important;
+            padding: 6px 4px !important;
+            border-radius: 12px !important;
             gap: 3px !important;
             text-align: center !important;
           }
@@ -21356,7 +21356,7 @@ return (
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-grid.compact .choice-skip {
             grid-column: auto !important;
-            min-height: 50px !important;
+            min-height: 46px !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-close {
@@ -21370,7 +21370,7 @@ return (
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-close {
-            min-height: 34px !important;
+            min-height: 32px !important;
           }
 
           .job-drawer.selected-focus .field-status-map-tools {
@@ -23066,7 +23066,7 @@ return (
                           <strong>{activeWorkChoice.phase === "start" ? "Before and after options" : "Choose after media path"}</strong>
                           <small>
                             {activeWorkChoice.phase === "start"
-                              ? "Do before media first. When work is done, use the after buttons below or finish without media."
+                              ? "Before first. After when done."
                               : "Camera, gallery upload, or save the final status without media."}
                           </small>
                         </div>
