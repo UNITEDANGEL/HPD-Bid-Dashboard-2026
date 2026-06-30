@@ -1,3 +1,5 @@
+import { cleanJobLocation, cleanJobLocationText, isCommonAreaLocation } from "./jobLocation";
+
 export const HPD_TENANT_CONTACT_EMAIL = "AtkinsKi@hpd.nyc.gov";
 export const HPD_TENANT_CONTACT_ATTENTION = "Kizzy Atkins / K. Atkins";
 
@@ -46,8 +48,11 @@ export function cleanTenantContactName(raw: unknown) {
 
 export function tenantContactRequestEmailHref(job: TenantContactJob, apartment = "") {
   const key = firstText(job, ["id", "OMO", "omo", "jobId"]) || "Unknown OMO";
-  const address = firstText(job, ["address", "BuildingAddress", "Address", "location", "Location"]) || "Not listed";
-  const location = apartment || firstText(job, ["ItbTenantApartment", "ApartmentUnit", "Apt", "location", "Location"]) || "Not listed";
+  const address =
+    firstText(job, ["address", "BuildingAddress", "Address"]) ||
+    cleanJobLocationText(firstText(job, ["location", "Location"])) ||
+    "Not listed";
+  const location = cleanJobLocation({ ...job, ItbTenantApartment: apartment }) || "Not listed";
   const awardDate = firstText(job, ["awardDate", "AwardDate", "Award Date"]) || "Not listed";
   const startDate = firstText(job, ["workStartDate", "WorkStartDate", "StartDate", "Start Date"]) || "Not listed";
   const completionDate =
@@ -97,14 +102,14 @@ export function tenantContactInfo(job: TenantContactJob | null | undefined) {
 
   const accessType = firstText(job, ["ItbTenantAccessType", "itbTenantAccessType"]).toLowerCase();
   const explicitNeeded = job.ItbTenantAppointmentNeeded ?? job.itbTenantAppointmentNeeded;
-  const apartment = firstText(job, ["ItbTenantApartment", "itbTenantApartment", "ApartmentUnit", "Apt", "location", "Location"]);
+  const apartment = cleanJobLocation(job);
   const name = cleanTenantContactName(firstText(job, ["ItbTenantName", "itbTenantName", "TenantName", "tenantName"]));
   const phone = firstText(job, ["ItbTenantPhone", "itbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"]);
   const contactStatus = firstText(job, ["ItbTenantContactStatus", "itbTenantContactStatus"]).toUpperCase();
   const commonArea =
     accessType === "common_area" ||
     contactStatus === "COMMON_AREA_NO_TENANT" ||
-    /\b(public|hallway|hall way|vestibule|lobby|stair|cellar|basement|boiler|bulkhead|roof|yard|common area)\b/i.test(apartment);
+    isCommonAreaLocation(apartment);
   const appointmentNeeded =
     !commonArea && (explicitNeeded === true || explicitNeeded === "true" || Boolean(apartment || name || phone));
   const cleanPhone = phone.replace(/[^\d+]/g, "");

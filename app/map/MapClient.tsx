@@ -36,6 +36,7 @@ import {
   listFieldPackets,
   saveFieldPacket,
 } from "../../lib/field-packet-store";
+import { cleanJobLocation, cleanJobLocationText, isCommonAreaLocation } from "../../lib/jobLocation";
 import { paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 
@@ -512,7 +513,9 @@ function boroughFromAddress(address: string) {
 function normalizeStaticJob(row: JobRecord, index: number): any {
   const anyRow = row as any;
   const omo = getAny(anyRow, "OMO", "omo", "Job_ID", "Job ID", "jobId", "id") || `JOB-${index + 1}`;
-  const address = getAny(anyRow, "address", "BuildingAddress", "Building_Address", "Building Address", "Address", "location", "Location");
+  const address =
+    getAny(anyRow, "address", "BuildingAddress", "Building_Address", "Building Address", "Address") ||
+    cleanJobLocationText(getAny(anyRow, "location", "Location"));
   const borough = getAny(anyRow, "borough", "Borough", "Boro", "boro") || boroughFromAddress(address);
   const description = getAny(anyRow, "description", "JobDescription", "Job_Description", "Job Description", "Description", "WorkDescription", "ScopeOfWork");
   const amount = getAny(anyRow, "AwardAmount", "awardAmount", "Award Amount", "bidAmount", "BidAmount", "Bid Amount", "Amount", "amountValue");
@@ -583,21 +586,12 @@ function displayAddress(job: JobRecord | null | undefined) {
     (job as any).BuildingAddress ||
     (job as any).Address ||
     (job as any).Building_Address ||
-    (job as any).location ||
-    (job as any).Location ||
+    cleanJobLocationText((job as any).location || (job as any).Location) ||
     "No address listed"
   );
 }
 function displayLocation(job: JobRecord | null | undefined) {
-  if (!job) return "";
-  return (
-    (job as any).Location ||
-    (job as any).location ||
-    (job as any).ApartmentUnit ||
-    (job as any).Apartment ||
-    (job as any).Unit ||
-    ""
-  );
+  return cleanJobLocation(job as Record<string, unknown>);
 }
 function displayDescription(job: JobRecord | null | undefined) {
   if (!job) return "";
@@ -674,14 +668,7 @@ function tenantContactInfo(job: JobRecord | null | undefined) {
 
   const accessType = String((job as any).ItbTenantAccessType || (job as any).itbTenantAccessType || "").toLowerCase();
   const explicitNeeded = (job as any).ItbTenantAppointmentNeeded ?? (job as any).itbTenantAppointmentNeeded;
-  const apartment = String(
-    (job as any).ItbTenantApartment ||
-      (job as any).itbTenantApartment ||
-      (job as any).ApartmentUnit ||
-      (job as any).Location ||
-      (job as any).location ||
-      ""
-  ).trim();
+  const apartment = displayLocation(job);
   const name = cleanTenantContactName(
     (job as any).ItbTenantName ||
       (job as any).itbTenantName ||
@@ -699,7 +686,7 @@ function tenantContactInfo(job: JobRecord | null | undefined) {
   ).trim();
   const commonArea =
     accessType === "common_area" ||
-    /\b(public|hallway|hall way|vestibule|lobby|stair|cellar|basement|boiler|bulkhead|roof|yard|common area)\b/i.test(apartment);
+    isCommonAreaLocation(apartment);
   const appointmentNeeded = commonArea ? false : explicitNeeded === true || explicitNeeded === "true" || Boolean(apartment || name || phone);
   const cleanPhone = phone.replace(/[^\d+]/g, "");
   const emailHref = !commonArea && !cleanPhone ? tenantContactRequestEmailHref(job, apartment) : "";

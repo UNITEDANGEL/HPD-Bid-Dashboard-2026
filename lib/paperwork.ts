@@ -1,3 +1,5 @@
+import { cleanJobLocation, cleanJobLocationText } from "./jobLocation";
+
 export type PaperworkOutcome =
   | "pending"
   | "work_completed"
@@ -169,19 +171,20 @@ export function getJobWorkflowStatus(job: PaperworkJob | null | undefined) {
 }
 
 export function getJobAddress(job: PaperworkJob | null | undefined) {
-  return pick(job, [
+  const address = pick(job, [
     "address",
     "BuildingAddress",
     "Building_Address",
     "Building Address",
     "Address",
-    "location",
-    "Location",
   ]);
+  if (address) return address;
+
+  return cleanJobLocationText(pick(job, ["location", "Location"]));
 }
 
 export function getJobLocation(job: PaperworkJob | null | undefined) {
-  return pick(job, ["Location", "location", "ApartmentUnit", "Apartment", "Unit"]);
+  return cleanJobLocation(job);
 }
 
 export function getJobBorough(job: PaperworkJob | null | undefined) {
