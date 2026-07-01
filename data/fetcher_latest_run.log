@@ -1,4 +1,4 @@
-Fetcher run started: 2026-06-30T12:10:53.564Z
+Fetcher run started: 2026-07-01T12:35:14.028Z
 Google auth files validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
 
@@ -14,7 +14,7 @@ $ python FetchrMatcherV5.py --update --days 14
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/06/16 before:2026/07/01
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/06/17 before:2026/07/02
 COA items parsed (latest per OMO): 20
 ITB items parsed (latest per OMO): 20
 Final JobRows: 20
@@ -24,22 +24,22 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/20 [00:00<?, ?it/s]Downloading COA messages:  10%|█         | 2/20 [00:00<00:01, 12.32it/s]Downloading COA messages:  20%|██        | 4/20 [00:00<00:01, 11.62it/s]Downloading COA messages:  30%|███       | 6/20 [00:00<00:01,  9.97it/s]Downloading COA messages:  40%|████      | 8/20 [00:00<00:01, 11.47it/s]Downloading COA messages:  50%|█████     | 10/20 [00:00<00:00, 12.20it/s]Downloading COA messages:  60%|██████    | 12/20 [00:01<00:00, 11.68it/s]Downloading COA messages:  70%|███████   | 14/20 [00:01<00:00, 10.82it/s]Downloading COA messages:  80%|████████  | 16/20 [00:01<00:00, 11.30it/s]Downloading COA messages:  90%|█████████ | 18/20 [00:01<00:00, 11.72it/s]Downloading COA messages: 100%|██████████| 20/20 [00:01<00:00, 11.39it/s]Downloading COA messages: 100%|██████████| 20/20 [00:01<00:00, 11.38it/s]
-Geocoding COA addresses:   0%|          | 0/20 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 20/20 [00:00<00:00, 372827.02it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/20 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   5%|▌         | 1/20 [00:00<00:08,  2.35it/s]Fetching ITBs for COA OMOs:  10%|█         | 2/20 [00:00<00:07,  2.49it/s]Fetching ITBs for COA OMOs:  15%|█▌        | 3/20 [00:01<00:06,  2.62it/s]Fetching ITBs for COA OMOs:  20%|██        | 4/20 [00:01<00:06,  2.63it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 5/20 [00:01<00:05,  2.70it/s]Fetching ITBs for COA OMOs:  30%|███       | 6/20 [00:02<00:05,  2.58it/s]Fetching ITBs for COA OMOs:  35%|███▌      | 7/20 [00:02<00:04,  2.71it/s]Fetching ITBs for COA OMOs:  40%|████      | 8/20 [00:03<00:04,  2.68it/s]Fetching ITBs for COA OMOs:  45%|████▌     | 9/20 [00:03<00:04,  2.73it/s]Fetching ITBs for COA OMOs:  50%|█████     | 10/20 [00:03<00:03,  2.71it/s]Fetching ITBs for COA OMOs:  55%|█████▌    | 11/20 [00:04<00:03,  2.69it/s]Fetching ITBs for COA OMOs:  60%|██████    | 12/20 [00:04<00:02,  2.90it/s]Fetching ITBs for COA OMOs:  65%|██████▌   | 13/20 [00:04<00:02,  2.88it/s]Fetching ITBs for COA OMOs:  70%|███████   | 14/20 [00:05<00:02,  2.82it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 15/20 [00:05<00:01,  2.75it/s]Fetching ITBs for COA OMOs:  80%|████████  | 16/20 [00:06<00:01,  2.34it/s]Fetching ITBs for COA OMOs:  85%|████████▌ | 17/20 [00:06<00:01,  2.46it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 18/20 [00:06<00:00,  2.56it/s]Fetching ITBs for COA OMOs:  95%|█████████▌| 19/20 [00:07<00:00,  2.67it/s]Fetching ITBs for COA OMOs: 100%|██████████| 20/20 [00:07<00:00,  2.84it/s]Fetching ITBs for COA OMOs: 100%|██████████| 20/20 [00:07<00:00,  2.68it/s]
+Downloading COA messages:   0%|          | 0/20 [00:00<?, ?it/s]Downloading COA messages:   5%|▌         | 1/20 [00:00<00:02,  7.03it/s]Downloading COA messages:  15%|█▌        | 3/20 [00:00<00:01,  9.58it/s]Downloading COA messages:  25%|██▌       | 5/20 [00:00<00:01,  9.25it/s]Downloading COA messages:  30%|███       | 6/20 [00:00<00:01,  9.37it/s]Downloading COA messages:  40%|████      | 8/20 [00:00<00:01,  9.87it/s]Downloading COA messages:  50%|█████     | 10/20 [00:01<00:01,  9.70it/s]Downloading COA messages:  60%|██████    | 12/20 [00:01<00:00, 10.14it/s]Downloading COA messages:  70%|███████   | 14/20 [00:01<00:00,  8.70it/s]Downloading COA messages:  75%|███████▌  | 15/20 [00:01<00:00,  8.65it/s]Downloading COA messages:  80%|████████  | 16/20 [00:01<00:00,  8.23it/s]Downloading COA messages:  90%|█████████ | 18/20 [00:01<00:00,  9.05it/s]Downloading COA messages:  95%|█████████▌| 19/20 [00:02<00:00,  8.50it/s]Downloading COA messages: 100%|██████████| 20/20 [00:02<00:00,  9.05it/s]
+Geocoding COA addresses:   0%|          | 0/20 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 20/20 [00:00<00:00, 265462.28it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/20 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   5%|▌         | 1/20 [00:00<00:10,  1.77it/s]Fetching ITBs for COA OMOs:  10%|█         | 2/20 [00:01<00:08,  2.01it/s]Fetching ITBs for COA OMOs:  15%|█▌        | 3/20 [00:01<00:07,  2.14it/s]Fetching ITBs for COA OMOs:  20%|██        | 4/20 [00:01<00:07,  2.23it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 5/20 [00:02<00:06,  2.22it/s]Fetching ITBs for COA OMOs:  30%|███       | 6/20 [00:02<00:06,  2.09it/s]Fetching ITBs for COA OMOs:  35%|███▌      | 7/20 [00:03<00:06,  2.14it/s]Fetching ITBs for COA OMOs:  40%|████      | 8/20 [00:03<00:05,  2.00it/s]Fetching ITBs for COA OMOs:  45%|████▌     | 9/20 [00:04<00:05,  2.08it/s]Fetching ITBs for COA OMOs:  50%|█████     | 10/20 [00:04<00:04,  2.12it/s]Fetching ITBs for COA OMOs:  55%|█████▌    | 11/20 [00:05<00:04,  2.13it/s]Fetching ITBs for COA OMOs:  60%|██████    | 12/20 [00:05<00:03,  2.23it/s]Fetching ITBs for COA OMOs:  65%|██████▌   | 13/20 [00:06<00:03,  2.27it/s]Fetching ITBs for COA OMOs:  70%|███████   | 14/20 [00:06<00:02,  2.20it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 15/20 [00:06<00:02,  2.18it/s]Fetching ITBs for COA OMOs:  80%|████████  | 16/20 [00:07<00:02,  1.84it/s]Fetching ITBs for COA OMOs:  85%|████████▌ | 17/20 [00:08<00:01,  1.96it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 18/20 [00:08<00:00,  2.06it/s]Fetching ITBs for COA OMOs:  95%|█████████▌| 19/20 [00:08<00:00,  2.21it/s]Fetching ITBs for COA OMOs: 100%|██████████| 20/20 [00:09<00:00,  2.30it/s]Fetching ITBs for COA OMOs: 100%|██████████| 20/20 [00:09<00:00,  2.13it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
 Safe merge complete
-Master before: 534
+Master before: 539
 Incoming rows: 20
-Added new OMOs: 5
-Skipped existing OMOs: 15
+Added new OMOs: 0
+Skipped existing OMOs: 20
 Updated existing OMOs: 0
-Need geocode: 5
+Need geocode: 0
 Missing ITB: 0
-Missing description: 5
+Missing description: 0
 Master after: 539
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
@@ -47,13 +47,8 @@ Report: ./data/safe_7day_merge_report.json
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 5
-OK EQ26418 351 9 STREET, 11215 40.668543 -73.984373 NYC_PLANNING_OK
-OK EQ31747 602 AVENUE T, 11223 40.599933 -73.965017 NYC_PLANNING_OK
-OK EQ30092 2735 WEST 15 STREET, 11224 40.580977 -73.983229 NYC_PLANNING_OK
-OK EQ31754 19-24 LINDEN STREET, 11385 40.708491 -73.903006 NYC_PLANNING_OK
-OK EQ31492 315 WEST 138 STREET, 10030 40.818895 -73.945781 NYC_PLANNING_OK
-Geocoded: 5
+Need geocode: 0
+Geocoded: 0
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -78,23 +73,13 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 5
-DESCRIPTION OK EQ26418 EQ26418_062326062812.pdf
-DESCRIPTION OK EQ31747 EQ31747_062626015248.pdf
-DESCRIPTION OK EQ30092 EQ30092_062626031300.pdf
-DESCRIPTION OK EQ31754 EQ31754_062626014828.pdf
-DESCRIPTION OK EQ31492 EQ31492_062526025816.pdf
-Descriptions patched: 5
+Matched ITBs needing description: 0
+Descriptions patched: 0
 Missing PDF: 0
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'EQ26418', 'Address': '351 9 STREET, 11215', 'RecoveredFrom': 'EQ26418_062326062812.pdf', 'Preview': 'FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS  Provide/Install   Abate   Remove   Delead   Painting/SPP   Repair   Replace   APPLIANCES: STOVE: REFRIGERATOR:  '}
-{'OMO': 'EQ31747', 'Address': '602 AVENUE T, 11223', 'RecoveredFrom': 'EQ31747_062626015248.pdf', 'Preview': ': #1: HOPPER DOOR, 3RD STORY. #2: HOPPER DOOR, 1ST STORY. #1: MAKE ALL NECESSARY REPAIRS TO MAKE HOPPER DOOR SELF CLOSING AND PROPERLY LATCHING, LOCATED AT 3RD STORY.. #2: MAKE ALL NECESSARY REPAIRS TO MAKE HOPPER DOOR S'}
-{'OMO': 'EQ30092', 'Address': '2735 WEST 15 STREET, 11224', 'RecoveredFrom': 'EQ30092_062626031300.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ REPLACE THE BROKEN 1ST AND 3RD MARBLE TREAD FROM BO TTOM AT PUBLIC HALL STAIRS AT VESTIBULE MAKE ALL NECESSARY REPAIRS TO REPLACE WITH SIMILAR MATERIAL '}
-{'OMO': 'EQ31754', 'Address': '19-24 LINDEN STREET, 11385', 'RecoveredFrom': 'EQ31754_062626014828.pdf', 'Preview': 'FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS  Provide/Install   Abate   Remove   Delead   Painting/SPP   Repair   Replace   APPLIANCES: STOVE: REFRIGERATOR:  '}
-{'OMO': 'EQ31492', 'Address': '315 WEST 138 STREET, 10030', 'RecoveredFrom': 'EQ31492_062526025816.pdf', 'Preview': ': REPLACE DEFECTIVE LOCKSET AT BUILDING ENTRANCE DOOR . TOTAL DOORS= (1) NYC HPD EMERGENCY OPERATIONS DIVISION -"ESSENTIALS SERVICE WORK" AT BUILDING ENTRANCE DOOR: MAKE ALL NESACCERY ADJUSTMENT TO THE DOOR AND CLOSE R, '}
 
 
 ========== Verify mapping ==========
@@ -141,13 +126,13 @@ Exported: ./data/missing_itb_jobs_2026.csv
 └─────────┘
 
 
-Fetcher run finished: 2026-06-30T12:11:30.584Z
+Fetcher run finished: 2026-07-01T12:35:38.703Z
 {
   "fetchedCoaItems": 20,
   "fetchedItbItems": 20,
   "fetchedFinalJobRows": 20,
-  "addedNewOmos": 5,
-  "skippedExistingOmos": 15,
+  "addedNewOmos": 0,
+  "skippedExistingOmos": 20,
   "rawRows": 539,
   "rows2026": 488,
   "mapped2026": 488,
