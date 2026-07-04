@@ -891,6 +891,7 @@ export default function PaperworkPage() {
   const [pdfStatus, setPdfStatus] = useState("");
   const [packagePreview, setPackagePreview] = useState<CompletePackagePreview | null>(null);
   const [packagePreviewOpen, setPackagePreviewOpen] = useState(false);
+  const [fullScreenPdfOpen, setFullScreenPdfOpen] = useState(false);
   const pendingCompletePackageRef = useRef<PendingCompletePackage | null>(null);
   const autoGenerateStartedRef = useRef(false);
 
@@ -990,6 +991,7 @@ export default function PaperworkPage() {
   function clearPackagePreview() {
     setPackagePreview(null);
     setPackagePreviewOpen(false);
+    setFullScreenPdfOpen(false);
     pendingCompletePackageRef.current = null;
   }
 
@@ -1285,6 +1287,7 @@ export default function PaperworkPage() {
     }
 
     clearPackagePreview();
+    setFullScreenPdfOpen(false);
     const includeMedia = Boolean(includeMediaOverride);
     const isWorkOutcome = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
     const mediaOptionalForOutcome = isWorkOutcome || isNoWorkOutcome(activeOutcome);
@@ -1969,7 +1972,9 @@ export default function PaperworkPage() {
         }
 
         .package-pdf-preview-head a,
-        .package-pdf-actions a {
+        .package-pdf-preview-head button,
+        .package-pdf-actions a,
+        .package-pdf-actions button {
           min-height: 42px;
           display: inline-flex;
           align-items: center;
@@ -1983,6 +1988,8 @@ export default function PaperworkPage() {
           font-size: 12px;
           font-weight: 950;
           text-align: center;
+          font-family: inherit;
+          cursor: pointer;
         }
 
         .package-pdf-frame {
@@ -2019,6 +2026,87 @@ export default function PaperworkPage() {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 8px;
+        }
+
+        .fullscreen-pdf-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 80;
+          display: grid;
+          background: rgba(2, 6, 23, 0.94);
+          backdrop-filter: blur(10px);
+          padding: 12px;
+        }
+
+        .fullscreen-pdf-shell {
+          min-height: 0;
+          display: grid;
+          grid-template-rows: auto minmax(0, 1fr);
+          gap: 10px;
+          border: 1px solid rgba(125, 211, 252, 0.26);
+          border-radius: 8px;
+          background: #07111f;
+          box-shadow: 0 30px 80px rgba(0, 0, 0, 0.4);
+          overflow: hidden;
+        }
+
+        .fullscreen-pdf-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          padding: 10px;
+          border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+        }
+
+        .fullscreen-pdf-bar span {
+          color: #93c5fd;
+          font-size: 11px;
+          font-weight: 950;
+          text-transform: uppercase;
+        }
+
+        .fullscreen-pdf-bar strong {
+          display: block;
+          color: #ffffff;
+          font-size: 13px;
+          line-height: 1.2;
+          overflow-wrap: anywhere;
+        }
+
+        .fullscreen-pdf-close {
+          min-height: 42px;
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 8px;
+          background: rgba(255, 255, 255, 0.08);
+          color: #ffffff;
+          padding: 0 14px;
+          font-weight: 950;
+          font-family: inherit;
+          cursor: pointer;
+        }
+
+        .fullscreen-pdf-body {
+          min-height: 0;
+          overflow: auto;
+          padding: 10px;
+          text-align: center;
+        }
+
+        .fullscreen-pdf-body img {
+          width: min(100%, 980px);
+          height: auto;
+          border-radius: 8px;
+          background: #ffffff;
+        }
+
+        .fullscreen-pdf-body object,
+        .fullscreen-pdf-body iframe {
+          width: min(100%, 980px);
+          min-height: 80vh;
+          border: 0;
+          border-radius: 8px;
+          background: #ffffff;
         }
 
         .package-content-list {
@@ -2896,7 +2984,9 @@ export default function PaperworkPage() {
         }
 
         .package-pdf-preview-head a,
-        .package-pdf-actions a {
+        .package-pdf-preview-head button,
+        .package-pdf-actions a,
+        .package-pdf-actions button {
           min-height: 52px;
           border-radius: 14px;
           font-size: 14px;
@@ -3332,9 +3422,9 @@ export default function PaperworkPage() {
                           {packagePreview.pdfPreviewPageCount ? ` · Page 1 of ${packagePreview.pdfPreviewPageCount}` : ""}
                         </small>
                       </div>
-                      <a href={packagePreview.pdfUrl} target="_blank" rel="noopener noreferrer">
+                      <button type="button" onClick={() => setFullScreenPdfOpen(true)}>
                         Open PDF
-                      </a>
+                      </button>
                     </div>
                     {packagePreview.pdfPreviewImageUrl ? (
                       <img
@@ -3361,9 +3451,9 @@ export default function PaperworkPage() {
                       </small>
                     ) : null}
                     <div className="package-pdf-actions">
-                      <a href={packagePreview.pdfUrl} target="_blank" rel="noopener noreferrer">
+                      <button type="button" onClick={() => setFullScreenPdfOpen(true)}>
                         Full Screen PDF
-                      </a>
+                      </button>
                       <a href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
                         Save PDF
                       </a>
@@ -3480,6 +3570,41 @@ export default function PaperworkPage() {
             </div>
           ) : null}
         </section>
+
+        {packagePreview && fullScreenPdfOpen ? (
+          <div className="fullscreen-pdf-overlay" role="dialog" aria-modal="true" aria-label={`${packagePreview.jobId} generated PDF viewer`}>
+            <div className="fullscreen-pdf-shell">
+              <div className="fullscreen-pdf-bar">
+                <div>
+                  <span>PDF Preview</span>
+                  <strong>{packagePreview.pdfFileName}</strong>
+                </div>
+                <button className="fullscreen-pdf-close" type="button" onClick={() => setFullScreenPdfOpen(false)}>
+                  Close
+                </button>
+              </div>
+              <div className="fullscreen-pdf-body">
+                {packagePreview.pdfPreviewImageUrl ? (
+                  <img
+                    src={packagePreview.pdfPreviewImageUrl}
+                    alt={`${packagePreview.jobId} generated affidavit invoice PDF full screen page 1`}
+                  />
+                ) : (
+                  <object
+                    data={packagePreview.pdfUrl}
+                    type="application/pdf"
+                    aria-label={`${packagePreview.jobId} generated affidavit invoice PDF full screen`}
+                  >
+                    <iframe
+                      src={packagePreview.pdfUrl}
+                      title={`${packagePreview.jobId} generated affidavit invoice PDF full screen`}
+                    />
+                  </object>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <section className="paperwork-preview">
           <div className="paperwork-sheet">
