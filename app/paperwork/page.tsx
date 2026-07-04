@@ -98,6 +98,11 @@ type CompletePackagePreview = {
   beforeCount: number;
   afterCount: number;
   pdfFileName: string;
+  pdfSize: number;
+  pdfUrl: string;
+  pdfPreviewImageUrl: string;
+  pdfPreviewPageCount: number;
+  pdfPreviewError: string;
   videoPackageFileName: string;
   videoPackageSize: number;
   videoPackageUrl: string;
@@ -748,6 +753,58 @@ function bytesToObjectUrl(bytes: Uint8Array, mimeType = "application/octet-strea
   return URL.createObjectURL(new Blob([buffer], { type: mimeType }));
 }
 
+async function renderPdfFirstPageImage(bytes: Uint8Array) {
+  if (typeof document === "undefined") {
+    return { imageUrl: "", pageCount: 0, error: "PDF preview is only available in the browser." };
+  }
+
+  try {
+    const pdfjs = await import("pdfjs-dist");
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+
+    const data = new Uint8Array(bytes.byteLength);
+    data.set(bytes);
+
+    const loadingTask = pdfjs.getDocument({ data });
+    const documentProxy = await loadingTask.promise;
+    const page = await documentProxy.getPage(1);
+    const baseViewport = page.getViewport({ scale: 1 });
+    const previewWidth = 1100;
+    const scale = Math.max(1, Math.min(2.2, previewWidth / baseViewport.width));
+    const viewport = page.getViewport({ scale });
+    const outputScale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    if (!context) throw new Error("PDF preview canvas is not available on this device.");
+
+    canvas.width = Math.floor(viewport.width * outputScale);
+    canvas.height = Math.floor(viewport.height * outputScale);
+    canvas.style.width = `${Math.floor(viewport.width)}px`;
+    canvas.style.height = `${Math.floor(viewport.height)}px`;
+    context.setTransform(outputScale, 0, 0, outputScale, 0, 0);
+
+    await page.render({ canvas, canvasContext: context, viewport }).promise;
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
+    const pageCount = documentProxy.numPages || 1;
+    await loadingTask.destroy();
+    if (!blob) throw new Error("PDF preview image could not be created on this device.");
+
+    return {
+      imageUrl: URL.createObjectURL(blob),
+      pageCount,
+      error: "",
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      imageUrl: "",
+      pageCount: 0,
+      error: error instanceof Error ? error.message : "PDF preview image could not be created.",
+    };
+  }
+}
+
 function mediaHasPackageBytes(media: FieldMedia) {
   const dataUrl = String(media.dataUrl || "");
   const commaIndex = dataUrl.indexOf(",");
@@ -880,6 +937,8 @@ export default function PaperworkPage() {
     return () => {
       if (packagePreview?.completeUrl) URL.revokeObjectURL(packagePreview.completeUrl);
       if (packagePreview?.applicationUrl) URL.revokeObjectURL(packagePreview.applicationUrl);
+      if (packagePreview?.pdfUrl) URL.revokeObjectURL(packagePreview.pdfUrl);
+      if (packagePreview?.pdfPreviewImageUrl) URL.revokeObjectURL(packagePreview.pdfPreviewImageUrl);
       if (packagePreview?.videoPackageUrl) URL.revokeObjectURL(packagePreview.videoPackageUrl);
       packagePreview?.videoLinks.forEach((link) => URL.revokeObjectURL(link.url));
     };
@@ -1369,6 +1428,8 @@ export default function PaperworkPage() {
       const videoBytes = videoEntries.length ? buildStoredZip(videoEntries) : undefined;
       const completeUrl = bytesToObjectUrl(completeBytes, "application/zip");
       const applicationUrl = bytesToObjectUrl(applicationBytes, "application/zip");
+      const pdfUrl = bytesToObjectUrl(pdf.bytes, "application/pdf");
+      const pdfPreview = await renderPdfFirstPageImage(pdf.bytes);
       const videoPackageUrl = videoBytes ? bytesToObjectUrl(videoBytes, "application/zip") : "";
       const imageCount = imageMedia.length;
       const videoCount = videoMedia.length;
@@ -1483,6 +1544,11 @@ export default function PaperworkPage() {
         beforeCount,
         afterCount,
         pdfFileName: pdf.fileName,
+        pdfSize: pdf.size,
+        pdfUrl,
+        pdfPreviewImageUrl: pdfPreview.imageUrl,
+        pdfPreviewPageCount: pdfPreview.pageCount,
+        pdfPreviewError: pdfPreview.error,
         videoPackageFileName: videoBytes ? videoPackageFileName : "",
         videoPackageSize: videoBytes?.byteLength || 0,
         videoPackageUrl,
@@ -1866,6 +1932,102 @@ export default function PaperworkPage() {
         .package-preview-panel {
           display: grid;
           gap: 12px;
+        }
+
+        .package-pdf-preview-card {
+          display: grid;
+          gap: 10px;
+          border: 1px solid rgba(83, 230, 156, 0.28);
+          border-radius: 8px;
+          background:
+            linear-gradient(135deg, rgba(83, 230, 156, 0.10), rgba(125, 211, 252, 0.08)),
+            rgba(2, 6, 23, 0.72);
+          padding: 12px;
+        }
+
+        .package-pdf-preview-head {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          gap: 10px;
+          align-items: center;
+        }
+
+        .package-pdf-preview-head span {
+          display: block;
+          color: #53e69c;
+          font-size: 11px;
+          font-weight: 950;
+          letter-spacing: 0;
+          text-transform: uppercase;
+        }
+
+        .package-pdf-preview-head strong {
+          display: block;
+          margin-top: 3px;
+          color: #ffffff;
+          font-size: 14px;
+          line-height: 1.25;
+          overflow-wrap: anywhere;
+        }
+
+        .package-pdf-preview-head small {
+          display: block;
+          margin-top: 3px;
+          color: #cbd5e1;
+          line-height: 1.35;
+        }
+
+        .package-pdf-preview-head a,
+        .package-pdf-actions a {
+          min-height: 42px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 8px;
+          border: 1px solid rgba(125, 211, 252, 0.38);
+          background: rgba(224, 242, 254, 0.10);
+          color: #e0f2fe;
+          padding: 0 12px;
+          text-decoration: none;
+          font-size: 12px;
+          font-weight: 950;
+          text-align: center;
+        }
+
+        .package-pdf-frame {
+          width: 100%;
+          min-height: 520px;
+          border: 1px solid rgba(226, 232, 240, 0.20);
+          border-radius: 8px;
+          background: #ffffff;
+          overflow: hidden;
+        }
+
+        .package-pdf-frame iframe {
+          width: 100%;
+          min-height: 520px;
+          border: 0;
+        }
+
+        .package-pdf-image {
+          width: 100%;
+          display: block;
+          border: 1px solid rgba(226, 232, 240, 0.24);
+          border-radius: 8px;
+          background: #ffffff;
+          box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+        }
+
+        .package-pdf-fallback-note {
+          display: block;
+          color: #fde68a;
+          line-height: 1.35;
+        }
+
+        .package-pdf-actions {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
         }
 
         .package-content-list {
@@ -2732,6 +2894,39 @@ export default function PaperworkPage() {
           padding: 0;
         }
 
+        .package-pdf-preview-card {
+          border-radius: 18px;
+          padding: 12px;
+        }
+
+        .package-pdf-preview-head {
+          grid-template-columns: 1fr;
+        }
+
+        .package-pdf-preview-head a,
+        .package-pdf-actions a {
+          min-height: 52px;
+          border-radius: 14px;
+          font-size: 14px;
+        }
+
+        .package-pdf-frame {
+          min-height: 460px;
+          border-radius: 12px;
+        }
+
+        .package-pdf-frame iframe {
+          min-height: 460px;
+        }
+
+        .package-pdf-image {
+          border-radius: 12px;
+        }
+
+        .package-pdf-actions {
+          grid-template-columns: 1fr;
+        }
+
         .package-content-list {
           gap: 10px;
         }
@@ -3121,6 +3316,53 @@ export default function PaperworkPage() {
               </div>
               {packagePreviewOpen ? (
                 <div className="package-preview-panel">
+                  <div className="package-pdf-preview-card">
+                    <div className="package-pdf-preview-head">
+                      <div>
+                        <span>Actual PDF Created</span>
+                        <strong>{packagePreview.pdfFileName}</strong>
+                        <small>
+                          {packetSizeLabel(packagePreview.pdfSize)} affidavit/invoice PDF generated from this job
+                          {packagePreview.pdfPreviewPageCount ? ` · Page 1 of ${packagePreview.pdfPreviewPageCount}` : ""}
+                        </small>
+                      </div>
+                      <a href={packagePreview.pdfUrl} target="_blank" rel="noopener noreferrer">
+                        Open PDF
+                      </a>
+                    </div>
+                    {packagePreview.pdfPreviewImageUrl ? (
+                      <img
+                        className="package-pdf-image"
+                        src={packagePreview.pdfPreviewImageUrl}
+                        alt={`${packagePreview.jobId} generated affidavit invoice PDF page 1`}
+                      />
+                    ) : (
+                      <object
+                        data={packagePreview.pdfUrl}
+                        type="application/pdf"
+                        className="package-pdf-frame"
+                        aria-label={`${packagePreview.jobId} generated affidavit invoice PDF`}
+                      >
+                        <iframe
+                          src={packagePreview.pdfUrl}
+                          title={`${packagePreview.jobId} generated affidavit invoice PDF`}
+                        />
+                      </object>
+                    )}
+                    {packagePreview.pdfPreviewError ? (
+                      <small className="package-pdf-fallback-note">
+                        PDF image preview is not available on this device. Use Full Screen PDF or Save PDF below.
+                      </small>
+                    ) : null}
+                    <div className="package-pdf-actions">
+                      <a href={packagePreview.pdfUrl} target="_blank" rel="noopener noreferrer">
+                        Full Screen PDF
+                      </a>
+                      <a href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
+                        Save PDF
+                      </a>
+                    </div>
+                  </div>
                   <div className="package-content-list">
                     <div className="package-content-row primary-package-row">
                       <div>
