@@ -201,6 +201,8 @@ export function getJobBorough(job: PaperworkJob | null | undefined) {
 
 export function getJobDescription(job: PaperworkJob | null | undefined) {
   return pick(job, [
+    "ItbPage3Description",
+    "itbPage3Description",
     "description",
     "JobDescription",
     "Job_Description",

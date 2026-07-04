@@ -1160,6 +1160,9 @@ function appointmentCalendarFileName(job: JobRecord) {
   return `HPD-${String(jobKey(job)).replace(/[^a-z0-9-]+/gi, "-")}-appointment.ics`;
 }
 function descriptionStatusLabel(job: JobRecord | null | undefined) {
+  if ((job as any)?.DescriptionNeedsSourceReview || (job as any)?.descriptionNeedsSourceReview) {
+    return "Needs ITB source PDF";
+  }
   const text = displayDescription(job);
   if (!text) return "Description missing";
   if (text.length < 40) return "Description short - check source";
@@ -8448,6 +8451,8 @@ function directionsUrl(job: JobRecord) {
 
       return (
         !desc ||
+        (job as any).DescriptionNeedsSourceReview ||
+        (job as any).descriptionNeedsSourceReview ||
         source.includes("needs_manual") ||
         desc.includes("description needs review") ||
         (desc.includes("prepared by") && desc.includes("signature") && desc.includes("permit required"))

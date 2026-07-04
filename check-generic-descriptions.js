@@ -29,7 +29,7 @@ function isBadDescription(desc) {
 
 const bad = jobs.filter((job) => {
   const desc = get(job, "JobDescription", "description", "Job_Description");
-  return desc && isBadDescription(desc);
+  return Boolean(job.DescriptionNeedsSourceReview || job.descriptionNeedsSourceReview) || (desc && isBadDescription(desc));
 });
 
 const missing = jobs.filter((job) => {

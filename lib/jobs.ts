@@ -158,6 +158,8 @@ function normalizeJob(row: Record<string, string>, index: number): JobRecord {
   const awardDate = pickWithOverlay(row, overlay, ["AwardDate", "Award_Date", "AwardDate_dt"]);
   const bidAmount = pickWithOverlay(row, overlay, ["BidAmount", "AwardAmount", "Award_Amount", "bid_amount"]);
   const description = pickWithOverlay(row, overlay, [
+    "ItbPage3Description",
+    "itbPage3Description",
     "DescriptionOfWork",
     "FullDescription",
     "Description",
