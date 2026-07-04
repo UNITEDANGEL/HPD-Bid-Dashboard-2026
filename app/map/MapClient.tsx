@@ -2926,6 +2926,16 @@ function closeMapMenu() {
 }
 
 function showCleanMapView() {
+  const selectedBucket = selected ? workflowViewBucket(selected) : "";
+  if (selectedBucket === "waiting72") {
+    setWorkflowViewFilter("waiting72");
+  } else if (selectedBucket === "ready2") {
+    setWorkflowViewFilter("ready2");
+  } else if (selectedBucket === "archived") {
+    setWorkflowViewFilter("archived");
+  } else if (selectedBucket === "final") {
+    setWorkflowViewFilter("final");
+  }
   setClusterSheet(null);
   setMapJobBrief(null);
   setSelectedOnly(false);
@@ -4019,8 +4029,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const layer = markerLayerRef.current;
       const zoomLevel = Number(mapZoom || map.getZoom?.() || 10);
       const markerOverview = zoomLevel < 13;
-      const markerExpanded = zoomLevel >= 15;
-      const markerDetailed = zoomLevel >= 17;
+      const focusedMarkerCards = selectedOnly || filteredJobs.length <= 1;
+      const markerExpanded = focusedMarkerCards && zoomLevel >= 15;
+      const markerDetailed = focusedMarkerCards && zoomLevel >= 17;
 
       layer.clearLayers();
 
@@ -4115,15 +4126,27 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                         : worstOverdue
                           ? overdueDaysLabel(worstOverdue)
                           : "mapped";
-          const marker = L.marker([item.lat, item.lng], {
+          const clusterOffsetByStatus: Record<string, [number, number]> = {
+            "cluster-appointment": [0, -72],
+            "cluster-ready": [0, 72],
+            "cluster-noaccess-soon": [64, 0],
+            "cluster-noaccess-waiting": [-64, 0],
+            "cluster-pending": [0, 0],
+            "cluster-overdue": [0, -72],
+            "cluster-normal": [0, 0],
+          };
+          const [offsetX, offsetY] = clusterOffsetByStatus[statusClass] || [0, 0];
+          const clusterPoint = map.latLngToLayerPoint([item.lat, item.lng]);
+          const clusterLatLng = map.layerPointToLatLng(L.point(clusterPoint.x + offsetX, clusterPoint.y + offsetY));
+          const marker = L.marker([clusterLatLng.lat, clusterLatLng.lng], {
             icon: L.divIcon({
               className: "maturity-map-marker",
               html: `<div class="map-cluster-marker ${statusClass}">
                       <span>${clusterItems.length}</span>
                       <strong>${escapeMarkerHtml(clusterLabel)}</strong>
                     </div>`,
-              iconSize: [76, 58],
-              iconAnchor: [38, 29],
+              iconSize: [96, 74],
+              iconAnchor: [48, 37],
               popupAnchor: [0, -18],
             }),
           });
@@ -7654,12 +7677,15 @@ function localDatetimeValue(date = new Date()) {
       invalidateFullPackagePreview(key, true);
       if (patch.ArchivedFromMap || patch.archivedFromMap) {
         setWorkflowViewFilter("archived");
+      } else if (patch.WorkflowStatus === "NO_ACCESS_1_WAITING_72H" || patch.workflowStatus === "NO_ACCESS_1_WAITING_72H") {
+        setWorkflowViewFilter("waiting72");
       }
       workflowServerSave(key, patch)
         .then(() => {
           setDraftWorkflowSaved(true);
           const archived = Boolean(patch.ArchivedFromMap || patch.archivedFromMap);
           if (archived) setWorkflowViewFilter("archived");
+          else if (patch.WorkflowStatus === "NO_ACCESS_1_WAITING_72H" || patch.workflowStatus === "NO_ACCESS_1_WAITING_72H") setWorkflowViewFilter("waiting72");
           showActionNotice(archived ? "Saved ✓ Status synced and archived from active map." : "Saved ✓ Status synced to CSV + Google Drive.");
         })
         .catch((error) => {
@@ -16196,13 +16222,13 @@ return (
           }
 
           .maturity-map-marker .map-cluster-marker {
-            min-width: 72px !important;
-            min-height: 52px !important;
+            min-width: 88px !important;
+            min-height: 62px !important;
             display: grid !important;
             place-items: center !important;
             align-content: center !important;
             gap: 2px !important;
-            padding: 6px 9px !important;
+            padding: 7px 10px !important;
             border: 2px solid rgba(255, 255, 255, 0.96) !important;
             border-radius: 18px !important;
             background:
@@ -16234,7 +16260,7 @@ return (
           .maturity-map-marker .map-cluster-marker span {
             display: block !important;
             color: #ffffff !important;
-            font-size: 23px !important;
+            font-size: 24px !important;
             font-weight: 1000 !important;
             line-height: 0.95 !important;
             letter-spacing: 0 !important;
@@ -16249,7 +16275,7 @@ return (
             border-radius: 999px !important;
             background: rgba(255, 255, 255, 0.14) !important;
             color: #e2e8f0 !important;
-            font-size: 9px !important;
+            font-size: 10px !important;
             line-height: 1 !important;
             font-weight: 1000 !important;
             letter-spacing: 0 !important;
