@@ -894,6 +894,7 @@ export default function PaperworkPage() {
   const [fullScreenPdfOpen, setFullScreenPdfOpen] = useState(false);
   const pendingCompletePackageRef = useRef<PendingCompletePackage | null>(null);
   const autoGenerateStartedRef = useRef(false);
+  const packagePreviewPanelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -905,6 +906,19 @@ export default function PaperworkPage() {
       packagePreview?.videoLinks.forEach((link) => URL.revokeObjectURL(link.url));
     };
   }, [packagePreview]);
+
+  useEffect(() => {
+    if (!packagePreview || !packagePreviewOpen || typeof window === "undefined") return;
+
+    const focusTimer = window.setTimeout(() => {
+      packagePreviewPanelRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 120);
+
+    return () => window.clearTimeout(focusTimer);
+  }, [packagePreview, packagePreviewOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1880,6 +1894,10 @@ export default function PaperworkPage() {
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 8px;
+        }
+
+        .package-main-actions {
+          grid-template-columns: 1fr;
         }
 
         .package-delivery-actions {
@@ -3405,13 +3423,10 @@ export default function PaperworkPage() {
                 </span>
               </div>
               <div className="package-review-actions package-review-actions-simple package-main-actions">
-                <button type="button" onClick={() => setPackagePreviewOpen(true)} aria-expanded={packagePreviewOpen}>
-                  Preview Package
-                </button>
                 <button type="button" onClick={sendCompletePackage}>Send ZIP</button>
               </div>
               {packagePreviewOpen ? (
-                <div className="package-preview-panel">
+                <div className="package-preview-panel" ref={packagePreviewPanelRef}>
                   <div className="package-pdf-preview-card">
                     <div className="package-pdf-preview-head">
                       <div>
