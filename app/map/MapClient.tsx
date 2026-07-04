@@ -1539,8 +1539,7 @@ function markerSignalLabelHtml(
 
   if (options.overview) {
     return `
-      <span class="signal-eyebrow">${escapeMarkerHtml(daySignal)}</span>
-      <strong class="signal-main">${escapeMarkerHtml(id)}</strong>
+      <span class="signal-top"><span class="signal-eyebrow">${escapeMarkerHtml(daySignal)}</span><strong class="signal-main">${escapeMarkerHtml(id)}</strong></span>
       <span class="signal-address">${escapeMarkerHtml(address)}</span>
       ${options.noAccessTimerLabel ? options.noAccessTimerLabel : ""}
       ${options.appointmentLabel ? options.appointmentLabel : ""}
@@ -1549,8 +1548,7 @@ function markerSignalLabelHtml(
   }
 
   return `
-    <span class="signal-eyebrow">${escapeMarkerHtml(daySignal)}</span>
-    <strong class="signal-main">${escapeMarkerHtml(id)}</strong>
+    <span class="signal-top"><span class="signal-eyebrow">${escapeMarkerHtml(daySignal)}</span><strong class="signal-main">${escapeMarkerHtml(id)}</strong></span>
     <span class="signal-address">${escapeMarkerHtml(address)}</span>
     ${start && !options.overdueLabel ? `<span class="signal-start">${escapeMarkerHtml(start)}</span>` : ""}
     ${options.noAccessTimerLabel ? options.noAccessTimerLabel : ""}
@@ -24611,6 +24609,393 @@ return (
               display: block !important;
               max-width: 142px !important;
               font-size: 9px !important;
+            }
+          }
+
+          /* MAP_FIELD_BADGE_THEME_2026 */
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-compact {
+            align-items: stretch !important;
+            justify-content: center !important;
+            min-width: 152px !important;
+            min-height: 82px !important;
+            max-width: 174px !important;
+            padding: 7px 8px 8px 10px !important;
+            gap: 5px !important;
+            overflow: visible !important;
+            color: #0f172a !important;
+            border: 1px solid rgba(15, 23, 42, 0.14) !important;
+            border-left: 6px solid #0ea5e9 !important;
+            border-radius: 15px !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98)) !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.82),
+              0 18px 34px rgba(15, 23, 42, 0.24),
+              inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+            backdrop-filter: blur(6px) saturate(1.03) !important;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview::after,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-compact::after {
+            width: 13px !important;
+            height: 13px !important;
+            bottom: -7px !important;
+            border: 1px solid rgba(15, 23, 42, 0.12) !important;
+            border-top: 0 !important;
+            border-left: 0 !important;
+            background: rgba(248, 250, 252, 0.98) !important;
+            box-shadow: 2px 3px 5px rgba(15, 23, 42, 0.12) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .signal-top,
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-top,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-top {
+            width: 100% !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 2px !important;
+            align-items: start !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-eyebrow,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-eyebrow {
+            width: fit-content !important;
+            max-width: 148px !important;
+            min-height: 19px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 3px 7px !important;
+            color: #ffffff !important;
+            background: #0f172a !important;
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+            border-radius: 999px !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-main,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-main {
+            width: 100% !important;
+            max-width: 150px !important;
+            display: block !important;
+            color: #111827 !important;
+            font-size: 20px !important;
+            line-height: 0.96 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-align: left !important;
+            text-shadow: none !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-address,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-address {
+            width: 100% !important;
+            max-width: 150px !important;
+            min-height: 22px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            padding: 3px 7px !important;
+            color: #075985 !important;
+            background: linear-gradient(135deg, #e0f2fe, #ecfeff) !important;
+            border: 1px solid rgba(14, 165, 233, 0.26) !important;
+            border-radius: 10px !important;
+            font-size: 10px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-align: left !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-overdue,
+          .maturity-map-marker .map-signal-marker.marker-appointment-past {
+            border-left-color: #ef4444 !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(255, 247, 247, 0.99)) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-overdue .signal-eyebrow,
+          .maturity-map-marker .map-signal-marker.marker-appointment-past .signal-eyebrow {
+            color: #991b1b !important;
+            background: #fee2e2 !important;
+            border-color: rgba(239, 68, 68, 0.26) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-no-access {
+            border-left-color: #f97316 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-no-access-soon {
+            border-left-color: #ea580c !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.82),
+              0 0 0 5px rgba(249, 115, 22, 0.16),
+              0 18px 34px rgba(15, 23, 42, 0.24) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-ready-revisit {
+            border-left-color: #16a34a !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-ready-revisit .signal-eyebrow {
+            color: #064e3b !important;
+            background: #bbf7d0 !important;
+            border-color: rgba(22, 163, 74, 0.24) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-appointment:not(.marker-appointment-past) {
+            border-left-color: #0284c7 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-has-appointment:not(.marker-appointment-past) .signal-eyebrow {
+            color: #082f49 !important;
+            background: #bae6fd !important;
+            border-color: rgba(2, 132, 199, 0.24) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-pending-appointment {
+            animation: fieldBadgePulse 1.65s ease-in-out infinite !important;
+          }
+
+          @keyframes fieldBadgePulse {
+            0%,
+            100% {
+              box-shadow:
+                0 0 0 2px rgba(255, 255, 255, 0.82),
+                0 18px 34px rgba(15, 23, 42, 0.24);
+            }
+            50% {
+              box-shadow:
+                0 0 0 2px rgba(255, 255, 255, 0.88),
+                0 0 0 7px rgba(14, 165, 233, 0.18),
+                0 22px 42px rgba(15, 23, 42, 0.28);
+            }
+          }
+
+          .maturity-map-marker .map-cluster-marker {
+            min-width: 94px !important;
+            min-height: 70px !important;
+            padding: 8px 9px !important;
+            border: 1px solid rgba(15, 23, 42, 0.16) !important;
+            border-left: 6px solid #0ea5e9 !important;
+            border-radius: 16px !important;
+            color: #0f172a !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98)) !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.82),
+              0 18px 34px rgba(15, 23, 42, 0.24) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker span {
+            color: #0f172a !important;
+            font-size: 24px !important;
+            line-height: 0.9 !important;
+            font-weight: 1000 !important;
+            text-shadow: none !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker strong {
+            max-width: 88px !important;
+            color: #075985 !important;
+            background: #e0f2fe !important;
+            border: 1px solid rgba(14, 165, 233, 0.24) !important;
+            border-radius: 999px !important;
+            font-size: 9px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker em {
+            color: #475569 !important;
+            background: rgba(15, 23, 42, 0.06) !important;
+            border-radius: 999px !important;
+            font-size: 8px !important;
+            font-weight: 1000 !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-overdue {
+            border-left-color: #ef4444 !important;
+            background: linear-gradient(180deg, #ffffff, #fff7f7) !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.82),
+              0 0 0 5px rgba(239, 68, 68, 0.08),
+              0 18px 34px rgba(15, 23, 42, 0.22) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-overdue strong {
+            color: #991b1b !important;
+            background: #fee2e2 !important;
+            border-color: rgba(239, 68, 68, 0.24) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-ready {
+            border-left-color: #16a34a !important;
+            background: linear-gradient(180deg, #ffffff, #f0fdf4) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-ready strong {
+            color: #064e3b !important;
+            background: #bbf7d0 !important;
+            border-color: rgba(22, 163, 74, 0.22) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-appointment {
+            border-left-color: #0284c7 !important;
+            background: linear-gradient(180deg, #ffffff, #f0f9ff) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-appointment strong {
+            color: #082f49 !important;
+            background: #bae6fd !important;
+            border-color: rgba(2, 132, 199, 0.22) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-noaccess-soon,
+          .maturity-map-marker .map-cluster-marker.cluster-noaccess-waiting {
+            border-left-color: #f97316 !important;
+            background: linear-gradient(180deg, #ffffff, #fff7ed) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-noaccess-soon strong,
+          .maturity-map-marker .map-cluster-marker.cluster-noaccess-waiting strong {
+            color: #9a3412 !important;
+            background: #ffedd5 !important;
+            border-color: rgba(249, 115, 22, 0.24) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-pending {
+            border-left-color: #64748b !important;
+          }
+
+          .map-stats {
+            width: min(292px, calc(100vw - 118px)) !important;
+            padding: 5px !important;
+            border-radius: 14px !important;
+            background: rgba(8, 13, 20, 0.72) !important;
+            opacity: 0.92 !important;
+          }
+
+          .map-stat {
+            min-height: 38px !important;
+            border-radius: 10px !important;
+          }
+
+          .map-stat strong {
+            font-size: 15px !important;
+            line-height: 1 !important;
+          }
+
+          .map-stat span {
+            font-size: 8px !important;
+            line-height: 1 !important;
+          }
+
+          .status-legend {
+            padding: 5px 6px !important;
+            border-radius: 13px !important;
+            background: rgba(8, 13, 20, 0.72) !important;
+            opacity: 0.9 !important;
+            backdrop-filter: blur(14px) saturate(1.04) !important;
+          }
+
+          .status-legend span {
+            min-height: 22px !important;
+            padding: 0 6px !important;
+            font-size: 9px !important;
+          }
+
+          .location-status-pill {
+            min-height: 32px !important;
+            max-width: min(240px, calc(100vw - 28px)) !important;
+            padding: 0 9px !important;
+            gap: 6px !important;
+            font-size: 10px !important;
+            opacity: 0.92 !important;
+            box-shadow: 0 10px 26px rgba(3, 8, 14, 0.26) !important;
+          }
+
+          .location-status-pill b {
+            padding: 3px 7px !important;
+            font-size: 9px !important;
+          }
+
+          .location-status-pill.blocked {
+            background: rgba(127, 29, 29, 0.88) !important;
+            border-color: rgba(251, 146, 60, 0.38) !important;
+            box-shadow:
+              0 0 0 2px rgba(251, 146, 60, 0.12),
+              0 12px 28px rgba(127, 29, 29, 0.28) !important;
+          }
+
+          .location-help-card {
+            display: none !important;
+          }
+
+          @media (max-width: 700px) {
+            .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview,
+            .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-compact {
+              min-width: 146px !important;
+              min-height: 78px !important;
+              max-width: 166px !important;
+              padding: 7px 8px 8px 9px !important;
+              gap: 4px !important;
+            }
+
+            .maturity-map-marker .map-signal-marker.marker-overview .signal-eyebrow,
+            .maturity-map-marker .map-signal-marker.marker-compact .signal-eyebrow {
+              max-width: 140px !important;
+              min-height: 18px !important;
+              padding: 3px 6px !important;
+              font-size: 8px !important;
+            }
+
+            .maturity-map-marker .map-signal-marker.marker-overview .signal-main,
+            .maturity-map-marker .map-signal-marker.marker-compact .signal-main {
+              max-width: 140px !important;
+              font-size: 18px !important;
+            }
+
+            .maturity-map-marker .map-signal-marker.marker-overview .signal-address,
+            .maturity-map-marker .map-signal-marker.marker-compact .signal-address {
+              max-width: 140px !important;
+              min-height: 20px !important;
+              padding: 3px 6px !important;
+              font-size: 9px !important;
+            }
+
+            .maturity-map-marker .map-cluster-marker {
+              min-width: 88px !important;
+              min-height: 64px !important;
+              padding: 7px 8px !important;
+            }
+
+            .map-stats {
+              width: min(250px, calc(100vw - 102px)) !important;
+              padding: 4px !important;
+            }
+
+            .map-stat {
+              min-height: 34px !important;
+            }
+
+            .location-status-pill {
+              min-height: 30px !important;
+              max-width: min(210px, calc(100vw - 24px)) !important;
             }
           }
         `}
