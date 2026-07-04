@@ -412,6 +412,35 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   };
 }
 
+function isFallbackPackageDescription(value: string) {
+  const raw = String(value || "").trim();
+  return !raw || raw === "Work completed per HPD bid / work order." || raw === "Select a job and field outcome to prepare paperwork.";
+}
+
+function formWithLoadedJobData(current: PackageForm, job: JobRecord, outcome: PaperworkOutcome) {
+  const pulled = formFromJob(job, outcome);
+  const sameJob = current.jobId === pulled.jobId;
+  if (!sameJob) return pulled;
+
+  return {
+    ...current,
+    jobId: pulled.jobId,
+    address: current.address || pulled.address,
+    location: current.location || pulled.location,
+    borough: current.borough || pulled.borough,
+    amount: current.amount || pulled.amount,
+    bidAmount: current.bidAmount || pulled.bidAmount,
+    fieldDate: current.fieldDate || pulled.fieldDate,
+    firstAttempt: current.firstAttempt || pulled.firstAttempt,
+    secondAttempt: current.secondAttempt || pulled.secondAttempt,
+    workStart: current.workStart || pulled.workStart,
+    workComplete: current.workComplete || pulled.workComplete,
+    sourceStatus: current.sourceStatus || pulled.sourceStatus,
+    description: isFallbackPackageDescription(current.description) ? pulled.description : current.description,
+    notes: current.notes || pulled.notes,
+  };
+}
+
 function jobText(job: JobRecord | null | undefined, keys: string[]) {
   if (!job) return "";
 
@@ -986,6 +1015,9 @@ export default function PaperworkPage() {
   }, [jobs, selectedId]);
 
   const selectedJob = useMemo(() => findJob(jobs, selectedId), [jobs, selectedId]);
+  const selectedJobId = selectedJob ? getJobId(selectedJob) : "";
+  const packageJobLoading = Boolean(selectedId && (!selectedJob || form.jobId !== selectedJobId));
+  const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading);
 
   useEffect(() => {
     if (!autoGeneratePackage || autoGenerateStartedRef.current) return;
@@ -1287,9 +1319,15 @@ export default function PaperworkPage() {
   }
 
   async function generateCompletePackage(includeMediaOverride = includePackageMedia) {
-    const activeForm = form;
     const activeOutcome = outcome;
     const activeJob = selectedJob;
+    if (selectedId && !activeJob) {
+      setPdfStatus("Still loading COA/ITB job data. Wait a moment, then generate the package.");
+      return;
+    }
+
+    const activeForm = activeJob ? formWithLoadedJobData(form, activeJob, activeOutcome) : form;
+    if (activeJob && activeForm !== form) setForm(activeForm);
     const jobId = activeForm.jobId || selectedId;
     if (!jobId) {
       setPdfStatus("Select a job before generating the package.");
@@ -1781,6 +1819,12 @@ export default function PaperworkPage() {
           background: #53e69c;
           color: #03120b;
           border-color: transparent;
+        }
+
+        .paperwork-generate-choice button:disabled {
+          cursor: wait;
+          opacity: 0.58;
+          filter: saturate(0.65);
         }
 
         .paperwork-package-review {
@@ -3389,13 +3433,13 @@ export default function PaperworkPage() {
 
           {!packagePreview ? (
             <div className="paperwork-generate-choice" aria-label="Package media choice">
-              <button className="paperwork-print" type="button" onClick={() => generateCompletePackage(true)}>
-                Generate Full Package
+              <button className="paperwork-print" type="button" onClick={() => generateCompletePackage(true)} disabled={!canGeneratePackage}>
+                {packageJobLoading ? "Loading Job Data..." : "Generate Full Package"}
               </button>
-              <button className="paperwork-secondary paperwork-pdf-only" type="button" onClick={() => generateCompletePackage(false)}>
+              <button className="paperwork-secondary paperwork-pdf-only" type="button" onClick={() => generateCompletePackage(false)} disabled={!canGeneratePackage}>
                 Affidavit + Invoice Only
               </button>
-              <small>Use the second button when you want no images or videos attached.</small>
+              <small>{packageJobLoading ? "Loading COA address and ITB page 3 description before package creation." : "Use the second button when you want no images or videos attached."}</small>
             </div>
           ) : null}
           {packagePreview ? (
