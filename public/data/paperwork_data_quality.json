@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-07-04T21:13:07.301Z",
+  "generatedAt": "2026-07-04T21:34:12.233Z",
   "totalJobs": 544,
   "missingAddresses": 0,
   "missingDescriptions": 0,
   "badDescriptions": 0,
-  "sourceReviewJobs": 5,
+  "sourceReviewJobs": 3,
   "missingItbFiles": 0,
   "missingPage3Images": 0,
   "publicDataInSync": true,
@@ -18,31 +18,15 @@
         "Address": "3211 PARKSIDE PLACE, 10467",
         "ITB": "faxCopy_20260324_123735_.69c2bf4dc9546.pdf",
         "Source": "MANUAL_OCR_PAGE_3",
-        "Status": "MATCHED",
+        "Status": "SOURCE_PAGE_UNREADABLE",
         "Preview": "REPLACE LATCH AT 5TH STY COMPACTOR DOOR AT 5TH STY PUBLIC HALL COMPACTOR CLOSET..REPLACE THE DEFECTIVE LATCH SET WITH NEW PASSAGE LATCH SET."
-      },
-      {
-        "OMO": "EO29204",
-        "Address": "2970 WEST 27 STREET, 11224",
-        "ITB": "EO29204_041924015633 2970, WEST 27 STREET.pdf",
-        "Source": "GOOGLE_DRIVE_ITB",
-        "Status": "RECOVERED_DRIVE_ITB",
-        "Preview": "AT (APT ENTRANCE DOOR APT 511). MAKE ALL NECESSARY REPAIRS TO MAKE DOOR SELF CLOSING AND LATCHING ALSO REPLACE MORTISE LOCK AT (APT ENTRANCE"
-      },
-      {
-        "OMO": "EO17794",
-        "Address": "141 MAC DONOUGH STREET, 11216",
-        "ITB": "EO17794_010424093220 141, MAC DONOUGH STREET.pdf",
-        "Source": "GOOGLE_DRIVE_ITB",
-        "Status": "RECOVERED_DRIVE_ITB",
-        "Preview": "NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK” AT APARTMENT 3A, 3RD STORY TOTAL WINDOWS (3) REPLACE WITH NEW THE BROKEN/DE"
       },
       {
         "OMO": "EQ31176",
         "Address": "18 EAST 109 STREET, 10029",
         "ITB": "EQ31176_062626123102.pdf",
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
-        "Status": "MATCHED",
+        "Status": "SOURCE_PDF_MISSING",
         "Preview": ": AT BLDG ENTRANCE DOOR, REPAIR MAGNECTIC LOCK TOTAL DOORS= (1) NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BLDG E"
       },
       {
@@ -50,7 +34,7 @@
         "Address": "1370 UNIVERSITY AVENUE, 10452",
         "ITB": "EQ31123_070126022138.pdf",
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
-        "Status": "MATCHED",
+        "Status": "SOURCE_PDF_MISSING",
         "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK\" REPLACE THE KITCHEN FLOOR AT APT 4B. CERAMIC TILES AT FLOOR IN THE KITCHE"
       }
     ],

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-04T19:55:50.769Z",
+  "generatedAt": "2026-07-04T21:27:51.178Z",
   "page": 3,
   "dpi": 150,
   "totalJobs": 544,
@@ -7,7 +7,8 @@
   "sourceDirectories": [
     "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Scripts\\Diagnostics script\\ITB_Downloads_V5",
     "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Scripts\\Diagnostics script\\ITB_Downloads_V6",
-    "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Invitations_to_Bid"
+    "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Invitations_to_Bid",
+    "C:\\Users\\uac52\\My Drive\\temp script\\UNITED ANGEL CONSTRUCTION BIDS 2024 ONE DRIVE 1"
   ],
   "entries": {
     "EQ15489_010226100207.pdf": {
@@ -2231,6 +2232,12 @@
       "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Scripts\\Diagnostics script\\ITB_Downloads_V5\\EQ24684_040826112253.pdf",
       "sourceMatch": "exact"
     },
+    "EO29204_041924015633 2970, WEST 27 STREET.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/EO29204_041924015633_2970_WEST_27_STREET-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\temp script\\UNITED ANGEL CONSTRUCTION BIDS 2024 ONE DRIVE 1\\EO29204_041924015633 2970, WEST 27 STREET.pdf",
+      "sourceMatch": "exact"
+    },
     "EQ25189_041326123744.pdf": {
       "page": 3,
       "pageImage": "/documents/itb-pages/EQ25189_041326123744-p3.png",
@@ -2265,6 +2272,12 @@
       "page": 3,
       "pageImage": "/documents/itb-pages/faxCopy_20260416_093858_.69e0ea6b52bae-p3.png",
       "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Scripts\\Diagnostics script\\ITB_Downloads_V5\\faxCopy_20260416_093858_.69e0ea6b52bae.pdf",
+      "sourceMatch": "exact"
+    },
+    "EO17794_010424093220 141, MAC DONOUGH STREET.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/EO17794_010424093220_141_MAC_DONOUGH_STREET-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\temp script\\UNITED ANGEL CONSTRUCTION BIDS 2024 ONE DRIVE 1\\EO17794_010424093220 141, MAC DONOUGH STREET.pdf",
       "sourceMatch": "exact"
     },
     "faxCopy_20260417_093205_.69e239499ce30.pdf": {
@@ -3253,10 +3266,10 @@
     }
   },
   "summary": {
-    "rendered": 19,
-    "reused": 521,
+    "rendered": 2,
+    "reused": 540,
     "copiedPdfs": 0,
-    "missingSource": 4,
+    "missingSource": 2,
     "failed": 0
   }
 }

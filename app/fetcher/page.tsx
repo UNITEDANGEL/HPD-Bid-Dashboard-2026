@@ -160,7 +160,8 @@ type CleanupJob = {
     (summary.missingAddresses ?? 0) +
     (summary.missingItbJobs ?? 0) +
     (summary.missingPage3Images ?? 0);
-  const dataIssues = hardDataIssues + (summary.sourceReviewJobs ?? 0);
+  const sourceWarnings = summary.sourceReviewJobs ?? 0;
+  const dataIssues = hardDataIssues;
   const fetcherClean = Boolean(status.ok) && hardDataIssues === 0;
 
   return (
@@ -192,7 +193,13 @@ type CleanupJob = {
           <div className={`command-card ${dataIssues ? "warn" : "primary"}`}>
             <span>Data issues</span>
             <strong>{dataIssues}</strong>
-            <small>{dataIssues ? "Review before dispatch" : "No missing address, ITB, or description issues"}</small>
+            <small>
+              {dataIssues
+                ? "Review before dispatch"
+                : sourceWarnings
+                  ? `${sourceWarnings} source review warning${sourceWarnings === 1 ? "" : "s"}`
+                  : "No missing address, ITB, or description issues"}
+            </small>
           </div>
         </div>
         <div className="actions">

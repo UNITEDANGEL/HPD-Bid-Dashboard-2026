@@ -152,6 +152,7 @@ const sourceDirs = uniqueExistingDirectories([
   path.join(projectRoot, "Scripts", "Diagnostics script", "ITB_Downloads_V5"),
   path.join(projectRoot, "Scripts", "Diagnostics script", "ITB_Downloads_V6"),
   path.join(projectRoot, "Invitations_to_Bid"),
+  path.join(projectRoot, "..", "temp script", "UNITED ANGEL CONSTRUCTION BIDS 2024 ONE DRIVE 1"),
 ]);
 
 if (!sourceDirs.length) {

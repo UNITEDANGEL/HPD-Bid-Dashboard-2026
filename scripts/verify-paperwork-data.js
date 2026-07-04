@@ -81,7 +81,7 @@ function summarizeJob(job) {
     Address: get(job, ADDRESS_KEYS),
     ITB: get(job, ITB_KEYS),
     Source: get(job, ["ItbPage3DescriptionSource", "DescriptionSource", "descriptionSource"]),
-    Status: get(job, ["ITBMatchStatus", "itbMatchStatus", "ItbPage3VerificationStatus", "itbPage3VerificationStatus"]),
+    Status: get(job, ["ItbPage3VerificationStatus", "itbPage3VerificationStatus", "ITBMatchStatus", "itbMatchStatus"]),
     Preview: get(job, DESCRIPTION_KEYS).replace(/\s+/g, " ").slice(0, 140),
   };
 }

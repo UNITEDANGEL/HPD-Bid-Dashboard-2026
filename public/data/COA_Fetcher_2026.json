@@ -16660,12 +16660,10 @@
     "boro": "Brooklyn",
     "BoroughSource": "ZIP_CODE_CORRECTED",
     "boroughSource": "ZIP_CODE_CORRECTED",
-    "DescriptionNeedsSourceReview": true,
-    "descriptionNeedsSourceReview": true,
-    "ItbPage3VerificationStatus": "SOURCE_PDF_MISSING",
-    "itbPage3VerificationStatus": "SOURCE_PDF_MISSING",
-    "ItbPage3VerificationNote": "No confirmed ITB source PDF with page 3 was found.",
-    "itbPage3VerificationNote": "No confirmed ITB source PDF with page 3 was found."
+    "ItbPage3VerifiedAt": "2026-07-04T21:33:20.476Z",
+    "itbPage3VerifiedAt": "2026-07-04T21:33:20.476Z",
+    "ItbPage3VerificationStatus": "VERIFIED_SOURCE_PDF",
+    "itbPage3VerificationStatus": "VERIFIED_SOURCE_PDF"
   },
   {
     "OMO": "EQ25189",
@@ -16993,12 +16991,10 @@
     "boro": "Brooklyn",
     "BoroughSource": "ZIP_CODE_CORRECTED",
     "boroughSource": "ZIP_CODE_CORRECTED",
-    "DescriptionNeedsSourceReview": true,
-    "descriptionNeedsSourceReview": true,
-    "ItbPage3VerificationStatus": "SOURCE_PDF_MISSING",
-    "itbPage3VerificationStatus": "SOURCE_PDF_MISSING",
-    "ItbPage3VerificationNote": "No confirmed ITB source PDF with page 3 was found.",
-    "itbPage3VerificationNote": "No confirmed ITB source PDF with page 3 was found."
+    "ItbPage3VerifiedAt": "2026-07-04T21:33:20.476Z",
+    "itbPage3VerifiedAt": "2026-07-04T21:33:20.476Z",
+    "ItbPage3VerificationStatus": "VERIFIED_SOURCE_PDF",
+    "itbPage3VerificationStatus": "VERIFIED_SOURCE_PDF"
   },
   {
     "OMO": "EQ25386",

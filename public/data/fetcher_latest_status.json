@@ -18,7 +18,7 @@
     "missingDescriptions": 0,
     "missingItbJobs": 0,
     "missingAddresses": 0,
-    "sourceReviewJobs": 5,
+    "sourceReviewJobs": 3,
     "missingPage3Images": 0
   },
   "logPath": "data/fetcher_latest_run.log"
