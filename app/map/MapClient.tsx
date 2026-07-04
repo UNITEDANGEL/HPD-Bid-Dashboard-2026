@@ -10,6 +10,15 @@ const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
 const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v2";
 const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
 const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
+const MAP_BOROUGH_FILTERS = [
+  { key: "all", label: "All Boroughs", short: "All" },
+  { key: "manhattan", label: "Manhattan", short: "MN" },
+  { key: "bronx", label: "Bronx", short: "BX" },
+  { key: "brooklyn", label: "Brooklyn", short: "BK" },
+  { key: "queens", label: "Queens", short: "QN" },
+  { key: "staten-island", label: "Staten Island", short: "SI" },
+  { key: "unknown", label: "Unknown", short: "?" },
+] as const;
 const USER_LOCATION_OVERVIEW_ZOOM = 14;
 const USER_LOCATION_NEARBY_RADIUS_MILES = 2.5;
 const USER_LOCATION_CONTEXT_JOB_LIMIT = 12;
@@ -140,6 +149,8 @@ type WorkflowViewFilter =
   | "final"
   | "archived"
   | "all";
+
+type MapBoroughFilter = (typeof MAP_BOROUGH_FILTERS)[number]["key"];
 
 type ItbSourceManifestEntry = {
   page?: number;
@@ -524,6 +535,38 @@ function boroughFromAddress(address: string) {
   if (z >= 11201 && z <= 11256) return "Brooklyn";
   return "";
 }
+
+function normalizeBoroughKey(value: unknown): MapBoroughFilter | "" {
+  const raw = String(value || "").trim().toLowerCase();
+  if (!raw) return "";
+  const compact = raw.replace(/[^a-z0-9]+/g, "");
+  if (compact === "all" || compact === "allboroughs" || compact === "allboros") return "all";
+  if (compact.includes("manhattan") || compact === "mn" || compact === "nyc" || compact === "newyork") return "manhattan";
+  if (compact.includes("bronx") || compact === "bx") return "bronx";
+  if (compact.includes("brooklyn") || compact.includes("kings") || compact === "bk") return "brooklyn";
+  if (compact.includes("queens") || compact === "qn") return "queens";
+  if (compact.includes("staten") || compact.includes("richmond") || compact === "si") return "staten-island";
+  if (compact.includes("unknown") || compact.includes("blank") || compact === "na") return "unknown";
+  return "";
+}
+
+function boroughFilterMeta(key: MapBoroughFilter | "") {
+  return MAP_BOROUGH_FILTERS.find((borough) => borough.key === key) || MAP_BOROUGH_FILTERS[0];
+}
+
+function jobBoroughKey(job: JobRecord): MapBoroughFilter {
+  const raw = getAny(job, "borough", "Borough", "Boro", "boro") || boroughFromAddress(displayAddress(job));
+  return normalizeBoroughKey(raw) || "unknown";
+}
+
+function jobBoroughLabel(job: JobRecord) {
+  return boroughFilterMeta(jobBoroughKey(job)).label;
+}
+
+function matchesMapBorough(job: JobRecord, filter: MapBoroughFilter) {
+  return filter === "all" || jobBoroughKey(job) === filter;
+}
+
 function normalizeStaticJob(row: JobRecord, index: number): any {
   const anyRow = row as any;
   const omo = getAny(anyRow, "OMO", "omo", "Job_ID", "Job ID", "jobId", "id") || `JOB-${index + 1}`;
@@ -2491,6 +2534,7 @@ const [appointmentSaving, setAppointmentSaving] = useState(false);
 const [appointmentAlertPhone, setAppointmentAlertPhone] = useState("");
 const [appointmentAlertSaving, setAppointmentAlertSaving] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<WorkflowViewFilter>("active");
+const [mapBoroughFilter, setMapBoroughFilter] = useState<MapBoroughFilter>("all");
 const [countdownTick, setCountdownTick] = useState(0);
 const [mapZoom, setMapZoom] = useState(10);
 const [photoCaptureTarget, setPhotoCaptureTarget] = useState<FieldCaptureTarget | null>(null);
@@ -3095,6 +3139,7 @@ function handleMapTouchEnd(event: any) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const view = params.get("view");
+    const requestedBorough = normalizeBoroughKey(params.get("boro") || params.get("borough"));
     const omo = String(params.get("omo") || params.get("job") || params.get("q") || "")
       .trim()
       .replace(/^omo\s*[:#-]?\s*/i, "");
@@ -3127,9 +3172,14 @@ function handleMapTouchEnd(event: any) {
         setMapShowAllDays(true);
       }
     }
+    if (requestedBorough) {
+      setMapBoroughFilter(requestedBorough);
+      setActionNotice(`${boroughFilterMeta(requestedBorough).label} map filter loaded.`);
+    }
     if (omo) {
       setSearch(omo.toUpperCase());
       setUrlOmoRequest(omo);
+      setMapBoroughFilter("all");
       setMapShowAllDays(true);
       setWorkflowViewFilter(requestedWorkflowView || "all");
       setDrawerOpen(true);
@@ -3302,6 +3352,42 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return mapShowAllDays ? "All mapped jobs" : `Last ${mapDaysBackLimit()} days`;
   }
 
+  function mapSearchText(job: JobRecord) {
+    return [
+      job.id,
+      job.omo,
+      job.jobId,
+      job.address,
+      job.location,
+      job.borough,
+      job.trade,
+      job.status,
+      job.awardDate,
+      job.bidDueDate,
+      job.dueDate,
+      job.bidAmount,
+      (job as any).ItbTenantName,
+      (job as any).itbTenantName,
+      (job as any).TenantName,
+      (job as any).tenantName,
+      job.tenantPhone,
+      (job as any).ItbTenantPhone,
+      (job as any).itbTenantPhone,
+      (job as any).TenantPhone,
+      job.phone,
+      job.contractor,
+      job.owner,
+      job.description,
+      jobBoroughLabel(job),
+    ]
+      .join(" ")
+      .toLowerCase();
+  }
+
+  function matchesMapSearch(job: JobRecord, needle: string) {
+    return !needle || mapSearchText(job).includes(needle);
+  }
+
   const filteredJobs = useMemo<MappedJob[]>(() => {
     const needle = search.trim().toLowerCase();
 
@@ -3322,42 +3408,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           return (age !== null && age >= 0 && age <= limit) || hasUpcomingAppointment(job);
         });
 
-    const workflowFiltered = dateFiltered.filter((job) => shouldShowForWorkflowView(job, workflowViewFilter));
+    const boroughFiltered = dateFiltered.filter((job) => matchesMapBorough(job, mapBoroughFilter));
+    const workflowFiltered = boroughFiltered.filter((job) => shouldShowForWorkflowView(job, workflowViewFilter));
 
     if (!needle) return workflowFiltered;
 
-    return workflowFiltered.filter((job) =>
-      [
-        job.id,
-        job.omo,
-        job.jobId,
-        job.address,
-        job.location,
-        job.borough,
-        job.trade,
-        job.status,
-        job.awardDate,
-        job.bidDueDate,
-        job.dueDate,
-        job.bidAmount,
-        (job as any).ItbTenantName,
-        (job as any).itbTenantName,
-        (job as any).TenantName,
-        (job as any).tenantName,
-        job.tenantPhone,
-        (job as any).ItbTenantPhone,
-        (job as any).itbTenantPhone,
-        (job as any).TenantPhone,
-        job.phone,
-        job.contractor,
-        job.owner,
-        job.description,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(needle)
-    );
-  }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays, workflowViewFilter, countdownTick]);
+    return workflowFiltered.filter((job) => matchesMapSearch(job, needle));
+  }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays, mapBoroughFilter, workflowViewFilter, countdownTick]);
 
   useEffect(() => {
     if (!urlOmoRequest) return;
@@ -3398,7 +3455,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         });
 
     const limit = mapDaysBackLimit();
-    return rows.reduce(
+    const boroughRows = rows.filter((job) => matchesMapBorough(job, mapBoroughFilter));
+    return boroughRows.reduce(
       (acc: { all: number; visible: number; missingDate: number }, job: MappedJob) => {
         acc.all += 1;
         const age = mapDateAgeDays(job);
@@ -3408,7 +3466,40 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       },
       { all: 0, visible: 0, missingDate: 0 }
     );
-  }, [jobs, mappedJobs, mapDaysBack, mapShowAllDays]);
+  }, [jobs, mappedJobs, mapDaysBack, mapShowAllDays, mapBoroughFilter]);
+
+  const mapBoroughOptions = useMemo(() => {
+    const rows: MappedJob[] = mappedJobs.length
+      ? mappedJobs
+      : jobs.map((job) => {
+          const coords = getStoredCoords(job);
+          return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" } : { ...job };
+        });
+
+    const limit = mapDaysBackLimit();
+    const needle = search.trim().toLowerCase();
+    const counts = MAP_BOROUGH_FILTERS.reduce(
+      (acc, borough) => ({ ...acc, [borough.key]: 0 }),
+      {} as Record<MapBoroughFilter, number>
+    );
+
+    rows.forEach((job) => {
+      if (!mapShowAllDays) {
+        const age = mapDateAgeDays(job);
+        if (!((age !== null && age >= 0 && age <= limit) || hasUpcomingAppointment(job))) return;
+      }
+      if (!shouldShowForWorkflowView(job, workflowViewFilter)) return;
+      if (!matchesMapSearch(job, needle)) return;
+
+      const key = jobBoroughKey(job);
+      counts.all += 1;
+      counts[key] += 1;
+    });
+
+    return MAP_BOROUGH_FILTERS
+      .filter((borough) => borough.key !== "unknown" || counts.unknown > 0 || mapBoroughFilter === "unknown")
+      .map((borough) => ({ ...borough, count: counts[borough.key] || 0 }));
+  }, [jobs, mappedJobs, mapDaysBack, mapShowAllDays, mapBoroughFilter, workflowViewFilter, search, countdownTick]);
 
   function clearMarkerOverviewReturn() {
     if (markerOverviewTimerRef.current !== null) {
@@ -4064,7 +4155,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         ? Array.from(
             plottedItems.reduce((clusters, item) => {
               const point = map.latLngToLayerPoint([item.lat, item.lng]);
-              const key = `${Math.floor(point.x / 116)}:${Math.floor(point.y / 96)}`;
+              const key = `${Math.floor(point.x / 156)}:${Math.floor(point.y / 126)}`;
               const cluster = clusters.get(key) || { items: [] as typeof plottedItems, latTotal: 0, lngTotal: 0 };
               cluster.items.push(item);
               cluster.latTotal += item.lat;
@@ -4104,6 +4195,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           const waitingNoAccessCount = waitingNoAccessItems.length;
           const waitingNoAccessLabel = waitingNoAccessItems[0]?.second?.label.replace(" TO 2ND", "") || "";
           const pendingCount = clusterItems.filter((current) => workflowViewBucket(current.job) === "pending").length;
+          const clusterBoroughCounts = clusterItems.reduce((counts, current) => {
+            const key = jobBoroughKey(current.job);
+            counts.set(key, (counts.get(key) || 0) + 1);
+            return counts;
+          }, new Map<MapBoroughFilter, number>());
+          const dominantBorough = Array.from(clusterBoroughCounts.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || "unknown";
+          const clusterBoroughLabel =
+            mapBoroughFilter === "all" && clusterBoroughCounts.size > 1
+              ? `${boroughFilterMeta(dominantBorough).short}+${clusterBoroughCounts.size - 1}`
+              : boroughFilterMeta(mapBoroughFilter === "all" ? dominantBorough : mapBoroughFilter).short;
           const statusClass = appointmentCount
             ? "cluster-appointment"
             : readyCount
@@ -4153,9 +4254,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               html: `<div class="map-cluster-marker ${statusClass}">
                       <span>${clusterItems.length}</span>
                       <strong>${escapeMarkerHtml(clusterLabel)}</strong>
+                      <em>${escapeMarkerHtml(clusterBoroughLabel)}</em>
                     </div>`,
-              iconSize: [96, 74],
-              iconAnchor: [48, 37],
+              iconSize: [116, 86],
+              iconAnchor: [58, 43],
               popupAnchor: [0, -18],
             }),
           });
@@ -8406,6 +8508,8 @@ function directionsUrl(job: JobRecord) {
   const readySecondCount = noAccessReadyJobs.length || health.readySecond.length;
   const workflowDashboardCounts = useMemo(() => {
     const rows = (mappedJobs.length ? mappedJobs : jobs) as MappedJob[];
+    const limit = mapDaysBackLimit();
+    const needle = search.trim().toLowerCase();
     const counts: Record<WorkflowViewFilter, number> = {
       active: 0,
       pending: 0,
@@ -8415,10 +8519,18 @@ function directionsUrl(job: JobRecord) {
       ready2: 0,
       final: 0,
       archived: 0,
-      all: rows.length,
+      all: 0,
     };
 
     rows.forEach((job) => {
+      if (!matchesMapBorough(job, mapBoroughFilter)) return;
+      if (!mapShowAllDays) {
+        const age = mapDateAgeDays(job);
+        if (!((age !== null && age >= 0 && age <= limit) || hasUpcomingAppointment(job))) return;
+      }
+      if (!matchesMapSearch(job, needle)) return;
+
+      counts.all += 1;
       const bucket = workflowViewBucket(job) as Exclude<WorkflowViewFilter, "appointments" | "noaccess24" | "all">;
       counts[bucket] += 1;
       if (bucket === "pending") counts.active += 1;
@@ -8427,7 +8539,7 @@ function directionsUrl(job: JobRecord) {
     });
 
     return counts;
-  }, [jobs, mappedJobs, countdownTick]);
+  }, [jobs, mappedJobs, mapDaysBack, mapShowAllDays, mapBoroughFilter, search, countdownTick]);
   const missingGeoCount = Math.max(0, jobs.length - plottedCount);
   const visibleMappedCount = filteredJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng)).length;
   const dashboardViewCopy: Record<WorkflowViewFilter, { label: string; detail: string }> = {
@@ -8454,7 +8566,13 @@ function directionsUrl(job: JobRecord) {
   };
   const dashboardView = dashboardViewCopy[workflowViewFilter];
   const mapReturnView = mapReturnCopy[workflowViewFilter];
-  const dashboardSubtitle = search.trim() ? `Search: ${search.trim()}` : dashboardView.detail;
+  const activeBoroughFilter = boroughFilterMeta(mapBoroughFilter);
+  const mapBoroughScopeLabel = mapBoroughFilter === "all" ? "All boroughs" : activeBoroughFilter.label;
+  const dashboardSubtitle = search.trim()
+    ? `Search: ${search.trim()} · ${mapBoroughScopeLabel}`
+    : mapBoroughFilter === "all"
+      ? dashboardView.detail
+      : `${activeBoroughFilter.label} · ${dashboardView.detail}`;
   const dashboardDataStatus = health.totalIssues ? `${health.totalIssues} data checks` : "Data clean";
   const locationBlocked = locationBlockedByBrowser();
   const timerMapLayerActive =
@@ -8614,6 +8732,26 @@ function directionsUrl(job: JobRecord) {
     window.requestAnimationFrame(() => {
       mapRef.current?.invalidateSize();
       fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true);
+    });
+  }
+
+  function changeMapBoroughFilter(value: MapBoroughFilter) {
+    setMapBoroughFilter(value);
+    setClusterSheet(null);
+    setMapJobBrief(null);
+    setSelectedOnly(false);
+    setSelected(null);
+    setDrawerOpen(false);
+    setFullMap(true);
+    setActionNotice(
+      value === "all"
+        ? "Showing all boroughs on this map layer."
+        : `${boroughFilterMeta(value).label} selected. Map will show this borough on the current layer.`
+    );
+
+    window.requestAnimationFrame(() => {
+      mapRef.current?.invalidateSize();
+      fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : MAP_LAYER_OVERVIEW_ZOOM, Boolean(userLocation));
     });
   }
 
@@ -16229,13 +16367,13 @@ return (
           }
 
           .maturity-map-marker .map-cluster-marker {
-            min-width: 88px !important;
-            min-height: 62px !important;
+            min-width: 106px !important;
+            min-height: 74px !important;
             display: grid !important;
             place-items: center !important;
             align-content: center !important;
             gap: 2px !important;
-            padding: 7px 10px !important;
+            padding: 8px 10px !important;
             border: 2px solid rgba(255, 255, 255, 0.96) !important;
             border-radius: 18px !important;
             background:
@@ -16267,7 +16405,7 @@ return (
           .maturity-map-marker .map-cluster-marker span {
             display: block !important;
             color: #ffffff !important;
-            font-size: 24px !important;
+            font-size: 27px !important;
             font-weight: 1000 !important;
             line-height: 0.95 !important;
             letter-spacing: 0 !important;
@@ -16284,6 +16422,23 @@ return (
             color: #e2e8f0 !important;
             font-size: 10px !important;
             line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker em {
+            display: inline-flex !important;
+            min-height: 14px !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 2px 6px !important;
+            border-radius: 999px !important;
+            background: rgba(15, 23, 42, 0.26) !important;
+            color: rgba(255, 255, 255, 0.92) !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-style: normal !important;
             font-weight: 1000 !important;
             letter-spacing: 0 !important;
             white-space: nowrap !important;
@@ -19759,6 +19914,61 @@ return (
             box-shadow: 0 12px 26px rgba(34, 197, 94, 0.20) !important;
           }
 
+          .map-borough-control {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 6px !important;
+          }
+
+          .map-borough-control label {
+            min-width: 0 !important;
+            min-height: 40px !important;
+            display: grid !important;
+            grid-template-columns: auto minmax(0, 1fr) !important;
+            align-items: center !important;
+            gap: 8px !important;
+            padding: 6px 10px !important;
+            border-radius: 14px !important;
+            background: #ffffff !important;
+            border: 1px solid rgba(128, 150, 174, 0.30) !important;
+            color: #162235 !important;
+          }
+
+          .map-borough-control label span {
+            color: #5d7088 !important;
+            font-size: 9px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-borough-control select {
+            min-width: 0 !important;
+            width: 100% !important;
+            border: 0 !important;
+            background: transparent !important;
+            color: #162235 !important;
+            font-size: 13px !important;
+            font-weight: 950 !important;
+            outline: none !important;
+          }
+
+          .map-borough-control button {
+            min-height: 40px !important;
+            padding: 0 12px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            background: #ecfeff !important;
+            color: #0f172a !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-borough-control button.active {
+            background: linear-gradient(135deg, #0f172a, #155e75) !important;
+            color: #ffffff !important;
+          }
+
           .map-days-filter {
             display: grid !important;
             grid-template-columns: minmax(0, 1fr) repeat(2, auto) !important;
@@ -20198,9 +20408,29 @@ return (
 
           .maturity-map-marker .map-cluster-marker {
             border-radius: 18px !important;
+            min-width: 106px !important;
+            min-height: 74px !important;
+            padding: 8px 10px !important;
             box-shadow:
               0 0 0 3px rgba(255, 255, 255, 0.72),
               0 18px 36px rgba(15, 23, 42, 0.30) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker em {
+            display: inline-flex !important;
+            min-height: 14px !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 2px 6px !important;
+            border-radius: 999px !important;
+            background: rgba(15, 23, 42, 0.28) !important;
+            color: rgba(255, 255, 255, 0.92) !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-style: normal !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
           }
 
           .maturity-map-marker .map-cluster-marker.cluster-noaccess-waiting {
@@ -20626,13 +20856,13 @@ return (
             position: absolute !important;
             z-index: 18 !important;
             left: 12px !important;
-            bottom: 96px !important;
-            width: min(390px, calc(100vw - 24px)) !important;
+            bottom: 88px !important;
+            width: min(320px, calc(100vw - 24px)) !important;
             display: grid !important;
-            gap: 10px !important;
-            padding: 13px !important;
+            gap: 7px !important;
+            padding: 10px !important;
             color: #fff7ed !important;
-            border-radius: 20px !important;
+            border-radius: 16px !important;
             border: 1px solid rgba(251, 146, 60, 0.42) !important;
             background:
               radial-gradient(circle at top left, rgba(251, 146, 60, 0.26), transparent 42%),
@@ -20655,7 +20885,7 @@ return (
             color: #ffffff !important;
             display: block !important;
             margin-top: 2px !important;
-            font-size: 18px !important;
+            font-size: 15px !important;
             line-height: 1.05 !important;
             font-weight: 1000 !important;
           }
@@ -20663,20 +20893,20 @@ return (
           .location-help-card small {
             color: #ffedd5 !important;
             display: block !important;
-            margin-top: 5px !important;
-            font-size: 12px !important;
-            line-height: 1.32 !important;
+            margin-top: 3px !important;
+            font-size: 10px !important;
+            line-height: 1.18 !important;
             font-weight: 800 !important;
           }
 
           .location-help-actions {
             display: grid !important;
             grid-template-columns: 1.1fr 1fr 0.7fr !important;
-            gap: 8px !important;
+            gap: 6px !important;
           }
 
           .location-help-actions button {
-            min-height: 42px !important;
+            min-height: 34px !important;
             border: 1px solid rgba(255, 255, 255, 0.20) !important;
             border-radius: 14px !important;
             color: #431407 !important;
@@ -20696,27 +20926,36 @@ return (
             background: rgba(255, 255, 255, 0.10) !important;
           }
 
+          .map-cockpit.board-open ~ .location-help-card {
+            display: none !important;
+          }
+
           @media (width <= 700px) {
             .location-help-card {
               left: 8px !important;
               right: 8px !important;
-              bottom: 102px !important;
+              bottom: 88px !important;
               width: auto !important;
-              padding: 12px !important;
-              border-radius: 18px !important;
+              padding: 9px !important;
+              border-radius: 15px !important;
             }
 
             .location-help-card strong {
-              font-size: 17px !important;
+              font-size: 14px !important;
+            }
+
+            .location-help-card small {
+              display: none !important;
             }
 
             .location-help-actions {
-              grid-template-columns: 1fr 1fr !important;
+              grid-template-columns: 1fr 1fr 0.64fr !important;
+              gap: 5px !important;
             }
 
             .location-help-actions button:nth-child(3) {
-              grid-column: 1 / -1 !important;
-              min-height: 36px !important;
+              grid-column: auto !important;
+              min-height: 32px !important;
             }
           }
 
@@ -20924,6 +21163,7 @@ return (
           .map-cockpit.board-collapsed .map-command-banner small,
           .map-cockpit.board-collapsed .map-command-buttons button:not(.map-board-toggle),
           .map-cockpit.board-collapsed .map-board-switcher,
+          .map-cockpit.board-collapsed .map-borough-rail,
           .map-cockpit.board-collapsed .map-cockpit-actions {
             display: none !important;
           }
@@ -20996,6 +21236,69 @@ return (
           .map-board-switcher button.active span,
           .map-board-switcher button.active b {
             color: #082f49 !important;
+          }
+
+          .map-borough-rail {
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 5px !important;
+          }
+
+          .map-borough-rail button {
+            min-width: 0 !important;
+            min-height: 35px !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            gap: 4px !important;
+            padding: 5px 7px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            background: rgba(255, 255, 255, 0.76) !important;
+            color: #0f172a !important;
+            box-shadow: none !important;
+          }
+
+          .map-borough-rail button span {
+            min-width: 0 !important;
+            color: #334155 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-align: left !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-borough-rail button strong {
+            min-width: 22px !important;
+            min-height: 22px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 999px !important;
+            background: #e0f2fe !important;
+            color: #075985 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-borough-rail button.active {
+            background: #0f172a !important;
+            border-color: rgba(14, 165, 233, 0.26) !important;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16) !important;
+          }
+
+          .map-borough-rail button.active span,
+          .map-borough-rail button.active strong {
+            color: #ffffff !important;
+          }
+
+          .map-borough-rail button.active strong {
+            background: rgba(14, 165, 233, 0.40) !important;
           }
 
           .map-cockpit-actions button {
@@ -23863,6 +24166,43 @@ return (
               font-size: 10px !important;
             }
 
+            .map-borough-control {
+              grid-template-columns: minmax(0, 1fr) 74px !important;
+              gap: 5px !important;
+            }
+
+            .map-borough-control label,
+            .map-borough-control button {
+              min-height: 36px !important;
+              border-radius: 12px !important;
+            }
+
+            .map-borough-control select {
+              font-size: 12px !important;
+            }
+
+            .map-borough-rail {
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              gap: 4px !important;
+            }
+
+            .map-borough-rail button {
+              min-height: 31px !important;
+              padding: 4px 5px !important;
+              border-radius: 10px !important;
+            }
+
+            .map-borough-rail button span {
+              font-size: 9px !important;
+              text-align: center !important;
+            }
+
+            .map-borough-rail button strong {
+              min-width: 19px !important;
+              min-height: 18px !important;
+              font-size: 9px !important;
+            }
+
             .map-cockpit-actions {
               gap: 5px !important;
             }
@@ -23987,7 +24327,7 @@ return (
         <div className="map-title-row">
           <div>
             <h1>HPD Dashboard</h1>
-            <p>{mapDateFilterLabel()} - {filteredJobs.length} visible - {activeMapBaseStyle.label}</p>
+            <p>{mapBoroughScopeLabel} - {mapDateFilterLabel()} - {filteredJobs.length} visible - {activeMapBaseStyle.label}</p>
           </div>
           <a className="home-btn" href="/">Home</a>
           <button className="map-menu-close" type="button" onClick={closeMapMenu}>
@@ -24066,6 +24406,7 @@ return (
           </div>
 
           <div className="dispatch-dashboard-strip">
+            <span>{mapBoroughScopeLabel}</span>
             <span>{mapDateFilterLabel()}</span>
             <span>{activeMapBaseStyle.label}</span>
             <span>{dashboardDataStatus}</span>
@@ -24083,6 +24424,29 @@ return (
             closeMapMenu();
           }}>
             Jobs
+          </button>
+        </div>
+
+        <div className="map-borough-control" aria-label="Borough filter">
+          <label>
+            <span>Borough</span>
+            <select
+              value={mapBoroughFilter}
+              onChange={(event) => changeMapBoroughFilter(event.target.value as MapBoroughFilter)}
+            >
+              {mapBoroughOptions.map((borough) => (
+                <option key={borough.key} value={borough.key}>
+                  {borough.label} ({borough.count})
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className={mapBoroughFilter === "all" ? "active" : ""}
+            onClick={() => changeMapBoroughFilter("all")}
+          >
+            All Boros
           </button>
         </div>
 
@@ -24165,7 +24529,7 @@ return (
             <div>
               <span>Schedule Board</span>
               <strong>{dashboardView.label}</strong>
-              <small>{filteredJobs.length} visible · {visibleMappedCount} mapped · {activeMapBaseStyle.label}</small>
+              <small>{mapBoroughScopeLabel} · {filteredJobs.length} visible · {visibleMappedCount} mapped · {activeMapBaseStyle.label}</small>
             </div>
             <div className="map-command-buttons">
               <button
@@ -24191,6 +24555,19 @@ return (
               >
                 <span>{mode.label}</span>
                 <b>{mode.count}</b>
+              </button>
+            ))}
+          </div>
+          <div className="map-borough-rail" aria-label="Filter map by borough">
+            {mapBoroughOptions.map((borough) => (
+              <button
+                key={borough.key}
+                type="button"
+                className={mapBoroughFilter === borough.key ? "active" : ""}
+                onClick={() => changeMapBoroughFilter(borough.key)}
+              >
+                <span>{borough.short}</span>
+                <strong>{borough.count}</strong>
               </button>
             ))}
           </div>
