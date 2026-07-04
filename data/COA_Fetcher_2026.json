@@ -13650,7 +13650,13 @@
     "Boro": "Bronx",
     "boro": "Bronx",
     "BoroughSource": "ZIP_CODE_CORRECTED",
-    "boroughSource": "ZIP_CODE_CORRECTED"
+    "boroughSource": "ZIP_CODE_CORRECTED",
+    "DescriptionNeedsSourceReview": true,
+    "descriptionNeedsSourceReview": true,
+    "ItbPage3VerificationStatus": "SOURCE_PAGE_UNREADABLE",
+    "itbPage3VerificationStatus": "SOURCE_PAGE_UNREADABLE",
+    "ItbPage3VerificationNote": "ITB source scan has blank or unreadable OMO description page; verify from Gmail/HPD source before relying on the saved scope.",
+    "itbPage3VerificationNote": "ITB source scan has blank or unreadable OMO description page; verify from Gmail/HPD source before relying on the saved scope."
   },
   {
     "OMO": "EQ22135",

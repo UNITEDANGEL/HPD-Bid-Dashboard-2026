@@ -1,5 +1,8 @@
 import json
 import re
+import shutil
+import subprocess
+import tempfile
 from difflib import SequenceMatcher
 from pathlib import Path
 
@@ -10,6 +13,7 @@ ROOT = Path.cwd()
 DATA_FILE = ROOT / "public" / "data" / "COA_Fetcher_2026.json"
 MANIFEST_FILE = ROOT / "public" / "data" / "itb_source_manifest.json"
 SOURCE_PAGE = 3
+OCR_DPI = 220
 
 
 def clean_document_file_name(raw):
@@ -54,19 +58,152 @@ def similarity(left, right):
     return SequenceMatcher(None, comparable(left), comparable(right)).ratio()
 
 
-def extract_page3_description(pdf_path):
-    with pdfplumber.open(pdf_path) as pdf:
-        if len(pdf.pages) < SOURCE_PAGE:
-            return ""
-        text = pdf.pages[SOURCE_PAGE - 1].extract_text(x_tolerance=1, y_tolerance=3) or ""
-
-    match = re.search(r"Job\s+Description\s*:\s*", text, flags=re.IGNORECASE)
+def trim_page3_description(text):
+    text = text or ""
+    match = re.search(r"Job\s+Descript(?:ion)?\s*:?\s*", text, flags=re.IGNORECASE)
     if match:
         text = text[match.end() :]
 
     text = re.split(r"\n?General Decision Number:", text, maxsplit=1)[0]
     text = re.split(r"\n?Superseded General Decision Number:", text, maxsplit=1)[0]
     return normalize(text)
+
+
+def resolve_tool(tool_name):
+    known_tools = {
+        "pdftoppm": [
+            r"C:\poppler\bin\pdftoppm.exe",
+            r"C:\Program Files\poppler-24.08.0\Library\bin\pdftoppm.exe",
+            r"C:\Users\uac52\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\poppler\Library\bin\pdftoppm.exe",
+        ],
+        "tesseract": [
+            r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+        ],
+    }
+    for candidate in known_tools.get(tool_name, []):
+        if Path(candidate).is_file():
+            return candidate
+
+    path = shutil.which(tool_name)
+    return path or ""
+
+
+def ocr_page_description(pdf_path, page_number):
+    pdftoppm = resolve_tool("pdftoppm")
+    tesseract = resolve_tool("tesseract")
+    if not pdftoppm or not tesseract:
+        return "", ""
+
+    with tempfile.TemporaryDirectory(prefix="itb-page3-ocr-") as temp_dir:
+        output_prefix = Path(temp_dir) / "page"
+        render = subprocess.run(
+            [
+                pdftoppm,
+                "-f",
+                str(page_number),
+                "-l",
+                str(page_number),
+                "-r",
+                str(OCR_DPI),
+                "-png",
+                str(pdf_path),
+                str(output_prefix),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+        if render.returncode != 0:
+            return "", ""
+
+        images = sorted(Path(temp_dir).glob("page*.png"))
+        if not images:
+            return "", ""
+
+        result = subprocess.run(
+            [tesseract, str(images[0]), "stdout", "--psm", "6"],
+            capture_output=True,
+            text=True,
+            timeout=90,
+            check=False,
+        )
+        if result.returncode != 0:
+            return "", ""
+        return result.stdout, trim_page3_description(result.stdout)
+
+
+def text_has_omo(text, omo):
+    haystack = re.sub(r"[^A-Z0-9]+", "", str(text or "").upper())
+    needle = re.sub(r"[^A-Z0-9]+", "", str(omo or "").upper())
+    if needle and needle in haystack:
+        return True
+
+    def ocr_normalize(value):
+        return value.replace("O", "0").replace("I", "1").replace("L", "1")
+
+    return bool(needle and ocr_normalize(needle) in ocr_normalize(haystack))
+
+
+def is_real_job_description_page(raw_text, description):
+    raw = str(raw_text or "")
+    if not re.search(r"Job\s+Descript(?:ion)?\s*:?", raw, flags=re.IGNORECASE):
+        return False
+
+    cover_markers = (
+        "INVITATION TO BID QUOTATION SHEET",
+        "JOB DESCRIPTION ON OMO",
+        "BID CERTIFICATION",
+        "YOUR PRICE QUOTATION",
+    )
+    upper_raw = raw.upper()
+    if any(marker in upper_raw for marker in cover_markers):
+        return False
+
+    words = comparable(description).split()
+    return len(words) >= 8
+
+
+def ocr_best_description(pdf_path, page_count, omo):
+    is_fax_bundle = pdf_path.name.lower().startswith("faxcopy_")
+    pages = [SOURCE_PAGE]
+    if is_fax_bundle:
+        # Fax bundles have a leading scanned page; the OMO description page is usually physical page 4.
+        pages = [4, 3, 5, 6, 2, 7, 8]
+
+    fallback = ("", "")
+    for page_number in [page for page in pages if 1 <= page <= page_count]:
+        raw_text, description = ocr_page_description(pdf_path, page_number)
+        if not description or not is_real_job_description_page(raw_text, description):
+            continue
+        method = f"ocr_page_{page_number}"
+        if text_has_omo(raw_text, omo):
+            return description, method
+        if is_fax_bundle:
+            continue
+        if not fallback[0] and re.search(r"Page\s*3\s*of\s*3", raw_text or "", flags=re.IGNORECASE):
+            fallback = (description, method)
+
+    return fallback
+
+
+def extract_page3_description(pdf_path, omo):
+    text = ""
+    with pdfplumber.open(pdf_path) as pdf:
+        page_count = len(pdf.pages)
+        if len(pdf.pages) < SOURCE_PAGE:
+            return "", "missing_page"
+        text = pdf.pages[SOURCE_PAGE - 1].extract_text(x_tolerance=1, y_tolerance=3) or ""
+
+    extracted = trim_page3_description(text)
+    if extracted:
+        return extracted, "pdf_text"
+
+    ocr_text, method = ocr_best_description(pdf_path, page_count, omo)
+    if ocr_text:
+        return ocr_text, method
+
+    return "", "empty"
 
 
 def current_description(job):
@@ -100,6 +237,7 @@ def main():
     missing_source = []
     extract_failed = []
     matched = 0
+    ocr_used = 0
 
     for job in jobs:
         omo = str(job.get("OMO") or job.get("omo") or "").strip()
@@ -118,14 +256,17 @@ def main():
             missing_source.append({"omo": omo, "itb": file_name, "reason": "source PDF missing"})
             continue
 
-        if source_file not in extracted_by_file:
+        cache_key = f"{source_file}::{omo}"
+        if cache_key not in extracted_by_file:
             try:
-                extracted_by_file[source_file] = extract_page3_description(source_path)
+                extracted_by_file[cache_key] = extract_page3_description(source_path, omo)
             except Exception as error:
-                extracted_by_file[source_file] = ""
+                extracted_by_file[cache_key] = ("", "error")
                 extract_failed.append({"omo": omo, "itb": file_name, "error": str(error)})
 
-        extracted = extracted_by_file[source_file]
+        extracted, method = extracted_by_file[cache_key]
+        if method.startswith("ocr"):
+            ocr_used += 1
         if not extracted:
             extract_failed.append({"omo": omo, "itb": file_name, "error": "empty extracted page 3 description"})
             continue
@@ -165,6 +306,7 @@ def main():
                 "mismatches": len(mismatches),
                 "missingSource": len(missing_source),
                 "extractFailed": len(extract_failed),
+                "ocrUsed": ocr_used,
                 "mismatchSample": mismatches[:50],
                 "missingSourceSample": missing_source[:50],
                 "extractFailedSample": extract_failed[:20],
