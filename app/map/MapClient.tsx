@@ -19,10 +19,10 @@ const MAP_BOROUGH_FILTERS = [
   { key: "staten-island", label: "Staten Island", short: "SI" },
   { key: "unknown", label: "Unknown", short: "?" },
 ] as const;
-const USER_LOCATION_OVERVIEW_ZOOM = 14;
+const USER_LOCATION_OVERVIEW_ZOOM = 13;
 const USER_LOCATION_NEARBY_RADIUS_MILES = 2.5;
 const USER_LOCATION_CONTEXT_JOB_LIMIT = 12;
-const MAP_LAYER_OVERVIEW_ZOOM = 13;
+const MAP_LAYER_OVERVIEW_ZOOM = 12;
 const MAP_SINGLE_JOB_OVERVIEW_ZOOM = 13;
 const FULL_PACKAGE_SAVE_LIMIT_BYTES = 35 * 1024 * 1024;
 
@@ -4131,8 +4131,22 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const map = mapRef.current;
       const layer = markerLayerRef.current;
       const zoomLevel = Number(mapZoom || map.getZoom?.() || 10);
-      const markerOverview = zoomLevel < 13;
-      const focusedMarkerCards = selectedOnly || filteredJobs.length <= 1;
+      const mobileMap = typeof window !== "undefined" && window.innerWidth <= 720;
+      const filteredCount = filteredJobs.length;
+      const timerLayer =
+        workflowViewFilter === "waiting72" ||
+        workflowViewFilter === "noaccess24" ||
+        workflowViewFilter === "ready2";
+      const timerLayerNeedsClusters =
+        timerLayer &&
+        !selectedOnly &&
+        filteredCount > (mobileMap ? 6 : 12) &&
+        zoomLevel < (mobileMap ? 15 : 14);
+      const denseLayer = !selectedOnly && filteredCount > (mobileMap ? 10 : 18);
+      const markerOverview =
+        timerLayerNeedsClusters ||
+        (denseLayer ? zoomLevel < (mobileMap ? 15 : 14) : zoomLevel < 13);
+      const focusedMarkerCards = selectedOnly || filteredCount <= 1;
       const markerExpanded = focusedMarkerCards && zoomLevel >= 15;
       const markerDetailed = focusedMarkerCards && zoomLevel >= 17;
 
@@ -4140,10 +4154,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       const bounds: [number, number][] = [];
       const plottedItems: ClusterJobItem[] = [];
-      const showIndividualNoAccessTimers =
-        workflowViewFilter === "waiting72" ||
-        workflowViewFilter === "noaccess24" ||
-        workflowViewFilter === "ready2";
+      const showIndividualNoAccessTimers = timerLayer && !timerLayerNeedsClusters;
 
       filteredJobs.forEach((job, index) => {
         if (!Number.isFinite(job._lat) || !Number.isFinite(job._lng)) return;
@@ -4158,7 +4169,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         ? Array.from(
             plottedItems.reduce((clusters, item) => {
               const point = map.latLngToLayerPoint([item.lat, item.lng]);
-              const key = `${Math.floor(point.x / 156)}:${Math.floor(point.y / 126)}`;
+              const clusterCellX = mobileMap ? (zoomLevel < 12 ? 240 : 210) : (zoomLevel < 12 ? 210 : 180);
+              const clusterCellY = mobileMap ? (zoomLevel < 12 ? 180 : 158) : (zoomLevel < 12 ? 160 : 136);
+              const key = `${Math.floor(point.x / clusterCellX)}:${Math.floor(point.y / clusterCellY)}`;
               const cluster = clusters.get(key) || { items: [] as typeof plottedItems, latTotal: 0, lngTotal: 0 };
               cluster.items.push(item);
               cluster.latTotal += item.lat;
@@ -4239,18 +4252,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                         : worstOverdue
                           ? overdueDaysLabel(worstOverdue)
                           : "mapped";
-          const clusterOffsetByStatus: Record<string, [number, number]> = {
-            "cluster-appointment": [0, -72],
-            "cluster-ready": [0, 72],
-            "cluster-noaccess-soon": [64, 0],
-            "cluster-noaccess-waiting": [-64, 0],
-            "cluster-pending": [0, 0],
-            "cluster-overdue": [0, -72],
-            "cluster-normal": [0, 0],
-          };
-          const [offsetX, offsetY] = clusterOffsetByStatus[statusClass] || [0, 0];
+          const [offsetX, offsetY]: [number, number] = [0, 0];
           const clusterPoint = map.latLngToLayerPoint([item.lat, item.lng]);
           const clusterLatLng = map.layerPointToLatLng(L.point(clusterPoint.x + offsetX, clusterPoint.y + offsetY));
+          const clusterIconSize: [number, number] = mobileMap ? [96, 68] : [108, 76];
           const marker = L.marker([clusterLatLng.lat, clusterLatLng.lng], {
             icon: L.divIcon({
               className: "maturity-map-marker",
@@ -4259,8 +4264,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                       <strong>${escapeMarkerHtml(clusterLabel)}</strong>
                       <em>${escapeMarkerHtml(clusterBoroughLabel)}</em>
                     </div>`,
-              iconSize: [116, 86],
-              iconAnchor: [58, 43],
+              iconSize: clusterIconSize,
+              iconAnchor: [Math.round(clusterIconSize[0] / 2), Math.round(clusterIconSize[1] / 2)],
               popupAnchor: [0, -18],
             }),
           });
@@ -4309,12 +4314,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           : markerExpanded
             ? [236, noAccessTimerLabel || appointmentLabel ? 170 : 116]
             : noAccessTimerFocus
-              ? [252, 184]
+              ? [226, 160]
             : markerOverview
-              ? [hasOverdue || appointmentLabel || noAccessTimerLabel ? 202 : 148, appointmentLabel || noAccessTimerLabel ? 142 : 108]
+              ? [hasOverdue || appointmentLabel || noAccessTimerLabel ? 132 : 112, appointmentLabel || noAccessTimerLabel ? 92 : 70]
               : selectedMarkerTapHint
-                ? [hasOverdue ? 164 : noAccessTimerLabel ? 186 : 154, noAccessTimerLabel || appointmentLabel ? 134 : 104]
-                : [hasOverdue ? 148 : noAccessTimerLabel ? 176 : 132, noAccessTimerLabel || appointmentLabel ? 118 : 84];
+                ? [hasOverdue ? 150 : noAccessTimerLabel ? 174 : 132, noAccessTimerLabel || appointmentLabel ? 120 : 88]
+                : [hasOverdue ? 136 : noAccessTimerLabel ? 168 : 120, noAccessTimerLabel || appointmentLabel ? 112 : 76];
         const iconSize: [number, number] = [
           baseIconSize[0] + (hasOverdue && !markerOverview ? 8 : 0),
           baseIconSize[1] + (hasOverdue && !markerOverview ? 6 : 0),
@@ -24237,6 +24242,141 @@ return (
               min-height: 40px !important;
               padding: 6px !important;
               border-radius: 11px !important;
+            }
+          }
+
+          /* MAP_CLUSTER_FLOW_FIX_2026 */
+          .maturity-map-marker {
+            pointer-events: auto !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker {
+            width: auto !important;
+            min-width: 92px !important;
+            min-height: 62px !important;
+            padding: 6px 8px !important;
+            border-radius: 14px !important;
+            gap: 3px !important;
+            transform: translateZ(0) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker span {
+            font-size: 22px !important;
+            line-height: 0.95 !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker strong {
+            max-width: 96px !important;
+            min-height: 18px !important;
+            padding: 3px 7px !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker em {
+            min-height: 13px !important;
+            padding: 2px 5px !important;
+            font-size: 8px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview,
+          .maturity-map-marker .map-signal-marker.marker-compact {
+            min-width: 98px !important;
+            min-height: 60px !important;
+            max-width: 132px !important;
+            padding: 6px 8px !important;
+            border-radius: 13px !important;
+            gap: 2px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-main,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-main {
+            font-size: 16px !important;
+            line-height: 1 !important;
+            max-width: 116px !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-eyebrow,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-eyebrow {
+            font-size: 8px !important;
+            max-width: 112px !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-address {
+            display: none !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-address {
+            max-width: 112px !important;
+            font-size: 8px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-timer-focus {
+            min-width: 206px !important;
+            min-height: 144px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-timer-focus .marker-no-access-timer {
+            min-width: 156px !important;
+          }
+
+          .map-shell.drawer-selected .map-stage::after,
+          .map-shell.map-brief-open .map-stage::after {
+            content: "" !important;
+            position: absolute !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            height: min(28dvh, 190px) !important;
+            z-index: 2 !important;
+            pointer-events: none !important;
+            background: linear-gradient(180deg, transparent, rgba(5, 9, 20, 0.44)) !important;
+          }
+
+          @media (max-width: 700px) {
+            .maturity-map-marker .map-cluster-marker {
+              min-width: 86px !important;
+              min-height: 58px !important;
+              padding: 6px 7px !important;
+              border-radius: 13px !important;
+              box-shadow:
+                0 0 0 2px rgba(255, 255, 255, 0.78),
+                0 12px 24px rgba(15, 23, 42, 0.24) !important;
+            }
+
+            .maturity-map-marker .map-cluster-marker span {
+              font-size: 20px !important;
+            }
+
+            .maturity-map-marker .map-cluster-marker strong {
+              max-width: 82px !important;
+              font-size: 9px !important;
+            }
+
+            .maturity-map-marker .map-signal-marker.marker-overview,
+            .maturity-map-marker .map-signal-marker.marker-compact {
+              min-width: 92px !important;
+              min-height: 56px !important;
+              max-width: 120px !important;
+              padding: 6px 7px !important;
+            }
+
+            .maturity-map-marker .map-signal-marker.marker-overview .signal-main,
+            .maturity-map-marker .map-signal-marker.marker-compact .signal-main {
+              font-size: 15px !important;
+              max-width: 104px !important;
+            }
+
+            .maturity-map-marker .map-signal-marker.marker-compact .signal-address {
+              display: none !important;
             }
           }
         `}
