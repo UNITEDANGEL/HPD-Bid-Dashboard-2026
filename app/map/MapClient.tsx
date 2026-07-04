@@ -4167,6 +4167,19 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       const clusterCellX = mobileMap ? (zoomLevel < 12 ? 240 : 210) : (zoomLevel < 12 ? 210 : 180);
       const clusterCellY = mobileMap ? (zoomLevel < 12 ? 180 : 158) : (zoomLevel < 12 ? 160 : 136);
+      const mapSize = map.getSize?.();
+      const clusterSafeLayerBounds = mapSize && map.containerPointToLayerPoint
+        ? {
+            min: map.containerPointToLayerPoint([
+              mobileMap ? 82 : 72,
+              mobileMap ? 88 : 72,
+            ]),
+            max: map.containerPointToLayerPoint([
+              Math.max(mobileMap ? 82 : 72, Number(mapSize.x || 0) - (mobileMap ? 82 : 72)),
+              Math.max(mobileMap ? 120 : 72, Number(mapSize.y || 0) - (mobileMap ? 250 : 96)),
+            ]),
+          }
+        : null;
       const renderItems: any[] = markerOverview && !showIndividualNoAccessTimers
         ? Array.from(
             plottedItems.reduce((clusters, item) => {
@@ -4181,10 +4194,15 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             }, new Map<string, { items: typeof plottedItems; cellX: number; cellY: number }>())
           ).map(([key, cluster]) => {
             if (cluster.items.length === 1) return { kind: "job", ...cluster.items[0] };
-            const center = map.layerPointToLatLng([
-              (cluster.cellX + 0.5) * clusterCellX,
-              (cluster.cellY + 0.5) * clusterCellY,
-            ]);
+            const rawCenterX = (cluster.cellX + 0.5) * clusterCellX;
+            const rawCenterY = (cluster.cellY + 0.5) * clusterCellY;
+            const clampedCenter = clusterSafeLayerBounds
+              ? L.point(
+                  Math.min(clusterSafeLayerBounds.max.x, Math.max(clusterSafeLayerBounds.min.x, rawCenterX)),
+                  Math.min(clusterSafeLayerBounds.max.y, Math.max(clusterSafeLayerBounds.min.y, rawCenterY))
+                )
+              : L.point(rawCenterX, rawCenterY);
+            const center = map.layerPointToLatLng(clampedCenter);
             return {
               kind: "cluster",
               key,
