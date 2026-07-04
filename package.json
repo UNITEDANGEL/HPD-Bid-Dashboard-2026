@@ -9,6 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "build:cloudflare": "node scripts/build-cloudflare-pages.js",
+    "verify:paperwork-data": "node scripts/verify-paperwork-data.js --strict",
     "render:itb-pages": "node scripts/render-itb-page3-assets.js",
     "sync:itb-descriptions": "python scripts/sync-itb-page3-descriptions.py",
     "sync:itb-tenants": "node scripts/sync-itb-page2-tenants.js",

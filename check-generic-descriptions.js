@@ -1,6 +1,17 @@
 ﻿const fs = require("fs");
 
 const jobs = JSON.parse(fs.readFileSync("./data/COA_Fetcher_2026.json", "utf8"));
+const DESC_KEYS = [
+  "ItbPage3Description",
+  "itbPage3Description",
+  "description",
+  "JobDescription",
+  "Job_Description",
+  "Job Description",
+  "Description",
+  "WorkDescription",
+  "ScopeOfWork"
+];
 
 function get(job, ...keys) {
   for (const key of keys) {
@@ -28,19 +39,22 @@ function isBadDescription(desc) {
 }
 
 const bad = jobs.filter((job) => {
-  const desc = get(job, "JobDescription", "description", "Job_Description");
-  return Boolean(job.DescriptionNeedsSourceReview || job.descriptionNeedsSourceReview) || (desc && isBadDescription(desc));
+  const desc = get(job, ...DESC_KEYS);
+  return desc && isBadDescription(desc);
 });
 
 const missing = jobs.filter((job) => {
-  const desc = get(job, "JobDescription", "description", "Job_Description");
+  const desc = get(job, ...DESC_KEYS);
   const status = get(job, "ITBMatchStatus", "itbMatchStatus", "status").toUpperCase();
   const itb = get(job, "ITBFile", "itbFile");
   return !desc && status !== "NO_ITB" && itb;
 });
 
+const sourceReview = jobs.filter((job) => job.DescriptionNeedsSourceReview || job.descriptionNeedsSourceReview);
+
 console.log("Bad/boilerplate descriptions:", bad.length);
 console.log("Missing descriptions:", missing.length);
+console.log("Source review jobs:", sourceReview.length);
 
 console.log("\nBad sample:");
 console.table(bad.slice(0, 50).map((j) => ({
@@ -49,7 +63,17 @@ console.table(bad.slice(0, 50).map((j) => ({
   ITB: get(j, "ITBFile", "itbFile"),
   Status: get(j, "ITBMatchStatus", "itbMatchStatus", "status"),
   Source: get(j, "DescriptionSource", "descriptionSource"),
-  Preview: get(j, "JobDescription", "description", "Job_Description").slice(0, 100)
+  Preview: get(j, ...DESC_KEYS).slice(0, 100)
+})));
+
+console.log("\nSource review sample:");
+console.table(sourceReview.slice(0, 20).map((j) => ({
+  OMO: get(j, "OMO", "id"),
+  Address: get(j, "BuildingAddress", "address"),
+  ITB: get(j, "ITBFile", "itbFile"),
+  Status: get(j, "ItbPage3VerificationStatus", "itbPage3VerificationStatus", "ITBMatchStatus", "status"),
+  Source: get(j, "DescriptionSource", "descriptionSource"),
+  Preview: get(j, ...DESC_KEYS).slice(0, 100)
 })));
 
 console.log("\nMissing sample:");

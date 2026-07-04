@@ -100,9 +100,26 @@ function restoreApiRouteDirectory(moved) {
   fs.renameSync(tempApiDir, apiDir);
 }
 
+function runPaperworkDataGate() {
+  const command = process.platform === "win32" ? process.env.ComSpec || "cmd.exe" : "npm";
+  const args = process.platform === "win32" ? ["/d", "/s", "/c", "npm run verify:paperwork-data"] : ["run", "verify:paperwork-data"];
+  const result = spawnSync(command, args, {
+    cwd: root,
+    stdio: "inherit",
+    shell: false,
+  });
+
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(`Paperwork data quality gate failed with exit code ${result.status}.`);
+  }
+}
+
 let movedApi = false;
 
 try {
+  runPaperworkDataGate();
+
   removeIfExists(outDir, { allowEmptyDir: true });
   removeIfExists(tempRoot, { allowEmptyDir: true });
   generatedNextTypeDirs.forEach((dir) => removeIfExists(dir, { allowEmptyDir: true }));

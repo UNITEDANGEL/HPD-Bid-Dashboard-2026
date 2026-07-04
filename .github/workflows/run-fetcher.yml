@@ -64,6 +64,9 @@ jobs:
           cp data/COA_Fetcher_2026.json public/data/COA_Fetcher_2026.json
           cp data/fetcher_latest_status.json public/data/fetcher_latest_status.json
           cp data/fetcher_latest_run.log public/data/fetcher_latest_run.log
+          if [ -f data/paperwork_data_quality.json ]; then
+            cp data/paperwork_data_quality.json public/data/paperwork_data_quality.json
+          fi
           if [ -f data/missing_itb_jobs_2026.csv ]; then
             cp data/missing_itb_jobs_2026.csv public/data/missing_itb_jobs_2026.csv
           fi
@@ -78,6 +81,10 @@ jobs:
           git config user.email "github-actions@github.com"
 
           git add data/COA_Fetcher_2026.json data/fetcher_latest_status.json data/fetcher_latest_run.log public/data/COA_Fetcher_2026.json public/data/fetcher_latest_status.json public/data/fetcher_latest_run.log
+
+          if [ -f data/paperwork_data_quality.json ]; then
+            git add data/paperwork_data_quality.json public/data/paperwork_data_quality.json
+          fi
 
           if [ -f data/missing_itb_jobs_2026.csv ]; then
             git add data/missing_itb_jobs_2026.csv public/data/missing_itb_jobs_2026.csv

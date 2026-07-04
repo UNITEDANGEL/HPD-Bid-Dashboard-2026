@@ -100,7 +100,7 @@ function extractNumber(text, label) {
   return m ? Number(m[1]) : null;
 }
 
-function summarizeChecks(mappingOut, descOut, itbOut, fullLog) {
+function summarizeChecks(mappingOut, descOut, itbOut, paperworkOut, fullLog) {
   return {
     fetchedCoaItems: extractNumber(fullLog, "COA items parsed (latest per OMO)"),
     fetchedItbItems: extractNumber(fullLog, "ITB items parsed (latest per OMO)"),
@@ -111,8 +111,11 @@ function summarizeChecks(mappingOut, descOut, itbOut, fullLog) {
     rows2026: extractNumber(mappingOut, "2026 rows"),
     mapped2026: extractNumber(mappingOut, "2026 rows with valid NYC coordinates"),
     notMapped2026: extractNumber(mappingOut, "2026 rows NOT valid mapped"),
-    badDescriptions: extractNumber(descOut, "Bad/boilerplate descriptions"),
-    missingDescriptions: extractNumber(descOut, "Missing descriptions"),
+    missingAddresses: extractNumber(paperworkOut, "Missing addresses"),
+    badDescriptions: extractNumber(paperworkOut, "Bad/boilerplate descriptions") ?? extractNumber(descOut, "Bad/boilerplate descriptions"),
+    missingDescriptions: extractNumber(paperworkOut, "Missing descriptions") ?? extractNumber(descOut, "Missing descriptions"),
+    sourceReviewJobs: extractNumber(paperworkOut, "Source review jobs"),
+    missingPage3Images: extractNumber(paperworkOut, "Missing page 3 images"),
     missingItbJobs: extractNumber(itbOut, "Missing ITB jobs"),
   };
 }
@@ -181,9 +184,10 @@ async function main() {
     const mappingOut = runStep("Verify mapping", "node", ["check-local-mapping.js"]);
     const descOut = runStep("Verify descriptions", "node", ["check-generic-descriptions.js"]);
     const itbOut = runStep("Verify missing ITB", "node", ["export-missing-itb.js"]);
+    const paperworkOut = runStep("Verify paperwork required data", "node", ["scripts/verify-paperwork-data.js", "--strict", "--write-report"]);
 
     const fullLog = fs.readFileSync(LOG_PATH, "utf8");
-    const summary = summarizeChecks(mappingOut, descOut, itbOut, fullLog);
+    const summary = summarizeChecks(mappingOut, descOut, itbOut, paperworkOut, fullLog);
 
     status.state = "complete";
     status.ok = true;

@@ -13,9 +13,12 @@ type FetcherStatus = {
     rows2026?: number;
     mapped2026?: number;
     notMapped2026?: number;
+    missingAddresses?: number;
     badDescriptions?: number;
     missingDescriptions?: number;
     missingItbJobs?: number;
+    missingPage3Images?: number;
+    sourceReviewJobs?: number;
     fetchedCoaItems?: number;
     fetchedItbItems?: number;
     fetchedFinalJobRows?: number;
@@ -54,6 +57,10 @@ type CleanupJob = {
   Description?: string;
   description?: string;
   ITBMatchStatus?: string;
+  ItbPage3Description?: string;
+  itbPage3Description?: string;
+  DescriptionNeedsSourceReview?: boolean;
+  descriptionNeedsSourceReview?: boolean;
   status?: string;
 };export default function FetcherPage() {
   const [status, setStatus] = useState<FetcherStatus>({});
@@ -76,7 +83,15 @@ type CleanupJob = {
     return !Number.isFinite(lat) || !Number.isFinite(lng);
   }
   function isMissingDescription(job: CleanupJob) {
-    const desc = String(job.JobDescription || job.jobDescription || job.Description || job.description || "").trim();
+    const desc = String(
+      job.ItbPage3Description ||
+        job.itbPage3Description ||
+        job.description ||
+        job.JobDescription ||
+        job.jobDescription ||
+        job.Description ||
+        ""
+    ).trim();
     return !desc;
   }
   async function loadCleanupJobs() {
@@ -139,11 +154,14 @@ type CleanupJob = {
   const summary = status.summary || {};
 
 
-  const dataIssues =
+  const hardDataIssues =
     (summary.badDescriptions ?? 0) +
     (summary.missingDescriptions ?? 0) +
-    (summary.missingItbJobs ?? 0);
-  const fetcherClean = Boolean(status.ok) && dataIssues === 0;
+    (summary.missingAddresses ?? 0) +
+    (summary.missingItbJobs ?? 0) +
+    (summary.missingPage3Images ?? 0);
+  const dataIssues = hardDataIssues + (summary.sourceReviewJobs ?? 0);
+  const fetcherClean = Boolean(status.ok) && hardDataIssues === 0;
 
   return (
     <main className="fetcher-page">
@@ -174,7 +192,7 @@ type CleanupJob = {
           <div className={`command-card ${dataIssues ? "warn" : "primary"}`}>
             <span>Data issues</span>
             <strong>{dataIssues}</strong>
-            <small>{dataIssues ? "Review before dispatch" : "No missing ITB/description issues"}</small>
+            <small>{dataIssues ? "Review before dispatch" : "No missing address, ITB, or description issues"}</small>
           </div>
         </div>
         <div className="actions">
@@ -217,7 +235,11 @@ type CleanupJob = {
         {status.state === "complete" ? (
           <div className="cleanup-alert">
             <strong>Fetcher Complete</strong>
-            <span>{summary.notMapped2026 ?? 0} need map/geocode review · {summary.missingDescriptions ?? 0} missing descriptions · {summary.missingItbJobs ?? 0} missing ITB</span>
+            <span>
+              {summary.notMapped2026 ?? 0} need map/geocode review · {summary.missingAddresses ?? 0} missing address ·{" "}
+              {summary.missingDescriptions ?? 0} missing descriptions · {summary.missingItbJobs ?? 0} missing ITB ·{" "}
+              {summary.sourceReviewJobs ?? 0} source review
+            </span>
           </div>
         ) : null}
 
@@ -230,9 +252,12 @@ type CleanupJob = {
           <div><span>2026 Jobs</span><strong>{summary.rows2026 ?? "—"}</strong></div>
           <div><span>Mapped</span><strong>{summary.mapped2026 ?? "—"}</strong></div>
           <div><span>Need Geo</span><strong>{summary.notMapped2026 ?? "—"}</strong></div>
+          <div><span>Missing Address</span><strong>{summary.missingAddresses ?? "—"}</strong></div>
           <div><span>Missing ITB</span><strong>{summary.missingItbJobs ?? "—"}</strong></div>
           <div><span>Missing Desc</span><strong>{summary.missingDescriptions ?? "—"}</strong></div>
           <div><span>Bad Desc</span><strong>{summary.badDescriptions ?? "—"}</strong></div>
+          <div><span>Page 3 Image</span><strong>{summary.missingPage3Images ?? "—"}</strong></div>
+          <div><span>Source Review</span><strong>{summary.sourceReviewJobs ?? "—"}</strong></div>
         </div>
 
         <div className="env clean-env">
