@@ -3518,8 +3518,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       ? {
           animate: true,
           duration,
-          paddingTopLeft: [58, 310] as [number, number],
-          paddingBottomRight: [58, 88] as [number, number],
+          paddingTopLeft: [56, 96] as [number, number],
+          paddingBottomRight: [56, 210] as [number, number],
           maxZoom,
         }
       : {
@@ -3536,8 +3536,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       ? {
           animate: true,
           duration,
-          paddingTopLeft: [72, 235] as [number, number],
-          paddingBottomRight: [72, 138] as [number, number],
+          paddingTopLeft: [72, 110] as [number, number],
+          paddingBottomRight: [72, 190] as [number, number],
           maxZoom,
         }
       : {
@@ -4165,28 +4165,32 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         plottedItems.push({ job, index, lat, lng });
       });
 
+      const clusterCellX = mobileMap ? (zoomLevel < 12 ? 240 : 210) : (zoomLevel < 12 ? 210 : 180);
+      const clusterCellY = mobileMap ? (zoomLevel < 12 ? 180 : 158) : (zoomLevel < 12 ? 160 : 136);
       const renderItems: any[] = markerOverview && !showIndividualNoAccessTimers
         ? Array.from(
             plottedItems.reduce((clusters, item) => {
               const point = map.latLngToLayerPoint([item.lat, item.lng]);
-              const clusterCellX = mobileMap ? (zoomLevel < 12 ? 240 : 210) : (zoomLevel < 12 ? 210 : 180);
-              const clusterCellY = mobileMap ? (zoomLevel < 12 ? 180 : 158) : (zoomLevel < 12 ? 160 : 136);
-              const key = `${Math.floor(point.x / clusterCellX)}:${Math.floor(point.y / clusterCellY)}`;
-              const cluster = clusters.get(key) || { items: [] as typeof plottedItems, latTotal: 0, lngTotal: 0 };
+              const cellX = Math.floor(point.x / clusterCellX);
+              const cellY = Math.floor(point.y / clusterCellY);
+              const key = `${cellX}:${cellY}`;
+              const cluster = clusters.get(key) || { items: [] as typeof plottedItems, cellX, cellY };
               cluster.items.push(item);
-              cluster.latTotal += item.lat;
-              cluster.lngTotal += item.lng;
               clusters.set(key, cluster);
               return clusters;
-            }, new Map<string, { items: typeof plottedItems; latTotal: number; lngTotal: number }>())
+            }, new Map<string, { items: typeof plottedItems; cellX: number; cellY: number }>())
           ).map(([key, cluster]) => {
             if (cluster.items.length === 1) return { kind: "job", ...cluster.items[0] };
+            const center = map.layerPointToLatLng([
+              (cluster.cellX + 0.5) * clusterCellX,
+              (cluster.cellY + 0.5) * clusterCellY,
+            ]);
             return {
               kind: "cluster",
               key,
               items: cluster.items,
-              lat: cluster.latTotal / cluster.items.length,
-              lng: cluster.lngTotal / cluster.items.length,
+              lat: center.lat,
+              lng: center.lng,
             };
           })
         : plottedItems.map((item) => ({ kind: "job", ...item }));
