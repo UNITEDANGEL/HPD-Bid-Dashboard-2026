@@ -1535,7 +1535,7 @@ function markerSignalLabelHtml(
   const address = markerAddressLabel(job);
   const daySignal = options.overdueLabel || (options.noAccessTimerLabel ? "72h no access" : award.main.replace(/^MD\s*/i, "").replace(/^AWD IN\s*/i, "Award in "));
   const footer = options.detailed ? markerDetailLabel(job) : options.expanded ? award.badge : "";
-  const tapHint = options.tapHint || options.overview || options.expanded || options.detailed ? `<span class="signal-tap">Tap to open card</span>` : "";
+  const tapHint = "";
 
   if (options.overview) {
     return `
