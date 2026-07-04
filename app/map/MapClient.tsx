@@ -4195,7 +4195,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               return clusters;
             }, new Map<string, { items: typeof plottedItems; cellX: number; cellY: number }>())
           ).map(([key, cluster]) => {
-            if (cluster.items.length === 1 && !denseLayer && !timerLayerNeedsClusters && !(mobileMap && filteredCount > 2)) return { kind: "job", ...cluster.items[0] };
+            if (cluster.items.length === 1 && !denseLayer && !timerLayerNeedsClusters) return { kind: "job", ...cluster.items[0] };
             const rawCenterX = (cluster.cellX + 0.5) * clusterCellX;
             const rawCenterY = (cluster.cellY + 0.5) * clusterCellY;
             const clampedCenter = clusterSafeLayerBounds
@@ -4344,10 +4344,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             : noAccessTimerFocus
               ? [226, 160]
             : markerOverview
-              ? [hasOverdue || appointmentLabel || noAccessTimerLabel ? 132 : 112, appointmentLabel || noAccessTimerLabel ? 92 : 70]
+              ? [hasOverdue || appointmentLabel || noAccessTimerLabel ? 164 : 150, appointmentLabel || noAccessTimerLabel ? 108 : 88]
               : selectedMarkerTapHint
                 ? [hasOverdue ? 150 : noAccessTimerLabel ? 174 : 132, noAccessTimerLabel || appointmentLabel ? 120 : 88]
-                : [hasOverdue ? 136 : noAccessTimerLabel ? 168 : 120, noAccessTimerLabel || appointmentLabel ? 112 : 76];
+                : [hasOverdue ? 168 : noAccessTimerLabel ? 178 : 150, noAccessTimerLabel || appointmentLabel ? 118 : 88];
         const iconSize: [number, number] = [
           baseIconSize[0] + (hasOverdue && !markerOverview ? 8 : 0),
           baseIconSize[1] + (hasOverdue && !markerOverview ? 6 : 0),
@@ -24536,6 +24536,81 @@ return (
 
             .maturity-map-marker .map-signal-marker.marker-compact .signal-address {
               display: none !important;
+            }
+          }
+
+          /* MAP_READABLE_ADDRESS_MARKERS_2026 */
+          .maturity-map-marker .map-signal-marker.marker-overview,
+          .maturity-map-marker .map-signal-marker.marker-compact {
+            min-width: 148px !important;
+            min-height: 84px !important;
+            max-width: 178px !important;
+            padding: 8px 10px 10px !important;
+            gap: 3px !important;
+            border-radius: 16px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-eyebrow,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-eyebrow {
+            max-width: 152px !important;
+            font-size: 9px !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-main,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-main {
+            max-width: 152px !important;
+            font-size: 20px !important;
+            line-height: 0.98 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-address,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-address {
+            display: block !important;
+            max-width: 154px !important;
+            color: #1f2937 !important;
+            font-size: 10px !important;
+            line-height: 1.08 !important;
+            font-weight: 1000 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-start,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-start,
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-footer,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-footer {
+            display: inline-flex !important;
+            max-width: 152px !important;
+            font-size: 9px !important;
+          }
+
+          @media (max-width: 700px) {
+            .maturity-map-marker .map-signal-marker.marker-overview,
+            .maturity-map-marker .map-signal-marker.marker-compact {
+              min-width: 138px !important;
+              min-height: 80px !important;
+              max-width: 166px !important;
+              padding: 8px 9px 9px !important;
+            }
+
+            .maturity-map-marker .map-signal-marker.marker-overview .signal-main,
+            .maturity-map-marker .map-signal-marker.marker-compact .signal-main {
+              max-width: 142px !important;
+              font-size: 19px !important;
+            }
+
+            .maturity-map-marker .map-signal-marker.marker-overview .signal-address,
+            .maturity-map-marker .map-signal-marker.marker-compact .signal-address {
+              display: block !important;
+              max-width: 142px !important;
+              font-size: 9px !important;
             }
           }
         `}
