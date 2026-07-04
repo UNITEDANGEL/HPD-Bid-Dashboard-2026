@@ -3,12 +3,14 @@ const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
 const HPD_TENANT_CONTACT_EMAIL = "AtkinsKi@hpd.nyc.gov";
 const HPD_TENANT_CONTACT_ATTENTION = "Kizzy Atkins / K. Atkins";
 const APPOINTMENT_ALERT_EMAIL = "uac525@gmail.com";
+const APPOINTMENT_ALERT_PHONE_STORAGE_KEY = "hpd-appointment-alert-phone-v1";
+const APPOINTMENT_ALERT_WORKER_PATH = "/appointment-alerts";
 const MAPTILER_ENV_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
 const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
 const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v2";
 const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
 const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
-const USER_LOCATION_OVERVIEW_ZOOM = 12;
+const USER_LOCATION_OVERVIEW_ZOOM = 14;
 const USER_LOCATION_NEARBY_RADIUS_MILES = 2.5;
 const USER_LOCATION_CONTEXT_JOB_LIMIT = 12;
 const MAP_LAYER_OVERVIEW_ZOOM = 13;
@@ -99,6 +101,18 @@ type JobRecord = {
   appointmentAt?: string;
   AppointmentUpdatedAt?: string;
   appointmentUpdatedAt?: string;
+  AppointmentAlertPhone?: string;
+  appointmentAlertPhone?: string;
+  AppointmentAlertChannels?: string;
+  appointmentAlertChannels?: string;
+  AppointmentAlertServiceStatus?: string;
+  appointmentAlertServiceStatus?: string;
+  AppointmentAlertRequestedAt?: string;
+  appointmentAlertRequestedAt?: string;
+  AppointmentAlertOneDayAt?: string;
+  appointmentAlertOneDayAt?: string;
+  AppointmentAlertTwoHourAt?: string;
+  appointmentAlertTwoHourAt?: string;
   AppointmentReminderStatus?: string;
   appointmentReminderStatus?: string;
   description?: string;
@@ -650,6 +664,21 @@ function tenantContactRequestEmailHref(job: JobRecord, apartment: string) {
 
   return `mailto:${HPD_TENANT_CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
+
+function whatsappHrefForContact(job: JobRecord, rawPhone: string) {
+  const digits = String(rawPhone || "").replace(/\D/g, "");
+  if (!digits) return "";
+
+  const phoneNumber = digits.length === 10 ? `1${digits}` : digits;
+  const message = [
+    `Hello, this is regarding HPD work order ${jobKey(job)}.`,
+    `Address: ${displayAddress(job)}.`,
+    `Please reply with a good appointment time for access.`,
+  ].join(" ");
+
+  return `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+}
+
 function tenantContactInfo(job: JobRecord | null | undefined) {
   if (!job) {
     return {
@@ -662,6 +691,7 @@ function tenantContactInfo(job: JobRecord | null | undefined) {
       status: "No tenant contact listed",
       actionHref: "",
       smsHref: "",
+      whatsappHref: "",
       emailHref: "",
     };
   }
@@ -705,6 +735,7 @@ function tenantContactInfo(job: JobRecord | null | undefined) {
         : "Request contact information from HPD",
     actionHref: cleanPhone ? `tel:${cleanPhone}` : "",
     smsHref: cleanPhone ? `sms:${cleanPhone}` : "",
+    whatsappHref: cleanPhone ? whatsappHrefForContact(job, cleanPhone) : "",
     emailHref,
   };
 }
@@ -776,10 +807,10 @@ function appointmentStatusInfo(job: JobRecord | null | undefined, now = new Date
   const when = displayWorkflowDate(date.toISOString());
 
   if (diff < -APPOINTMENT_DUE_GRACE_MS) {
-    return { tone: "past", label: "Past appointment", detail: `Was ${when}` };
+    return { tone: "past", label: "Appointment Past Due", detail: `Was ${when}` };
   }
   if (diff <= 0) {
-    return { tone: "due", label: "Due now", detail: when };
+    return { tone: "due", label: "Appointment Due Now", detail: when };
   }
   if (diff <= 60 * 60 * 1000) {
     const minutes = Math.max(1, Math.ceil(diff / 60000));
@@ -838,6 +869,48 @@ function appointmentReminderSetupInfo(job: JobRecord | null | undefined, draftLo
   };
 }
 
+function appointmentCountdownInfo(job: JobRecord | null | undefined, draftLocalValue: string, now = new Date()) {
+  const date = appointmentDateFromLocalValue(draftLocalValue) || appointmentDate(job);
+  if (!date) {
+    return {
+      tone: "empty",
+      title: "No Timer",
+      detail: "Pick an appointment time to start the counter.",
+    };
+  }
+
+  const diff = date.getTime() - now.getTime();
+  const appointmentLabel = displayWorkflowDate(date.toISOString());
+
+  if (diff < -APPOINTMENT_DUE_GRACE_MS) {
+    return {
+      tone: "past",
+      title: "Past Due",
+      detail: `Was ${appointmentLabel}. Reschedule now.`,
+    };
+  }
+
+  if (diff <= 0) {
+    return {
+      tone: "due",
+      title: "Due Now",
+      detail: `Appointment time: ${appointmentLabel}`,
+    };
+  }
+
+  const totalMinutes = Math.max(1, Math.ceil(diff / 60000));
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  const label = days > 0 ? `${days}d ${hours}h` : hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
+  return {
+    tone: diff <= APPOINTMENT_TWO_HOUR_REMINDER_MS ? "urgent" : diff <= APPOINTMENT_REMINDER_WINDOW_MS ? "soon" : "scheduled",
+    title: `T-${label}`,
+    detail: `Due ${appointmentLabel}`,
+  };
+}
+
 function calendarDateStamp(date: Date) {
   const pad = (n: number) => String(n).padStart(2, "0");
   return [
@@ -883,6 +956,84 @@ function googleCalendarAppointmentHref(job: JobRecord, draftLocalValue: string) 
   });
 
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function appointmentTextAlertHref(job: JobRecord, draftLocalValue: string) {
+  const start = appointmentDateFromLocalValue(draftLocalValue) || appointmentDate(job);
+  if (!start) return "";
+
+  const key = jobKey(job);
+  const body = [
+    `HPD appointment alert: ${key}`,
+    `Time: ${displayWorkflowDate(start.toISOString())}`,
+    `Address: ${displayAddress(job)}`,
+    `Dashboard: https://hpd-bid-dashboard-2026.pages.dev/map/?omo=${encodeURIComponent(key)}&view=all`,
+  ].join("\n");
+
+  return `sms:?&body=${encodeURIComponent(body)}`;
+}
+
+function appointmentStoredAlertPhone(job: JobRecord | null | undefined) {
+  return String((job as any)?.AppointmentAlertPhone || (job as any)?.appointmentAlertPhone || "").trim();
+}
+
+function normalizeAppointmentAlertPhone(raw: string) {
+  const digits = String(raw || "").replace(/\D/g, "");
+  if (!digits) return "";
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return digits.startsWith("1") && digits.length > 10 ? `+${digits}` : `+${digits}`;
+}
+
+function appointmentAlertStatusInfo(job: JobRecord | null | undefined, draftPhone = "") {
+  const rawStatus = String((job as any)?.AppointmentAlertServiceStatus || (job as any)?.appointmentAlertServiceStatus || "").toLowerCase();
+  const requestedAt = String((job as any)?.AppointmentAlertRequestedAt || (job as any)?.appointmentAlertRequestedAt || "").trim();
+  const phone = normalizeAppointmentAlertPhone(draftPhone || appointmentStoredAlertPhone(job));
+
+  if (rawStatus.includes("scheduled") || rawStatus.includes("live")) {
+    return {
+      tone: "live",
+      label: "Text Alerts Live",
+      detail: `SMS/WhatsApp alerts are scheduled for ${phone || "saved phone"}.`,
+    };
+  }
+
+  if (requestedAt) {
+    return {
+      tone: "pending",
+      label: "Provider Needed",
+      detail: `Request saved ${displayWorkflowDate(requestedAt)}. Connect SMS/WhatsApp sender to make it automatic.`,
+    };
+  }
+
+  if (phone) {
+    return {
+      tone: "ready",
+      label: "Ready To Request",
+      detail: "Save this request to schedule 1-day and 2-hour text/WhatsApp alerts.",
+    };
+  }
+
+  return {
+    tone: "empty",
+    label: "Phone Needed",
+    detail: "Enter your cell number for text and WhatsApp appointment alerts.",
+  };
+}
+
+async function appointmentAlertProviderSave(key: string, payload: Record<string, any>) {
+  const response = await fetch(`${HPD_STATUS_WORKER_URL}${APPOINTMENT_ALERT_WORKER_PATH}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key, ...payload }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Appointment alert service returned ${response.status}.`);
+  }
+
+  return response.json().catch(() => ({}));
 }
 
 function calendarTextEscape(value: unknown) {
@@ -1330,7 +1481,7 @@ function markerAddressLabel(job: JobRecord) {
 }
 function markerSignalLabelHtml(
   job: JobRecord,
-  options: { overview: boolean; expanded: boolean; detailed: boolean; overdueLabel: string; noAccessTimerLabel: string; appointmentLabel: string }
+  options: { overview: boolean; expanded: boolean; detailed: boolean; overdueLabel: string; noAccessTimerLabel: string; appointmentLabel: string; tapHint?: boolean }
 ) {
   const award = markerAwardCounter(job);
   const start = markerStartCounterLabel(job);
@@ -1338,6 +1489,7 @@ function markerSignalLabelHtml(
   const address = markerAddressLabel(job);
   const daySignal = options.overdueLabel || (options.noAccessTimerLabel ? "72h no access" : award.main.replace(/^MD\s*/i, "").replace(/^AWD IN\s*/i, "Award in "));
   const footer = options.detailed ? markerDetailLabel(job) : options.expanded ? award.badge : "";
+  const tapHint = options.tapHint || options.overview || options.expanded || options.detailed ? `<span class="signal-tap">Tap to open card</span>` : "";
 
   if (options.overview) {
     return `
@@ -1346,6 +1498,7 @@ function markerSignalLabelHtml(
       <span class="signal-address">${escapeMarkerHtml(address)}</span>
       ${options.noAccessTimerLabel ? options.noAccessTimerLabel : ""}
       ${options.appointmentLabel ? options.appointmentLabel : ""}
+      ${tapHint}
     `;
   }
 
@@ -1357,6 +1510,7 @@ function markerSignalLabelHtml(
     ${options.noAccessTimerLabel ? options.noAccessTimerLabel : ""}
     ${options.appointmentLabel ? options.appointmentLabel : ""}
     ${footer ? `<span class="signal-footer">${escapeMarkerHtml(footer)}</span>` : ""}
+    ${tapHint}
   `;
 }
 function markerDetailLabel(job: JobRecord) {
@@ -1397,7 +1551,7 @@ function markerAppointmentLabelText(job: JobRecord, now = new Date()) {
   const date = appointmentDate(job);
   if (!date) return "";
   const diff = date.getTime() - now.getTime();
-  if (diff < -APPOINTMENT_DUE_GRACE_MS) return "";
+  if (diff < -APPOINTMENT_DUE_GRACE_MS) return "APPT PAST DUE";
 
   if (diff <= 0) return "APPT NOW";
   return `APPT ${appointmentMarkerTimeLabel(date, now)}`;
@@ -1408,7 +1562,7 @@ function markerAppointmentReminderHtml(job: JobRecord, now = new Date()) {
   const date = appointmentDate(job);
   const diff = date ? date.getTime() - now.getTime() : 1;
 
-  const className = diff <= 0 ? "is-due" : diff <= APPOINTMENT_REMINDER_WINDOW_MS ? "is-soon" : "is-scheduled";
+  const className = diff < -APPOINTMENT_DUE_GRACE_MS ? "is-past" : diff <= 0 ? "is-due" : diff <= APPOINTMENT_REMINDER_WINDOW_MS ? "is-soon" : "is-scheduled";
   return `<span class="marker-appointment-badge ${className}">${escapeMarkerHtml(label)}</span>`;
 }
 function hasUpcomingAppointment(job: JobRecord) {
@@ -1748,16 +1902,17 @@ function workflowLabel(job: JobRecord) {
   const status = workflowStatus(job);
 
   const labels: Record<string, string> = {
+    PENDING: "Pending",
     EN_ROUTE: "En Route",
     VISIT_STARTED: "Visit Started",
     NO_ACCESS_1_WAITING_72H: "No Access 1st - Waiting 72h",
     READY_SECOND_ATTEMPT: "Ready 2nd Attempt",
     NO_ACCESS_COMPLETE: "No Access Complete",
     REFUSED_ACCESS: "Refused Access",
-    COMPLETED_BY_OTHERS: "Completed by Others",
+    COMPLETED_BY_OTHERS: "Work Completed by Others",
     BEFORE_EVIDENCE: "Before Evidence",
     AFTER_EVIDENCE: "After Evidence",
-    WORK_STARTED: "Work Started",
+    WORK_STARTED: "Work In Progress",
     WORK_COMPLETED: "Work Completed",
     PARTIAL_WORK_COMPLETED: "Partial Work Completed",
     PACKAGE_REVIEW: "Package Review",
@@ -2333,6 +2488,8 @@ const [draftWorkflowSaved, setDraftWorkflowSaved] = useState(false);
 const [visitStatusDate, setVisitStatusDate] = useState("");
 const [appointmentDraft, setAppointmentDraft] = useState("");
 const [appointmentSaving, setAppointmentSaving] = useState(false);
+const [appointmentAlertPhone, setAppointmentAlertPhone] = useState("");
+const [appointmentAlertSaving, setAppointmentAlertSaving] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<WorkflowViewFilter>("active");
 const [countdownTick, setCountdownTick] = useState(0);
 const [mapZoom, setMapZoom] = useState(10);
@@ -3021,10 +3178,20 @@ function handleMapTouchEnd(event: any) {
   useEffect(() => {
     if (!selected) {
       setAppointmentDraft("");
+      setAppointmentAlertPhone("");
       return;
     }
     setAppointmentDraft(appointmentDraftValue(selected) || appointmentDefaultLocalValue());
-  }, [selected ? jobKey(selected) : "", selected?.AppointmentAt, selected?.appointmentAt]);
+    let savedPhone = appointmentStoredAlertPhone(selected);
+    if (!savedPhone && typeof window !== "undefined") {
+      try {
+        savedPhone = window.localStorage.getItem(APPOINTMENT_ALERT_PHONE_STORAGE_KEY) || "";
+      } catch {
+        savedPhone = "";
+      }
+    }
+    setAppointmentAlertPhone(savedPhone);
+  }, [selected ? jobKey(selected) : "", selected?.AppointmentAt, selected?.appointmentAt, selected?.AppointmentAlertPhone, selected?.appointmentAlertPhone]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -3987,7 +4154,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const noAccessSoon = isNoAccessTwentyFourHourAlert(job);
         const noAccessReady = workflowViewBucket(job) === "ready2";
         const noAccessTimerFocus = Boolean(noAccessTimerLabel) && showIndividualNoAccessTimers;
+        const selectedMarkerTapHint = selectedOnly || filteredJobs.length === 1;
         const appointmentLabel = markerAppointmentReminderHtml(job);
+        const appointmentDateValue = appointmentDate(job);
+        const appointmentPastDue = Boolean(appointmentDateValue && appointmentDateValue.getTime() < Date.now() - APPOINTMENT_DUE_GRACE_MS);
         const pendingAppointmentPulse = hasPendingUpcomingAppointment(job);
         const hasOverdue = Boolean(overdueLabel);
         const markerMode = markerDetailed
@@ -4004,8 +4174,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             : noAccessTimerFocus
               ? [252, 184]
             : markerOverview
-              ? [hasOverdue || appointmentLabel || noAccessTimerLabel ? 188 : 132, appointmentLabel || noAccessTimerLabel ? 126 : 88]
-              : [hasOverdue ? 148 : noAccessTimerLabel ? 176 : 132, noAccessTimerLabel || appointmentLabel ? 118 : 84];
+              ? [hasOverdue || appointmentLabel || noAccessTimerLabel ? 202 : 148, appointmentLabel || noAccessTimerLabel ? 142 : 108]
+              : selectedMarkerTapHint
+                ? [hasOverdue ? 164 : noAccessTimerLabel ? 186 : 154, noAccessTimerLabel || appointmentLabel ? 134 : 104]
+                : [hasOverdue ? 148 : noAccessTimerLabel ? 176 : 132, noAccessTimerLabel || appointmentLabel ? 118 : 84];
         const iconSize: [number, number] = [
           baseIconSize[0] + (hasOverdue && !markerOverview ? 8 : 0),
           baseIconSize[1] + (hasOverdue && !markerOverview ? 6 : 0),
@@ -4017,8 +4189,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           title: `${popupJobId} ${displayAddress(job)}`,
           icon: L.divIcon({
             className: "maturity-map-marker",
-            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} ${noAccessTimerLabel ? "marker-has-no-access" : ""} ${noAccessSoon ? "marker-no-access-soon" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} ${pendingAppointmentPulse ? "marker-pending-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${noAccessReady ? "marker-ready-revisit" : ""}" style="border-color:${hasOverdue ? "#ef4444" : noAccessSoon ? "#f97316" : appointmentLabel ? "#f59e0b" : noAccessReady ? "#22c55e" : markerColor}">
-                    ${markerSignalLabelHtml(job, { overview: markerOverview, expanded: markerExpanded, detailed: markerDetailed, overdueLabel, noAccessTimerLabel, appointmentLabel })}
+            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} ${noAccessTimerLabel ? "marker-has-no-access" : ""} ${noAccessSoon ? "marker-no-access-soon" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} ${appointmentPastDue ? "marker-appointment-past" : ""} ${pendingAppointmentPulse ? "marker-pending-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${noAccessReady ? "marker-ready-revisit" : ""}" style="border-color:${hasOverdue ? "#ef4444" : appointmentPastDue ? "#dc2626" : noAccessSoon ? "#f97316" : appointmentLabel ? "#f59e0b" : noAccessReady ? "#22c55e" : markerColor}">
+                    ${markerSignalLabelHtml(job, { overview: markerOverview, expanded: markerExpanded, detailed: markerDetailed, overdueLabel, noAccessTimerLabel, appointmentLabel, tapHint: selectedMarkerTapHint })}
                   </div>`,
             iconSize,
             iconAnchor,
@@ -4036,6 +4208,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       if (bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
         markerAutoFitKeyRef.current = markerAutoFitKey;
+        if (userLocation && followMyLocation) {
+          centerMapOnUserLocation(userLocation);
+          setTimeout(() => map.invalidateSize(), 250);
+          return;
+        }
         if (userLocation && !selectedOnly && !drawerOpen) {
           fitVisibleJobsOnMap(USER_LOCATION_OVERVIEW_ZOOM, true);
           setTimeout(() => map.invalidateSize(), 250);
@@ -4057,7 +4234,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     drawMarkers();
-  }, [mapReady, filteredJobs, countdownTick, mapZoom, markerAutoFitKey, userLocation, selectedOnly, drawerOpen, workflowViewFilter]);
+  }, [mapReady, filteredJobs, countdownTick, mapZoom, markerAutoFitKey, userLocation, followMyLocation, selectedOnly, drawerOpen, workflowViewFilter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -4097,7 +4274,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         userLocationAccuracyRef.current.setRadius(Math.max(15, userLocation.accuracy || 25));
       }
 
-      if (!locationOverviewFitRef.current && !selectedOnly && !drawerOpen) {
+      if (!locationOverviewFitRef.current || followMyLocation) {
         locationOverviewFitRef.current = true;
         centerMapOnUserLocation(userLocation);
       }
@@ -4494,6 +4671,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setMappedJobs((rows) => rows.map(applyPatch));
   }
 
+  function updateAppointmentAlertPhone(value: string) {
+    setAppointmentAlertPhone(value);
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(APPOINTMENT_ALERT_PHONE_STORAGE_KEY, value);
+    } catch {
+      // Device storage is optional.
+    }
+  }
+
   function saveJobAppointment(job: MappedJob) {
     const key = jobKey(job);
     const iso = appointmentIsoFromLocalValue(appointmentDraft);
@@ -4504,6 +4691,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
     const appointmentAt = new Date(iso);
     const reminderInfo = appointmentReminderSetupInfo(job, appointmentDraft);
+    const savedAppointmentDate = appointmentDate(job);
+    const savedWasExpired = Boolean(savedAppointmentDate && savedAppointmentDate.getTime() <= Date.now());
     if (appointmentAt.getTime() <= Date.now()) {
       alert("Choose a future appointment time. This appointment is already past, so reminders cannot fire.");
       return;
@@ -4527,12 +4716,108 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     applyWorkflowPatchToState(key, patch);
 
     workflowServerSave(key, patch)
-      .then(() => showActionNotice(`Appointment saved for ${key}: ${displayWorkflowDate(iso)}. ${reminderInfo.title}.`))
+      .then(() => showActionNotice(`${savedWasExpired ? "Appointment rescheduled" : "Appointment saved"} for ${key}: ${displayWorkflowDate(iso)}. ${reminderInfo.title}.`))
       .catch((error) => {
         console.error(error);
         showActionNotice("Appointment saved on this device. Server sync needs retry.");
       })
       .finally(() => setAppointmentSaving(false));
+  }
+
+  function saveAppointmentAlertRequest(job: MappedJob) {
+    const key = jobKey(job);
+    const iso = appointmentIsoFromLocalValue(appointmentDraft) || appointmentIso(job);
+    if (!key) return;
+    if (!iso) {
+      alert("Choose an appointment date and time first.");
+      return;
+    }
+
+    const appointmentAt = new Date(iso);
+    if (Number.isNaN(appointmentAt.getTime()) || appointmentAt.getTime() <= Date.now()) {
+      alert("Choose a future appointment time before saving automatic alerts.");
+      return;
+    }
+
+    const normalizedPhone = normalizeAppointmentAlertPhone(appointmentAlertPhone);
+    const phoneDigits = normalizedPhone.replace(/\D/g, "");
+    if (phoneDigits.length < 10) {
+      alert("Enter your cell phone number with area code for text and WhatsApp alerts.");
+      return;
+    }
+
+    const updatedAt = new Date().toISOString();
+    const oneDayAt = new Date(appointmentAt.getTime() - APPOINTMENT_REMINDER_WINDOW_MS);
+    const twoHourAt = new Date(appointmentAt.getTime() - APPOINTMENT_TWO_HOUR_REMINDER_MS);
+    const contact = tenantContactInfo(job);
+    const channels = ["sms", "whatsapp", "email"];
+    const providerPayload = {
+      appointmentAt: iso,
+      alertPhone: normalizedPhone,
+      alertEmail: APPOINTMENT_ALERT_EMAIL,
+      channels,
+      reminders: [
+        { label: "1 day before", triggerAt: oneDayAt.toISOString() },
+        { label: "2 hours before", triggerAt: twoHourAt.toISOString() },
+      ],
+      job: {
+        key,
+        address: displayAddress(job),
+        location: contact.apartment || displayLocation(job),
+        tenantName: contact.name || "",
+        tenantPhone: contact.phone || "",
+        description: displayDescription(job).replace(/\s+/g, " ").slice(0, 900),
+      },
+    };
+    const patch = {
+      AppointmentAt: iso,
+      appointmentAt: iso,
+      AppointmentAlertPhone: normalizedPhone,
+      appointmentAlertPhone: normalizedPhone,
+      AppointmentAlertEmail: APPOINTMENT_ALERT_EMAIL,
+      appointmentAlertEmail: APPOINTMENT_ALERT_EMAIL,
+      AppointmentAlertChannels: channels.join(","),
+      appointmentAlertChannels: channels.join(","),
+      AppointmentAlertServiceStatus: "provider_required",
+      appointmentAlertServiceStatus: "provider_required",
+      AppointmentAlertRequestedAt: updatedAt,
+      appointmentAlertRequestedAt: updatedAt,
+      AppointmentAlertOneDayAt: oneDayAt.toISOString(),
+      appointmentAlertOneDayAt: oneDayAt.toISOString(),
+      AppointmentAlertTwoHourAt: twoHourAt.toISOString(),
+      appointmentAlertTwoHourAt: twoHourAt.toISOString(),
+      AppointmentReminderStatus: "text_whatsapp_email_requested_1d_2h",
+      appointmentReminderStatus: "text_whatsapp_email_requested_1d_2h",
+      AppointmentUpdatedAt: updatedAt,
+      appointmentUpdatedAt: updatedAt,
+      updatedAt,
+    };
+
+    setAppointmentAlertSaving(true);
+    workflowStorageSave(key, patch);
+    applyWorkflowPatchToState(key, patch);
+
+    workflowServerSave(key, patch)
+      .then(() => appointmentAlertProviderSave(key, providerPayload))
+      .then(() => {
+        const scheduledAt = new Date().toISOString();
+        const scheduledPatch = {
+          AppointmentAlertServiceStatus: "scheduled",
+          appointmentAlertServiceStatus: "scheduled",
+          AppointmentAlertScheduledAt: scheduledAt,
+          appointmentAlertScheduledAt: scheduledAt,
+          updatedAt: scheduledAt,
+        };
+        workflowStorageSave(key, scheduledPatch);
+        applyWorkflowPatchToState(key, scheduledPatch);
+        workflowServerSave(key, scheduledPatch).catch((error) => console.error(error));
+        showActionNotice(`Automatic SMS/WhatsApp alert request scheduled for ${key}.`);
+      })
+      .catch((error) => {
+        console.error(error);
+        showActionNotice("Alert request saved. SMS/WhatsApp sender still needs provider setup before automatic messages go out.");
+      })
+      .finally(() => setAppointmentAlertSaving(false));
   }
 
   function clearJobAppointment(job: MappedJob) {
@@ -4549,6 +4834,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       appointmentDateTime: "",
       AppointmentAlertEmail: "",
       appointmentAlertEmail: "",
+      AppointmentAlertPhone: "",
+      appointmentAlertPhone: "",
+      AppointmentAlertChannels: "",
+      appointmentAlertChannels: "",
+      AppointmentAlertServiceStatus: "",
+      appointmentAlertServiceStatus: "",
+      AppointmentAlertRequestedAt: "",
+      appointmentAlertRequestedAt: "",
+      AppointmentAlertOneDayAt: "",
+      appointmentAlertOneDayAt: "",
+      AppointmentAlertTwoHourAt: "",
+      appointmentAlertTwoHourAt: "",
       AppointmentReminderStatus: "",
       appointmentReminderStatus: "",
       AppointmentUpdatedAt: updatedAt,
@@ -4620,17 +4917,31 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function renderJobAppointmentCard(job: MappedJob, mode: "mission" | "selected" = "selected") {
-    const info = appointmentStatusInfo(job);
+    const now = new Date();
+    const info = appointmentStatusInfo(job, now);
     const savedIso = appointmentIso(job);
     const savedDate = appointmentDate(job);
     const calendarHref = googleCalendarAppointmentHref(job, appointmentDraft);
+    const textAlertHref = appointmentTextAlertHref(job, appointmentDraft);
     const calendarAlertHref = calendarAlertDownloadHref(job, appointmentDraft);
     const draftDate = appointmentDateFromLocalValue(appointmentDraft);
-    const reminderInfo = appointmentReminderSetupInfo(job, appointmentDraft);
-    const savedExpired = Boolean(savedDate && savedDate.getTime() <= Date.now());
+    const savedExpired = Boolean(savedDate && savedDate.getTime() <= now.getTime());
+    const reminderInfo = savedExpired
+      ? {
+          tone: "missed",
+          title: "Appointment Past Due",
+          detail: `Reschedule this appointment. ${savedDate ? `Previous time was ${displayWorkflowDate(savedDate.toISOString())}.` : "Choose a new future time."}`,
+        }
+      : appointmentReminderSetupInfo(job, appointmentDraft, now);
+    const countdownInfo = appointmentCountdownInfo(job, savedExpired ? "" : appointmentDraft, now);
+    const alertStatus = appointmentAlertStatusInfo(job, appointmentAlertPhone);
+    const contact = tenantContactInfo(job);
+    const whatsappHref = contact.whatsappHref || "";
+    const appointmentHeadline = savedExpired ? "Past Due - Reschedule" : info.label;
+    const appointmentInputLabel = savedExpired ? "New date / time" : "Date / time";
     const appointmentSupportText = savedIso
       ? savedExpired
-        ? `Expired appointment: ${info.detail}. New time ready: ${draftDate ? displayWorkflowDate(draftDate.toISOString()) : "choose a future time"}. Tap Replace Appointment, then add Calendar or Download Alerts.`
+        ? `Appointment past due. Pick or edit the new date/time, then tap Reschedule Appointment. Google Calendar and Download Alerts use that rescheduled time.`
         : `Saved appointment: ${info.detail}. Add it to Google Calendar or download the .ics file for phone/email reminders.`
       : draftDate
         ? `Ready to save: ${displayWorkflowDate(draftDate.toISOString())}. Then add it to Calendar or download alerts.`
@@ -4640,57 +4951,134 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       <div className={`job-appointment-card appointment-${info.tone} reminder-${reminderInfo.tone} ${savedExpired ? "appointment-expired" : ""} ${mode === "mission" ? "mission-appointment" : ""}`} aria-label="Job appointment reminder">
         <div className="job-appointment-head">
           <span>Schedule Appointment</span>
-          <strong>{info.label}</strong>
+          <strong>{appointmentHeadline}</strong>
         </div>
-        <div className="job-appointment-banner">
-          <span>{jobKey(job)}</span>
-          <strong>{reminderInfo.title}</strong>
-          <small>{reminderInfo.detail}</small>
+        <div className="job-appointment-main-panel">
+          <div className="job-appointment-banner">
+            <span>{jobKey(job)}</span>
+            <strong>{reminderInfo.title}</strong>
+            <small>{reminderInfo.detail}</small>
+          </div>
+          <div className={`job-appointment-countdown countdown-${countdownInfo.tone}`} aria-live="polite">
+            <span>Clock</span>
+            <strong>{countdownInfo.title}</strong>
+            <small>{countdownInfo.detail}</small>
+          </div>
         </div>
-        <label className="job-appointment-input">
-          <span>Date / time</span>
-          <input
-            type="datetime-local"
-            value={appointmentDraft}
-            onChange={(event) => setAppointmentDraft(event.target.value)}
-          />
-        </label>
-        <small>{appointmentSupportText}</small>
-        <div className={`job-appointment-actions ${savedIso ? "has-clear" : ""}`}>
-          <button type="button" onClick={() => saveJobAppointment(job)} disabled={appointmentSaving}>
-            {appointmentSaving ? "Saving" : savedExpired ? "Replace Appointment" : "Save Appointment"}
+        <div className="job-appointment-plan-row">
+          <label className="job-appointment-input">
+            <span>{appointmentInputLabel}</span>
+            <input
+              type="datetime-local"
+              value={appointmentDraft}
+              onChange={(event) => setAppointmentDraft(event.target.value)}
+            />
+          </label>
+          <button type="button" className="job-appointment-save-button" onClick={() => saveJobAppointment(job)} disabled={appointmentSaving}>
+            {appointmentSaving ? "Saving" : savedExpired ? "Reschedule" : "Save"}
           </button>
+        </div>
+        <small className="job-appointment-guidance">{appointmentSupportText}</small>
+        <div className="job-appointment-calendar-panel" aria-label="Calendar appointment options">
+          <div className="calendar-panel-head">
+            <span>Calendar Options</span>
+            <strong>1 day + 2 hour alerts</strong>
+          </div>
+          <div className="job-appointment-calendar-actions">
+            <a
+              href={calendarHref || undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={calendarHref ? "calendar-link" : "calendar-link disabled"}
+              onClick={(event) => {
+                if (!calendarHref) {
+                  event.preventDefault();
+                  alert("Choose an appointment date and time first.");
+                } else {
+                  showActionNotice("Finish adding this event in Google Calendar to activate reminders.");
+                }
+              }}
+            >
+              Google Calendar
+            </a>
+            <a
+              href={calendarAlertHref || undefined}
+              download={appointmentCalendarFileName(job)}
+              className={calendarAlertHref ? "alert-link" : "disabled"}
+              onClick={(event) => {
+                if (!calendarAlertHref) {
+                  event.preventDefault();
+                  alert("Choose an appointment date and time first.");
+                } else {
+                  showActionNotice("Import the downloaded .ics file into Calendar to activate alerts.");
+                }
+              }}
+            >
+              Download Alert File
+            </a>
+          </div>
+        </div>
+        <details className={`job-appointment-auto-alert auto-alert-${alertStatus.tone}`} open={alertStatus.tone !== "empty"}>
+          <summary className="auto-alert-summary">
+            <span>Phone Alerts</span>
+            <strong>{alertStatus.label}</strong>
+          </summary>
+          <div className="auto-alert-body">
+            <label className="auto-alert-phone">
+              <span>My alert phone</span>
+              <input
+                type="tel"
+                inputMode="tel"
+                value={appointmentAlertPhone}
+                onChange={(event) => updateAppointmentAlertPhone(event.target.value)}
+                placeholder="Cell for SMS / WhatsApp"
+              />
+            </label>
+            <button type="button" onClick={() => saveAppointmentAlertRequest(job)} disabled={appointmentAlertSaving}>
+              {appointmentAlertSaving ? "Saving Alert Request" : "Save Text / WhatsApp Alerts"}
+            </button>
+            <div className="auto-alert-reminders" aria-label="Automatic appointment reminder windows">
+              <span>1 day before</span>
+              <span>2 hours before</span>
+              <span>{APPOINTMENT_ALERT_EMAIL}</span>
+            </div>
+            <small>{alertStatus.detail}</small>
+          </div>
+        </details>
+        <div className={`job-appointment-actions ${savedIso ? "has-clear" : ""}`} aria-label="Secondary appointment actions">
           <a
-            href={calendarHref || undefined}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={calendarHref ? "" : "disabled"}
+            href={textAlertHref || undefined}
+            className={textAlertHref ? "text-alert-link" : "disabled"}
             onClick={(event) => {
-              if (!calendarHref) {
+              if (!textAlertHref) {
                 event.preventDefault();
                 alert("Choose an appointment date and time first.");
               } else {
-                showActionNotice("Finish adding this event in Google Calendar to activate reminders.");
+                showActionNotice("Text Alert opens your phone text draft. Scheduled automatic SMS needs a connected text provider.");
               }
             }}
           >
-            Google Calendar
+            Text Alert
           </a>
-          <a
-            href={calendarAlertHref || undefined}
-            download={appointmentCalendarFileName(job)}
-            className={calendarAlertHref ? "alert-link" : "disabled"}
-            onClick={(event) => {
-              if (!calendarAlertHref) {
-                event.preventDefault();
-                alert("Choose an appointment date and time first.");
-              } else {
-                showActionNotice("Import the downloaded .ics file into Calendar to activate alerts.");
-              }
-            }}
-          >
-            Download Alerts
-          </a>
+          {whatsappHref ? (
+            <a
+              href={whatsappHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="whatsapp-link"
+            >
+              WhatsApp Tenant
+            </a>
+          ) : (
+            <button
+              type="button"
+              className="quiet whatsapp-disabled"
+              disabled
+              title="No tenant phone number is available for WhatsApp on this work order."
+            >
+              No WhatsApp Phone
+            </button>
+          )}
           <button type="button" className="quiet" onClick={() => enableAppointmentBrowserAlerts(job)}>
             Test Alert
           </button>
@@ -5387,7 +5775,8 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       if (requireChoice && !(choice instanceof HTMLElement)) return;
       const target =
         choice ||
-        document.querySelector(".job-drawer.selected-focus .field-status-action-grid");
+        document.querySelector(".job-drawer.selected-focus .field-status-picker-card") ||
+        document.querySelector(".job-drawer.selected-focus .field-media-option-hub");
       if (!(target instanceof HTMLElement)) return;
 
       const container = findScrollContainer(target);
@@ -5408,6 +5797,67 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     window.setTimeout(() => positionChoice(false), 80);
     window.setTimeout(() => positionChoice(true), 260);
     window.setTimeout(() => positionChoice(true), 700);
+  }
+
+  function scrollSelectedJobCardTo(selector: string, notice = "") {
+    window.setTimeout(() => {
+      const target = document.querySelector<HTMLElement>(selector);
+      if (!target) return;
+
+      const drawer = jobDrawerRef.current || document.querySelector<HTMLElement>(".job-drawer.selected-focus");
+      const stickyHead =
+        drawer?.querySelector<HTMLElement>(".selected-job-drawer-head") ||
+        document.querySelector<HTMLElement>(".job-drawer.selected-focus .selected-job-drawer-head");
+
+      if (!drawer) {
+        target.scrollIntoView({ behavior: androidScrollFix ? "auto" : "smooth", block: "start" });
+        if (notice) showActionNotice(notice);
+        return;
+      }
+
+      const drawerRect = drawer.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const headHeight = stickyHead?.offsetHeight || 0;
+      const top = drawer.scrollTop + targetRect.top - drawerRect.top - headHeight - 12;
+
+      drawer.scrollTo({
+        top: Math.max(0, top),
+        left: 0,
+        behavior: androidScrollFix ? "auto" : "smooth",
+      });
+      if (notice) showActionNotice(notice);
+    }, 70);
+  }
+
+  function jumpToStatusFlow() {
+    setFieldFocusPane("capture");
+    scrollSelectedJobCardTo(
+      ".job-drawer.selected-focus .field-status-picker-card, .job-drawer.selected-focus .site-procedure-stage[data-field-pane='capture']",
+      "Status flow ready."
+    );
+  }
+
+  function jumpToMediaFlow() {
+    setFieldFocusPane("evidence");
+    scrollSelectedJobCardTo(
+      ".job-drawer.selected-focus .field-media-option-hub, .job-drawer.selected-focus .site-procedure-stage[data-field-pane='evidence'], .job-drawer.selected-focus .field-evidence-gallery",
+      "Media flow ready."
+    );
+  }
+
+  function jumpToAppointmentFlow() {
+    scrollSelectedJobCardTo(
+      ".job-drawer.selected-focus .job-appointment-card.mission-appointment, .job-drawer.selected-focus .job-appointment-card",
+      "Appointment flow ready."
+    );
+  }
+
+  function jumpToPackageFlow() {
+    setFieldFocusPane("package");
+    scrollSelectedJobCardTo(
+      ".job-drawer.selected-focus .site-procedure-stage[data-field-pane='package'], .job-drawer.selected-focus .field-packet-vault",
+      "Package flow ready."
+    );
   }
 
   function focusFieldMedia(kind?: FieldMediaKind) {
@@ -7035,6 +7485,12 @@ function localDatetimeValue(date = new Date()) {
     const iso = when.toISOString();
     const available = new Date(when);
     available.setHours(available.getHours() + 72);
+    const packageReadyFields = (message: string) => ({
+      PackageReadyMessage: message,
+      packageReadyMessage: message,
+      PackageGeneratedAt: iso,
+      packageGeneratedAt: iso,
+    });
 
     let nextStatus = draftWorkflowStatus;
     let patch: Record<string, any> = {
@@ -7042,6 +7498,21 @@ function localDatetimeValue(date = new Date()) {
       status: nextStatus || "Pending",
       ITBMatchStatus: nextStatus || job.ITBMatchStatus,
     };
+
+    if (draftWorkflowStatus === "Pending") {
+      patch = {
+        ...patch,
+        WorkflowStatus: "PENDING",
+        workflowStatus: "PENDING",
+        FieldOutcome: "PENDING",
+        fieldOutcome: "PENDING",
+        StatusOverride: "Pending",
+        status: "Pending",
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+        ...activeWorkflowArchiveFields(),
+      };
+    }
 
     if (draftWorkflowStatus === "No Access - 1st Attempt") {
       patch = {
@@ -7082,6 +7553,28 @@ function localDatetimeValue(date = new Date()) {
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
         ...archiveCloseoutFields(iso),
+        ...packageReadyFields("No Access 2nd saved. No-work affidavit/invoice package ready."),
+      };
+    }
+
+    if (draftWorkflowStatus === "Start Job" || draftWorkflowStatus === "Work In Progress") {
+      patch = {
+        ...patch,
+        WorkflowStatus: "WORK_STARTED",
+        workflowStatus: "WORK_STARTED",
+        FieldOutcome: "WORK_STARTED",
+        fieldOutcome: "WORK_STARTED",
+        StatusOverride: "Work In Progress",
+        status: "Work In Progress",
+        JobStartedAt: iso,
+        jobStartedAt: iso,
+        ActualWorkStartDate: iso,
+        actualWorkStartDate: iso,
+        FieldTimerStartedAt: iso,
+        fieldTimerStartedAt: iso,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+        ...activeWorkflowArchiveFields(),
       };
     }
 
@@ -7101,6 +7594,7 @@ function localDatetimeValue(date = new Date()) {
         outcomeLockedAt: iso,
         ...archiveCloseoutFields(iso),
         ...refusedDescriptionPatch(description),
+        ...packageReadyFields("Refused access saved. No-work affidavit/invoice package ready."),
       };
     }
 
@@ -7116,6 +7610,7 @@ function localDatetimeValue(date = new Date()) {
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
         ...archiveCloseoutFields(iso),
+        ...packageReadyFields("Work completed by others saved. Affidavit/invoice package ready."),
       };
     }
 
@@ -7131,6 +7626,7 @@ function localDatetimeValue(date = new Date()) {
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
         ...archiveCloseoutFields(iso),
+        ...packageReadyFields("Work completed saved. Affidavit/invoice package ready."),
       };
     }
 
@@ -7148,6 +7644,7 @@ function localDatetimeValue(date = new Date()) {
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
         ...archiveCloseoutFields(iso),
+        ...packageReadyFields("Partial work saved. Affidavit/invoice package ready."),
       };
     }
     const key = jobKey(job);
@@ -7186,16 +7683,17 @@ function workflowLabel(job: JobRecord) {
   const status = workflowStatus(job);
 
   const labels: Record<string, string> = {
+    PENDING: "Pending",
     EN_ROUTE: "En Route",
     VISIT_STARTED: "Visit Started",
     NO_ACCESS_1_WAITING_72H: "No Access 1st - Waiting 72h",
     READY_SECOND_ATTEMPT: "Ready 2nd Attempt",
     NO_ACCESS_COMPLETE: "No Access Complete",
     REFUSED_ACCESS: "Refused Access",
-    COMPLETED_BY_OTHERS: "Completed by Others",
+    COMPLETED_BY_OTHERS: "Work Completed by Others",
     BEFORE_EVIDENCE: "Before Evidence",
     AFTER_EVIDENCE: "After Evidence",
-    WORK_STARTED: "Work Started",
+    WORK_STARTED: "Work In Progress",
     WORK_COMPLETED: "Work Completed",
     PARTIAL_WORK_COMPLETED: "Partial Work Completed",
     PACKAGE_REVIEW: "Package Review",
@@ -7210,6 +7708,71 @@ function workflowLabel(job: JobRecord) {
 
 function isClosedWorkflow(job: JobRecord) {
   return CLOSED_WORKFLOW_STATUSES.has(workflowStatus(job));
+}
+
+function workflowSavedDateIso(job: JobRecord | null | undefined) {
+  if (!job) return "";
+  const status = workflowStatus(job);
+  const values =
+    status === "NO_ACCESS_1_WAITING_72H"
+      ? [
+          job.NoAccessFirstAttemptAt,
+          (job as any).noAccessFirstAttemptAt,
+          (job as any).OutcomeLockedAt,
+          (job as any).outcomeLockedAt,
+        ]
+      : status === "NO_ACCESS_COMPLETE"
+        ? [
+            job.NoAccessSecondAttemptAt,
+            (job as any).noAccessSecondAttemptAt,
+            (job as any).OutcomeLockedAt,
+            (job as any).outcomeLockedAt,
+          ]
+        : status === "REFUSED_ACCESS"
+          ? [
+              job.RefusalDate,
+              (job as any).refusalDate,
+              (job as any).OutcomeLockedAt,
+              (job as any).outcomeLockedAt,
+            ]
+          : status === "COMPLETED_BY_OTHERS"
+            ? [
+                job.VerifiedByOthersDate,
+                (job as any).verifiedByOthersDate,
+                (job as any).OutcomeLockedAt,
+                (job as any).outcomeLockedAt,
+              ]
+            : status === "WORK_STARTED" || status === "BEFORE_EVIDENCE"
+              ? [
+                  job.JobStartedAt,
+                  (job as any).jobStartedAt,
+                  job.ActualWorkStartDate,
+                  (job as any).actualWorkStartDate,
+                  (job as any).OutcomeLockedAt,
+                  (job as any).outcomeLockedAt,
+                ]
+              : [
+                  job.ActualWorkCompletionDate,
+                  (job as any).actualWorkCompletionDate,
+                  (job as any).JobFinishedAt,
+                  (job as any).jobFinishedAt,
+                  (job as any).OutcomeLockedAt,
+                  (job as any).outcomeLockedAt,
+                  job.NoAccessFirstAttemptAt,
+                  (job as any).noAccessFirstAttemptAt,
+                ];
+
+  return String(values.find((value) => String(value || "").trim()) || "");
+}
+
+function workflowMapLayerLabel(job: JobRecord | null | undefined) {
+  if (!job) return "Pending map";
+  const status = workflowStatus(job);
+  if (CLOSED_WORKFLOW_STATUSES.has(status)) return "Archive map";
+  if (status === "NO_ACCESS_1_WAITING_72H") return "72h waiting layer";
+  if (status === "READY_SECOND_ATTEMPT") return "Ready 2nd layer";
+  if (appointmentIso(job)) return "Appointments layer";
+  return "Active / pending map";
 }
 
 function parseWorkflowDate(value?: string) {
@@ -7599,6 +8162,11 @@ function directionsUrl(job: JobRecord) {
   }
 
   function openPaperworkPreviewForStatus(job: JobRecord, patch: Record<string, any>, openPreview = true) {
+    const rawStatus = String(
+      patch.WorkflowStatus || patch.workflowStatus || patch.FieldOutcome || patch.fieldOutcome || patch.StatusOverride || patch.status || ""
+    ).toUpperCase();
+    if (rawStatus === "PENDING" || rawStatus === "WORK_STARTED" || rawStatus === "NO_ACCESS_1_WAITING_72H") return;
+
     const outcome = paperworkOutcomeFromValue(
       patch.WorkflowStatus || patch.workflowStatus || patch.FieldOutcome || patch.fieldOutcome || patch.StatusOverride || patch.status
     );
@@ -7902,13 +8470,92 @@ function directionsUrl(job: JobRecord) {
     { view: "all", label: "All", count: workflowDashboardCounts.all },
   ];
   const quickWorkflowOptions = [
-    { value: "No Access - 1st Attempt", label: "No Access 1st", tone: "waiting" },
-    { value: "No Access - 2nd Attempt", label: "No Access 2nd", tone: "archive" },
-    { value: "Refused Access", label: "Refused", tone: "danger" },
-    { value: "Work Completed", label: "Completed", tone: "success" },
-    { value: "Partial Work Completed", label: "Partial", tone: "partial" },
-    { value: "Completed by Others", label: "Other Done", tone: "other" },
+    { value: "Pending", label: "Pending", tone: "pending", group: "Open" },
+    { value: "Work In Progress", label: "Work In Progress", tone: "start", group: "Open" },
+    { value: "Work Completed", label: "Work Completed", tone: "success", group: "Completed" },
+    { value: "Partial Work Completed", label: "Partial Work", tone: "partial", group: "Completed" },
+    { value: "No Access - 1st Attempt", label: "No Access 1st - Start 72h", tone: "waiting", group: "No Work Completed" },
+    { value: "No Access - 2nd Attempt", label: "No Access 2nd - Close", tone: "archive", group: "No Work Completed" },
+    { value: "Refused Access", label: "Refused Access - Close", tone: "danger", group: "No Work Completed" },
+    { value: "Completed by Others", label: "Work Completed by Others", tone: "other", group: "No Work Completed" },
   ];
+  const workflowOptionGroups = ["Open", "Completed", "No Work Completed"].map((group) => ({
+    group,
+    options: quickWorkflowOptions.filter((option) => option.group === group),
+  }));
+
+  function normalizeWorkflowChoice(value: string) {
+    const raw = String(value || "").trim().toLowerCase();
+    if (!raw) return "Pending";
+    if (raw === "pending") return "Pending";
+    if (raw.includes("work_started") || raw.includes("work started") || raw.includes("work in progress") || raw === "start job") {
+      return "Work In Progress";
+    }
+    if (raw.includes("partial")) return "Partial Work Completed";
+    if (raw.includes("completed_by_others") || raw.includes("completed by others") || raw.includes("completed by other")) return "Completed by Others";
+    if (raw.includes("work_completed") || raw.includes("work completed")) return "Work Completed";
+    if (raw.includes("no_access_1") || raw.includes("waiting_72h") || raw.includes("waiting 72") || raw.includes("no access - 1st") || raw.includes("no access 1")) {
+      return "No Access - 1st Attempt";
+    }
+    if (raw.includes("no_access_complete") || raw.includes("no access - 2nd") || raw.includes("no access 2")) return "No Access - 2nd Attempt";
+    if (raw.includes("refused")) return "Refused Access";
+    return value;
+  }
+
+  function workflowChoiceInfo(value: string) {
+    const choice = normalizeWorkflowChoice(value);
+    const map: Record<string, { tone: string; title: string; detail: string; next: string }> = {
+      Pending: {
+        tone: "pending",
+        title: "Pending",
+        detail: "Job stays active on the map. No package is generated yet.",
+        next: "Use this before work starts or after clearing a test status.",
+      },
+      "Work In Progress": {
+        tone: "start",
+        title: "Work In Progress",
+        detail: "Job is started and stays active. Media can be taken or uploaded from the media section.",
+        next: "After the visit, choose Work Completed, Partial Work, or a no-work-completed closeout.",
+      },
+      "Work Completed": {
+        tone: "success",
+        title: "Completed",
+        detail: "Closes the job, archives it from the active map, and opens affidavit/invoice package review.",
+        next: "Media is optional for now; use Package to review affidavit, invoice, and files.",
+      },
+      "Partial Work Completed": {
+        tone: "partial",
+        title: "Partial Work",
+        detail: "Closes as partial work and opens affidavit/invoice package review.",
+        next: "Use this when some work was done but the full scope is not complete.",
+      },
+      "No Access - 1st Attempt": {
+        tone: "waiting",
+        title: "No Access 1st",
+        detail: "Starts the 72-hour timer and keeps the job off the clean pending layer until the revisit window.",
+        next: "At T-24 / Ready 2nd, return and save No Access 2nd if still no access.",
+      },
+      "No Access - 2nd Attempt": {
+        tone: "archive",
+        title: "No Access 2nd",
+        detail: "Closes the job, archives it, and opens the no-work affidavit/invoice package.",
+        next: "Use after the 72-hour timer matures or when you are ready to close the no-access route.",
+      },
+      "Refused Access": {
+        tone: "danger",
+        title: "Refused Access",
+        detail: "Closes the job and opens the refused-access affidavit/invoice package.",
+        next: "Description of who refused is saved with the package when available.",
+      },
+      "Completed by Others": {
+        tone: "other",
+        title: "Work Completed by Others",
+        detail: "Closes the job and opens the no-work package for completed-by-others documentation.",
+        next: "Use when HPD work is already done by another party.",
+      },
+    };
+    return map[choice] || map.Pending;
+  }
 
   function switchMapBoard(view: WorkflowViewFilter) {
     setWorkflowViewFilter(view);
@@ -15836,8 +16483,33 @@ return (
             text-overflow: ellipsis !important;
           }
 
+          .maturity-map-marker .map-signal-marker .signal-tap {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-height: 18px !important;
+            max-width: 178px !important;
+            padding: 3px 8px !important;
+            border-radius: 999px !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            font-size: 8px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+            white-space: nowrap !important;
+            box-shadow: 0 5px 12px rgba(15, 23, 42, 0.18) !important;
+          }
+
           .maturity-map-marker .map-signal-marker.marker-compact .signal-footer {
             display: none !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-tap {
+            min-height: 16px !important;
+            padding: 3px 7px !important;
+            font-size: 7px !important;
           }
 
           .maturity-map-marker .map-signal-marker.marker-expanded {
@@ -15914,10 +16586,21 @@ return (
             box-shadow: inset 0 0 0 1px rgba(120, 53, 15, 0.16) !important;
           }
 
-          .maturity-map-marker .map-signal-marker .marker-appointment-badge.is-due {
+          .maturity-map-marker .map-signal-marker .marker-appointment-badge.is-due,
+          .maturity-map-marker .map-signal-marker .marker-appointment-badge.is-past {
             background: #fb923c !important;
             color: #431407 !important;
             animation: appointmentMarkerPulse 1.8s ease-in-out infinite;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-appointment-badge.is-past {
+            min-width: 112px !important;
+            background: #dc2626 !important;
+            color: #ffffff !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+              0 0 0 2px rgba(255, 255, 255, 0.94),
+              0 8px 22px rgba(127, 29, 29, 0.34) !important;
           }
 
           .maturity-map-marker .map-signal-marker.marker-has-appointment {
@@ -15974,6 +16657,29 @@ return (
               0 0 42px rgba(245, 158, 11, 0.72),
               0 0 92px rgba(217, 119, 6, 0.32) !important;
             animation: pendingAppointmentHaloPulse 1.65s ease-out infinite !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-appointment-past {
+            --marker-glow-core: rgba(220, 38, 38, 0.54);
+            --marker-ring: rgba(248, 113, 113, 0.30);
+            --marker-glow: rgba(220, 38, 38, 0.84);
+            --marker-glow-wide: rgba(127, 29, 29, 0.36);
+            border-color: #dc2626 !important;
+            background:
+              linear-gradient(180deg, rgba(255, 241, 242, 0.99), rgba(254, 226, 226, 0.98)) !important;
+            animation: pendingAppointmentMarkerPulse 1.25s ease-in-out infinite !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-appointment-past::before {
+            display: block !important;
+            width: 102px !important;
+            height: 102px !important;
+            background: radial-gradient(circle, rgba(220, 38, 38, 0.56), transparent 64%) !important;
+            box-shadow:
+              0 0 0 11px rgba(248, 113, 113, 0.20),
+              0 0 46px rgba(220, 38, 38, 0.72),
+              0 0 96px rgba(127, 29, 29, 0.34) !important;
+            animation: pendingAppointmentHaloPulse 1.25s ease-out infinite !important;
           }
 
           @keyframes appointmentMarkerPulse {
@@ -16833,6 +17539,13 @@ return (
             text-align: right !important;
           }
 
+          .job-appointment-main-panel {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) minmax(96px, 118px) !important;
+            gap: 8px !important;
+            align-items: stretch !important;
+          }
+
           .job-appointment-banner {
             display: grid !important;
             gap: 3px !important;
@@ -16882,10 +17595,94 @@ return (
             font-weight: 820 !important;
           }
 
+          .job-appointment-countdown {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            align-content: center !important;
+            gap: 5px !important;
+            padding: 11px 12px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(34, 197, 94, 0.30) !important;
+            background: rgba(5, 46, 22, 0.28) !important;
+          }
+
+          .job-appointment-countdown span {
+            color: #bbf7d0 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-appointment-countdown strong {
+            color: #ffffff !important;
+            font-size: 22px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-align: left !important;
+          }
+
+          .job-appointment-countdown small {
+            color: #dcfce7 !important;
+            font-size: 11px !important;
+            line-height: 1.2 !important;
+            font-weight: 820 !important;
+          }
+
+          .job-appointment-countdown.countdown-urgent,
+          .job-appointment-countdown.countdown-due {
+            border-color: rgba(248, 113, 113, 0.56) !important;
+            background: rgba(127, 29, 29, 0.36) !important;
+            animation: appointmentPulse 1.4s ease-in-out infinite !important;
+          }
+
+          .job-appointment-countdown.countdown-soon {
+            border-color: rgba(251, 191, 36, 0.50) !important;
+            background: rgba(113, 63, 18, 0.32) !important;
+          }
+
+          .job-appointment-countdown.countdown-empty {
+            border-color: rgba(148, 163, 184, 0.32) !important;
+            background: rgba(30, 41, 59, 0.34) !important;
+          }
+
+          .job-appointment-countdown.countdown-past {
+            border-color: rgba(248, 113, 113, 0.68) !important;
+            background: rgba(127, 29, 29, 0.42) !important;
+            animation: appointmentPulse 1.05s ease-in-out infinite !important;
+          }
+
+          .job-appointment-countdown.countdown-past span,
+          .job-appointment-countdown.countdown-past small {
+            color: #fecaca !important;
+          }
+
+          .job-appointment-countdown.countdown-past strong {
+            color: #ffffff !important;
+          }
+
+          @keyframes appointmentPulse {
+            0%, 100% {
+              box-shadow: 0 0 0 rgba(248, 113, 113, 0) !important;
+            }
+            50% {
+              box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.16) !important;
+            }
+          }
+
           .job-appointment-input {
             min-width: 0 !important;
             display: grid !important;
             gap: 6px !important;
+          }
+
+          .job-appointment-plan-row {
+            min-width: 0 !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) minmax(88px, 112px) !important;
+            gap: 8px !important;
+            align-items: end !important;
           }
 
           .job-appointment-input input {
@@ -16901,6 +17698,24 @@ return (
             letter-spacing: 0 !important;
           }
 
+          .job-appointment-save-button {
+            min-height: 42px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(34, 197, 94, 0.38) !important;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.88), rgba(14, 165, 233, 0.82)) !important;
+            color: #ffffff !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            cursor: pointer !important;
+          }
+
+          .job-appointment-save-button:disabled {
+            opacity: 0.62 !important;
+            cursor: wait !important;
+          }
+
           .job-appointment-card small {
             color: #dbeafe !important;
             font-size: 12px !important;
@@ -16908,14 +17723,227 @@ return (
             font-weight: 760 !important;
           }
 
-          .job-appointment-actions {
+          .job-appointment-guidance {
+            display: block !important;
+            margin-top: -2px !important;
+          }
+
+          .job-appointment-calendar-panel {
             display: grid !important;
-            grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)) !important;
+            gap: 8px !important;
+            padding: 10px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(96, 165, 250, 0.24) !important;
+            background:
+              linear-gradient(135deg, rgba(59, 130, 246, 0.16), rgba(14, 165, 233, 0.10)),
+              rgba(248, 250, 252, 0.06) !important;
+          }
+
+          .calendar-panel-head {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
             gap: 8px !important;
           }
 
+          .calendar-panel-head span {
+            color: #bfdbfe !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .calendar-panel-head strong {
+            color: #ffffff !important;
+            font-size: 12px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+            text-align: right !important;
+          }
+
+          .job-appointment-calendar-actions {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .job-appointment-calendar-actions a {
+            min-height: 40px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(96, 165, 250, 0.36) !important;
+            background: rgba(37, 99, 235, 0.20) !important;
+            color: #dbeafe !important;
+            padding: 0 8px !important;
+            font-size: 11px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+            text-align: center !important;
+            text-decoration: none !important;
+          }
+
+          .job-appointment-calendar-actions .calendar-link {
+            background: rgba(14, 165, 233, 0.22) !important;
+            border-color: rgba(56, 189, 248, 0.36) !important;
+            color: #e0f2fe !important;
+          }
+
+          .job-appointment-calendar-actions .alert-link {
+            background: rgba(251, 191, 36, 0.20) !important;
+            border-color: rgba(251, 191, 36, 0.42) !important;
+            color: #fef3c7 !important;
+          }
+
+          .job-appointment-calendar-actions a.disabled {
+            opacity: 0.55 !important;
+            cursor: not-allowed !important;
+          }
+
+          .job-appointment-auto-alert {
+            display: grid !important;
+            gap: 8px !important;
+            padding: 0 !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(148, 163, 184, 0.24) !important;
+            background: rgba(15, 23, 42, 0.24) !important;
+            overflow: hidden !important;
+          }
+
+          .auto-alert-summary {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 10px !important;
+            min-height: 38px !important;
+            padding: 0 10px !important;
+            cursor: pointer !important;
+            list-style: none !important;
+          }
+
+          .auto-alert-summary::-webkit-details-marker {
+            display: none !important;
+          }
+
+          .auto-alert-summary::after {
+            content: "+" !important;
+            width: 22px !important;
+            height: 22px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 999px !important;
+            background: rgba(148, 163, 184, 0.18) !important;
+            color: #e2e8f0 !important;
+            font-size: 14px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            flex: 0 0 auto !important;
+          }
+
+          .job-appointment-auto-alert[open] .auto-alert-summary::after {
+            content: "-" !important;
+          }
+
+          .auto-alert-body {
+            display: grid !important;
+            gap: 8px !important;
+            padding: 0 10px 10px !important;
+          }
+
+          .auto-alert-summary span,
+          .auto-alert-phone span {
+            color: #bfdbfe !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .auto-alert-summary strong {
+            color: #ffffff !important;
+            font-size: 13px !important;
+            line-height: 1.1 !important;
+            font-weight: 1000 !important;
+            text-align: right !important;
+            margin-left: auto !important;
+          }
+
+          .job-appointment-auto-alert.auto-alert-live .auto-alert-summary strong {
+            color: #bbf7d0 !important;
+          }
+
+          .job-appointment-auto-alert.auto-alert-pending .auto-alert-summary strong {
+            color: #fef3c7 !important;
+          }
+
+          .auto-alert-phone {
+            display: grid !important;
+            gap: 6px !important;
+          }
+
+          .auto-alert-phone input {
+            width: 100% !important;
+            min-height: 40px !important;
+            border-radius: 10px !important;
+            border: 1px solid rgba(191, 219, 254, 0.24) !important;
+            background: rgba(2, 6, 23, 0.42) !important;
+            color: #f8fafc !important;
+            padding: 0 10px !important;
+            font-size: 14px !important;
+            font-weight: 850 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .auto-alert-reminders {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+          }
+
+          .auto-alert-reminders span {
+            min-height: 26px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            border-radius: 999px !important;
+            padding: 0 9px !important;
+            background: rgba(14, 165, 233, 0.16) !important;
+            border: 1px solid rgba(56, 189, 248, 0.24) !important;
+            color: #e0f2fe !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-appointment-auto-alert button {
+            min-height: 40px !important;
+            border-radius: 999px !important;
+            border: 1px solid rgba(34, 197, 94, 0.38) !important;
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.34), rgba(14, 165, 233, 0.26)) !important;
+            color: #f8fafc !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            cursor: pointer !important;
+          }
+
+          .job-appointment-auto-alert button:disabled {
+            opacity: 0.62 !important;
+            cursor: wait !important;
+          }
+
+          .job-appointment-actions {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)) !important;
+            gap: 7px !important;
+          }
+
           .job-appointment-actions.has-clear {
-            grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)) !important;
+            grid-template-columns: repeat(auto-fit, minmax(88px, 1fr)) !important;
           }
 
           .job-appointment-actions button,
@@ -16947,10 +17975,27 @@ return (
             color: #fef3c7 !important;
           }
 
+          .job-appointment-actions .text-alert-link {
+            background: rgba(14, 165, 233, 0.18) !important;
+            border-color: rgba(56, 189, 248, 0.40) !important;
+            color: #e0f2fe !important;
+          }
+
+          .job-appointment-actions .whatsapp-link {
+            background: rgba(34, 197, 94, 0.18) !important;
+            border-color: rgba(34, 197, 94, 0.40) !important;
+            color: #dcfce7 !important;
+          }
+
           .job-appointment-actions .quiet {
             background: rgba(148, 163, 184, 0.14) !important;
             border-color: rgba(148, 163, 184, 0.24) !important;
             color: #e2e8f0 !important;
+          }
+
+          .job-appointment-actions .whatsapp-disabled {
+            white-space: normal !important;
+            line-height: 1.12 !important;
           }
 
           .job-appointment-actions button:disabled,
@@ -16979,6 +18024,12 @@ return (
 
             .job-appointment-actions,
             .job-appointment-actions.has-clear {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .job-appointment-main-panel,
+            .job-appointment-plan-row,
+            .job-appointment-calendar-actions {
               grid-template-columns: minmax(0, 1fr) !important;
             }
           }
@@ -17287,11 +18338,12 @@ return (
             overflow: auto !important;
             transform: translateX(-50%) !important;
             display: grid !important;
-            gap: 11px !important;
-            padding: 12px !important;
-            border-radius: 8px !important;
+            gap: 12px !important;
+            padding: 13px !important;
+            border-radius: 18px !important;
             border: 1px solid rgba(226, 232, 240, 0.18) !important;
-            background: linear-gradient(180deg, rgba(12, 18, 28, 0.98), rgba(24, 28, 35, 0.96)) !important;
+            background:
+              linear-gradient(180deg, rgba(12, 18, 28, 0.98), rgba(24, 28, 35, 0.96)) !important;
             color: #f8fbff !important;
             box-shadow: 0 22px 62px rgba(0, 0, 0, 0.42) !important;
             backdrop-filter: blur(18px) saturate(1.08) !important;
@@ -17355,9 +18407,11 @@ return (
           .map-job-brief-actions button,
           .site-visit-date-card button {
             min-height: 40px !important;
-            display: inline-flex !important;
+            display: grid !important;
             align-items: center !important;
             justify-content: center !important;
+            align-content: center !important;
+            gap: 3px !important;
             border-radius: 12px !important;
             border: 1px solid rgba(226, 232, 240, 0.18) !important;
             background: rgba(248, 250, 252, 0.09) !important;
@@ -17368,6 +18422,24 @@ return (
             letter-spacing: 0 !important;
             white-space: normal !important;
             text-align: center !important;
+          }
+
+          .map-job-brief-actions button strong {
+            color: inherit !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-job-brief-actions button small {
+            color: inherit !important;
+            opacity: 0.76 !important;
+            font-size: 10px !important;
+            line-height: 1.05 !important;
+            font-weight: 850 !important;
+            letter-spacing: 0 !important;
+            text-transform: none !important;
           }
 
           .map-job-brief-close {
@@ -19701,6 +20773,14 @@ return (
               0 8px 18px rgba(120, 53, 15, 0.20) !important;
           }
 
+          .maturity-map-marker .map-signal-marker .marker-appointment-badge.is-past {
+            background: #dc2626 !important;
+            color: #ffffff !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.95),
+              0 8px 22px rgba(127, 29, 29, 0.34) !important;
+          }
+
           /* CLEAN_MAP_HEADER_2026 */
           .map-cockpit {
             width: min(392px, calc(100vw - 20px)) !important;
@@ -20050,8 +21130,8 @@ return (
 
           .job-drawer.selected-focus .job-appointment-card.appointment-expired {
             background:
-              linear-gradient(180deg, #fff7ed, #ffffff) !important;
-            border-color: rgba(249, 115, 22, 0.42) !important;
+              linear-gradient(180deg, #fff1f2, #ffffff) !important;
+            border-color: rgba(220, 38, 38, 0.36) !important;
           }
 
           .job-drawer.selected-focus .job-appointment-head span,
@@ -20072,8 +21152,8 @@ return (
           }
 
           .job-drawer.selected-focus .job-appointment-card.appointment-expired .job-appointment-banner {
-            background: #ffedd5 !important;
-            border-color: rgba(249, 115, 22, 0.22) !important;
+            background: #fee2e2 !important;
+            border-color: rgba(220, 38, 38, 0.22) !important;
           }
 
           .job-drawer.selected-focus .job-appointment-banner span {
@@ -20081,7 +21161,60 @@ return (
           }
 
           .job-drawer.selected-focus .job-appointment-card.appointment-expired .job-appointment-banner span {
-            color: #9a3412 !important;
+            color: #991b1b !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-card.appointment-expired .job-appointment-banner strong {
+            color: #7f1d1d !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-countdown {
+            background: #ecfdf5 !important;
+            border: 1px solid rgba(22, 163, 74, 0.22) !important;
+            border-radius: 16px !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-countdown span {
+            color: #166534 !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-countdown strong {
+            color: #052e16 !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-countdown small {
+            color: #14532d !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-countdown.countdown-urgent,
+          .job-drawer.selected-focus .job-appointment-countdown.countdown-due,
+          .job-drawer.selected-focus .job-appointment-countdown.countdown-past {
+            background: #fef2f2 !important;
+            border-color: rgba(220, 38, 38, 0.30) !important;
+            animation: appointmentPulse 1.05s ease-in-out infinite !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-countdown.countdown-urgent span,
+          .job-drawer.selected-focus .job-appointment-countdown.countdown-due span,
+          .job-drawer.selected-focus .job-appointment-countdown.countdown-past span,
+          .job-drawer.selected-focus .job-appointment-countdown.countdown-urgent small,
+          .job-drawer.selected-focus .job-appointment-countdown.countdown-due small,
+          .job-drawer.selected-focus .job-appointment-countdown.countdown-past small {
+            color: #991b1b !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-countdown.countdown-soon {
+            background: #fffbeb !important;
+            border-color: rgba(217, 119, 6, 0.26) !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-countdown.countdown-past strong {
+            color: #7f1d1d !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-countdown.countdown-soon span,
+          .job-drawer.selected-focus .job-appointment-countdown.countdown-soon small {
+            color: #92400e !important;
           }
 
           .job-drawer.selected-focus .job-appointment-input input {
@@ -20091,11 +21224,108 @@ return (
             border-radius: 14px !important;
           }
 
-          .job-drawer.selected-focus .job-appointment-actions button,
-          .job-drawer.selected-focus .job-appointment-actions a {
+          .job-drawer.selected-focus .job-appointment-save-button {
+            border-radius: 14px !important;
+            background: linear-gradient(135deg, #16a34a, #0ea5e9) !important;
+            border-color: transparent !important;
+            color: #ffffff !important;
+            min-height: 44px !important;
+            box-shadow: 0 10px 22px rgba(14, 165, 233, 0.18) !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-calendar-panel {
+            background: #f0f9ff !important;
+            border: 1px solid rgba(14, 165, 233, 0.18) !important;
+            border-radius: 16px !important;
+          }
+
+          .job-drawer.selected-focus .calendar-panel-head span {
+            color: #0369a1 !important;
+          }
+
+          .job-drawer.selected-focus .calendar-panel-head strong {
+            color: #0f172a !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-calendar-actions a {
             border-radius: 14px !important;
             min-height: 44px !important;
             box-shadow: none !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-calendar-actions .calendar-link {
+            background: #dbeafe !important;
+            border-color: rgba(37, 99, 235, 0.20) !important;
+            color: #1e3a8a !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-calendar-actions .alert-link {
+            background: #fef3c7 !important;
+            border-color: rgba(217, 119, 6, 0.24) !important;
+            color: #78350f !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-calendar-actions a.disabled {
+            background: #e2e8f0 !important;
+            border-color: rgba(100, 116, 139, 0.16) !important;
+            color: #64748b !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-auto-alert {
+            background: #f8fafc !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            border-radius: 16px !important;
+          }
+
+          .job-drawer.selected-focus .auto-alert-summary span,
+          .job-drawer.selected-focus .auto-alert-phone span {
+            color: #64748b !important;
+          }
+
+          .job-drawer.selected-focus .auto-alert-summary strong {
+            color: #0f172a !important;
+          }
+
+          .job-drawer.selected-focus .auto-alert-summary::after {
+            background: #e2e8f0 !important;
+            color: #334155 !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-auto-alert.auto-alert-live .auto-alert-summary strong {
+            color: #166534 !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-auto-alert.auto-alert-pending .auto-alert-summary strong {
+            color: #92400e !important;
+          }
+
+          .job-drawer.selected-focus .auto-alert-phone input {
+            background: #ffffff !important;
+            border: 1px solid rgba(15, 23, 42, 0.16) !important;
+            color: #0f172a !important;
+            border-radius: 14px !important;
+          }
+
+          .job-drawer.selected-focus .auto-alert-reminders span {
+            background: #f0f9ff !important;
+            border-color: rgba(2, 132, 199, 0.18) !important;
+            color: #075985 !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-auto-alert button {
+            border-radius: 14px !important;
+            background: linear-gradient(135deg, #16a34a, #0ea5e9) !important;
+            border-color: transparent !important;
+            color: #ffffff !important;
+            min-height: 44px !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-actions button,
+          .job-drawer.selected-focus .job-appointment-actions a {
+            border-radius: 14px !important;
+            min-height: 38px !important;
+            box-shadow: none !important;
+            font-size: 10px !important;
           }
 
           .job-drawer.selected-focus .job-appointment-actions button:first-child {
@@ -20114,6 +21344,18 @@ return (
             background: #fef3c7 !important;
             border-color: rgba(217, 119, 6, 0.24) !important;
             color: #78350f !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-actions .text-alert-link {
+            background: #e0f2fe !important;
+            border-color: rgba(2, 132, 199, 0.24) !important;
+            color: #075985 !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-actions .whatsapp-link {
+            background: #dcfce7 !important;
+            border-color: rgba(34, 197, 94, 0.24) !important;
+            color: #14532d !important;
           }
 
           .job-drawer.selected-focus .job-appointment-actions a.disabled {
@@ -20535,9 +21777,30 @@ return (
           }
 
           .job-card-field-action-dock .route-head-arrived {
-            font-size: 13px !important;
+            display: grid !important;
+            align-content: center !important;
+            justify-items: center !important;
+            gap: 3px !important;
             background: linear-gradient(135deg, #fde68a, #22c55e) !important;
             color: #06251b !important;
+          }
+
+          .job-card-field-action-dock .route-head-arrived strong {
+            color: inherit !important;
+            font-size: 15px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-card-field-action-dock .route-head-arrived small {
+            color: inherit !important;
+            opacity: 0.78 !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-weight: 900 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
           }
 
           .job-card-field-action-dock .route-head-button {
@@ -20558,6 +21821,96 @@ return (
             font-size: 10px !important;
             line-height: 1 !important;
             white-space: nowrap !important;
+          }
+
+          .job-card-field-action-dock .route-action-copy strong {
+            color: inherit !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-card-field-action-dock .route-action-copy small {
+            color: inherit !important;
+            opacity: 0.74 !important;
+            font-size: 8px !important;
+            line-height: 1 !important;
+            font-weight: 900 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-card-smooth-flow-rail {
+            width: 100% !important;
+            min-width: 0 !important;
+            display: grid !important;
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+
+          .job-card-smooth-flow-rail button {
+            min-width: 0 !important;
+            min-height: 36px !important;
+            padding: 0 2px !important;
+            display: grid !important;
+            align-content: center !important;
+            justify-items: center !important;
+            gap: 2px !important;
+            border-radius: 13px !important;
+            border: 1px solid rgba(255, 255, 255, 0.16) !important;
+            background: rgba(255, 255, 255, 0.10) !important;
+            color: #e0f2fe !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            cursor: pointer !important;
+            transition:
+              transform 150ms ease,
+              background 150ms ease,
+              color 150ms ease,
+              border-color 150ms ease !important;
+          }
+
+          .job-card-smooth-flow-rail button strong {
+            color: inherit !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-card-smooth-flow-rail button small {
+            max-width: 100% !important;
+            color: inherit !important;
+            opacity: 0.68 !important;
+            font-size: 7px !important;
+            line-height: 1 !important;
+            font-weight: 850 !important;
+            letter-spacing: 0 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+
+          .job-card-smooth-flow-rail button:active {
+            transform: scale(0.97) !important;
+          }
+
+          .job-card-smooth-flow-rail button.active {
+            background: #ffffff !important;
+            border-color: rgba(255, 255, 255, 0.64) !important;
+            color: #0f172a !important;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14) !important;
+          }
+
+          .job-card-smooth-flow-rail .flow-map {
+            background: rgba(34, 197, 94, 0.20) !important;
+            border-color: rgba(187, 247, 208, 0.28) !important;
+            color: #dcfce7 !important;
           }
 
           .job-card-map-return-row {
@@ -20977,13 +22330,415 @@ return (
             box-shadow: 0 10px 20px rgba(6, 78, 59, 0.24) !important;
           }
 
-          .job-drawer.selected-focus .tenant-contact-actions a:nth-child(2) {
+          .job-drawer.selected-focus .tenant-contact-actions .contact-call {
+            background: linear-gradient(135deg, #14532d, #16a34a) !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-actions .contact-text {
             background: linear-gradient(135deg, #075985, #2563eb) !important;
           }
 
-          .job-drawer.selected-focus .tenant-contact-actions a:nth-child(3) {
+          .job-drawer.selected-focus .tenant-contact-actions .contact-whatsapp {
+            background: linear-gradient(135deg, #047857, #22c55e) !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-actions .contact-email {
             grid-column: 1 / -1 !important;
             background: linear-gradient(135deg, #334155, #0f172a) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card {
+            display: grid !important;
+            gap: 10px !important;
+            padding: 12px !important;
+            border-radius: 18px !important;
+            background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            border-left: 6px solid #2563eb !important;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.10) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card.status-no-access-1-waiting-72h {
+            border-left-color: #f59e0b !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card.status-no-access-complete,
+          .job-drawer.selected-focus .field-status-picker-card.status-refused-access {
+            border-left-color: #ef4444 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card.status-work-completed,
+          .job-drawer.selected-focus .field-status-picker-card.status-completed-by-others,
+          .job-drawer.selected-focus .field-status-picker-card.status-partial-work-completed {
+            border-left-color: #22c55e !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.96fr) minmax(0, 0.86fr) !important;
+            gap: 7px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip div {
+            min-width: 0 !important;
+            min-height: 58px !important;
+            display: grid !important;
+            align-content: center !important;
+            gap: 4px !important;
+            padding: 9px !important;
+            border-radius: 14px !important;
+            background: #0f172a !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            color: #ffffff !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip div:nth-child(2) {
+            background: #155e75 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip div:nth-child(3) {
+            background: #f8fafc !important;
+            color: #0f172a !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip span,
+          .job-drawer.selected-focus .field-status-select-label span,
+          .job-drawer.selected-focus .field-status-date-label span,
+          .job-drawer.selected-focus .field-media-option-head span,
+          .job-drawer.selected-focus .field-media-option-column span {
+            color: inherit !important;
+            opacity: 0.76 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip strong {
+            min-width: 0 !important;
+            color: inherit !important;
+            font-size: 13px !important;
+            line-height: 1.08 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .direction-provider-copy,
+          .route-action-copy {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 2px !important;
+            align-content: center !important;
+            justify-items: center !important;
+          }
+
+          .direction-provider-copy strong {
+            color: inherit !important;
+            font-size: 16px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .direction-provider-copy small {
+            color: inherit !important;
+            opacity: 0.72 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 900 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-controls {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 7px !important;
+            align-items: end !important;
+          }
+
+          .job-drawer.selected-focus .field-status-select-label {
+            grid-column: 1 / -1 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-select-label,
+          .job-drawer.selected-focus .field-status-date-label {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 5px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-select-label span,
+          .job-drawer.selected-focus .field-status-date-label span {
+            color: #475569 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-date-label input {
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 46px !important;
+            padding: 0 10px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(15, 23, 42, 0.14) !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+            font-weight: 950 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-now {
+            min-width: 54px !important;
+            min-height: 46px !important;
+            border-radius: 14px !important;
+            background: #e0f2fe !important;
+            border: 1px solid rgba(14, 165, 233, 0.22) !important;
+            color: #075985 !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card {
+            display: grid !important;
+            gap: 5px !important;
+            padding: 11px 12px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(37, 99, 235, 0.18) !important;
+            background: #eff6ff !important;
+            color: #172554 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card.compact {
+            margin-top: 8px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card span {
+            color: inherit !important;
+            opacity: 0.72 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card strong {
+            color: inherit !important;
+            font-size: 14px !important;
+            line-height: 1.18 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card small {
+            color: inherit !important;
+            opacity: 0.82 !important;
+            font-size: 12px !important;
+            line-height: 1.24 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card.tone-start {
+            background: #ecfeff !important;
+            border-color: rgba(6, 182, 212, 0.24) !important;
+            color: #155e75 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card.tone-success,
+          .job-drawer.selected-focus .field-status-flow-card.tone-partial {
+            background: #ecfdf5 !important;
+            border-color: rgba(34, 197, 94, 0.24) !important;
+            color: #14532d !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card.tone-waiting {
+            background: #fffbeb !important;
+            border-color: rgba(217, 119, 6, 0.26) !important;
+            color: #92400e !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card.tone-archive,
+          .job-drawer.selected-focus .field-status-flow-card.tone-danger {
+            background: #fef2f2 !important;
+            border-color: rgba(220, 38, 38, 0.24) !important;
+            color: #991b1b !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card.tone-other {
+            background: #f8fafc !important;
+            border-color: rgba(100, 116, 139, 0.22) !important;
+            color: #334155 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-save-actions {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-save-primary,
+          .job-drawer.selected-focus .field-status-clear-inline {
+            min-height: 50px !important;
+            border-radius: 15px !important;
+            font-size: 14px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-save-primary {
+            background: linear-gradient(135deg, #1d4ed8, #0ea5e9) !important;
+            border-color: transparent !important;
+            color: #ffffff !important;
+            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.20) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-save-primary:disabled {
+            background: #cbd5e1 !important;
+            color: #64748b !important;
+            box-shadow: none !important;
+          }
+
+          .job-drawer.selected-focus .field-status-clear-inline {
+            padding: 0 12px !important;
+            background: #fff7ed !important;
+            border: 1px solid rgba(249, 115, 22, 0.24) !important;
+            color: #9a3412 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card > small {
+            color: #475569 !important;
+            font-size: 12px !important;
+            line-height: 1.24 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-hub {
+            display: grid !important;
+            gap: 10px !important;
+            padding: 12px !important;
+            border-radius: 18px !important;
+            background: #f8fafc !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            border-left: 6px solid #14b8a6 !important;
+            box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-head {
+            display: flex !important;
+            align-items: start !important;
+            justify-content: space-between !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-head div {
+            display: grid !important;
+            gap: 3px !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-head span {
+            color: #0f766e !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-head strong {
+            color: #0f172a !important;
+            font-size: 18px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-head small {
+            color: #475569 !important;
+            font-size: 11px !important;
+            line-height: 1.15 !important;
+            font-weight: 900 !important;
+            text-align: right !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 6px !important;
+            padding: 9px !important;
+            border-radius: 16px !important;
+            background: #ffffff !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column div {
+            display: grid !important;
+            gap: 3px !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column span {
+            color: #475569 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column strong {
+            color: #0f172a !important;
+            font-size: 16px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column.before {
+            border-top: 4px solid #2563eb !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column.after {
+            border-top: 4px solid #16a34a !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column button {
+            min-width: 0 !important;
+            min-height: 36px !important;
+            padding: 0 8px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            background: #eef2ff !important;
+            color: #1e3a8a !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column.after button {
+            background: #ecfdf5 !important;
+            color: #14532d !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-footer {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-footer button,
+          .job-drawer.selected-focus .field-media-option-footer a {
+            min-width: 0 !important;
+            min-height: 44px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 8px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            font-size: 12px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+            text-align: center !important;
+            text-decoration: none !important;
           }
 
           .job-drawer.selected-focus .field-status-date-card {
@@ -21695,7 +23450,10 @@ return (
           }
 
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived {
-            font-size: 11px !important;
+            display: grid !important;
+            align-content: center !important;
+            justify-items: center !important;
+            gap: 2px !important;
           }
 
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button {
@@ -21712,6 +23470,89 @@ return (
 
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button span {
             font-size: 10px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived strong,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-action-copy strong {
+            color: inherit !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived small,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-action-copy small {
+            color: inherit !important;
+            opacity: 0.72 !important;
+            font-size: 7px !important;
+            line-height: 1 !important;
+            font-weight: 900 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail {
+            gap: 5px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button {
+            min-height: 32px !important;
+            border-radius: 11px !important;
+            background: rgba(255, 255, 255, 0.11) !important;
+            color: #dbeafe !important;
+            display: grid !important;
+            align-content: center !important;
+            justify-items: center !important;
+            gap: 1px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button strong {
+            color: inherit !important;
+            font-size: 8px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button small {
+            max-width: 100% !important;
+            color: inherit !important;
+            opacity: 0.64 !important;
+            font-size: 6px !important;
+            line-height: 1 !important;
+            font-weight: 850 !important;
+            letter-spacing: 0 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.active {
+            background: #ffffff !important;
+            color: #0f172a !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-map {
+            background: rgba(34, 197, 94, 0.24) !important;
+            color: #dcfce7 !important;
+          }
+
+          .job-drawer.selected-focus {
+            scroll-behavior: smooth !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-card,
+          .job-drawer.selected-focus .field-status-picker-card,
+          .job-drawer.selected-focus .field-media-option-hub,
+          .job-drawer.selected-focus .site-procedure-stage,
+          .job-drawer.selected-focus .field-pane {
+            scroll-margin-top: 136px !important;
+            transition:
+              opacity 180ms ease,
+              transform 180ms ease,
+              box-shadow 180ms ease,
+              border-color 180ms ease !important;
           }
 
           .job-drawer.selected-focus .field-page3-description[data-job-card-description-focus="true"] {
@@ -22328,7 +24169,10 @@ return (
                 onClick={() => showActionNotice("Opening Waze. Tap Update Status when you reach the site.")}
               >
                 <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
-                <span>Waze</span>
+                <span className="direction-provider-copy">
+                  <strong>Waze</strong>
+                  <small>Live traffic</small>
+                </span>
               </a>
               <a
                 className="direction-provider-button google"
@@ -22338,7 +24182,10 @@ return (
                 onClick={() => showActionNotice("Opening Google Maps. Tap Update Status when you reach the site.")}
               >
                 <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
-                <span>Google Maps</span>
+                <span className="direction-provider-copy">
+                  <strong>Google</strong>
+                  <small>Map route</small>
+                </span>
               </a>
             </div>
             <div className="map-job-brief-grid">
@@ -22358,14 +24205,17 @@ return (
             <div className="map-job-brief-actions">
               {!userLocation ? (
                 <button type="button" onClick={startLocationTracking}>
-                  Start GPS
+                  <strong>Start GPS</strong>
+                  <small>center nearby jobs</small>
                 </button>
               ) : null}
               <button type="button" onClick={() => focusJob(briefJob)}>
-                Open Job Card
+                <strong>Open Job Card</strong>
+                <small>description + contact</small>
               </button>
               <button type="button" className="primary" onClick={() => openArrivedJob(briefJob)}>
-                Update Status
+                <strong>Update Status</strong>
+                <small>save field result</small>
               </button>
             </div>
           </section>
@@ -22412,16 +24262,45 @@ return (
               ) : null}
               <div className="job-card-field-action-dock" aria-label="Job card primary actions">
                 <button type="button" className="route-head-arrived" onClick={() => openArrivedJob(selected)}>
-                  Arrived / Status
+                  <strong>Status</strong>
+                  <small>arrived / update</small>
                 </button>
                 <a className="route-head-button waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer" aria-label="Open Waze directions">
                   <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
-                  <span>Waze</span>
+                  <span className="route-action-copy">
+                    <strong>Waze</strong>
+                    <small>traffic</small>
+                  </span>
                 </a>
                 <a className="route-head-button google" href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer" aria-label="Open Google Maps directions">
                   <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
-                  <span>Google</span>
+                  <span className="route-action-copy">
+                    <strong>Google</strong>
+                    <small>maps</small>
+                  </span>
                 </a>
+              </div>
+              <div className="job-card-smooth-flow-rail" aria-label="Quick job flow">
+                <button type="button" className="flow-map" onClick={showCleanMapView}>
+                  <strong>Map</strong>
+                  <small>return</small>
+                </button>
+                <button type="button" className={fieldFocusPane === "capture" ? "active" : ""} onClick={jumpToStatusFlow}>
+                  <strong>Status</strong>
+                  <small>save</small>
+                </button>
+                <button type="button" className={fieldFocusPane === "evidence" ? "active" : ""} onClick={jumpToMediaFlow}>
+                  <strong>Media</strong>
+                  <small>before/after</small>
+                </button>
+                <button type="button" onClick={jumpToAppointmentFlow}>
+                  <strong>Appt</strong>
+                  <small>alerts</small>
+                </button>
+                <button type="button" className={fieldFocusPane === "package" ? "active" : ""} onClick={jumpToPackageFlow}>
+                  <strong>Pkg</strong>
+                  <small>review</small>
+                </button>
               </div>
               <div className="job-card-map-return-row" aria-label="Fast map return actions">
                 <button type="button" className="job-card-map-return-rail" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
@@ -22902,6 +24781,44 @@ return (
                 const missionStatusDateLabel = Number.isNaN(missionStatusDate.getTime())
                   ? "Choose date"
                   : displayWorkflowDate(missionStatusDate.toISOString());
+                const currentStatusLabel = workflowLabel(selected) || JobStatus.statusLabel(selected) || "Pending";
+                const savedStatusIso = workflowSavedDateIso(selected);
+                const savedStatusDateLabel = savedStatusIso ? displayWorkflowDate(savedStatusIso) : "No saved field status yet";
+                const selectedDraftOption = quickWorkflowOptions.find((option) => option.value === draftWorkflowStatus);
+                const statusChoiceInfo = workflowChoiceInfo(draftWorkflowStatus || workflowStatus(selected) || "Pending");
+                const statusSaveLabel = selectedDraftOption ? `Save ${selectedDraftOption.label}` : "Pick Status First";
+                const beforePhotoStep = extraPhotoCaptureStep(selected, "before");
+                const beforeVideoStep = extraVideoCaptureStep(selected, "before");
+                const afterPhotoStep = extraPhotoCaptureStep(selected, "after");
+                const afterVideoStep = extraVideoCaptureStep(selected, "after");
+                const beforeUploadPhotoStep = {
+                  ...beforePhotoStep,
+                  camera: false,
+                  title: "Before Image Upload",
+                  text: "Upload a before image. It will be labeled and saved with this job.",
+                  label: beforePhotoStep.label.replace("Photo", "Uploaded Image"),
+                };
+                const beforeUploadVideoStep = {
+                  ...beforeVideoStep,
+                  camera: false,
+                  title: "Before Video Upload",
+                  text: "Upload a before video. It will be labeled and saved with this job.",
+                  label: beforeVideoStep.label.replace("Video", "Uploaded Video"),
+                };
+                const afterUploadPhotoStep = {
+                  ...afterPhotoStep,
+                  camera: false,
+                  title: "After Image Upload",
+                  text: "Upload an after image. It will be labeled and saved with this job.",
+                  label: afterPhotoStep.label.replace("Photo", "Uploaded Image"),
+                };
+                const afterUploadVideoStep = {
+                  ...afterVideoStep,
+                  camera: false,
+                  title: "After Video Upload",
+                  text: "Upload an after video. It will be labeled and saved with this job.",
+                  label: afterVideoStep.label.replace("Video", "Uploaded Video"),
+                };
                 const activeWorkChoice = fieldWorkChoice?.jobKey === jobKey(selected) ? fieldWorkChoice : null;
                 const finishChoicePartial = Boolean(activeWorkChoice?.partial);
 
@@ -22920,6 +24837,7 @@ return (
                         {selectedNoAccessTimerInfo ? (selectedNoAccessTimerInfo.ready ? "READY 2ND" : selectedNoAccessTimerInfo.label) : jobCounterLabel(selected)}
                       </small>
                     </div>
+                    {renderJobAppointmentCard(selected, "mission")}
                     <div
                       className={`field-page3-description ${missionDescription ? "" : "is-missing"}`}
                       data-job-card-description-focus="true"
@@ -22966,24 +24884,61 @@ return (
                               <strong>{missionTenantContact.apartment || displayLocation(selected) || "Not listed"}</strong>
                             </div>
                           </div>
-                          {missionTenantContact.actionHref || missionTenantContact.smsHref || missionTenantContact.emailHref ? (
+                          {missionTenantContact.actionHref || missionTenantContact.smsHref || missionTenantContact.whatsappHref || missionTenantContact.emailHref ? (
                             <div className="tenant-contact-actions">
-                              {missionTenantContact.actionHref ? <a href={missionTenantContact.actionHref}>Call Tenant</a> : null}
-                              {missionTenantContact.smsHref ? <a href={missionTenantContact.smsHref}>Text Message</a> : null}
-                              {missionTenantContact.emailHref ? <a href={missionTenantContact.emailHref}>Email HPD</a> : null}
+                              {missionTenantContact.actionHref ? <a className="contact-call" href={missionTenantContact.actionHref}>Call Tenant</a> : null}
+                              {missionTenantContact.smsHref ? <a className="contact-text" href={missionTenantContact.smsHref}>Text Message</a> : null}
+                              {missionTenantContact.whatsappHref ? <a className="contact-whatsapp" href={missionTenantContact.whatsappHref} target="_blank" rel="noopener noreferrer">WhatsApp</a> : null}
+                              {missionTenantContact.emailHref ? <a className="contact-email" href={missionTenantContact.emailHref}>Email HPD</a> : null}
                             </div>
                           ) : null}
                         </>
                       ) : null}
                     </div>
-                    <div className="field-status-date-card" aria-label="Status date used for all workflow buttons">
-                      <div className="field-status-date-head">
-                        <span>Status date / time</span>
-                        <strong>{missionStatusDateLabel}</strong>
+                    <div className={`field-status-picker-card status-${workflowStatus(selected).toLowerCase().replace(/[^a-z0-9]+/g, "-") || "pending"}`} aria-label="Status picker and saved status">
+                      <div className="field-status-current-strip">
+                        <div>
+                          <span>Status</span>
+                          <strong>{currentStatusLabel}</strong>
+                        </div>
+                        <div>
+                          <span>Saved</span>
+                          <strong>{savedStatusDateLabel}</strong>
+                        </div>
+                        <div>
+                          <span>Layer</span>
+                          <strong>{workflowMapLayerLabel(selected)}</strong>
+                        </div>
                       </div>
-                      <div className="field-mission-date-row">
-                        <label>
-                          <span>Add or edit date for next status</span>
+                      <div className="field-status-picker-controls">
+                        <label className="field-status-select-label">
+                          <span>Pick new status</span>
+                          <select
+                            value={draftWorkflowStatus}
+                            onChange={(event) => {
+                              const value = event.target.value;
+                              if (value) {
+                                pickDraftWorkflow(value);
+                              } else {
+                                setDraftWorkflowStatus("");
+                                setDraftWorkflowSaved(false);
+                              }
+                            }}
+                          >
+                            <option value="">Choose status...</option>
+                            {workflowOptionGroups.map((group) => (
+                              <optgroup key={group.group} label={group.group}>
+                                {group.options.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </optgroup>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="field-status-date-label">
+                          <span>Status date / time</span>
                           <input
                             type="datetime-local"
                             value={missionStatusDateValue}
@@ -22992,56 +24947,96 @@ return (
                         </label>
                         <button
                           type="button"
+                          className="field-status-now"
                           onClick={() => {
                             setWorkflowVisitDateToNow();
-                            showActionNotice("Status date set to now. The next status button will save this date.");
+                            showActionNotice("Status date set to now. Save the dropdown status when ready.");
                           }}
                         >
                           Now
                         </button>
                       </div>
-                    <small>No Access 1st/2nd, Refused, Start, Completed Work, Partial, and Done by Others all save this date.</small>
+                      <div className={`field-status-flow-card tone-${statusChoiceInfo.tone}`}>
+                        <span>{statusChoiceInfo.title}</span>
+                        <strong>{statusChoiceInfo.detail}</strong>
+                        <small>{statusChoiceInfo.next}</small>
+                      </div>
+                      <div className="field-status-save-actions">
+                        <button
+                          type="button"
+                          className="field-status-save-primary"
+                          disabled={!draftWorkflowStatus}
+                          onClick={() => saveDraftWorkflow(selected)}
+                        >
+                          {statusSaveLabel}
+                        </button>
+                        <button type="button" className="field-status-clear-inline" onClick={() => resetFieldJobForTesting(selected)}>
+                          Clear Status
+                        </button>
+                      </div>
+                      <small>Pick one status, confirm date/time, then save. Closed statuses move to Archive and the map layer updates.</small>
+                      {draftWorkflowSaved ? <p className="saved-status-note">Saved. Status, time, and map layer updated.</p> : null}
                     </div>
-                    <div className="field-mission-status-head">
-                      <span>Pick status</span>
-                      <strong>{workflowLabel(selected) || "Pending"}</strong>
-                    </div>
-                    <div className="field-status-action-grid" aria-label="Status and workflow actions">
-                      <button type="button" className={`status-start ${isBeforeEvidence ? "active" : ""}`} onClick={() => openStartJobChoices(selected)}>
-                        <strong>Start Job</strong>
-                        <small>Choose media path</small>
-                      </button>
-                      <button type="button" className={`status-finish ${isWorkCompleted ? "active" : ""}`} onClick={() => openFinishJobChoices(selected)}>
-                        <strong>Completed Work</strong>
-                        <small>Choose after path</small>
-                      </button>
-                      <button type="button" className={`status-partial ${isPartialWork ? "active" : ""}`} onClick={() => openFinishJobChoices(selected, true)}>
-                        <strong>Partial Work</strong>
-                        <small>Choose after path</small>
-                      </button>
-                      <button type="button" className={`status-no-access ${isNoAccessFirst ? "active" : ""}`} onClick={() => startNoAccessCounter(selected)}>
-                        <strong>No Access 1st</strong>
-                        <small>Start 72h</small>
-                      </button>
-                      <button
-                        type="button"
-                        className={`status-no-access ${isNoAccessSecond ? "active" : ""}`}
-                        onClick={() => markNoAccessSecondAttempt(selected)}
-                        disabled={!secondAttemptInfo?.ready}
-                        title={secondAttemptInfo ? secondAttemptInfo.ready ? "Ready for 2nd attempt" : secondAttemptInfo.label : "Save No Access 1st first"}
-                      >
-                        <strong>No Access 2nd</strong>
-                        <small>{secondAttemptInfo ? secondAttemptInfo.ready ? "Ready now" : secondAttemptInfo.label : "Save 1st first"}</small>
-                      </button>
-                      <button type="button" className={`status-refused ${isRefused ? "active" : ""}`} onClick={() => markRefusedAccess(selected)}>
-                        <strong>Refused</strong>
-                        <small>Access denied</small>
-                      </button>
-                      <button type="button" className={`status-other ${isCompletedByOthers ? "active" : ""}`} onClick={() => markCompletedByOthers(selected)}>
-                        <strong>Done by Others</strong>
-                        <small>Close job</small>
-                      </button>
-                    </div>
+                    {!noAccessWaiting ? (
+                      <div className="field-media-option-hub" aria-label="Before and after media options">
+                        <div className="field-media-option-head">
+                          <div>
+                            <span>Before / After Media</span>
+                            <strong>All options in one place</strong>
+                          </div>
+                          <small>{counts.before} before · {counts.after} after · {counts.videos} video(s)</small>
+                        </div>
+                        <div className="field-media-option-grid">
+                          <section className="field-media-option-column before">
+                            <div>
+                              <span>Before</span>
+                              <strong>{fieldMediaCountLabel(counts.before)}</strong>
+                            </div>
+                            <button type="button" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*", true, beforePhotoStep)}>
+                              Take Image
+                            </button>
+                            <button type="button" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*", false, beforeUploadPhotoStep)}>
+                              Upload Image
+                            </button>
+                            <button type="button" onClick={() => requestFieldPhotoCapture(selected, "before", "video/*", true, beforeVideoStep)}>
+                              Take Video
+                            </button>
+                            <button type="button" onClick={() => requestFieldPhotoCapture(selected, "before", "video/*", false, beforeUploadVideoStep)}>
+                              Upload Video
+                            </button>
+                          </section>
+                          <section className="field-media-option-column after">
+                            <div>
+                              <span>After</span>
+                              <strong>{fieldMediaCountLabel(counts.after)}</strong>
+                            </div>
+                            <button type="button" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*", true, afterPhotoStep)}>
+                              Take Image
+                            </button>
+                            <button type="button" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*", false, afterUploadPhotoStep)}>
+                              Upload Image
+                            </button>
+                            <button type="button" onClick={() => requestFieldPhotoCapture(selected, "after", "video/*", true, afterVideoStep)}>
+                              Take Video
+                            </button>
+                            <button type="button" onClick={() => requestFieldPhotoCapture(selected, "after", "video/*", false, afterUploadVideoStep)}>
+                              Upload Video
+                            </button>
+                          </section>
+                        </div>
+                        <div className="field-media-option-footer">
+                          <button type="button" onClick={() => openStartJobChoices(selected)}>
+                            Start Job Flow
+                          </button>
+                          <button type="button" onClick={() => openFinishJobChoices(selected)}>
+                            Finish Flow
+                          </button>
+                          <a href={paperworkAutoPdfOnlyHref(selected)}>
+                            Skip Media / Package
+                          </a>
+                        </div>
+                      </div>
+                    ) : null}
                     {activeWorkChoice ? (
                       <section
                         className={`field-work-choice-card ${activeWorkChoice.phase}`}
@@ -23154,7 +25149,6 @@ return (
                         </small>
                       </div>
                     ) : null}
-                    {noAccessWaiting && !appointmentIso(selected) ? null : renderJobAppointmentCard(selected, "mission")}
                     {!noAccessWaiting ? (
                       <>
                         <div className="field-mission-main">
@@ -23955,10 +25949,14 @@ return (
                     }}
                   >
                     <option value="">Choose status...</option>
-                    {quickWorkflowOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
+                    {workflowOptionGroups.map((group) => (
+                      <optgroup key={group.group} label={group.group}>
+                        {group.options.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </label>
@@ -23973,17 +25971,10 @@ return (
                   />
                 </label>
               </div>
-              <div className="selected-status-grid">
-                {quickWorkflowOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`quick-status-button tone-${option.tone} ${draftWorkflowStatus === option.value ? "active" : ""}`}
-                    onClick={() => pickDraftWorkflow(option.value)}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+              <div className={`field-status-flow-card compact tone-${workflowChoiceInfo(draftWorkflowStatus || workflowStatus(selected) || "Pending").tone}`}>
+                <span>{workflowChoiceInfo(draftWorkflowStatus || workflowStatus(selected) || "Pending").title}</span>
+                <strong>{workflowChoiceInfo(draftWorkflowStatus || workflowStatus(selected) || "Pending").detail}</strong>
+                <small>{workflowChoiceInfo(draftWorkflowStatus || workflowStatus(selected) || "Pending").next}</small>
               </div>
               <div className="quick-status-save-row">
                 <button
@@ -23995,13 +25986,13 @@ return (
                   {draftWorkflowStatus ? "Save Status + Time" : "Choose Status First"}
                 </button>
                 <button type="button" className="quick-status-clear" onClick={() => resetFieldJobForTesting(selected)}>
-                  Clear Test
+                  Clear Status
                 </button>
               </div>
               <p className="quick-status-note">
                 {draftWorkflowStatus
-                  ? "Date/time will be saved with this status. Closed outcomes move to Archive."
-                  : "Pick a status or use a quick button, then save with date/time."}
+                  ? "Date/time will be saved with this status. Closed outcomes move to Archive and open package review."
+                  : "Pick one status from the dropdown, then save with date/time."}
               </p>
               {draftWorkflowSaved ? <p className="saved-status-note">Saved. Status synced and map updated.</p> : null}
             </div>
