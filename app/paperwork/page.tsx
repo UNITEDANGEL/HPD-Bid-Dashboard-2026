@@ -547,6 +547,14 @@ function upper(value: string) {
   return String(value || "").toUpperCase();
 }
 
+function pdfLocationFontSize(value: string) {
+  const length = upper(value).replace(/\s+/g, " ").trim().length;
+  if (length > 26) return 6.2;
+  if (length > 20) return 6.8;
+  if (length > 14) return 7.4;
+  return 9;
+}
+
 function oathSigner(value: string) {
   const raw = String(value || "JOTJAGRAJ SINGH").trim();
   return raw
@@ -753,56 +761,9 @@ function bytesToObjectUrl(bytes: Uint8Array, mimeType = "application/octet-strea
   return URL.createObjectURL(new Blob([buffer], { type: mimeType }));
 }
 
-async function renderPdfFirstPageImage(bytes: Uint8Array) {
-  if (typeof document === "undefined") {
-    return { imageUrl: "", pageCount: 0, error: "PDF preview is only available in the browser." };
-  }
-
-  try {
-    const pdfjs = await import("pdfjs-dist");
-    pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
-
-    const data = new Uint8Array(bytes.byteLength);
-    data.set(bytes);
-
-    const loadingTask = pdfjs.getDocument({ data });
-    const documentProxy = await loadingTask.promise;
-    const page = await documentProxy.getPage(1);
-    const baseViewport = page.getViewport({ scale: 1 });
-    const previewWidth = 1100;
-    const scale = Math.max(1, Math.min(2.2, previewWidth / baseViewport.width));
-    const viewport = page.getViewport({ scale });
-    const outputScale = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
-
-    if (!context) throw new Error("PDF preview canvas is not available on this device.");
-
-    canvas.width = Math.floor(viewport.width * outputScale);
-    canvas.height = Math.floor(viewport.height * outputScale);
-    canvas.style.width = `${Math.floor(viewport.width)}px`;
-    canvas.style.height = `${Math.floor(viewport.height)}px`;
-    context.setTransform(outputScale, 0, 0, outputScale, 0, 0);
-
-    await page.render({ canvas, canvasContext: context, viewport }).promise;
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.92));
-    const pageCount = documentProxy.numPages || 1;
-    await loadingTask.destroy();
-    if (!blob) throw new Error("PDF preview image could not be created on this device.");
-
-    return {
-      imageUrl: URL.createObjectURL(blob),
-      pageCount,
-      error: "",
-    };
-  } catch (error) {
-    console.error(error);
-    return {
-      imageUrl: "",
-      pageCount: 0,
-      error: error instanceof Error ? error.message : "PDF preview image could not be created.",
-    };
-  }
+async function renderPdfFirstPageImage(bytes: Uint8Array): Promise<{ imageUrl: string; pageCount: number; error: string }> {
+  const renderer = await import("./pdf-preview-renderer");
+  return renderer.renderPdfFirstPageImage(bytes);
 }
 
 function mediaHasPackageBytes(media: FieldMedia) {
@@ -1124,6 +1085,8 @@ export default function PaperworkPage() {
     const invoiceDate = useWorkTemplate ? activeForm.workComplete || fieldDate : secondAttempt;
     const signer = activeForm.signer || "JOTJAGRAJ SINGH";
     const swornSigner = oathSigner(signer);
+    const locationText = upper(activeForm.location);
+    const locationFontSize = pdfLocationFontSize(locationText);
 
     if (refusedAccessNeedsDescription(activeOutcome, activeForm)) {
       setPdfStatus(`Refused access needs section 7b description of the person. Enter what you observed, for example: ${REFUSED_ACCESS_DESCRIPTION_EXAMPLE}.`);
@@ -1174,7 +1137,7 @@ export default function PaperworkPage() {
       setText("TRADE", "GENERAL CONSTRUCTION");
       setText("Boro", upper(borough), 9);
       setText("Borough", upper(borough), 9);
-      setText("Apt #", upper(activeForm.location));
+      setText("Apt #", locationText, locationFontSize);
       setText("Building Address", upper(activeForm.address), activeForm.address.length > 42 ? 8 : 10);
       setText("BID AMOUNT", bidAmount);
       setText("INCREASE DECREASE AMOUNT", changeAmount);
@@ -1189,7 +1152,7 @@ export default function PaperworkPage() {
         const workDate = activeForm.workComplete || fieldDate;
         setText("COUNTY OF", AFFIDAVIT_NOTARY_COUNTY, 9);
         setText("being duly sworn deposes and says", `I,  ${swornSigner}/ United Angel Construction Corp`);
-        setText("Apt#", upper(activeForm.location));
+        setText("Apt#", locationText, locationFontSize);
         setText("State", "NY");
         setText("PARTIAL WORK DESC", "");
         setText("AMOUNT", "");
@@ -1562,9 +1525,9 @@ export default function PaperworkPage() {
 
       pendingCompletePackageRef.current = { ...preview, completeBytes, applicationBytes, videoBytes, applicationShareFiles, videoShareFiles: videoFiles };
       setPackagePreview(preview);
-      setPackagePreviewOpen(false);
+      setPackagePreviewOpen(true);
       const archiveMessage = await markPackageGenerated(pdf.jobId);
-      setPdfStatus(`${includedMedia.length ? "Package Created" : "PDF-only Package Created"}. Tap Preview, then Send. ${archiveMessage}`);
+      setPdfStatus(`${includedMedia.length ? "Package Created" : "PDF-only Package Created"}. Review the PDF, then Send. ${archiveMessage}`);
     } catch (error) {
       console.error(error);
       setPdfStatus(error instanceof Error ? error.message : "Could not generate complete package.");
@@ -1820,13 +1783,41 @@ export default function PaperworkPage() {
           margin: 0;
         }
 
-        .paperwork-package-review p {
-          color: #cfe7da;
-          line-height: 1.35;
+      .paperwork-package-review p {
+        color: #cfe7da;
+        line-height: 1.35;
+      }
+
+        .package-review-strip {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
         }
 
-        .package-created-head {
-          display: flex;
+        .package-review-strip span {
+          display: grid;
+          gap: 3px;
+          border: 1px solid rgba(125, 211, 252, 0.22);
+          background: rgba(224, 242, 254, 0.07);
+          border-radius: 8px;
+          padding: 10px;
+        }
+
+        .package-review-strip b {
+          color: #93c5fd;
+          font-size: 10px;
+          font-weight: 950;
+          text-transform: uppercase;
+        }
+
+        .package-review-strip strong {
+          color: #ffffff;
+          font-size: 13px;
+          line-height: 1.15;
+        }
+
+      .package-created-head {
+        display: flex;
           align-items: start;
           justify-content: space-between;
           gap: 12px;
@@ -2588,6 +2579,7 @@ export default function PaperworkPage() {
           .paperwork-summary-grid,
           .package-review-grid,
           .package-review-split,
+          .package-review-strip,
           .package-review-actions,
           .package-delivery-actions,
           .package-content-row,
@@ -3307,6 +3299,20 @@ export default function PaperworkPage() {
                   <p>{packagePreview.note}</p>
                 </div>
                 <span>{packagePreview.imageCount} image(s) / {packagePreview.videoCount} video(s)</span>
+              </div>
+              <div className="package-review-strip" aria-label="Package review flow">
+                <span>
+                  <b>Review</b>
+                  <strong>PDF visible</strong>
+                </span>
+                <span>
+                  <b>Package</b>
+                  <strong>{packagePreview.completeSize ? packetSizeLabel(packagePreview.completeSize) : "Ready"}</strong>
+                </span>
+                <span>
+                  <b>Next</b>
+                  <strong>Send ZIP</strong>
+                </span>
               </div>
               <div className="package-review-actions package-review-actions-simple package-main-actions">
                 <button type="button" onClick={() => setPackagePreviewOpen(true)} aria-expanded={packagePreviewOpen}>
