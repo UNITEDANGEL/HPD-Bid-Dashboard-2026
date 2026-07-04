@@ -2976,6 +2976,16 @@ function openMapLayersFromJobCard() {
   });
 }
 
+function stickyHeaderClearance(container: HTMLElement | null, stickyHead: HTMLElement | null, gap = 12) {
+  if (!container || !stickyHead) return gap;
+
+  const containerRect = container.getBoundingClientRect();
+  const headRect = stickyHead.getBoundingClientRect();
+  const headOffset = Math.max(0, headRect.top - containerRect.top);
+
+  return headOffset + stickyHead.offsetHeight + gap;
+}
+
 function positionSelectedCardInDrawer() {
   const drawer = jobDrawerRef.current;
   if (drawer) {
@@ -2984,8 +2994,7 @@ function positionSelectedCardInDrawer() {
       const drawerRect = drawer.getBoundingClientRect();
       const targetRect = descriptionTarget.getBoundingClientRect();
       const stickyHead = drawer.querySelector<HTMLElement>(".selected-job-drawer-head");
-      const headHeight = stickyHead?.offsetHeight || 0;
-      const top = drawer.scrollTop + targetRect.top - drawerRect.top - headHeight - 8;
+      const top = drawer.scrollTop + targetRect.top - drawerRect.top - stickyHeaderClearance(drawer, stickyHead, 12);
       drawer.scrollTo({
         top: Math.max(0, top),
         left: 0,
@@ -5808,8 +5817,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       const stickyHead =
         jobDrawerRef.current?.querySelector<HTMLElement>(".selected-job-drawer-head") ||
         document.querySelector<HTMLElement>(".job-drawer.selected-focus .selected-job-drawer-head");
-      const headHeight = stickyHead?.offsetHeight || 0;
-      const top = container.scrollTop + targetRect.top - containerRect.top - headHeight - 10;
+      const top = container.scrollTop + targetRect.top - containerRect.top - stickyHeaderClearance(container, stickyHead, 12);
       container.scrollTo({
         top: Math.max(0, top),
         left: 0,
@@ -5840,8 +5848,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
 
       const drawerRect = drawer.getBoundingClientRect();
       const targetRect = target.getBoundingClientRect();
-      const headHeight = stickyHead?.offsetHeight || 0;
-      const top = drawer.scrollTop + targetRect.top - drawerRect.top - headHeight - 12;
+      const top = drawer.scrollTop + targetRect.top - drawerRect.top - stickyHeaderClearance(drawer, stickyHead, 14);
 
       drawer.scrollTo({
         top: Math.max(0, top),
@@ -23591,6 +23598,134 @@ return (
 
           .job-drawer.selected-focus .field-page3-description[data-job-card-description-focus="true"] p {
             max-height: min(30dvh, 230px) !important;
+          }
+
+          @media (max-width: 430px) {
+            .maturity-map-marker .map-signal-marker.marker-expanded,
+            .maturity-map-marker .map-signal-marker.marker-detailed,
+            .maturity-map-marker .map-signal-marker.marker-timer-focus {
+              min-width: 186px !important;
+              max-width: 204px !important;
+              min-height: 112px !important;
+              padding: 8px 9px !important;
+              gap: 4px !important;
+              border-radius: 14px !important;
+            }
+
+            .maturity-map-marker .map-signal-marker.marker-timer-focus .signal-address {
+              max-width: 178px !important;
+              font-size: 10px !important;
+            }
+
+            .maturity-map-marker .map-signal-marker .marker-no-access-timer {
+              min-width: 152px !important;
+              min-height: 44px !important;
+              padding: 7px 10px !important;
+              border-radius: 13px !important;
+            }
+
+            .maturity-map-marker .map-signal-marker .marker-no-access-timer strong {
+              font-size: 20px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+              padding: 6px !important;
+              border-radius: 15px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-field-sheet-head {
+              gap: 5px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-field-title-row {
+              grid-template-columns: minmax(0, 1fr) 45px !important;
+              align-items: start !important;
+              gap: 5px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-field-title-copy strong {
+              font-size: clamp(22px, 7vw, 25px) !important;
+              line-height: 0.95 !important;
+              max-width: 100% !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+            }
+
+            .job-drawer.selected-focus .job-card-field-title-copy p {
+              display: -webkit-box !important;
+              -webkit-line-clamp: 2 !important;
+              -webkit-box-orient: vertical !important;
+              margin-top: 1px !important;
+              font-size: 11px !important;
+              line-height: 1.08 !important;
+              white-space: normal !important;
+              overflow: hidden !important;
+              overflow-wrap: anywhere !important;
+            }
+
+            .job-drawer.selected-focus .job-card-map-back-pill {
+              min-width: 45px !important;
+              min-height: 32px !important;
+              padding: 0 8px !important;
+              border-radius: 12px !important;
+              font-size: 10px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-field-action-dock {
+              grid-template-columns: minmax(0, 1fr) minmax(0, 0.78fr) minmax(0, 0.86fr) !important;
+              gap: 5px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button {
+              min-height: 36px !important;
+              border-radius: 11px !important;
+              box-shadow: 0 8px 16px rgba(15, 23, 42, 0.14) !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button {
+              gap: 4px !important;
+              padding: 4px 5px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button img {
+              width: 15px !important;
+              height: 15px !important;
+              flex-basis: 15px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived strong,
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-action-copy strong {
+              font-size: 9px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived small,
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-action-copy small {
+              display: none !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail {
+              gap: 4px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button {
+              min-height: 29px !important;
+              border-radius: 10px !important;
+              padding: 0 1px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button strong {
+              font-size: 7px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button small {
+              display: none !important;
+            }
+
+            .job-drawer.selected-focus .field-page3-description[data-job-card-description-focus="true"] {
+              scroll-margin-top: 168px !important;
+            }
           }
 
           @media (max-width: 520px) {
