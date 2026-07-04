@@ -125,6 +125,7 @@ type GeneratePdfOptions = {
   downloadPdf?: boolean;
   markGenerated?: boolean;
   formOverride?: PackageForm;
+  outcomeOverride?: PaperworkOutcome;
 };
 
 function shiftInvoiceAptLocationWidget(pdfForm: any) {
@@ -954,13 +955,17 @@ export default function PaperworkPage() {
   useEffect(() => {
     if (!autoGeneratePackage || autoGenerateStartedRef.current) return;
     if (!selectedId || !jobs.length || !selectedJob || !form.jobId) return;
+    if (outcome === "pending") {
+      setPdfStatus("Pick Work Completed or No Work Completed before generating this package.");
+      return;
+    }
 
     autoGenerateStartedRef.current = true;
-    setPdfStatus("Auto-generating package. Refused/no-access can be created without images or videos.");
+    setPdfStatus("Auto-generating package. If no media is saved, I will create the affidavit/invoice ZIP so the first tap still finishes.");
     window.setTimeout(() => {
-      void generateCompletePackage();
+      void generateCompletePackage(includePackageMedia);
     }, 250);
-  }, [autoGeneratePackage, selectedId, jobs.length, selectedJob, form.jobId]);
+  }, [autoGeneratePackage, selectedId, jobs.length, selectedJob, form.jobId, includePackageMedia, outcome]);
 
   function clearPackagePreview() {
     setPackagePreview(null);
@@ -1039,7 +1044,8 @@ export default function PaperworkPage() {
     const downloadPdf = options.downloadPdf !== false;
     const markGenerated = options.markGenerated !== false;
     const activeForm = options.formOverride || form;
-    const useWorkTemplate = outcome === "work_completed" || outcome === "partial_work_completed";
+    const activeOutcome = options.outcomeOverride || outcome;
+    const useWorkTemplate = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
     const templateUrl = useWorkTemplate ? WORK_AFFIDAVIT_TEMPLATE : NO_WORK_AFFIDAVIT_TEMPLATE;
     const jobId = activeForm.jobId || selectedId || "HPD";
     const archiveJobId = activeForm.jobId || selectedId;
@@ -1048,9 +1054,9 @@ export default function PaperworkPage() {
     const chargeValue = amountNumber(activeForm.amount || activeForm.bidAmount);
     const bidAmount = pdfMoney(bidValue);
     const chargeAmount = pdfMoney(chargeValue);
-    const changeAmount = outcome === "partial_work_completed"
+    const changeAmount = activeOutcome === "partial_work_completed"
       ? pdfMoney(Math.max(0, bidValue - chargeValue))
-      : isNoWorkOutcome(outcome)
+      : isNoWorkOutcome(activeOutcome)
         ? pdfMoney(chargeValue - bidValue, true)
         : "0.00";
     const fieldDate = activeForm.fieldDate || activeForm.workComplete || todayIsoDate();
@@ -1060,7 +1066,7 @@ export default function PaperworkPage() {
     const signer = activeForm.signer || "JOTJAGRAJ SINGH";
     const swornSigner = oathSigner(signer);
 
-    if (refusedAccessNeedsDescription(outcome, activeForm)) {
+    if (refusedAccessNeedsDescription(activeOutcome, activeForm)) {
       setPdfStatus(`Refused access needs section 7b description of the person. Enter what you observed, for example: ${REFUSED_ACCESS_DESCRIPTION_EXAMPLE}.`);
       return null;
     }
@@ -1074,7 +1080,7 @@ export default function PaperworkPage() {
       const pdfDoc = await PDFDocument.load(await response.arrayBuffer());
       const pdfForm = pdfDoc.getForm();
       shiftInvoiceAptLocationWidget(pdfForm);
-      if (!useWorkTemplate && outcome === "no_access") {
+      if (!useWorkTemplate && activeOutcome === "no_access") {
         shiftNoAccessAffidavitDateWidgets(pdfForm);
       }
 
@@ -1101,7 +1107,7 @@ export default function PaperworkPage() {
       };
 
       clearMaterialRows();
-      const materials = outcome === "partial_work_completed" ? PARTIAL_MATERIALS : useWorkTemplate ? WORK_MATERIALS : ["TRASH BAG"];
+      const materials = activeOutcome === "partial_work_completed" ? PARTIAL_MATERIALS : useWorkTemplate ? WORK_MATERIALS : ["TRASH BAG"];
       materials.forEach((material, index) => setText(`M${index + 1}`, material));
       setText("OMO", jobId);
       setText("TAX ID", "203444624");
@@ -1128,25 +1134,25 @@ export default function PaperworkPage() {
         setText("State", "NY");
         setText("PARTIAL WORK DESC", "");
         setText("AMOUNT", "");
-        setText("PARTIAL REFUSED AMOUNT", outcome === "partial_work_completed" ? chargeAmount : "");
+        setText("PARTIAL REFUSED AMOUNT", activeOutcome === "partial_work_completed" ? chargeAmount : "");
         setText("relationship to building", "");
         setText("Description of individual", "");
         setText("eg malefemale", "");
         setText("MONTH", monthName(workDate));
         setText("DAY", dayOfMonth(workDate));
         setText("Type or Print Name", signer.toUpperCase());
-        setText("START DATE", outcome === "work_completed" ? activeForm.workStart || activeForm.fieldDate : "");
-        setText("COMPLETE DATE", outcome === "work_completed" ? activeForm.workComplete || activeForm.fieldDate : "");
+        setText("START DATE", activeOutcome === "work_completed" ? activeForm.workStart || activeForm.fieldDate : "");
+        setText("COMPLETE DATE", activeOutcome === "work_completed" ? activeForm.workComplete || activeForm.fieldDate : "");
         setText("Work Description", activeForm.description || activeForm.notes || "Work completed per HPD bid / work order.");
       } else {
-        const noWorkReason = activeForm.affidavitReason || affidavitReasonForOutcome(outcome);
-        const isRefusedAccess = outcome === "refused_access";
+        const noWorkReason = activeForm.affidavitReason || affidavitReasonForOutcome(activeOutcome);
+        const isRefusedAccess = activeOutcome === "refused_access";
         const deniedName = isRefusedAccess ? cleanRefusedName(activeForm.deniedName) : "";
         const deniedRelationship = isRefusedAccess ? activeForm.deniedRelationship || "SUPER" : "";
         const deniedDescription = isRefusedAccess ? activeForm.deniedDescription : "";
         const deniedPhone = isRefusedAccess ? activeForm.deniedPhone : "";
 
-        setText("inaccessibility was due to 1", outcome === "no_access" ? "NO ACCESS TO MAKE REPAIRS" : "");
+        setText("inaccessibility was due to 1", activeOutcome === "no_access" ? "NO ACCESS TO MAKE REPAIRS" : "");
         setText("inaccessibility was due to 2", "");
         setText("COUNTY OF", AFFIDAVIT_NOTARY_COUNTY, 9);
         setText("AMOUNT", chargeAmount);
@@ -1163,8 +1169,8 @@ export default function PaperworkPage() {
         setText("Type or Print Name", signer.toUpperCase());
         setText("State", "NY");
         setText("I swear statement", `I     ${swornSigner} / United Angel Construction Corp`);
-        setText("START DATE", outcome === "no_access" ? firstAttempt : "");
-        setText("COMPLETE DATE", outcome === "no_access" ? secondAttempt : "");
+        setText("START DATE", activeOutcome === "no_access" ? firstAttempt : "");
+        setText("COMPLETE DATE", activeOutcome === "no_access" ? secondAttempt : "");
         setText("Work Description", activeForm.description || noWorkReason, 11);
       }
 
@@ -1173,16 +1179,16 @@ export default function PaperworkPage() {
 
       const pdfPages = pdfDoc.getPages();
       const checkboxPage = pdfPages[2] || pdfPages[0];
-      if (!useWorkTemplate && outcome === "completed_by_others" && pdfPages[0]) {
+      if (!useWorkTemplate && activeOutcome === "completed_by_others" && pdfPages[0]) {
         pdfPages[0].drawText(secondAttempt, NO_WORK_COMPLETED_BY_OTHERS_LINE_5_DATE);
       }
-      if (useWorkTemplate && outcome === "partial_work_completed" && checkboxPage) {
+      if (useWorkTemplate && activeOutcome === "partial_work_completed" && checkboxPage) {
         pdfPages[0]?.drawText(activeForm.workStart || activeForm.fieldDate, { x: 126, y: 481, size: 10 });
         checkboxPage.drawText(invoiceDate, { x: 411, y: 635, size: 10 });
         checkboxPage.drawText(activeForm.workStart || activeForm.fieldDate, { x: 411, y: 618, size: 10 });
         checkboxPage.drawText(activeForm.workComplete || activeForm.fieldDate, { x: 423, y: 595, size: 10 });
       }
-      if (!useWorkTemplate && outcome !== "no_access" && checkboxPage) {
+      if (!useWorkTemplate && activeOutcome !== "no_access" && checkboxPage) {
         checkboxPage.drawText(secondAttempt, { x: 411, y: 635, size: 10 });
         checkboxPage.drawText(secondAttempt, { x: 411, y: 618, size: 10 });
         checkboxPage.drawText(secondAttempt, { x: 423, y: 595, size: 10 });
@@ -1243,21 +1249,30 @@ export default function PaperworkPage() {
   }
 
   async function generateCompletePackage(includeMediaOverride = includePackageMedia) {
-    const jobId = form.jobId || selectedId;
+    const activeForm = form;
+    const activeOutcome = outcome;
+    const activeJob = selectedJob;
+    const jobId = activeForm.jobId || selectedId;
     if (!jobId) {
       setPdfStatus("Select a job before generating the package.");
+      return;
+    }
+    if (activeOutcome === "pending") {
+      setPdfStatus("Pick Work Completed or No Work Completed before generating this package.");
       return;
     }
 
     clearPackagePreview();
     const includeMedia = Boolean(includeMediaOverride);
+    const isWorkOutcome = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
+    const mediaOptionalForOutcome = isWorkOutcome || isNoWorkOutcome(activeOutcome);
     setIncludePackageMedia(includeMedia);
-    const allowPdfOnlyPackage = !includeMedia || outcome === "refused_access" || outcome === "no_access";
+    const allowPdfOnlyPackage = !includeMedia || mediaOptionalForOutcome;
     setPdfStatus(
       !includeMedia
         ? "Generating affidavit and invoice only. No images or videos will be attached."
-        : allowPdfOnlyPackage
-          ? "Generating package: affidavit and invoice. Images and videos are optional for this outcome."
+        : mediaOptionalForOutcome
+          ? "Generating package. If no saved media exists, I will create the affidavit/invoice ZIP."
         : "Generating package: affidavit, invoice, images, and videos..."
     );
 
@@ -1282,11 +1297,16 @@ export default function PaperworkPage() {
         return;
       }
 
-      const packageEventDate = fieldEventDateForPackage(selectedJob, outcome, includedMedia);
-      const packageForm = formWithFieldEventDate(form, outcome, packageEventDate, selectedJob);
+      const packageEventDate = fieldEventDateForPackage(activeJob, activeOutcome, includedMedia);
+      const packageForm = formWithFieldEventDate(activeForm, activeOutcome, packageEventDate, activeJob);
       setForm(packageForm);
 
-      const pdf = await generateAffidavitPdf({ downloadPdf: false, markGenerated: false, formOverride: packageForm });
+      const pdf = await generateAffidavitPdf({
+        downloadPdf: false,
+        markGenerated: false,
+        formOverride: packageForm,
+        outcomeOverride: activeOutcome,
+      });
       if (!pdf) return;
 
       const imageMedia = includedMedia.filter((media) => media.mediaType === "image");
