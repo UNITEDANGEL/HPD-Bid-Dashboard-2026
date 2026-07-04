@@ -3036,10 +3036,12 @@ function stickyHeaderClearance(container: HTMLElement | null, stickyHead: HTMLEl
 function positionSelectedCardInDrawer() {
   const drawer = jobDrawerRef.current;
   if (drawer) {
-    const descriptionTarget = drawer.querySelector<HTMLElement>("[data-job-card-description-focus='true']");
-    if (descriptionTarget) {
+    const fieldDataTarget =
+      drawer.querySelector<HTMLElement>(".job-card-data-strip") ||
+      drawer.querySelector<HTMLElement>("[data-job-card-description-focus='true']");
+    if (fieldDataTarget) {
       const drawerRect = drawer.getBoundingClientRect();
-      const targetRect = descriptionTarget.getBoundingClientRect();
+      const targetRect = fieldDataTarget.getBoundingClientRect();
       const stickyHead = drawer.querySelector<HTMLElement>(".selected-job-drawer-head");
       const top = drawer.scrollTop + targetRect.top - drawerRect.top - stickyHeaderClearance(drawer, stickyHead, 12);
       drawer.scrollTo({
@@ -17407,6 +17409,109 @@ return (
             overflow-wrap: anywhere !important;
           }
 
+          .job-drawer.selected-focus .job-card-data-strip {
+            display: grid !important;
+            gap: 8px !important;
+            padding: 10px !important;
+            border-radius: 18px !important;
+            background: #f8fafc !important;
+            border: 1px solid rgba(125, 211, 252, 0.32) !important;
+            color: #0f172a !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.72),
+              0 14px 32px rgba(2, 6, 23, 0.18) !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-strip-head {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: start !important;
+            gap: 8px !important;
+            min-width: 0 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-strip-head div {
+            display: grid !important;
+            gap: 4px !important;
+            min-width: 0 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-strip-head span,
+          .job-drawer.selected-focus .job-card-data-tile span {
+            color: #0369a1 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-strip-head strong {
+            color: #0f172a !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+            font-size: 15px !important;
+            line-height: 1.08 !important;
+            font-weight: 1000 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-strip-head small {
+            justify-self: end !important;
+            max-width: 124px !important;
+            color: #475569 !important;
+            font-size: 10px !important;
+            line-height: 1.14 !important;
+            font-weight: 850 !important;
+            text-align: right !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+            min-width: 0 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-tile {
+            display: grid !important;
+            align-content: start !important;
+            gap: 3px !important;
+            min-width: 0 !important;
+            min-height: 50px !important;
+            padding: 8px 9px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            background: #ffffff !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-tile strong {
+            color: #0f172a !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+            font-size: 13px !important;
+            line-height: 1.12 !important;
+            font-weight: 1000 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-tile small {
+            color: #475569 !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+            font-size: 10px !important;
+            line-height: 1.12 !important;
+            font-weight: 850 !important;
+            overflow-wrap: anywhere !important;
+          }
+
           .field-page3-description {
             display: grid !important;
             gap: 7px !important;
@@ -22615,6 +22720,30 @@ return (
             letter-spacing: 0 !important;
           }
 
+          .job-drawer.selected-focus .field-mission-topline {
+            order: 0 !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-jobline {
+            order: 1 !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-card.mission-appointment {
+            order: 5 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-strip {
+            order: 2 !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description {
+            order: 3 !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-card {
+            order: 4 !important;
+          }
+
           .job-drawer.selected-focus .field-page3-description {
             padding: 12px !important;
             border-radius: 17px !important;
@@ -25493,6 +25622,15 @@ return (
                 const currentStatusLabel = workflowLabel(selected) || JobStatus.statusLabel(selected) || "Pending";
                 const savedStatusIso = workflowSavedDateIso(selected);
                 const savedStatusDateLabel = savedStatusIso ? displayWorkflowDate(savedStatusIso) : "No saved field status yet";
+                const savedStatusCardLabel = savedStatusIso ? savedStatusDateLabel : "Not saved";
+                const missionWorkWindow = workWindowInfo(selected);
+                const missionMaturity = maturityInfo(selected);
+                const missionAmountLabel = displayAmount(selected) || money(selected) || "Not listed";
+                const missionWorkStartLabel = missionWorkWindow.startDate || "Start not listed";
+                const missionWorkEndLabel = missionWorkWindow.endDate || "End not listed";
+                const missionDataAddress = displayAddress(selected);
+                const missionDataLocation = `${selected.borough || "Unknown borough"} · ${displayLocation(selected) || "Location not listed"}`;
+                const missionContractorLabel = selected.contractor || "Contractor not listed";
                 const selectedDraftOption = quickWorkflowOptions.find((option) => option.value === draftWorkflowStatus);
                 const statusChoiceInfo = workflowChoiceInfo(draftWorkflowStatus || workflowStatus(selected) || "Pending");
                 const statusSaveLabel = selectedDraftOption ? `Save ${selectedDraftOption.label}` : "Pick Status First";
@@ -25547,6 +25685,37 @@ return (
                       </small>
                     </div>
                     {renderJobAppointmentCard(selected, "mission")}
+                    <div className="job-card-data-strip" aria-label="Work order data">
+                      <div className="job-card-data-strip-head">
+                        <div>
+                          <span>Work Order Data</span>
+                          <strong>{missionDataAddress}</strong>
+                        </div>
+                        <small>{missionDataLocation}</small>
+                      </div>
+                      <div className="job-card-data-grid">
+                        <div className="job-card-data-tile">
+                          <span>Amount</span>
+                          <strong>{missionAmountLabel}</strong>
+                          <small>{missionContractorLabel}</small>
+                        </div>
+                        <div className="job-card-data-tile">
+                          <span>Award / COA</span>
+                          <strong>{missionMaturity.award}</strong>
+                          <small>{jobCounterLabel(selected)}</small>
+                        </div>
+                        <div className="job-card-data-tile">
+                          <span>Work Dates</span>
+                          <strong>{missionWorkWindow.statusLabel}</strong>
+                          <small>{missionWorkStartLabel} to {missionWorkEndLabel}</small>
+                        </div>
+                        <div className="job-card-data-tile">
+                          <span>Status Date</span>
+                          <strong>{savedStatusCardLabel}</strong>
+                          <small>{currentStatusLabel}</small>
+                        </div>
+                      </div>
+                    </div>
                     <div
                       className={`field-page3-description ${missionDescription ? "" : "is-missing"}`}
                       data-job-card-description-focus="true"
