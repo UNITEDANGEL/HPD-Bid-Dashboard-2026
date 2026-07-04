@@ -4193,7 +4193,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               return clusters;
             }, new Map<string, { items: typeof plottedItems; cellX: number; cellY: number }>())
           ).map(([key, cluster]) => {
-            if (cluster.items.length === 1) return { kind: "job", ...cluster.items[0] };
+            if (cluster.items.length === 1 && !denseLayer && !timerLayerNeedsClusters) return { kind: "job", ...cluster.items[0] };
             const rawCenterX = (cluster.cellX + 0.5) * clusterCellX;
             const rawCenterY = (cluster.cellY + 0.5) * clusterCellY;
             const clampedCenter = clusterSafeLayerBounds
@@ -4293,6 +4293,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           });
 
           marker.on("click", () => {
+            if (clusterItems.length === 1) {
+              focusJob(clusterItems[0].job);
+              return;
+            }
             openClusterSheet(clusterItems, item.lat, item.lng, clusterLabel, readyCount, worstOverdue);
           });
 
