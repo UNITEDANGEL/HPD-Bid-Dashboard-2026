@@ -60,7 +60,7 @@ def similarity(left, right):
 
 def trim_page3_description(text):
     text = text or ""
-    match = re.search(r"Job\s+Descript(?:ion)?\s*:?\s*", text, flags=re.IGNORECASE)
+    match = re.search(r"(?:Job\s+Descript(?:ion)?|WORK\s+DESCRIPTION)\s*:?\s*", text, flags=re.IGNORECASE)
     if match:
         text = text[match.end() :]
 
@@ -147,7 +147,9 @@ def text_has_omo(text, omo):
 
 def is_real_job_description_page(raw_text, description):
     raw = str(raw_text or "")
-    if not re.search(r"Job\s+Descript(?:ion)?\s*:?", raw, flags=re.IGNORECASE):
+    has_description_marker = re.search(r"Job\s+Descript(?:ion)?\s*:?", raw, flags=re.IGNORECASE)
+    has_work_description_marker = re.search(r"WORK\s+DESCRIPTION", raw, flags=re.IGNORECASE)
+    if not has_description_marker and not has_work_description_marker:
         return False
 
     cover_markers = (
@@ -228,6 +230,17 @@ def source_label(job):
     return str(job.get("ItbPage3DescriptionSource") or job.get("DescriptionSource") or job.get("descriptionSource") or "")
 
 
+def visual_source_page_description(pdf_path, page_number, current):
+    raw_text, description = ocr_page_description(pdf_path, page_number)
+    if not raw_text and not description:
+        return "", ""
+
+    if token_overlap(current, raw_text) >= 0.68 or token_overlap(current, description) >= 0.68:
+        return description or raw_text, f"ocr_manifest_page_{page_number}"
+
+    return "", ""
+
+
 def main():
     jobs = json.loads(DATA_FILE.read_text(encoding="utf-8"))
     manifest = json.loads(MANIFEST_FILE.read_text(encoding="utf-8"))
@@ -256,6 +269,7 @@ def main():
             missing_source.append({"omo": omo, "itb": file_name, "reason": "source PDF missing"})
             continue
 
+        current = current_description(job)
         cache_key = f"{source_file}::{omo}"
         if cache_key not in extracted_by_file:
             try:
@@ -265,13 +279,22 @@ def main():
                 extract_failed.append({"omo": omo, "itb": file_name, "error": str(error)})
 
         extracted, method = extracted_by_file[cache_key]
+        if not extracted:
+            manifest_page = int(entry.get("page") or SOURCE_PAGE)
+            manifest_cache_key = f"{source_file}::manifest::{manifest_page}::{omo}"
+            if manifest_cache_key not in extracted_by_file:
+                try:
+                    extracted_by_file[manifest_cache_key] = visual_source_page_description(source_path, manifest_page, current)
+                except Exception:
+                    extracted_by_file[manifest_cache_key] = ("", "error")
+            extracted, method = extracted_by_file[manifest_cache_key]
+
         if method.startswith("ocr"):
             ocr_used += 1
         if not extracted:
             extract_failed.append({"omo": omo, "itb": file_name, "error": "empty extracted page 3 description"})
             continue
 
-        current = current_description(job)
         current_compact = comparable(current)
         extracted_compact = comparable(extracted)
         if current_compact == extracted_compact:

@@ -15,6 +15,8 @@ const force = process.argv.includes("--force");
 const copyPdfs = process.argv.includes("--copy-pdfs") || process.env.HPD_COPY_ITB_PDFS === "1";
 
 const faxDescriptionPageOverrides = new Map([
+  // This fax bundle's OMO work description is on the COA-style page before a blank fax page.
+  ["faxcopy_20260324_123735_.69c2bf4dc9546.pdf", 3],
   // This multi-fax bundle has extra fax cover pages before the ITB packet.
   ["faxcopy_20260106_104555_.695d315782d68.pdf", 6],
 ]);
