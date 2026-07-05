@@ -83,7 +83,15 @@ function currentCommit() {
 function moveIfExists(from, to) {
   if (fs.existsSync(from)) {
     fs.mkdirSync(path.dirname(to), { recursive: true });
-    fs.renameSync(from, to);
+    try {
+      fs.renameSync(from, to);
+    } catch (error) {
+      if (!["EPERM", "EXDEV"].includes(error?.code)) throw error;
+
+      fs.cpSync(from, to, { recursive: true });
+      removeIfExists(from);
+    }
+
     return true;
   }
 
@@ -97,7 +105,14 @@ function restoreApiRouteDirectory(moved) {
     throw new Error("Cannot restore app/api because a new app/api directory already exists.");
   }
 
-  fs.renameSync(tempApiDir, apiDir);
+  try {
+    fs.renameSync(tempApiDir, apiDir);
+  } catch (error) {
+    if (!["EPERM", "EXDEV"].includes(error?.code)) throw error;
+
+    fs.cpSync(tempApiDir, apiDir, { recursive: true });
+    removeIfExists(tempApiDir, { allowEmptyDir: true });
+  }
 }
 
 function runPaperworkDataGate() {

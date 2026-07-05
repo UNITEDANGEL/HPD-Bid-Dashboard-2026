@@ -7,7 +7,7 @@ const APPOINTMENT_ALERT_PHONE_STORAGE_KEY = "hpd-appointment-alert-phone-v1";
 const APPOINTMENT_ALERT_WORKER_PATH = "/appointment-alerts";
 const MAPTILER_ENV_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
 const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
-const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v2";
+const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v3";
 const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
 const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
 const MAP_BOROUGH_FILTERS = [
@@ -8829,7 +8829,7 @@ function directionsUrl(job: JobRecord) {
 
 return (
     <main
-      className={`map-shell ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""} ${clusterSheet ? "cluster-tray-open" : ""} ${mapJobBrief ? "map-brief-open" : ""} ${timerMapLayerActive ? "timer-map-layer" : ""}`}
+      className={`map-shell map-style-${activeMapBaseStyle.id} ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""} ${clusterSheet ? "cluster-tray-open" : ""} ${mapJobBrief ? "map-brief-open" : ""} ${timerMapLayerActive ? "timer-map-layer" : ""}`}
       onTouchStart={androidScrollFix ? undefined : handleMapTouchStart}
       onTouchEnd={androidScrollFix ? undefined : handleMapTouchEnd}
     >
@@ -25484,6 +25484,457 @@ return (
             .cluster-job-meta b {
               max-width: none !important;
               text-align: left !important;
+            }
+          }
+
+          /* MAP_NEXT_LEVEL_FIELD_THEME_2026 */
+          .map-shell,
+          .map-shell.full-map-mode {
+            background: #dbe6ec !important;
+          }
+
+          .map-stage,
+          .map-node,
+          .map-node .leaflet-container {
+            background: #dbe6ec !important;
+          }
+
+          .map-stage::before {
+            inset: 8px !important;
+            border-radius: 18px !important;
+            border-color: rgba(15, 23, 42, 0.10) !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(255, 255, 255, 0.36),
+              inset 0 0 30px rgba(15, 23, 42, 0.05) !important;
+          }
+
+          .map-node::after {
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.10), transparent 24%, transparent 74%, rgba(15, 23, 42, 0.08)),
+              linear-gradient(90deg, rgba(15, 23, 42, 0.06), transparent 24%, transparent 76%, rgba(15, 23, 42, 0.05)) !important;
+          }
+
+          .map-shell.map-style-carto-voyager .map-node .leaflet-tile,
+          .map-shell.map-style-carto-light .map-node .leaflet-tile {
+            filter: saturate(0.88) contrast(0.94) brightness(1.05) !important;
+          }
+
+          .map-shell.map-style-osm-color .map-node .leaflet-tile,
+          .map-shell.map-style-maptiler-streets .map-node .leaflet-tile,
+          .map-shell.map-style-maptiler-basic .map-node .leaflet-tile,
+          .map-shell.map-style-maptiler-outdoor .map-node .leaflet-tile {
+            filter: saturate(0.92) contrast(0.96) brightness(1.02) !important;
+          }
+
+          .map-shell.map-style-carto-dark .map-node::after {
+            background:
+              linear-gradient(180deg, rgba(3, 7, 18, 0.12), transparent 28%, transparent 70%, rgba(3, 7, 18, 0.18)) !important;
+          }
+
+          .map-shell.map-style-carto-dark .map-node .leaflet-tile {
+            filter: saturate(1.06) contrast(1.04) brightness(0.92) !important;
+          }
+
+          .map-menu-fab {
+            min-width: 48px !important;
+            width: 48px !important;
+            height: 48px !important;
+            border-radius: 14px !important;
+            background: rgba(255, 255, 255, 0.94) !important;
+            color: #0f172a !important;
+            border-color: rgba(15, 23, 42, 0.12) !important;
+            box-shadow:
+              0 14px 32px rgba(15, 23, 42, 0.20),
+              inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+          }
+
+          .map-menu-fab-icon span {
+            background: #0f172a !important;
+          }
+
+          .map-cockpit {
+            left: calc(env(safe-area-inset-left) + 10px) !important;
+            top: calc(env(safe-area-inset-top) + 12px) !important;
+            width: min(420px, calc(100vw - 20px)) !important;
+            padding: 10px !important;
+            gap: 8px !important;
+            border-radius: 16px !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 250, 252, 0.94)) !important;
+            color: #0f172a !important;
+            border: 1px solid rgba(15, 23, 42, 0.12) !important;
+            box-shadow:
+              0 16px 38px rgba(15, 23, 42, 0.20),
+              inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+          }
+
+          .map-cockpit.board-collapsed {
+            left: calc(env(safe-area-inset-left) + 64px) !important;
+            top: calc(env(safe-area-inset-top) + 10px) !important;
+            width: min(308px, calc(100vw - 82px)) !important;
+            min-height: 48px !important;
+            padding: 7px 9px !important;
+            border-radius: 14px !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+          }
+
+          .map-command-banner span {
+            color: #0f766e !important;
+            font-size: 9px !important;
+          }
+
+          .map-command-banner strong {
+            color: #0f172a !important;
+            font-size: 22px !important;
+          }
+
+          .map-command-banner small {
+            color: #475569 !important;
+            font-size: 10px !important;
+          }
+
+          .map-command-banner button {
+            min-height: 36px !important;
+            border-radius: 11px !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18) !important;
+          }
+
+          .map-command-buttons .map-board-toggle {
+            background: linear-gradient(135deg, #0f766e, #0284c7) !important;
+          }
+
+          .map-board-switcher,
+          .map-borough-rail {
+            gap: 5px !important;
+          }
+
+          .map-board-switcher button,
+          .map-borough-rail button {
+            min-height: 38px !important;
+            border-radius: 10px !important;
+            background: #ffffff !important;
+            border-color: rgba(15, 23, 42, 0.10) !important;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05) !important;
+          }
+
+          .map-board-switcher button.active,
+          .map-borough-rail button.active {
+            background: #0f172a !important;
+            color: #ffffff !important;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16) !important;
+          }
+
+          .map-cockpit-actions {
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            gap: 5px !important;
+          }
+
+          .map-cockpit-actions button {
+            min-height: 34px !important;
+            padding: 0 5px !important;
+            border-radius: 10px !important;
+            background: #eef6f8 !important;
+            color: #0f172a !important;
+            border-color: rgba(15, 23, 42, 0.08) !important;
+            font-size: 10px !important;
+          }
+
+          .map-cockpit-actions button.active,
+          .map-cockpit-actions button.primary {
+            background: linear-gradient(135deg, #0f172a, #0f766e) !important;
+            color: #ffffff !important;
+          }
+
+          .map-stats,
+          .status-legend,
+          .zoom-panel,
+          .location-status-pill {
+            background: rgba(255, 255, 255, 0.92) !important;
+            color: #0f172a !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14) !important;
+            backdrop-filter: blur(14px) saturate(1.04) !important;
+          }
+
+          .map-stat {
+            background: #f6fafb !important;
+            border: 1px solid rgba(15, 23, 42, 0.06) !important;
+          }
+
+          .map-stat strong,
+          .map-stat span,
+          .status-legend span,
+          .location-status-pill span {
+            color: #0f172a !important;
+          }
+
+          .zoom-panel {
+            bottom: calc(env(safe-area-inset-bottom) + 82px) !important;
+            border-radius: 14px !important;
+          }
+
+          .zoom-panel button {
+            background: #0f172a !important;
+            color: #ffffff !important;
+            border: 0 !important;
+          }
+
+          .zoom-panel .live-location-btn.active {
+            background: linear-gradient(135deg, #22c55e, #38bdf8) !important;
+            color: #052e16 !important;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-compact {
+            min-width: 136px !important;
+            min-height: 72px !important;
+            max-width: 158px !important;
+            padding: 7px 8px 8px !important;
+            gap: 4px !important;
+            border-left-width: 5px !important;
+            border-radius: 12px !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.86),
+              0 12px 26px rgba(15, 23, 42, 0.20) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-eyebrow,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-eyebrow {
+            max-width: 132px !important;
+            min-height: 16px !important;
+            padding: 2px 6px !important;
+            font-size: 8px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-main,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-main {
+            max-width: 136px !important;
+            font-size: 18px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-address,
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-address {
+            max-width: 136px !important;
+            min-height: 20px !important;
+            padding: 3px 6px !important;
+            color: #164e63 !important;
+            background: #e6f7fb !important;
+            font-size: 9px !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot {
+            width: 56px !important;
+            min-width: 56px !important;
+            height: 56px !important;
+            min-height: 56px !important;
+            border-color: rgba(255, 255, 255, 0.96) !important;
+            box-shadow:
+              0 0 0 3px rgba(14, 165, 233, 0.14),
+              0 12px 24px rgba(15, 23, 42, 0.22) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot span {
+            font-size: 20px !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot strong {
+            max-width: 44px !important;
+            min-height: 15px !important;
+            padding: 2px 6px !important;
+            font-size: 8px !important;
+          }
+
+          .map-shell.drawer-selected .map-stage::after,
+          .map-shell.map-brief-open .map-stage::after {
+            height: 100% !important;
+            background:
+              linear-gradient(180deg, rgba(219, 230, 236, 0.08), transparent 28%, rgba(15, 23, 42, 0.10)) !important;
+          }
+
+          .job-drawer.selected-focus,
+          .job-drawer.selected-focus.closed,
+          .job-drawer.selected-focus.drawer-hard-hidden {
+            position: fixed !important;
+            left: max(8px, env(safe-area-inset-left)) !important;
+            right: max(8px, env(safe-area-inset-right)) !important;
+            bottom: max(8px, env(safe-area-inset-bottom)) !important;
+            top: auto !important;
+            width: auto !important;
+            max-height: min(82dvh, 720px) !important;
+            padding: 8px !important;
+            overflow-y: auto !important;
+            scrollbar-gutter: stable !important;
+            border-radius: 18px !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 248, 250, 0.98)) !important;
+            border: 1px solid rgba(15, 23, 42, 0.12) !important;
+            box-shadow:
+              0 26px 70px rgba(15, 23, 42, 0.26),
+              inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+          }
+
+          .job-drawer.selected-focus::before {
+            content: "" !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 9 !important;
+            display: block !important;
+            width: 48px !important;
+            height: 4px !important;
+            margin: 0 auto 6px !important;
+            border-radius: 999px !important;
+            background: rgba(15, 23, 42, 0.20) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+            top: 8px !important;
+            margin-bottom: 8px !important;
+            padding: 8px !important;
+            border-radius: 14px !important;
+            background:
+              linear-gradient(135deg, #0f172a, #155e75 54%, #0f766e) !important;
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.22) !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy span {
+            color: #99f6e4 !important;
+            font-size: 9px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy strong {
+            font-size: clamp(24px, 6vw, 32px) !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy p {
+            color: #e0f2fe !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button {
+            border-radius: 10px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived {
+            background: #ecfdf5 !important;
+            color: #064e3b !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button.waze {
+            background: #e0f8ff !important;
+            color: #062336 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button.google {
+            background: #fef3c7 !important;
+            color: #1f2937 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail {
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button {
+            background: rgba(255, 255, 255, 0.13) !important;
+            color: #e0f2fe !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.active,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-map {
+            background: #ffffff !important;
+            color: #0f172a !important;
+          }
+
+          .map-job-brief-card {
+            bottom: calc(env(safe-area-inset-bottom) + 82px) !important;
+            border-radius: 16px !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 248, 250, 0.96)) !important;
+            color: #0f172a !important;
+            border-color: rgba(15, 23, 42, 0.12) !important;
+            box-shadow: 0 22px 58px rgba(15, 23, 42, 0.26) !important;
+          }
+
+          .map-job-brief-head strong,
+          .map-job-brief-address,
+          .map-job-brief-grid strong,
+          .map-job-brief-actions button strong {
+            color: #0f172a !important;
+          }
+
+          .map-job-brief-head span,
+          .map-job-brief-summary-block span,
+          .map-job-brief-grid small,
+          .map-job-brief-actions button small {
+            color: #475569 !important;
+          }
+
+          .map-job-brief-summary-block,
+          .map-job-brief-grid span,
+          .map-job-brief-actions button,
+          .map-job-brief-close {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border-color: rgba(15, 23, 42, 0.10) !important;
+          }
+
+          .map-job-brief-summary-block p {
+            color: #1f2937 !important;
+          }
+
+          .map-job-brief-actions .primary {
+            background: linear-gradient(135deg, #0f766e, #38bdf8) !important;
+            color: #ffffff !important;
+          }
+
+          @media (max-width: 520px) {
+            .map-cockpit {
+              left: 8px !important;
+              width: calc(100vw - 16px) !important;
+              border-radius: 14px !important;
+            }
+
+            .map-cockpit.board-collapsed {
+              left: 62px !important;
+              width: calc(100vw - 76px) !important;
+              min-height: 46px !important;
+              border-radius: 13px !important;
+            }
+
+            .map-cockpit-actions {
+              grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            }
+
+            .map-cockpit-actions button {
+              min-height: 32px !important;
+              font-size: 9px !important;
+            }
+
+            .job-drawer.selected-focus,
+            .job-drawer.selected-focus.closed,
+            .job-drawer.selected-focus.drawer-hard-hidden {
+              max-height: min(84dvh, 690px) !important;
+              border-radius: 16px !important;
+            }
+
+            .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview,
+            .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-compact {
+              min-width: 124px !important;
+              min-height: 68px !important;
+              max-width: 146px !important;
+            }
+
+            .maturity-map-marker .map-signal-marker.marker-overview .signal-main,
+            .maturity-map-marker .map-signal-marker.marker-compact .signal-main,
+            .maturity-map-marker .map-signal-marker.marker-overview .signal-address,
+            .maturity-map-marker .map-signal-marker.marker-compact .signal-address {
+              max-width: 124px !important;
+            }
+
+            .map-job-brief-card {
+              bottom: calc(env(safe-area-inset-bottom) + 14px) !important;
             }
           }
         `}
