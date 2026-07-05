@@ -23419,6 +23419,71 @@ return (
             text-align: right !important;
           }
 
+          .job-drawer.selected-focus .field-media-step-cue {
+            display: grid !important;
+            grid-template-columns: auto minmax(0, 1fr) !important;
+            align-items: center !important;
+            gap: 4px 8px !important;
+            padding: 10px 11px !important;
+            border-radius: 14px !important;
+            background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.92),
+              0 8px 18px rgba(15, 23, 42, 0.07) !important;
+          }
+
+          .job-drawer.selected-focus .field-media-step-cue span {
+            display: inline-grid !important;
+            place-items: center !important;
+            min-height: 24px !important;
+            padding: 0 8px !important;
+            border-radius: 999px !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-media-step-cue strong {
+            min-width: 0 !important;
+            color: #0f172a !important;
+            font-size: 17px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-step-cue small {
+            grid-column: 1 / -1 !important;
+            color: #334155 !important;
+            font-size: 12px !important;
+            line-height: 1.2 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-step-cue.tone-before {
+            border-left: 5px solid #2563eb !important;
+          }
+
+          .job-drawer.selected-focus .field-media-step-cue.tone-after {
+            border-left: 5px solid #16a34a !important;
+          }
+
+          .job-drawer.selected-focus .field-media-step-cue.tone-review {
+            border-left: 5px solid #0f766e !important;
+          }
+
+          .job-drawer.selected-focus .field-media-step-cue.tone-before span {
+            background: #1d4ed8 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-step-cue.tone-after span,
+          .job-drawer.selected-focus .field-media-step-cue.tone-review span {
+            background: #047857 !important;
+          }
+
           .job-drawer.selected-focus .field-media-option-grid {
             display: grid !important;
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -23457,6 +23522,29 @@ return (
 
           .job-drawer.selected-focus .field-media-option-column.after {
             border-top: 4px solid #16a34a !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column.is-next-media-step {
+            outline: 3px solid rgba(14, 165, 233, 0.24) !important;
+            outline-offset: 2px !important;
+            box-shadow:
+              0 0 0 1px rgba(14, 165, 233, 0.16),
+              0 12px 24px rgba(14, 165, 233, 0.14) !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column.is-next-media-step > div span::after {
+            content: "NEXT" !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            margin-left: 6px !important;
+            padding: 2px 5px !important;
+            border-radius: 999px !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            font-size: 8px !important;
+            font-weight: 1000 !important;
+            line-height: 1 !important;
+            vertical-align: middle !important;
           }
 
           .job-drawer.selected-focus .field-media-option-column button {
@@ -28571,6 +28659,26 @@ return (
                   text: "Upload an after video. It will be labeled and saved with this job.",
                   label: afterVideoStep.label.replace("Video", "Uploaded Video"),
                 };
+                const mediaStepCue = counts.before === 0
+                  ? {
+                      tone: "before",
+                      eyebrow: "Step 1",
+                      title: "Add Before Media",
+                      detail: "Take or upload before image/video first.",
+                    }
+                  : counts.after === 0
+                    ? {
+                        tone: "after",
+                        eyebrow: "Step 2",
+                        title: "Add After Media",
+                        detail: "Finish with after image/video when work is done.",
+                      }
+                    : {
+                        tone: "review",
+                        eyebrow: "Media Ready",
+                        title: `${counts.total} file${counts.total === 1 ? "" : "s"} saved`,
+                        detail: "Review media, then package.",
+                      };
                 const activeWorkChoice = fieldWorkChoice?.jobKey === jobKey(selected) ? fieldWorkChoice : null;
                 const finishChoicePartial = Boolean(activeWorkChoice?.partial);
                 const packageReadinessItems = [
@@ -28989,8 +29097,13 @@ return (
                           </div>
                           <small>{counts.before} before · {counts.after} after · {counts.videos} video(s)</small>
                         </div>
+                        <div className={`field-media-step-cue tone-${mediaStepCue.tone}`} aria-live="polite">
+                          <span>{mediaStepCue.eyebrow}</span>
+                          <strong>{mediaStepCue.title}</strong>
+                          <small>{mediaStepCue.detail}</small>
+                        </div>
                         <div className="field-media-option-grid">
-                          <section className="field-media-option-column before">
+                          <section className={`field-media-option-column before ${mediaStepCue.tone === "before" ? "is-next-media-step" : ""}`}>
                             <div>
                               <span>Before</span>
                               <strong>{fieldMediaCountLabel(counts.before)}</strong>
@@ -29008,7 +29121,7 @@ return (
                               Upload Video
                             </button>
                           </section>
-                          <section className="field-media-option-column after">
+                          <section className={`field-media-option-column after ${mediaStepCue.tone === "after" ? "is-next-media-step" : ""}`}>
                             <div>
                               <span>After</span>
                               <strong>{fieldMediaCountLabel(counts.after)}</strong>
