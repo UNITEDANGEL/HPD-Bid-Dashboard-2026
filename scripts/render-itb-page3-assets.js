@@ -14,6 +14,11 @@ const dpi = Number(process.env.HPD_ITB_SOURCE_DPI || 150) || 150;
 const force = process.argv.includes("--force");
 const copyPdfs = process.argv.includes("--copy-pdfs") || process.env.HPD_COPY_ITB_PDFS === "1";
 
+const faxDescriptionPageOverrides = new Map([
+  // This multi-fax bundle has extra fax cover pages before the ITB packet.
+  ["faxcopy_20260106_104555_.695d315782d68.pdf", 6],
+]);
+
 function fileExists(target) {
   try {
     return fs.existsSync(target) && fs.statSync(target).isFile();
@@ -49,6 +54,24 @@ function safeAssetStem(fileName) {
       .replace(/_+/g, "_")
       .replace(/^_+|_+$/g, "") || "itb-page"
   );
+}
+
+function isFaxCopyFileName(fileName) {
+  return /^faxcopy_/i.test(String(fileName || ""));
+}
+
+function descriptionRenderPage(ref, source) {
+  const fileName = String(ref?.fileName || "");
+  const lowerFileName = fileName.toLowerCase();
+  const pageCount = Number(source?.pageCount || 0);
+  const overridePage = faxDescriptionPageOverrides.get(lowerFileName);
+  if (overridePage && pageCount >= overridePage) return overridePage;
+
+  if (isFaxCopyFileName(fileName) && pageCount >= page + 1) {
+    return page + 1;
+  }
+
+  return page;
 }
 
 function urlForPublicFile(relativeParts) {
@@ -272,11 +295,8 @@ const referencedPageFiles = new Set();
 
 for (const ref of refs.values()) {
   const { source, rejected } = findUsableSource(ref);
-  const renderPage = page;
 
   const assetStem = safeAssetStem(ref.fileName);
-  const pageFileName = `${assetStem}-p${renderPage}.png`;
-  const pageFilePath = path.join(outputDir, pageFileName);
 
   if (!source) {
     manifest.summary.missingSource += 1;
@@ -289,6 +309,10 @@ for (const ref of refs.values()) {
   }
 
   try {
+    const renderPage = descriptionRenderPage(ref, source);
+    const pageFileName = `${assetStem}-p${renderPage}.png`;
+    const pageFilePath = path.join(outputDir, pageFileName);
+
     if (force || !fileExists(pageFilePath)) {
       const generatedFile = renderSinglePage(pdftoppm, source.filePath, assetStem, renderPage);
       const finalPageFileName = `${assetStem}-p${renderPage}.png`;

@@ -1199,7 +1199,7 @@ function itbSourceFor(job: JobRecord | null | undefined, manifest: Record<string
     page,
     pageImageUrl,
     pagePublished: Boolean(pageImageUrl),
-    itbPage3Published: Boolean(pageImageUrl && page === 3),
+    itbPage3Published: Boolean(pageImageUrl),
     pdfPublished: Boolean(pdfDownloadUrl),
     pdfUrl: pdfDownloadUrl ? `${pdfDownloadUrl}#page=${page}` : `/documents/itb/${encodedFile}#page=${page}`,
     pdfDownloadUrl: pdfDownloadUrl || `/documents/itb/${encodedFile}`,
@@ -26699,10 +26699,10 @@ return (
                     <div
                       className={`field-page3-description ${missionDescription ? "" : "is-missing"}`}
                       data-job-card-description-focus="true"
-                      aria-label="Page 3 job description"
+                      aria-label="ITB job description"
                     >
                       <div className="field-page3-description-head">
-                        <span>ITB Page 3 Scope</span>
+                        <span>ITB Description Page</span>
                         {missionItbSource?.itbPage3Published ? (
                           <button
                             type="button"
@@ -26711,15 +26711,15 @@ return (
                               setItbSourceOpen(true);
                             }}
                           >
-                            View ITB Page 3
+                            View ITB Page
                           </button>
                         ) : missionItbSource ? (
-                          <small>Needs ITB Page 3</small>
+                          <small>Needs ITB image</small>
                         ) : (
                           <small>No ITB PDF</small>
                         )}
                       </div>
-                      <p>{missionDescription || "No page 3 description found for this job."}</p>
+                      <p>{missionDescription || "No ITB description found for this job."}</p>
                     </div>
                     <div className={`tenant-contact-card ${missionTenantContact.appointmentNeeded ? "" : "no-appointment"}`} aria-label="Tenant appointment contact">
                       <div className="tenant-contact-head">
@@ -27932,9 +27932,12 @@ return (
               <div className="itb-source-modal-head">
                 <div>
                   <strong>
-                    {jobKey(selected)} Original ITB Page 3
+                    {jobKey(selected)} Original ITB Description Page
                   </strong>
-                  <span>{source?.fileName || "No ITB file listed"} · {displayAddress(selected)}</span>
+                  <span>
+                    {source?.fileName || "No ITB file listed"} · {displayAddress(selected)}
+                    {source?.page ? ` · PDF page ${source.page}` : ""}
+                  </span>
                 </div>
                 <div className="itb-source-modal-actions">
                   {source?.itbPage3Published ? (
@@ -27961,15 +27964,15 @@ return (
                   <img
                     className="itb-source-page-image"
                     src={source.pageImageUrl}
-                    alt={`Original ITB page 3 for ${jobKey(selected)}`}
+                    alt={`Original ITB description page for ${jobKey(selected)}`}
                     onError={() => setItbSourceImageFailed(source.pageImageUrl)}
                   />
                 ) : (
                   <div className="itb-source-missing">
-                    <strong>Original ITB page 3 is not published yet.</strong>
+                    <strong>Original ITB description page is not published yet.</strong>
                     <span>
                       {source
-                        ? `The job references ${source.fileName}. Import the true ITB from Gmail or the ITB archive to show the exact page 3 job description here.`
+                        ? `The job references ${source.fileName}. Import the true ITB from Gmail or the ITB archive to show the exact ITB description page here.`
                         : "This job does not list an ITB PDF filename in the dashboard data."}
                     </span>
                   </div>
