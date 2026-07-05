@@ -6039,7 +6039,20 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     );
   }
 
-  function jumpToMediaFlow() {
+  function guideToStatusBeforeFlow(job: JobRecord | undefined, flowLabel: "media" | "package") {
+    if (!job || hasSavedFieldWorkflow(job)) return false;
+
+    setFieldFocusPane("capture");
+    scrollSelectedJobCardTo(
+      ".job-drawer.selected-focus .field-status-picker-card, .job-drawer.selected-focus .site-procedure-stage[data-field-pane='capture']",
+      draftWorkflowStatus ? `Save selected status before ${flowLabel}.` : `Pick and save status before ${flowLabel}.`
+    );
+    return true;
+  }
+
+  function jumpToMediaFlow(job?: JobRecord) {
+    if (guideToStatusBeforeFlow(job, "media")) return;
+
     setFieldFocusPane("evidence");
     scrollSelectedJobCardTo(
       ".job-drawer.selected-focus .field-media-step-cue, .job-drawer.selected-focus .field-media-option-hub, .job-drawer.selected-focus .site-procedure-stage[data-field-pane='evidence'], .job-drawer.selected-focus .field-evidence-gallery",
@@ -6055,7 +6068,9 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     );
   }
 
-  function jumpToPackageFlow() {
+  function jumpToPackageFlow(job?: JobRecord) {
+    if (guideToStatusBeforeFlow(job, "package")) return;
+
     setFieldFocusPane("package");
     scrollSelectedJobCardTo(
       ".job-drawer.selected-focus .site-procedure-stage[data-field-pane='package'], .job-drawer.selected-focus .field-packet-vault",
@@ -8923,12 +8938,12 @@ function directionsUrl(job: JobRecord) {
     }
 
     if (stateBanner.action === "package") {
-      jumpToPackageFlow();
+      jumpToPackageFlow(job);
       return;
     }
 
     if (stateBanner.action === "media") {
-      jumpToMediaFlow();
+      jumpToMediaFlow(job);
       return;
     }
 
@@ -26397,6 +26412,17 @@ return (
             box-shadow: 0 0 12px rgba(34, 197, 94, 0.58) !important;
           }
 
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.needs-status {
+            border-color: rgba(245, 158, 11, 0.52) !important;
+            background: rgba(245, 158, 11, 0.15) !important;
+            color: #fef3c7 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.needs-status::before {
+            background: #f59e0b !important;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.46) !important;
+          }
+
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-return::before {
             background: #99f6e4 !important;
           }
@@ -26549,6 +26575,13 @@ return (
             box-shadow:
               0 8px 18px rgba(15, 23, 42, 0.12),
               inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+          }
+
+          .job-drawer.selected-focus .site-procedure-steps button.needs-status,
+          .job-drawer.selected-focus .field-flow-dock button.needs-status {
+            border-color: rgba(245, 158, 11, 0.32) !important;
+            background: #fff7ed !important;
+            color: #7c2d12 !important;
           }
 
           @media (max-width: 430px) {
@@ -28076,11 +28109,11 @@ return (
                 </button>
                 <button
                   type="button"
-                  className={`flow-media ${fieldFocusPane === "evidence" ? "active" : ""} ${fieldPhotoCountsFor(selected).total > 0 ? "done" : ""}`}
-                  onClick={jumpToMediaFlow}
+                  className={`flow-media ${fieldFocusPane === "evidence" && hasSavedFieldWorkflow(selected) ? "active" : ""} ${fieldPhotoCountsFor(selected).total > 0 ? "done" : ""} ${!hasSavedFieldWorkflow(selected) ? "needs-status" : ""}`}
+                  onClick={() => jumpToMediaFlow(selected)}
                 >
                   <strong>Media</strong>
-                  <small>before/after</small>
+                  <small>{hasSavedFieldWorkflow(selected) ? "before/after" : "save status"}</small>
                 </button>
                 <button
                   type="button"
@@ -28092,11 +28125,11 @@ return (
                 </button>
                 <button
                   type="button"
-                  className={`flow-package ${fieldFocusPane === "package" ? "active" : ""} ${fullPackagePreviewFor(selected) ? "done" : ""}`}
-                  onClick={jumpToPackageFlow}
+                  className={`flow-package ${fieldFocusPane === "package" && hasSavedFieldWorkflow(selected) ? "active" : ""} ${fullPackagePreviewFor(selected) ? "done" : ""} ${!hasSavedFieldWorkflow(selected) ? "needs-status" : ""}`}
+                  onClick={() => jumpToPackageFlow(selected)}
                 >
                   <strong>Pkg</strong>
-                  <small>review</small>
+                  <small>{hasSavedFieldWorkflow(selected) ? "review" : "save status"}</small>
                 </button>
               </div>
               <div className="job-card-map-return-row" aria-label="Fast map return actions">
@@ -28807,12 +28840,12 @@ return (
                             }
                           : evidenceReady && outcomeChosen
                             ? {
-                                tone: "media",
-                                eyebrow: "Next Action",
-                                title: "Review Media",
-                                detail: "Check the saved before/after media before packaging.",
-                                meta: `${counts.total} file(s)`,
-                                onClick: jumpToMediaFlow,
+                              tone: "media",
+                              eyebrow: "Next Action",
+                              title: "Review Media",
+                              detail: "Check the saved before/after media before packaging.",
+                              meta: `${counts.total} file(s)`,
+                                onClick: () => jumpToMediaFlow(selected),
                               }
                             : outcomeChosen
                               ? {
@@ -28821,7 +28854,7 @@ return (
                                   title: "Add Optional Media",
                                   detail: "Take or upload labeled before/after media, or continue without it.",
                                   meta: "Before / After",
-                                  onClick: jumpToMediaFlow,
+                                  onClick: () => jumpToMediaFlow(selected),
                                 }
                               : {
                                   tone: "status",
@@ -29366,11 +29399,11 @@ return (
                         <span>1</span>
                         <strong>Outcome</strong>
                       </button>
-                      <button type="button" className={`${fieldFocusPane === "evidence" ? "active" : ""} ${evidenceReady ? "done" : ""}`} onClick={() => focusFieldPane("evidence")}>
+                      <button type="button" className={`${fieldFocusPane === "evidence" && hasSavedFieldWorkflow(selected) ? "active" : ""} ${evidenceReady ? "done" : ""} ${!hasSavedFieldWorkflow(selected) ? "needs-status" : ""}`} onClick={() => jumpToMediaFlow(selected)}>
                         <span>2</span>
                         <strong>Evidence</strong>
                       </button>
-                      <button type="button" className={`${fieldFocusPane === "package" ? "active" : ""} ${packageReady ? "done" : ""}`} onClick={() => focusFieldPane("package")}>
+                      <button type="button" className={`${fieldFocusPane === "package" && hasSavedFieldWorkflow(selected) ? "active" : ""} ${packageReady ? "done" : ""} ${!hasSavedFieldWorkflow(selected) ? "needs-status" : ""}`} onClick={() => jumpToPackageFlow(selected)}>
                         <span>3</span>
                         <strong>Package</strong>
                       </button>
@@ -29717,15 +29750,15 @@ return (
                   <strong>Capture</strong>
                   <small>Before / after</small>
                 </button>
-                <button type="button" className={`evidence ${fieldFocusPane === "evidence" ? "active" : ""}`} onClick={() => focusFieldPane("evidence")}>
+                <button type="button" className={`evidence ${fieldFocusPane === "evidence" && hasSavedFieldWorkflow(selected) ? "active" : ""} ${!hasSavedFieldWorkflow(selected) ? "needs-status" : ""}`} onClick={() => jumpToMediaFlow(selected)}>
                   <span className="flow-icon">2</span>
                   <strong>Evidence</strong>
-                  <small>Job card</small>
+                  <small>{hasSavedFieldWorkflow(selected) ? "Job card" : "Save status"}</small>
                 </button>
-                <button type="button" className={`package ${fieldFocusPane === "package" ? "active" : ""}`} onClick={() => focusFieldPane("package")}>
+                <button type="button" className={`package ${fieldFocusPane === "package" && hasSavedFieldWorkflow(selected) ? "active" : ""} ${!hasSavedFieldWorkflow(selected) ? "needs-status" : ""}`} onClick={() => jumpToPackageFlow(selected)}>
                   <span className="flow-icon">3</span>
                   <strong>Package</strong>
-                  <small>PDFs / ZIPs</small>
+                  <small>{hasSavedFieldWorkflow(selected) ? "PDFs / ZIPs" : "Save status"}</small>
                 </button>
                 <button type="button" className={`send ${fieldFocusPane === "send" ? "active" : ""}`} onClick={() => focusFieldPane("send")}>
                   <span className="flow-icon">4</span>
