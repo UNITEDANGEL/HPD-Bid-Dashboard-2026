@@ -26672,6 +26672,110 @@ return (
             font-weight: 900 !important;
           }
 
+          /* FIELD_NEXT_ACTION_2026 */
+          .job-drawer.selected-focus .field-next-action-card {
+            display: grid !important;
+            gap: 10px !important;
+            padding: 12px !important;
+            border-radius: 14px !important;
+            background: linear-gradient(135deg, #0f172a, #334155) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.18) !important;
+            box-shadow:
+              0 18px 34px rgba(15, 23, 42, 0.20),
+              inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card.action-status {
+            background: linear-gradient(135deg, #075985, #0f766e) !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card.action-media {
+            background: linear-gradient(135deg, #0f766e, #0284c7) !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card.action-package {
+            background: linear-gradient(135deg, #14532d, #0f766e 58%, #16a34a) !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card.action-review {
+            background: linear-gradient(135deg, #1e3a8a, #0f766e) !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card.action-send {
+            background: linear-gradient(135deg, #14532d, #16a34a 62%, #22c55e) !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card.action-waiting {
+            background: linear-gradient(135deg, #92400e, #f59e0b 62%, #f97316) !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-copy {
+            display: grid !important;
+            gap: 3px !important;
+            min-width: 0 !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-copy span {
+            color: rgba(255, 255, 255, 0.82) !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-copy strong {
+            color: #ffffff !important;
+            font-size: 20px !important;
+            line-height: 1.04 !important;
+            font-weight: 1000 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-copy small {
+            color: rgba(255, 255, 255, 0.86) !important;
+            font-size: 12px !important;
+            line-height: 1.24 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card button {
+            width: 100% !important;
+            min-height: 56px !important;
+            display: grid !important;
+            place-items: center !important;
+            gap: 3px !important;
+            padding: 10px 12px !important;
+            border: 0 !important;
+            border-radius: 12px !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            box-shadow:
+              0 12px 24px rgba(15, 23, 42, 0.24),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card button b {
+            color: inherit !important;
+            font-size: 15px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-align: center !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card button small {
+            color: #475569 !important;
+            font-size: 10px !important;
+            line-height: 1.05 !important;
+            font-weight: 900 !important;
+            text-align: center !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card button:active {
+            transform: translateY(1px) !important;
+          }
+
           @media (max-width: 430px) {
             .job-drawer.selected-focus .package-readiness-grid {
               grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
@@ -27949,6 +28053,90 @@ return (
                         ? "Generate package from the Package step."
                         : "Add optional evidence or generate without media."
                       : "Pick and save the field status to unlock package review.";
+                const oneBigNextAction = packageReviewApproved
+                  ? {
+                      tone: "send",
+                      eyebrow: "Next Action",
+                      title: "Send ZIP Package",
+                      detail: "Review is approved. Send the complete ZIP when ready.",
+                      meta: "Ready to send",
+                      onClick: () => {
+                        void sendFullEvidencePackage(selected);
+                      },
+                    }
+                  : packageReady
+                    ? {
+                        tone: "review",
+                        eyebrow: "Next Action",
+                        title: "Review Package",
+                        detail: "Open the review step, check the package, then approve it.",
+                        meta: missionPackageLabel,
+                        onClick: () => {
+                          focusFieldPane("send");
+                          showActionNotice("Review the package, then approve when ready.");
+                        },
+                      }
+                    : noAccessReadyForSecond
+                      ? {
+                          tone: "waiting",
+                          eyebrow: "Next Action",
+                          title: "Save No Access 2nd",
+                          detail: "The 72-hour counter is complete. Record the final attempt.",
+                          meta: "Ready now",
+                          onClick: () => markNoAccessSecondAttempt(selected),
+                        }
+                      : noAccessWaiting
+                        ? {
+                            tone: "waiting",
+                            eyebrow: "Next Action",
+                            title: "Wait for 2nd Attempt",
+                            detail: `Second attempt unlocks ${displayWorkflowDate(secondAttemptInfo?.available.toISOString())}.`,
+                            meta: secondAttemptInfo?.label || "72h timer",
+                            onClick: () => {
+                              switchMapBoard(noAccessSoonForSecond ? "noaccess24" : "waiting72");
+                              showCleanMapView();
+                              showActionNotice(noAccessSoonForSecond ? "Showing T-24 no-access jobs on the map." : "Showing 72h waiting jobs on the map.");
+                            },
+                          }
+                        : finalOutcome
+                          ? {
+                              tone: "package",
+                              eyebrow: "Next Action",
+                              title: counts.total === 0 && canGenerateWithoutMedia ? "Generate Without Media" : "Generate Package",
+                              detail: counts.total === 0 && canGenerateWithoutMedia
+                                ? "Create the affidavit and invoice package now without images."
+                                : "Create the affidavit, invoice, images, and video package.",
+                              meta: missionPackageLabel,
+                              onClick: () => {
+                                void runPackagePrimaryAction(selected);
+                              },
+                            }
+                          : evidenceReady && outcomeChosen
+                            ? {
+                                tone: "media",
+                                eyebrow: "Next Action",
+                                title: "Review Media",
+                                detail: "Check the saved before/after media before packaging.",
+                                meta: `${counts.total} file(s)`,
+                                onClick: jumpToMediaFlow,
+                              }
+                            : outcomeChosen
+                              ? {
+                                  tone: "media",
+                                  eyebrow: "Next Action",
+                                  title: "Add Optional Media",
+                                  detail: "Take or upload labeled before/after media, or continue without it.",
+                                  meta: "Before / After",
+                                  onClick: jumpToMediaFlow,
+                                }
+                              : {
+                                  tone: "status",
+                                  eyebrow: "Next Action",
+                                  title: "Pick Status",
+                                  detail: "Choose what happened at the site and save the date/time.",
+                                  meta: "Start here",
+                                  onClick: jumpToStatusFlow,
+                                };
 
                 return (
                   <>
@@ -28158,6 +28346,17 @@ return (
                         ))}
                       </div>
                       <p>{packageReadinessNext}</p>
+                    </div>
+                    <div className={`field-next-action-card action-${oneBigNextAction.tone}`} aria-label="One big next action">
+                      <div className="field-next-action-copy">
+                        <span>{oneBigNextAction.eyebrow}</span>
+                        <strong>{oneBigNextAction.title}</strong>
+                        <small>{oneBigNextAction.detail}</small>
+                      </div>
+                      <button type="button" onClick={oneBigNextAction.onClick}>
+                        <b>{oneBigNextAction.title}</b>
+                        <small>{oneBigNextAction.meta}</small>
+                      </button>
                     </div>
                     {!noAccessWaiting ? (
                       <div className="field-media-option-hub" aria-label="Before and after media options">
