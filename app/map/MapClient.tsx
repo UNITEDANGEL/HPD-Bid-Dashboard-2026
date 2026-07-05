@@ -26793,6 +26793,138 @@ return (
             opacity: 1 !important;
           }
 
+          /* STATUS_QUICK_CHOICES_2026 */
+          .job-drawer.selected-focus .field-status-quick-choices {
+            display: grid !important;
+            gap: 8px !important;
+            padding: 10px !important;
+            border-radius: 16px !important;
+            background: linear-gradient(180deg, #f8fafc, #ffffff) !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            box-shadow:
+              0 10px 22px rgba(15, 23, 42, 0.07),
+              inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-head {
+            display: grid !important;
+            gap: 2px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-head span,
+          .job-drawer.selected-focus .field-status-quick-group > span {
+            color: #0f766e !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-head strong {
+            color: #0f172a !important;
+            font-size: 13px !important;
+            line-height: 1.1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-group {
+            display: grid !important;
+            gap: 5px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-group div {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-group.group-no-work-completed div {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .job-drawer.selected-focus .quick-status-choice {
+            min-width: 0 !important;
+            min-height: 52px !important;
+            display: grid !important;
+            align-content: center !important;
+            justify-items: start !important;
+            gap: 3px !important;
+            padding: 9px 10px !important;
+            border-radius: 13px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            text-align: left !important;
+            box-shadow:
+              0 8px 16px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+          }
+
+          .job-drawer.selected-focus .quick-status-choice strong {
+            color: inherit !important;
+            font-size: 12px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .job-drawer.selected-focus .quick-status-choice small {
+            color: inherit !important;
+            opacity: 0.72 !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .quick-status-choice.tone-pending {
+            border-color: rgba(100, 116, 139, 0.24) !important;
+            background: #f8fafc !important;
+          }
+
+          .job-drawer.selected-focus .quick-status-choice.tone-start {
+            border-color: rgba(14, 165, 233, 0.24) !important;
+            background: #ecfeff !important;
+            color: #075985 !important;
+          }
+
+          .job-drawer.selected-focus .quick-status-choice.tone-success,
+          .job-drawer.selected-focus .quick-status-choice.tone-partial {
+            border-color: rgba(34, 197, 94, 0.26) !important;
+            background: #ecfdf5 !important;
+            color: #14532d !important;
+          }
+
+          .job-drawer.selected-focus .quick-status-choice.tone-waiting {
+            border-color: rgba(245, 158, 11, 0.32) !important;
+            background: #fffbeb !important;
+            color: #92400e !important;
+          }
+
+          .job-drawer.selected-focus .quick-status-choice.tone-archive,
+          .job-drawer.selected-focus .quick-status-choice.tone-danger {
+            border-color: rgba(220, 38, 38, 0.24) !important;
+            background: #fef2f2 !important;
+            color: #991b1b !important;
+          }
+
+          .job-drawer.selected-focus .quick-status-choice.tone-other {
+            border-color: rgba(100, 116, 139, 0.24) !important;
+            background: #f1f5f9 !important;
+            color: #334155 !important;
+          }
+
+          .job-drawer.selected-focus .quick-status-choice.active {
+            background: linear-gradient(135deg, #1d4ed8, #0f766e) !important;
+            border-color: rgba(125, 211, 252, 0.72) !important;
+            color: #ffffff !important;
+            box-shadow:
+              0 0 0 3px rgba(14, 165, 233, 0.16),
+              0 12px 24px rgba(15, 23, 42, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+          }
+
           /* PACKAGE_READINESS_SCORE_2026 */
           .job-drawer.selected-focus .package-readiness-card {
             display: grid !important;
@@ -28292,6 +28424,7 @@ return (
                 const selectedDraftOption = quickWorkflowOptions.find((option) => option.value === draftWorkflowStatus);
                 const statusChoiceInfo = workflowChoiceInfo(draftWorkflowStatus || workflowStatus(selected) || "Pending");
                 const statusSaveLabel = selectedDraftOption ? `Save ${selectedDraftOption.label}` : "Pick Status First";
+                const activeQuickStatusChoice = normalizeWorkflowChoice(draftWorkflowStatus || workflowDisplayStatusValue(selected));
                 const beforePhotoStep = extraPhotoCaptureStep(selected, "before");
                 const beforeVideoStep = extraVideoCaptureStep(selected, "before");
                 const afterPhotoStep = extraPhotoCaptureStep(selected, "after");
@@ -28640,6 +28773,38 @@ return (
                         >
                           Now
                         </button>
+                      </div>
+                      <div className="field-status-quick-choices" aria-label="Quick status choices">
+                        <div className="field-status-quick-head">
+                          <span>Quick Pick</span>
+                          <strong>Tap status, confirm time, then Save</strong>
+                        </div>
+                        {workflowOptionGroups.map((group) => (
+                          <section key={group.group} className={`field-status-quick-group group-${group.group.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
+                            <span>{group.group}</span>
+                            <div>
+                              {group.options.map((option) => {
+                                const optionInfo = workflowChoiceInfo(option.value);
+                                const optionActive = normalizeWorkflowChoice(option.value) === activeQuickStatusChoice;
+                                return (
+                                  <button
+                                    key={option.value}
+                                    type="button"
+                                    className={`quick-status-choice tone-${optionInfo.tone} ${optionActive ? "active" : ""}`}
+                                    aria-pressed={optionActive}
+                                    onClick={() => {
+                                      pickDraftWorkflow(option.value);
+                                      showActionNotice(`${option.label} selected. Confirm date/time, then Save.`);
+                                    }}
+                                  >
+                                    <strong>{option.label}</strong>
+                                    <small>{optionInfo.title}</small>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </section>
+                        ))}
                       </div>
                       <div className={`field-status-flow-card tone-${statusChoiceInfo.tone}`}>
                         <span>{statusChoiceInfo.title}</span>
