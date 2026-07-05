@@ -92,6 +92,7 @@ function auditRows(rows, manifest) {
 
   const missingAddresses = [];
   const missingDescriptions = [];
+  const missingItbPage3Descriptions = [];
   const badDescriptions = [];
   const sourceReviewJobs = [];
   const missingItbFiles = [];
@@ -99,6 +100,7 @@ function auditRows(rows, manifest) {
 
   for (const job of jobs) {
     const description = get(job, DESCRIPTION_KEYS);
+    const itbPage3Description = get(job, ["ItbPage3Description", "itbPage3Description"]);
     const address = get(job, ADDRESS_KEYS);
     const itbFile = cleanItbFile(get(job, ITB_KEYS));
     const status = get(job, ["ITBMatchStatus", "itbMatchStatus", "status"]).toUpperCase();
@@ -106,6 +108,9 @@ function auditRows(rows, manifest) {
 
     if (!address) missingAddresses.push(summarizeJob(job));
     if (!description && status !== "NO_ITB" && itbFile) missingDescriptions.push(summarizeJob(job));
+    if (!itbPage3Description && description && status !== "NO_ITB" && itbFile) {
+      missingItbPage3Descriptions.push(summarizeJob(job));
+    }
     if (description && isBadDescription(description)) badDescriptions.push(summarizeJob(job));
     if (needsSourceReview) sourceReviewJobs.push(summarizeJob(job));
     if (!itbFile && status !== "NO_ITB") missingItbFiles.push(summarizeJob(job));
@@ -121,6 +126,7 @@ function auditRows(rows, manifest) {
     totalJobs: jobs.length,
     missingAddresses,
     missingDescriptions,
+    missingItbPage3Descriptions,
     badDescriptions,
     sourceReviewJobs,
     missingItbFiles,
@@ -133,6 +139,7 @@ function sameCriticalCounts(left, right) {
     left.totalJobs === right.totalJobs &&
     left.missingAddresses.length === right.missingAddresses.length &&
     left.missingDescriptions.length === right.missingDescriptions.length &&
+    left.missingItbPage3Descriptions.length === right.missingItbPage3Descriptions.length &&
     left.badDescriptions.length === right.badDescriptions.length &&
     left.sourceReviewJobs.length === right.sourceReviewJobs.length
   );
@@ -160,6 +167,7 @@ const output = {
   totalJobs: report.totalJobs,
   missingAddresses: report.missingAddresses.length,
   missingDescriptions: report.missingDescriptions.length,
+  missingItbPage3Descriptions: report.missingItbPage3Descriptions.length,
   badDescriptions: report.badDescriptions.length,
   sourceReviewJobs: report.sourceReviewJobs.length,
   missingItbFiles: report.missingItbFiles.length,
@@ -168,6 +176,7 @@ const output = {
   samples: {
     missingAddresses: report.missingAddresses.slice(0, 25),
     missingDescriptions: report.missingDescriptions.slice(0, 25),
+    missingItbPage3Descriptions: report.missingItbPage3Descriptions.slice(0, 25),
     badDescriptions: report.badDescriptions.slice(0, 25),
     sourceReviewJobs: report.sourceReviewJobs.slice(0, 25),
     missingItbFiles: report.missingItbFiles.slice(0, 25),
@@ -179,6 +188,7 @@ console.log("PAPERWORK DATA QUALITY");
 console.log(`Total jobs: ${output.totalJobs}`);
 console.log(`Missing addresses: ${output.missingAddresses}`);
 console.log(`Missing descriptions: ${output.missingDescriptions}`);
+console.log(`Missing ITB page 3 descriptions: ${output.missingItbPage3Descriptions}`);
 console.log(`Bad/boilerplate descriptions: ${output.badDescriptions}`);
 console.log(`Source review jobs: ${output.sourceReviewJobs}`);
 console.log(`Missing ITB files: ${output.missingItbFiles}`);
@@ -188,6 +198,7 @@ console.log(`Public data in sync: ${output.publicDataInSync ? "yes" : "no"}`);
 printTable("Source review sample", report.sourceReviewJobs);
 printTable("Missing address sample", report.missingAddresses);
 printTable("Missing description sample", report.missingDescriptions);
+printTable("Missing ITB page 3 description sample", report.missingItbPage3Descriptions);
 printTable("Bad description sample", report.badDescriptions);
 
 if (writeReport) {
@@ -204,6 +215,7 @@ if (writeReport) {
 const criticalIssues = [];
 if (report.missingAddresses.length) criticalIssues.push(`missingAddresses=${report.missingAddresses.length}`);
 if (report.missingDescriptions.length) criticalIssues.push(`missingDescriptions=${report.missingDescriptions.length}`);
+if (report.missingItbPage3Descriptions.length) criticalIssues.push(`missingItbPage3Descriptions=${report.missingItbPage3Descriptions.length}`);
 if (report.badDescriptions.length) criticalIssues.push(`badDescriptions=${report.badDescriptions.length}`);
 if (report.missingItbFiles.length) criticalIssues.push(`missingItbFiles=${report.missingItbFiles.length}`);
 if (!publicDataInSync) criticalIssues.push("publicDataInSync=false");

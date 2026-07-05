@@ -32,11 +32,11 @@ def normalize_description(text):
     return value.strip()
 
 
-def extract_page3_description(pdf_path):
+def extract_page_description(pdf_path, page_number):
     with pdfplumber.open(pdf_path) as pdf:
-        if len(pdf.pages) < SOURCE_PAGE:
+        if len(pdf.pages) < page_number:
             return ""
-        text = pdf.pages[SOURCE_PAGE - 1].extract_text(x_tolerance=1, y_tolerance=3) or ""
+        text = pdf.pages[page_number - 1].extract_text(x_tolerance=1, y_tolerance=3) or ""
 
     match = re.search(r"Job\s+Description\s*:\s*", text, flags=re.IGNORECASE)
     if match:
@@ -73,7 +73,7 @@ def main():
     extracted_by_file = {}
     stats = {
         "jobs": len(jobs),
-        "confirmedPage3Entries": len(entries),
+        "manifestEntries": len(entries),
         "descriptionsAdded": 0,
         "legacyDescriptionReplaced": 0,
         "missingManifestEntry": 0,
@@ -93,9 +93,7 @@ def main():
             stats["missingManifestEntry"] += 1
             continue
 
-        if int(entry.get("page") or 0) != SOURCE_PAGE:
-            stats["missingManifestEntry"] += 1
-            continue
+        page_number = int(entry.get("page") or SOURCE_PAGE)
 
         source_file = entry.get("sourceFile") or ""
         source_path = Path(source_file)
@@ -103,13 +101,14 @@ def main():
             stats["missingManifestEntry"] += 1
             continue
 
-        description = extracted_by_file.get(source_file)
+        cache_key = f"{source_file}::p{page_number}"
+        description = extracted_by_file.get(cache_key)
         if description is None:
             try:
-                description = extract_page3_description(source_path)
+                description = extract_page_description(source_path, page_number)
             except Exception:
                 description = ""
-            extracted_by_file[source_file] = description
+            extracted_by_file[cache_key] = description
 
         if not description:
             stats["extractFailed"] += 1
@@ -117,7 +116,7 @@ def main():
 
         previous = current_description(job)
         job["ItbPage3Description"] = description
-        job["ItbPage3DescriptionSource"] = "PDF_PAGE_3"
+        job["ItbPage3DescriptionSource"] = f"PDF_PAGE_{page_number}"
         job["ItbPage3SourceFile"] = Path(source_file).name
         stats["descriptionsAdded"] += 1
 
