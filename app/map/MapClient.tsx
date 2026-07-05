@@ -25937,6 +25937,51 @@ return (
               bottom: calc(env(safe-area-inset-bottom) + 14px) !important;
             }
           }
+
+          /* JOB_CARD_MAP_BUTTON_ALIGN_2026 */
+          .job-drawer.selected-focus .job-card-field-title-row {
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: start !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-map-back-pill.job-card-close-pill {
+            width: auto !important;
+            min-width: 52px !important;
+            max-width: 68px !important;
+            min-height: 34px !important;
+            height: 34px !important;
+            max-height: 34px !important;
+            padding: 0 11px !important;
+            justify-self: end !important;
+            align-self: start !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            border-radius: 11px !important;
+            background: rgba(255, 255, 255, 0.96) !important;
+            color: #0f172a !important;
+            border: 1px solid rgba(255, 255, 255, 0.54) !important;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.18) !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            white-space: nowrap !important;
+          }
+
+          @media (max-width: 430px) {
+            .job-drawer.selected-focus .job-card-field-title-row {
+              grid-template-columns: minmax(0, 1fr) auto !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-map-back-pill.job-card-close-pill {
+              min-width: 48px !important;
+              height: 31px !important;
+              min-height: 31px !important;
+              max-height: 31px !important;
+              padding: 0 9px !important;
+              border-radius: 10px !important;
+              font-size: 11px !important;
+            }
+          }
         `}
         </style>
 
