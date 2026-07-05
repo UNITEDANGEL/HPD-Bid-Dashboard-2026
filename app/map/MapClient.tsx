@@ -26718,6 +26718,81 @@ return (
               0 16px 34px rgba(15, 23, 42, 0.14) !important;
           }
 
+          /* STATUS_PICKER_VISIBILITY_FIX_2026 */
+          .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip div:first-child span,
+          .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip div:first-child strong,
+          .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip div:nth-child(2) span,
+          .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip div:nth-child(2) strong {
+            color: #ffffff !important;
+            opacity: 1 !important;
+            text-shadow: 0 1px 1px rgba(2, 6, 23, 0.28) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip div:first-child {
+            box-shadow:
+              0 10px 22px rgba(15, 23, 42, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card .field-status-select-label {
+            padding: 10px !important;
+            border-radius: 16px !important;
+            background: linear-gradient(180deg, #ffffff, #f8fafc) !important;
+            border: 1px solid rgba(37, 99, 235, 0.18) !important;
+            box-shadow:
+              0 12px 24px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card .field-status-select-label span {
+            color: #0f172a !important;
+            opacity: 1 !important;
+            font-size: 12px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card .field-status-select-label select {
+            min-height: 54px !important;
+            padding: 0 14px !important;
+            border: 2px solid #2563eb !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            box-shadow:
+              0 0 0 4px rgba(37, 99, 235, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+            font-size: 15px !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card.tone-pending .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-start .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-success .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-partial .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-waiting .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-archive .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-danger .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-other .field-status-select-label select {
+            border: 2px solid #2563eb !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            box-shadow:
+              0 0 0 4px rgba(37, 99, 235, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card .field-status-select-label select option,
+          .job-drawer.selected-focus .field-status-picker-card .field-status-select-label select optgroup {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            font-weight: 900 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card .field-status-save-primary:disabled {
+            background: #eff6ff !important;
+            border: 1px solid rgba(37, 99, 235, 0.22) !important;
+            color: #1d4ed8 !important;
+            opacity: 1 !important;
+          }
+
           /* PACKAGE_READINESS_SCORE_2026 */
           .job-drawer.selected-focus .package-readiness-card {
             display: grid !important;
