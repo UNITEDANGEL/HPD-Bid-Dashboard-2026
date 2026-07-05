@@ -8818,6 +8818,88 @@ function directionsUrl(job: JobRecord) {
     return Boolean(workflowLabel(job)) && status !== "PENDING";
   }
 
+  function workflowStateBannerInfo(job: JobRecord, draftValue = "") {
+    const displayValue = workflowDisplayStatusValue(job, draftValue);
+    const choice = normalizeWorkflowChoice(displayValue);
+    const choiceInfo = workflowChoiceInfo(displayValue);
+    const savedIso = workflowSavedDateIso(job);
+    const saved = hasSavedFieldWorkflow(job);
+    const secondAttemptInfo = workflowSecondAttemptInfo(job);
+    const packageReady = Boolean(fullPackagePreviewFor(job));
+    const packageApproved = Boolean(fieldPackageReviewApprovedAt(job));
+    const counts = fieldPhotoCountsFor(job);
+    const canGenerateWithoutMedia = canGeneratePdfOnlyPackage(job);
+    let eyebrow = draftValue ? "Selected Status" : saved ? "Current Status" : "Status Needed";
+    let next = draftValue
+      ? "Save this status with the correct date/time."
+      : "Pick status to unlock media and package flow.";
+    let meta = draftValue ? "Not saved" : savedIso ? displayWorkflowDate(savedIso) : "Start";
+    let action: "status" | "media" | "package" | "send" = "status";
+
+    if (!draftValue && choice === "Work In Progress") {
+      next = counts.total ? "Media saved. Finish work or update final status." : "Take before/after media or finish the job.";
+      meta = savedIso ? displayWorkflowDate(savedIso) : "Started";
+      action = "media";
+    }
+
+    if (!draftValue && (choice === "Work Completed" || choice === "Partial Work Completed")) {
+      eyebrow = "Closed Status";
+      if (packageApproved) {
+        next = "Package review approved. Send the ZIP package.";
+        action = "send";
+      } else if (packageReady) {
+        next = "Package is ready. Review and approve it.";
+        action = "send";
+      } else {
+        next = counts.total || canGenerateWithoutMedia ? "Generate affidavit, invoice, and ZIP package." : "Add media or generate without media.";
+        action = "package";
+      }
+      meta = savedIso ? displayWorkflowDate(savedIso) : "Package";
+    }
+
+    if (!draftValue && choice === "No Access - 1st Attempt") {
+      eyebrow = secondAttemptInfo?.ready ? "Ready Status" : "Waiting Status";
+      next = secondAttemptInfo?.ready
+        ? "72-hour counter matured. Save No Access 2nd."
+        : secondAttemptInfo
+          ? `Second attempt unlocks ${displayWorkflowDate(secondAttemptInfo.available.toISOString())}.`
+          : "72-hour timer is active.";
+      meta = secondAttemptInfo?.ready ? "Ready now" : secondAttemptInfo?.label || meta;
+      action = "status";
+    }
+
+    if (!draftValue && (choice === "No Access - 2nd Attempt" || choice === "Refused Access" || choice === "Completed by Others")) {
+      eyebrow = "Closed Status";
+      if (packageApproved) {
+        next = "Review approved. Send the package when ready.";
+        action = "send";
+      } else if (packageReady) {
+        next = "Package ready. Review and approve before sending.";
+        action = "send";
+      } else {
+        next = "Generate affidavit and invoice package.";
+        action = "package";
+      }
+      meta = savedIso ? displayWorkflowDate(savedIso) : "Closeout";
+    }
+
+    if (!draftValue && choice === "Pending") {
+      meta = "Start";
+      action = "status";
+    }
+
+    return {
+      action,
+      eyebrow,
+      label: workflowShortStatusLabel(displayValue),
+      meta,
+      next,
+      tone: choiceInfo.tone,
+      isDraft: Boolean(draftValue),
+      isSaved: saved,
+    };
+  }
+
   function switchMapBoard(view: WorkflowViewFilter) {
     setWorkflowViewFilter(view);
     setClusterSheet(null);
@@ -26409,6 +26491,152 @@ return (
             outline-offset: 2px !important;
           }
 
+          /* CURRENT_STATE_BANNER_2026 */
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner {
+            width: 100% !important;
+            min-height: 58px !important;
+            display: grid !important;
+            grid-template-columns: auto minmax(0, 1fr) minmax(62px, auto) !important;
+            align-items: center !important;
+            gap: 9px !important;
+            padding: 9px 10px !important;
+            border: 1px solid rgba(255, 255, 255, 0.20) !important;
+            border-radius: 14px !important;
+            background: linear-gradient(135deg, #334155, #0f172a) !important;
+            color: #ffffff !important;
+            text-align: left !important;
+            box-shadow:
+              0 14px 28px rgba(2, 6, 23, 0.22),
+              inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+            animation: jobStateBannerGlow2026 2.2s ease-in-out infinite !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-pending {
+            background: linear-gradient(135deg, #334155, #0f172a) !important;
+            border-color: rgba(226, 232, 240, 0.42) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-start {
+            background: linear-gradient(135deg, #075985, #0284c7 54%, #0f766e) !important;
+            border-color: rgba(125, 211, 252, 0.68) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-success,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-partial {
+            background: linear-gradient(135deg, #14532d, #16a34a 58%, #0f766e) !important;
+            border-color: rgba(187, 247, 208, 0.72) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-waiting {
+            background: linear-gradient(135deg, #92400e, #f59e0b 58%, #f97316) !important;
+            border-color: rgba(254, 215, 170, 0.78) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-archive,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-danger {
+            background: linear-gradient(135deg, #7f1d1d, #dc2626 58%, #f97316) !important;
+            border-color: rgba(254, 202, 202, 0.78) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-other {
+            background: linear-gradient(135deg, #334155, #475569 54%, #64748b) !important;
+            border-color: rgba(203, 213, 225, 0.66) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.has-draft-status {
+            outline: 2px solid rgba(255, 255, 255, 0.62) !important;
+            outline-offset: 2px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner .state-pulse-dot {
+            width: 12px !important;
+            height: 12px !important;
+            border-radius: 999px !important;
+            background: #ffffff !important;
+            box-shadow:
+              0 0 0 5px rgba(255, 255, 255, 0.16),
+              0 0 18px rgba(255, 255, 255, 0.70) !important;
+            animation: jobStateDotPulse2026 1.28s ease-in-out infinite !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner .state-banner-copy {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 2px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner small {
+            color: rgba(255, 255, 255, 0.78) !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner strong {
+            color: #ffffff !important;
+            font-size: 16px !important;
+            line-height: 1.02 !important;
+            font-weight: 1000 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner em {
+            color: rgba(255, 255, 255, 0.88) !important;
+            font-size: 11px !important;
+            line-height: 1.18 !important;
+            font-style: normal !important;
+            font-weight: 850 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner b {
+            max-width: 96px !important;
+            justify-self: end !important;
+            padding: 6px 7px !important;
+            border-radius: 10px !important;
+            background: rgba(255, 255, 255, 0.92) !important;
+            color: #0f172a !important;
+            font-size: 9px !important;
+            line-height: 1.06 !important;
+            font-weight: 1000 !important;
+            text-align: center !important;
+            overflow-wrap: anywhere !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner:active {
+            transform: translateY(1px) !important;
+          }
+
+          @keyframes jobStateBannerGlow2026 {
+            0%,
+            100% {
+              box-shadow:
+                0 14px 28px rgba(2, 6, 23, 0.22),
+                inset 0 1px 0 rgba(255, 255, 255, 0.18);
+            }
+            50% {
+              box-shadow:
+                0 0 0 2px rgba(255, 255, 255, 0.18),
+                0 20px 34px rgba(2, 6, 23, 0.28),
+                inset 0 1px 0 rgba(255, 255, 255, 0.24);
+            }
+          }
+
+          @keyframes jobStateDotPulse2026 {
+            0%,
+            100% {
+              transform: scale(0.92);
+              opacity: 0.74;
+            }
+            50% {
+              transform: scale(1.15);
+              opacity: 1;
+            }
+          }
+
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail {
             grid-template-columns: 0.82fr 1.32fr 0.96fr 0.80fr 0.76fr !important;
           }
@@ -26802,7 +27030,9 @@ return (
 
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
-            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status {
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner,
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner .state-pulse-dot {
               animation: none !important;
             }
           }
@@ -27356,6 +27586,39 @@ return (
                   Map
                 </button>
               </div>
+              {(() => {
+                const stateBanner = workflowStateBannerInfo(selected, draftWorkflowStatus);
+                return (
+                  <button
+                    type="button"
+                    className={`job-card-current-state-banner tone-${stateBanner.tone} ${stateBanner.isDraft ? "has-draft-status" : ""} ${stateBanner.isSaved ? "has-saved-status" : "needs-status"}`}
+                    aria-label={`${stateBanner.eyebrow}: ${stateBanner.label}. ${stateBanner.next}`}
+                    onClick={() => {
+                      if (stateBanner.action === "send") {
+                        focusFieldPane("send");
+                        return;
+                      }
+                      if (stateBanner.action === "package") {
+                        jumpToPackageFlow();
+                        return;
+                      }
+                      if (stateBanner.action === "media") {
+                        jumpToMediaFlow();
+                        return;
+                      }
+                      jumpToStatusFlow();
+                    }}
+                  >
+                    <span className="state-pulse-dot" aria-hidden="true" />
+                    <span className="state-banner-copy">
+                      <small>{stateBanner.eyebrow}</small>
+                      <strong>{stateBanner.label}</strong>
+                      <em>{stateBanner.next}</em>
+                    </span>
+                    <b>{stateBanner.meta}</b>
+                  </button>
+                );
+              })()}
               {selectedNoAccessTimerInfo ? (
                 <div className={`job-card-72h-counter ${selectedNoAccessTimerInfo.ready ? "is-ready" : selectedNoAccessTimerInfo.within24 ? "is-soon" : "is-waiting"}`} role="status" aria-live="polite" aria-label="72 hour no access counter">
                   <span>72H Counter</span>
