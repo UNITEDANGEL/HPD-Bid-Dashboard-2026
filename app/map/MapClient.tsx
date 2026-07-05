@@ -8780,6 +8780,44 @@ function directionsUrl(job: JobRecord) {
     return map[choice] || map.Pending;
   }
 
+  function workflowShortStatusLabel(value: string) {
+    const choice = normalizeWorkflowChoice(value);
+    const labels: Record<string, string> = {
+      Pending: "Pending",
+      "Work In Progress": "Started",
+      "Work Completed": "Completed",
+      "Partial Work Completed": "Partial",
+      "No Access - 1st Attempt": "No Access 1st",
+      "No Access - 2nd Attempt": "No Access 2nd",
+      "Refused Access": "Refused",
+      "Completed by Others": "By Others",
+    };
+    return labels[choice] || workflowChoiceInfo(choice).title || "Status";
+  }
+
+  function workflowButtonSubLabel(value: string, draft: boolean) {
+    const choice = normalizeWorkflowChoice(value);
+    if (draft) return "selected";
+    if (choice === "Pending") return "pick status";
+    if (choice === "No Access - 1st Attempt") return "72h timer";
+    if (choice === "No Access - 2nd Attempt") return "closeout";
+    if (choice === "Refused Access") return "closeout";
+    if (choice === "Work Completed" || choice === "Partial Work Completed") return "package";
+    if (choice === "Completed by Others") return "archive";
+    return "current";
+  }
+
+  function workflowDisplayStatusValue(job: JobRecord, draftValue = "") {
+    if (draftValue) return draftValue;
+    const savedLabel = workflowLabel(job);
+    return savedLabel ? workflowStatus(job) : "Pending";
+  }
+
+  function hasSavedFieldWorkflow(job: JobRecord) {
+    const status = workflowStatus(job);
+    return Boolean(workflowLabel(job)) && status !== "PENDING";
+  }
+
   function switchMapBoard(view: WorkflowViewFilter) {
     setWorkflowViewFilter(view);
     setClusterSheet(null);
@@ -26325,6 +26363,133 @@ return (
             box-shadow: 0 0 12px rgba(255, 255, 255, 0.58) !important;
           }
 
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.tone-pending,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.tone-pending {
+            background: linear-gradient(135deg, #334155, #0f172a) !important;
+            border-color: rgba(226, 232, 240, 0.40) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.tone-start,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.tone-start {
+            background: linear-gradient(135deg, #075985, #0284c7 52%, #06b6d4) !important;
+            border-color: rgba(125, 211, 252, 0.68) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.tone-success,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.tone-partial,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.tone-success,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.tone-partial {
+            background: linear-gradient(135deg, #14532d, #16a34a 58%, #22c55e) !important;
+            border-color: rgba(187, 247, 208, 0.70) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.tone-waiting,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.tone-waiting {
+            background: linear-gradient(135deg, #92400e, #f59e0b 58%, #f97316) !important;
+            border-color: rgba(254, 215, 170, 0.76) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.tone-archive,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.tone-danger,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.tone-archive,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.tone-danger {
+            background: linear-gradient(135deg, #7f1d1d, #dc2626 58%, #f97316) !important;
+            border-color: rgba(254, 202, 202, 0.78) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.tone-other,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.tone-other {
+            background: linear-gradient(135deg, #334155, #475569 54%, #64748b) !important;
+            border-color: rgba(203, 213, 225, 0.62) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.has-draft-status,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.has-draft-status {
+            outline: 2px solid rgba(255, 255, 255, 0.54) !important;
+            outline-offset: 2px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail {
+            grid-template-columns: 0.82fr 1.32fr 0.96fr 0.80fr 0.76fr !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived strong {
+            font-size: 13px !important;
+            line-height: 1.02 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status strong {
+            font-size: 10px !important;
+            line-height: 1.02 !important;
+            overflow-wrap: anywhere !important;
+            white-space: normal !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status small {
+            font-size: 7px !important;
+            line-height: 1 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card.tone-pending .field-status-current-strip div:first-child,
+          .job-drawer.selected-focus .field-status-picker-card.tone-pending .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-pending .field-status-save-primary:not(:disabled) {
+            background: linear-gradient(135deg, #334155, #0f172a) !important;
+            color: #ffffff !important;
+            border-color: rgba(226, 232, 240, 0.34) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card.tone-start .field-status-current-strip div:first-child,
+          .job-drawer.selected-focus .field-status-picker-card.tone-start .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-start .field-status-save-primary:not(:disabled) {
+            background: linear-gradient(135deg, #075985, #0284c7 52%, #06b6d4) !important;
+            color: #ffffff !important;
+            border-color: rgba(125, 211, 252, 0.42) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card.tone-success .field-status-current-strip div:first-child,
+          .job-drawer.selected-focus .field-status-picker-card.tone-partial .field-status-current-strip div:first-child,
+          .job-drawer.selected-focus .field-status-picker-card.tone-success .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-partial .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-success .field-status-save-primary:not(:disabled),
+          .job-drawer.selected-focus .field-status-picker-card.tone-partial .field-status-save-primary:not(:disabled) {
+            background: linear-gradient(135deg, #14532d, #16a34a 58%, #22c55e) !important;
+            color: #ffffff !important;
+            border-color: rgba(187, 247, 208, 0.48) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card.tone-waiting .field-status-current-strip div:first-child,
+          .job-drawer.selected-focus .field-status-picker-card.tone-waiting .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-waiting .field-status-save-primary:not(:disabled) {
+            background: linear-gradient(135deg, #92400e, #f59e0b 58%, #f97316) !important;
+            color: #ffffff !important;
+            border-color: rgba(254, 215, 170, 0.54) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card.tone-archive .field-status-current-strip div:first-child,
+          .job-drawer.selected-focus .field-status-picker-card.tone-danger .field-status-current-strip div:first-child,
+          .job-drawer.selected-focus .field-status-picker-card.tone-archive .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-danger .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-archive .field-status-save-primary:not(:disabled),
+          .job-drawer.selected-focus .field-status-picker-card.tone-danger .field-status-save-primary:not(:disabled) {
+            background: linear-gradient(135deg, #7f1d1d, #dc2626 58%, #f97316) !important;
+            color: #ffffff !important;
+            border-color: rgba(254, 202, 202, 0.54) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card.tone-other .field-status-current-strip div:first-child,
+          .job-drawer.selected-focus .field-status-picker-card.tone-other .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-picker-card.tone-other .field-status-save-primary:not(:disabled) {
+            background: linear-gradient(135deg, #334155, #475569 54%, #64748b) !important;
+            color: #ffffff !important;
+            border-color: rgba(203, 213, 225, 0.48) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card.has-draft-status {
+            box-shadow:
+              0 0 0 3px rgba(14, 165, 233, 0.14),
+              0 16px 34px rgba(15, 23, 42, 0.14) !important;
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status {
@@ -26896,9 +27061,13 @@ return (
                 </div>
               ) : null}
               <div className="job-card-field-action-dock" aria-label="Job card primary actions">
-                <button type="button" className="route-head-arrived" onClick={() => openArrivedJob(selected)}>
-                  <strong>Status</strong>
-                  <small>arrived / update</small>
+                <button
+                  type="button"
+                  className={`route-head-arrived tone-${workflowChoiceInfo(workflowDisplayStatusValue(selected, draftWorkflowStatus)).tone} ${draftWorkflowStatus ? "has-draft-status" : ""}`}
+                  onClick={() => openArrivedJob(selected)}
+                >
+                  <strong>{workflowShortStatusLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus))}</strong>
+                  <small>{workflowButtonSubLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus), Boolean(draftWorkflowStatus))}</small>
                 </button>
                 <a className="route-head-button waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer" aria-label="Open Waze directions">
                   <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
@@ -26922,11 +27091,11 @@ return (
                 </button>
                 <button
                   type="button"
-                  className={`flow-status ${fieldFocusPane === "capture" ? "active" : ""} ${workflowStatus(selected) && workflowStatus(selected) !== "PENDING" ? "done" : ""}`}
+                  className={`flow-status tone-${workflowChoiceInfo(workflowDisplayStatusValue(selected, draftWorkflowStatus)).tone} ${fieldFocusPane === "capture" ? "active" : ""} ${hasSavedFieldWorkflow(selected) ? "done" : ""} ${draftWorkflowStatus ? "has-draft-status" : ""}`}
                   onClick={jumpToStatusFlow}
                 >
-                  <strong>Status</strong>
-                  <small>save</small>
+                  <strong>{workflowShortStatusLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus))}</strong>
+                  <small>{workflowButtonSubLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus), Boolean(draftWorkflowStatus))}</small>
                 </button>
                 <button
                   type="button"
@@ -27460,7 +27629,7 @@ return (
                 const missionStatusDateLabel = Number.isNaN(missionStatusDate.getTime())
                   ? "Choose date"
                   : displayWorkflowDate(missionStatusDate.toISOString());
-                const currentStatusLabel = workflowLabel(selected) || JobStatus.statusLabel(selected) || "Pending";
+                const currentStatusLabel = workflowLabel(selected) || "Pending";
                 const savedStatusIso = workflowSavedDateIso(selected);
                 const savedStatusDateLabel = savedStatusIso ? displayWorkflowDate(savedStatusIso) : "No saved field status yet";
                 const savedStatusCardLabel = savedStatusIso ? savedStatusDateLabel : "Not saved";
@@ -27614,7 +27783,7 @@ return (
                         </>
                       ) : null}
                     </div>
-                    <div className={`field-status-picker-card status-${workflowStatus(selected).toLowerCase().replace(/[^a-z0-9]+/g, "-") || "pending"}`} aria-label="Status picker and saved status">
+                    <div className={`field-status-picker-card status-${workflowStatus(selected).toLowerCase().replace(/[^a-z0-9]+/g, "-") || "pending"} tone-${statusChoiceInfo.tone} ${draftWorkflowStatus ? "has-draft-status" : ""}`} aria-label="Status picker and saved status">
                       <div className="field-status-current-strip">
                         <div>
                           <span>Status</span>
