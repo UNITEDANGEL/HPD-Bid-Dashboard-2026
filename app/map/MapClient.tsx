@@ -4188,27 +4188,27 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       });
 
       const clusterCellX = mobileMap
-        ? zoomLevel < 12
-          ? 280
-          : zoomLevel < 14
-            ? 248
-            : 224
-        : zoomLevel < 12
-          ? 236
-          : zoomLevel < 14
-            ? 208
-            : 188;
-      const clusterCellY = mobileMap
-        ? zoomLevel < 12
-          ? 218
-          : zoomLevel < 14
-            ? 194
-            : 176
-        : zoomLevel < 12
+        ? zoomLevel < 11
+          ? 178
+          : zoomLevel < 13
+            ? 148
+            : 128
+        : zoomLevel < 11
           ? 188
-          : zoomLevel < 14
-            ? 166
-            : 148;
+          : zoomLevel < 13
+            ? 156
+            : 136;
+      const clusterCellY = mobileMap
+        ? zoomLevel < 11
+          ? 154
+          : zoomLevel < 13
+            ? 132
+            : 116
+        : zoomLevel < 11
+          ? 164
+          : zoomLevel < 13
+            ? 142
+            : 124;
       const renderItems: any[] = markerOverview && !showIndividualNoAccessTimers
         ? Array.from(
             plottedItems.reduce((clusters, item) => {
@@ -4220,9 +4220,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               cluster.items.push(item);
               clusters.set(key, cluster);
               return clusters;
-            }, new Map<string, { items: typeof plottedItems; cellX: number; cellY: number }>())
+          }, new Map<string, { items: typeof plottedItems; cellX: number; cellY: number }>())
           ).map(([key, cluster]) => {
-            if (cluster.items.length === 1 && !denseLayer && !timerLayerNeedsClusters) return { kind: "job", ...cluster.items[0] };
+            if (cluster.items.length === 1 && (!denseLayer || zoomLevel >= (mobileMap ? 11 : 10)) && !timerLayerNeedsClusters) {
+              return { kind: "job", ...cluster.items[0] };
+            }
             const rawCenterX = (cluster.cellX + 0.5) * clusterCellX;
             const rawCenterY = (cluster.cellY + 0.5) * clusterCellY;
             const center = map.layerPointToLatLng(L.point(rawCenterX, rawCenterY));
@@ -4282,14 +4284,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           const [offsetX, offsetY]: [number, number] = [0, 0];
           const clusterPoint = map.latLngToLayerPoint([item.lat, item.lng]);
           const clusterLatLng = map.layerPointToLatLng(L.point(clusterPoint.x + offsetX, clusterPoint.y + offsetY));
-          const clusterIconSize: [number, number] = mobileMap ? [96, 68] : [108, 76];
+          const clusterIconSize: [number, number] = mobileMap ? [70, 78] : [76, 84];
           const marker = L.marker([clusterLatLng.lat, clusterLatLng.lng], {
             icon: L.divIcon({
               className: "maturity-map-marker",
-              html: `<div class="map-cluster-marker ${statusClass}">
+              html: `<div class="map-cluster-marker map-cluster-dot ${statusClass}">
                       <span>${clusterItems.length}</span>
-                      <strong>${clusterItems.length === 1 ? "JOB" : "JOBS"}</strong>
-                      <em>${escapeMarkerHtml(clusterBoroughLabel)}</em>
+                      <strong>${escapeMarkerHtml(clusterBoroughLabel)}</strong>
                     </div>`,
               iconSize: clusterIconSize,
               iconAnchor: [Math.round(clusterIconSize[0] / 2), Math.round(clusterIconSize[1] / 2)],
@@ -4300,6 +4301,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           marker.on("click", () => {
             if (clusterItems.length === 1) {
               focusJob(clusterItems[0].job);
+              return;
+            }
+            if (zoomLevel < (mobileMap ? 14 : 13)) {
+              markProgrammaticMapMove();
+              map.setView([item.lat, item.lng], Math.min(16, Math.max(zoomLevel + 2, mobileMap ? 11 : 11)), { animate: true, duration: 0.45 });
               return;
             }
             openClusterSheet(clusterItems, item.lat, item.lng, clusterLabel, readyCount, worstOverdue);
@@ -25016,6 +25022,102 @@ return (
             place-items: center !important;
           }
 
+          /* MAP_DOT_CLUSTER_THEME_2026 */
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot {
+            width: 62px !important;
+            min-width: 62px !important;
+            height: 62px !important;
+            min-height: 62px !important;
+            padding: 0 !important;
+            display: grid !important;
+            grid-template-rows: 1fr auto !important;
+            place-items: center !important;
+            gap: 0 !important;
+            color: #0f172a !important;
+            border: 2px solid rgba(255, 255, 255, 0.92) !important;
+            border-left-width: 2px !important;
+            border-radius: 999px !important;
+            background:
+              radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96) 58%, rgba(226, 232, 240, 0.96)) !important;
+            box-shadow:
+              0 0 0 3px rgba(14, 165, 233, 0.16),
+              0 14px 28px rgba(15, 23, 42, 0.28) !important;
+            transform: translateZ(0) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot::after {
+            content: "" !important;
+            position: absolute !important;
+            left: 50% !important;
+            bottom: -8px !important;
+            width: 14px !important;
+            height: 14px !important;
+            border-radius: 3px !important;
+            transform: translateX(-50%) rotate(45deg) !important;
+            background: #e2e8f0 !important;
+            border-right: 2px solid rgba(255, 255, 255, 0.92) !important;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.92) !important;
+            box-shadow: 4px 4px 8px rgba(15, 23, 42, 0.16) !important;
+            z-index: -1 !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot span {
+            min-width: 0 !important;
+            padding: 10px 4px 0 !important;
+            color: #0f172a !important;
+            font-size: 22px !important;
+            line-height: 0.86 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-shadow: none !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot strong {
+            min-width: 0 !important;
+            max-width: 50px !important;
+            min-height: 17px !important;
+            padding: 2px 7px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            color: #075985 !important;
+            background: rgba(224, 242, 254, 0.98) !important;
+            border: 1px solid rgba(14, 165, 233, 0.22) !important;
+            border-radius: 999px !important;
+            font-size: 8px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-overdue {
+            box-shadow:
+              0 0 0 3px rgba(239, 68, 68, 0.16),
+              0 14px 28px rgba(15, 23, 42, 0.28) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-ready {
+            box-shadow:
+              0 0 0 3px rgba(22, 163, 74, 0.18),
+              0 14px 28px rgba(15, 23, 42, 0.28) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-appointment {
+            box-shadow:
+              0 0 0 3px rgba(14, 165, 233, 0.20),
+              0 14px 28px rgba(15, 23, 42, 0.28) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-noaccess-soon,
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-noaccess-waiting {
+            box-shadow:
+              0 0 0 3px rgba(249, 115, 22, 0.18),
+              0 14px 28px rgba(15, 23, 42, 0.28) !important;
+          }
+
           @media (max-width: 700px) {
             .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview,
             .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-compact {
@@ -25081,6 +25183,23 @@ return (
               min-width: 40px !important;
               min-height: 36px !important;
               max-width: 40px !important;
+            }
+
+            .maturity-map-marker .map-cluster-marker.map-cluster-dot {
+              width: 58px !important;
+              min-width: 58px !important;
+              height: 58px !important;
+              min-height: 58px !important;
+            }
+
+            .maturity-map-marker .map-cluster-marker.map-cluster-dot span {
+              font-size: 20px !important;
+            }
+
+            .maturity-map-marker .map-cluster-marker.map-cluster-dot strong {
+              max-width: 46px !important;
+              min-height: 16px !important;
+              font-size: 8px !important;
             }
           }
         `}
