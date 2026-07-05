@@ -26273,6 +26273,64 @@ return (
               border-left-width: 3px !important;
             }
           }
+
+          /* JOB_CARD_STATUS_PULSE_2026 */
+          @keyframes jobStatusButtonPulse2026 {
+            0%,
+            100% {
+              box-shadow:
+                0 0 0 1px rgba(14, 165, 233, 0.32),
+                0 0 14px rgba(14, 165, 233, 0.34),
+                0 10px 24px rgba(2, 6, 23, 0.20),
+                inset 0 1px 0 rgba(255, 255, 255, 0.28);
+              filter: drop-shadow(0 0 5px rgba(14, 165, 233, 0.28)) saturate(1.02) brightness(1);
+            }
+
+            50% {
+              box-shadow:
+                0 0 0 2px rgba(45, 212, 191, 0.44),
+                0 0 24px rgba(45, 212, 191, 0.52),
+                0 14px 30px rgba(2, 6, 23, 0.24),
+                inset 0 1px 0 rgba(255, 255, 255, 0.36);
+              filter: drop-shadow(0 0 12px rgba(45, 212, 191, 0.52)) saturate(1.08) brightness(1.08);
+            }
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.active,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.done,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.active.done {
+            background:
+              linear-gradient(135deg, #0284c7 0%, #0f766e 54%, #16a34a 100%) !important;
+            color: #ffffff !important;
+            border-color: rgba(125, 211, 252, 0.64) !important;
+            animation: jobStatusButtonPulse2026 1.45s ease-in-out infinite !important;
+            text-shadow: 0 1px 1px rgba(2, 6, 23, 0.34) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived strong,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived small,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status strong,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status small {
+            color: #ffffff !important;
+            opacity: 1 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status::before,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.active::before,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.done::before,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.active.done::before {
+            background: rgba(255, 255, 255, 0.88) !important;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.58) !important;
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status {
+              animation: none !important;
+            }
+          }
         `}
         </style>
 
