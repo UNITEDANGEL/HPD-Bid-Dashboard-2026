@@ -1,18 +1,5 @@
 {
-  "generatedAt": "2026-07-05T13:40:58.504Z",
-  "missing": [
-    {
-      "fileName": "EQ31176_062626123102.pdf",
-      "omo": "EQ31176",
-      "reason": "No confirmed ITB source PDF with page 3 was found.",
-      "rejected": []
-    },
-    {
-      "fileName": "EQ31123_070126022138.pdf",
-      "omo": "EQ31123",
-      "reason": "No confirmed ITB source PDF with page 3 was found.",
-      "rejected": []
-    }
-  ],
+  "generatedAt": "2026-07-05T14:50:39.084Z",
+  "missing": [],
   "failed": []
 }
