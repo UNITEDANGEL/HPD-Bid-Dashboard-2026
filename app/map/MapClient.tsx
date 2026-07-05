@@ -8829,11 +8829,16 @@ function directionsUrl(job: JobRecord) {
     const packageApproved = Boolean(fieldPackageReviewApprovedAt(job));
     const counts = fieldPhotoCountsFor(job);
     const canGenerateWithoutMedia = canGeneratePdfOnlyPackage(job);
-    let eyebrow = draftValue ? "Selected Status" : saved ? "Current Status" : "Status Needed";
+    const draftDateValue = draftValue ? workflowVisitDateValue() : "";
+    const draftDate = draftDateValue ? new Date(isoFromLocalDatetime(draftDateValue)) : null;
+    const draftDateLabel = draftDate && !Number.isNaN(draftDate.getTime())
+      ? displayWorkflowDate(draftDate.toISOString())
+      : "Choose time";
+    let eyebrow = draftValue ? "Ready to Save" : saved ? "Current Status" : "Status Needed";
     let next = draftValue
-      ? "Save this status with the correct date/time."
+      ? "Tap this banner to review and save."
       : "Pick status to unlock media and package flow.";
-    let meta = draftValue ? "Not saved" : savedIso ? displayWorkflowDate(savedIso) : "Start";
+    let meta = draftValue ? draftDateLabel : savedIso ? displayWorkflowDate(savedIso) : "Start";
     let action: "status" | "media" | "package" | "send" = "status";
 
     if (!draftValue && choice === "Work In Progress") {
@@ -23236,6 +23241,74 @@ return (
             display: grid !important;
             grid-template-columns: minmax(0, 1fr) auto !important;
             gap: 8px !important;
+            padding: 8px !important;
+            border-radius: 18px !important;
+            background: rgba(255, 255, 255, 0.96) !important;
+            border: 1px solid rgba(37, 99, 235, 0.16) !important;
+            box-shadow:
+              0 16px 30px rgba(15, 23, 42, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+            backdrop-filter: blur(12px) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-save-actions.ready-to-save {
+            background: linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(255, 255, 255, 0.98)) !important;
+            border-color: rgba(37, 99, 235, 0.28) !important;
+            box-shadow:
+              0 0 0 3px rgba(37, 99, 235, 0.10),
+              0 18px 34px rgba(15, 23, 42, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-save-summary {
+            grid-column: 1 / -1 !important;
+            min-width: 0 !important;
+            display: grid !important;
+            grid-template-columns: auto minmax(0, 1fr) !important;
+            gap: 3px 8px !important;
+            align-items: center !important;
+            padding: 8px 10px !important;
+            border-radius: 14px !important;
+            background: #ffffff !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-save-summary span {
+            color: #2563eb !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+            white-space: nowrap !important;
+          }
+
+          .job-drawer.selected-focus .field-status-save-summary strong {
+            min-width: 0 !important;
+            color: #0f172a !important;
+            font-size: 14px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+
+          .job-drawer.selected-focus .field-status-save-summary small {
+            grid-column: 1 / -1 !important;
+            color: #475569 !important;
+            font-size: 11px !important;
+            line-height: 1.1 !important;
+            font-weight: 900 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-save-actions.ready-to-save .field-status-save-summary {
+            border-color: rgba(37, 99, 235, 0.18) !important;
+            background: linear-gradient(180deg, #ffffff, #eff6ff) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-save-actions.ready-to-save .field-status-save-summary span {
+            color: #1d4ed8 !important;
           }
 
           .job-drawer.selected-focus .field-status-save-primary,
@@ -26548,6 +26621,12 @@ return (
             outline-offset: 2px !important;
           }
 
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.has-draft-status b {
+            max-width: 118px !important;
+            color: #06223a !important;
+            background: #ffffff !important;
+          }
+
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner .state-pulse-dot {
             width: 12px !important;
             height: 12px !important;
@@ -28424,6 +28503,12 @@ return (
                 const selectedDraftOption = quickWorkflowOptions.find((option) => option.value === draftWorkflowStatus);
                 const statusChoiceInfo = workflowChoiceInfo(draftWorkflowStatus || workflowStatus(selected) || "Pending");
                 const statusSaveLabel = selectedDraftOption ? `Save ${selectedDraftOption.label}` : "Pick Status First";
+                const statusSaveSummaryTitle = draftWorkflowStatus
+                  ? selectedDraftOption?.label || statusChoiceInfo.title
+                  : "Pick status first";
+                const statusSaveSummaryMeta = draftWorkflowStatus
+                  ? `Date/time: ${missionStatusDateLabel}`
+                  : "Tap a quick choice or use dropdown.";
                 const activeQuickStatusChoice = normalizeWorkflowChoice(draftWorkflowStatus || workflowDisplayStatusValue(selected));
                 const beforePhotoStep = extraPhotoCaptureStep(selected, "before");
                 const beforeVideoStep = extraVideoCaptureStep(selected, "before");
@@ -28811,7 +28896,12 @@ return (
                         <strong>{statusChoiceInfo.detail}</strong>
                         <small>{statusChoiceInfo.next}</small>
                       </div>
-                      <div className="field-status-save-actions">
+                      <div className={`field-status-save-actions ${draftWorkflowStatus ? "ready-to-save" : "needs-status"}`} aria-live="polite">
+                        <div className="field-status-save-summary">
+                          <span>{draftWorkflowStatus ? "Ready to Save" : "Waiting for Status"}</span>
+                          <strong>{statusSaveSummaryTitle}</strong>
+                          <small>{statusSaveSummaryMeta}</small>
+                        </div>
                         <button
                           type="button"
                           className="field-status-save-primary"
