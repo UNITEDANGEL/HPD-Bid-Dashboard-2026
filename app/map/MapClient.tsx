@@ -25982,6 +25982,282 @@ return (
               font-size: 11px !important;
             }
           }
+
+          /* JOB_CARD_FLOW_POLISH_2026 */
+          @keyframes jobFlowSoftIn {
+            from {
+              opacity: 0.92;
+              transform: translateY(5px);
+            }
+
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail {
+            position: relative !important;
+            gap: 4px !important;
+            padding: 5px !important;
+            border-radius: 13px !important;
+            background: rgba(2, 6, 23, 0.24) !important;
+            border: 1px solid rgba(255, 255, 255, 0.14) !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.10),
+              0 10px 24px rgba(2, 6, 23, 0.14) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button {
+            position: relative !important;
+            isolation: isolate !important;
+            overflow: hidden !important;
+            min-height: 38px !important;
+            padding: 7px 3px 5px !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            background: rgba(255, 255, 255, 0.11) !important;
+            color: #e0f2fe !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+            transition:
+              transform 160ms ease,
+              background 160ms ease,
+              border-color 160ms ease,
+              box-shadow 160ms ease !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button::before {
+            content: "" !important;
+            position: absolute !important;
+            top: 4px !important;
+            left: 8px !important;
+            right: 8px !important;
+            height: 2px !important;
+            border-radius: 999px !important;
+            background: rgba(226, 232, 240, 0.28) !important;
+            pointer-events: none !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.done::before {
+            background: #22c55e !important;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.48) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.done::after {
+            content: "" !important;
+            position: absolute !important;
+            top: 6px !important;
+            right: 6px !important;
+            width: 7px !important;
+            height: 7px !important;
+            border-radius: 999px !important;
+            background: #22c55e !important;
+            border: 1px solid rgba(255, 255, 255, 0.78) !important;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.52) !important;
+            pointer-events: none !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.active,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-map {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border-color: rgba(255, 255, 255, 0.70) !important;
+            box-shadow:
+              0 8px 18px rgba(2, 6, 23, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.active::before {
+            background: #38bdf8 !important;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.46) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-return::before {
+            background: #99f6e4 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button strong {
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+            color: inherit !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button small {
+            margin-top: 1px !important;
+            font-size: 8px !important;
+            font-weight: 850 !important;
+            color: currentColor !important;
+            opacity: 0.72 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button:active {
+            transform: translateY(1px) scale(0.99) !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode {
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-strip,
+          .job-drawer.selected-focus .field-page3-description,
+          .job-drawer.selected-focus .tenant-contact-card,
+          .job-drawer.selected-focus .field-status-picker-card,
+          .job-drawer.selected-focus .field-media-option-hub,
+          .job-drawer.selected-focus .job-appointment-card,
+          .job-drawer.selected-focus .site-procedure-stage,
+          .job-drawer.selected-focus .field-evidence-gallery,
+          .job-drawer.selected-focus .field-packet-vault,
+          .job-drawer.selected-focus .field-send-panel {
+            border-radius: 12px !important;
+            background:
+              linear-gradient(180deg, #ffffff, #f8fbfc) !important;
+            border: 1px solid rgba(15, 23, 42, 0.09) !important;
+            border-left: 4px solid rgba(14, 165, 233, 0.78) !important;
+            box-shadow:
+              0 10px 22px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+            animation: jobFlowSoftIn 220ms ease both !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description {
+            border-left-color: #0284c7 !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-card {
+            border-left-color: #0f766e !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card {
+            border-left-color: #2563eb !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-hub,
+          .job-drawer.selected-focus .field-evidence-gallery {
+            border-left-color: #f59e0b !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-card {
+            border-left-color: #dc2626 !important;
+          }
+
+          .job-drawer.selected-focus .site-procedure-stage {
+            border-left-color: #14b8a6 !important;
+          }
+
+          .job-drawer.selected-focus .field-packet-vault {
+            border-left-color: #334155 !important;
+          }
+
+          .job-drawer.selected-focus .field-send-panel {
+            border-left-color: #16a34a !important;
+          }
+
+          .job-drawer.selected-focus .site-procedure-stage.is-active,
+          .job-drawer.selected-focus .field-pane.is-active,
+          .job-drawer.selected-focus .field-status-picker-card:focus-within,
+          .job-drawer.selected-focus .field-media-option-hub:focus-within {
+            box-shadow:
+              0 0 0 3px rgba(14, 165, 233, 0.12),
+              0 14px 30px rgba(15, 23, 42, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description-head span,
+          .job-drawer.selected-focus .tenant-contact-head span,
+          .job-drawer.selected-focus .field-status-current-strip span,
+          .job-drawer.selected-focus .field-media-option-head span,
+          .job-drawer.selected-focus .job-appointment-head span,
+          .job-drawer.selected-focus .site-procedure-head span,
+          .job-drawer.selected-focus .field-packet-head span,
+          .job-drawer.selected-focus .field-send-head span,
+          .job-drawer.selected-focus .job-card-data-strip-head span {
+            color: #0f766e !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description p,
+          .job-drawer.selected-focus .tenant-contact-row strong,
+          .job-drawer.selected-focus .field-status-current-strip strong,
+          .job-drawer.selected-focus .job-card-data-tile strong {
+            color: #0f172a !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description p {
+            font-size: 13px !important;
+            line-height: 1.45 !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-actions a {
+            min-height: 36px !important;
+            border-radius: 10px !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            padding: 0 12px !important;
+            color: #ffffff !important;
+            background: #0f172a !important;
+            border: 1px solid rgba(15, 23, 42, 0.12) !important;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16) !important;
+            font-size: 12px !important;
+            font-weight: 950 !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-actions .contact-text {
+            background: #0369a1 !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-actions .contact-whatsapp {
+            background: #047857 !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-actions .contact-email {
+            background: #7c2d12 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-controls button,
+          .job-drawer.selected-focus .field-media-option-hub button,
+          .job-drawer.selected-focus .site-procedure-stage button,
+          .job-drawer.selected-focus .field-packet-vault button,
+          .job-drawer.selected-focus .field-send-panel button {
+            font-weight: 950 !important;
+            box-shadow:
+              0 8px 18px rgba(15, 23, 42, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+          }
+
+          @media (max-width: 430px) {
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail {
+              gap: 3px !important;
+              padding: 4px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button {
+              min-height: 35px !important;
+              padding: 7px 2px 4px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button strong {
+              font-size: 11px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button small {
+              font-size: 7px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-data-strip,
+            .job-drawer.selected-focus .field-page3-description,
+            .job-drawer.selected-focus .tenant-contact-card,
+            .job-drawer.selected-focus .field-status-picker-card,
+            .job-drawer.selected-focus .field-media-option-hub,
+            .job-drawer.selected-focus .job-appointment-card,
+            .job-drawer.selected-focus .site-procedure-stage,
+            .job-drawer.selected-focus .field-evidence-gallery,
+            .job-drawer.selected-focus .field-packet-vault,
+            .job-drawer.selected-focus .field-send-panel {
+              border-radius: 10px !important;
+              border-left-width: 3px !important;
+            }
+          }
         `}
         </style>
 
@@ -26567,23 +26843,39 @@ return (
                 </a>
               </div>
               <div className="job-card-smooth-flow-rail" aria-label="Quick job flow">
-                <button type="button" className="flow-map" onClick={showCleanMapView}>
+                <button type="button" className="flow-map flow-return" onClick={showCleanMapView}>
                   <strong>Map</strong>
                   <small>return</small>
                 </button>
-                <button type="button" className={fieldFocusPane === "capture" ? "active" : ""} onClick={jumpToStatusFlow}>
+                <button
+                  type="button"
+                  className={`flow-status ${fieldFocusPane === "capture" ? "active" : ""} ${workflowStatus(selected) && workflowStatus(selected) !== "PENDING" ? "done" : ""}`}
+                  onClick={jumpToStatusFlow}
+                >
                   <strong>Status</strong>
                   <small>save</small>
                 </button>
-                <button type="button" className={fieldFocusPane === "evidence" ? "active" : ""} onClick={jumpToMediaFlow}>
+                <button
+                  type="button"
+                  className={`flow-media ${fieldFocusPane === "evidence" ? "active" : ""} ${fieldPhotoCountsFor(selected).total > 0 ? "done" : ""}`}
+                  onClick={jumpToMediaFlow}
+                >
                   <strong>Media</strong>
                   <small>before/after</small>
                 </button>
-                <button type="button" onClick={jumpToAppointmentFlow}>
+                <button
+                  type="button"
+                  className={`flow-appt ${appointmentIso(selected) ? "done" : ""}`}
+                  onClick={jumpToAppointmentFlow}
+                >
                   <strong>Appt</strong>
                   <small>alerts</small>
                 </button>
-                <button type="button" className={fieldFocusPane === "package" ? "active" : ""} onClick={jumpToPackageFlow}>
+                <button
+                  type="button"
+                  className={`flow-package ${fieldFocusPane === "package" ? "active" : ""} ${fullPackagePreviewFor(selected) ? "done" : ""}`}
+                  onClick={jumpToPackageFlow}
+                >
                   <strong>Pkg</strong>
                   <small>review</small>
                 </button>
