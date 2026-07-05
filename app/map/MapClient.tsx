@@ -2495,6 +2495,8 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const markerOverviewTimerRef = useRef<number | null>(null);
   const markerOverviewKeyRef = useRef("");
   const markerAutoFitKeyRef = useRef("");
+  const mapUserInteractedAtRef = useRef(0);
+  const mapProgrammaticMoveUntilRef = useRef(0);
   const appointmentAlertTestTriggeredRef = useRef("");
   const noAccessReadyAlertSeenRef = useRef<Record<string, string>>({});
   const fieldPhotoInputRef = useRef<HTMLInputElement | null>(null);
@@ -3549,6 +3551,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         };
   }
 
+  function markProgrammaticMapMove(durationMs = 1200) {
+    mapProgrammaticMoveUntilRef.current = Date.now() + durationMs;
+  }
+
+  function userRecentlyAdjustedMap(windowMs = 10000) {
+    return Date.now() - mapUserInteractedAtRef.current < windowMs;
+  }
+
+  function shouldKeepManualMapView() {
+    return userRecentlyAdjustedMap() && !selectedOnly && !drawerOpen;
+  }
+
   function nudgeSingleMarkerIntoTapZone(latLng: [number, number], delay = 220) {
     if (typeof window === "undefined" || window.innerWidth > 720) return;
 
@@ -3568,6 +3582,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   function fitVisibleJobsOnMap(maxZoom = 13, includeUserLocation = false) {
     const map = mapRef.current;
     if (!map) return;
+    markProgrammaticMapMove();
 
     const jobBounds = filteredJobs
       .filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng))
@@ -3785,6 +3800,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   function centerMapOnUserLocation(location = userLocation) {
     const map = mapRef.current;
     if (!map || !location) return false;
+    markProgrammaticMapMove();
 
     const userPoint: [number, number] = [location.lat, location.lng];
     const nearbyBounds = nearbyJobBoundsForLocation(location);
@@ -4031,6 +4047,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         map.on("zoomend", () => {
           setMapZoom(map.getZoom());
         });
+        map.on("zoomstart dragstart", () => {
+          if (Date.now() <= mapProgrammaticMoveUntilRef.current) return;
+          mapUserInteractedAtRef.current = Date.now();
+          locationOverviewFitRef.current = true;
+          setFollowMyLocation(false);
+        });
 
         setMapReady(true);
 
@@ -4165,21 +4187,28 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         plottedItems.push({ job, index, lat, lng });
       });
 
-      const clusterCellX = mobileMap ? (zoomLevel < 12 ? 240 : 210) : (zoomLevel < 12 ? 210 : 180);
-      const clusterCellY = mobileMap ? (zoomLevel < 12 ? 180 : 158) : (zoomLevel < 12 ? 160 : 136);
-      const mapSize = map.getSize?.();
-      const clusterSafeLayerBounds = mapSize && map.containerPointToLayerPoint
-        ? {
-            min: map.containerPointToLayerPoint([
-              mobileMap ? 82 : 72,
-              mobileMap ? 88 : 72,
-            ]),
-            max: map.containerPointToLayerPoint([
-              Math.max(mobileMap ? 82 : 72, Number(mapSize.x || 0) - (mobileMap ? 82 : 72)),
-              Math.max(mobileMap ? 120 : 72, Number(mapSize.y || 0) - (mobileMap ? 250 : 96)),
-            ]),
-          }
-        : null;
+      const clusterCellX = mobileMap
+        ? zoomLevel < 12
+          ? 280
+          : zoomLevel < 14
+            ? 248
+            : 224
+        : zoomLevel < 12
+          ? 236
+          : zoomLevel < 14
+            ? 208
+            : 188;
+      const clusterCellY = mobileMap
+        ? zoomLevel < 12
+          ? 218
+          : zoomLevel < 14
+            ? 194
+            : 176
+        : zoomLevel < 12
+          ? 188
+          : zoomLevel < 14
+            ? 166
+            : 148;
       const renderItems: any[] = markerOverview && !showIndividualNoAccessTimers
         ? Array.from(
             plottedItems.reduce((clusters, item) => {
@@ -4196,13 +4225,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             if (cluster.items.length === 1 && !denseLayer && !timerLayerNeedsClusters) return { kind: "job", ...cluster.items[0] };
             const rawCenterX = (cluster.cellX + 0.5) * clusterCellX;
             const rawCenterY = (cluster.cellY + 0.5) * clusterCellY;
-            const clampedCenter = clusterSafeLayerBounds
-              ? L.point(
-                  Math.min(clusterSafeLayerBounds.max.x, Math.max(clusterSafeLayerBounds.min.x, rawCenterX)),
-                  Math.min(clusterSafeLayerBounds.max.y, Math.max(clusterSafeLayerBounds.min.y, rawCenterY))
-                )
-              : L.point(rawCenterX, rawCenterY);
-            const center = map.layerPointToLatLng(clampedCenter);
+            const center = map.layerPointToLatLng(L.point(rawCenterX, rawCenterY));
             return {
               kind: "cluster",
               key,
@@ -4231,7 +4254,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             .filter((current) => current.second && !current.second.ready && !current.second.within24)
             .sort((a, b) => (a.second?.hoursLeft || 9999) - (b.second?.hoursLeft || 9999));
           const waitingNoAccessCount = waitingNoAccessItems.length;
-          const waitingNoAccessLabel = waitingNoAccessItems[0]?.second?.label.replace(" TO 2ND", "") || "";
           const pendingCount = clusterItems.filter((current) => workflowViewBucket(current.job) === "pending").length;
           const clusterBoroughCounts = clusterItems.reduce((counts, current) => {
             const key = jobBoroughKey(current.job);
@@ -4256,24 +4278,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                     : worstOverdue
                       ? "cluster-overdue"
                       : "cluster-normal";
-          const clusterLabel =
-            appointmentCount === 1
-              ? markerAppointmentLabelText(appointmentItems[0].job)
-              : appointmentCount
-                ? `${appointmentCount} appts`
-                : readyCount
-                  ? `${readyCount} ready`
-                  : soonNoAccessCount
-                    ? `${soonNoAccessCount} T-24`
-                    : waitingNoAccessCount
-                      ? waitingNoAccessCount === 1
-                        ? waitingNoAccessLabel
-                        : `${waitingNoAccessCount} clocks`
-                      : pendingCount
-                        ? `${pendingCount} pending`
-                        : worstOverdue
-                          ? overdueDaysLabel(worstOverdue)
-                          : "mapped";
+          const clusterLabel = `${clusterItems.length} job${clusterItems.length === 1 ? "" : "s"}`;
           const [offsetX, offsetY]: [number, number] = [0, 0];
           const clusterPoint = map.latLngToLayerPoint([item.lat, item.lng]);
           const clusterLatLng = map.layerPointToLatLng(L.point(clusterPoint.x + offsetX, clusterPoint.y + offsetY));
@@ -4283,7 +4288,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               className: "maturity-map-marker",
               html: `<div class="map-cluster-marker ${statusClass}">
                       <span>${clusterItems.length}</span>
-                      <strong>${escapeMarkerHtml(clusterLabel)}</strong>
+                      <strong>${clusterItems.length === 1 ? "JOB" : "JOBS"}</strong>
                       <em>${escapeMarkerHtml(clusterBoroughLabel)}</em>
                     </div>`,
               iconSize: clusterIconSize,
@@ -4376,6 +4381,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       if (bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
         markerAutoFitKeyRef.current = markerAutoFitKey;
+        if (shouldKeepManualMapView()) {
+          setTimeout(() => map.invalidateSize(), 250);
+          return;
+        }
         if (userLocation && followMyLocation) {
           centerMapOnUserLocation(userLocation);
           setTimeout(() => map.invalidateSize(), 250);
@@ -4387,14 +4396,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           return;
         }
         if (bounds.length === 1) {
+          markProgrammaticMapMove();
           map.setView(bounds[0], MAP_SINGLE_JOB_OVERVIEW_ZOOM, { animate: true, duration: 0.5 });
           nudgeSingleMarkerIntoTapZone(bounds[0], 260);
           setTimeout(() => map.invalidateSize(), 250);
           return;
         }
+        markProgrammaticMapMove();
         map.fitBounds(bounds, mapFitOptions(MAP_LAYER_OVERVIEW_ZOOM, 0.5));
       } else if (!bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
         markerAutoFitKeyRef.current = markerAutoFitKey;
+        if (shouldKeepManualMapView()) return;
+        markProgrammaticMapMove();
         map.setView([40.7128, -74.006], 10);
       }
 
@@ -4442,7 +4455,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         userLocationAccuracyRef.current.setRadius(Math.max(15, userLocation.accuracy || 25));
       }
 
-      if (!locationOverviewFitRef.current || followMyLocation) {
+      if (followMyLocation || (!locationOverviewFitRef.current && !userRecentlyAdjustedMap())) {
         locationOverviewFitRef.current = true;
         centerMapOnUserLocation(userLocation);
       }
@@ -24882,6 +24895,28 @@ return (
             border-left-color: #64748b !important;
           }
 
+          .maturity-map-marker .map-cluster-marker.cluster-overdue,
+          .maturity-map-marker .map-cluster-marker.cluster-ready,
+          .maturity-map-marker .map-cluster-marker.cluster-appointment,
+          .maturity-map-marker .map-cluster-marker.cluster-noaccess-soon,
+          .maturity-map-marker .map-cluster-marker.cluster-noaccess-waiting,
+          .maturity-map-marker .map-cluster-marker.cluster-pending {
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.82),
+              0 18px 34px rgba(15, 23, 42, 0.22) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-overdue strong,
+          .maturity-map-marker .map-cluster-marker.cluster-ready strong,
+          .maturity-map-marker .map-cluster-marker.cluster-appointment strong,
+          .maturity-map-marker .map-cluster-marker.cluster-noaccess-soon strong,
+          .maturity-map-marker .map-cluster-marker.cluster-noaccess-waiting strong,
+          .maturity-map-marker .map-cluster-marker.cluster-pending strong {
+            color: #075985 !important;
+            background: #e0f2fe !important;
+            border-color: rgba(14, 165, 233, 0.24) !important;
+          }
+
           .map-stats {
             width: min(292px, calc(100vw - 118px)) !important;
             padding: 5px !important;
@@ -24946,6 +24981,41 @@ return (
             display: none !important;
           }
 
+          .zoom-panel {
+            position: absolute !important;
+            top: auto !important;
+            left: auto !important;
+            right: max(10px, env(safe-area-inset-right)) !important;
+            bottom: calc(env(safe-area-inset-bottom) + 74px) !important;
+            z-index: 16 !important;
+            width: auto !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            height: auto !important;
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 7px !important;
+            padding: 7px !important;
+            border-radius: 15px !important;
+            background: rgba(8, 13, 20, 0.82) !important;
+            border: 1px solid rgba(226, 232, 240, 0.16) !important;
+            pointer-events: auto !important;
+          }
+
+          .zoom-panel button {
+            width: 42px !important;
+            height: 38px !important;
+            min-width: 42px !important;
+            min-height: 38px !important;
+            max-width: 42px !important;
+            padding: 0 !important;
+            border-radius: 11px !important;
+            font-size: 14px !important;
+            line-height: 1 !important;
+            display: inline-grid !important;
+            place-items: center !important;
+          }
+
           @media (max-width: 700px) {
             .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview,
             .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-compact {
@@ -24996,6 +25066,21 @@ return (
             .location-status-pill {
               min-height: 30px !important;
               max-width: min(210px, calc(100vw - 24px)) !important;
+            }
+
+            .zoom-panel {
+              right: max(8px, env(safe-area-inset-right)) !important;
+              bottom: calc(env(safe-area-inset-bottom) + 72px) !important;
+              gap: 6px !important;
+              padding: 6px !important;
+            }
+
+            .zoom-panel button {
+              width: 40px !important;
+              height: 36px !important;
+              min-width: 40px !important;
+              min-height: 36px !important;
+              max-width: 40px !important;
             }
           }
         `}
