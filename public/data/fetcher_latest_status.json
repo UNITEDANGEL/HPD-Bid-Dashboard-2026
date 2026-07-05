@@ -1,7 +1,7 @@
 {
   "state": "complete",
-  "startedAt": "2026-07-04T11:32:11.516Z",
-  "finishedAt": "2026-07-04T11:32:39.132Z",
+  "startedAt": "2026-07-05T11:36:42.333Z",
+  "finishedAt": "2026-07-05T11:37:05.753Z",
   "ok": true,
   "error": "",
   "summary": {
@@ -14,12 +14,12 @@
     "rows2026": 493,
     "mapped2026": 493,
     "notMapped2026": 0,
+    "missingAddresses": 0,
     "badDescriptions": 0,
     "missingDescriptions": 0,
-    "missingItbJobs": 0,
-    "missingAddresses": 0,
     "sourceReviewJobs": 3,
-    "missingPage3Images": 0
+    "missingPage3Images": 0,
+    "missingItbJobs": 0
   },
   "logPath": "data/fetcher_latest_run.log"
 }
