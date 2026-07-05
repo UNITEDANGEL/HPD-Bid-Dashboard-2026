@@ -26042,18 +26042,17 @@ return (
             box-shadow: 0 0 10px rgba(34, 197, 94, 0.48) !important;
           }
 
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.done {
+            border-color: rgba(34, 197, 94, 0.58) !important;
+            box-shadow:
+              0 0 0 1px rgba(34, 197, 94, 0.22),
+              0 0 16px rgba(34, 197, 94, 0.28),
+              inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+          }
+
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.done::after {
-            content: "" !important;
-            position: absolute !important;
-            top: 6px !important;
-            right: 6px !important;
-            width: 7px !important;
-            height: 7px !important;
-            border-radius: 999px !important;
-            background: #22c55e !important;
-            border: 1px solid rgba(255, 255, 255, 0.78) !important;
-            box-shadow: 0 0 10px rgba(34, 197, 94, 0.52) !important;
-            pointer-events: none !important;
+            content: none !important;
+            display: none !important;
           }
 
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.active,
@@ -26069,6 +26068,22 @@ return (
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.active::before {
             background: #38bdf8 !important;
             box-shadow: 0 0 10px rgba(56, 189, 248, 0.46) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.active.done {
+            background:
+              linear-gradient(180deg, #ffffff, #ecfdf5) !important;
+            border-color: rgba(34, 197, 94, 0.70) !important;
+            box-shadow:
+              0 0 0 2px rgba(34, 197, 94, 0.22),
+              0 0 20px rgba(34, 197, 94, 0.42),
+              0 10px 24px rgba(2, 6, 23, 0.20),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button.active.done::before {
+            background: #22c55e !important;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.58) !important;
           }
 
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-return::before {
