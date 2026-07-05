@@ -27037,6 +27037,113 @@ return (
             opacity: 1 !important;
           }
 
+          /* STATUS_COMMAND_CENTER_2026 */
+          .job-drawer.selected-focus .field-status-command-center {
+            display: grid !important;
+            gap: 7px !important;
+            padding: 8px !important;
+            border-radius: 16px !important;
+            background:
+              linear-gradient(180deg, #ffffff, #f8fafc) !important;
+            border: 1px solid rgba(37, 99, 235, 0.16) !important;
+            box-shadow:
+              0 14px 28px rgba(15, 23, 42, 0.10),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-center.ready-to-save {
+            border-color: rgba(37, 99, 235, 0.30) !important;
+            box-shadow:
+              0 0 0 3px rgba(37, 99, 235, 0.10),
+              0 16px 32px rgba(15, 23, 42, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-main {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr) !important;
+            gap: 7px !important;
+            align-items: end !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-main .field-status-select-label {
+            grid-column: auto !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-main .field-status-select-label,
+          .job-drawer.selected-focus .field-status-command-main .field-status-date-label {
+            min-width: 0 !important;
+            padding: 7px !important;
+            border-radius: 13px !important;
+            background: #ffffff !important;
+            border: 1px solid rgba(15, 23, 42, 0.09) !important;
+            box-shadow:
+              0 10px 20px rgba(15, 23, 42, 0.07),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-main .field-status-select-label span,
+          .job-drawer.selected-focus .field-status-command-main .field-status-date-label span {
+            color: #0f172a !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-main .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-command-main .field-status-date-label input {
+            min-height: 40px !important;
+            border-radius: 12px !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-actions {
+            display: grid !important;
+            grid-template-columns: 58px minmax(0, 1fr) 68px !important;
+            gap: 7px !important;
+            align-items: stretch !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-actions .field-status-now,
+          .job-drawer.selected-focus .field-status-command-actions .field-status-save-primary,
+          .job-drawer.selected-focus .field-status-command-actions .field-status-clear-inline {
+            min-width: 0 !important;
+            min-height: 40px !important;
+            border-radius: 13px !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-actions .field-status-save-primary {
+            font-size: 14px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-actions .field-status-save-primary:not(:disabled) {
+            animation: jobStatusButtonPulse2026 1.6s ease-in-out infinite !important;
+          }
+
+          @media (max-width: 430px) {
+            .job-drawer.selected-focus .field-status-command-main {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .job-drawer.selected-focus .field-status-command-actions {
+              grid-template-columns: 50px minmax(0, 1fr) 58px !important;
+              gap: 6px !important;
+            }
+
+            .job-drawer.selected-focus .field-status-command-actions .field-status-now,
+            .job-drawer.selected-focus .field-status-command-actions .field-status-save-primary,
+            .job-drawer.selected-focus .field-status-command-actions .field-status-clear-inline {
+              min-height: 40px !important;
+              padding: 0 6px !important;
+              font-size: 11px !important;
+            }
+          }
+
           /* STATUS_QUICK_CHOICES_2026 */
           .job-drawer.selected-focus .field-status-quick-choices {
             display: grid !important;
@@ -28651,15 +28758,7 @@ return (
                 const missionDataAddress = displayAddress(selected);
                 const missionDataLocation = `${selected.borough || "Unknown borough"} · ${displayLocation(selected) || "Location not listed"}`;
                 const missionContractorLabel = selected.contractor || "Contractor not listed";
-                const selectedDraftOption = quickWorkflowOptions.find((option) => option.value === draftWorkflowStatus);
                 const statusChoiceInfo = workflowChoiceInfo(draftWorkflowStatus || workflowStatus(selected) || "Pending");
-                const statusSaveLabel = selectedDraftOption ? `Save ${selectedDraftOption.label}` : "Pick Status First";
-                const statusSaveSummaryTitle = draftWorkflowStatus
-                  ? selectedDraftOption?.label || statusChoiceInfo.title
-                  : "Pick status first";
-                const statusSaveSummaryMeta = draftWorkflowStatus
-                  ? `Date/time: ${missionStatusDateLabel}`
-                  : "Tap a quick choice or use dropdown.";
                 const activeQuickStatusChoice = normalizeWorkflowChoice(draftWorkflowStatus || workflowDisplayStatusValue(selected));
                 const beforePhotoStep = extraPhotoCaptureStep(selected, "before");
                 const beforeVideoStep = extraVideoCaptureStep(selected, "before");
@@ -28984,51 +29083,66 @@ return (
                           <strong>{workflowMapLayerLabel(selected)}</strong>
                         </div>
                       </div>
-                      <div className="field-status-picker-controls">
-                        <label className="field-status-select-label">
-                          <span>Pick new status</span>
-                          <select
-                            value={draftWorkflowStatus}
-                            onChange={(event) => {
-                              const value = event.target.value;
-                              if (value) {
-                                pickDraftWorkflow(value);
-                              } else {
-                                setDraftWorkflowStatus("");
-                                setDraftWorkflowSaved(false);
-                              }
+                      <div className={`field-status-command-center ${draftWorkflowStatus ? "ready-to-save" : "needs-status"}`} aria-live="polite">
+                        <div className="field-status-command-main">
+                          <label className="field-status-select-label">
+                            <span>Pick new status</span>
+                            <select
+                              value={draftWorkflowStatus}
+                              onChange={(event) => {
+                                const value = event.target.value;
+                                if (value) {
+                                  pickDraftWorkflow(value);
+                                } else {
+                                  setDraftWorkflowStatus("");
+                                  setDraftWorkflowSaved(false);
+                                }
+                              }}
+                            >
+                              <option value="">Choose status...</option>
+                              {workflowOptionGroups.map((group) => (
+                                <optgroup key={group.group} label={group.group}>
+                                  {group.options.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              ))}
+                            </select>
+                          </label>
+                          <label className="field-status-date-label">
+                            <span>Status date / time</span>
+                            <input
+                              type="datetime-local"
+                              value={missionStatusDateValue}
+                              onChange={(event) => setWorkflowVisitDate(event.target.value)}
+                            />
+                          </label>
+                        </div>
+                        <div className="field-status-command-actions">
+                          <button
+                            type="button"
+                            className="field-status-now"
+                            onClick={() => {
+                              setWorkflowVisitDateToNow();
+                              showActionNotice("Status date set to now. Save the dropdown status when ready.");
                             }}
                           >
-                            <option value="">Choose status...</option>
-                            {workflowOptionGroups.map((group) => (
-                              <optgroup key={group.group} label={group.group}>
-                                {group.options.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </optgroup>
-                            ))}
-                          </select>
-                        </label>
-                        <label className="field-status-date-label">
-                          <span>Status date / time</span>
-                          <input
-                            type="datetime-local"
-                            value={missionStatusDateValue}
-                            onChange={(event) => setWorkflowVisitDate(event.target.value)}
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          className="field-status-now"
-                          onClick={() => {
-                            setWorkflowVisitDateToNow();
-                            showActionNotice("Status date set to now. Save the dropdown status when ready.");
-                          }}
-                        >
-                          Now
-                        </button>
+                            Now
+                          </button>
+                          <button
+                            type="button"
+                            className="field-status-save-primary field-status-command-save"
+                            disabled={!draftWorkflowStatus}
+                            onClick={() => saveDraftWorkflow(selected)}
+                          >
+                            {draftWorkflowStatus ? "Save Status" : "Pick First"}
+                          </button>
+                          <button type="button" className="field-status-clear-inline" onClick={() => resetFieldJobForTesting(selected)}>
+                            Clear
+                          </button>
+                        </div>
                       </div>
                       <div className="field-status-quick-choices" aria-label="Quick status choices">
                         <div className="field-status-quick-head">
@@ -29066,24 +29180,6 @@ return (
                         <span>{statusChoiceInfo.title}</span>
                         <strong>{statusChoiceInfo.detail}</strong>
                         <small>{statusChoiceInfo.next}</small>
-                      </div>
-                      <div className={`field-status-save-actions ${draftWorkflowStatus ? "ready-to-save" : "needs-status"}`} aria-live="polite">
-                        <div className="field-status-save-summary">
-                          <span>{draftWorkflowStatus ? "Ready to Save" : "Waiting for Status"}</span>
-                          <strong>{statusSaveSummaryTitle}</strong>
-                          <small>{statusSaveSummaryMeta}</small>
-                        </div>
-                        <button
-                          type="button"
-                          className="field-status-save-primary"
-                          disabled={!draftWorkflowStatus}
-                          onClick={() => saveDraftWorkflow(selected)}
-                        >
-                          {statusSaveLabel}
-                        </button>
-                        <button type="button" className="field-status-clear-inline" onClick={() => resetFieldJobForTesting(selected)}>
-                          Clear Status
-                        </button>
                       </div>
                       <small>Pick one status, confirm date/time, then save. Closed statuses move to Archive and the map layer updates.</small>
                       {draftWorkflowSaved ? <p className="saved-status-note">Saved. Status, time, and map layer updated.</p> : null}
