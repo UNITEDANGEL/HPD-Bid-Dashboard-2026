@@ -26490,6 +26490,212 @@ return (
               0 16px 34px rgba(15, 23, 42, 0.14) !important;
           }
 
+          /* PACKAGE_READINESS_SCORE_2026 */
+          .job-drawer.selected-focus .package-readiness-card {
+            display: grid !important;
+            gap: 9px !important;
+            padding: 12px !important;
+            border-radius: 13px !important;
+            background:
+              linear-gradient(180deg, #ffffff, #f8fafc) !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            border-left: 4px solid #0284c7 !important;
+            box-shadow:
+              0 12px 26px rgba(15, 23, 42, 0.09),
+              inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-card.readiness-start {
+            border-left-color: #334155 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-card.readiness-working {
+            border-left-color: #0284c7 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-card.readiness-almost {
+            border-left-color: #f59e0b !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-card.readiness-ready {
+            border-left-color: #16a34a !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-card.readiness-approved {
+            border-left-color: #0f766e !important;
+            background: linear-gradient(180deg, #f0fdfa, #ffffff) !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-head {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 8px !important;
+            align-items: center !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-head div {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 2px !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-head span {
+            color: #0f766e !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-head strong {
+            color: #0f172a !important;
+            font-size: 22px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-head small {
+            color: #475569 !important;
+            font-size: 12px !important;
+            line-height: 1.15 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-head b {
+            min-width: 54px !important;
+            min-height: 44px !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            border-radius: 12px !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            font-size: 14px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-meter {
+            height: 9px !important;
+            overflow: hidden !important;
+            border-radius: 999px !important;
+            background: #e2e8f0 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-meter i {
+            display: block !important;
+            height: 100% !important;
+            min-width: 6px !important;
+            max-width: 100% !important;
+            border-radius: inherit !important;
+            background: linear-gradient(90deg, #0284c7, #14b8a6, #22c55e) !important;
+            transition: width 220ms ease !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-card.readiness-start .package-readiness-meter i {
+            background: linear-gradient(90deg, #64748b, #334155) !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-card.readiness-almost .package-readiness-meter i {
+            background: linear-gradient(90deg, #f59e0b, #22c55e) !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-card.readiness-approved .package-readiness-meter i {
+            background: linear-gradient(90deg, #0f766e, #22c55e) !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid span {
+            min-width: 0 !important;
+            min-height: 56px !important;
+            display: grid !important;
+            align-content: center !important;
+            gap: 3px !important;
+            padding: 7px !important;
+            border-radius: 10px !important;
+            background: #f1f5f9 !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            color: #334155 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid span.done {
+            background: #ecfdf5 !important;
+            border-color: rgba(34, 197, 94, 0.24) !important;
+            color: #14532d !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid b {
+            width: max-content !important;
+            max-width: 100% !important;
+            padding: 3px 6px !important;
+            border-radius: 999px !important;
+            background: rgba(15, 23, 42, 0.08) !important;
+            color: inherit !important;
+            font-size: 8px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid span.done b {
+            background: rgba(34, 197, 94, 0.16) !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid strong {
+            color: inherit !important;
+            font-size: 12px !important;
+            line-height: 1.04 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid small {
+            color: inherit !important;
+            opacity: 0.78 !important;
+            font-size: 10px !important;
+            line-height: 1.12 !important;
+            font-weight: 850 !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-card p {
+            margin: 0 !important;
+            padding: 9px 10px !important;
+            border-radius: 10px !important;
+            background: #eff6ff !important;
+            color: #1e3a8a !important;
+            font-size: 12px !important;
+            line-height: 1.25 !important;
+            font-weight: 900 !important;
+          }
+
+          @media (max-width: 430px) {
+            .job-drawer.selected-focus .package-readiness-grid {
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+              gap: 5px !important;
+            }
+
+            .job-drawer.selected-focus .package-readiness-head strong {
+              font-size: 20px !important;
+            }
+
+            .job-drawer.selected-focus .package-readiness-grid span {
+              min-height: 52px !important;
+              padding: 6px !important;
+            }
+
+            .job-drawer.selected-focus .package-readiness-grid strong {
+              font-size: 10px !important;
+            }
+
+            .job-drawer.selected-focus .package-readiness-grid small {
+              font-size: 8px !important;
+            }
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status {
@@ -27678,6 +27884,71 @@ return (
                 };
                 const activeWorkChoice = fieldWorkChoice?.jobKey === jobKey(selected) ? fieldWorkChoice : null;
                 const finishChoicePartial = Boolean(activeWorkChoice?.partial);
+                const packageReadinessItems = [
+                  {
+                    key: "status",
+                    label: "Status",
+                    detail: currentStatusLabel,
+                    done: Boolean(savedStatusIso && currentStatusLabel !== "Pending"),
+                  },
+                  {
+                    key: "date",
+                    label: "Date",
+                    detail: savedStatusIso ? savedStatusDateLabel : "Not saved",
+                    done: Boolean(savedStatusIso),
+                  },
+                  {
+                    key: "media",
+                    label: "Media",
+                    detail: counts.total ? `${counts.total} file(s)` : canGenerateWithoutMedia || hasOptionalNoWorkEvidence ? "Optional" : "None",
+                    done: Boolean(counts.total || canGenerateWithoutMedia || hasOptionalNoWorkEvidence),
+                  },
+                  {
+                    key: "pdf",
+                    label: "Affidavit",
+                    detail: invoicePacket || packageReady ? "PDF ready" : finalOutcome ? "Ready to generate" : "Waiting",
+                    done: Boolean(invoicePacket || packageReady),
+                  },
+                  {
+                    key: "zip",
+                    label: "ZIP",
+                    detail: packageReady ? missionPackageLabel : "Not generated",
+                    done: packageReady,
+                  },
+                  {
+                    key: "review",
+                    label: "Review",
+                    detail: packageReviewApproved ? "Approved" : packageReady ? "Needs approval" : "Pending",
+                    done: packageReviewApproved,
+                  },
+                ];
+                const packageReadinessDoneCount = packageReadinessItems.filter((item) => item.done).length;
+                const packageReadinessScore = Math.round((packageReadinessDoneCount / packageReadinessItems.length) * 100);
+                const packageReadinessTone = packageReviewApproved
+                  ? "approved"
+                  : packageReady
+                    ? "ready"
+                    : packageReadinessScore >= 67
+                      ? "almost"
+                      : packageReadinessScore >= 34
+                        ? "working"
+                        : "start";
+                const packageReadinessTitle = packageReviewApproved
+                  ? "Approved to send"
+                  : packageReady
+                    ? "Package ready for review"
+                    : finalOutcome
+                      ? "Package can be generated"
+                      : "Save final status first";
+                const packageReadinessNext = packageReviewApproved
+                  ? "Send the ZIP package when ready."
+                  : packageReady
+                    ? "Preview the package, then approve review."
+                    : finalOutcome
+                      ? counts.total || canGenerateWithoutMedia
+                        ? "Generate package from the Package step."
+                        : "Add optional evidence or generate without media."
+                      : "Pick and save the field status to unlock package review.";
 
                 return (
                   <>
@@ -27864,6 +28135,29 @@ return (
                       </div>
                       <small>Pick one status, confirm date/time, then save. Closed statuses move to Archive and the map layer updates.</small>
                       {draftWorkflowSaved ? <p className="saved-status-note">Saved. Status, time, and map layer updated.</p> : null}
+                    </div>
+                    <div className={`package-readiness-card readiness-${packageReadinessTone}`} aria-label="Package readiness score">
+                      <div className="package-readiness-head">
+                        <div>
+                          <span>Package Readiness</span>
+                          <strong>{packageReadinessScore}% Ready</strong>
+                          <small>{packageReadinessTitle}</small>
+                        </div>
+                        <b>{packageReadinessDoneCount}/{packageReadinessItems.length}</b>
+                      </div>
+                      <div className="package-readiness-meter" aria-hidden="true">
+                        <i style={{ width: `${packageReadinessScore}%` }} />
+                      </div>
+                      <div className="package-readiness-grid">
+                        {packageReadinessItems.map((item) => (
+                          <span key={item.key} className={item.done ? "done" : ""}>
+                            <b>{item.done ? "OK" : "Need"}</b>
+                            <strong>{item.label}</strong>
+                            <small>{item.detail}</small>
+                          </span>
+                        ))}
+                      </div>
+                      <p>{packageReadinessNext}</p>
                     </div>
                     {!noAccessWaiting ? (
                       <div className="field-media-option-hub" aria-label="Before and after media options">
