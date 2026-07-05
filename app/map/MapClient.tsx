@@ -6002,7 +6002,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     window.setTimeout(() => positionChoice(true), 700);
   }
 
-  function scrollSelectedJobCardTo(selector: string, notice = "") {
+  function scrollSelectedJobCardTo(selector: string, notice = "", advance = 0) {
     window.setTimeout(() => {
       const target = document.querySelector<HTMLElement>(selector);
       if (!target) return;
@@ -6020,7 +6020,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
 
       const drawerRect = drawer.getBoundingClientRect();
       const targetRect = target.getBoundingClientRect();
-      const top = drawer.scrollTop + targetRect.top - drawerRect.top - stickyHeaderClearance(drawer, stickyHead, 14);
+      const top = drawer.scrollTop + targetRect.top - drawerRect.top - stickyHeaderClearance(drawer, stickyHead, 14) + advance;
 
       drawer.scrollTo({
         top: Math.max(0, top),
@@ -6042,8 +6042,9 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
   function jumpToMediaFlow() {
     setFieldFocusPane("evidence");
     scrollSelectedJobCardTo(
-      ".job-drawer.selected-focus .field-media-option-hub, .job-drawer.selected-focus .site-procedure-stage[data-field-pane='evidence'], .job-drawer.selected-focus .field-evidence-gallery",
-      "Media flow ready."
+      ".job-drawer.selected-focus .field-media-step-cue, .job-drawer.selected-focus .field-media-option-hub, .job-drawer.selected-focus .site-procedure-stage[data-field-pane='evidence'], .job-drawer.selected-focus .field-evidence-gallery",
+      "Media flow ready.",
+      72
     );
   }
 
