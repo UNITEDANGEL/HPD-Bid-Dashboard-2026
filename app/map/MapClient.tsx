@@ -3646,6 +3646,23 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     });
   }
 
+  function clusterGoogleRouteUrl(items: ClusterJobItem[]) {
+    const stops = sortedClusterItems(items)
+      .map((item) => displayAddress(item.job).trim())
+      .filter(Boolean)
+      .slice(0, 8);
+    if (!stops.length) return "https://www.google.com/maps";
+
+    const params = new URLSearchParams({
+      api: "1",
+      travelmode: "driving",
+      destination: stops[stops.length - 1],
+    });
+    if (userLocation) params.set("origin", `${userLocation.lat},${userLocation.lng}`);
+    if (stops.length > 1) params.set("waypoints", stops.slice(0, -1).join("|"));
+    return `https://www.google.com/maps/dir/?${params.toString()}`;
+  }
+
   function openClusterSheet(items: ClusterJobItem[], lat: number, lng: number, label: string, readyCount: number, worstOverdue: number) {
     const sortedItems = sortedClusterItems(items);
     setMapJobBrief(null);
@@ -4303,7 +4320,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               focusJob(clusterItems[0].job);
               return;
             }
-            if (zoomLevel < (mobileMap ? 14 : 13)) {
+            if (zoomLevel < 11) {
               markProgrammaticMapMove();
               map.setView([item.lat, item.lng], Math.min(16, Math.max(zoomLevel + 2, mobileMap ? 11 : 11)), { animate: true, duration: 0.45 });
               return;
@@ -8812,7 +8829,7 @@ function directionsUrl(job: JobRecord) {
 
 return (
     <main
-      className={`map-shell ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""} ${mapJobBrief ? "map-brief-open" : ""} ${timerMapLayerActive ? "timer-map-layer" : ""}`}
+      className={`map-shell ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""} ${clusterSheet ? "cluster-tray-open" : ""} ${mapJobBrief ? "map-brief-open" : ""} ${timerMapLayerActive ? "timer-map-layer" : ""}`}
       onTouchStart={androidScrollFix ? undefined : handleMapTouchStart}
       onTouchEnd={androidScrollFix ? undefined : handleMapTouchEnd}
     >
@@ -25118,6 +25135,243 @@ return (
               0 14px 28px rgba(15, 23, 42, 0.28) !important;
           }
 
+          /* CLUSTER_DISPATCH_TRAY_2026 */
+          .job-drawer.cluster-focus {
+            left: 8px !important;
+            right: 8px !important;
+            bottom: 8px !important;
+            max-height: min(62dvh, 560px) !important;
+            padding: 10px !important;
+            border-radius: 22px !important;
+            background:
+              linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(226, 232, 240, 0.98)) !important;
+            border: 1px solid rgba(15, 23, 42, 0.14) !important;
+            box-shadow:
+              0 -12px 40px rgba(15, 23, 42, 0.24),
+              inset 0 1px 0 rgba(255, 255, 255, 0.82) !important;
+          }
+
+          .job-drawer.cluster-focus .drawer-head {
+            display: none !important;
+          }
+
+          .cluster-dispatch-sheet {
+            gap: 9px !important;
+            padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
+          }
+
+          .cluster-sheet-hero {
+            padding: 10px !important;
+            display: grid !important;
+            gap: 9px !important;
+            border-radius: 18px !important;
+            color: #0f172a !important;
+            border: 1px solid rgba(14, 165, 233, 0.18) !important;
+            background:
+              radial-gradient(circle at top left, rgba(14, 165, 233, 0.14), transparent 42%),
+              linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(240, 249, 255, 0.96)) !important;
+          }
+
+          .cluster-sheet-hero-copy {
+            display: grid !important;
+            gap: 2px !important;
+          }
+
+          .cluster-sheet-hero-copy span,
+          .cluster-sheet-hero-copy small {
+            color: #475569 !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .cluster-sheet-hero-copy strong {
+            color: #0f172a !important;
+            font-size: 24px !important;
+            line-height: 0.95 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .cluster-sheet-stats {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 7px !important;
+          }
+
+          .cluster-sheet-stats span {
+            min-height: 48px !important;
+            display: grid !important;
+            align-content: center !important;
+            justify-items: center !important;
+            border-radius: 13px !important;
+            color: #0f172a !important;
+            background: rgba(255, 255, 255, 0.76) !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .cluster-sheet-stats b {
+            font-size: 18px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .cluster-sheet-stats small {
+            margin-top: 3px !important;
+            color: #64748b !important;
+            font-size: 9px !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .cluster-sheet-actions {
+            display: grid !important;
+            grid-template-columns: 1fr 1.2fr 0.7fr !important;
+            gap: 7px !important;
+          }
+
+          .cluster-sheet-actions button,
+          .cluster-sheet-actions a {
+            min-height: 38px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 13px !important;
+            border: 1px solid rgba(15, 23, 42, 0.12) !important;
+            color: #0f172a !important;
+            background: #ffffff !important;
+            font-family: inherit !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+            text-decoration: none !important;
+          }
+
+          .cluster-sheet-actions a {
+            color: #062c22 !important;
+            background: linear-gradient(135deg, #bbf7d0, #bae6fd) !important;
+            border-color: rgba(14, 165, 233, 0.20) !important;
+          }
+
+          .cluster-sheet-list {
+            gap: 8px !important;
+          }
+
+          .cluster-job-card {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 8px !important;
+            align-items: stretch !important;
+            padding: 9px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            background: rgba(255, 255, 255, 0.82) !important;
+            color: #0f172a !important;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .cluster-job-main {
+            min-width: 0 !important;
+            padding: 0 !important;
+            display: grid !important;
+            gap: 3px !important;
+            text-align: left !important;
+            color: inherit !important;
+            background: transparent !important;
+            border: 0 !important;
+            font-family: inherit !important;
+          }
+
+          .cluster-job-main span,
+          .cluster-job-main strong,
+          .cluster-job-main small {
+            min-width: 0 !important;
+            display: block !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+
+          .cluster-job-main span {
+            color: #0f766e !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .cluster-job-main strong {
+            color: #0f172a !important;
+            font-size: 14px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+          }
+
+          .cluster-job-main small {
+            color: #475569 !important;
+            font-size: 10px !important;
+            font-weight: 850 !important;
+          }
+
+          .cluster-job-meta {
+            min-width: 86px !important;
+            display: grid !important;
+            gap: 6px !important;
+            align-content: center !important;
+            justify-items: end !important;
+          }
+
+          .cluster-job-meta b {
+            max-width: 116px !important;
+            padding: 5px 7px !important;
+            border-radius: 999px !important;
+            color: #991b1b !important;
+            background: #fee2e2 !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .cluster-job-actions {
+            display: flex !important;
+            gap: 5px !important;
+          }
+
+          .cluster-job-actions a,
+          .cluster-job-actions button {
+            min-height: 28px !important;
+            padding: 0 8px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 999px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            color: #0f172a !important;
+            background: #f8fafc !important;
+            font-family: inherit !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+            text-decoration: none !important;
+          }
+
+          .cluster-job-actions a {
+            color: #064e3b !important;
+            background: #bbf7d0 !important;
+          }
+
+          .cluster-sheet-more {
+            color: #475569 !important;
+          }
+
+          .map-shell.cluster-tray-open .maturity-map-marker .maturity-marker-bubble {
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transform: translateY(8px) scale(0.92) !important;
+          }
+
           @media (max-width: 700px) {
             .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview,
             .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-compact {
@@ -25200,6 +25454,36 @@ return (
               max-width: 46px !important;
               min-height: 16px !important;
               font-size: 8px !important;
+            }
+
+            .job-drawer.cluster-focus {
+              left: 7px !important;
+              right: 7px !important;
+              bottom: 7px !important;
+              max-height: min(64dvh, 560px) !important;
+              padding: 8px !important;
+              border-radius: 20px !important;
+            }
+
+            .cluster-sheet-actions {
+              grid-template-columns: 1fr 1.1fr 0.7fr !important;
+              gap: 6px !important;
+            }
+
+            .cluster-job-card {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .cluster-job-meta {
+              min-width: 0 !important;
+              grid-template-columns: minmax(0, 1fr) auto !important;
+              align-items: center !important;
+              justify-items: stretch !important;
+            }
+
+            .cluster-job-meta b {
+              max-width: none !important;
+              text-align: left !important;
             }
           }
         `}
@@ -25878,38 +26162,66 @@ return (
         {clusterSheet ? (
           <section className="cluster-dispatch-sheet">
             <div className="cluster-sheet-hero">
-              <span>Map Cluster</span>
-              <strong>{clusterSheet.label}</strong>
-              <small>
-                {clusterSheet.readyCount
-                  ? `${clusterSheet.readyCount} ready 2nd attempt job(s)`
-                  : clusterSheet.worstOverdue
-                    ? `Worst overdue: ${clusterSheet.worstOverdue} day(s)`
-                    : "Jobs grouped in this area"}
-              </small>
+              <div className="cluster-sheet-hero-copy">
+                <span>Area Dispatch</span>
+                <strong>{clusterSheet.title}</strong>
+                <small>
+                  {clusterSheet.readyCount
+                    ? `${clusterSheet.readyCount} ready 2nd attempt job(s)`
+                    : clusterSheet.worstOverdue
+                      ? `Worst overdue: ${clusterSheet.worstOverdue} day(s)`
+                      : "Jobs grouped in this map area"}
+                </small>
+              </div>
+              <div className="cluster-sheet-stats" aria-label="Cluster summary">
+                <span><b>{clusterSheet.items.length}</b><small>Jobs</small></span>
+                <span><b>{clusterSheet.readyCount || 0}</b><small>Ready</small></span>
+                <span><b>{clusterSheet.worstOverdue || 0}</b><small>Days</small></span>
+              </div>
+              <div className="cluster-sheet-actions" aria-label="Cluster actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    markProgrammaticMapMove();
+                    mapRef.current?.flyTo([clusterSheet.lat, clusterSheet.lng], 14, { animate: true, duration: 0.55 });
+                  }}
+                >
+                  Zoom Area
+                </button>
+                <a href={clusterGoogleRouteUrl(clusterSheet.items)} target="_blank" rel="noopener noreferrer">
+                  Google Route
+                </a>
+                <button type="button" onClick={closeClusterSheet}>
+                  Map
+                </button>
+              </div>
             </div>
             <div className="cluster-sheet-list">
-              {clusterSheet.items.slice(0, 24).map((item) => {
+              {clusterSheet.items.slice(0, 16).map((item) => {
                 const job = item.job;
                 return (
-                  <button
-                    className={`cluster-job-row job-status-card ${JobStatus.statusCardClass(job)}`}
+                  <article
+                    className={`cluster-job-card job-status-card ${JobStatus.statusCardClass(job)}`}
                     key={`${jobKey(job, item.index)}-${item.index}`}
-                    type="button"
-                    onClick={() => focusJob(job)}
                   >
-                    <div>
-                      <strong>{jobKey(job, item.index)}</strong>
-                      <span>{displayAddress(job)}</span>
+                    <button type="button" className="cluster-job-main" onClick={() => focusJob(job)}>
+                      <span>{jobKey(job, item.index)}</span>
+                      <strong>{displayAddress(job)}</strong>
                       <small>{job.borough || "Unknown borough"} · {displayLocation(job) || "Location not listed"}</small>
+                    </button>
+                    <div className="cluster-job-meta">
+                      <b>{clusterJobReason(job)}</b>
+                      <div className="cluster-job-actions">
+                        <a href={wazeDirectionsUrl(job)} target="_blank" rel="noopener noreferrer">Waze</a>
+                        <button type="button" onClick={() => openArrivedJob(job)}>Status</button>
+                      </div>
                     </div>
-                    <b>{clusterJobReason(job)}</b>
-                  </button>
+                  </article>
                 );
               })}
             </div>
-            {clusterSheet.items.length > 24 ? (
-              <small className="cluster-sheet-more">Showing first 24 priority jobs in this cluster.</small>
+            {clusterSheet.items.length > 16 ? (
+              <small className="cluster-sheet-more">Showing first 16 priority jobs in this area. Use Google Route for the first 8 stops.</small>
             ) : null}
           </section>
         ) : !selectedOnly ? (
