@@ -8801,12 +8801,13 @@ function directionsUrl(job: JobRecord) {
     const choice = normalizeWorkflowChoice(value);
     if (draft) return "tap to save";
     if (choice === "Pending") return "pick status";
-    if (choice === "No Access - 1st Attempt") return "72h timer";
-    if (choice === "No Access - 2nd Attempt") return "closeout";
-    if (choice === "Refused Access") return "closeout";
-    if (choice === "Work Completed" || choice === "Partial Work Completed") return "package";
+    if (choice === "Work In Progress") return "media next";
+    if (choice === "No Access - 1st Attempt") return "timer";
+    if (choice === "No Access - 2nd Attempt") return "closed";
+    if (choice === "Refused Access") return "closed";
+    if (choice === "Work Completed" || choice === "Partial Work Completed") return "package next";
     if (choice === "Completed by Others") return "archive";
-    return "current";
+    return "saved";
   }
 
   function workflowDisplayStatusValue(job: JobRecord, draftValue = "") {
@@ -8836,7 +8837,7 @@ function directionsUrl(job: JobRecord) {
     const draftDateLabel = draftDate && !Number.isNaN(draftDate.getTime())
       ? displayWorkflowDate(draftDate.toISOString())
       : "Choose time";
-    let eyebrow = draftValue ? "Ready to Save" : saved ? "Current Status" : "Status Needed";
+    let eyebrow = draftValue ? "Ready to Save" : saved ? "Saved Status" : "Status Needed";
     let next = draftValue
       ? "Tap banner to save status."
       : "Pick status to unlock media and package flow.";
@@ -8844,7 +8845,7 @@ function directionsUrl(job: JobRecord) {
     let action: "status" | "media" | "package" | "send" = "status";
 
     if (!draftValue && choice === "Work In Progress") {
-      next = counts.total ? "Media saved. Finish work or update final status." : "Take before/after media or finish the job.";
+      next = counts.total ? "Media ready. Finish work or update status." : "Add media or finish work.";
       meta = savedIso ? displayWorkflowDate(savedIso) : "Started";
       action = "media";
     }
@@ -26627,6 +26628,20 @@ return (
             max-width: 118px !important;
             color: #06223a !important;
             background: #ffffff !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.has-saved-status {
+            box-shadow:
+              0 12px 24px rgba(2, 6, 23, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+            animation-duration: 3.2s !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.has-saved-status .state-pulse-dot {
+            background: #bbf7d0 !important;
+            box-shadow:
+              0 0 0 5px rgba(187, 247, 208, 0.16),
+              0 0 16px rgba(187, 247, 208, 0.68) !important;
           }
 
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner .state-pulse-dot {
