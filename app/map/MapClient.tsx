@@ -7881,6 +7881,8 @@ function localDatetimeValue(date = new Date()) {
     setSelected((current) => (current && jobKey(current) === key ? applyPatch(current) as MappedJob : current));
     setJobs((rows) => rows.map(applyPatch));
     setMappedJobs((rows) => rows.map(applyPatch));
+    setDraftWorkflowStatus("");
+    setDraftWorkflowSaved(true);
     openPaperworkPreviewForStatus(job, patch);
   }
 
@@ -8797,7 +8799,7 @@ function directionsUrl(job: JobRecord) {
 
   function workflowButtonSubLabel(value: string, draft: boolean) {
     const choice = normalizeWorkflowChoice(value);
-    if (draft) return "selected";
+    if (draft) return "tap to save";
     if (choice === "Pending") return "pick status";
     if (choice === "No Access - 1st Attempt") return "72h timer";
     if (choice === "No Access - 2nd Attempt") return "closeout";
@@ -8836,7 +8838,7 @@ function directionsUrl(job: JobRecord) {
       : "Choose time";
     let eyebrow = draftValue ? "Ready to Save" : saved ? "Current Status" : "Status Needed";
     let next = draftValue
-      ? "Tap this banner to review and save."
+      ? "Tap banner to save status."
       : "Pick status to unlock media and package flow.";
     let meta = draftValue ? draftDateLabel : savedIso ? displayWorkflowDate(savedIso) : "Start";
     let action: "status" | "media" | "package" | "send" = "status";
@@ -27880,6 +27882,10 @@ return (
                     className={`job-card-current-state-banner tone-${stateBanner.tone} ${stateBanner.isDraft ? "has-draft-status" : ""} ${stateBanner.isSaved ? "has-saved-status" : "needs-status"}`}
                     aria-label={`${stateBanner.eyebrow}: ${stateBanner.label}. ${stateBanner.next}`}
                     onClick={() => {
+                      if (draftWorkflowStatus) {
+                        saveDraftWorkflow(selected);
+                        return;
+                      }
                       if (stateBanner.action === "send") {
                         focusFieldPane("send");
                         return;
@@ -27923,7 +27929,13 @@ return (
                 <button
                   type="button"
                   className={`route-head-arrived tone-${workflowChoiceInfo(workflowDisplayStatusValue(selected, draftWorkflowStatus)).tone} ${draftWorkflowStatus ? "has-draft-status" : ""}`}
-                  onClick={() => openArrivedJob(selected)}
+                  onClick={() => {
+                    if (draftWorkflowStatus) {
+                      saveDraftWorkflow(selected);
+                      return;
+                    }
+                    openArrivedJob(selected);
+                  }}
                 >
                   <strong>{workflowShortStatusLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus))}</strong>
                   <small>{workflowButtonSubLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus), Boolean(draftWorkflowStatus))}</small>
