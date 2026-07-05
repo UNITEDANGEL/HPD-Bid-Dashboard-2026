@@ -8908,6 +8908,32 @@ function directionsUrl(job: JobRecord) {
     };
   }
 
+  function runWorkflowNextAction(job: MappedJob) {
+    const stateBanner = workflowStateBannerInfo(job, draftWorkflowStatus);
+
+    if (draftWorkflowStatus) {
+      saveDraftWorkflow(job);
+      return;
+    }
+
+    if (stateBanner.action === "send") {
+      focusFieldPane("send");
+      return;
+    }
+
+    if (stateBanner.action === "package") {
+      jumpToPackageFlow();
+      return;
+    }
+
+    if (stateBanner.action === "media") {
+      jumpToMediaFlow();
+      return;
+    }
+
+    jumpToStatusFlow();
+  }
+
   function switchMapBoard(view: WorkflowViewFilter) {
     setWorkflowViewFilter(view);
     setClusterSheet(null);
@@ -27896,25 +27922,7 @@ return (
                     type="button"
                     className={`job-card-current-state-banner tone-${stateBanner.tone} ${stateBanner.isDraft ? "has-draft-status" : ""} ${stateBanner.isSaved ? "has-saved-status" : "needs-status"}`}
                     aria-label={`${stateBanner.eyebrow}: ${stateBanner.label}. ${stateBanner.next}`}
-                    onClick={() => {
-                      if (draftWorkflowStatus) {
-                        saveDraftWorkflow(selected);
-                        return;
-                      }
-                      if (stateBanner.action === "send") {
-                        focusFieldPane("send");
-                        return;
-                      }
-                      if (stateBanner.action === "package") {
-                        jumpToPackageFlow();
-                        return;
-                      }
-                      if (stateBanner.action === "media") {
-                        jumpToMediaFlow();
-                        return;
-                      }
-                      jumpToStatusFlow();
-                    }}
+                    onClick={() => runWorkflowNextAction(selected)}
                   >
                     <span className="state-pulse-dot" aria-hidden="true" />
                     <span className="state-banner-copy">
@@ -27944,13 +27952,7 @@ return (
                 <button
                   type="button"
                   className={`route-head-arrived tone-${workflowChoiceInfo(workflowDisplayStatusValue(selected, draftWorkflowStatus)).tone} ${draftWorkflowStatus ? "has-draft-status" : ""}`}
-                  onClick={() => {
-                    if (draftWorkflowStatus) {
-                      saveDraftWorkflow(selected);
-                      return;
-                    }
-                    openArrivedJob(selected);
-                  }}
+                  onClick={() => runWorkflowNextAction(selected)}
                 >
                   <strong>{workflowShortStatusLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus))}</strong>
                   <small>{workflowButtonSubLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus), Boolean(draftWorkflowStatus))}</small>
@@ -27978,7 +27980,7 @@ return (
                 <button
                   type="button"
                   className={`flow-status tone-${workflowChoiceInfo(workflowDisplayStatusValue(selected, draftWorkflowStatus)).tone} ${fieldFocusPane === "capture" ? "active" : ""} ${hasSavedFieldWorkflow(selected) ? "done" : ""} ${draftWorkflowStatus ? "has-draft-status" : ""}`}
-                  onClick={jumpToStatusFlow}
+                  onClick={() => runWorkflowNextAction(selected)}
                 >
                   <strong>{workflowShortStatusLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus))}</strong>
                   <small>{workflowButtonSubLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus), Boolean(draftWorkflowStatus))}</small>
