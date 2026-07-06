@@ -27496,6 +27496,30 @@ return (
             background: linear-gradient(135deg, #92400e, #f59e0b 62%, #f97316) !important;
           }
 
+          .job-drawer.selected-focus .field-status-picker-card .field-next-action-card.status-next-action {
+            gap: 8px !important;
+            padding: 10px !important;
+            border-radius: 13px !important;
+            box-shadow:
+              0 14px 28px rgba(15, 23, 42, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card .field-next-action-card.status-next-action .field-next-action-copy strong {
+            font-size: 17px !important;
+            line-height: 1.04 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card .field-next-action-card.status-next-action .field-next-action-copy small {
+            font-size: 11px !important;
+            line-height: 1.2 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card .field-next-action-card.status-next-action button {
+            min-height: 48px !important;
+            border-radius: 11px !important;
+          }
+
           .job-drawer.selected-focus .field-next-action-copy {
             display: grid !important;
             gap: 3px !important;
@@ -28588,6 +28612,7 @@ return (
                 const isCompletedByOthers = status === "COMPLETED_BY_OTHERS" || /completed by others/i.test(labelText);
                 const isBeforeEvidence = status === "BEFORE_EVIDENCE";
                 const isAfterEvidence = status === "AFTER_EVIDENCE";
+                const isWorkStarted = status === "WORK_STARTED" || /work in progress/i.test(labelText);
                 const isWorkCompleted = status === "WORK_COMPLETED" || (/work completed/i.test(labelText) && !/partial/i.test(labelText));
                 const pendingCompletionOutcome = String(selected.PendingCompletionOutcome || selected.pendingCompletionOutcome || "").toUpperCase();
                 const isPendingPartial = isAfterEvidence && pendingCompletionOutcome === "PARTIAL_WORK_COMPLETED";
@@ -28597,7 +28622,7 @@ return (
                 const noAccessWaiting = isNoAccessFirst && Boolean(secondAttemptInfo) && !secondAttemptInfo?.ready;
                 const noAccessSoonForSecond = noAccessWaiting && Boolean(secondAttemptInfo?.within24);
                 const noAccessReadyForSecond = isNoAccessFirst && Boolean(secondAttemptInfo?.ready);
-                const outcomeChosen = isBeforeEvidence || isAfterEvidence || isNoAccess || isRefused || isCompletedByOthers || isWorkCompleted || isPartialWork;
+                const outcomeChosen = isWorkStarted || isBeforeEvidence || isAfterEvidence || isNoAccess || isRefused || isCompletedByOthers || isWorkCompleted || isPartialWork;
                 const finalOutcome = isNoAccessSecond || isRefused || isCompletedByOthers || isWorkCompleted || isPartialWork;
                 const refusedPhotoCount = counts.refused_access;
                 const hasRefusedPhoto = refusedPhotoCount > 0;
@@ -28937,7 +28962,16 @@ return (
                                 void runPackagePrimaryAction(selected);
                               },
                             }
-                          : evidenceReady && outcomeChosen
+                          : isWorkStarted && !counts.total
+                            ? {
+                                tone: "media",
+                                eyebrow: "Next Action",
+                                title: "Add Before Media",
+                                detail: "Work is started. Add labeled before image/video, or continue without media if needed.",
+                                meta: "Before / After",
+                                onClick: () => jumpToMediaFlow(selected),
+                              }
+                            : evidenceReady && outcomeChosen
                             ? {
                               tone: "media",
                               eyebrow: "Next Action",
@@ -29144,6 +29178,17 @@ return (
                           </button>
                         </div>
                       </div>
+                      <div className={`field-next-action-card status-next-action action-${oneBigNextAction.tone}`} aria-label="One big next action">
+                        <div className="field-next-action-copy">
+                          <span>{oneBigNextAction.eyebrow}</span>
+                          <strong>{oneBigNextAction.title}</strong>
+                          <small>{oneBigNextAction.detail}</small>
+                        </div>
+                        <button type="button" onClick={oneBigNextAction.onClick}>
+                          <b>{oneBigNextAction.title}</b>
+                          <small>{oneBigNextAction.meta}</small>
+                        </button>
+                      </div>
                       <div className="field-status-quick-choices" aria-label="Quick status choices">
                         <div className="field-status-quick-head">
                           <span>Quick Pick</span>
@@ -29206,17 +29251,6 @@ return (
                         ))}
                       </div>
                       <p>{packageReadinessNext}</p>
-                    </div>
-                    <div className={`field-next-action-card action-${oneBigNextAction.tone}`} aria-label="One big next action">
-                      <div className="field-next-action-copy">
-                        <span>{oneBigNextAction.eyebrow}</span>
-                        <strong>{oneBigNextAction.title}</strong>
-                        <small>{oneBigNextAction.detail}</small>
-                      </div>
-                      <button type="button" onClick={oneBigNextAction.onClick}>
-                        <b>{oneBigNextAction.title}</b>
-                        <small>{oneBigNextAction.meta}</small>
-                      </button>
                     </div>
                     {!noAccessWaiting ? (
                       <div className="field-media-option-hub" aria-label="Before and after media options">
