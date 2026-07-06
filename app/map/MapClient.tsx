@@ -1535,11 +1535,13 @@ function markerSignalLabelHtml(
   const address = markerAddressLabel(job);
   const daySignal = options.overdueLabel || (options.noAccessTimerLabel ? "72h no access" : award.main.replace(/^MD\s*/i, "").replace(/^AWD IN\s*/i, "Award in "));
   const footer = options.detailed ? markerDetailLabel(job) : options.expanded ? award.badge : "";
+  const ageBadge = markerAgeBadgeHtml(job);
   const tapHint = "";
 
   if (options.overview) {
     return `
       <span class="signal-top"><span class="signal-eyebrow">${escapeMarkerHtml(daySignal)}</span><strong class="signal-main">${escapeMarkerHtml(id)}</strong></span>
+      ${ageBadge}
       <span class="signal-address">${escapeMarkerHtml(address)}</span>
       ${options.noAccessTimerLabel ? options.noAccessTimerLabel : ""}
       ${options.appointmentLabel ? options.appointmentLabel : ""}
@@ -1549,6 +1551,7 @@ function markerSignalLabelHtml(
 
   return `
     <span class="signal-top"><span class="signal-eyebrow">${escapeMarkerHtml(daySignal)}</span><strong class="signal-main">${escapeMarkerHtml(id)}</strong></span>
+    ${ageBadge}
     <span class="signal-address">${escapeMarkerHtml(address)}</span>
     ${start && !options.overdueLabel ? `<span class="signal-start">${escapeMarkerHtml(start)}</span>` : ""}
     ${options.noAccessTimerLabel ? options.noAccessTimerLabel : ""}
@@ -1789,6 +1792,44 @@ function jobCounterInfo(job: JobRecord) {
 
 function jobCounterLabel(job: JobRecord) {
   return jobCounterInfo(job).label;
+}
+
+function jobAgeBadgeInfo(job: JobRecord) {
+  const info = maturityInfo(job);
+
+  if (info.daysLeft === null) {
+    return {
+      label: "JOB AGE",
+      main: "?",
+      detail: "Award date missing",
+      priority: "nodate",
+    };
+  }
+
+  if (info.daysLeft < 0) {
+    const days = Math.abs(info.daysLeft);
+    return {
+      label: "STARTS IN",
+      main: `${days}D`,
+      detail: `Award starts in ${days} day${days === 1 ? "" : "s"}`,
+      priority: "future",
+    };
+  }
+
+  const days = info.daysLeft;
+  const label = days >= 90 ? "OLD JOB" : days >= 60 ? "AGING" : days >= 30 ? "WATCH" : "JOB AGE";
+
+  return {
+    label,
+    main: `${days}D`,
+    detail: days === 0 ? "Awarded today" : `${days} day${days === 1 ? "" : "s"} since award`,
+    priority: info.priority,
+  };
+}
+
+function markerAgeBadgeHtml(job: JobRecord) {
+  const age = jobAgeBadgeInfo(job);
+  return `<span class="marker-age-badge age-${escapeMarkerHtml(age.priority)}"><b>${escapeMarkerHtml(age.label)}</b><strong>${escapeMarkerHtml(age.main)}</strong></span>`;
 }
 
 function overdueBucket(job: JobRecord) {
@@ -4391,6 +4432,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const appointmentPastDue = Boolean(appointmentDateValue && appointmentDateValue.getTime() < Date.now() - APPOINTMENT_DUE_GRACE_MS);
         const pendingAppointmentPulse = hasPendingUpcomingAppointment(job);
         const hasOverdue = Boolean(overdueLabel);
+        const ageInfo = jobAgeBadgeInfo(job);
+        const ageUrgent = ageInfo.priority === "warning" || ageInfo.priority === "urgent" || ageInfo.priority === "overdue";
         const markerMode = markerDetailed
           ? "marker-detailed"
           : markerExpanded || noAccessTimerFocus
@@ -4410,8 +4453,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                 ? [hasOverdue ? 150 : noAccessTimerLabel ? 174 : 132, noAccessTimerLabel || appointmentLabel ? 120 : 88]
                 : [hasOverdue ? 168 : noAccessTimerLabel ? 178 : 150, noAccessTimerLabel || appointmentLabel ? 118 : 88];
         const iconSize: [number, number] = [
-          baseIconSize[0] + (hasOverdue && !markerOverview ? 8 : 0),
-          baseIconSize[1] + (hasOverdue && !markerOverview ? 6 : 0),
+          baseIconSize[0] + (ageUrgent ? 18 : 10) + (hasOverdue && !markerOverview ? 8 : 0),
+          baseIconSize[1] + (ageUrgent ? 18 : 12) + (hasOverdue && !markerOverview ? 6 : 0),
         ];
         const iconAnchor: [number, number] = [Math.round(iconSize[0] / 2), Math.round(iconSize[1] / 2)];
         const popupJobId = jobKey(job, index);
@@ -27853,11 +27896,222 @@ return (
             }
           }
 
+          /* JOB_AGE_VISIBILITY_2026 */
+          .maturity-map-marker .map-signal-marker .marker-age-badge {
+            display: inline-grid !important;
+            grid-template-columns: auto auto !important;
+            align-items: center !important;
+            justify-content: start !important;
+            gap: 5px !important;
+            width: max-content !important;
+            max-width: 100% !important;
+            min-height: 30px !important;
+            margin: 1px 0 2px !important;
+            padding: 4px 8px !important;
+            border-radius: 10px !important;
+            background: #ecfeff !important;
+            color: #0e7490 !important;
+            border: 1px solid rgba(8, 145, 178, 0.28) !important;
+            box-shadow:
+              0 8px 18px rgba(8, 47, 73, 0.16),
+              inset 0 1px 0 rgba(255, 255, 255, 0.86) !important;
+            letter-spacing: 0 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-age-badge b {
+            color: inherit !important;
+            font-size: 8px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+            opacity: 0.86 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-age-badge strong {
+            color: inherit !important;
+            font-size: 20px !important;
+            line-height: 0.92 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .marker-age-badge,
+          .maturity-map-marker .map-signal-marker.marker-compact .marker-age-badge {
+            min-height: 34px !important;
+            padding: 5px 9px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overview .marker-age-badge strong,
+          .maturity-map-marker .map-signal-marker.marker-compact .marker-age-badge strong {
+            font-size: 23px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-age-badge.age-warning {
+            background: #fff7ed !important;
+            color: #c2410c !important;
+            border-color: rgba(249, 115, 22, 0.36) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-age-badge.age-urgent,
+          .maturity-map-marker .map-signal-marker .marker-age-badge.age-overdue {
+            background: linear-gradient(135deg, #fee2e2, #fff7ed) !important;
+            color: #b91c1c !important;
+            border-color: rgba(239, 68, 68, 0.42) !important;
+            animation: jobAgePulse 1.6s ease-in-out infinite !important;
+          }
+
+          .maturity-map-marker .map-signal-marker:active .marker-age-badge {
+            transform: scale(1.08) !important;
+          }
+
+          .job-drawer.selected-focus .selected-chip-stack {
+            align-items: stretch !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .selected-age-badge {
+            display: grid !important;
+            gap: 2px !important;
+            min-width: 112px !important;
+            padding: 9px 11px !important;
+            border-radius: 13px !important;
+            background: #ecfeff !important;
+            color: #0e7490 !important;
+            border: 1px solid rgba(8, 145, 178, 0.28) !important;
+            box-shadow:
+              0 14px 26px rgba(8, 47, 73, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+          }
+
+          .job-drawer.selected-focus .selected-age-badge b {
+            color: inherit !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .selected-age-badge strong {
+            color: inherit !important;
+            font-size: 32px !important;
+            line-height: 0.92 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-drawer.selected-focus .selected-age-badge small {
+            color: inherit !important;
+            font-size: 10px !important;
+            line-height: 1.12 !important;
+            font-weight: 850 !important;
+            opacity: 0.82 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            align-items: stretch !important;
+            gap: 6px !important;
+            margin-top: 6px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .selected-age-badge {
+            min-width: 128px !important;
+            grid-template-columns: auto auto !important;
+            align-items: center !important;
+            gap: 2px 7px !important;
+            padding: 7px 9px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .selected-age-badge strong {
+            font-size: 26px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .selected-age-badge small {
+            grid-column: 1 / -1 !important;
+            font-size: 9px !important;
+          }
+
+          .job-drawer.selected-focus .selected-age-badge.age-warning {
+            background: #fff7ed !important;
+            color: #c2410c !important;
+            border-color: rgba(249, 115, 22, 0.38) !important;
+          }
+
+          .job-drawer.selected-focus .selected-age-badge.age-urgent,
+          .job-drawer.selected-focus .selected-age-badge.age-overdue {
+            background: linear-gradient(135deg, #fee2e2, #fff7ed) !important;
+            color: #b91c1c !important;
+            border-color: rgba(239, 68, 68, 0.42) !important;
+            animation: jobAgePulse 1.6s ease-in-out infinite !important;
+          }
+
+          .compact-job-status .maturity-pill {
+            min-width: 72px !important;
+            min-height: 34px !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            padding: 7px 10px !important;
+            border-radius: 11px !important;
+            font-size: 15px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          @keyframes jobAgePulse {
+            0%,
+            100% {
+              transform: translateZ(0) scale(1);
+              box-shadow:
+                0 12px 24px rgba(239, 68, 68, 0.18),
+                inset 0 1px 0 rgba(255, 255, 255, 0.88);
+            }
+            50% {
+              transform: translateZ(0) scale(1.045);
+              box-shadow:
+                0 16px 32px rgba(239, 68, 68, 0.28),
+                0 0 24px rgba(249, 115, 22, 0.16),
+                inset 0 1px 0 rgba(255, 255, 255, 0.94);
+            }
+          }
+
+          @media (max-width: 430px) {
+            .maturity-map-marker .map-signal-marker .marker-age-badge {
+              min-height: 32px !important;
+              padding: 4px 8px !important;
+            }
+
+            .maturity-map-marker .map-signal-marker .marker-age-badge strong {
+              font-size: 21px !important;
+            }
+
+            .job-drawer.selected-focus .selected-chip-stack {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .job-drawer.selected-focus .selected-age-badge {
+              grid-column: 1 / -1 !important;
+              min-width: 0 !important;
+              grid-template-columns: auto auto !important;
+              align-items: center !important;
+              justify-content: space-between !important;
+            }
+
+            .job-drawer.selected-focus .selected-age-badge small {
+              grid-column: 1 / -1 !important;
+            }
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner,
-            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner .state-pulse-dot {
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner .state-pulse-dot,
+            .maturity-map-marker .map-signal-marker .marker-age-badge,
+            .job-drawer.selected-focus .selected-age-badge {
               animation: none !important;
             }
           }
@@ -28405,6 +28659,16 @@ return (
                     <span className={`maturity-pill ${maturityPriorityClass(selectedNoAccessTimerJob || selected)}`}>
                       {selectedNoAccessTimerInfo ? (selectedNoAccessTimerInfo.ready ? "READY 2ND" : selectedNoAccessTimerInfo.label) : jobCounterLabel(selected)}
                     </span>
+                    {(() => {
+                      const age = jobAgeBadgeInfo(selectedNoAccessTimerJob || selected);
+                      return (
+                        <span className={`selected-age-badge job-card-header-age-badge age-${age.priority}`} aria-label={`Job age ${age.detail}`}>
+                          <b>{age.label}</b>
+                          <strong>{age.main}</strong>
+                          <small>{age.detail}</small>
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
                 <button type="button" className="job-card-close-pill job-card-map-back-pill" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
@@ -28823,6 +29087,16 @@ return (
                 <span className={`maturity-pill ${maturityPriorityClass(selectedNoAccessTimerJob || selected)}`}>
                   {selectedNoAccessTimerInfo ? (selectedNoAccessTimerInfo.ready ? "READY 2ND" : selectedNoAccessTimerInfo.label) : jobCounterLabel(selected)}
                 </span>
+                {(() => {
+                  const age = jobAgeBadgeInfo(selectedNoAccessTimerJob || selected);
+                  return (
+                    <span className={`selected-age-badge age-${age.priority}`} aria-label={`Job age ${age.detail}`}>
+                      <b>{age.label}</b>
+                      <strong>{age.main}</strong>
+                      <small>{age.detail}</small>
+                    </span>
+                  );
+                })()}
               </div>
               <div className="job-card-command-strip" aria-label="Job card quick actions">
                 <button type="button" className="job-card-close-action" onClick={showCleanMapView}>
