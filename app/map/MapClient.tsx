@@ -4297,17 +4297,52 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                     : worstOverdue
                       ? "cluster-overdue"
                       : "cluster-normal";
+          const clusterPriority = appointmentCount
+            ? { label: "Appt", value: appointmentCount }
+            : readyCount
+              ? { label: "Ready", value: readyCount }
+              : soonNoAccessCount
+                ? { label: "24h", value: soonNoAccessCount }
+                : waitingNoAccessCount
+                  ? { label: "72h", value: waitingNoAccessCount }
+                  : worstOverdue
+                    ? { label: "Late", value: worstOverdue }
+                    : pendingCount
+                      ? { label: "Pending", value: pendingCount }
+                      : { label: "Route", value: clusterItems.length };
+          const clusterSizeClass = clusterItems.length >= 100
+            ? "cluster-size-xl"
+            : clusterItems.length >= 25
+              ? "cluster-size-lg"
+              : "cluster-size-sm";
+          const clusterStats = [
+            readyCount ? { label: "Ready", value: readyCount, className: "ready" } : null,
+            soonNoAccessCount ? { label: "24h", value: soonNoAccessCount, className: "soon" } : null,
+            waitingNoAccessCount ? { label: "72h", value: waitingNoAccessCount, className: "waiting" } : null,
+            appointmentCount ? { label: "Appt", value: appointmentCount, className: "appointment" } : null,
+            pendingCount ? { label: "Pend", value: pendingCount, className: "pending" } : null,
+            worstOverdue ? { label: "Late", value: worstOverdue, className: "late" } : null,
+          ]
+            .filter(Boolean)
+            .slice(0, 3)
+            .map((stat) => `<i class="cluster-stat-mini ${stat!.className}"><b>${stat!.value}</b><small>${escapeMarkerHtml(stat!.label)}</small></i>`)
+            .join("");
           const clusterLabel = `${clusterItems.length} job${clusterItems.length === 1 ? "" : "s"}`;
           const [offsetX, offsetY]: [number, number] = [0, 0];
           const clusterPoint = map.latLngToLayerPoint([item.lat, item.lng]);
           const clusterLatLng = map.layerPointToLatLng(L.point(clusterPoint.x + offsetX, clusterPoint.y + offsetY));
-          const clusterIconSize: [number, number] = mobileMap ? [70, 78] : [76, 84];
+          const clusterIconSize: [number, number] = mobileMap ? [88, 100] : [96, 108];
           const marker = L.marker([clusterLatLng.lat, clusterLatLng.lng], {
             icon: L.divIcon({
               className: "maturity-map-marker",
-              html: `<div class="map-cluster-marker map-cluster-dot ${statusClass}">
+              html: `<div class="map-cluster-marker map-cluster-dot cluster-dispatch-badge ${statusClass} ${clusterSizeClass}" title="${escapeMarkerHtml(clusterLabel)}">
+                      <div class="cluster-topline">
+                        <strong>${escapeMarkerHtml(clusterBoroughLabel)}</strong>
+                        <em>${escapeMarkerHtml(clusterPriority.label)}</em>
+                      </div>
                       <span>${clusterItems.length}</span>
-                      <strong>${escapeMarkerHtml(clusterBoroughLabel)}</strong>
+                      <small class="cluster-job-word">jobs</small>
+                      <div class="cluster-stat-row">${clusterStats || `<i class="cluster-stat-mini normal"><b>${clusterPriority.value}</b><small>${escapeMarkerHtml(clusterPriority.label)}</small></i>`}</div>
                     </div>`,
               iconSize: clusterIconSize,
               iconAnchor: [Math.round(clusterIconSize[0] / 2), Math.round(clusterIconSize[1] / 2)],
@@ -26070,6 +26105,214 @@ return (
             min-height: 15px !important;
             padding: 2px 6px !important;
             font-size: 8px !important;
+          }
+
+          /* MAP_CLUSTER_DISPATCH_BADGE_2026 */
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge {
+            --cluster-accent: #0ea5e9;
+            --cluster-soft: #e0f2fe;
+            --cluster-text: #0f172a;
+            width: 84px !important;
+            min-width: 84px !important;
+            height: 92px !important;
+            min-height: 92px !important;
+            display: grid !important;
+            grid-template-rows: auto 1fr auto auto !important;
+            align-items: center !important;
+            justify-items: center !important;
+            gap: 2px !important;
+            padding: 6px !important;
+            border: 1px solid rgba(255, 255, 255, 0.92) !important;
+            border-left-width: 1px !important;
+            border-radius: 18px !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96)) !important;
+            color: var(--cluster-text) !important;
+            box-shadow:
+              0 0 0 3px color-mix(in srgb, var(--cluster-accent) 18%, transparent),
+              0 16px 32px rgba(15, 23, 42, 0.26),
+              inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+            transform: translateZ(0) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge::before {
+            content: "" !important;
+            position: absolute !important;
+            inset: 0 !important;
+            border-radius: inherit !important;
+            border-top: 5px solid var(--cluster-accent) !important;
+            pointer-events: none !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge::after {
+            background: #f8fafc !important;
+            border-color: rgba(255, 255, 255, 0.92) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge.cluster-appointment {
+            --cluster-accent: #0284c7;
+            --cluster-soft: #dbeafe;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge.cluster-ready {
+            --cluster-accent: #16a34a;
+            --cluster-soft: #dcfce7;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge.cluster-noaccess-soon,
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge.cluster-noaccess-waiting {
+            --cluster-accent: #f97316;
+            --cluster-soft: #ffedd5;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge.cluster-overdue {
+            --cluster-accent: #dc2626;
+            --cluster-soft: #fee2e2;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge.cluster-pending {
+            --cluster-accent: #64748b;
+            --cluster-soft: #f1f5f9;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-topline {
+            width: 100% !important;
+            min-width: 0 !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 3px !important;
+            align-items: center !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge strong,
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge em {
+            min-width: 0 !important;
+            min-height: 16px !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            padding: 2px 5px !important;
+            border-radius: 999px !important;
+            border: 1px solid color-mix(in srgb, var(--cluster-accent) 26%, transparent) !important;
+            background: var(--cluster-soft) !important;
+            color: #0f172a !important;
+            font-size: 7px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            font-style: normal !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge em {
+            color: #ffffff !important;
+            background: var(--cluster-accent) !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge span {
+            padding: 0 !important;
+            color: #0f172a !important;
+            font-size: 26px !important;
+            line-height: 0.86 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge.cluster-size-lg span {
+            font-size: 24px !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge.cluster-size-xl span {
+            font-size: 21px !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-job-word {
+            margin-top: -1px !important;
+            color: #475569 !important;
+            font-size: 7px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-stat-row {
+            width: 100% !important;
+            min-width: 0 !important;
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 2px !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-stat-mini {
+            min-width: 0 !important;
+            min-height: 18px !important;
+            display: grid !important;
+            align-content: center !important;
+            justify-items: center !important;
+            gap: 0 !important;
+            padding: 2px 1px !important;
+            border-radius: 6px !important;
+            background: rgba(15, 23, 42, 0.06) !important;
+            color: #0f172a !important;
+            font-style: normal !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-stat-mini b {
+            color: inherit !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-stat-mini small {
+            color: inherit !important;
+            opacity: 0.72 !important;
+            font-size: 6px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-stat-mini.ready {
+            background: #dcfce7 !important;
+            color: #14532d !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-stat-mini.soon,
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-stat-mini.waiting {
+            background: #ffedd5 !important;
+            color: #9a3412 !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-stat-mini.appointment {
+            background: #dbeafe !important;
+            color: #1e3a8a !important;
+          }
+
+          .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-stat-mini.late {
+            background: #fee2e2 !important;
+            color: #991b1b !important;
+          }
+
+          @media (max-width: 430px) {
+            .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge {
+              width: 78px !important;
+              min-width: 78px !important;
+              height: 88px !important;
+              min-height: 88px !important;
+              border-radius: 17px !important;
+            }
+
+            .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge span {
+              font-size: 24px !important;
+            }
+
+            .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge.cluster-size-xl span {
+              font-size: 19px !important;
+            }
           }
 
           .map-shell.drawer-selected .map-stage::after,
