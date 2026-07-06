@@ -171,6 +171,9 @@ type ClusterJobItem = {
   index: number;
   lat: number;
   lng: number;
+  locationKey?: string;
+  locationRank?: number;
+  locationCount?: number;
 };
 
 type ClusterSheetState = {
@@ -2916,6 +2919,7 @@ const [serverWorkflowOverrides, setServerWorkflowOverrides] = useState<Record<st
   const [mapMenuOpen, setMapMenuOpen] = useState(false);
   const [mapBoardOpen, setMapBoardOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [jobCardHeaderFolded, setJobCardHeaderFolded] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
 const [hideCompleted, setHideCompleted] = useState(false);
   // HPD_TOUCH_INFO_EVENT_LISTENER
@@ -3102,6 +3106,17 @@ function positionSelectedCardInDrawer() {
   }
 
   selectedCardRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function handleJobDrawerScroll(event: any) {
+  const drawer = event.currentTarget as HTMLElement;
+  if (!selectedOnly || !selected) {
+    setJobCardHeaderFolded(false);
+    return;
+  }
+
+  const shouldFold = drawer.scrollTop > 116;
+  setJobCardHeaderFolded((current) => (current === shouldFold ? current : shouldFold));
 }
 
 function mapOverlayTouchTarget(target: EventTarget | null) {
@@ -3961,6 +3976,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }, []);
 
   useEffect(() => {
+    setJobCardHeaderFolded(Boolean(selected));
     if (selected) {
       window.setTimeout(positionSelectedCardInDrawer, 80);
     }
@@ -4234,6 +4250,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       const bounds: [number, number][] = [];
       const plottedItems: ClusterJobItem[] = [];
+      const locationRankMap = new Map<string, number>();
+      const locationTotalMap = new Map<string, number>();
       const showIndividualNoAccessTimers = timerLayer && !timerLayerNeedsClusters;
 
       filteredJobs.forEach((job, index) => {
@@ -4241,8 +4259,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
         const lat = Number(job._lat);
         const lng = Number(job._lng);
+        const locationKey = `${lat.toFixed(5)}:${lng.toFixed(5)}`;
+        const locationRank = locationRankMap.get(locationKey) || 0;
+        locationRankMap.set(locationKey, locationRank + 1);
+        locationTotalMap.set(locationKey, (locationTotalMap.get(locationKey) || 0) + 1);
         bounds.push([lat, lng]);
-        plottedItems.push({ job, index, lat, lng });
+        plottedItems.push({ job, index, lat, lng, locationKey, locationRank });
+      });
+
+      plottedItems.forEach((item) => {
+        item.locationCount = item.locationKey ? locationTotalMap.get(item.locationKey) || 1 : 1;
       });
 
       const clusterCellX = mobileMap
@@ -4295,6 +4321,23 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             };
           })
         : plottedItems.map((item) => ({ kind: "job", ...item }));
+
+      const markerCollisionPadding = mobileMap ? 8 : 10;
+      const markerCollisionBoxes: Array<{ left: number; right: number; top: number; bottom: number }> = [];
+      const markerBoxAt = (point: any, width: number, height: number) => ({
+        left: point.x - width / 2,
+        right: point.x + width / 2,
+        top: point.y - height / 2,
+        bottom: point.y + height / 2,
+      });
+      const markerBoxesOverlap = (
+        first: { left: number; right: number; top: number; bottom: number },
+        second: { left: number; right: number; top: number; bottom: number }
+      ) =>
+        first.left < second.right + markerCollisionPadding &&
+        first.right > second.left - markerCollisionPadding &&
+        first.top < second.bottom + markerCollisionPadding &&
+        first.bottom > second.top - markerCollisionPadding;
 
       renderItems.forEach((item) => {
         if (item.kind === "cluster") {
@@ -4412,6 +4455,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const index = Number(item.index || 0);
         const lat = Number(item.lat);
         const lng = Number(item.lng);
+        const locationCount = Number((item as ClusterJobItem).locationCount || 1);
+        const locationRank = Number((item as ClusterJobItem).locationRank || 0);
+        const shouldFanOut = !selectedOnly && locationCount > 1;
+        const fanoutRadius = shouldFanOut ? Math.min(mobileMap ? 34 : 42, (mobileMap ? 14 : 18) + Math.min(6, locationCount) * 3) : 0;
+        const fanoutAngle = shouldFanOut ? (Math.PI * 2 * (locationRank % Math.max(2, Math.min(locationCount, 10)))) / Math.max(2, Math.min(locationCount, 10)) : 0;
+        const fanoutPoint = shouldFanOut ? map.latLngToLayerPoint([lat, lng]) : null;
+        const markerLatLng = shouldFanOut && fanoutPoint
+          ? map.layerPointToLatLng(L.point(fanoutPoint.x + Math.cos(fanoutAngle) * fanoutRadius, fanoutPoint.y + Math.sin(fanoutAngle) * fanoutRadius))
+          : { lat, lng };
+        const markerPoint = map.latLngToLayerPoint([markerLatLng.lat, markerLatLng.lng]);
 
         const color = (job.status || "").toLowerCase().includes("award")
           ? "#53e69c"
@@ -4427,6 +4480,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const noAccessReady = workflowViewBucket(job) === "ready2";
         const noAccessTimerFocus = Boolean(noAccessTimerLabel) && showIndividualNoAccessTimers;
         const selectedMarkerTapHint = selectedOnly || filteredJobs.length === 1;
+        const overlapSafeMarker = !selectedOnly && filteredCount > 1 && !noAccessTimerFocus && !selectedMarkerTapHint;
+        let collisionMiniMarker = false;
         const appointmentLabel = markerAppointmentReminderHtml(job);
         const appointmentDateValue = appointmentDate(job);
         const appointmentPastDue = Boolean(appointmentDateValue && appointmentDateValue.getTime() < Date.now() - APPOINTMENT_DUE_GRACE_MS);
@@ -4434,7 +4489,19 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const hasOverdue = Boolean(overdueLabel);
         const ageInfo = jobAgeBadgeInfo(job);
         const ageUrgent = ageInfo.priority === "warning" || ageInfo.priority === "urgent" || ageInfo.priority === "overdue";
-        const markerMode = markerDetailed
+        if (overlapSafeMarker) {
+          const fullBox = markerBoxAt(markerPoint, mobileMap ? 116 : 122, noAccessTimerLabel || appointmentLabel ? 94 : 66);
+          collisionMiniMarker = markerCollisionBoxes.some((box) => markerBoxesOverlap(fullBox, box));
+          const reservedBox = collisionMiniMarker
+            ? markerBoxAt(markerPoint, mobileMap ? 70 : 76, noAccessTimerLabel || appointmentLabel ? 62 : 52)
+            : fullBox;
+          markerCollisionBoxes.push(reservedBox);
+        }
+        const markerMode = collisionMiniMarker
+          ? "marker-overlap-mini"
+          : overlapSafeMarker
+          ? "marker-overlap-safe"
+          : markerDetailed
           ? "marker-detailed"
           : markerExpanded || noAccessTimerFocus
             ? `marker-expanded${noAccessTimerFocus ? " marker-timer-focus" : ""}`
@@ -4447,19 +4514,25 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             ? [236, noAccessTimerLabel || appointmentLabel ? 170 : 116]
             : noAccessTimerFocus
               ? [226, 160]
+            : collisionMiniMarker
+              ? [mobileMap ? 74 : 80, noAccessTimerLabel || appointmentLabel ? 66 : 54]
+            : overlapSafeMarker
+              ? [mobileMap ? 126 : 132, noAccessTimerLabel || appointmentLabel ? 94 : 78]
             : markerOverview
               ? [hasOverdue || appointmentLabel || noAccessTimerLabel ? 164 : 150, appointmentLabel || noAccessTimerLabel ? 108 : 88]
               : selectedMarkerTapHint
                 ? [hasOverdue ? 150 : noAccessTimerLabel ? 174 : 132, noAccessTimerLabel || appointmentLabel ? 120 : 88]
                 : [hasOverdue ? 168 : noAccessTimerLabel ? 178 : 150, noAccessTimerLabel || appointmentLabel ? 118 : 88];
-        const iconSize: [number, number] = [
-          baseIconSize[0] + (ageUrgent ? 18 : 10) + (hasOverdue && !markerOverview ? 8 : 0),
-          baseIconSize[1] + (ageUrgent ? 18 : 12) + (hasOverdue && !markerOverview ? 6 : 0),
-        ];
+        const iconSize: [number, number] = overlapSafeMarker
+          ? baseIconSize
+          : [
+              baseIconSize[0] + (ageUrgent ? 18 : 10) + (hasOverdue && !markerOverview ? 8 : 0),
+              baseIconSize[1] + (ageUrgent ? 18 : 12) + (hasOverdue && !markerOverview ? 6 : 0),
+            ];
         const iconAnchor: [number, number] = [Math.round(iconSize[0] / 2), Math.round(iconSize[1] / 2)];
         const popupJobId = jobKey(job, index);
 
-        const marker = L.marker([lat, lng], {
+        const marker = L.marker([markerLatLng.lat, markerLatLng.lng], {
           title: `${popupJobId} ${displayAddress(job)}`,
           icon: L.divIcon({
             className: "maturity-map-marker",
@@ -28654,6 +28727,282 @@ return (
             }
           }
 
+          /* MAP_NO_OVERLAP_AND_FOLDING_CARD_2026 */
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-safe,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-safe.marker-has-overdue,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-safe.marker-has-appointment,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-safe.marker-has-no-access {
+            position: relative !important;
+            width: auto !important;
+            min-width: 98px !important;
+            max-width: 118px !important;
+            min-height: 58px !important;
+            padding: 6px 8px 7px !important;
+            gap: 2px !important;
+            border-radius: 14px !important;
+            border-width: 2px !important;
+            overflow: visible !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.92),
+              0 8px 18px rgba(15, 23, 42, 0.22) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe::after {
+            bottom: -6px !important;
+            width: 12px !important;
+            height: 12px !important;
+            border-width: 2px !important;
+            border-radius: 3px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-top {
+            display: grid !important;
+            justify-items: start !important;
+            gap: 1px !important;
+            max-width: 96px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-eyebrow {
+            min-height: 12px !important;
+            max-width: 90px !important;
+            padding: 2px 5px !important;
+            font-size: 7px !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-main,
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe.marker-has-overdue .signal-main {
+            max-width: 98px !important;
+            color: #0f172a !important;
+            font-size: 17px !important;
+            line-height: 0.95 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-address {
+            display: block !important;
+            max-width: 96px !important;
+            font-size: 8px !important;
+            line-height: 1 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-start,
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-footer,
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-tap {
+            display: none !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .marker-age-badge {
+            position: absolute !important;
+            right: -13px !important;
+            top: -13px !important;
+            min-width: 52px !important;
+            min-height: 30px !important;
+            padding: 4px 7px !important;
+            border-radius: 11px !important;
+            z-index: 2 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .marker-age-badge b {
+            display: none !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .marker-age-badge strong {
+            font-size: 18px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .marker-no-access-timer {
+            min-width: 88px !important;
+            min-height: 34px !important;
+            padding: 5px 8px !important;
+            border-radius: 11px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .marker-no-access-timer b {
+            display: none !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .marker-no-access-timer strong {
+            font-size: 14px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-safe .marker-appointment-badge {
+            position: absolute !important;
+            left: 50% !important;
+            bottom: -15px !important;
+            min-width: 58px !important;
+            min-height: 18px !important;
+            padding: 3px 7px !important;
+            font-size: 8px !important;
+            transform: translateX(-50%) !important;
+            z-index: 2 !important;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-mini,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-mini.marker-has-overdue,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-mini.marker-has-appointment,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-mini.marker-has-no-access {
+            position: relative !important;
+            width: auto !important;
+            min-width: 58px !important;
+            max-width: 74px !important;
+            min-height: 42px !important;
+            padding: 7px 7px 6px !important;
+            border-radius: 15px !important;
+            border-width: 2px !important;
+            overflow: visible !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.96),
+              0 8px 18px rgba(15, 23, 42, 0.22) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini::after {
+            bottom: -5px !important;
+            width: 10px !important;
+            height: 10px !important;
+            border-width: 2px !important;
+            border-radius: 3px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .signal-top {
+            display: grid !important;
+            max-width: 58px !important;
+            justify-items: start !important;
+            gap: 0 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .signal-eyebrow,
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .signal-address,
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .signal-start,
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .signal-footer,
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .signal-tap {
+            display: none !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .signal-main,
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini.marker-has-overdue .signal-main {
+            max-width: 58px !important;
+            color: #0f172a !important;
+            font-size: 13px !important;
+            line-height: 0.95 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .marker-age-badge {
+            position: absolute !important;
+            right: -12px !important;
+            top: -13px !important;
+            min-width: 44px !important;
+            min-height: 27px !important;
+            padding: 4px 6px !important;
+            border-radius: 10px !important;
+            z-index: 2 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .marker-age-badge b {
+            display: none !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .marker-age-badge strong {
+            font-size: 16px !important;
+            line-height: 0.9 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .marker-no-access-timer,
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .marker-appointment-badge {
+            position: absolute !important;
+            left: 50% !important;
+            bottom: -14px !important;
+            min-width: 52px !important;
+            min-height: 18px !important;
+            padding: 3px 6px !important;
+            border-radius: 999px !important;
+            font-size: 8px !important;
+            transform: translateX(-50%) !important;
+            z-index: 2 !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .marker-no-access-timer b {
+            display: none !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-overlap-mini .marker-no-access-timer strong {
+            font-size: 10px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+            transition:
+              padding 160ms ease,
+              border-radius 160ms ease,
+              box-shadow 160ms ease,
+              transform 160ms ease !important;
+          }
+
+          .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head {
+            padding: 5px 7px !important;
+            border-radius: 12px !important;
+            box-shadow:
+              0 10px 22px rgba(15, 23, 42, 0.22),
+              inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+          }
+
+          .job-drawer.selected-focus.job-card-header-folded .job-card-field-sheet-head {
+            gap: 4px !important;
+          }
+
+          .job-drawer.selected-focus.job-card-header-folded .job-card-field-title-row {
+            grid-template-columns: minmax(0, 1fr) 52px !important;
+            align-items: center !important;
+            gap: 6px !important;
+          }
+
+          .job-drawer.selected-focus.job-card-header-folded .job-card-field-title-copy span,
+          .job-drawer.selected-focus.job-card-header-folded .job-card-field-title-copy p,
+          .job-drawer.selected-focus.job-card-header-folded .job-card-field-metas,
+          .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .job-card-field-action-dock {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus.job-card-header-folded .job-card-field-title-copy strong {
+            font-size: clamp(20px, 5vw, 24px) !important;
+            line-height: 0.95 !important;
+          }
+
+          .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .job-card-map-back-pill.job-card-close-pill {
+            width: 52px !important;
+            min-width: 52px !important;
+            height: 32px !important;
+            min-height: 32px !important;
+            max-height: 32px !important;
+            border-radius: 10px !important;
+          }
+
+          .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .job-card-current-state-banner {
+            min-height: 34px !important;
+            padding: 4px 6px !important;
+            border-radius: 10px !important;
+            gap: 6px !important;
+          }
+
+          .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .job-card-current-state-banner .state-pulse-dot {
+            width: 12px !important;
+            height: 12px !important;
+          }
+
+          .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .job-card-current-state-banner small,
+          .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .job-card-current-state-banner em,
+          .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .job-card-current-state-banner b {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .job-card-current-state-banner strong {
+            font-size: 13px !important;
+            line-height: 1 !important;
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
@@ -29193,7 +29542,8 @@ return (
 
       <aside
         ref={jobDrawerRef}
-        className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""} ${clusterSheet ? "cluster-focus" : ""} ${fullMap && !drawerOpen ? "drawer-hard-hidden" : ""}`}
+        className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""} ${jobCardHeaderFolded ? "job-card-header-folded" : ""} ${clusterSheet ? "cluster-focus" : ""} ${fullMap && !drawerOpen ? "drawer-hard-hidden" : ""}`}
+        onScroll={handleJobDrawerScroll}
       >
         <div className={`drawer-head ${selectedOnly && selected ? "selected-job-drawer-head" : ""}`}>
           {selectedOnly && selected ? (
