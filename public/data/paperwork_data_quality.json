@@ -1,43 +1,20 @@
 {
-  "generatedAt": "2026-07-05T11:37:05.740Z",
+  "generatedAt": "2026-07-06T13:48:30.901Z",
   "totalJobs": 544,
   "missingAddresses": 0,
   "missingDescriptions": 0,
+  "missingItbPage3Descriptions": 0,
   "badDescriptions": 0,
-  "sourceReviewJobs": 3,
+  "sourceReviewJobs": 0,
   "missingItbFiles": 0,
   "missingPage3Images": 0,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
     "missingDescriptions": [],
+    "missingItbPage3Descriptions": [],
     "badDescriptions": [],
-    "sourceReviewJobs": [
-      {
-        "OMO": "EQ23165",
-        "Address": "3211 PARKSIDE PLACE, 10467",
-        "ITB": "faxCopy_20260324_123735_.69c2bf4dc9546.pdf",
-        "Source": "MANUAL_OCR_PAGE_3",
-        "Status": "SOURCE_PAGE_UNREADABLE",
-        "Preview": "REPLACE LATCH AT 5TH STY COMPACTOR DOOR AT 5TH STY PUBLIC HALL COMPACTOR CLOSET..REPLACE THE DEFECTIVE LATCH SET WITH NEW PASSAGE LATCH SET."
-      },
-      {
-        "OMO": "EQ31176",
-        "Address": "18 EAST 109 STREET, 10029",
-        "ITB": "EQ31176_062626123102.pdf",
-        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
-        "Status": "SOURCE_PDF_MISSING",
-        "Preview": ": AT BLDG ENTRANCE DOOR, REPAIR MAGNECTIC LOCK TOTAL DOORS= (1) NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BLDG E"
-      },
-      {
-        "OMO": "EQ31123",
-        "Address": "1370 UNIVERSITY AVENUE, 10452",
-        "ITB": "EQ31123_070126022138.pdf",
-        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
-        "Status": "SOURCE_PDF_MISSING",
-        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK\" REPLACE THE KITCHEN FLOOR AT APT 4B. CERAMIC TILES AT FLOOR IN THE KITCHE"
-      }
-    ],
+    "sourceReviewJobs": [],
     "missingItbFiles": [],
     "missingPage3Images": []
   }
