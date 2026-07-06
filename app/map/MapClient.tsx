@@ -3078,8 +3078,8 @@ function positionSelectedCardInDrawer() {
   const drawer = jobDrawerRef.current;
   if (drawer) {
     const fieldDataTarget =
-      drawer.querySelector<HTMLElement>(".job-card-data-strip") ||
-      drawer.querySelector<HTMLElement>("[data-job-card-description-focus='true']");
+      drawer.querySelector<HTMLElement>("[data-job-card-description-focus='true']") ||
+      drawer.querySelector<HTMLElement>(".job-card-data-strip");
     if (fieldDataTarget) {
       const drawerRect = drawer.getBoundingClientRect();
       const targetRect = fieldDataTarget.getBoundingClientRect();
@@ -28283,6 +28283,375 @@ return (
 
           .job-drawer.selected-focus .field-page3-description[data-job-card-description-focus="true"] {
             scroll-margin-top: 4px !important;
+          }
+
+          /* JOB_CARD_FIELD_READ_MODE_2026 */
+          .job-drawer.selected-focus,
+          .job-drawer.selected-focus.closed,
+          .job-drawer.selected-focus.drawer-hard-hidden {
+            bottom: max(0px, env(safe-area-inset-bottom)) !important;
+            width: min(480px, calc(100vw - 8px)) !important;
+            max-height: min(98dvh, 880px) !important;
+            padding: 4px !important;
+            border-radius: 12px 12px 8px 8px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+            margin-bottom: 5px !important;
+            padding: 8px !important;
+            border-radius: 14px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-sheet-head {
+            gap: 6px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-row {
+            grid-template-columns: minmax(0, 1fr) 58px !important;
+            gap: 8px !important;
+            align-items: start !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy {
+            min-width: 0 !important;
+            gap: 2px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy span {
+            font-size: 9px !important;
+            line-height: 1 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy strong {
+            font-size: clamp(28px, 7.2vw, 34px) !important;
+            line-height: 0.92 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy p {
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            margin-top: 2px !important;
+            font-size: 13px !important;
+            line-height: 1.18 !important;
+            font-weight: 850 !important;
+            white-space: normal !important;
+            overflow: hidden !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            align-items: stretch !important;
+            gap: 5px !important;
+            margin-top: 7px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .status,
+          .job-drawer.selected-focus .job-card-field-metas .maturity-pill {
+            min-height: 27px !important;
+            padding: 0 9px !important;
+            border-radius: 10px !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .selected-age-badge {
+            min-width: 132px !important;
+            min-height: 48px !important;
+            grid-template-columns: auto auto !important;
+            align-items: center !important;
+            gap: 2px 8px !important;
+            padding: 7px 10px !important;
+            border-radius: 13px !important;
+            box-shadow:
+              0 12px 24px rgba(8, 47, 73, 0.20),
+              inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .selected-age-badge b {
+            font-size: 10px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .selected-age-badge strong {
+            font-size: 32px !important;
+            line-height: 0.88 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .selected-age-badge small {
+            display: block !important;
+            grid-column: 1 / -1 !important;
+            font-size: 9px !important;
+            line-height: 1.05 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-map-back-pill.job-card-close-pill {
+            min-width: 58px !important;
+            width: 58px !important;
+            height: 38px !important;
+            min-height: 38px !important;
+            max-height: 38px !important;
+            padding: 0 8px !important;
+            border-radius: 12px !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner {
+            min-height: 48px !important;
+            padding: 7px 8px !important;
+            border-radius: 13px !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner .state-pulse-dot {
+            width: 16px !important;
+            height: 16px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner small {
+            font-size: 8px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner strong {
+            font-size: 15px !important;
+            line-height: 1.05 !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner em {
+            display: block !important;
+            font-size: 8px !important;
+            line-height: 1 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner b {
+            min-height: 27px !important;
+            padding: 0 8px !important;
+            font-size: 9px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-field-action-dock {
+            grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.82fr) minmax(0, 0.9fr) !important;
+            gap: 6px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button {
+            min-height: 42px !important;
+            border-radius: 13px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button {
+            padding: 5px 7px !important;
+            gap: 5px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button img {
+            width: 20px !important;
+            height: 20px !important;
+            flex-basis: 20px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived strong,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-action-copy strong {
+            font-size: 12px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived small,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-action-copy small {
+            display: block !important;
+            font-size: 7px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button {
+            min-height: 32px !important;
+            border-radius: 10px !important;
+            padding: 0 2px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button strong {
+            font-size: 9px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button small {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .selected-card {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+          }
+
+          .job-drawer.selected-focus .selected-card > .selected-card-head {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .field-workflow-card,
+          .job-drawer.selected-focus .job-card-data-strip,
+          .job-drawer.selected-focus .field-page3-description {
+            margin-top: 6px !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description[data-job-card-description-focus="true"] {
+            scroll-margin-top: 6px !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description p {
+            font-size: 15px !important;
+            line-height: 1.48 !important;
+          }
+
+          @media (max-width: 430px) {
+            .job-drawer.selected-focus,
+            .job-drawer.selected-focus.closed,
+            .job-drawer.selected-focus.drawer-hard-hidden {
+              width: calc(100vw - 4px) !important;
+              max-height: min(98dvh, 900px) !important;
+              padding: 3px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+              padding: 7px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-field-title-row {
+              grid-template-columns: minmax(0, 1fr) 54px !important;
+              gap: 6px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-field-title-copy strong {
+              font-size: clamp(27px, 8vw, 32px) !important;
+            }
+
+            .job-drawer.selected-focus .job-card-field-title-copy p {
+              font-size: 12px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-field-metas .selected-age-badge {
+              min-width: 124px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-field-action-dock {
+              grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 0.86fr) !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button {
+              min-height: 39px !important;
+            }
+          }
+
+          /* JOB_CARD_FAST_READ_FLOW_2026 */
+          .job-drawer.selected-focus .job-card-field-metas {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: stretch !important;
+            gap: 5px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .maturity-pill {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .status,
+          .job-drawer.selected-focus .job-card-field-metas .maturity-pill {
+            min-width: 0 !important;
+            width: 100% !important;
+            justify-content: center !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .field-workflow-card > .field-workflow-head,
+          .job-drawer.selected-focus .field-mission-topline,
+          .job-drawer.selected-focus .field-mission-jobline {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .field-workflow-card {
+            padding-top: 0 !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 7px !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-card.mission-appointment {
+            order: 1 !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description {
+            order: 2 !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-card {
+            order: 3 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card {
+            order: 4 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-strip {
+            order: 5 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-card {
+            order: 6 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-hub,
+          .job-drawer.selected-focus .field-evidence-gallery {
+            order: 7 !important;
+          }
+
+          .job-drawer.selected-focus .site-procedure-stage {
+            order: 8 !important;
+          }
+
+          .job-drawer.selected-focus .field-packet-vault {
+            order: 9 !important;
+          }
+
+          .job-drawer.selected-focus .field-send-panel {
+            order: 10 !important;
+          }
+
+          @media (max-width: 430px) {
+            .job-drawer.selected-focus .job-card-field-metas {
+              grid-template-columns: minmax(0, 1fr) 118px !important;
+              gap: 4px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-field-metas .status,
+            .job-drawer.selected-focus .job-card-field-metas .maturity-pill {
+              padding: 0 6px !important;
+              font-size: 8px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-field-metas .selected-age-badge {
+              min-width: 118px !important;
+              min-height: 45px !important;
+              padding: 6px 8px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-field-metas .selected-age-badge strong {
+              font-size: 29px !important;
+            }
+
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner {
+              min-height: 44px !important;
+            }
           }
 
           @media (prefers-reduced-motion: reduce) {
