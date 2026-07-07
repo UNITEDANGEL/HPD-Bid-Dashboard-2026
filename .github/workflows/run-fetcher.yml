@@ -104,7 +104,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
-            echo "::error::Missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID. Add both as GitHub Actions repository secrets so daily fetcher runs can update Cloudflare Pages."
+            echo "::error::Missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID. Add both as GitHub Actions repository secrets so scheduled fetcher runs can update Cloudflare Pages."
             exit 1
           fi
 
