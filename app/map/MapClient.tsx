@@ -29040,6 +29040,110 @@ return (
             line-height: 1 !important;
           }
 
+          /* STARTED_CONTRAST_FIX_2026 */
+          .status.status-started,
+          .status.started,
+          .selected-chip-stack .status.status-started,
+          .selected-chip-stack .status.started,
+          .selected-card .selected-chip-stack .status.status-started,
+          .selected-card .selected-chip-stack .status.started,
+          .job-card-field-metas .status.status-started,
+          .job-card-field-metas .status.started,
+          .job-drawer.selected-focus .selected-chip-stack .status.status-started,
+          .job-drawer.selected-focus .selected-chip-stack .status.started,
+          .job-drawer.selected-focus .job-card-field-metas .status.status-started,
+          .job-drawer.selected-focus .job-card-field-metas .status.started {
+            background: linear-gradient(135deg, #082f49, #0369a1 56%, #0f766e) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(56, 189, 248, 0.72) !important;
+            box-shadow:
+              0 0 0 2px rgba(14, 165, 233, 0.18),
+              0 0 20px rgba(14, 165, 233, 0.34),
+              0 10px 24px rgba(8, 47, 73, 0.28) !important;
+            opacity: 1 !important;
+            text-shadow: 0 1px 1px rgba(2, 6, 23, 0.38) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.tone-start,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.tone-start,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-start,
+          .job-drawer.selected-focus .field-status-picker-card.tone-start .field-status-current-strip div:first-child,
+          .job-drawer.selected-focus .field-status-picker-card.tone-start .field-status-save-primary:not(:disabled),
+          .job-drawer.selected-focus .quick-status-choice.tone-start,
+          .job-drawer.selected-focus .quick-status-choice.tone-start.active {
+            background: linear-gradient(135deg, #082f49, #0369a1 56%, #0f766e) !important;
+            color: #ffffff !important;
+            border-color: rgba(56, 189, 248, 0.76) !important;
+            box-shadow:
+              0 0 0 2px rgba(14, 165, 233, 0.18),
+              0 0 20px rgba(14, 165, 233, 0.28),
+              0 10px 24px rgba(8, 47, 73, 0.26) !important;
+            text-shadow: 0 1px 1px rgba(2, 6, 23, 0.36) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.tone-start strong,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.tone-start small,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.tone-start strong,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.tone-start small,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-start small,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-start strong,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-start em,
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-start b,
+          .job-drawer.selected-focus .field-status-picker-card.tone-start .field-status-current-strip div:first-child span,
+          .job-drawer.selected-focus .field-status-picker-card.tone-start .field-status-current-strip div:first-child strong,
+          .job-drawer.selected-focus .quick-status-choice.tone-start strong,
+          .job-drawer.selected-focus .quick-status-choice.tone-start small {
+            color: #ffffff !important;
+            opacity: 1 !important;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started,
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started.marker-overlap-safe,
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started.marker-overlap-mini,
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started.marker-compact,
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started.marker-overview {
+            background: linear-gradient(135deg, #082f49, #0369a1 56%, #0f766e) !important;
+            color: #ffffff !important;
+            border-color: rgba(56, 189, 248, 0.86) !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.94),
+              0 0 18px rgba(14, 165, 233, 0.35),
+              0 8px 18px rgba(15, 23, 42, 0.22) !important;
+            text-shadow: 0 1px 1px rgba(2, 6, 23, 0.34) !important;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started::after {
+            background: #0369a1 !important;
+            border-color: rgba(56, 189, 248, 0.86) !important;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started .signal-main,
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started.marker-has-overdue .signal-main,
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started .signal-address,
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started .signal-eyebrow,
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started .signal-start,
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started .signal-footer,
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started .signal-tap {
+            color: #ffffff !important;
+            opacity: 1 !important;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started .marker-age-badge {
+            background: #082f49 !important;
+            color: #ffffff !important;
+            border-color: rgba(56, 189, 248, 0.76) !important;
+            box-shadow:
+              0 0 0 2px rgba(14, 165, 233, 0.22),
+              0 10px 18px rgba(8, 47, 73, 0.26) !important;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started .marker-age-badge b,
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started .marker-age-badge strong,
+          .maturity-map-marker .maturity-marker-bubble.status-marker-started .marker-age-badge small {
+            color: #ffffff !important;
+            opacity: 1 !important;
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
