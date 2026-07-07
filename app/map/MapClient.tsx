@@ -3525,7 +3525,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         acc.all += 1;
         const age = mapDateAgeDays(job);
         if (age === null) acc.missingDate += 1;
-        if (mapShowAllDays || (age !== null && age >= 0 && age <= limit)) acc.visible += 1;
+        if ((age !== null && age >= 0 && age <= limit) || hasUpcomingAppointment(job)) acc.visible += 1;
         return acc;
       },
       { all: 0, visible: 0, missingDate: 0 }
@@ -9148,6 +9148,35 @@ function directionsUrl(job: JobRecord) {
     window.requestAnimationFrame(() => {
       mapRef.current?.invalidateSize();
       fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : MAP_LAYER_OVERVIEW_ZOOM, Boolean(userLocation));
+    });
+  }
+
+  function applyMapDaysFilter(showAll: boolean, daysValue = mapDaysBack) {
+    const cleanedDays = String(daysValue || "")
+      .replace(/[^\d]/g, "")
+      .slice(0, 4);
+    const nextDays = cleanedDays || String(mapDaysBackLimit());
+    if (!showAll) setMapDaysBack(nextDays);
+    setMapShowAllDays(showAll);
+    setClusterSheet(null);
+    setMapJobBrief(null);
+    setSelectedOnly(false);
+    setSelected(null);
+    setGeneratedLinks({});
+    setDescriptionOpen(false);
+    setDrawerOpen(false);
+    setFullMap(true);
+    setMapMenuOpen(false);
+    setMapBoardOpen(false);
+    setUrlOmoRequest("");
+    setSearch("");
+    markerAutoFitKeyRef.current = "";
+    mapUserInteractedAtRef.current = 0;
+    mapRef.current?.closePopup?.();
+    setActionNotice(showAll ? "Showing all mapped jobs." : `Showing jobs from the last ${Number(nextDays)} days.`);
+
+    window.requestAnimationFrame(() => {
+      mapRef.current?.invalidateSize();
     });
   }
 
@@ -29775,15 +29804,19 @@ return (
               max="9999"
               value={mapDaysBack}
               onChange={(event) => {
-                setMapShowAllDays(false);
-                setMapDaysBack(event.target.value.replace(/[^\d]/g, "").slice(0, 4));
+                const nextDays = event.target.value.replace(/[^\d]/g, "").slice(0, 4);
+                if (nextDays) applyMapDaysFilter(false, nextDays);
+                else {
+                  setMapShowAllDays(false);
+                  setMapDaysBack("");
+                }
               }}
             />
           </label>
-          <button className={!mapShowAllDays ? "active" : ""} type="button" onClick={() => setMapShowAllDays(false)}>
+          <button className={!mapShowAllDays ? "active" : ""} type="button" onClick={() => applyMapDaysFilter(false)}>
             Show {mapDateCounts.visible}
           </button>
-          <button className={mapShowAllDays ? "active" : ""} type="button" onClick={() => setMapShowAllDays(true)}>
+          <button className={mapShowAllDays ? "active" : ""} type="button" onClick={() => applyMapDaysFilter(true)}>
             All {mapDateCounts.all}
           </button>
         </div>
@@ -29794,10 +29827,7 @@ return (
               key={days}
               className={!mapShowAllDays && mapDaysBackLimit() === Number(days) ? "active" : ""}
               type="button"
-              onClick={() => {
-                setMapShowAllDays(false);
-                setMapDaysBack(days);
-              }}
+              onClick={() => applyMapDaysFilter(false, days)}
             >
               {days}d
             </button>
