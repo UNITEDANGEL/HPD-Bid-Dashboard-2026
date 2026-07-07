@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 const HPD_STATUS_WORKER_URL = "https://hpd-status-worker.uac525.workers.dev";
 const HPD_TENANT_CONTACT_EMAIL = "AtkinsKi@hpd.nyc.gov";
 const HPD_TENANT_CONTACT_ATTENTION = "Kizzy Atkins / K. Atkins";
@@ -672,6 +672,29 @@ function displayDescription(job: JobRecord | null | undefined) {
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]{2,}/g, " ")
     .trim();
+}
+function normalizeMapSearchValue(value: unknown) {
+  const normalized = String(value ?? "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/\b(street)\b/g, "st")
+    .replace(/\b(avenue)\b/g, "ave")
+    .replace(/\b(road)\b/g, "rd")
+    .replace(/\b(boulevard)\b/g, "blvd")
+    .replace(/\b(place)\b/g, "pl")
+    .replace(/\b(drive)\b/g, "dr")
+    .replace(/\b(court)\b/g, "ct")
+    .replace(/\b(apartment|apt\.)\b/g, "apt")
+    .replace(/\b(north)\b/g, "n")
+    .replace(/\b(south)\b/g, "s")
+    .replace(/\b(east)\b/g, "e")
+    .replace(/\b(west)\b/g, "w")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  return normalized.replace(/\s+/g, " ");
+}
+function compactMapSearchValue(value: unknown) {
+  return normalizeMapSearchValue(value).replace(/\s+/g, "");
 }
 function cleanTenantContactName(raw: unknown) {
   const name = String(raw || "").trim();
@@ -3247,7 +3270,7 @@ function handleMapTouchEnd(event: any) {
       setMapShowAllDays(true);
       setWorkflowViewFilter(requestedWorkflowView || "all");
       setDrawerOpen(true);
-      setActionNotice(`Searching OMO ${omo.toUpperCase()}.`);
+      setActionNotice(`Searching map for ${omo.toUpperCase()}.`);
     }
   }, []);
 
@@ -3417,16 +3440,33 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }
 
   function mapSearchText(job: JobRecord) {
-    return [
+    const values = [
       job.id,
       job.omo,
+      (job as any).OMO,
       job.jobId,
+      (job as any).Job_ID,
+      (job as any)["Job ID"],
+      displayAddress(job),
+      cleanAddress(job),
+      markerAddressLabel(job),
       job.address,
+      (job as any).Address,
+      (job as any).BuildingAddress,
+      (job as any).Building_Address,
       job.location,
+      (job as any).Location,
+      displayLocation(job),
       job.borough,
+      (job as any).Borough,
+      (job as any).Boro,
       job.trade,
       job.status,
+      workflowLabel(job),
+      workflowMapLayerLabel(job),
       job.awardDate,
+      (job as any).AwardDate,
+      (job as any)["Award Date"],
       job.bidDueDate,
       job.dueDate,
       job.bidAmount,
@@ -3442,14 +3482,27 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       job.contractor,
       job.owner,
       job.description,
+      displayDescription(job),
       jobBoroughLabel(job),
-    ]
-      .join(" ")
-      .toLowerCase();
+    ];
+    const original = values.map((value) => String(value ?? "").toLowerCase()).join(" ");
+    const normalized = values.map(normalizeMapSearchValue).filter(Boolean).join(" ");
+    const compact = values.map(compactMapSearchValue).filter(Boolean).join(" ");
+    return `${original} ${normalized} ${compact}`;
   }
 
   function matchesMapSearch(job: JobRecord, needle: string) {
-    return !needle || mapSearchText(job).includes(needle);
+    const normalizedNeedle = normalizeMapSearchValue(needle);
+    if (!normalizedNeedle) return true;
+    const compactNeedle = compactMapSearchValue(needle);
+    const haystack = mapSearchText(job);
+    if (haystack.includes(String(needle).toLowerCase())) return true;
+    if (haystack.includes(normalizedNeedle)) return true;
+    if (compactNeedle && haystack.includes(compactNeedle)) return true;
+    return normalizedNeedle
+      .split(" ")
+      .filter(Boolean)
+      .every((part) => haystack.includes(part));
   }
 
   const filteredJobs = useMemo<MappedJob[]>(() => {
@@ -3493,12 +3546,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const searchRows = filteredJobs.length ? filteredJobs : fallbackRows;
     const match =
       searchRows.find((job) => String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "") === target) ||
+      searchRows.find((job) => compactMapSearchValue(displayAddress(job)) === compactMapSearchValue(urlOmoRequest)) ||
+      searchRows.find((job) => matchesMapSearch(job, urlOmoRequest)) ||
       searchRows[0];
     if (!match) return;
 
     focusJob(match);
     setUrlOmoRequest("");
-    setActionNotice(`Opened ${jobKey(match)} from OMO search.`);
+    setActionNotice(`Opened ${jobKey(match)} from map search.`);
   }, [urlOmoRequest, filteredJobs, jobs, mappedJobs]);
 
   const markerAutoFitKey = useMemo(() => {
@@ -3579,8 +3634,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       ? {
           animate: true,
           duration,
-          paddingTopLeft: [56, 96] as [number, number],
-          paddingBottomRight: [56, 210] as [number, number],
+          paddingTopLeft: [56, 148] as [number, number],
+          paddingBottomRight: [56, 190] as [number, number],
           maxZoom,
         }
       : {
@@ -3597,8 +3652,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       ? {
           animate: true,
           duration,
-          paddingTopLeft: [72, 110] as [number, number],
-          paddingBottomRight: [72, 190] as [number, number],
+          paddingTopLeft: [72, 150] as [number, number],
+          paddingBottomRight: [72, 176] as [number, number],
           maxZoom,
         }
       : {
@@ -4402,34 +4457,37 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             : clusterItems.length >= 25
               ? "cluster-size-lg"
               : "cluster-size-sm";
-          const clusterStats = [
-            readyCount ? { label: "Ready", value: readyCount, className: "ready" } : null,
-            soonNoAccessCount ? { label: "24h", value: soonNoAccessCount, className: "soon" } : null,
-            waitingNoAccessCount ? { label: "72h", value: waitingNoAccessCount, className: "waiting" } : null,
-            appointmentCount ? { label: "Appt", value: appointmentCount, className: "appointment" } : null,
-            pendingCount ? { label: "Pend", value: pendingCount, className: "pending" } : null,
-            worstOverdue ? { label: "Late", value: worstOverdue, className: "late" } : null,
-          ]
-            .filter(Boolean)
-            .slice(0, 3)
-            .map((stat) => `<i class="cluster-stat-mini ${stat!.className}"><b>${stat!.value}</b><small>${escapeMarkerHtml(stat!.label)}</small></i>`)
-            .join("");
           const clusterLabel = `${clusterItems.length} job${clusterItems.length === 1 ? "" : "s"}`;
-          const [offsetX, offsetY]: [number, number] = [0, 0];
+          const clusterSignalClass =
+            appointmentCount
+              ? "appointment"
+              : readyCount
+                ? "ready"
+                : soonNoAccessCount
+                  ? "soon"
+                  : waitingNoAccessCount
+                    ? "waiting"
+                    : worstOverdue
+                      ? "late"
+                      : pendingCount
+                        ? "pending"
+                        : "normal";
           const clusterPoint = map.latLngToLayerPoint([item.lat, item.lng]);
+          const topHeaderShift = mobileMap && clusterPoint.y < 150 ? 48 : 0;
+          const [offsetX, offsetY]: [number, number] = [0, topHeaderShift];
           const clusterLatLng = map.layerPointToLatLng(L.point(clusterPoint.x + offsetX, clusterPoint.y + offsetY));
-          const clusterIconSize: [number, number] = mobileMap ? [88, 100] : [96, 108];
+          const clusterIconSize: [number, number] = mobileMap ? [84, 92] : [90, 98];
           const marker = L.marker([clusterLatLng.lat, clusterLatLng.lng], {
             icon: L.divIcon({
               className: "maturity-map-marker",
               html: `<div class="map-cluster-marker map-cluster-dot cluster-dispatch-badge ${statusClass} ${clusterSizeClass}" title="${escapeMarkerHtml(clusterLabel)}">
                       <div class="cluster-topline">
                         <strong>${escapeMarkerHtml(clusterBoroughLabel)}</strong>
-                        <em>${escapeMarkerHtml(clusterPriority.label)}</em>
+                        <em>Zone</em>
                       </div>
                       <span>${clusterItems.length}</span>
                       <small class="cluster-job-word">jobs</small>
-                      <div class="cluster-stat-row">${clusterStats || `<i class="cluster-stat-mini normal"><b>${clusterPriority.value}</b><small>${escapeMarkerHtml(clusterPriority.label)}</small></i>`}</div>
+                      <div class="cluster-focus-row ${clusterSignalClass}"><b>${clusterPriority.value}</b><small>${escapeMarkerHtml(clusterPriority.label)}</small></div>
                     </div>`,
               iconSize: clusterIconSize,
               iconAnchor: [Math.round(clusterIconSize[0] / 2), Math.round(clusterIconSize[1] / 2)],
@@ -4437,7 +4495,46 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             }),
           });
 
-          marker.on("click", () => {
+          let clusterPreviewTimer: number | undefined;
+          let clusterTapPreviewOnly = false;
+          const clearClusterPreviewTimer = () => {
+            if (clusterPreviewTimer) {
+              window.clearTimeout(clusterPreviewTimer);
+              clusterPreviewTimer = undefined;
+            }
+          };
+          const setClusterPreviewActive = (active: boolean) => {
+            marker.getElement()?.classList.toggle("cluster-preview-active", active);
+          };
+
+          marker.on("mouseover", () => {
+            clearClusterPreviewTimer();
+            setClusterPreviewActive(true);
+          });
+          marker.on("mouseout", () => {
+            if (clusterTapPreviewOnly) return;
+            clearClusterPreviewTimer();
+            setClusterPreviewActive(false);
+          });
+          marker.on("touchstart", () => {
+            const alreadyPreviewing = marker.getElement()?.classList.contains("cluster-preview-active") || false;
+            clusterTapPreviewOnly = mobileMap && !alreadyPreviewing;
+            clearClusterPreviewTimer();
+            setClusterPreviewActive(true);
+            clusterPreviewTimer = window.setTimeout(() => {
+              clusterTapPreviewOnly = false;
+              setClusterPreviewActive(false);
+            }, 2200);
+          });
+
+          marker.on("click", (event) => {
+            if (mobileMap && clusterTapPreviewOnly) {
+              clusterTapPreviewOnly = false;
+              L.DomEvent.stop(event);
+              return;
+            }
+            clearClusterPreviewTimer();
+            setClusterPreviewActive(false);
             if (clusterItems.length === 1) {
               focusJob(clusterItems[0].job);
               return;
@@ -8787,8 +8884,14 @@ function directionsUrl(job: JobRecord) {
   const missingGeoCount = Math.max(0, jobs.length - plottedCount);
   const visibleMappedCount = filteredJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng)).length;
   const visibleMissingGeoCount = Math.max(0, filteredJobs.length - visibleMappedCount);
-  const mapHudFilterLabel = mapShowAllDays ? "All jobs" : `${mapDaysBackLimit()} days`;
+  const showMapStatsPanel = visibleMissingGeoCount > 0;
+  const mapDateButtonCount = mapShowAllDays ? mapDateCounts.visible : filteredJobs.length;
   const mapHudSummaryLabel = `${mapDateFilterLabel()} - ${filteredJobs.length} job${filteredJobs.length === 1 ? "" : "s"}`;
+  const mapFocusActive =
+    !mapShowAllDays ||
+    mapBoroughFilter !== "all" ||
+    workflowViewFilter !== "all" ||
+    Boolean(search.trim());
   const dashboardViewCopy: Record<WorkflowViewFilter, { label: string; detail: string }> = {
     active: { label: "Active Work", detail: "Pending work orders on the clean map." },
     pending: { label: "Pending Map", detail: "Only jobs that still need field attention." },
@@ -9185,7 +9288,7 @@ function directionsUrl(job: JobRecord) {
 
 return (
     <main
-      className={`map-shell map-style-${activeMapBaseStyle.id} ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""} ${clusterSheet ? "cluster-tray-open" : ""} ${mapJobBrief ? "map-brief-open" : ""} ${timerMapLayerActive ? "timer-map-layer" : ""}`}
+      className={`map-shell map-visual-preview map-glass-command-trial map-style-${activeMapBaseStyle.id} ${mapFocusActive ? "map-focus-active" : ""} ${showMapStatsPanel ? "map-stats-visible" : "map-stats-hidden"} ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""} ${clusterSheet ? "cluster-tray-open" : ""} ${mapJobBrief ? "map-brief-open" : ""} ${timerMapLayerActive ? "timer-map-layer" : ""}`}
       onTouchStart={androidScrollFix ? undefined : handleMapTouchStart}
       onTouchEnd={androidScrollFix ? undefined : handleMapTouchEnd}
     >
@@ -29692,11 +29795,1232 @@ return (
             opacity: 1 !important;
           }
 
+          /* MAP_VISUAL_PREVIEW_FOCUS_2026 */
+          .map-shell.map-visual-preview:not(.map-style-carto-dark) .map-node .leaflet-tile {
+            filter: saturate(0.86) contrast(1.04) brightness(0.84) !important;
+          }
+
+          .map-shell.map-visual-preview.map-style-carto-dark .map-node .leaflet-tile {
+            filter: saturate(0.92) contrast(1.02) brightness(0.78) !important;
+          }
+
+          .map-shell.map-visual-preview .map-stage::after {
+            background:
+              linear-gradient(180deg, rgba(15, 23, 42, 0.08), transparent 22%, transparent 68%, rgba(15, 23, 42, 0.16)),
+              linear-gradient(90deg, rgba(15, 118, 110, 0.08), transparent 28%, transparent 72%, rgba(2, 132, 199, 0.07)) !important;
+          }
+
+          @keyframes mapFocusFramePulse2026 {
+            0%,
+            100% {
+              box-shadow:
+                inset 0 0 0 1px rgba(20, 184, 166, 0.18),
+                inset 0 0 34px rgba(14, 165, 233, 0.06),
+                0 0 0 0 rgba(14, 165, 233, 0);
+            }
+
+            50% {
+              box-shadow:
+                inset 0 0 0 2px rgba(20, 184, 166, 0.34),
+                inset 0 0 42px rgba(14, 165, 233, 0.10),
+                0 0 0 3px rgba(14, 165, 233, 0.08);
+            }
+          }
+
+          .map-shell.map-visual-preview.map-focus-active .map-stage::before {
+            inset: 7px !important;
+            border: 2px solid rgba(20, 184, 166, 0.34) !important;
+            box-shadow:
+              inset 0 0 0 1px rgba(255, 255, 255, 0.52),
+              inset 0 0 38px rgba(14, 165, 233, 0.08),
+              0 14px 34px rgba(15, 23, 42, 0.12) !important;
+            animation: mapFocusFramePulse2026 3.4s ease-in-out infinite !important;
+          }
+
+          .map-shell.map-visual-preview.map-focus-active .map-stage::after {
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 18%, transparent 74%, rgba(15, 23, 42, 0.10)),
+              linear-gradient(90deg, rgba(15, 118, 110, 0.08), transparent 22%, transparent 78%, rgba(2, 132, 199, 0.07)) !important;
+          }
+
+          .map-shell.map-visual-preview.map-focus-active .map-filter-count-hud {
+            min-height: 64px !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 2px 9px !important;
+            padding: 11px 13px 11px 15px !important;
+            border-radius: 17px !important;
+            background:
+              linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(15, 118, 110, 0.96) 58%, rgba(2, 132, 199, 0.96)) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(125, 211, 252, 0.38) !important;
+            box-shadow:
+              0 18px 42px rgba(15, 23, 42, 0.32),
+              0 0 0 1px rgba(255, 255, 255, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+          }
+
+          .map-shell.map-visual-preview.map-focus-active .map-filter-count-hud::after {
+            content: "" !important;
+            grid-row: 1 / span 2 !important;
+            grid-column: 2 !important;
+            width: 9px !important;
+            height: 38px !important;
+            align-self: center !important;
+            border-radius: 999px !important;
+            background: linear-gradient(180deg, #22c55e, #38bdf8) !important;
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.48) !important;
+          }
+
+          .map-shell.map-visual-preview.map-focus-active .map-filter-count-hud span,
+          .map-shell.map-visual-preview.map-focus-active .map-filter-count-hud strong,
+          .map-shell.map-visual-preview.map-focus-active .map-filter-count-hud small {
+            color: #ffffff !important;
+            text-shadow: 0 1px 1px rgba(2, 6, 23, 0.28) !important;
+          }
+
+          .map-shell.map-visual-preview.map-focus-active .map-filter-count-hud span {
+            color: #99f6e4 !important;
+            font-size: 10px !important;
+          }
+
+          .map-shell.map-visual-preview.map-focus-active .map-filter-count-hud strong {
+            font-size: 26px !important;
+          }
+
+          .map-shell.map-visual-preview.map-focus-active .map-filter-count-hud small {
+            color: rgba(240, 253, 250, 0.90) !important;
+            font-size: 11px !important;
+          }
+
+          .map-shell.map-visual-preview.map-focus-active .map-stats.filtered-days .map-stat-primary {
+            background:
+              linear-gradient(135deg, #082f49, #0f766e 58%, #16a34a) !important;
+            box-shadow:
+              0 12px 24px rgba(8, 47, 73, 0.24),
+              inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+          }
+
+          .map-shell.map-visual-preview.map-stats-hidden .map-filter-count-hud {
+            bottom: calc(env(safe-area-inset-bottom) + 58px) !important;
+          }
+
+          .map-shell.map-visual-preview.map-stats-hidden .location-status-pill {
+            right: max(8px, env(safe-area-inset-right)) !important;
+            bottom: calc(env(safe-area-inset-bottom) + 12px) !important;
+            left: auto !important;
+          }
+
+          .map-shell.map-visual-preview .map-stats.map-data-alert {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .map-shell.map-visual-preview .map-stats.map-data-alert .map-stat-primary {
+            background: linear-gradient(135deg, #7f1d1d, #dc2626) !important;
+          }
+
+          .map-shell.map-visual-preview .zoom-panel {
+            right: max(8px, env(safe-area-inset-right)) !important;
+            bottom: calc(env(safe-area-inset-bottom) + 70px) !important;
+            gap: 5px !important;
+            padding: 5px !important;
+            border-radius: 18px !important;
+            background: rgba(15, 23, 42, 0.76) !important;
+            border: 1px solid rgba(255, 255, 255, 0.20) !important;
+            box-shadow:
+              0 16px 34px rgba(15, 23, 42, 0.28),
+              inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+            backdrop-filter: blur(16px) saturate(1.05) !important;
+          }
+
+          .map-shell.map-visual-preview .zoom-panel button {
+            width: 44px !important;
+            height: 40px !important;
+            min-width: 44px !important;
+            min-height: 40px !important;
+            border-radius: 13px !important;
+            background: rgba(255, 255, 255, 0.92) !important;
+            color: #0f172a !important;
+            border: 0 !important;
+            box-shadow:
+              0 8px 16px rgba(15, 23, 42, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+          }
+
+          .map-shell.map-visual-preview .zoom-panel .live-location-btn {
+            background: linear-gradient(135deg, #0f172a, #0f766e) !important;
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-visual-preview .location-status-pill {
+            min-height: 30px !important;
+            max-width: 160px !important;
+            padding: 0 8px !important;
+            border-radius: 12px !important;
+            font-size: 10px !important;
+            box-shadow:
+              0 12px 24px rgba(15, 23, 42, 0.22),
+              inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+          }
+
+          .map-shell.map-visual-preview .location-status-pill.blocked {
+            width: 76px !important;
+            min-width: 76px !important;
+            max-width: 76px !important;
+            min-height: 44px !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            justify-items: center !important;
+            gap: 3px !important;
+            padding: 5px 6px !important;
+            border-radius: 14px !important;
+            background: rgba(127, 29, 29, 0.88) !important;
+            color: #fee2e2 !important;
+            border-color: rgba(254, 202, 202, 0.38) !important;
+          }
+
+          .map-shell.map-visual-preview .location-status-pill.blocked span {
+            width: 100% !important;
+            font-size: 0 !important;
+            text-align: center !important;
+          }
+
+          .map-shell.map-visual-preview .location-status-pill.blocked span::after {
+            content: "GPS" !important;
+            color: #fee2e2 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-visual-preview .location-status-pill.blocked b {
+            min-height: 17px !important;
+            padding: 2px 8px !important;
+            border-radius: 999px !important;
+            background: #fef3c7 !important;
+            color: #7f1d1d !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge {
+            width: 94px !important;
+            min-width: 94px !important;
+            height: 100px !important;
+            min-height: 100px !important;
+            grid-template-rows: 20px minmax(0, 1fr) auto 25px !important;
+            gap: 2px !important;
+            padding: 7px !important;
+            border-radius: 18px !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(241, 248, 250, 0.97)) !important;
+            border: 1px solid rgba(255, 255, 255, 0.96) !important;
+            box-shadow:
+              0 0 0 3px color-mix(in srgb, var(--cluster-accent) 20%, transparent),
+              0 18px 36px rgba(15, 23, 42, 0.28),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+            transition:
+              transform 160ms ease,
+              box-shadow 160ms ease,
+              filter 160ms ease !important;
+          }
+
+          .map-shell.map-visual-preview.map-focus-active .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge {
+            box-shadow:
+              0 0 0 4px color-mix(in srgb, var(--cluster-accent) 25%, transparent),
+              0 20px 42px rgba(15, 23, 42, 0.32),
+              0 0 22px color-mix(in srgb, var(--cluster-accent) 18%, transparent),
+              inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge:active {
+            transform: translateY(1px) scale(0.985) !important;
+          }
+
+          .map-shell.map-visual-preview .leaflet-marker-icon.maturity-map-marker.cluster-preview-active,
+          .map-shell.map-visual-preview .leaflet-marker-icon.maturity-map-marker:hover {
+            z-index: 2400 !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker.cluster-preview-active .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge,
+          .map-shell.map-visual-preview .maturity-map-marker:hover .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge {
+            transform: translateY(-22px) scale(1.16) !important;
+            filter: saturate(1.12) contrast(1.05) brightness(1.04) !important;
+            box-shadow:
+              0 0 0 5px color-mix(in srgb, var(--cluster-accent) 32%, transparent),
+              0 28px 52px rgba(15, 23, 42, 0.42),
+              0 0 28px color-mix(in srgb, var(--cluster-accent) 28%, transparent),
+              inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker.cluster-preview-active .map-cluster-marker.cluster-dispatch-badge::after,
+          .map-shell.map-visual-preview .maturity-map-marker:hover .map-cluster-marker.cluster-dispatch-badge::after {
+            transform: translateX(-50%) rotate(45deg) scale(1.08) !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker.cluster-preview-active .map-cluster-marker.cluster-dispatch-badge .cluster-focus-row,
+          .map-shell.map-visual-preview .maturity-map-marker:hover .map-cluster-marker.cluster-dispatch-badge .cluster-focus-row {
+            grid-template-columns: auto minmax(0, 1fr) auto !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker.cluster-preview-active .map-cluster-marker.cluster-dispatch-badge .cluster-focus-row::after,
+          .map-shell.map-visual-preview .maturity-map-marker:hover .map-cluster-marker.cluster-dispatch-badge .cluster-focus-row::after {
+            content: "Open" !important;
+            min-width: 28px !important;
+            padding: 2px 5px !important;
+            border-radius: 999px !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            font-size: 7px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge::before {
+            border-top-width: 6px !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-topline {
+            gap: 4px !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge strong,
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge em {
+            min-height: 19px !important;
+            padding: 3px 6px !important;
+            font-size: 8px !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge span {
+            margin-top: 1px !important;
+            font-size: 34px !important;
+            line-height: 0.82 !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge.cluster-size-lg span {
+            font-size: 31px !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge.cluster-size-xl span {
+            font-size: 27px !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-job-word {
+            margin-top: -2px !important;
+            color: #334155 !important;
+            font-size: 9px !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-focus-row {
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 25px !important;
+            display: grid !important;
+            grid-template-columns: auto minmax(0, 1fr) !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 3px !important;
+            padding: 4px 6px !important;
+            border-radius: 9px !important;
+            background: color-mix(in srgb, var(--cluster-accent) 14%, #ffffff) !important;
+            color: #0f172a !important;
+            border: 1px solid color-mix(in srgb, var(--cluster-accent) 24%, transparent) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-focus-row b {
+            color: inherit !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-focus-row small {
+            min-width: 0 !important;
+            color: inherit !important;
+            opacity: 0.82 !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-focus-row.late {
+            background: #fee2e2 !important;
+            color: #991b1b !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-focus-row.appointment {
+            background: #dbeafe !important;
+            color: #1e3a8a !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-focus-row.ready {
+            background: #dcfce7 !important;
+            color: #14532d !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-focus-row.soon,
+          .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge .cluster-focus-row.waiting {
+            background: #ffedd5 !important;
+            color: #9a3412 !important;
+          }
+
+          .map-shell.map-visual-preview .maturity-map-marker .map-signal-marker.marker-overlap-safe,
+          .map-shell.map-visual-preview .maturity-map-marker .map-signal-marker.marker-overlap-mini {
+            filter: saturate(1.06) contrast(1.02) !important;
+          }
+
+          .map-shell.map-visual-preview.map-focus-active .maturity-map-marker .map-signal-marker.marker-overlap-safe {
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.96),
+              0 0 0 5px rgba(20, 184, 166, 0.10),
+              0 12px 24px rgba(15, 23, 42, 0.24) !important;
+          }
+
+          .map-shell.map-visual-preview.map-focus-active .map-cockpit.board-collapsed {
+            background:
+              linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(240, 253, 250, 0.95)) !important;
+            border-color: rgba(20, 184, 166, 0.20) !important;
+          }
+
+          @media (max-width: 430px) {
+            .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge {
+              width: 88px !important;
+              min-width: 88px !important;
+              height: 94px !important;
+              min-height: 94px !important;
+              border-radius: 17px !important;
+              padding: 6px !important;
+            }
+
+            .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge span {
+              font-size: 31px !important;
+            }
+
+            .map-shell.map-visual-preview .maturity-map-marker .map-cluster-marker.cluster-dispatch-badge.cluster-size-xl span {
+              font-size: 25px !important;
+            }
+
+            .map-shell.map-visual-preview.map-focus-active .map-filter-count-hud {
+              min-height: 54px !important;
+              width: min(238px, calc(100vw - 92px)) !important;
+              padding: 8px 10px 8px 11px !important;
+            }
+
+            .map-shell.map-visual-preview.map-focus-active .map-filter-count-hud strong {
+              font-size: 24px !important;
+            }
+
+            .map-shell.map-visual-preview.map-stats-hidden .map-filter-count-hud {
+              bottom: calc(env(safe-area-inset-bottom) + 58px) !important;
+            }
+
+            .map-shell.map-visual-preview.map-stats-hidden .location-status-pill {
+              right: max(8px, env(safe-area-inset-right)) !important;
+              bottom: calc(env(safe-area-inset-bottom) + 12px) !important;
+              left: auto !important;
+            }
+          }
+
+          /* MAP_GLASS_COMMAND_TRIAL_2026 */
+          @keyframes glassCommandSheetIn {
+            from {
+              opacity: 0;
+              transform: translateY(22px) scale(0.985);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+
+          @keyframes glassCommandPulse {
+            0%,
+            100% {
+              transform: scale(1);
+              box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.34);
+            }
+            50% {
+              transform: scale(1.035);
+              box-shadow: 0 0 0 7px rgba(20, 184, 166, 0);
+            }
+          }
+
+          .map-shell.map-glass-command-trial {
+            --command-ink: #0f172a;
+            --command-muted: #475569;
+            --command-panel: rgba(248, 250, 252, 0.90);
+            --command-panel-strong: rgba(255, 255, 255, 0.96);
+            --command-line: rgba(15, 23, 42, 0.12);
+            --command-shadow: 0 28px 80px rgba(2, 6, 23, 0.38);
+            --command-teal: #0f766e;
+            --command-cyan: #0891b2;
+            --command-blue: #2563eb;
+            --command-amber: #d97706;
+            --command-rose: #be123c;
+            background:
+              linear-gradient(180deg, #030712 0%, #08111f 44%, #0f172a 100%) !important;
+          }
+
+          .map-shell.map-glass-command-trial:not(.map-style-carto-dark) .map-node .leaflet-tile {
+            filter: saturate(1.12) contrast(1.42) brightness(0.52) !important;
+          }
+
+          .map-shell.map-glass-command-trial.map-style-carto-dark .map-node .leaflet-tile {
+            filter: saturate(1.12) contrast(1.28) brightness(0.58) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-stage::after {
+            background:
+              linear-gradient(180deg, rgba(2, 6, 23, 0.32), rgba(2, 6, 23, 0.04) 44%, rgba(2, 6, 23, 0.30)),
+              linear-gradient(90deg, rgba(6, 78, 118, 0.20), transparent 32%, transparent 68%, rgba(15, 118, 110, 0.18)) !important;
+            pointer-events: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed,
+          .map-shell.map-glass-command-trial .map-filter-count-hud,
+          .map-shell.map-glass-command-trial .zoom-panel,
+          .map-shell.map-glass-command-trial .location-status-pill,
+          .map-shell.map-glass-command-trial .map-menu-fab,
+          .map-shell.map-glass-command-trial .map-job-brief {
+            border: 1px solid rgba(255, 255, 255, 0.34) !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.90), rgba(226, 232, 240, 0.78)) !important;
+            color: var(--command-ink) !important;
+            box-shadow:
+              0 18px 48px rgba(2, 6, 23, 0.32),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+            backdrop-filter: blur(22px) saturate(1.35) !important;
+            -webkit-backdrop-filter: blur(22px) saturate(1.35) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-filter-count-hud strong {
+            color: #020617 !important;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.70) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-filter-count-hud span,
+          .map-shell.map-glass-command-trial .map-filter-count-hud small {
+            color: #334155 !important;
+          }
+
+          .map-shell.map-glass-command-trial.map-focus-active .map-filter-count-hud {
+            top: 78px !important;
+            bottom: auto !important;
+            width: min(232px, calc(100vw - 126px)) !important;
+            min-height: 58px !important;
+            padding: 10px 12px !important;
+            border-radius: 18px !important;
+            background:
+              linear-gradient(135deg, rgba(3, 7, 18, 0.94), rgba(15, 118, 110, 0.92) 58%, rgba(8, 145, 178, 0.92)) !important;
+            color: #ffffff !important;
+            border-color: rgba(103, 232, 249, 0.34) !important;
+          }
+
+          .map-shell.map-glass-command-trial.map-focus-active .map-filter-count-hud span,
+          .map-shell.map-glass-command-trial.map-focus-active .map-filter-count-hud strong,
+          .map-shell.map-glass-command-trial.map-focus-active .map-filter-count-hud small {
+            color: #ffffff !important;
+            text-shadow: 0 1px 2px rgba(2, 6, 23, 0.45) !important;
+          }
+
+          .map-shell.map-glass-command-trial .zoom-panel button,
+          .map-shell.map-glass-command-trial .map-menu-fab {
+            min-width: 48px !important;
+            min-height: 48px !important;
+            color: #020617 !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge {
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(232, 245, 244, 0.94)) !important;
+            border: 1px solid rgba(255, 255, 255, 0.98) !important;
+            color: #020617 !important;
+            box-shadow:
+              0 0 0 4px color-mix(in srgb, var(--cluster-accent) 28%, transparent),
+              0 22px 48px rgba(2, 6, 23, 0.36),
+              inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker.cluster-preview-active .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge,
+          .map-shell.map-glass-command-trial .maturity-map-marker:hover .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge {
+            transform: translateY(-28px) scale(1.20) !important;
+            box-shadow:
+              0 0 0 6px color-mix(in srgb, var(--cluster-accent) 34%, transparent),
+              0 34px 70px rgba(2, 6, 23, 0.48),
+              0 0 32px color-mix(in srgb, var(--cluster-accent) 36%, transparent),
+              inset 0 1px 0 rgba(255, 255, 255, 0.98) !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-safe,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-mini,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overview,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-compact {
+            background:
+              linear-gradient(145deg, #06244a 0%, #075985 45%, #0f766e 100%) !important;
+            border-color: rgba(103, 232, 249, 0.94) !important;
+            color: #ffffff !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.98),
+              0 0 0 5px rgba(14, 165, 233, 0.20),
+              0 14px 34px rgba(2, 6, 23, 0.54),
+              inset 0 1px 0 rgba(255, 255, 255, 0.34) !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-main,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-mini .signal-main,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overview .signal-main,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-compact .signal-main,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-eyebrow,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-mini .signal-eyebrow,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overview .signal-eyebrow,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-compact .signal-eyebrow,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-start,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-mini .signal-start,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overview .signal-start,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-compact .signal-start,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-footer,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-mini .signal-footer,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overview .signal-footer,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-compact .signal-footer {
+            color: #ffffff !important;
+            text-shadow: 0 1px 2px rgba(2, 6, 23, 0.54) !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-address,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-mini .signal-address,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overview .signal-address,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-compact .signal-address {
+            border: 1px solid rgba(255, 255, 255, 0.28) !important;
+            background: rgba(2, 6, 23, 0.70) !important;
+            color: #ffffff !important;
+            text-shadow: none !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-safe::after,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-mini::after,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overview::after,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-compact::after {
+            background: #075985 !important;
+            border-color: rgba(255, 255, 255, 0.96) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-job-brief {
+            border-radius: 24px !important;
+            padding: 12px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-job-brief strong,
+          .map-shell.map-glass-command-trial .map-job-brief b {
+            color: #020617 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-job-brief small,
+          .map-shell.map-glass-command-trial .map-job-brief span {
+            color: #334155 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-job-brief-actions button {
+            min-height: 48px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(15, 23, 42, 0.12) !important;
+            background: rgba(255, 255, 255, 0.82) !important;
+            color: #0f172a !important;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-job-brief-actions button.primary {
+            background: linear-gradient(135deg, #0f766e, #2563eb) !important;
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+            max-height: min(88dvh, 780px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.72) !important;
+            border-bottom: 0 !important;
+            border-radius: 30px 30px 0 0 !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(241, 245, 249, 0.92)) !important;
+            color: var(--command-ink) !important;
+            box-shadow: var(--command-shadow) !important;
+            backdrop-filter: blur(28px) saturate(1.38) !important;
+            -webkit-backdrop-filter: blur(28px) saturate(1.38) !important;
+            animation: glassCommandSheetIn 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+            background: transparent !important;
+            border-bottom: 0 !important;
+            padding-top: 18px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head::before {
+            content: "" !important;
+            display: block !important;
+            width: 54px !important;
+            height: 5px !important;
+            margin: -6px auto 12px !important;
+            border-radius: 999px !important;
+            background: rgba(15, 23, 42, 0.22) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-field-title-copy span,
+          .map-shell.map-glass-command-trial .field-status-select-label span,
+          .map-shell.map-glass-command-trial .field-status-date-label span,
+          .map-shell.map-glass-command-trial .field-media-option-head span,
+          .map-shell.map-glass-command-trial .site-procedure-stage-head span,
+          .map-shell.map-glass-command-trial .field-media-console-head span {
+            color: var(--command-teal) !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-field-title-copy strong {
+            color: #020617 !important;
+            font-size: clamp(26px, 6.5vw, 42px) !important;
+            line-height: 0.95 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-field-title-copy p {
+            color: #334155 !important;
+            font-size: 14px !important;
+            font-weight: 850 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-close-pill,
+          .map-shell.map-glass-command-trial .job-card-map-back-pill {
+            min-width: 62px !important;
+            min-height: 48px !important;
+            border-radius: 999px !important;
+            border: 1px solid rgba(15, 23, 42, 0.12) !important;
+            background: rgba(255, 255, 255, 0.82) !important;
+            color: #0f172a !important;
+            box-shadow: 0 12px 26px rgba(15, 23, 42, 0.14) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-field-action-dock,
+          .map-shell.map-glass-command-trial .job-card-smooth-flow-rail,
+          .map-shell.map-glass-command-trial .job-card-map-return-row {
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            border-radius: 24px !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.84), rgba(226, 232, 240, 0.70)) !important;
+            box-shadow:
+              0 16px 38px rgba(15, 23, 42, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+            backdrop-filter: blur(20px) saturate(1.24) !important;
+            -webkit-backdrop-filter: blur(20px) saturate(1.24) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-field-action-dock {
+            padding: 8px !important;
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .route-head-arrived,
+          .map-shell.map-glass-command-trial .route-head-button,
+          .map-shell.map-glass-command-trial .job-card-smooth-flow-rail button,
+          .map-shell.map-glass-command-trial .job-card-map-return-row button {
+            min-height: 58px !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            transform: translateZ(0);
+            transition:
+              transform 160ms ease,
+              box-shadow 160ms ease,
+              background 160ms ease !important;
+          }
+
+          .map-shell.map-glass-command-trial .route-head-arrived,
+          .map-shell.map-glass-command-trial .job-card-smooth-flow-rail .flow-status.active,
+          .map-shell.map-glass-command-trial .job-card-smooth-flow-rail .flow-status.has-draft-status {
+            background: linear-gradient(135deg, #0f766e, #0891b2 54%, #2563eb) !important;
+            color: #ffffff !important;
+            border-color: rgba(255, 255, 255, 0.38) !important;
+            box-shadow:
+              0 16px 34px rgba(8, 145, 178, 0.28),
+              inset 0 1px 0 rgba(255, 255, 255, 0.38) !important;
+          }
+
+          .map-shell.map-glass-command-trial .route-head-arrived strong,
+          .map-shell.map-glass-command-trial .route-head-arrived small,
+          .map-shell.map-glass-command-trial .job-card-smooth-flow-rail .flow-status.active strong,
+          .map-shell.map-glass-command-trial .job-card-smooth-flow-rail .flow-status.active small {
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .route-head-button,
+          .map-shell.map-glass-command-trial .job-card-smooth-flow-rail button,
+          .map-shell.map-glass-command-trial .job-card-map-return-row button {
+            background: rgba(255, 255, 255, 0.86) !important;
+            color: #0f172a !important;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12) !important;
+          }
+
+          .map-shell.map-glass-command-trial .route-head-arrived:active,
+          .map-shell.map-glass-command-trial .route-head-button:active,
+          .map-shell.map-glass-command-trial .job-card-smooth-flow-rail button:active,
+          .map-shell.map-glass-command-trial .job-card-map-return-row button:active {
+            transform: scale(0.975) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .job-card-field-action-dock {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 0.72fr) minmax(0, 0.82fr) !important;
+            gap: 6px !important;
+            margin-top: 5px !important;
+            padding: 5px !important;
+            border-radius: 18px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .route-head-arrived,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .route-head-button {
+            min-height: 42px !important;
+            border-radius: 14px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .route-head-button img {
+            width: 20px !important;
+            height: 20px !important;
+            flex-basis: 20px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .route-head-arrived strong,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .route-action-copy strong {
+            font-size: 12px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .route-head-arrived small,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head .route-action-copy small {
+            display: block !important;
+            font-size: 7px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-current-state-banner {
+            min-height: 72px !important;
+            border-radius: 24px !important;
+            border: 1px solid rgba(15, 23, 42, 0.12) !important;
+            background:
+              linear-gradient(135deg, rgba(15, 118, 110, 0.14), rgba(37, 99, 235, 0.12)),
+              rgba(255, 255, 255, 0.88) !important;
+            color: #0f172a !important;
+            box-shadow: 0 16px 38px rgba(15, 23, 42, 0.13) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-current-state-banner .state-pulse-dot {
+            background: #14b8a6 !important;
+            animation: glassCommandPulse 1.55s ease-in-out infinite !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-72h-counter,
+          .map-shell.map-glass-command-trial .field-status-picker-card,
+          .map-shell.map-glass-command-trial .field-status-flow-card,
+          .map-shell.map-glass-command-trial .package-readiness-card,
+          .map-shell.map-glass-command-trial .field-media-option-hub,
+          .map-shell.map-glass-command-trial .active-work-choice-panel,
+          .map-shell.map-glass-command-trial .site-procedure-card,
+          .map-shell.map-glass-command-trial .field-media-console,
+          .map-shell.map-glass-command-trial .field-packet-vault,
+          .map-shell.map-glass-command-trial .selected-description,
+          .map-shell.map-glass-command-trial .selected-card,
+          .map-shell.map-glass-command-trial .package-ready-card {
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            border-radius: 24px !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(241, 245, 249, 0.88)) !important;
+            color: #0f172a !important;
+            box-shadow:
+              0 18px 42px rgba(15, 23, 42, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+            backdrop-filter: blur(18px) saturate(1.2) !important;
+            -webkit-backdrop-filter: blur(18px) saturate(1.2) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-status-command-center,
+          .map-shell.map-glass-command-trial .field-media-step-cue,
+          .map-shell.map-glass-command-trial .site-package-strip,
+          .map-shell.map-glass-command-trial .field-package-preview {
+            border-radius: 18px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            background: rgba(255, 255, 255, 0.78) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.80) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-status-select-label select,
+          .map-shell.map-glass-command-trial .field-status-date-label input {
+            min-height: 50px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(15, 23, 42, 0.16) !important;
+            background: rgba(255, 255, 255, 0.92) !important;
+            color: #020617 !important;
+            font-size: 16px !important;
+            font-weight: 900 !important;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-status-save-primary,
+          .map-shell.map-glass-command-trial .field-status-command-save,
+          .map-shell.map-glass-command-trial .procedure-primary,
+          .map-shell.map-glass-command-trial .send-package-btn,
+          .map-shell.map-glass-command-trial .one-big-next-action {
+            min-height: 52px !important;
+            border-radius: 18px !important;
+            background: linear-gradient(135deg, #0f766e, #2563eb) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.36) !important;
+            box-shadow:
+              0 16px 34px rgba(37, 99, 235, 0.24),
+              inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-status-clear-inline {
+            min-height: 48px !important;
+            border-radius: 16px !important;
+            background: rgba(255, 255, 255, 0.84) !important;
+            color: #9f1239 !important;
+            border: 1px solid rgba(190, 18, 60, 0.20) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-media-option-grid,
+          .map-shell.map-glass-command-trial .field-media-lanes,
+          .map-shell.map-glass-command-trial .package-readiness-grid {
+            gap: 10px !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-media-option-column,
+          .map-shell.map-glass-command-trial .field-media-lane,
+          .map-shell.map-glass-command-trial .package-readiness-item {
+            border-radius: 18px !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            background: rgba(255, 255, 255, 0.82) !important;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-media-option-column.is-next-media-step,
+          .map-shell.map-glass-command-trial .field-media-lane.just-saved {
+            border-color: rgba(20, 184, 166, 0.38) !important;
+            box-shadow:
+              0 0 0 4px rgba(20, 184, 166, 0.12),
+              0 18px 38px rgba(20, 184, 166, 0.16) !important;
+          }
+
+          .map-shell.map-glass-command-trial .package-readiness-meter {
+            height: 12px !important;
+            border-radius: 999px !important;
+            background: rgba(15, 23, 42, 0.10) !important;
+          }
+
+          .map-shell.map-glass-command-trial .package-readiness-meter i {
+            border-radius: 999px !important;
+            background: linear-gradient(90deg, #0f766e, #0891b2, #2563eb) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-media-actions button,
+          .map-shell.map-glass-command-trial .field-media-option-column button,
+          .map-shell.map-glass-command-trial .active-work-choice-panel button {
+            min-height: 48px !important;
+            border-radius: 16px !important;
+            font-weight: 950 !important;
+          }
+
+          .map-shell.map-glass-command-trial .selected-description strong,
+          .map-shell.map-glass-command-trial .field-status-picker-card strong,
+          .map-shell.map-glass-command-trial .field-media-option-hub strong,
+          .map-shell.map-glass-command-trial .site-procedure-card strong,
+          .map-shell.map-glass-command-trial .field-packet-vault strong {
+            color: #020617 !important;
+          }
+
+          .map-shell.map-glass-command-trial .selected-description p,
+          .map-shell.map-glass-command-trial .field-status-picker-card small,
+          .map-shell.map-glass-command-trial .field-media-option-hub small,
+          .map-shell.map-glass-command-trial .site-procedure-card small,
+          .map-shell.map-glass-command-trial .field-packet-vault small {
+            color: #475569 !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-status-current-strip div {
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            background: rgba(255, 255, 255, 0.84) !important;
+            color: #0f172a !important;
+            box-shadow:
+              0 10px 24px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-status-current-strip div:first-child {
+            border-color: rgba(15, 118, 110, 0.22) !important;
+            border-left: 5px solid #0f766e !important;
+            background: linear-gradient(180deg, #ecfdf5, #e0f2fe) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-status-current-strip div:nth-child(2) {
+            border-color: rgba(37, 99, 235, 0.18) !important;
+            border-left: 5px solid #2563eb !important;
+            background: linear-gradient(180deg, #eff6ff, #ffffff) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-status-current-strip span,
+          .map-shell.map-glass-command-trial .field-status-current-strip div:first-child span,
+          .map-shell.map-glass-command-trial .field-status-current-strip div:nth-child(2) span,
+          .map-shell.map-glass-command-trial .field-status-current-strip div:nth-child(3) span {
+            color: #0f766e !important;
+            opacity: 1 !important;
+            text-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-status-current-strip strong,
+          .map-shell.map-glass-command-trial .field-status-current-strip div:first-child strong,
+          .map-shell.map-glass-command-trial .field-status-current-strip div:nth-child(2) strong,
+          .map-shell.map-glass-command-trial .field-status-current-strip div:nth-child(3) strong {
+            color: #020617 !important;
+            opacity: 1 !important;
+            text-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .tenant-contact-card,
+          .map-shell.map-glass-command-trial .job-appointment-card,
+          .map-shell.map-glass-command-trial .appointment-hero,
+          .map-shell.map-glass-command-trial .selected-alert-card,
+          .map-shell.map-glass-command-trial .field-workflow-card,
+          .map-shell.map-glass-command-trial .field-mission-mode,
+          .map-shell.map-glass-command-trial .more-job-details {
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            border-radius: 24px !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(241, 245, 249, 0.90)) !important;
+            color: #0f172a !important;
+            box-shadow:
+              0 18px 42px rgba(15, 23, 42, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.94) !important;
+            backdrop-filter: blur(18px) saturate(1.2) !important;
+            -webkit-backdrop-filter: blur(18px) saturate(1.2) !important;
+          }
+
+          .map-shell.map-glass-command-trial .tenant-contact-card :is(strong, b),
+          .map-shell.map-glass-command-trial .job-appointment-card :is(strong, b),
+          .map-shell.map-glass-command-trial .appointment-hero :is(strong, b),
+          .map-shell.map-glass-command-trial .selected-alert-card :is(strong, b),
+          .map-shell.map-glass-command-trial .field-workflow-card :is(strong, b),
+          .map-shell.map-glass-command-trial .field-mission-mode :is(strong, b),
+          .map-shell.map-glass-command-trial .more-job-details :is(strong, b) {
+            color: #020617 !important;
+          }
+
+          .map-shell.map-glass-command-trial .tenant-contact-card :is(span, small, p, em, label),
+          .map-shell.map-glass-command-trial .job-appointment-card :is(span, small, p, em, label),
+          .map-shell.map-glass-command-trial .appointment-hero :is(span, small, p, em, label),
+          .map-shell.map-glass-command-trial .selected-alert-card :is(span, small, p, em, label),
+          .map-shell.map-glass-command-trial .field-workflow-card :is(span, small, p, em, label),
+          .map-shell.map-glass-command-trial .field-mission-mode :is(span, small, p, em, label),
+          .map-shell.map-glass-command-trial .more-job-details :is(span, small, p, em, label) {
+            color: #475569 !important;
+          }
+
+          .map-shell.map-glass-command-trial .tenant-contact-card .tenant-contact-head span,
+          .map-shell.map-glass-command-trial .tenant-contact-card .tenant-contact-row span,
+          .map-shell.map-glass-command-trial .job-appointment-head span,
+          .map-shell.map-glass-command-trial .appointment-hero-main span,
+          .map-shell.map-glass-command-trial .auto-alert-summary span,
+          .map-shell.map-glass-command-trial .auto-alert-phone span,
+          .map-shell.map-glass-command-trial .selected-alert-card span {
+            color: #0f766e !important;
+          }
+
+          .map-shell.map-glass-command-trial .tenant-contact-card.no-appointment .tenant-contact-head strong,
+          .map-shell.map-glass-command-trial .tenant-contact-card.no-appointment strong {
+            color: #0f172a !important;
+          }
+
+          .map-shell.map-glass-command-trial .tenant-contact-row,
+          .map-shell.map-glass-command-trial .appointment-hero-contact div,
+          .map-shell.map-glass-command-trial .job-appointment-banner,
+          .map-shell.map-glass-command-trial .job-appointment-calendar-panel,
+          .map-shell.map-glass-command-trial .job-appointment-auto-alert,
+          .map-shell.map-glass-command-trial .auto-alert-body,
+          .map-shell.map-glass-command-trial .auto-alert-phone,
+          .map-shell.map-glass-command-trial .field-workflow-card > div,
+          .map-shell.map-glass-command-trial .more-job-details > div {
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            border-radius: 18px !important;
+            background: rgba(255, 255, 255, 0.78) !important;
+            color: #0f172a !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-appointment-countdown {
+            border: 1px solid rgba(15, 23, 42, 0.12) !important;
+            background: rgba(255, 255, 255, 0.84) !important;
+            color: #0f172a !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-appointment-countdown :is(strong, b) {
+            color: #020617 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-appointment-countdown :is(span, small) {
+            color: #475569 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-appointment-countdown.countdown-urgent,
+          .map-shell.map-glass-command-trial .job-appointment-countdown.countdown-due,
+          .map-shell.map-glass-command-trial .job-appointment-countdown.countdown-past,
+          .map-shell.map-glass-command-trial .appointment-hero.appointment-past,
+          .map-shell.map-glass-command-trial .appointment-hero.appointment-due {
+            background: linear-gradient(135deg, #7f1d1d, #be123c) !important;
+            color: #ffffff !important;
+            border-color: rgba(254, 202, 202, 0.36) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-appointment-countdown.countdown-urgent *,
+          .map-shell.map-glass-command-trial .job-appointment-countdown.countdown-due *,
+          .map-shell.map-glass-command-trial .job-appointment-countdown.countdown-past *,
+          .map-shell.map-glass-command-trial .appointment-hero.appointment-past *,
+          .map-shell.map-glass-command-trial .appointment-hero.appointment-due * {
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-appointment-input input,
+          .map-shell.map-glass-command-trial .auto-alert-phone input {
+            min-height: 48px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(15, 23, 42, 0.16) !important;
+            background: rgba(255, 255, 255, 0.94) !important;
+            color: #020617 !important;
+            font-size: 16px !important;
+            font-weight: 900 !important;
+          }
+
+          .map-shell.map-glass-command-trial .tenant-contact-actions a,
+          .map-shell.map-glass-command-trial .appointment-hero-actions a,
+          .map-shell.map-glass-command-trial .appointment-hero-actions button,
+          .map-shell.map-glass-command-trial .job-appointment-save-button,
+          .map-shell.map-glass-command-trial .job-appointment-auto-alert button,
+          .map-shell.map-glass-command-trial .job-appointment-actions button,
+          .map-shell.map-glass-command-trial .job-appointment-actions a,
+          .map-shell.map-glass-command-trial .field-workflow-card button {
+            min-height: 48px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(255, 255, 255, 0.36) !important;
+            background: linear-gradient(135deg, #0f766e, #2563eb) !important;
+            color: #ffffff !important;
+            font-weight: 950 !important;
+            box-shadow:
+              0 14px 30px rgba(37, 99, 235, 0.22),
+              inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+          }
+
+          .map-shell.map-glass-command-trial .tenant-contact-actions a *,
+          .map-shell.map-glass-command-trial .appointment-hero-actions a *,
+          .map-shell.map-glass-command-trial .appointment-hero-actions button *,
+          .map-shell.map-glass-command-trial .job-appointment-save-button *,
+          .map-shell.map-glass-command-trial .job-appointment-auto-alert button *,
+          .map-shell.map-glass-command-trial .job-appointment-actions button *,
+          .map-shell.map-glass-command-trial .job-appointment-actions a *,
+          .map-shell.map-glass-command-trial .field-workflow-card button * {
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-appointment-actions .quiet,
+          .map-shell.map-glass-command-trial .job-appointment-actions .whatsapp-disabled,
+          .map-shell.map-glass-command-trial .job-appointment-actions a.disabled,
+          .map-shell.map-glass-command-trial .job-appointment-auto-alert button:disabled,
+          .map-shell.map-glass-command-trial .job-appointment-actions button:disabled {
+            background: rgba(255, 255, 255, 0.82) !important;
+            color: #334155 !important;
+            border-color: rgba(15, 23, 42, 0.12) !important;
+            box-shadow: none !important;
+            opacity: 1 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-appointment-actions .quiet *,
+          .map-shell.map-glass-command-trial .job-appointment-actions .whatsapp-disabled *,
+          .map-shell.map-glass-command-trial .job-appointment-actions a.disabled *,
+          .map-shell.map-glass-command-trial .job-appointment-auto-alert button:disabled *,
+          .map-shell.map-glass-command-trial .job-appointment-actions button:disabled * {
+            color: #334155 !important;
+            opacity: 1 !important;
+          }
+
+          @media (max-width: 700px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+              left: 6px !important;
+              right: 6px !important;
+              bottom: 0 !important;
+              max-height: calc(100dvh - 30px) !important;
+              border-radius: 26px 26px 0 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-card-field-action-dock {
+              grid-template-columns: minmax(0, 1.35fr) minmax(70px, 0.82fr) minmax(78px, 0.92fr) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-card-field-title-copy strong {
+              font-size: clamp(28px, 8vw, 36px) !important;
+            }
+
+            .map-shell.map-glass-command-trial .route-head-arrived,
+            .map-shell.map-glass-command-trial .route-head-button,
+            .map-shell.map-glass-command-trial .job-card-smooth-flow-rail button {
+              min-height: 56px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-card-smooth-flow-rail {
+              overflow-x: auto !important;
+              padding: 8px !important;
+            }
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip > div,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip > div:first-child,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip > div:nth-child(2),
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip > div:nth-child(3) {
+            border: 1px solid rgba(15, 23, 42, 0.12) !important;
+            background: rgba(255, 255, 255, 0.92) !important;
+            color: #0f172a !important;
+            text-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip > div:first-child {
+            border-left: 5px solid #0f766e !important;
+            background: linear-gradient(180deg, #ecfdf5, #e0f2fe) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip > div:nth-child(2) {
+            border-left: 5px solid #2563eb !important;
+            background: linear-gradient(180deg, #eff6ff, #ffffff) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip > div:nth-child(3) {
+            border-left: 5px solid #7c3aed !important;
+            background: linear-gradient(180deg, #f5f3ff, #ffffff) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip > div :is(span, small, em, label) {
+            color: #0f766e !important;
+            opacity: 1 !important;
+            text-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card .field-status-current-strip > div :is(strong, b) {
+            color: #020617 !important;
+            opacity: 1 !important;
+            text-shadow: none !important;
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner .state-pulse-dot,
+            .map-shell.map-visual-preview.map-focus-active .map-stage::before,
             .maturity-map-marker .map-signal-marker .marker-age-badge,
             .job-drawer.selected-focus .selected-age-badge {
               animation: none !important;
@@ -29938,7 +31262,7 @@ return (
             />
           </label>
           <button className={!mapShowAllDays ? "active" : ""} type="button" onClick={() => applyMapDaysFilter(false)}>
-            Show {mapDateCounts.visible}
+            Show {mapDateButtonCount}
           </button>
           <button className={mapShowAllDays ? "active" : ""} type="button" onClick={() => applyMapDaysFilter(true)}>
             All {mapDateCounts.all}
@@ -30076,25 +31400,23 @@ return (
         </section>
 
         <div className={`map-filter-count-hud ${mapShowAllDays ? "all-days" : "filtered-days"}`} aria-label={mapHudSummaryLabel}>
-          <span>Showing</span>
+          <span>{dashboardView.label}</span>
           <strong>{filteredJobs.length} job{filteredJobs.length === 1 ? "" : "s"}</strong>
           <small>{mapBoroughScopeLabel} - {mapDateFilterLabel()}</small>
         </div>
 
-        <div className={`map-stats ${mapShowAllDays ? "all-days" : "filtered-days"}`} aria-label={`Map stats: ${mapHudSummaryLabel}`}>
-          <div className="map-stat map-stat-primary">
-            <strong>{filteredJobs.length}</strong>
-            <span>{mapHudFilterLabel}</span>
+        {showMapStatsPanel ? (
+          <div className={`map-stats map-data-alert ${mapShowAllDays ? "all-days" : "filtered-days"}`} aria-label={`Map data: ${visibleMissingGeoCount} jobs need geo`}>
+            <div className="map-stat map-stat-primary">
+              <strong>{visibleMissingGeoCount}</strong>
+              <span>Need geo</span>
+            </div>
+            <div className="map-stat">
+              <strong>{visibleMappedCount}</strong>
+              <span>Mapped</span>
+            </div>
           </div>
-          <div className="map-stat">
-            <strong>{visibleMappedCount}</strong>
-            <span>Mapped</span>
-          </div>
-          <div className="map-stat">
-            <strong>{visibleMissingGeoCount}</strong>
-            <span>Need geo</span>
-          </div>
-        </div>
+        ) : null}
 
         <div className="status-legend">
           <span><b className="dot completed"></b>Done</span>
