@@ -4245,9 +4245,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const markerOverview =
         timerLayerNeedsClusters ||
         (denseLayer ? zoomLevel < (mobileMap ? 15 : 14) : zoomLevel < 13);
-      const focusedMarkerCards = selectedOnly || filteredCount <= 1;
-      const markerExpanded = focusedMarkerCards && zoomLevel >= 15;
-      const markerDetailed = focusedMarkerCards && zoomLevel >= 17;
+      const focusedMarkerCards = selectedOnly;
+      const markerExpanded = selectedOnly && zoomLevel >= 15;
+      const markerDetailed = selectedOnly && zoomLevel >= 17;
 
       layer.clearLayers();
 
@@ -4482,7 +4482,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const noAccessSoon = isNoAccessTwentyFourHourAlert(job);
         const noAccessReady = workflowViewBucket(job) === "ready2";
         const noAccessTimerFocus = Boolean(noAccessTimerLabel) && showIndividualNoAccessTimers;
-        const selectedMarkerTapHint = selectedOnly || filteredJobs.length === 1;
+        const selectedMarkerTapHint = selectedOnly;
         const overlapSafeMarker = !selectedOnly && filteredCount > 1 && !noAccessTimerFocus && !selectedMarkerTapHint;
         let collisionMiniMarker = false;
         const appointmentLabel = markerAppointmentReminderHtml(job);
@@ -29040,6 +29040,399 @@ return (
             line-height: 1 !important;
           }
 
+          /* JOB_CARD_FLOW_V2_2026 */
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 5 !important;
+            padding: 9px !important;
+            border-radius: 16px !important;
+            background:
+              linear-gradient(145deg, rgba(8, 47, 73, 0.99), rgba(3, 105, 161, 0.97) 52%, rgba(15, 118, 110, 0.98)) !important;
+            border: 1px solid rgba(125, 211, 252, 0.28) !important;
+            box-shadow:
+              0 16px 34px rgba(15, 23, 42, 0.26),
+              inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-row {
+            grid-template-columns: minmax(0, 1fr) 58px !important;
+            align-items: start !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy span {
+            color: #bae6fd !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy strong {
+            color: #ffffff !important;
+            text-shadow: 0 1px 1px rgba(2, 6, 23, 0.32) !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy p {
+            color: #ecfeff !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas {
+            grid-template-columns: minmax(0, 1fr) minmax(104px, auto) !important;
+            align-items: center !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .status {
+            min-height: 32px !important;
+            border-radius: 12px !important;
+            font-size: 11px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .selected-age-badge {
+            min-width: 112px !important;
+            min-height: 52px !important;
+            border-radius: 14px !important;
+            background: linear-gradient(180deg, #ffffff, #e0f2fe) !important;
+            border: 1px solid rgba(125, 211, 252, 0.60) !important;
+            color: #082f49 !important;
+            box-shadow:
+              0 0 0 2px rgba(14, 165, 233, 0.14),
+              0 12px 24px rgba(8, 47, 73, 0.22) !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .selected-age-badge b,
+          .job-drawer.selected-focus .job-card-field-metas .selected-age-badge strong,
+          .job-drawer.selected-focus .job-card-field-metas .selected-age-badge small {
+            color: inherit !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner {
+            min-height: 50px !important;
+            border-radius: 14px !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.10),
+              0 14px 26px rgba(2, 6, 23, 0.20) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner strong {
+            font-size: 16px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner em {
+            display: block !important;
+            max-width: 100% !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-field-action-dock {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 0.82fr) minmax(0, 0.82fr) !important;
+            gap: 6px !important;
+          }
+
+          .job-drawer.selected-focus .route-head-arrived,
+          .job-drawer.selected-focus .route-head-button {
+            min-height: 46px !important;
+            border-radius: 14px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-map-return-row,
+          .job-drawer.selected-focus .job-card-smooth-flow-rail,
+          .job-drawer.selected-focus .field-flow-dock,
+          .job-drawer.selected-focus .site-procedure-card,
+          .job-drawer.selected-focus .field-workflow-grid,
+          .job-drawer.selected-focus .field-evidence-rail.compact,
+          .job-drawer.selected-focus .field-status-flow-card {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode {
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .job-appointment-card.mission-appointment {
+            order: 0 !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description {
+            order: 1 !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-card {
+            order: 2 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card {
+            order: 3 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-hub {
+            order: 4 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-card {
+            order: 5 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-strip {
+            order: 6 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-map-tools {
+            order: 7 !important;
+          }
+
+          .job-drawer.selected-focus .field-evidence-gallery {
+            order: 8 !important;
+          }
+
+          .job-drawer.selected-focus .field-capture-guide {
+            order: 9 !important;
+          }
+
+          .job-drawer.selected-focus .field-packet-vault {
+            order: 10 !important;
+          }
+
+          .job-drawer.selected-focus .field-send-panel {
+            order: 11 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card {
+            gap: 9px !important;
+            border-radius: 16px !important;
+            border-left-width: 5px !important;
+            box-shadow:
+              0 12px 26px rgba(15, 23, 42, 0.09),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip div:nth-child(3) {
+            grid-column: 1 / -1 !important;
+            min-height: 40px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-center {
+            padding: 9px !important;
+            border-radius: 14px !important;
+            background: linear-gradient(180deg, #f8fafc, #ffffff) !important;
+            border: 1px solid rgba(37, 99, 235, 0.14) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-main {
+            grid-template-columns: minmax(0, 1fr) minmax(132px, 0.58fr) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-date-label input {
+            min-height: 48px !important;
+            border-radius: 12px !important;
+            border: 2px solid rgba(37, 99, 235, 0.20) !important;
+            font-size: 13px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-actions {
+            grid-template-columns: 52px minmax(0, 1fr) 58px !important;
+            gap: 6px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-actions .field-status-now,
+          .job-drawer.selected-focus .field-status-command-actions .field-status-save-primary,
+          .job-drawer.selected-focus .field-status-command-actions .field-status-clear-inline {
+            min-height: 42px !important;
+            border-radius: 12px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card .field-next-action-card.status-next-action {
+            grid-template-columns: minmax(0, 1fr) minmax(116px, 0.42fr) !important;
+            align-items: stretch !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card .field-next-action-card.status-next-action button {
+            min-height: 100% !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-choices {
+            display: grid !important;
+            gap: 7px !important;
+            padding: 8px !important;
+            border-radius: 14px !important;
+            background: #f8fafc !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            box-shadow: none !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-choices:not([open]) .field-status-quick-group {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-summary {
+            min-height: 42px !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            gap: 2px 8px !important;
+            cursor: pointer !important;
+            list-style: none !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-summary::-webkit-details-marker {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-summary span {
+            color: #2563eb !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-summary strong {
+            color: #0f172a !important;
+            font-size: 13px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-summary small {
+            grid-column: 1 / 2 !important;
+            color: #475569 !important;
+            font-size: 10px !important;
+            line-height: 1.1 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-summary::after {
+            content: "Open" !important;
+            grid-row: 1 / span 2 !important;
+            grid-column: 2 !important;
+            min-width: 56px !important;
+            min-height: 30px !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            border-radius: 999px !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-choices[open] .field-status-quick-summary::after {
+            content: "Hide" !important;
+            background: #1d4ed8 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-group > span {
+            margin-top: 3px !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-hub {
+            border-radius: 16px !important;
+            background:
+              radial-gradient(circle at top left, rgba(20, 184, 166, 0.12), transparent 38%),
+              linear-gradient(180deg, #ffffff, #f8fafc) !important;
+            border-left-color: #0f766e !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column {
+            min-height: 0 !important;
+            border-radius: 14px !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column button {
+            min-height: 38px !important;
+            border-radius: 11px !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-footer {
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.08fr) !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-card {
+            border-radius: 16px !important;
+            background:
+              linear-gradient(180deg, #ffffff, #f8fafc) !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          }
+
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-compact,
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview {
+            min-width: 108px !important;
+            max-width: 120px !important;
+            min-height: 62px !important;
+            padding: 6px 7px !important;
+            border-radius: 14px !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.88),
+              0 10px 20px rgba(15, 23, 42, 0.22) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-eyebrow,
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-eyebrow {
+            min-height: 16px !important;
+            max-width: 104px !important;
+            padding: 2px 6px !important;
+            font-size: 7px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-main,
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-main {
+            max-width: 104px !important;
+            font-size: 15px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-compact .signal-address,
+          .maturity-map-marker .map-signal-marker.marker-overview .signal-address {
+            max-width: 104px !important;
+            min-height: 18px !important;
+            padding: 2px 6px !important;
+            font-size: 8px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-compact .marker-age-badge,
+          .maturity-map-marker .map-signal-marker.marker-overview .marker-age-badge {
+            min-height: 24px !important;
+            padding: 3px 6px !important;
+            border-radius: 9px !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-compact .marker-age-badge strong,
+          .maturity-map-marker .map-signal-marker.marker-overview .marker-age-badge strong {
+            font-size: 14px !important;
+          }
+
+          @media (max-width: 430px) {
+            .job-drawer.selected-focus .field-status-command-main,
+            .job-drawer.selected-focus .field-status-picker-card .field-next-action-card.status-next-action,
+            .job-drawer.selected-focus .field-media-option-grid,
+            .job-drawer.selected-focus .field-media-option-footer {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .job-drawer.selected-focus .field-status-current-strip {
+              grid-template-columns: minmax(0, 1fr) minmax(0, 0.88fr) !important;
+            }
+
+            .job-drawer.selected-focus .package-readiness-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+          }
+
           /* STARTED_CONTRAST_FIX_2026 */
           .status.status-started,
           .status.started,
@@ -29695,7 +30088,14 @@ return (
                   <strong>{jobKey(selected)}</strong>
                   <p>{displayAddress(selected)}</p>
                   <div className="job-card-field-metas" aria-label="Job status summary">
-                    <span className={`status ${statusClass(selected.status)}`}>{JobStatus.statusLabel(selected)}</span>
+                    {(() => {
+                      const headerStatusValue = workflowDisplayStatusValue(selected, draftWorkflowStatus);
+                      return (
+                        <span className={`status ${statusClass(headerStatusValue)}`}>
+                          {workflowShortStatusLabel(headerStatusValue)}
+                        </span>
+                      );
+                    })()}
                     <span className={`maturity-pill ${maturityPriorityClass(selectedNoAccessTimerJob || selected)}`}>
                       {selectedNoAccessTimerInfo ? (selectedNoAccessTimerInfo.ready ? "READY 2ND" : selectedNoAccessTimerInfo.label) : jobCounterLabel(selected)}
                     </span>
@@ -30746,11 +31146,12 @@ return (
                           <small>{oneBigNextAction.meta}</small>
                         </button>
                       </div>
-                      <div className="field-status-quick-choices" aria-label="Quick status choices">
-                        <div className="field-status-quick-head">
-                          <span>Quick Pick</span>
-                          <strong>Tap status, confirm time, then Save</strong>
-                        </div>
+                      <details className="field-status-quick-choices" aria-label="Quick status choices">
+                        <summary className="field-status-quick-summary">
+                          <span>Optional Quick Buttons</span>
+                          <strong>Tap a status shortcut</strong>
+                          <small>Dropdown above stays the main control</small>
+                        </summary>
                         {workflowOptionGroups.map((group) => (
                           <section key={group.group} className={`field-status-quick-group group-${group.group.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
                             <span>{group.group}</span>
@@ -30777,7 +31178,7 @@ return (
                             </div>
                           </section>
                         ))}
-                      </div>
+                      </details>
                       <div className={`field-status-flow-card tone-${statusChoiceInfo.tone}`}>
                         <span>{statusChoiceInfo.title}</span>
                         <strong>{statusChoiceInfo.detail}</strong>
