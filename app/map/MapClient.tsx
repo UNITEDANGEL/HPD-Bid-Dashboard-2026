@@ -1659,12 +1659,15 @@ function normalizedStatus(jobOrStatus?: JobRecord | string) {
 
 function statusClass(value?: string) {
   const raw = String(value || "").toLowerCase();
-  if (raw.includes("completed") || raw.includes("done")) return "ok";
-  if (raw.includes("no access")) return "warning";
-  if (raw.includes("refused")) return "danger";
-  if (raw.includes("award")) return "ok";
-  if (raw.includes("pending")) return "pending";
-  return "pending";
+  if (raw.includes("completed") || raw.includes("done")) return "status-completed good";
+  if (raw.includes("no access")) return "status-noaccess warn";
+  if (raw.includes("refused")) return "status-refused danger";
+  if (!raw.includes("not started") && (raw.includes("work in progress") || raw.includes("work started") || raw.includes("visit started") || raw.includes("job started") || raw === "started")) {
+    return "status-started started";
+  }
+  if (raw.includes("award")) return "status-completed good";
+  if (raw.includes("pending")) return "status-pending pending";
+  return "status-pending pending";
 }
 function statusLabel(job: JobRecord) {
   return (
@@ -9314,6 +9317,10 @@ return (
           box-shadow: 0 0 0 4px rgba(184, 117, 255, 0.25), 0 0 28px rgba(184, 117, 255, 0.8), 0 12px 30px rgba(0,0,0,.38);
         }
 
+        .maturity-marker-bubble.status-marker-started {
+          box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.30), 0 0 30px rgba(14, 165, 233, 0.82), 0 12px 30px rgba(0,0,0,.40);
+        }
+
         .maturity-marker-bubble.status-marker-pending {
           box-shadow: 0 0 0 4px rgba(255, 209, 102, 0.2), 0 0 24px rgba(255, 209, 102, 0.65), 0 12px 30px rgba(0,0,0,.38);
         }
@@ -9640,6 +9647,7 @@ return (
         .dot.refused { background: #ff4d5f; color: #ff4d5f; }
         .dot.noaccess { background: #47a3ff; color: #47a3ff; }
         .dot.second { background: #05070b; color: #ffffff; border: 1px solid #fff; }
+        .dot.started { background: #0284c7; color: #38bdf8; }
         .dot.pending { background: #ffd166; color: #ffd166; }
 
         .map-shell.full-map-mode {
@@ -9848,6 +9856,11 @@ return (
           background: linear-gradient(135deg, rgba(184, 117, 255, 0.16), rgba(255, 255, 255, 0.07)) !important;
         }
 
+        .status-card-started {
+          border-left-color: #0284c7 !important;
+          background: linear-gradient(135deg, rgba(2, 132, 199, 0.24), rgba(15, 118, 110, 0.13), rgba(255, 255, 255, 0.06)) !important;
+        }
+
         .status-card-pending {
           border-left-color: #ffd166 !important;
           background: linear-gradient(135deg, rgba(255, 209, 102, 0.14), rgba(255, 255, 255, 0.07)) !important;
@@ -9927,6 +9940,14 @@ return (
         .status.status-otherdone {
           background: rgba(184, 117, 255, 0.18);
           color: #efdfff;
+        }
+
+        .status.status-started,
+        .status.started {
+          background: linear-gradient(135deg, rgba(7, 89, 133, 0.94), rgba(15, 118, 110, 0.92));
+          color: #ffffff;
+          border: 1px solid rgba(125, 211, 252, 0.42);
+          box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.16), 0 0 18px rgba(14, 165, 233, 0.26);
         }
 
         .status.status-pending {
@@ -11069,7 +11090,8 @@ return (
           .job-status-card.status-card-completed,
           .job-status-card.status-card-refused,
           .job-status-card.status-card-noaccess,
-          .job-status-card.status-card-otherdone {
+          .job-status-card.status-card-otherdone,
+          .job-status-card.status-card-started {
             animation: statusGlowPulse 4.8s ease-in-out infinite;
             box-shadow:
               0 0 0 4px var(--status-ring-soft),
@@ -11102,11 +11124,18 @@ return (
             --status-ring-soft: rgba(184, 117, 255, 0.30);
           }
 
+          .job-status-card.status-card-started {
+            --status-glow: rgba(14, 165, 233, 0.80);
+            --status-glow-wide: rgba(15, 118, 110, 0.34);
+            --status-ring-soft: rgba(2, 132, 199, 0.32);
+          }
+
           .maturity-marker-bubble.status-marker-completed,
           .maturity-marker-bubble.status-marker-refused,
           .maturity-marker-bubble.status-marker-noaccess1,
           .maturity-marker-bubble.status-marker-noaccess2,
-          .maturity-marker-bubble.status-marker-otherdone {
+          .maturity-marker-bubble.status-marker-otherdone,
+          .maturity-marker-bubble.status-marker-started {
             animation: statusGlowPulse 5.2s ease-in-out infinite;
           }
           .no-access-timer-card {
@@ -11239,6 +11268,13 @@ return (
             --marker-ring: rgba(184, 117, 255, 0.28);
             --marker-glow: rgba(184, 117, 255, 0.88);
             --marker-glow-wide: rgba(184, 117, 255, 0.36);
+          }
+
+          .maturity-marker-bubble.status-marker-started {
+            --marker-glow-core: rgba(14, 165, 233, 0.44);
+            --marker-ring: rgba(2, 132, 199, 0.30);
+            --marker-glow: rgba(14, 165, 233, 0.92);
+            --marker-glow-wide: rgba(15, 118, 110, 0.40);
           }
 
           .maturity-marker-bubble.status-marker-pending::before,
@@ -27036,8 +27072,8 @@ return (
 
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.tone-start,
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.tone-start {
-            background: linear-gradient(135deg, #075985, #0284c7 52%, #06b6d4) !important;
-            border-color: rgba(125, 211, 252, 0.68) !important;
+            background: linear-gradient(135deg, #082f49, #0369a1 52%, #0f766e) !important;
+            border-color: rgba(56, 189, 248, 0.76) !important;
           }
 
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived.tone-success,
@@ -27100,8 +27136,8 @@ return (
           }
 
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-start {
-            background: linear-gradient(135deg, #075985, #0284c7 54%, #0f766e) !important;
-            border-color: rgba(125, 211, 252, 0.68) !important;
+            background: linear-gradient(135deg, #082f49, #0369a1 54%, #0f766e) !important;
+            border-color: rgba(56, 189, 248, 0.76) !important;
           }
 
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner.tone-success,
@@ -27272,9 +27308,9 @@ return (
           .job-drawer.selected-focus .field-status-picker-card.tone-start .field-status-current-strip div:first-child,
           .job-drawer.selected-focus .field-status-picker-card.tone-start .field-status-select-label select,
           .job-drawer.selected-focus .field-status-picker-card.tone-start .field-status-save-primary:not(:disabled) {
-            background: linear-gradient(135deg, #075985, #0284c7 52%, #06b6d4) !important;
+            background: linear-gradient(135deg, #082f49, #0369a1 52%, #0f766e) !important;
             color: #ffffff !important;
-            border-color: rgba(125, 211, 252, 0.42) !important;
+            border-color: rgba(56, 189, 248, 0.54) !important;
           }
 
           .job-drawer.selected-focus .field-status-picker-card.tone-success .field-status-current-strip div:first-child,
@@ -27594,9 +27630,10 @@ return (
           }
 
           .job-drawer.selected-focus .quick-status-choice.tone-start {
-            border-color: rgba(14, 165, 233, 0.24) !important;
-            background: #ecfeff !important;
-            color: #075985 !important;
+            border-color: rgba(56, 189, 248, 0.56) !important;
+            background: linear-gradient(135deg, #082f49, #0369a1 56%, #0f766e) !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.14), 0 10px 22px rgba(8, 47, 73, 0.28) !important;
           }
 
           .job-drawer.selected-focus .quick-status-choice.tone-success,

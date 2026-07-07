@@ -5,6 +5,7 @@
   | "noaccess1"
   | "noaccess2"
   | "otherdone"
+  | "started"
   | "pending";
 
 export function statusText(job: any) {
@@ -26,6 +27,17 @@ export function statusKind(job: any): JobStatusKind {
 
   if (value.includes("no access") && value.includes("2")) return "noaccess2";
   if (value.includes("no access")) return "noaccess1";
+
+  if (
+    !value.includes("not started") &&
+    (value.includes("work in progress") ||
+      value.includes("work started") ||
+      value.includes("visit started") ||
+      value.includes("job started") ||
+      value === "started")
+  ) {
+    return "started";
+  }
 
   if (
     value.includes("completed by other") ||
@@ -61,6 +73,7 @@ export function statusColor(job: any) {
   if (kind === "noaccess1") return "#7f93aa";
   if (kind === "noaccess2") return "#05070b";
   if (kind === "otherdone") return "#b875ff";
+  if (kind === "started") return "#0284c7";
   if (kind === "pending") return "#ffd166";
 
   return "#42e8f3";
