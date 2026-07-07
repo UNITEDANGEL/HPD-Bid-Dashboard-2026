@@ -29141,6 +29141,8 @@ return (
           .job-drawer.selected-focus .field-flow-dock,
           .job-drawer.selected-focus .site-procedure-card,
           .job-drawer.selected-focus .field-workflow-grid,
+          .job-drawer.selected-focus .field-media-console,
+          .job-drawer.selected-focus .field-capture-guide,
           .job-drawer.selected-focus .field-evidence-rail.compact,
           .job-drawer.selected-focus .field-status-flow-card {
             display: none !important;
