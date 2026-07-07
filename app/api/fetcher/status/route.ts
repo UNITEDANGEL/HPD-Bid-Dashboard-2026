@@ -16,8 +16,16 @@ function readJson(filePath: string) {
 function readLogTail(filePath: string) {
   if (!fs.existsSync(filePath)) return "";
 
-  const log = fs.readFileSync(filePath, "utf8");
-  return log.split(/\r?\n/).slice(-100).join("\n");
+  try {
+    const log = fs.readFileSync(filePath, "utf8");
+    return log.split(/\r?\n/).slice(-100).join("\n");
+  } catch {
+    return "";
+  }
+}
+
+function hasEnvValue(...names: string[]) {
+  return names.some((name) => Boolean(process.env[name]));
 }
 
 export async function GET() {
@@ -59,6 +67,18 @@ export async function GET() {
     environment: {
       hasCredentialsJson: fs.existsSync(path.join(root, "credentials.json")),
       hasTokenJson: fs.existsSync(path.join(root, "token.json")),
+      hasGoogleCredentialEnv: hasEnvValue(
+        "GOOGLE_CREDENTIALS_JSON_BASE64",
+        "GOOGLE_CREDENTIALS_BASE64",
+        "GOOGLE_CREDENTIALS_JSON",
+        "GOOGLE_CREDENTIALS"
+      ),
+      hasGoogleTokenEnv: hasEnvValue(
+        "GOOGLE_TOKEN_JSON_BASE64",
+        "GOOGLE_OAUTH_TOKEN_JSON_BASE64",
+        "GOOGLE_TOKEN_JSON",
+        "GOOGLE_OAUTH_TOKEN_JSON"
+      ),
       hasFetcherScript: fs.existsSync(path.join(root, "FetchrMatcherV5.py")),
       hasGitHubDispatchToken: Boolean(
         process.env.GITHUB_ACTIONS_PAT ||

@@ -8970,6 +8970,31 @@ function directionsUrl(job: JobRecord) {
     { view: "archived", label: "Archive", count: workflowDashboardCounts.archived },
     { view: "all", label: "All", count: workflowDashboardCounts.all },
   ];
+  const fieldQueueJobs = useMemo(() => {
+    return [...filteredJobs]
+      .map((job, index) => {
+        const second = workflowSecondAttemptInfo(job);
+        const maturity = maturityInfo(job);
+        const appt = appointmentDate(job);
+        const apptHours = appt ? Math.ceil((appt.getTime() - Date.now()) / 3600000) : null;
+        let score = typeof maturity.daysLeft === "number" ? maturity.daysLeft : -1000;
+
+        if (second?.ready) score += 10000;
+        if (workflowViewFilter === "noaccess24") score += 8000;
+        if (workflowViewFilter === "waiting72" && second) score += 6000;
+        if (workflowViewFilter === "appointments" && apptHours !== null) {
+          score += Math.max(0, 5000 - Math.abs(apptHours));
+        }
+
+        return { job, index, score };
+      })
+      .sort((a, b) => b.score - a.score || a.index - b.index)
+      .slice(0, 5)
+      .map((item) => item.job);
+  }, [filteredJobs, workflowViewFilter, countdownTick]);
+  const fieldQueueLabel = fieldQueueJobs.length
+    ? `${fieldQueueJobs.length} ready to open`
+    : "No jobs in this layer";
   const quickWorkflowOptions = [
     { value: "Pending", label: "Pending", tone: "pending", group: "Open" },
     { value: "Work In Progress", label: "Work In Progress", tone: "start", group: "Open" },
@@ -9210,7 +9235,13 @@ function directionsUrl(job: JobRecord) {
     jumpToStatusFlow();
   }
 
-  function switchMapBoard(view: WorkflowViewFilter) {
+  function openFieldQueueJob(job: MappedJob) {
+    setMapBoardOpen(false);
+    focusJob(job);
+    showActionNotice(`${jobKey(job)} opened from ${dashboardViewCopy[workflowViewFilter].label}.`);
+  }
+
+  function switchMapBoard(view: WorkflowViewFilter, keepBoardOpen = false) {
     setWorkflowViewFilter(view);
     setClusterSheet(null);
     setMapJobBrief(null);
@@ -9228,8 +9259,8 @@ function directionsUrl(job: JobRecord) {
         view === "ready2"
     );
     setMapMenuOpen(false);
-    setMapBoardOpen(false);
-    setActionNotice(`${dashboardViewCopy[view].label} map view.`);
+    setMapBoardOpen(keepBoardOpen);
+    setActionNotice(`${dashboardViewCopy[view].label} ${keepBoardOpen ? "queue" : "map view"}.`);
 
     window.requestAnimationFrame(() => {
       mapRef.current?.invalidateSize();
@@ -31342,6 +31373,522 @@ return (
             pointer-events: none !important;
           }
 
+          /* IPHONE_COMMAND_SHEET_PREVIEW_2026 */
+          .map-shell.map-glass-command-trial .map-stage:has(.map-cockpit.board-open) {
+            background:
+              radial-gradient(circle at 16% 0%, rgba(14, 165, 233, 0.22), transparent 36%),
+              radial-gradient(circle at 90% 12%, rgba(20, 184, 166, 0.18), transparent 34%),
+              linear-gradient(180deg, #effaff 0%, #f8fafc 46%, #e8fff6 100%) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-stage:has(.map-cockpit.board-open) .map-node,
+          .map-shell.map-glass-command-trial .map-stage:has(.map-cockpit.board-open) .map-filter-count-hud,
+          .map-shell.map-glass-command-trial .map-stage:has(.map-cockpit.board-open) .status-legend,
+          .map-shell.map-glass-command-trial .map-stage:has(.map-cockpit.board-open) .zoom-panel,
+          .map-shell.map-glass-command-trial .map-stage:has(.map-cockpit.board-open) .location-status-pill,
+          .map-shell.map-glass-command-trial .map-stage:has(.map-cockpit.board-open) .map-menu-fab,
+          .map-shell.map-glass-command-trial .map-stage:has(.map-cockpit.board-open) .map-job-brief {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            transform: scale(0.99) !important;
+          }
+
+          .map-shell.map-glass-command-trial:has(.map-cockpit.board-open) .map-menu-fab {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+          }
+
+          :global(body:has(.map-cockpit.board-open) nextjs-portal) {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-stage:has(.map-cockpit.board-open)::after {
+            z-index: 4 !important;
+            opacity: 1 !important;
+            background:
+              linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(239, 250, 255, 0.96) 48%, rgba(232, 255, 246, 0.98)),
+              radial-gradient(circle at 26% 8%, rgba(14, 165, 233, 0.14), transparent 36%) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open {
+            left: calc(env(safe-area-inset-left) + 12px) !important;
+            right: auto !important;
+            top: calc(env(safe-area-inset-top) + 10px) !important;
+            bottom: calc(env(safe-area-inset-bottom) + 12px) !important;
+            width: min(430px, calc(100vw - 24px)) !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain !important;
+            gap: 8px !important;
+            padding: 18px 11px 10px !important;
+            border-radius: 28px 28px 22px 22px !important;
+            border: 1px solid rgba(255, 255, 255, 0.58) !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.97), rgba(235, 249, 255, 0.92) 48%, rgba(225, 245, 254, 0.90)) !important;
+            color: #06141f !important;
+            box-shadow:
+              0 32px 76px rgba(2, 8, 23, 0.34),
+              0 0 0 1px rgba(14, 165, 233, 0.16),
+              inset 0 1px 0 rgba(255, 255, 255, 0.96) !important;
+            backdrop-filter: blur(28px) saturate(1.28) !important;
+            -webkit-backdrop-filter: blur(28px) saturate(1.28) !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: rgba(14, 116, 144, 0.38) transparent !important;
+            animation: mapCommandSheetIn 240ms cubic-bezier(0.2, 0.9, 0.2, 1) both !important;
+            z-index: 980 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open::before {
+            content: "" !important;
+            position: absolute !important;
+            top: 8px !important;
+            left: 50% !important;
+            width: 48px !important;
+            height: 5px !important;
+            border-radius: 999px !important;
+            transform: translateX(-50%) !important;
+            background: rgba(8, 47, 73, 0.30) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner {
+            min-height: 78px !important;
+            padding: 10px !important;
+            border-radius: 20px !important;
+            border: 1px solid rgba(8, 47, 73, 0.10) !important;
+            background:
+              linear-gradient(135deg, #082f49 0%, #075985 54%, #0f766e 100%) !important;
+            box-shadow:
+              0 18px 34px rgba(8, 47, 73, 0.22),
+              inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner div:first-child {
+            align-self: center !important;
+            gap: 3px !important;
+            overflow: visible !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner span {
+            color: #a7f3d0 !important;
+            font-size: 10px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner strong {
+            color: #ffffff !important;
+            font-size: 20px !important;
+            text-shadow: 0 1px 2px rgba(2, 6, 23, 0.22) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner small {
+            color: rgba(240, 253, 250, 0.88) !important;
+            font-size: 11px !important;
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-buttons {
+            gap: 7px !important;
+            align-self: center !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-buttons button {
+            min-height: 42px !important;
+            padding: 0 12px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(255, 255, 255, 0.22) !important;
+            background: rgba(255, 255, 255, 0.16) !important;
+            color: #ffffff !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-buttons .map-board-toggle {
+            background: linear-gradient(135deg, #ffffff, #d9f99d) !important;
+            color: #064e3b !important;
+            box-shadow:
+              0 10px 22px rgba(217, 249, 157, 0.22),
+              inset 0 1px 0 rgba(255, 255, 255, 0.80) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-layer-search {
+            height: 46px !important;
+            min-height: 46px !important;
+            margin-top: 0 !important;
+            border-radius: 18px !important;
+            border-color: rgba(8, 47, 73, 0.16) !important;
+            background:
+              linear-gradient(135deg, rgba(3, 7, 18, 0.94), rgba(14, 116, 144, 0.94)) !important;
+            box-shadow:
+              0 16px 30px rgba(8, 47, 73, 0.20),
+              inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-layer-search input {
+            font-size: 15px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher {
+            gap: 8px !important;
+            padding: 2px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button {
+            min-height: 46px !important;
+            padding: 8px 9px !important;
+            border-radius: 17px !important;
+            border: 1px solid rgba(8, 47, 73, 0.12) !important;
+            background: rgba(255, 255, 255, 0.82) !important;
+            color: #082f49 !important;
+            box-shadow:
+              0 12px 24px rgba(15, 23, 42, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+            touch-action: manipulation !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button span {
+            color: #082f49 !important;
+            font-size: 11px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button b {
+            background: #e0f2fe !important;
+            color: #082f49 !important;
+            min-width: 28px !important;
+            min-height: 28px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.priority-layer {
+            min-height: 88px !important;
+            border-radius: 24px !important;
+            padding: 12px !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.92)) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.priority-layer span {
+            font-size: 15px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.priority-layer b {
+            min-width: 44px !important;
+            min-height: 44px !important;
+            font-size: 18px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.layer-active,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.layer-pending {
+            box-shadow:
+              0 22px 46px rgba(8, 47, 73, 0.20),
+              inset 0 1px 0 rgba(255, 255, 255, 0.26) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button:is(:hover, :focus, :focus-visible) {
+            transform: translateY(-7px) scale(1.07) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .field-map-queue {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .field-map-queue {
+            display: grid !important;
+            gap: 8px !important;
+            padding: 9px !important;
+            border-radius: 22px !important;
+            border: 1px solid rgba(8, 47, 73, 0.12) !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(240, 253, 250, 0.84)) !important;
+            box-shadow:
+              0 16px 32px rgba(15, 23, 42, 0.10),
+              inset 0 1px 0 rgba(255, 255, 255, 0.88) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-head {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 8px !important;
+            align-items: center !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-head div {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 1px !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-head span {
+            color: #0e7490 !important;
+            font-size: 9px !important;
+            font-weight: 1000 !important;
+            line-height: 1 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-head strong {
+            min-width: 0 !important;
+            color: #082f49 !important;
+            font-size: 16px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-head small {
+            color: #155e75 !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            font-weight: 950 !important;
+            white-space: nowrap !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-list {
+            display: grid !important;
+            gap: 7px !important;
+            padding-bottom: 48px !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-item {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto auto !important;
+            align-items: center !important;
+            gap: 7px !important;
+            min-height: 58px !important;
+            padding: 7px !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(8, 47, 73, 0.10) !important;
+            background: rgba(255, 255, 255, 0.86) !important;
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-main {
+            min-width: 0 !important;
+            min-height: 44px !important;
+            display: grid !important;
+            gap: 2px !important;
+            padding: 0 !important;
+            border: 0 !important;
+            background: transparent !important;
+            text-align: left !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-main span {
+            color: #0f766e !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-main strong {
+            min-width: 0 !important;
+            color: #06141f !important;
+            font-size: 13px !important;
+            line-height: 1.08 !important;
+            font-weight: 1000 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-main small {
+            min-width: 0 !important;
+            color: #334155 !important;
+            font-size: 10px !important;
+            line-height: 1.05 !important;
+            font-weight: 850 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-meta {
+            min-width: 54px !important;
+            display: grid !important;
+            justify-items: center !important;
+            gap: 2px !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-meta b {
+            min-width: 38px !important;
+            min-height: 30px !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            border-radius: 999px !important;
+            background: #e0f2fe !important;
+            color: #082f49 !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-meta span {
+            max-width: 64px !important;
+            color: #155e75 !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            font-weight: 950 !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-open {
+            min-width: 54px !important;
+            min-height: 38px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(8, 47, 73, 0.12) !important;
+            background: linear-gradient(135deg, #082f49, #0f766e) !important;
+            color: #ffffff !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            box-shadow: 0 10px 18px rgba(8, 47, 73, 0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-empty {
+            min-height: 70px !important;
+            display: grid !important;
+            place-items: center !important;
+            gap: 4px !important;
+            padding: 12px !important;
+            border-radius: 18px !important;
+            border: 1px dashed rgba(8, 47, 73, 0.18) !important;
+            background: rgba(255, 255, 255, 0.62) !important;
+            text-align: center !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-empty strong {
+            color: #082f49 !important;
+            font-size: 14px !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-empty span {
+            color: #475569 !important;
+            font-size: 11px !important;
+            font-weight: 850 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-borough-rail {
+            display: flex !important;
+            gap: 7px !important;
+            overflow-x: auto !important;
+            padding: 2px 1px 4px !important;
+            scrollbar-width: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-borough-rail::-webkit-scrollbar {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-borough-rail button {
+            min-width: 74px !important;
+            min-height: 38px !important;
+            border-radius: 999px !important;
+            background: rgba(255, 255, 255, 0.80) !important;
+            box-shadow: 0 10px 18px rgba(15, 23, 42, 0.07) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-borough-rail button:is(:hover, :focus, :focus-visible) {
+            transform: translateY(-4px) scale(1.04) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-cockpit-actions {
+            position: sticky !important;
+            bottom: 0 !important;
+            z-index: 5 !important;
+            display: grid !important;
+            padding-top: 6px !important;
+            background:
+              linear-gradient(180deg, rgba(232, 255, 246, 0), rgba(232, 255, 246, 0.96) 24%, rgba(232, 255, 246, 0.98)) !important;
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            gap: 5px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-cockpit-actions button {
+            min-height: 34px !important;
+            padding: 0 5px !important;
+            border-radius: 999px !important;
+            background: rgba(255, 255, 255, 0.78) !important;
+            color: #082f49 !important;
+            border-color: rgba(8, 47, 73, 0.12) !important;
+            font-size: 10px !important;
+            white-space: nowrap !important;
+            box-shadow: 0 8px 16px rgba(15, 23, 42, 0.07) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-cockpit-actions button.active,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-cockpit-actions button.primary {
+            background: linear-gradient(135deg, #082f49, #0f766e) !important;
+            color: #ffffff !important;
+          }
+
+          @keyframes mapCommandSheetIn {
+            from {
+              opacity: 0;
+              transform: translateY(18px) scale(0.98);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+
+          @media (max-width: 560px) {
+            .map-shell.map-glass-command-trial .map-cockpit.board-open {
+              left: calc(env(safe-area-inset-left) + 8px) !important;
+              top: calc(env(safe-area-inset-top) + 8px) !important;
+              bottom: calc(env(safe-area-inset-bottom) + 8px) !important;
+              width: calc(100vw - 16px) !important;
+              max-height: none !important;
+              padding: 20px 10px 10px !important;
+              border-radius: 28px 28px 20px 20px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner {
+              grid-template-columns: minmax(0, 1fr) auto !important;
+              min-height: 82px !important;
+              align-items: center !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-buttons {
+              display: flex !important;
+              flex-wrap: nowrap !important;
+              justify-content: flex-end !important;
+              gap: 6px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-buttons button {
+              min-width: 58px !important;
+              min-height: 38px !important;
+              padding: 0 9px !important;
+              font-size: 10px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner div:first-child {
+              min-width: 0 !important;
+              max-width: 172px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner strong {
+              font-size: 19px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner small {
+              font-size: 10px !important;
+              line-height: 1.1 !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.priority-layer {
+              min-height: 84px !important;
+            }
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
@@ -31658,9 +32205,9 @@ return (
                 aria-expanded={mapBoardOpen}
                 onClick={() => setMapBoardOpen((open) => !open)}
               >
-                {mapBoardOpen ? "Hide" : "Layers"}
+                {mapBoardOpen ? "Map" : "Layers"}
               </button>
-              <button type="button" onClick={() => switchMapBoard("appointments")}>
+              <button type="button" onClick={() => switchMapBoard("appointments", true)}>
                 Schedule
               </button>
             </div>
@@ -31691,13 +32238,53 @@ return (
                 key={mode.view}
                 type="button"
                 className={`${workflowViewFilter === mode.view ? "active" : ""} ${mode.view === "active" || mode.view === "pending" ? "priority-layer" : ""} layer-${mode.view}`}
-                onClick={() => switchMapBoard(mode.view)}
+                onClick={() => switchMapBoard(mode.view, true)}
               >
                 <span>{mode.label}</span>
                 <b>{mode.count}</b>
               </button>
             ))}
           </div>
+          <section className="field-map-queue" aria-label={`${dashboardView.label} field queue`}>
+            <div className="field-map-queue-head">
+              <div>
+                <span>Field Queue</span>
+                <strong>{dashboardView.label}</strong>
+              </div>
+              <small>{fieldQueueLabel}</small>
+            </div>
+            {fieldQueueJobs.length ? (
+              <div className="field-map-queue-list">
+                {fieldQueueJobs.map((job, index) => {
+                  const key = jobKey(job, index);
+                  const age = jobAgeBadgeInfo(job);
+                  const next = nextActionInfo(job);
+                  const appointmentInfo = appointmentStatusInfo(job);
+                  return (
+                    <article className={`field-map-queue-item ${maturityPriorityClass(job)}`} key={`${key}-field-queue-${index}`}>
+                      <button type="button" className="field-map-queue-main" onClick={() => openFieldQueueJob(job)}>
+                        <span>{key}</span>
+                        <strong>{displayAddress(job)}</strong>
+                        <small>{workflowLabel(job) || next.label}</small>
+                      </button>
+                      <div className="field-map-queue-meta">
+                        <b>{age.main}</b>
+                        <span>{workflowViewFilter === "appointments" ? appointmentInfo.label : jobCounterLabel(job)}</span>
+                      </div>
+                      <button type="button" className="field-map-queue-open" onClick={() => openFieldQueueJob(job)}>
+                        Open
+                      </button>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="field-map-queue-empty">
+                <strong>No work in this layer</strong>
+                <span>Try All, Pending, or another borough.</span>
+              </div>
+            )}
+          </section>
           <div className="map-borough-rail" aria-label="Filter map by borough">
             {mapBoroughOptions.map((borough) => (
               <button

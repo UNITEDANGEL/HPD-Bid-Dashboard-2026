@@ -30,7 +30,10 @@ type FetcherStatus = {
   environment?: {
     hasCredentialsJson?: boolean;
     hasTokenJson?: boolean;
+    hasGoogleCredentialEnv?: boolean;
+    hasGoogleTokenEnv?: boolean;
     hasFetcherScript?: boolean;
+    hasGitHubDispatchToken?: boolean;
   };
 };
 
@@ -110,14 +113,28 @@ type CleanupJob = {
     }
   }  async function loadStatus() {
     const cacheBust = Date.now();
-    let res = await fetch("/api/fetcher/status?v=" + cacheBust, { cache: "no-store" });
+    try {
+      let res = await fetch("/api/fetcher/status?v=" + cacheBust, { cache: "no-store" });
 
-    if (!res.ok) {
-      res = await fetch("/data/fetcher_latest_status.json?v=" + cacheBust, { cache: "no-store" });
+      if (!res.ok) {
+        res = await fetch("/data/fetcher_latest_status.json?v=" + cacheBust, { cache: "no-store" });
+      }
+
+      if (!res.ok) {
+        throw new Error(`Fetcher status failed with status ${res.status}.`);
+      }
+
+      const data = await res.json();
+      setStatus(data);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setStatus({
+        state: "status_unavailable",
+        ok: false,
+        error: message,
+        summary: {},
+      });
     }
-
-    const data = await res.json();
-    setStatus(data);
   }
 
   async function runFetcher(days = daysBack) {
@@ -268,10 +285,12 @@ type CleanupJob = {
         </div>
 
         <div className="env clean-env">
-          <p>Daily Auto Fetch: ON</p>
+          <p>Daily Auto Fetch: {status.environment?.hasGoogleCredentialEnv || status.environment?.hasCredentialsJson ? "READY" : "NEEDS GOOGLE AUTH"}</p>
           <p>Default Scan: 14 days back</p>
           <p>Manual Scan: 1–95 days</p>
-          <p>GitHub Action: Run Built-In Fetcher</p>
+          <p>Google Credentials: {status.environment?.hasCredentialsJson || status.environment?.hasGoogleCredentialEnv ? "Found" : "Missing"}</p>
+          <p>Google Token: {status.environment?.hasTokenJson || status.environment?.hasGoogleTokenEnv ? "Found" : "Needed for auto schedule"}</p>
+          <p>GitHub Action: {status.environment?.hasGitHubDispatchToken ? "Ready" : "Local/manual only"}</p>
         </div>
       </section>
 
@@ -324,6 +343,30 @@ type CleanupJob = {
           flex-wrap: wrap;
           gap: 12px;
           margin-top: 18px;
+          max-width: 100%;
+        }
+
+        .days-picker {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+          max-width: 100%;
+        }
+
+        .days-picker label {
+          display: grid;
+          gap: 8px;
+          min-width: 180px;
+          font-weight: 800;
+        }
+
+        .days-picker input {
+          width: 100%;
+          box-sizing: border-box;
+          border: 0;
+          border-radius: 16px;
+          padding: 13px 14px;
+          font: inherit;
         }
 
         button,
@@ -336,6 +379,9 @@ type CleanupJob = {
           background: linear-gradient(135deg, #6fb4ff, #27e2b6);
           cursor: pointer;
           text-decoration: none;
+          max-width: 100%;
+          white-space: normal;
+          line-height: 1.15;
         }
 
         button.secondary {
@@ -390,6 +436,31 @@ type CleanupJob = {
           font-weight: 800;
         }
         @media (max-width: 720px) {
+          .fetcher-page {
+            overflow-x: hidden;
+            padding: 14px;
+          }
+
+          .hero,
+          .status-card,
+          .log-card {
+            border-radius: 18px;
+            padding: 16px;
+          }
+
+          .actions,
+          .days-picker {
+            display: grid;
+            grid-template-columns: 1fr;
+            width: 100%;
+          }
+
+          .days-picker label,
+          .actions button,
+          .actions a {
+            width: 100%;
+          }
+
           .github-action-card {
             display: grid;
           }

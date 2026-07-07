@@ -197,6 +197,23 @@ for (const job of jobs) {
   if (!refs.has(fileName)) refs.set(fileName, { fileName, omo });
 }
 
+function readPreviousManifest() {
+  try {
+    return JSON.parse(fs.readFileSync(manifestFile, "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function publicUrlToFilePath(url) {
+  const clean = String(url || "").replace(/^\/+/, "").split(/[?#]/)[0];
+  if (!clean) return "";
+  return path.join(root, "public", ...clean.split("/").map(decodeURIComponent));
+}
+
+const previousManifest = readPreviousManifest();
+const previousEntries = previousManifest.entries || {};
+
 const sourceFiles = [];
 sourceDirs.forEach((dir, dirIndex) => {
   for (const filePath of walkPdfFiles(dir)) {
@@ -301,6 +318,19 @@ for (const ref of refs.values()) {
   const assetStem = safeAssetStem(ref.fileName);
 
   if (!source) {
+    const previousEntry = previousEntries[ref.fileName];
+    const previousImage = previousEntry?.pageImage || "";
+    const previousImagePath = publicUrlToFilePath(previousImage);
+    if (previousImage && fileExists(previousImagePath)) {
+      manifest.entries[ref.fileName] = {
+        ...previousEntry,
+        sourceMatch: previousEntry.sourceMatch || "existing-image",
+      };
+      referencedPageFiles.add(path.basename(previousImagePath));
+      manifest.summary.reused += 1;
+      continue;
+    }
+
     manifest.summary.missingSource += 1;
     missing.push({
       ...ref,

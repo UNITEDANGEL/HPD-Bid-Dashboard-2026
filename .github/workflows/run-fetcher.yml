@@ -2,8 +2,8 @@
 
 on:
   schedule:
-    # Runs every 24 hours at 6:00 AM New York time during daylight savings.
-    - cron: "0 10 * * *"
+    # Runs every 2 hours from 7 AM through 7 PM New York time during daylight savings.
+    - cron: "0 11-23/2 * * *"
   workflow_dispatch:
     inputs:
       days_back:
