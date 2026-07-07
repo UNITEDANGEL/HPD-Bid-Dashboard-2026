@@ -8786,6 +8786,9 @@ function directionsUrl(job: JobRecord) {
   }, [jobs, mappedJobs, mapDaysBack, mapShowAllDays, mapBoroughFilter, search, countdownTick]);
   const missingGeoCount = Math.max(0, jobs.length - plottedCount);
   const visibleMappedCount = filteredJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng)).length;
+  const visibleMissingGeoCount = Math.max(0, filteredJobs.length - visibleMappedCount);
+  const mapHudFilterLabel = mapShowAllDays ? "All jobs" : `${mapDaysBackLimit()} days`;
+  const mapHudSummaryLabel = `${mapDateFilterLabel()} - ${filteredJobs.length} job${filteredJobs.length === 1 ? "" : "s"}`;
   const dashboardViewCopy: Record<WorkflowViewFilter, { label: string; detail: string }> = {
     active: { label: "Active Work", detail: "Pending work orders on the clean map." },
     pending: { label: "Pending Map", detail: "Only jobs that still need field attention." },
@@ -26228,6 +26231,127 @@ return (
             color: #052e16 !important;
           }
 
+          /* MAP_FILTER_HUD_2026 */
+          .map-filter-count-hud {
+            position: absolute !important;
+            z-index: 7 !important;
+            left: 10px !important;
+            bottom: calc(env(safe-area-inset-bottom) + 116px) !important;
+            width: min(300px, calc(100vw - 104px)) !important;
+            display: grid !important;
+            grid-template-columns: auto minmax(0, 1fr) !important;
+            gap: 2px 8px !important;
+            align-items: center !important;
+            padding: 8px 10px !important;
+            border-radius: 16px !important;
+            background: rgba(255, 255, 255, 0.94) !important;
+            color: #0f172a !important;
+            border: 1px solid rgba(15, 23, 42, 0.10) !important;
+            box-shadow:
+              0 14px 32px rgba(15, 23, 42, 0.16),
+              inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+            pointer-events: none !important;
+          }
+
+          .map-filter-count-hud span {
+            color: #0f766e !important;
+            font-size: 9px !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-filter-count-hud strong {
+            color: #0f172a !important;
+            font-size: 19px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            white-space: nowrap !important;
+          }
+
+          .map-filter-count-hud small {
+            grid-column: 1 / -1 !important;
+            min-width: 0 !important;
+            color: #475569 !important;
+            font-size: 10px !important;
+            font-weight: 900 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-stats.filtered-days .map-stat-primary {
+            background: linear-gradient(135deg, #0f172a, #0f766e) !important;
+            border-color: rgba(20, 184, 166, 0.28) !important;
+          }
+
+          .map-stats.filtered-days .map-stat-primary strong,
+          .map-stats.filtered-days .map-stat-primary span {
+            color: #ffffff !important;
+          }
+
+          .map-shell.drawer-selected .map-filter-count-hud,
+          .map-shell.map-brief-open .map-filter-count-hud,
+          .map-shell.timer-map-layer .map-filter-count-hud {
+            display: none !important;
+          }
+
+          @media (max-width: 520px) {
+            .map-filter-count-hud {
+              left: 8px !important;
+              bottom: calc(env(safe-area-inset-bottom) + 112px) !important;
+              width: min(224px, calc(100vw - 92px)) !important;
+              padding: 7px 8px !important;
+              border-radius: 13px !important;
+            }
+
+            .map-filter-count-hud span {
+              font-size: 8px !important;
+            }
+
+            .map-filter-count-hud strong {
+              font-size: 17px !important;
+            }
+
+            .map-filter-count-hud small {
+              font-size: 9px !important;
+            }
+
+            .map-stats {
+              width: min(224px, calc(100vw - 92px)) !important;
+              grid-template-columns: 1.08fr 0.92fr !important;
+              gap: 5px !important;
+              bottom: calc(env(safe-area-inset-bottom) + 10px) !important;
+            }
+
+            .map-stats .map-stat-primary {
+              grid-column: 1 / -1 !important;
+              min-height: 42px !important;
+            }
+
+            .map-stats .map-stat {
+              min-height: 34px !important;
+              padding: 5px !important;
+            }
+
+            .map-stats .map-stat strong {
+              font-size: 15px !important;
+            }
+
+            .map-stats .map-stat-primary strong {
+              font-size: 22px !important;
+            }
+
+            .map-stats .map-stat span {
+              font-size: 8px !important;
+            }
+
+            .location-status-pill {
+              max-width: min(224px, calc(100vw - 92px)) !important;
+              bottom: calc(env(safe-area-inset-bottom) + 164px) !important;
+              overflow: hidden !important;
+            }
+          }
+
           .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview,
           .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-compact {
             min-width: 136px !important;
@@ -29951,17 +30075,23 @@ return (
           </div>
         </section>
 
-        <div className="map-stats">
-          <div className="map-stat">
-            <strong>{jobs.length}</strong>
-            <span>Total</span>
+        <div className={`map-filter-count-hud ${mapShowAllDays ? "all-days" : "filtered-days"}`} aria-label={mapHudSummaryLabel}>
+          <span>Showing</span>
+          <strong>{filteredJobs.length} job{filteredJobs.length === 1 ? "" : "s"}</strong>
+          <small>{mapBoroughScopeLabel} - {mapDateFilterLabel()}</small>
+        </div>
+
+        <div className={`map-stats ${mapShowAllDays ? "all-days" : "filtered-days"}`} aria-label={`Map stats: ${mapHudSummaryLabel}`}>
+          <div className="map-stat map-stat-primary">
+            <strong>{filteredJobs.length}</strong>
+            <span>{mapHudFilterLabel}</span>
           </div>
           <div className="map-stat">
-            <strong>{plottedCount}</strong>
+            <strong>{visibleMappedCount}</strong>
             <span>Mapped</span>
           </div>
           <div className="map-stat">
-            <strong>{Math.max(0, jobs.length - plottedCount)}</strong>
+            <strong>{visibleMissingGeoCount}</strong>
             <span>Need geo</span>
           </div>
         </div>
