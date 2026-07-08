@@ -10,6 +10,7 @@ const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
 const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v3";
 const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
 const FIELD_VISIT_TRACKING_STORAGE_KEY = "hpd-private-field-visit-tracking-v1";
+const DAY_AGENT_LOG_STORAGE_KEY = "hpd-ai-day-agent-log-v1";
 const FIELD_VISIT_RADIUS_MILES = 0.08;
 const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
 const MAP_BOROUGH_FILTERS = [
@@ -2578,6 +2579,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const mapProgrammaticMoveUntilRef = useRef(0);
   const mapManualControlLockedRef = useRef(false);
   const mapManualControlNoticeAtRef = useRef(0);
+  const dayAgentRouteLineRef = useRef<any>(null);
   const appointmentAlertTestTriggeredRef = useRef("");
   const noAccessReadyAlertSeenRef = useRef<Record<string, string>>({});
   const fieldPhotoInputRef = useRef<HTMLInputElement | null>(null);
@@ -2674,6 +2676,10 @@ const autoVisitRecordedRef = useRef<Record<string, string>>({});
   const [message, setMessage] = useState("Loading jobs...");
 const [actionNotice, setActionNotice] = useState("");
 const [dispatchQuestion, setDispatchQuestion] = useState("");
+const [dayAgentStarted, setDayAgentStarted] = useState(false);
+const [dayAgentCommand, setDayAgentCommand] = useState("Start in Manhattan first, then route me through the best jobs.");
+const [dayAgentRoute, setDayAgentRoute] = useState<MappedJob[]>([]);
+const [dayAgentLog, setDayAgentLog] = useState<Array<{ at: string; text: string; jobId?: string }>>([]);
 const [dispatchMessages, setDispatchMessages] = useState<Array<{ role: "user" | "assistant"; text: string; jobs?: string[] }>>([
   {
     role: "assistant",
@@ -2732,6 +2738,171 @@ const openDispatchJob = (jobId: string) => {
   }
   focusJob(job);
   setActionNotice(`Opened ${jobId}.`);
+};
+
+const readPersistedDayAgentLog = () => {
+  try {
+    const raw = window.localStorage?.getItem(DAY_AGENT_LOG_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.slice(0, 40) : [];
+  } catch {
+    return [];
+  }
+};
+
+const persistDayAgentLog = (entries: Array<{ at: string; text: string; jobId?: string }>) => {
+  try {
+    window.localStorage?.setItem(DAY_AGENT_LOG_STORAGE_KEY, JSON.stringify(entries.slice(0, 40)));
+  } catch {}
+};
+
+const appendDayAgentLog = (text: string, job?: JobRecord | null) => {
+  const entry = { at: new Date().toISOString(), text, jobId: job ? jobKey(job) : undefined };
+  const persistedFallback = [entry, ...readPersistedDayAgentLog()].slice(0, 40);
+  persistDayAgentLog(persistedFallback);
+  setDayAgentLog((current) => {
+    const next = [entry, ...(current.length ? current : readPersistedDayAgentLog())].slice(0, 40);
+    persistDayAgentLog(next);
+    return next;
+  });
+};
+
+const manhattanStreetNumber = (job: JobRecord | null | undefined) => {
+  const borough = String((job as any)?.borough || (job as any)?.Borough || "").toLowerCase();
+  if (!borough.includes("manhattan")) return null;
+  const text = `${displayAddress(job)} ${displayLocation(job)}`.toUpperCase();
+  const match = text.match(/\b(?:EAST|WEST|E|W)?\s*(\d{1,3})(?:ST|ND|RD|TH)?\s+(?:ST|STREET)\b/);
+  if (!match) return null;
+  const street = Number(match[1]);
+  return Number.isFinite(street) ? street : null;
+};
+
+const manhattanExitGuidance = (job: JobRecord | null | undefined) => {
+  const street = manhattanStreetNumber(job);
+  if (street === null) return "Use live traffic. If Manhattan is selected, confirm whether the stop is above or below 62 St.";
+  if (street > 62) return `Above 62 St (${street} St): route north and plan the Bronx exit after upper Manhattan.`;
+  return `Below 62 St (${street} St): any bridge/tunnel exit is acceptable; keep routing by traffic.`;
+};
+
+const dayAgentContactPlan = (job: JobRecord | null | undefined) => {
+  const contact = tenantContactInfo(job);
+  const description = displayDescription(job).replace(/\s+/g, " ").slice(0, 220);
+  if (!job) return "No job selected yet.";
+  if (!contact.appointmentNeeded) {
+    return `Public/common area: no tenant call needed. Go to site, review: ${description || "description not listed"}.`;
+  }
+  if (contact.phone) {
+    return `Apartment/contact job: call or text ${contact.name || "tenant"} at ${contact.phone}. Summarize: ${description || "work order details"}. Ask for an access appointment.`;
+  }
+  return `Apartment/contact job but no phone is listed. Request contact information from HPD, then set appointment.`;
+};
+
+const dayAgentRouteScore = (job: MappedJob, command: string) => {
+  const q = command.toLowerCase();
+  const borough = String((job as any).borough || (job as any).Borough || "").toLowerCase();
+  const street = manhattanStreetNumber(job);
+  const coords = jobLatLng(job);
+  let score = dispatchUrgencyScore(job);
+  if (q.includes("manhattan") || q.includes("start")) {
+    if (borough.includes("manhattan")) score += 5000;
+    if (borough.includes("bronx")) score += 1400;
+    if (street !== null && street <= 62) score += 450 - street;
+    if (street !== null && street > 62) score += 250 - Math.min(street, 130);
+  }
+  if (q.includes("bronx") && borough.includes("bronx")) score += 3200;
+  if (q.includes("near") && coords && userLocation) score -= distanceMiles(userLocation, coords) * 100;
+  if (workflowViewBucket(job) === "archived" || workflowViewBucket(job) === "final") score -= 8000;
+  if (!coords) score -= 800;
+  return score;
+};
+
+const buildDayAgentRoute = (commandText = dayAgentCommand) => {
+  const command = String(commandText || "start").trim();
+  const pool = dispatchJobPool()
+    .filter((job) => workflowViewBucket(job) !== "archived" && workflowViewBucket(job) !== "final")
+    .filter((job) => cleanAddress(job));
+  const sorted = [...pool].sort((a, b) => {
+    const score = dayAgentRouteScore(b, command) - dayAgentRouteScore(a, command);
+    if (score !== 0) return score;
+    const aStreet = manhattanStreetNumber(a) || 999;
+    const bStreet = manhattanStreetNumber(b) || 999;
+    if (aStreet !== bStreet) return aStreet - bStreet;
+    return String(jobKey(a)).localeCompare(String(jobKey(b)));
+  });
+  return sorted.slice(0, 8);
+};
+
+const dayAgentGoogleRouteUrl = (routeJobs = dayAgentRoute) => {
+  const stops = routeJobs.map((job) => displayAddress(job).trim()).filter(Boolean).slice(0, 8);
+  if (!stops.length) return "https://www.google.com/maps";
+  const params = new URLSearchParams({
+    api: "1",
+    travelmode: "driving",
+    destination: stops[stops.length - 1],
+  });
+  if (userLocation) params.set("origin", `${userLocation.lat},${userLocation.lng}`);
+  if (stops.length > 1) params.set("waypoints", stops.slice(0, -1).join("|"));
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+};
+
+async function drawDayAgentRouteLine(routeJobs = dayAgentRoute) {
+  if (!mapRef.current) return;
+  const points: Array<[number, number]> = [];
+  if (userLocation) points.push([userLocation.lat, userLocation.lng]);
+  routeJobs.slice(0, 6).forEach((job) => {
+    const coords = jobLatLng(job);
+    if (coords) points.push([coords.lat, coords.lng]);
+  });
+  if (points.length < 2) {
+    setActionNotice("Start GPS or choose mapped jobs before drawing the agent route.");
+    return;
+  }
+  const leafletModule = await import("leaflet");
+  const L = (leafletModule as any).default || leafletModule;
+  if (dayAgentRouteLineRef.current) {
+    mapRef.current.removeLayer(dayAgentRouteLineRef.current);
+  }
+  dayAgentRouteLineRef.current = L.polyline(points, {
+    color: "#21f5a5",
+    weight: 5,
+    opacity: 0.9,
+    dashArray: "12 10",
+    lineCap: "round",
+  }).addTo(mapRef.current);
+  markProgrammaticMapMove();
+  mapRef.current.fitBounds(dayAgentRouteLineRef.current.getBounds(), {
+    animate: true,
+    duration: 0.7,
+    paddingTopLeft: [72, 140],
+    paddingBottomRight: [72, 210],
+    maxZoom: 13,
+  });
+  appendDayAgentLog(`Drew route line for ${routeJobs.slice(0, 4).map((job) => jobKey(job)).join(", ")}.`, routeJobs[0]);
+}
+
+const startDayAgent = (commandText = dayAgentCommand) => {
+  const command = String(commandText || "start").trim();
+  const route = buildDayAgentRoute(command);
+  setDayAgentStarted(true);
+  setDayAgentRoute(route);
+  setDayAgentCommand(command);
+  if (route[0]) {
+    setWorkflowViewFilter("all");
+    setMapBoroughFilter("all");
+    setSelectedOnly(false);
+    setFullMap(true);
+    appendDayAgentLog(`Started day agent. First stop: ${jobKey(route[0])}. ${manhattanExitGuidance(route[0])}`, route[0]);
+    focusJob(route[0]);
+    void drawDayAgentRouteLine(route);
+    setActionNotice(`Day Agent started: ${jobKey(route[0])} first. ${tenantContactInfo(route[0]).appointmentNeeded ? "Contact tenant before route." : "Public/common area: go directly."}`);
+  } else {
+    appendDayAgentLog("Started day agent, but no active mapped jobs matched.");
+    setActionNotice("Day Agent did not find active mapped jobs for this command.");
+  }
+};
+
+const runDayAgentCommand = () => {
+  startDayAgent(dayAgentCommand);
 };
 const runDispatchChat = (text?: string) => {
   const question = String(text || dispatchQuestion || "").trim();
@@ -2981,6 +3152,16 @@ const [hideCompleted, setHideCompleted] = useState(false);
     return () => {
       window.removeEventListener("hpd-open-touch-info", handleTouchInfo as EventListener);
     };
+  }, []);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage?.getItem(DAY_AGENT_LOG_STORAGE_KEY);
+      if (saved) {
+        const rows = JSON.parse(saved);
+        if (Array.isArray(rows)) setDayAgentLog(rows.slice(0, 40));
+      }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -13066,6 +13247,173 @@ return (
             text-overflow: ellipsis;
             text-transform: none;
             letter-spacing: 0;
+          }
+
+          .day-agent-card {
+            display: grid;
+            gap: 11px;
+            margin: 0 0 12px;
+            padding: 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(45, 212, 191, 0.28);
+            background:
+              linear-gradient(145deg, rgba(2, 22, 31, 0.96), rgba(3, 38, 45, 0.94));
+            color: #eafffb;
+            box-shadow: 0 18px 42px rgba(2, 18, 25, 0.22);
+          }
+
+          .day-agent-card.is-running {
+            border-color: rgba(33, 245, 165, 0.72);
+            box-shadow: 0 20px 48px rgba(18, 247, 166, 0.20);
+          }
+
+          .day-agent-head,
+          .day-agent-command,
+          .day-agent-actions {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+          }
+
+          .day-agent-head {
+            justify-content: space-between;
+          }
+
+          .day-agent-head span,
+          .day-agent-next span,
+          .day-agent-log span {
+            display: block;
+            color: #8eeed4;
+            font-size: 10px;
+            font-weight: 1000;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+          }
+
+          .day-agent-head strong,
+          .day-agent-next strong,
+          .day-agent-log strong {
+            color: #ffffff;
+            font-weight: 1000;
+          }
+
+          .day-agent-head button,
+          .day-agent-command button,
+          .day-agent-actions button,
+          .day-agent-actions a {
+            min-height: 40px;
+            border: 1px solid rgba(45, 212, 191, 0.38);
+            border-radius: 12px;
+            background: rgba(15, 118, 110, 0.40);
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 1000;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 12px;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 10px 22px rgba(0, 0, 0, 0.18);
+          }
+
+          .day-agent-head button,
+          .day-agent-command button {
+            background: #21f5a5;
+            color: #06231b;
+            border-color: rgba(33, 245, 165, 0.86);
+          }
+
+          .day-agent-command input {
+            min-width: 0;
+            flex: 1;
+            min-height: 42px;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 237, 220, 0.30);
+            background: rgba(255, 255, 255, 0.10);
+            color: #ffffff;
+            padding: 0 12px;
+            font-weight: 900;
+          }
+
+          .day-agent-command input::placeholder {
+            color: rgba(234, 255, 251, 0.62);
+          }
+
+          .day-agent-next {
+            display: grid;
+            gap: 7px;
+            padding: 12px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.09);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+          }
+
+          .day-agent-next small,
+          .day-agent-next p,
+          .day-agent-log {
+            color: #d7fff4;
+            font-size: 12px;
+            font-weight: 850;
+            line-height: 1.25;
+          }
+
+          .day-agent-next p {
+            margin: 0;
+          }
+
+          .day-agent-actions {
+            flex-wrap: wrap;
+          }
+
+          .day-agent-route-list {
+            display: grid;
+            gap: 7px;
+          }
+
+          .day-agent-route-list button {
+            display: grid;
+            grid-template-columns: 34px 78px minmax(0, 1fr);
+            align-items: center;
+            gap: 8px;
+            min-height: 42px;
+            padding: 8px 10px;
+            border-radius: 12px;
+            border: 1px solid rgba(45, 212, 191, 0.22);
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            text-align: left;
+          }
+
+          .day-agent-route-list b {
+            display: grid;
+            place-items: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 999px;
+            background: #21f5a5;
+            color: #06231b;
+            font-size: 12px;
+          }
+
+          .day-agent-route-list span {
+            color: #ffffff;
+            font-weight: 1000;
+          }
+
+          .day-agent-route-list small {
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            color: #c8fff0;
+            font-weight: 850;
+          }
+
+          .day-agent-log {
+            padding: 10px;
+            border-radius: 12px;
+            background: rgba(33, 245, 165, 0.12);
+            border: 1px solid rgba(33, 245, 165, 0.24);
           }
 
           .field-workflow-card {
@@ -32878,6 +33226,270 @@ return (
             color: rgba(235, 255, 248, 0.78) !important;
           }
 
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 8px !important;
+            align-items: center !important;
+            margin-top: 8px !important;
+            position: relative !important;
+            z-index: 8 !important;
+            padding: 9px !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(124, 246, 198, 0.26) !important;
+            background:
+              radial-gradient(circle at 0% 0%, rgba(25, 240, 162, 0.18), transparent 42%),
+              linear-gradient(135deg, rgba(3, 21, 39, 0.96), rgba(6, 47, 83, 0.94) 62%, rgba(7, 77, 72, 0.90)) !important;
+            box-shadow:
+              0 16px 30px rgba(2, 10, 29, 0.28),
+              0 0 24px rgba(0, 208, 132, 0.13),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-face-search + .map-cockpit.board-collapsed .map-day-agent-launcher {
+            margin-top: 54px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-command,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-actions button:nth-child(2) {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher > div:first-child {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 2px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher span {
+            color: #7cf6c6 !important;
+            font-size: 9px !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher strong {
+            color: #ffffff !important;
+            font-size: 15px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher small {
+            color: rgba(235, 255, 248, 0.76) !important;
+            font-size: 10px !important;
+            line-height: 1.15 !important;
+            font-weight: 850 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-actions {
+            display: flex !important;
+            gap: 6px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-actions button,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-actions a {
+            min-width: 56px !important;
+            min-height: 38px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(124, 246, 198, 0.42) !important;
+            background:
+              linear-gradient(135deg, #031527 0%, #062f53 58%, #074d48 100%) !important;
+            color: #ecfff8 !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            text-decoration: none !important;
+            box-shadow:
+              0 0 0 1px rgba(0, 208, 132, 0.14),
+              0 12px 24px rgba(2, 10, 29, 0.28),
+              0 0 20px rgba(0, 208, 132, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-actions button:first-child {
+            background:
+              linear-gradient(135deg, #19f0a2 0%, #00d084 52%, #00ad74 100%) !important;
+            color: #031527 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-launcher {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) minmax(180px, 0.8fr) auto !important;
+            gap: 10px !important;
+            align-items: stretch !important;
+            padding: 11px !important;
+            border-radius: 22px !important;
+            border: 1px solid rgba(124, 246, 198, 0.24) !important;
+            background:
+              radial-gradient(circle at 0% 0%, rgba(25, 240, 162, 0.20), transparent 42%),
+              linear-gradient(135deg, rgba(3, 21, 39, 0.96), rgba(6, 47, 83, 0.94) 62%, rgba(7, 77, 72, 0.90)) !important;
+            box-shadow:
+              0 18px 36px rgba(2, 10, 29, 0.34),
+              0 0 30px rgba(0, 208, 132, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-launcher.is-running {
+            border-color: rgba(202, 255, 232, 0.54) !important;
+            box-shadow:
+              0 20px 42px rgba(2, 10, 29, 0.38),
+              0 0 42px rgba(25, 240, 162, 0.26),
+              inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-launcher > div:first-child {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 3px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-launcher span {
+            color: #7cf6c6 !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-launcher strong {
+            color: #ffffff !important;
+            font-size: 17px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+            text-shadow: 0 0 16px rgba(69, 213, 255, 0.24) !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-launcher small {
+            color: rgba(235, 255, 248, 0.84) !important;
+            font-size: 11px !important;
+            line-height: 1.25 !important;
+            font-weight: 850 !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
+            overflow: hidden !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-command {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 4px !important;
+            margin: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-command input {
+            min-width: 0 !important;
+            width: 100% !important;
+            min-height: 42px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(124, 246, 198, 0.32) !important;
+            background: rgba(255, 255, 255, 0.10) !important;
+            color: #ffffff !important;
+            padding: 0 12px !important;
+            font-size: 14px !important;
+            font-weight: 850 !important;
+            outline: none !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-command input::placeholder {
+            color: rgba(235, 255, 248, 0.56) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-actions {
+            display: flex !important;
+            align-items: stretch !important;
+            justify-content: flex-end !important;
+            gap: 7px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-actions button,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-actions a {
+            min-width: 58px !important;
+            min-height: 44px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(124, 246, 198, 0.42) !important;
+            background:
+              linear-gradient(135deg, #031527 0%, #062f53 58%, #074d48 100%) !important;
+            color: #ecfff8 !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+            text-decoration: none !important;
+            text-shadow: 0 0 10px rgba(124, 246, 198, 0.24) !important;
+            box-shadow:
+              0 0 0 1px rgba(0, 208, 132, 0.14),
+              0 14px 30px rgba(2, 10, 29, 0.32),
+              0 0 24px rgba(0, 208, 132, 0.16),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-actions button:first-child {
+            border-color: rgba(202, 255, 232, 0.54) !important;
+            background:
+              linear-gradient(135deg, #19f0a2 0%, #00d084 52%, #00ad74 100%) !important;
+            color: #031527 !important;
+            text-shadow: none !important;
+            box-shadow:
+              0 0 0 1px rgba(25, 240, 162, 0.30),
+              0 18px 38px rgba(0, 208, 132, 0.34),
+              0 0 36px rgba(25, 240, 162, 0.38),
+              inset 0 1px 0 rgba(255, 255, 255, 0.46) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-actions :is(button, a):is(:hover, :focus, :focus-visible) {
+            transform: translateY(-4px) scale(1.035) !important;
+            box-shadow:
+              0 0 0 1px rgba(25, 240, 162, 0.34),
+              0 20px 38px rgba(2, 10, 29, 0.40),
+              0 0 34px rgba(25, 240, 162, 0.28),
+              inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+          }
+
+          @media (max-width: 720px) {
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-launcher {
+              grid-template-columns: minmax(0, 1fr) !important;
+              gap: 8px !important;
+              padding: 10px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-launcher strong {
+              font-size: 16px !important;
+              white-space: normal !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-command input {
+              min-height: 44px !important;
+              font-size: 15px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-actions {
+              display: grid !important;
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-actions button,
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-actions a {
+              min-width: 0 !important;
+              min-height: 46px !important;
+              font-size: 13px !important;
+            }
+          }
+
           .map-shell.map-glass-command-trial .map-menu-fab,
           .map-shell.map-glass-command-trial .zoom-panel button,
           .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-buttons button,
@@ -33781,6 +34393,38 @@ return (
               </button>
             </div>
           </div>
+          {(() => {
+            const agentFirstJob = dayAgentRoute[0] || fieldQueueJobs[0] || todayPriorityJobs[0] || null;
+            const routeUrl = dayAgentGoogleRouteUrl(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : []);
+            return (
+              <section className={`map-day-agent-launcher ${dayAgentStarted ? "is-running" : ""}`} aria-label="Start AI day agent">
+                <div>
+                  <span>AI Day Agent</span>
+                  <strong>{agentFirstJob ? `${jobKey(agentFirstJob)} first` : "Start route"}</strong>
+                  <small>{agentFirstJob ? dayAgentContactPlan(agentFirstJob) : "Say start, Manhattan first, or route me."}</small>
+                </div>
+                <label className="map-day-agent-command">
+                  <span>Tell agent</span>
+                  <input
+                    value={dayAgentCommand}
+                    onChange={(event) => setDayAgentCommand(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        runDayAgentCommand();
+                      }
+                    }}
+                    placeholder="Start Manhattan first..."
+                  />
+                </label>
+                <div className="map-day-agent-actions">
+                  <button type="button" className="map-day-agent-start" onClick={runDayAgentCommand}>Start</button>
+                  <button type="button" className="map-day-agent-line" onClick={() => void drawDayAgentRouteLine(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : [])}>Line</button>
+                  <a className="map-day-agent-route-link" href={routeUrl} target="_blank" rel="noopener noreferrer">Route</a>
+                </div>
+              </section>
+            );
+          })()}
           <div className="map-board-switcher" aria-label="Switch map board">
             {mapBoardModes.map((mode) => (
               <button
@@ -34369,6 +35013,84 @@ return (
             ))}
           </div>
         </section>
+
+        {(() => {
+          const agentFirstJob = dayAgentRoute[0] || todayPriorityJobs[0] || null;
+          const agentContact = tenantContactInfo(agentFirstJob);
+          const routeUrl = dayAgentGoogleRouteUrl(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : []);
+          const contactHref = agentContact.actionHref || agentContact.smsHref || agentContact.whatsappHref || agentContact.emailHref || "";
+          return (
+            <section className={`day-agent-card ${dayAgentStarted ? "is-running" : ""}`} aria-label="AI day field agent">
+              <div className="day-agent-head">
+                <div>
+                  <span>AI Day Agent</span>
+                  <strong>{dayAgentStarted ? "Route running" : "Start your field day"}</strong>
+                </div>
+                <button type="button" onClick={() => startDayAgent("Start in Manhattan first, then route me through the best jobs.")}>
+                  Start
+                </button>
+              </div>
+              <div className="day-agent-command">
+                <input
+                  value={dayAgentCommand}
+                  onChange={(event) => setDayAgentCommand(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") runDayAgentCommand();
+                  }}
+                  placeholder="Tell agent: Manhattan first, Bronx exit, route me"
+                />
+                <button type="button" onClick={runDayAgentCommand}>Go</button>
+              </div>
+              {agentFirstJob ? (
+                <div className="day-agent-next">
+                  <div>
+                    <span>First stop</span>
+                    <strong>{jobKey(agentFirstJob)}</strong>
+                    <small>{displayAddress(agentFirstJob)}</small>
+                  </div>
+                  <p>{manhattanExitGuidance(agentFirstJob)}</p>
+                  <p>{dayAgentContactPlan(agentFirstJob)}</p>
+                </div>
+              ) : (
+                <div className="day-agent-next empty">
+                  <strong>No active stop selected yet.</strong>
+                  <p>Tap Start to build a route from the active map jobs.</p>
+                </div>
+              )}
+              <div className="day-agent-actions">
+                <button type="button" onClick={() => startDayAgent("Start in Manhattan first, then route me through the best jobs.")}>Manhattan First</button>
+                <button type="button" onClick={() => void drawDayAgentRouteLine(dayAgentRoute)}>Draw Line</button>
+                <a href={routeUrl} target="_blank" rel="noopener noreferrer">Google Route</a>
+                {agentFirstJob ? <a href={wazeDirectionsUrl(agentFirstJob)} target="_blank" rel="noopener noreferrer">Waze First</a> : null}
+                {contactHref ? (
+                  <a href={contactHref} target={agentContact.whatsappHref ? "_blank" : undefined} rel={agentContact.whatsappHref ? "noopener noreferrer" : undefined}>
+                    {agentContact.actionHref ? "Call Tenant" : agentContact.smsHref ? "Text Tenant" : agentContact.whatsappHref ? "WhatsApp" : "Email HPD"}
+                  </a>
+                ) : null}
+              </div>
+              {dayAgentRoute.length ? (
+                <div className="day-agent-route-list">
+                  {dayAgentRoute.slice(0, 5).map((job, index) => (
+                    <button type="button" key={`${jobKey(job)}-${index}`} onClick={() => {
+                      focusJob(job);
+                      appendDayAgentLog(`Opened route stop ${index + 1}: ${jobKey(job)}.`, job);
+                    }}>
+                      <b>{index + 1}</b>
+                      <span>{jobKey(job)}</span>
+                      <small>{displayAddress(job)}</small>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {dayAgentLog.length ? (
+                <div className="day-agent-log">
+                  <span>Local agent log</span>
+                  <strong>{dayAgentLog[0].text}</strong>
+                </div>
+              ) : null}
+            </section>
+          );
+        })()}
 
         <section className={`map-health-panel ${health.totalIssues ? "has-issues" : "clean"}`}>
           {health.totalIssues === 0 ? (
