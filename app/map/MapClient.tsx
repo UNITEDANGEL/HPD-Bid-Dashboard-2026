@@ -3673,7 +3673,14 @@ function handleMapTouchEnd(event: any) {
       view === "all"
         ? view
         : "";
-    const dashboardRequested = params.get("dashboard") === "1" || params.get("panel") === "dashboard";
+    const panel = params.get("panel");
+    const dashboardRequested = params.get("dashboard") === "1" || panel === "dashboard";
+    const mapRequested = params.get("map") === "1" || params.get("fullMap") === "1" || panel === "map";
+    if (mapRequested) {
+      setFullMap(true);
+      setMapMenuOpen(false);
+      setMapBoardOpen(false);
+    }
     if (dashboardRequested) {
       setMapMenuOpen(true);
       setMapBoardOpen(true);
