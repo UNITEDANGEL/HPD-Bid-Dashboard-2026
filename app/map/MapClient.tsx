@@ -4245,7 +4245,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     async function loadJobs() {
       try {
-        const jobDataSources = ["/data/COA_Fetcher_2026.json", "/assets/hpd_jobs_2026.txt"] as const;
+        const jobDataSources = ["/data/COA_Fetcher_2026.json", "/data/hpd_jobs_2026.txt"] as const;
         let data: any = null;
         let loadedJobsUrl = "";
         let lastLoadError: unknown = null;
@@ -4268,7 +4268,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         }
 
         const rows = asArray(Array.isArray(data) ? data : data.jobs || data.data || []).map(normalizeStaticJob);
-        const sourceNote = loadedJobsUrl.includes("/assets/") ? " · fallback data" : "";
+        const sourceNote = loadedJobsUrl.includes("hpd_jobs_2026") ? " · fallback data" : "";
 
         if (cancelled) return;
 
