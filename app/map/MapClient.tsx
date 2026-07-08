@@ -33548,10 +33548,10 @@ return (
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher {
             display: grid !important;
-            grid-template-columns: minmax(0, 1fr) auto !important;
+            grid-template-columns: minmax(0, 1fr) 64px auto !important;
             gap: 8px !important;
             align-items: center !important;
-            margin-top: 96px !important;
+            margin-top: 116px !important;
             position: relative !important;
             z-index: 8 !important;
             padding: 9px !important;
@@ -33567,14 +33567,41 @@ return (
           }
 
           .map-shell.map-glass-command-trial .map-face-search + .map-cockpit.board-collapsed .map-day-agent-launcher {
-            margin-top: 96px !important;
+            margin-top: 116px !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-command,
-          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-borough,
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-return,
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-actions button:nth-child(2) {
             display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-borough {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 2px !important;
+            margin: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-borough span {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-borough select {
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 38px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(124, 246, 198, 0.34) !important;
+            background: rgba(255, 255, 255, 0.10) !important;
+            color: #ffffff !important;
+            padding: 0 6px !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            outline: none !important;
+            box-shadow:
+              0 0 0 1px rgba(0, 208, 132, 0.10),
+              inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher > div:first-child {
@@ -33617,7 +33644,7 @@ return (
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-actions button,
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-actions a {
-            min-width: 56px !important;
+            min-width: 54px !important;
             min-height: 38px !important;
             display: inline-flex !important;
             align-items: center !important;
