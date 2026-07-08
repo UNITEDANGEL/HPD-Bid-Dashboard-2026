@@ -14,6 +14,7 @@ When the user says "add to the plan", update this file with the new feature, wor
 
 ## Browser Testing Rule
 
+- Local development and browser testing should run from `D:\dev\HPD-Bid-Dashboard-2026` so Codex does not crash when the C drive / Google Drive workspace is full.
 - Always open the live app in the browser/right panel during upgrade and test cycles.
 - The user should be able to see the current app state while changes are being tested.
 - Prefer testing the Cloudflare live URL when the user is reviewing the production app.
