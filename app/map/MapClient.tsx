@@ -4245,11 +4245,30 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     async function loadJobs() {
       try {
-        const response = await fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" });
-        if (!response.ok) throw new Error(`/data/COA_Fetcher_2026.json returned ${response.status}`);
+        const jobDataSources = ["/data/COA_Fetcher_2026.json", "/assets/hpd_jobs_2026.txt"] as const;
+        let data: any = null;
+        let loadedJobsUrl = "";
+        let lastLoadError: unknown = null;
 
-        const data = await response.json();
+        for (const url of jobDataSources) {
+          try {
+            const response = await fetch(url, { cache: "no-store" });
+            if (!response.ok) throw new Error(`${url} returned ${response.status}`);
+            data = await response.json();
+            loadedJobsUrl = url;
+            break;
+          } catch (sourceError) {
+            lastLoadError = sourceError;
+            console.warn(`Could not load jobs from ${url}`, sourceError);
+          }
+        }
+
+        if (!data) {
+          throw lastLoadError || new Error("Could not load static jobs data.");
+        }
+
         const rows = asArray(Array.isArray(data) ? data : data.jobs || data.data || []).map(normalizeStaticJob);
+        const sourceNote = loadedJobsUrl.includes("/assets/") ? " · fallback data" : "";
 
         if (cancelled) return;
 
@@ -4266,7 +4285,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const existing = initialMapped.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng)).length;
         const missing = rows.length - existing;
 
-        setMessage(`${rows.length} jobs · ${existing} mapped · ${missing} need lookup`);
+        setMessage(`${rows.length} jobs · ${existing} mapped · ${missing} need lookup${sourceNote}`);
 
         const toGeocode = initialMapped
           .filter((job) => !Number.isFinite(job._lat) || !Number.isFinite(job._lng))
