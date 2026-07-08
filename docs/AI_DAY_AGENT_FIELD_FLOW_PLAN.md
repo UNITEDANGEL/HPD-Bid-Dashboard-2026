@@ -12,6 +12,13 @@ The current job card, status, media, package, appointment, and map flow stays in
 
 When the user says "add to the plan", update this file with the new feature, workflow, or rule. Keep this document as the source of direction for the AI Day Agent work.
 
+## Browser Testing Rule
+
+- Always open the live app in the browser/right panel during upgrade and test cycles.
+- The user should be able to see the current app state while changes are being tested.
+- Prefer testing the Cloudflare live URL when the user is reviewing the production app.
+- Use localhost only for private pre-push testing, then reopen the Cloudflare app after push.
+
 ## Base And Routing Rules
 
 - Base / return location: 87-35 114 Street, Richmond Hill, NY 11418.
