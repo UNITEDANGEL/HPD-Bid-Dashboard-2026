@@ -31889,6 +31889,800 @@ return (
             }
           }
 
+          /* MOBILE_TRADING_COMMAND_SKIN_2026 */
+          .map-shell.map-glass-command-trial {
+            --command-navy: #062242;
+            --command-navy-2: #02152b;
+            --command-ink: #031527;
+            --command-green: #00d084;
+            --command-green-2: #19f0a2;
+            --command-cyan: #45d5ff;
+            --command-line: rgba(124, 246, 198, 0.24);
+            background: #061b34 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top {
+            border: 0 !important;
+            background: rgba(255, 255, 255, 0.96) !important;
+            color: var(--command-ink) !important;
+            box-shadow:
+              0 14px 36px rgba(2, 10, 29, 0.20),
+              inset 0 -1px 0 rgba(2, 21, 43, 0.08) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top h1 {
+            color: var(--command-ink) !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top p,
+          .map-shell.map-glass-command-trial .dispatch-dashboard-copy small,
+          .map-shell.map-glass-command-trial .dispatch-dashboard-strip span {
+            color: #25425f !important;
+            font-weight: 850 !important;
+          }
+
+          .map-shell.map-glass-command-trial .home-btn,
+          .map-shell.map-glass-command-trial .jobs-toggle,
+          .map-shell.map-glass-command-trial .map-menu-close {
+            border: 0 !important;
+            background: linear-gradient(135deg, var(--command-green), #00b978) !important;
+            color: #031527 !important;
+            box-shadow: 0 12px 24px rgba(0, 208, 132, 0.28) !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-shell.map-glass-command-trial .dispatch-dashboard-card {
+            border: 1px solid rgba(0, 208, 132, 0.20) !important;
+            background:
+              linear-gradient(135deg, var(--command-navy-2), var(--command-navy) 58%, #073c3a) !important;
+            color: #ffffff !important;
+            box-shadow:
+              0 22px 48px rgba(2, 10, 29, 0.32),
+              inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+          }
+
+          .map-shell.map-glass-command-trial .dispatch-dashboard-copy span,
+          .map-shell.map-glass-command-trial .dispatch-dashboard-strip span {
+            color: #7cf6c6 !important;
+          }
+
+          .map-shell.map-glass-command-trial .dispatch-dashboard-copy strong,
+          .map-shell.map-glass-command-trial .dispatch-dashboard-count span {
+            color: #ffffff !important;
+            text-shadow: 0 1px 0 rgba(0, 0, 0, 0.24) !important;
+          }
+
+          .map-shell.map-glass-command-trial .dispatch-dashboard-count {
+            border: 1px solid rgba(124, 246, 198, 0.24) !important;
+            background: rgba(0, 208, 132, 0.13) !important;
+          }
+
+          .map-shell.map-glass-command-trial .dispatch-kpi {
+            border: 1px solid rgba(124, 246, 198, 0.16) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .dispatch-kpi span,
+          .map-shell.map-glass-command-trial .dispatch-kpi small {
+            color: rgba(235, 255, 248, 0.82) !important;
+          }
+
+          .map-shell.map-glass-command-trial .dispatch-kpi strong {
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .dispatch-kpi.active,
+          .map-shell.map-glass-command-trial .dispatch-kpi:is(:hover, :focus, :focus-visible) {
+            background: linear-gradient(135deg, var(--command-green), #03c988) !important;
+            color: #02152b !important;
+            transform: translateY(-2px) !important;
+          }
+
+          .map-shell.map-glass-command-trial .dispatch-kpi.active *,
+          .map-shell.map-glass-command-trial .dispatch-kpi:is(:hover, :focus, :focus-visible) * {
+            color: #02152b !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-stage {
+            background:
+              radial-gradient(circle at 20% 0%, rgba(0, 208, 132, 0.16), transparent 32%),
+              linear-gradient(180deg, #071e39 0%, #092f44 44%, #eef7f7 100%) !important;
+          }
+
+          .map-shell.map-glass-command-trial:not(.map-style-carto-dark) .map-node .leaflet-tile {
+            filter: saturate(0.92) contrast(1.08) brightness(0.90) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-filter-count-hud,
+          .map-shell.map-glass-command-trial .zoom-panel,
+          .map-shell.map-glass-command-trial .location-status-pill,
+          .map-shell.map-glass-command-trial .map-job-brief {
+            border: 1px solid rgba(124, 246, 198, 0.28) !important;
+            background: rgba(2, 21, 43, 0.88) !important;
+            color: #ffffff !important;
+            box-shadow: 0 18px 38px rgba(2, 10, 29, 0.28) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-filter-count-hud span,
+          .map-shell.map-glass-command-trial .map-filter-count-hud small,
+          .map-shell.map-glass-command-trial .map-job-brief small,
+          .map-shell.map-glass-command-trial .map-job-brief span {
+            color: #a8ffe0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-filter-count-hud strong,
+          .map-shell.map-glass-command-trial .map-job-brief strong,
+          .map-shell.map-glass-command-trial .map-job-brief b {
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .zoom-panel button,
+          .map-shell.map-glass-command-trial .map-menu-fab {
+            background: linear-gradient(135deg, #ffffff, #d8fff0) !important;
+            color: var(--command-ink) !important;
+            border: 0 !important;
+            box-shadow: 0 12px 24px rgba(2, 10, 29, 0.22) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-menu-fab-icon span {
+            background: var(--command-ink) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open {
+            border: 1px solid rgba(124, 246, 198, 0.30) !important;
+            background:
+              linear-gradient(180deg, #ffffff 0%, #ffffff 12%, var(--command-navy) 12%, var(--command-navy-2) 100%) !important;
+            color: #ffffff !important;
+            box-shadow:
+              0 34px 78px rgba(2, 10, 29, 0.48),
+              0 0 0 1px rgba(124, 246, 198, 0.10),
+              inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open::before {
+            background: rgba(2, 21, 43, 0.28) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner {
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            padding: 12px 10px 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner span {
+            color: #0b2747 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner strong {
+            color: #06182b !important;
+            text-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner small {
+            color: #33526b !important;
+            font-weight: 900 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-buttons button {
+            background: #0b2747 !important;
+            color: #ffffff !important;
+            border: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-buttons .map-board-toggle,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-layer-search-clear,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .field-map-queue-open {
+            background: linear-gradient(135deg, var(--command-green), var(--command-green-2)) !important;
+            color: #031527 !important;
+            box-shadow: 0 12px 26px rgba(0, 208, 132, 0.26) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-layer-search {
+            border: 1px solid rgba(124, 246, 198, 0.26) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-layer-search-label span,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-layer-search input,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-layer-search-count {
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-layer-search input::placeholder {
+            color: rgba(235, 255, 248, 0.58) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button {
+            border: 1px solid rgba(124, 246, 198, 0.16) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+            box-shadow:
+              0 14px 26px rgba(2, 10, 29, 0.20),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button span,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button b {
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button b {
+            background: rgba(124, 246, 198, 0.16) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.active,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.priority-layer.active {
+            background: linear-gradient(135deg, var(--command-green), #00b978) !important;
+            color: #031527 !important;
+            box-shadow:
+              0 18px 36px rgba(0, 208, 132, 0.28),
+              inset 0 1px 0 rgba(255, 255, 255, 0.30) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.active span,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.active b {
+            color: #031527 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.active b {
+            background: rgba(255, 255, 255, 0.70) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .field-map-queue {
+            border: 1px solid rgba(124, 246, 198, 0.18) !important;
+            background: rgba(255, 255, 255, 0.07) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-head span,
+          .map-shell.map-glass-command-trial .field-map-queue-head small,
+          .map-shell.map-glass-command-trial .field-map-queue-main span,
+          .map-shell.map-glass-command-trial .field-map-queue-meta span {
+            color: #7cf6c6 !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-head strong,
+          .map-shell.map-glass-command-trial .field-map-queue-main strong {
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-main small {
+            color: rgba(235, 255, 248, 0.76) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-item {
+            border: 1px solid rgba(124, 246, 198, 0.14) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-map-queue-meta b {
+            background: #ffffff !important;
+            color: #031527 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-borough-rail button,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-cockpit-actions button {
+            border: 1px solid rgba(124, 246, 198, 0.18) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-borough-rail button.active,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-cockpit-actions button.active,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-cockpit-actions button.primary {
+            background: #ffffff !important;
+            color: #031527 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-cockpit-actions {
+            background:
+              linear-gradient(180deg, rgba(2, 21, 43, 0), rgba(2, 21, 43, 0.94) 24%, rgba(2, 21, 43, 0.98)) !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker,
+          .map-shell.map-glass-command-trial .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge {
+            border: 2px solid rgba(255, 255, 255, 0.94) !important;
+            box-shadow:
+              0 18px 32px rgba(2, 10, 29, 0.34),
+              0 0 0 4px rgba(0, 208, 132, 0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker:hover .map-signal-marker,
+          .map-shell.map-glass-command-trial .maturity-map-marker.cluster-preview-active .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge {
+            transform: translateY(-9px) scale(1.15) !important;
+            box-shadow:
+              0 28px 50px rgba(2, 10, 29, 0.44),
+              0 0 0 6px rgba(0, 208, 132, 0.22) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+            background:
+              linear-gradient(180deg, #ffffff 0%, #ffffff 96px, var(--command-navy) 96px, var(--command-navy-2) 100%) !important;
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+            background: transparent !important;
+            color: #06182b !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-field-title-copy strong,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-title {
+            color: #06182b !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-field-title-copy span,
+          .map-shell.map-glass-command-trial .job-card-field-title-copy p {
+            color: #33526b !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-close-pill,
+          .map-shell.map-glass-command-trial .job-card-map-back-pill {
+            background: #ffffff !important;
+            color: var(--command-ink) !important;
+          }
+
+          .map-shell.map-glass-command-trial .route-head-arrived,
+          .map-shell.map-glass-command-trial .field-status-save-primary,
+          .map-shell.map-glass-command-trial .field-status-command-save,
+          .map-shell.map-glass-command-trial .procedure-primary,
+          .map-shell.map-glass-command-trial .send-package-btn,
+          .map-shell.map-glass-command-trial .one-big-next-action,
+          .map-shell.map-glass-command-trial .save-status-btn {
+            background: linear-gradient(135deg, var(--command-green), var(--command-green-2)) !important;
+            color: #031527 !important;
+            border: 0 !important;
+            box-shadow: 0 16px 30px rgba(0, 208, 132, 0.28) !important;
+          }
+
+          .map-shell.map-glass-command-trial .route-head-arrived *,
+          .map-shell.map-glass-command-trial .field-status-save-primary *,
+          .map-shell.map-glass-command-trial .field-status-command-save *,
+          .map-shell.map-glass-command-trial .procedure-primary *,
+          .map-shell.map-glass-command-trial .send-package-btn *,
+          .map-shell.map-glass-command-trial .one-big-next-action *,
+          .map-shell.map-glass-command-trial .save-status-btn * {
+            color: #031527 !important;
+          }
+
+          .map-shell.map-glass-command-trial .selected-description,
+          .map-shell.map-glass-command-trial .field-page3-description,
+          .map-shell.map-glass-command-trial .job-card-72h-counter,
+          .map-shell.map-glass-command-trial .field-status-picker-card,
+          .map-shell.map-glass-command-trial .field-status-flow-card,
+          .map-shell.map-glass-command-trial .package-readiness-card,
+          .map-shell.map-glass-command-trial .field-media-option-hub,
+          .map-shell.map-glass-command-trial .site-procedure-card,
+          .map-shell.map-glass-command-trial .field-media-console,
+          .map-shell.map-glass-command-trial .field-packet-vault,
+          .map-shell.map-glass-command-trial .selected-card,
+          .map-shell.map-glass-command-trial .package-ready-card,
+          .map-shell.map-glass-command-trial .tenant-contact-card,
+          .map-shell.map-glass-command-trial .job-appointment-card,
+          .map-shell.map-glass-command-trial .appointment-hero,
+          .map-shell.map-glass-command-trial .selected-alert-card,
+          .map-shell.map-glass-command-trial .field-workflow-card,
+          .map-shell.map-glass-command-trial .field-mission-mode,
+          .map-shell.map-glass-command-trial .more-job-details {
+            border: 1px solid rgba(124, 246, 198, 0.16) !important;
+            background: rgba(255, 255, 255, 0.96) !important;
+            color: #06182b !important;
+            box-shadow: 0 18px 38px rgba(2, 10, 29, 0.22) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-status-current-strip div,
+          .map-shell.map-glass-command-trial .field-status-command-center,
+          .map-shell.map-glass-command-trial .field-media-step-cue,
+          .map-shell.map-glass-command-trial .site-package-strip,
+          .map-shell.map-glass-command-trial .field-package-preview,
+          .map-shell.map-glass-command-trial .tenant-contact-row,
+          .map-shell.map-glass-command-trial .appointment-hero-contact div,
+          .map-shell.map-glass-command-trial .job-appointment-banner,
+          .map-shell.map-glass-command-trial .job-appointment-calendar-panel,
+          .map-shell.map-glass-command-trial .job-appointment-auto-alert,
+          .map-shell.map-glass-command-trial .auto-alert-body,
+          .map-shell.map-glass-command-trial .auto-alert-phone,
+          .map-shell.map-glass-command-trial .field-workflow-card > div,
+          .map-shell.map-glass-command-trial .more-job-details > div {
+            background: #f6fbff !important;
+            color: #06182b !important;
+            border-color: rgba(2, 21, 43, 0.10) !important;
+          }
+
+          .map-shell.map-glass-command-trial .selected-description :is(strong, b),
+          .map-shell.map-glass-command-trial .field-status-picker-card :is(strong, b),
+          .map-shell.map-glass-command-trial .field-media-option-hub :is(strong, b),
+          .map-shell.map-glass-command-trial .site-procedure-card :is(strong, b),
+          .map-shell.map-glass-command-trial .field-packet-vault :is(strong, b),
+          .map-shell.map-glass-command-trial .tenant-contact-card :is(strong, b),
+          .map-shell.map-glass-command-trial .job-appointment-card :is(strong, b),
+          .map-shell.map-glass-command-trial .appointment-hero :is(strong, b),
+          .map-shell.map-glass-command-trial .selected-alert-card :is(strong, b),
+          .map-shell.map-glass-command-trial .field-workflow-card :is(strong, b),
+          .map-shell.map-glass-command-trial .field-mission-mode :is(strong, b),
+          .map-shell.map-glass-command-trial .more-job-details :is(strong, b) {
+            color: #06182b !important;
+          }
+
+          .map-shell.map-glass-command-trial .selected-description :is(p, span, small, label, em),
+          .map-shell.map-glass-command-trial .field-status-picker-card :is(p, span, small, label, em),
+          .map-shell.map-glass-command-trial .field-media-option-hub :is(p, span, small, label, em),
+          .map-shell.map-glass-command-trial .site-procedure-card :is(p, span, small, label, em),
+          .map-shell.map-glass-command-trial .field-packet-vault :is(p, span, small, label, em),
+          .map-shell.map-glass-command-trial .tenant-contact-card :is(p, span, small, label, em),
+          .map-shell.map-glass-command-trial .job-appointment-card :is(p, span, small, label, em),
+          .map-shell.map-glass-command-trial .appointment-hero :is(p, span, small, label, em),
+          .map-shell.map-glass-command-trial .selected-alert-card :is(p, span, small, label, em),
+          .map-shell.map-glass-command-trial .field-workflow-card :is(p, span, small, label, em),
+          .map-shell.map-glass-command-trial .field-mission-mode :is(p, span, small, label, em),
+          .map-shell.map-glass-command-trial .more-job-details :is(p, span, small, label, em) {
+            color: #304b63 !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-status-select-label select,
+          .map-shell.map-glass-command-trial .field-status-date-label input,
+          .map-shell.map-glass-command-trial .job-appointment-input input,
+          .map-shell.map-glass-command-trial .auto-alert-phone input {
+            border: 1px solid rgba(2, 21, 43, 0.14) !important;
+            background: #ffffff !important;
+            color: #06182b !important;
+          }
+
+          @media (max-width: 560px) {
+            .map-shell.map-glass-command-trial .map-top {
+              top: calc(env(safe-area-inset-top) + 8px) !important;
+              left: calc(env(safe-area-inset-left) + 8px) !important;
+              right: calc(env(safe-area-inset-right) + 8px) !important;
+              max-height: calc(100vh - 16px - env(safe-area-inset-top)) !important;
+              border-radius: 20px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-title-row {
+              min-height: 48px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open {
+              background:
+                linear-gradient(180deg, #ffffff 0%, #ffffff 104px, var(--command-navy) 104px, var(--command-navy-2) 100%) !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner {
+              min-height: 72px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button:not(.priority-layer) {
+              min-height: 56px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.priority-layer {
+              min-height: 92px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+              left: calc(env(safe-area-inset-left) + 6px) !important;
+              right: calc(env(safe-area-inset-right) + 6px) !important;
+              width: auto !important;
+              max-width: none !important;
+              background:
+                linear-gradient(180deg, #ffffff 0%, #ffffff 104px, var(--command-navy) 104px, var(--command-navy-2) 100%) !important;
+            }
+          }
+
+          /* OANDA_DARK_GLOW_BUTTON_PASS_2026 */
+          .map-shell.map-glass-command-trial .map-cockpit.board-open,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+            background:
+              radial-gradient(circle at 12% 0%, rgba(0, 208, 132, 0.18), transparent 34%),
+              linear-gradient(180deg, #062242 0%, #02152b 100%) !important;
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner {
+            border: 1px solid rgba(124, 246, 198, 0.20) !important;
+            background:
+              linear-gradient(135deg, rgba(3, 21, 39, 0.94), rgba(6, 52, 76, 0.90) 58%, rgba(0, 208, 132, 0.15)) !important;
+            box-shadow:
+              0 20px 42px rgba(2, 10, 29, 0.34),
+              0 0 24px rgba(0, 208, 132, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner span,
+          .map-shell.map-glass-command-trial .job-card-field-title-copy span {
+            color: #7cf6c6 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner strong,
+          .map-shell.map-glass-command-trial .job-card-field-title-copy strong,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-title {
+            color: #ffffff !important;
+            text-shadow: 0 0 16px rgba(69, 213, 255, 0.22) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-banner small,
+          .map-shell.map-glass-command-trial .job-card-field-title-copy p {
+            color: rgba(235, 255, 248, 0.78) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-menu-fab,
+          .map-shell.map-glass-command-trial .zoom-panel button,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-buttons button,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-borough-rail button,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-cockpit-actions button,
+          .map-shell.map-glass-command-trial .job-card-map-back-pill,
+          .map-shell.map-glass-command-trial .job-card-close-pill,
+          .map-shell.map-glass-command-trial .route-head-button,
+          .map-shell.map-glass-command-trial .job-card-smooth-flow-rail button,
+          .map-shell.map-glass-command-trial .job-card-map-return-row button,
+          .map-shell.map-glass-command-trial .status-layers,
+          .map-shell.map-glass-command-trial .status-archive-map,
+          .map-shell.map-glass-command-trial .status-clear,
+          .map-shell.map-glass-command-trial .quick-status-clear,
+          .map-shell.map-glass-command-trial .field-status-now,
+          .map-shell.map-glass-command-trial .field-status-clear-inline,
+          .map-shell.map-glass-command-trial .field-media-actions button,
+          .map-shell.map-glass-command-trial .field-media-option-column button,
+          .map-shell.map-glass-command-trial .active-work-choice-panel button,
+          .map-shell.map-glass-command-trial .tenant-contact-actions a,
+          .map-shell.map-glass-command-trial .appointment-hero-actions a,
+          .map-shell.map-glass-command-trial .appointment-hero-actions button,
+          .map-shell.map-glass-command-trial .job-appointment-actions button,
+          .map-shell.map-glass-command-trial .job-appointment-actions a {
+            border: 1px solid rgba(124, 246, 198, 0.42) !important;
+            background:
+              linear-gradient(135deg, #031527 0%, #062f53 58%, #074d48 100%) !important;
+            color: #ecfff8 !important;
+            text-shadow: 0 0 10px rgba(124, 246, 198, 0.24) !important;
+            box-shadow:
+              0 0 0 1px rgba(0, 208, 132, 0.14),
+              0 14px 30px rgba(2, 10, 29, 0.32),
+              0 0 24px rgba(0, 208, 132, 0.16),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-menu-fab-icon span {
+            background: #7cf6c6 !important;
+            box-shadow: 0 0 10px rgba(124, 246, 198, 0.40) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-menu-fab:is(:hover, :focus, :focus-visible),
+          .map-shell.map-glass-command-trial .zoom-panel button:is(:hover, :focus, :focus-visible),
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-buttons button:is(:hover, :focus, :focus-visible),
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button:is(:hover, :focus, :focus-visible),
+          .map-shell.map-glass-command-trial .route-head-button:is(:hover, :focus, :focus-visible),
+          .map-shell.map-glass-command-trial .job-card-smooth-flow-rail button:is(:hover, :focus, :focus-visible) {
+            transform: translateY(-4px) scale(1.035) !important;
+            box-shadow:
+              0 0 0 1px rgba(25, 240, 162, 0.34),
+              0 20px 38px rgba(2, 10, 29, 0.40),
+              0 0 34px rgba(25, 240, 162, 0.28),
+              inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial .home-btn,
+          .map-shell.map-glass-command-trial .jobs-toggle,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-buttons .map-board-toggle,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.active,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.priority-layer.active,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-layer-search-clear,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .field-map-queue-open,
+          .map-shell.map-glass-command-trial .route-head-arrived,
+          .map-shell.map-glass-command-trial .field-status-save-primary,
+          .map-shell.map-glass-command-trial .field-status-command-save,
+          .map-shell.map-glass-command-trial .procedure-primary,
+          .map-shell.map-glass-command-trial .send-package-btn,
+          .map-shell.map-glass-command-trial .one-big-next-action,
+          .map-shell.map-glass-command-trial .save-status-btn,
+          .map-shell.map-glass-command-trial .job-appointment-save-button,
+          .map-shell.map-glass-command-trial .job-appointment-auto-alert button {
+            border: 1px solid rgba(202, 255, 232, 0.54) !important;
+            background:
+              linear-gradient(135deg, #19f0a2 0%, #00d084 52%, #00ad74 100%) !important;
+            color: #031527 !important;
+            text-shadow: none !important;
+            box-shadow:
+              0 0 0 1px rgba(25, 240, 162, 0.30),
+              0 18px 38px rgba(0, 208, 132, 0.34),
+              0 0 36px rgba(25, 240, 162, 0.38),
+              inset 0 1px 0 rgba(255, 255, 255, 0.46) !important;
+          }
+
+          .map-shell.map-glass-command-trial .home-btn *,
+          .map-shell.map-glass-command-trial .jobs-toggle *,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-command-buttons .map-board-toggle *,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.active *,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .field-map-queue-open *,
+          .map-shell.map-glass-command-trial .route-head-arrived *,
+          .map-shell.map-glass-command-trial .field-status-save-primary *,
+          .map-shell.map-glass-command-trial .field-status-command-save *,
+          .map-shell.map-glass-command-trial .procedure-primary *,
+          .map-shell.map-glass-command-trial .send-package-btn *,
+          .map-shell.map-glass-command-trial .one-big-next-action *,
+          .map-shell.map-glass-command-trial .save-status-btn *,
+          .map-shell.map-glass-command-trial .job-appointment-save-button *,
+          .map-shell.map-glass-command-trial .job-appointment-auto-alert button * {
+            color: #031527 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-current-state-banner,
+          .map-shell.map-glass-command-trial .job-card-smooth-flow-rail,
+          .map-shell.map-glass-command-trial .job-card-field-action-dock,
+          .map-shell.map-glass-command-trial .field-status-command-center,
+          .map-shell.map-glass-command-trial .field-media-step-cue,
+          .map-shell.map-glass-command-trial .site-package-strip,
+          .map-shell.map-glass-command-trial .field-package-preview {
+            border-color: rgba(124, 246, 198, 0.20) !important;
+            background:
+              linear-gradient(135deg, rgba(3, 21, 39, 0.96), rgba(6, 47, 83, 0.92)) !important;
+            color: #ffffff !important;
+            box-shadow:
+              0 18px 36px rgba(2, 10, 29, 0.30),
+              0 0 26px rgba(0, 208, 132, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-card-current-state-banner *,
+          .map-shell.map-glass-command-trial .job-card-smooth-flow-rail *,
+          .map-shell.map-glass-command-trial .job-card-field-action-dock *,
+          .map-shell.map-glass-command-trial .field-status-command-center *,
+          .map-shell.map-glass-command-trial .field-media-step-cue *,
+          .map-shell.map-glass-command-trial .site-package-strip *,
+          .map-shell.map-glass-command-trial .field-package-preview * {
+            color: #ecfff8 !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-status-select-label select,
+          .map-shell.map-glass-command-trial .field-status-date-label input,
+          .map-shell.map-glass-command-trial .job-appointment-input input,
+          .map-shell.map-glass-command-trial .auto-alert-phone input {
+            border-color: rgba(124, 246, 198, 0.34) !important;
+            background: #031527 !important;
+            color: #ffffff !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.08),
+              0 0 18px rgba(0, 208, 132, 0.10) !important;
+          }
+
+          .map-shell.map-glass-command-trial .field-status-select-label select option {
+            color: #031527 !important;
+          }
+
+          /* OANDA_EXACT_JOB_BUTTON_DARKEN_2026 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+            border: 1px solid rgba(124, 246, 198, 0.20) !important;
+            background:
+              radial-gradient(circle at 12% 0%, rgba(25, 240, 162, 0.20), transparent 36%),
+              linear-gradient(135deg, rgba(3, 21, 39, 0.96), rgba(6, 47, 83, 0.94) 62%, rgba(2, 21, 43, 0.98)) !important;
+            box-shadow:
+              0 18px 40px rgba(2, 10, 29, 0.34),
+              0 0 28px rgba(0, 208, 132, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-field-title-copy strong,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-title {
+            color: #ffffff !important;
+            text-shadow:
+              0 2px 0 rgba(2, 10, 29, 0.24),
+              0 0 18px rgba(69, 213, 255, 0.28) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-field-title-copy span,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-field-title-copy p {
+            color: rgba(219, 255, 242, 0.86) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-map-back-pill,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-map-back-pill.job-card-close-pill,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button,
+          .map-shell.map-glass-command-trial .selected-card .route-head-button,
+          .map-shell.map-glass-command-trial .quick-status-clear,
+          .map-shell.map-glass-command-trial .field-status-clear-inline,
+          .map-shell.map-glass-command-trial .field-status-now,
+          .map-shell.map-glass-command-trial .field-status-save-primary:disabled,
+          .map-shell.map-glass-command-trial .field-status-command-save:disabled,
+          .map-shell.map-glass-command-trial .save-status-btn:disabled {
+            border: 1px solid rgba(124, 246, 198, 0.46) !important;
+            background:
+              linear-gradient(135deg, #031527 0%, #062f53 58%, #074d48 100%) !important;
+            color: #ecfff8 !important;
+            opacity: 1 !important;
+            filter: none !important;
+            text-shadow: 0 0 10px rgba(124, 246, 198, 0.24) !important;
+            box-shadow:
+              0 0 0 1px rgba(0, 208, 132, 0.16),
+              0 14px 30px rgba(2, 10, 29, 0.34),
+              0 0 28px rgba(0, 208, 132, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-map-back-pill *,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button *,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button *,
+          .map-shell.map-glass-command-trial .selected-card .route-head-button *,
+          .map-shell.map-glass-command-trial .quick-status-clear *,
+          .map-shell.map-glass-command-trial .field-status-clear-inline *,
+          .map-shell.map-glass-command-trial .field-status-now *,
+          .map-shell.map-glass-command-trial .field-status-save-primary:disabled *,
+          .map-shell.map-glass-command-trial .field-status-command-save:disabled *,
+          .map-shell.map-glass-command-trial .save-status-btn:disabled * {
+            color: #ecfff8 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.active,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.has-draft-status {
+            border: 1px solid rgba(202, 255, 232, 0.56) !important;
+            background:
+              linear-gradient(135deg, #19f0a2 0%, #00d084 52%, #00ad74 100%) !important;
+            color: #031527 !important;
+            box-shadow:
+              0 0 0 1px rgba(25, 240, 162, 0.34),
+              0 18px 38px rgba(0, 208, 132, 0.36),
+              0 0 38px rgba(25, 240, 162, 0.42),
+              inset 0 1px 0 rgba(255, 255, 255, 0.46) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived *,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.active *,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status.has-draft-status * {
+            color: #031527 !important;
+            text-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.priority-layer,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.layer-active,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.layer-pending {
+            border: 1px solid rgba(124, 246, 198, 0.46) !important;
+            background:
+              linear-gradient(135deg, #031527 0%, #062f53 58%, #074d48 100%) !important;
+            color: #ecfff8 !important;
+            text-shadow: 0 0 10px rgba(124, 246, 198, 0.24) !important;
+            box-shadow:
+              0 0 0 1px rgba(0, 208, 132, 0.16),
+              0 16px 34px rgba(2, 10, 29, 0.34),
+              0 0 30px rgba(0, 208, 132, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.priority-layer *,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.layer-active *,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.layer-pending * {
+            color: #ecfff8 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.priority-layer.active,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.layer-active.active,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.layer-pending.active {
+            border: 1px solid rgba(202, 255, 232, 0.56) !important;
+            background:
+              linear-gradient(135deg, #19f0a2 0%, #00d084 52%, #00ad74 100%) !important;
+            color: #031527 !important;
+            text-shadow: none !important;
+            box-shadow:
+              0 0 0 1px rgba(25, 240, 162, 0.34),
+              0 18px 38px rgba(0, 208, 132, 0.36),
+              0 0 38px rgba(25, 240, 162, 0.42),
+              inset 0 1px 0 rgba(255, 255, 255, 0.46) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.priority-layer.active *,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.layer-active.active *,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.layer-pending.active * {
+            color: #031527 !important;
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
