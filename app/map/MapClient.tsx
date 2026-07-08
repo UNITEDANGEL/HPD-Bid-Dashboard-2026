@@ -19,7 +19,7 @@ const MAP_BOROUGH_FILTERS = [
   { key: "staten-island", label: "Staten Island", short: "SI" },
   { key: "unknown", label: "Unknown", short: "?" },
 ] as const;
-const USER_LOCATION_OVERVIEW_ZOOM = 13;
+const USER_LOCATION_OVERVIEW_ZOOM = 12;
 const USER_LOCATION_NEARBY_RADIUS_MILES = 2.5;
 const USER_LOCATION_CONTEXT_JOB_LIMIT = 12;
 const MAP_LAYER_OVERVIEW_ZOOM = 12;
@@ -2567,6 +2567,8 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const markerAutoFitKeyRef = useRef("");
   const mapUserInteractedAtRef = useRef(0);
   const mapProgrammaticMoveUntilRef = useRef(0);
+  const mapManualControlLockedRef = useRef(false);
+  const mapManualControlNoticeAtRef = useRef(0);
   const appointmentAlertTestTriggeredRef = useRef("");
   const noAccessReadyAlertSeenRef = useRef<Record<string, string>>({});
   const fieldPhotoInputRef = useRef<HTMLInputElement | null>(null);
@@ -3064,10 +3066,10 @@ function showCleanMapView() {
   setFullMap(true);
   setMapMenuOpen(false);
   setMapBoardOpen(false);
+  clearManualMapControl();
 
   window.requestAnimationFrame(() => {
     mapRef.current?.invalidateSize();
-    fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true);
   });
 
   window.setTimeout(() => {
@@ -3086,11 +3088,11 @@ function openMapLayersFromJobCard() {
   setFullMap(true);
   setMapMenuOpen(true);
   setMapBoardOpen(true);
+  clearManualMapControl();
   setActionNotice("Layers open. Choose Soft, Open, Light, Night, Satellite, or another map style.");
 
   window.requestAnimationFrame(() => {
     mapRef.current?.invalidateSize();
-    fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true);
   });
 }
 
@@ -3669,12 +3671,33 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     mapProgrammaticMoveUntilRef.current = Date.now() + durationMs;
   }
 
-  function userRecentlyAdjustedMap(windowMs = 10000) {
-    return Date.now() - mapUserInteractedAtRef.current < windowMs;
+  function clearManualMapControl() {
+    mapManualControlLockedRef.current = false;
+    mapUserInteractedAtRef.current = 0;
+    setFollowMyLocation(false);
   }
 
-  function shouldKeepManualMapView() {
-    return userRecentlyAdjustedMap() && !selectedOnly && !drawerOpen;
+  function markUserMapControl(showNotice = true) {
+    mapManualControlLockedRef.current = true;
+    mapUserInteractedAtRef.current = Date.now();
+    locationOverviewFitRef.current = true;
+    setFollowMyLocation(false);
+
+    if (showNotice && Date.now() - mapManualControlNoticeAtRef.current > 12000) {
+      mapManualControlNoticeAtRef.current = Date.now();
+      showActionNotice("Manual map control on. Tap Me when you want the map to center on you.");
+    }
+  }
+
+  function handleMapUserGesture(event?: any) {
+    if (Date.now() <= mapProgrammaticMoveUntilRef.current && !event?.originalEvent) return;
+    markUserMapControl();
+  }
+
+  function manualZoomMap(direction: "in" | "out") {
+    markUserMapControl(false);
+    if (direction === "in") mapRef.current?.zoomIn();
+    else mapRef.current?.zoomOut();
   }
 
   function nudgeSingleMarkerIntoTapZone(latLng: [number, number], delay = 220) {
@@ -3728,7 +3751,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       return;
     }
 
-    map.setView([40.7128, -74.006], 10, { animate: true });
+    const fallbackZoom = typeof window !== "undefined" && window.innerWidth <= 720 ? 9 : 10;
+    map.setView([40.7128, -74.006], fallbackZoom, { animate: true });
   }
 
   function clusterPriorityScore(job: MappedJob) {
@@ -3797,6 +3821,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setFullMap(true);
     setMapMenuOpen(false);
     setActionNotice("");
+    markProgrammaticMapMove();
     mapRef.current?.panTo([lat, lng], { animate: true, duration: 0.45 });
     window.setTimeout(() => mapRef.current?.invalidateSize(), 120);
   }
@@ -3867,6 +3892,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   function openMapJobBrief(job: MappedJob, index?: number) {
     clearMarkerOverviewReturn();
     setClusterSheet(null);
+    setFollowMyLocation(false);
+    locationOverviewFitRef.current = true;
     setSelected(null);
     setSelectedOnly(false);
     setGeneratedLinks({});
@@ -3880,6 +3907,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const coords = jobLatLng(job);
     if (coords && mapRef.current) {
       const nextZoom = Math.max(Number(mapZoom || 0), 15);
+      markProgrammaticMapMove();
       mapRef.current.flyTo([coords.lat, coords.lng], Math.min(nextZoom, 16), {
         animate: true,
         duration: 0.55,
@@ -3954,7 +3982,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setFollowMyLocation(false);
     setLocationStatus("Location blocked in Chrome");
     setLocationHelpOpen(true);
-    fitVisibleJobsOnMap(MAP_LAYER_OVERVIEW_ZOOM, false);
     showActionNotice("Location blocked. Allow Location for this site, then tap Retry GPS.");
   }
 
@@ -3966,6 +3993,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function showMyLocationOverview() {
     clearMarkerOverviewReturn();
+    clearManualMapControl();
     setMapJobBrief(null);
     setClusterSheet(null);
     setSelectedOnly(false);
@@ -3982,6 +4010,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     if (centerMapOnUserLocation()) {
+      setFollowMyLocation(false);
       setLocationHelpOpen(false);
       const nearbyCount = userLocation ? nearbyJobBoundsForLocation(userLocation).length : 0;
       showActionNotice(
@@ -3991,7 +4020,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       );
     } else {
       setLocationHelpOpen(false);
-      startLocationTracking();
+      startLocationTracking({ followMap: true });
       showActionNotice("Starting location. The map will center on you with a wider view.");
     }
 
@@ -4008,9 +4037,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     setDrawerOpen(false);
     setFullMap(true);
     mapRef.current?.closePopup?.();
-    if (!centerMapOnUserLocation()) {
-      fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true);
-    }
+    clearManualMapControl();
     window.setTimeout(() => mapRef.current?.invalidateSize(), 120);
   }
 
@@ -4165,11 +4192,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
         if (cancelled || !mapNode.current) return;
 
+        const initialMapZoom = typeof window !== "undefined" && window.innerWidth <= 720 ? 9 : 10;
         const map = L.map(mapNode.current, {
           zoomControl: false,
           attributionControl: true,
           preferCanvas: true,
-        }).setView([40.7128, -74.006], 10);
+        }).setView([40.7128, -74.006], initialMapZoom);
 
         const markerLayer = L.layerGroup().addTo(map);
 
@@ -4179,12 +4207,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         map.on("zoomend", () => {
           setMapZoom(map.getZoom());
         });
-        map.on("zoomstart dragstart", () => {
-          if (Date.now() <= mapProgrammaticMoveUntilRef.current) return;
-          mapUserInteractedAtRef.current = Date.now();
-          locationOverviewFitRef.current = true;
-          setFollowMyLocation(false);
-        });
+        map.on("zoomstart dragstart movestart", handleMapUserGesture);
 
         setMapReady(true);
 
@@ -4331,26 +4354,26 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       const clusterCellX = mobileMap
         ? zoomLevel < 11
-          ? 178
+          ? 236
           : zoomLevel < 13
-            ? 148
-            : 128
+            ? 206
+            : 176
         : zoomLevel < 11
-          ? 188
+          ? 248
           : zoomLevel < 13
-            ? 156
-            : 136;
+            ? 214
+            : 184;
       const clusterCellY = mobileMap
         ? zoomLevel < 11
-          ? 154
+          ? 206
           : zoomLevel < 13
-            ? 132
-            : 116
+            ? 178
+            : 154
         : zoomLevel < 11
-          ? 164
+          ? 214
           : zoomLevel < 13
-            ? 142
-            : 124;
+            ? 186
+            : 160;
       const renderItems: any[] = markerOverview && !showIndividualNoAccessTimers
         ? Array.from(
             plottedItems.reduce((clusters, item) => {
@@ -4476,11 +4499,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           const topHeaderShift = mobileMap && clusterPoint.y < 150 ? 48 : 0;
           const [offsetX, offsetY]: [number, number] = [0, topHeaderShift];
           const clusterLatLng = map.layerPointToLatLng(L.point(clusterPoint.x + offsetX, clusterPoint.y + offsetY));
-          const clusterIconSize: [number, number] = mobileMap ? [84, 92] : [90, 98];
+          const compactCluster = mobileMap || denseLayer || filteredCount > 24 || zoomLevel < 14;
+          const clusterIconSize: [number, number] = compactCluster
+            ? (mobileMap ? [62, 66] : [70, 74])
+            : (mobileMap ? [84, 92] : [90, 98]);
           const marker = L.marker([clusterLatLng.lat, clusterLatLng.lng], {
             icon: L.divIcon({
               className: "maturity-map-marker",
-              html: `<div class="map-cluster-marker map-cluster-dot cluster-dispatch-badge ${statusClass} ${clusterSizeClass}" title="${escapeMarkerHtml(clusterLabel)}">
+              html: `<div class="map-cluster-marker map-cluster-dot cluster-dispatch-badge ${compactCluster ? "cluster-compact-dot" : ""} ${statusClass} ${clusterSizeClass}" title="${escapeMarkerHtml(clusterLabel)}">
                       <div class="cluster-topline">
                         <strong>${escapeMarkerHtml(clusterBoroughLabel)}</strong>
                         <em>Zone</em>
@@ -4539,11 +4565,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               focusJob(clusterItems[0].job);
               return;
             }
-            if (zoomLevel < 11) {
-              markProgrammaticMapMove();
-              map.setView([item.lat, item.lng], Math.min(16, Math.max(zoomLevel + 2, mobileMap ? 11 : 11)), { animate: true, duration: 0.45 });
-              return;
-            }
             openClusterSheet(clusterItems, item.lat, item.lng, clusterLabel, readyCount, worstOverdue);
           });
 
@@ -4557,7 +4578,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const lng = Number(item.lng);
         const locationCount = Number((item as ClusterJobItem).locationCount || 1);
         const locationRank = Number((item as ClusterJobItem).locationRank || 0);
-        const shouldFanOut = !selectedOnly && locationCount > 1;
+        const shouldFanOut = !selectedOnly && locationCount > 1 && zoomLevel >= (mobileMap ? 16 : 15);
         const fanoutRadius = shouldFanOut ? Math.min(mobileMap ? 34 : 42, (mobileMap ? 14 : 18) + Math.min(6, locationCount) * 3) : 0;
         const fanoutAngle = shouldFanOut ? (Math.PI * 2 * (locationRank % Math.max(2, Math.min(locationCount, 10)))) / Math.max(2, Math.min(locationCount, 10)) : 0;
         const fanoutPoint = shouldFanOut ? map.latLngToLayerPoint([lat, lng]) : null;
@@ -4655,34 +4676,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       if (bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
         markerAutoFitKeyRef.current = markerAutoFitKey;
-        if (shouldKeepManualMapView()) {
-          setTimeout(() => map.invalidateSize(), 250);
-          return;
-        }
         if (userLocation && followMyLocation) {
           centerMapOnUserLocation(userLocation);
           setTimeout(() => map.invalidateSize(), 250);
           return;
         }
-        if (userLocation && !selectedOnly && !drawerOpen) {
-          fitVisibleJobsOnMap(USER_LOCATION_OVERVIEW_ZOOM, true);
-          setTimeout(() => map.invalidateSize(), 250);
-          return;
-        }
-        if (bounds.length === 1) {
-          markProgrammaticMapMove();
-          map.setView(bounds[0], MAP_SINGLE_JOB_OVERVIEW_ZOOM, { animate: true, duration: 0.5 });
-          nudgeSingleMarkerIntoTapZone(bounds[0], 260);
-          setTimeout(() => map.invalidateSize(), 250);
-          return;
-        }
-        markProgrammaticMapMove();
-        map.fitBounds(bounds, mapFitOptions(MAP_LAYER_OVERVIEW_ZOOM, 0.5));
+        setTimeout(() => map.invalidateSize(), 250);
       } else if (!bounds.length && markerAutoFitKeyRef.current !== markerAutoFitKey) {
         markerAutoFitKeyRef.current = markerAutoFitKey;
-        if (shouldKeepManualMapView()) return;
-        markProgrammaticMapMove();
-        map.setView([40.7128, -74.006], 10);
       }
 
       setTimeout(() => map.invalidateSize(), 250);
@@ -4729,9 +4730,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         userLocationAccuracyRef.current.setRadius(Math.max(15, userLocation.accuracy || 25));
       }
 
-      if (followMyLocation || (!locationOverviewFitRef.current && !userRecentlyAdjustedMap())) {
+      if (followMyLocation) {
         locationOverviewFitRef.current = true;
         centerMapOnUserLocation(userLocation);
+        setFollowMyLocation(false);
       }
     }
 
@@ -7819,7 +7821,8 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     openPaperworkPreviewForStatus(job, patch, false);
   }
 
-  function startLocationTracking() {
+  function startLocationTracking(optionsOverride: { followMap?: boolean } = {}) {
+    const followMap = Boolean(optionsOverride.followMap);
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setLocationStatus("Location unavailable");
       showActionNotice("Location is not available in this browser.");
@@ -7829,7 +7832,12 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     if (typeof window !== "undefined") {
       window.localStorage.setItem(LOCATION_ALWAYS_STORAGE_KEY, "on");
     }
-    locationOverviewFitRef.current = false;
+    if (followMap) {
+      clearManualMapControl();
+      locationOverviewFitRef.current = false;
+    } else {
+      locationOverviewFitRef.current = true;
+    }
 
     const options: PositionOptions = {
       enableHighAccuracy: true,
@@ -7867,7 +7875,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
 
     const requestPosition = () => {
       setLocationHelpOpen(false);
-      setFollowMyLocation(true);
+      setFollowMyLocation(followMap);
       setLocationStatus("Live location starting...");
       navigator.geolocation.getCurrentPosition(onPosition, onError, options);
       if (geolocationWatchRef.current === null) {
@@ -8552,6 +8560,8 @@ function focusJob(job: MappedJob) {
     clearMarkerOverviewReturn();
     setMapJobBrief(null);
     setClusterSheet(null);
+    setFollowMyLocation(false);
+    locationOverviewFitRef.current = true;
     mapRef.current?.closePopup?.();
     const nextVisitDate = localDatetimeValue();
     setVisitStatusDate(nextVisitDate);
@@ -8569,6 +8579,7 @@ function focusJob(job: MappedJob) {
     });
 
     if (Number.isFinite(job._lat) && Number.isFinite(job._lng) && mapRef.current) {
+      markProgrammaticMapMove();
       mapRef.current.flyTo([Number(job._lat), Number(job._lng)], 16, {
         animate: true,
         duration: 0.65,
@@ -9260,11 +9271,11 @@ function directionsUrl(job: JobRecord) {
     );
     setMapMenuOpen(false);
     setMapBoardOpen(keepBoardOpen);
+    clearManualMapControl();
     setActionNotice(`${dashboardViewCopy[view].label} ${keepBoardOpen ? "queue" : "map view"}.`);
 
     window.requestAnimationFrame(() => {
       mapRef.current?.invalidateSize();
-      fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : 13, true);
     });
   }
 
@@ -9276,6 +9287,7 @@ function directionsUrl(job: JobRecord) {
     setSelected(null);
     setDrawerOpen(false);
     setFullMap(true);
+    clearManualMapControl();
     setActionNotice(
       value === "all"
         ? "Showing all boroughs on this map layer."
@@ -9284,7 +9296,6 @@ function directionsUrl(job: JobRecord) {
 
     window.requestAnimationFrame(() => {
       mapRef.current?.invalidateSize();
-      fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : MAP_LAYER_OVERVIEW_ZOOM, Boolean(userLocation));
     });
   }
 
@@ -9308,7 +9319,7 @@ function directionsUrl(job: JobRecord) {
     setUrlOmoRequest("");
     setSearch("");
     markerAutoFitKeyRef.current = "";
-    mapUserInteractedAtRef.current = 0;
+    clearManualMapControl();
     mapRef.current?.closePopup?.();
     setActionNotice(showAll ? "Showing all mapped jobs." : `Showing jobs from the last ${Number(nextDays)} days.`);
 
@@ -32683,6 +32694,129 @@ return (
             color: #031527 !important;
           }
 
+          /* MAP_MANUAL_CONTROL_CLUSTER_DENSITY_2026 */
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge.cluster-compact-dot {
+            width: 64px !important;
+            min-width: 64px !important;
+            height: 66px !important;
+            min-height: 66px !important;
+            display: grid !important;
+            grid-template-rows: 17px minmax(0, 1fr) !important;
+            align-items: center !important;
+            justify-items: center !important;
+            gap: 1px !important;
+            padding: 6px !important;
+            border-radius: 20px !important;
+            background:
+              radial-gradient(circle at 50% 16%, rgba(124, 246, 198, 0.34), transparent 34%),
+              linear-gradient(145deg, #031527 0%, #062f53 55%, #074d48 100%) !important;
+            color: #ecfff8 !important;
+            border: 2px solid rgba(202, 255, 232, 0.78) !important;
+            box-shadow:
+              0 0 0 2px rgba(0, 208, 132, 0.18),
+              0 14px 30px rgba(2, 10, 29, 0.42),
+              0 0 24px rgba(0, 208, 132, 0.22),
+              inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot .cluster-topline {
+            width: 100% !important;
+            display: grid !important;
+            justify-items: center !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot .cluster-topline strong {
+            min-height: 15px !important;
+            padding: 2px 6px !important;
+            border-radius: 999px !important;
+            background: rgba(202, 255, 232, 0.16) !important;
+            color: #ecfff8 !important;
+            font-size: 8px !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot .cluster-topline em,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot .cluster-job-word,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot .cluster-focus-row {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot span,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot.cluster-size-lg span,
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot.cluster-size-xl span {
+            margin: 0 !important;
+            color: #ffffff !important;
+            font-size: 23px !important;
+            line-height: 0.92 !important;
+            font-weight: 1000 !important;
+            text-shadow: 0 0 12px rgba(124, 246, 198, 0.30) !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker.cluster-preview-active .map-cluster-marker.cluster-compact-dot,
+          .map-shell.map-glass-command-trial .maturity-map-marker:hover .map-cluster-marker.cluster-compact-dot {
+            transform: translateY(-13px) scale(1.18) !important;
+            filter: saturate(1.18) brightness(1.08) !important;
+            box-shadow:
+              0 0 0 4px rgba(0, 208, 132, 0.28),
+              0 26px 48px rgba(2, 10, 29, 0.50),
+              0 0 38px rgba(25, 240, 162, 0.36),
+              inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot::after {
+            width: 12px !important;
+            height: 12px !important;
+            bottom: -6px !important;
+            background: #062f53 !important;
+            border-color: rgba(202, 255, 232, 0.78) !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-safe {
+            min-width: 86px !important;
+            max-width: 98px !important;
+            min-height: 52px !important;
+            padding: 6px 7px !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-main {
+            max-width: 82px !important;
+            font-size: 15px !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-address {
+            max-width: 78px !important;
+            font-size: 7px !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-mini {
+            min-width: 48px !important;
+            max-width: 58px !important;
+            min-height: 40px !important;
+          }
+
+          .map-shell.map-glass-command-trial .maturity-map-marker:hover .map-signal-marker.marker-overlap-safe,
+          .map-shell.map-glass-command-trial .maturity-map-marker:hover .map-signal-marker.marker-overlap-mini {
+            transform: translateY(-14px) scale(1.18) !important;
+          }
+
+          @media (max-width: 430px) {
+            .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge.cluster-compact-dot {
+              width: 58px !important;
+              min-width: 58px !important;
+              height: 60px !important;
+              min-height: 60px !important;
+              border-radius: 18px !important;
+              padding: 5px !important;
+            }
+
+            .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot span,
+            .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot.cluster-size-lg span,
+            .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot.cluster-size-xl span {
+              font-size: 21px !important;
+            }
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
@@ -33121,7 +33255,10 @@ return (
             >
               Layers
             </button>
-            <button type="button" onClick={() => fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : MAP_LAYER_OVERVIEW_ZOOM, Boolean(userLocation))}>
+            <button type="button" onClick={() => {
+              clearManualMapControl();
+              fitVisibleJobsOnMap(MAP_LAYER_OVERVIEW_ZOOM, false);
+            }}>
               Fit Layer
             </button>
           </div>
@@ -33155,10 +33292,11 @@ return (
         </div>
 
         <div className="zoom-panel">
-          <button type="button" onClick={() => mapRef.current?.zoomIn()}>+</button>
-          <button type="button" onClick={() => mapRef.current?.zoomOut()}>−</button>
+          <button type="button" onClick={() => manualZoomMap("in")}>+</button>
+          <button type="button" onClick={() => manualZoomMap("out")}>−</button>
           <button type="button" onClick={() => {
-            fitVisibleJobsOnMap(userLocation ? USER_LOCATION_OVERVIEW_ZOOM : MAP_LAYER_OVERVIEW_ZOOM, Boolean(userLocation));
+            clearManualMapControl();
+            fitVisibleJobsOnMap(MAP_LAYER_OVERVIEW_ZOOM, false);
           }}>Fit</button>
           <button
             type="button"
@@ -33188,7 +33326,7 @@ return (
               <small>Chrome is not sharing your current position. I fitted the active layer so the map still works.</small>
             </div>
             <div className="location-help-actions">
-              <button type="button" onClick={startLocationTracking}>Retry GPS</button>
+              <button type="button" onClick={() => startLocationTracking({ followMap: true })}>Retry GPS</button>
               <button type="button" onClick={fitLayerWhileLocationBlocked}>Fit Layer</button>
               <button type="button" onClick={() => setLocationHelpOpen(false)}>Hide</button>
             </div>
@@ -33267,7 +33405,7 @@ return (
             </div>
             <div className="map-job-brief-actions">
               {!userLocation ? (
-                <button type="button" onClick={startLocationTracking}>
+                <button type="button" onClick={() => startLocationTracking({ followMap: true })}>
                   <strong>Start GPS</strong>
                   <small>center nearby jobs</small>
                 </button>
