@@ -21,6 +21,11 @@ const faxDescriptionPageOverrides = new Map([
   ["faxcopy_20260106_104555_.695d315782d68.pdf", 6],
 ]);
 
+const descriptionPageOverrides = new Map([
+  // This ITB has the OMO scope on page 2; page 3 is blank and page 4 is the generic form.
+  ["eq31601_070726090621.pdf", 2],
+]);
+
 function fileExists(target) {
   try {
     return fs.existsSync(target) && fs.statSync(target).isFile();
@@ -66,6 +71,9 @@ function descriptionRenderPage(ref, source) {
   const fileName = String(ref?.fileName || "");
   const lowerFileName = fileName.toLowerCase();
   const pageCount = Number(source?.pageCount || 0);
+  const descriptionPage = descriptionPageOverrides.get(lowerFileName);
+  if (descriptionPage && pageCount >= descriptionPage) return descriptionPage;
+
   const overridePage = faxDescriptionPageOverrides.get(lowerFileName);
   if (overridePage && pageCount >= overridePage) return overridePage;
 
