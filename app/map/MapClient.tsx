@@ -19,6 +19,7 @@ const DAY_AGENT_ROUTE_ACCENT = "#0ea5e9";
 const DAY_AGENT_ROUTE_LABEL_WIDTH = 112;
 const DAY_AGENT_ROUTE_LABEL_HEIGHT = 34;
 const DAY_AGENT_ROUTE_LABEL_LIMIT = 5;
+const DAY_AGENT_ROUTE_FETCH_TIMEOUT_MS = 5500;
 const FIELD_VISIT_RADIUS_MILES = 0.08;
 const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
 const MAP_BOROUGH_FILTERS = [
@@ -2972,9 +2973,12 @@ async function fetchDayAgentRoadRoute(points: ReturnType<typeof dayAgentRoutePoi
   const coordPath = points
     .map((point) => `${point.coords.lng.toFixed(6)},${point.coords.lat.toFixed(6)}`)
     .join(";");
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), DAY_AGENT_ROUTE_FETCH_TIMEOUT_MS);
   const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordPath}?overview=full&geometries=geojson&steps=false`, {
     cache: "no-store",
-  });
+    signal: controller.signal,
+  }).finally(() => window.clearTimeout(timeoutId));
   if (!response.ok) throw new Error(`Route service returned ${response.status}`);
   const body = await response.json();
   const route = body?.routes?.[0];
