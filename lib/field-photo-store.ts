@@ -890,6 +890,43 @@ export async function listFieldEvidence(jobId: string) {
   return listFieldPhotos(jobId);
 }
 
+export async function updateFieldEvidence(
+  jobId: string,
+  mediaId: string,
+  updates: Partial<Pick<FieldMedia, "kind" | "evidenceLabel" | "outcome" | "name">>
+) {
+  const cleanJobId = String(jobId || "").trim();
+  const cleanMediaId = String(mediaId || "").trim();
+  if (!cleanJobId || !cleanMediaId || !hasIndexedDb()) return null;
+
+  const rows = await listFieldPhotos(cleanJobId);
+  const existing = rows.find((media) => media.id === cleanMediaId);
+  if (!existing) return null;
+
+  const nextKind = updates.kind || existing.kind || "general";
+  const nextLabel = String(updates.evidenceLabel || "").trim() || existing.evidenceLabel || evidenceLabel(nextKind);
+  const updated: FieldMedia = {
+    ...existing,
+    kind: nextKind,
+    evidenceLabel: nextLabel,
+    outcome: String(updates.outcome ?? existing.outcome ?? "").trim(),
+    name: String(updates.name || "").trim() || existing.name,
+  };
+
+  const db = await openDb();
+  const transaction = db.transaction(STORE_NAME, "readwrite");
+  transaction.objectStore(STORE_NAME).put(updated);
+
+  await new Promise<void>((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error || new Error("Could not update evidence."));
+    transaction.onabort = () => reject(transaction.error || new Error("Evidence update was aborted."));
+  });
+
+  db.close();
+  return updated;
+}
+
 export async function clearFieldEvidence(jobId: string) {
   const cleanJobId = String(jobId || "").trim();
   if (!cleanJobId || !hasIndexedDb()) return 0;

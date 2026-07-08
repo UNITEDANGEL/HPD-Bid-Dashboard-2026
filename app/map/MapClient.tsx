@@ -9,6 +9,8 @@ const MAPTILER_ENV_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
 const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
 const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v3";
 const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
+const FIELD_VISIT_TRACKING_STORAGE_KEY = "hpd-private-field-visit-tracking-v1";
+const FIELD_VISIT_RADIUS_MILES = 0.08;
 const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
 const MAP_BOROUGH_FILTERS = [
   { key: "all", label: "All Boroughs", short: "All" },
@@ -39,7 +41,13 @@ import {
   dataUrlToBytes,
   listFieldEvidence,
   saveFieldPhotos,
+  updateFieldEvidence,
 } from "../../lib/field-photo-store";
+import {
+  type FieldVisitRecord,
+  fieldVisitSummaryByJob,
+  saveFieldVisit,
+} from "../../lib/field-visit-store";
 import {
   type FieldPacket,
   bytesToDataUrl,
@@ -2656,6 +2664,10 @@ const [userLocation, setUserLocation] = useState<UserLocationState | null>(null)
 const [locationStatus, setLocationStatus] = useState("Location off");
 const [locationHelpOpen, setLocationHelpOpen] = useState(false);
 const [followMyLocation, setFollowMyLocation] = useState(false);
+const [fieldVisitTrackingEnabled, setFieldVisitTrackingEnabled] = useState(true);
+const [fieldVisitSummary, setFieldVisitSummary] = useState<Record<string, { latest?: FieldVisitRecord; today?: FieldVisitRecord; count: number }>>({});
+const [fieldVisitSaving, setFieldVisitSaving] = useState(false);
+const autoVisitRecordedRef = useRef<Record<string, string>>({});
   const [search, setSearch] = useState("");
   const [urlOmoRequest, setUrlOmoRequest] = useState("");
   const [message, setMessage] = useState("Loading jobs...");
@@ -3936,6 +3948,88 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return `${Math.round(miles)} mi away`;
   }
 
+  function fieldVisitDateKey(value = new Date()) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  function visitSummaryFor(job: JobRecord | null | undefined) {
+    const key = job ? jobKey(job) : "";
+    return key ? fieldVisitSummary[key] : undefined;
+  }
+
+  function visitDistanceLabel(visit?: FieldVisitRecord) {
+    if (!visit) return "Not visited yet";
+    const feet = Math.round(Number(visit.distanceMiles || 0) * 5280);
+    if (feet < 75) return "on site";
+    if (feet < 900) return `${feet} ft`;
+    return `${Number(visit.distanceMiles || 0).toFixed(1)} mi`;
+  }
+
+  async function refreshFieldVisitSummary() {
+    try {
+      const summary = await fieldVisitSummaryByJob();
+      setFieldVisitSummary(summary);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async function markFieldVisit(job: JobRecord, source: "auto_nearby" | "manual_here" = "manual_here") {
+    const key = jobKey(job);
+    const coords = jobLatLng(job);
+    if (!key || !coords) {
+      showActionNotice("This work order has no map location to track.");
+      return null;
+    }
+
+    if (!userLocation) {
+      showActionNotice("Turn on location, then tap Mark I'm Here again.");
+      startLocationTracking();
+      return null;
+    }
+
+    setFieldVisitSaving(source === "manual_here");
+    try {
+      const miles = distanceMiles(userLocation, coords);
+      const visitDate = fieldVisitDateKey();
+      const row = await saveFieldVisit({
+        id: `${key}-${visitDate}`,
+        jobId: key,
+        address: displayAddress(job),
+        location: displayLocation(job),
+        borough: jobBoroughLabel(job),
+        jobLat: coords.lat,
+        jobLng: coords.lng,
+        userLat: userLocation.lat,
+        userLng: userLocation.lng,
+        distanceMiles: miles,
+        accuracy: Number(userLocation.accuracy || 0),
+        visitDate,
+        source,
+        note: source === "auto_nearby" ? "Auto-recorded when GPS was near the work order." : "Marked from the job card.",
+      });
+
+      autoVisitRecordedRef.current[`${key}:${visitDate}`] = row.visitedAt;
+      await refreshFieldVisitSummary();
+      showActionNotice(`${key} visit recorded privately: ${visitDistanceLabel(row)}.`);
+      return row;
+    } catch (error) {
+      console.error(error);
+      showActionNotice(error instanceof Error ? error.message : "Could not save private visit.");
+      return null;
+    } finally {
+      if (source === "manual_here") setFieldVisitSaving(false);
+    }
+  }
+
+  function updateFieldVisitTrackingEnabled(enabled: boolean) {
+    setFieldVisitTrackingEnabled(enabled);
+    try {
+      window.localStorage?.setItem(FIELD_VISIT_TRACKING_STORAGE_KEY, enabled ? "1" : "0");
+    } catch {}
+    showActionNotice(enabled ? "Private daily visit tracking is on." : "Private daily visit tracking is off.");
+  }
+
   function mapBriefText(job: JobRecord) {
     const summary = descriptionSummary(job);
     if (summary && summary !== "No description available.") return summary;
@@ -4726,6 +4820,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const hasOverdue = Boolean(overdueLabel);
         const ageInfo = jobAgeBadgeInfo(job);
         const ageUrgent = ageInfo.priority === "warning" || ageInfo.priority === "urgent" || ageInfo.priority === "overdue";
+        const visitSummary = visitSummaryFor(job);
+        const visitedToday = Boolean(visitSummary?.today);
         if (overlapSafeMarker) {
           const fullBox = markerBoxAt(markerPoint, mobileMap ? 116 : 122, noAccessTimerLabel || appointmentLabel ? 94 : 66);
           collisionMiniMarker = markerCollisionBoxes.some((box) => markerBoxesOverlap(fullBox, box));
@@ -4773,8 +4869,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           title: `${popupJobId} ${displayAddress(job)}`,
           icon: L.divIcon({
             className: "maturity-map-marker",
-            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} ${noAccessTimerLabel ? "marker-has-no-access" : ""} ${noAccessSoon ? "marker-no-access-soon" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} ${appointmentPastDue ? "marker-appointment-past" : ""} ${pendingAppointmentPulse ? "marker-pending-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${noAccessReady ? "marker-ready-revisit" : ""}" style="border-color:${hasOverdue ? "#ef4444" : appointmentPastDue ? "#dc2626" : noAccessSoon ? "#f97316" : appointmentLabel ? "#f59e0b" : noAccessReady ? "#22c55e" : markerColor}">
+            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} ${visitedToday ? "marker-visited-today" : ""} ${noAccessTimerLabel ? "marker-has-no-access" : ""} ${noAccessSoon ? "marker-no-access-soon" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} ${appointmentPastDue ? "marker-appointment-past" : ""} ${pendingAppointmentPulse ? "marker-pending-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${noAccessReady ? "marker-ready-revisit" : ""}" style="border-color:${visitedToday ? "#53e69c" : hasOverdue ? "#ef4444" : appointmentPastDue ? "#dc2626" : noAccessSoon ? "#f97316" : appointmentLabel ? "#f59e0b" : noAccessReady ? "#22c55e" : markerColor}">
                     ${markerSignalLabelHtml(job, { overview: markerOverview, expanded: markerExpanded, detailed: markerDetailed, overdueLabel, noAccessTimerLabel, appointmentLabel, tapHint: selectedMarkerTapHint })}
+                    ${visitedToday ? '<span class="marker-visit-badge">VISITED TODAY</span>' : ""}
                   </div>`,
             iconSize,
             iconAnchor,
@@ -4886,6 +4983,53 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       }
     };
   }, []);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage?.getItem(FIELD_VISIT_TRACKING_STORAGE_KEY);
+      if (saved === "0") setFieldVisitTrackingEnabled(false);
+    } catch {}
+    void refreshFieldVisitSummary();
+  }, []);
+
+  useEffect(() => {
+    if (!fieldVisitTrackingEnabled || !userLocation) return;
+    const pool = (mappedJobs.length ? mappedJobs : jobs) as MappedJob[];
+    if (!pool.length) return;
+
+    const visitDate = fieldVisitDateKey();
+    const nearby = pool
+      .map((job) => {
+        const coords = jobLatLng(job);
+        if (!coords) return null;
+        const miles = distanceMiles(userLocation, coords);
+        return { job, miles };
+      })
+      .filter((item): item is { job: MappedJob; miles: number } => Boolean(item))
+      .filter((item) => item.miles <= FIELD_VISIT_RADIUS_MILES)
+      .sort((a, b) => a.miles - b.miles)
+      .slice(0, 3);
+
+    if (!nearby.length) return;
+
+    let cancelled = false;
+    async function saveNearbyVisits() {
+      for (const item of nearby) {
+        if (cancelled) return;
+        const key = jobKey(item.job);
+        if (!key) continue;
+        const dayKey = `${key}:${visitDate}`;
+        if (autoVisitRecordedRef.current[dayKey] || fieldVisitSummary[key]?.today) continue;
+        autoVisitRecordedRef.current[dayKey] = "saving";
+        await markFieldVisit(item.job, "auto_nearby");
+      }
+    }
+
+    void saveNearbyVisits();
+    return () => {
+      cancelled = true;
+    };
+  }, [fieldVisitTrackingEnabled, userLocation?.lat, userLocation?.lng, mappedJobs.length, jobs.length]);
 
   useEffect(() => {
     if (!mapReady || locationAutoStartedRef.current || typeof window === "undefined") return;
@@ -6185,6 +6329,33 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
 
   function fieldEvidencePreview(media: FieldMedia) {
     return media.mediaType === "video" ? media.posterDataUrl || "" : media.dataUrl;
+  }
+
+  async function updateSavedMediaLabel(job: JobRecord, media: FieldMedia, nextKind: FieldMediaKind, nextLabel: string) {
+    const key = jobKey(job);
+    if (!key) return;
+
+    try {
+      const updated = await updateFieldEvidence(key, media.id, {
+        kind: nextKind,
+        evidenceLabel: nextLabel,
+        outcome: workflowStatus(job),
+      });
+      if (!updated) {
+        showActionNotice("Could not find that saved media item.");
+        return;
+      }
+
+      const [counts, evidenceRows] = await Promise.all([countFieldPhotos(key), listFieldEvidence(key)]);
+      setFieldPhotoCounts((current) => ({ ...current, [key]: counts }));
+      setFieldEvidenceByJob((current) => ({ ...current, [key]: fieldEvidenceCardRows(evidenceRows) }));
+      setFieldMediaFlashKind(nextKind);
+      window.setTimeout(() => setFieldMediaFlashKind((current) => (current === nextKind ? "" : current)), 1200);
+      showActionNotice(`${key} media label updated.`);
+    } catch (error) {
+      console.error(error);
+      showActionNotice(error instanceof Error ? error.message : "Could not update media label.");
+    }
   }
 
   function fieldEvidenceRowsByKind(job: JobRecord | null, kind: FieldMediaKind) {
@@ -13605,6 +13776,49 @@ return (
             letter-spacing: 0 !important;
           }
 
+          .field-media-edit-panel {
+            margin: 0 8px 8px !important;
+            border-radius: 10px !important;
+            border: 1px solid rgba(124, 246, 198, 0.18) !important;
+            background: rgba(2, 8, 23, 0.28) !important;
+            overflow: hidden !important;
+          }
+
+          .field-media-edit-panel summary {
+            min-height: 32px !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 9px !important;
+            color: #a7f3d0 !important;
+            font-size: 11px !important;
+            font-weight: 950 !important;
+            cursor: pointer !important;
+          }
+
+          .field-media-edit-panel label {
+            display: grid !important;
+            gap: 5px !important;
+            padding: 0 9px 9px !important;
+            color: #dfffea !important;
+            font-size: 10px !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+          }
+
+          .field-media-edit-panel select,
+          .field-media-edit-panel input {
+            width: 100% !important;
+            min-height: 36px !important;
+            border: 1px solid rgba(124, 246, 198, 0.22) !important;
+            border-radius: 9px !important;
+            background: rgba(1, 12, 23, 0.86) !important;
+            color: #ffffff !important;
+            padding: 0 9px !important;
+            font-size: 13px !important;
+            font-weight: 800 !important;
+            text-transform: none !important;
+          }
+
           .field-evidence-gallery-empty {
             display: grid;
             gap: 2px;
@@ -17494,6 +17708,31 @@ return (
             letter-spacing: 0 !important;
             white-space: nowrap !important;
             box-shadow: inset 0 0 0 1px rgba(120, 53, 15, 0.16) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker .marker-visit-badge {
+            min-height: 22px !important;
+            min-width: 112px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 5px 10px !important;
+            border-radius: 999px !important;
+            background: #53e69c !important;
+            color: #032019 !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+            line-height: 1 !important;
+            box-shadow:
+              0 0 0 2px rgba(255, 255, 255, 0.92),
+              0 0 18px rgba(83, 230, 156, 0.44) !important;
+          }
+
+          .maturity-map-marker .map-signal-marker.marker-visited-today {
+            box-shadow:
+              0 18px 34px rgba(3, 20, 14, 0.32),
+              0 0 0 3px rgba(83, 230, 156, 0.20),
+              0 0 22px rgba(83, 230, 156, 0.34) !important;
           }
 
           .maturity-map-marker .map-signal-marker .marker-appointment-badge.is-due,
@@ -22992,6 +23231,77 @@ return (
             font-weight: 900 !important;
             letter-spacing: 0 !important;
             text-transform: uppercase !important;
+          }
+
+          .private-visit-card {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 10px !important;
+            align-items: center !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(124, 246, 198, 0.22) !important;
+            background: linear-gradient(135deg, rgba(3, 22, 34, 0.94), rgba(5, 60, 70, 0.84)) !important;
+            padding: 10px !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.10),
+              0 16px 28px rgba(2, 8, 23, 0.20) !important;
+          }
+
+          .private-visit-card.visited-today {
+            border-color: rgba(83, 230, 156, 0.56) !important;
+            box-shadow:
+              0 0 0 3px rgba(83, 230, 156, 0.12),
+              0 0 28px rgba(83, 230, 156, 0.20),
+              inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+          }
+
+          .private-visit-card span,
+          .private-visit-card small {
+            display: block !important;
+            color: #a7f3d0 !important;
+            font-size: 10px !important;
+            line-height: 1.2 !important;
+            font-weight: 900 !important;
+            text-transform: uppercase !important;
+          }
+
+          .private-visit-card strong {
+            display: block !important;
+            margin: 2px 0 !important;
+            color: #ffffff !important;
+            font-size: 16px !important;
+            line-height: 1.1 !important;
+            font-weight: 1000 !important;
+          }
+
+          .private-visit-card small {
+            color: #d6f7ff !important;
+            text-transform: none !important;
+            font-size: 11px !important;
+          }
+
+          .private-visit-actions {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 6px !important;
+            min-width: 112px !important;
+          }
+
+          .private-visit-actions button {
+            min-height: 34px !important;
+            border: 0 !important;
+            border-radius: 12px !important;
+            background: #53e69c !important;
+            color: #031d17 !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            cursor: pointer !important;
+          }
+
+          .private-visit-actions button.enabled {
+            background: rgba(124, 246, 198, 0.16) !important;
+            color: #dfffea !important;
+            box-shadow: inset 0 0 0 1px rgba(124, 246, 198, 0.34) !important;
           }
 
           .job-card-smooth-flow-rail {
@@ -33620,6 +33930,7 @@ return (
           const briefJob = mapJobBrief.job;
           const contact = tenantContactInfo(briefJob);
           const appointmentInfo = appointmentStatusInfo(briefJob);
+          const visit = visitSummaryFor(briefJob);
           const hasAppointment = Boolean(appointmentIso(briefJob));
           const tenantSignal = contact.appointmentNeeded
             ? contact.phone || contact.status
@@ -33676,6 +33987,10 @@ return (
               <span>
                 <small>Distance</small>
                 <strong>{jobDistanceLabel(briefJob)}</strong>
+              </span>
+              <span>
+                <small>Private Visit</small>
+                <strong>{visit?.today ? "Visited today" : visit?.latest ? "Seen before" : "Not yet"}</strong>
               </span>
               <span>
                 <small>Next Step</small>
@@ -33805,6 +34120,38 @@ return (
                   </span>
                 </a>
               </div>
+              {(() => {
+                const visit = visitSummaryFor(selected);
+                const latest = visit?.latest;
+                const today = visit?.today;
+                return (
+                  <div className={`private-visit-card ${today ? "visited-today" : ""}`} aria-label="Private field visit tracker">
+                    <div>
+                      <span>Private Visit Tracker</span>
+                      <strong>{today ? "Visited Today" : latest ? "Last Seen" : "Not Recorded Yet"}</strong>
+                      <small>
+                        {today
+                          ? `${displayWorkflowDate(today.visitedAt)} · ${visitDistanceLabel(today)}`
+                          : latest
+                            ? `${displayWorkflowDate(latest.visitedAt)} · ${visitDistanceLabel(latest)}`
+                            : "Local in-house tracking only. Not shared publicly."}
+                      </small>
+                    </div>
+                    <div className="private-visit-actions">
+                      <button type="button" onClick={() => markFieldVisit(selected, "manual_here")} disabled={fieldVisitSaving}>
+                        {fieldVisitSaving ? "Saving..." : "Mark I'm Here"}
+                      </button>
+                      <button
+                        type="button"
+                        className={fieldVisitTrackingEnabled ? "enabled" : ""}
+                        onClick={() => updateFieldVisitTrackingEnabled(!fieldVisitTrackingEnabled)}
+                      >
+                        {fieldVisitTrackingEnabled ? "Auto On" : "Auto Off"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="job-card-smooth-flow-rail" aria-label="Quick job flow">
                 <button type="button" className="flow-map flow-return" onClick={showCleanMapView}>
                   <strong>Map</strong>
@@ -35587,6 +35934,38 @@ return (
                           <span>{displayWorkflowDate(media.capturedAt)}</span>
                           <small>{media.name}</small>
                         </div>
+                        <details className="field-media-edit-panel">
+                          <summary>Edit media label</summary>
+                          <label>
+                            Stage
+                            <select
+                              defaultValue={media.kind}
+                              onChange={(event) => {
+                                const nextKind = event.target.value as FieldMediaKind;
+                                void updateSavedMediaLabel(selected, media, nextKind, fieldEvidenceLabel(nextKind));
+                              }}
+                            >
+                              <option value="before">Before</option>
+                              <option value="after">After</option>
+                              <option value="no_access">No Access</option>
+                              <option value="refused_access">Refused Access</option>
+                              <option value="completed_by_others">Completed By Others</option>
+                              <option value="general">General</option>
+                            </select>
+                          </label>
+                          <label>
+                            Label
+                            <input
+                              defaultValue={media.evidenceLabel || fieldEvidenceLabel(media.kind)}
+                              onBlur={(event) => {
+                                const nextLabel = event.target.value.trim();
+                                if (nextLabel && nextLabel !== media.evidenceLabel) {
+                                  void updateSavedMediaLabel(selected, media, media.kind, nextLabel);
+                                }
+                              }}
+                            />
+                          </label>
+                        </details>
                       </div>
                     ))}
                   </div>
