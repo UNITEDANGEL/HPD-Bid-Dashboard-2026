@@ -11,6 +11,14 @@ const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v3";
 const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
 const FIELD_VISIT_TRACKING_STORAGE_KEY = "hpd-private-field-visit-tracking-v1";
 const DAY_AGENT_LOG_STORAGE_KEY = "hpd-ai-day-agent-log-v1";
+const DAY_AGENT_BASE_ADDRESS = "87-35 114 Street, Richmond Hill, NY 11418";
+const DAY_AGENT_BASE_COORDS = { lat: 40.6992, lng: -73.8357 };
+const DAY_AGENT_ROUTE_MAX_STOPS = 8;
+const DAY_AGENT_ROUTE_DARK = "#082f49";
+const DAY_AGENT_ROUTE_ACCENT = "#0ea5e9";
+const DAY_AGENT_ROUTE_LABEL_WIDTH = 112;
+const DAY_AGENT_ROUTE_LABEL_HEIGHT = 34;
+const DAY_AGENT_ROUTE_LABEL_LIMIT = 5;
 const FIELD_VISIT_RADIUS_MILES = 0.08;
 const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
 const MAP_BOROUGH_FILTERS = [
@@ -207,6 +215,25 @@ type MapJobBriefState = {
   job: MappedJob;
   index?: number;
   openedAt: string;
+};
+
+type DayAgentRouteLeg = {
+  from: string;
+  to: string;
+  label: string;
+  durationSeconds: number;
+  distanceMeters: number;
+  midpoint: { lat: number; lng: number };
+};
+
+type DayAgentRouteSummary = {
+  mode: "road" | "fallback";
+  message: string;
+  startedFrom: string;
+  returnedToBase: boolean;
+  totalDurationSeconds: number;
+  totalDistanceMeters: number;
+  legs: DayAgentRouteLeg[];
 };
 
 type MapBaseStyleId =
@@ -2580,6 +2607,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const mapManualControlLockedRef = useRef(false);
   const mapManualControlNoticeAtRef = useRef(0);
   const dayAgentRouteLineRef = useRef<any>(null);
+  const dayAgentRouteLayerRef = useRef<any>(null);
   const appointmentAlertTestTriggeredRef = useRef("");
   const noAccessReadyAlertSeenRef = useRef<Record<string, string>>({});
   const fieldPhotoInputRef = useRef<HTMLInputElement | null>(null);
@@ -2678,7 +2706,10 @@ const [actionNotice, setActionNotice] = useState("");
 const [dispatchQuestion, setDispatchQuestion] = useState("");
 const [dayAgentStarted, setDayAgentStarted] = useState(false);
 const [dayAgentCommand, setDayAgentCommand] = useState("Start in Manhattan first, then route me through the best jobs.");
+const [dayAgentBoroughStart, setDayAgentBoroughStart] = useState<MapBoroughFilter>("all");
+const [dayAgentReturnToBase, setDayAgentReturnToBase] = useState(true);
 const [dayAgentRoute, setDayAgentRoute] = useState<MappedJob[]>([]);
+const [dayAgentRouteSummary, setDayAgentRouteSummary] = useState<DayAgentRouteSummary | null>(null);
 const [dayAgentLog, setDayAgentLog] = useState<Array<{ at: string; text: string; jobId?: string }>>([]);
 const [dispatchMessages, setDispatchMessages] = useState<Array<{ role: "user" | "assistant"; text: string; jobs?: string[] }>>([
   {
@@ -2797,78 +2828,237 @@ const dayAgentContactPlan = (job: JobRecord | null | undefined) => {
   return `Apartment/contact job but no phone is listed. Request contact information from HPD, then set appointment.`;
 };
 
-const dayAgentRouteScore = (job: MappedJob, command: string) => {
+const dayAgentRequestedBorough = (command: string, explicit = dayAgentBoroughStart): MapBoroughFilter => {
+  const fromCommand = normalizeBoroughKey(command);
+  if (fromCommand && fromCommand !== "all") return fromCommand;
+  return explicit || "all";
+};
+
+const formatDayAgentDistance = (meters: number) => {
+  if (!Number.isFinite(meters) || meters <= 0) return "0 mi";
+  const miles = meters / 1609.344;
+  return miles < 10 ? `${miles.toFixed(1)} mi` : `${Math.round(miles)} mi`;
+};
+
+const formatDayAgentDuration = (seconds: number) => {
+  if (!Number.isFinite(seconds) || seconds <= 0) return "0 min";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const remain = minutes % 60;
+  return remain ? `${hours}h ${remain}m` : `${hours}h`;
+};
+
+const formatDayAgentLegLabel = (seconds: number, meters: number) => {
+  return `${formatDayAgentDuration(seconds)} / ${formatDayAgentDistance(meters)}`;
+};
+
+const dayAgentPointLabel = (point: { label: string; address?: string }) => {
+  return point.label || point.address || "Stop";
+};
+
+const dayAgentRoutePoints = (routeJobs = dayAgentRoute, includeReturnToBase = dayAgentReturnToBase) => {
+  const origin = userLocation
+    ? { label: "My location", address: "Current GPS", coords: { lat: userLocation.lat, lng: userLocation.lng } }
+    : { label: "Base", address: DAY_AGENT_BASE_ADDRESS, coords: DAY_AGENT_BASE_COORDS };
+  const stops = routeJobs
+    .slice(0, DAY_AGENT_ROUTE_MAX_STOPS)
+    .map((job) => {
+      const coords = jobLatLng(job);
+      return coords ? { label: jobKey(job), address: displayAddress(job), coords } : null;
+    })
+    .filter(Boolean) as Array<{ label: string; address: string; coords: { lat: number; lng: number } }>;
+  const points = [origin, ...stops];
+  if (includeReturnToBase && stops.length) {
+    points.push({ label: "Return base", address: DAY_AGENT_BASE_ADDRESS, coords: DAY_AGENT_BASE_COORDS });
+  }
+  return points;
+};
+
+const dayAgentRouteScore = (job: MappedJob, command: string, requestedBorough = dayAgentRequestedBorough(command)) => {
   const q = command.toLowerCase();
   const borough = String((job as any).borough || (job as any).Borough || "").toLowerCase();
+  const boroughKey = jobBoroughKey(job);
   const street = manhattanStreetNumber(job);
   const coords = jobLatLng(job);
+  const origin = userLocation || DAY_AGENT_BASE_COORDS;
   let score = dispatchUrgencyScore(job);
-  if (q.includes("manhattan") || q.includes("start")) {
-    if (borough.includes("manhattan")) score += 5000;
-    if (borough.includes("bronx")) score += 1400;
+  if (requestedBorough !== "all" && requestedBorough !== "unknown") {
+    if (boroughKey === requestedBorough) score += 5200;
+    else score += 500;
+  } else if (q.includes("start") || q.includes("route")) {
+    score += 750;
+  }
+  if (requestedBorough === "manhattan" || q.includes("manhattan")) {
     if (street !== null && street <= 62) score += 450 - street;
     if (street !== null && street > 62) score += 250 - Math.min(street, 130);
   }
   if (q.includes("bronx") && borough.includes("bronx")) score += 3200;
-  if (q.includes("near") && coords && userLocation) score -= distanceMiles(userLocation, coords) * 100;
+  if (coords) score -= distanceMiles(origin, coords) * (q.includes("near") || requestedBorough === "all" ? 115 : 28);
   if (workflowViewBucket(job) === "archived" || workflowViewBucket(job) === "final") score -= 8000;
   if (!coords) score -= 800;
   return score;
 };
 
-const buildDayAgentRoute = (commandText = dayAgentCommand) => {
+const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverride?: MapBoroughFilter) => {
   const command = String(commandText || "start").trim();
+  const requestedBorough = requestedBoroughOverride || dayAgentRequestedBorough(command);
   const pool = dispatchJobPool()
     .filter((job) => workflowViewBucket(job) !== "archived" && workflowViewBucket(job) !== "final")
-    .filter((job) => cleanAddress(job));
+    .filter((job) => cleanAddress(job))
+    .filter((job) => jobLatLng(job));
   const sorted = [...pool].sort((a, b) => {
-    const score = dayAgentRouteScore(b, command) - dayAgentRouteScore(a, command);
+    const score = dayAgentRouteScore(b, command, requestedBorough) - dayAgentRouteScore(a, command, requestedBorough);
     if (score !== 0) return score;
     const aStreet = manhattanStreetNumber(a) || 999;
     const bStreet = manhattanStreetNumber(b) || 999;
     if (aStreet !== bStreet) return aStreet - bStreet;
     return String(jobKey(a)).localeCompare(String(jobKey(b)));
   });
-  return sorted.slice(0, 8);
+  return sorted.slice(0, DAY_AGENT_ROUTE_MAX_STOPS);
 };
 
 const dayAgentGoogleRouteUrl = (routeJobs = dayAgentRoute) => {
   const stops = routeJobs.map((job) => displayAddress(job).trim()).filter(Boolean).slice(0, 8);
   if (!stops.length) return "https://www.google.com/maps";
+  const origin = userLocation ? `${userLocation.lat},${userLocation.lng}` : DAY_AGENT_BASE_ADDRESS;
+  const destination = dayAgentReturnToBase ? DAY_AGENT_BASE_ADDRESS : stops[stops.length - 1];
+  const waypoints = dayAgentReturnToBase ? stops : stops.slice(0, -1);
   const params = new URLSearchParams({
     api: "1",
     travelmode: "driving",
-    destination: stops[stops.length - 1],
+    origin,
+    destination,
   });
-  if (userLocation) params.set("origin", `${userLocation.lat},${userLocation.lng}`);
-  if (stops.length > 1) params.set("waypoints", stops.slice(0, -1).join("|"));
+  if (waypoints.length) params.set("waypoints", waypoints.join("|"));
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 };
 
+const buildFallbackDayAgentSummary = (points: ReturnType<typeof dayAgentRoutePoints>, routeLatLngs: Array<[number, number]>) => {
+  const legs = points.slice(1).map((point, index) => {
+    const from = points[index];
+    const miles = distanceMiles(from.coords, point.coords);
+    const distanceMeters = miles * 1609.344;
+    const durationSeconds = Math.max(120, Math.round((miles / 14) * 3600));
+    return {
+      from: dayAgentPointLabel(from),
+      to: dayAgentPointLabel(point),
+      durationSeconds,
+      distanceMeters,
+      label: formatDayAgentLegLabel(durationSeconds, distanceMeters),
+      midpoint: {
+        lat: (from.coords.lat + point.coords.lat) / 2,
+        lng: (from.coords.lng + point.coords.lng) / 2,
+      },
+    };
+  });
+  const totalDurationSeconds = legs.reduce((sum, leg) => sum + leg.durationSeconds, 0);
+  const totalDistanceMeters = legs.reduce((sum, leg) => sum + leg.distanceMeters, 0);
+  return {
+    summary: {
+      mode: "fallback" as const,
+      message: "Estimated connector route. Open Google Route for live turn-by-turn traffic.",
+      startedFrom: points[0]?.address || points[0]?.label || "Start",
+      returnedToBase: Boolean(points.length > 2 && points[points.length - 1]?.label === "Return base"),
+      totalDurationSeconds,
+      totalDistanceMeters,
+      legs,
+    },
+    routeLatLngs,
+  };
+};
+
+async function fetchDayAgentRoadRoute(points: ReturnType<typeof dayAgentRoutePoints>) {
+  const coordPath = points
+    .map((point) => `${point.coords.lng.toFixed(6)},${point.coords.lat.toFixed(6)}`)
+    .join(";");
+  const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordPath}?overview=full&geometries=geojson&steps=false`, {
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error(`Route service returned ${response.status}`);
+  const body = await response.json();
+  const route = body?.routes?.[0];
+  const geometry = route?.geometry?.coordinates;
+  if (!Array.isArray(geometry) || geometry.length < 2) throw new Error("Route service did not return a road geometry.");
+  const legs = points.slice(1).map((point, index) => {
+    const from = points[index];
+    const rawLeg = route?.legs?.[index] || {};
+    const distanceMeters = Number(rawLeg.distance || 0);
+    const durationSeconds = Number(rawLeg.duration || 0);
+    return {
+      from: dayAgentPointLabel(from),
+      to: dayAgentPointLabel(point),
+      durationSeconds,
+      distanceMeters,
+      label: formatDayAgentLegLabel(durationSeconds, distanceMeters),
+      midpoint: {
+        lat: (from.coords.lat + point.coords.lat) / 2,
+        lng: (from.coords.lng + point.coords.lng) / 2,
+      },
+    };
+  });
+  const routeLatLngs = geometry.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+  return {
+    summary: {
+      mode: "road" as const,
+      message: "Road route ready. Use Google Route for live traffic and turn-by-turn navigation.",
+      startedFrom: points[0]?.address || points[0]?.label || "Start",
+      returnedToBase: Boolean(points.length > 2 && points[points.length - 1]?.label === "Return base"),
+      totalDurationSeconds: Number(route.duration || 0),
+      totalDistanceMeters: Number(route.distance || 0),
+      legs,
+    },
+    routeLatLngs,
+  };
+}
+
 async function drawDayAgentRouteLine(routeJobs = dayAgentRoute) {
   if (!mapRef.current) return;
-  const points: Array<[number, number]> = [];
-  if (userLocation) points.push([userLocation.lat, userLocation.lng]);
-  routeJobs.slice(0, 6).forEach((job) => {
-    const coords = jobLatLng(job);
-    if (coords) points.push([coords.lat, coords.lng]);
-  });
-  if (points.length < 2) {
-    setActionNotice("Start GPS or choose mapped jobs before drawing the agent route.");
+  const points = dayAgentRoutePoints(routeJobs);
+  const fallbackLatLngs = points.map((point) => [point.coords.lat, point.coords.lng] as [number, number]);
+  if (points.length < 2 || fallbackLatLngs.length < 2) {
+    setActionNotice("Choose mapped jobs before drawing the agent route.");
     return;
   }
   const leafletModule = await import("leaflet");
   const L = (leafletModule as any).default || leafletModule;
-  if (dayAgentRouteLineRef.current) {
-    mapRef.current.removeLayer(dayAgentRouteLineRef.current);
+  if (dayAgentRouteLayerRef.current) {
+    mapRef.current.removeLayer(dayAgentRouteLayerRef.current);
+    dayAgentRouteLayerRef.current = null;
+    dayAgentRouteLineRef.current = null;
   }
-  dayAgentRouteLineRef.current = L.polyline(points, {
-    color: "#21f5a5",
-    weight: 5,
-    opacity: 0.9,
-    dashArray: "12 10",
+
+  let routeResult: { summary: DayAgentRouteSummary; routeLatLngs: Array<[number, number]> };
+  try {
+    routeResult = await fetchDayAgentRoadRoute(points);
+  } catch {
+    routeResult = buildFallbackDayAgentSummary(points, fallbackLatLngs);
+  }
+
+  const layer = L.layerGroup().addTo(mapRef.current);
+  L.polyline(routeResult.routeLatLngs, {
+    color: "#e0f2fe",
+    weight: 12,
+    opacity: 0.78,
     lineCap: "round",
-  }).addTo(mapRef.current);
+    lineJoin: "round",
+  }).addTo(layer);
+  dayAgentRouteLineRef.current = L.polyline(routeResult.routeLatLngs, {
+    color: DAY_AGENT_ROUTE_DARK,
+    weight: 7,
+    opacity: 0.96,
+    lineCap: "round",
+    lineJoin: "round",
+  }).addTo(layer);
+  L.polyline(routeResult.routeLatLngs, {
+    color: DAY_AGENT_ROUTE_ACCENT,
+    weight: 2,
+    opacity: 0.82,
+    lineCap: "round",
+    lineJoin: "round",
+  }).addTo(layer);
+  dayAgentRouteLayerRef.current = layer;
+  setDayAgentRouteSummary(routeResult.summary);
   markProgrammaticMapMove();
   mapRef.current.fitBounds(dayAgentRouteLineRef.current.getBounds(), {
     animate: true,
@@ -2877,18 +3067,53 @@ async function drawDayAgentRouteLine(routeJobs = dayAgentRoute) {
     paddingBottomRight: [72, 210],
     maxZoom: 13,
   });
-  appendDayAgentLog(`Drew route line for ${routeJobs.slice(0, 4).map((job) => jobKey(job)).join(", ")}.`, routeJobs[0]);
+  const addReadableLegLabels = () => {
+    if (!mapRef.current || dayAgentRouteLayerRef.current !== layer) return;
+    const placed: Array<{ left: number; top: number; right: number; bottom: number }> = [];
+    let visibleLabels = 0;
+    routeResult.summary.legs.forEach((leg, index) => {
+      if (visibleLabels >= DAY_AGENT_ROUTE_LABEL_LIMIT) return;
+      const point = mapRef.current.latLngToContainerPoint([leg.midpoint.lat, leg.midpoint.lng]);
+      const box = {
+        left: point.x - DAY_AGENT_ROUTE_LABEL_WIDTH / 2,
+        top: point.y - DAY_AGENT_ROUTE_LABEL_HEIGHT / 2,
+        right: point.x + DAY_AGENT_ROUTE_LABEL_WIDTH / 2,
+        bottom: point.y + DAY_AGENT_ROUTE_LABEL_HEIGHT / 2,
+      };
+      const collides = placed.some((seen) => box.left < seen.right + 8 && box.right + 8 > seen.left && box.top < seen.bottom + 8 && box.bottom + 8 > seen.top);
+      if (collides) return;
+      placed.push(box);
+      visibleLabels += 1;
+      L.marker([leg.midpoint.lat, leg.midpoint.lng], {
+        interactive: false,
+        icon: L.divIcon({
+          className: "day-agent-route-leg-label",
+          html: `<span>${index + 1}</span><b>${leg.label}</b>`,
+          iconSize: [DAY_AGENT_ROUTE_LABEL_WIDTH, DAY_AGENT_ROUTE_LABEL_HEIGHT],
+          iconAnchor: [DAY_AGENT_ROUTE_LABEL_WIDTH / 2, DAY_AGENT_ROUTE_LABEL_HEIGHT / 2],
+        }),
+      }).addTo(layer);
+    });
+  };
+  window.setTimeout(addReadableLegLabels, 760);
+  appendDayAgentLog(
+    `${routeResult.summary.mode === "road" ? "Road route" : "Estimated route"} ready: ${formatDayAgentDuration(routeResult.summary.totalDurationSeconds)} / ${formatDayAgentDistance(routeResult.summary.totalDistanceMeters)}.`,
+    routeJobs[0]
+  );
 }
 
-const startDayAgent = (commandText = dayAgentCommand) => {
+const startDayAgent = (commandText = dayAgentCommand, requestedBoroughOverride?: MapBoroughFilter) => {
   const command = String(commandText || "start").trim();
-  const route = buildDayAgentRoute(command);
+  const requestedBorough = requestedBoroughOverride || dayAgentRequestedBorough(command);
+  const route = buildDayAgentRoute(command, requestedBorough);
   setDayAgentStarted(true);
   setDayAgentRoute(route);
   setDayAgentCommand(command);
+  setDayAgentBoroughStart(requestedBorough);
+  setDayAgentRouteSummary(null);
   if (route[0]) {
     setWorkflowViewFilter("all");
-    setMapBoroughFilter("all");
+    setMapBoroughFilter(requestedBorough === "unknown" ? "all" : requestedBorough);
     setSelectedOnly(false);
     setFullMap(true);
     appendDayAgentLog(`Started day agent. First stop: ${jobKey(route[0])}. ${manhattanExitGuidance(route[0])}`, route[0]);
@@ -13279,7 +13504,17 @@ return (
             justify-content: space-between;
           }
 
+          .day-agent-head small {
+            display: block;
+            margin-top: 3px;
+            color: #b8ffed;
+            font-size: 11px;
+            font-weight: 900;
+            line-height: 1.2;
+          }
+
           .day-agent-head span,
+          .day-agent-route-controls span,
           .day-agent-next span,
           .day-agent-log span {
             display: block;
@@ -13295,6 +13530,49 @@ return (
           .day-agent-log strong {
             color: #ffffff;
             font-weight: 1000;
+          }
+
+          .day-agent-route-controls {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 9px;
+            align-items: end;
+          }
+
+          .day-agent-route-controls label {
+            display: grid;
+            gap: 5px;
+            min-width: 0;
+            margin: 0;
+          }
+
+          .day-agent-route-controls select {
+            width: 100%;
+            min-height: 40px;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 237, 220, 0.30);
+            background: rgba(255, 255, 255, 0.10);
+            color: #ffffff;
+            padding: 0 10px;
+            font-weight: 1000;
+          }
+
+          .day-agent-return-toggle {
+            min-height: 40px;
+            grid-auto-flow: column;
+            grid-auto-columns: auto;
+            align-items: center;
+            padding: 0 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(45, 212, 191, 0.26);
+            background: rgba(255, 255, 255, 0.08);
+            color: #eafffb;
+          }
+
+          .day-agent-return-toggle input {
+            width: 18px;
+            height: 18px;
+            accent-color: #21f5a5;
           }
 
           .day-agent-head button,
@@ -13414,6 +13692,44 @@ return (
             border-radius: 12px;
             background: rgba(33, 245, 165, 0.12);
             border: 1px solid rgba(33, 245, 165, 0.24);
+          }
+
+          .day-agent-route-leg-label {
+            border: 0 !important;
+            background: transparent !important;
+            pointer-events: none !important;
+          }
+
+          .day-agent-route-leg-label span,
+          .day-agent-route-leg-label b {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+          }
+
+          .day-agent-route-leg-label span {
+            width: 22px;
+            height: 22px;
+            border-radius: 999px;
+            background: #082f49;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 1000;
+            box-shadow: 0 6px 16px rgba(2, 10, 29, 0.34);
+          }
+
+          .day-agent-route-leg-label b {
+            min-height: 24px;
+            margin-left: -4px;
+            padding: 0 8px 0 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(8, 47, 73, 0.16);
+            background: rgba(255, 255, 255, 0.96);
+            color: #082f49;
+            font-size: 10px;
+            font-weight: 1000;
+            box-shadow: 0 8px 18px rgba(2, 10, 29, 0.18);
           }
 
           .field-workflow-card {
@@ -33231,7 +33547,7 @@ return (
             grid-template-columns: minmax(0, 1fr) auto !important;
             gap: 8px !important;
             align-items: center !important;
-            margin-top: 8px !important;
+            margin-top: 96px !important;
             position: relative !important;
             z-index: 8 !important;
             padding: 9px !important;
@@ -33247,10 +33563,12 @@ return (
           }
 
           .map-shell.map-glass-command-trial .map-face-search + .map-cockpit.board-collapsed .map-day-agent-launcher {
-            margin-top: 54px !important;
+            margin-top: 96px !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-command,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-borough,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-return,
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-actions button:nth-child(2) {
             display: none !important;
           }
@@ -33323,7 +33641,7 @@ return (
 
           .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-launcher {
             display: grid !important;
-            grid-template-columns: minmax(0, 1fr) minmax(180px, 0.8fr) auto !important;
+            grid-template-columns: minmax(0, 1fr) 104px minmax(178px, 0.8fr) auto !important;
             gap: 10px !important;
             align-items: stretch !important;
             padding: 11px !important;
@@ -33387,6 +33705,45 @@ return (
             display: grid !important;
             gap: 4px !important;
             margin: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-borough,
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-return {
+            min-width: 0 !important;
+            display: grid !important;
+            gap: 4px !important;
+            margin: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-borough select {
+            width: 100% !important;
+            min-height: 42px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(124, 246, 198, 0.32) !important;
+            background: rgba(255, 255, 255, 0.10) !important;
+            color: #ffffff !important;
+            padding: 0 10px !important;
+            font-size: 13px !important;
+            font-weight: 1000 !important;
+            outline: none !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-return {
+            grid-column: 1 / -1 !important;
+            grid-template-columns: auto minmax(0, 1fr) !important;
+            align-items: center !important;
+            min-height: 36px !important;
+            padding: 0 10px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(124, 246, 198, 0.18) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-return input {
+            width: 18px !important;
+            height: 18px !important;
+            accent-color: #19f0a2 !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-command input {
@@ -33473,6 +33830,11 @@ return (
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-command input {
+              min-height: 44px !important;
+              font-size: 15px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-borough select {
               min-height: 44px !important;
               font-size: 15px !important;
             }
@@ -33936,6 +34298,10 @@ return (
               inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
           }
 
+          .map-shell.map-glass-command-trial:has(.map-cockpit.board-open) .map-face-search {
+            display: none !important;
+          }
+
           .map-shell.map-glass-command-trial .map-face-search label {
             min-width: 0 !important;
             display: grid !important;
@@ -34396,13 +34762,30 @@ return (
           {(() => {
             const agentFirstJob = dayAgentRoute[0] || fieldQueueJobs[0] || todayPriorityJobs[0] || null;
             const routeUrl = dayAgentGoogleRouteUrl(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : []);
+            const routeSummaryText = dayAgentRouteSummary
+              ? `${dayAgentRouteSummary.mode === "road" ? "Road route" : "Estimated route"} · ${formatDayAgentDuration(dayAgentRouteSummary.totalDurationSeconds)} · ${formatDayAgentDistance(dayAgentRouteSummary.totalDistanceMeters)}${dayAgentRouteSummary.returnedToBase ? " · returns base" : ""}`
+              : agentFirstJob
+                ? dayAgentContactPlan(agentFirstJob)
+                : "Say start, pick a borough, or route me.";
             return (
               <section className={`map-day-agent-launcher ${dayAgentStarted ? "is-running" : ""}`} aria-label="Start AI day agent">
                 <div>
                   <span>AI Day Agent</span>
                   <strong>{agentFirstJob ? `${jobKey(agentFirstJob)} first` : "Start route"}</strong>
-                  <small>{agentFirstJob ? dayAgentContactPlan(agentFirstJob) : "Say start, Manhattan first, or route me."}</small>
+                  <small>{routeSummaryText}</small>
                 </div>
+                <label className="map-day-agent-borough">
+                  <span>Start borough</span>
+                  <select
+                    value={dayAgentBoroughStart}
+                    onChange={(event) => setDayAgentBoroughStart(event.target.value as MapBoroughFilter)}
+                    aria-label="AI day agent start borough"
+                  >
+                    {MAP_BOROUGH_FILTERS.filter((borough) => borough.key !== "unknown").map((borough) => (
+                      <option key={borough.key} value={borough.key}>{borough.short}</option>
+                    ))}
+                  </select>
+                </label>
                 <label className="map-day-agent-command">
                   <span>Tell agent</span>
                   <input
@@ -34422,6 +34805,14 @@ return (
                   <button type="button" className="map-day-agent-line" onClick={() => void drawDayAgentRouteLine(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : [])}>Line</button>
                   <a className="map-day-agent-route-link" href={routeUrl} target="_blank" rel="noopener noreferrer">Route</a>
                 </div>
+                <label className="map-day-agent-return">
+                  <input
+                    type="checkbox"
+                    checked={dayAgentReturnToBase}
+                    onChange={(event) => setDayAgentReturnToBase(event.target.checked)}
+                  />
+                  <span>Return base</span>
+                </label>
               </section>
             );
           })()}
@@ -35019,16 +35410,34 @@ return (
           const agentContact = tenantContactInfo(agentFirstJob);
           const routeUrl = dayAgentGoogleRouteUrl(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : []);
           const contactHref = agentContact.actionHref || agentContact.smsHref || agentContact.whatsappHref || agentContact.emailHref || "";
+          const agentRouteSummaryLabel = dayAgentRouteSummary
+            ? `${dayAgentRouteSummary.mode === "road" ? "Road route" : "Estimated route"} · ${formatDayAgentDuration(dayAgentRouteSummary.totalDurationSeconds)} · ${formatDayAgentDistance(dayAgentRouteSummary.totalDistanceMeters)}${dayAgentRouteSummary.returnedToBase ? " · returns base" : ""}`
+            : `Base: ${DAY_AGENT_BASE_ADDRESS}`;
           return (
             <section className={`day-agent-card ${dayAgentStarted ? "is-running" : ""}`} aria-label="AI day field agent">
               <div className="day-agent-head">
                 <div>
                   <span>AI Day Agent</span>
                   <strong>{dayAgentStarted ? "Route running" : "Start your field day"}</strong>
+                  <small>{agentRouteSummaryLabel}</small>
                 </div>
-                <button type="button" onClick={() => startDayAgent("Start in Manhattan first, then route me through the best jobs.")}>
+                <button type="button" onClick={runDayAgentCommand}>
                   Start
                 </button>
+              </div>
+              <div className="day-agent-route-controls">
+                <label>
+                  <span>Start borough</span>
+                  <select value={dayAgentBoroughStart} onChange={(event) => setDayAgentBoroughStart(event.target.value as MapBoroughFilter)}>
+                    {MAP_BOROUGH_FILTERS.filter((borough) => borough.key !== "unknown").map((borough) => (
+                      <option key={borough.key} value={borough.key}>{borough.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="day-agent-return-toggle">
+                  <input type="checkbox" checked={dayAgentReturnToBase} onChange={(event) => setDayAgentReturnToBase(event.target.checked)} />
+                  <span>Return to base</span>
+                </label>
               </div>
               <div className="day-agent-command">
                 <input
@@ -35058,7 +35467,7 @@ return (
                 </div>
               )}
               <div className="day-agent-actions">
-                <button type="button" onClick={() => startDayAgent("Start in Manhattan first, then route me through the best jobs.")}>Manhattan First</button>
+                <button type="button" onClick={() => startDayAgent("Start in Manhattan first, then route me through the best jobs.", "manhattan")}>Manhattan First</button>
                 <button type="button" onClick={() => void drawDayAgentRouteLine(dayAgentRoute)}>Draw Line</button>
                 <a href={routeUrl} target="_blank" rel="noopener noreferrer">Google Route</a>
                 {agentFirstJob ? <a href={wazeDirectionsUrl(agentFirstJob)} target="_blank" rel="noopener noreferrer">Waze First</a> : null}
