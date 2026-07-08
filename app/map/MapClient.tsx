@@ -29,6 +29,7 @@ const MAP_SINGLE_JOB_OVERVIEW_ZOOM = 13;
 const FULL_PACKAGE_SAVE_LIMIT_BYTES = 35 * 1024 * 1024;
 
 
+import bundledJobsData from "../../data/COA_Fetcher_2026.json";
 import * as JobStatus from "../../lib/jobs/status";
 import {
   type FieldEvidenceMeta,
@@ -4264,11 +4265,19 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         }
 
         if (!data) {
-          throw lastLoadError || new Error("Could not load static jobs data.");
+          data = bundledJobsData;
+          loadedJobsUrl = "bundled";
         }
 
-        const rows = asArray(Array.isArray(data) ? data : data.jobs || data.data || []).map(normalizeStaticJob);
-        const sourceNote = loadedJobsUrl.includes("hpd_jobs_2026") ? " · fallback data" : "";
+        let rows = asArray(Array.isArray(data) ? data : data.jobs || data.data || []).map(normalizeStaticJob);
+        if (!rows.length) {
+          rows = asArray(Array.isArray(bundledJobsData) ? bundledJobsData : []).map(normalizeStaticJob);
+          loadedJobsUrl = "bundled";
+        }
+        if (!rows.length) {
+          throw lastLoadError || new Error("Could not load static jobs data.");
+        }
+        const sourceNote = loadedJobsUrl.includes("hpd_jobs_2026") || loadedJobsUrl === "bundled" ? " · fallback data" : "";
 
         if (cancelled) return;
 
