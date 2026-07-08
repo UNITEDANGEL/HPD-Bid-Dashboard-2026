@@ -2946,6 +2946,12 @@ const [serverWorkflowOverrides, setServerWorkflowOverrides] = useState<Record<st
   const [mapReady, setMapReady] = useState(false);
   const [mapMenuOpen, setMapMenuOpen] = useState(false);
   const [mapBoardOpen, setMapBoardOpen] = useState(false);
+  const [mapViewTick, setMapViewTick] = useState(0);
+  const [clusterNetwork, setClusterNetwork] = useState<{
+    width: number;
+    height: number;
+    links: Array<{ key: string; x1: number; y1: number; x2: number; y2: number; strength: number }>;
+  }>({ width: 0, height: 0, links: [] });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [jobCardHeaderFolded, setJobCardHeaderFolded] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -3505,6 +3511,53 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       .split(" ")
       .filter(Boolean)
       .every((part) => haystack.includes(part));
+  }
+
+  function allMapSearchRows() {
+    const rows: MappedJob[] = mappedJobs.length
+      ? mappedJobs
+      : jobs.map((job) => {
+          const coords = getStoredCoords(job);
+          return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" } : { ...job };
+        });
+    return rows;
+  }
+
+  function bestMapSearchMatch(needle: string) {
+    const clean = needle.trim();
+    if (!clean) return null;
+
+    const target = clean.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const compactNeedle = compactMapSearchValue(clean);
+    const rows = allMapSearchRows();
+    return (
+      rows.find((job) => String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "") === target) ||
+      rows.find((job) => compactMapSearchValue(displayAddress(job)) === compactNeedle) ||
+      rows.find((job) => matchesMapSearch(job, clean)) ||
+      null
+    );
+  }
+
+  function submitMapFaceSearch(event?: { preventDefault?: () => void }) {
+    event?.preventDefault?.();
+    const needle = search.trim();
+    if (!needle) {
+      showActionNotice("Search by OMO or address.");
+      return;
+    }
+
+    const match = bestMapSearchMatch(needle);
+    if (!match) {
+      showActionNotice(`No work order found for ${needle}.`);
+      return;
+    }
+
+    setMapShowAllDays(true);
+    setWorkflowViewFilter("all");
+    setMapBoroughFilter("all");
+    setSearch(jobKey(match) || needle);
+    focusJob(match);
+    showActionNotice(`Opened ${jobKey(match)} from map search.`);
   }
 
   const filteredJobs = useMemo<MappedJob[]>(() => {
@@ -4204,8 +4257,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         mapRef.current = map;
         markerLayerRef.current = markerLayer;
         setMapZoom(map.getZoom());
-        map.on("zoomend", () => {
+        map.on("zoomend moveend", () => {
           setMapZoom(map.getZoom());
+          setMapViewTick((tick) => tick + 1);
         });
         map.on("zoomstart dragstart movestart", handleMapUserGesture);
 
@@ -4402,6 +4456,68 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             };
           })
         : plottedItems.map((item) => ({ kind: "job", ...item }));
+
+      const mapSize = map.getSize?.();
+      const clusterPoints = renderItems
+        .filter((item) => item.kind === "cluster")
+        .map((item, index) => {
+          const point = map.latLngToContainerPoint([item.lat, item.lng]);
+          const y = point.y + (mobileMap && point.y < 150 ? 48 : 0);
+          return {
+            id: `${index}:${Number(item.lat).toFixed(5)}:${Number(item.lng).toFixed(5)}`,
+            x: Math.round(point.x),
+            y: Math.round(y),
+          };
+        })
+        .filter((point) => {
+          const width = Number(mapSize?.x || 0);
+          const height = Number(mapSize?.y || 0);
+          return (
+            Number.isFinite(point.x) &&
+            Number.isFinite(point.y) &&
+            point.x > -90 &&
+            point.y > -90 &&
+            point.x < width + 90 &&
+            point.y < height + 90
+          );
+        });
+
+      if (mapSize && clusterPoints.length > 1) {
+        const edgeMap = new Map<string, { a: (typeof clusterPoints)[number]; b: (typeof clusterPoints)[number]; distance: number }>();
+        clusterPoints.forEach((point, index) => {
+          const nearest = clusterPoints
+            .map((other, otherIndex) => {
+              if (otherIndex === index) return null;
+              const dx = point.x - other.x;
+              const dy = point.y - other.y;
+              return { other, otherIndex, distance: Math.sqrt(dx * dx + dy * dy) };
+            })
+            .filter((item): item is { other: (typeof clusterPoints)[number]; otherIndex: number; distance: number } => Boolean(item))
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, 2);
+
+          nearest.forEach(({ other, otherIndex, distance }) => {
+            const key = [index, otherIndex].sort((a, b) => a - b).join(":");
+            if (!edgeMap.has(key)) edgeMap.set(key, { a: point, b: other, distance });
+          });
+        });
+
+        const maxDistance = Math.max(1, Math.max(Number(mapSize.x), Number(mapSize.y)) * 0.68);
+        const links = Array.from(edgeMap.entries())
+          .sort((a, b) => a[1].distance - b[1].distance)
+          .slice(0, mobileMap ? 7 : 10)
+          .map(([key, edge]) => ({
+            key,
+            x1: edge.a.x,
+            y1: edge.a.y,
+            x2: edge.b.x,
+            y2: edge.b.y,
+            strength: Math.max(0.22, 1 - edge.distance / maxDistance),
+          }));
+        setClusterNetwork({ width: Number(mapSize.x || 0), height: Number(mapSize.y || 0), links });
+      } else if (clusterNetwork.links.length || clusterNetwork.width || clusterNetwork.height) {
+        setClusterNetwork({ width: 0, height: 0, links: [] });
+      }
 
       const markerCollisionPadding = mobileMap ? 8 : 10;
       const markerCollisionBoxes: Array<{ left: number; right: number; top: number; bottom: number }> = [];
@@ -4690,7 +4806,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     drawMarkers();
-  }, [mapReady, filteredJobs, countdownTick, mapZoom, markerAutoFitKey, userLocation, followMyLocation, selectedOnly, drawerOpen, workflowViewFilter]);
+  }, [mapReady, filteredJobs, countdownTick, mapZoom, mapViewTick, markerAutoFitKey, userLocation, followMyLocation, selectedOnly, drawerOpen, workflowViewFilter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -32817,6 +32933,144 @@ return (
             }
           }
 
+          /* MAP_FACE_SEARCH_AND_CLUSTER_LINKS_2026 */
+          .map-shell.map-glass-command-trial .map-cluster-link-layer {
+            position: absolute !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            z-index: 460 !important;
+            pointer-events: none !important;
+            overflow: visible !important;
+            filter: drop-shadow(0 0 10px rgba(25, 240, 162, 0.32)) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cluster-link-line {
+            stroke: rgba(25, 240, 162, calc(0.20 + (var(--link-strength, 0.5) * 0.34))) !important;
+            stroke-width: calc(2px + (var(--link-strength, 0.5) * 2px)) !important;
+            stroke-linecap: round !important;
+            stroke-dasharray: 8 9 !important;
+            vector-effect: non-scaling-stroke !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-face-search {
+            position: absolute !important;
+            z-index: 2450 !important;
+            top: calc(env(safe-area-inset-top) + 72px) !important;
+            left: max(12px, env(safe-area-inset-left)) !important;
+            right: max(66px, calc(env(safe-area-inset-right) + 66px)) !important;
+            min-height: 52px !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) 46px 34px !important;
+            align-items: center !important;
+            gap: 6px !important;
+            padding: 7px !important;
+            border-radius: 20px !important;
+            border: 1px solid rgba(124, 246, 198, 0.28) !important;
+            background:
+              linear-gradient(135deg, rgba(3, 21, 39, 0.94), rgba(6, 47, 83, 0.92) 58%, rgba(7, 77, 72, 0.90)) !important;
+            color: #ecfff8 !important;
+            box-shadow:
+              0 18px 40px rgba(2, 10, 29, 0.36),
+              0 0 28px rgba(0, 208, 132, 0.14),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+            backdrop-filter: blur(18px) saturate(1.20) !important;
+            -webkit-backdrop-filter: blur(18px) saturate(1.20) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-face-search.has-query {
+            border-color: rgba(25, 240, 162, 0.56) !important;
+            box-shadow:
+              0 20px 44px rgba(2, 10, 29, 0.42),
+              0 0 34px rgba(25, 240, 162, 0.24),
+              inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-face-search label {
+            min-width: 0 !important;
+            display: grid !important;
+            grid-template-columns: 48px minmax(0, 1fr) !important;
+            align-items: center !important;
+            gap: 6px !important;
+            margin: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-face-search label span {
+            color: #7cf6c6 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-face-search input {
+            width: 100% !important;
+            min-width: 0 !important;
+            height: 36px !important;
+            border: 1px solid rgba(124, 246, 198, 0.18) !important;
+            border-radius: 13px !important;
+            padding: 0 10px !important;
+            background: rgba(255, 255, 255, 0.10) !important;
+            color: #ffffff !important;
+            font-size: 14px !important;
+            font-weight: 900 !important;
+            outline: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-face-search input::placeholder {
+            color: rgba(235, 255, 248, 0.62) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-face-search button,
+          .map-shell.map-glass-command-trial .map-face-search strong {
+            width: 100% !important;
+            min-width: 0 !important;
+            height: 36px !important;
+            display: grid !important;
+            place-items: center !important;
+            border-radius: 13px !important;
+            border: 1px solid rgba(202, 255, 232, 0.22) !important;
+            background: linear-gradient(135deg, #19f0a2, #00d084 58%, #00ad74) !important;
+            color: #031527 !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            box-shadow: 0 12px 24px rgba(0, 208, 132, 0.24) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-face-search .map-face-search-clear {
+            background: rgba(255, 255, 255, 0.12) !important;
+            color: #ecfff8 !important;
+          }
+
+          @media (max-width: 430px) {
+            .map-shell.map-glass-command-trial .map-face-search {
+              top: calc(env(safe-area-inset-top) + 65px) !important;
+              right: max(58px, calc(env(safe-area-inset-right) + 58px)) !important;
+              min-height: 48px !important;
+              grid-template-columns: minmax(0, 1fr) 42px 30px !important;
+              gap: 5px !important;
+              padding: 6px !important;
+              border-radius: 18px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-face-search label {
+              grid-template-columns: 0 minmax(0, 1fr) !important;
+              gap: 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-face-search label span {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-face-search input,
+            .map-shell.map-glass-command-trial .map-face-search button,
+            .map-shell.map-glass-command-trial .map-face-search strong {
+              height: 34px !important;
+              font-size: 12px !important;
+            }
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
@@ -33119,6 +33373,55 @@ return (
       <section className="map-stage">
         <div ref={mapNode} className="map-node" />
 
+        {clusterNetwork.links.length && !drawerOpen && !clusterSheet ? (
+          <svg
+            className="map-cluster-link-layer"
+            viewBox={`0 0 ${clusterNetwork.width || 1} ${clusterNetwork.height || 1}`}
+            aria-hidden="true"
+          >
+            {clusterNetwork.links.map((link) => (
+              <line
+                key={link.key}
+                className="map-cluster-link-line"
+                x1={link.x1}
+                y1={link.y1}
+                x2={link.x2}
+                y2={link.y2}
+                style={{ ["--link-strength" as any]: link.strength }}
+              />
+            ))}
+          </svg>
+        ) : null}
+
+        {!drawerOpen && !clusterSheet && !mapBoardOpen && !mapMenuOpen ? (
+          <form className={`map-face-search ${search.trim() ? "has-query" : ""}`} onSubmit={submitMapFaceSearch} aria-label="Search map by OMO or address">
+            <label>
+              <span>Search</span>
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    submitMapFaceSearch();
+                  }
+                }}
+                placeholder="OMO or address"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </label>
+            <button type="submit">Go</button>
+            {search.trim() ? (
+              <button type="button" className="map-face-search-clear" aria-label="Clear map search" onClick={() => setSearch("")}>
+                X
+              </button>
+            ) : (
+              <strong>{filteredJobs.length}</strong>
+            )}
+          </form>
+        ) : null}
+
         <section className={`map-cockpit ${mapMenuOpen ? "panel-open" : ""} ${mapBoardOpen ? "board-open" : "board-collapsed"}`} aria-label="Map controls">
           <div className="map-command-banner" aria-label="Schedule board banner">
             <div>
@@ -33139,26 +33442,6 @@ return (
                 Schedule
               </button>
             </div>
-          </div>
-          <div className={`map-layer-search ${search.trim() ? "has-query" : ""}`} aria-label="Search visible map">
-            <label className="map-layer-search-label">
-              <span>Search Map</span>
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="OMO or address..."
-                autoComplete="off"
-                spellCheck={false}
-              />
-            </label>
-            <span className="map-layer-search-count">
-              {filteredJobs.length} job{filteredJobs.length === 1 ? "" : "s"}
-            </span>
-            {search.trim() ? (
-              <button type="button" className="map-layer-search-clear" aria-label="Clear map search" onClick={() => setSearch("")}>
-                X
-              </button>
-            ) : null}
           </div>
           <div className="map-board-switcher" aria-label="Switch map board">
             {mapBoardModes.map((mode) => (
