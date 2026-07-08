@@ -14,7 +14,7 @@ When the user says "add to the plan", update this file with the new feature, wor
 
 ## Base And Routing Rules
 
-- Base / return location: 87-30 114 St, Richmond Hill, NY 11418.
+- Base / return location: 87-35 114 Street, Richmond Hill, NY 11418.
 - The agent should be able to start from the user's live location or from the base address.
 - The user can choose any borough to start: Manhattan, Bronx, Brooklyn, Queens, Staten Island, or all boroughs.
 - Manhattan to Bronx routing is one example, not a hard-coded rule. The user can ask for any route pattern.
