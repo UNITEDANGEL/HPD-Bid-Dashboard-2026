@@ -3037,6 +3037,12 @@ async function drawDayAgentRouteLine(routeJobs = dayAgentRoute) {
     routeResult = await fetchDayAgentRoadRoute(points);
   } catch {
     routeResult = buildFallbackDayAgentSummary(points, fallbackLatLngs);
+    setDayAgentRouteSummary({
+      ...routeResult.summary,
+      message: "Road route service is unavailable. Use Google or Waze for live navigation; straight connector lines are hidden.",
+    });
+    setActionNotice("Road route unavailable. I hid the straight green connector lines; use Google/Waze navigation for this route.");
+    return;
   }
 
   const layer = L.layerGroup().addTo(mapRef.current);
@@ -34701,6 +34707,527 @@ return (
             }
           }
 
+          /* JOB_CARD_FLOW_CLEANUP_2026_07_09 */
+          .job-drawer.selected-focus {
+            max-height: min(88dvh, calc(100dvh - 78px)) !important;
+            left: max(14px, env(safe-area-inset-left)) !important;
+            right: max(14px, env(safe-area-inset-right)) !important;
+            width: auto !important;
+            border-radius: 22px 22px 0 0 !important;
+          }
+
+          .job-drawer.selected-focus .selected-card {
+            display: grid !important;
+            gap: 10px !important;
+            padding: 12px !important;
+            border-radius: 18px !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-head {
+            position: sticky;
+            top: 0;
+            z-index: 7;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            gap: 10px !important;
+            margin: -12px -12px 0 !important;
+            padding: 10px 12px !important;
+            border-radius: 18px 18px 12px 12px !important;
+            background:
+              linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,251,253,0.94)) !important;
+            border-bottom: 1px solid rgba(126,146,169,0.20) !important;
+            box-shadow: 0 10px 24px rgba(31,47,70,0.08) !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-row {
+            grid-template-columns: minmax(0, 1fr) 54px !important;
+            gap: 9px !important;
+            align-items: start !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy > strong {
+            font-size: clamp(30px, 9vw, 36px) !important;
+            line-height: 0.94 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-map-back-pill {
+            width: 54px !important;
+            min-width: 54px !important;
+            height: 54px !important;
+            border-radius: 18px !important;
+            font-size: 11px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-address-route-row {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 8px !important;
+            align-items: stretch !important;
+            margin-top: 9px !important;
+            padding: 8px !important;
+            border-radius: 16px !important;
+            background:
+              linear-gradient(135deg, rgba(3, 7, 18, 0.94), rgba(8, 47, 73, 0.92)) !important;
+            border: 1px solid rgba(125, 211, 252, 0.26) !important;
+            box-shadow:
+              0 14px 30px rgba(2, 8, 23, 0.20),
+              inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy .job-card-address-route-row p {
+            margin: 0 !important;
+            align-self: center !important;
+            color: #ffffff !important;
+            font-size: 15px !important;
+            line-height: 1.15 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-shadow: 0 1px 14px rgba(125, 211, 252, 0.20) !important;
+          }
+
+          .job-drawer.selected-focus .job-card-address-route-actions {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(58px, 1fr)) !important;
+            gap: 6px !important;
+            align-items: stretch !important;
+          }
+
+          .job-drawer.selected-focus .job-card-address-route-actions .route-head-button {
+            min-height: 46px !important;
+            min-width: 58px !important;
+            padding: 6px 8px !important;
+            border-radius: 14px !important;
+            justify-content: center !important;
+            overflow: visible !important;
+            gap: 7px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-address-route-actions .route-head-button img {
+            width: 26px !important;
+            height: 26px !important;
+            flex: 0 0 auto !important;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.20)) !important;
+          }
+
+          .job-drawer.selected-focus .job-card-address-route-actions .route-action-copy {
+            display: block !important;
+            min-width: 42px !important;
+            overflow: visible !important;
+          }
+
+          .job-drawer.selected-focus .job-card-address-route-actions .route-head-button strong {
+            display: block !important;
+            max-width: none !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            white-space: nowrap !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-address-route-actions .route-head-button small {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-address-route-row p {
+            color: #ffffff !important;
+            font-size: 15px !important;
+            line-height: 1.16 !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-address-route-actions .route-action-copy strong {
+            max-width: none !important;
+            color: #ffffff !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            display: block !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-address-route-actions .route-action-copy small {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-action-dock {
+            grid-template-columns: 1fr !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-action-dock .route-head-arrived {
+            min-height: 48px !important;
+          }
+
+          .job-drawer.selected-focus .selected-card-eyebrow {
+            color: #64748b !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0.06em !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .selected-title-block .job-title {
+            font-size: 22px !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-drawer.selected-focus .selected-title-block .job-address {
+            margin-top: 4px !important;
+            font-size: 13px !important;
+            font-weight: 900 !important;
+            color: #26384f !important;
+          }
+
+          .job-drawer.selected-focus .selected-title-block .job-sub {
+            margin-top: 2px !important;
+            font-size: 11px !important;
+            font-weight: 800 !important;
+            color: #64748b !important;
+          }
+
+          .job-drawer.selected-focus .selected-chip-stack {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            justify-content: flex-end !important;
+            gap: 6px !important;
+            max-width: 42vw !important;
+          }
+
+          .job-drawer.selected-focus .selected-chip-stack > .status,
+          .job-drawer.selected-focus .selected-chip-stack > .maturity-pill {
+            min-height: 28px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            border-radius: 999px !important;
+            padding: 5px 9px !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .selected-age-badge {
+            display: grid !important;
+            grid-template-columns: auto auto !important;
+            column-gap: 5px !important;
+            align-items: center !important;
+            min-height: 28px !important;
+            padding: 4px 8px !important;
+            border-radius: 999px !important;
+          }
+
+          .job-drawer.selected-focus .selected-age-badge small {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .job-card-command-strip {
+            grid-column: 1 / -1 !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) !important;
+            gap: 8px !important;
+            margin-top: 8px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-command-strip button {
+            min-height: 42px !important;
+            border-radius: 12px !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-arrived-action {
+            background: linear-gradient(135deg, #082f49, #0f766e) !important;
+            color: #ffffff !important;
+            border-color: rgba(20,184,166,0.42) !important;
+            box-shadow: 0 12px 26px rgba(15,118,110,0.24) !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-mode {
+            margin-top: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+          }
+
+          .job-drawer.selected-focus .field-mission-topline,
+          .job-drawer.selected-focus .field-mission-jobline {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-strip,
+          .job-drawer.selected-focus .field-page3-description,
+          .job-drawer.selected-focus .tenant-contact-card,
+          .job-drawer.selected-focus .field-status-picker-card,
+          .job-drawer.selected-focus .package-readiness-card,
+          .job-drawer.selected-focus .field-media-option-hub,
+          .job-drawer.selected-focus .more-job-details {
+            margin-top: 0 !important;
+            border-radius: 14px !important;
+            box-shadow: 0 10px 24px rgba(31,47,70,0.08) !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description {
+            margin-top: 18px !important;
+            order: -3 !important;
+            border-color: rgba(14,165,233,0.32) !important;
+            background:
+              linear-gradient(180deg, rgba(239,246,255,0.98), rgba(255,255,255,0.98)) !important;
+          }
+
+          .job-drawer.selected-focus .tenant-contact-card {
+            order: -2 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card {
+            order: -1 !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description p {
+            max-height: 132px !important;
+            overflow-y: auto !important;
+            color: #142033 !important;
+            font-size: 15px !important;
+            line-height: 1.42 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-page3-description-head {
+            margin-bottom: 7px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-tile {
+            min-height: 64px !important;
+            padding: 9px !important;
+          }
+
+          .job-drawer.selected-focus .selected-overview-grid,
+          .job-drawer.selected-focus .quick-status-console {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .more-job-details summary {
+            min-height: 44px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            color: #172033 !important;
+          }
+
+          .job-drawer.selected-focus .more-job-details summary::after {
+            content: "open";
+            color: #0f766e;
+            font-size: 11px;
+            font-weight: 1000;
+            text-transform: uppercase;
+          }
+
+          .job-drawer.selected-focus .more-job-details[open] summary::after {
+            content: "close";
+          }
+
+          @media (max-width: 720px) {
+            .job-drawer.selected-focus {
+              max-height: min(90dvh, calc(100dvh - 54px)) !important;
+              left: max(12px, env(safe-area-inset-left)) !important;
+              right: max(12px, env(safe-area-inset-right)) !important;
+            }
+
+            .job-drawer.selected-focus .selected-card {
+              padding: 10px !important;
+            }
+
+            .job-drawer.selected-focus .selected-card-head {
+              grid-template-columns: 1fr !important;
+              margin: -10px -10px 0 !important;
+              padding: 10px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-address-route-row {
+              grid-template-columns: 1fr !important;
+              gap: 8px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-address-route-actions {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .job-drawer.selected-focus .job-card-address-route-actions .route-head-button {
+              min-height: 50px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-address-route-actions .route-head-button strong {
+              font-size: 13px !important;
+            }
+
+            .job-drawer.selected-focus .selected-chip-stack {
+              max-width: none !important;
+              justify-content: flex-start !important;
+            }
+
+            .job-drawer.selected-focus .job-card-command-strip {
+              grid-template-columns: 0.8fr 1.2fr !important;
+            }
+
+            .job-drawer.selected-focus .field-page3-description p {
+              max-height: 150px !important;
+              font-size: 14px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-data-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
+
+          /* FIELD_MAP_ADVANCED_COLLAPSE_2026_07_09 */
+          .map-shell.map-glass-command-trial .map-top:not(.open) {
+            position: absolute !important;
+            top: max(10px, env(safe-area-inset-top)) !important;
+            left: max(10px, env(safe-area-inset-left)) !important;
+            right: auto !important;
+            width: min(360px, calc(100vw - 20px)) !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: 62px !important;
+            overflow: hidden !important;
+            transform: none !important;
+            z-index: 2550 !important;
+            padding: 8px !important;
+            border-radius: 18px !important;
+            background: rgba(255, 255, 255, 0.94) !important;
+            border: 1px solid rgba(126, 146, 169, 0.28) !important;
+            box-shadow: 0 14px 34px rgba(31, 47, 70, 0.16) !important;
+            backdrop-filter: blur(14px) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top:not(.open) > :not(.map-title-row) {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial.drawer-active .map-top:not(.open),
+          .map-shell.map-glass-command-trial.drawer-selected .map-top:not(.open) {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top:not(.open) .map-title-row {
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top:not(.open) .map-title-row h1 {
+            font-size: 17px !important;
+            line-height: 1 !important;
+            color: #0f172a !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top:not(.open) .map-title-row p {
+            max-width: 190px !important;
+            margin-top: 3px !important;
+            color: #52667f !important;
+            font-size: 11px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-shell.map-glass-command-trial .advanced-toggle-btn {
+            min-height: 38px !important;
+            border-radius: 999px !important;
+            padding: 0 13px !important;
+            pointer-events: auto !important;
+            background: linear-gradient(135deg, #082f49, #0f766e) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(20,184,166,0.38) !important;
+            box-shadow: 0 10px 24px rgba(15,118,110,0.22) !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open {
+            max-height: min(72dvh, 640px) !important;
+            overflow-y: auto !important;
+            border-radius: 0 0 22px 22px !important;
+            box-shadow: 0 18px 46px rgba(31,47,70,0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial:has(.map-top.open) .zoom-panel {
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cluster-link-layer {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-agent-route-link.waze {
+            background: linear-gradient(135deg, #00d4ff, #0ea5e9) !important;
+            color: #031524 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-agent-line {
+            background: #e8f0f7 !important;
+            color: #38516b !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
+            top: calc(env(safe-area-inset-top) + 82px) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
+            position: relative !important;
+            top: auto !important;
+            left: auto !important;
+            right: auto !important;
+            width: 100% !important;
+            min-height: 52px !important;
+            margin-top: 8px !important;
+            grid-template-columns: minmax(0, 1fr) 46px 34px !important;
+          }
+
+          .map-shell.map-glass-command-trial .zoom-panel {
+            top: calc(env(safe-area-inset-top) + 304px) !important;
+            right: max(8px, env(safe-area-inset-right)) !important;
+            z-index: 2320 !important;
+          }
+
+          @media (max-width: 720px) {
+            .map-shell.map-glass-command-trial .map-top:not(.open) {
+              width: min(330px, calc(100vw - 18px)) !important;
+              padding: 7px !important;
+              border-radius: 16px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-top:not(.open) .map-title-row p {
+              max-width: 150px !important;
+            }
+
+            .map-shell.map-glass-command-trial .advanced-toggle-btn {
+              min-height: 36px !important;
+              padding: 0 11px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
+              top: calc(env(safe-area-inset-top) + 78px) !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
+              position: relative !important;
+              top: auto !important;
+            }
+
+            .map-shell.map-glass-command-trial .zoom-panel {
+              top: calc(env(safe-area-inset-top) + 304px) !important;
+              right: max(7px, env(safe-area-inset-right)) !important;
+            }
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
@@ -34804,12 +35331,16 @@ return (
       <header className={`map-top ${mapMenuOpen ? "open" : ""}`}>
         <div className="map-title-row">
           <div>
-            <h1>HPD Dashboard</h1>
-            <p>{mapBoroughScopeLabel} - {mapDateFilterLabel()} - {filteredJobs.length} visible - {activeMapBaseStyle.label}</p>
+            <h1>{mapMenuOpen ? "Advanced Controls" : "Field Map"}</h1>
+            <p>
+              {mapMenuOpen
+                ? `${mapBoroughScopeLabel} - ${mapDateFilterLabel()} - ${filteredJobs.length} visible - ${activeMapBaseStyle.label}`
+                : `${filteredJobs.length} jobs - ${mapBoroughScopeLabel}`}
+            </p>
           </div>
-          <a className="home-btn" href="/">Home</a>
-          <button className="map-menu-close" type="button" onClick={closeMapMenu}>
-            Close
+          {mapMenuOpen ? <a className="home-btn" href="/">Home</a> : null}
+          <button className="map-menu-close advanced-toggle-btn" type="button" onClick={mapMenuOpen ? closeMapMenu : openMapMenu}>
+            {mapMenuOpen ? "Close" : "Advanced"}
           </button>
         </div>
 
@@ -35118,6 +35649,9 @@ return (
                 <div className="map-day-agent-actions">
                   <button type="button" className="map-day-agent-start" onClick={runDayAgentCommand}>Start</button>
                   <button type="button" className="map-day-agent-line" onClick={() => void drawDayAgentRouteLine(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : [])}>Line</button>
+                  {agentFirstJob ? (
+                    <a className="map-day-agent-route-link waze" href={wazeDirectionsUrl(agentFirstJob)} target="_blank" rel="noopener noreferrer">Waze</a>
+                  ) : null}
                   <a className="map-day-agent-route-link" href={routeUrl} target="_blank" rel="noopener noreferrer">Google</a>
                 </div>
                 <label className="map-day-agent-return">
@@ -35412,7 +35946,25 @@ return (
                 <div className="job-card-field-title-copy">
                   <span>Work order</span>
                   <strong>{jobKey(selected)}</strong>
-                  <p>{displayAddress(selected)}</p>
+                  <div className="job-card-address-route-row" aria-label="Job address and directions">
+                    <p>{displayAddress(selected)}</p>
+                    <div className="job-card-address-route-actions">
+                      <a className="route-head-button waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer" aria-label="Open Waze directions">
+                        <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
+                        <span className="route-action-copy">
+                          <strong>Waze</strong>
+                          <small>traffic</small>
+                        </span>
+                      </a>
+                      <a className="route-head-button google" href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer" aria-label="Open Google Maps directions">
+                        <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
+                        <span className="route-action-copy">
+                          <strong>Google</strong>
+                          <small>maps</small>
+                        </span>
+                      </a>
+                    </div>
+                  </div>
                   <div className="job-card-field-metas" aria-label="Job status summary">
                     {(() => {
                       const headerStatusValue = workflowDisplayStatusValue(selected, draftWorkflowStatus);
@@ -35483,20 +36035,6 @@ return (
                   <strong>{workflowShortStatusLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus))}</strong>
                   <small>{workflowButtonSubLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus), Boolean(draftWorkflowStatus))}</small>
                 </button>
-                <a className="route-head-button waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer" aria-label="Open Waze directions">
-                  <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
-                  <span className="route-action-copy">
-                    <strong>Waze</strong>
-                    <small>traffic</small>
-                  </span>
-                </a>
-                <a className="route-head-button google" href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer" aria-label="Open Google Maps directions">
-                  <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
-                  <span className="route-action-copy">
-                    <strong>Google</strong>
-                    <small>maps</small>
-                  </span>
-                </a>
               </div>
               {(() => {
                 const visit = visitSummaryFor(selected);
