@@ -34463,10 +34463,18 @@ return (
               color: #ffffff !important;
             }
 
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
+              position: relative !important;
+              inset: auto !important;
+              top: auto !important;
+              left: auto !important;
+              right: auto !important;
+              width: 100% !important;
+              z-index: 2 !important;
+              margin-top: 6px !important;
+            }
+
             .map-shell.map-glass-command-trial .map-face-search {
-              top: calc(env(safe-area-inset-top) + 60px) !important;
-              left: max(72px, calc(env(safe-area-inset-left) + 72px)) !important;
-              right: max(58px, calc(env(safe-area-inset-right) + 58px)) !important;
               min-height: 44px !important;
               grid-template-columns: minmax(0, 1fr) 42px 32px !important;
               gap: 5px !important;
@@ -34487,7 +34495,7 @@ return (
 
             .map-shell.map-glass-command-trial .map-face-search + .map-cockpit.board-collapsed .map-day-agent-launcher,
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher {
-              margin-top: 106px !important;
+              margin-top: 7px !important;
               min-height: 60px !important;
               padding: 8px !important;
               border-radius: 17px !important;
@@ -34996,35 +35004,6 @@ return (
           </svg>
         ) : null}
 
-        {!drawerOpen && !clusterSheet && !mapBoardOpen && !mapMenuOpen ? (
-          <form className={`map-face-search ${search.trim() ? "has-query" : ""}`} onSubmit={submitMapFaceSearch} aria-label="Search map by OMO or address">
-            <label>
-              <span>Search</span>
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    submitMapFaceSearch();
-                  }
-                }}
-                placeholder="OMO or address"
-                autoComplete="off"
-                spellCheck={false}
-              />
-            </label>
-            <button type="submit">Go</button>
-            {search.trim() ? (
-              <button type="button" className="map-face-search-clear" aria-label="Clear map search" onClick={() => setSearch("")}>
-                X
-              </button>
-            ) : (
-              <strong>{filteredJobs.length}</strong>
-            )}
-          </form>
-        ) : null}
-
         <section className={`map-cockpit ${mapMenuOpen ? "panel-open" : ""} ${mapBoardOpen ? "board-open" : "board-collapsed"}`} aria-label="Map controls">
           <div className="map-command-banner" aria-label="Schedule board banner">
             <div>
@@ -35046,6 +35025,34 @@ return (
               </button>
             </div>
           </div>
+          {!drawerOpen && !clusterSheet && !mapBoardOpen && !mapMenuOpen ? (
+            <form className={`map-face-search ${search.trim() ? "has-query" : ""}`} onSubmit={submitMapFaceSearch} aria-label="Search map by OMO or address">
+              <label>
+                <span>Search</span>
+                <input
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      submitMapFaceSearch();
+                    }
+                  }}
+                  placeholder="OMO or address"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </label>
+              <button type="submit">Go</button>
+              {search.trim() ? (
+                <button type="button" className="map-face-search-clear" aria-label="Clear map search" onClick={() => setSearch("")}>
+                  X
+                </button>
+              ) : (
+                <strong>{filteredJobs.length}</strong>
+              )}
+            </form>
+          ) : null}
           {(() => {
             const agentFirstJob = dayAgentRoute[0] || fieldQueueJobs[0] || todayPriorityJobs[0] || null;
             const routeUrl = dayAgentGoogleRouteUrl(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : []);
