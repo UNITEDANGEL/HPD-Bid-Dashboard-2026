@@ -15,6 +15,7 @@ The app should feel like a mobile field command center, not a slow data dashboar
 Target first impression:
 - Full-screen map with no overlapping controls.
 - One compact command dock for search, layers, borough, day route, and AI agent.
+- Webull-style mobile feel: dark, fast, clean, with one primary search/command bar and hidden advanced tools.
 - One clear job sheet when a work order is selected.
 - Big field actions for route, status, media, appointment, package, and return to map.
 - The user should always know: where to go next, why that job matters, how old it is, what status it has, and what action is next.
@@ -62,6 +63,8 @@ Current pain points:
 Fix direction:
 - Create a single map command dock that can expand/collapse.
 - Keep search inside the command dock.
+- In normal map mode, show only the search/route-status bar. Hide appointment, layer, agent, and dashboard controls until the user opens the command dock.
+- Do not show duplicate status pills, duplicate pending labels, duplicate direction buttons, or duplicate agent panels.
 - Put layer counts and borough choice in the same dock.
 - Make the AI Agent a compact assistant panel, not another floating object.
 - Add a Day Route Tray: Stop 1, Stop 2, Stop 3, ETA, distance, status, and Google route button.
@@ -106,6 +109,11 @@ Expected behavior:
 - Prioritize active and pending jobs.
 - Route first to the closest high-priority active/pending job.
 - Build a day route with multiple stops, such as 5 jobs in Brooklyn.
+- When the user taps Start, stay on the map. Do not open the first job card automatically.
+- Show the first stop, second stop, third stop, ETA, distance, and next action directly on the map.
+- Let the user tap stop 1, stop 2, stop 3 to focus that stop on the map without opening the full job card.
+- Opening a full job card should be an intentional second action from the stop/marker.
+- The user should be able to reorder, skip, or add stops before pushing the route to Google Maps.
 - Include return to base by the end of the work day.
 - Respect the user's work window, for example 8:00 AM to 5:00 PM / 6:00 PM.
 - Show whether the route can finish on time and still return to 87-35 114 Street, Richmond Hill, NY 11418.

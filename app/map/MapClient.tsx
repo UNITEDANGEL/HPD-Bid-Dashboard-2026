@@ -3127,7 +3127,9 @@ const startDayAgent = (commandText = dayAgentCommand, requestedBoroughOverride?:
     setSelectedOnly(false);
     setFullMap(true);
     appendDayAgentLog(`Started day agent. First stop: ${jobKey(route[0])}. ${manhattanExitGuidance(route[0])}`, route[0]);
-    focusJob(route[0]);
+    setSelected(null);
+    setSelectedOnly(false);
+    setDrawerOpen(false);
     void drawDayAgentRouteLine(route);
     setActionNotice(`Day Agent started: ${jobKey(route[0])} first. ${tenantContactInfo(route[0]).appointmentNeeded ? "Contact tenant before route." : "Public/common area: go directly."}`);
   } else {
@@ -9325,6 +9327,26 @@ function focusJob(job: MappedJob) {
     }
   }
 
+  function focusRouteStopOnMap(job: MappedJob, stopIndex = 0) {
+    clearMarkerOverviewReturn();
+    setMapJobBrief(null);
+    setClusterSheet(null);
+    setSelected(null);
+    setSelectedOnly(false);
+    setFullMap(true);
+    setDrawerOpen(false);
+    setFollowMyLocation(false);
+    mapRef.current?.closePopup?.();
+    if (Number.isFinite(job._lat) && Number.isFinite(job._lng) && mapRef.current) {
+      markProgrammaticMapMove();
+      mapRef.current.flyTo([Number(job._lat), Number(job._lng)], 15, {
+        animate: true,
+        duration: 0.55,
+      });
+    }
+    setActionNotice(`Route stop ${stopIndex + 1}: ${jobKey(job)}. Tap the marker only when you want the full job card.`);
+  }
+
   function smoothFocusSelectedCard(job: JobRecord) {
     const key = jobKey(job);
 
@@ -13662,17 +13684,17 @@ return (
 
           .day-agent-route-list {
             display: grid;
-            gap: 7px;
+            gap: 9px;
           }
 
           .day-agent-route-list button {
             display: grid;
-            grid-template-columns: 34px 78px minmax(0, 1fr);
+            grid-template-columns: 44px 92px minmax(0, 1fr);
             align-items: center;
-            gap: 8px;
-            min-height: 42px;
-            padding: 8px 10px;
-            border-radius: 12px;
+            gap: 10px;
+            min-height: 54px;
+            padding: 10px 12px;
+            border-radius: 16px;
             border: 1px solid rgba(45, 212, 191, 0.22);
             background: rgba(255, 255, 255, 0.08);
             color: #ffffff;
@@ -13682,17 +13704,19 @@ return (
           .day-agent-route-list b {
             display: grid;
             place-items: center;
-            width: 26px;
-            height: 26px;
+            width: 36px;
+            height: 36px;
             border-radius: 999px;
             background: #21f5a5;
             color: #06231b;
-            font-size: 12px;
+            font-size: 17px;
+            font-weight: 1000;
           }
 
           .day-agent-route-list span {
             color: #ffffff;
             font-weight: 1000;
+            font-size: 15px;
           }
 
           .day-agent-route-list small {
@@ -13702,6 +13726,7 @@ return (
             text-overflow: ellipsis;
             color: #c8fff0;
             font-weight: 850;
+            font-size: 13px;
           }
 
           .day-agent-log {
@@ -13726,25 +13751,25 @@ return (
           }
 
           .day-agent-route-leg-label span {
-            width: 22px;
-            height: 22px;
+            width: 32px;
+            height: 32px;
             border-radius: 999px;
             background: #082f49;
             color: #ffffff;
-            font-size: 11px;
+            font-size: 16px;
             font-weight: 1000;
             box-shadow: 0 6px 16px rgba(2, 10, 29, 0.34);
           }
 
           .day-agent-route-leg-label b {
-            min-height: 24px;
-            margin-left: -4px;
-            padding: 0 8px 0 10px;
+            min-height: 32px;
+            margin-left: -6px;
+            padding: 0 12px 0 14px;
             border-radius: 999px;
             border: 1px solid rgba(8, 47, 73, 0.16);
             background: rgba(255, 255, 255, 0.96);
             color: #082f49;
-            font-size: 10px;
+            font-size: 13px;
             font-weight: 1000;
             box-shadow: 0 8px 18px rgba(2, 10, 29, 0.18);
           }
@@ -35191,6 +35216,116 @@ return (
             grid-template-columns: minmax(0, 1fr) 46px 34px !important;
           }
 
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-command-banner,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-board-switcher,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .field-map-queue {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-tray {
+            display: grid !important;
+            gap: 8px !important;
+            margin-top: 8px !important;
+            padding: 10px !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(124, 246, 198, 0.28) !important;
+            background:
+              radial-gradient(circle at 0% 0%, rgba(25, 240, 162, 0.20), transparent 42%),
+              linear-gradient(135deg, rgba(3, 21, 39, 0.96), rgba(6, 47, 83, 0.94) 62%, rgba(7, 77, 72, 0.90)) !important;
+            box-shadow:
+              0 16px 30px rgba(2, 10, 29, 0.28),
+              0 0 24px rgba(0, 208, 132, 0.13),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-tray-head {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 8px !important;
+            align-items: center !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-tray-head span {
+            display: block !important;
+            color: #7cf6c6 !important;
+            font-size: 9px !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-tray-head strong {
+            display: block !important;
+            color: #ffffff !important;
+            font-size: 16px !important;
+            line-height: 1.05 !important;
+            font-weight: 1000 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-tray-head a {
+            min-height: 38px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 12px !important;
+            border-radius: 14px !important;
+            background: linear-gradient(135deg, #19f0a2 0%, #00d084 52%, #00ad74 100%) !important;
+            color: #031527 !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+            text-decoration: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-stop-list {
+            display: grid !important;
+            gap: 7px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-stop-list button {
+            min-height: 48px !important;
+            display: grid !important;
+            grid-template-columns: 38px minmax(64px, 0.42fr) minmax(0, 1fr) !important;
+            gap: 8px !important;
+            align-items: center !important;
+            padding: 7px 9px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(124, 246, 198, 0.22) !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: #ffffff !important;
+            text-align: left !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-stop-list b {
+            width: 32px !important;
+            height: 32px !important;
+            display: grid !important;
+            place-items: center !important;
+            border-radius: 999px !important;
+            background: #21f5a5 !important;
+            color: #06231b !important;
+            font-size: 16px !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-stop-list span {
+            color: #ffffff !important;
+            font-size: 14px !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-stop-list small {
+            min-width: 0 !important;
+            overflow: hidden !important;
+            white-space: nowrap !important;
+            text-overflow: ellipsis !important;
+            color: #c8fff0 !important;
+            font-size: 12px !important;
+            font-weight: 850 !important;
+          }
+
           .map-shell.map-glass-command-trial .zoom-panel {
             top: calc(env(safe-area-inset-top) + 304px) !important;
             right: max(8px, env(safe-area-inset-right)) !important;
@@ -35665,6 +35800,29 @@ return (
               </section>
             );
           })()}
+          {dayAgentRoute.length ? (
+            <section className="map-day-route-tray" aria-label="Active day route stops">
+              <div className="map-day-route-tray-head">
+                <div>
+                  <span>Active Route</span>
+                  <strong>
+                    {dayAgentRoute.length} stop{dayAgentRoute.length === 1 ? "" : "s"}
+                    {dayAgentRouteSummary ? ` · ${formatDayAgentDuration(dayAgentRouteSummary.totalDurationSeconds)}` : ""}
+                  </strong>
+                </div>
+                <a href={dayAgentGoogleRouteUrl(dayAgentRoute)} target="_blank" rel="noopener noreferrer">Google</a>
+              </div>
+              <div className="map-day-route-stop-list">
+                {dayAgentRoute.slice(0, 5).map((job, index) => (
+                  <button type="button" key={`${jobKey(job)}-map-route-${index}`} onClick={() => focusRouteStopOnMap(job, index)}>
+                    <b>{index + 1}</b>
+                    <span>{jobKey(job)}</span>
+                    <small>{displayAddress(job)}</small>
+                  </button>
+                ))}
+              </div>
+            </section>
+          ) : null}
           <div className="map-board-switcher" aria-label="Switch map board">
             {mapBoardModes.map((mode) => (
               <button
@@ -36335,8 +36493,8 @@ return (
                 <div className="day-agent-route-list">
                   {dayAgentRoute.slice(0, 5).map((job, index) => (
                     <button type="button" key={`${jobKey(job)}-${index}`} onClick={() => {
-                      focusJob(job);
-                      appendDayAgentLog(`Opened route stop ${index + 1}: ${jobKey(job)}.`, job);
+                      focusRouteStopOnMap(job, index);
+                      appendDayAgentLog(`Focused route stop ${index + 1}: ${jobKey(job)}.`, job);
                     }}>
                       <b>{index + 1}</b>
                       <span>{jobKey(job)}</span>
