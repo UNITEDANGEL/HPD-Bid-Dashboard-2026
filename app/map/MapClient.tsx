@@ -34574,14 +34574,19 @@ return (
             }
 
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner {
-              min-height: 50px !important;
-              padding: 8px 10px !important;
+              min-height: 44px !important;
+              padding: 7px 9px !important;
               border-radius: 16px !important;
               grid-template-columns: 18px minmax(0, 1fr) auto !important;
             }
 
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner strong {
-              font-size: 14px !important;
+              font-size: 13px !important;
+              line-height: 1.05 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner em {
+              display: none !important;
             }
 
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-field-action-dock {
@@ -34601,22 +34606,36 @@ return (
             }
 
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-card {
-              grid-template-columns: minmax(0, 1fr) auto !important;
-              gap: 8px !important;
-              padding: 10px !important;
+              grid-template-columns: minmax(0, 1fr) !important;
+              gap: 6px !important;
+              padding: 8px !important;
               border-radius: 16px !important;
             }
 
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-card span {
+              font-size: 9px !important;
+            }
+
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-card strong {
-              font-size: 18px !important;
+              font-size: 16px !important;
               line-height: 1.05 !important;
             }
 
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-card small {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-actions {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 6px !important;
+            }
+
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-actions button {
-              min-height: 38px !important;
-              padding: 0 12px !important;
+              min-height: 34px !important;
+              padding: 0 10px !important;
               border-radius: 14px !important;
-              font-size: 12px !important;
+              font-size: 11px !important;
             }
 
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail {
