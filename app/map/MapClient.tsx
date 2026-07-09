@@ -35174,6 +35174,11 @@ return (
             font-weight: 1000 !important;
           }
 
+          .map-shell.map-glass-command-trial .advanced-toggle-btn::before {
+            content: none !important;
+            display: none !important;
+          }
+
           .map-shell.map-glass-command-trial .map-top.open {
             max-height: min(72dvh, 640px) !important;
             overflow-y: auto !important;
