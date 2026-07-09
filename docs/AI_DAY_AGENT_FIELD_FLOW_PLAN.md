@@ -1,12 +1,73 @@
 # AI Day Agent Field Flow Plan
 
-Last updated: 2026-07-08
+Last updated: 2026-07-09
 
 ## Vision
 
 Build the HPD dashboard into a field operations assistant that can plan the day, route through jobs, guide the user stop by stop, communicate with tenants after approval, record what happened, and prepare the final package.
 
 The current job card, status, media, package, appointment, and map flow stays intact. The AI Day Agent becomes an optional layer on top of the existing field workflow.
+
+## Product Direction - Fast Field Command Center
+
+The app should feel like a mobile field command center, not a slow data dashboard.
+
+Target first impression:
+- Full-screen map with no overlapping controls.
+- One compact command dock for search, layers, borough, day route, and AI agent.
+- One clear job sheet when a work order is selected.
+- Big field actions for route, status, media, appointment, package, and return to map.
+- The user should always know: where to go next, why that job matters, how old it is, what status it has, and what action is next.
+
+The app should stay usable in the field with one hand on iPhone:
+- Fast search by OMO or address.
+- Fast borough filtering.
+- Fast layer switching.
+- Fast return to map.
+- No duplicate buttons.
+- No hidden text.
+- No light text on light background.
+- No map/card/control overlap.
+
+## Architecture Decision
+
+Do not rewrite the whole app right now. Keep the current Next.js / React / TypeScript app and improve the structure in phases.
+
+Recommended stack:
+- Frontend: Next.js + React + TypeScript for the Cloudflare Pages app.
+- Map UI: keep Leaflet/MapLibre-style web map rendering for low-cost control of markers, clusters, layers, and custom field UI.
+- Routing engine: use a free or low-cost route service first, such as OSRM, Valhalla, GraphHopper, or OpenRouteService. Use Google Maps URLs as the driving handoff.
+- Google Maps: do not rely on paid embedded Google Maps for every interaction. Generate Google Maps direction links with stops when the user wants to navigate.
+- Data/cache: add a local fast cache for jobs, statuses, appointments, and route candidates so the UI does not wait on every fetch.
+- Background work: move Gmail fetching, PDF processing, data quality checks, route precomputation, and package generation into scheduled/background jobs.
+- Future mobile option: only consider React Native or a PWA wrapper after the web app flow is fast and stable. Native mobile may help later for camera, GPS, offline tracking, and background location, but it is not the first fix.
+
+Performance rule:
+- The map screen should render only what is visible and needed now.
+- Heavy data should be precomputed or lazy-loaded.
+- Job details should load when the user opens a job, not all at once.
+- Lists should be virtualized when large.
+- Markers should cluster or simplify by zoom level.
+- Route calculations should happen outside the render loop.
+
+## Slow Flow Problems To Fix
+
+Current pain points:
+- Too many controls compete on top of the map.
+- Search, layers, active work, agent, and job cards can overlap.
+- The map can feel slow because too much job data and marker UI are active at once.
+- Route planning is still visual instead of operational: it needs stop order, drive time, distance, Google handoff, and return-to-base.
+- Job card flow is strong, but it still needs clearer hierarchy and fewer repeated actions.
+
+Fix direction:
+- Create a single map command dock that can expand/collapse.
+- Keep search inside the command dock.
+- Put layer counts and borough choice in the same dock.
+- Make the AI Agent a compact assistant panel, not another floating object.
+- Add a Day Route Tray: Stop 1, Stop 2, Stop 3, ETA, distance, status, and Google route button.
+- Keep the job card focused on: Description, Contact, Route, Status, Media, Package.
+- Fold secondary sections until needed.
+- Preserve the user's current successful flow while making every step faster.
 
 ## Living Plan Rule
 
