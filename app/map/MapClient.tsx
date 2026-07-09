@@ -37,6 +37,12 @@ const USER_LOCATION_CONTEXT_JOB_LIMIT = 12;
 const MAP_LAYER_OVERVIEW_ZOOM = 12;
 const MAP_SINGLE_JOB_OVERVIEW_ZOOM = 13;
 const FULL_PACKAGE_SAVE_LIMIT_BYTES = 35 * 1024 * 1024;
+const NYC_MAP_BOUNDS = {
+  minLat: 40.45,
+  maxLat: 40.98,
+  minLng: -74.30,
+  maxLng: -73.65,
+};
 
 
 import bundledJobsData from "../../data/COA_Fetcher_2026.json";
@@ -1441,6 +1447,19 @@ function displayAmount(job: JobRecord | null | undefined) {
     maximumFractionDigits: 2,
   });
   return suspicious ? `${formatted} ⚠ check` : formatted;
+}
+
+function isNycMapCoordinate(lat: any, lng: any) {
+  const latitude = Number(lat);
+  const longitude = Number(lng);
+  return (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= NYC_MAP_BOUNDS.minLat &&
+    latitude <= NYC_MAP_BOUNDS.maxLat &&
+    longitude >= NYC_MAP_BOUNDS.minLng &&
+    longitude <= NYC_MAP_BOUNDS.maxLng
+  );
 }
 
 function cleanAddress(job: JobRecord) {
@@ -4051,12 +4070,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   const markerAutoFitKey = useMemo(() => {
     return filteredJobs
-      .filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng))
+      .filter((job) => isNycMapCoordinate(job._lat, job._lng))
       .map((job, index) => `${jobKey(job, index)}:${Number(job._lat).toFixed(5)}:${Number(job._lng).toFixed(5)}`)
       .join("|") || "empty";
   }, [filteredJobs]);
 
-  const plottedCount = mappedJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng)).length;
+  const plottedCount = mappedJobs.filter((job) => isNycMapCoordinate(job._lat, job._lng)).length;
 
   const mapDateCounts = useMemo(() => {
     const rows = mappedJobs.length
@@ -4213,7 +4232,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     markProgrammaticMapMove();
 
     const jobBounds = filteredJobs
-      .filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng))
+      .filter((job) => isNycMapCoordinate(job._lat, job._lng))
       .map((job) => [Number(job._lat), Number(job._lng)] as [number, number]);
     const bounds = [...jobBounds];
 
@@ -4330,6 +4349,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     const lat = toNumber((job as any)._lat ?? (job as any).Latitude ?? (job as any).latitude ?? (job as any).lat);
     const lng = toNumber((job as any)._lng ?? (job as any).Longitude ?? (job as any).longitude ?? (job as any).lng ?? (job as any).lon);
     if (lat === null || lng === null) return null;
+    if (!isNycMapCoordinate(lat, lng)) return null;
     return { lat, lng };
   }
 
@@ -4937,7 +4957,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const showIndividualNoAccessTimers = timerLayer && !timerLayerNeedsClusters;
 
       filteredJobs.forEach((job, index) => {
-        if (!Number.isFinite(job._lat) || !Number.isFinite(job._lng)) return;
+        if (!isNycMapCoordinate(job._lat, job._lng)) return;
 
         const lat = Number(job._lat);
         const lng = Number(job._lng);
@@ -5505,13 +5525,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             showLocationBlockedHelp();
             return;
           }
-          startLocationTracking();
+          startLocationTracking({ followMap: true });
         })
-        .catch(() => startLocationTracking());
+        .catch(() => startLocationTracking({ followMap: true }));
       return;
     }
 
-    startLocationTracking();
+    startLocationTracking({ followMap: true });
   }, [mapReady]);
 
   useEffect(() => {
@@ -9318,7 +9338,7 @@ function focusJob(job: MappedJob) {
       positionSelectedCardInDrawer();
     });
 
-    if (Number.isFinite(job._lat) && Number.isFinite(job._lng) && mapRef.current) {
+    if (isNycMapCoordinate(job._lat, job._lng) && mapRef.current) {
       markProgrammaticMapMove();
       mapRef.current.flyTo([Number(job._lat), Number(job._lng)], 16, {
         animate: true,
@@ -9337,7 +9357,7 @@ function focusJob(job: MappedJob) {
     setDrawerOpen(false);
     setFollowMyLocation(false);
     mapRef.current?.closePopup?.();
-    if (Number.isFinite(job._lat) && Number.isFinite(job._lng) && mapRef.current) {
+    if (isNycMapCoordinate(job._lat, job._lng) && mapRef.current) {
       markProgrammaticMapMove();
       mapRef.current.flyTo([Number(job._lat), Number(job._lng)], 15, {
         animate: true,
@@ -9459,7 +9479,7 @@ function directionsUrl(job: JobRecord) {
     setDescriptionOpen(false);
     setActionNotice(direction === "next" ? "Next job selected." : "Previous job selected.");
 
-    if (Number.isFinite(nextJob._lat) && Number.isFinite(nextJob._lng)) {
+    if (isNycMapCoordinate(nextJob._lat, nextJob._lng)) {
       window.setTimeout(() => {
         mapRef.current?.panTo([Number(nextJob._lat), Number(nextJob._lng)], {
           animate: true,
@@ -9653,7 +9673,7 @@ function directionsUrl(job: JobRecord) {
     return counts;
   }, [jobs, mappedJobs, mapDaysBack, mapShowAllDays, mapBoroughFilter, search, countdownTick]);
   const missingGeoCount = Math.max(0, jobs.length - plottedCount);
-  const visibleMappedCount = filteredJobs.filter((job) => Number.isFinite(job._lat) && Number.isFinite(job._lng)).length;
+  const visibleMappedCount = filteredJobs.filter((job) => isNycMapCoordinate(job._lat, job._lng)).length;
   const visibleMissingGeoCount = Math.max(0, filteredJobs.length - visibleMappedCount);
   const showMapStatsPanel = visibleMissingGeoCount > 0;
   const mapDateButtonCount = mapShowAllDays ? mapDateCounts.visible : filteredJobs.length;
@@ -35207,7 +35227,7 @@ return (
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
-            top: calc(env(safe-area-inset-top) + 82px) !important;
+            top: calc(env(safe-area-inset-top) + 8px) !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
@@ -35216,9 +35236,28 @@ return (
             left: auto !important;
             right: auto !important;
             width: 100% !important;
-            min-height: 52px !important;
-            margin-top: 8px !important;
-            grid-template-columns: minmax(0, 1fr) 46px 34px !important;
+            min-height: 46px !important;
+            margin-top: 4px !important;
+            grid-template-columns: minmax(0, 1fr) 42px 38px !important;
+            gap: 6px !important;
+            padding: 5px !important;
+            border-radius: 17px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search label {
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search label span {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search input,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search button,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search strong {
+            height: 36px !important;
+            border-radius: 12px !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-command-banner,
@@ -35226,6 +35265,84 @@ return (
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-board-switcher,
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .field-map-queue {
             display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-launcher,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-board-switcher {
+            display: grid !important;
+            margin-top: 8px !important;
+            animation: mapCommandSheetIn 160ms cubic-bezier(0.2, 0.9, 0.2, 1) both !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-launcher {
+            grid-template-columns: minmax(0, 0.72fr) 68px minmax(0, 1fr) !important;
+            padding: 9px !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(124, 246, 198, 0.26) !important;
+            background:
+              radial-gradient(circle at 0% 0%, rgba(25, 240, 162, 0.18), transparent 42%),
+              linear-gradient(135deg, rgba(3, 21, 39, 0.96), rgba(6, 47, 83, 0.94) 62%, rgba(7, 77, 72, 0.90)) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-launcher > div:first-child small,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-command,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-return,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-actions button:nth-child(2) {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-actions {
+            display: grid !important;
+            grid-template-columns: 1fr !important;
+            gap: 5px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-actions a {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-actions :is(button, a) {
+            min-width: 0 !important;
+            min-height: 42px !important;
+            border-radius: 14px !important;
+            font-size: 11px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-board-switcher {
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+            max-height: 116px !important;
+            overflow-y: auto !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-board-switcher button {
+            min-height: 52px !important;
+            padding: 7px 6px !important;
+            border-radius: 15px !important;
+            display: grid !important;
+            place-items: center !important;
+            gap: 3px !important;
+            font-size: 11px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-board-switcher button span {
+            font-size: 10px !important;
+            line-height: 1 !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-board-switcher button b {
+            width: auto !important;
+            min-width: 28px !important;
+            height: 24px !important;
+            padding: 0 6px !important;
+            font-size: 13px !important;
           }
 
           .map-shell.map-glass-command-trial .map-day-route-tray {
@@ -35339,22 +35456,60 @@ return (
 
           @media (max-width: 720px) {
             .map-shell.map-glass-command-trial .map-top:not(.open) {
-              width: min(330px, calc(100vw - 18px)) !important;
-              padding: 7px !important;
+              left: auto !important;
+              right: max(8px, env(safe-area-inset-right)) !important;
+              top: calc(env(safe-area-inset-top) + 8px) !important;
+              width: 92px !important;
+              min-width: 92px !important;
+              height: 48px !important;
+              min-height: 48px !important;
+              padding: 0 !important;
+              border: 0 !important;
               border-radius: 16px !important;
+              background: transparent !important;
+              box-shadow: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              overflow: visible !important;
             }
 
+            .map-shell.map-glass-command-trial .map-top:not(.open) .map-title-row {
+              display: flex !important;
+              justify-content: flex-end !important;
+              align-items: center !important;
+              gap: 0 !important;
+              width: 100% !important;
+              height: 48px !important;
+              padding: 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-top:not(.open) .map-title-row > div,
+            .map-shell.map-glass-command-trial .map-top:not(.open) .map-title-row h1,
             .map-shell.map-glass-command-trial .map-top:not(.open) .map-title-row p {
-              max-width: 150px !important;
+              display: none !important;
             }
 
             .map-shell.map-glass-command-trial .advanced-toggle-btn {
+              width: 92px !important;
+              min-width: 92px !important;
+              height: 48px !important;
               min-height: 36px !important;
-              padding: 0 11px !important;
+              padding: 0 10px !important;
+              border-radius: 16px !important;
+              font-size: 12px !important;
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
-              top: calc(env(safe-area-inset-top) + 78px) !important;
+              left: calc(max(8px, env(safe-area-inset-left)) + 58px) !important;
+              right: calc(max(8px, env(safe-area-inset-right)) + 104px) !important;
+              top: calc(env(safe-area-inset-top) + 8px) !important;
+              width: auto !important;
+              min-width: 0 !important;
+              padding: 0 !important;
+              background: transparent !important;
+              box-shadow: none !important;
+              border: 0 !important;
+              border-radius: 16px !important;
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
@@ -35366,6 +35521,34 @@ return (
               top: calc(env(safe-area-inset-top) + 304px) !important;
               right: max(7px, env(safe-area-inset-right)) !important;
             }
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
+            min-height: 48px !important;
+            max-height: 48px !important;
+            width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            margin-top: 0 !important;
+            padding: 4px !important;
+            border-radius: 16px !important;
+            grid-template-columns: minmax(0, 1fr) 36px 34px !important;
+            gap: 5px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search input,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search button,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search strong {
+            height: 34px !important;
+            min-height: 34px !important;
+            max-height: 34px !important;
+            border-radius: 11px !important;
+            font-size: 12px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search input {
+            font-size: 13px !important;
+            padding: 0 9px !important;
           }
 
           @media (prefers-reduced-motion: reduce) {
