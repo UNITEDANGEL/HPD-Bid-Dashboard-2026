@@ -1,13 +1,13 @@
 {
   "state": "complete",
-  "startedAt": "2026-07-09T02:29:04.589Z",
-  "finishedAt": "2026-07-09T02:30:50.386Z",
+  "startedAt": "2026-07-09T12:08:56.829Z",
+  "finishedAt": "2026-07-09T12:10:56.582Z",
   "ok": true,
   "error": "",
   "summary": {
-    "fetchedCoaItems": 21,
-    "fetchedItbItems": 21,
-    "fetchedFinalJobRows": 21,
+    "fetchedCoaItems": 19,
+    "fetchedItbItems": 19,
+    "fetchedFinalJobRows": 19,
     "addedNewOmos": 0,
     "skippedExistingOmos": 21,
     "rawRows": 560,
