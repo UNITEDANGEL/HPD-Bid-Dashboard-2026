@@ -34475,11 +34475,11 @@ return (
             }
 
             .map-shell.map-glass-command-trial .map-face-search {
-              min-height: 44px !important;
-              grid-template-columns: minmax(0, 1fr) 42px 32px !important;
-              gap: 5px !important;
-              padding: 5px !important;
-              border-radius: 17px !important;
+              min-height: 54px !important;
+              grid-template-columns: minmax(0, 1fr) 50px 42px !important;
+              gap: 7px !important;
+              padding: 7px !important;
+              border-radius: 19px !important;
               border-color: rgba(124, 246, 198, 0.22) !important;
               box-shadow:
                 0 10px 26px rgba(2, 10, 29, 0.28),
@@ -34487,10 +34487,29 @@ return (
                 inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
             }
 
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search label {
+              grid-template-columns: 48px minmax(0, 1fr) !important;
+              gap: 6px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search label span {
+              display: inline-flex !important;
+              align-items: center !important;
+              color: #7cf6c6 !important;
+              font-size: 10px !important;
+              font-weight: 1000 !important;
+            }
+
             .map-shell.map-glass-command-trial .map-face-search input,
             .map-shell.map-glass-command-trial .map-face-search button,
             .map-shell.map-glass-command-trial .map-face-search strong {
-              height: 34px !important;
+              height: 40px !important;
+              font-size: 13px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-face-search input {
+              font-size: 14px !important;
+              font-weight: 1000 !important;
             }
 
             .map-shell.map-glass-command-trial .map-face-search + .map-cockpit.board-collapsed .map-day-agent-launcher,
@@ -35055,17 +35074,19 @@ return (
           ) : null}
           {(() => {
             const agentFirstJob = dayAgentRoute[0] || fieldQueueJobs[0] || todayPriorityJobs[0] || null;
+            const agentBorough = boroughFilterMeta(dayAgentBoroughStart);
+            const agentBoroughTitle = dayAgentBoroughStart === "all" ? "All boroughs route" : `${agentBorough.label} route`;
             const routeUrl = dayAgentGoogleRouteUrl(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : []);
             const routeSummaryText = dayAgentRouteSummary
-              ? `${dayAgentRouteSummary.mode === "road" ? "Road route" : "Estimated route"} · ${formatDayAgentDuration(dayAgentRouteSummary.totalDurationSeconds)} · ${formatDayAgentDistance(dayAgentRouteSummary.totalDistanceMeters)}${dayAgentRouteSummary.returnedToBase ? " · returns base" : ""}`
+              ? `${dayAgentRouteSummary.mode === "road" ? "Free road route" : "Estimated free route"} · ${formatDayAgentDuration(dayAgentRouteSummary.totalDurationSeconds)} · ${formatDayAgentDistance(dayAgentRouteSummary.totalDistanceMeters)}${dayAgentRouteSummary.returnedToBase ? " · returns base" : ""}`
               : agentFirstJob
-                ? dayAgentContactPlan(agentFirstJob)
-                : "Say start, pick a borough, or route me.";
+                ? `${agentBorough.label} selected · next ${jobKey(agentFirstJob)}`
+                : `${agentBorough.label} selected · pick borough and start`;
             return (
               <section className={`map-day-agent-launcher ${dayAgentStarted ? "is-running" : ""}`} aria-label="Start AI day agent">
                 <div>
                   <span>AI Day Agent</span>
-                  <strong>{agentFirstJob ? `${jobKey(agentFirstJob)} first` : "Start route"}</strong>
+                  <strong>{agentBoroughTitle}</strong>
                   <small>{routeSummaryText}</small>
                 </div>
                 <label className="map-day-agent-borough">
@@ -35097,7 +35118,7 @@ return (
                 <div className="map-day-agent-actions">
                   <button type="button" className="map-day-agent-start" onClick={runDayAgentCommand}>Start</button>
                   <button type="button" className="map-day-agent-line" onClick={() => void drawDayAgentRouteLine(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : [])}>Line</button>
-                  <a className="map-day-agent-route-link" href={routeUrl} target="_blank" rel="noopener noreferrer">Route</a>
+                  <a className="map-day-agent-route-link" href={routeUrl} target="_blank" rel="noopener noreferrer">Google</a>
                 </div>
                 <label className="map-day-agent-return">
                   <input
@@ -35704,15 +35725,16 @@ return (
           const agentContact = tenantContactInfo(agentFirstJob);
           const routeUrl = dayAgentGoogleRouteUrl(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : []);
           const contactHref = agentContact.actionHref || agentContact.smsHref || agentContact.whatsappHref || agentContact.emailHref || "";
+          const agentBorough = boroughFilterMeta(dayAgentBoroughStart);
           const agentRouteSummaryLabel = dayAgentRouteSummary
-            ? `${dayAgentRouteSummary.mode === "road" ? "Road route" : "Estimated route"} · ${formatDayAgentDuration(dayAgentRouteSummary.totalDurationSeconds)} · ${formatDayAgentDistance(dayAgentRouteSummary.totalDistanceMeters)}${dayAgentRouteSummary.returnedToBase ? " · returns base" : ""}`
-            : `Base: ${DAY_AGENT_BASE_ADDRESS}`;
+            ? `${dayAgentRouteSummary.mode === "road" ? "Free road route" : "Estimated free route"} · ${formatDayAgentDuration(dayAgentRouteSummary.totalDurationSeconds)} · ${formatDayAgentDistance(dayAgentRouteSummary.totalDistanceMeters)}${dayAgentRouteSummary.returnedToBase ? " · returns base" : ""}`
+            : `${agentBorough.label} selected · Base: ${DAY_AGENT_BASE_ADDRESS}`;
           return (
             <section className={`day-agent-card ${dayAgentStarted ? "is-running" : ""}`} aria-label="AI day field agent">
               <div className="day-agent-head">
                 <div>
                   <span>AI Day Agent</span>
-                  <strong>{dayAgentStarted ? "Route running" : "Start your field day"}</strong>
+                  <strong>{dayAgentStarted ? `${agentBorough.label} route running` : `Start ${agentBorough.label}`}</strong>
                   <small>{agentRouteSummaryLabel}</small>
                 </div>
                 <button type="button" onClick={runDayAgentCommand}>
