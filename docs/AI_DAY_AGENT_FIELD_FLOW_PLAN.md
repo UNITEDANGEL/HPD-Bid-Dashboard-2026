@@ -93,6 +93,143 @@ When the user says "add to the plan", update this file with the new feature, wor
 - Jobs on the way should be suggested as optional detours, not forced stops.
 - The user can override the agent at any time by selecting a job, borough, or priority.
 
+## Field Day Dispatcher Flow
+
+The agent should operate like a dispatcher for the work day.
+
+Example command:
+"Agent, I want to start working in Brooklyn today."
+
+Expected behavior:
+- Use the user's current location or base location as the starting point.
+- Filter to the selected borough, such as Brooklyn, unless the user chooses all boroughs.
+- Prioritize active and pending jobs.
+- Route first to the closest high-priority active/pending job.
+- Build a day route with multiple stops, such as 5 jobs in Brooklyn.
+- Include return to base by the end of the work day.
+- Respect the user's work window, for example 8:00 AM to 5:00 PM / 6:00 PM.
+- Show whether the route can finish on time and still return to 87-35 114 Street, Richmond Hill, NY 11418.
+- Push the route to Google Maps in chunks when needed.
+- Keep the in-app route visible as the field-day plan.
+
+The route should be explainable:
+- "There are 5 pending Brooklyn jobs."
+- "This is the closest active job from your current location."
+- "This route returns to base by about 5:30 PM."
+- "This job is on the way if you want to add it."
+- "This appointment is due today, so it should be prioritized."
+
+## Arrival, Departure, And Time-On-Site Tracking
+
+The app should track internal field presence for job accountability.
+
+When the user reaches a job location:
+- Detect arrival when the user's GPS is near the work order location.
+- Log arrival date/time.
+- Show: "You are at this location."
+- Ask: "What happened at this job?"
+- Start a time-on-site counter.
+
+When the user leaves the job location:
+- Detect departure when the user moves away from the work order location.
+- Log departure date/time.
+- Save time spent on site.
+- Use the time spent as job evidence and workflow context.
+
+Examples:
+- No access: user arrived, spent 5 minutes, marked No Access 1st.
+- Refused access: user arrived, spoke with tenant, spent 10 minutes, marked Refused Access.
+- Work completed: user arrived, spent 2 hours, marked Work Completed.
+- Appointment needed: user arrived, tenant requested a future appointment, schedule follow-up.
+
+Rules:
+- Tracking is internal only.
+- Tracking must be visible and understandable to the user.
+- The app should let the user correct or add a note to an arrival/departure record.
+- The app should not share location history externally without explicit approval.
+- Time-on-site should be saved to the work order log and package history when useful.
+
+## On-Site Decision Flow
+
+When the user arrives at a stop, the agent should guide the next action.
+
+Primary question:
+"What happened here?"
+
+Main options:
+- Schedule appointment.
+- Start work / work in progress.
+- Work completed.
+- Partial work.
+- No access 1st.
+- No access 2nd.
+- Refused access.
+- Work completed by others.
+- Add note.
+- Contact tenant.
+
+Schedule appointment should be one of the first options because it is a common field outcome.
+
+Appointment scheduling flow:
+- User manually picks date and time.
+- App saves appointment to the work order.
+- App creates or updates the Google Calendar event.
+- Google Calendar reminders should notify the user.
+- The appointment should appear in the app's appointment layer.
+- When appointment is due, the agent should say which appointments are today and route them into the day plan.
+- If an appointment is missed or past due, show "Appointment past due - reschedule."
+
+Work in progress flow:
+- Mark job as Work In Progress.
+- Save status date/time.
+- Ask if material is needed.
+- Add reminder / note such as "Need to get material for this job."
+- Keep the job active until completed, partial, no access, refused, or closed.
+
+Status flow:
+- Status should answer what happened at the location.
+- Status date/time is always saved.
+- Status note should be optional but easy to add.
+- The agent should use status history, appointment dates, and time-on-site to plan the next route.
+
+## Tenant Contact Agent Flow
+
+Tenant contact should be available from the job card and on-site decision flow.
+
+Contact options:
+- Text tenant.
+- Call tenant.
+- WhatsApp tenant.
+- Email tenant, when email is available.
+- Request contact information from HPD when no tenant phone/apartment is available.
+
+Before sending any message, the app should draft it and ask for user approval.
+
+Tenant message should include:
+- Company name / contractor identity.
+- That we are a contractor/vendor working with the city.
+- Work order number.
+- Address and apartment when available.
+- Tenant name when available.
+- Short work description from the ITB.
+- Request for available appointment date/time.
+- Clear callback or reply instruction.
+
+Example message direction:
+"Hello, this is United Angel Construction Corp, contractor/vendor working with the city regarding work order EQ##### at [address]. We are contacting you to schedule access for [short work description]. Please reply with the best date/time this week for access."
+
+When tenant replies:
+- Save reply to the work order log.
+- Let the user convert reply into an appointment.
+- Let the user add a note.
+- Let the agent use the reply to update the route and calendar.
+
+The agent should summarize tenant communication:
+- "Tenant requested next week."
+- "Tenant available Tuesday at 10:00 AM."
+- "Tenant did not answer."
+- "Text sent, awaiting reply."
+
 ## Route Line Design
 
 Problem to fix: the current light green straight line is only a visual connector. It does not look like a real driving route.
