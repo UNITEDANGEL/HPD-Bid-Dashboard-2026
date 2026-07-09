@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-07-09T17:07:34.867Z",
+  "generatedAt": "2026-07-09T21:23:51.082Z",
   "page": 3,
   "dpi": 150,
-  "totalJobs": 562,
-  "uniqueItbRefs": 562,
+  "totalJobs": 568,
+  "uniqueItbRefs": 568,
   "sourceDirectories": [
     "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5",
     "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Scripts\\Diagnostics script\\ITB_Downloads_V5",
@@ -3945,12 +3945,54 @@
       "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\EQ31299_070826022922.pdf",
       "sourceMatch": "exact",
       "pdf": "/documents/itb/EQ31299_070826022922.pdf"
+    },
+    "ER00171_070826030153.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00171_070826030153-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER00171_070826030153.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00171_070826030153.pdf"
+    },
+    "EQ31144_070826023357.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/EQ31144_070826023357-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\EQ31144_070826023357.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/EQ31144_070826023357.pdf"
+    },
+    "ER00276_070826121642.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00276_070826121642-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER00276_070826121642.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00276_070826121642.pdf"
+    },
+    "EQ31547_070726125454.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/EQ31547_070726125454-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\EQ31547_070726125454.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/EQ31547_070726125454.pdf"
+    },
+    "ER00572_070826113050.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00572_070826113050-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER00572_070826113050.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00572_070826113050.pdf"
+    },
+    "ER00598_070826113233.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00598_070826113233-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER00598_070826113233.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00598_070826113233.pdf"
     }
   },
   "summary": {
-    "rendered": 2,
-    "reused": 560,
-    "copiedPdfs": 2,
+    "rendered": 6,
+    "reused": 562,
+    "copiedPdfs": 6,
     "missingSource": 0,
     "failed": 0
   }
