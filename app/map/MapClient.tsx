@@ -34419,6 +34419,242 @@ return (
             }
           }
 
+          @media (max-width: 520px) {
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
+              left: max(58px, env(safe-area-inset-left)) !important;
+              right: max(10px, env(safe-area-inset-right)) !important;
+              top: calc(env(safe-area-inset-top) + 10px) !important;
+              width: auto !important;
+              padding: 7px !important;
+              border-radius: 22px !important;
+              background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(255, 255, 255, 0.90) 24%, rgba(3, 21, 39, 0.08) 100%) !important;
+              box-shadow:
+                0 18px 42px rgba(2, 10, 29, 0.24),
+                inset 0 1px 0 rgba(255, 255, 255, 0.84) !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-command-banner {
+              min-height: 42px !important;
+              padding: 0 6px !important;
+              border-radius: 16px !important;
+              background: transparent !important;
+              box-shadow: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-command-banner span,
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-command-banner small {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-command-banner strong {
+              font-size: 13px !important;
+              line-height: 1.05 !important;
+              color: #06182b !important;
+              text-shadow: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-command-buttons .map-board-toggle {
+              min-width: 58px !important;
+              min-height: 36px !important;
+              border-radius: 14px !important;
+              font-size: 11px !important;
+              background: linear-gradient(135deg, #063b66, #075e63) !important;
+              color: #ffffff !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-face-search {
+              top: calc(env(safe-area-inset-top) + 60px) !important;
+              left: max(72px, calc(env(safe-area-inset-left) + 72px)) !important;
+              right: max(58px, calc(env(safe-area-inset-right) + 58px)) !important;
+              min-height: 44px !important;
+              grid-template-columns: minmax(0, 1fr) 42px 32px !important;
+              gap: 5px !important;
+              padding: 5px !important;
+              border-radius: 17px !important;
+              border-color: rgba(124, 246, 198, 0.22) !important;
+              box-shadow:
+                0 10px 26px rgba(2, 10, 29, 0.28),
+                0 0 20px rgba(0, 208, 132, 0.10),
+                inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-face-search input,
+            .map-shell.map-glass-command-trial .map-face-search button,
+            .map-shell.map-glass-command-trial .map-face-search strong {
+              height: 34px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-face-search + .map-cockpit.board-collapsed .map-day-agent-launcher,
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher {
+              margin-top: 106px !important;
+              min-height: 60px !important;
+              padding: 8px !important;
+              border-radius: 17px !important;
+              grid-template-columns: minmax(0, 1fr) 64px auto !important;
+              box-shadow:
+                0 12px 28px rgba(2, 10, 29, 0.30),
+                0 0 22px rgba(0, 208, 132, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher strong {
+              font-size: 13px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-borough select,
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-actions button,
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-actions a {
+              min-height: 38px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+              padding: 10px !important;
+              gap: 8px !important;
+              border-radius: 22px !important;
+              box-shadow:
+                0 18px 40px rgba(2, 10, 29, 0.34),
+                0 0 24px rgba(0, 208, 132, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-row {
+              grid-template-columns: minmax(0, 1fr) 58px !important;
+              align-items: start !important;
+              gap: 8px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-copy {
+              gap: 3px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-copy strong,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-title {
+              font-size: 22px !important;
+              line-height: 1 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-copy p {
+              font-size: 12px !important;
+              line-height: 1.2 !important;
+              display: -webkit-box !important;
+              -webkit-line-clamp: 2 !important;
+              -webkit-box-orient: vertical !important;
+              overflow: hidden !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-metas {
+              gap: 5px !important;
+              overflow-x: auto !important;
+              padding-bottom: 2px !important;
+              scrollbar-width: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-metas::-webkit-scrollbar {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-metas .status,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-metas .maturity-pill {
+              min-height: 28px !important;
+              padding: 0 9px !important;
+              white-space: nowrap !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-age-badge {
+              min-width: 60px !important;
+              padding: 5px 7px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-map-back-pill.job-card-close-pill {
+              min-width: 56px !important;
+              min-height: 50px !important;
+              border-radius: 16px !important;
+              font-size: 12px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner {
+              min-height: 50px !important;
+              padding: 8px 10px !important;
+              border-radius: 16px !important;
+              grid-template-columns: 18px minmax(0, 1fr) auto !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner strong {
+              font-size: 14px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-field-action-dock {
+              gap: 7px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button {
+              min-height: 48px !important;
+              border-radius: 16px !important;
+              padding: 8px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button img {
+              width: 24px !important;
+              height: 24px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-card {
+              grid-template-columns: minmax(0, 1fr) auto !important;
+              gap: 8px !important;
+              padding: 10px !important;
+              border-radius: 16px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-card strong {
+              font-size: 18px !important;
+              line-height: 1.05 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-actions button {
+              min-height: 38px !important;
+              padding: 0 12px !important;
+              border-radius: 14px !important;
+              font-size: 12px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail {
+              gap: 6px !important;
+              padding: 6px !important;
+              border-radius: 16px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button {
+              min-height: 44px !important;
+              padding: 6px 4px !important;
+              border-radius: 14px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button strong {
+              font-size: 12px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail button small {
+              font-size: 9px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-map-return-row {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 6px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-map-return-row button {
+              min-height: 42px !important;
+              border-radius: 14px !important;
+              padding: 6px 8px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-map-return-row button small {
+              display: none !important;
+            }
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
