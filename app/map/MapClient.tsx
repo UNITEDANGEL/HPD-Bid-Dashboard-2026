@@ -5089,10 +5089,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       const clusterCellX = mobileMap
         ? zoomLevel < 11
-          ? 236
+          ? 136
           : zoomLevel < 13
-            ? 206
-            : 176
+            ? 120
+            : 108
         : zoomLevel < 11
           ? 248
           : zoomLevel < 13
@@ -5100,10 +5100,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             : 184;
       const clusterCellY = mobileMap
         ? zoomLevel < 11
-          ? 206
+          ? 142
           : zoomLevel < 13
-            ? 178
-            : 154
+            ? 122
+            : 104
         : zoomLevel < 11
           ? 214
           : zoomLevel < 13
@@ -5143,7 +5143,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         .filter((item) => item.kind === "cluster")
         .map((item, index) => {
           const point = map.latLngToContainerPoint([item.lat, item.lng]);
-          const y = point.y + (mobileMap && point.y < 150 ? 48 : 0);
+          const y = mobileMap && point.y < 112 ? 112 : point.y;
           return {
             id: `${index}:${Number(item.lat).toFixed(5)}:${Number(item.lng).toFixed(5)}`,
             x: Math.round(point.x),
@@ -5293,12 +5293,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                         ? "pending"
                         : "normal";
           const clusterPoint = map.latLngToLayerPoint([item.lat, item.lng]);
-          const topHeaderShift = mobileMap && clusterPoint.y < 150 ? 48 : 0;
+          const topHeaderShift = mobileMap && clusterPoint.y < 112 ? 112 - clusterPoint.y : 0;
           const [offsetX, offsetY]: [number, number] = [0, topHeaderShift];
           const clusterLatLng = map.layerPointToLatLng(L.point(clusterPoint.x + offsetX, clusterPoint.y + offsetY));
           const compactCluster = mobileMap || denseLayer || filteredCount > 24 || zoomLevel < 14;
           const clusterIconSize: [number, number] = compactCluster
-            ? (mobileMap ? [62, 66] : [70, 74])
+            ? (mobileMap ? [54, 58] : [70, 74])
             : (mobileMap ? [84, 92] : [90, 98]);
           const marker = L.marker([clusterLatLng.lat, clusterLatLng.lng], {
             icon: L.divIcon({
@@ -34342,17 +34342,17 @@ return (
 
           /* MAP_MANUAL_CONTROL_CLUSTER_DENSITY_2026 */
           .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge.cluster-compact-dot {
-            width: 64px !important;
-            min-width: 64px !important;
-            height: 66px !important;
-            min-height: 66px !important;
+            width: 58px !important;
+            min-width: 58px !important;
+            height: 60px !important;
+            min-height: 60px !important;
             display: grid !important;
             grid-template-rows: 17px minmax(0, 1fr) !important;
             align-items: center !important;
             justify-items: center !important;
             gap: 1px !important;
             padding: 6px !important;
-            border-radius: 20px !important;
+            border-radius: 18px !important;
             background:
               radial-gradient(circle at 50% 16%, rgba(124, 246, 198, 0.34), transparent 34%),
               linear-gradient(145deg, #031527 0%, #062f53 55%, #074d48 100%) !important;
@@ -34448,18 +34448,18 @@ return (
 
           @media (max-width: 430px) {
             .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.map-cluster-dot.cluster-dispatch-badge.cluster-compact-dot {
-              width: 58px !important;
-              min-width: 58px !important;
-              height: 60px !important;
-              min-height: 60px !important;
-              border-radius: 18px !important;
-              padding: 5px !important;
+              width: 54px !important;
+              min-width: 54px !important;
+              height: 58px !important;
+              min-height: 58px !important;
+              border-radius: 17px !important;
+              padding: 4px !important;
             }
 
             .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot span,
             .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot.cluster-size-lg span,
             .map-shell.map-glass-command-trial .maturity-map-marker .map-cluster-marker.cluster-compact-dot.cluster-size-xl span {
-              font-size: 21px !important;
+              font-size: 20px !important;
             }
           }
 
