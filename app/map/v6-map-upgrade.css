@@ -1,0 +1,118 @@
+/* V6 map polish layer.
+   Kept separate from MapClient.tsx so ChatGPT/Codex can iterate safely. */
+
+.map-shell.map-glass-command-trial {
+  --v6-control-radius: 18px;
+  --v6-control-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
+  --v6-control-border: 1px solid rgba(148, 163, 184, 0.28);
+}
+
+.map-shell.map-glass-command-trial .map-menu-fab,
+.map-shell.map-glass-command-trial .map-face-search,
+.map-shell.map-glass-command-trial .map-agent-top-button,
+.map-shell.map-glass-command-trial .map-day-route-tray,
+.map-shell.map-glass-command-trial .zoom-panel {
+  box-shadow: var(--v6-control-shadow) !important;
+  border: var(--v6-control-border) !important;
+  backdrop-filter: blur(18px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.15) !important;
+}
+
+.map-shell.map-glass-command-trial .map-menu-fab,
+.map-shell.map-glass-command-trial .map-face-search,
+.map-shell.map-glass-command-trial .map-agent-top-button {
+  border-radius: var(--v6-control-radius) !important;
+}
+
+.map-shell.map-glass-command-trial .map-day-route-tray {
+  border-radius: 20px !important;
+  transition:
+    opacity 160ms ease,
+    transform 180ms ease,
+    max-height 180ms ease,
+    padding 180ms ease,
+    margin 180ms ease !important;
+}
+
+.map-shell.map-glass-command-trial .map-day-route-tray.is-hidden {
+  opacity: 0 !important;
+  transform: translateY(-8px) scale(0.985) !important;
+  pointer-events: none !important;
+  max-height: 0 !important;
+  min-height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  overflow: hidden !important;
+}
+
+.map-shell.map-glass-command-trial .map-cockpit,
+.map-shell.map-glass-command-trial .map-board,
+.map-shell.map-glass-command-trial .map-menu-panel,
+.map-shell.map-glass-command-trial .map-job-brief,
+.map-shell.map-glass-command-trial .cluster-sheet {
+  transition:
+    opacity 160ms ease,
+    transform 180ms ease,
+    width 180ms ease,
+    height 180ms ease !important;
+}
+
+.map-shell.map-glass-command-trial .map-face-search input {
+  min-width: 0 !important;
+  text-overflow: ellipsis !important;
+}
+
+.map-shell.map-glass-command-trial .zoom-panel button,
+.map-shell.map-glass-command-trial .map-menu-fab,
+.map-shell.map-glass-command-trial .map-agent-top-button {
+  touch-action: manipulation !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.map-shell.map-glass-command-trial .zoom-panel button:active,
+.map-shell.map-glass-command-trial .map-menu-fab:active,
+.map-shell.map-glass-command-trial .map-agent-top-button:active {
+  transform: scale(0.96) !important;
+}
+
+@media (max-width: 720px) {
+  .map-shell.map-glass-command-trial {
+    --v6-mobile-gap: clamp(6px, 1.8vw, 10px);
+  }
+
+  .map-shell.map-glass-command-trial .map-top {
+    gap: var(--v6-mobile-gap) !important;
+  }
+
+  .map-shell.map-glass-command-trial .map-day-route-tray {
+    max-height: min(34dvh, 250px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+  }
+
+  .map-shell.map-glass-command-trial .map-day-route-tray.is-hidden {
+    max-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .map-shell.map-glass-command-trial .map-face-search input {
+    font-size: 16px !important;
+  }
+
+  .map-shell.map-glass-command-trial .zoom-panel {
+    border-radius: 18px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-shell.map-glass-command-trial *,
+  .map-shell.map-glass-command-trial *::before,
+  .map-shell.map-glass-command-trial *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
