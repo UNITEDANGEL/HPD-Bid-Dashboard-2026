@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-07-10T21:04:25.030Z",
+  "generatedAt": "2026-07-10T23:05:50.369Z",
   "page": 3,
   "dpi": 150,
-  "totalJobs": 575,
-  "uniqueItbRefs": 575,
+  "totalJobs": 576,
+  "uniqueItbRefs": 576,
   "sourceDirectories": [
     "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5",
     "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Scripts\\Diagnostics script\\ITB_Downloads_V5",
@@ -4036,11 +4036,18 @@
       "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\EQ30686_070826014627.pdf",
       "sourceMatch": "exact",
       "pdf": "/documents/itb/EQ30686_070826014627.pdf"
+    },
+    "EQ31362_070826123941.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/EQ31362_070826123941-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\EQ31362_070826123941.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/EQ31362_070826123941.pdf"
     }
   },
   "summary": {
     "rendered": 1,
-    "reused": 574,
+    "reused": 575,
     "copiedPdfs": 1,
     "missingSource": 0,
     "failed": 0
