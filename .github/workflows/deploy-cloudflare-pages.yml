@@ -48,23 +48,10 @@ jobs:
       - name: Build Cloudflare Pages output
         run: npm run build:cloudflare
 
-      - name: Resolve Cloudflare production branch
-        id: pages-project
-        shell: bash
-        run: |
-          response="$(curl -fsS \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            -H "Content-Type: application/json" \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/hpd-bid-dashboard-2026")"
-
-          production_branch="$(printf '%s' "$response" | node -e "const fs = require('fs'); const body = JSON.parse(fs.readFileSync(0, 'utf8')); if (!body.success) { console.error(JSON.stringify(body.errors)); process.exit(1); } console.log(body.result.production_branch || 'main');")"
-          echo "production_branch=$production_branch" >> "$GITHUB_OUTPUT"
-          echo "Cloudflare Pages production branch: $production_branch"
-
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy out --project-name=hpd-bid-dashboard-2026 --branch=${{ steps.pages-project.outputs.production_branch }}
+          command: pages deploy out --project-name=hpd-bid-dashboard-2026 --branch=main
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
