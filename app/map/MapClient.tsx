@@ -35748,7 +35748,7 @@ return (
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
             left: calc(max(8px, env(safe-area-inset-left)) + 68px) !important;
-            right: calc(max(8px, env(safe-area-inset-right)) + 82px) !important;
+            right: calc(max(8px, env(safe-area-inset-right)) + 76px) !important;
             top: calc(env(safe-area-inset-top) + 8px) !important;
             width: auto !important;
             min-width: 0 !important;
@@ -35758,9 +35758,9 @@ return (
             border: 0 !important;
             border-radius: 16px !important;
             display: grid !important;
-            grid-template-columns: minmax(0, 1fr) 72px !important;
+            grid-template-columns: minmax(0, 1fr) 68px !important;
             align-items: start !important;
-            gap: 7px !important;
+            gap: 5px !important;
           }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
@@ -35792,7 +35792,7 @@ return (
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-agent-top-button {
             position: relative !important;
             z-index: 31 !important;
-            width: 72px !important;
+            width: 68px !important;
             height: 48px !important;
             min-height: 48px !important;
             display: grid !important;
@@ -35813,8 +35813,8 @@ return (
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) {
-            grid-template-columns: minmax(0, 1fr) 88px 58px !important;
-            gap: 4px !important;
+            grid-template-columns: minmax(0, 1fr) 74px 64px !important;
+            gap: 3px !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-face-search {
@@ -35825,13 +35825,13 @@ return (
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button {
             grid-column: 3 !important;
             grid-row: 1 !important;
-            width: 58px !important;
-            min-width: 58px !important;
+            width: 64px !important;
+            min-width: 64px !important;
             font-size: 0 !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button::after {
-            content: "AI Agent" !important;
+            content: "Agent" !important;
             font-size: 11px !important;
             font-weight: 1000 !important;
           }
@@ -35929,9 +35929,9 @@ return (
             top: auto !important;
             left: auto !important;
             right: auto !important;
-            width: 92px !important;
-            min-width: 92px !important;
-            max-width: 92px !important;
+            width: 74px !important;
+            min-width: 74px !important;
+            max-width: 74px !important;
             height: 48px !important;
             max-height: 48px !important;
             margin: 0 !important;
@@ -36494,7 +36494,7 @@ return (
                 >
                   <span>Active Route</span>
                   <strong>
-                    {dayAgentRouteHidden ? `${Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1) + 1} ${selectedRouteLeg ? formatDayAgentDuration(selectedRouteLeg.durationSeconds) : "stop"}` : selectedRouteLabel}
+                    {dayAgentRouteHidden ? selectedRouteLeg ? `${formatDayAgentDuration(selectedRouteLeg.durationSeconds)} away` : `${dayAgentRoute.length} stops` : selectedRouteLabel}
                   </strong>
                 </div>
                 <div className="map-day-route-actions">
