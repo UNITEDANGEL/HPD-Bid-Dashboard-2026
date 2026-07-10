@@ -2878,7 +2878,7 @@ const formatDayAgentDuration = (seconds: number) => {
 };
 
 const formatDayAgentLegLabel = (seconds: number, meters: number) => {
-  return `${formatDayAgentDuration(seconds)} / ${formatDayAgentDistance(meters)}`;
+  return `${formatDayAgentDuration(seconds)} away · ${formatDayAgentDistance(meters)}`;
 };
 
 const dayAgentPointLabel = (point: { label: string; address?: string }) => {
@@ -2940,7 +2940,11 @@ const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverr
   const pool = dispatchJobPool()
     .filter((job) => workflowViewBucket(job) !== "archived" && workflowViewBucket(job) !== "final")
     .filter((job) => cleanAddress(job))
-    .filter((job) => jobLatLng(job));
+    .filter((job) => jobLatLng(job))
+    .filter((job) => {
+      const age = mapDateAgeDays(job);
+      return (age !== null && age >= 0 && age <= 90) || hasUpcomingAppointment(job);
+    });
   const sorted = [...pool].sort((a, b) => {
     const score = dayAgentRouteScore(b, command, requestedBorough, routeOrigin) - dayAgentRouteScore(a, command, requestedBorough, routeOrigin);
     if (score !== 0) return score;
@@ -4113,6 +4117,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     showActionNotice(`Opened ${jobKey(match)} from map search.`);
   }
 
+  const routeFocusActive = dayAgentStarted && dayAgentRoute.length > 0;
+  const routeFocusKeys = useMemo(() => {
+    return new Set(dayAgentRoute.map((job, index) => jobKey(job, index)).filter(Boolean));
+  }, [dayAgentRoute]);
+
   const filteredJobs = useMemo<MappedJob[]>(() => {
     const needle = search.trim().toLowerCase();
 
@@ -4125,10 +4134,19 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             : { ...job };
         });
 
+    const routeFocusedRows = routeFocusActive
+      ? rows.filter((job, index) => routeFocusKeys.has(jobKey(job, index)) || routeFocusKeys.has(jobKey(job)))
+      : rows;
+
+    if (routeFocusActive) {
+      if (!needle) return routeFocusedRows;
+      return routeFocusedRows.filter((job) => matchesMapSearch(job, needle));
+    }
+
     const limit = mapDaysBackLimit();
     const dateFiltered = mapShowAllDays
-      ? rows
-      : rows.filter((job) => {
+      ? routeFocusedRows
+      : routeFocusedRows.filter((job) => {
           const age = mapDateAgeDays(job);
           return (age !== null && age >= 0 && age <= limit) || hasUpcomingAppointment(job);
         });
@@ -4139,7 +4157,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     if (!needle) return workflowFiltered;
 
     return workflowFiltered.filter((job) => matchesMapSearch(job, needle));
-  }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays, mapBoroughFilter, workflowViewFilter, countdownTick]);
+  }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays, mapBoroughFilter, workflowViewFilter, countdownTick, routeFocusActive, routeFocusKeys]);
 
   useEffect(() => {
     if (!urlOmoRequest) return;
@@ -5091,7 +5109,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           : zoomLevel < 13
             ? 186
             : 160;
-      const renderItems: any[] = markerOverview && !showIndividualNoAccessTimers
+      const renderItems: any[] = markerOverview && !showIndividualNoAccessTimers && !routeFocusActive
         ? Array.from(
             plottedItems.reduce((clusters, item) => {
               const point = map.latLngToLayerPoint([item.lat, item.lng]);
@@ -5472,7 +5490,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     drawMarkers();
-  }, [mapReady, filteredJobs, countdownTick, mapZoom, mapViewTick, markerAutoFitKey, userLocation, followMyLocation, selectedOnly, drawerOpen, workflowViewFilter]);
+  }, [mapReady, filteredJobs, countdownTick, mapZoom, mapViewTick, markerAutoFitKey, userLocation, followMyLocation, selectedOnly, drawerOpen, workflowViewFilter, routeFocusActive]);
 
   useEffect(() => {
     let cancelled = false;
