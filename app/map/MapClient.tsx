@@ -39,7 +39,7 @@ const MAP_BOROUGH_FILTERS = [
 const USER_LOCATION_OVERVIEW_ZOOM = 12;
 const USER_LOCATION_NEARBY_RADIUS_MILES = 2.5;
 const USER_LOCATION_CONTEXT_JOB_LIMIT = 12;
-const MAP_LAYER_OVERVIEW_ZOOM = 12;
+const MAP_LAYER_OVERVIEW_ZOOM = 11;
 const MAP_SINGLE_JOB_OVERVIEW_ZOOM = 13;
 const FULL_PACKAGE_SAVE_LIMIT_BYTES = 35 * 1024 * 1024;
 const NYC_MAP_BOUNDS = {
@@ -35944,7 +35944,7 @@ return (
           .map-shell.map-glass-command-trial .zoom-panel {
             right: max(6px, env(safe-area-inset-right)) !important;
             top: auto !important;
-            bottom: calc(env(safe-area-inset-bottom) + 14px) !important;
+            bottom: calc(env(safe-area-inset-bottom) + 34px) !important;
             display: grid !important;
             grid-template-columns: repeat(2, 34px) !important;
             gap: 5px !important;
