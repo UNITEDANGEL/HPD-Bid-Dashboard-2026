@@ -36012,9 +36012,9 @@ return (
 
           @media (max-width: 720px) {
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
-              left: calc(max(8px, env(safe-area-inset-left)) + 64px) !important;
+              left: calc(max(8px, env(safe-area-inset-left)) + 56px) !important;
               right: calc(max(8px, env(safe-area-inset-right)) + 74px) !important;
-              grid-template-columns: minmax(0, 1fr) 52px !important;
+              grid-template-columns: minmax(0, 1fr) 42px !important;
               gap: 4px !important;
               height: 48px !important;
               max-height: 48px !important;
@@ -36036,24 +36036,32 @@ return (
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-agent-top-button,
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button {
-              width: 52px !important;
-              min-width: 52px !important;
-              max-width: 52px !important;
+              width: 42px !important;
+              min-width: 42px !important;
+              max-width: 42px !important;
               height: 48px !important;
               padding: 0 !important;
-              font-size: 10px !important;
+              font-size: 0 !important;
               overflow: hidden !important;
             }
 
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-agent-top-button::after,
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button::after {
+              content: "AI" !important;
+              font-size: 12px !important;
+              font-weight: 1000 !important;
+              letter-spacing: 0 !important;
+            }
+
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) {
-              grid-template-columns: minmax(0, 1fr) 68px 52px !important;
+              grid-template-columns: minmax(0, 1fr) 64px 42px !important;
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray.is-hidden,
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray.is-hidden:is(:hover, :focus-within) {
-              width: 68px !important;
-              min-width: 68px !important;
-              max-width: 68px !important;
+              width: 64px !important;
+              min-width: 64px !important;
+              max-width: 64px !important;
             }
           }
 
