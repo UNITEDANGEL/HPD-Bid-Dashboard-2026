@@ -36020,6 +36020,10 @@ return (
               pointer-events: auto !important;
             }
 
+            .map-shell.map-glass-command-trial.full-map-mode .map-top:not(.open) {
+              display: none !important;
+            }
+
             .map-shell.map-glass-command-trial .advanced-toggle-btn {
               width: 60px !important;
               min-width: 60px !important;
@@ -36030,7 +36034,7 @@ return (
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
               left: calc(max(8px, env(safe-area-inset-left)) + 68px) !important;
-              right: calc(max(8px, env(safe-area-inset-right)) + 74px) !important;
+              right: calc(max(8px, env(safe-area-inset-right)) + 8px) !important;
               grid-template-columns: minmax(0, 1fr) 52px !important;
               gap: 6px !important;
               height: 48px !important;
