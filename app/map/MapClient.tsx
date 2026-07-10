@@ -2885,9 +2885,15 @@ const dayAgentPointLabel = (point: { label: string; address?: string }) => {
   return point.label || point.address || "Stop";
 };
 
-const dayAgentRoutePoints = (routeJobs = dayAgentRoute, includeReturnToBase = true) => {
-  const origin = userLocation
-    ? { label: "My location", address: "Current GPS", coords: { lat: userLocation.lat, lng: userLocation.lng } }
+const isFreshRouteLocation = (location?: UserLocationState | null) => {
+  if (!location?.updatedAt) return false;
+  const updatedAt = Date.parse(location.updatedAt);
+  return Number.isFinite(updatedAt) && Date.now() - updatedAt < 2 * 60 * 1000;
+};
+
+const dayAgentRoutePoints = (routeJobs = dayAgentRoute, includeReturnToBase = true, routeOrigin: UserLocationState | null = userLocation) => {
+  const origin = routeOrigin
+    ? { label: "My location", address: "Current GPS", coords: { lat: routeOrigin.lat, lng: routeOrigin.lng } }
     : { label: "Base", address: DAY_AGENT_BASE_ADDRESS, coords: DAY_AGENT_BASE_COORDS };
   const stops = routeJobs
     .slice(0, DAY_AGENT_ROUTE_MAX_STOPS)
@@ -2903,13 +2909,13 @@ const dayAgentRoutePoints = (routeJobs = dayAgentRoute, includeReturnToBase = tr
   return points;
 };
 
-const dayAgentRouteScore = (job: MappedJob, command: string, requestedBorough = dayAgentRequestedBorough(command)) => {
+const dayAgentRouteScore = (job: MappedJob, command: string, requestedBorough = dayAgentRequestedBorough(command), routeOrigin: UserLocationState | null = userLocation) => {
   const q = command.toLowerCase();
   const borough = String((job as any).borough || (job as any).Borough || "").toLowerCase();
   const boroughKey = jobBoroughKey(job);
   const street = manhattanStreetNumber(job);
   const coords = jobLatLng(job);
-  const origin = userLocation || DAY_AGENT_BASE_COORDS;
+  const origin = routeOrigin || DAY_AGENT_BASE_COORDS;
   let score = dispatchUrgencyScore(job);
   if (requestedBorough !== "all" && requestedBorough !== "unknown") {
     if (boroughKey === requestedBorough) score += 5200;
@@ -2928,7 +2934,7 @@ const dayAgentRouteScore = (job: MappedJob, command: string, requestedBorough = 
   return score;
 };
 
-const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverride?: MapBoroughFilter) => {
+const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverride?: MapBoroughFilter, routeOrigin: UserLocationState | null = userLocation) => {
   const command = String(commandText || "start").trim();
   const requestedBorough = requestedBoroughOverride || dayAgentRequestedBorough(command);
   const pool = dispatchJobPool()
@@ -2936,7 +2942,7 @@ const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverr
     .filter((job) => cleanAddress(job))
     .filter((job) => jobLatLng(job));
   const sorted = [...pool].sort((a, b) => {
-    const score = dayAgentRouteScore(b, command, requestedBorough) - dayAgentRouteScore(a, command, requestedBorough);
+    const score = dayAgentRouteScore(b, command, requestedBorough, routeOrigin) - dayAgentRouteScore(a, command, requestedBorough, routeOrigin);
     if (score !== 0) return score;
     const aStreet = manhattanStreetNumber(a) || 999;
     const bStreet = manhattanStreetNumber(b) || 999;
@@ -2944,7 +2950,7 @@ const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverr
     return String(jobKey(a)).localeCompare(String(jobKey(b)));
   });
   const route: MappedJob[] = [];
-  let cursor = userLocation || DAY_AGENT_BASE_COORDS;
+  let cursor = routeOrigin || DAY_AGENT_BASE_COORDS;
   let fieldMinutesUsed = 0;
   const fieldMinutesLimit = (DAY_AGENT_FIELD_END_HOUR - DAY_AGENT_WORK_START_HOUR) * 60;
   const returnMinutesLimit = (DAY_AGENT_BASE_RETURN_HOUR - DAY_AGENT_WORK_START_HOUR) * 60;
@@ -3062,9 +3068,9 @@ async function fetchDayAgentRoadRoute(points: ReturnType<typeof dayAgentRoutePoi
   };
 }
 
-async function drawDayAgentRouteLine(routeJobs = dayAgentRoute) {
+async function drawDayAgentRouteLine(routeJobs = dayAgentRoute, routeOrigin: UserLocationState | null = userLocation) {
   if (!mapRef.current) return;
-  const points = dayAgentRoutePoints(routeJobs);
+  const points = dayAgentRoutePoints(routeJobs, true, routeOrigin);
   const fallbackLatLngs = points.map((point) => [point.coords.lat, point.coords.lng] as [number, number]);
   if (points.length < 2 || fallbackLatLngs.length < 2) {
     setActionNotice("Choose mapped jobs before drawing the agent route.");
@@ -3161,16 +3167,63 @@ async function drawDayAgentRouteLine(routeJobs = dayAgentRoute) {
   );
 }
 
-const startDayAgent = (commandText = dayAgentCommand, requestedBoroughOverride?: MapBoroughFilter) => {
+const requestFreshDayAgentLocation = () => {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    setLocationStatus("Location unavailable");
+    return Promise.resolve(userLocation);
+  }
+
+  return new Promise<UserLocationState | null>((resolve) => {
+    const options: PositionOptions = {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 12000,
+    };
+
+    setLocationHelpOpen(false);
+    setFollowMyLocation(true);
+    setLocationStatus("Getting live GPS for route...");
+    setActionNotice("Getting your live GPS before building the route.");
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const nextLocation = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          updatedAt: new Date().toISOString(),
+        };
+        setUserLocation(nextLocation);
+        setLocationStatus(`Live guide · ±${Math.round((position.coords.accuracy || 0) * 3.28084)} ft`);
+        if (geolocationWatchRef.current === null) {
+          startLocationTracking({ followMap: true });
+        }
+        resolve(nextLocation);
+      },
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          showLocationBlockedHelp();
+        } else {
+          setLocationStatus(error.code === error.TIMEOUT ? "Location searching..." : "Location unavailable");
+          setLocationHelpOpen(true);
+          showActionNotice("Could not get fresh GPS yet. Route will use the saved location or base until location is allowed.");
+        }
+        resolve(userLocation);
+      },
+      options
+    );
+  });
+};
+
+const startDayAgent = async (commandText = dayAgentCommand, requestedBoroughOverride?: MapBoroughFilter) => {
   const command = String(commandText || "start").trim();
   const requestedBorough = requestedBoroughOverride || dayAgentRequestedBorough(command);
-  const route = buildDayAgentRoute(command, requestedBorough);
   if (typeof document !== "undefined") {
     (document.activeElement as HTMLElement | null)?.blur?.();
   }
-  if (!userLocation) {
-    startLocationTracking();
-  }
+  const routeOrigin = isFreshRouteLocation(userLocation) ? userLocation : await requestFreshDayAgentLocation();
+  if (!routeOrigin) startLocationTracking({ followMap: true });
+  const route = buildDayAgentRoute(command, requestedBorough, routeOrigin || null);
   setDayAgentStarted(true);
   setDayAgentRoute(route);
   setDayAgentCommand(command);
@@ -3191,8 +3244,9 @@ const startDayAgent = (commandText = dayAgentCommand, requestedBoroughOverride?:
     setSelected(null);
     setSelectedOnly(false);
     setDrawerOpen(false);
-    void drawDayAgentRouteLine(route);
-    setActionNotice(`Workday route ready: ${route.length} stop${route.length === 1 ? "" : "s"} chosen for 8 AM start, field work to 5 PM, and base return by 6 PM. ${jobKey(route[0])} is first.`);
+    void drawDayAgentRouteLine(route, routeOrigin || null);
+    const originLabel = routeOrigin ? "from your live location" : "from base until GPS is allowed";
+    setActionNotice(`Workday route ready ${originLabel}: ${route.length} stop${route.length === 1 ? "" : "s"} chosen for 8 AM start, field work to 5 PM, and base return by 6 PM. ${jobKey(route[0])} is first.`);
   } else {
     appendDayAgentLog("Started day agent, but no active mapped jobs matched.");
     setActionNotice("Day Agent did not find active mapped jobs for this command.");
