@@ -36020,10 +36020,18 @@ return (
               pointer-events: auto !important;
             }
 
+            .map-shell.map-glass-command-trial .advanced-toggle-btn {
+              width: 60px !important;
+              min-width: 60px !important;
+              max-width: 60px !important;
+              padding: 0 6px !important;
+              font-size: 10px !important;
+            }
+
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
-              left: calc(max(8px, env(safe-area-inset-left)) + 72px) !important;
-              right: calc(max(8px, env(safe-area-inset-right)) + 90px) !important;
-              grid-template-columns: minmax(0, 1fr) 56px !important;
+              left: calc(max(8px, env(safe-area-inset-left)) + 68px) !important;
+              right: calc(max(8px, env(safe-area-inset-right)) + 74px) !important;
+              grid-template-columns: minmax(0, 1fr) 52px !important;
               gap: 6px !important;
               height: 48px !important;
               max-height: 48px !important;
@@ -36048,9 +36056,9 @@ return (
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-agent-top-button,
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button {
-              width: 56px !important;
-              min-width: 56px !important;
-              max-width: 56px !important;
+              width: 52px !important;
+              min-width: 52px !important;
+              max-width: 52px !important;
               height: 48px !important;
               padding: 0 !important;
               font-size: 0 !important;
@@ -36066,7 +36074,7 @@ return (
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) {
-              grid-template-columns: minmax(0, 1fr) 62px 56px !important;
+              grid-template-columns: minmax(0, 1fr) 62px 52px !important;
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray.is-hidden,
