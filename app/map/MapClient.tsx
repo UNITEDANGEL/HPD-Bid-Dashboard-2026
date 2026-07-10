@@ -35944,24 +35944,24 @@ return (
           .map-shell.map-glass-command-trial .zoom-panel {
             right: max(6px, env(safe-area-inset-right)) !important;
             top: auto !important;
-            bottom: calc(env(safe-area-inset-bottom) + 34px) !important;
+            bottom: calc(env(safe-area-inset-bottom) + clamp(34px, 8dvh, 56px)) !important;
             display: grid !important;
-            grid-template-columns: repeat(2, 34px) !important;
+            grid-template-columns: repeat(2, clamp(34px, 9vw, 40px)) !important;
             gap: 5px !important;
             padding: 5px !important;
             border-radius: 16px !important;
           }
 
           .map-shell.map-glass-command-trial .zoom-panel button {
-            width: 34px !important;
-            height: 34px !important;
-            min-width: 34px !important;
-            min-height: 34px !important;
-            max-width: 34px !important;
-            max-height: 34px !important;
+            width: clamp(34px, 9vw, 40px) !important;
+            height: clamp(34px, 9vw, 40px) !important;
+            min-width: clamp(34px, 9vw, 40px) !important;
+            min-height: clamp(34px, 9vw, 40px) !important;
+            max-width: clamp(34px, 9vw, 40px) !important;
+            max-height: clamp(34px, 9vw, 40px) !important;
             border-radius: 13px !important;
             padding: 0 !important;
-            font-size: 14px !important;
+            font-size: clamp(13px, 3.4vw, 15px) !important;
             line-height: 1 !important;
           }
 
@@ -36011,6 +36011,14 @@ return (
           }
 
           @media (max-width: 720px) {
+            .map-shell.map-glass-command-trial {
+              --mobile-map-edge: max(8px, env(safe-area-inset-left));
+              --mobile-map-tools-width: clamp(56px, 15vw, 64px);
+              --mobile-map-agent-width: clamp(48px, 13vw, 56px);
+              --mobile-map-control-height: clamp(46px, 12vw, 52px);
+              --mobile-map-control-gap: clamp(6px, 1.8vw, 10px);
+            }
+
             .map-shell.map-glass-command-trial.full-map-mode .map-top {
               opacity: 1 !important;
               pointer-events: auto !important;
@@ -36032,21 +36040,29 @@ return (
               font-size: 10px !important;
             }
 
+            .map-shell.map-glass-command-trial .map-menu-fab {
+              width: var(--mobile-map-tools-width) !important;
+              min-width: var(--mobile-map-tools-width) !important;
+              max-width: var(--mobile-map-tools-width) !important;
+              height: var(--mobile-map-control-height) !important;
+              min-height: var(--mobile-map-control-height) !important;
+            }
+
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
-              left: calc(max(8px, env(safe-area-inset-left)) + 68px) !important;
+              left: calc(var(--mobile-map-edge) + var(--mobile-map-tools-width) + var(--mobile-map-control-gap)) !important;
               right: calc(max(8px, env(safe-area-inset-right)) + 8px) !important;
-              grid-template-columns: minmax(0, 1fr) 52px !important;
-              gap: 6px !important;
-              height: 48px !important;
-              max-height: 48px !important;
+              grid-template-columns: minmax(0, 1fr) var(--mobile-map-agent-width) !important;
+              gap: var(--mobile-map-control-gap) !important;
+              height: var(--mobile-map-control-height) !important;
+              max-height: var(--mobile-map-control-height) !important;
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
               min-width: 0 !important;
               width: 100% !important;
               max-width: none !important;
-              height: 48px !important;
-              max-height: 48px !important;
+              height: var(--mobile-map-control-height) !important;
+              max-height: var(--mobile-map-control-height) !important;
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search input {
@@ -36060,10 +36076,10 @@ return (
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-agent-top-button,
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button {
-              width: 52px !important;
-              min-width: 52px !important;
-              max-width: 52px !important;
-              height: 48px !important;
+              width: var(--mobile-map-agent-width) !important;
+              min-width: var(--mobile-map-agent-width) !important;
+              max-width: var(--mobile-map-agent-width) !important;
+              height: var(--mobile-map-control-height) !important;
               padding: 0 !important;
               font-size: 0 !important;
               overflow: hidden !important;
@@ -36078,7 +36094,7 @@ return (
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) {
-              grid-template-columns: minmax(0, 1fr) 62px 52px !important;
+              grid-template-columns: minmax(0, 1fr) clamp(58px, 15vw, 68px) var(--mobile-map-agent-width) !important;
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray.is-hidden,
