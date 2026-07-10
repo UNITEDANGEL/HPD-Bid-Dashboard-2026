@@ -36011,9 +36011,18 @@ return (
           }
 
           @media (max-width: 720px) {
+            .map-shell.map-glass-command-trial.full-map-mode .map-top {
+              opacity: 1 !important;
+              pointer-events: auto !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-title-row {
+              pointer-events: auto !important;
+            }
+
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
               left: calc(max(8px, env(safe-area-inset-left)) + 72px) !important;
-              right: calc(max(8px, env(safe-area-inset-right)) + 74px) !important;
+              right: calc(max(8px, env(safe-area-inset-right)) + 90px) !important;
               grid-template-columns: minmax(0, 1fr) 56px !important;
               gap: 6px !important;
               height: 48px !important;
@@ -36032,6 +36041,9 @@ return (
               width: 100% !important;
               min-width: 0 !important;
               max-width: none !important;
+              font-size: 12px !important;
+              padding-left: 8px !important;
+              padding-right: 8px !important;
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-agent-top-button,
@@ -36438,7 +36450,7 @@ return (
                       submitMapFaceSearch();
                     }
                   }}
-                  placeholder="OMO / address"
+                  placeholder="OMO/address"
                   autoComplete="off"
                   spellCheck={false}
                 />
