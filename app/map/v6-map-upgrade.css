@@ -112,6 +112,59 @@
   transform: scale(0.96) !important;
 }
 
+/* V6 command-center override.
+   This selector intentionally outranks the large inline legacy style block. */
+.map-shell.map-glass-command-trial.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open {
+  position: fixed !important;
+  top: max(14px, calc(env(safe-area-inset-top) + 12px)) !important;
+  left: 50% !important;
+  right: auto !important;
+  width: min(760px, calc(100vw - 220px)) !important;
+  min-width: 420px !important;
+  max-width: 760px !important;
+  min-height: 52px !important;
+  max-height: 58px !important;
+  padding: 6px !important;
+  gap: 6px !important;
+  grid-template-columns: minmax(180px, 1fr) minmax(130px, 180px) auto !important;
+  transform: translateX(-50%) !important;
+  overflow: visible !important;
+  z-index: 2600 !important;
+  border-radius: 17px !important;
+  background: rgba(8, 24, 44, 0.92) !important;
+}
+
+.map-shell.map-glass-command-trial.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open input,
+.map-shell.map-glass-command-trial.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open select,
+.map-shell.map-glass-command-trial.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open button {
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  margin: 0 !important;
+}
+
+.map-shell.map-glass-command-trial.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open input {
+  padding: 0 12px !important;
+}
+
+.map-shell.map-glass-command-trial.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open button {
+  min-width: 92px !important;
+  padding: 0 16px !important;
+}
+
+.map-shell.map-glass-command-trial.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
+  height: 46px !important;
+  min-height: 46px !important;
+  max-height: 46px !important;
+}
+
+.map-shell.map-glass-command-trial.map-glass-command-trial .map-cockpit.board-collapsed .map-agent-top-button,
+.map-shell.map-glass-command-trial.map-glass-command-trial .map-menu-fab {
+  height: 46px !important;
+  min-height: 46px !important;
+  max-height: 46px !important;
+}
+
 @media (max-width: 720px) {
   .map-shell.map-glass-command-trial {
     --v6-mobile-gap: clamp(6px, 1.8vw, 10px);
@@ -162,6 +215,34 @@
 
   .map-shell.map-glass-command-trial .zoom-panel {
     border-radius: 18px !important;
+  }
+
+  .map-shell.map-glass-command-trial.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open {
+    top: calc(env(safe-area-inset-top) + 62px) !important;
+    left: max(8px, env(safe-area-inset-left)) !important;
+    right: max(8px, env(safe-area-inset-right)) !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    min-height: 50px !important;
+    max-height: 54px !important;
+    padding: 5px !important;
+    gap: 5px !important;
+    grid-template-columns: minmax(0, 1fr) minmax(86px, 26vw) 72px !important;
+    transform: none !important;
+  }
+
+  .map-shell.map-glass-command-trial.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open input,
+  .map-shell.map-glass-command-trial.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open select,
+  .map-shell.map-glass-command-trial.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open button {
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+  }
+
+  .map-shell.map-glass-command-trial.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open button {
+    min-width: 72px !important;
+    padding: 0 8px !important;
   }
 }
 
