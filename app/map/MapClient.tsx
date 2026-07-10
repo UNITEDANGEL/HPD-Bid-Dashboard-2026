@@ -14,6 +14,11 @@ const DAY_AGENT_LOG_STORAGE_KEY = "hpd-ai-day-agent-log-v1";
 const DAY_AGENT_BASE_ADDRESS = "87-35 114 Street, Richmond Hill, NY 11418";
 const DAY_AGENT_BASE_COORDS = { lat: 40.6992, lng: -73.8357 };
 const DAY_AGENT_ROUTE_MAX_STOPS = 8;
+const DAY_AGENT_WORK_START_HOUR = 8;
+const DAY_AGENT_FIELD_END_HOUR = 17;
+const DAY_AGENT_BASE_RETURN_HOUR = 18;
+const DAY_AGENT_DEFAULT_STOP_MINUTES = 40;
+const DAY_AGENT_DAY_DRIVE_MPH = 14;
 const DAY_AGENT_ROUTE_DARK = "#082f49";
 const DAY_AGENT_ROUTE_ACCENT = "#0ea5e9";
 const DAY_AGENT_ROUTE_LABEL_WIDTH = 112;
@@ -2731,6 +2736,8 @@ const [dayAgentBoroughStart, setDayAgentBoroughStart] = useState<MapBoroughFilte
 const [dayAgentReturnToBase, setDayAgentReturnToBase] = useState(true);
 const [dayAgentRoute, setDayAgentRoute] = useState<MappedJob[]>([]);
 const [dayAgentRouteSummary, setDayAgentRouteSummary] = useState<DayAgentRouteSummary | null>(null);
+const [dayAgentRouteHidden, setDayAgentRouteHidden] = useState(false);
+const [dayAgentSelectedStopIndex, setDayAgentSelectedStopIndex] = useState(0);
 const [dayAgentLog, setDayAgentLog] = useState<Array<{ at: string; text: string; jobId?: string }>>([]);
 const [dispatchMessages, setDispatchMessages] = useState<Array<{ role: "user" | "assistant"; text: string; jobs?: string[] }>>([
   {
@@ -2878,7 +2885,7 @@ const dayAgentPointLabel = (point: { label: string; address?: string }) => {
   return point.label || point.address || "Stop";
 };
 
-const dayAgentRoutePoints = (routeJobs = dayAgentRoute, includeReturnToBase = dayAgentReturnToBase) => {
+const dayAgentRoutePoints = (routeJobs = dayAgentRoute, includeReturnToBase = true) => {
   const origin = userLocation
     ? { label: "My location", address: "Current GPS", coords: { lat: userLocation.lat, lng: userLocation.lng } }
     : { label: "Base", address: DAY_AGENT_BASE_ADDRESS, coords: DAY_AGENT_BASE_COORDS };
@@ -2890,7 +2897,7 @@ const dayAgentRoutePoints = (routeJobs = dayAgentRoute, includeReturnToBase = da
     })
     .filter(Boolean) as Array<{ label: string; address: string; coords: { lat: number; lng: number } }>;
   const points = [origin, ...stops];
-  if (includeReturnToBase && stops.length) {
+  if (includeReturnToBase !== false && stops.length) {
     points.push({ label: "Return base", address: DAY_AGENT_BASE_ADDRESS, coords: DAY_AGENT_BASE_COORDS });
   }
   return points;
@@ -2936,15 +2943,34 @@ const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverr
     if (aStreet !== bStreet) return aStreet - bStreet;
     return String(jobKey(a)).localeCompare(String(jobKey(b)));
   });
-  return sorted.slice(0, DAY_AGENT_ROUTE_MAX_STOPS);
+  const route: MappedJob[] = [];
+  let cursor = userLocation || DAY_AGENT_BASE_COORDS;
+  let fieldMinutesUsed = 0;
+  const fieldMinutesLimit = (DAY_AGENT_FIELD_END_HOUR - DAY_AGENT_WORK_START_HOUR) * 60;
+  const returnMinutesLimit = (DAY_AGENT_BASE_RETURN_HOUR - DAY_AGENT_WORK_START_HOUR) * 60;
+  sorted.forEach((job) => {
+    if (route.length >= DAY_AGENT_ROUTE_MAX_STOPS) return;
+    const coords = jobLatLng(job);
+    if (!coords) return;
+    const travelToJobMinutes = Math.max(4, Math.round((distanceMiles(cursor, coords) / DAY_AGENT_DAY_DRIVE_MPH) * 60));
+    const returnToBaseMinutes = Math.max(4, Math.round((distanceMiles(coords, DAY_AGENT_BASE_COORDS) / DAY_AGENT_DAY_DRIVE_MPH) * 60));
+    const projectedFieldMinutes = fieldMinutesUsed + travelToJobMinutes + DAY_AGENT_DEFAULT_STOP_MINUTES;
+    const projectedReturnMinutes = projectedFieldMinutes + returnToBaseMinutes;
+    if (projectedFieldMinutes <= fieldMinutesLimit && projectedReturnMinutes <= returnMinutesLimit) {
+      route.push(job);
+      fieldMinutesUsed = projectedFieldMinutes;
+      cursor = coords;
+    }
+  });
+  return route.length ? route : sorted.slice(0, Math.min(1, sorted.length));
 };
 
 const dayAgentGoogleRouteUrl = (routeJobs = dayAgentRoute) => {
   const stops = routeJobs.map((job) => displayAddress(job).trim()).filter(Boolean).slice(0, 8);
   if (!stops.length) return "https://www.google.com/maps";
   const origin = userLocation ? `${userLocation.lat},${userLocation.lng}` : DAY_AGENT_BASE_ADDRESS;
-  const destination = dayAgentReturnToBase ? DAY_AGENT_BASE_ADDRESS : stops[stops.length - 1];
-  const waypoints = dayAgentReturnToBase ? stops : stops.slice(0, -1);
+  const destination = DAY_AGENT_BASE_ADDRESS;
+  const waypoints = stops;
   const params = new URLSearchParams({
     api: "1",
     travelmode: "driving",
@@ -3090,12 +3116,15 @@ async function drawDayAgentRouteLine(routeJobs = dayAgentRoute) {
   dayAgentRouteLayerRef.current = layer;
   setDayAgentRouteSummary(routeResult.summary);
   markProgrammaticMapMove();
-  mapRef.current.fitBounds(dayAgentRouteLineRef.current.getBounds(), {
+  const firstLegBounds = L.latLngBounds(
+    points.slice(0, Math.min(points.length, 2)).map((point) => [point.coords.lat, point.coords.lng] as [number, number])
+  );
+  mapRef.current.fitBounds(firstLegBounds.isValid() ? firstLegBounds : dayAgentRouteLineRef.current.getBounds(), {
     animate: true,
     duration: 0.7,
-    paddingTopLeft: [72, 140],
-    paddingBottomRight: [72, 210],
-    maxZoom: 13,
+    paddingTopLeft: [58, 120],
+    paddingBottomRight: [58, 140],
+    maxZoom: 14,
   });
   const addReadableLegLabels = () => {
     if (!mapRef.current || dayAgentRouteLayerRef.current !== layer) return;
@@ -3139,10 +3168,16 @@ const startDayAgent = (commandText = dayAgentCommand, requestedBoroughOverride?:
   if (typeof document !== "undefined") {
     (document.activeElement as HTMLElement | null)?.blur?.();
   }
+  if (!userLocation) {
+    startLocationTracking();
+  }
   setDayAgentStarted(true);
   setDayAgentRoute(route);
   setDayAgentCommand(command);
   setDayAgentBoroughStart(requestedBorough);
+  setDayAgentReturnToBase(true);
+  setDayAgentRouteHidden(false);
+  setDayAgentSelectedStopIndex(0);
   setDayAgentRouteSummary(null);
   if (route[0]) {
     setWorkflowViewFilter("all");
@@ -3157,7 +3192,7 @@ const startDayAgent = (commandText = dayAgentCommand, requestedBoroughOverride?:
     setSelectedOnly(false);
     setDrawerOpen(false);
     void drawDayAgentRouteLine(route);
-    setActionNotice(`Route ready: ${jobKey(route[0])} first. Stay on map, then tap Update Google Route when ready.`);
+    setActionNotice(`Workday route ready: ${route.length} stop${route.length === 1 ? "" : "s"} chosen for 8 AM start, field work to 5 PM, and base return by 6 PM. ${jobKey(route[0])} is first.`);
   } else {
     appendDayAgentLog("Started day agent, but no active mapped jobs matched.");
     setActionNotice("Day Agent did not find active mapped jobs for this command.");
@@ -9363,15 +9398,36 @@ function focusJob(job: MappedJob) {
     setFullMap(true);
     setDrawerOpen(false);
     setFollowMyLocation(false);
+    setDayAgentSelectedStopIndex(Math.max(0, stopIndex));
     mapRef.current?.closePopup?.();
     if (isNycMapCoordinate(job._lat, job._lng) && mapRef.current) {
       markProgrammaticMapMove();
-      mapRef.current.flyTo([Number(job._lat), Number(job._lng)], 15, {
-        animate: true,
-        duration: 0.55,
-      });
+      const routePoints = dayAgentRoutePoints(dayAgentRoute.length ? dayAgentRoute : [job]);
+      const fromPoint = routePoints[stopIndex] || routePoints[0];
+      const toPoint = routePoints[stopIndex + 1] || { coords: { lat: Number(job._lat), lng: Number(job._lng) } };
+      if (fromPoint?.coords && toPoint?.coords) {
+        mapRef.current.fitBounds(
+          [
+            [fromPoint.coords.lat, fromPoint.coords.lng],
+            [toPoint.coords.lat, toPoint.coords.lng],
+          ],
+          {
+            animate: true,
+            duration: 0.55,
+            paddingTopLeft: [54, 112],
+            paddingBottomRight: [54, 124],
+            maxZoom: 15,
+          }
+        );
+      } else {
+        mapRef.current.flyTo([Number(job._lat), Number(job._lng)], 15, {
+          animate: true,
+          duration: 0.55,
+        });
+      }
     }
-    setActionNotice(`Route stop ${stopIndex + 1}: ${jobKey(job)}. Tap the marker only when you want the full job card.`);
+    const leg = dayAgentRouteSummary?.legs?.[stopIndex];
+    setActionNotice(`Route stop ${stopIndex + 1}: ${jobKey(job)}${leg ? ` · ${leg.label}` : ""}. Tap the marker only when you want the full job card.`);
   }
 
   function smoothFocusSelectedCard(job: JobRecord) {
@@ -35353,10 +35409,10 @@ return (
 
           .map-shell.map-glass-command-trial .map-day-route-tray {
             display: grid !important;
-            gap: 8px !important;
+            gap: 0 !important;
             margin-top: 8px !important;
-            padding: 10px !important;
-            border-radius: 18px !important;
+            padding: 7px !important;
+            border-radius: 16px !important;
             border: 1px solid rgba(124, 246, 198, 0.28) !important;
             background:
               radial-gradient(circle at 0% 0%, rgba(25, 240, 162, 0.20), transparent 42%),
@@ -35365,12 +35421,13 @@ return (
               0 16px 30px rgba(2, 10, 29, 0.28),
               0 0 24px rgba(0, 208, 132, 0.13),
               inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+            overflow: hidden !important;
           }
 
           .map-shell.map-glass-command-trial .map-day-route-tray-head {
             display: grid !important;
             grid-template-columns: minmax(0, 1fr) auto !important;
-            gap: 8px !important;
+            gap: 7px !important;
             align-items: center !important;
           }
 
@@ -35393,23 +35450,129 @@ return (
             text-overflow: ellipsis !important;
           }
 
-          .map-shell.map-glass-command-trial .map-day-route-tray-head a {
-            min-height: 38px !important;
+          .map-shell.map-glass-command-trial .map-day-route-actions {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 6px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-actions button,
+          .map-shell.map-glass-command-trial .map-day-route-actions a {
+            min-height: 34px !important;
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
-            padding: 0 12px !important;
-            border-radius: 14px !important;
+            padding: 0 10px !important;
+            border-radius: 13px !important;
+            border: 0 !important;
+            cursor: pointer !important;
             background: linear-gradient(135deg, #19f0a2 0%, #00d084 52%, #00ad74 100%) !important;
             color: #031527 !important;
-            font-size: 12px !important;
+            font-size: 11px !important;
             font-weight: 1000 !important;
             text-decoration: none !important;
           }
 
+          .map-shell.map-glass-command-trial .map-day-route-actions button {
+            min-width: 50px !important;
+            background: rgba(255, 255, 255, 0.14) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-tray.is-hidden {
+            width: auto !important;
+            min-width: 92px !important;
+            max-width: 112px !important;
+            right: auto !important;
+            padding: 6px !important;
+            border-radius: 16px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-tray.is-hidden .map-day-route-tray-head {
+            grid-template-columns: minmax(0, 1fr) 20px !important;
+            gap: 4px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-tray.is-hidden .map-day-route-tray-head span {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-tray.is-hidden .map-day-route-tray-head strong {
+            font-size: 11px !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-tray.is-hidden .map-day-route-actions a {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-tray.is-hidden .map-day-route-actions button {
+            min-width: 0 !important;
+            width: 20px !important;
+            min-height: 28px !important;
+            padding: 0 !important;
+            font-size: 0 !important;
+            color: #031527 !important;
+            background: linear-gradient(135deg, #19f0a2, #00d084) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-tray.is-hidden .map-day-route-actions button::after {
+            content: "+" !important;
+            font-size: 15px !important;
+            line-height: 1 !important;
+          }
+
           .map-shell.map-glass-command-trial .map-day-route-stop-list {
-            display: grid !important;
+            display: none !important;
             gap: 7px !important;
+            margin-top: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-tray:not(.is-hidden):is(:hover, :focus-within) .map-day-route-stop-list {
+            display: grid !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-selected-summary {
+            display: grid !important;
+            gap: 3px !important;
+            width: 100% !important;
+            margin-top: 7px !important;
+            padding: 8px 9px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(25, 240, 162, 0.30) !important;
+            background: rgba(255, 255, 255, 0.10) !important;
+            color: #ffffff !important;
+            text-align: left !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-selected-summary span,
+          .map-shell.map-glass-command-trial .map-day-route-selected-summary small {
+            min-width: 0 !important;
+            overflow: hidden !important;
+            white-space: nowrap !important;
+            text-overflow: ellipsis !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-selected-summary span {
+            color: #c8fff0 !important;
+            font-size: 11px !important;
+            font-weight: 900 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-selected-summary strong {
+            color: #ffffff !important;
+            font-size: 15px !important;
+            font-weight: 1000 !important;
+            line-height: 1.05 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-selected-summary small {
+            color: rgba(235, 255, 248, 0.82) !important;
+            font-size: 11px !important;
+            font-weight: 800 !important;
           }
 
           .map-shell.map-glass-command-trial .map-day-route-stop-list button {
@@ -35424,6 +35587,12 @@ return (
             background: rgba(255, 255, 255, 0.08) !important;
             color: #ffffff !important;
             text-align: left !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-stop-list button.active {
+            border-color: rgba(25, 240, 162, 0.78) !important;
+            background: rgba(25, 240, 162, 0.18) !important;
+            box-shadow: 0 0 0 1px rgba(25, 240, 162, 0.24), 0 0 18px rgba(25, 240, 162, 0.20) !important;
           }
 
           .map-shell.map-glass-command-trial .map-day-route-stop-list b {
@@ -35571,6 +35740,30 @@ return (
             color: #031527 !important;
           }
 
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) {
+            grid-template-columns: minmax(0, 1fr) 92px 58px !important;
+            gap: 4px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-face-search {
+            grid-column: 1 !important;
+            grid-row: 1 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button {
+            grid-column: 3 !important;
+            grid-row: 1 !important;
+            width: 58px !important;
+            min-width: 58px !important;
+            font-size: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button::after {
+            content: "AI Agent" !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+          }
+
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search input,
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search button,
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search strong {
@@ -35642,12 +35835,64 @@ return (
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray {
-            top: calc(env(safe-area-inset-top) + 64px) !important;
+            top: calc(env(safe-area-inset-top) + 58px) !important;
             left: -58px !important;
             right: auto !important;
             width: calc(100vw - 16px) !important;
-            max-height: min(42dvh, 260px) !important;
+            max-height: min(30dvh, 178px) !important;
+            margin-top: 0 !important;
             overflow-y: auto !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray:is(:hover, :focus-within) {
+            max-height: min(32dvh, 190px) !important;
+            overflow-y: auto !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray.is-hidden,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray.is-hidden:is(:hover, :focus-within) {
+            position: relative !important;
+            grid-column: 2 !important;
+            grid-row: 1 !important;
+            top: auto !important;
+            left: auto !important;
+            right: auto !important;
+            width: 92px !important;
+            min-width: 92px !important;
+            max-width: 92px !important;
+            height: 48px !important;
+            max-height: 48px !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+          }
+
+          .map-shell.map-glass-command-trial .zoom-panel {
+            right: max(6px, env(safe-area-inset-right)) !important;
+            top: auto !important;
+            bottom: calc(env(safe-area-inset-bottom) + 14px) !important;
+            display: grid !important;
+            grid-template-columns: repeat(2, 34px) !important;
+            gap: 5px !important;
+            padding: 5px !important;
+            border-radius: 16px !important;
+          }
+
+          .map-shell.map-glass-command-trial .zoom-panel button {
+            width: 34px !important;
+            height: 34px !important;
+            min-width: 34px !important;
+            min-height: 34px !important;
+            max-width: 34px !important;
+            max-height: 34px !important;
+            border-radius: 13px !important;
+            padding: 0 !important;
+            font-size: 14px !important;
+            line-height: 1 !important;
+          }
+
+          .map-shell.map-glass-command-trial .zoom-panel button:nth-child(3),
+          .map-shell.map-glass-command-trial .zoom-panel .live-location-btn {
+            font-size: 11px !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-board-switcher {
@@ -36033,7 +36278,7 @@ return (
                       submitMapFaceSearch();
                     }
                   }}
-                  placeholder="OMO or address"
+                  placeholder="OMO"
                   autoComplete="off"
                   spellCheck={false}
                 />
@@ -36068,7 +36313,7 @@ return (
             const agentBoroughTitle = dayAgentBoroughStart === "all" ? "All boroughs route" : `${agentBorough.label} route`;
             const routeUrl = dayAgentGoogleRouteUrl(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : []);
             const routeSummaryText = dayAgentRouteSummary
-              ? `${dayAgentRouteSummary.mode === "road" ? "Free road route" : "Estimated free route"} · ${formatDayAgentDuration(dayAgentRouteSummary.totalDurationSeconds)} · ${formatDayAgentDistance(dayAgentRouteSummary.totalDistanceMeters)}${dayAgentRouteSummary.returnedToBase ? " · returns base" : ""}`
+              ? `${dayAgentRouteSummary.mode === "road" ? "Free road route" : "Estimated free route"} · ${formatDayAgentDuration(dayAgentRouteSummary.totalDurationSeconds)} · ${formatDayAgentDistance(dayAgentRouteSummary.totalDistanceMeters)} · 8 AM-6 PM base plan${dayAgentRouteSummary.returnedToBase ? " · returns base" : ""}`
               : agentFirstJob
                 ? `${agentBorough.label} selected · next ${jobKey(agentFirstJob)}`
                 : `${agentBorough.label} selected · pick borough and start`;
@@ -36116,36 +36361,66 @@ return (
                 <label className="map-day-agent-return">
                   <input
                     type="checkbox"
-                    checked={dayAgentReturnToBase}
-                    onChange={(event) => setDayAgentReturnToBase(event.target.checked)}
+                    checked
+                    readOnly
+                    aria-label="Route ends at base"
                   />
-                  <span>Return base</span>
+                  <span>Ends at base</span>
                 </label>
               </section>
             );
           })()}
           {dayAgentRoute.length ? (
-            <section className="map-day-route-tray" aria-label="Active day route stops">
+            (() => {
+              const selectedRouteJob = dayAgentRoute[Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1)] || dayAgentRoute[0];
+              const selectedRouteLeg = dayAgentRouteSummary?.legs?.[Math.min(dayAgentSelectedStopIndex, Math.max(0, dayAgentRouteSummary.legs.length - 1))];
+              const selectedRouteLabel = selectedRouteLeg ? `Stop ${Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1) + 1} · ${selectedRouteLeg.label}` : `${dayAgentRoute.length} stop${dayAgentRoute.length === 1 ? "" : "s"}`;
+              const selectedRouteDescription = selectedRouteJob ? descriptionSummary(selectedRouteJob).replace(/\s+/g, " ").slice(0, 130) : "";
+              return (
+            <section className={`map-day-route-tray ${dayAgentRouteHidden ? "is-hidden" : ""}`} aria-label="Active day route stops">
               <div className="map-day-route-tray-head">
-                <div>
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => selectedRouteJob ? focusRouteStopOnMap(selectedRouteJob, Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1)) : undefined}
+                  onKeyDown={(event) => {
+                    if ((event.key === "Enter" || event.key === " ") && selectedRouteJob) {
+                      event.preventDefault();
+                      focusRouteStopOnMap(selectedRouteJob, Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1));
+                    }
+                  }}
+                >
                   <span>Active Route</span>
                   <strong>
-                    {dayAgentRoute.length} stop{dayAgentRoute.length === 1 ? "" : "s"}
-                    {dayAgentRouteSummary ? ` · ${formatDayAgentDuration(dayAgentRouteSummary.totalDurationSeconds)}` : ""}
+                    {dayAgentRouteHidden ? `${Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1) + 1} ${selectedRouteLeg ? formatDayAgentDuration(selectedRouteLeg.durationSeconds) : "stop"}` : selectedRouteLabel}
                   </strong>
                 </div>
-                <a href={dayAgentGoogleRouteUrl(dayAgentRoute)} target="_blank" rel="noopener noreferrer">Update Google</a>
+                <div className="map-day-route-actions">
+                  <button type="button" onClick={() => setDayAgentRouteHidden((hidden) => !hidden)}>
+                    {dayAgentRouteHidden ? "Show" : "Hide"}
+                  </button>
+                  <a href={dayAgentGoogleRouteUrl(dayAgentRoute)} target="_blank" rel="noopener noreferrer">Google</a>
+                </div>
               </div>
+              {!dayAgentRouteHidden && selectedRouteJob ? (
+                <button type="button" className="map-day-route-selected-summary" onClick={() => focusRouteStopOnMap(selectedRouteJob, Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1))}>
+                  <span>{jobKey(selectedRouteJob)} · {displayAddress(selectedRouteJob)}</span>
+                  <strong>{selectedRouteLeg ? selectedRouteLeg.label : "Route leg loading"}</strong>
+                  <small>{selectedRouteDescription || "No job description available."}</small>
+                </button>
+              ) : null}
               <div className="map-day-route-stop-list">
                 {dayAgentRoute.slice(0, 5).map((job, index) => (
-                  <button type="button" key={`${jobKey(job)}-map-route-${index}`} onClick={() => focusRouteStopOnMap(job, index)}>
+                  <button type="button" className={index === dayAgentSelectedStopIndex ? "active" : ""} key={`${jobKey(job)}-map-route-${index}`} onClick={() => focusRouteStopOnMap(job, index)}>
                     <b>{index + 1}</b>
                     <span>{jobKey(job)}</span>
-                    <small>{displayAddress(job)}</small>
+                    <small>{dayAgentRouteSummary?.legs?.[index]?.label ? `${dayAgentRouteSummary.legs[index].label} · ${displayAddress(job)}` : displayAddress(job)}</small>
                   </button>
                 ))}
               </div>
             </section>
+              );
+            })()
           ) : null}
           <div className="map-board-switcher" aria-label="Switch map board">
             {mapBoardModes.map((mode) => (
@@ -36771,8 +37046,8 @@ return (
                   </select>
                 </label>
                 <label className="day-agent-return-toggle">
-                  <input type="checkbox" checked={dayAgentReturnToBase} onChange={(event) => setDayAgentReturnToBase(event.target.checked)} />
-                  <span>Return to base</span>
+                  <input type="checkbox" checked readOnly aria-label="Route ends at base" />
+                  <span>Ends at base</span>
                 </label>
               </div>
               <div className="day-agent-command">

@@ -1,6 +1,6 @@
 # AI Day Agent Field Flow Plan
 
-Last updated: 2026-07-09
+Last updated: 2026-07-10
 
 ## Vision
 
@@ -90,7 +90,10 @@ When the user says "add to the plan", update this file with the new feature, wor
 - The agent should be able to start from the user's live location or from the base address.
 - The user can choose any borough to start: Manhattan, Bronx, Brooklyn, Queens, Staten Island, or all boroughs.
 - Manhattan to Bronx routing is one example, not a hard-coded rule. The user can ask for any route pattern.
-- The route should return to base when requested.
+- The route should return to base by default.
+- Field day time rule: start work at 8:00 AM, plan field stops through about 5:00 PM, and return to base by 6:00 PM.
+- Stop count must be chosen by the available day window, drive time, expected time on site, and return-to-base time, not by a fixed number.
+- The current 8-stop limit is only a technical maximum for route/link handling; the agent should choose fewer stops when the workday cannot safely fit 8.
 - The map should show road-following routes, not straight-line green segments.
 - Route legs should show estimated time and distance between stops.
 - Jobs on the way should be suggested as optional detours, not forced stops.
@@ -108,14 +111,18 @@ Expected behavior:
 - Filter to the selected borough, such as Brooklyn, unless the user chooses all boroughs.
 - Prioritize active and pending jobs.
 - Route first to the closest high-priority active/pending job.
-- Build a day route with multiple stops, such as 5 jobs in Brooklyn.
+- Build a day route with as many stops as reasonably fit the 8:00 AM to 6:00 PM return-to-base window, such as 3, 5, or 8 jobs depending on distance and job time.
 - When the user taps Start, stay on the map. Do not open the first job card automatically.
+- When the user chooses a borough and taps Start, immediately zoom the map from the user's live location to stop 1.
+- The first route view must clearly show distance and drive time from the user's current location to stop 1.
+- Show a short first-stop route summary before field action: stop number, OMO, address, drive time, mileage, borough, and a short ITB/job description.
 - Show the first stop, second stop, third stop, ETA, distance, and next action directly on the map.
 - Let the user tap stop 1, stop 2, stop 3 to focus that stop on the map without opening the full job card.
+- When a stop is selected, zoom to that route leg and update the route summary with the selected stop's drive time, mileage, OMO, address, and job description.
 - Opening a full job card should be an intentional second action from the stop/marker.
 - The user should be able to reorder, skip, or add stops before pushing the route to Google Maps.
 - Include return to base by the end of the work day.
-- Respect the user's work window, for example 8:00 AM to 5:00 PM / 6:00 PM.
+- Respect the user's work window: start at 8:00 AM, stop field work around 5:00 PM, and be back at base by 6:00 PM.
 - Show whether the route can finish on time and still return to 87-35 114 Street, Richmond Hill, NY 11418.
 - Push the route to Google Maps in chunks when needed.
 - Keep the in-app route visible as the field-day plan.
