@@ -3222,9 +3222,28 @@ const requestFreshDayAgentLocation = () => {
 const startDayAgent = async (commandText = dayAgentCommand, requestedBoroughOverride?: MapBoroughFilter) => {
   const command = String(commandText || "start").trim();
   const requestedBorough = requestedBoroughOverride || dayAgentRequestedBorough(command);
+  // Close all map overlays immediately so route generation never leaves
+  // the AI panel or another drawer covering the map while GPS resolves.
+  setDayAgentPanelOpen(false);
+  setMapMenuOpen(false);
+  setMapBoardOpen(false);
+  setDrawerOpen(false);
+  setClusterSheet(null);
+  setMapJobBrief(null);
+  setDescriptionOpen(false);
+  setSelected(null);
+  setSelectedOnly(false);
+  setFullMap(true);
+  setDayAgentRouteHidden(true);
   if (typeof document !== "undefined") {
     (document.activeElement as HTMLElement | null)?.blur?.();
   }
+  window.requestAnimationFrame(() => {
+    mapRef.current?.invalidateSize();
+  });
+  window.setTimeout(() => {
+    mapRef.current?.invalidateSize();
+  }, 260);
   const routeOrigin = isFreshRouteLocation(userLocation) ? userLocation : await requestFreshDayAgentLocation();
   if (!routeOrigin) startLocationTracking({ followMap: true });
   const route = buildDayAgentRoute(command, requestedBorough, routeOrigin || null);
@@ -3233,7 +3252,7 @@ const startDayAgent = async (commandText = dayAgentCommand, requestedBoroughOver
   setDayAgentCommand(command);
   setDayAgentBoroughStart(requestedBorough);
   setDayAgentReturnToBase(true);
-  setDayAgentRouteHidden(false);
+  setDayAgentRouteHidden(true);
   setDayAgentSelectedStopIndex(0);
   setDayAgentRouteSummary(null);
   if (route[0]) {
@@ -39346,220 +39365,3 @@ return (
       </main>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
