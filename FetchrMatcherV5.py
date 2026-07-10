@@ -38,7 +38,6 @@ import csv
 import json
 import argparse
 import datetime
-import time
 from dataclasses import dataclass
 from typing import Optional, Dict, List, Tuple, Any
 
@@ -122,25 +121,6 @@ else:
 def dlog(msg: str):
     if DEBUG:
         print(msg)
-
-
-def gmail_execute(request, label: str, retries: int = 3):
-    for attempt in range(1, retries + 1):
-        try:
-            return request.execute()
-        except HttpError as e:
-            status = getattr(getattr(e, "resp", None), "status", None)
-            if status not in (429, 500, 502, 503, 504) or attempt == retries:
-                raise
-            wait = min(30, 2 ** attempt)
-            print(f"{label} transient Gmail error {status}; retrying in {wait}s ({attempt}/{retries})")
-            time.sleep(wait)
-        except (TimeoutError, OSError) as e:
-            if attempt == retries:
-                raise
-            wait = min(30, 2 ** attempt)
-            print(f"{label} Gmail read timeout; retrying in {wait}s ({attempt}/{retries}): {e}")
-            time.sleep(wait)
 
 
 def clean_spaces(s: str) -> str:
@@ -689,12 +669,10 @@ def gmail_fetch_coa_messages(service, days: int) -> List[Dict]:
     token = None
     while True:
         resp = (
-            gmail_execute(
-                service.users()
-                .messages()
-                .list(userId="me", q=query, maxResults=100, pageToken=token),
-                "COA message search",
-            )
+            service.users()
+            .messages()
+            .list(userId="me", q=query, maxResults=100, pageToken=token)
+            .execute()
         )
         msgs.extend(resp.get("messages", []))
         token = resp.get("nextPageToken")
@@ -705,12 +683,10 @@ def gmail_fetch_coa_messages(service, days: int) -> List[Dict]:
     for i, m in enumerate(tqdm(msgs, desc="Downloading COA messages"), start=1):
         try:
             full = (
-                gmail_execute(
-                    service.users()
-                    .messages()
-                    .get(userId="me", id=m["id"], format="full"),
-                    f"COA message read {i}/{len(msgs)}",
-                )
+                service.users()
+                .messages()
+                .get(userId="me", id=m["id"], format="full")
+                .execute()
             )
             full_msgs.append(full)
             if DEBUG:
@@ -720,7 +696,7 @@ def gmail_fetch_coa_messages(service, days: int) -> List[Dict]:
                         subj = h["value"]
                         break
                 print(f"[COA] Msg {i}/{len(msgs)} Subject: {subj}")
-        except (HttpError, TimeoutError, OSError) as e:
+        except HttpError as e:
             print(f"COA message read error: {e}")
 
     return full_msgs
@@ -744,15 +720,13 @@ def download_coa_attachments(service, msg: Dict) -> List[str]:
 
         try:
             att = (
-                gmail_execute(
-                    service.users()
-                    .messages()
-                    .attachments()
-                    .get(userId="me", messageId=msg_id, id=att_id),
-                    f"COA attachment download {msg_id}",
-                )
+                service.users()
+                .messages()
+                .attachments()
+                .get(userId="me", messageId=msg_id, id=att_id)
+                .execute()
             )
-        except (HttpError, TimeoutError, OSError) as e:
+        except HttpError as e:
             print(f"COA attachment download error: {e}")
             continue
 
@@ -836,15 +810,13 @@ def download_itb_attachments(service, msg: Dict) -> List[Tuple[str, str]]:
 
         try:
             att = (
-                gmail_execute(
-                    service.users()
-                    .messages()
-                    .attachments()
-                    .get(userId="me", messageId=msg_id, id=att_id),
-                    f"ITB attachment download {msg_id}",
-                )
+                service.users()
+                .messages()
+                .attachments()
+                .get(userId="me", messageId=msg_id, id=att_id)
+                .execute()
             )
-        except (HttpError, TimeoutError, OSError) as e:
+        except HttpError as e:
             print(f"ITB attachment download error: {e}")
             continue
 
@@ -918,14 +890,12 @@ def build_itb_lookup_from_gmail_for_omos(
             dlog(f"[ITB] Searching: {query}")
             try:
                 resp = (
-                    gmail_execute(
-                        service.users()
-                        .messages()
-                        .list(userId="me", q=query, maxResults=10),
-                        f"ITB search {omo}",
-                    )
+                    service.users()
+                    .messages()
+                    .list(userId="me", q=query, maxResults=10)
+                    .execute()
                 )
-            except (HttpError, TimeoutError, OSError) as e:
+            except HttpError as e:
                 print(f"ITB search error for {omo}: {e}")
                 continue
             for msg in resp.get("messages", []):
@@ -947,14 +917,12 @@ def build_itb_lookup_from_gmail_for_omos(
         for m in msgs:
             try:
                 full = (
-                    gmail_execute(
-                        service.users()
-                        .messages()
-                        .get(userId="me", id=m["id"], format="full"),
-                        f"ITB read {omo}",
-                    )
+                    service.users()
+                    .messages()
+                    .get(userId="me", id=m["id"], format="full")
+                    .execute()
                 )
-            except (HttpError, TimeoutError, OSError) as e:
+            except HttpError as e:
                 print(f"ITB read error for {omo}: {e}")
                 continue
 
