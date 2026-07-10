@@ -2726,6 +2726,7 @@ const [actionNotice, setActionNotice] = useState("");
 const [dispatchQuestion, setDispatchQuestion] = useState("");
 const [dayAgentStarted, setDayAgentStarted] = useState(false);
 const [dayAgentCommand, setDayAgentCommand] = useState("");
+const [dayAgentPanelOpen, setDayAgentPanelOpen] = useState(false);
 const [dayAgentBoroughStart, setDayAgentBoroughStart] = useState<MapBoroughFilter>("all");
 const [dayAgentReturnToBase, setDayAgentReturnToBase] = useState(true);
 const [dayAgentRoute, setDayAgentRoute] = useState<MappedJob[]>([]);
@@ -3135,6 +3136,9 @@ const startDayAgent = (commandText = dayAgentCommand, requestedBoroughOverride?:
   const command = String(commandText || "start").trim();
   const requestedBorough = requestedBoroughOverride || dayAgentRequestedBorough(command);
   const route = buildDayAgentRoute(command, requestedBorough);
+  if (typeof document !== "undefined") {
+    (document.activeElement as HTMLElement | null)?.blur?.();
+  }
   setDayAgentStarted(true);
   setDayAgentRoute(route);
   setDayAgentCommand(command);
@@ -3143,6 +3147,9 @@ const startDayAgent = (commandText = dayAgentCommand, requestedBoroughOverride?:
   if (route[0]) {
     setWorkflowViewFilter("all");
     setMapBoroughFilter(requestedBorough === "unknown" ? "all" : requestedBorough);
+    setMapBoardOpen(false);
+    setMapMenuOpen(false);
+    setDayAgentPanelOpen(false);
     setSelectedOnly(false);
     setFullMap(true);
     appendDayAgentLog(`Started day agent. First stop: ${jobKey(route[0])}. ${manhattanExitGuidance(route[0])}`, route[0]);
@@ -3150,7 +3157,7 @@ const startDayAgent = (commandText = dayAgentCommand, requestedBoroughOverride?:
     setSelectedOnly(false);
     setDrawerOpen(false);
     void drawDayAgentRouteLine(route);
-    setActionNotice(`Day Agent started: ${jobKey(route[0])} first. ${tenantContactInfo(route[0]).appointmentNeeded ? "Contact tenant before route." : "Public/common area: go directly."}`);
+    setActionNotice(`Route ready: ${jobKey(route[0])} first. Stay on map, then tap Update Google Route when ready.`);
   } else {
     appendDayAgentLog("Started day agent, but no active mapped jobs matched.");
     setActionNotice("Day Agent did not find active mapped jobs for this command.");
@@ -35267,14 +35274,13 @@ return (
             display: none !important;
           }
 
-          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-launcher,
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-board-switcher {
             display: grid !important;
             margin-top: 8px !important;
             animation: mapCommandSheetIn 160ms cubic-bezier(0.2, 0.9, 0.2, 1) both !important;
           }
 
-          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-launcher {
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open {
             grid-template-columns: minmax(0, 0.72fr) 68px minmax(0, 1fr) !important;
             padding: 9px !important;
             border-radius: 18px !important;
@@ -35284,24 +35290,24 @@ return (
               linear-gradient(135deg, rgba(3, 21, 39, 0.96), rgba(6, 47, 83, 0.94) 62%, rgba(7, 77, 72, 0.90)) !important;
           }
 
-          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-launcher > div:first-child small,
-          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-command,
-          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-return,
-          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-actions button:nth-child(2) {
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open > div:first-child small,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open .map-day-agent-command,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open .map-day-agent-return,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open .map-day-agent-actions button:nth-child(2) {
             display: none !important;
           }
 
-          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-actions {
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open .map-day-agent-actions {
             display: grid !important;
             grid-template-columns: 1fr !important;
             gap: 5px !important;
           }
 
-          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-actions a {
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open .map-day-agent-actions a {
             display: none !important;
           }
 
-          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-day-agent-actions :is(button, a) {
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open .map-day-agent-actions :is(button, a) {
             min-width: 0 !important;
             min-height: 42px !important;
             border-radius: 14px !important;
@@ -35499,18 +35505,22 @@ return (
               font-size: 12px !important;
             }
 
-            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
-              left: calc(max(8px, env(safe-area-inset-left)) + 58px) !important;
-              right: calc(max(8px, env(safe-area-inset-right)) + 104px) !important;
-              top: calc(env(safe-area-inset-top) + 8px) !important;
-              width: auto !important;
-              min-width: 0 !important;
-              padding: 0 !important;
-              background: transparent !important;
-              box-shadow: none !important;
-              border: 0 !important;
-              border-radius: 16px !important;
-            }
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
+            left: calc(max(8px, env(safe-area-inset-left)) + 58px) !important;
+            right: calc(max(8px, env(safe-area-inset-right)) + 104px) !important;
+            top: calc(env(safe-area-inset-top) + 8px) !important;
+            width: auto !important;
+            min-width: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            border: 0 !important;
+            border-radius: 16px !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) 72px !important;
+            align-items: start !important;
+            gap: 7px !important;
+          }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
               position: relative !important;
@@ -35524,6 +35534,8 @@ return (
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
+            position: relative !important;
+            z-index: 30 !important;
             min-height: 48px !important;
             max-height: 48px !important;
             width: 100% !important;
@@ -35532,8 +35544,31 @@ return (
             margin-top: 0 !important;
             padding: 4px !important;
             border-radius: 16px !important;
-            grid-template-columns: minmax(0, 1fr) 36px 34px !important;
-            gap: 5px !important;
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-agent-top-button {
+            position: relative !important;
+            z-index: 31 !important;
+            width: 72px !important;
+            height: 48px !important;
+            min-height: 48px !important;
+            display: grid !important;
+            place-items: center !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(124, 246, 198, 0.34) !important;
+            background: linear-gradient(135deg, #07263f, #0f766e) !important;
+            color: #ffffff !important;
+            font-size: 12px !important;
+            font-weight: 1000 !important;
+            box-shadow: 0 12px 26px rgba(15, 118, 110, 0.24) !important;
+            pointer-events: auto !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-agent-top-button.active {
+            background: linear-gradient(135deg, #19f0a2, #00d084 58%, #00ad74) !important;
+            color: #031527 !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search input,
@@ -35549,6 +35584,81 @@ return (
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search input {
             font-size: 13px !important;
             padding: 0 9px !important;
+            position: relative !important;
+            z-index: 31 !important;
+            pointer-events: auto !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-command-banner,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-command-buttons,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-command-buttons button {
+            pointer-events: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search button,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search strong {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search.has-query .map-face-search-clear {
+            display: grid !important;
+            position: absolute !important;
+            top: 7px !important;
+            right: 7px !important;
+            width: 34px !important;
+            height: 34px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search.has-query input {
+            padding-right: 44px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-board-switcher,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray {
+            position: fixed !important;
+            left: max(8px, env(safe-area-inset-left)) !important;
+            right: max(8px, env(safe-area-inset-right)) !important;
+            width: auto !important;
+            z-index: 2445 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray) .map-day-agent-launcher {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open {
+            display: grid !important;
+            top: calc(env(safe-area-inset-top) + 64px) !important;
+            min-height: 74px !important;
+            grid-template-columns: minmax(0, 1fr) 76px 82px !important;
+            left: -58px !important;
+            right: auto !important;
+            width: calc(100vw - 16px) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray {
+            top: calc(env(safe-area-inset-top) + 64px) !important;
+            left: -58px !important;
+            right: auto !important;
+            width: calc(100vw - 16px) !important;
+            max-height: min(42dvh, 260px) !important;
+            overflow-y: auto !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-board-switcher {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open .map-day-agent-command,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open .map-day-agent-return,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open .map-day-agent-line,
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-agent-launcher.agent-panel-open .map-day-agent-route-link {
+            display: none !important;
           }
 
           @media (prefers-reduced-motion: reduce) {
@@ -35899,11 +36009,23 @@ return (
             </div>
           </div>
           {!drawerOpen && !clusterSheet && !mapBoardOpen && !mapMenuOpen ? (
-            <form className={`map-face-search ${search.trim() ? "has-query" : ""}`} onSubmit={submitMapFaceSearch} aria-label="Search map by OMO or address">
+            <form
+              className={`map-face-search ${search.trim() ? "has-query" : ""}`}
+              onClick={(event) => event.stopPropagation()}
+              onMouseDown={(event) => event.stopPropagation()}
+              onSubmit={submitMapFaceSearch}
+              aria-label="Search map by OMO or address"
+            >
               <label>
                 <span>Search</span>
                 <input
                   value={search}
+                  onFocus={() => {
+                    setMapBoardOpen(false);
+                    setMapMenuOpen(false);
+                    setDayAgentPanelOpen(false);
+                  }}
+                  onClick={(event) => event.stopPropagation()}
                   onChange={(event) => setSearch(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Enter") {
@@ -35926,6 +36048,20 @@ return (
               )}
             </form>
           ) : null}
+          {!drawerOpen && !clusterSheet && !mapBoardOpen && !mapMenuOpen ? (
+            <button
+              type="button"
+              className={`map-agent-top-button ${dayAgentPanelOpen ? "active" : ""}`}
+              aria-expanded={dayAgentPanelOpen}
+              onClick={() => {
+                setMapBoardOpen(false);
+                setMapMenuOpen(false);
+                setDayAgentPanelOpen((open) => !open);
+              }}
+            >
+              Agent
+            </button>
+          ) : null}
           {(() => {
             const agentFirstJob = dayAgentRoute[0] || fieldQueueJobs[0] || todayPriorityJobs[0] || null;
             const agentBorough = boroughFilterMeta(dayAgentBoroughStart);
@@ -35937,7 +36073,7 @@ return (
                 ? `${agentBorough.label} selected · next ${jobKey(agentFirstJob)}`
                 : `${agentBorough.label} selected · pick borough and start`;
             return (
-              <section className={`map-day-agent-launcher ${dayAgentStarted ? "is-running" : ""}`} aria-label="Start AI day agent">
+              <section className={`map-day-agent-launcher ${dayAgentStarted ? "is-running" : ""} ${dayAgentPanelOpen ? "agent-panel-open" : ""}`} aria-label="Start AI day agent">
                 <div>
                   <span>AI Day Agent</span>
                   <strong>{agentBoroughTitle}</strong>
@@ -35998,7 +36134,7 @@ return (
                     {dayAgentRouteSummary ? ` · ${formatDayAgentDuration(dayAgentRouteSummary.totalDurationSeconds)}` : ""}
                   </strong>
                 </div>
-                <a href={dayAgentGoogleRouteUrl(dayAgentRoute)} target="_blank" rel="noopener noreferrer">Google</a>
+                <a href={dayAgentGoogleRouteUrl(dayAgentRoute)} target="_blank" rel="noopener noreferrer">Update Google</a>
               </div>
               <div className="map-day-route-stop-list">
                 {dayAgentRoute.slice(0, 5).map((job, index) => (
