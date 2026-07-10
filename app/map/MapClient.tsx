@@ -35758,7 +35758,7 @@ return (
             border: 0 !important;
             border-radius: 16px !important;
             display: grid !important;
-            grid-template-columns: minmax(0, 1fr) 68px !important;
+            grid-template-columns: minmax(0, 1fr) 56px !important;
             align-items: start !important;
             gap: 5px !important;
           }
@@ -35792,7 +35792,9 @@ return (
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-agent-top-button {
             position: relative !important;
             z-index: 31 !important;
-            width: 68px !important;
+            width: 56px !important;
+            min-width: 56px !important;
+            max-width: 56px !important;
             height: 48px !important;
             min-height: 48px !important;
             display: grid !important;
@@ -35801,7 +35803,7 @@ return (
             border: 1px solid rgba(124, 246, 198, 0.34) !important;
             background: linear-gradient(135deg, #07263f, #0f766e) !important;
             color: #ffffff !important;
-            font-size: 12px !important;
+            font-size: 11px !important;
             font-weight: 1000 !important;
             box-shadow: 0 12px 26px rgba(15, 118, 110, 0.24) !important;
             pointer-events: auto !important;
@@ -35813,7 +35815,7 @@ return (
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) {
-            grid-template-columns: minmax(0, 1fr) 74px 64px !important;
+            grid-template-columns: minmax(0, 1fr) 74px 56px !important;
             gap: 3px !important;
           }
 
@@ -35825,8 +35827,9 @@ return (
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button {
             grid-column: 3 !important;
             grid-row: 1 !important;
-            width: 64px !important;
-            min-width: 64px !important;
+            width: 56px !important;
+            min-width: 56px !important;
+            max-width: 56px !important;
             font-size: 0 !important;
           }
 
