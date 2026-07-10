@@ -36010,6 +36010,53 @@ return (
             letter-spacing: 0 !important;
           }
 
+          @media (max-width: 720px) {
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
+              left: calc(max(8px, env(safe-area-inset-left)) + 64px) !important;
+              right: calc(max(8px, env(safe-area-inset-right)) + 74px) !important;
+              grid-template-columns: minmax(0, 1fr) 52px !important;
+              gap: 4px !important;
+              height: 48px !important;
+              max-height: 48px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
+              min-width: 0 !important;
+              width: 100% !important;
+              max-width: none !important;
+              height: 48px !important;
+              max-height: 48px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search input {
+              width: 100% !important;
+              min-width: 0 !important;
+              max-width: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-agent-top-button,
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button {
+              width: 52px !important;
+              min-width: 52px !important;
+              max-width: 52px !important;
+              height: 48px !important;
+              padding: 0 !important;
+              font-size: 10px !important;
+              overflow: hidden !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) {
+              grid-template-columns: minmax(0, 1fr) 68px 52px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray.is-hidden,
+            .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray.is-hidden:is(:hover, :focus-within) {
+              width: 68px !important;
+              min-width: 68px !important;
+              max-width: 68px !important;
+            }
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
