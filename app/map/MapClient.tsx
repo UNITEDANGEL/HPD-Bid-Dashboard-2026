@@ -35634,8 +35634,8 @@ return (
               left: auto !important;
               right: max(8px, env(safe-area-inset-right)) !important;
               top: calc(env(safe-area-inset-top) + 8px) !important;
-              width: 92px !important;
-              min-width: 92px !important;
+              width: 72px !important;
+              min-width: 72px !important;
               height: 48px !important;
               min-height: 48px !important;
               padding: 0 !important;
@@ -35665,18 +35665,18 @@ return (
             }
 
             .map-shell.map-glass-command-trial .advanced-toggle-btn {
-              width: 92px !important;
-              min-width: 92px !important;
+              width: 72px !important;
+              min-width: 72px !important;
               height: 48px !important;
               min-height: 36px !important;
               padding: 0 10px !important;
               border-radius: 16px !important;
-              font-size: 12px !important;
+              font-size: 11px !important;
             }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
-            left: calc(max(8px, env(safe-area-inset-left)) + 58px) !important;
-            right: calc(max(8px, env(safe-area-inset-right)) + 104px) !important;
+            left: calc(max(8px, env(safe-area-inset-left)) + 68px) !important;
+            right: calc(max(8px, env(safe-area-inset-right)) + 82px) !important;
             top: calc(env(safe-area-inset-top) + 8px) !important;
             width: auto !important;
             min-width: 0 !important;
@@ -35741,7 +35741,7 @@ return (
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) {
-            grid-template-columns: minmax(0, 1fr) 92px 58px !important;
+            grid-template-columns: minmax(0, 1fr) 88px 58px !important;
             gap: 4px !important;
           }
 
@@ -35906,6 +35906,35 @@ return (
             display: none !important;
           }
 
+          .map-shell.map-glass-command-trial .map-menu-fab {
+            width: 60px !important;
+            min-width: 60px !important;
+            height: 48px !important;
+            min-height: 48px !important;
+            display: grid !important;
+            grid-template-columns: 18px minmax(0, 1fr) !important;
+            gap: 5px !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 7px !important;
+            border-radius: 16px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-menu-fab-icon {
+            width: 18px !important;
+            display: grid !important;
+            gap: 3px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-menu-fab-label {
+            display: block !important;
+            color: #ecfff8 !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
@@ -35997,6 +36026,7 @@ return (
           <span />
           <span />
         </span>
+        <span className="map-menu-fab-label">Tools</span>
       </button>
       <span className="map-swipe-hint" aria-hidden="true" />
       <button
