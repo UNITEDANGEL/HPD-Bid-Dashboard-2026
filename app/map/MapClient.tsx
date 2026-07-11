@@ -36,9 +36,9 @@ const MAP_BOROUGH_FILTERS = [
   { key: "staten-island", label: "Staten Island", short: "SI" },
   { key: "unknown", label: "Unknown", short: "?" },
 ] as const;
-const USER_LOCATION_OVERVIEW_ZOOM = 12;
-const USER_LOCATION_NEARBY_RADIUS_MILES = 2.5;
-const USER_LOCATION_CONTEXT_JOB_LIMIT = 12;
+const USER_LOCATION_OVERVIEW_ZOOM = 13;
+const USER_LOCATION_NEARBY_RADIUS_MILES = 1.25;
+const USER_LOCATION_CONTEXT_JOB_LIMIT = 6;
 const MAP_LAYER_OVERVIEW_ZOOM = 11;
 const MAP_SINGLE_JOB_OVERVIEW_ZOOM = 13;
 const FULL_PACKAGE_SAVE_LIMIT_BYTES = 35 * 1024 * 1024;
@@ -4926,12 +4926,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
         if (cancelled || !mapNode.current) return;
 
-        const initialMapZoom = typeof window !== "undefined" && window.innerWidth <= 720 ? 9 : 10;
+        const initialMapZoom = typeof window !== "undefined" && window.innerWidth <= 720 ? 12 : 11;
         const map = L.map(mapNode.current, {
           zoomControl: false,
           attributionControl: true,
           preferCanvas: true,
-        }).setView([40.7128, -74.006], initialMapZoom);
+        }).setView([DAY_AGENT_BASE_COORDS.lat, DAY_AGENT_BASE_COORDS.lng], initialMapZoom);
 
         const markerLayer = L.layerGroup().addTo(map);
 
