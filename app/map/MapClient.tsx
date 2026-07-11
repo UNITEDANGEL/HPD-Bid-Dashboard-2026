@@ -2911,6 +2911,12 @@ const formatDayAgentLegLabel = (seconds: number, meters: number) => {
   return `${formatDayAgentDuration(seconds)} away · ${formatDayAgentDistance(meters)}`;
 };
 
+const formatDayAgentCompactLegLabel = (seconds: number, meters: number) => {
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  const time = minutes < 60 ? `${minutes}m` : formatDayAgentDuration(seconds);
+  return `${time} · ${formatDayAgentDistance(meters)}`;
+};
+
 const dayAgentPointLabel = (point: { label: string; address?: string }) => {
   return point.label || point.address || "Stop";
 };
@@ -36223,14 +36229,14 @@ return (
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) {
-              grid-template-columns: minmax(0, 1fr) clamp(58px, 15vw, 68px) var(--mobile-map-agent-width) !important;
+              grid-template-columns: minmax(0, 1fr) clamp(74px, 19vw, 84px) var(--mobile-map-agent-width) !important;
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray.is-hidden,
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-day-route-tray.is-hidden:is(:hover, :focus-within) {
-              width: 62px !important;
-              min-width: 62px !important;
-              max-width: 62px !important;
+              width: clamp(74px, 19vw, 84px) !important;
+              min-width: clamp(74px, 19vw, 84px) !important;
+              max-width: clamp(74px, 19vw, 84px) !important;
             }
           }
 
@@ -36263,7 +36269,7 @@ return (
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) {
-            grid-template-columns: minmax(0, 1fr) clamp(58px, 15vw, 72px) var(--mobile-map-agent-width, 56px) !important;
+            grid-template-columns: minmax(0, 1fr) clamp(74px, 19vw, 84px) var(--mobile-map-agent-width, 56px) !important;
           }
 
           .map-shell.map-glass-command-trial .map-top.open {
@@ -36878,7 +36884,7 @@ return (
                 >
                   <span>Active Route</span>
                   <strong>
-                    {dayAgentRouteHidden ? selectedRouteLeg ? `${formatDayAgentDuration(selectedRouteLeg.durationSeconds)} away` : `${dayAgentRoute.length} stops` : selectedRouteLabel}
+                    {dayAgentRouteHidden ? selectedRouteLeg ? formatDayAgentCompactLegLabel(selectedRouteLeg.durationSeconds, selectedRouteLeg.distanceMeters) : `${dayAgentRoute.length} stops` : selectedRouteLabel}
                   </strong>
                 </div>
                 <div className="map-day-route-actions">
