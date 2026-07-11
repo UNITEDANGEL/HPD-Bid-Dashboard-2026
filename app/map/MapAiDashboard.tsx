@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type CSSProperties, type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type ChatMessage = {
   id: string;
@@ -24,28 +24,34 @@ function findButton(root: ParentNode, pattern: RegExp) {
   return Array.from(root.querySelectorAll<HTMLButtonElement>("button")).find((button) => pattern.test(textOf(button)));
 }
 
+function readMapStats(): MapStats {
+  return {
+    visibleJobs: document.querySelectorAll(".maturity-map-marker").length,
+    routeStops: document.querySelectorAll(".map-day-route-stop-row").length,
+    selectedJob: Boolean(document.querySelector(".job-drawer.selected-focus")),
+  };
+}
+
 export default function MapAiDashboard() {
-  const [open, setOpen] = useState(true);
+  const [expanded, setExpanded] = useState(false);
   const [voiceOn, setVoiceOn] = useState(false);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [stats, setStats] = useState<MapStats>({ visibleJobs: 0, routeStops: 0, selectedJob: false });
-  const [clearButtonStyle, setClearButtonStyle] = useState<React.CSSProperties>({});
+  const [clearButtonStyle, setClearButtonStyle] = useState<CSSProperties>({});
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
       role: "assistant",
-      text: "Good morning. Your map dashboard is ready. I can open Agent, start today’s route, clear the route, or summarize the jobs currently visible on the map.",
+      text: "Map dashboard ready. Ask me to start a route, clear it, open Agent, or summarize the map.",
     },
   ]);
   const messageEndRef = useRef<HTMLDivElement | null>(null);
 
   const refreshStats = () => {
-    setStats({
-      visibleJobs: document.querySelectorAll(".maturity-map-marker").length,
-      routeStops: document.querySelectorAll(".map-day-route-stop-row").length,
-      selectedJob: Boolean(document.querySelector(".job-drawer.selected-focus")),
-    });
+    const next = readMapStats();
+    setStats(next);
+    return next;
   };
 
   const alignClearButton = () => {
@@ -79,11 +85,11 @@ export default function MapAiDashboard() {
   }, []);
 
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ block: "nearest" });
-  }, [messages, open]);
+    if (expanded) messageEndRef.current?.scrollIntoView({ block: "nearest" });
+  }, [messages, expanded]);
 
   const speak = (text: string) => {
-    if (!voiceOn || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    if (!voiceOn || !("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
   };
@@ -102,12 +108,12 @@ export default function MapAiDashboard() {
       document.querySelector<HTMLButtonElement>(".map-agent-top-button") ||
       Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find((item) => /agent/i.test(textOf(item)));
     if (!button) {
-      addAssistant("I could not find the Agent control on the current map view.");
+      addAssistant("I could not find the Agent control on this map view.");
       return false;
     }
     button.click();
     await wait(140);
-    addAssistant("Agent is open on the map.");
+    addAssistant("Agent opened on the map.");
     return true;
   };
 
@@ -126,10 +132,10 @@ export default function MapAiDashboard() {
         return;
       }
       startButton.click();
-      addAssistant("Starting the map route now. The Agent panel will close when the route is ready.");
+      addAssistant("Starting today’s route now.");
     } finally {
       setBusy(false);
-      await wait(250);
+      await wait(260);
       refreshStats();
     }
   };
@@ -139,8 +145,7 @@ export default function MapAiDashboard() {
     try {
       const hiddenTray = document.querySelector<HTMLElement>(".map-day-route-tray.is-hidden");
       if (hiddenTray) {
-        const showButton = findButton(hiddenTray, /show|expand|open/i);
-        showButton?.click();
+        findButton(hiddenTray, /show|expand|open/i)?.click();
         await wait(100);
       }
 
@@ -154,11 +159,11 @@ export default function MapAiDashboard() {
       }
 
       refreshStats();
-      if (removed > 0) {
-        addAssistant(`Route cleared. Removed ${removed} stop${removed === 1 ? "" : "s"} from the map.`);
-      } else {
-        addAssistant("There is no active route to clear.");
-      }
+      addAssistant(
+        removed > 0
+          ? `Route cleared. Removed ${removed} stop${removed === 1 ? "" : "s"}.`
+          : "There is no active route to clear.",
+      );
     } finally {
       setBusy(false);
     }
@@ -178,12 +183,12 @@ export default function MapAiDashboard() {
   };
 
   const summarize = () => {
-    refreshStats();
-    const jobText = `${stats.visibleJobs} visible job${stats.visibleJobs === 1 ? "" : "s"}`;
-    const routeText = stats.routeStops
-      ? `${stats.routeStops} active route stop${stats.routeStops === 1 ? "" : "s"}`
+    const current = refreshStats();
+    const jobs = `${current.visibleJobs} visible job${current.visibleJobs === 1 ? "" : "s"}`;
+    const route = current.routeStops
+      ? `${current.routeStops} active route stop${current.routeStops === 1 ? "" : "s"}`
       : "no active route";
-    addAssistant(`Map summary: ${jobText}, ${routeText}${stats.selectedJob ? ", and one selected job card is open" : ""}.`);
+    addAssistant(`Map summary: ${jobs}, ${route}${current.selectedJob ? ", and one selected job is open" : ""}.`);
   };
 
   const runCommand = async (rawText: string) => {
@@ -193,28 +198,13 @@ export default function MapAiDashboard() {
     setInput("");
     const normalized = text.toLowerCase();
 
-    if (/clear|remove|cancel/.test(normalized) && /route|stops?/.test(normalized)) {
-      await clearRoute();
-      return;
-    }
-    if (/start|build|make|optimi[sz]e/.test(normalized) && /route|day|today/.test(normalized)) {
-      await startRoute();
-      return;
-    }
-    if (/show|open|expand/.test(normalized) && /route/.test(normalized)) {
-      await showRoute();
-      return;
-    }
-    if (/agent|assistant/.test(normalized) && /open|show|start/.test(normalized)) {
-      await openAgent();
-      return;
-    }
-    if (/how many|summary|status|visible|today/.test(normalized)) {
-      summarize();
-      return;
-    }
+    if (/clear|remove|cancel/.test(normalized) && /route|stops?/.test(normalized)) return clearRoute();
+    if (/start|build|make|optimi[sz]e/.test(normalized) && /route|day|today/.test(normalized)) return startRoute();
+    if (/show|open|expand/.test(normalized) && /route/.test(normalized)) return showRoute();
+    if (/agent|assistant/.test(normalized) && /open|show|start/.test(normalized)) return openAgent();
+    if (/how many|summary|status|visible|today/.test(normalized)) return summarize();
 
-    addAssistant("I can help directly on this map. Try: “start today’s route,” “clear route,” “show route,” “open Agent,” or “map summary.”");
+    addAssistant("Try: start today’s route, clear route, show route, open Agent, or map summary.");
   };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -226,6 +216,8 @@ export default function MapAiDashboard() {
     if (!stats.routeStops) return "No route";
     return `${stats.routeStops} stop${stats.routeStops === 1 ? "" : "s"}`;
   }, [stats.routeStops]);
+
+  const latestAssistant = [...messages].reverse().find((message) => message.role === "assistant")?.text || "Map dashboard ready.";
 
   return (
     <>
@@ -240,61 +232,62 @@ export default function MapAiDashboard() {
         Clear route
       </button>
 
-      {open ? (
-        <aside className="map-ai-dashboard" aria-label="AI map dashboard">
-          <header className="map-ai-dashboard-head">
+      <aside className={`map-ai-dock ${expanded ? "is-expanded" : "is-compact"}`} aria-label="AI map dashboard">
+        <header className="map-ai-dock-head">
+          <div className="map-ai-brand">
+            <span className="map-ai-live-dot" aria-hidden="true" />
             <div>
-              <span className="map-ai-live-dot" aria-hidden="true" />
-              <strong>AI Map Dashboard</strong>
-              <small>Live on the map</small>
+              <strong>AI Map</strong>
+              <small>{stats.visibleJobs} jobs · {routeLabel}</small>
             </div>
-            <div className="map-ai-head-actions">
-              <button type="button" onClick={() => setVoiceOn((value) => !value)} aria-pressed={voiceOn}>
-                {voiceOn ? "Voice on" : "Voice off"}
-              </button>
-              <button type="button" onClick={() => setOpen(false)} aria-label="Minimize AI dashboard">
-                —
-              </button>
-            </div>
-          </header>
-
-          <section className="map-ai-stats" aria-label="Map status">
-            <div><b>{stats.visibleJobs}</b><span>Visible jobs</span></div>
-            <div><b>{routeLabel}</b><span>Route</span></div>
-            <div><b>{stats.selectedJob ? "Open" : "None"}</b><span>Selected job</span></div>
-          </section>
-
-          <div className="map-ai-messages" aria-live="polite">
-            {messages.slice(-8).map((message) => (
-              <p key={message.id} className={`map-ai-message ${message.role}`}>
-                {message.text}
-              </p>
-            ))}
-            <div ref={messageEndRef} />
           </div>
+          <p className="map-ai-latest" aria-live="polite">{latestAssistant}</p>
+          <div className="map-ai-head-actions">
+            <button type="button" onClick={() => setVoiceOn((value) => !value)} aria-pressed={voiceOn}>
+              {voiceOn ? "Voice on" : "Voice"}
+            </button>
+            <button type="button" onClick={() => setExpanded((value) => !value)}>
+              {expanded ? "Compact" : "Dashboard"}
+            </button>
+          </div>
+        </header>
 
+        <div className="map-ai-command-row">
           <div className="map-ai-quick-actions">
-            <button type="button" onClick={() => void startRoute()} disabled={busy}>Start route</button>
-            <button type="button" onClick={() => void clearRoute()} disabled={busy || stats.routeStops === 0}>Clear route</button>
-            <button type="button" onClick={summarize}>Map summary</button>
-            <button type="button" onClick={() => void openAgent()}>Open Agent</button>
+            <button type="button" onClick={() => void startRoute()} disabled={busy}>Start</button>
+            <button type="button" onClick={() => void clearRoute()} disabled={busy || stats.routeStops === 0}>Clear</button>
+            <button type="button" onClick={summarize}>Summary</button>
+            <button type="button" onClick={() => void openAgent()}>Agent</button>
           </div>
 
           <form className="map-ai-form" onSubmit={submit}>
             <input
               value={input}
               onChange={(event) => setInput(event.target.value)}
-              placeholder="Ask the map assistant…"
+              placeholder="Ask AI about this map…"
               aria-label="Ask the map assistant"
             />
             <button type="submit" disabled={busy || !input.trim()}>Send</button>
           </form>
-        </aside>
-      ) : (
-        <button type="button" className="map-ai-reopen" onClick={() => setOpen(true)}>
-          AI Map
-        </button>
-      )}
+        </div>
+
+        {expanded ? (
+          <div className="map-ai-expanded-body">
+            <section className="map-ai-stats" aria-label="Map status">
+              <div><b>{stats.visibleJobs}</b><span>Visible jobs</span></div>
+              <div><b>{routeLabel}</b><span>Route</span></div>
+              <div><b>{stats.selectedJob ? "Open" : "None"}</b><span>Selected job</span></div>
+            </section>
+
+            <div className="map-ai-messages" aria-live="polite">
+              {messages.slice(-10).map((message) => (
+                <p key={message.id} className={`map-ai-message ${message.role}`}>{message.text}</p>
+              ))}
+              <div ref={messageEndRef} />
+            </div>
+          </div>
+        ) : null}
+      </aside>
     </>
   );
 }
