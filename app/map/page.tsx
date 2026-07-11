@@ -6,13 +6,13 @@ import "./map-field-visit-flow.css";
 import "./map-smart-dispatch.css";
 import "./map-smart-conversation.css";
 import "./map-agent-lifecycle.css";
-import "./map-results-board.css";
+import "./map-responsive-workspace.css";
 import MapAgentLifecycleClient from "./MapAgentLifecycleClient";
 import MapAiOperationsDashboard from "./MapAiOperationsDashboard";
 import MapClient from "./MapClient";
 import MapDirectionsEnhancer from "./MapDirectionsEnhancer";
 import MapFieldVisitFlow from "./MapFieldVisitFlow";
-import MapResultsBoardEnhancer from "./MapResultsBoardEnhancer";
+import MapResponsiveWorkspaceClient from "./MapResponsiveWorkspaceClient";
 import MapSmartConversationEnhancer from "./MapSmartConversationEnhancer";
 import MapSmartDispatchEnhancer from "./MapSmartDispatchEnhancer";
 
@@ -25,7 +25,7 @@ export default function MapPage() {
       <MapFieldVisitFlow />
       <MapSmartDispatchEnhancer />
       <MapSmartConversationEnhancer />
-      <MapResultsBoardEnhancer />
+      <MapResponsiveWorkspaceClient />
       <MapAgentLifecycleClient />
     </>
   );
