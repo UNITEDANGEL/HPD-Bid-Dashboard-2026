@@ -12,6 +12,9 @@ type IndexedJob = {
   lng?: number;
 };
 
+const ACTIVE_TRIP_STORAGE_KEY = "hpd-ai-active-trip-v1";
+const ENROUTE_EVENT = "hpd-map-enroute";
+
 function stringValue(value: unknown) {
   return typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
 }
@@ -61,6 +64,27 @@ function directionsUrl(id: string, fallbackAddress: string) {
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
+function beginTrip(id: string, fallbackAddress: string, url: string) {
+  const job = JOB_INDEX.get(id.toUpperCase());
+  const detail = {
+    id: id.toUpperCase(),
+    address: job?.address || cleanRouteDetail(fallbackAddress),
+    lat: job?.lat,
+    lng: job?.lng,
+    directionsUrl: url,
+    status: "enroute" as const,
+    enrouteAt: new Date().toISOString(),
+  };
+
+  try {
+    window.localStorage.setItem(ACTIVE_TRIP_STORAGE_KEY, JSON.stringify(detail));
+  } catch {
+    // The trip still works for this session through the custom event.
+  }
+
+  window.dispatchEvent(new CustomEvent(ENROUTE_EVENT, { detail }));
+}
+
 function makeEnrouteButton(id: string, fallbackAddress: string) {
   const button = document.createElement("button");
   button.type = "button";
@@ -75,6 +99,7 @@ function makeEnrouteButton(id: string, fallbackAddress: string) {
     event.stopPropagation();
 
     const url = directionsUrl(id, fallbackAddress);
+    beginTrip(id, fallbackAddress, url);
     button.classList.add("opening");
     const label = button.querySelector("b");
     if (label) label.textContent = "Opening";
