@@ -10,9 +10,8 @@ type SavedWorkflow = {
 type Point = {
   x: number;
   y: number;
-  label: string;
+  label?: string;
   id: string;
-  start?: boolean;
 };
 
 const STORAGE_KEY = "hpd-unified-workflow-v1";
@@ -67,9 +66,9 @@ function markerIdentity(marker: HTMLElement) {
 function jobMarker(id: string) {
   const candidates = Array.from(
     document.querySelectorAll<HTMLElement>(
-      ".maturity-map-marker, [data-omo], [data-job-id], [class*='job-marker'], .maplibregl-marker, .mapboxgl-marker",
+      ".maturity-map-marker, [data-omo], [data-job-id], .maplibregl-marker, .mapboxgl-marker",
     ),
-  );
+  ).filter((element) => !element.closest(".hpd-live-route-guide"));
   return candidates.find((marker) => markerIdentity(marker).includes(id.toUpperCase())) || null;
 }
 
@@ -108,35 +107,30 @@ function draw(map: HTMLElement, svg: SVGSVGElement) {
   svg.setAttribute("width", String(rect.width));
   svg.setAttribute("height", String(rect.height));
 
-  const ids = routeIdsFromUi();
-  const points: Point[] = [];
-
   const current = locationMarker();
-  const currentPoint = current ? centerOf(current, rect) : null;
-  points.push({
-    x: currentPoint?.x ?? Math.max(34, rect.width * 0.12),
-    y: currentPoint?.y ?? Math.max(48, rect.height * 0.82),
-    label: currentPoint ? "YOU" : "START",
-    id: "start",
-    start: true,
-  });
-
-  // Route numbering must always begin at 1 and stay continuous. If the first route
-  // marker is not visible yet, do not draw a misleading partial 3–6 route.
-  for (let index = 0; index < ids.length; index += 1) {
-    const id = ids[index];
-    const marker = jobMarker(id);
-    if (!marker) break;
-    const point = centerOf(marker, rect);
-    if (!point) break;
-    points.push({ x: point.x, y: point.y, label: String(index + 1), id });
+  const start = current ? centerOf(current, rect) : null;
+  if (!start) {
+    svg.innerHTML = "";
+    svg.classList.remove("is-visible");
+    return;
   }
 
-  const signature = points.map((p) => `${p.id}:${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("|");
+  const points: Point[] = [{ x: start.x, y: start.y, id: "current" }];
+  const ids = routeIdsFromUi();
+
+  for (const id of ids) {
+    const marker = jobMarker(id);
+    if (!marker) continue;
+    const point = centerOf(marker, rect);
+    if (!point) continue;
+    points.push({ x: point.x, y: point.y, label: String(points.length), id });
+  }
+
+  const signature = points.map((point) => `${point.id}:${point.x.toFixed(1)},${point.y.toFixed(1)}`).join("|");
   if (svg.dataset.signature === signature) return;
   svg.dataset.signature = signature;
 
-  if (points.length < 2 || points[1]?.label !== "1") {
+  if (points.length < 2) {
     svg.innerHTML = "";
     svg.classList.remove("is-visible");
     return;
@@ -144,11 +138,12 @@ function draw(map: HTMLElement, svg: SVGSVGElement) {
 
   const path = pathFor(points);
   const nodes = points
+    .slice(1)
     .map(
       (point) => `
-      <g class="hpd-live-route-node ${point.start ? "start" : "stop"}">
-        <circle cx="${point.x}" cy="${point.y}" r="${point.start ? 12 : 11}" />
-        <text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle">${point.start ? "YOU" : point.label}</text>
+      <g class="hpd-live-route-node stop">
+        <circle cx="${point.x}" cy="${point.y}" r="12" />
+        <text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle">${point.label}</text>
       </g>`,
     )
     .join("");
@@ -200,7 +195,7 @@ export default function MapVisibleRouteGuide() {
     render();
     const observer = new MutationObserver(schedule);
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, characterData: true });
-    const timer = window.setInterval(schedule, 180);
+    const timer = window.setInterval(schedule, 120);
     document.addEventListener("click", schedule, true);
     window.addEventListener("resize", schedule);
     window.addEventListener("scroll", schedule, true);
