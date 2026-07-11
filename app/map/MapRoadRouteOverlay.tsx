@@ -8,12 +8,10 @@ type LngLat = [number, number];
 type SavedWorkflow = { routeIds?: string[]; resultIds?: string[] };
 type Calibration = { mx: number; my: number; sx: number; sy: number };
 type Transform = { ax: number; bx: number; cx: number; ay: number; by: number; cy: number };
-type OsrmResponse = { code?: string; routes?: Array<{ geometry?: { coordinates?: LngLat[] } }> };
-
-type Stop = { id: string; coord: LngLat };
 type ScreenPoint = { x: number; y: number };
-
-type Anchor = { index: number; projected: ScreenPoint; actual: ScreenPoint };
+type Stop = { id: string; coord: LngLat };
+type RouteLeg = { from: LngLat; to: LngLat; geometry: LngLat[] };
+type OsrmResponse = { code?: string; routes?: Array<{ geometry?: { coordinates?: LngLat[] } }> };
 
 const STORAGE_KEY = "hpd-unified-workflow-v1";
 const JOB_ID_PATTERN = /\b[A-Z]{2}\d{4,7}\b/i;
@@ -100,14 +98,32 @@ function markerId(marker: HTMLElement) {
   return combined.match(JOB_ID_PATTERN)?.[0]?.toUpperCase() || "";
 }
 
+function markerFor(id: string) {
+  return markerElements().find((marker) => markerId(marker) === id) || null;
+}
+
 function markerCenter(marker: HTMLElement, mapRect: DOMRect): ScreenPoint | null {
   const rect = marker.getBoundingClientRect();
   if (!rect.width && !rect.height) return null;
   return { x: rect.left - mapRect.left + rect.width / 2, y: rect.top - mapRect.top + rect.height / 2 };
 }
 
-function markerFor(id: string) {
-  return markerElements().find((marker) => markerId(marker) === id) || null;
+function currentLocationCenter(mapRect: DOMRect) {
+  const selectors = [
+    ".maplibregl-user-location-dot",
+    ".mapboxgl-user-location-dot",
+    ".map-current-location-marker",
+    ".map-user-location-marker",
+    "[data-current-location='true']",
+    "[aria-label*='current location' i]",
+  ];
+  for (const selector of selectors) {
+    const marker = document.querySelector<HTMLElement>(selector);
+    if (!marker) continue;
+    const point = markerCenter(marker, mapRect);
+    if (point) return point;
+  }
+  return null;
 }
 
 function mercator([lng, lat]: LngLat) {
@@ -143,10 +159,18 @@ function fitAffine(samples: Calibration[]): Transform | null {
   let sxx = 0, syy = 0, sxy = 0, sx = 0, sy = 0, n = 0;
   let txX = 0, tyX = 0, tX = 0, txY = 0, tyY = 0, tY = 0;
   for (const sample of samples) {
-    sxx += sample.mx * sample.mx; syy += sample.my * sample.my; sxy += sample.mx * sample.my;
-    sx += sample.mx; sy += sample.my; n += 1;
-    txX += sample.mx * sample.sx; tyX += sample.my * sample.sx; tX += sample.sx;
-    txY += sample.mx * sample.sy; tyY += sample.my * sample.sy; tY += sample.sy;
+    sxx += sample.mx * sample.mx;
+    syy += sample.my * sample.my;
+    sxy += sample.mx * sample.my;
+    sx += sample.mx;
+    sy += sample.my;
+    n += 1;
+    txX += sample.mx * sample.sx;
+    tyX += sample.my * sample.sx;
+    tX += sample.sx;
+    txY += sample.mx * sample.sy;
+    tyY += sample.my * sample.sy;
+    tY += sample.sy;
   }
   const normal = [[sxx, sxy, sx], [sxy, syy, sy], [sx, sy, n]];
   const x = solve3(normal, [txX, tyX, tX]);
@@ -157,7 +181,10 @@ function fitAffine(samples: Calibration[]): Transform | null {
 
 function project(coord: LngLat, transform: Transform): ScreenPoint {
   const point = mercator(coord);
-  return { x: transform.ax * point.x + transform.bx * point.y + transform.cx, y: transform.ay * point.x + transform.by * point.y + transform.cy };
+  return {
+    x: transform.ax * point.x + transform.bx * point.y + transform.cx,
+    y: transform.ay * point.x + transform.by * point.y + transform.cy,
+  };
 }
 
 function collectCalibration(mapRect: DOMRect) {
@@ -184,66 +211,31 @@ function currentLocation(): Promise<LngLat> {
   });
 }
 
-async function fetchRoadGeometry(coords: LngLat[], signal: AbortSignal) {
-  const path = coords.map(([lng, lat]) => `${lng.toFixed(6)},${lat.toFixed(6)}`).join(";");
+async function fetchLeg(from: LngLat, to: LngLat, signal: AbortSignal): Promise<RouteLeg> {
+  const path = [from, to].map(([lng, lat]) => `${lng.toFixed(6)},${lat.toFixed(6)}`).join(";");
   const url = `${ROUTER}/${path}?overview=full&geometries=geojson&steps=false&continue_straight=false`;
   const response = await fetch(url, { signal, cache: "no-store" });
   if (!response.ok) throw new Error(`Routing failed: ${response.status}`);
   const data = (await response.json()) as OsrmResponse;
   const geometry = data.routes?.[0]?.geometry?.coordinates;
   if (data.code !== "Ok" || !geometry?.length) throw new Error("No routed geometry returned");
-  return geometry;
+  return { from, to, geometry };
 }
 
-function nearestGeometryIndex(geometry: LngLat[], target: LngLat) {
-  let bestIndex = 0;
-  let bestDistance = Number.POSITIVE_INFINITY;
-  for (let index = 0; index < geometry.length; index += 1) {
-    const dx = geometry[index][0] - target[0];
-    const dy = geometry[index][1] - target[1];
-    const distance = dx * dx + dy * dy;
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestIndex = index;
-    }
-  }
-  return bestIndex;
-}
-
-function correctedProjection(
-  geometry: LngLat[],
-  projected: ScreenPoint[],
-  stops: Stop[],
-  mapRect: DOMRect,
-) {
-  const anchors: Anchor[] = [];
-  for (const stop of stops) {
-    const marker = markerFor(stop.id);
-    const actual = marker ? markerCenter(marker, mapRect) : null;
-    if (!actual) continue;
-    const index = nearestGeometryIndex(geometry, stop.coord);
-    anchors.push({ index, projected: projected[index], actual });
-  }
-  anchors.sort((a, b) => a.index - b.index);
-  if (!anchors.length) return projected;
-
-  return projected.map((point, index) => {
-    let previous = anchors[0];
-    let next = anchors[anchors.length - 1];
-    for (let i = 0; i < anchors.length - 1; i += 1) {
-      if (index >= anchors[i].index && index <= anchors[i + 1].index) {
-        previous = anchors[i];
-        next = anchors[i + 1];
-        break;
-      }
-    }
-    const span = Math.max(1, next.index - previous.index);
-    const t = Math.min(1, Math.max(0, (index - previous.index) / span));
-    const dx1 = previous.actual.x - previous.projected.x;
-    const dy1 = previous.actual.y - previous.projected.y;
-    const dx2 = next.actual.x - next.projected.x;
-    const dy2 = next.actual.y - next.projected.y;
-    return { x: point.x + dx1 + (dx2 - dx1) * t, y: point.y + dy1 + (dy2 - dy1) * t };
+function interpolateCorrection(points: ScreenPoint[], startTarget: ScreenPoint, endTarget: ScreenPoint) {
+  if (!points.length) return points;
+  const start = points[0];
+  const end = points[points.length - 1];
+  const startDx = startTarget.x - start.x;
+  const startDy = startTarget.y - start.y;
+  const endDx = endTarget.x - end.x;
+  const endDy = endTarget.y - end.y;
+  return points.map((point, index) => {
+    const t = points.length <= 1 ? 1 : index / (points.length - 1);
+    return {
+      x: point.x + startDx * (1 - t) + endDx * t,
+      y: point.y + startDy * (1 - t) + endDy * t,
+    };
   });
 }
 
@@ -255,10 +247,9 @@ export default function MapRoadRouteOverlay() {
   useEffect(() => {
     let destroyed = false;
     let overlay: SVGSVGElement | null = null;
-    let currentMap: HTMLElement | null = null;
     let frame = 0;
     let routeKey = "";
-    let routeGeometry: LngLat[] = [];
+    let routeLegs: RouteLeg[] = [];
     let routeStops: Stop[] = [];
     let controller: AbortController | null = null;
     let origin: LngLat = BASE_COORDS;
@@ -277,8 +268,7 @@ export default function MapRoadRouteOverlay() {
 
     const draw = () => {
       const map = mapElement();
-      if (!map || !routeGeometry.length || !routeStops.length) return;
-      currentMap = map;
+      if (!map || !routeLegs.length || !routeStops.length) return;
       const svg = ensureOverlay(map);
       const rect = map.getBoundingClientRect();
       const transform = fitAffine(collectCalibration(rect));
@@ -287,28 +277,42 @@ export default function MapRoadRouteOverlay() {
         return;
       }
 
-      svg.setAttribute("viewBox", `0 0 ${Math.max(1, rect.width)} ${Math.max(1, rect.height)}`);
-      svg.setAttribute("width", String(rect.width));
-      svg.setAttribute("height", String(rect.height));
-
-      const projected = routeGeometry.map((coord) => project(coord, transform));
-      const corrected = correctedProjection(routeGeometry, projected, routeStops, rect);
-      const d = pathData(corrected);
-
-      const stopNodes = routeStops.map((stop, index) => {
+      const stopAnchors = new Map<string, ScreenPoint>();
+      for (const stop of routeStops) {
         const marker = markerFor(stop.id);
-        const point = marker ? markerCenter(marker, rect) : project(stop.coord, transform);
-        if (!point) return "";
+        const point = marker ? markerCenter(marker, rect) : null;
+        if (point) stopAnchors.set(stop.id, point);
+      }
+
+      const originAnchor = currentLocationCenter(rect) || project(origin, transform);
+      const correctedLegs: ScreenPoint[][] = [];
+      for (let index = 0; index < routeLegs.length; index += 1) {
+        const leg = routeLegs[index];
+        const projected = leg.geometry.map((coord) => project(coord, transform));
+        const startTarget = index === 0
+          ? originAnchor
+          : stopAnchors.get(routeStops[index - 1]?.id) || project(leg.from, transform);
+        const endTarget = stopAnchors.get(routeStops[index]?.id) || project(leg.to, transform);
+        correctedLegs.push(interpolateCorrection(projected, startTarget, endTarget));
+      }
+
+      const allPoints = correctedLegs.flatMap((leg, index) => (index ? leg.slice(1) : leg));
+      const d = pathData(allPoints);
+      const stopNodes = routeStops.map((stop, index) => {
+        const point = stopAnchors.get(stop.id) || project(stop.coord, transform);
         return `<g class="hpd-road-route-stop"><circle cx="${point.x}" cy="${point.y}" r="12"/><text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle">${index + 1}</text></g>`;
       }).join("");
 
+      svg.setAttribute("viewBox", `0 0 ${Math.max(1, rect.width)} ${Math.max(1, rect.height)}`);
+      svg.setAttribute("width", String(rect.width));
+      svg.setAttribute("height", String(rect.height));
       svg.innerHTML = `
         <path id="hpd-road-route-path" class="hpd-road-route-casing" d="${d}" />
         <path class="hpd-road-route-line" d="${d}" />
         <g class="hpd-road-route-motion" aria-hidden="true">
-          <circle r="4"><animateMotion dur="5s" repeatCount="indefinite" rotate="auto"><mpath href="#hpd-road-route-path" /></animateMotion></circle>
-          <circle r="3"><animateMotion begin="1.65s" dur="5s" repeatCount="indefinite" rotate="auto"><mpath href="#hpd-road-route-path" /></animateMotion></circle>
-          <circle r="3"><animateMotion begin="3.3s" dur="5s" repeatCount="indefinite" rotate="auto"><mpath href="#hpd-road-route-path" /></animateMotion></circle>
+          <circle r="4"><animateMotion dur="5.2s" repeatCount="indefinite"><mpath href="#hpd-road-route-path" /></animateMotion></circle>
+          <circle r="3.3"><animateMotion begin="-1.7s" dur="5.2s" repeatCount="indefinite"><mpath href="#hpd-road-route-path" /></animateMotion></circle>
+          <circle r="3"><animateMotion begin="-3.4s" dur="5.2s" repeatCount="indefinite"><mpath href="#hpd-road-route-path" /></animateMotion></circle>
         </g>
         ${stopNodes}
       `;
@@ -319,14 +323,14 @@ export default function MapRoadRouteOverlay() {
       const ids = orderedRouteIds();
       const stops = ids.map((id) => ({ id, coord: JOB_COORDS.get(id) })).filter((item): item is Stop => Boolean(item.coord));
       if (!stops.length) {
-        routeGeometry = [];
+        routeLegs = [];
         routeStops = [];
         overlay?.classList.remove("is-visible");
         return;
       }
 
       const nextKey = stops.map((stop) => stop.id).join("|");
-      if (nextKey === routeKey && routeGeometry.length) {
+      if (nextKey === routeKey && routeLegs.length) {
         draw();
         return;
       }
@@ -337,11 +341,16 @@ export default function MapRoadRouteOverlay() {
       controller = new AbortController();
       try {
         origin = await currentLocation();
-        routeGeometry = await fetchRoadGeometry([origin, ...stops.map((stop) => stop.coord)], controller.signal);
+        const coords = [origin, ...stops.map((stop) => stop.coord)];
+        const legs: RouteLeg[] = [];
+        for (let index = 0; index < coords.length - 1; index += 1) {
+          legs.push(await fetchLeg(coords[index], coords[index + 1], controller.signal));
+        }
+        routeLegs = legs;
         if (!destroyed) draw();
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
-          routeGeometry = [];
+          routeLegs = [];
           overlay?.classList.remove("is-visible");
           console.warn("HPD road route unavailable", error);
         }
@@ -376,7 +385,6 @@ export default function MapRoadRouteOverlay() {
       window.removeEventListener("scroll", schedule, true);
       window.removeEventListener("storage", schedule);
       overlay?.remove();
-      void currentMap;
     };
   }, []);
 
