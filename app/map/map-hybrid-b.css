@@ -1,0 +1,190 @@
+/* Jobber + Onfleet hybrid: map remains the primary surface. */
+
+.hpd-hybrid-view-mode-host {
+  position: fixed;
+  inset: 0;
+  z-index: 2147482600;
+  pointer-events: none;
+}
+
+.hpd-hybrid-view-switch {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  border-radius: 14px;
+  background: rgba(3, 12, 24, 0.94);
+  box-shadow: 0 14px 34px rgba(2, 6, 23, 0.36);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  pointer-events: auto;
+}
+
+.hpd-hybrid-view-switch button {
+  min-height: 32px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #cbd5e1;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.hpd-hybrid-view-switch button.active {
+  border-color: rgba(59, 130, 246, 0.44);
+  background: linear-gradient(145deg, rgba(37, 99, 235, 0.76), rgba(29, 78, 216, 0.54));
+  color: #eff6ff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 6px 16px rgba(37,99,235,.24);
+}
+
+/* Desktop map-always: right workflow rail, 70/30 visual balance. */
+@media (min-width: 821px) {
+  body.hpd-hybrid-map-always .hpd-unified-panel {
+    top: max(66px, calc(env(safe-area-inset-top) + 58px)) !important;
+    right: max(14px, env(safe-area-inset-right)) !important;
+    bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    width: clamp(390px, 31vw, 520px) !important;
+    border-radius: 22px !important;
+  }
+
+  body.hpd-hybrid-map-always.hpd-unified-job-open .job-drawer.selected-focus,
+  body.hpd-hybrid-map-always.hpd-unified-job-open .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+    top: max(66px, calc(env(safe-area-inset-top) + 58px)) !important;
+    right: max(14px, env(safe-area-inset-right)) !important;
+    bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    left: auto !important;
+    width: clamp(440px, 36vw, 620px) !important;
+    max-width: 620px !important;
+  }
+
+  body.hpd-hybrid-focus-work .hpd-unified-panel {
+    top: max(64px, calc(env(safe-area-inset-top) + 56px)) !important;
+    left: 50% !important;
+    right: auto !important;
+    width: min(760px, calc(100vw - 32px)) !important;
+    transform: translateX(-50%);
+  }
+
+  body.hpd-hybrid-focus-work.hpd-unified-job-open .job-drawer.selected-focus,
+  body.hpd-hybrid-focus-work.hpd-unified-job-open .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+    top: max(58px, calc(env(safe-area-inset-top) + 52px)) !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    width: min(860px, calc(100vw - 24px)) !important;
+    max-width: 860px !important;
+    transform: translateX(-50%);
+  }
+}
+
+/* iPhone map-always: persistent map + draggable-style bottom sheet. */
+@media (max-width: 820px) {
+  .hpd-hybrid-view-switch {
+    top: max(7px, env(safe-area-inset-top));
+    right: max(7px, env(safe-area-inset-right));
+  }
+
+  .hpd-hybrid-view-switch button {
+    min-height: 29px;
+    padding: 0 8px;
+    font-size: 7px;
+  }
+
+  body.hpd-hybrid-map-always .hpd-unified-panel {
+    top: auto !important;
+    left: max(5px, env(safe-area-inset-left)) !important;
+    right: max(5px, env(safe-area-inset-right)) !important;
+    bottom: max(66px, calc(env(safe-area-inset-bottom) + 59px)) !important;
+    width: auto !important;
+    height: min(48dvh, 430px) !important;
+    max-height: min(48dvh, 430px) !important;
+    border-radius: 24px 24px 15px 15px !important;
+    box-shadow: 0 -10px 34px rgba(2, 6, 23, 0.36), 0 24px 58px rgba(2, 6, 23, 0.5) !important;
+  }
+
+  body.hpd-hybrid-map-always .hpd-unified-panel::before {
+    content: "";
+    width: 42px;
+    height: 5px;
+    flex: 0 0 auto;
+    align-self: center;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.5);
+    margin: -2px 0 1px;
+  }
+
+  body.hpd-hybrid-map-always .hpd-plan-primary button {
+    min-height: 54px;
+  }
+
+  body.hpd-hybrid-map-always .hpd-unified-prompt {
+    max-height: 58px;
+    overflow: hidden;
+  }
+
+  body.hpd-hybrid-map-always .hpd-recommend-card {
+    min-height: 0;
+  }
+
+  body.hpd-hybrid-map-always.hpd-unified-job-open .job-drawer.selected-focus,
+  body.hpd-hybrid-map-always.hpd-unified-job-open .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+    top: auto !important;
+    left: max(5px, env(safe-area-inset-left)) !important;
+    right: max(5px, env(safe-area-inset-right)) !important;
+    bottom: max(5px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    height: min(74dvh, 680px) !important;
+    max-height: min(74dvh, 680px) !important;
+    border-radius: 24px 24px 15px 15px !important;
+  }
+
+  body.hpd-hybrid-focus-work .hpd-unified-panel {
+    top: max(5px, env(safe-area-inset-top)) !important;
+    bottom: max(5px, env(safe-area-inset-bottom)) !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  body.hpd-hybrid-focus-work.hpd-unified-job-open .job-drawer.selected-focus,
+  body.hpd-hybrid-focus-work.hpd-unified-job-open .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+    top: max(4px, env(safe-area-inset-top)) !important;
+    bottom: max(4px, env(safe-area-inset-bottom)) !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+}
+
+/* Keep the map interactive behind the workflow surface. */
+body.hpd-hybrid-map-always .hpd-unified-workflow-host {
+  pointer-events: none;
+}
+
+body.hpd-hybrid-map-always .hpd-unified-workflow-host > * {
+  pointer-events: auto;
+}
+
+/* Route and recommendation cards match the selected dark operations design. */
+body.hpd-hybrid-map-always .hpd-recommend-card,
+body.hpd-hybrid-map-always .hpd-route-focus,
+body.hpd-hybrid-map-always .hpd-next-job {
+  border-color: rgba(59, 130, 246, 0.22);
+  background:
+    radial-gradient(circle at 4% -4%, rgba(37, 99, 235, 0.18), transparent 34%),
+    linear-gradient(145deg, rgba(10, 25, 45, 0.96), rgba(5, 17, 32, 0.94));
+}
+
+body.hpd-hybrid-map-always .hpd-unified-panel,
+body.hpd-hybrid-map-always .hpd-unified-travel,
+body.hpd-hybrid-map-always .hpd-unified-field-coach {
+  background:
+    radial-gradient(circle at 0 0, rgba(37, 99, 235, 0.18), transparent 32%),
+    radial-gradient(circle at 100% 0, rgba(14, 165, 233, 0.12), transparent 28%),
+    linear-gradient(155deg, rgba(3, 13, 26, 0.985), rgba(5, 20, 38, 0.985));
+}
