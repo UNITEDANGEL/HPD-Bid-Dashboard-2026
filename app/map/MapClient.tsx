@@ -5098,15 +5098,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         workflowViewFilter === "waiting72" ||
         workflowViewFilter === "noaccess24" ||
         workflowViewFilter === "ready2";
+      const clusterMarkersEnabled = false;
       const timerLayerNeedsClusters =
+        clusterMarkersEnabled &&
         timerLayer &&
         !selectedOnly &&
         filteredCount > (mobileMap ? 6 : 12) &&
         zoomLevel < (mobileMap ? 15 : 14);
       const denseLayer = !selectedOnly && filteredCount > (mobileMap ? 10 : 18);
       const markerOverview =
-        timerLayerNeedsClusters ||
-        (denseLayer ? zoomLevel < (mobileMap ? 15 : 14) : zoomLevel < 13);
+        clusterMarkersEnabled &&
+        (timerLayerNeedsClusters ||
+          (denseLayer ? zoomLevel < (mobileMap ? 15 : 14) : zoomLevel < 13));
       const focusedMarkerCards = selectedOnly;
       const markerExpanded = selectedOnly && zoomLevel >= 15;
       const markerDetailed = selectedOnly && zoomLevel >= 17;
