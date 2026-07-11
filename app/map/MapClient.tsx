@@ -31662,9 +31662,8 @@ return (
           }
 
           .map-shell.map-visual-preview.map-focus-active .map-cockpit.board-collapsed {
-            background:
-              linear-gradient(135deg, rgba(255, 255, 255, 0.97), rgba(240, 253, 250, 0.95)) !important;
-            border-color: rgba(20, 184, 166, 0.20) !important;
+            background: transparent !important;
+            border-color: transparent !important;
           }
 
           @media (max-width: 430px) {
@@ -36266,6 +36265,47 @@ return (
             grid-template-columns: minmax(0, 1fr) var(--mobile-map-agent-width, 56px) !important;
             align-items: start !important;
             gap: var(--mobile-map-control-gap, 8px) !important;
+            padding: 0 !important;
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
+            border: 1px solid rgba(15, 23, 42, 0.12) !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.94)) !important;
+            color: #06182b !important;
+            box-shadow:
+              0 14px 32px rgba(15, 23, 42, 0.20),
+              inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+            backdrop-filter: blur(14px) saturate(1.05) !important;
+            -webkit-backdrop-filter: blur(14px) saturate(1.05) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search input {
+            border: 0 !important;
+            background: transparent !important;
+            color: #06182b !important;
+            box-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search input::placeholder {
+            color: #475569 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search label span {
+            color: #0f766e !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search.has-query {
+            border-color: rgba(20, 184, 166, 0.36) !important;
+            box-shadow:
+              0 16px 34px rgba(15, 23, 42, 0.22),
+              0 0 0 3px rgba(20, 184, 166, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) {
@@ -36380,6 +36420,29 @@ return (
             .job-drawer.selected-focus .selected-age-badge {
               animation: none !important;
             }
+          }
+
+          /* FINAL_MAP_TOP_SEARCH_CLEANUP_2026_07_11 */
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
+            background: transparent !important;
+            background-color: transparent !important;
+            background-image: none !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search {
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(241, 245, 249, 0.96)) !important;
+            border-color: rgba(15, 23, 42, 0.14) !important;
+            box-shadow:
+              0 12px 26px rgba(15, 23, 42, 0.20),
+              0 0 0 1px rgba(255, 255, 255, 0.72) inset !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search input {
+            background: transparent !important;
+            color: #06182b !important;
           }
         `}
         </style>
@@ -36724,7 +36787,20 @@ return (
           </svg>
         ) : null}
 
-        <section className={`map-cockpit ${mapMenuOpen ? "panel-open" : ""} ${mapBoardOpen ? "board-open" : "board-collapsed"}`} aria-label="Map controls">
+        <section
+          className={`map-cockpit ${mapMenuOpen ? "panel-open" : ""} ${mapBoardOpen ? "board-open" : "board-collapsed"}`}
+          style={
+            mapBoardOpen
+              ? undefined
+              : {
+                  background: "transparent",
+                  backgroundImage: "none",
+                  borderColor: "transparent",
+                  boxShadow: "none",
+                }
+          }
+          aria-label="Map controls"
+        >
           <div className="map-command-banner" aria-label="Schedule board banner">
             <div>
               <span>Schedule Board</span>
