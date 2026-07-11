@@ -1,0 +1,421 @@
+/* AI map dashboard V2 polish. Loaded after the base dashboard stylesheet. */
+
+.map-ai-clear-route {
+  z-index: 12500 !important;
+  min-width: 96px !important;
+  min-height: 40px !important;
+  padding-inline: 12px !important;
+  border-color: rgba(248, 113, 113, 0.34) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.985), rgba(254, 242, 242, 0.97)) !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16) !important;
+}
+
+.map-ai-control-center {
+  top: max(76px, calc(env(safe-area-inset-top) + 66px)) !important;
+  right: max(12px, env(safe-area-inset-right)) !important;
+  bottom: max(12px, env(safe-area-inset-bottom)) !important;
+  z-index: 12000 !important;
+  width: min(350px, calc(100vw - 24px)) !important;
+  border-radius: 22px !important;
+  background:
+    radial-gradient(circle at 12% -6%, rgba(45, 212, 191, 0.22), transparent 34%),
+    radial-gradient(circle at 100% 20%, rgba(37, 99, 235, 0.12), transparent 36%),
+    linear-gradient(160deg, rgba(5, 18, 32, 0.985), rgba(7, 27, 47, 0.98)) !important;
+  box-shadow:
+    0 24px 64px rgba(2, 6, 23, 0.40),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035) !important;
+}
+
+.map-ai-control-head {
+  min-height: 58px !important;
+  padding: 9px 10px !important;
+}
+
+.map-ai-brand-block {
+  gap: 9px !important;
+}
+
+.map-ai-brand-block strong {
+  max-width: 168px !important;
+  font-size: 13px !important;
+}
+
+.map-ai-brand-block small {
+  margin-top: 3px !important;
+  font-size: 9px !important;
+}
+
+.map-ai-head-actions {
+  align-items: center;
+  gap: 4px !important;
+}
+
+.map-ai-head-actions button {
+  min-height: 30px !important;
+  padding-inline: 7px !important;
+  font-size: 9px !important;
+}
+
+.map-ai-route-badge {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  font-size: 9px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.map-ai-route-badge.is-live {
+  border-color: rgba(52, 211, 153, 0.30);
+  background: rgba(16, 185, 129, 0.13);
+  color: #a7f3d0;
+  box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.04);
+}
+
+.map-ai-kpis {
+  gap: 6px !important;
+  padding: 8px 10px 7px !important;
+}
+
+.map-ai-kpis article {
+  padding: 8px !important;
+  border-radius: 13px !important;
+}
+
+.map-ai-kpis b {
+  margin-top: 4px !important;
+  font-size: 18px !important;
+}
+
+.map-ai-tabs {
+  padding: 0 10px 8px !important;
+}
+
+.map-ai-tabs button {
+  min-height: 32px !important;
+  font-size: 9px !important;
+}
+
+.map-ai-panel-body {
+  background: rgba(2, 8, 23, 0.10);
+}
+
+.map-ai-route-panel,
+.map-ai-overview-panel {
+  padding: 9px !important;
+}
+
+.map-ai-route-status,
+.map-ai-next-stop,
+.map-ai-overview-panel article {
+  padding: 10px !important;
+  border-radius: 14px !important;
+}
+
+.map-ai-route-status-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.map-ai-route-status-line > b {
+  margin: 0 !important;
+  font-size: 14px !important;
+  white-space: nowrap;
+}
+
+.map-ai-progress-track {
+  width: 100%;
+  height: 6px;
+  margin-top: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.map-ai-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #14b8a6, #38bdf8);
+  box-shadow: 0 0 16px rgba(45, 212, 191, 0.36);
+  transition: width 180ms ease;
+}
+
+.map-ai-next-stop {
+  position: relative;
+  padding-right: 92px !important;
+}
+
+.map-ai-next-stop strong {
+  max-height: 50px;
+  overflow: hidden;
+  font-size: 11px !important;
+}
+
+.map-ai-next-stop button {
+  position: absolute;
+  top: 50%;
+  right: 9px;
+  min-height: 32px;
+  padding: 0 8px;
+  transform: translateY(-50%);
+  color: #dbeafe;
+}
+
+.map-ai-stop-list {
+  max-height: min(28vh, 250px);
+  margin: 8px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  scrollbar-width: thin;
+}
+
+.map-ai-stop-list li + li {
+  margin-top: 5px;
+}
+
+.map-ai-stop-list button {
+  width: 100%;
+  min-height: 48px;
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  text-align: left;
+  border-radius: 13px !important;
+}
+
+.map-ai-stop-list button > b {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #bae6fd;
+  font-size: 10px;
+}
+
+.map-ai-stop-list button > span {
+  min-width: 0;
+}
+
+.map-ai-stop-list button strong,
+.map-ai-stop-list button small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.map-ai-stop-list button strong {
+  color: #ffffff;
+  font-size: 10px;
+}
+
+.map-ai-stop-list button small {
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 9px;
+}
+
+.map-ai-stop-list button.active {
+  border-color: rgba(52, 211, 153, 0.36) !important;
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.18), rgba(14, 116, 144, 0.11)) !important;
+  box-shadow: inset 3px 0 0 #34d399;
+}
+
+.map-ai-route-actions {
+  margin-top: 8px !important;
+}
+
+.map-ai-command-actions {
+  padding: 8px 9px 6px !important;
+}
+
+.map-ai-form {
+  padding: 0 9px 9px !important;
+}
+
+.map-ai-form input {
+  height: 40px !important;
+}
+
+.map-ai-form button {
+  min-height: 40px !important;
+}
+
+.map-ai-rail {
+  z-index: 12000 !important;
+}
+
+@supports selector(body:has(.map-ai-control-center)) {
+  @media (min-width: 721px) {
+    body:has(.map-ai-control-center) .map-shell.map-glass-command-trial .zoom-panel {
+      right: 374px !important;
+    }
+
+    body:has(.map-ai-control-center) .map-shell.map-glass-command-trial .map-day-route-tray {
+      right: 370px !important;
+      max-width: calc(100vw - 402px) !important;
+    }
+  }
+}
+
+@media (max-width: 900px) and (min-width: 721px) {
+  .map-ai-control-center {
+    width: 330px !important;
+  }
+
+  @supports selector(body:has(.map-ai-control-center)) {
+    body:has(.map-ai-control-center) .map-shell.map-glass-command-trial .zoom-panel {
+      right: 352px !important;
+    }
+
+    body:has(.map-ai-control-center) .map-shell.map-glass-command-trial .map-day-route-tray {
+      right: 348px !important;
+      max-width: calc(100vw - 378px) !important;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .map-ai-control-center {
+    top: auto !important;
+    left: max(7px, env(safe-area-inset-left)) !important;
+    right: max(7px, env(safe-area-inset-right)) !important;
+    bottom: max(7px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    height: min(43dvh, 470px) !important;
+    min-height: 300px !important;
+    border-radius: 22px 22px 17px 17px !important;
+  }
+
+  .map-ai-control-head {
+    min-height: 50px !important;
+    padding: 7px 8px !important;
+  }
+
+  .map-ai-brand-block strong {
+    max-width: 118px !important;
+    font-size: 11px !important;
+  }
+
+  .map-ai-brand-block small {
+    display: none !important;
+  }
+
+  .map-ai-route-badge {
+    min-height: 26px;
+    padding-inline: 7px;
+    font-size: 8px;
+  }
+
+  .map-ai-head-actions button {
+    min-height: 28px !important;
+    padding-inline: 6px !important;
+    font-size: 8px !important;
+  }
+
+  .map-ai-kpis {
+    padding: 6px 8px !important;
+  }
+
+  .map-ai-kpis article {
+    padding: 6px !important;
+  }
+
+  .map-ai-kpis b {
+    font-size: 15px !important;
+  }
+
+  .map-ai-tabs {
+    padding: 0 8px 6px !important;
+  }
+
+  .map-ai-route-panel,
+  .map-ai-overview-panel,
+  .map-ai-messages {
+    padding: 7px !important;
+  }
+
+  .map-ai-stop-list {
+    max-height: 130px;
+  }
+
+  .map-ai-command-actions {
+    padding: 6px 7px 5px !important;
+  }
+
+  .map-ai-command-actions button {
+    min-height: 32px !important;
+    padding-inline: 4px !important;
+    font-size: 8px !important;
+  }
+
+  .map-ai-form {
+    padding: 0 7px 7px !important;
+  }
+
+  .map-ai-form input {
+    height: 38px !important;
+    font-size: 16px !important;
+  }
+
+  .map-ai-form button {
+    min-height: 38px !important;
+  }
+
+  /* The right-side AI control center replaces the large legacy route tray on phones. */
+  @supports selector(body:has(.map-ai-control-center)) {
+    body:has(.map-ai-control-center) .map-shell.map-glass-command-trial .map-day-route-tray:not(.is-hidden) {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    body:has(.map-ai-control-center) .map-shell.map-glass-command-trial .zoom-panel {
+      bottom: calc(43dvh + 18px) !important;
+    }
+  }
+}
+
+@media (max-width: 430px) {
+  .map-ai-control-center {
+    height: min(41dvh, 435px) !important;
+    min-height: 290px !important;
+  }
+
+  .map-ai-route-badge {
+    display: none;
+  }
+
+  .map-ai-next-stop {
+    padding-right: 10px !important;
+  }
+
+  .map-ai-next-stop button {
+    position: static;
+    width: 100%;
+    min-height: 30px;
+    margin-top: 7px;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-ai-progress-track > span {
+    transition: none;
+  }
+}
