@@ -36179,7 +36179,7 @@ return (
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
               left: calc(var(--mobile-map-edge) + var(--mobile-map-tools-width) + var(--mobile-map-control-gap)) !important;
-              right: max(6px, env(safe-area-inset-right)) !important;
+              right: 6px !important;
               grid-template-columns: minmax(0, 1fr) var(--mobile-map-agent-width) !important;
               gap: var(--mobile-map-control-gap) !important;
               height: var(--mobile-map-control-height) !important;
@@ -36252,7 +36252,7 @@ return (
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
             left: calc(max(8px, env(safe-area-inset-left)) + var(--mobile-map-tools-width, 60px) + var(--mobile-map-control-gap, 8px)) !important;
-            right: max(6px, env(safe-area-inset-right)) !important;
+            right: 6px !important;
             width: auto !important;
             min-width: 0 !important;
             max-width: none !important;
