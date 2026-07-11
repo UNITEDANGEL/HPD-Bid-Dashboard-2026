@@ -37,6 +37,7 @@ const MAP_BOROUGH_FILTERS = [
   { key: "unknown", label: "Unknown", short: "?" },
 ] as const;
 const USER_LOCATION_OVERVIEW_ZOOM = 13;
+const USER_LOCATION_ME_ZOOM = 14;
 const USER_LOCATION_NEARBY_RADIUS_MILES = 1.25;
 const USER_LOCATION_CONTEXT_JOB_LIMIT = 6;
 const MAP_LAYER_OVERVIEW_ZOOM = 11;
@@ -4669,14 +4670,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     markProgrammaticMapMove();
 
     const userPoint: [number, number] = [location.lat, location.lng];
-    const nearbyBounds = nearbyJobBoundsForLocation(location);
-
-    if (nearbyBounds.length) {
-      map.fitBounds([userPoint, ...nearbyBounds], locationMapFitOptions(USER_LOCATION_OVERVIEW_ZOOM));
-      return true;
-    }
-
-    map.flyTo(userPoint, USER_LOCATION_OVERVIEW_ZOOM, { animate: true, duration: 0.75 });
+    map.flyTo(userPoint, USER_LOCATION_ME_ZOOM, { animate: true, duration: 0.75 });
     return true;
   }
 
