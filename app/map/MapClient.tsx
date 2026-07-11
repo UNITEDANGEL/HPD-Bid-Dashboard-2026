@@ -184,6 +184,7 @@ type WorkflowViewFilter =
   | "all";
 
 type MapBoroughFilter = (typeof MAP_BOROUGH_FILTERS)[number]["key"];
+type TodayZoneLimit = "all" | "20" | "40";
 
 type ItbSourceManifestEntry = {
   page?: number;
@@ -2702,6 +2703,7 @@ const [appointmentAlertPhone, setAppointmentAlertPhone] = useState("");
 const [appointmentAlertSaving, setAppointmentAlertSaving] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<WorkflowViewFilter>("active");
 const [mapBoroughFilter, setMapBoroughFilter] = useState<MapBoroughFilter>("nearby");
+const [todayZoneLimit, setTodayZoneLimit] = useState<TodayZoneLimit>("40");
 const [countdownTick, setCountdownTick] = useState(0);
 const [mapZoom, setMapZoom] = useState(10);
 const [photoCaptureTarget, setPhotoCaptureTarget] = useState<FieldCaptureTarget | null>(null);
@@ -4181,11 +4183,24 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     const boroughFiltered = dateFiltered.filter((job) => matchesMapBorough(job, mapBoroughFilter));
     const workflowFiltered = boroughFiltered.filter((job) => shouldShowForWorkflowView(job, workflowViewFilter));
+    const zoneOrigin = userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : DAY_AGENT_BASE_COORDS;
+    const zoneFiltered =
+      mapBoroughFilter === "nearby" && todayZoneLimit !== "all"
+        ? [...workflowFiltered]
+            .sort((a, b) => {
+              const aCoords = jobMapPoint(a);
+              const bCoords = jobMapPoint(b);
+              const aDistance = aCoords ? mapDistanceMiles(zoneOrigin, aCoords) : Number.POSITIVE_INFINITY;
+              const bDistance = bCoords ? mapDistanceMiles(zoneOrigin, bCoords) : Number.POSITIVE_INFINITY;
+              return aDistance - bDistance;
+            })
+            .slice(0, Number(todayZoneLimit))
+        : workflowFiltered;
 
-    if (!needle) return workflowFiltered;
+    if (!needle) return zoneFiltered;
 
-    return workflowFiltered.filter((job) => matchesMapSearch(job, needle));
-  }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays, mapBoroughFilter, workflowViewFilter, countdownTick, routeFocusActive, routeFocusKeys]);
+    return zoneFiltered.filter((job) => matchesMapSearch(job, needle));
+  }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays, mapBoroughFilter, workflowViewFilter, countdownTick, routeFocusActive, routeFocusKeys, todayZoneLimit, userLocation]);
 
   useEffect(() => {
     if (!urlOmoRequest) return;
@@ -9872,6 +9887,12 @@ function directionsUrl(job: JobRecord) {
   const mapReturnView = mapReturnCopy[workflowViewFilter];
   const activeBoroughFilter = boroughFilterMeta(mapBoroughFilter);
   const mapBoroughScopeLabel = mapBoroughFilter === "all" ? "All boroughs" : activeBoroughFilter.label;
+  const todayZoneLabel =
+    mapBoroughFilter === "nearby"
+      ? todayZoneLimit === "all"
+        ? "All nearby"
+        : `Today Zone ${todayZoneLimit}`
+      : mapBoroughScopeLabel;
   const dashboardSubtitle = search.trim()
     ? `Search: ${search.trim()} · ${mapBoroughScopeLabel}`
     : mapBoroughFilter === "all"
@@ -23137,6 +23158,7 @@ return (
           .map-cockpit.board-collapsed .map-command-buttons button:not(.map-board-toggle),
           .map-cockpit.board-collapsed .map-board-switcher,
           .map-cockpit.board-collapsed .map-borough-rail,
+          .map-cockpit.board-collapsed .map-today-zone-rail,
           .map-cockpit.board-collapsed .map-cockpit-actions {
             display: none !important;
           }
@@ -23272,6 +23294,65 @@ return (
 
           .map-borough-rail button.active strong {
             background: rgba(14, 165, 233, 0.40) !important;
+          }
+
+          .map-today-zone-rail {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 5px !important;
+          }
+
+          .map-today-zone-rail button {
+            min-width: 0 !important;
+            min-height: 38px !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            gap: 5px !important;
+            padding: 6px 8px !important;
+            border-radius: 13px !important;
+            border: 1px solid rgba(20, 184, 166, 0.22) !important;
+            background: linear-gradient(135deg, rgba(240, 253, 250, 0.94), rgba(224, 242, 254, 0.88)) !important;
+            color: #0f172a !important;
+          }
+
+          .map-today-zone-rail button span {
+            min-width: 0 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            color: #134e4a !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-today-zone-rail button strong {
+            min-width: 24px !important;
+            min-height: 24px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 999px !important;
+            background: rgba(20, 184, 166, 0.18) !important;
+            color: #115e59 !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-today-zone-rail button.active {
+            background: linear-gradient(135deg, #022c22, #0f766e) !important;
+            color: #ffffff !important;
+            box-shadow: 0 12px 24px rgba(15, 118, 110, 0.22) !important;
+          }
+
+          .map-today-zone-rail button.active span,
+          .map-today-zone-rail button.active strong {
+            color: #ffffff !important;
+          }
+
+          .map-today-zone-rail button.active strong {
+            background: rgba(255, 255, 255, 0.16) !important;
           }
 
           .map-cockpit-actions button {
@@ -36179,6 +36260,104 @@ return (
             grid-template-columns: minmax(0, 1fr) clamp(58px, 15vw, 72px) var(--mobile-map-agent-width, 56px) !important;
           }
 
+          .map-shell.map-glass-command-trial .map-top.open {
+            max-height: calc(100dvh - 14px) !important;
+            overflow: hidden !important;
+            display: grid !important;
+            gap: 7px !important;
+            padding: 10px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-search,
+          .map-shell.map-glass-command-trial .map-top.open .map-borough-control,
+          .map-shell.map-glass-command-trial .map-top.open .map-filter-row,
+          .map-shell.map-glass-command-trial .map-top.open .map-day-presets,
+          .map-shell.map-glass-command-trial .map-top.open .map-style-panel {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-title-row {
+            min-height: 46px !important;
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open h1 {
+            font-size: 20px !important;
+            line-height: 1.02 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open p {
+            font-size: 11px !important;
+            line-height: 1.15 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .dispatch-dashboard-card {
+            padding: 8px !important;
+            gap: 7px !important;
+            border-radius: 17px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .dispatch-dashboard-head {
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .dispatch-dashboard-copy strong {
+            font-size: 23px !important;
+            line-height: 1 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .dispatch-dashboard-copy small {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .dispatch-dashboard-count {
+            min-width: 66px !important;
+            min-height: 56px !important;
+            padding: 6px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .dispatch-kpi-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 5px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .dispatch-kpi {
+            min-height: 52px !important;
+            padding: 7px !important;
+            border-radius: 13px !important;
+            gap: 2px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .dispatch-kpi span {
+            font-size: 9px !important;
+            line-height: 1 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .dispatch-kpi strong {
+            font-size: 20px !important;
+            line-height: 1 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .dispatch-kpi small {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .dispatch-dashboard-strip {
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 5px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-top-zone-rail {
+            margin-top: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-top-zone-rail button {
+            min-height: 70px !important;
+            max-height: 72px !important;
+            align-content: center !important;
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
@@ -36373,6 +36552,33 @@ return (
             <span>{dashboardDataStatus}</span>
           </div>
         </section>
+
+        {mapBoroughFilter === "nearby" ? (
+          <div className="map-today-zone-rail map-top-zone-rail" aria-label="Today Zone job count">
+            {(["20", "40", "all"] as TodayZoneLimit[]).map((limit) => (
+              <button
+                key={`top-${limit}`}
+                type="button"
+                className={todayZoneLimit === limit ? "active" : ""}
+                onClick={() => {
+                  setTodayZoneLimit(limit);
+                  setClusterSheet(null);
+                  setMapJobBrief(null);
+                  setSelectedOnly(false);
+                  setSelected(null);
+                  setDrawerOpen(false);
+                  setFullMap(true);
+                  clearManualMapControl();
+                  setActionNotice(limit === "all" ? "Showing all nearby jobs." : `Today Zone: closest ${limit} active jobs.`);
+                  window.requestAnimationFrame(() => mapRef.current?.invalidateSize());
+                }}
+              >
+                <span>{limit === "all" ? "All Nearby" : `Today ${limit}`}</span>
+                <strong>{limit === "all" ? mapBoroughOptions.find((item) => item.key === "nearby")?.count || 0 : limit}</strong>
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         <div className="map-search">
           <input
@@ -36762,6 +36968,32 @@ return (
               </button>
             ))}
           </div>
+          {mapBoroughFilter === "nearby" ? (
+            <div className="map-today-zone-rail" aria-label="Today Zone job count">
+              {(["20", "40", "all"] as TodayZoneLimit[]).map((limit) => (
+                <button
+                  key={limit}
+                  type="button"
+                  className={todayZoneLimit === limit ? "active" : ""}
+                  onClick={() => {
+                    setTodayZoneLimit(limit);
+                    setClusterSheet(null);
+                    setMapJobBrief(null);
+                    setSelectedOnly(false);
+                    setSelected(null);
+                    setDrawerOpen(false);
+                    setFullMap(true);
+                    clearManualMapControl();
+                    setActionNotice(limit === "all" ? "Showing all nearby jobs." : `Today Zone: closest ${limit} active jobs.`);
+                    window.requestAnimationFrame(() => mapRef.current?.invalidateSize());
+                  }}
+                >
+                  <span>{limit === "all" ? "All Nearby" : `Today ${limit}`}</span>
+                  <strong>{limit === "all" ? mapBoroughOptions.find((item) => item.key === "nearby")?.count || 0 : limit}</strong>
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div className="map-cockpit-actions" aria-label="Quick map actions">
             <button
               type="button"
@@ -36803,7 +37035,7 @@ return (
         <div className={`map-filter-count-hud ${mapShowAllDays ? "all-days" : "filtered-days"}`} aria-label={mapHudSummaryLabel}>
           <span>{dashboardView.label}</span>
           <strong>{filteredJobs.length} job{filteredJobs.length === 1 ? "" : "s"}</strong>
-          <small>{mapBoroughScopeLabel} - {mapDateFilterLabel()}</small>
+          <small>{todayZoneLabel} - {mapDateFilterLabel()}</small>
         </div>
 
         {showMapStatsPanel ? (
