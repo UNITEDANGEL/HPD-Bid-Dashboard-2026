@@ -5143,7 +5143,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         .filter((item) => item.kind === "cluster")
         .map((item, index) => {
           const point = map.latLngToContainerPoint([item.lat, item.lng]);
-          const y = mobileMap && point.y < 148 ? 148 : point.y;
+          const y = mobileMap && point.y < 190 ? 190 : point.y;
           return {
             id: `${index}:${Number(item.lat).toFixed(5)}:${Number(item.lng).toFixed(5)}`,
             x: Math.round(point.x),
@@ -5293,7 +5293,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                         ? "pending"
                         : "normal";
           const clusterPoint = map.latLngToLayerPoint([item.lat, item.lng]);
-          const topHeaderShift = mobileMap && clusterPoint.y < 148 ? 148 - clusterPoint.y : 0;
+          const topHeaderShift = mobileMap && clusterPoint.y < 190 ? 190 - clusterPoint.y : 0;
           const [offsetX, offsetY]: [number, number] = [0, topHeaderShift];
           const clusterLatLng = map.layerPointToLatLng(L.point(clusterPoint.x + offsetX, clusterPoint.y + offsetY));
           const compactCluster = mobileMap || denseLayer || filteredCount > 24 || zoomLevel < 14;
@@ -36117,6 +36117,22 @@ return (
               min-width: 62px !important;
               max-width: 62px !important;
             }
+          }
+
+          .map-shell.map-glass-command-trial .map-top:not(.open),
+          .map-shell.map-glass-command-trial.full-map-mode .map-top:not(.open) {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top:not(.open) .advanced-toggle-btn,
+          .map-shell.map-glass-command-trial.full-map-mode .map-top:not(.open) .advanced-toggle-btn {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
           }
 
           @media (prefers-reduced-motion: reduce) {
