@@ -38,6 +38,30 @@ function findButton(root: ParentNode, pattern: RegExp) {
   return Array.from(root.querySelectorAll<HTMLButtonElement>("button")).find((button) => pattern.test(textOf(button)));
 }
 
+function findAgentButton() {
+  const mapRoot = document.querySelector(".map-shell") || document;
+  return (
+    document.querySelector<HTMLButtonElement>(".map-agent-top-button") ||
+    Array.from(mapRoot.querySelectorAll<HTMLButtonElement>("button")).find((button) => /^agent$/i.test(textOf(button))) ||
+    Array.from(mapRoot.querySelectorAll<HTMLButtonElement>("button")).find((button) => /agent/i.test(textOf(button))) ||
+    null
+  );
+}
+
+function findOpenAgentPanel() {
+  return document.querySelector<HTMLElement>(".map-day-agent-launcher.agent-panel-open");
+}
+
+async function waitForOpenAgentPanel(timeoutMs = 900) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < timeoutMs) {
+    const panel = findOpenAgentPanel();
+    if (panel) return panel;
+    await wait(50);
+  }
+  return null;
+}
+
 function readMapStats(): MapStats {
   const routeRows = Array.from(document.querySelectorAll<HTMLElement>(".map-day-route-stop-row"));
   const routeStopCards = routeRows.map((row, index) => {
@@ -117,6 +141,7 @@ export default function MapAiDashboard() {
   };
 
   useEffect(() => {
+    let frame = 0;
     const sync = () => {
       const next = refreshStats();
       if (priorRouteCountRef.current === 0 && next.routeStops > 0) {
@@ -126,11 +151,18 @@ export default function MapAiDashboard() {
       priorRouteCountRef.current = next.routeStops;
       alignClearButton();
     };
+    const scheduleSync = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        sync();
+      });
+    };
 
     sync();
     const interval = window.setInterval(sync, 800);
-    const observer = new MutationObserver(sync);
-    observer.observe(document.body, {
+    const observer = new MutationObserver(scheduleSync);
+    observer.observe(document.querySelector(".map-shell") || document.body, {
       childList: true,
       subtree: true,
       attributes: true,
@@ -139,6 +171,7 @@ export default function MapAiDashboard() {
     window.addEventListener("resize", alignClearButton);
     return () => {
       window.clearInterval(interval);
+      if (frame) window.cancelAnimationFrame(frame);
       observer.disconnect();
       window.removeEventListener("resize", alignClearButton);
     };
@@ -157,30 +190,56 @@ export default function MapAiDashboard() {
   };
 
   const addAssistant = (text: string) => {
-    setMessages((current) => [...current, { id: `${Date.now()}-assistant`, role: "assistant", text }]);
+    setMessages((current) => [
+      ...current,
+      { id: `${Date.now()}-assistant-${Math.random().toString(36).slice(2, 8)}`, role: "assistant", text },
+    ]);
     speak(text);
   };
 
   const addUser = (text: string) => {
-    setMessages((current) => [...current, { id: `${Date.now()}-user`, role: "user", text }]);
+    setMessages((current) => [
+      ...current,
+      { id: `${Date.now()}-user-${Math.random().toString(36).slice(2, 8)}`, role: "user", text },
+    ]);
   };
 
   const openAgent = async () => {
     setCollapsed(false);
-    const mapRoot = document.querySelector(".map-shell") || document;
-    const button =
-      document.querySelector<HTMLButtonElement>(".map-agent-top-button") ||
-      Array.from(mapRoot.querySelectorAll<HTMLButtonElement>("button")).find((item) => /agent/i.test(textOf(item)));
+    const existingPanel = findOpenAgentPanel();
+    if (existingPanel) return existingPanel;
 
+    const button = findAgentButton();
     if (!button) {
       addAssistant("I could not find the Agent control on this map view.");
-      return false;
+      return null;
     }
 
     button.click();
-    await wait(140);
+    const panel = await waitForOpenAgentPanel();
+    if (!panel) {
+      addAssistant("I could not open the Agent tools. Try the Agent button on the map.");
+      return null;
+    }
+
     addAssistant("Agent opened. The AI control center will remain visible.");
-    return true;
+    return panel;
+  };
+
+  const closeLegacyAgentPanel = async () => {
+    const panel = findOpenAgentPanel();
+    if (!panel) return;
+
+    const labelledClose = panel.querySelector<HTMLButtonElement>(
+      'button[aria-label*="close" i], button[title*="close" i], button[aria-label*="collapse" i]',
+    );
+    const closeButton =
+      labelledClose ||
+      findButton(panel, /^(close|done|hide|collapse|minimize)$/i) ||
+      findAgentButton();
+
+    closeButton?.click();
+    await wait(120);
   };
 
   const startRoute = async () => {
@@ -188,10 +247,9 @@ export default function MapAiDashboard() {
     setCollapsed(false);
     setTab("route");
     try {
-      const opened = await openAgent();
-      if (!opened) return;
-      const mapRoot = document.querySelector(".map-shell") || document;
-      const panel = document.querySelector(".map-day-agent-launcher.agent-panel-open") || mapRoot;
+      const panel = await openAgent();
+      if (!panel) return;
+
       const startButton =
         findButton(panel, /^start$/i) ||
         findButton(panel, /start route/i) ||
@@ -204,7 +262,12 @@ export default function MapAiDashboard() {
 
       startButton.click();
       addAssistant("Starting today’s route. I am keeping the full AI dashboard open on the right.");
-      await wait(900);
+
+      await wait(180);
+      await closeLegacyAgentPanel();
+      await wait(720);
+      await closeLegacyAgentPanel();
+
       setCollapsed(false);
       setTab("route");
       refreshStats();
