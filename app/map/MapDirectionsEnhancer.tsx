@@ -76,13 +76,15 @@ function makeEnrouteButton(id: string, fallbackAddress: string) {
 
     const url = directionsUrl(id, fallbackAddress);
     button.classList.add("opening");
-    button.querySelector("b")!.textContent = "Opening";
+    const label = button.querySelector("b");
+    if (label) label.textContent = "Opening";
     window.open(url, "_blank", "noopener,noreferrer");
 
     window.setTimeout(() => {
       if (!button.isConnected) return;
       button.classList.remove("opening");
-      button.querySelector("b")!.textContent = "Enroute";
+      const currentLabel = button.querySelector("b");
+      if (currentLabel) currentLabel.textContent = "Enroute";
     }, 1200);
   });
 
@@ -101,11 +103,17 @@ function enhanceResultList() {
 
     mainButton.classList.add("hpd-ai-list-main");
     const sibling = mainButton.nextElementSibling;
-    if (sibling instanceof HTMLButtonElement && sibling.classList.contains("hpd-ai-enroute")) {
-      sibling.dataset.enrouteFor = id;
+    if (
+      sibling instanceof HTMLButtonElement &&
+      sibling.classList.contains("hpd-ai-enroute") &&
+      sibling.dataset.enrouteFor === id
+    ) {
       continue;
     }
 
+    if (sibling instanceof HTMLButtonElement && sibling.classList.contains("hpd-ai-enroute")) {
+      sibling.remove();
+    }
     mainButton.insertAdjacentElement("afterend", makeEnrouteButton(id, address));
   }
 }
@@ -122,11 +130,8 @@ function enhanceRouteList() {
 
     mainButton.classList.add("hpd-ai-list-main");
     const existing = row.querySelector<HTMLButtonElement>(":scope > .hpd-ai-enroute");
-    if (existing) {
-      existing.dataset.enrouteFor = id;
-      continue;
-    }
-
+    if (existing?.dataset.enrouteFor === id) continue;
+    existing?.remove();
     row.appendChild(makeEnrouteButton(id, detail));
   }
 }
