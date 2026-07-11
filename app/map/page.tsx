@@ -5,7 +5,7 @@ import "./map-hybrid-b.css";
 import "./map-suggested-route.css";
 import MapClient from "./MapClient";
 import MapHybridViewModeClient from "./MapHybridViewModeClient";
-import MapSuggestedRouteOverlayClient from "./MapSuggestedRouteOverlayClient";
+import MapRouteSequenceOverlayClient from "./MapRouteSequenceOverlayClient";
 import MapWorkflowControllerClient from "./MapWorkflowControllerClient";
 
 export default function MapPage() {
@@ -14,7 +14,7 @@ export default function MapPage() {
       <MapClient />
       <MapWorkflowControllerClient />
       <MapHybridViewModeClient />
-      <MapSuggestedRouteOverlayClient />
+      <MapRouteSequenceOverlayClient />
     </>
   );
 }
