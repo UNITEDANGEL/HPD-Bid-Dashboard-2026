@@ -1,0 +1,25 @@
+/* Fixed workspace shells keep their exact layout; 3D motion is reserved for cards and workflow surfaces. */
+
+body.hpd-depth-motion :is(
+  .hpd-ai-center,
+  .job-drawer.selected-focus,
+  .hpd-field-trip-bar,
+  .hpd-workspace-switch,
+  .hpd-lite-command-dock,
+  .hpd-mobile-field-dock
+).hpd-depth-surface {
+  transform: none !important;
+  will-change: auto;
+}
+
+body.hpd-depth-motion :is(
+  .hpd-responsive-results-list > .hpd-ai-list-main:not([hidden]),
+  .hpd-ai-route-list > li,
+  .hpd-ai-smart-summary,
+  .hpd-ai-route-smart-summary,
+  .hpd-ai-route-card,
+  .hpd-ai-next-card,
+  .hpd-agent-coach
+).hpd-depth-surface {
+  will-change: transform, box-shadow;
+}
