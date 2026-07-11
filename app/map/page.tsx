@@ -8,6 +8,7 @@ import "./map-smart-conversation.css";
 import "./map-agent-lifecycle.css";
 import "./map-responsive-workspace.css";
 import "./map-3d-depth.css";
+import "./map-3d-stability.css";
 import Map3DInteractionsClient from "./Map3DInteractionsClient";
 import MapAgentLifecycleClient from "./MapAgentLifecycleClient";
 import MapAiOperationsDashboard from "./MapAiOperationsDashboard";
