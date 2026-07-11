@@ -9560,6 +9560,42 @@ function focusJob(job: MappedJob) {
     setActionNotice(`Route stop ${stopIndex + 1}: ${jobKey(job)}${leg ? ` · ${leg.label}` : ""}. Tap the marker only when you want the full job card.`);
   }
 
+  function updateDayAgentRouteOrder(nextRoute: MappedJob[], selectedIndex = dayAgentSelectedStopIndex, notice = "Route updated.") {
+    const safeRoute = nextRoute.filter(Boolean);
+    setDayAgentRoute(safeRoute);
+    setDayAgentSelectedStopIndex(Math.max(0, Math.min(selectedIndex, Math.max(0, safeRoute.length - 1))));
+    setDayAgentRouteSummary(null);
+    setDayAgentRouteHidden(false);
+    if (safeRoute.length) {
+      void drawDayAgentRouteLine(safeRoute);
+      showActionNotice(notice);
+    } else {
+      if (dayAgentRouteLayerRef.current && mapRef.current) {
+        mapRef.current.removeLayer(dayAgentRouteLayerRef.current);
+        dayAgentRouteLayerRef.current = null;
+        dayAgentRouteLineRef.current = null;
+      }
+      setDayAgentStarted(false);
+      showActionNotice("Route cleared.");
+    }
+  }
+
+  function moveDayAgentRouteStop(index: number, direction: -1 | 1) {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= dayAgentRoute.length) return;
+    const nextRoute = [...dayAgentRoute];
+    const [moved] = nextRoute.splice(index, 1);
+    nextRoute.splice(nextIndex, 0, moved);
+    updateDayAgentRouteOrder(nextRoute, nextIndex, `Moved ${jobKey(moved)} to stop ${nextIndex + 1}.`);
+  }
+
+  function removeDayAgentRouteStop(index: number) {
+    const removed = dayAgentRoute[index];
+    if (!removed) return;
+    const nextRoute = dayAgentRoute.filter((_, routeIndex) => routeIndex !== index);
+    updateDayAgentRouteOrder(nextRoute, Math.min(index, nextRoute.length - 1), `Removed ${jobKey(removed)} from this route.`);
+  }
+
   function smoothFocusSelectedCard(job: JobRecord) {
     const key = jobKey(job);
 
@@ -35770,7 +35806,15 @@ return (
             font-weight: 800 !important;
           }
 
-          .map-shell.map-glass-command-trial .map-day-route-stop-list button {
+          .map-shell.map-glass-command-trial .map-day-route-stop-row {
+            min-width: 0 !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 6px !important;
+            align-items: stretch !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-stop-main {
             min-height: 48px !important;
             display: grid !important;
             grid-template-columns: 38px minmax(64px, 0.42fr) minmax(0, 1fr) !important;
@@ -35784,7 +35828,7 @@ return (
             text-align: left !important;
           }
 
-          .map-shell.map-glass-command-trial .map-day-route-stop-list button.active {
+          .map-shell.map-glass-command-trial .map-day-route-stop-row.active .map-day-route-stop-main {
             border-color: rgba(25, 240, 162, 0.78) !important;
             background: rgba(25, 240, 162, 0.18) !important;
             box-shadow: 0 0 0 1px rgba(25, 240, 162, 0.24), 0 0 18px rgba(25, 240, 162, 0.20) !important;
@@ -35816,6 +35860,36 @@ return (
             color: #c8fff0 !important;
             font-size: 12px !important;
             font-weight: 850 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-edit-actions {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 4px !important;
+            align-items: stretch !important;
+            width: min(138px, 38vw) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-edit-actions button {
+            min-width: 0 !important;
+            min-height: 48px !important;
+            padding: 0 5px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(124, 246, 198, 0.22) !important;
+            background: rgba(255, 255, 255, 0.10) !important;
+            color: #ffffff !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-edit-actions button:disabled {
+            opacity: 0.34 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-day-route-edit-actions button.remove {
+            color: #fff7ed !important;
+            border-color: rgba(251, 146, 60, 0.38) !important;
+            background: rgba(127, 29, 29, 0.36) !important;
           }
 
           .map-shell.map-glass-command-trial .zoom-panel {
@@ -36982,11 +37056,24 @@ return (
               ) : null}
               <div className="map-day-route-stop-list">
                 {dayAgentRoute.slice(0, 5).map((job, index) => (
-                  <button type="button" className={index === dayAgentSelectedStopIndex ? "active" : ""} key={`${jobKey(job)}-map-route-${index}`} onClick={() => focusRouteStopOnMap(job, index)}>
-                    <b>{index + 1}</b>
-                    <span>{jobKey(job)}</span>
-                    <small>{dayAgentRouteSummary?.legs?.[index]?.label ? `${dayAgentRouteSummary.legs[index].label} · ${displayAddress(job)}` : displayAddress(job)}</small>
-                  </button>
+                  <article className={`map-day-route-stop-row ${index === dayAgentSelectedStopIndex ? "active" : ""}`} key={`${jobKey(job)}-map-route-${index}`}>
+                    <button type="button" className="map-day-route-stop-main" onClick={() => focusRouteStopOnMap(job, index)}>
+                      <b>{index + 1}</b>
+                      <span>{jobKey(job)}</span>
+                      <small>{dayAgentRouteSummary?.legs?.[index]?.label ? `${dayAgentRouteSummary.legs[index].label} · ${displayAddress(job)}` : displayAddress(job)}</small>
+                    </button>
+                    <div className="map-day-route-edit-actions" aria-label={`Edit route stop ${index + 1}`}>
+                      <button type="button" onClick={() => moveDayAgentRouteStop(index, -1)} disabled={index === 0} aria-label={`Move ${jobKey(job)} earlier`}>
+                        ↑
+                      </button>
+                      <button type="button" onClick={() => moveDayAgentRouteStop(index, 1)} disabled={index >= dayAgentRoute.length - 1} aria-label={`Move ${jobKey(job)} later`}>
+                        ↓
+                      </button>
+                      <button type="button" className="remove" onClick={() => removeDayAgentRouteStop(index)} aria-label={`Remove ${jobKey(job)} from route`}>
+                        Remove
+                      </button>
+                    </div>
+                  </article>
                 ))}
               </div>
             </section>
