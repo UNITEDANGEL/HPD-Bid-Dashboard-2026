@@ -8,10 +8,14 @@ type ChatMessage = {
   text: string;
 };
 
+type PanelTab = "assistant" | "route" | "overview";
+
 type MapStats = {
   visibleJobs: number;
   routeStops: number;
   selectedJob: boolean;
+  nextStop: string;
+  routeSummary: string;
 };
 
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -25,25 +29,40 @@ function findButton(root: ParentNode, pattern: RegExp) {
 }
 
 function readMapStats(): MapStats {
+  const routeRows = Array.from(document.querySelectorAll<HTMLElement>(".map-day-route-stop-row"));
+  const activeRouteRow = document.querySelector<HTMLElement>(".map-day-route-stop-row.active") || routeRows[0] || null;
+  const routeSummary =
+    textOf(document.querySelector(".map-day-route-selected-summary")) ||
+    textOf(document.querySelector(".map-day-route-tray-head"));
+
   return {
     visibleJobs: document.querySelectorAll(".maturity-map-marker").length,
-    routeStops: document.querySelectorAll(".map-day-route-stop-row").length,
+    routeStops: routeRows.length,
     selectedJob: Boolean(document.querySelector(".job-drawer.selected-focus")),
+    nextStop: textOf(activeRouteRow) || "No stop selected",
+    routeSummary: routeSummary || "No active route",
   };
 }
 
 export default function MapAiDashboard() {
-  const [expanded, setExpanded] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [tab, setTab] = useState<PanelTab>("assistant");
   const [voiceOn, setVoiceOn] = useState(false);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [stats, setStats] = useState<MapStats>({ visibleJobs: 0, routeStops: 0, selectedJob: false });
+  const [stats, setStats] = useState<MapStats>({
+    visibleJobs: 0,
+    routeStops: 0,
+    selectedJob: false,
+    nextStop: "No stop selected",
+    routeSummary: "No active route",
+  });
   const [clearButtonStyle, setClearButtonStyle] = useState<CSSProperties>({});
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
       role: "assistant",
-      text: "Map dashboard ready. Ask me to start a route, clear it, open Agent, or summarize the map.",
+      text: "Good morning. Your AI map control center is ready and will stay open while the route runs.",
     },
   ]);
   const messageEndRef = useRef<HTMLDivElement | null>(null);
@@ -76,7 +95,7 @@ export default function MapAiDashboard() {
     const interval = window.setInterval(() => {
       refreshStats();
       alignClearButton();
-    }, 900);
+    }, 800);
     window.addEventListener("resize", alignClearButton);
     return () => {
       window.clearInterval(interval);
@@ -85,8 +104,10 @@ export default function MapAiDashboard() {
   }, []);
 
   useEffect(() => {
-    if (expanded) messageEndRef.current?.scrollIntoView({ block: "nearest" });
-  }, [messages, expanded]);
+    if (!collapsed && tab === "assistant") {
+      messageEndRef.current?.scrollIntoView({ block: "nearest" });
+    }
+  }, [messages, collapsed, tab]);
 
   const speak = (text: string) => {
     if (!voiceOn || !("speechSynthesis" in window)) return;
@@ -104,44 +125,55 @@ export default function MapAiDashboard() {
   };
 
   const openAgent = async () => {
+    setCollapsed(false);
+    const mapRoot = document.querySelector(".map-shell") || document;
     const button =
       document.querySelector<HTMLButtonElement>(".map-agent-top-button") ||
-      Array.from(document.querySelectorAll<HTMLButtonElement>("button")).find((item) => /agent/i.test(textOf(item)));
+      Array.from(mapRoot.querySelectorAll<HTMLButtonElement>("button")).find((item) => /agent/i.test(textOf(item)));
+
     if (!button) {
       addAssistant("I could not find the Agent control on this map view.");
       return false;
     }
+
     button.click();
     await wait(140);
-    addAssistant("Agent opened on the map.");
+    addAssistant("Agent opened. The AI control center will remain visible.");
     return true;
   };
 
   const startRoute = async () => {
     setBusy(true);
+    setCollapsed(false);
+    setTab("route");
     try {
       const opened = await openAgent();
       if (!opened) return;
-      const panel = document.querySelector(".map-day-agent-launcher.agent-panel-open") || document;
+      const mapRoot = document.querySelector(".map-shell") || document;
+      const panel = document.querySelector(".map-day-agent-launcher.agent-panel-open") || mapRoot;
       const startButton =
         findButton(panel, /^start$/i) ||
         findButton(panel, /start route/i) ||
         findButton(panel, /^route$/i);
+
       if (!startButton) {
         addAssistant("Agent is open. Tap Start in the Agent bar to build the route.");
         return;
       }
+
       startButton.click();
-      addAssistant("Starting today’s route now.");
+      addAssistant("Starting today’s route. I am keeping the full AI dashboard open on the right.");
+      await wait(850);
+      refreshStats();
     } finally {
       setBusy(false);
-      await wait(260);
-      refreshStats();
     }
   };
 
   const clearRoute = async () => {
     setBusy(true);
+    setCollapsed(false);
+    setTab("route");
     try {
       const hiddenTray = document.querySelector<HTMLElement>(".map-day-route-tray.is-hidden");
       if (hiddenTray) {
@@ -170,6 +202,8 @@ export default function MapAiDashboard() {
   };
 
   const showRoute = async () => {
+    setCollapsed(false);
+    setTab("route");
     const tray = document.querySelector<HTMLElement>(".map-day-route-tray");
     if (!tray) {
       addAssistant("There is no active route yet.");
@@ -183,6 +217,8 @@ export default function MapAiDashboard() {
   };
 
   const summarize = () => {
+    setCollapsed(false);
+    setTab("overview");
     const current = refreshStats();
     const jobs = `${current.visibleJobs} visible job${current.visibleJobs === 1 ? "" : "s"}`;
     const route = current.routeStops
@@ -194,6 +230,8 @@ export default function MapAiDashboard() {
   const runCommand = async (rawText: string) => {
     const text = rawText.trim();
     if (!text) return;
+    setCollapsed(false);
+    setTab("assistant");
     addUser(text);
     setInput("");
     const normalized = text.toLowerCase();
@@ -217,7 +255,9 @@ export default function MapAiDashboard() {
     return `${stats.routeStops} stop${stats.routeStops === 1 ? "" : "s"}`;
   }, [stats.routeStops]);
 
-  const latestAssistant = [...messages].reverse().find((message) => message.role === "assistant")?.text || "Map dashboard ready.";
+  const insightText = stats.routeStops
+    ? `Route is active with ${stats.routeStops} stop${stats.routeStops === 1 ? "" : "s"}. Keep the next stop selected and use Clear Route only when you want to rebuild the day.`
+    : "No route is active. Start a route and the control center will stay open while the map updates.";
 
   return (
     <>
@@ -232,30 +272,101 @@ export default function MapAiDashboard() {
         Clear route
       </button>
 
-      <aside className={`map-ai-dock ${expanded ? "is-expanded" : "is-compact"}`} aria-label="AI map dashboard">
-        <header className="map-ai-dock-head">
-          <div className="map-ai-brand">
-            <span className="map-ai-live-dot" aria-hidden="true" />
-            <div>
-              <strong>AI Map</strong>
-              <small>{stats.visibleJobs} jobs · {routeLabel}</small>
+      {collapsed ? (
+        <button type="button" className="map-ai-rail" onClick={() => setCollapsed(false)} aria-label="Open AI map dashboard">
+          <span className="map-ai-live-dot" aria-hidden="true" />
+          <strong>AI</strong>
+          <small>{stats.routeStops || stats.visibleJobs}</small>
+          <span className="map-ai-rail-label">Open dashboard</span>
+        </button>
+      ) : (
+        <aside className="map-ai-control-center" aria-label="AI map dashboard">
+          <header className="map-ai-control-head">
+            <div className="map-ai-brand-block">
+              <span className="map-ai-live-dot" aria-hidden="true" />
+              <div>
+                <strong>AI Map Control Center</strong>
+                <small>Online · always visible</small>
+              </div>
             </div>
-          </div>
-          <p className="map-ai-latest" aria-live="polite">{latestAssistant}</p>
-          <div className="map-ai-head-actions">
-            <button type="button" onClick={() => setVoiceOn((value) => !value)} aria-pressed={voiceOn}>
-              {voiceOn ? "Voice on" : "Voice"}
-            </button>
-            <button type="button" onClick={() => setExpanded((value) => !value)}>
-              {expanded ? "Compact" : "Dashboard"}
-            </button>
-          </div>
-        </header>
+            <div className="map-ai-head-actions">
+              <button type="button" onClick={() => setVoiceOn((value) => !value)} aria-pressed={voiceOn}>
+                {voiceOn ? "Voice on" : "Voice"}
+              </button>
+              <button type="button" onClick={() => setCollapsed(true)} aria-label="Collapse AI map dashboard">
+                Collapse
+              </button>
+            </div>
+          </header>
 
-        <div className="map-ai-command-row">
-          <div className="map-ai-quick-actions">
-            <button type="button" onClick={() => void startRoute()} disabled={busy}>Start</button>
-            <button type="button" onClick={() => void clearRoute()} disabled={busy || stats.routeStops === 0}>Clear</button>
+          <section className="map-ai-kpis" aria-label="Live map status">
+            <article><span>Jobs</span><b>{stats.visibleJobs}</b><small>visible</small></article>
+            <article><span>Route</span><b>{stats.routeStops}</b><small>stops</small></article>
+            <article><span>Job card</span><b>{stats.selectedJob ? "Open" : "—"}</b><small>selected</small></article>
+          </section>
+
+          <nav className="map-ai-tabs" aria-label="AI dashboard sections">
+            <button type="button" className={tab === "assistant" ? "active" : ""} onClick={() => setTab("assistant")}>Assistant</button>
+            <button type="button" className={tab === "route" ? "active" : ""} onClick={() => setTab("route")}>Route</button>
+            <button type="button" className={tab === "overview" ? "active" : ""} onClick={() => setTab("overview")}>Overview</button>
+          </nav>
+
+          <div className="map-ai-panel-body">
+            {tab === "assistant" ? (
+              <section className="map-ai-assistant-panel">
+                <div className="map-ai-messages" aria-live="polite">
+                  {messages.slice(-12).map((message) => (
+                    <p key={message.id} className={`map-ai-message ${message.role}`}>{message.text}</p>
+                  ))}
+                  <div ref={messageEndRef} />
+                </div>
+                <div className="map-ai-suggestion-row">
+                  <button type="button" onClick={() => void runCommand("Start today’s route")}>Build today’s route</button>
+                  <button type="button" onClick={() => void runCommand("Map summary")}>Summarize map</button>
+                </div>
+              </section>
+            ) : null}
+
+            {tab === "route" ? (
+              <section className="map-ai-route-panel">
+                <div className="map-ai-route-status">
+                  <span className={stats.routeStops ? "is-live" : ""}>{stats.routeStops ? "Route active" : "Route not started"}</span>
+                  <b>{routeLabel}</b>
+                  <small>{stats.routeSummary}</small>
+                </div>
+                <div className="map-ai-next-stop">
+                  <span>Next stop</span>
+                  <strong>{stats.nextStop}</strong>
+                </div>
+                <div className="map-ai-route-actions">
+                  <button type="button" className="primary" onClick={() => void startRoute()} disabled={busy}>Start / rebuild</button>
+                  <button type="button" onClick={() => void showRoute()} disabled={!stats.routeStops}>Show route</button>
+                  <button type="button" className="danger" onClick={() => void clearRoute()} disabled={busy || !stats.routeStops}>Clear route</button>
+                </div>
+              </section>
+            ) : null}
+
+            {tab === "overview" ? (
+              <section className="map-ai-overview-panel">
+                <article>
+                  <span>AI recommendation</span>
+                  <p>{insightText}</p>
+                </article>
+                <article>
+                  <span>Current map state</span>
+                  <p>{stats.visibleJobs} visible jobs · {routeLabel} · {stats.selectedJob ? "job card open" : "no job selected"}</p>
+                </article>
+                <div className="map-ai-overview-actions">
+                  <button type="button" onClick={summarize}>Refresh summary</button>
+                  <button type="button" onClick={() => void openAgent()}>Open Agent tools</button>
+                </div>
+              </section>
+            ) : null}
+          </div>
+
+          <div className="map-ai-command-actions">
+            <button type="button" className="primary" onClick={() => void startRoute()} disabled={busy}>Start</button>
+            <button type="button" className="danger" onClick={() => void clearRoute()} disabled={busy || !stats.routeStops}>Clear</button>
             <button type="button" onClick={summarize}>Summary</button>
             <button type="button" onClick={() => void openAgent()}>Agent</button>
           </div>
@@ -269,25 +380,8 @@ export default function MapAiDashboard() {
             />
             <button type="submit" disabled={busy || !input.trim()}>Send</button>
           </form>
-        </div>
-
-        {expanded ? (
-          <div className="map-ai-expanded-body">
-            <section className="map-ai-stats" aria-label="Map status">
-              <div><b>{stats.visibleJobs}</b><span>Visible jobs</span></div>
-              <div><b>{routeLabel}</b><span>Route</span></div>
-              <div><b>{stats.selectedJob ? "Open" : "None"}</b><span>Selected job</span></div>
-            </section>
-
-            <div className="map-ai-messages" aria-live="polite">
-              {messages.slice(-10).map((message) => (
-                <p key={message.id} className={`map-ai-message ${message.role}`}>{message.text}</p>
-              ))}
-              <div ref={messageEndRef} />
-            </div>
-          </div>
-        ) : null}
-      </aside>
+        </aside>
+      )}
     </>
   );
 }
