@@ -19,7 +19,6 @@ const MAP_SELECTORS = [
   ".map-shell .mapboxgl-map",
   ".map-shell [class*='map-canvas']",
   ".map-shell [class*='map-stage']",
-  ".map-shell",
 ];
 
 const CURRENT_LOCATION_SELECTORS = [
@@ -49,7 +48,9 @@ function readWorkflow(): SavedWorkflow {
 function mapSurface() {
   for (const selector of MAP_SELECTORS) {
     const element = document.querySelector<HTMLElement>(selector);
-    if (element && element.getBoundingClientRect().width > 200 && element.getBoundingClientRect().height > 200) return element;
+    if (!element) continue;
+    const rect = element.getBoundingClientRect();
+    if (rect.width > 200 && rect.height > 200) return element;
   }
   return null;
 }
@@ -81,11 +82,34 @@ function currentLocationMarker() {
   return null;
 }
 
-function pointFor(element: HTMLElement, surfaceRect: DOMRect, id: string, label: string): Point | null {
+function markerAnchor(element: HTMLElement, current: boolean) {
   const rect = element.getBoundingClientRect();
   if (!rect.width && !rect.height) return null;
-  const x = rect.left - surfaceRect.left + rect.width / 2;
-  const y = rect.top - surfaceRect.top + rect.height / 2;
+
+  if (current) {
+    return { left: rect.left + rect.width / 2, top: rect.top + rect.height / 2 };
+  }
+
+  const visual = element.querySelector<HTMLElement>(
+    "[data-marker-anchor], .marker-pin, .map-pin, [class*='marker-pin'], [class*='pin-head']",
+  );
+  if (visual) {
+    const visualRect = visual.getBoundingClientRect();
+    if (visualRect.width || visualRect.height) {
+      return { left: visualRect.left + visualRect.width / 2, top: visualRect.top + visualRect.height / 2 };
+    }
+  }
+
+  // Most map marker wrappers are centered on the geographic point. Using the wrapper center
+  // keeps the route attached during pan and zoom without guessing a pin-tip offset.
+  return { left: rect.left + rect.width / 2, top: rect.top + rect.height / 2 };
+}
+
+function pointFor(element: HTMLElement, surfaceRect: DOMRect, id: string, label: string, current = false): Point | null {
+  const anchor = markerAnchor(element, current);
+  if (!anchor) return null;
+  const x = anchor.left - surfaceRect.left;
+  const y = anchor.top - surfaceRect.top;
   if (x < -40 || y < -40 || x > surfaceRect.width + 40 || y > surfaceRect.height + 40) return null;
   return { x, y, id, label };
 }
@@ -108,8 +132,14 @@ function makePath(points: Point[]) {
   for (let index = 1; index < points.length; index += 1) {
     const previous = points[index - 1];
     const current = points[index];
-    const midX = (previous.x + current.x) / 2;
-    parts.push(`C ${midX.toFixed(1)} ${previous.y.toFixed(1)}, ${midX.toFixed(1)} ${current.y.toFixed(1)}, ${current.x.toFixed(1)} ${current.y.toFixed(1)}`);
+    const dx = current.x - previous.x;
+    const dy = current.y - previous.y;
+    const bend = Math.min(80, Math.max(24, Math.hypot(dx, dy) * 0.22));
+    const control1X = previous.x + Math.sign(dx || 1) * bend;
+    const control2X = current.x - Math.sign(dx || 1) * bend;
+    parts.push(
+      `C ${control1X.toFixed(1)} ${previous.y.toFixed(1)}, ${control2X.toFixed(1)} ${current.y.toFixed(1)}, ${current.x.toFixed(1)} ${current.y.toFixed(1)}`,
+    );
   }
   return parts.join(" ");
 }
@@ -121,11 +151,12 @@ function renderOverlay(surface: HTMLElement, overlay: SVGSVGElement) {
   overlay.setAttribute("viewBox", `0 0 ${Math.max(1, surfaceRect.width)} ${Math.max(1, surfaceRect.height)}`);
   overlay.setAttribute("width", String(surfaceRect.width));
   overlay.setAttribute("height", String(surfaceRect.height));
+  overlay.setAttribute("preserveAspectRatio", "none");
 
   const points: Point[] = [];
   const current = currentLocationMarker();
   if (current) {
-    const point = pointFor(current, surfaceRect, "current", "You");
+    const point = pointFor(current, surfaceRect, "current", "You", true);
     if (point) points.push(point);
   }
 
@@ -136,9 +167,18 @@ function renderOverlay(surface: HTMLElement, overlay: SVGSVGElement) {
     if (point) points.push(point);
   });
 
-  const visibleIds = points.map((point) => point.id).join("|");
-  if (overlay.dataset.signature === visibleIds && overlay.dataset.width === String(Math.round(surfaceRect.width)) && overlay.dataset.height === String(Math.round(surfaceRect.height))) return;
-  overlay.dataset.signature = visibleIds;
+  // Include live coordinates in the signature. The old signature only used IDs, so the SVG
+  // stayed frozen while map markers moved during pan, zoom, resize, and drawer changes.
+  const signature = points
+    .map((point) => `${point.id}:${point.x.toFixed(1)},${point.y.toFixed(1)}`)
+    .join("|");
+  if (
+    overlay.dataset.signature === signature &&
+    overlay.dataset.width === String(Math.round(surfaceRect.width)) &&
+    overlay.dataset.height === String(Math.round(surfaceRect.height))
+  ) return;
+
+  overlay.dataset.signature = signature;
   overlay.dataset.width = String(Math.round(surfaceRect.width));
   overlay.dataset.height = String(Math.round(surfaceRect.height));
 
@@ -180,12 +220,20 @@ export default function MapSuggestedRouteOverlay() {
     let surface: HTMLElement | null = null;
     let frame = 0;
     let destroyed = false;
+    let resizeObserver: ResizeObserver | null = null;
 
     const ensure = () => {
       if (destroyed) return;
       const nextSurface = mapSurface();
       if (!nextSurface) return;
-      surface = nextSurface;
+
+      if (surface !== nextSurface) {
+        resizeObserver?.disconnect();
+        surface = nextSurface;
+        resizeObserver = new ResizeObserver(schedule);
+        resizeObserver.observe(surface);
+      }
+
       const computed = window.getComputedStyle(surface);
       if (computed.position === "static") surface.style.position = "relative";
 
@@ -209,17 +257,25 @@ export default function MapSuggestedRouteOverlay() {
 
     ensure();
     const observer = new MutationObserver(schedule);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class", "transform"] });
-    const timer = window.setInterval(schedule, 500);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style", "class", "transform"],
+    });
+    const timer = window.setInterval(schedule, 120);
     window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, true);
     window.addEventListener("storage", schedule);
 
     return () => {
       destroyed = true;
       if (frame) window.cancelAnimationFrame(frame);
       observer.disconnect();
+      resizeObserver?.disconnect();
       window.clearInterval(timer);
       window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, true);
       window.removeEventListener("storage", schedule);
       overlay?.remove();
     };
