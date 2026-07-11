@@ -66,7 +66,7 @@ function markerIdentity(marker: HTMLElement) {
 function jobMarker(id: string) {
   const candidates = Array.from(
     document.querySelectorAll<HTMLElement>(
-      ".maturity-map-marker, [data-omo], [data-job-id], .maplibregl-marker, .mapboxgl-marker",
+      ".maturity-map-marker, [data-omo], [data-job-id], [class*='job-marker'], .maplibregl-marker, .mapboxgl-marker",
     ),
   ).filter((element) => !element.closest(".hpd-live-route-guide"));
   return candidates.find((marker) => markerIdentity(marker).includes(id.toUpperCase())) || null;
@@ -97,8 +97,27 @@ function centerOf(element: HTMLElement, mapRect: DOMRect) {
   };
 }
 
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalize(point: { x: number; y: number }, rect: DOMRect) {
+  return {
+    x: clamp(point.x, 18, Math.max(18, rect.width - 18)),
+    y: clamp(point.y, 18, Math.max(18, rect.height - 18)),
+  };
+}
+
 function pathFor(points: Point[]) {
-  return points.map((point, index) => `${index ? "L" : "M"} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`).join(" ");
+  if (points.length < 2) return "";
+  const parts = [`M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`];
+  for (let index = 1; index < points.length; index += 1) {
+    const previous = points[index - 1];
+    const current = points[index];
+    const midX = (previous.x + current.x) / 2;
+    parts.push(`C ${midX.toFixed(1)} ${previous.y.toFixed(1)}, ${midX.toFixed(1)} ${current.y.toFixed(1)}, ${current.x.toFixed(1)} ${current.y.toFixed(1)}`);
+  }
+  return parts.join(" ");
 }
 
 function draw(map: HTMLElement, svg: SVGSVGElement) {
@@ -106,27 +125,28 @@ function draw(map: HTMLElement, svg: SVGSVGElement) {
   svg.setAttribute("viewBox", `0 0 ${Math.max(1, rect.width)} ${Math.max(1, rect.height)}`);
   svg.setAttribute("width", String(rect.width));
   svg.setAttribute("height", String(rect.height));
+  svg.setAttribute("preserveAspectRatio", "none");
 
   const current = locationMarker();
-  const start = current ? centerOf(current, rect) : null;
-  if (!start) {
-    svg.innerHTML = "";
-    svg.classList.remove("is-visible");
-    return;
-  }
+  const actualStart = current ? centerOf(current, rect) : null;
+  const fallbackStart = { x: rect.width * 0.12, y: rect.height * 0.82 };
+  const start = normalize(actualStart || fallbackStart, rect);
 
   const points: Point[] = [{ x: start.x, y: start.y, id: "current" }];
   const ids = routeIdsFromUi();
 
+  let number = 1;
   for (const id of ids) {
     const marker = jobMarker(id);
     if (!marker) continue;
-    const point = centerOf(marker, rect);
-    if (!point) continue;
-    points.push({ x: point.x, y: point.y, label: String(points.length), id });
+    const raw = centerOf(marker, rect);
+    if (!raw) continue;
+    const point = normalize(raw, rect);
+    points.push({ x: point.x, y: point.y, label: String(number), id });
+    number += 1;
   }
 
-  const signature = points.map((point) => `${point.id}:${point.x.toFixed(1)},${point.y.toFixed(1)}`).join("|");
+  const signature = points.map((point) => `${point.id}:${point.label || "start"}:${point.x.toFixed(1)},${point.y.toFixed(1)}`).join("|");
   if (svg.dataset.signature === signature) return;
   svg.dataset.signature = signature;
 
@@ -150,6 +170,10 @@ function draw(map: HTMLElement, svg: SVGSVGElement) {
 
   svg.innerHTML = `
     <defs>
+      <filter id="hpd-live-route-glow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="2.5" result="blur" />
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
       <marker id="hpd-live-route-arrow" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
         <path d="M0,0 L0,6 L8,3 z" />
       </marker>
@@ -167,12 +191,18 @@ export default function MapVisibleRouteGuide() {
     let map: HTMLElement | null = null;
     let frame = 0;
     let destroyed = false;
+    let resizeObserver: ResizeObserver | null = null;
 
     const render = () => {
       if (destroyed) return;
       const nextMap = mapElement();
       if (!nextMap) return;
-      map = nextMap;
+      if (map !== nextMap) {
+        resizeObserver?.disconnect();
+        map = nextMap;
+        resizeObserver = new ResizeObserver(schedule);
+        resizeObserver.observe(map);
+      }
       if (window.getComputedStyle(map).position === "static") map.style.position = "relative";
       if (!svg || svg.parentElement !== map) {
         svg?.remove();
@@ -195,7 +225,7 @@ export default function MapVisibleRouteGuide() {
     render();
     const observer = new MutationObserver(schedule);
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, characterData: true });
-    const timer = window.setInterval(schedule, 120);
+    const timer = window.setInterval(schedule, 100);
     document.addEventListener("click", schedule, true);
     window.addEventListener("resize", schedule);
     window.addEventListener("scroll", schedule, true);
@@ -205,6 +235,7 @@ export default function MapVisibleRouteGuide() {
       destroyed = true;
       if (frame) cancelAnimationFrame(frame);
       observer.disconnect();
+      resizeObserver?.disconnect();
       clearInterval(timer);
       document.removeEventListener("click", schedule, true);
       window.removeEventListener("resize", schedule);
