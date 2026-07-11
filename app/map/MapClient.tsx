@@ -36135,6 +36135,22 @@ return (
             pointer-events: none !important;
           }
 
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
+            left: calc(max(8px, env(safe-area-inset-left)) + var(--mobile-map-tools-width, 60px) + var(--mobile-map-control-gap, 8px)) !important;
+            right: max(10px, env(safe-area-inset-right)) !important;
+            width: auto !important;
+            min-width: 0 !important;
+            max-width: none !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) var(--mobile-map-agent-width, 56px) !important;
+            align-items: start !important;
+            gap: var(--mobile-map-control-gap, 8px) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) {
+            grid-template-columns: minmax(0, 1fr) clamp(58px, 15vw, 72px) var(--mobile-map-agent-width, 56px) !important;
+          }
+
           @media (prefers-reduced-motion: reduce) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-arrived,
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-smooth-flow-rail .flow-status,
