@@ -28,6 +28,7 @@ const DAY_AGENT_ROUTE_FETCH_TIMEOUT_MS = 5500;
 const FIELD_VISIT_RADIUS_MILES = 0.08;
 const MAP_DAYS_PRESETS = ["7", "14", "30", "60", "90", "180"];
 const MAP_BOROUGH_FILTERS = [
+  { key: "nearby", label: "Nearby", short: "Near" },
   { key: "all", label: "All Boroughs", short: "All" },
   { key: "manhattan", label: "Manhattan", short: "MN" },
   { key: "bronx", label: "Bronx", short: "BX" },
@@ -40,6 +41,7 @@ const USER_LOCATION_OVERVIEW_ZOOM = 13;
 const USER_LOCATION_ME_ZOOM = 14;
 const USER_LOCATION_NEARBY_RADIUS_MILES = 1.25;
 const USER_LOCATION_CONTEXT_JOB_LIMIT = 6;
+const BASE_NEARBY_RADIUS_MILES = 8;
 const MAP_LAYER_OVERVIEW_ZOOM = 11;
 const MAP_SINGLE_JOB_OVERVIEW_ZOOM = 13;
 const FULL_PACKAGE_SAVE_LIMIT_BYTES = 35 * 1024 * 1024;
@@ -593,6 +595,7 @@ function normalizeBoroughKey(value: unknown): MapBoroughFilter | "" {
   const raw = String(value || "").trim().toLowerCase();
   if (!raw) return "";
   const compact = raw.replace(/[^a-z0-9]+/g, "");
+  if (compact === "nearby" || compact === "near" || compact === "base" || compact === "home") return "nearby";
   if (compact === "all" || compact === "allboroughs" || compact === "allboros") return "all";
   if (compact.includes("manhattan") || compact === "mn" || compact === "nyc" || compact === "newyork") return "manhattan";
   if (compact.includes("bronx") || compact === "bx") return "bronx";
@@ -616,7 +619,31 @@ function jobBoroughLabel(job: JobRecord) {
   return boroughFilterMeta(jobBoroughKey(job)).label;
 }
 
+function jobMapPoint(job: JobRecord) {
+  const lat = Number((job as any)._lat ?? (job as any).Latitude ?? (job as any).latitude ?? (job as any).lat);
+  const lng = Number((job as any)._lng ?? (job as any).Longitude ?? (job as any).longitude ?? (job as any).lng);
+  if (!isNycMapCoordinate(lat, lng)) return null;
+  return { lat, lng };
+}
+
+function mapDistanceMiles(from: { lat: number; lng: number }, to: { lat: number; lng: number }) {
+  const radiusMiles = 3958.8;
+  const toRad = (value: number) => (value * Math.PI) / 180;
+  const dLat = toRad(to.lat - from.lat);
+  const dLng = toRad(to.lng - from.lng);
+  const lat1 = toRad(from.lat);
+  const lat2 = toRad(to.lat);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return radiusMiles * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 function matchesMapBorough(job: JobRecord, filter: MapBoroughFilter) {
+  if (filter === "nearby") {
+    const coords = jobMapPoint(job);
+    return Boolean(coords && mapDistanceMiles(DAY_AGENT_BASE_COORDS, coords) <= BASE_NEARBY_RADIUS_MILES);
+  }
   return filter === "all" || jobBoroughKey(job) === filter;
 }
 
@@ -2674,7 +2701,7 @@ const [appointmentSaving, setAppointmentSaving] = useState(false);
 const [appointmentAlertPhone, setAppointmentAlertPhone] = useState("");
 const [appointmentAlertSaving, setAppointmentAlertSaving] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<WorkflowViewFilter>("active");
-const [mapBoroughFilter, setMapBoroughFilter] = useState<MapBoroughFilter>("all");
+const [mapBoroughFilter, setMapBoroughFilter] = useState<MapBoroughFilter>("nearby");
 const [countdownTick, setCountdownTick] = useState(0);
 const [mapZoom, setMapZoom] = useState(10);
 const [photoCaptureTarget, setPhotoCaptureTarget] = useState<FieldCaptureTarget | null>(null);
@@ -4239,6 +4266,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       const key = jobBoroughKey(job);
       counts.all += 1;
+      if (matchesMapBorough(job, "nearby")) counts.nearby += 1;
       counts[key] += 1;
     });
 
