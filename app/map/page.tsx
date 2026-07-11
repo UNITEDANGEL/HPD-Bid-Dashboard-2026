@@ -6,7 +6,7 @@ import "./map-field-visit-flow.css";
 import "./map-smart-dispatch.css";
 import "./map-smart-conversation.css";
 import "./map-agent-lifecycle.css";
-import MapAgentLifecycle from "./MapAgentLifecycle";
+import MapAgentLifecycleClient from "./MapAgentLifecycleClient";
 import MapAiOperationsDashboard from "./MapAiOperationsDashboard";
 import MapClient from "./MapClient";
 import MapDirectionsEnhancer from "./MapDirectionsEnhancer";
@@ -23,7 +23,7 @@ export default function MapPage() {
       <MapFieldVisitFlow />
       <MapSmartDispatchEnhancer />
       <MapSmartConversationEnhancer />
-      <MapAgentLifecycle />
+      <MapAgentLifecycleClient />
     </>
   );
 }
