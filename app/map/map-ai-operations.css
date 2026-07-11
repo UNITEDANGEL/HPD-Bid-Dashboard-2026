@@ -1,0 +1,989 @@
+.hpd-ai-portal-host {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  pointer-events: none;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.hpd-ai-center,
+.hpd-ai-rail {
+  pointer-events: auto;
+}
+
+.hpd-ai-center {
+  position: fixed;
+  top: max(76px, calc(env(safe-area-inset-top) + 66px));
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  width: min(390px, calc(100vw - 24px));
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 6% -5%, rgba(45, 212, 191, 0.22), transparent 30%),
+    radial-gradient(circle at 100% 12%, rgba(37, 99, 235, 0.16), transparent 34%),
+    linear-gradient(158deg, rgba(4, 15, 28, 0.988), rgba(7, 28, 49, 0.98));
+  color: #f8fafc;
+  box-shadow: 0 28px 76px rgba(2, 6, 23, 0.46), inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  backdrop-filter: blur(26px) saturate(1.18);
+  -webkit-backdrop-filter: blur(26px) saturate(1.18);
+}
+
+.hpd-ai-center button,
+.hpd-ai-rail {
+  border: 1px solid rgba(148, 163, 184, 0.23);
+  background: rgba(255, 255, 255, 0.075);
+  color: #f8fafc;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 850;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hpd-ai-center button:hover {
+  border-color: rgba(94, 234, 212, 0.36);
+  background: rgba(255, 255, 255, 0.11);
+}
+
+.hpd-ai-center button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.hpd-ai-header {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.hpd-ai-brand {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.hpd-ai-brand > div {
+  min-width: 0;
+}
+
+.hpd-ai-brand strong,
+.hpd-ai-brand small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hpd-ai-brand strong {
+  max-width: 176px;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.hpd-ai-brand small {
+  max-width: 190px;
+  margin-top: 3px;
+  color: #99f6e4;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.hpd-ai-live-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #34d399;
+  box-shadow: 0 0 0 5px rgba(52, 211, 153, 0.13), 0 0 18px rgba(52, 211, 153, 0.62);
+}
+
+.hpd-ai-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hpd-ai-header-actions button {
+  min-height: 30px;
+  padding: 0 7px;
+  border-radius: 10px;
+  font-size: 9px;
+}
+
+.hpd-ai-route-pill {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 8px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #cbd5e1;
+  font-size: 8px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.hpd-ai-route-pill.live {
+  border-color: rgba(52, 211, 153, 0.33);
+  background: rgba(16, 185, 129, 0.14);
+  color: #a7f3d0;
+}
+
+.hpd-ai-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px 10px 7px;
+}
+
+.hpd-ai-kpis article {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 13px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.038));
+}
+
+.hpd-ai-kpis span,
+.hpd-ai-kpis b,
+.hpd-ai-kpis small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hpd-ai-kpis span {
+  color: #94a3b8;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.hpd-ai-kpis b {
+  margin-top: 4px;
+  color: #fff;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.hpd-ai-kpis small {
+  margin-top: 4px;
+  color: #cbd5e1;
+  font-size: 8px;
+}
+
+.hpd-ai-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  padding: 0 10px 7px;
+}
+
+.hpd-ai-tabs button {
+  min-height: 32px;
+  border-radius: 11px;
+  font-size: 9px;
+}
+
+.hpd-ai-tabs button.active {
+  border-color: rgba(94, 234, 212, 0.48);
+  background: linear-gradient(180deg, rgba(13, 148, 136, 0.28), rgba(15, 118, 110, 0.18));
+  color: #ccfbf1;
+  box-shadow: inset 0 0 0 1px rgba(45, 212, 191, 0.07);
+}
+
+.hpd-ai-tabs button span {
+  margin-left: 3px;
+  color: #67e8f9;
+}
+
+.hpd-ai-quick-strip {
+  display: flex;
+  gap: 5px;
+  padding: 0 10px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.hpd-ai-quick-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.hpd-ai-quick-strip button {
+  min-height: 29px;
+  flex: 0 0 auto;
+  padding: 0 8px;
+  border-radius: 999px;
+  color: #dbeafe;
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.hpd-ai-body {
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(2, 8, 23, 0.1);
+}
+
+.hpd-ai-chat-panel,
+.hpd-ai-results-panel,
+.hpd-ai-route-panel,
+.hpd-ai-job-panel {
+  height: 100%;
+  min-height: 0;
+}
+
+.hpd-ai-messages {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px;
+  scrollbar-width: thin;
+}
+
+.hpd-ai-message {
+  width: fit-content;
+  max-width: 91%;
+  margin: 0 0 7px;
+  padding: 8px 9px;
+  border-radius: 14px;
+  font-size: 11px;
+  line-height: 1.38;
+}
+
+.hpd-ai-message.assistant {
+  border: 1px solid rgba(94, 234, 212, 0.2);
+  background: rgba(15, 118, 110, 0.22);
+  color: #ecfeff;
+}
+
+.hpd-ai-message.user {
+  margin-left: auto;
+  border: 1px solid rgba(147, 197, 253, 0.2);
+  background: rgba(37, 99, 235, 0.24);
+  color: #eff6ff;
+}
+
+.hpd-ai-followups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 8px 0 10px;
+  padding: 9px;
+  border: 1px solid rgba(94, 234, 212, 0.14);
+  border-radius: 16px;
+  background: rgba(2, 132, 199, 0.06);
+}
+
+.hpd-ai-followups button {
+  min-height: 38px;
+  padding: 6px 8px;
+  border-radius: 12px;
+}
+
+.hpd-ai-followups button b,
+.hpd-ai-followups button span {
+  display: block;
+}
+
+.hpd-ai-followups button b {
+  color: #67e8f9;
+  font-size: 11px;
+}
+
+.hpd-ai-followups button span {
+  margin-top: 2px;
+  color: #e2e8f0;
+  font-size: 8px;
+}
+
+.hpd-ai-followups button.active {
+  border-color: rgba(52, 211, 153, 0.42);
+  background: rgba(16, 185, 129, 0.16);
+}
+
+.hpd-ai-results-panel,
+.hpd-ai-route-panel,
+.hpd-ai-job-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  padding: 9px;
+  gap: 8px;
+}
+
+.hpd-ai-section-head,
+.hpd-ai-selected-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.hpd-ai-section-head > div,
+.hpd-ai-selected-head > div {
+  min-width: 0;
+}
+
+.hpd-ai-section-head span,
+.hpd-ai-section-head strong,
+.hpd-ai-selected-head span,
+.hpd-ai-selected-head strong,
+.hpd-ai-selected-head small {
+  display: block;
+}
+
+.hpd-ai-section-head span,
+.hpd-ai-selected-head span {
+  color: #94a3b8;
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hpd-ai-section-head strong,
+.hpd-ai-selected-head strong {
+  margin-top: 4px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.hpd-ai-section-head > b {
+  min-width: 34px;
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(14, 165, 233, 0.14);
+  color: #bae6fd;
+  font-size: 12px;
+}
+
+.hpd-ai-selected-head small {
+  max-width: 230px;
+  margin-top: 3px;
+  overflow: hidden;
+  color: #cbd5e1;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hpd-ai-selected-head > b {
+  max-width: 110px;
+  overflow: hidden;
+  color: #a7f3d0;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hpd-ai-result-list,
+.hpd-ai-route-list,
+.hpd-ai-job-panel {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.hpd-ai-result-list {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.hpd-ai-result-list > button {
+  width: 100%;
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 13px;
+  text-align: left;
+}
+
+.hpd-ai-result-list > button > b {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.14);
+  color: #bae6fd;
+}
+
+.hpd-ai-result-list button span {
+  min-width: 0;
+}
+
+.hpd-ai-result-list button strong,
+.hpd-ai-result-list button small,
+.hpd-ai-result-list button em {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hpd-ai-result-list button strong {
+  font-size: 10px;
+}
+
+.hpd-ai-result-list button small {
+  margin-top: 3px;
+  color: #cbd5e1;
+  font-size: 9px;
+}
+
+.hpd-ai-result-list button em {
+  margin-top: 3px;
+  color: #67e8f9;
+  font-size: 8px;
+  font-style: normal;
+}
+
+.hpd-ai-result-list button i {
+  color: #93c5fd;
+  font-size: 8px;
+  font-style: normal;
+}
+
+.hpd-ai-result-actions,
+.hpd-ai-route-actions,
+.hpd-ai-job-info-actions,
+.hpd-ai-field-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.hpd-ai-result-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
+.hpd-ai-result-actions button,
+.hpd-ai-route-actions button,
+.hpd-ai-job-info-actions button,
+.hpd-ai-field-actions button {
+  min-height: 36px;
+  padding: 0 8px;
+  border-radius: 11px;
+}
+
+.hpd-ai-center button.primary {
+  border-color: rgba(153, 246, 228, 0.4);
+  background: linear-gradient(135deg, #14b8a6, #0f766e);
+}
+
+.hpd-ai-center button.danger {
+  border-color: rgba(248, 113, 113, 0.3);
+  background: rgba(127, 29, 29, 0.4);
+}
+
+.hpd-ai-route-panel {
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.hpd-ai-route-card,
+.hpd-ai-next-card,
+.hpd-ai-scope-card,
+.hpd-ai-job-grid article {
+  padding: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.hpd-ai-route-card > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hpd-ai-route-card span,
+.hpd-ai-next-card > span,
+.hpd-ai-scope-card > span,
+.hpd-ai-job-grid span {
+  color: #94a3b8;
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.hpd-ai-route-card span.live {
+  color: #6ee7b7;
+}
+
+.hpd-ai-route-card b {
+  font-size: 13px;
+}
+
+.hpd-ai-route-card p {
+  margin: 7px 0 0;
+  color: #cbd5e1;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.hpd-ai-next-card {
+  position: relative;
+  padding-right: 72px;
+}
+
+.hpd-ai-next-card strong {
+  display: block;
+  max-height: 34px;
+  margin-top: 5px;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+.hpd-ai-next-card button {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  min-height: 31px;
+  padding: 0 7px;
+  border-radius: 10px;
+  transform: translateY(-50%);
+}
+
+.hpd-ai-route-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hpd-ai-route-list li + li {
+  margin-top: 5px;
+}
+
+.hpd-ai-route-list button {
+  width: 100%;
+  min-height: 47px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  text-align: left;
+}
+
+.hpd-ai-route-list button > b {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.14);
+  color: #bae6fd;
+}
+
+.hpd-ai-route-list button strong,
+.hpd-ai-route-list button small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hpd-ai-route-list button strong {
+  font-size: 10px;
+}
+
+.hpd-ai-route-list button small {
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 8px;
+}
+
+.hpd-ai-route-list button.active {
+  border-color: rgba(52, 211, 153, 0.35);
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.17), rgba(14, 116, 144, 0.1));
+  box-shadow: inset 3px 0 0 #34d399;
+}
+
+.hpd-ai-route-actions {
+  grid-template-columns: 1fr 1fr 0.75fr;
+}
+
+.hpd-ai-job-panel {
+  display: block;
+  padding: 9px;
+}
+
+.hpd-ai-job-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.hpd-ai-job-grid p,
+.hpd-ai-scope-card p {
+  margin: 6px 0 0;
+  color: #e2e8f0;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.hpd-ai-scope-card {
+  margin-top: 8px;
+}
+
+.hpd-ai-job-info-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 8px;
+}
+
+.hpd-ai-field-actions {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-top: 8px;
+}
+
+.hpd-ai-field-actions button {
+  min-width: 0;
+  padding: 0 4px;
+  font-size: 8px;
+}
+
+.hpd-ai-empty {
+  margin: auto;
+  padding: 22px 14px;
+  color: #94a3b8;
+  font-size: 10px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.hpd-ai-empty strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #fff;
+  font-size: 12px;
+}
+
+.hpd-ai-composer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 6px;
+  padding: 8px 9px 9px;
+}
+
+.hpd-ai-composer input {
+  min-width: 0;
+  height: 41px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.085);
+  color: #fff;
+  padding: 0 11px;
+  outline: none;
+  font: inherit;
+  font-size: 12px;
+}
+
+.hpd-ai-composer input::placeholder {
+  color: #94a3b8;
+}
+
+.hpd-ai-composer input:focus {
+  border-color: rgba(45, 212, 191, 0.66);
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.11);
+}
+
+.hpd-ai-composer button {
+  min-width: 42px;
+  min-height: 41px;
+  padding: 0 9px;
+  border-radius: 12px;
+}
+
+.hpd-ai-composer button.send {
+  min-width: 58px;
+  border-color: rgba(147, 197, 253, 0.34);
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.hpd-ai-mic {
+  font-size: 15px !important;
+}
+
+.hpd-ai-mic.listening {
+  border-color: rgba(248, 113, 113, 0.48) !important;
+  background: rgba(185, 28, 28, 0.35) !important;
+  box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.1);
+}
+
+.hpd-ai-rail {
+  position: fixed;
+  top: 50%;
+  right: max(9px, env(safe-area-inset-right));
+  width: 56px;
+  min-height: 174px;
+  display: grid;
+  place-items: center;
+  gap: 7px;
+  padding: 12px 6px;
+  border-radius: 21px;
+  background: linear-gradient(180deg, rgba(4, 15, 28, 0.99), rgba(7, 28, 49, 0.98));
+  color: #fff;
+  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.42);
+  transform: translateY(-50%);
+}
+
+.hpd-ai-rail strong {
+  font-size: 15px;
+}
+
+.hpd-ai-rail small {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.2);
+  color: #ccfbf1;
+}
+
+.hpd-ai-rail > span:last-child {
+  color: #cbd5e1;
+  font-size: 8px;
+  font-weight: 900;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+@supports selector(body:has(.hpd-ai-center)) {
+  @media (min-width: 721px) {
+    body:has(.hpd-ai-center) .map-shell.map-glass-command-trial .zoom-panel {
+      right: 416px !important;
+    }
+
+    body:has(.hpd-ai-center) .map-shell.map-glass-command-trial .map-day-route-tray {
+      right: 412px !important;
+      max-width: calc(100vw - 444px) !important;
+    }
+  }
+}
+
+@media (max-width: 900px) and (min-width: 721px) {
+  .hpd-ai-center {
+    width: 355px;
+  }
+
+  @supports selector(body:has(.hpd-ai-center)) {
+    body:has(.hpd-ai-center) .map-shell.map-glass-command-trial .zoom-panel {
+      right: 380px !important;
+    }
+
+    body:has(.hpd-ai-center) .map-shell.map-glass-command-trial .map-day-route-tray {
+      right: 376px !important;
+      max-width: calc(100vw - 408px) !important;
+    }
+  }
+}
+
+@media (max-width: 720px) {
+  .hpd-ai-center {
+    top: auto;
+    left: max(7px, env(safe-area-inset-left));
+    right: max(7px, env(safe-area-inset-right));
+    bottom: max(7px, env(safe-area-inset-bottom));
+    width: auto;
+    height: min(50dvh, 560px);
+    min-height: 340px;
+    border-radius: 23px 23px 17px 17px;
+  }
+
+  .hpd-ai-header {
+    min-height: 52px;
+    padding: 7px 8px;
+  }
+
+  .hpd-ai-brand strong {
+    max-width: 126px;
+    font-size: 11px;
+  }
+
+  .hpd-ai-brand small {
+    display: none;
+  }
+
+  .hpd-ai-route-pill {
+    display: none;
+  }
+
+  .hpd-ai-header-actions button {
+    min-height: 28px;
+    padding: 0 6px;
+    font-size: 8px;
+  }
+
+  .hpd-ai-kpis {
+    padding: 6px 8px;
+  }
+
+  .hpd-ai-kpis article {
+    padding: 6px;
+  }
+
+  .hpd-ai-kpis b {
+    font-size: 14px;
+  }
+
+  .hpd-ai-tabs {
+    padding: 0 8px 6px;
+  }
+
+  .hpd-ai-tabs button {
+    min-height: 30px;
+    font-size: 8px;
+  }
+
+  .hpd-ai-quick-strip {
+    padding: 0 8px 6px;
+  }
+
+  .hpd-ai-body {
+    min-height: 0;
+  }
+
+  .hpd-ai-messages,
+  .hpd-ai-results-panel,
+  .hpd-ai-route-panel,
+  .hpd-ai-job-panel {
+    padding: 7px;
+  }
+
+  .hpd-ai-followups {
+    padding: 7px;
+  }
+
+  .hpd-ai-followups button {
+    min-height: 34px;
+  }
+
+  .hpd-ai-route-list {
+    max-height: 128px;
+  }
+
+  .hpd-ai-field-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .hpd-ai-job-info-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hpd-ai-composer {
+    padding: 6px 7px 7px;
+  }
+
+  .hpd-ai-composer input {
+    height: 39px;
+    font-size: 16px;
+  }
+
+  .hpd-ai-composer button {
+    min-height: 39px;
+  }
+
+  .hpd-ai-rail {
+    top: auto;
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: 92px;
+    min-height: 44px;
+    grid-template-columns: auto auto auto;
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: 15px;
+    transform: none;
+  }
+
+  .hpd-ai-rail > span:last-child {
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+
+  @supports selector(body:has(.hpd-ai-center)) {
+    body:has(.hpd-ai-center) .map-shell.map-glass-command-trial .map-day-route-tray:not(.is-hidden) {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+
+    body:has(.hpd-ai-center) .map-shell.map-glass-command-trial .zoom-panel {
+      bottom: calc(50dvh + 18px) !important;
+    }
+  }
+}
+
+@media (max-width: 430px) {
+  .hpd-ai-center {
+    height: min(47dvh, 500px);
+    min-height: 320px;
+  }
+
+  .hpd-ai-selected-head > b {
+    display: none;
+  }
+
+  .hpd-ai-job-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hpd-ai-next-card {
+    padding-right: 10px;
+  }
+
+  .hpd-ai-next-card button {
+    position: static;
+    width: 100%;
+    margin-top: 7px;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hpd-ai-center *,
+  .hpd-ai-rail {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .hpd-ai-live-dot {
+    box-shadow: none;
+  }
+}
