@@ -43,7 +43,7 @@
 }
 
 .hpd-live-route-node.start circle {
-  fill: #0ea56b;
+  fill: #0f766e;
 }
 
 .hpd-live-route-node.stop circle {
@@ -53,7 +53,7 @@
 .hpd-live-route-node text {
   fill: #fff;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 950;
   paint-order: stroke;
   stroke: rgba(15, 23, 42, 0.45);
@@ -61,7 +61,8 @@
 }
 
 .hpd-live-route-node.start text {
-  font-size: 7px;
+  font-size: 6px;
+  letter-spacing: 0.02em;
 }
 
 @media (max-width: 820px) {
