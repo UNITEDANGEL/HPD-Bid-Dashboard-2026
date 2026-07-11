@@ -8,11 +8,12 @@ type LngLat = [number, number];
 type SavedWorkflow = { routeIds?: string[]; resultIds?: string[] };
 type Calibration = { mx: number; my: number; sx: number; sy: number };
 type Transform = { ax: number; bx: number; cx: number; ay: number; by: number; cy: number };
+type OsrmResponse = { code?: string; routes?: Array<{ geometry?: { coordinates?: LngLat[] } }> };
 
-type OsrmResponse = {
-  code?: string;
-  routes?: Array<{ geometry?: { type?: string; coordinates?: LngLat[] } }>;
-};
+type Stop = { id: string; coord: LngLat };
+type ScreenPoint = { x: number; y: number };
+
+type Anchor = { index: number; projected: ScreenPoint; actual: ScreenPoint };
 
 const STORAGE_KEY = "hpd-unified-workflow-v1";
 const JOB_ID_PATTERN = /\b[A-Z]{2}\d{4,7}\b/i;
@@ -99,15 +100,20 @@ function markerId(marker: HTMLElement) {
   return combined.match(JOB_ID_PATTERN)?.[0]?.toUpperCase() || "";
 }
 
-function markerCenter(marker: HTMLElement, mapRect: DOMRect) {
+function markerCenter(marker: HTMLElement, mapRect: DOMRect): ScreenPoint | null {
   const rect = marker.getBoundingClientRect();
   if (!rect.width && !rect.height) return null;
-  return { sx: rect.left - mapRect.left + rect.width / 2, sy: rect.top - mapRect.top + rect.height / 2 };
+  return { x: rect.left - mapRect.left + rect.width / 2, y: rect.top - mapRect.top + rect.height / 2 };
+}
+
+function markerFor(id: string) {
+  return markerElements().find((marker) => markerId(marker) === id) || null;
 }
 
 function mercator([lng, lat]: LngLat) {
   const x = (lng + 180) / 360;
-  const sin = Math.sin((Math.max(-85.051129, Math.min(85.051129, lat)) * Math.PI) / 180);
+  const bounded = Math.max(-85.051129, Math.min(85.051129, lat));
+  const sin = Math.sin((bounded * Math.PI) / 180);
   const y = 0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI);
   return { x, y };
 }
@@ -134,51 +140,24 @@ function solve3(matrix: number[][], vector: number[]) {
 
 function fitAffine(samples: Calibration[]): Transform | null {
   if (samples.length < 3) return null;
-  let sxx = 0;
-  let syy = 0;
-  let sxy = 0;
-  let sx = 0;
-  let sy = 0;
-  let n = 0;
-  let txX = 0;
-  let tyX = 0;
-  let tX = 0;
-  let txY = 0;
-  let tyY = 0;
-  let tY = 0;
-
+  let sxx = 0, syy = 0, sxy = 0, sx = 0, sy = 0, n = 0;
+  let txX = 0, tyX = 0, tX = 0, txY = 0, tyY = 0, tY = 0;
   for (const sample of samples) {
-    sxx += sample.mx * sample.mx;
-    syy += sample.my * sample.my;
-    sxy += sample.mx * sample.my;
-    sx += sample.mx;
-    sy += sample.my;
-    n += 1;
-    txX += sample.mx * sample.sx;
-    tyX += sample.my * sample.sx;
-    tX += sample.sx;
-    txY += sample.mx * sample.sy;
-    tyY += sample.my * sample.sy;
-    tY += sample.sy;
+    sxx += sample.mx * sample.mx; syy += sample.my * sample.my; sxy += sample.mx * sample.my;
+    sx += sample.mx; sy += sample.my; n += 1;
+    txX += sample.mx * sample.sx; tyX += sample.my * sample.sx; tX += sample.sx;
+    txY += sample.mx * sample.sy; tyY += sample.my * sample.sy; tY += sample.sy;
   }
-
-  const normal = [
-    [sxx, sxy, sx],
-    [sxy, syy, sy],
-    [sx, sy, n],
-  ];
+  const normal = [[sxx, sxy, sx], [sxy, syy, sy], [sx, sy, n]];
   const x = solve3(normal, [txX, tyX, tX]);
   const y = solve3(normal, [txY, tyY, tY]);
   if (!x || !y) return null;
   return { ax: x[0], bx: x[1], cx: x[2], ay: y[0], by: y[1], cy: y[2] };
 }
 
-function project(coord: LngLat, transform: Transform) {
+function project(coord: LngLat, transform: Transform): ScreenPoint {
   const point = mercator(coord);
-  return {
-    x: transform.ax * point.x + transform.bx * point.y + transform.cx,
-    y: transform.ay * point.x + transform.by * point.y + transform.cy,
-  };
+  return { x: transform.ax * point.x + transform.bx * point.y + transform.cx, y: transform.ay * point.x + transform.by * point.y + transform.cy };
 }
 
 function collectCalibration(mapRect: DOMRect) {
@@ -189,7 +168,7 @@ function collectCalibration(mapRect: DOMRect) {
     const center = markerCenter(marker, mapRect);
     if (!coord || !center) continue;
     const m = mercator(coord);
-    samples.push({ mx: m.x, my: m.y, sx: center.sx, sy: center.sy });
+    samples.push({ mx: m.x, my: m.y, sx: center.x, sy: center.y });
   }
   return samples;
 }
@@ -200,7 +179,7 @@ function currentLocation(): Promise<LngLat> {
     navigator.geolocation.getCurrentPosition(
       (position) => resolve([position.coords.longitude, position.coords.latitude]),
       () => resolve(BASE_COORDS),
-      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 6_000 },
+      { enableHighAccuracy: true, maximumAge: 30_000, timeout: 8_000 },
     );
   });
 }
@@ -216,7 +195,59 @@ async function fetchRoadGeometry(coords: LngLat[], signal: AbortSignal) {
   return geometry;
 }
 
-function pathData(points: Array<{ x: number; y: number }>) {
+function nearestGeometryIndex(geometry: LngLat[], target: LngLat) {
+  let bestIndex = 0;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < geometry.length; index += 1) {
+    const dx = geometry[index][0] - target[0];
+    const dy = geometry[index][1] - target[1];
+    const distance = dx * dx + dy * dy;
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestIndex = index;
+    }
+  }
+  return bestIndex;
+}
+
+function correctedProjection(
+  geometry: LngLat[],
+  projected: ScreenPoint[],
+  stops: Stop[],
+  mapRect: DOMRect,
+) {
+  const anchors: Anchor[] = [];
+  for (const stop of stops) {
+    const marker = markerFor(stop.id);
+    const actual = marker ? markerCenter(marker, mapRect) : null;
+    if (!actual) continue;
+    const index = nearestGeometryIndex(geometry, stop.coord);
+    anchors.push({ index, projected: projected[index], actual });
+  }
+  anchors.sort((a, b) => a.index - b.index);
+  if (!anchors.length) return projected;
+
+  return projected.map((point, index) => {
+    let previous = anchors[0];
+    let next = anchors[anchors.length - 1];
+    for (let i = 0; i < anchors.length - 1; i += 1) {
+      if (index >= anchors[i].index && index <= anchors[i + 1].index) {
+        previous = anchors[i];
+        next = anchors[i + 1];
+        break;
+      }
+    }
+    const span = Math.max(1, next.index - previous.index);
+    const t = Math.min(1, Math.max(0, (index - previous.index) / span));
+    const dx1 = previous.actual.x - previous.projected.x;
+    const dy1 = previous.actual.y - previous.projected.y;
+    const dx2 = next.actual.x - next.projected.x;
+    const dy2 = next.actual.y - next.projected.y;
+    return { x: point.x + dx1 + (dx2 - dx1) * t, y: point.y + dy1 + (dy2 - dy1) * t };
+  });
+}
+
+function pathData(points: ScreenPoint[]) {
   return points.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
 }
 
@@ -228,7 +259,7 @@ export default function MapRoadRouteOverlay() {
     let frame = 0;
     let routeKey = "";
     let routeGeometry: LngLat[] = [];
-    let routeStops: Array<{ id: string; coord: LngLat }> = [];
+    let routeStops: Stop[] = [];
     let controller: AbortController | null = null;
     let origin: LngLat = BASE_COORDS;
 
@@ -259,18 +290,26 @@ export default function MapRoadRouteOverlay() {
       svg.setAttribute("viewBox", `0 0 ${Math.max(1, rect.width)} ${Math.max(1, rect.height)}`);
       svg.setAttribute("width", String(rect.width));
       svg.setAttribute("height", String(rect.height));
+
       const projected = routeGeometry.map((coord) => project(coord, transform));
-      const d = pathData(projected);
-      const stopNodes = routeStops
-        .map((stop, index) => {
-          const point = project(stop.coord, transform);
-          return `<g class="hpd-road-route-stop"><circle cx="${point.x}" cy="${point.y}" r="12"/><text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle">${index + 1}</text></g>`;
-        })
-        .join("");
+      const corrected = correctedProjection(routeGeometry, projected, routeStops, rect);
+      const d = pathData(corrected);
+
+      const stopNodes = routeStops.map((stop, index) => {
+        const marker = markerFor(stop.id);
+        const point = marker ? markerCenter(marker, rect) : project(stop.coord, transform);
+        if (!point) return "";
+        return `<g class="hpd-road-route-stop"><circle cx="${point.x}" cy="${point.y}" r="12"/><text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle">${index + 1}</text></g>`;
+      }).join("");
 
       svg.innerHTML = `
-        <path class="hpd-road-route-casing" d="${d}" />
+        <path id="hpd-road-route-path" class="hpd-road-route-casing" d="${d}" />
         <path class="hpd-road-route-line" d="${d}" />
+        <g class="hpd-road-route-motion" aria-hidden="true">
+          <circle r="4"><animateMotion dur="5s" repeatCount="indefinite" rotate="auto"><mpath href="#hpd-road-route-path" /></animateMotion></circle>
+          <circle r="3"><animateMotion begin="1.65s" dur="5s" repeatCount="indefinite" rotate="auto"><mpath href="#hpd-road-route-path" /></animateMotion></circle>
+          <circle r="3"><animateMotion begin="3.3s" dur="5s" repeatCount="indefinite" rotate="auto"><mpath href="#hpd-road-route-path" /></animateMotion></circle>
+        </g>
         ${stopNodes}
       `;
       svg.classList.add("is-visible");
@@ -278,9 +317,7 @@ export default function MapRoadRouteOverlay() {
 
     const refreshRoute = async () => {
       const ids = orderedRouteIds();
-      const stops = ids
-        .map((id) => ({ id, coord: JOB_COORDS.get(id) }))
-        .filter((item): item is { id: string; coord: LngLat } => Boolean(item.coord));
+      const stops = ids.map((id) => ({ id, coord: JOB_COORDS.get(id) })).filter((item): item is Stop => Boolean(item.coord));
       if (!stops.length) {
         routeGeometry = [];
         routeStops = [];
@@ -322,7 +359,7 @@ export default function MapRoadRouteOverlay() {
     void refreshRoute();
     const observer = new MutationObserver(schedule);
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, characterData: true });
-    const interval = window.setInterval(schedule, 500);
+    const interval = window.setInterval(schedule, 350);
     document.addEventListener("click", schedule, true);
     window.addEventListener("resize", schedule);
     window.addEventListener("scroll", schedule, true);
@@ -339,9 +376,7 @@ export default function MapRoadRouteOverlay() {
       window.removeEventListener("scroll", schedule, true);
       window.removeEventListener("storage", schedule);
       overlay?.remove();
-      if (currentMap && window.getComputedStyle(currentMap).position === "relative") {
-        // Leave map positioning intact; MapLibre commonly uses relative positioning.
-      }
+      void currentMap;
     };
   }, []);
 
