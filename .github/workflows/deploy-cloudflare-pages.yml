@@ -53,5 +53,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy out --project-name=hpd-bid-dashboard-2026 --branch=main
+          command: pages deploy out --project-name=hpd-bid-dashboard-2026 --branch=v6-map-upgrade
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
