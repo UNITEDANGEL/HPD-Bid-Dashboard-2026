@@ -1,0 +1,411 @@
+/* Adaptive HPD map workspace: iPhone Lite and Desktop modes. */
+
+.hpd-responsive-workspace-portal {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483200;
+  pointer-events: none;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.hpd-workspace-switch,
+.hpd-lite-command-dock,
+.hpd-mobile-field-dock {
+  pointer-events: auto;
+}
+
+.hpd-workspace-switch {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 14px;
+  background: rgba(4, 15, 28, 0.93);
+  box-shadow: 0 12px 32px rgba(2, 6, 23, 0.32);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.hpd-workspace-switch button {
+  min-height: 31px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #cbd5e1;
+  padding: 0 9px;
+  font: inherit;
+  font-size: 8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.hpd-workspace-switch button.active {
+  border-color: rgba(45, 212, 191, 0.35);
+  background: rgba(13, 148, 136, 0.23);
+  color: #ccfbf1;
+}
+
+/* Desktop workspace keeps the map visible while giving results enough room. */
+body.hpd-workspace-desktop .hpd-ai-center {
+  width: min(690px, calc(100vw - 34px)) !important;
+  right: max(16px, env(safe-area-inset-right)) !important;
+  top: max(72px, calc(env(safe-area-inset-top) + 64px)) !important;
+  bottom: max(14px, env(safe-area-inset-bottom)) !important;
+}
+
+body.hpd-workspace-desktop .hpd-ai-results-panel {
+  min-height: 0;
+  overflow: hidden !important;
+}
+
+/* iPhone Lite becomes a controlled bottom sheet instead of a full desktop panel. */
+body.hpd-workspace-lite .hpd-ai-center {
+  top: auto !important;
+  left: max(6px, env(safe-area-inset-left)) !important;
+  right: max(6px, env(safe-area-inset-right)) !important;
+  bottom: max(66px, calc(env(safe-area-inset-bottom) + 58px)) !important;
+  width: auto !important;
+  height: min(46dvh, 430px) !important;
+  max-height: min(46dvh, 430px) !important;
+  border-radius: 22px 22px 14px 14px !important;
+  transition: height 180ms ease, max-height 180ms ease !important;
+}
+
+body.hpd-workspace-lite.hpd-workspace-expanded .hpd-ai-center {
+  height: min(82dvh, 760px) !important;
+  max-height: min(82dvh, 760px) !important;
+}
+
+body.hpd-workspace-lite.hpd-workspace-compact .hpd-ai-kpis,
+body.hpd-workspace-lite.hpd-workspace-compact .hpd-ai-quick-strip,
+body.hpd-workspace-lite.hpd-workspace-compact .hpd-ai-smart-flow {
+  display: none !important;
+}
+
+body.hpd-workspace-lite .hpd-ai-header {
+  min-height: 50px !important;
+  padding: 7px 8px !important;
+}
+
+body.hpd-workspace-lite .hpd-ai-brand strong {
+  font-size: 12px !important;
+}
+
+body.hpd-workspace-lite .hpd-ai-header-actions button {
+  min-height: 28px !important;
+  padding: 0 6px !important;
+}
+
+body.hpd-workspace-lite .hpd-ai-tabs {
+  padding: 0 8px 6px !important;
+}
+
+body.hpd-workspace-lite .hpd-ai-tabs button {
+  min-height: 34px !important;
+  font-size: 9px !important;
+}
+
+body.hpd-workspace-lite .hpd-ai-body {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Stable paged results. No long inner scrolling in either mode. */
+.hpd-responsive-results-panel {
+  display: grid !important;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto !important;
+  gap: 7px !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.hpd-responsive-results-panel .hpd-ai-smart-summary {
+  margin: 0 !important;
+  max-height: 155px;
+  overflow: hidden;
+}
+
+.hpd-responsive-results-toolbar {
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) 34px auto 34px;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 6px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.hpd-responsive-results-toolbar > div span,
+.hpd-responsive-results-toolbar > div strong {
+  display: block;
+}
+
+.hpd-responsive-results-toolbar > div span {
+  color: #67e8f9;
+  font-size: 7px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hpd-responsive-results-toolbar > div strong {
+  margin-top: 2px;
+  color: #fff;
+  font-size: 10px;
+}
+
+.hpd-responsive-results-toolbar > b {
+  color: #cbd5e1;
+  font-size: 9px;
+  text-align: center;
+}
+
+.hpd-responsive-results-toolbar button {
+  min-height: 29px !important;
+  padding: 0 !important;
+  border-radius: 9px !important;
+  font-size: 16px !important;
+}
+
+.hpd-responsive-results-list {
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  gap: 8px !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+}
+
+.hpd-responsive-results-list[data-workspace-mode="lite"] {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.hpd-responsive-results-list > [hidden] {
+  display: none !important;
+}
+
+.hpd-responsive-results-list > .hpd-ai-list-main {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  position: relative;
+  display: grid !important;
+  grid-template-columns: 30px minmax(0, 1fr) !important;
+  align-items: start !important;
+  gap: 9px !important;
+  padding: 12px 84px 12px 11px !important;
+  border-radius: 17px !important;
+  overflow: hidden !important;
+  text-align: left !important;
+}
+
+.hpd-responsive-results-list > .hpd-ai-list-main i {
+  display: none !important;
+}
+
+.hpd-responsive-results-list > .hpd-ai-list-main > span {
+  min-width: 0;
+  display: block;
+}
+
+.hpd-responsive-results-list .hpd-ai-result-intel {
+  display: grid !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+}
+
+.hpd-responsive-results-list .hpd-ai-result-metrics {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 4px !important;
+}
+
+.hpd-responsive-results-list .hpd-ai-result-metrics b {
+  padding: 3px 6px !important;
+  border-radius: 999px;
+  background: rgba(14, 165, 233, 0.13);
+  color: #bae6fd;
+  font-size: 8px !important;
+}
+
+.hpd-responsive-results-list .hpd-ai-result-intel small {
+  display: block !important;
+  overflow: hidden;
+  color: #cbd5e1 !important;
+  font-size: 9px !important;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: normal !important;
+}
+
+.hpd-responsive-results-list > .hpd-ai-enroute {
+  width: 70px !important;
+  min-width: 70px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  z-index: 3;
+  align-self: stretch !important;
+  justify-self: end !important;
+  margin: 8px !important;
+  border-radius: 12px !important;
+}
+
+body.hpd-workspace-lite .hpd-responsive-results-list > .hpd-ai-list-main {
+  padding: 14px 86px 14px 12px !important;
+}
+
+body.hpd-workspace-lite .hpd-responsive-results-list > .hpd-ai-list-main strong {
+  font-size: 14px !important;
+}
+
+body.hpd-workspace-lite .hpd-responsive-results-list > .hpd-ai-list-main small {
+  font-size: 10px !important;
+}
+
+body.hpd-workspace-lite .hpd-responsive-results-list .hpd-ai-result-intel small {
+  font-size: 10px !important;
+}
+
+body.hpd-workspace-lite .hpd-responsive-results-list > .hpd-ai-enroute {
+  width: 72px !important;
+  min-width: 72px !important;
+  margin: 9px !important;
+}
+
+/* Lite navigation remains available without reopening a dense menu. */
+.hpd-lite-command-dock,
+.hpd-mobile-field-dock {
+  position: fixed;
+  left: max(6px, env(safe-area-inset-left));
+  right: max(6px, env(safe-area-inset-right));
+  bottom: max(6px, env(safe-area-inset-bottom));
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 17px;
+  background: rgba(4, 15, 28, 0.96);
+  box-shadow: 0 18px 46px rgba(2, 6, 23, 0.42);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.hpd-lite-command-dock button,
+.hpd-mobile-field-dock button {
+  min-width: 0;
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 3px;
+  border: 1px solid rgba(148, 163, 184, 0.17);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #e2e8f0;
+  padding: 4px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.hpd-lite-command-dock button span,
+.hpd-mobile-field-dock button span {
+  color: #67e8f9;
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.hpd-lite-command-dock button b,
+.hpd-mobile-field-dock button b {
+  font-size: 7px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.hpd-mobile-field-dock {
+  z-index: 2147483250;
+}
+
+body.hpd-full-job-open .job-drawer.selected-focus {
+  padding-bottom: max(82px, calc(env(safe-area-inset-bottom) + 76px)) !important;
+}
+
+@media (max-width: 980px) {
+  body.hpd-workspace-desktop .hpd-ai-center {
+    width: min(560px, calc(100vw - 24px)) !important;
+  }
+
+  .hpd-responsive-results-list {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .hpd-workspace-switch {
+    top: max(7px, env(safe-area-inset-top));
+    right: max(7px, env(safe-area-inset-right));
+  }
+
+  .hpd-workspace-switch button {
+    min-height: 29px;
+    padding: 0 7px;
+    font-size: 7px;
+  }
+
+  body.hpd-workspace-lite .hpd-ai-results-panel .hpd-ai-smart-summary {
+    max-height: 124px;
+  }
+
+  body.hpd-workspace-lite .hpd-ai-smart-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  body.hpd-workspace-lite .hpd-ai-smart-summary-grid article:nth-child(4) {
+    display: none;
+  }
+
+  body.hpd-workspace-lite .hpd-ai-smart-summary-actions {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  body.hpd-workspace-lite .hpd-ai-smart-summary-actions button:nth-child(2) {
+    display: none;
+  }
+
+  .hpd-responsive-results-toolbar {
+    grid-template-columns: minmax(74px, 1fr) 32px auto 32px;
+  }
+}
+
+@media (max-width: 430px) {
+  body.hpd-workspace-lite .hpd-ai-center {
+    bottom: max(64px, calc(env(safe-area-inset-bottom) + 56px)) !important;
+    height: min(48dvh, 430px) !important;
+    max-height: min(48dvh, 430px) !important;
+  }
+
+  body.hpd-workspace-lite.hpd-workspace-expanded .hpd-ai-center {
+    height: min(84dvh, 760px) !important;
+    max-height: min(84dvh, 760px) !important;
+  }
+
+  .hpd-responsive-results-list > .hpd-ai-list-main {
+    padding-right: 78px !important;
+  }
+
+  .hpd-responsive-results-list > .hpd-ai-enroute {
+    width: 64px !important;
+    min-width: 64px !important;
+    margin: 7px !important;
+  }
+}
