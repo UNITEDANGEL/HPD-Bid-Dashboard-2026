@@ -375,7 +375,7 @@ function stagePrompt(stage: WorkflowStage, job: Job | null, nextJob: Job | null,
     after_media: job ? `Capture after photos and video from matching angles, then mark the evidence saved.` : "Capture after evidence.",
     outcome: "Select the correct final outcome. That choice controls the invoice and affidavit package.",
     closeout: "Review the invoice, affidavit, media, notes, and full package. Finish Job unlocks when required evidence and the package are ready.",
-    complete: nextJob ? `${id} is complete. The next recommended stop is ${nextJob.id}.` : `${id} is complete. There are no more ranked stops.` ,
+    complete: nextJob ? `${id} is complete. The next recommended stop is ${nextJob.id}.` : `${id} is complete. There are no more ranked stops.`,
   };
   if (stage === "recommended" && originLabel) return `${prompts[stage]} Estimates are calculated from ${originLabel}.`;
   return prompts[stage];
@@ -411,6 +411,7 @@ export default function MapWorkflowController() {
   const voiceUnlockedRef = useRef(false);
   const nearSpokenRef = useRef(false);
   const fieldHostRef = useRef<HTMLElement | null>(null);
+  const promptRef = useRef("");
 
   const jobMap = useMemo(() => new Map(jobs.map((job) => [job.id, job])), [jobs]);
   const results = useMemo(() => resultIds.map((id) => jobMap.get(id)).filter((job): job is Job => Boolean(job)), [jobMap, resultIds]);
@@ -528,6 +529,7 @@ export default function MapWorkflowController() {
   };
 
   const currentPrompt = stagePrompt(stage, activeJob || selectedJob, nextJob, originLabel);
+  promptRef.current = currentPrompt;
 
   useEffect(() => {
     if (!hydrated || !voiceUnlockedRef.current) return;
@@ -537,12 +539,13 @@ export default function MapWorkflowController() {
 
   useEffect(() => {
     const unlock = () => {
+      if (voiceUnlockedRef.current) return;
       voiceUnlockedRef.current = true;
-      speak(currentPrompt, true);
+      speak(promptRef.current, true);
     };
     document.addEventListener("pointerdown", unlock, { once: true });
     return () => document.removeEventListener("pointerdown", unlock);
-  }, [currentPrompt]);
+  }, []);
 
   useEffect(() => {
     if (stage !== "enroute" || !activeJob?.coords || !navigator.geolocation) return;
@@ -640,6 +643,11 @@ export default function MapWorkflowController() {
 
   const buildRoute = () => {
     const ids = resultIds.slice(0, MAX_ROUTE_STOPS);
+    if (!ids.length) {
+      setNotice("Choose a planning option before building a route.");
+      setStage("plan");
+      return;
+    }
     setRouteIds(ids);
     setRouteIndex(0);
     setStage("route");
@@ -710,12 +718,12 @@ export default function MapWorkflowController() {
     if (doc === "package") setPackageReady(true);
   };
 
-  const finishAllowed = beforeDone && (outcome === "no_access" || afterDone) && Boolean(outcome) && packageReady;
+  const finishAllowed = beforeDone && (outcome === "no_access" || afterDone) && Boolean(outcome) && invoiceReviewed && affidavitReviewed && packageReady;
 
   const finishJob = () => {
     if (!activeJob) return;
     if (!finishAllowed) {
-      setNotice("Finish is locked until the required evidence, outcome, and full package are ready.");
+      setNotice("Finish is locked until the required evidence, invoice, affidavit, outcome, and full package are ready.");
       return;
     }
     setCompletedJobId(activeJob.id);
@@ -730,9 +738,10 @@ export default function MapWorkflowController() {
       setActiveJobId("");
       return;
     }
+    const nextResultIndex = resultIds.indexOf(nextJob.id);
+    if (nextResultIndex >= 0) setSelectedIndex(nextResultIndex);
     if (routeJobs.length && routeIndex + 1 < routeJobs.length) setRouteIndex((current) => current + 1);
-    else setSelectedIndex((current) => Math.min(results.length - 1, current + 1));
-    setActiveJobId(nextJob.id);
+    setActiveJobId("");
     setBeforeDone(false);
     setAfterDone(false);
     setOutcome(null);
@@ -896,7 +905,7 @@ export default function MapWorkflowController() {
   const workspace = stage === "plan" ? planPanel : stage === "recommended" ? recommendedPanel : stage === "route" ? routePanel : stage === "complete" ? completePanel : arrivedFallback;
 
   const mobileNav = !jobOpen && stage !== "enroute" ? (
-    <nav className="hpd-unified-mobile-nav" data-hpd-unified-workflow><button type="button" className={stage === "plan" ? "active" : ""} onClick={() => setStage("plan")}><span>1</span><b>Plan</b></button><button type="button" className={stage === "recommended" ? "active" : ""} onClick={() => resultIds.length ? setStage("recommended") : setStage("plan")}><span>2</span><b>Jobs</b></button><button type="button" className={stage === "route" ? "active" : ""} onClick={() => routeIds.length ? setStage("route") : buildRoute()}><span>3</span><b>Route</b></button></nav>
+    <nav className="hpd-unified-mobile-nav" data-hpd-unified-workflow><button type="button" className={stage === "plan" ? "active" : ""} onClick={() => setStage("plan")}><span>1</span><b>Plan</b></button><button type="button" className={stage === "recommended" ? "active" : ""} onClick={() => resultIds.length ? setStage("recommended") : setStage("plan")}><span>2</span><b>Jobs</b></button><button type="button" className={stage === "route" ? "active" : ""} onClick={() => routeIds.length ? setStage("route") : resultIds.length ? buildRoute() : setStage("plan")}><span>3</span><b>Route</b></button></nav>
   ) : null;
 
   return (
