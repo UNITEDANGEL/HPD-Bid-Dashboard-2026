@@ -3269,7 +3269,7 @@ const startDayAgent = async (commandText = dayAgentCommand, requestedBoroughOver
   setDayAgentCommand(command);
   setDayAgentBoroughStart(requestedBorough);
   setDayAgentReturnToBase(true);
-  setDayAgentRouteHidden(false);
+  setDayAgentRouteHidden(true);
   setDayAgentSelectedStopIndex(0);
   setDayAgentRouteSummary(null);
   if (route[0]) {
