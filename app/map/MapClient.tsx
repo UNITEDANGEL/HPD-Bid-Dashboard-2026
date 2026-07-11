@@ -5188,7 +5188,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         : plottedItems.map((item) => ({ kind: "job", ...item }));
 
       const mapSize = map.getSize?.();
-      const clusterPoints = renderItems
+      const shouldDrawClusterLinks = !mobileMap && !routeFocusActive && !selectedOnly && !drawerOpen && !clusterSheet;
+      const clusterPoints = shouldDrawClusterLinks
+        ? renderItems
         .filter((item) => item.kind === "cluster")
         .map((item, index) => {
           const point = map.latLngToContainerPoint([item.lat, item.lng]);
@@ -5210,9 +5212,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             point.x < width + 90 &&
             point.y < height + 90
           );
-        });
+        })
+        : [];
 
-      if (mapSize && clusterPoints.length > 1) {
+      if (shouldDrawClusterLinks && mapSize && clusterPoints.length > 1) {
         const edgeMap = new Map<string, { a: (typeof clusterPoints)[number]; b: (typeof clusterPoints)[number]; distance: number }>();
         clusterPoints.forEach((point, index) => {
           const nearest = clusterPoints
