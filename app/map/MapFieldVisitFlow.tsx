@@ -29,6 +29,12 @@ function textOf(node: Element | null) {
   return String(node?.textContent || "").replace(/\s+/g, " ").trim();
 }
 
+function isVisibleElement(element: Element | null) {
+  if (!(element instanceof HTMLElement)) return false;
+  const style = window.getComputedStyle(element);
+  return element.getClientRects().length > 0 && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || "1") > 0;
+}
+
 function readStoredTrip(): ActiveTrip | null {
   try {
     const raw = window.localStorage.getItem(ACTIVE_TRIP_STORAGE_KEY);
@@ -61,9 +67,11 @@ function distanceMiles(a: GeoPoint, b: GeoPoint) {
 }
 
 function selectedJobIdFromDom() {
+  const drawer = document.querySelector(".job-drawer.selected-focus");
+  const brief = document.querySelector(".map-job-brief");
   const sources = [
-    textOf(document.querySelector(".job-drawer.selected-focus")),
-    textOf(document.querySelector(".map-job-brief")),
+    isVisibleElement(drawer) ? textOf(drawer) : "",
+    isVisibleElement(brief) ? textOf(brief) : "",
     document.querySelector<HTMLInputElement>(".map-face-search input")?.value || "",
   ];
 
@@ -81,7 +89,7 @@ function setNativeInputValue(input: HTMLInputElement, value: string) {
 }
 
 function isJobCardOpen() {
-  return Boolean(document.querySelector(".job-drawer.selected-focus, .map-job-brief"));
+  return Array.from(document.querySelectorAll(".job-drawer.selected-focus, .map-job-brief")).some(isVisibleElement);
 }
 
 function collapseAiDispatcher() {
@@ -113,9 +121,10 @@ function reopenAiChat() {
 }
 
 function clickFullJobControl() {
-  if (document.querySelector(".job-drawer.selected-focus")) return true;
+  const drawer = document.querySelector(".job-drawer.selected-focus");
+  if (isVisibleElement(drawer)) return true;
   const brief = document.querySelector<HTMLElement>(".map-job-brief");
-  if (!brief) return false;
+  if (!isVisibleElement(brief)) return false;
 
   const button = Array.from(brief.querySelectorAll<HTMLButtonElement>("button"))
     .find((candidate) => candidate.getClientRects().length > 0 && /open.*job|view.*job|full.*job|details|open details/i.test(textOf(candidate)));
@@ -138,7 +147,8 @@ function openCompleteJobCard(id: string) {
   let attempts = 0;
   const timer = window.setInterval(() => {
     attempts += 1;
-    if (document.querySelector(".job-drawer.selected-focus")) {
+    const drawer = document.querySelector(".job-drawer.selected-focus");
+    if (isVisibleElement(drawer)) {
       window.clearInterval(timer);
       return;
     }
