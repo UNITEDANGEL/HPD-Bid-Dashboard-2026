@@ -7,6 +7,8 @@ import "./map-smart-dispatch.css";
 import "./map-smart-conversation.css";
 import "./map-agent-lifecycle.css";
 import "./map-responsive-workspace.css";
+import "./map-3d-depth.css";
+import Map3DInteractionsClient from "./Map3DInteractionsClient";
 import MapAgentLifecycleClient from "./MapAgentLifecycleClient";
 import MapAiOperationsDashboard from "./MapAiOperationsDashboard";
 import MapClient from "./MapClient";
@@ -27,6 +29,7 @@ export default function MapPage() {
       <MapSmartConversationEnhancer />
       <MapResponsiveWorkspaceClient />
       <MapAgentLifecycleClient />
+      <Map3DInteractionsClient />
     </>
   );
 }
