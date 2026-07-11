@@ -36142,10 +36142,10 @@ return (
           @media (max-width: 720px) {
             .map-shell.map-glass-command-trial {
               --mobile-map-edge: max(8px, env(safe-area-inset-left));
-              --mobile-map-tools-width: clamp(56px, 15vw, 64px);
-              --mobile-map-agent-width: clamp(48px, 13vw, 56px);
+              --mobile-map-tools-width: clamp(52px, 14vw, 58px);
+              --mobile-map-agent-width: clamp(64px, 18vw, 72px);
               --mobile-map-control-height: clamp(46px, 12vw, 52px);
-              --mobile-map-control-gap: clamp(6px, 1.8vw, 10px);
+              --mobile-map-control-gap: clamp(6px, 1.4vw, 8px);
             }
 
             .map-shell.map-glass-command-trial.full-map-mode .map-top {
@@ -36179,7 +36179,7 @@ return (
 
             .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
               left: calc(var(--mobile-map-edge) + var(--mobile-map-tools-width) + var(--mobile-map-control-gap)) !important;
-              right: calc(max(8px, env(safe-area-inset-right)) + 8px) !important;
+              right: max(6px, env(safe-area-inset-right)) !important;
               grid-template-columns: minmax(0, 1fr) var(--mobile-map-agent-width) !important;
               gap: var(--mobile-map-control-gap) !important;
               height: var(--mobile-map-control-height) !important;
@@ -36252,7 +36252,7 @@ return (
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
             left: calc(max(8px, env(safe-area-inset-left)) + var(--mobile-map-tools-width, 60px) + var(--mobile-map-control-gap, 8px)) !important;
-            right: max(10px, env(safe-area-inset-right)) !important;
+            right: max(6px, env(safe-area-inset-right)) !important;
             width: auto !important;
             min-width: 0 !important;
             max-width: none !important;
