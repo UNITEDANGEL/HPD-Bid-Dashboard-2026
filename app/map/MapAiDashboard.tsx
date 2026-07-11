@@ -10,12 +10,22 @@ type ChatMessage = {
 
 type PanelTab = "assistant" | "route" | "overview";
 
+type RouteStopCard = {
+  index: number;
+  number: string;
+  job: string;
+  detail: string;
+  active: boolean;
+};
+
 type MapStats = {
   visibleJobs: number;
   routeStops: number;
   selectedJob: boolean;
   nextStop: string;
   routeSummary: string;
+  activeStopIndex: number;
+  routeStopCards: RouteStopCard[];
 };
 
 const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -30,17 +40,31 @@ function findButton(root: ParentNode, pattern: RegExp) {
 
 function readMapStats(): MapStats {
   const routeRows = Array.from(document.querySelectorAll<HTMLElement>(".map-day-route-stop-row"));
-  const activeRouteRow = document.querySelector<HTMLElement>(".map-day-route-stop-row.active") || routeRows[0] || null;
+  const routeStopCards = routeRows.map((row, index) => {
+    const main = row.querySelector<HTMLElement>(".map-day-route-stop-main") || row;
+    return {
+      index,
+      number: textOf(main.querySelector("b")) || String(index + 1),
+      job: textOf(main.querySelector("span")) || `Stop ${index + 1}`,
+      detail: textOf(main.querySelector("small")) || "Address unavailable",
+      active: row.classList.contains("active"),
+    };
+  });
+  const activeIndex = routeStopCards.findIndex((stop) => stop.active);
+  const safeActiveIndex = routeStopCards.length ? Math.max(0, activeIndex) : -1;
+  const activeStop = safeActiveIndex >= 0 ? routeStopCards[safeActiveIndex] : null;
   const routeSummary =
     textOf(document.querySelector(".map-day-route-selected-summary")) ||
     textOf(document.querySelector(".map-day-route-tray-head"));
 
   return {
     visibleJobs: document.querySelectorAll(".maturity-map-marker").length,
-    routeStops: routeRows.length,
+    routeStops: routeStopCards.length,
     selectedJob: Boolean(document.querySelector(".job-drawer.selected-focus")),
-    nextStop: textOf(activeRouteRow) || "No stop selected",
+    nextStop: activeStop ? `${activeStop.job} · ${activeStop.detail}` : "No stop selected",
     routeSummary: routeSummary || "No active route",
+    activeStopIndex: safeActiveIndex,
+    routeStopCards,
   };
 }
 
@@ -56,6 +80,8 @@ export default function MapAiDashboard() {
     selectedJob: false,
     nextStop: "No stop selected",
     routeSummary: "No active route",
+    activeStopIndex: -1,
+    routeStopCards: [],
   });
   const [clearButtonStyle, setClearButtonStyle] = useState<CSSProperties>({});
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -66,6 +92,7 @@ export default function MapAiDashboard() {
     },
   ]);
   const messageEndRef = useRef<HTMLDivElement | null>(null);
+  const priorRouteCountRef = useRef(0);
 
   const refreshStats = () => {
     const next = readMapStats();
@@ -90,15 +117,29 @@ export default function MapAiDashboard() {
   };
 
   useEffect(() => {
-    refreshStats();
-    alignClearButton();
-    const interval = window.setInterval(() => {
-      refreshStats();
+    const sync = () => {
+      const next = refreshStats();
+      if (priorRouteCountRef.current === 0 && next.routeStops > 0) {
+        setCollapsed(false);
+        setTab("route");
+      }
+      priorRouteCountRef.current = next.routeStops;
       alignClearButton();
-    }, 800);
+    };
+
+    sync();
+    const interval = window.setInterval(sync, 800);
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class"],
+    });
     window.addEventListener("resize", alignClearButton);
     return () => {
       window.clearInterval(interval);
+      observer.disconnect();
       window.removeEventListener("resize", alignClearButton);
     };
   }, []);
@@ -163,7 +204,9 @@ export default function MapAiDashboard() {
 
       startButton.click();
       addAssistant("Starting today’s route. I am keeping the full AI dashboard open on the right.");
-      await wait(850);
+      await wait(900);
+      setCollapsed(false);
+      setTab("route");
       refreshStats();
     } finally {
       setBusy(false);
@@ -216,6 +259,25 @@ export default function MapAiDashboard() {
     addAssistant("The active route is expanded on the map.");
   };
 
+  const focusRouteStop = (index: number) => {
+    const rows = Array.from(document.querySelectorAll<HTMLElement>(".map-day-route-stop-row"));
+    const row = rows[index];
+    const button = row?.querySelector<HTMLButtonElement>(".map-day-route-stop-main") || row?.querySelector<HTMLButtonElement>("button");
+    if (!button) {
+      addAssistant("That route stop is not available on the map yet.");
+      return;
+    }
+    setCollapsed(false);
+    setTab("route");
+    button.click();
+    window.setTimeout(refreshStats, 120);
+  };
+
+  const focusNextStop = () => {
+    const index = stats.activeStopIndex >= 0 ? stats.activeStopIndex : 0;
+    focusRouteStop(index);
+  };
+
   const summarize = () => {
     setCollapsed(false);
     setTab("overview");
@@ -239,10 +301,11 @@ export default function MapAiDashboard() {
     if (/clear|remove|cancel/.test(normalized) && /route|stops?/.test(normalized)) return clearRoute();
     if (/start|build|make|optimi[sz]e/.test(normalized) && /route|day|today/.test(normalized)) return startRoute();
     if (/show|open|expand/.test(normalized) && /route/.test(normalized)) return showRoute();
+    if (/next/.test(normalized) && /stop|job|route/.test(normalized)) return focusNextStop();
     if (/agent|assistant/.test(normalized) && /open|show|start/.test(normalized)) return openAgent();
     if (/how many|summary|status|visible|today/.test(normalized)) return summarize();
 
-    addAssistant("Try: start today’s route, clear route, show route, open Agent, or map summary.");
+    addAssistant("Try: start today’s route, clear route, show route, focus next stop, open Agent, or map summary.");
   };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -254,6 +317,10 @@ export default function MapAiDashboard() {
     if (!stats.routeStops) return "No route";
     return `${stats.routeStops} stop${stats.routeStops === 1 ? "" : "s"}`;
   }, [stats.routeStops]);
+
+  const routeProgress = stats.routeStops
+    ? Math.min(100, Math.max(8, ((Math.max(stats.activeStopIndex, 0) + 1) / stats.routeStops) * 100))
+    : 0;
 
   const insightText = stats.routeStops
     ? `Route is active with ${stats.routeStops} stop${stats.routeStops === 1 ? "" : "s"}. Keep the next stop selected and use Clear Route only when you want to rebuild the day.`
@@ -290,6 +357,9 @@ export default function MapAiDashboard() {
               </div>
             </div>
             <div className="map-ai-head-actions">
+              <span className={`map-ai-route-badge ${stats.routeStops ? "is-live" : ""}`}>
+                {stats.routeStops ? `${stats.routeStops} stops` : "No route"}
+              </span>
               <button type="button" onClick={() => setVoiceOn((value) => !value)} aria-pressed={voiceOn}>
                 {voiceOn ? "Voice on" : "Voice"}
               </button>
@@ -330,14 +400,39 @@ export default function MapAiDashboard() {
             {tab === "route" ? (
               <section className="map-ai-route-panel">
                 <div className="map-ai-route-status">
-                  <span className={stats.routeStops ? "is-live" : ""}>{stats.routeStops ? "Route active" : "Route not started"}</span>
-                  <b>{routeLabel}</b>
+                  <div className="map-ai-route-status-line">
+                    <span className={stats.routeStops ? "is-live" : ""}>{stats.routeStops ? "Route active" : "Route not started"}</span>
+                    <b>{routeLabel}</b>
+                  </div>
+                  <div className="map-ai-progress-track" aria-label={`Route progress ${Math.round(routeProgress)} percent`}>
+                    <span style={{ width: `${routeProgress}%` }} />
+                  </div>
                   <small>{stats.routeSummary}</small>
                 </div>
+
                 <div className="map-ai-next-stop">
                   <span>Next stop</span>
                   <strong>{stats.nextStop}</strong>
+                  <button type="button" onClick={focusNextStop} disabled={!stats.routeStops}>Focus on map</button>
                 </div>
+
+                {stats.routeStopCards.length ? (
+                  <ol className="map-ai-stop-list" aria-label="Route stops">
+                    {stats.routeStopCards.map((stop) => (
+                      <li key={`${stop.job}-${stop.index}`}>
+                        <button
+                          type="button"
+                          className={stop.active ? "active" : ""}
+                          onClick={() => focusRouteStop(stop.index)}
+                        >
+                          <b>{stop.number}</b>
+                          <span><strong>{stop.job}</strong><small>{stop.detail}</small></span>
+                        </button>
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
+
                 <div className="map-ai-route-actions">
                   <button type="button" className="primary" onClick={() => void startRoute()} disabled={busy}>Start / rebuild</button>
                   <button type="button" onClick={() => void showRoute()} disabled={!stats.routeStops}>Show route</button>
