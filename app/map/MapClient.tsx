@@ -5504,12 +5504,37 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               : selectedMarkerTapHint
                 ? [hasOverdue ? 150 : noAccessTimerLabel ? 174 : 132, noAccessTimerLabel || appointmentLabel ? 120 : 88]
                 : [hasOverdue ? 168 : noAccessTimerLabel ? 178 : 150, noAccessTimerLabel || appointmentLabel ? 118 : 88];
-        const iconSize: [number, number] = overlapSafeMarker
+        const unscaledIconSize: [number, number] = overlapSafeMarker
           ? baseIconSize
           : [
               baseIconSize[0] + (ageUrgent ? 18 : 10) + (hasOverdue && !markerOverview ? 8 : 0),
               baseIconSize[1] + (ageUrgent ? 18 : 12) + (hasOverdue && !markerOverview ? 6 : 0),
             ];
+        const rawZoomMarkerScale =
+          zoomLevel <= 10
+            ? 0.66
+            : zoomLevel <= 11
+              ? 0.74
+              : zoomLevel <= 12
+                ? 0.82
+                : zoomLevel <= 13
+                  ? 0.9
+                  : zoomLevel <= 14
+                    ? 0.98
+                    : zoomLevel <= 15
+                      ? 1.06
+                      : zoomLevel <= 16
+                        ? 1.14
+                        : 1.22;
+        const markerZoomScale = selectedOnly
+          ? 1
+          : collisionMiniMarker
+            ? Math.max(rawZoomMarkerScale, 0.82)
+            : rawZoomMarkerScale;
+        const iconSize: [number, number] = [
+          Math.round(unscaledIconSize[0] * markerZoomScale),
+          Math.round(unscaledIconSize[1] * markerZoomScale),
+        ];
         const iconAnchor: [number, number] = [Math.round(iconSize[0] / 2), Math.round(iconSize[1] / 2)];
         const popupJobId = jobKey(job, index);
 
@@ -5517,7 +5542,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           title: `${popupJobId} ${displayAddress(job)}`,
           icon: L.divIcon({
             className: "maturity-map-marker",
-            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} ${visitedToday ? "marker-visited-today" : ""} ${noAccessTimerLabel ? "marker-has-no-access" : ""} ${noAccessSoon ? "marker-no-access-soon" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} ${appointmentPastDue ? "marker-appointment-past" : ""} ${pendingAppointmentPulse ? "marker-pending-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${noAccessReady ? "marker-ready-revisit" : ""}" style="border-color:${visitedToday ? "#53e69c" : hasOverdue ? "#ef4444" : appointmentPastDue ? "#dc2626" : noAccessSoon ? "#f97316" : appointmentLabel ? "#f59e0b" : noAccessReady ? "#22c55e" : markerColor}">
+            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} ${visitedToday ? "marker-visited-today" : ""} ${noAccessTimerLabel ? "marker-has-no-access" : ""} ${noAccessSoon ? "marker-no-access-soon" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} ${appointmentPastDue ? "marker-appointment-past" : ""} ${pendingAppointmentPulse ? "marker-pending-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${noAccessReady ? "marker-ready-revisit" : ""}" style="border-color:${visitedToday ? "#53e69c" : hasOverdue ? "#ef4444" : appointmentPastDue ? "#dc2626" : noAccessSoon ? "#f97316" : appointmentLabel ? "#f59e0b" : noAccessReady ? "#22c55e" : markerColor};--marker-zoom-scale:${markerZoomScale.toFixed(2)};">
                     ${markerSignalLabelHtml(job, { overview: markerOverview, expanded: markerExpanded, detailed: markerDetailed, overdueLabel, noAccessTimerLabel, appointmentLabel, tapHint: selectedMarkerTapHint })}
                     ${visitedToday ? '<span class="marker-visit-badge">VISITED TODAY</span>' : ""}
                   </div>`,
@@ -34606,6 +34631,20 @@ return (
           .map-shell.map-glass-command-trial .maturity-map-marker:hover .map-signal-marker.marker-overlap-safe,
           .map-shell.map-glass-command-trial .maturity-map-marker:hover .map-signal-marker.marker-overlap-mini {
             transform: translateY(-14px) scale(1.18) !important;
+          }
+
+          /* MAP_ZOOM_RESPONSIVE_PINS_2026_07_11 */
+          .maturity-map-marker .maturity-marker-bubble.map-signal-marker {
+            transform: translateZ(0) scale(var(--marker-zoom-scale, 1)) !important;
+            transform-origin: center center !important;
+            transition:
+              transform 160ms ease,
+              filter 160ms ease,
+              box-shadow 160ms ease !important;
+          }
+
+          .maturity-map-marker:hover .maturity-marker-bubble.map-signal-marker {
+            transform: translateY(-10px) scale(calc(var(--marker-zoom-scale, 1) * 1.12)) !important;
           }
 
           @media (max-width: 430px) {
