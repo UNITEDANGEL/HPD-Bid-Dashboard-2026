@@ -13,7 +13,7 @@ const FIELD_VISIT_TRACKING_STORAGE_KEY = "hpd-private-field-visit-tracking-v1";
 const DAY_AGENT_LOG_STORAGE_KEY = "hpd-ai-day-agent-log-v1";
 const DAY_AGENT_BASE_ADDRESS = "87-35 114 Street, Richmond Hill, NY 11418";
 const DAY_AGENT_BASE_COORDS = { lat: 40.6992, lng: -73.8357 };
-const DAY_AGENT_ROUTE_MAX_STOPS = 8;
+const DAY_AGENT_ROUTE_MAX_STOPS = 6;
 const DAY_AGENT_WORK_START_HOUR = 8;
 const DAY_AGENT_FIELD_END_HOUR = 17;
 const DAY_AGENT_BASE_RETURN_HOUR = 18;
@@ -2762,7 +2762,7 @@ const [dispatchQuestion, setDispatchQuestion] = useState("");
 const [dayAgentStarted, setDayAgentStarted] = useState(false);
 const [dayAgentCommand, setDayAgentCommand] = useState("");
 const [dayAgentPanelOpen, setDayAgentPanelOpen] = useState(false);
-const [dayAgentBoroughStart, setDayAgentBoroughStart] = useState<MapBoroughFilter>("all");
+const [dayAgentBoroughStart, setDayAgentBoroughStart] = useState<MapBoroughFilter>("nearby");
 const [dayAgentReturnToBase, setDayAgentReturnToBase] = useState(true);
 const [dayAgentRoute, setDayAgentRoute] = useState<MappedJob[]>([]);
 const [dayAgentRouteSummary, setDayAgentRouteSummary] = useState<DayAgentRouteSummary | null>(null);
@@ -2967,10 +2967,16 @@ const dayAgentRouteScore = (job: MappedJob, command: string, requestedBorough = 
 const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverride?: MapBoroughFilter, routeOrigin: UserLocationState | null = userLocation) => {
   const command = String(commandText || "start").trim();
   const requestedBorough = requestedBoroughOverride || dayAgentRequestedBorough(command);
-  const pool = dispatchJobPool()
+  const visibleRouteSource =
+    requestedBorough === "nearby" || mapBoroughFilter === "nearby"
+      ? filteredJobs
+      : dispatchJobPool();
+  const sourcePool = visibleRouteSource.length ? visibleRouteSource : dispatchJobPool();
+  const pool = sourcePool
     .filter((job) => workflowViewBucket(job) !== "archived" && workflowViewBucket(job) !== "final")
     .filter((job) => cleanAddress(job))
     .filter((job) => jobLatLng(job))
+    .filter((job) => requestedBorough === "all" || requestedBorough === "unknown" || matchesMapBorough(job, requestedBorough))
     .filter((job) => {
       const age = mapDateAgeDays(job);
       return (age !== null && age >= 0 && age <= 90) || hasUpcomingAppointment(job);
@@ -3006,7 +3012,7 @@ const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverr
 };
 
 const dayAgentGoogleRouteUrl = (routeJobs = dayAgentRoute) => {
-  const stops = routeJobs.map((job) => displayAddress(job).trim()).filter(Boolean).slice(0, 8);
+  const stops = routeJobs.map((job) => displayAddress(job).trim()).filter(Boolean).slice(0, DAY_AGENT_ROUTE_MAX_STOPS);
   if (!stops.length) return "https://www.google.com/maps";
   const origin = userLocation ? `${userLocation.lat},${userLocation.lng}` : DAY_AGENT_BASE_ADDRESS;
   const destination = DAY_AGENT_BASE_ADDRESS;
@@ -36854,7 +36860,7 @@ return (
             (() => {
               const selectedRouteJob = dayAgentRoute[Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1)] || dayAgentRoute[0];
               const selectedRouteLeg = dayAgentRouteSummary?.legs?.[Math.min(dayAgentSelectedStopIndex, Math.max(0, dayAgentRouteSummary.legs.length - 1))];
-              const selectedRouteLabel = selectedRouteLeg ? `Stop ${Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1) + 1} · ${selectedRouteLeg.label}` : `${dayAgentRoute.length} stop${dayAgentRoute.length === 1 ? "" : "s"}`;
+              const selectedRouteLabel = selectedRouteLeg ? `Stop ${Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1) + 1} · Drive ${selectedRouteLeg.label}` : `${dayAgentRoute.length} stop${dayAgentRoute.length === 1 ? "" : "s"}`;
               const selectedRouteDescription = selectedRouteJob ? descriptionSummary(selectedRouteJob).replace(/\s+/g, " ").slice(0, 130) : "";
               return (
             <section className={`map-day-route-tray ${dayAgentRouteHidden ? "is-hidden" : ""}`} aria-label="Active day route stops">
@@ -36884,8 +36890,8 @@ return (
               </div>
               {!dayAgentRouteHidden && selectedRouteJob ? (
                 <button type="button" className="map-day-route-selected-summary" onClick={() => focusRouteStopOnMap(selectedRouteJob, Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1))}>
-                  <span>{jobKey(selectedRouteJob)} · {displayAddress(selectedRouteJob)}</span>
-                  <strong>{selectedRouteLeg ? selectedRouteLeg.label : "Route leg loading"}</strong>
+                  <span>{jobKey(selectedRouteJob)} · {displayAddress(selectedRouteJob)} ·</span>
+                  <strong>{selectedRouteLeg ? `Drive ${selectedRouteLeg.label}` : "Route leg loading"}</strong>
                   <small>{selectedRouteDescription || "No job description available."}</small>
                 </button>
               ) : null}
