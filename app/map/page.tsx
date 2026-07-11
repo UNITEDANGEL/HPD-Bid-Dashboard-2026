@@ -2,9 +2,11 @@ import "./v6-map-upgrade.css";
 import "./v6-map-stability.css";
 import "./map-ai-operations.css";
 import "./map-directions-enhancer.css";
+import "./map-field-visit-flow.css";
 import MapAiOperationsDashboard from "./MapAiOperationsDashboard";
 import MapClient from "./MapClient";
 import MapDirectionsEnhancer from "./MapDirectionsEnhancer";
+import MapFieldVisitFlow from "./MapFieldVisitFlow";
 
 export default function MapPage() {
   return (
@@ -12,6 +14,7 @@ export default function MapPage() {
       <MapClient />
       <MapAiOperationsDashboard />
       <MapDirectionsEnhancer />
+      <MapFieldVisitFlow />
     </>
   );
 }
