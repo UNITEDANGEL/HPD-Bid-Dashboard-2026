@@ -8,9 +8,17 @@ type SavedWorkflow = {
   activeJobId?: string;
 };
 
-type RoutePoint = { x: number; y: number; id: string; label: string; current: boolean };
+type RoutePoint = {
+  x: number;
+  y: number;
+  id: string;
+  label: string;
+  current: boolean;
+  offscreen: boolean;
+};
 
 const STORAGE_KEY = "hpd-unified-workflow-v1";
+const EDGE_PADDING = 20;
 const MAP_SELECTORS = [
   ".map-shell .maplibregl-map",
   ".map-shell .mapboxgl-map",
@@ -68,18 +76,21 @@ function markerIdentity(marker: HTMLElement) {
   ].filter(Boolean).join(" ").toUpperCase();
 }
 
-function findJobMarker(id: string) {
-  const normalized = id.toUpperCase();
-  const candidates = Array.from(document.querySelectorAll<HTMLElement>(
+function allMarkerCandidates() {
+  return Array.from(document.querySelectorAll<HTMLElement>(
     ".maturity-map-marker, [data-omo], [data-job-id], [class*='job-marker'], [class*='map-marker']",
   ));
-  return candidates.find((marker) => markerIdentity(marker).includes(normalized)) || null;
+}
+
+function findJobMarker(id: string) {
+  const normalized = id.toUpperCase();
+  return allMarkerCandidates().find((marker) => markerIdentity(marker).includes(normalized)) || null;
 }
 
 function findCurrentLocationMarker() {
   for (const selector of CURRENT_LOCATION_SELECTORS) {
     const marker = document.querySelector<HTMLElement>(selector);
-    if (marker && marker.getClientRects().length > 0) return marker;
+    if (marker) return marker;
   }
   return null;
 }
@@ -101,13 +112,21 @@ function anchorFor(element: HTMLElement, current: boolean) {
   return { left: rect.left + rect.width / 2, top: rect.top + rect.height / 2 };
 }
 
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
 function pointFor(element: HTMLElement, surfaceRect: DOMRect, id: string, label: string, current = false): RoutePoint | null {
   const anchor = anchorFor(element, current);
   if (!anchor) return null;
-  const x = anchor.left - surfaceRect.left;
-  const y = anchor.top - surfaceRect.top;
-  if (x < -40 || y < -40 || x > surfaceRect.width + 40 || y > surfaceRect.height + 40) return null;
-  return { x, y, id, label, current };
+
+  const rawX = anchor.left - surfaceRect.left;
+  const rawY = anchor.top - surfaceRect.top;
+  const x = clamp(rawX, EDGE_PADDING, Math.max(EDGE_PADDING, surfaceRect.width - EDGE_PADDING));
+  const y = clamp(rawY, EDGE_PADDING, Math.max(EDGE_PADDING, surfaceRect.height - EDGE_PADDING));
+  const offscreen = rawX !== x || rawY !== y;
+
+  return { x, y, id, label, current, offscreen };
 }
 
 function buildPath(points: RoutePoint[]) {
@@ -126,6 +145,7 @@ function render(surface: HTMLElement, overlay: SVGSVGElement) {
   const workflow = readWorkflow();
   const ids = routeIds(workflow);
   const surfaceRect = surface.getBoundingClientRect();
+
   overlay.setAttribute("viewBox", `0 0 ${Math.max(1, surfaceRect.width)} ${Math.max(1, surfaceRect.height)}`);
   overlay.setAttribute("width", String(surfaceRect.width));
   overlay.setAttribute("height", String(surfaceRect.height));
@@ -138,18 +158,25 @@ function render(surface: HTMLElement, overlay: SVGSVGElement) {
     if (point) points.push(point);
   }
 
-  ids.forEach((id, index) => {
+  // Preserve the exact sequence. Stop labels always remain 1, 2, 3... even when a stop
+  // sits just outside the visible map; off-screen stops are clamped to the map edge.
+  for (let index = 0; index < ids.length; index += 1) {
+    const id = ids[index];
     const marker = findJobMarker(id);
-    if (!marker) return;
+    if (!marker) break;
     const point = pointFor(marker, surfaceRect, id, String(index + 1));
-    if (point) points.push(point);
-  });
+    if (!point) break;
+    points.push(point);
+  }
 
-  const signature = points.map((point) => `${point.id}:${point.label}:${point.x.toFixed(1)},${point.y.toFixed(1)}`).join("|");
+  const signature = points
+    .map((point) => `${point.id}:${point.label}:${point.x.toFixed(1)},${point.y.toFixed(1)}:${point.offscreen ? "edge" : "map"}`)
+    .join("|");
   if (overlay.dataset.signature === signature) return;
   overlay.dataset.signature = signature;
 
-  if (points.length < 2 || !points.some((point) => point.label === "1")) {
+  const hasStopOne = points.some((point) => point.label === "1");
+  if (points.length < 2 || !hasStopOne) {
     overlay.innerHTML = "";
     overlay.classList.remove("is-visible");
     return;
@@ -157,7 +184,7 @@ function render(surface: HTMLElement, overlay: SVGSVGElement) {
 
   const path = buildPath(points);
   const dots = points.map((point) => `
-    <g class="hpd-suggested-route-stop ${point.current ? "current" : "job"}">
+    <g class="hpd-suggested-route-stop ${point.current ? "current" : "job"} ${point.offscreen ? "offscreen" : ""}">
       <circle cx="${point.x}" cy="${point.y}" r="${point.current ? 10 : 13}" />
       <text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle">${point.current ? "●" : point.label}</text>
     </g>`).join("");
@@ -165,7 +192,7 @@ function render(surface: HTMLElement, overlay: SVGSVGElement) {
   overlay.innerHTML = `
     <defs>
       <filter id="hpd-route-glow" x="-40%" y="-40%" width="180%" height="180%">
-        <feGaussianBlur stdDeviation="4" result="blur" />
+        <feGaussianBlur stdDeviation="3" result="blur" />
         <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
       </filter>
       <marker id="hpd-route-arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto" markerUnits="strokeWidth">
@@ -219,7 +246,7 @@ export default function MapRouteSequenceOverlay() {
     ensure();
     const observer = new MutationObserver(schedule);
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class", "transform"] });
-    const timer = window.setInterval(schedule, 120);
+    const timer = window.setInterval(schedule, 100);
     window.addEventListener("resize", schedule);
     window.addEventListener("scroll", schedule, true);
     window.addEventListener("storage", schedule);
