@@ -36888,7 +36888,7 @@ return (
               : agentFirstJob
                 ? `${agentBorough.label} selected · next ${jobKey(agentFirstJob)}`
                 : `${agentBorough.label} selected · pick borough and start`;
-            return (
+            return dayAgentPanelOpen ? (
               <section className={`map-day-agent-launcher ${dayAgentStarted ? "is-running" : ""} ${dayAgentPanelOpen ? "agent-panel-open" : ""}`} aria-label="Start AI day agent">
                 <div>
                   <span>AI Day Agent</span>
@@ -36939,7 +36939,7 @@ return (
                   <span>Ends at base</span>
                 </label>
               </section>
-            );
+            ) : null;
           })()}
           {dayAgentRoute.length ? (
             (() => {
