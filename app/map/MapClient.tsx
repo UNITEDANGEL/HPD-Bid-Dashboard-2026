@@ -5089,10 +5089,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       const clusterCellX = mobileMap
         ? zoomLevel < 11
-          ? 136
+          ? 168
           : zoomLevel < 13
-            ? 120
-            : 108
+            ? 152
+            : 136
         : zoomLevel < 11
           ? 248
           : zoomLevel < 13
@@ -5100,10 +5100,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             : 184;
       const clusterCellY = mobileMap
         ? zoomLevel < 11
-          ? 142
+          ? 176
           : zoomLevel < 13
-            ? 122
-            : 104
+            ? 154
+            : 136
         : zoomLevel < 11
           ? 214
           : zoomLevel < 13
@@ -5122,7 +5122,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
               return clusters;
           }, new Map<string, { items: typeof plottedItems; cellX: number; cellY: number }>())
           ).map(([key, cluster]) => {
-            if (cluster.items.length === 1 && (!denseLayer || zoomLevel >= (mobileMap ? 11 : 10)) && !timerLayerNeedsClusters) {
+            if (cluster.items.length === 1 && (!denseLayer || zoomLevel >= (mobileMap ? 14 : 10)) && !timerLayerNeedsClusters) {
               return { kind: "job", ...cluster.items[0] };
             }
             const rawCenterX = (cluster.cellX + 0.5) * clusterCellX;
@@ -5294,7 +5294,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                         : "normal";
           const clusterPoint = map.latLngToLayerPoint([item.lat, item.lng]);
           const topHeaderShift = mobileMap && clusterPoint.y < 190 ? 190 - clusterPoint.y : 0;
-          const [offsetX, offsetY]: [number, number] = [0, topHeaderShift];
+          const sameAreaRank = clusterPoints.filter((point) => {
+            if (point.id === item.key) return false;
+            return Math.abs(point.x - Math.round(clusterPoint.x)) < (mobileMap ? 76 : 92) && Math.abs(point.y - Math.round(clusterPoint.y)) < (mobileMap ? 72 : 86);
+          }).length;
+          const spreadDirection = sameAreaRank % 2 === 0 ? 1 : -1;
+          const spreadStep = Math.min(mobileMap ? 34 : 42, Math.ceil(sameAreaRank / 2) * (mobileMap ? 16 : 20));
+          const [offsetX, offsetY]: [number, number] = [sameAreaRank ? spreadDirection * spreadStep : 0, topHeaderShift + (sameAreaRank ? Math.min(22, sameAreaRank * 4) : 0)];
           const clusterLatLng = map.layerPointToLatLng(L.point(clusterPoint.x + offsetX, clusterPoint.y + offsetY));
           const compactCluster = mobileMap || denseLayer || filteredCount > 24 || zoomLevel < 14;
           const clusterIconSize: [number, number] = compactCluster
