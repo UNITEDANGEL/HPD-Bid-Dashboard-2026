@@ -114,26 +114,29 @@ function draw(map: HTMLElement, svg: SVGSVGElement) {
   const current = locationMarker();
   const currentPoint = current ? centerOf(current, rect) : null;
   points.push({
-    x: currentPoint?.x ?? Math.max(28, rect.width * 0.12),
-    y: currentPoint?.y ?? Math.max(40, rect.height * 0.82),
+    x: currentPoint?.x ?? Math.max(34, rect.width * 0.12),
+    y: currentPoint?.y ?? Math.max(48, rect.height * 0.82),
     label: currentPoint ? "YOU" : "START",
     id: "start",
     start: true,
   });
 
-  ids.forEach((id, index) => {
+  // Route numbering must always begin at 1 and stay continuous. If the first route
+  // marker is not visible yet, do not draw a misleading partial 3–6 route.
+  for (let index = 0; index < ids.length; index += 1) {
+    const id = ids[index];
     const marker = jobMarker(id);
-    if (!marker) return;
+    if (!marker) break;
     const point = centerOf(marker, rect);
-    if (!point) return;
+    if (!point) break;
     points.push({ x: point.x, y: point.y, label: String(index + 1), id });
-  });
+  }
 
   const signature = points.map((p) => `${p.id}:${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("|");
   if (svg.dataset.signature === signature) return;
   svg.dataset.signature = signature;
 
-  if (points.length < 2) {
+  if (points.length < 2 || points[1]?.label !== "1") {
     svg.innerHTML = "";
     svg.classList.remove("is-visible");
     return;
@@ -144,8 +147,8 @@ function draw(map: HTMLElement, svg: SVGSVGElement) {
     .map(
       (point) => `
       <g class="hpd-live-route-node ${point.start ? "start" : "stop"}">
-        <circle cx="${point.x}" cy="${point.y}" r="${point.start ? 9 : 12}" />
-        <text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle">${point.start ? "●" : point.label}</text>
+        <circle cx="${point.x}" cy="${point.y}" r="${point.start ? 12 : 11}" />
+        <text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle">${point.start ? "YOU" : point.label}</text>
       </g>`,
     )
     .join("");
@@ -197,7 +200,7 @@ export default function MapVisibleRouteGuide() {
     render();
     const observer = new MutationObserver(schedule);
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, characterData: true });
-    const timer = window.setInterval(schedule, 100);
+    const timer = window.setInterval(schedule, 180);
     document.addEventListener("click", schedule, true);
     window.addEventListener("resize", schedule);
     window.addEventListener("scroll", schedule, true);
