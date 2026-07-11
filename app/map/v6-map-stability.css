@@ -1,0 +1,130 @@
+/* V6 map stability and layout arbitration.
+   Loaded after v6-map-upgrade.css so it can safely override legacy inline rules. */
+
+.map-shell.map-glass-command-trial {
+  isolation: isolate;
+}
+
+/* Keep a usable active-route chip after the full route tray is collapsed. */
+.map-shell.map-glass-command-trial.map-glass-command-trial .map-day-route-tray.is-hidden {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  min-height: 44px !important;
+  max-height: 48px !important;
+  padding: 4px 6px !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  overflow: hidden !important;
+}
+
+.map-shell.map-glass-command-trial.map-glass-command-trial .map-day-route-tray.is-hidden .map-day-route-stop-list,
+.map-shell.map-glass-command-trial.map-glass-command-trial .map-day-route-tray.is-hidden .map-day-route-selected-summary {
+  display: none !important;
+}
+
+.map-shell.map-glass-command-trial.map-glass-command-trial .map-day-route-tray.is-hidden .map-day-route-tray-head {
+  min-height: 36px !important;
+  align-items: center !important;
+}
+
+/* Closed overlays must not block clicks on the map. */
+.map-shell.map-glass-command-trial .map-menu-scrim:not(.open),
+.map-shell.map-glass-command-trial .map-top:not(.open) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* One-overlay-at-a-time visual arbitration. The selected job is highest priority. */
+@supports selector(.map-shell:has(.job-drawer)) {
+  .map-shell.map-glass-command-trial:has(.job-drawer.selected-focus) .map-top.open,
+  .map-shell.map-glass-command-trial:has(.job-drawer.selected-focus) .map-menu-scrim.open,
+  .map-shell.map-glass-command-trial:has(.job-drawer.selected-focus) .map-day-agent-launcher.agent-panel-open,
+  .map-shell.map-glass-command-trial:has(.job-drawer.selected-focus) .map-day-route-tray {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .map-shell.map-glass-command-trial:has(.map-day-agent-launcher.agent-panel-open) .map-top.open,
+  .map-shell.map-glass-command-trial:has(.map-day-agent-launcher.agent-panel-open) .map-menu-scrim.open,
+  .map-shell.map-glass-command-trial:has(.map-day-agent-launcher.agent-panel-open) .cluster-sheet,
+  .map-shell.map-glass-command-trial:has(.map-day-agent-launcher.agent-panel-open) .map-job-brief {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .map-shell.map-glass-command-trial:has(.map-top.open) .map-day-route-tray:not(.is-hidden) {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+}
+
+/* Cleaner desktop right-side map controls. */
+@media (min-width: 721px) {
+  .map-shell.map-glass-command-trial.map-glass-command-trial .zoom-panel {
+    display: grid !important;
+    grid-template-columns: 44px !important;
+    width: auto !important;
+    gap: 6px !important;
+    padding: 6px !important;
+    border-radius: 20px !important;
+  }
+
+  .map-shell.map-glass-command-trial.map-glass-command-trial .zoom-panel button {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+    max-width: 44px !important;
+    max-height: 44px !important;
+    border-radius: 14px !important;
+  }
+}
+
+/* Compact selected-job bottom sheet on phones and narrow tablets. */
+@media (max-width: 720px) {
+  .map-shell.map-glass-command-trial.map-glass-command-trial .job-drawer.selected-focus {
+    left: max(8px, env(safe-area-inset-left)) !important;
+    right: max(8px, env(safe-area-inset-right)) !important;
+    bottom: max(8px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: min(72dvh, 620px) !important;
+    border-radius: 24px 24px 18px 18px !important;
+    overflow: auto !important;
+    overscroll-behavior: contain !important;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.32) !important;
+  }
+
+  .map-shell.map-glass-command-trial.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 4 !important;
+    padding: 8px !important;
+    backdrop-filter: blur(18px) saturate(1.1) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(1.1) !important;
+  }
+
+  .map-shell.map-glass-command-trial.map-glass-command-trial .zoom-panel {
+    right: max(8px, env(safe-area-inset-right)) !important;
+    bottom: calc(env(safe-area-inset-bottom) + 18px) !important;
+  }
+
+  .map-shell.map-glass-command-trial.map-glass-command-trial .map-face-search {
+    min-width: 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-shell.map-glass-command-trial .map-day-route-tray,
+  .map-shell.map-glass-command-trial .job-drawer,
+  .map-shell.map-glass-command-trial .zoom-panel {
+    transition: none !important;
+  }
+}
