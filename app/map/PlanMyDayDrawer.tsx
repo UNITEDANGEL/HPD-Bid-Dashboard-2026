@@ -239,16 +239,33 @@ export default function PlanMyDayDrawer() {
   const [results, setResults] = useState<PlannedJob[]>([]);
   const [busy, setBusy] = useState(false);
   const [originLabel, setOriginLabel] = useState("");
+  const [voiceStatus, setVoiceStatus] = useState("Tap Read Reply on iPhone");
 
   const planSummary = useMemo(() => describePlan(plan), [plan]);
+  const lastAssistantReply = useMemo(
+    () => [...messages].reverse().find((message) => message.role === "assistant")?.text || "",
+    [messages],
+  );
 
-  function speakReply(text: string) {
-    if (!voiceEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  function speakReply(text: string, force = false) {
+    if ((!voiceEnabled && !force) || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    if (!text.trim()) return;
+    window.speechSynthesis.resume();
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
     utterance.rate = 0.92;
+    utterance.volume = 1;
+    utterance.onstart = () => setVoiceStatus("Speaking now");
+    utterance.onend = () => setVoiceStatus("Finished · tap to replay");
+    utterance.onerror = () => setVoiceStatus("Tap Read Reply again");
     window.speechSynthesis.speak(utterance);
+  }
+
+  function readLastReply() {
+    setVoiceEnabled(true);
+    setVoiceStatus("Starting voice…");
+    speakReply(lastAssistantReply, true);
   }
 
   async function handleMessage(raw: string) {
@@ -348,6 +365,11 @@ export default function PlanMyDayDrawer() {
             {["Plan 5 jobs near me", "5 urgent Queens jobs", "Appointments first", "Avoid Manhattan"].map((suggestion) => (
               <button type="button" key={suggestion} onClick={() => void handleMessage(suggestion)}>{suggestion}</button>
             ))}
+          </div>
+
+          <div className="plan-my-day__voice-row">
+            <button type="button" onClick={readLastReply} disabled={!lastAssistantReply}>🔊 Read Reply</button>
+            <small>{voiceStatus}</small>
           </div>
 
           <form className="plan-my-day__composer" onSubmit={submit}>
