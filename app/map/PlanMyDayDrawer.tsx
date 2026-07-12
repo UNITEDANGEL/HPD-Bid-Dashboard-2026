@@ -1,6 +1,7 @@
 "use client";
 
 import jobsData from "../../data/COA_Fetcher_2026.json";
+import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 
 type JobRecord = Record<string, unknown>;
@@ -242,6 +243,21 @@ function rankJobs(plan: LocalPlan, origin: Point) {
   return ordered;
 }
 
+function selectableJob(record: JobRecord, origin?: Point, reason = "Selected by you"): PlannedJob {
+  const lat = numberValue(record.Latitude ?? record.latitude ?? record.lat);
+  const lng = numberValue(record.Longitude ?? record.longitude ?? record.lng ?? record.lon);
+  return {
+    id: jobId(record),
+    address: textValue(record, ["BuildingAddress", "Building Address", "Address", "address", "Location", "location"]),
+    borough: normalizeBorough(textValue(record, ["Borough", "borough", "Boro", "boro"])),
+    status: jobStatus(record),
+    lat,
+    lng,
+    distance: origin && lat !== null && lng !== null ? distanceMiles(origin, { lat, lng }) : null,
+    reason,
+  };
+}
+
 export default function PlanMyDayDrawer() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -251,6 +267,9 @@ export default function PlanMyDayDrawer() {
   ]);
   const [plan, setPlan] = useState<LocalPlan>(DEFAULT_PLAN);
   const [results, setResults] = useState<PlannedJob[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [jobSearch, setJobSearch] = useState("");
+  const [originPoint, setOriginPoint] = useState<Point | null>(null);
   const [busy, setBusy] = useState(false);
   const [originLabel, setOriginLabel] = useState("");
   const [voiceStatus, setVoiceStatus] = useState("Tap Read Reply on iPhone");
@@ -260,6 +279,18 @@ export default function PlanMyDayDrawer() {
     () => [...messages].reverse().find((message) => message.role === "assistant")?.text || "",
     [messages],
   );
+  const activeJobs = useMemo(() => asArray(jobsData).filter((job) => !isClosed(job) && jobId(job)), []);
+  const searchMatches = useMemo(() => {
+    const query = jobSearch.trim().toLowerCase();
+    if (query.length < 2) return [];
+    return activeJobs
+      .filter((job) => {
+        const haystack = `${jobId(job)} ${textValue(job, ["BuildingAddress", "Building Address", "Address", "address"])} ${textValue(job, ["Borough", "borough"])}`.toLowerCase();
+        return haystack.includes(query);
+      })
+      .slice(0, 8);
+  }, [activeJobs, jobSearch]);
+  const selectedResults = useMemo(() => results.filter((job) => selectedIds.includes(job.id)), [results, selectedIds]);
 
   function speakReply(text: string, force = false) {
     if ((!voiceEnabled && !force) || typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -294,7 +325,9 @@ export default function PlanMyDayDrawer() {
     const nextResults = rankJobs(nextPlan, point);
     setPlan(nextPlan);
     setResults(nextResults);
+    setSelectedIds(nextResults.map((job) => job.id));
     setOriginLabel(label);
+    setOriginPoint(point);
 
     const missingIncluded = nextPlan.includeOmo.filter((id) => !nextResults.some((job) => job.id === id));
     let reply = `I prepared ${nextResults.length} stops from ${label}. ${describePlan(nextPlan)}`;
@@ -313,9 +346,8 @@ export default function PlanMyDayDrawer() {
   }
 
   function acceptPlan() {
-    if (!results.length) return;
+    if (!selectedResults.length) return;
     const detail = {
-      stop_count: plan.stopCount,
       boroughs: plan.boroughs,
       avoid_boroughs: plan.avoidBoroughs,
       priorities: plan.priorities,
@@ -325,7 +357,8 @@ export default function PlanMyDayDrawer() {
       route_preference: plan.routePreference,
       start_mode: plan.startMode,
       originLabel,
-      jobs: results,
+      stop_count: selectedResults.length,
+      jobs: selectedResults,
       acceptedAt: new Date().toISOString(),
     };
     sessionStorage.setItem("hpd-plan-my-day-approved", JSON.stringify(detail));
@@ -340,9 +373,34 @@ export default function PlanMyDayDrawer() {
     if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
     setPlan(DEFAULT_PLAN);
     setResults([]);
+    setSelectedIds([]);
+    setJobSearch("");
     setInput("");
     setOriginLabel("");
     setMessages([{ role: "assistant", text: "New plan started. Tell me where you want to work and what matters most." }]);
+  }
+
+  function toggleJob(id: string) {
+    setSelectedIds((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
+  }
+
+  function addJob(record: JobRecord) {
+    const id = jobId(record);
+    if (!id) return;
+    setResults((current) => current.some((job) => job.id === id) ? current : [...current, selectableJob(record, originPoint || undefined)]);
+    setSelectedIds((current) => current.includes(id) ? current : [...current, id]);
+    setJobSearch("");
+  }
+
+  function moveJob(id: string, direction: -1 | 1) {
+    setResults((current) => {
+      const index = current.findIndex((job) => job.id === id);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= current.length) return current;
+      const next = [...current];
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
   }
 
   return (
@@ -376,7 +434,7 @@ export default function PlanMyDayDrawer() {
           </div>
 
           <div className="plan-my-day__suggestions">
-            {["Plan 5 jobs near me", "5 urgent Queens jobs", "Appointments first", "Avoid Manhattan"].map((suggestion) => (
+            {["Plan 5 jobs near me", "5 urgent Queens jobs", "Appointments first", "Nearest jobs first"].map((suggestion) => (
               <button type="button" key={suggestion} onClick={() => void handleMessage(suggestion)}>{suggestion}</button>
             ))}
           </div>
@@ -393,7 +451,7 @@ export default function PlanMyDayDrawer() {
                 id="plan-chat-input"
                 value={input}
                 onChange={(event) => setInput(event.target.value)}
-                placeholder="Example: Plan 6 urgent Queens jobs near me, include EQ24929, avoid Manhattan, finish by 3 PM."
+                placeholder="Example: Plan 6 urgent jobs near me, include EQ24929, finish by 3 PM."
                 rows={3}
                 disabled={busy}
               />
@@ -402,15 +460,30 @@ export default function PlanMyDayDrawer() {
           </form>
 
           <section className="plan-my-day__working-plan">
-            <span>WORKING PLAN</span><p>{planSummary}</p>
+            <span>WORKING PLAN · {selectedResults.length} SELECTED</span><p>{planSummary}</p>
+          </section>
+
+          <section className="plan-my-day__job-picker" aria-label="Add jobs to route">
+            <label htmlFor="plan-job-search">Add a job you need</label>
+            <input id="plan-job-search" value={jobSearch} onChange={(event) => setJobSearch(event.target.value)} placeholder="Search OMO, address, or borough" />
+            {searchMatches.length ? <div className="plan-my-day__search-results">
+              {searchMatches.map((record) => <button type="button" key={jobId(record)} onClick={() => addJob(record)}>
+                <strong>{jobId(record)}</strong><span>{textValue(record, ["BuildingAddress", "Building Address", "Address", "address"])}</span><b>Add</b>
+              </button>)}
+            </div> : null}
           </section>
 
           {results.length ? (
             <div className="plan-my-day__results">
               {results.map((job, index) => (
-                <article key={job.id}><b>{index + 1}</b><div><strong>{job.id}</strong><span>{job.address || "Address unavailable"}</span><small>{job.borough || "Unknown borough"} · {job.distance === null ? "distance unavailable" : `${job.distance.toFixed(1)} mi`} · {job.reason}</small></div></article>
+                <article key={job.id} className={selectedIds.includes(job.id) ? "is-selected" : "is-unselected"}>
+                  <label className="plan-my-day__select"><input type="checkbox" checked={selectedIds.includes(job.id)} onChange={() => toggleJob(job.id)} /><b>{index + 1}</b></label>
+                  <div><strong>{job.id}</strong><span>{job.address || "Address unavailable"}</span><small>{job.borough || "Unknown borough"} · {job.distance === null ? "distance unavailable" : `${job.distance.toFixed(1)} mi`}</small><em>Why AI selected it: {job.reason}</em>
+                    <nav><Link href={`/jobs/${encodeURIComponent(job.id)}`}>View Job</Link><button type="button" onClick={() => moveJob(job.id, -1)} disabled={index === 0}>Move up</button><button type="button" onClick={() => moveJob(job.id, 1)} disabled={index === results.length - 1}>Move down</button></nav>
+                  </div>
+                </article>
               ))}
-              <button type="button" className="plan-my-day__accept" onClick={acceptPlan}>Accept Plan</button>
+              <button type="button" className="plan-my-day__accept" onClick={acceptPlan} disabled={!selectedResults.length}>Build Route with {selectedResults.length} Selected</button>
             </div>
           ) : null}
         </div>
