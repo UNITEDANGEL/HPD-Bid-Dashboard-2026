@@ -6,6 +6,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 type JobRecord = Record<string, unknown>;
 type Point = { lat: number; lng: number };
 type ChatMessage = { role: "assistant" | "user"; text: string };
+type FieldStep = "ready" | "arrived" | "work_started" | "no_access" | "refused_access" | "work_completed" | "partial_work" | "completed_by_others";
 type RoutePreference = "shortest_drive" | "highest_priority" | "balanced" | "appointments_first";
 type LocalPlan = {
   boroughs: string[];
@@ -283,6 +284,7 @@ export default function PlanMyDayDrawer() {
   const [jobSearch, setJobSearch] = useState("");
   const [originPoint, setOriginPoint] = useState<Point | null>(null);
   const [viewingJobId, setViewingJobId] = useState<string | null>(null);
+  const [fieldSteps, setFieldSteps] = useState<Record<string, FieldStep>>({});
   const [busy, setBusy] = useState(false);
   const [originLabel, setOriginLabel] = useState("");
   const [voiceStatus, setVoiceStatus] = useState("Tap Read Reply on iPhone");
@@ -401,6 +403,7 @@ export default function PlanMyDayDrawer() {
     setInput("");
     setOriginLabel("");
     setViewingJobId(null);
+    setFieldSteps({});
     setMessages([{ role: "assistant", text: "New plan started. Tell me where you want to work and what matters most." }]);
   }
 
@@ -413,6 +416,16 @@ export default function PlanMyDayDrawer() {
     const destination = job.lat !== null && job.lng !== null ? `${job.lat},${job.lng}` : job.address;
     if (service === "waze") return `https://www.waze.com/ul?q=${encodeURIComponent(destination)}&navigate=yes`;
     return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+  }
+
+  function updateFieldStep(job: PlannedJob, step: FieldStep) {
+    setFieldSteps((current) => ({ ...current, [job.id]: step }));
+    window.dispatchEvent(new CustomEvent("hpd:routed-job-status", { detail: { jobId: job.id, step, occurredAt: new Date().toISOString() } }));
+  }
+
+  function nextSelectedStop(jobId: string) {
+    const index = selectedResults.findIndex((job) => job.id === jobId);
+    return selectedResults[index + 1] || null;
   }
 
   function toggleJob(id: string) {
@@ -468,6 +481,13 @@ export default function PlanMyDayDrawer() {
             <p><b>Phone:</b> {viewingJob.contactPhone ? <a href={`tel:${viewingJob.contactPhone.replace(/[^+\d]/g, "")}`}>{viewingJob.contactPhone}</a> : "Not listed"}</p>
             <div className="plan-my-day__itb"><b>ITB Job Description</b><p>{viewingJob.description || "ITB description unavailable."}</p></div>
             <div className="plan-my-day__go-here"><a href={routeUrl(viewingJob, "google")} target="_blank" rel="noreferrer">Google Maps</a><a href={routeUrl(viewingJob, "waze")} target="_blank" rel="noreferrer">Waze</a></div>
+            <section className="plan-my-day__field-flow" aria-label="Field job status">
+              <span>FIELD VISIT</span>
+              {(!fieldSteps[viewingJob.id] || fieldSteps[viewingJob.id] === "ready") ? <><p>When you reach this job, confirm arrival to begin.</p><button type="button" className="primary" onClick={() => updateFieldStep(viewingJob, "arrived")}>I Have Arrived</button></> : null}
+              {fieldSteps[viewingJob.id] === "arrived" ? <><p>You are at the job. Start work or record the access outcome.</p><div className="plan-my-day__status-grid"><button type="button" className="primary" onClick={() => updateFieldStep(viewingJob, "work_started")}>Start Job</button><button type="button" onClick={() => updateFieldStep(viewingJob, "no_access")}>No Access</button><button type="button" onClick={() => updateFieldStep(viewingJob, "refused_access")}>Refused Access</button><button type="button" onClick={() => updateFieldStep(viewingJob, "completed_by_others")}>Completed by Others</button></div></> : null}
+              {fieldSteps[viewingJob.id] === "work_started" ? <><p>Work timer started. Choose the result when field work ends.</p><div className="plan-my-day__status-grid"><button type="button" className="primary" onClick={() => updateFieldStep(viewingJob, "work_completed")}>Work Completed</button><button type="button" onClick={() => updateFieldStep(viewingJob, "partial_work")}>Partial Work</button></div></> : null}
+              {["no_access", "refused_access", "work_completed", "partial_work", "completed_by_others"].includes(fieldSteps[viewingJob.id] || "") ? <div className="plan-my-day__outcome-saved"><strong>Status saved: {(fieldSteps[viewingJob.id] || "").replaceAll("_", " ")}</strong>{nextSelectedStop(viewingJob.id) ? <button type="button" onClick={() => setViewingJobId(nextSelectedStop(viewingJob.id)!.id)}>Next Stop · {nextSelectedStop(viewingJob.id)!.id}</button> : <button type="button" onClick={backToMap}>Route Finished · Back to Map</button>}</div> : null}
+            </section>
           </section> : null}
 
           <div ref={chatRef} className="plan-my-day__chat" aria-live="polite">

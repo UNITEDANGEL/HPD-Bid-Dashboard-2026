@@ -4268,6 +4268,63 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }, [jobs, mappedJobs, filteredJobs, userLocation, mapBoroughFilter]);
 
   useEffect(() => {
+    function handleRoutedJobStatus(event: Event) {
+      const detail = ((event as CustomEvent).detail || {}) as { jobId?: string; step?: string; occurredAt?: string };
+      const key = String(detail.jobId || "").trim();
+      const step = String(detail.step || "").trim();
+      if (!key || !step) return;
+      const iso = detail.occurredAt && !Number.isNaN(new Date(detail.occurredAt).getTime()) ? detail.occurredAt : new Date().toISOString();
+      const available = new Date(new Date(iso).getTime() + NO_ACCESS_SECOND_ATTEMPT_WAIT_MS).toISOString();
+      let patch: Record<string, any> = { updatedAt: iso };
+      let message = "Field status saved.";
+
+      if (step === "arrived") {
+        patch = { ...patch, LastArrivedAt: iso, lastArrivedAt: iso };
+        message = `${key}: arrival saved. Choose Start Job or an access outcome.`;
+      } else if (step === "work_started") {
+        patch = { ...patch, WorkflowStatus: "WORK_STARTED", workflowStatus: "WORK_STARTED", FieldOutcome: "WORK_STARTED", fieldOutcome: "WORK_STARTED", StatusOverride: "Work In Progress", status: "Work In Progress", JobStartedAt: iso, jobStartedAt: iso, ActualWorkStartDate: iso, actualWorkStartDate: iso, FieldTimerStartedAt: iso, fieldTimerStartedAt: iso, ...activeWorkflowArchiveFields() };
+        message = `${key}: work started.`;
+      } else if (step === "no_access") {
+        patch = { ...patch, WorkflowStatus: "NO_ACCESS_1_WAITING_72H", workflowStatus: "NO_ACCESS_1_WAITING_72H", FieldOutcome: "NO_ACCESS_1_WAITING_72H", fieldOutcome: "NO_ACCESS_1_WAITING_72H", StatusOverride: "No Access 1st - Waiting 72h", status: "No Access 1st - Waiting 72h", NoAccessFirstAttemptAt: iso, noAccessFirstAttemptAt: iso, SecondAttemptAvailableAt: available, secondAttemptAvailableAt: available, ...activeWorkflowArchiveFields() };
+        message = `${key}: No Access saved. The 72-hour revisit timer started.`;
+      } else if (step === "refused_access") {
+        patch = { ...patch, WorkflowStatus: "REFUSED_ACCESS", workflowStatus: "REFUSED_ACCESS", FieldOutcome: "REFUSED_ACCESS", fieldOutcome: "REFUSED_ACCESS", StatusOverride: "Refused Access", status: "Refused Access", RefusalDate: iso, refusalDate: iso, ...archiveCloseoutFields(iso) };
+        message = `${key}: Refused Access saved and archived.`;
+      } else if (step === "work_completed") {
+        patch = { ...patch, WorkflowStatus: "WORK_COMPLETED", workflowStatus: "WORK_COMPLETED", FieldOutcome: "WORK_COMPLETED", fieldOutcome: "WORK_COMPLETED", StatusOverride: "Work Completed", status: "Work Completed", ActualWorkCompletionDate: iso, actualWorkCompletionDate: iso, ...archiveCloseoutFields(iso) };
+        message = `${key}: Work Completed saved and archived.`;
+      } else if (step === "partial_work") {
+        patch = { ...patch, WorkflowStatus: "PARTIAL_WORK_COMPLETED", workflowStatus: "PARTIAL_WORK_COMPLETED", FieldOutcome: "PARTIAL_WORK_COMPLETED", fieldOutcome: "PARTIAL_WORK_COMPLETED", StatusOverride: "Partial Work Completed", status: "Partial Work Completed", ActualWorkCompletionDate: iso, actualWorkCompletionDate: iso, ...archiveCloseoutFields(iso) };
+        message = `${key}: Partial Work saved and archived.`;
+      } else if (step === "completed_by_others") {
+        patch = { ...patch, WorkflowStatus: "COMPLETED_BY_OTHERS", workflowStatus: "COMPLETED_BY_OTHERS", FieldOutcome: "COMPLETED_BY_OTHERS", fieldOutcome: "COMPLETED_BY_OTHERS", StatusOverride: "Completed by Others", status: "Completed by Others", VerifiedByOthersDate: iso, verifiedByOthersDate: iso, ...archiveCloseoutFields(iso) };
+        message = `${key}: Completed by Others saved and archived.`;
+      } else {
+        return;
+      }
+
+      const testOnly = new URLSearchParams(window.location.search).get("fieldFlowTest") === "1";
+      if (testOnly) {
+        applyWorkflowPatchToState(key, patch);
+        showActionNotice(`[TEST ONLY] ${message}`);
+        return;
+      }
+
+      workflowStorageSave(key, patch);
+      applyWorkflowPatchToState(key, patch);
+      if (step === "no_access") setWorkflowViewFilter("waiting72");
+      workflowServerSave(key, patch)
+        .then(() => showActionNotice(message))
+        .catch((error) => {
+          console.error(error);
+          showActionNotice(`${message} Saved on this device; cloud sync needs retry.`);
+        });
+    }
+    window.addEventListener("hpd:routed-job-status", handleRoutedJobStatus as EventListener);
+    return () => window.removeEventListener("hpd:routed-job-status", handleRoutedJobStatus as EventListener);
+  }, [jobs, mappedJobs]);
+
+  useEffect(() => {
     if (!urlOmoRequest) return;
 
     const target = urlOmoRequest.toLowerCase().replace(/[^a-z0-9]+/g, "");
