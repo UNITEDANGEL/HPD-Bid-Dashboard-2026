@@ -37536,7 +37536,6 @@ return (
               const selectedRouteJob = dayAgentRoute[Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1)] || dayAgentRoute[0];
               const selectedRouteLeg = dayAgentRouteSummary?.legs?.[Math.min(dayAgentSelectedStopIndex, Math.max(0, dayAgentRouteSummary.legs.length - 1))];
               const selectedRouteLabel = selectedRouteLeg ? `Stop ${Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1) + 1} · Drive ${selectedRouteLeg.label}` : `${dayAgentRoute.length} stop${dayAgentRoute.length === 1 ? "" : "s"}`;
-              const selectedRouteDescription = selectedRouteJob ? descriptionSummary(selectedRouteJob).replace(/\s+/g, " ").slice(0, 130) : "";
               return (
             <section className={`map-day-route-tray ${dayAgentRouteHidden ? "is-hidden" : ""}`} aria-label="Active day route stops">
               <div className="map-day-route-tray-head">
@@ -37564,10 +37563,10 @@ return (
                 </div>
               </div>
               {!dayAgentRouteHidden && selectedRouteJob ? (
-                <button type="button" className="map-day-route-selected-summary" onClick={() => focusRouteStopOnMap(selectedRouteJob, Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1))}>
+                <button type="button" className="map-day-route-selected-summary" onClick={() => focusJob(selectedRouteJob)} aria-label={`Open job ${jobKey(selectedRouteJob)}. AI reason: ${dispatchJobReason(selectedRouteJob)}`}>
                   <span>{jobKey(selectedRouteJob)} · {displayAddress(selectedRouteJob)} ·</span>
                   <strong>{selectedRouteLeg ? `Drive ${selectedRouteLeg.label}` : "Route leg loading"}</strong>
-                  <small>{selectedRouteDescription || "No job description available."}</small>
+                  <small>Why AI chose it: {dispatchJobReason(selectedRouteJob)} · Tap to open job</small>
                 </button>
               ) : null}
               <div className="map-day-route-stop-list">
@@ -37576,7 +37575,7 @@ return (
                     <button type="button" className="map-day-route-stop-main" onClick={() => focusRouteStopOnMap(job, index)}>
                       <b>{index + 1}</b>
                       <span>{jobKey(job)}</span>
-                      <small>{dayAgentRouteSummary?.legs?.[index]?.label ? `${dayAgentRouteSummary.legs[index].label} · ${displayAddress(job)}` : displayAddress(job)}</small>
+                      <small>{dayAgentRouteSummary?.legs?.[index]?.label ? `${dayAgentRouteSummary.legs[index].label} · ${dispatchJobReason(job)}` : dispatchJobReason(job)}</small>
                     </button>
                     <div className="map-day-route-edit-actions" aria-label={`Edit route stop ${index + 1}`}>
                       <button type="button" onClick={() => moveDayAgentRouteStop(index, -1)} disabled={index === 0} aria-label={`Move ${jobKey(job)} earlier`}>
