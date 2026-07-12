@@ -83,6 +83,7 @@ import {
 } from "../../lib/field-packet-store";
 import { cleanJobLocation, cleanJobLocationText, isCommonAreaLocation } from "../../lib/jobLocation";
 import { paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
+import { copyLegacyFieldStorage } from "../../lib/unified-field-store";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 
 const WAZE_LOGO_URL = "https://www.google.com/s2/favicons?domain=waze.com&sz=64";
@@ -2672,6 +2673,12 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const fieldCameraRecordingTargetRef = useRef<FieldCaptureTarget | null>(null);
   const fieldCameraChunksRef = useRef<Blob[]>([]);
   const fieldCameraRecordingStartedAtRef = useRef(0);
+
+  useEffect(() => {
+    copyLegacyFieldStorage().catch((error) => {
+      console.warn("Unified field storage bootstrap failed; legacy storage remains active.", error);
+    });
+  }, []);
 
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
@@ -36621,6 +36628,32 @@ return (
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed .map-face-search input {
             background: transparent !important;
             color: #06182b !important;
+          }
+          @media (max-width: 700px) {
+            .job-drawer,
+            .job-drawer.closed {
+              width: auto !important;
+              max-width: calc(100vw - 16px) !important;
+              min-width: 0 !important;
+              overflow-x: hidden !important;
+            }
+
+            .job-drawer > *,
+            .ai-dispatch-chat,
+            .dispatch-chat-head,
+            .dispatch-chat-messages,
+            .dispatch-chat-prompts,
+            .ai-job-assistant {
+              box-sizing: border-box !important;
+              width: 100% !important;
+              max-width: 100% !important;
+              min-width: 0 !important;
+            }
+
+            .dispatch-chat-head,
+            .dispatch-chat-messages {
+              overflow-wrap: anywhere !important;
+            }
           }
         `}
         </style>

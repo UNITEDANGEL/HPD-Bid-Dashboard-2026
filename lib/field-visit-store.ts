@@ -18,6 +18,8 @@ export type FieldVisitRecord = {
   note: string;
 };
 
+import { shadowUpsert } from "./unified-field-store";
+
 const DB_NAME = "hpd-field-visits-v1";
 const STORE_NAME = "visits";
 
@@ -122,6 +124,7 @@ export async function saveFieldVisit(record: Omit<FieldVisitRecord, "id" | "visi
   });
 
   db.close();
+  await shadowUpsert("visit", row as unknown as Record<string, unknown>);
   return row;
 }
 

@@ -20,6 +20,8 @@ export type FieldPacket = {
   generatedAt: string;
 };
 
+import { shadowUpsert } from "./unified-field-store";
+
 const DB_NAME = "hpd-field-packets-v1";
 const STORE_NAME = "packets";
 
@@ -108,6 +110,7 @@ export async function saveFieldPacket(packet: Omit<FieldPacket, "id" | "generate
   });
 
   db.close();
+  await shadowUpsert("document", row as unknown as Record<string, unknown>);
   return row;
 }
 

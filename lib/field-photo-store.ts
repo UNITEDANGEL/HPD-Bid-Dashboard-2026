@@ -40,6 +40,8 @@ export type FieldMedia = {
 
 export type FieldPhoto = FieldMedia;
 
+import { shadowUpsert } from "./unified-field-store";
+
 export type FieldMediaCounts = Record<FieldMediaKind, number> & {
   images: number;
   videos: number;
@@ -855,6 +857,8 @@ export async function saveFieldPhotos(
     db.close();
   }
 
+  await Promise.all(saved.map((evidence) => shadowUpsert("media", evidence as unknown as Record<string, unknown>)));
+
   return saved;
 }
 
@@ -924,6 +928,7 @@ export async function updateFieldEvidence(
   });
 
   db.close();
+  await shadowUpsert("media", updated as unknown as Record<string, unknown>);
   return updated;
 }
 
