@@ -3192,8 +3192,9 @@ async function drawDayAgentRouteLine(routeJobs = dayAgentRoute, routeOrigin: Use
     if (!mapRef.current || dayAgentRouteLayerRef.current !== layer) return;
     const placed: Array<{ left: number; top: number; right: number; bottom: number }> = [];
     let visibleLabels = 0;
+    const routeLabelLimit = typeof window !== "undefined" && window.innerWidth <= 720 ? 3 : DAY_AGENT_ROUTE_LABEL_LIMIT;
     routeResult.summary.legs.forEach((leg, index) => {
-      if (visibleLabels >= DAY_AGENT_ROUTE_LABEL_LIMIT) return;
+      if (visibleLabels >= routeLabelLimit) return;
       const point = mapRef.current.latLngToContainerPoint([leg.midpoint.lat, leg.midpoint.lng]);
       const box = {
         left: point.x - DAY_AGENT_ROUTE_LABEL_WIDTH / 2,
@@ -5142,7 +5143,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         workflowViewFilter === "waiting72" ||
         workflowViewFilter === "noaccess24" ||
         workflowViewFilter === "ready2";
-      const clusterMarkersEnabled = false;
+      const clusterMarkersEnabled = true;
       const timerLayerNeedsClusters =
         clusterMarkersEnabled &&
         timerLayer &&
@@ -5635,12 +5636,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       if (!userLocationMarkerRef.current) {
         userLocationMarkerRef.current = L.marker(latLng, {
-          zIndexOffset: 2000,
+          zIndexOffset: 10000,
           icon: L.divIcon({
             className: "user-location-marker",
-            html: '<div class="user-location-dot"><em>You</em><span></span></div>',
-            iconSize: [64, 64],
-            iconAnchor: [32, 32],
+            html: '<div class="user-location-dot"><em>MY LOCATION</em><span></span></div>',
+            iconSize: [76, 76],
+            iconAnchor: [38, 38],
           }),
         }).addTo(map);
       } else {
@@ -13704,19 +13705,21 @@ return (
           .user-location-marker {
             background: transparent !important;
             border: 0 !important;
+            z-index: 10000 !important;
+            pointer-events: none !important;
           }
 
           .user-location-dot {
             position: relative;
-            width: 64px;
-            height: 64px;
+            width: 76px;
+            height: 76px;
             display: grid;
             place-items: center;
             border-radius: 999px;
             background: rgba(37, 99, 235, 0.14);
             border: 2px solid rgba(255, 255, 255, 0.92);
             box-shadow:
-              0 0 0 9px rgba(37, 99, 235, 0.16),
+              0 0 0 12px rgba(37, 99, 235, 0.2),
               0 12px 30px rgba(3, 9, 16, 0.32);
           }
 
@@ -13731,15 +13734,16 @@ return (
 
           .user-location-dot em {
             position: absolute;
-            top: -5px;
+            top: -10px;
             left: 50%;
             z-index: 2;
             transform: translateX(-50%);
-            padding: 3px 7px;
+            padding: 4px 9px;
             border-radius: 999px;
             background: rgba(15, 23, 42, 0.95);
             color: #ffffff;
-            font-size: 9px;
+            font-size: 10px;
+            white-space: nowrap;
             font-style: normal;
             font-weight: 1000;
             letter-spacing: 0;
@@ -13749,8 +13753,8 @@ return (
           .user-location-dot span {
             position: relative;
             z-index: 1;
-            width: 22px;
-            height: 22px;
+            width: 26px;
+            height: 26px;
             border-radius: 999px;
             background: #ef4444;
             border: 4px solid #ffffff;
