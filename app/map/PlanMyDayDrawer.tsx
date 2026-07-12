@@ -1,7 +1,6 @@
 "use client";
 
 import jobsData from "../../data/COA_Fetcher_2026.json";
-import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 
 type JobRecord = Record<string, unknown>;
@@ -28,6 +27,10 @@ type PlannedJob = {
   lng: number | null;
   distance: number | null;
   reason: string;
+  description: string;
+  contactName: string;
+  contactPhone: string;
+  unit: string;
 };
 
 const BOROUGHS = ["Queens", "Brooklyn", "Bronx", "Manhattan", "Staten Island"];
@@ -238,6 +241,10 @@ function rankJobs(plan: LocalPlan, origin: Point) {
       lng,
       distance,
       reason: appointment ? "Appointment today" : urgent ? "Urgent or overdue" : distance !== null ? "Good travel fit" : "Active job",
+      description: textValue(job, ["ItbPage3Description", "ITBDescription", "JobDescription", "Job_Description", "description"]),
+      contactName: textValue(job, ["ItbTenantName", "TenantName", "tenantName", "ContactName", "contactName"]),
+      contactPhone: textValue(job, ["ItbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"]),
+      unit: textValue(job, ["ItbTenantApartment", "ApartmentUnit", "Location", "location"]),
     }));
 
   return ordered;
@@ -255,6 +262,10 @@ function selectableJob(record: JobRecord, origin?: Point, reason = "Selected by 
     lng,
     distance: origin && lat !== null && lng !== null ? distanceMiles(origin, { lat, lng }) : null,
     reason,
+    description: textValue(record, ["ItbPage3Description", "ITBDescription", "JobDescription", "Job_Description", "description"]),
+    contactName: textValue(record, ["ItbTenantName", "TenantName", "tenantName", "ContactName", "contactName"]),
+    contactPhone: textValue(record, ["ItbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"]),
+    unit: textValue(record, ["ItbTenantApartment", "ApartmentUnit", "Location", "location"]),
   };
 }
 
@@ -270,6 +281,7 @@ export default function PlanMyDayDrawer() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [jobSearch, setJobSearch] = useState("");
   const [originPoint, setOriginPoint] = useState<Point | null>(null);
+  const [viewingJobId, setViewingJobId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [originLabel, setOriginLabel] = useState("");
   const [voiceStatus, setVoiceStatus] = useState("Tap Read Reply on iPhone");
@@ -291,6 +303,7 @@ export default function PlanMyDayDrawer() {
       .slice(0, 8);
   }, [activeJobs, jobSearch]);
   const selectedResults = useMemo(() => results.filter((job) => selectedIds.includes(job.id)), [results, selectedIds]);
+  const viewingJob = useMemo(() => results.find((job) => job.id === viewingJobId) || null, [results, viewingJobId]);
 
   function speakReply(text: string, force = false) {
     if ((!voiceEnabled && !force) || typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -377,7 +390,19 @@ export default function PlanMyDayDrawer() {
     setJobSearch("");
     setInput("");
     setOriginLabel("");
+    setViewingJobId(null);
     setMessages([{ role: "assistant", text: "New plan started. Tell me where you want to work and what matters most." }]);
+  }
+
+  function backToMap() {
+    setViewingJobId(null);
+    setOpen(false);
+  }
+
+  function routeUrl(job: PlannedJob, service: "google" | "waze") {
+    const destination = job.lat !== null && job.lng !== null ? `${job.lat},${job.lng}` : job.address;
+    if (service === "waze") return `https://www.waze.com/ul?q=${encodeURIComponent(destination)}&navigate=yes`;
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
   }
 
   function toggleJob(id: string) {
@@ -420,9 +445,20 @@ export default function PlanMyDayDrawer() {
               <button type="button" onClick={() => setVoiceEnabled((value) => !value)} aria-pressed={voiceEnabled}>
                 {voiceEnabled ? "Voice on" : "Voice off"}
               </button>
-              <button type="button" onClick={newChat}>New chat</button>
+              <button type="button" onClick={newChat}>Reset Route</button>
+              <button type="button" onClick={backToMap}>Back to Map</button>
             </div>
           </header>
+
+          {viewingJob ? <section className="plan-my-day__job-view" aria-label={`Job ${viewingJob.id} details`}>
+            <div className="plan-my-day__job-view-head"><button type="button" onClick={() => setViewingJobId(null)}>← Back to Route</button><strong>{viewingJob.id}</strong><span>{viewingJob.status}</span></div>
+            <h3>{viewingJob.address || "Address unavailable"}</h3>
+            <p><b>Unit:</b> {viewingJob.unit || "Not listed"}</p>
+            <p><b>Contact:</b> {viewingJob.contactName || "Not listed"}</p>
+            <p><b>Phone:</b> {viewingJob.contactPhone ? <a href={`tel:${viewingJob.contactPhone.replace(/[^+\d]/g, "")}`}>{viewingJob.contactPhone}</a> : "Not listed"}</p>
+            <div className="plan-my-day__itb"><b>ITB Job Description</b><p>{viewingJob.description || "ITB description unavailable."}</p></div>
+            <div className="plan-my-day__go-here"><a href={routeUrl(viewingJob, "google")} target="_blank" rel="noreferrer">Google Maps</a><a href={routeUrl(viewingJob, "waze")} target="_blank" rel="noreferrer">Waze</a></div>
+          </section> : null}
 
           <div className="plan-my-day__chat" aria-live="polite">
             {messages.map((message, index) => (
@@ -479,7 +515,7 @@ export default function PlanMyDayDrawer() {
                 <article key={job.id} className={selectedIds.includes(job.id) ? "is-selected" : "is-unselected"}>
                   <label className="plan-my-day__select"><input type="checkbox" checked={selectedIds.includes(job.id)} onChange={() => toggleJob(job.id)} /><b>{index + 1}</b></label>
                   <div><strong>{job.id}</strong><span>{job.address || "Address unavailable"}</span><small>{job.borough || "Unknown borough"} · {job.distance === null ? "distance unavailable" : `${job.distance.toFixed(1)} mi`}</small><em>Why AI selected it: {job.reason}</em>
-                    <nav><Link href={`/jobs/${encodeURIComponent(job.id)}`}>View Job</Link><button type="button" onClick={() => moveJob(job.id, -1)} disabled={index === 0}>Move up</button><button type="button" onClick={() => moveJob(job.id, 1)} disabled={index === results.length - 1}>Move down</button></nav>
+                    <nav><button type="button" onClick={() => setViewingJobId(job.id)}>View Job</button><a href={`/jobs/${encodeURIComponent(job.id)}/`}>Full Page</a><a href={routeUrl(job, "google")} target="_blank" rel="noreferrer">Go Here</a><button type="button" onClick={() => moveJob(job.id, -1)} disabled={index === 0}>Move up</button><button type="button" onClick={() => moveJob(job.id, 1)} disabled={index === results.length - 1}>Move down</button></nav>
                   </div>
                 </article>
               ))}
