@@ -3192,7 +3192,7 @@ async function drawDayAgentRouteLine(routeJobs = dayAgentRoute, routeOrigin: Use
     if (!mapRef.current || dayAgentRouteLayerRef.current !== layer) return;
     const placed: Array<{ left: number; top: number; right: number; bottom: number }> = [];
     let visibleLabels = 0;
-    const routeLabelLimit = typeof window !== "undefined" && window.innerWidth <= 720 ? 3 : DAY_AGENT_ROUTE_LABEL_LIMIT;
+    const routeLabelLimit = typeof window !== "undefined" && window.innerWidth <= 720 ? 0 : Math.min(2, DAY_AGENT_ROUTE_LABEL_LIMIT);
     routeResult.summary.legs.forEach((leg, index) => {
       if (visibleLabels >= routeLabelLimit) return;
       const point = mapRef.current.latLngToContainerPoint([leg.midpoint.lat, leg.midpoint.lng]);
@@ -5505,7 +5505,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const noAccessTimerFocus = Boolean(noAccessTimerLabel) && showIndividualNoAccessTimers;
         const selectedMarkerTapHint = selectedOnly;
         const overlapSafeMarker = !selectedOnly && filteredCount > 1 && !noAccessTimerFocus && !selectedMarkerTapHint;
-        let collisionMiniMarker = false;
+        let collisionMiniMarker = routeFocusActive && !selectedOnly;
         const appointmentLabel = markerAppointmentReminderHtml(job);
         const appointmentDateValue = appointmentDate(job);
         const appointmentPastDue = Boolean(appointmentDateValue && appointmentDateValue.getTime() < Date.now() - APPOINTMENT_DUE_GRACE_MS);
@@ -5517,7 +5517,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const visitedToday = Boolean(visitSummary?.today);
         if (overlapSafeMarker) {
           const fullBox = markerBoxAt(markerPoint, mobileMap ? 116 : 122, noAccessTimerLabel || appointmentLabel ? 94 : 66);
-          collisionMiniMarker = markerCollisionBoxes.some((box) => markerBoxesOverlap(fullBox, box));
+          if (!collisionMiniMarker) {
+            collisionMiniMarker = markerCollisionBoxes.some((box) => markerBoxesOverlap(fullBox, box));
+          }
           const reservedBox = collisionMiniMarker
             ? markerBoxAt(markerPoint, mobileMap ? 70 : 76, noAccessTimerLabel || appointmentLabel ? 62 : 52)
             : fullBox;
