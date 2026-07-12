@@ -31,6 +31,7 @@ type PlannedJob = {
 
 const BOROUGHS = ["Queens", "Brooklyn", "Bronx", "Manhattan", "Staten Island"];
 const BASE_POINT: Point = { lat: 40.6957, lng: -73.8331 };
+const LAST_LOCATION_STORAGE_KEY = "hpd-map-location-last-v1";
 const DEFAULT_PLAN: LocalPlan = {
   boroughs: [],
   avoidBoroughs: [],
@@ -171,13 +172,26 @@ function describePlan(plan: LocalPlan) {
   return `${plan.stopCount} stops in ${area}${avoid}, prioritizing ${priority}${finish}.`;
 }
 
-function getOrigin(startMode: LocalPlan["startMode"]): Promise<{ point: Point; label: string }> {
+async function getOrigin(startMode: LocalPlan["startMode"]): Promise<{ point: Point; label: string }> {
   if (startMode === "office" || !navigator.geolocation) return Promise.resolve({ point: BASE_POINT, label: "Richmond Hill office" });
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(LAST_LOCATION_STORAGE_KEY) || "null");
+    if (Number.isFinite(saved?.lat) && Number.isFinite(saved?.lng)) {
+      return { point: { lat: saved.lat, lng: saved.lng }, label: "your saved location" };
+    }
+  } catch {}
+  try {
+    const permissions = (navigator as any).permissions;
+    if (permissions?.query) {
+      const permission = await permissions.query({ name: "geolocation" });
+      if (permission.state === "denied") return { point: BASE_POINT, label: "Richmond Hill office fallback" };
+    }
+  } catch {}
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
       (position) => resolve({ point: { lat: position.coords.latitude, lng: position.coords.longitude }, label: "your current location" }),
       () => resolve({ point: BASE_POINT, label: "Richmond Hill office fallback" }),
-      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 },
+      { enableHighAccuracy: true, maximumAge: 300_000, timeout: 2_500 },
     );
   });
 }
