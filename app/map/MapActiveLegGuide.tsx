@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 const JOB_ID_PATTERN = /\b[A-Z]{2}\d{4,7}\b/i;
-const ACTIVE_INDEX_KEY = "hpd-active-leg-index-v1";
+const ACTIVE_INDEX_KEY = "hpd-active-leg-index-v2";
 
 function textOf(node: Element | null) {
   return String(node?.textContent || "").replace(/\s+/g, " ").trim();
@@ -42,9 +42,7 @@ function currentLocationMarker(mapRect: DOMRect) {
     const rect = marker.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
-    if (cx >= mapRect.left && cx <= mapRect.right && cy >= mapRect.top && cy <= mapRect.bottom) {
-      return marker;
-    }
+    if (cx >= mapRect.left && cx <= mapRect.right && cy >= mapRect.top && cy <= mapRect.bottom) return marker;
   }
   return null;
 }
@@ -69,9 +67,19 @@ function routeRows() {
   );
 }
 
-function routeIdAt(index: number) {
-  const row = routeRows()[index];
-  return textOf(row).match(JOB_ID_PATTERN)?.[0]?.toUpperCase() || "";
+function routeId(row: HTMLElement | undefined) {
+  return textOf(row || null).match(JOB_ID_PATTERN)?.[0]?.toUpperCase() || "";
+}
+
+function routeAddress(row: HTMLElement | undefined) {
+  if (!row) return "";
+  const small = row.querySelector("small");
+  const raw = textOf(small || row);
+  return raw
+    .replace(/^\d+\s*(?:min|m|hr|h).*?·\s*/i, "")
+    .replace(JOB_ID_PATTERN, "")
+    .replace(/^[-·\s]+|[-·\s]+$/g, "")
+    .trim();
 }
 
 function stopMarker(id: string, mapRect: DOMRect) {
@@ -102,12 +110,17 @@ function writeActiveIndex(index: number) {
   sessionStorage.setItem(ACTIVE_INDEX_KEY, String(Math.max(0, index)));
 }
 
+function googleUrl(address: string, id: string) {
+  const query = address || id;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
 export default function MapActiveLegGuide() {
   useEffect(() => {
     let destroyed = false;
     let frame = 0;
     let svg: SVGSVGElement | null = null;
-    let status: HTMLDivElement | null = null;
+    let panel: HTMLDivElement | null = null;
 
     const render = () => {
       if (destroyed) return;
@@ -131,44 +144,48 @@ export default function MapActiveLegGuide() {
         map.appendChild(svg);
       }
 
-      if (!status || status.parentElement !== map) {
-        status?.remove();
-        status = document.createElement("div");
-        status.className = "hpd-active-leg-status";
-        Object.assign(status.style, {
+      if (!panel || panel.parentElement !== map) {
+        panel?.remove();
+        panel = document.createElement("div");
+        panel.className = "hpd-active-leg-panel";
+        Object.assign(panel.style, {
           position: "absolute",
           left: "50%",
-          bottom: "18px",
+          bottom: "16px",
           transform: "translateX(-50%)",
           zIndex: "905",
-          padding: "8px 12px",
-          borderRadius: "999px",
-          background: "rgba(8,24,44,.94)",
+          width: "min(340px, calc(100% - 24px))",
+          padding: "12px",
+          borderRadius: "16px",
+          background: "rgba(8,24,44,.96)",
           color: "#fff",
-          fontSize: "12px",
-          fontWeight: "900",
-          boxShadow: "0 10px 26px rgba(15,23,42,.25)",
-          pointerEvents: "none",
-          whiteSpace: "nowrap",
+          boxShadow: "0 12px 30px rgba(15,23,42,.3)",
+          fontFamily: "Inter,Arial,sans-serif",
         });
-        map.appendChild(status);
+        map.appendChild(panel);
       }
 
       const rows = routeRows();
+      if (!rows.length) {
+        svg.innerHTML = "";
+        panel.innerHTML = `<div style="font-size:11px;font-weight:900;opacity:.72">ROUTE</div><div style="font-size:15px;font-weight:900;margin-top:2px">Add jobs to today's route</div><div style="font-size:12px;opacity:.78;margin-top:4px">No Start button is needed. The guide begins automatically when route stops appear.</div>`;
+        return;
+      }
+
       const maxIndex = Math.max(0, rows.length - 1);
       const activeIndex = Math.min(readActiveIndex(), maxIndex);
-      const activeId = routeIdAt(activeIndex);
+      const row = rows[activeIndex];
+      const activeId = routeId(row);
+      const address = routeAddress(row);
       const rect = map.getBoundingClientRect();
       const you = currentLocationMarker(rect);
       const stop = stopMarker(activeId, rect);
 
       if (!you || !stop || !activeId) {
         svg.innerHTML = "";
-        status.textContent = !you
-          ? "Turn on location to show YOU → 1"
-          : !rows.length
-            ? "Start a route to show YOU → 1"
-            : "Active stop marker is not visible";
+        panel.innerHTML = !you
+          ? `<div style="font-size:11px;font-weight:900;opacity:.72">NEXT STOP</div><div style="font-size:15px;font-weight:900;margin-top:2px">Turn on location</div><div style="font-size:12px;opacity:.78;margin-top:4px">The line starts automatically when the YOU marker is visible.</div>`
+          : `<div style="font-size:11px;font-weight:900;opacity:.72">NEXT STOP</div><div style="font-size:15px;font-weight:900;margin-top:2px">Stop ${activeIndex + 1}</div><div style="font-size:12px;opacity:.78;margin-top:4px">Move the map until this stop marker is visible.</div>`;
         return;
       }
 
@@ -179,21 +196,36 @@ export default function MapActiveLegGuide() {
       svg.setAttribute("viewBox", `0 0 ${Math.max(1, rect.width)} ${Math.max(1, rect.height)}`);
       const path = `M${start.x.toFixed(1)},${start.y.toFixed(1)} L${end.x.toFixed(1)},${end.y.toFixed(1)}`;
       const signature = `${activeId}:${path}`;
-      if (svg.dataset.signature === signature) return;
-      svg.dataset.signature = signature;
+      if (svg.dataset.signature !== signature) {
+        svg.dataset.signature = signature;
+        svg.innerHTML = `
+          <path id="hpd-active-leg-path" d="${path}" fill="none" stroke="rgba(255,255,255,.98)" stroke-width="12" stroke-linecap="round" />
+          <path d="${path}" fill="none" stroke="#1677ff" stroke-width="7" stroke-linecap="round" />
+          <circle cx="${start.x}" cy="${start.y}" r="16" fill="#0ea56b" stroke="#fff" stroke-width="3" />
+          <text x="${start.x}" y="${start.y + 0.5}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="8" font-weight="900">YOU</text>
+          <circle cx="${end.x}" cy="${end.y}" r="18" fill="#ff8a00" stroke="#fff" stroke-width="3" />
+          <text x="${end.x}" y="${end.y + 0.5}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="12" font-weight="900">${activeIndex + 1}</text>
+          <circle r="5" fill="#e8fbff" stroke="#1677ff" stroke-width="2"><animateMotion dur="2.8s" repeatCount="indefinite"><mpath href="#hpd-active-leg-path" /></animateMotion></circle>
+        `;
+      }
 
-      svg.innerHTML = `
-        <path id="hpd-active-leg-path" d="${path}" fill="none" stroke="rgba(255,255,255,.98)" stroke-width="12" stroke-linecap="round" />
-        <path d="${path}" fill="none" stroke="#1677ff" stroke-width="7" stroke-linecap="round" />
-        <circle cx="${start.x}" cy="${start.y}" r="16" fill="#0ea56b" stroke="#fff" stroke-width="3" />
-        <text x="${start.x}" y="${start.y + 0.5}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="8" font-weight="900">YOU</text>
-        <circle cx="${end.x}" cy="${end.y}" r="18" fill="#ff8a00" stroke="#fff" stroke-width="3" />
-        <text x="${end.x}" y="${end.y + 0.5}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="12" font-weight="900">${activeIndex + 1}</text>
-        <circle r="5" fill="#e8fbff" stroke="#1677ff" stroke-width="2">
-          <animateMotion dur="2.8s" repeatCount="indefinite"><mpath href="#hpd-active-leg-path" /></animateMotion>
-        </circle>
+      const nextDisabled = activeIndex >= maxIndex;
+      panel.innerHTML = `
+        <div style="font-size:11px;font-weight:900;opacity:.72">NEXT STOP</div>
+        <div style="font-size:17px;font-weight:900;margin-top:2px">YOU → ${activeIndex + 1}</div>
+        <div style="font-size:12px;opacity:.82;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${address || activeId}</div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <a data-nav href="${googleUrl(address, activeId)}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;text-decoration:none;background:#1677ff;color:#fff;border-radius:11px;padding:10px;font-size:12px;font-weight:900">NAVIGATE</a>
+          <button data-next type="button" ${nextDisabled ? "disabled" : ""} style="border:0;border-radius:11px;padding:10px 14px;font-size:12px;font-weight:900;background:${nextDisabled ? "rgba(255,255,255,.15)" : "#fff"};color:${nextDisabled ? "rgba(255,255,255,.55)" : "#0f172a"};cursor:${nextDisabled ? "default" : "pointer"}">${nextDisabled ? "LAST STOP" : "NEXT"}</button>
+        </div>
       `;
-      status.textContent = activeIndex === 0 ? `YOU → 1 · ${activeId}` : `${activeIndex} → ${activeIndex + 1} · ${activeId}`;
+
+      panel.querySelector<HTMLButtonElement>("[data-next]")?.addEventListener("click", () => {
+        if (activeIndex >= maxIndex) return;
+        writeActiveIndex(activeIndex + 1);
+        if (svg) svg.dataset.signature = "";
+        render();
+      });
     };
 
     const schedule = () => {
@@ -232,7 +264,7 @@ export default function MapActiveLegGuide() {
       window.removeEventListener("resize", schedule);
       window.removeEventListener("scroll", schedule, true);
       svg?.remove();
-      status?.remove();
+      panel?.remove();
     };
   }, []);
 
