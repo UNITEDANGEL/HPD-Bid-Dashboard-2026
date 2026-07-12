@@ -1,12 +1,13 @@
 "use client";
 
 import jobsData from "../../data/COA_Fetcher_2026.json";
+import { countFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type JobRecord = Record<string, unknown>;
 type Point = { lat: number; lng: number };
 type ChatMessage = { role: "assistant" | "user"; text: string };
-type FieldStep = "ready" | "arrived" | "work_started" | "no_access" | "refused_access" | "work_completed" | "partial_work" | "completed_by_others";
+type FieldStep = "ready" | "arrived" | "before_media" | "work_started" | "after_media" | "no_access_media" | "refused_access_media" | "completed_by_others_media" | "no_access" | "refused_access" | "work_completed" | "partial_work" | "completed_by_others";
 type RoutePreference = "shortest_drive" | "highest_priority" | "balanced" | "appointments_first";
 type LocalPlan = {
   boroughs: string[];
@@ -285,6 +286,7 @@ export default function PlanMyDayDrawer() {
   const [originPoint, setOriginPoint] = useState<Point | null>(null);
   const [viewingJobId, setViewingJobId] = useState<string | null>(null);
   const [fieldSteps, setFieldSteps] = useState<Record<string, FieldStep>>({});
+  const [mediaPaused, setMediaPaused] = useState(false);
   const [busy, setBusy] = useState(false);
   const [originLabel, setOriginLabel] = useState("");
   const [voiceStatus, setVoiceStatus] = useState("Tap Read Reply on iPhone");
@@ -404,6 +406,7 @@ export default function PlanMyDayDrawer() {
     setOriginLabel("");
     setViewingJobId(null);
     setFieldSteps({});
+    setMediaPaused(false);
     setMessages([{ role: "assistant", text: "New plan started. Tell me where you want to work and what matters most." }]);
   }
 
@@ -421,6 +424,25 @@ export default function PlanMyDayDrawer() {
   function updateFieldStep(job: PlannedJob, step: FieldStep) {
     setFieldSteps((current) => ({ ...current, [job.id]: step }));
     window.dispatchEvent(new CustomEvent("hpd:routed-job-status", { detail: { jobId: job.id, step, occurredAt: new Date().toISOString() } }));
+  }
+
+  function openRequiredMedia(job: PlannedJob, kind: "before" | "after" | "no_access" | "refused_access" | "completed_by_others") {
+    window.dispatchEvent(new CustomEvent("hpd:routed-job-media", { detail: { jobId: job.id, kind } }));
+    setMediaPaused(true);
+    setOpen(false);
+  }
+
+  async function confirmRequiredMedia(job: PlannedJob, kind: FieldMediaKind, next: FieldStep) {
+    const testOnly = new URLSearchParams(window.location.search).get("fieldFlowTest") === "1";
+    if (!testOnly) {
+      const counts = await countFieldPhotos(job.id);
+      if (!counts[kind]) {
+        window.alert(`${kind.replaceAll("_", " ")} evidence is required before continuing.`);
+        return;
+      }
+    }
+    if (["work_started", "no_access", "refused_access", "completed_by_others"].includes(next)) updateFieldStep(job, next);
+    else setFieldSteps((current) => ({ ...current, [job.id]: next }));
   }
 
   function nextSelectedStop(jobId: string) {
@@ -452,9 +474,9 @@ export default function PlanMyDayDrawer() {
   }
 
   return (
-    <aside className={`plan-my-day ${open ? "is-open" : ""}`} aria-label="Free local AI day planner">
-      <button type="button" className="plan-my-day__toggle" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
-        <span>AI</span><strong>Plan My Day</strong><b>{open ? "Close" : "Open"}</b>
+    <aside className={`plan-my-day ${open ? "is-open" : ""} ${mediaPaused ? "is-media-paused" : ""}`} aria-label="Free local AI day planner">
+      <button type="button" className="plan-my-day__toggle" onClick={() => { if (mediaPaused) { setMediaPaused(false); setOpen(true); } else setOpen((value) => !value); }} aria-expanded={open}>
+        <span>AI</span><strong>{mediaPaused ? "Return to Route" : "Plan My Day"}</strong><b>{mediaPaused ? "Resume" : open ? "Close" : "Open"}</b>
       </button>
 
       {open ? (
@@ -484,8 +506,13 @@ export default function PlanMyDayDrawer() {
             <section className="plan-my-day__field-flow" aria-label="Field job status">
               <span>FIELD VISIT</span>
               {(!fieldSteps[viewingJob.id] || fieldSteps[viewingJob.id] === "ready") ? <><p>When you reach this job, confirm arrival to begin.</p><button type="button" className="primary" onClick={() => updateFieldStep(viewingJob, "arrived")}>I Have Arrived</button></> : null}
-              {fieldSteps[viewingJob.id] === "arrived" ? <><p>You are at the job. Start work or record the access outcome.</p><div className="plan-my-day__status-grid"><button type="button" className="primary" onClick={() => updateFieldStep(viewingJob, "work_started")}>Start Job</button><button type="button" onClick={() => updateFieldStep(viewingJob, "no_access")}>No Access</button><button type="button" onClick={() => updateFieldStep(viewingJob, "refused_access")}>Refused Access</button><button type="button" onClick={() => updateFieldStep(viewingJob, "completed_by_others")}>Completed by Others</button></div></> : null}
-              {fieldSteps[viewingJob.id] === "work_started" ? <><p>Work timer started. Choose the result when field work ends.</p><div className="plan-my-day__status-grid"><button type="button" className="primary" onClick={() => updateFieldStep(viewingJob, "work_completed")}>Work Completed</button><button type="button" onClick={() => updateFieldStep(viewingJob, "partial_work")}>Partial Work</button></div></> : null}
+              {fieldSteps[viewingJob.id] === "arrived" ? <><p>You are at the job. Start work or record the access outcome. Evidence is required before the status can close.</p><div className="plan-my-day__status-grid"><button type="button" className="primary" onClick={() => setFieldSteps((current) => ({ ...current, [viewingJob.id]: "before_media" }))}>Start Job</button><button type="button" onClick={() => setFieldSteps((current) => ({ ...current, [viewingJob.id]: "no_access_media" }))}>No Access</button><button type="button" onClick={() => setFieldSteps((current) => ({ ...current, [viewingJob.id]: "refused_access_media" }))}>Refused Access</button><button type="button" onClick={() => setFieldSteps((current) => ({ ...current, [viewingJob.id]: "completed_by_others_media" }))}>Completed by Others</button></div></> : null}
+              {fieldSteps[viewingJob.id] === "before_media" ? <><p>Capture BEFORE evidence before work begins.</p><button type="button" className="primary" onClick={() => openRequiredMedia(viewingJob, "before")}>Open Before Media</button><button type="button" onClick={() => void confirmRequiredMedia(viewingJob, "before", "work_started")}>Before Media Saved · Begin Work</button></> : null}
+              {fieldSteps[viewingJob.id] === "work_started" ? <><p>Work is in progress. When finished, capture AFTER evidence before choosing completion status.</p><button type="button" className="primary" onClick={() => openRequiredMedia(viewingJob, "after")}>Open After Media</button><button type="button" onClick={() => void confirmRequiredMedia(viewingJob, "after", "after_media")}>After Media Saved · Continue</button></> : null}
+              {fieldSteps[viewingJob.id] === "after_media" ? <><p>After evidence confirmed. Choose the final work result.</p><div className="plan-my-day__status-grid"><button type="button" className="primary" onClick={() => updateFieldStep(viewingJob, "work_completed")}>Work Completed</button><button type="button" onClick={() => updateFieldStep(viewingJob, "partial_work")}>Partial Work</button></div></> : null}
+              {fieldSteps[viewingJob.id] === "no_access_media" ? <><p>Capture evidence showing the No Access attempt before saving.</p><button type="button" className="primary" onClick={() => openRequiredMedia(viewingJob, "no_access")}>Open No Access Media</button><button type="button" onClick={() => void confirmRequiredMedia(viewingJob, "no_access", "no_access")}>Evidence Saved · Confirm No Access</button></> : null}
+              {fieldSteps[viewingJob.id] === "refused_access_media" ? <><p>Capture evidence supporting Refused Access before saving.</p><button type="button" className="primary" onClick={() => openRequiredMedia(viewingJob, "refused_access")}>Open Refused Access Media</button><button type="button" onClick={() => void confirmRequiredMedia(viewingJob, "refused_access", "refused_access")}>Evidence Saved · Confirm Refused Access</button></> : null}
+              {fieldSteps[viewingJob.id] === "completed_by_others_media" ? <><p>Capture evidence showing work completed by others before saving.</p><button type="button" className="primary" onClick={() => openRequiredMedia(viewingJob, "completed_by_others")}>Open Completed-by-Others Media</button><button type="button" onClick={() => void confirmRequiredMedia(viewingJob, "completed_by_others", "completed_by_others")}>Evidence Saved · Confirm Outcome</button></> : null}
               {["no_access", "refused_access", "work_completed", "partial_work", "completed_by_others"].includes(fieldSteps[viewingJob.id] || "") ? <div className="plan-my-day__outcome-saved"><strong>Status saved: {(fieldSteps[viewingJob.id] || "").replaceAll("_", " ")}</strong>{nextSelectedStop(viewingJob.id) ? <button type="button" onClick={() => setViewingJobId(nextSelectedStop(viewingJob.id)!.id)}>Next Stop · {nextSelectedStop(viewingJob.id)!.id}</button> : <button type="button" onClick={backToMap}>Route Finished · Back to Map</button>}</div> : null}
             </section>
           </section> : null}

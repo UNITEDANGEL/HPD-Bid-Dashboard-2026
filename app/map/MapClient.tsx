@@ -4325,6 +4325,33 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }, [jobs, mappedJobs]);
 
   useEffect(() => {
+    function handleRoutedJobMedia(event: Event) {
+      const detail = ((event as CustomEvent).detail || {}) as { jobId?: string; kind?: FieldMediaKind };
+      const key = String(detail.jobId || "").trim();
+      const kind = detail.kind;
+      if (!key || !kind) return;
+      const source = [...mappedJobs, ...jobs].find((job) => jobKey(job) === key);
+      if (!source) {
+        showActionNotice(`Could not open media for ${key}.`);
+        return;
+      }
+      const coords = getStoredCoords(source);
+      const target = ({ ...source, ...(coords ? { _lat: coords.lat, _lng: coords.lng, _source: "stored" } : {}) }) as MappedJob;
+      setSelected(target);
+      setDrawerOpen(true);
+      setFieldFocusPane("capture");
+      const testOnly = new URLSearchParams(window.location.search).get("fieldFlowTest") === "1";
+      if (testOnly) {
+        showActionNotice(`[TEST ONLY] ${fieldEvidenceLabel(kind)} media console opened for ${key}.`);
+        return;
+      }
+      window.setTimeout(() => requestFieldPhotoCapture(target, kind, "image/*,video/*", true), 180);
+    }
+    window.addEventListener("hpd:routed-job-media", handleRoutedJobMedia as EventListener);
+    return () => window.removeEventListener("hpd:routed-job-media", handleRoutedJobMedia as EventListener);
+  }, [jobs, mappedJobs]);
+
+  useEffect(() => {
     if (!urlOmoRequest) return;
 
     const target = urlOmoRequest.toLowerCase().replace(/[^a-z0-9]+/g, "");
@@ -36710,6 +36737,53 @@ return (
             .dispatch-chat-head,
             .dispatch-chat-messages {
               overflow-wrap: anywhere !important;
+            }
+
+            .job-drawer,
+            .job-drawer * {
+              box-sizing: border-box !important;
+            }
+
+            .job-drawer * {
+              min-width: 0 !important;
+              max-width: 100% !important;
+            }
+
+            .job-drawer .selected-card-head {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .job-drawer .selected-chip-stack {
+              justify-items: start !important;
+              width: 100% !important;
+            }
+
+            .job-drawer .ai-job-assistant,
+            .job-drawer .ai-head,
+            .job-drawer .ai-input-row,
+            .job-drawer .ai-chip-row,
+            .job-drawer .ai-answer,
+            .job-drawer .selected-card,
+            .job-drawer .field-workflow-card,
+            .job-drawer .field-mission-mode,
+            .job-drawer .field-media-option-hub,
+            .job-drawer .field-media-console {
+              width: 100% !important;
+            }
+
+            .job-drawer .package-readiness-grid,
+            .job-drawer .field-media-option-grid,
+            .job-drawer .field-media-lanes,
+            .job-drawer .field-media-option-head,
+            .job-drawer .field-media-console-head {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .job-drawer .package-readiness-grid *,
+            .job-drawer .field-media-option-hub *,
+            .job-drawer .field-media-console * {
+              overflow-wrap: anywhere !important;
+              white-space: normal !important;
             }
           }
         `}
