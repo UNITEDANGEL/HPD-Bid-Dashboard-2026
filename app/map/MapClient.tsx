@@ -36800,6 +36800,45 @@ return (
               overflow-wrap: anywhere !important;
               white-space: normal !important;
             }
+
+            .job-drawer .job-card-field-metas,
+            .job-drawer .job-card-current-state-banner {
+              display: none !important;
+            }
+
+            body .map-shell .job-drawer:not(.closed) .job-card-field-metas,
+            body .map-shell .job-drawer:not(.closed) .job-card-current-state-banner {
+              display: none !important;
+              visibility: hidden !important;
+              height: 0 !important;
+              min-height: 0 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              overflow: hidden !important;
+            }
+
+            .job-drawer .private-visit-card small,
+            .job-drawer .private-visit-card p {
+              display: none !important;
+            }
+
+            .job-drawer .private-visit-card {
+              padding: 10px !important;
+              gap: 7px !important;
+            }
+
+            .job-drawer .field-page3-description > p {
+              display: none !important;
+            }
+
+            .job-drawer .field-page3-description {
+              min-height: 0 !important;
+              padding: 10px !important;
+            }
+
+            .job-drawer .field-page3-description-head {
+              margin: 0 !important;
+            }
           }
         `}
         </style>
