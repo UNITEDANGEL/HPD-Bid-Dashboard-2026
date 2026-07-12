@@ -1,236 +1,337 @@
 "use client";
 
+import jobsData from "../../data/COA_Fetcher_2026.json";
 import { FormEvent, useMemo, useState } from "react";
 
-type Role = "assistant" | "user";
-type ChatMessage = { id: string; role: Role; text: string };
-type StructuredPlan = {
-  start_mode: "current_location" | "office" | "custom";
-  start_location_text: string | null;
+type JobRecord = Record<string, unknown>;
+type Point = { lat: number; lng: number };
+type ChatMessage = { role: "assistant" | "user"; text: string };
+type RoutePreference = "shortest_drive" | "highest_priority" | "balanced" | "appointments_first";
+type LocalPlan = {
   boroughs: string[];
-  avoid_boroughs: string[];
+  avoidBoroughs: string[];
   priorities: string[];
-  stop_count: number;
-  include_omo: string[];
-  exclude_omo: string[];
-  finish_by: string | null;
-  route_preference: "shortest_drive" | "highest_priority" | "balanced" | "appointments_first";
-  notes: string[];
+  stopCount: number;
+  includeOmo: string[];
+  excludeOmo: string[];
+  finishBy: string | null;
+  routePreference: RoutePreference;
+  startMode: "current_location" | "office";
+};
+type PlannedJob = {
+  id: string;
+  address: string;
+  borough: string;
+  status: string;
+  lat: number | null;
+  lng: number | null;
+  distance: number | null;
+  reason: string;
 };
 
-type PlannerResponse = {
-  reply: string;
-  needs_clarification: boolean;
-  clarification_question: string | null;
-  plan_ready: boolean;
-  plan: StructuredPlan;
-  response_id: string | null;
-  error?: string;
-};
-
-const QUICK_PROMPTS = [
-  "Plan 5 jobs near me",
-  "Plan urgent and overdue jobs",
-  "Plan today's appointments",
-  "Plan the shortest Queens route",
-];
-
-const EMPTY_PLAN: StructuredPlan = {
-  start_mode: "current_location",
-  start_location_text: null,
+const BOROUGHS = ["Queens", "Brooklyn", "Bronx", "Manhattan", "Staten Island"];
+const BASE_POINT: Point = { lat: 40.6957, lng: -73.8331 };
+const DEFAULT_PLAN: LocalPlan = {
   boroughs: [],
-  avoid_boroughs: [],
-  priorities: [],
-  stop_count: 5,
-  include_omo: [],
-  exclude_omo: [],
-  finish_by: null,
-  route_preference: "balanced",
-  notes: [],
+  avoidBoroughs: [],
+  priorities: ["balanced"],
+  stopCount: 5,
+  includeOmo: [],
+  excludeOmo: [],
+  finishBy: null,
+  routePreference: "balanced",
+  startMode: "current_location",
 };
 
-function uid() {
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+function asArray(value: unknown): JobRecord[] {
+  if (Array.isArray(value)) return value as JobRecord[];
+  if (value && typeof value === "object") {
+    const object = value as Record<string, unknown>;
+    if (Array.isArray(object.jobs)) return object.jobs as JobRecord[];
+    if (Array.isArray(object.data)) return object.data as JobRecord[];
+    if (Array.isArray(object.records)) return object.records as JobRecord[];
+  }
+  return [];
 }
 
-function planSummary(plan: StructuredPlan) {
-  const items: string[] = [];
-  items.push(`${plan.stop_count} stops`);
-  items.push(plan.start_mode === "current_location" ? "start near me" : plan.start_mode === "office" ? "start at office" : `start at ${plan.start_location_text || "custom location"}`);
-  if (plan.boroughs.length) items.push(plan.boroughs.join(", "));
-  if (plan.priorities.length) items.push(plan.priorities.join(", "));
-  if (plan.avoid_boroughs.length) items.push(`avoid ${plan.avoid_boroughs.join(", ")}`);
-  if (plan.finish_by) items.push(`finish by ${plan.finish_by}`);
-  items.push(plan.route_preference.replaceAll("_", " "));
-  return items.join(" · ");
+function textValue(record: JobRecord, keys: string[]) {
+  for (const key of keys) {
+    const value = record[key];
+    if (value !== undefined && value !== null && String(value).trim()) return String(value).trim();
+  }
+  return "";
+}
+
+function numberValue(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeBorough(value: string) {
+  const clean = value.toLowerCase();
+  if (clean.includes("queen") || /\bqn\b/.test(clean)) return "Queens";
+  if (clean.includes("brooklyn") || /\bbk\b/.test(clean)) return "Brooklyn";
+  if (clean.includes("bronx") || /\bbx\b/.test(clean)) return "Bronx";
+  if (clean.includes("manhattan") || /\bmn\b/.test(clean)) return "Manhattan";
+  if (clean.includes("staten") || /\bsi\b/.test(clean)) return "Staten Island";
+  return value;
+}
+
+function distanceMiles(a: Point, b: Point) {
+  const radius = 3958.7613;
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const dLat = toRadians(b.lat - a.lat);
+  const dLng = toRadians(b.lng - a.lng);
+  const lat1 = toRadians(a.lat);
+  const lat2 = toRadians(b.lat);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return radius * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+function jobId(record: JobRecord) {
+  return textValue(record, ["OMO", "omo", "jobId", "id", "Job_ID", "Job ID"]).toUpperCase();
+}
+
+function jobStatus(record: JobRecord) {
+  return textValue(record, ["WorkflowStatus", "FieldOutcome", "StatusOverride", "status", "Status"]) || "Active";
+}
+
+function isClosed(record: JobRecord) {
+  return /completed|complete|closed|archived|cancelled|canceled/i.test(jobStatus(record));
+}
+
+function isUrgent(record: JobRecord) {
+  const status = jobStatus(record);
+  const due = textValue(record, ["DueDate", "dueDate", "WorkCompletionDate", "workCompletionDate"]);
+  const date = due ? new Date(due) : null;
+  const overdue = Boolean(date && !Number.isNaN(date.getTime()) && date.getTime() < Date.now());
+  return /urgent|emergency|priority|overdue|no\s*access|ready\s*(?:for\s*)?(?:second|2)/i.test(status) || overdue;
+}
+
+function hasAppointmentToday(record: JobRecord) {
+  const raw = textValue(record, ["AppointmentAt", "appointmentAt", "AppointmentUpdatedAt"]);
+  if (!raw) return false;
+  const date = new Date(raw);
+  return !Number.isNaN(date.getTime()) && date.toDateString() === new Date().toDateString();
+}
+
+function unique(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+function parseMessage(message: string, current: LocalPlan): LocalPlan {
+  const clean = message.toLowerCase();
+  const next: LocalPlan = { ...current, boroughs: [...current.boroughs], avoidBoroughs: [...current.avoidBoroughs], priorities: [...current.priorities], includeOmo: [...current.includeOmo], excludeOmo: [...current.excludeOmo] };
+
+  const count = clean.match(/\b(1[0-2]|[1-9])\s*(?:jobs?|stops?)?\b/);
+  if (count) next.stopCount = Math.max(1, Math.min(12, Number(count[1])));
+
+  const mentionedBoroughs = BOROUGHS.filter((borough) => clean.includes(borough.toLowerCase()));
+  if (/\bavoid\b|\bexclude\b|\bskip\b/.test(clean)) next.avoidBoroughs = unique([...next.avoidBoroughs, ...mentionedBoroughs]);
+  else if (mentionedBoroughs.length) next.boroughs = mentionedBoroughs;
+
+  if (/near me|nearby|closest|shortest drive/.test(clean)) {
+    next.startMode = "current_location";
+    next.routePreference = "shortest_drive";
+  }
+  if (/office|base/.test(clean) && /start/.test(clean)) next.startMode = "office";
+  if (/urgent|overdue|priority/.test(clean)) next.priorities = unique([...next.priorities.filter((item) => item !== "balanced"), "urgent"]);
+  if (/appointment/.test(clean)) next.priorities = unique([...next.priorities.filter((item) => item !== "balanced"), "appointments"]);
+  if (/highest priority/.test(clean)) next.routePreference = "highest_priority";
+  if (/appointments first/.test(clean)) next.routePreference = "appointments_first";
+  if (/balanced/.test(clean)) next.routePreference = "balanced";
+
+  const finish = message.match(/(?:finish|done|end)\s+(?:by|before)\s+([0-9]{1,2}(?::[0-9]{2})?\s*(?:am|pm)?)/i);
+  if (finish) next.finishBy = finish[1].trim();
+
+  const ids = Array.from(message.toUpperCase().matchAll(/\b[A-Z]{1,3}\d{4,8}\b/g)).map((match) => match[0]);
+  if (ids.length) {
+    if (/remove|exclude|skip|without/.test(clean)) next.excludeOmo = unique([...next.excludeOmo, ...ids]);
+    else next.includeOmo = unique([...next.includeOmo, ...ids]);
+  }
+
+  if (/clear borough|any borough|all boroughs|anywhere/.test(clean)) next.boroughs = [];
+  if (/clear avoid|do not avoid/.test(clean)) next.avoidBoroughs = [];
+  if (/clear included|remove all included/.test(clean)) next.includeOmo = [];
+
+  return next;
+}
+
+function describePlan(plan: LocalPlan) {
+  const area = plan.boroughs.length ? plan.boroughs.join(" and ") : "all NYC boroughs";
+  const avoid = plan.avoidBoroughs.length ? `, avoiding ${plan.avoidBoroughs.join(" and ")}` : "";
+  const priority = plan.priorities.includes("appointments")
+    ? "appointments"
+    : plan.priorities.includes("urgent")
+      ? "urgent and overdue work"
+      : plan.routePreference === "shortest_drive"
+        ? "the shortest drive"
+        : "a balanced route";
+  const finish = plan.finishBy ? ` and target finishing by ${plan.finishBy}` : "";
+  return `${plan.stopCount} stops in ${area}${avoid}, prioritizing ${priority}${finish}.`;
+}
+
+function getOrigin(startMode: LocalPlan["startMode"]): Promise<{ point: Point; label: string }> {
+  if (startMode === "office" || !navigator.geolocation) return Promise.resolve({ point: BASE_POINT, label: "Richmond Hill office" });
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve({ point: { lat: position.coords.latitude, lng: position.coords.longitude }, label: "your current location" }),
+      () => resolve({ point: BASE_POINT, label: "Richmond Hill office fallback" }),
+      { enableHighAccuracy: true, maximumAge: 60_000, timeout: 10_000 },
+    );
+  });
+}
+
+function rankJobs(plan: LocalPlan, origin: Point) {
+  const records = asArray(jobsData).filter((job) => !isClosed(job));
+  const includeSet = new Set(plan.includeOmo);
+  const excludeSet = new Set(plan.excludeOmo);
+  const required = records.filter((job) => includeSet.has(jobId(job)) && !excludeSet.has(jobId(job)));
+
+  const candidates = records.filter((job) => {
+    const id = jobId(job);
+    if (!id || includeSet.has(id) || excludeSet.has(id)) return false;
+    const borough = normalizeBorough(textValue(job, ["Borough", "borough", "Boro", "boro"]));
+    if (plan.boroughs.length && !plan.boroughs.includes(borough)) return false;
+    if (plan.avoidBoroughs.includes(borough)) return false;
+    if (plan.priorities.includes("appointments") && !hasAppointmentToday(job)) return false;
+    if (plan.priorities.includes("urgent") && !isUrgent(job)) return false;
+    return true;
+  });
+
+  const scoreJob = (job: JobRecord) => {
+    const lat = numberValue(job.Latitude ?? job.latitude ?? job.lat);
+    const lng = numberValue(job.Longitude ?? job.longitude ?? job.lng ?? job.lon);
+    const distance = lat !== null && lng !== null ? distanceMiles(origin, { lat, lng }) : null;
+    const urgent = isUrgent(job);
+    const appointment = hasAppointmentToday(job);
+    let score = 0;
+    if (appointment) score += plan.routePreference === "appointments_first" ? 1200 : 500;
+    if (urgent) score += plan.routePreference === "highest_priority" ? 1000 : 450;
+    if (distance !== null) score += plan.routePreference === "shortest_drive" ? Math.max(0, 900 - distance * 35) : Math.max(0, 250 - distance * 10);
+    return { job, lat, lng, distance, score, urgent, appointment };
+  };
+
+  const ordered = [...required.map(scoreJob), ...candidates.map(scoreJob).sort((a, b) => b.score - a.score || (a.distance ?? 999) - (b.distance ?? 999))]
+    .slice(0, plan.stopCount)
+    .map(({ job, lat, lng, distance, urgent, appointment }): PlannedJob => ({
+      id: jobId(job),
+      address: textValue(job, ["BuildingAddress", "Building Address", "Address", "address", "Location", "location"]),
+      borough: normalizeBorough(textValue(job, ["Borough", "borough", "Boro", "boro"])),
+      status: jobStatus(job),
+      lat,
+      lng,
+      distance,
+      reason: appointment ? "Appointment today" : urgent ? "Urgent or overdue" : distance !== null ? "Good travel fit" : "Active job",
+    }));
+
+  return ordered;
 }
 
 export default function PlanMyDayDrawer() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState("");
-  const [previousResponseId, setPreviousResponseId] = useState<string | null>(null);
-  const [plan, setPlan] = useState<StructuredPlan>(EMPTY_PLAN);
-  const [planReady, setPlanReady] = useState(false);
-  const [accepted, setAccepted] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: uid(),
-      role: "assistant",
-      text: "Good morning. Tell me how you want to plan today. You can mention boroughs, urgency, appointments, specific OMO numbers, stop count, finish time, or the shortest drive.",
-    },
+    { role: "assistant", text: "Good morning. Tell me how you want to plan today. I work locally and do not require an API key." },
   ]);
+  const [plan, setPlan] = useState<LocalPlan>(DEFAULT_PLAN);
+  const [results, setResults] = useState<PlannedJob[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [originLabel, setOriginLabel] = useState("");
 
-  const summary = useMemo(() => planSummary(plan), [plan]);
+  const planSummary = useMemo(() => describePlan(plan), [plan]);
 
-  async function sendMessage(value: string) {
-    const text = value.trim();
-    if (!text || sending) return;
-
-    setMessages((current) => [...current, { id: uid(), role: "user", text }]);
+  async function handleMessage(raw: string) {
+    const message = raw.trim();
+    if (!message || busy) return;
     setInput("");
-    setSending(true);
-    setError("");
-    setAccepted(false);
+    setBusy(true);
+    setMessages((current) => [...current, { role: "user", text: message }]);
 
-    try {
-      const response = await fetch("/api/ai-day-planner", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          message: text,
-          previousResponseId,
-          currentPlan: plan,
-        }),
-      });
-      const data = (await response.json()) as PlannerResponse;
-      if (!response.ok || data.error) throw new Error(data.error || "The AI planner could not respond.");
+    const nextPlan = parseMessage(message, plan);
+    const { point, label } = await getOrigin(nextPlan.startMode);
+    const nextResults = rankJobs(nextPlan, point);
+    setPlan(nextPlan);
+    setResults(nextResults);
+    setOriginLabel(label);
 
-      setPreviousResponseId(data.response_id || null);
-      setPlan(data.plan);
-      setPlanReady(Boolean(data.plan_ready));
-      const assistantText = data.clarification_question
-        ? `${data.reply}\n\n${data.clarification_question}`
-        : data.reply;
-      setMessages((current) => [...current, { id: uid(), role: "assistant", text: assistantText }]);
-    } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "The AI planner could not respond.";
-      setError(message);
-      setMessages((current) => [...current, { id: uid(), role: "assistant", text: `I could not complete that request: ${message}` }]);
-    } finally {
-      setSending(false);
-    }
+    const missingIncluded = nextPlan.includeOmo.filter((id) => !nextResults.some((job) => job.id === id));
+    let reply = `I prepared ${nextResults.length} stops from ${label}. ${describePlan(nextPlan)}`;
+    if (!nextResults.length) reply = "I could not find matching active jobs. Try removing a restriction, changing the borough, or asking for nearby jobs.";
+    else if (missingIncluded.length) reply += ` I could not locate these active OMO numbers: ${missingIncluded.join(", ")}.`;
+    else reply += " Review the stops below. You can tell me to add, remove, shorten, or reprioritize the route.";
+
+    setMessages((current) => [...current, { role: "assistant", text: reply }]);
+    setBusy(false);
   }
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    void sendMessage(input);
+    void handleMessage(input);
   }
 
   function acceptPlan() {
-    const detail = { ...plan, acceptedAt: new Date().toISOString() };
-    window.sessionStorage.setItem("hpd-plan-my-day-approved", JSON.stringify(detail));
-    window.dispatchEvent(new CustomEvent("hpd:plan-my-day-approved", { detail }));
-    setAccepted(true);
-    setMessages((current) => [
-      ...current,
-      {
-        id: uid(),
-        role: "assistant",
-        text: "Plan approved. I saved the structured route request for the map-routing upgrade.",
-      },
-    ]);
+    if (!results.length) return;
+    const detail = { plan, originLabel, jobs: results };
+    sessionStorage.setItem("hpd-approved-day-plan", JSON.stringify(detail));
+    window.dispatchEvent(new CustomEvent("hpd:approved-day-plan", { detail }));
+    setMessages((current) => [...current, { role: "assistant", text: "Plan accepted and saved. The next map upgrade can load these approved stops into the native route." }]);
   }
 
-  function reset() {
+  function newChat() {
+    setPlan(DEFAULT_PLAN);
+    setResults([]);
     setInput("");
-    setSending(false);
-    setError("");
-    setPreviousResponseId(null);
-    setPlan(EMPTY_PLAN);
-    setPlanReady(false);
-    setAccepted(false);
-    setMessages([
-      {
-        id: uid(),
-        role: "assistant",
-        text: "Let’s start over. Describe the day you want to plan.",
-      },
-    ]);
+    setOriginLabel("");
+    setMessages([{ role: "assistant", text: "New plan started. Tell me where you want to work and what matters most." }]);
   }
 
   return (
-    <aside className={`plan-my-day ${open ? "is-open" : ""}`} aria-label="Plan My Day AI assistant">
+    <aside className={`plan-my-day ${open ? "is-open" : ""}`} aria-label="Free local AI day planner">
       <button type="button" className="plan-my-day__toggle" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
-        <span>AI</span>
-        <strong>Plan My Day</strong>
-        <b>{open ? "Close" : "Chat"}</b>
+        <span>AI</span><strong>Plan My Day</strong><b>{open ? "Close" : "Open"}</b>
       </button>
 
       {open ? (
-        <section className="plan-my-day__panel">
-          <header className="plan-my-day__header">
-            <div>
-              <span>OPENAI DAY PLANNER</span>
-              <h2>Plan the day by chatting</h2>
-            </div>
-            <button type="button" onClick={reset}>New chat</button>
+        <div className="plan-my-day__panel">
+          <header>
+            <div><span>FREE LOCAL PLANNER</span><h2>Plan by chatting</h2></div>
+            <button type="button" onClick={newChat}>New chat</button>
           </header>
 
-          <div className="plan-my-day__conversation" aria-live="polite">
-            {messages.map((message) => (
-              <article key={message.id} className={`plan-my-day__bubble is-${message.role}`}>
-                <small>{message.role === "assistant" ? "AI planner" : "You"}</small>
-                <p>{message.text}</p>
+          <div className="plan-my-day__chat" aria-live="polite">
+            {messages.map((message, index) => (
+              <article key={`${message.role}-${index}`} className={`plan-my-day__bubble is-${message.role}`}>
+                <b>{message.role === "assistant" ? "Planner" : "You"}</b><p>{message.text}</p>
               </article>
             ))}
-            {sending ? (
-              <article className="plan-my-day__bubble is-assistant is-thinking">
-                <small>AI planner</small>
-                <p>Thinking through your route…</p>
-              </article>
-            ) : null}
+            {busy ? <article className="plan-my-day__bubble is-assistant"><b>Planner</b><p>Planning…</p></article> : null}
           </div>
 
-          {!messages.some((message) => message.role === "user") ? (
-            <div className="plan-my-day__suggestions" aria-label="Suggested planning prompts">
-              {QUICK_PROMPTS.map((prompt) => (
-                <button type="button" key={prompt} onClick={() => void sendMessage(prompt)} disabled={sending}>{prompt}</button>
-              ))}
-            </div>
-          ) : null}
+          <div className="plan-my-day__suggestions">
+            {["Plan 5 jobs near me", "5 urgent Queens jobs", "Appointments first", "Avoid Manhattan"].map((suggestion) => (
+              <button type="button" key={suggestion} onClick={() => void handleMessage(suggestion)}>{suggestion}</button>
+            ))}
+          </div>
 
           <form className="plan-my-day__composer" onSubmit={submit}>
-            <label htmlFor="plan-my-day-chat">Message the planner</label>
-            <div>
-              <textarea
-                id="plan-my-day-chat"
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder="Example: Plan 6 urgent Queens jobs near me, include EQ24929, avoid Manhattan, and finish by 3 PM."
-                rows={3}
-                disabled={sending}
-              />
-              <button type="submit" disabled={sending || !input.trim()}>{sending ? "Sending…" : "Send"}</button>
-            </div>
+            <label htmlFor="plan-chat-input">Message the planner</label>
+            <div><textarea id="plan-chat-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Example: Plan 6 urgent Queens jobs near me, include EQ24929, avoid Manhattan, finish by 3 PM." rows={3} /><button type="submit" disabled={busy || !input.trim()}>Send</button></div>
           </form>
 
-          {error ? <div className="plan-my-day__error" role="alert">{error}</div> : null}
-
-          <section className={`plan-my-day__plan ${planReady ? "is-ready" : ""}`}>
-            <div>
-              <span>{planReady ? "PLAN READY" : "WORKING PLAN"}</span>
-              <p>{summary}</p>
-            </div>
-            <div className="plan-my-day__plan-actions">
-              <button type="button" onClick={() => setInput("Change the plan: ")}>Change plan</button>
-              <button type="button" className="primary" onClick={acceptPlan} disabled={!planReady || accepted}>
-                {accepted ? "Plan accepted" : "Accept plan"}
-              </button>
-            </div>
+          <section className="plan-my-day__working-plan">
+            <span>WORKING PLAN</span><p>{planSummary}</p>
           </section>
-        </section>
+
+          {results.length ? (
+            <div className="plan-my-day__results">
+              {results.map((job, index) => (
+                <article key={job.id}><b>{index + 1}</b><div><strong>{job.id}</strong><span>{job.address || "Address unavailable"}</span><small>{job.borough || "Unknown borough"} · {job.distance === null ? "distance unavailable" : `${job.distance.toFixed(1)} mi`} · {job.reason}</small></div></article>
+              ))}
+              <button type="button" className="plan-my-day__accept" onClick={acceptPlan}>Accept Plan</button>
+            </div>
+          ) : null}
+        </div>
       ) : null}
     </aside>
   );
