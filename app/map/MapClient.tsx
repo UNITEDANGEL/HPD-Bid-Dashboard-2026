@@ -1336,15 +1336,13 @@ function getBestVoice() {
   return englishVoices[0] || voices[0] || null;
 }
 function speakText(text: string, mode: "full" | "summary" = "full") {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") return false;
   if (!("speechSynthesis" in window)) {
-    alert("Text-to-speech is not supported in this browser.");
-    return;
+    return false;
   }
   const clean = String(text || "").trim();
   if (!clean) {
-    alert("No text available to read.");
-    return;
+    return false;
   }
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(clean);
@@ -1355,6 +1353,7 @@ function speakText(text: string, mode: "full" | "summary" = "full") {
   utterance.pitch = 1;
   utterance.volume = 1;
   window.speechSynthesis.speak(utterance);
+  return true;
 }
 function stopSpeaking() {
   if (typeof window === "undefined") return;
@@ -3322,6 +3321,10 @@ const startDayAgent = async (commandText = dayAgentCommand, requestedBoroughOver
     void drawDayAgentRouteLine(route, routeOrigin);
     const originLabel = userLocation ? "from your saved location" : "from base while GPS updates";
     setActionNotice(`Workday route ready ${originLabel}: ${route.length} stop${route.length === 1 ? "" : "s"} chosen for 8 AM start, field work to 5 PM, and base return by 6 PM. ${jobKey(route[0])} is first.`);
+    speakText(
+      `Route ready. ${route.length} stops. First stop ${jobKey(route[0])}, ${displayAddress(route[0])}.`,
+      "summary"
+    );
   } else {
     appendDayAgentLog("Started day agent, but no active mapped jobs matched.");
     setActionNotice("Day Agent did not find active mapped jobs for this command.");
@@ -36859,6 +36862,23 @@ return (
             font-weight: 900;
           }
 
+          .map-day-agent-voice {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+          }
+
+          .map-day-agent-voice button {
+            min-height: 38px;
+            border: 1px solid rgba(147,197,253,.3);
+            border-radius: 12px;
+            background: rgba(30,58,138,.28);
+            color: #eff6ff;
+            font-size: 11px;
+            font-weight: 900;
+          }
+
           .job-progress-timeline strong {
             font-size: 10px;
             font-weight: 950;
@@ -37486,6 +37506,18 @@ return (
                     <a className="map-day-agent-route-link waze" href={wazeDirectionsUrl(agentFirstJob)} target="_blank" rel="noopener noreferrer">Waze</a>
                   ) : null}
                   <a className="map-day-agent-route-link" href={routeUrl} target="_blank" rel="noopener noreferrer">Google</a>
+                </div>
+                <div className="map-day-agent-voice" aria-label="AI route voice controls">
+                  <button
+                    type="button"
+                    onClick={() => speakText(
+                      agentFirstJob
+                        ? `Route ready. ${dayAgentRoute.length || 1} stops. First stop ${jobKey(agentFirstJob)}, ${displayAddress(agentFirstJob)}.`
+                        : "No route yet. Choose Today, Nearby, or Ready second.",
+                      "summary"
+                    )}
+                  >Speak Route</button>
+                  <button type="button" onClick={stopSpeaking}>Stop Voice</button>
                 </div>
                 <label className="map-day-agent-return">
                   <input
