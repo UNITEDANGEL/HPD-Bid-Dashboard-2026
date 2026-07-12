@@ -36780,6 +36780,22 @@ return (
             text-align: center;
           }
 
+          .job-progress-timeline button {
+            width: 100%;
+            min-width: 0;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+          }
+
+          .job-progress-timeline button:disabled {
+            cursor: not-allowed;
+            opacity: .48;
+          }
+
           .job-progress-timeline li::before {
             content: "";
             display: block;
@@ -37920,18 +37936,20 @@ return (
                 const closed = ["Work Completed", "Partial Work Completed", "No Access - 2nd Attempt", "Refused Access", "Completed by Others"].includes(choice);
                 const packaged = Boolean(fullPackagePreviewFor(selected));
                 const steps = [
-                  { label: "Arrive", detail: "job open", done: true, active: !saved && !draftWorkflowStatus },
-                  { label: "Status", detail: saved ? workflowShortStatusLabel(choice) : draftWorkflowStatus ? "ready" : "choose", done: saved, active: Boolean(draftWorkflowStatus) },
-                  { label: "Media", detail: counts.total ? `${counts.total} saved` : "before/after", done: counts.total > 0, active: saved && !counts.total && !closed },
-                  { label: "Complete", detail: closed ? workflowShortStatusLabel(choice) : "finish", done: closed, active: saved && !closed && counts.total > 0 },
-                  { label: "Package", detail: packaged ? "ready" : "review", done: packaged, active: closed && !packaged },
+                  { label: "Arrive", detail: "job open", done: true, active: !saved && !draftWorkflowStatus, available: false, action: () => undefined },
+                  { label: "Status", detail: saved ? workflowShortStatusLabel(choice) : draftWorkflowStatus ? "ready" : "choose", done: saved, active: Boolean(draftWorkflowStatus), available: true, action: jumpToStatusFlow },
+                  { label: "Media", detail: counts.total ? `${counts.total} saved` : "before/after", done: counts.total > 0, active: saved && !counts.total && !closed, available: saved, action: () => jumpToMediaFlow(selected) },
+                  { label: "Complete", detail: closed ? workflowShortStatusLabel(choice) : "finish", done: closed, active: saved && !closed && counts.total > 0, available: saved, action: jumpToStatusFlow },
+                  { label: "Package", detail: packaged ? "ready" : "review", done: packaged, active: closed && !packaged, available: closed, action: () => jumpToPackageFlow(selected) },
                 ];
                 return (
                   <ol className="job-progress-timeline" aria-label="Job progress timeline">
                     {steps.map((step) => (
                       <li key={step.label} className={`${step.done ? "done" : ""} ${step.active ? "active" : ""}`.trim()} aria-current={step.active ? "step" : undefined}>
-                        <strong>{step.label}</strong>
-                        <small>{step.detail}</small>
+                        <button type="button" onClick={step.action} disabled={!step.available} aria-label={`${step.label}: ${step.detail}${step.available ? ". Open step" : ". Locked"}`}>
+                          <strong>{step.label}</strong>
+                          <small>{step.detail}</small>
+                        </button>
                       </li>
                     ))}
                   </ol>
