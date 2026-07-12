@@ -2770,6 +2770,7 @@ const [dispatchQuestion, setDispatchQuestion] = useState("");
 const [dayAgentStarted, setDayAgentStarted] = useState(false);
 const [dayAgentCommand, setDayAgentCommand] = useState("");
 const [dayAgentPanelOpen, setDayAgentPanelOpen] = useState(false);
+const [dayAgentPanelTab, setDayAgentPanelTab] = useState<"plan" | "route" | "ask">("plan");
 const [dayAgentBoroughStart, setDayAgentBoroughStart] = useState<MapBoroughFilter>("nearby");
 const [dayAgentReturnToBase, setDayAgentReturnToBase] = useState(true);
 const [dayAgentRoute, setDayAgentRoute] = useState<MappedJob[]>([]);
@@ -36921,6 +36922,70 @@ return (
             font-weight: 900;
           }
 
+          .map-day-agent-tabs {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+          }
+
+          .map-day-agent-tabs button {
+            min-height: 38px;
+            border: 1px solid rgba(147,197,253,.24);
+            border-radius: 12px;
+            background: rgba(3,15,31,.62);
+            color: #bfdbfe;
+            font-size: 11px;
+            font-weight: 950;
+          }
+
+          .map-day-agent-tabs button.active {
+            border-color: rgba(52,211,153,.68);
+            background: rgba(6,95,70,.52);
+            color: #ecfdf5;
+          }
+
+          .map-day-agent-tab-panel {
+            grid-column: 1 / -1;
+            display: grid;
+            gap: 7px;
+            padding: 8px;
+            border: 1px solid rgba(147,197,253,.18);
+            border-radius: 14px;
+            background: rgba(3,15,31,.56);
+          }
+
+          .map-day-agent-tab-panel strong,
+          .map-day-agent-tab-panel small {
+            display: block;
+          }
+
+          .map-day-agent-tab-panel input {
+            width: 100%;
+            min-height: 42px;
+            box-sizing: border-box;
+            border: 1px solid rgba(147,197,253,.28);
+            border-radius: 11px;
+            background: rgba(2,8,23,.72);
+            color: #fff;
+            padding: 0 10px;
+          }
+
+          .map-day-agent-tab-panel-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+          }
+
+          .map-day-agent-tab-panel button {
+            min-height: 40px;
+            border: 1px solid rgba(52,211,153,.34);
+            border-radius: 11px;
+            background: rgba(6,78,59,.4);
+            color: #ecfdf5;
+            font-weight: 900;
+          }
+
           .job-progress-timeline strong {
             font-size: 10px;
             font-weight: 950;
@@ -37504,13 +37569,24 @@ return (
                 ? `${agentBorough.label} selected · next ${jobKey(agentFirstJob)}`
                 : `${agentBorough.label} selected · pick borough and start`;
             return dayAgentPanelOpen ? (
-              <section className={`map-day-agent-launcher ${dayAgentStarted ? "is-running" : ""} ${dayAgentPanelOpen ? "agent-panel-open" : ""}`} aria-label="Start AI day agent">
+              <section className={`map-day-agent-launcher ${dayAgentStarted ? "is-running" : ""} ${dayAgentPanelOpen ? "agent-panel-open" : ""} tab-${dayAgentPanelTab}`} aria-label="AI agent panel">
                 <div>
                   <span>AI Day Agent</span>
                   <strong>{agentBoroughTitle}</strong>
                   <small>{routeSummaryText}</small>
                 </div>
-                <label className="map-day-agent-borough">
+                <div className="map-day-agent-tabs" role="tablist" aria-label="AI agent sections">
+                  {(["plan", "route", "ask"] as const).map((tab) => (
+                    <button key={tab} type="button" role="tab" aria-selected={dayAgentPanelTab === tab} className={dayAgentPanelTab === tab ? "active" : ""} onClick={() => {
+                      setDayAgentPanelTab(tab);
+                      if (tab === "route" && dayAgentRoute.length) setDayAgentRouteHidden(false);
+                    }}>
+                      {tab === "plan" ? "Plan" : tab === "route" ? "Route" : "Ask"}
+                    </button>
+                  ))}
+                </div>
+                {dayAgentPanelTab === "plan" ? <>
+                <label className="map-day-agent-borough agent-plan-control">
                   <span>Start borough</span>
                   <select
                     value={dayAgentBoroughStart}
@@ -37522,7 +37598,7 @@ return (
                     ))}
                   </select>
                 </label>
-                <label className="map-day-agent-command">
+                <label className="map-day-agent-command agent-plan-control">
                   <span>Tell agent</span>
                   <input
                     value={dayAgentCommand}
@@ -37536,12 +37612,12 @@ return (
                     placeholder="Start Manhattan first..."
                   />
                 </label>
-                <div className="map-day-agent-presets" aria-label="Quick AI day plans">
+                <div className="map-day-agent-presets agent-plan-control" aria-label="Quick AI day plans">
                   <button type="button" onClick={() => void startDayAgent("5 stops today")}>Today</button>
                   <button type="button" onClick={() => void startDayAgent("5 nearby stops", "nearby")}>Nearby</button>
                   <button type="button" onClick={() => void startDayAgent("5 ready second attempt stops")}>Ready 2nd</button>
                 </div>
-                <div className="map-day-agent-actions">
+                <div className="map-day-agent-actions agent-plan-control">
                   <button type="button" className="map-day-agent-start" onClick={runDayAgentCommand}>Plan Day</button>
                   <button type="button" className="map-day-agent-line" onClick={() => void drawDayAgentRouteLine(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : [])}>Line</button>
                   {agentFirstJob ? (
@@ -37549,7 +37625,7 @@ return (
                   ) : null}
                   <a className="map-day-agent-route-link" href={routeUrl} target="_blank" rel="noopener noreferrer">Google</a>
                 </div>
-                <div className="map-day-agent-voice" aria-label="AI route voice controls">
+                <div className="map-day-agent-voice agent-plan-control" aria-label="AI route voice controls">
                   <button
                     type="button"
                     onClick={() => speakText(
@@ -37561,7 +37637,7 @@ return (
                   >Speak Route</button>
                   <button type="button" onClick={stopSpeaking}>Stop Voice</button>
                 </div>
-                <label className="map-day-agent-return">
+                <label className="map-day-agent-return agent-plan-control">
                   <input
                     type="checkbox"
                     checked
@@ -37570,10 +37646,44 @@ return (
                   />
                   <span>Ends at base</span>
                 </label>
+                </> : null}
+                {dayAgentPanelTab === "route" ? (
+                  <div className="map-day-agent-tab-panel" role="tabpanel" aria-label="AI route section">
+                    <strong>{dayAgentRoute.length ? `${dayAgentRoute.length} saved route stops` : "No route planned"}</strong>
+                    <small>{agentFirstJob ? `First: ${jobKey(agentFirstJob)} · ${dispatchJobReason(agentFirstJob)}` : "Choose Plan, then Today, Nearby, or Ready 2nd."}</small>
+                    <div className="map-day-agent-tab-panel-actions">
+                      <button type="button" onClick={() => {
+                        setDayAgentRouteHidden(false);
+                        setDayAgentPanelOpen(false);
+                      }} disabled={!dayAgentRoute.length}>Show Route</button>
+                      <button type="button" onClick={() => agentFirstJob ? focusJob(agentFirstJob) : setDayAgentPanelTab("plan")}>
+                        {agentFirstJob ? "Open First Job" : "Plan Route"}
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                {dayAgentPanelTab === "ask" ? (
+                  <div className="map-day-agent-tab-panel" role="tabpanel" aria-label="Ask AI dispatch">
+                    <input
+                      value={dispatchQuestion}
+                      onChange={(event) => setDispatchQuestion(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") runDispatchChat();
+                      }}
+                      placeholder="Ask: what should I do first?"
+                      aria-label="Ask AI dispatch"
+                    />
+                    <div className="map-day-agent-tab-panel-actions">
+                      <button type="button" onClick={() => runDispatchChat("What should I do today?")}>Today</button>
+                      <button type="button" onClick={() => runDispatchChat()}>Ask AI</button>
+                    </div>
+                    <small>{dispatchMessages[dispatchMessages.length - 1]?.text?.split("\n").slice(0, 2).join(" ") || "Ask about urgent, overdue, no access, or paperwork jobs."}</small>
+                  </div>
+                ) : null}
               </section>
             ) : null;
           })()}
-          {dayAgentRoute.length ? (
+          {dayAgentRoute.length && !dayAgentPanelOpen ? (
             (() => {
               const selectedRouteJob = dayAgentRoute[Math.min(dayAgentSelectedStopIndex, dayAgentRoute.length - 1)] || dayAgentRoute[0];
               const selectedRouteLeg = dayAgentRouteSummary?.legs?.[Math.min(dayAgentSelectedStopIndex, Math.max(0, dayAgentRouteSummary.legs.length - 1))];
