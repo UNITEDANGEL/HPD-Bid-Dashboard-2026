@@ -1,7 +1,7 @@
 "use client";
 
 import jobsData from "../../data/COA_Fetcher_2026.json";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type JobRecord = Record<string, unknown>;
 type Point = { lat: number; lng: number };
@@ -270,6 +270,7 @@ function selectableJob(record: JobRecord, origin?: Point, reason = "Selected by 
 }
 
 export default function PlanMyDayDrawer() {
+  const chatRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
@@ -304,6 +305,15 @@ export default function PlanMyDayDrawer() {
   }, [activeJobs, jobSearch]);
   const selectedResults = useMemo(() => results.filter((job) => selectedIds.includes(job.id)), [results, selectedIds]);
   const viewingJob = useMemo(() => results.find((job) => job.id === viewingJobId) || null, [results, viewingJobId]);
+
+  useEffect(() => {
+    const chat = chatRef.current;
+    if (!chat || viewingJob) return;
+    const frame = window.requestAnimationFrame(() => {
+      chat.scrollTop = chat.scrollHeight;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [messages, busy, viewingJob]);
 
   function speakReply(text: string, force = false) {
     if ((!voiceEnabled && !force) || typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -460,7 +470,7 @@ export default function PlanMyDayDrawer() {
             <div className="plan-my-day__go-here"><a href={routeUrl(viewingJob, "google")} target="_blank" rel="noreferrer">Google Maps</a><a href={routeUrl(viewingJob, "waze")} target="_blank" rel="noreferrer">Waze</a></div>
           </section> : null}
 
-          <div className="plan-my-day__chat" aria-live="polite">
+          <div ref={chatRef} className="plan-my-day__chat" aria-live="polite">
             {messages.map((message, index) => (
               <article key={`${message.role}-${index}`} className={`plan-my-day__bubble is-${message.role}`}>
                 <b>{message.role === "assistant" ? "Planner" : "You"}</b><p>{message.text}</p>
