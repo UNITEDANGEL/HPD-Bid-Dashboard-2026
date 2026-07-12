@@ -36728,6 +36728,39 @@ return (
             max-width: calc(100vw - 16px) !important;
           }
 
+          .job-card-filter-menu {
+            width: 100%;
+            border: 1px solid rgba(255,255,255,.14);
+            border-radius: 12px;
+            background: rgba(255,255,255,.06);
+            padding: 8px;
+          }
+
+          .job-card-filter-menu summary {
+            cursor: pointer;
+            color: #dcecff;
+            font-weight: 950;
+            font-size: 12px;
+          }
+
+          .job-card-filter-menu > div {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 8px;
+          }
+
+          .job-card-filter-menu button {
+            min-height: 36px;
+            border: 1px solid rgba(255,255,255,.14);
+            border-radius: 999px;
+            background: rgba(255,255,255,.08);
+            color: #fff;
+            padding: 7px 10px;
+            font-size: 11px;
+            font-weight: 900;
+          }
+
           @media (max-width: 700px) {
             .job-drawer,
             .job-drawer.closed {
@@ -37796,6 +37829,18 @@ return (
                   <small>{workflowButtonSubLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus), Boolean(draftWorkflowStatus))}</small>
                 </button>
               </div>
+              <details className="job-card-filter-menu">
+                <summary>Jobs &amp; Filters</summary>
+                <div>
+                  <button type="button" onClick={() => { switchMapBoard("active"); showCleanMapView(); }}>Active</button>
+                  <button type="button" onClick={() => { switchMapBoard("archived"); showCleanMapView(); }}>Archived</button>
+                  <button type="button" onClick={() => { switchMapBoard("all"); showCleanMapView(); }}>All Statuses</button>
+                  <button type="button" onClick={() => { setMapShowAllDays(true); showCleanMapView(); }}>Any Days</button>
+                  <button type="button" onClick={() => { setMapShowAllDays(false); setMapDaysBack("7"); showCleanMapView(); }}>7 Days</button>
+                  <button type="button" onClick={() => { setMapBoroughFilter("all"); showCleanMapView(); }}>All Boroughs</button>
+                  <button type="button" onClick={() => { setMapBoroughFilter("nearby"); showCleanMapView(); }}>Nearby</button>
+                </div>
+              </details>
               {(() => {
                 const visit = visitSummaryFor(selected);
                 const latest = visit?.latest;
