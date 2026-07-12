@@ -231,6 +231,7 @@ function rankJobs(plan: LocalPlan, origin: Point) {
 export default function PlanMyDayDrawer() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", text: "Good morning. Tell me how you want to plan today. I work locally and do not require an API key." },
   ]);
@@ -240,6 +241,15 @@ export default function PlanMyDayDrawer() {
   const [originLabel, setOriginLabel] = useState("");
 
   const planSummary = useMemo(() => describePlan(plan), [plan]);
+
+  function speakReply(text: string) {
+    if (!voiceEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    utterance.rate = 0.92;
+    window.speechSynthesis.speak(utterance);
+  }
 
   async function handleMessage(raw: string) {
     const message = raw.trim();
@@ -262,6 +272,7 @@ export default function PlanMyDayDrawer() {
     else reply += " Review the stops below. You can tell me to add, remove, shorten, or reprioritize the route.";
 
     setMessages((current) => [...current, { role: "assistant", text: reply }]);
+    speakReply(reply);
     setBusy(false);
   }
 
@@ -272,13 +283,30 @@ export default function PlanMyDayDrawer() {
 
   function acceptPlan() {
     if (!results.length) return;
-    const detail = { plan, originLabel, jobs: results };
-    sessionStorage.setItem("hpd-approved-day-plan", JSON.stringify(detail));
-    window.dispatchEvent(new CustomEvent("hpd:approved-day-plan", { detail }));
-    setMessages((current) => [...current, { role: "assistant", text: "Plan accepted and saved. The next map upgrade can load these approved stops into the native route." }]);
+    const detail = {
+      stop_count: plan.stopCount,
+      boroughs: plan.boroughs,
+      avoid_boroughs: plan.avoidBoroughs,
+      priorities: plan.priorities,
+      include_omo: plan.includeOmo,
+      exclude_omo: plan.excludeOmo,
+      finish_by: plan.finishBy,
+      route_preference: plan.routePreference,
+      start_mode: plan.startMode,
+      originLabel,
+      jobs: results,
+      acceptedAt: new Date().toISOString(),
+    };
+    sessionStorage.setItem("hpd-plan-my-day-approved", JSON.stringify(detail));
+    window.dispatchEvent(new CustomEvent("hpd:plan-my-day-approved", { detail }));
+    const reply = "Plan approved. I’m building the route on the map now.";
+    setMessages((current) => [...current, { role: "assistant", text: reply }]);
+    speakReply(reply);
+    window.setTimeout(() => setOpen(false), 500);
   }
 
   function newChat() {
+    if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
     setPlan(DEFAULT_PLAN);
     setResults([]);
     setInput("");
@@ -294,9 +322,17 @@ export default function PlanMyDayDrawer() {
 
       {open ? (
         <div className="plan-my-day__panel">
-          <header>
-            <div><span>FREE LOCAL PLANNER</span><h2>Plan by chatting</h2></div>
-            <button type="button" onClick={newChat}>New chat</button>
+          <header className="plan-my-day__header">
+            <div>
+              <span>FREE LOCAL PLANNER</span>
+              <h2>Plan by chatting</h2>
+            </div>
+            <div>
+              <button type="button" onClick={() => setVoiceEnabled((value) => !value)} aria-pressed={voiceEnabled}>
+                {voiceEnabled ? "Voice on" : "Voice off"}
+              </button>
+              <button type="button" onClick={newChat}>New chat</button>
+            </div>
           </header>
 
           <div className="plan-my-day__chat" aria-live="polite">
@@ -316,7 +352,17 @@ export default function PlanMyDayDrawer() {
 
           <form className="plan-my-day__composer" onSubmit={submit}>
             <label htmlFor="plan-chat-input">Message the planner</label>
-            <div><textarea id="plan-chat-input" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Example: Plan 6 urgent Queens jobs near me, include EQ24929, avoid Manhattan, finish by 3 PM." rows={3} /><button type="submit" disabled={busy || !input.trim()}>Send</button></div>
+            <div>
+              <textarea
+                id="plan-chat-input"
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                placeholder="Example: Plan 6 urgent Queens jobs near me, include EQ24929, avoid Manhattan, finish by 3 PM."
+                rows={3}
+                disabled={busy}
+              />
+              <button type="submit" disabled={busy || !input.trim()}>{busy ? "Planning…" : "Plan route"}</button>
+            </div>
           </form>
 
           <section className="plan-my-day__working-plan">

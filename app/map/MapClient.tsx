@@ -9,6 +9,7 @@ const MAPTILER_ENV_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
 const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
 const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v3";
 const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
+const LOCATION_LAST_STORAGE_KEY = "hpd-map-location-last-v1";
 const FIELD_VISIT_TRACKING_STORAGE_KEY = "hpd-private-field-visit-tracking-v1";
 const DAY_AGENT_LOG_STORAGE_KEY = "hpd-ai-day-agent-log-v1";
 const DAY_AGENT_BASE_ADDRESS = "87-35 114 Street, Richmond Hill, NY 11418";
@@ -2972,6 +2973,11 @@ const dayAgentRouteScore = (job: MappedJob, command: string, requestedBorough = 
 
 const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverride?: MapBoroughFilter, routeOrigin: UserLocationState | null = userLocation) => {
   const command = String(commandText || "start").trim();
+  const requestedCountMatch = command.match(/\b(\d{1,2})\s+(?:jobs?|stops?)\b/i);
+  const requestedStopCount = Math.min(
+    DAY_AGENT_ROUTE_MAX_STOPS,
+    Math.max(1, Number(requestedCountMatch?.[1] || DAY_AGENT_ROUTE_MAX_STOPS))
+  );
   const requestedBorough = requestedBoroughOverride || dayAgentRequestedBorough(command);
   const visibleRouteSource =
     requestedBorough === "nearby" || mapBoroughFilter === "nearby"
@@ -2988,7 +2994,11 @@ const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverr
       return (age !== null && age >= 0 && age <= 90) || hasUpcomingAppointment(job);
     });
   const sorted = [...pool].sort((a, b) => {
-    const score = dayAgentRouteScore(b, command, requestedBorough, routeOrigin) - dayAgentRouteScore(a, command, requestedBorough, routeOrigin);
+    const aRequested = command.toLowerCase().includes(jobKey(a).toLowerCase()) ? 10000 : 0;
+    const bRequested = command.toLowerCase().includes(jobKey(b).toLowerCase()) ? 10000 : 0;
+    const score =
+      dayAgentRouteScore(b, command, requestedBorough, routeOrigin) + bRequested -
+      (dayAgentRouteScore(a, command, requestedBorough, routeOrigin) + aRequested);
     if (score !== 0) return score;
     const aStreet = manhattanStreetNumber(a) || 999;
     const bStreet = manhattanStreetNumber(b) || 999;
@@ -3001,7 +3011,7 @@ const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverr
   const fieldMinutesLimit = (DAY_AGENT_FIELD_END_HOUR - DAY_AGENT_WORK_START_HOUR) * 60;
   const returnMinutesLimit = (DAY_AGENT_BASE_RETURN_HOUR - DAY_AGENT_WORK_START_HOUR) * 60;
   sorted.forEach((job) => {
-    if (route.length >= DAY_AGENT_ROUTE_MAX_STOPS) return;
+    if (route.length >= requestedStopCount) return;
     const coords = jobLatLng(job);
     if (!coords) return;
     const travelToJobMinutes = Math.max(4, Math.round((distanceMiles(cursor, coords) / DAY_AGENT_DAY_DRIVE_MPH) * 60));
@@ -3014,7 +3024,7 @@ const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverr
       cursor = coords;
     }
   });
-  return route.length ? route : sorted.slice(0, Math.min(1, sorted.length));
+  return route.length ? route : sorted.slice(0, Math.min(requestedStopCount, sorted.length));
 };
 
 const dayAgentGoogleRouteUrl = (routeJobs = dayAgentRoute) => {
@@ -3240,6 +3250,9 @@ const requestFreshDayAgentLocation = () => {
           updatedAt: new Date().toISOString(),
         };
         setUserLocation(nextLocation);
+        try {
+          window.localStorage.setItem(LOCATION_LAST_STORAGE_KEY, JSON.stringify(nextLocation));
+        } catch {}
         setLocationStatus(`Live guide · ±${Math.round((position.coords.accuracy || 0) * 3.28084)} ft`);
         if (geolocationWatchRef.current === null) {
           startLocationTracking({ followMap: true });
@@ -4215,6 +4228,38 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays, mapBoroughFilter, workflowViewFilter, countdownTick, routeFocusActive, routeFocusKeys, todayZoneLimit, userLocation]);
 
   useEffect(() => {
+    function handleApprovedPlan(event: Event) {
+      const detail = ((event as CustomEvent).detail || {}) as {
+        stop_count?: number;
+        boroughs?: string[];
+        priorities?: string[];
+        include_omo?: string[];
+        finish_by?: string | null;
+        route_preference?: string;
+      };
+      const stopCount = Math.min(DAY_AGENT_ROUTE_MAX_STOPS, Math.max(1, Number(detail.stop_count || 5)));
+      const borough = String(detail.boroughs?.[0] || "").trim();
+      const normalizedBorough = borough ? normalizeBoroughKey(borough) : "nearby";
+      const requestedBorough: MapBoroughFilter =
+        normalizedBorough && normalizedBorough !== "unknown" ? normalizedBorough : "nearby";
+      const parts = [
+        `Plan ${stopCount} stops`,
+        borough ? `in ${borough}` : "near me",
+        ...(detail.priorities || []),
+        detail.route_preference ? detail.route_preference.replaceAll("_", " ") : "",
+        ...(detail.include_omo || []),
+        detail.finish_by ? `finish by ${detail.finish_by}` : "",
+      ].filter(Boolean);
+      const command = parts.join(", ");
+      setDayAgentPanelOpen(true);
+      setActionNotice("Building your accepted Plan My Day route…");
+      void startDayAgent(command, requestedBorough);
+    }
+    window.addEventListener("hpd:plan-my-day-approved", handleApprovedPlan as EventListener);
+    return () => window.removeEventListener("hpd:plan-my-day-approved", handleApprovedPlan as EventListener);
+  }, [jobs, mappedJobs, filteredJobs, userLocation, mapBoroughFilter]);
+
+  useEffect(() => {
     if (!urlOmoRequest) return;
 
     const target = urlOmoRequest.toLowerCase().replace(/[^a-z0-9]+/g, "");
@@ -4736,9 +4781,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function showLocationBlockedHelp() {
     setFollowMyLocation(false);
-    setLocationStatus("Location blocked in Chrome");
-    setLocationHelpOpen(true);
-    showActionNotice("Location blocked. Allow Location for this site, then tap Retry GPS.");
+    setLocationStatus(userLocation ? "Using saved location" : "Location permission needed");
+    setLocationHelpOpen(false);
   }
 
   function fitLayerWhileLocationBlocked() {
@@ -5715,6 +5759,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     window.localStorage.setItem(LOCATION_ALWAYS_STORAGE_KEY, "on");
+    try {
+      const savedLocation = JSON.parse(window.localStorage.getItem(LOCATION_LAST_STORAGE_KEY) || "null");
+      if (Number.isFinite(savedLocation?.lat) && Number.isFinite(savedLocation?.lng)) {
+        setUserLocation(savedLocation);
+        setLocationStatus("Using saved location while GPS refreshes");
+      }
+    } catch {}
 
     const permissions = (navigator as any).permissions;
     if (permissions?.query) {
@@ -8806,13 +8857,17 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     };
 
     const onPosition = (position: GeolocationPosition) => {
-      setLocationHelpOpen(false);
-      setUserLocation({
+      const nextLocation = {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
         accuracy: position.coords.accuracy,
         updatedAt: new Date().toISOString(),
-      });
+      };
+      setLocationHelpOpen(false);
+      setUserLocation(nextLocation);
+      try {
+        window.localStorage.setItem(LOCATION_LAST_STORAGE_KEY, JSON.stringify(nextLocation));
+      } catch {}
       setLocationStatus(`Live guide · ±${Math.round((position.coords.accuracy || 0) * 3.28084)} ft`);
     };
 
@@ -8823,14 +8878,12 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
         return;
       }
       if (error.code === error.TIMEOUT) {
-        setLocationStatus("Location searching...");
-        setLocationHelpOpen(true);
-        showActionNotice("Still looking for GPS. Keep Chrome open and make sure phone location is on.");
+        setLocationStatus(userLocation ? "Using saved location" : "Location searching...");
+        setLocationHelpOpen(false);
         return;
       }
-      setLocationStatus("Location unavailable");
-      setLocationHelpOpen(true);
-      showActionNotice("Phone location is unavailable right now. Check Chrome and device location settings.");
+      setLocationStatus(userLocation ? "Using saved location" : "Location unavailable");
+      setLocationHelpOpen(false);
     };
 
     const requestPosition = () => {
