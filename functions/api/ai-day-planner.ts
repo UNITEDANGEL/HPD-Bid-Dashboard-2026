@@ -9,6 +9,11 @@ type PlannerRequest = {
   currentPlan?: Record<string, unknown> | null;
 };
 
+type PagesContext = {
+  request: Request;
+  env: Env;
+};
+
 const PLAN_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -74,7 +79,7 @@ function outputText(response: any) {
   return "";
 }
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost = async ({ request, env }: PagesContext): Promise<Response> => {
   if (!env.OPENAI_API_KEY) {
     return json({ error: "OPENAI_API_KEY is not configured for this deployment." }, 503);
   }
@@ -136,7 +141,7 @@ Return only JSON matching the required schema.`;
     return json({ error: "Could not reach OpenAI." }, 502);
   }
 
-  const raw = await openAIResponse.json<any>().catch(() => null);
+  const raw: any = await openAIResponse.json().catch(() => null);
   if (!openAIResponse.ok) {
     const messageText = raw?.error?.message || "OpenAI request failed.";
     return json({ error: messageText }, openAIResponse.status >= 500 ? 502 : 400);
