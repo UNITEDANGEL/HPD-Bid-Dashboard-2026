@@ -3288,9 +3288,17 @@ const startDayAgent = async (commandText = dayAgentCommand, requestedBoroughOver
   if (typeof document !== "undefined") {
     (document.activeElement as HTMLElement | null)?.blur?.();
   }
-  const routeOrigin = isFreshRouteLocation(userLocation) ? userLocation : await requestFreshDayAgentLocation();
-  if (!routeOrigin) startLocationTracking({ followMap: true });
-  const route = buildDayAgentRoute(command, requestedBorough, routeOrigin || null);
+  // Plan immediately from the last saved GPS fix. A route should not pause for a
+  // fresh permission request every time the agent starts.
+  const routeOrigin: UserLocationState = userLocation || {
+    ...DAY_AGENT_BASE_COORDS,
+    accuracy: 0,
+    updatedAt: new Date().toISOString(),
+  };
+  if (!userLocation || !isFreshRouteLocation(userLocation)) {
+    startLocationTracking({ followMap: false });
+  }
+  const route = buildDayAgentRoute(command, requestedBorough, routeOrigin);
   setDayAgentStarted(true);
   setDayAgentRoute(route);
   setDayAgentCommand(command);
@@ -3311,8 +3319,8 @@ const startDayAgent = async (commandText = dayAgentCommand, requestedBoroughOver
     setSelected(null);
     setSelectedOnly(false);
     setDrawerOpen(false);
-    void drawDayAgentRouteLine(route, routeOrigin || null);
-    const originLabel = routeOrigin ? "from your live location" : "from base until GPS is allowed";
+    void drawDayAgentRouteLine(route, routeOrigin);
+    const originLabel = userLocation ? "from your saved location" : "from base while GPS updates";
     setActionNotice(`Workday route ready ${originLabel}: ${route.length} stop${route.length === 1 ? "" : "s"} chosen for 8 AM start, field work to 5 PM, and base return by 6 PM. ${jobKey(route[0])} is first.`);
   } else {
     appendDayAgentLog("Started day agent, but no active mapped jobs matched.");
@@ -36832,6 +36840,25 @@ return (
             white-space: nowrap;
           }
 
+          .map-day-agent-presets {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+          }
+
+          .map-day-agent-presets button {
+            min-width: 0;
+            min-height: 38px;
+            padding: 7px 6px;
+            border: 1px solid rgba(124,246,198,.28);
+            border-radius: 12px;
+            background: rgba(3,21,39,.72);
+            color: #eafff7;
+            font-size: 11px;
+            font-weight: 900;
+          }
+
           .job-progress-timeline strong {
             font-size: 10px;
             font-weight: 950;
@@ -37447,8 +37474,13 @@ return (
                     placeholder="Start Manhattan first..."
                   />
                 </label>
+                <div className="map-day-agent-presets" aria-label="Quick AI day plans">
+                  <button type="button" onClick={() => void startDayAgent("5 stops today")}>Today</button>
+                  <button type="button" onClick={() => void startDayAgent("5 nearby stops", "nearby")}>Nearby</button>
+                  <button type="button" onClick={() => void startDayAgent("5 ready second attempt stops")}>Ready 2nd</button>
+                </div>
                 <div className="map-day-agent-actions">
-                  <button type="button" className="map-day-agent-start" onClick={runDayAgentCommand}>Start</button>
+                  <button type="button" className="map-day-agent-start" onClick={runDayAgentCommand}>Plan Day</button>
                   <button type="button" className="map-day-agent-line" onClick={() => void drawDayAgentRouteLine(dayAgentRoute.length ? dayAgentRoute : agentFirstJob ? [agentFirstJob] : [])}>Line</button>
                   {agentFirstJob ? (
                     <a className="map-day-agent-route-link waze" href={wazeDirectionsUrl(agentFirstJob)} target="_blank" rel="noopener noreferrer">Waze</a>
