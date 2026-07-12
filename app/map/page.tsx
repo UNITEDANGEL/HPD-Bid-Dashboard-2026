@@ -4,6 +4,7 @@ import "./map-workflow-controller.css";
 import "./map-hybrid-b.css";
 import "./map-ai-route-assistant.css";
 import MapAIRouteAssistant from "./MapAIRouteAssistant";
+import MapAIRouteBridge from "./MapAIRouteBridge";
 import MapClient from "./MapClient";
 import MapHybridViewModeClient from "./MapHybridViewModeClient";
 import MapWorkflowControllerClient from "./MapWorkflowControllerClient";
@@ -15,6 +16,7 @@ export default function MapPage() {
       <MapWorkflowControllerClient />
       <MapHybridViewModeClient />
       <MapAIRouteAssistant />
+      <MapAIRouteBridge />
     </>
   );
 }
