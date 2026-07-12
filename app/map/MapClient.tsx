@@ -3151,10 +3151,9 @@ async function drawDayAgentRouteLine(routeJobs = dayAgentRoute, routeOrigin: Use
     routeResult = buildFallbackDayAgentSummary(points, fallbackLatLngs);
     setDayAgentRouteSummary({
       ...routeResult.summary,
-      message: "Road route service is unavailable. Use Google or Waze for live navigation; straight connector lines are hidden.",
+      message: "Road routing unavailable. Showing the direct YOU ? 1 ? 2 connector guide.",
     });
-    setActionNotice("Road route unavailable. I hid the straight green connector lines; use Google/Waze navigation for this route.");
-    return;
+    setActionNotice("Showing direct YOU ? 1 ? 2 route guide. Use Google or Waze for street navigation.");
   }
 
   const layer = L.layerGroup().addTo(mapRef.current);
