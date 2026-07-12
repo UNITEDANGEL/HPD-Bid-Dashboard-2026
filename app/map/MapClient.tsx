@@ -4340,6 +4340,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       setSelected(target);
       setDrawerOpen(true);
       setFieldFocusPane("capture");
+      window.setTimeout(() => {
+        const drawer = document.querySelector<HTMLElement>(".job-drawer");
+        if (drawer) drawer.scrollLeft = 0;
+      }, 0);
       const testOnly = new URLSearchParams(window.location.search).get("fieldFlowTest") === "1";
       if (testOnly) {
         showActionNotice(`[TEST ONLY] ${fieldEvidenceLabel(kind)} media console opened for ${key}.`);
@@ -36713,6 +36717,17 @@ return (
             background: transparent !important;
             color: #06182b !important;
           }
+          .job-drawer {
+            overflow-x: hidden !important;
+          }
+
+          .job-drawer:not(.closed) {
+            left: 8px !important;
+            right: auto !important;
+            transform: none !important;
+            max-width: calc(100vw - 16px) !important;
+          }
+
           @media (max-width: 700px) {
             .job-drawer,
             .job-drawer.closed {
