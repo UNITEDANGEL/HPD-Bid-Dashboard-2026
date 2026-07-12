@@ -2,11 +2,6 @@ import "./v6-map-upgrade.css";
 import "./v6-map-stability.css";
 import "./map-workflow-controller.css";
 import "./map-hybrid-b.css";
-import "./map-ai-route-assistant.css";
-import "./map-ai-route-review.css";
-import MapAIRouteAssistant from "./MapAIRouteAssistant";
-import MapAIRouteBridge from "./MapAIRouteBridge";
-import MapAIRouteReview from "./MapAIRouteReview";
 import MapClient from "./MapClient";
 import MapHybridViewModeClient from "./MapHybridViewModeClient";
 import MapWorkflowControllerClient from "./MapWorkflowControllerClient";
@@ -17,9 +12,6 @@ export default function MapPage() {
       <MapClient />
       <MapWorkflowControllerClient />
       <MapHybridViewModeClient />
-      <MapAIRouteAssistant />
-      <MapAIRouteBridge />
-      <MapAIRouteReview />
     </>
   );
 }
