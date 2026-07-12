@@ -44,9 +44,16 @@ function readSaved(): SavedWorkflow {
   }
 }
 
+function writeRouteIndex(index: number) {
+  const saved = readSaved();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...saved, routeIndex: index }));
+  window.dispatchEvent(new CustomEvent("hpd-route-index-change", { detail: { index } }));
+}
+
 function orderedIds() {
-  const rows = Array.from(document.querySelectorAll<HTMLElement>(".map-day-route-stop-row"))
-    .filter((row) => row.getClientRects().length > 0);
+  const rows = Array.from(document.querySelectorAll<HTMLElement>(".map-day-route-stop-row")).filter(
+    (row) => row.getClientRects().length > 0,
+  );
   const ids = rows
     .map((row) => textOf(row).match(JOB_ID_PATTERN)?.[0]?.toUpperCase() || "")
     .filter(Boolean);
@@ -90,22 +97,21 @@ function markerCandidates() {
 
 function markerFor(id: string, mapRect: DOMRect) {
   const upper = id.toUpperCase();
-  const matches = markerCandidates().filter((marker) => markerIdentity(marker).includes(upper));
-  return matches.find((marker) => {
-    const rect = marker.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    return cx >= mapRect.left && cx <= mapRect.right && cy >= mapRect.top && cy <= mapRect.bottom;
-  }) || null;
+  return (
+    markerCandidates().find((marker) => {
+      if (!markerIdentity(marker).includes(upper)) return false;
+      const rect = marker.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      return cx >= mapRect.left && cx <= mapRect.right && cy >= mapRect.top && cy <= mapRect.bottom;
+    }) || null
+  );
 }
 
 function centerOf(element: HTMLElement, mapRect: DOMRect) {
   const rect = element.getBoundingClientRect();
   if (!rect.width && !rect.height) return null;
-  return {
-    x: rect.left - mapRect.left + rect.width / 2,
-    y: rect.top - mapRect.top + rect.height / 2,
-  };
+  return { x: rect.left - mapRect.left + rect.width / 2, y: rect.top - mapRect.top + rect.height / 2 };
 }
 
 function currentLocationPoint(mapRect: DOMRect) {
@@ -150,9 +156,7 @@ function renderGuide(map: HTMLElement, svg: SVGSVGElement, dock: HTMLDivElement)
   svg.setAttribute("height", String(rect.height));
 
   const ids = orderedIds();
-  const start = currentLocationPoint(rect);
-  const points: Point[] = [{ ...start, id: "you", label: "YOU" }];
-
+  const points: Point[] = [{ ...currentLocationPoint(rect), id: "you", label: "YOU" }];
   ids.forEach((id, index) => {
     const marker = markerFor(id, rect);
     if (!marker) return;
@@ -168,18 +172,26 @@ function renderGuide(map: HTMLElement, svg: SVGSVGElement, dock: HTMLDivElement)
     return;
   }
 
-  const signature = points.map((point) => `${point.id}:${point.x.toFixed(1)},${point.y.toFixed(1)}`).join("|");
+  const saved = readSaved();
+  const requestedIndex = Number.isFinite(saved.routeIndex) ? Number(saved.routeIndex) : 0;
+  const activeIndex = Math.max(0, Math.min(points.length - 2, requestedIndex));
+
+  const signature = `${points.map((point) => `${point.id}:${point.x.toFixed(1)},${point.y.toFixed(1)}`).join("|")}|active:${activeIndex}`;
   if (svg.dataset.signature === signature) return;
   svg.dataset.signature = signature;
 
   const d = points.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
-  const nodes = points.map((point, index) => {
-    const startNode = index === 0;
-    const radius = startNode ? 16 : 15;
-    const fill = startNode ? "#0ea56b" : "#1677ff";
-    const fontSize = startNode ? 8 : 12;
-    return `<g><circle cx="${point.x}" cy="${point.y}" r="${radius}" fill="${fill}" stroke="#fff" stroke-width="3"/><text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="${fontSize}" font-weight="900">${point.label}</text></g>`;
-  }).join("");
+  const nodes = points
+    .map((point, index) => {
+      const startNode = index === 0;
+      const routeIndex = index - 1;
+      const active = !startNode && routeIndex === activeIndex;
+      const radius = startNode ? 16 : active ? 18 : 15;
+      const fill = startNode ? "#0ea56b" : active ? "#ff8a00" : "#1677ff";
+      const interactive = startNode ? "" : `data-route-index=\"${routeIndex}\" role=\"button\" tabindex=\"0\" style=\"pointer-events:all;cursor:pointer\"`;
+      return `<g ${interactive}><circle cx="${point.x}" cy="${point.y}" r="${radius}" fill="${fill}" stroke="#fff" stroke-width="3"/><text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="${startNode ? 8 : 12}" font-weight="900" style="pointer-events:none">${point.label}</text></g>`;
+    })
+    .join("");
 
   svg.innerHTML = `
     <path id="hpd-marker-guide-path" d="${d}" fill="none" stroke="rgba(255,255,255,.98)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
@@ -193,12 +205,8 @@ function renderGuide(map: HTMLElement, svg: SVGSVGElement, dock: HTMLDivElement)
   `;
   svg.style.opacity = "1";
 
-  const saved = readSaved();
-  const requestedIndex = Number.isFinite(saved.routeIndex) ? Number(saved.routeIndex) : 0;
-  const activeIndex = Math.max(0, Math.min(points.length - 2, requestedIndex));
   const active = points[activeIndex + 1];
   const coord = active.coord;
-  const title = `STOP ${active.label} · ${active.id}`;
   const google = coord
     ? `https://www.google.com/maps/dir/?api=1&destination=${coord[1]},${coord[0]}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(active.id)}`;
@@ -207,7 +215,7 @@ function renderGuide(map: HTMLElement, svg: SVGSVGElement, dock: HTMLDivElement)
     : `https://waze.com/ul?q=${encodeURIComponent(active.id)}&navigate=yes`;
 
   dock.innerHTML = `
-    <div style="font-size:12px;font-weight:900;letter-spacing:.02em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(title)}</div>
+    <div style="font-size:12px;font-weight:900;letter-spacing:.02em;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">STOP ${escapeHtml(active.label)} · ${escapeHtml(active.id)}</div>
     <div style="display:flex;gap:8px;margin-top:7px">
       <a href="${google}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;text-decoration:none;background:#fff;color:#0f172a;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:900">Google</a>
       <a href="${waze}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;text-decoration:none;background:#1677ff;color:#fff;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:900">Waze</a>
@@ -223,13 +231,16 @@ export default function MapNativeRoadRoute() {
     let svg: SVGSVGElement | null = null;
     let dock: HTMLDivElement | null = null;
 
-    const ensure = (map: HTMLElement) => {
+    const render = () => {
+      if (destroyed) return;
+      const map = mapElement();
+      if (!map) return;
       if (window.getComputedStyle(map).position === "static") map.style.position = "relative";
+
       if (!svg || svg.parentElement !== map) {
         svg?.remove();
         svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.classList.add("hpd-marker-guide");
-        svg.setAttribute("aria-hidden", "true");
         Object.assign(svg.style, {
           position: "absolute",
           inset: "0",
@@ -241,12 +252,32 @@ export default function MapNativeRoadRoute() {
           opacity: "0",
           transition: "opacity 160ms ease",
         });
+        svg.addEventListener("click", (event) => {
+          const target = event.target as Element | null;
+          const node = target?.closest<SVGGElement>("g[data-route-index]");
+          if (!node) return;
+          event.preventDefault();
+          event.stopPropagation();
+          writeRouteIndex(Number(node.dataset.routeIndex || 0));
+          svg!.dataset.signature = "";
+          render();
+        });
+        svg.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          const target = event.target as Element | null;
+          const node = target?.closest<SVGGElement>("g[data-route-index]");
+          if (!node) return;
+          event.preventDefault();
+          writeRouteIndex(Number(node.dataset.routeIndex || 0));
+          svg!.dataset.signature = "";
+          render();
+        });
         map.appendChild(svg);
       }
+
       if (!dock || dock.parentElement !== map) {
         dock?.remove();
         dock = document.createElement("div");
-        dock.className = "hpd-marker-guide-dock";
         Object.assign(dock.style, {
           position: "absolute",
           left: "50%",
@@ -263,14 +294,8 @@ export default function MapNativeRoadRoute() {
         dock.hidden = true;
         map.appendChild(dock);
       }
-    };
 
-    const render = () => {
-      if (destroyed) return;
-      const map = mapElement();
-      if (!map) return;
-      ensure(map);
-      if (svg && dock) renderGuide(map, svg, dock);
+      renderGuide(map, svg, dock);
     };
 
     const schedule = () => {
@@ -289,6 +314,7 @@ export default function MapNativeRoadRoute() {
     window.addEventListener("resize", schedule);
     window.addEventListener("scroll", schedule, true);
     window.addEventListener("storage", schedule);
+    window.addEventListener("hpd-route-index-change", schedule);
 
     return () => {
       destroyed = true;
@@ -299,6 +325,7 @@ export default function MapNativeRoadRoute() {
       window.removeEventListener("resize", schedule);
       window.removeEventListener("scroll", schedule, true);
       window.removeEventListener("storage", schedule);
+      window.removeEventListener("hpd-route-index-change", schedule);
       svg?.remove();
       dock?.remove();
     };
