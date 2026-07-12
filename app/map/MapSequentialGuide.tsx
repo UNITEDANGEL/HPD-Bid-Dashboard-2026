@@ -30,29 +30,29 @@ function writeRouteIndex(index: number) {
   window.dispatchEvent(new CustomEvent("hpd-route-index-change", { detail: { index } }));
 }
 
-function stringValue(value: unknown) {
-  return typeof value === "string" || typeof value === "number" ? String(value).trim() : "";
-}
-
-function firstValue(record: JobRecord, keys: string[]) {
+function value(record: JobRecord, keys: string[]) {
   for (const key of keys) {
-    const value = stringValue(record[key]);
-    if (value) return value;
+    const raw = record[key];
+    if (typeof raw === "string" || typeof raw === "number") {
+      const text = String(raw).trim();
+      if (text) return text;
+    }
   }
   return "";
 }
 
 const JOB_COORDS = new Map<string, LngLat>();
 for (const record of bundledJobsData as JobRecord[]) {
-  const id = firstValue(record, ["OMO", "omo", "jobId", "id"]).toUpperCase();
+  const id = value(record, ["OMO", "omo", "jobId", "id"]).toUpperCase();
   const lat = Number(record.Latitude ?? record.latitude ?? record.lat);
   const lng = Number(record.Longitude ?? record.longitude ?? record.lng ?? record.lon);
   if (id && Number.isFinite(lat) && Number.isFinite(lng) && lat && lng) JOB_COORDS.set(id, [lng, lat]);
 }
 
 function orderedIds() {
-  const rows = Array.from(document.querySelectorAll<HTMLElement>(".map-day-route-stop-row"))
-    .filter((row) => row.getClientRects().length > 0);
+  const rows = Array.from(document.querySelectorAll<HTMLElement>(".map-day-route-stop-row")).filter(
+    (row) => row.getClientRects().length > 0,
+  );
   const fromRows = rows
     .map((row) => textOf(row).match(JOB_ID_PATTERN)?.[0]?.toUpperCase() || "")
     .filter(Boolean);
@@ -80,24 +80,31 @@ function markerIdentity(marker: HTMLElement) {
     marker.getAttribute("aria-label"),
     marker.getAttribute("title"),
     textOf(marker),
-  ].filter(Boolean).join(" ").toUpperCase();
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toUpperCase();
 }
 
 function markerCandidates() {
-  return Array.from(document.querySelectorAll<HTMLElement>(
-    ".maturity-map-marker, [data-omo], [data-job-id], [class*='job-marker'], .maplibregl-marker, .mapboxgl-marker, .leaflet-marker-icon",
-  )).filter((marker) => marker.getClientRects().length > 0 && !marker.closest(".hpd-sequential-guide"));
+  return Array.from(
+    document.querySelectorAll<HTMLElement>(
+      ".maturity-map-marker, [data-omo], [data-job-id], [class*='job-marker'], .maplibregl-marker, .mapboxgl-marker, .leaflet-marker-icon",
+    ),
+  ).filter((marker) => marker.getClientRects().length > 0 && !marker.closest(".hpd-sequential-guide"));
 }
 
 function markerFor(id: string, mapRect: DOMRect) {
   const upper = id.toUpperCase();
-  return markerCandidates().find((marker) => {
-    if (!markerIdentity(marker).includes(upper)) return false;
-    const rect = marker.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    return cx >= mapRect.left && cx <= mapRect.right && cy >= mapRect.top && cy <= mapRect.bottom;
-  }) || null;
+  return (
+    markerCandidates().find((marker) => {
+      if (!markerIdentity(marker).includes(upper)) return false;
+      const rect = marker.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      return cx >= mapRect.left && cx <= mapRect.right && cy >= mapRect.top && cy <= mapRect.bottom;
+    }) || null
+  );
 }
 
 function centerOf(element: HTMLElement, mapRect: DOMRect) {
@@ -106,7 +113,7 @@ function centerOf(element: HTMLElement, mapRect: DOMRect) {
   return { x: rect.left - mapRect.left + rect.width / 2, y: rect.top - mapRect.top + rect.height / 2 };
 }
 
-function startPoint(mapRect: DOMRect) {
+function realCurrentLocationPoint(mapRect: DOMRect) {
   const selectors = [
     ".maplibregl-user-location-dot",
     ".mapboxgl-user-location-dot",
@@ -114,6 +121,7 @@ function startPoint(mapRect: DOMRect) {
     ".map-user-location-marker",
     "[data-current-location='true']",
     "[aria-label*='current location' i]",
+    ".leaflet-marker-icon[title*='location' i]",
   ];
   for (const selector of selectors) {
     const marker = document.querySelector<HTMLElement>(selector);
@@ -121,7 +129,7 @@ function startPoint(mapRect: DOMRect) {
     const point = centerOf(marker, mapRect);
     if (point) return point;
   }
-  return { x: Math.max(34, mapRect.width * 0.12), y: Math.max(54, mapRect.height * 0.82) };
+  return null;
 }
 
 function markerCoordinate(marker: HTMLElement | null, id: string): LngLat | undefined {
@@ -156,8 +164,14 @@ export default function MapSequentialGuide() {
         svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.classList.add("hpd-sequential-guide");
         Object.assign(svg.style, {
-          position: "absolute", inset: "0", width: "100%", height: "100%", zIndex: "650",
-          overflow: "hidden", pointerEvents: "none", opacity: "0",
+          position: "absolute",
+          inset: "0",
+          width: "100%",
+          height: "100%",
+          zIndex: "650",
+          overflow: "hidden",
+          pointerEvents: "none",
+          opacity: "0",
         });
         svg.addEventListener("click", (event) => {
           const node = (event.target as Element | null)?.closest<SVGGElement>("g[data-visible-index]");
@@ -175,9 +189,17 @@ export default function MapSequentialGuide() {
         dock?.remove();
         dock = document.createElement("div");
         Object.assign(dock.style, {
-          position: "absolute", left: "50%", bottom: "18px", transform: "translateX(-50%)",
-          zIndex: "900", width: "min(300px, calc(100% - 28px))", padding: "10px",
-          borderRadius: "15px", background: "rgba(8,24,44,.94)", boxShadow: "0 12px 30px rgba(15,23,42,.28)",
+          position: "absolute",
+          left: "50%",
+          bottom: "18px",
+          transform: "translateX(-50%)",
+          zIndex: "900",
+          width: "min(300px, calc(100% - 28px))",
+          padding: "10px",
+          borderRadius: "15px",
+          background: "rgba(8,24,44,.94)",
+          boxShadow: "0 12px 30px rgba(15,23,42,.28)",
+          color: "#fff",
         });
         map.appendChild(dock);
       }
@@ -199,44 +221,53 @@ export default function MapSequentialGuide() {
         return;
       }
 
+      const start = realCurrentLocationPoint(rect);
       const saved = readSaved();
       const requestedIndex = Number.isFinite(saved.routeIndex) ? Number(saved.routeIndex) : 0;
       const activeIndex = Math.max(0, Math.min(visibleStops.length - 1, requestedIndex));
-      const start = startPoint(rect);
-      const points = [{ ...start, id: "you" }, ...visibleStops];
-      const signature = `${points.map((point) => `${point.id}:${point.x.toFixed(1)},${point.y.toFixed(1)}`).join("|")}|active:${activeIndex}`;
+      const points = start ? [{ ...start, id: "you" }, ...visibleStops] : visibleStops;
+      const signature = `${points.map((point) => `${point.id}:${point.x.toFixed(1)},${point.y.toFixed(1)}`).join("|")}|active:${activeIndex}|start:${Boolean(start)}`;
       if (svg.dataset.signature === signature) return;
       svg.dataset.signature = signature;
 
       svg.setAttribute("viewBox", `0 0 ${Math.max(1, rect.width)} ${Math.max(1, rect.height)}`);
       const d = points.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
-      const nodes = points.map((point, index) => {
-        if (index === 0) {
-          return `<g><circle cx="${point.x}" cy="${point.y}" r="16" fill="#0ea56b" stroke="#fff" stroke-width="3"/><text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="8" font-weight="900">YOU</text></g>`;
-        }
-        const visibleIndex = index - 1;
-        const active = visibleIndex === activeIndex;
-        return `<g data-visible-index="${visibleIndex}" role="button" style="pointer-events:all;cursor:pointer"><circle cx="${point.x}" cy="${point.y}" r="${active ? 18 : 15}" fill="${active ? "#ff8a00" : "#1677ff"}" stroke="#fff" stroke-width="3"/><text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="12" font-weight="900" style="pointer-events:none">${index}</text></g>`;
-      }).join("");
+      const stopOffset = start ? 1 : 0;
+      const nodes = points
+        .map((point, index) => {
+          if (start && index === 0) {
+            return `<g><circle cx="${point.x}" cy="${point.y}" r="16" fill="#0ea56b" stroke="#fff" stroke-width="3"/><text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="8" font-weight="900">YOU</text></g>`;
+          }
+          const visibleIndex = index - stopOffset;
+          const active = visibleIndex === activeIndex;
+          return `<g data-visible-index="${visibleIndex}" role="button" style="pointer-events:all;cursor:pointer"><circle cx="${point.x}" cy="${point.y}" r="${active ? 18 : 15}" fill="${active ? "#ff8a00" : "#1677ff"}" stroke="#fff" stroke-width="3"/><text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="12" font-weight="900" style="pointer-events:none">${visibleIndex + 1}</text></g>`;
+        })
+        .join("");
 
-      svg.innerHTML = `
-        <path id="hpd-sequential-guide-path" d="${d}" fill="none" stroke="rgba(255,255,255,.98)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="${d}" fill="none" stroke="#1677ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
-        <g aria-hidden="true"><circle r="5" fill="#e8fbff" stroke="#1677ff" stroke-width="2"><animateMotion dur="5s" repeatCount="indefinite"><mpath href="#hpd-sequential-guide-path"/></animateMotion></circle></g>
-        ${nodes}`;
+      svg.innerHTML = `<path id="hpd-sequential-guide-path" d="${d}" fill="none" stroke="rgba(255,255,255,.98)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="#1677ff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><g aria-hidden="true"><circle r="5" fill="#e8fbff" stroke="#1677ff" stroke-width="2"><animateMotion dur="5s" repeatCount="indefinite"><mpath href="#hpd-sequential-guide-path"/></animateMotion></circle></g>${nodes}`;
       svg.style.opacity = "1";
 
       const active = visibleStops[activeIndex];
       const coord = active.coord;
-      const google = coord ? `https://www.google.com/maps/dir/?api=1&destination=${coord[1]},${coord[0]}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(active.id)}`;
-      const waze = coord ? `https://waze.com/ul?ll=${coord[1]},${coord[0]}&navigate=yes` : `https://waze.com/ul?q=${encodeURIComponent(active.id)}&navigate=yes`;
-      dock.innerHTML = `<div style="font-size:12px;font-weight:900;color:#fff">STOP ${activeIndex + 1} · ${escapeHtml(active.id)}</div><div style="display:flex;gap:8px;margin-top:7px"><a href="${google}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;text-decoration:none;background:#fff;color:#0f172a;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:900">Google</a><a href="${waze}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;text-decoration:none;background:#1677ff;color:#fff;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:900">Waze</a></div>`;
+      const google = coord
+        ? `https://www.google.com/maps/dir/?api=1&destination=${coord[1]},${coord[0]}`
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(active.id)}`;
+      const waze = coord
+        ? `https://waze.com/ul?ll=${coord[1]},${coord[0]}&navigate=yes`
+        : `https://waze.com/ul?q=${encodeURIComponent(active.id)}&navigate=yes`;
+      const locationStatus = start
+        ? "YOU is using the live location marker"
+        : "Enable map location to add an accurate YOU → 1 segment";
+      dock.innerHTML = `<div style="font-size:12px;font-weight:900">STOP ${activeIndex + 1} · ${escapeHtml(active.id)}</div><div style="font-size:11px;opacity:.78;margin-top:3px">${locationStatus}</div><div style="display:flex;gap:8px;margin-top:7px"><a href="${google}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;text-decoration:none;background:#fff;color:#0f172a;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:900">Google</a><a href="${waze}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;text-decoration:none;background:#1677ff;color:#fff;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:900">Waze</a></div>`;
       dock.hidden = false;
     };
 
     const schedule = () => {
       if (frame || destroyed) return;
-      frame = requestAnimationFrame(() => { frame = 0; render(); });
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        render();
+      });
     };
 
     render();
