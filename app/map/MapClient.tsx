@@ -36750,6 +36750,16 @@ return (
             margin-top: 8px;
           }
 
+          .job-card-filter-menu > div > span {
+            flex: 1 0 100%;
+            color: #86b7ef;
+            font-size: 10px;
+            font-weight: 950;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin-top: 3px;
+          }
+
           .job-card-filter-menu button {
             min-height: 36px;
             border: 1px solid rgba(255,255,255,.14);
@@ -36759,6 +36769,12 @@ return (
             padding: 7px 10px;
             font-size: 11px;
             font-weight: 900;
+          }
+
+          .job-card-filter-menu button.danger {
+            border-color: rgba(248,113,113,.45);
+            background: rgba(127,29,29,.35);
+            color: #fee2e2;
           }
 
           @media (max-width: 700px) {
@@ -37832,13 +37848,23 @@ return (
               <details className="job-card-filter-menu">
                 <summary>Jobs &amp; Filters</summary>
                 <div>
-                  <button type="button" onClick={() => { switchMapBoard("active"); showCleanMapView(); }}>Active</button>
-                  <button type="button" onClick={() => { switchMapBoard("archived"); showCleanMapView(); }}>Archived</button>
-                  <button type="button" onClick={() => { switchMapBoard("all"); showCleanMapView(); }}>All Statuses</button>
-                  <button type="button" onClick={() => { setMapShowAllDays(true); showCleanMapView(); }}>Any Days</button>
-                  <button type="button" onClick={() => { setMapShowAllDays(false); setMapDaysBack("7"); showCleanMapView(); }}>7 Days</button>
-                  <button type="button" onClick={() => { setMapBoroughFilter("all"); showCleanMapView(); }}>All Boroughs</button>
-                  <button type="button" onClick={() => { setMapBoroughFilter("nearby"); showCleanMapView(); }}>Nearby</button>
+                  <span>Status</span>
+                  <button type="button" onClick={() => switchMapBoard("active")}>Active</button>
+                  <button type="button" onClick={() => switchMapBoard("pending")}>Pending</button>
+                  <button type="button" onClick={() => switchMapBoard("appointments")}>Appointments</button>
+                  <button type="button" onClick={() => switchMapBoard("waiting72")}>Waiting 72h</button>
+                  <button type="button" onClick={() => switchMapBoard("ready2")}>Ready 2nd</button>
+                  <button type="button" onClick={() => switchMapBoard("final")}>Final Status</button>
+                  <button type="button" onClick={() => switchMapBoard("archived")}>Archived</button>
+                  <button type="button" onClick={() => switchMapBoard("all")}>All Statuses</button>
+                  <span>Days</span>
+                  <button type="button" onClick={() => applyMapDaysFilter(true)}>Any Days</button>
+                  {MAP_DAYS_PRESETS.map((days) => <button type="button" key={`job-card-${days}`} onClick={() => applyMapDaysFilter(false, days)}>{days} Days</button>)}
+                  <span>Area</span>
+                  <button type="button" onClick={() => changeMapBoroughFilter("all")}>All Boroughs</button>
+                  <button type="button" onClick={() => changeMapBoroughFilter("nearby")}>Nearby</button>
+                  <span>Job</span>
+                  <button type="button" className="danger" onClick={() => void resetFieldJobForTesting(selected)}>Reset This Job Status</button>
                 </div>
               </details>
               {(() => {
