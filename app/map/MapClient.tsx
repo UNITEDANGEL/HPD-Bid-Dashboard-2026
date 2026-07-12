@@ -36760,6 +36760,74 @@ return (
             margin-top: 3px;
           }
 
+          .job-progress-timeline {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 6px;
+            margin: 9px 0 2px;
+            padding: 0;
+            list-style: none;
+          }
+
+          .job-progress-timeline li {
+            position: relative;
+            min-width: 0;
+            padding: 9px 5px 8px;
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 12px;
+            background: rgba(3,15,31,.58);
+            color: #9fb5cc;
+            text-align: center;
+          }
+
+          .job-progress-timeline li::before {
+            content: "";
+            display: block;
+            width: 8px;
+            height: 8px;
+            margin: 0 auto 5px;
+            border: 2px solid currentColor;
+            border-radius: 999px;
+            background: #06101f;
+          }
+
+          .job-progress-timeline li.done {
+            border-color: rgba(52,211,153,.42);
+            background: rgba(6,78,59,.28);
+            color: #86efac;
+          }
+
+          .job-progress-timeline li.done::before {
+            background: #34d399;
+          }
+
+          .job-progress-timeline li.active {
+            border-color: rgba(56,189,248,.72);
+            background: rgba(3,105,161,.32);
+            color: #e0f2fe;
+            box-shadow: 0 0 0 2px rgba(56,189,248,.12);
+          }
+
+          .job-progress-timeline strong,
+          .job-progress-timeline small {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .job-progress-timeline strong {
+            font-size: 10px;
+            font-weight: 950;
+          }
+
+          .job-progress-timeline small {
+            margin-top: 2px;
+            font-size: 8px;
+            font-weight: 800;
+            opacity: .78;
+          }
+
           .job-card-filter-menu button {
             min-height: 36px;
             border: 1px solid rgba(255,255,255,.14);
@@ -37841,10 +37909,34 @@ return (
                   className={`route-head-arrived tone-${workflowChoiceInfo(workflowDisplayStatusValue(selected, draftWorkflowStatus)).tone} ${draftWorkflowStatus ? "has-draft-status" : ""}`}
                   onClick={() => runWorkflowNextAction(selected)}
                 >
-                  <strong>{workflowShortStatusLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus))}</strong>
-                  <small>{workflowButtonSubLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus), Boolean(draftWorkflowStatus))}</small>
+                  <strong>{!hasSavedFieldWorkflow(selected) && !draftWorkflowStatus ? "Start Visit" : workflowShortStatusLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus))}</strong>
+                  <small>{!hasSavedFieldWorkflow(selected) && !draftWorkflowStatus ? "choose outcome" : workflowButtonSubLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus), Boolean(draftWorkflowStatus))}</small>
                 </button>
               </div>
+              {(() => {
+                const saved = hasSavedFieldWorkflow(selected);
+                const choice = normalizeWorkflowChoice(workflowDisplayStatusValue(selected, draftWorkflowStatus));
+                const counts = fieldPhotoCountsFor(selected);
+                const closed = ["Work Completed", "Partial Work Completed", "No Access - 2nd Attempt", "Refused Access", "Completed by Others"].includes(choice);
+                const packaged = Boolean(fullPackagePreviewFor(selected));
+                const steps = [
+                  { label: "Arrive", detail: "job open", done: true, active: !saved && !draftWorkflowStatus },
+                  { label: "Status", detail: saved ? workflowShortStatusLabel(choice) : draftWorkflowStatus ? "ready" : "choose", done: saved, active: Boolean(draftWorkflowStatus) },
+                  { label: "Media", detail: counts.total ? `${counts.total} saved` : "before/after", done: counts.total > 0, active: saved && !counts.total && !closed },
+                  { label: "Complete", detail: closed ? workflowShortStatusLabel(choice) : "finish", done: closed, active: saved && !closed && counts.total > 0 },
+                  { label: "Package", detail: packaged ? "ready" : "review", done: packaged, active: closed && !packaged },
+                ];
+                return (
+                  <ol className="job-progress-timeline" aria-label="Job progress timeline">
+                    {steps.map((step) => (
+                      <li key={step.label} className={`${step.done ? "done" : ""} ${step.active ? "active" : ""}`.trim()} aria-current={step.active ? "step" : undefined}>
+                        <strong>{step.label}</strong>
+                        <small>{step.detail}</small>
+                      </li>
+                    ))}
+                  </ol>
+                );
+              })()}
               <details className="job-card-filter-menu">
                 <summary>Jobs &amp; Filters</summary>
                 <div>
