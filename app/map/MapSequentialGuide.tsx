@@ -126,6 +126,32 @@ function markerCoordinate(marker: HTMLElement | null, id: string): LngLat | unde
   return JOB_COORDS.get(id);
 }
 
+function mapLocationPoint(mapRect: DOMRect) {
+  const selectors = [
+    ".maplibregl-user-location-dot",
+    ".maplibregl-user-location-dot-stale",
+    ".mapboxgl-user-location-dot",
+    ".mapboxgl-user-location-dot-stale",
+    ".map-current-location-marker",
+    ".map-user-location-marker",
+    "[data-current-location='true']",
+    "[aria-label*='current location' i]",
+    ".leaflet-marker-icon[title*='current location' i]",
+    ".leaflet-marker-icon[aria-label*='current location' i]",
+  ];
+  for (const selector of selectors) {
+    const candidates = Array.from(document.querySelectorAll<HTMLElement>(selector));
+    for (const marker of candidates) {
+      if (!marker.getClientRects().length) continue;
+      const point = centerOf(marker, mapRect);
+      if (!point) continue;
+      if (point.x < 0 || point.y < 0 || point.x > mapRect.width || point.y > mapRect.height) continue;
+      return point;
+    }
+  }
+  return null;
+}
+
 function isMapboxProjector(value: unknown): value is MapboxProjector {
   const candidate = value as Partial<MapboxProjector> | null;
   return Boolean(candidate && typeof candidate.getContainer === "function" && typeof candidate.project === "function");
@@ -169,11 +195,7 @@ function searchObject(root: unknown, maxDepth = 12): MapboxProjector | LeafletPr
 function findProjector(map: HTMLElement): MapboxProjector | LeafletProjector | null {
   const globalCandidate = (window as unknown as Record<string, unknown>).__HPD_MAP__;
   if (isMapboxProjector(globalCandidate) || isLeafletProjector(globalCandidate)) return globalCandidate;
-
-  const roots = [
-    map,
-    ...Array.from(map.querySelectorAll<HTMLElement>("canvas, .maplibregl-canvas, .mapboxgl-canvas, .leaflet-map-pane")),
-  ];
+  const roots = [map, ...Array.from(map.querySelectorAll<HTMLElement>("canvas, .maplibregl-canvas, .mapboxgl-canvas, .leaflet-map-pane"))];
   for (const root of roots) {
     for (const key of Reflect.ownKeys(root)) {
       try {
@@ -283,21 +305,24 @@ export default function MapSequentialGuide() {
         return;
       }
 
-      const gpsPoint = projectGps(map, liveGps);
+      const mapPoint = mapLocationPoint(rect);
+      const gpsPoint = !mapPoint && gpsAccuracy !== null && gpsAccuracy <= 50 ? projectGps(map, liveGps) : null;
+      const youPoint = mapPoint || gpsPoint;
+      const sourceLabel = mapPoint ? "map location marker" : gpsPoint ? `live GPS · ±${Math.round(gpsAccuracy || 0)} m` : "location unavailable";
       const saved = readSaved();
       const requestedIndex = Number.isFinite(saved.routeIndex) ? Number(saved.routeIndex) : 0;
       const activeIndex = Math.max(0, Math.min(visibleStops.length - 1, requestedIndex));
-      const points = gpsPoint ? [{ ...gpsPoint, id: "you" }, ...visibleStops] : visibleStops;
-      const signature = `${points.map((point) => `${point.id}:${point.x.toFixed(1)},${point.y.toFixed(1)}`).join("|")}|active:${activeIndex}|gps:${liveGps?.join(",") || "none"}`;
+      const points = youPoint ? [{ ...youPoint, id: "you" }, ...visibleStops] : visibleStops;
+      const signature = `${points.map((point) => `${point.id}:${point.x.toFixed(1)},${point.y.toFixed(1)}`).join("|")}|active:${activeIndex}|source:${sourceLabel}`;
       if (svg.dataset.signature === signature) return;
       svg.dataset.signature = signature;
 
       svg.setAttribute("viewBox", `0 0 ${Math.max(1, rect.width)} ${Math.max(1, rect.height)}`);
       const d = points.map((point, index) => `${index ? "L" : "M"}${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
-      const stopOffset = gpsPoint ? 1 : 0;
+      const stopOffset = youPoint ? 1 : 0;
       const nodes = points
         .map((point, index) => {
-          if (gpsPoint && index === 0) {
+          if (youPoint && index === 0) {
             return `<g><circle cx="${point.x}" cy="${point.y}" r="16" fill="#0ea56b" stroke="#fff" stroke-width="3"/><text x="${point.x}" y="${point.y + 0.5}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="8" font-weight="900">YOU</text></g>`;
           }
           const visibleIndex = index - stopOffset;
@@ -317,9 +342,7 @@ export default function MapSequentialGuide() {
       const waze = coord
         ? `https://waze.com/ul?ll=${coord[1]},${coord[0]}&navigate=yes`
         : `https://waze.com/ul?q=${encodeURIComponent(active.id)}&navigate=yes`;
-      const locationStatus = gpsPoint
-        ? `YOU is live browser GPS${gpsAccuracy ? ` · ±${Math.round(gpsAccuracy)} m` : ""}`
-        : "Enable precise browser location to add an accurate YOU → 1 segment";
+      const locationStatus = youPoint ? `YOU uses ${sourceLabel}` : "Turn on the map location button to add YOU → 1";
       dock.innerHTML = `<div style="font-size:12px;font-weight:900">STOP ${activeIndex + 1} · ${escapeHtml(active.id)}</div><div style="font-size:11px;opacity:.78;margin-top:3px">${escapeHtml(locationStatus)}</div><div style="display:flex;gap:8px;margin-top:7px"><a href="${google}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;text-decoration:none;background:#fff;color:#0f172a;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:900">Google</a><a href="${waze}" target="_blank" rel="noreferrer" style="flex:1;text-align:center;text-decoration:none;background:#1677ff;color:#fff;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:900">Waze</a></div>`;
       dock.hidden = false;
     };
