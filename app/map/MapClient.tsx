@@ -3116,7 +3116,21 @@ async function fetchDayAgentRoadRoute(points: ReturnType<typeof dayAgentRoutePoi
 
 async function drawDayAgentRouteLine(routeJobs = dayAgentRoute, routeOrigin: UserLocationState | null = userLocation) {
   if (!mapRef.current) return;
-  const points = dayAgentRoutePoints(routeJobs, true, routeOrigin);
+  const requestedOrigin = isFreshRouteLocation(routeOrigin)
+    ? routeOrigin
+    : await requestFreshDayAgentLocation();
+
+  const freshOrigin = isFreshRouteLocation(requestedOrigin)
+    ? requestedOrigin
+    : null;
+
+  if (!freshOrigin) {
+    startLocationTracking({ followMap: true });
+    setActionNotice("Waiting for your current GPS location. Route was not drawn from base.");
+    return;
+  }
+
+  const points = dayAgentRoutePoints(routeJobs, true, freshOrigin);
   const fallbackLatLngs = points.map((point) => [point.coords.lat, point.coords.lng] as [number, number]);
   if (points.length < 2 || fallbackLatLngs.length < 2) {
     setActionNotice("Choose mapped jobs before drawing the agent route.");
