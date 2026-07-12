@@ -12,6 +12,7 @@ const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
 const LOCATION_LAST_STORAGE_KEY = "hpd-map-location-last-v1";
 const FIELD_VISIT_TRACKING_STORAGE_KEY = "hpd-private-field-visit-tracking-v1";
 const DAY_AGENT_LOG_STORAGE_KEY = "hpd-ai-day-agent-log-v1";
+const DAY_AGENT_ROUTE_STORAGE_KEY = "hpd-ai-day-agent-route-v1";
 const DAY_AGENT_BASE_ADDRESS = "87-35 114 Street, Richmond Hill, NY 11418";
 const DAY_AGENT_BASE_COORDS = { lat: 40.6992, lng: -73.8357 };
 const DAY_AGENT_ROUTE_MAX_STOPS = 6;
@@ -2776,6 +2777,7 @@ const [dayAgentRouteSummary, setDayAgentRouteSummary] = useState<DayAgentRouteSu
 const [dayAgentRouteHidden, setDayAgentRouteHidden] = useState(false);
 const [dayAgentSelectedStopIndex, setDayAgentSelectedStopIndex] = useState(0);
 const [dayAgentLog, setDayAgentLog] = useState<Array<{ at: string; text: string; jobId?: string }>>([]);
+const dayAgentRouteRestoredRef = useRef(false);
 const [dispatchMessages, setDispatchMessages] = useState<Array<{ role: "user" | "assistant"; text: string; jobs?: string[] }>>([
   {
     role: "assistant",
@@ -3593,6 +3595,46 @@ const [hideCompleted, setHideCompleted] = useState(false);
       }
     } catch {}
   }, []);
+
+  useEffect(() => {
+    if (dayAgentRouteRestoredRef.current || !mappedJobs.length) return;
+    dayAgentRouteRestoredRef.current = true;
+    try {
+      const saved = window.localStorage?.getItem(DAY_AGENT_ROUTE_STORAGE_KEY);
+      if (!saved) return;
+      const parsed = JSON.parse(saved);
+      const keys = Array.isArray(parsed?.jobKeys) ? parsed.jobKeys.map((key: unknown) => String(key || "")) : [];
+      const restored = keys
+        .map((key: string) => mappedJobs.find((job, index) => jobKey(job, index) === key || jobKey(job) === key))
+        .filter(Boolean) as MappedJob[];
+      if (!restored.length) return;
+      setDayAgentRoute(restored);
+      setDayAgentStarted(true);
+      setDayAgentCommand(String(parsed?.command || "Restored route"));
+      setDayAgentBoroughStart((parsed?.borough || "nearby") as MapBoroughFilter);
+      setDayAgentSelectedStopIndex(Math.max(0, Math.min(Number(parsed?.selectedIndex || 0), restored.length - 1)));
+      setDayAgentRouteHidden(Boolean(parsed?.hidden));
+      setActionNotice(`Restored AI route with ${restored.length} stop${restored.length === 1 ? "" : "s"}.`);
+    } catch {}
+  }, [mappedJobs]);
+
+  useEffect(() => {
+    if (!dayAgentRouteRestoredRef.current) return;
+    try {
+      if (!dayAgentRoute.length) {
+        window.localStorage?.removeItem(DAY_AGENT_ROUTE_STORAGE_KEY);
+        return;
+      }
+      window.localStorage?.setItem(DAY_AGENT_ROUTE_STORAGE_KEY, JSON.stringify({
+        jobKeys: dayAgentRoute.map((job, index) => jobKey(job, index)),
+        command: dayAgentCommand,
+        borough: dayAgentBoroughStart,
+        selectedIndex: dayAgentSelectedStopIndex,
+        hidden: dayAgentRouteHidden,
+        savedAt: new Date().toISOString(),
+      }));
+    } catch {}
+  }, [dayAgentRoute, dayAgentCommand, dayAgentBoroughStart, dayAgentSelectedStopIndex, dayAgentRouteHidden]);
 
   useEffect(() => {
     const stream = fieldCameraStreamRef.current;
@@ -37559,6 +37601,7 @@ return (
                   <button type="button" onClick={() => setDayAgentRouteHidden((hidden) => !hidden)}>
                     {dayAgentRouteHidden ? "Show" : "Hide"}
                   </button>
+                  <button type="button" onClick={() => updateDayAgentRouteOrder([], 0, "Route cleared.")}>Clear</button>
                   <a href={dayAgentGoogleRouteUrl(dayAgentRoute)} target="_blank" rel="noopener noreferrer">Google</a>
                 </div>
               </div>
