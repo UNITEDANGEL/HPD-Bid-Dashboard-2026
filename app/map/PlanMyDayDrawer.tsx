@@ -435,7 +435,7 @@ export default function PlanMyDayDrawer() {
       </button>
 
       {open ? (
-        <div className="plan-my-day__panel">
+        <div className={`plan-my-day__panel ${viewingJob ? "is-job-view" : ""}`}>
           <header className="plan-my-day__header">
             <div>
               <span>FREE LOCAL PLANNER</span>
