@@ -3020,19 +3020,20 @@ const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverr
   );
   const requestedBorough = requestedBoroughOverride || dayAgentRequestedBorough(command);
   const visibleRouteSource =
-    requestedBorough === "nearby" || mapBoroughFilter === "nearby"
+    requestedBorough === "nearby"
       ? filteredJobs
       : dispatchJobPool();
   const sourcePool = visibleRouteSource.length ? visibleRouteSource : dispatchJobPool();
-  const pool = sourcePool
+  const boroughPool = sourcePool
     .filter((job) => workflowViewBucket(job) !== "archived" && workflowViewBucket(job) !== "final")
     .filter((job) => cleanAddress(job))
     .filter((job) => jobLatLng(job))
-    .filter((job) => requestedBorough === "all" || requestedBorough === "unknown" || matchesMapBorough(job, requestedBorough))
-    .filter((job) => {
+    .filter((job) => requestedBorough === "all" || requestedBorough === "unknown" || matchesMapBorough(job, requestedBorough));
+  const recentPool = boroughPool.filter((job) => {
       const age = mapDateAgeDays(job);
       return (age !== null && age >= 0 && age <= 90) || hasUpcomingAppointment(job);
     });
+  const pool = recentPool.length ? recentPool : boroughPool;
   const sorted = [...pool].sort((a, b) => {
     const aRequested = command.toLowerCase().includes(jobKey(a).toLowerCase()) ? 10000 : 0;
     const bRequested = command.toLowerCase().includes(jobKey(b).toLowerCase()) ? 10000 : 0;
@@ -37017,6 +37018,46 @@ return (
             font-weight: 900;
           }
 
+          .map-day-agent-borough-grid {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 6px;
+          }
+
+          .map-day-agent-borough-grid > span {
+            grid-column: 1 / -1;
+            color: #bfdbfe;
+            font-size: 10px;
+            font-weight: 950;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+          }
+
+          .map-day-agent-borough-grid button {
+            min-width: 0;
+            min-height: 38px;
+            padding: 6px 4px;
+            border: 1px solid rgba(147,197,253,.24);
+            border-radius: 11px;
+            background: rgba(3,15,31,.62);
+            color: #dbeafe;
+            font-size: 10px;
+            font-weight: 950;
+          }
+
+          .map-day-agent-borough-grid button.active {
+            border-color: rgba(52,211,153,.72);
+            background: rgba(6,95,70,.58);
+            color: #ecfdf5;
+          }
+
+          @media (max-width: 420px) {
+            .map-day-agent-borough-grid {
+              grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+          }
+
           .job-progress-timeline strong {
             font-size: 10px;
             font-weight: 950;
@@ -37617,18 +37658,21 @@ return (
                   ))}
                 </div>
                 {dayAgentPanelTab === "plan" ? <>
-                <label className="map-day-agent-borough agent-plan-control">
-                  <span>Start borough</span>
-                  <select
-                    value={dayAgentBoroughStart}
-                    onChange={(event) => setDayAgentBoroughStart(event.target.value as MapBoroughFilter)}
-                    aria-label="AI day agent start borough"
-                  >
-                    {MAP_BOROUGH_FILTERS.filter((borough) => borough.key !== "unknown").map((borough) => (
-                      <option key={borough.key} value={borough.key}>{borough.short}</option>
-                    ))}
-                  </select>
-                </label>
+                <div className="map-day-agent-borough-grid agent-plan-control" aria-label="Pick route borough">
+                  <span>Pick route area</span>
+                  {MAP_BOROUGH_FILTERS.filter((borough) => borough.key !== "unknown").map((borough) => (
+                    <button
+                      type="button"
+                      key={borough.key}
+                      className={dayAgentBoroughStart === borough.key ? "active" : ""}
+                      aria-pressed={dayAgentBoroughStart === borough.key}
+                      aria-label={`Plan route for ${borough.label}`}
+                      onClick={() => setDayAgentBoroughStart(borough.key)}
+                    >
+                      {borough.key === "nearby" ? "Nearby" : borough.key === "all" ? "All" : borough.short}
+                    </button>
+                  ))}
+                </div>
                 <label className="map-day-agent-command agent-plan-control">
                   <span>Tell agent</span>
                   <input
