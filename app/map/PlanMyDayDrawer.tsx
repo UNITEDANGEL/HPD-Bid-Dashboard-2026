@@ -15,7 +15,10 @@ type Point = { lat: number; lng: number };
 type ChatMessage = { role: "assistant" | "user"; text: string };
 type FieldStep = "ready" | "arrived" | "before_media" | "work_started" | "after_media" | "no_access_media" | "refused_access_media" | "completed_by_others_media" | "no_access" | "refused_access" | "work_completed" | "partial_work" | "completed_by_others";
 type RoutePreference = "shortest_drive" | "highest_priority" | "balanced" | "appointments_first";
+type AreaMode = "nearby" | "all" | "borough";
 type LocalPlan = {
+  areaMode: AreaMode;
+  daysBack: number | null;
   boroughs: string[];
   avoidBoroughs: string[];
   priorities: string[];
@@ -46,6 +49,8 @@ const BASE_POINT: Point = { lat: 40.6957, lng: -73.8331 };
 const LAST_LOCATION_STORAGE_KEY = "hpd-map-location-last-v1";
 const STATUS_WORKER_URL = process.env.NEXT_PUBLIC_HPD_STATUS_WORKER_URL || "https://hpd-status-worker.uac525.workers.dev";
 const DEFAULT_PLAN: LocalPlan = {
+  areaMode: "all",
+  daysBack: null,
   boroughs: [],
   avoidBoroughs: [],
   priorities: ["balanced"],
@@ -129,6 +134,32 @@ function hasAppointmentToday(record: JobRecord) {
   return !Number.isNaN(date.getTime()) && date.toDateString() === new Date().toDateString();
 }
 
+function parsePlanJobDate(value: string) {
+  if (!value.trim()) return null;
+  const short = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (short) {
+    const year = Number(short[3]) < 100 ? 2000 + Number(short[3]) : Number(short[3]);
+    const date = new Date(year, Number(short[1]) - 1, Number(short[2]));
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function jobDateAgeDays(record: JobRecord) {
+  const raw = textValue(record, [
+    "WorkStartDate", "workStartDate", "Work Start Date",
+    "WorkCompletionDate", "workCompletionDate", "Work Completion Date",
+    "AwardDate", "awardDate", "Award Date",
+  ]);
+  const date = parsePlanJobDate(raw);
+  if (!date) return null;
+  const today = new Date();
+  const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  return Math.round((todayOnly - dateOnly) / 86_400_000);
+}
+
 function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
 }
@@ -140,9 +171,19 @@ function parseMessage(message: string, current: LocalPlan): LocalPlan {
   const count = clean.match(/\b(1[0-2]|[1-9])\s*(?:jobs?|stops?)?\b/);
   if (count) next.stopCount = Math.max(1, Math.min(12, Number(count[1])));
 
+  const explicitCount = clean.match(/\b(?:plan|route|pick|select)\s+(1[0-2]|[1-9])\b|\b(1[0-2]|[1-9])\s+(?:jobs?|stops?)\b/);
+  if (explicitCount) next.stopCount = Math.max(1, Math.min(12, Number(explicitCount[1] || explicitCount[2])));
+  const days = clean.match(/\b(?:last|past|within)?\s*(1|3|7|14|30|60|90|180|365)\s*days?\b/);
+  if (days) {
+    next.daysBack = Number(days[1]);
+    if (!explicitCount) next.stopCount = current.stopCount;
+  }
+  if (/any\s*(?:time|day|date)|all\s*(?:time|days|dates)|no date limit/.test(clean)) next.daysBack = null;
+
   const mentionedBoroughs = BOROUGHS.filter((borough) => clean.includes(borough.toLowerCase()));
   if (/\bavoid\b|\bexclude\b|\bskip\b/.test(clean)) next.avoidBoroughs = unique([...next.avoidBoroughs, ...mentionedBoroughs]);
   else if (mentionedBoroughs.length) {
+    next.areaMode = "borough";
     next.boroughs = mentionedBoroughs;
     next.avoidBoroughs = next.avoidBoroughs.filter((borough) => !mentionedBoroughs.includes(borough));
   }
@@ -152,6 +193,8 @@ function parseMessage(message: string, current: LocalPlan): LocalPlan {
   const wantsAppointments = /appointment/.test(clean);
 
   if (wantsShortestDrive) {
+    next.areaMode = "nearby";
+    next.boroughs = [];
     next.startMode = "current_location";
     next.routePreference = "shortest_drive";
   }
@@ -174,7 +217,10 @@ function parseMessage(message: string, current: LocalPlan): LocalPlan {
     else next.includeOmo = unique([...next.includeOmo, ...ids]);
   }
 
-  if (/clear borough|any borough|all boroughs|anywhere/.test(clean)) next.boroughs = [];
+  if (/clear borough|any borough|all boroughs|anywhere/.test(clean)) {
+    next.areaMode = "all";
+    next.boroughs = [];
+  }
   if (/clear avoid|do not avoid/.test(clean)) next.avoidBoroughs = [];
   if (/clear included|remove all included/.test(clean)) next.includeOmo = [];
 
@@ -182,7 +228,8 @@ function parseMessage(message: string, current: LocalPlan): LocalPlan {
 }
 
 function describePlan(plan: LocalPlan) {
-  const area = plan.boroughs.length ? plan.boroughs.join(" and ") : "all NYC boroughs";
+  const area = plan.areaMode === "nearby" ? "jobs nearest to you" : plan.boroughs.length ? plan.boroughs.join(" and ") : "all NYC boroughs";
+  const dateRange = plan.daysBack === null ? "from any date" : `from the last ${plan.daysBack} days`;
   const avoid = plan.avoidBoroughs.length ? `, avoiding ${plan.avoidBoroughs.join(" and ")}` : "";
   const priority = plan.priorities.includes("appointments")
     ? "appointments"
@@ -192,7 +239,7 @@ function describePlan(plan: LocalPlan) {
         ? "the shortest drive"
         : "a balanced route";
   const finish = plan.finishBy ? ` and target finishing by ${plan.finishBy}` : "";
-  return `${plan.stopCount} stops in ${area}${avoid}, prioritizing ${priority}${finish}.`;
+  return `${plan.stopCount} stops in ${area} ${dateRange}${avoid}, prioritizing ${priority}${finish}.`;
 }
 
 async function getOrigin(startMode: LocalPlan["startMode"]): Promise<{ point: Point; label: string }> {
@@ -231,6 +278,10 @@ function rankJobs(plan: LocalPlan, origin: Point) {
     const borough = normalizeBorough(textValue(job, ["Borough", "borough", "Boro", "boro"]));
     if (plan.boroughs.length && !plan.boroughs.includes(borough)) return false;
     if (plan.avoidBoroughs.includes(borough)) return false;
+    if (plan.daysBack !== null) {
+      const age = jobDateAgeDays(job);
+      if (age === null || age < 0 || age > plan.daysBack) return false;
+    }
     if (plan.priorities.includes("appointments") && !hasAppointmentToday(job)) return false;
     if (plan.priorities.includes("urgent") && !isUrgent(job)) return false;
     return true;
@@ -440,6 +491,8 @@ export default function PlanMyDayDrawer() {
     if (!selectedResults.length) return;
     const detail = {
       boroughs: plan.boroughs,
+      area_mode: plan.areaMode,
+      days_back: plan.daysBack,
       avoid_boroughs: plan.avoidBoroughs,
       priorities: plan.priorities,
       include_omo: plan.includeOmo,
@@ -538,6 +591,29 @@ export default function PlanMyDayDrawer() {
     });
   }
 
+  function updateAreaChoice(value: string) {
+    if (value === "nearby") {
+      setPlan((current) => ({ ...current, areaMode: "nearby", boroughs: [], startMode: "current_location", routePreference: "shortest_drive" }));
+      return;
+    }
+    if (value === "all") {
+      setPlan((current) => ({ ...current, areaMode: "all", boroughs: [] }));
+      return;
+    }
+    setPlan((current) => ({
+      ...current,
+      areaMode: "borough",
+      boroughs: [value],
+      avoidBoroughs: current.avoidBoroughs.filter((borough) => borough !== value),
+    }));
+  }
+
+  function applyChoices() {
+    const area = plan.areaMode === "nearby" ? "near me" : plan.areaMode === "borough" ? "in " + plan.boroughs[0] : "in all boroughs";
+    const days = plan.daysBack === null ? "from any time" : "from the last " + plan.daysBack + " days";
+    void handleMessage("Plan " + plan.stopCount + " jobs " + area + ", " + days);
+  }
+
   return (
     <aside className={`plan-my-day ${open ? "is-open" : ""} ${mediaPaused ? "is-media-paused" : ""}`} aria-label="Free local AI day planner">
       <button type="button" className="plan-my-day__toggle" onClick={() => { if (mediaPaused) { setMediaPaused(false); setOpen(true); } else setOpen((value) => !value); }} aria-expanded={open}>
@@ -609,6 +685,23 @@ export default function PlanMyDayDrawer() {
               <button type="button" key={suggestion} onClick={() => void handleMessage(suggestion)}>{suggestion}</button>
             ))}
           </div>
+
+          <section className="plan-my-day__choices" aria-label="Choose route area and job days">
+            <label htmlFor="plan-area-choice">Choose area
+              <select id="plan-area-choice" value={plan.areaMode === "borough" ? plan.boroughs[0] || "all" : plan.areaMode} onChange={(event) => updateAreaChoice(event.target.value)} disabled={busy}>
+                <option value="nearby">Nearby me</option>
+                <option value="all">All boroughs</option>
+                {BOROUGHS.map((borough) => <option key={borough} value={borough}>{borough}</option>)}
+              </select>
+            </label>
+            <label htmlFor="plan-days-choice">Choose job days
+              <select id="plan-days-choice" value={plan.daysBack === null ? "any" : String(plan.daysBack)} onChange={(event) => setPlan((current) => ({ ...current, daysBack: event.target.value === "any" ? null : Number(event.target.value) }))} disabled={busy}>
+                <option value="any">Any time</option>
+                {[1, 3, 7, 14, 30, 60, 90, 180, 365].map((days) => <option key={days} value={days}>Last {days} day{days === 1 ? "" : "s"}</option>)}
+              </select>
+            </label>
+            <button type="button" onClick={applyChoices} disabled={busy}>Apply choices</button>
+          </section>
 
           <div className="plan-my-day__voice-row">
             <button type="button" onClick={readLastReply} disabled={!lastAssistantReply}>🔊 Read Reply</button>

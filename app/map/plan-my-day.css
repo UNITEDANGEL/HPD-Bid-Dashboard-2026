@@ -19,3 +19,5 @@
 @media(max-width:700px){body:has(.job-drawer:not(.closed)) .plan-my-day:not(.is-open):not(.is-media-paused){display:none}.plan-my-day.is-media-paused{display:block!important}}
 
 .plan-my-day__offline-state{display:block;margin-top:6px;color:#76efaf;font-size:10px;font-weight:850;letter-spacing:0;line-height:1.25}
+
+.plan-my-day__choices{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;border:1px solid rgba(127,176,255,.22);border-radius:13px;background:rgba(79,140,255,.08);padding:10px}.plan-my-day__choices label{display:grid;gap:5px;color:#c9d7ec;font-size:11px;font-weight:900}.plan-my-day__choices select{width:100%;min-width:0;min-height:42px;border:1px solid rgba(255,255,255,.18);border-radius:10px;background:#fff;color:#07111f;padding:8px 30px 8px 10px;font:inherit;font-weight:800}.plan-my-day__choices>button{grid-column:1/-1;min-height:42px;border:0;border-radius:10px;background:#4f8cff;color:#fff;font-weight:950;cursor:pointer}.plan-my-day__choices>button:disabled{opacity:.5;cursor:not-allowed}@media(max-width:380px){.plan-my-day__choices{grid-template-columns:1fr}.plan-my-day__choices>button{grid-column:auto}}
