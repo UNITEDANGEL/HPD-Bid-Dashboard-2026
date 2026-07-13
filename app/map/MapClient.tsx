@@ -2821,6 +2821,25 @@ const dispatchJobReason = (job: JobRecord) => {
   if (/completed|done/i.test(workflow)) return "Completed/final — review paperwork package.";
   return workflow || "Review job details.";
 };
+const dayAgentEstimatedStopMinutes = (job: JobRecord) => {
+  const text = `${displayDescription(job)} ${displayLocation(job)}`.toLowerCase();
+  let minutes = DAY_AGENT_DEFAULT_STOP_MINUTES;
+  if (/paint|plaster|sheetrock|ceiling|wall/.test(text)) minutes += 20;
+  if (/door|lock|hinge|window/.test(text)) minutes += 10;
+  if (/electrical|outlet|switch|fixture|plumb|pipe|faucet|toilet/.test(text)) minutes += 15;
+  if (/multiple|throughout|entire|all rooms|several/.test(text)) minutes += 15;
+  if (/inspect|inspection|affidavit|no access/.test(text)) minutes -= 10;
+  return Math.max(25, Math.min(90, minutes));
+};
+const dayAgentSmartReason = (job: JobRecord) => {
+  const appointment = appointmentDate(job);
+  const appointmentHours = appointment ? Math.round((appointment.getTime() - Date.now()) / 3600000) : null;
+  const estimate = dayAgentEstimatedStopMinutes(job);
+  if (appointmentHours !== null && appointmentHours >= 0 && appointmentHours <= 24) {
+    return `Appointment in ${appointmentHours}h · est. ${estimate} min`;
+  }
+  return `${dispatchJobReason(job)} · est. ${estimate} min`;
+};
 const dispatchJobLine = (job: JobRecord, index: number) => {
   const address = displayAddress(job);
   const borough = (job as any).borough || (job as any).Borough || "Unknown";
@@ -2962,7 +2981,19 @@ const dayAgentRouteScore = (job: MappedJob, command: string, requestedBorough = 
   const street = manhattanStreetNumber(job);
   const coords = jobLatLng(job);
   const origin = routeOrigin || DAY_AGENT_BASE_COORDS;
+  const secondAttempt = workflowSecondAttemptInfo(job);
+  const appointment = appointmentDate(job);
+  const appointmentHours = appointment ? (appointment.getTime() - Date.now()) / 3600000 : null;
+  const age = mapDateAgeDays(job);
+  const estimatedMinutes = dayAgentEstimatedStopMinutes(job);
   let score = dispatchUrgencyScore(job);
+  if (secondAttempt?.ready) score += 6000;
+  else if (secondAttempt?.within24) score += 2800;
+  if (appointmentHours !== null && appointmentHours >= 0 && appointmentHours <= 12) score += 5200;
+  else if (appointmentHours !== null && appointmentHours > 12 && appointmentHours <= 24) score += 3200;
+  if (q.includes("appointment") && appointmentHours !== null && appointmentHours >= 0) score += 2600;
+  if (typeof age === "number" && age >= 60) score += Math.min(1800, (age - 59) * 24);
+  score -= Math.max(0, estimatedMinutes - DAY_AGENT_DEFAULT_STOP_MINUTES) * 6;
   if (requestedBorough !== "all" && requestedBorough !== "unknown") {
     if (boroughKey === requestedBorough) score += 5200;
     else score += 500;
@@ -3025,7 +3056,7 @@ const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverr
     if (!coords) return;
     const travelToJobMinutes = Math.max(4, Math.round((distanceMiles(cursor, coords) / DAY_AGENT_DAY_DRIVE_MPH) * 60));
     const returnToBaseMinutes = Math.max(4, Math.round((distanceMiles(coords, DAY_AGENT_BASE_COORDS) / DAY_AGENT_DAY_DRIVE_MPH) * 60));
-    const projectedFieldMinutes = fieldMinutesUsed + travelToJobMinutes + DAY_AGENT_DEFAULT_STOP_MINUTES;
+    const projectedFieldMinutes = fieldMinutesUsed + travelToJobMinutes + dayAgentEstimatedStopMinutes(job);
     const projectedReturnMinutes = projectedFieldMinutes + returnToBaseMinutes;
     if (projectedFieldMinutes <= fieldMinutesLimit && projectedReturnMinutes <= returnMinutesLimit) {
       route.push(job);
@@ -37650,7 +37681,7 @@ return (
                 {dayAgentPanelTab === "route" ? (
                   <div className="map-day-agent-tab-panel" role="tabpanel" aria-label="AI route section">
                     <strong>{dayAgentRoute.length ? `${dayAgentRoute.length} saved route stops` : "No route planned"}</strong>
-                    <small>{agentFirstJob ? `First: ${jobKey(agentFirstJob)} · ${dispatchJobReason(agentFirstJob)}` : "Choose Plan, then Today, Nearby, or Ready 2nd."}</small>
+                    <small>{agentFirstJob ? `First: ${jobKey(agentFirstJob)} · ${dayAgentSmartReason(agentFirstJob)}` : "Choose Plan, then Today, Nearby, or Ready 2nd."}</small>
                     <div className="map-day-agent-tab-panel-actions">
                       <button type="button" onClick={() => {
                         setDayAgentRouteHidden(false);
@@ -37716,10 +37747,10 @@ return (
                 </div>
               </div>
               {!dayAgentRouteHidden && selectedRouteJob ? (
-                <button type="button" className="map-day-route-selected-summary" onClick={() => focusJob(selectedRouteJob)} aria-label={`Open job ${jobKey(selectedRouteJob)}. AI reason: ${dispatchJobReason(selectedRouteJob)}`}>
+                <button type="button" className="map-day-route-selected-summary" onClick={() => focusJob(selectedRouteJob)} aria-label={`Open job ${jobKey(selectedRouteJob)}. AI reason: ${dayAgentSmartReason(selectedRouteJob)}`}>
                   <span>{jobKey(selectedRouteJob)} · {displayAddress(selectedRouteJob)} ·</span>
                   <strong>{selectedRouteLeg ? `Drive ${selectedRouteLeg.label}` : "Route leg loading"}</strong>
-                  <small>Why AI chose it: {dispatchJobReason(selectedRouteJob)} · Tap to open job</small>
+                  <small>Why AI chose it: {dayAgentSmartReason(selectedRouteJob)} · Tap to open job</small>
                 </button>
               ) : null}
               <div className="map-day-route-stop-list">
@@ -37728,7 +37759,7 @@ return (
                     <button type="button" className="map-day-route-stop-main" onClick={() => focusRouteStopOnMap(job, index)}>
                       <b>{index + 1}</b>
                       <span>{jobKey(job)}</span>
-                      <small>{dayAgentRouteSummary?.legs?.[index]?.label ? `${dayAgentRouteSummary.legs[index].label} · ${dispatchJobReason(job)}` : dispatchJobReason(job)}</small>
+                      <small>{dayAgentRouteSummary?.legs?.[index]?.label ? `${dayAgentRouteSummary.legs[index].label} · ${dayAgentSmartReason(job)}` : dayAgentSmartReason(job)}</small>
                     </button>
                     <div className="map-day-route-edit-actions" aria-label={`Edit route stop ${index + 1}`}>
                       <button type="button" onClick={() => moveDayAgentRouteStop(index, -1)} disabled={index === 0} aria-label={`Move ${jobKey(job)} earlier`}>
