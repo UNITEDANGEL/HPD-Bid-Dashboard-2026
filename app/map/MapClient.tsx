@@ -1642,7 +1642,8 @@ function markerSignalLabelHtml(
   const start = markerStartCounterLabel(job);
   const id = jobKey(job);
   const address = markerAddressLabel(job);
-  const daySignal = options.overdueLabel || (options.noAccessTimerLabel ? "72h no access" : award.main.replace(/^MD\s*/i, "").replace(/^AWD IN\s*/i, "Award in "));
+  const archiveSignal = archiveMarkerSignalLabel(job);
+  const daySignal = archiveSignal || options.overdueLabel || (options.noAccessTimerLabel ? "72h no access" : award.main.replace(/^MD\s*/i, "").replace(/^AWD IN\s*/i, "Award in "));
   const footer = options.detailed ? markerDetailLabel(job) : options.expanded ? award.badge : "";
   const ageBadge = markerAgeBadgeHtml(job);
   const tapHint = "";
@@ -2095,7 +2096,27 @@ function workflowStatus(job: JobRecord) {
   ).toUpperCase();
 }
 
+function archiveCloseoutLabel(job: JobRecord) {
+  const status = workflowStatus(job) || legacyWorkflowKind(job);
+  const raw = `${status} ${(job as any).StatusOverride || ""} ${job.status || ""}`.toLowerCase();
+
+  if (status === "WORK_COMPLETED" || raw.includes("work_completed") || raw.includes("work completed")) return "Work Completed";
+  if (status === "PARTIAL_WORK_COMPLETED" || raw.includes("partial")) return "Partial Work";
+  if (status === "NO_ACCESS_COMPLETE" || raw.includes("no access complete") || raw.includes("no access 2") || raw.includes("no access - 2nd")) return "No Access 2nd";
+  if (status === "REFUSED_ACCESS" || raw.includes("refused")) return "Refused Access";
+  if (status === "COMPLETED_BY_OTHERS" || raw.includes("completed by others") || raw.includes("completed by other")) return "Done by Others";
+  if (status === "ARCHIVED" || (job as any).ArchivedFromMap || (job as any).archivedFromMap) return "Archived";
+  return "";
+}
+
+function archiveMarkerSignalLabel(job: JobRecord) {
+  const label = archiveCloseoutLabel(job);
+  return label ? `Closed: ${label}` : "";
+}
+
 function workflowLabel(job: JobRecord) {
+  const closeoutLabel = archiveCloseoutLabel(job);
+  if (closeoutLabel && closeoutLabel !== "Archived") return closeoutLabel;
   const status = workflowStatus(job);
 
   const labels: Record<string, string> = {
@@ -9318,6 +9339,8 @@ function localDatetimeValue(date = new Date()) {
   }
 
 function workflowLabel(job: JobRecord) {
+  const closeoutLabel = archiveCloseoutLabel(job);
+  if (closeoutLabel && closeoutLabel !== "Archived") return closeoutLabel;
   const status = workflowStatus(job);
 
   const labels: Record<string, string> = {
