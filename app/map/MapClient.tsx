@@ -10518,8 +10518,59 @@ function directionsUrl(job: JobRecord) {
     });
   }
 
+  function showAllMappedWorkOrders() {
+    setWorkflowViewFilter("all");
+    setMapBoroughFilter("all");
+    setTodayZoneLimit("all");
+    setMapShowAllDays(true);
+    setClusterSheet(null);
+    setMapJobBrief(null);
+    setSelectedOnly(false);
+    setSelected(null);
+    setDrawerOpen(false);
+    setFullMap(true);
+    setUrlOmoRequest("");
+    setSearch("");
+    setMapMenuOpen(false);
+    setMapBoardOpen(false);
+    clearManualMapControl();
+    setActionNotice("Showing every mapped work order across all boroughs.");
+
+    window.requestAnimationFrame(() => {
+      mapRef.current?.invalidateSize();
+    });
+  }
+
+  function showAllNearbyWorkOrders() {
+    setWorkflowViewFilter("all");
+    setMapBoroughFilter("nearby");
+    setTodayZoneLimit("all");
+    setMapShowAllDays(true);
+    setClusterSheet(null);
+    setMapJobBrief(null);
+    setSelectedOnly(false);
+    setSelected(null);
+    setDrawerOpen(false);
+    setFullMap(true);
+    setUrlOmoRequest("");
+    setSearch("");
+    setMapMenuOpen(false);
+    setMapBoardOpen(false);
+    clearManualMapControl();
+    setActionNotice("Showing every nearby mapped work order.");
+
+    window.requestAnimationFrame(() => {
+      mapRef.current?.invalidateSize();
+    });
+  }
+
   function changeMapBoroughFilter(value: MapBoroughFilter) {
     setMapBoroughFilter(value);
+    if (value === "all") {
+      setTodayZoneLimit("all");
+      setMapShowAllDays(true);
+      setWorkflowViewFilter("all");
+    }
     setClusterSheet(null);
     setMapJobBrief(null);
     setSelectedOnly(false);
@@ -10545,6 +10596,9 @@ function directionsUrl(job: JobRecord) {
     const nextDays = cleanedDays || String(mapDaysBackLimit());
     if (!showAll) setMapDaysBack(nextDays);
     setMapShowAllDays(showAll);
+    if (showAll && mapBoroughFilter === "nearby") {
+      setTodayZoneLimit("all");
+    }
     setClusterSheet(null);
     setMapJobBrief(null);
     setSelectedOnly(false);
@@ -37442,6 +37496,10 @@ return (
                 type="button"
                 className={todayZoneLimit === limit ? "active" : ""}
                 onClick={() => {
+                  if (limit === "all") {
+                    showAllNearbyWorkOrders();
+                    return;
+                  }
                   setTodayZoneLimit(limit);
                   setClusterSheet(null);
                   setMapJobBrief(null);
@@ -37450,7 +37508,7 @@ return (
                   setDrawerOpen(false);
                   setFullMap(true);
                   clearManualMapControl();
-                  setActionNotice(limit === "all" ? "Showing all nearby jobs." : `Today Zone: closest ${limit} active jobs.`);
+                  setActionNotice(`Today Zone: closest ${limit} active jobs.`);
                   window.requestAnimationFrame(() => mapRef.current?.invalidateSize());
                 }}
               >
@@ -37492,7 +37550,7 @@ return (
           <button
             type="button"
             className={mapBoroughFilter === "all" ? "active" : ""}
-            onClick={() => changeMapBoroughFilter("all")}
+            onClick={showAllMappedWorkOrders}
           >
             All Boros
           </button>
@@ -37579,7 +37637,7 @@ return (
           <button type="button" onClick={() => switchMapBoard("active", true)}>
             Active
           </button>
-          <button type="button" onClick={() => switchMapBoard("all", true)}>
+          <button type="button" onClick={showAllMappedWorkOrders}>
             All Jobs
           </button>
           <button type="button" onClick={() => {
@@ -37969,6 +38027,10 @@ return (
                   type="button"
                   className={todayZoneLimit === limit ? "active" : ""}
                   onClick={() => {
+                    if (limit === "all") {
+                      showAllNearbyWorkOrders();
+                      return;
+                    }
                     setTodayZoneLimit(limit);
                     setClusterSheet(null);
                     setMapJobBrief(null);
@@ -37977,7 +38039,7 @@ return (
                     setDrawerOpen(false);
                     setFullMap(true);
                     clearManualMapControl();
-                    setActionNotice(limit === "all" ? "Showing all nearby jobs." : `Today Zone: closest ${limit} active jobs.`);
+                    setActionNotice(`Today Zone: closest ${limit} active jobs.`);
                     window.requestAnimationFrame(() => mapRef.current?.invalidateSize());
                   }}
                 >
@@ -38334,7 +38396,7 @@ return (
                   <button type="button" onClick={() => applyMapDaysFilter(true)}>Any Days</button>
                   {MAP_DAYS_PRESETS.map((days) => <button type="button" key={`job-card-${days}`} onClick={() => applyMapDaysFilter(false, days)}>{days} Days</button>)}
                   <span>Area</span>
-                  <button type="button" onClick={() => changeMapBoroughFilter("all")}>All Boroughs</button>
+                  <button type="button" onClick={showAllMappedWorkOrders}>All Boroughs</button>
                   <button type="button" onClick={() => changeMapBoroughFilter("nearby")}>Nearby</button>
                   <span>Job</span>
                   <button type="button" className="danger" onClick={() => void resetFieldJobForTesting(selected)}>Reset This Job Status</button>
