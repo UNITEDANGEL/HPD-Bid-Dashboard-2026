@@ -84,7 +84,7 @@ import {
 } from "../../lib/field-packet-store";
 import { cleanJobLocation, cleanJobLocationText, isCommonAreaLocation } from "../../lib/jobLocation";
 import { paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
-import { copyLegacyFieldStorage } from "../../lib/unified-field-store";
+import { copyLegacyFieldStorage, shadowUpsert } from "../../lib/unified-field-store";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   type DayAgentRouteSummary,
@@ -4348,6 +4348,13 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         return;
       }
 
+      void shadowUpsert("job_event", {
+        id: `${key}-${step}-${iso}`,
+        jobId: key,
+        step,
+        occurredAt: iso,
+        patch,
+      }).catch((error) => console.error("Could not queue the field status for offline sync.", error));
       workflowStorageSave(key, patch);
       applyWorkflowPatchToState(key, patch);
       if (step === "no_access") setWorkflowViewFilter("waiting72");

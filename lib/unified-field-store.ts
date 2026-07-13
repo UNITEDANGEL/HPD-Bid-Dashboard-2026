@@ -28,6 +28,16 @@ const FLAG_KEY = "hpd-unified-field-store-v1";
 const DEVICE_KEY = "hpd-field-device-id-v1";
 const MIGRATION_KEY = "legacy-migration-v1";
 const ENTITY_STORES = ["jobs", "job_events", "routes", "route_stops", "visits", "notes", "media", "documents", "invoices"] as const;
+const ENTITY_STORE_NAMES: Record<UnifiedEntityType, (typeof ENTITY_STORES)[number]> = {
+  media: "media",
+  document: "documents",
+  visit: "visits",
+  job_event: "job_events",
+  route: "routes",
+  route_stop: "route_stops",
+  note: "notes",
+  invoice: "invoices",
+};
 
 function browserReady() {
   return typeof window !== "undefined" && Boolean(window.indexedDB);
@@ -89,7 +99,7 @@ export async function shadowUpsert(entityType: UnifiedEntityType, value: Record<
   if (!unifiedFieldStoreEnabled()) return false;
   const id = String(value.id || "").trim();
   if (!id) throw new Error("Unified storage record needs an id.");
-  const storeName = entityType === "document" ? "documents" : entityType;
+  const storeName = ENTITY_STORE_NAMES[entityType];
   const now = new Date().toISOString();
   const db = await openDb();
   const transaction = db.transaction([storeName, "mutations"], "readwrite");

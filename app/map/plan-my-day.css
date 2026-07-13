@@ -17,3 +17,5 @@
 .plan-my-day.is-media-paused{top:82px;right:12px;bottom:auto;width:min(190px,calc(100vw - 24px))}.plan-my-day.is-media-paused .plan-my-day__toggle{min-height:48px;padding:6px 8px;grid-template-columns:auto 1fr}.plan-my-day.is-media-paused .plan-my-day__toggle span{width:32px;height:32px}.plan-my-day.is-media-paused .plan-my-day__toggle b{display:none}
 
 @media(max-width:700px){body:has(.job-drawer:not(.closed)) .plan-my-day:not(.is-open):not(.is-media-paused){display:none}.plan-my-day.is-media-paused{display:block!important}}
+
+.plan-my-day__offline-state{display:block;margin-top:6px;color:#76efaf;font-size:10px;font-weight:850;letter-spacing:0;line-height:1.25}

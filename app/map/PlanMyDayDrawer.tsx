@@ -2,6 +2,11 @@
 
 import jobsData from "../../data/COA_Fetcher_2026.json";
 import { countFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
+import {
+  shadowUpsert,
+  type UnifiedStorageStatus,
+  unifiedStorageStatus,
+} from "../../lib/unified-field-store";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type JobRecord = Record<string, unknown>;
@@ -300,6 +305,7 @@ export default function PlanMyDayDrawer() {
   const [busy, setBusy] = useState(false);
   const [originLabel, setOriginLabel] = useState("");
   const [voiceStatus, setVoiceStatus] = useState("Tap Read Reply on iPhone");
+  const [offlineStatus, setOfflineStatus] = useState<UnifiedStorageStatus | null>(null);
 
   const planSummary = useMemo(() => describePlan(plan), [plan]);
   const lastAssistantReply = useMemo(
@@ -328,6 +334,21 @@ export default function PlanMyDayDrawer() {
     });
     return () => window.cancelAnimationFrame(frame);
   }, [messages, busy, viewingJob]);
+
+  useEffect(() => {
+    let active = true;
+    const refresh = () => {
+      void unifiedStorageStatus()
+        .then((status) => { if (active) setOfflineStatus(status); })
+        .catch(() => { if (active) setOfflineStatus({ enabled: false, available: false, queued: 0, errors: 0, migrated: {} }); });
+    };
+    refresh();
+    window.addEventListener("hpd-unified-storage-change", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("hpd-unified-storage-change", refresh);
+    };
+  }, []);
 
   function speakReply(text: string, force = false) {
     if ((!voiceEnabled && !force) || typeof window === "undefined" || !("speechSynthesis" in window)) return;
@@ -382,6 +403,19 @@ export default function PlanMyDayDrawer() {
     void handleMessage(input);
   }
 
+  async function saveApprovedPlan(detail: Record<string, unknown> & { acceptedAt: string; jobs: PlannedJob[] }) {
+    const routeId = `route-${detail.acceptedAt}`;
+    await shadowUpsert("route", { ...detail, id: routeId, jobId: "", status: "planned" });
+    await Promise.all(detail.jobs.map((job, index) => shadowUpsert("route_stop", {
+      ...job,
+      id: `${routeId}-${job.id}`,
+      routeId,
+      jobId: job.id,
+      stopIndex: index,
+      status: "planned",
+    })));
+  }
+
   function acceptPlan() {
     if (!selectedResults.length) return;
     const detail = {
@@ -399,6 +433,7 @@ export default function PlanMyDayDrawer() {
       acceptedAt: new Date().toISOString(),
     };
     sessionStorage.setItem("hpd-plan-my-day-approved", JSON.stringify(detail));
+    void saveApprovedPlan(detail).catch((error) => console.error("Could not queue the route for offline sync.", error));
     window.dispatchEvent(new CustomEvent("hpd:plan-my-day-approved", { detail }));
     const reply = "Plan approved. I’m building the route on the map now.";
     setMessages((current) => [...current, { role: "assistant", text: reply }]);
@@ -495,6 +530,17 @@ export default function PlanMyDayDrawer() {
             <div>
               <span>FREE LOCAL PLANNER</span>
               <h2>Plan by chatting</h2>
+              <small className="plan-my-day__offline-state" role="status" aria-live="polite">
+                {!offlineStatus
+                  ? "Checking offline storage…"
+                  : !offlineStatus.available || !offlineStatus.enabled
+                    ? "Offline storage unavailable"
+                    : offlineStatus.errors
+                      ? `${offlineStatus.errors} offline item${offlineStatus.errors === 1 ? "" : "s"} need attention`
+                      : offlineStatus.queued
+                        ? `${offlineStatus.queued} saved locally · waiting for cloud`
+                        : "Offline storage ready"}
+              </small>
             </div>
             <div>
               <button type="button" onClick={() => setVoiceEnabled((value) => !value)} aria-pressed={voiceEnabled}>
