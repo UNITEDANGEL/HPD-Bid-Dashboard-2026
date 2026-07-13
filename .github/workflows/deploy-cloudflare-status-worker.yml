@@ -19,6 +19,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install current Wrangler
+        working-directory: cloudflare-worker
+        run: npm install --no-save wrangler@4.110.0
+
       - name: Deploy status and sync Worker
         uses: cloudflare/wrangler-action@v3
         with:

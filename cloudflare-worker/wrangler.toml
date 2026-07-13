@@ -1,4 +1,4 @@
-﻿name = "hpd-status-worker"
+name = "hpd-status-worker"
 main = "src/index.js"
 compatibility_date = "2026-05-26"
 kv_namespaces = [
