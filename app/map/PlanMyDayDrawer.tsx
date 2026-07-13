@@ -135,15 +135,25 @@ function parseMessage(message: string, current: LocalPlan): LocalPlan {
 
   const mentionedBoroughs = BOROUGHS.filter((borough) => clean.includes(borough.toLowerCase()));
   if (/\bavoid\b|\bexclude\b|\bskip\b/.test(clean)) next.avoidBoroughs = unique([...next.avoidBoroughs, ...mentionedBoroughs]);
-  else if (mentionedBoroughs.length) next.boroughs = mentionedBoroughs;
+  else if (mentionedBoroughs.length) {
+    next.boroughs = mentionedBoroughs;
+    next.avoidBoroughs = next.avoidBoroughs.filter((borough) => !mentionedBoroughs.includes(borough));
+  }
 
-  if (/near me|nearby|closest|shortest drive/.test(clean)) {
+  const wantsShortestDrive = /near me|nearby|closest|nearest|shortest drive/.test(clean);
+  const wantsUrgent = /urgent|overdue|priority/.test(clean);
+  const wantsAppointments = /appointment/.test(clean);
+
+  if (wantsShortestDrive) {
     next.startMode = "current_location";
     next.routePreference = "shortest_drive";
   }
   if (/office|base/.test(clean) && /start/.test(clean)) next.startMode = "office";
-  if (/urgent|overdue|priority/.test(clean)) next.priorities = unique([...next.priorities.filter((item) => item !== "balanced"), "urgent"]);
-  if (/appointment/.test(clean)) next.priorities = unique([...next.priorities.filter((item) => item !== "balanced"), "appointments"]);
+  if (wantsUrgent || wantsAppointments) {
+    next.priorities = [wantsUrgent ? "urgent" : "", wantsAppointments ? "appointments" : ""].filter(Boolean);
+  } else if (wantsShortestDrive || /balanced|any priority|all active|remove restriction|clear priority/.test(clean)) {
+    next.priorities = ["balanced"];
+  }
   if (/highest priority/.test(clean)) next.routePreference = "highest_priority";
   if (/appointments first/.test(clean)) next.routePreference = "appointments_first";
   if (/balanced/.test(clean)) next.routePreference = "balanced";

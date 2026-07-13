@@ -86,6 +86,15 @@ import { cleanJobLocation, cleanJobLocationText, isCommonAreaLocation } from "..
 import { paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
 import { copyLegacyFieldStorage } from "../../lib/unified-field-store";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type DayAgentRouteSummary,
+  estimateDayAgentStopMinutes,
+  formatDayAgentCompactLegLabel,
+  formatDayAgentDistance,
+  formatDayAgentDuration,
+  formatDayAgentLegLabel,
+  isFreshRouteLocation,
+} from "./ai/dayAgentCore";
 
 const WAZE_LOGO_URL = "https://www.google.com/s2/favicons?domain=waze.com&sz=64";
 const GOOGLE_MAPS_LOGO_URL = "https://www.google.com/s2/favicons?domain=maps.google.com&sz=64";
@@ -234,25 +243,6 @@ type MapJobBriefState = {
   job: MappedJob;
   index?: number;
   openedAt: string;
-};
-
-type DayAgentRouteLeg = {
-  from: string;
-  to: string;
-  label: string;
-  durationSeconds: number;
-  distanceMeters: number;
-  midpoint: { lat: number; lng: number };
-};
-
-type DayAgentRouteSummary = {
-  mode: "road" | "fallback";
-  message: string;
-  startedFrom: string;
-  returnedToBase: boolean;
-  totalDurationSeconds: number;
-  totalDistanceMeters: number;
-  legs: DayAgentRouteLeg[];
 };
 
 type MapBaseStyleId =
@@ -2822,14 +2812,7 @@ const dispatchJobReason = (job: JobRecord) => {
   return workflow || "Review job details.";
 };
 const dayAgentEstimatedStopMinutes = (job: JobRecord) => {
-  const text = `${displayDescription(job)} ${displayLocation(job)}`.toLowerCase();
-  let minutes = DAY_AGENT_DEFAULT_STOP_MINUTES;
-  if (/paint|plaster|sheetrock|ceiling|wall/.test(text)) minutes += 20;
-  if (/door|lock|hinge|window/.test(text)) minutes += 10;
-  if (/electrical|outlet|switch|fixture|plumb|pipe|faucet|toilet/.test(text)) minutes += 15;
-  if (/multiple|throughout|entire|all rooms|several/.test(text)) minutes += 15;
-  if (/inspect|inspection|affidavit|no access/.test(text)) minutes -= 10;
-  return Math.max(25, Math.min(90, minutes));
+  return estimateDayAgentStopMinutes(displayDescription(job), displayLocation(job), DAY_AGENT_DEFAULT_STOP_MINUTES);
 };
 const dayAgentSmartReason = (job: JobRecord) => {
   const appointment = appointmentDate(job);
@@ -2921,39 +2904,8 @@ const dayAgentRequestedBorough = (command: string, explicit = dayAgentBoroughSta
   return explicit || "all";
 };
 
-const formatDayAgentDistance = (meters: number) => {
-  if (!Number.isFinite(meters) || meters <= 0) return "0 mi";
-  const miles = meters / 1609.344;
-  return miles < 10 ? `${miles.toFixed(1)} mi` : `${Math.round(miles)} mi`;
-};
-
-const formatDayAgentDuration = (seconds: number) => {
-  if (!Number.isFinite(seconds) || seconds <= 0) return "0 min";
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  const remain = minutes % 60;
-  return remain ? `${hours}h ${remain}m` : `${hours}h`;
-};
-
-const formatDayAgentLegLabel = (seconds: number, meters: number) => {
-  return `${formatDayAgentDuration(seconds)} away · ${formatDayAgentDistance(meters)}`;
-};
-
-const formatDayAgentCompactLegLabel = (seconds: number, meters: number) => {
-  const minutes = Math.max(1, Math.round(seconds / 60));
-  const time = minutes < 60 ? `${minutes}m` : formatDayAgentDuration(seconds);
-  return `${time} · ${formatDayAgentDistance(meters)}`;
-};
-
 const dayAgentPointLabel = (point: { label: string; address?: string }) => {
   return point.label || point.address || "Stop";
-};
-
-const isFreshRouteLocation = (location?: UserLocationState | null) => {
-  if (!location?.updatedAt) return false;
-  const updatedAt = Date.parse(location.updatedAt);
-  return Number.isFinite(updatedAt) && Date.now() - updatedAt < 2 * 60 * 1000;
 };
 
 const dayAgentRoutePoints = (routeJobs = dayAgentRoute, includeReturnToBase = true, routeOrigin: UserLocationState | null = userLocation) => {
