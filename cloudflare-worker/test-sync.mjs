@@ -39,6 +39,10 @@ const body = {
   }],
 };
 
+const capabilityResponse = await worker.fetch(new Request("https://worker.example/sync"), env);
+assert.equal(capabilityResponse.status, 200);
+assert.equal((await capabilityResponse.json()).sync, true);
+
 const acceptedResponse = await worker.fetch(new Request("https://worker.example/sync", {
   method: "POST",
   headers: { "Content-Type": "application/json", Origin: "https://map-preview.hpd-bid-dashboard-2026.pages.dev" },

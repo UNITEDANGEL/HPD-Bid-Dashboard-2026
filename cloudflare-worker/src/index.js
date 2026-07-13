@@ -76,6 +76,9 @@ export default {
       }
       return json({ ok: true, overrides });
     }
+    if (url.pathname === "/sync" && request.method === "GET") {
+      return json({ ok: true, sync: true, version: 1, entityTypes: [...SYNC_ENTITY_TYPES] });
+    }
     if (url.pathname === "/sync" && request.method === "POST") {
       if (!syncOriginAllowed(request)) return json({ ok: false, error: "Origin is not allowed." }, 403);
       const body = await request.json().catch(() => null);

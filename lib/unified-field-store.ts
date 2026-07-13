@@ -237,6 +237,19 @@ export async function syncUnifiedMutations(workerUrl: string, limit = 50): Promi
     return { synced: 0, remaining: all.filter((mutation) => mutation.status === "queued").length };
   }
 
+  const syncUrl = `${workerUrl.replace(/\/$/, "")}/sync`;
+  try {
+    const capability = await fetch(syncUrl, { cache: "no-store" });
+    const detail = capability.ok ? await capability.json().catch(() => null) as { sync?: boolean } | null : null;
+    if (!detail?.sync) {
+      db.close();
+      return { synced: 0, remaining: all.length, error: "Cloud sync is not enabled on this Worker yet." };
+    }
+  } catch {
+    db.close();
+    return { synced: 0, remaining: all.length, error: "Cloud sync Worker is unreachable." };
+  }
+
   const storeNames = Array.from(new Set(batch.map((mutation) => ENTITY_STORE_NAMES[mutation.entityType])));
   const read = db.transaction(storeNames, "readonly");
   const readDone = transactionDone(read);
@@ -251,7 +264,7 @@ export async function syncUnifiedMutations(workerUrl: string, limit = 50): Promi
   await transactionDone(marking);
 
   try {
-    const response = await fetch(`${workerUrl.replace(/\/$/, "")}/sync`, {
+    const response = await fetch(syncUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ deviceId: deviceId(), mutations: payload }),
