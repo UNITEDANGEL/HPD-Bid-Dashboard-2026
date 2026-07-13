@@ -3941,9 +3941,12 @@ function handleMapTouchEnd(event: any) {
         requestedWorkflowView === "appointments" ||
         requestedWorkflowView === "waiting72" ||
         requestedWorkflowView === "noaccess24" ||
-        requestedWorkflowView === "ready2"
+        requestedWorkflowView === "ready2" ||
+        requestedWorkflowView === "final" ||
+        requestedWorkflowView === "archived"
       ) {
         setMapShowAllDays(true);
+        setTodayZoneLimit("all");
       }
     }
     if (requestedBorough) {
