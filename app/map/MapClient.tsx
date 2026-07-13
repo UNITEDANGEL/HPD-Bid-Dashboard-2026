@@ -36632,7 +36632,8 @@ return (
 
           .map-shell.map-glass-command-trial .map-top.open {
             max-height: calc(100dvh - 14px) !important;
-            overflow: hidden !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
             display: grid !important;
             gap: 7px !important;
             padding: 10px !important;
@@ -36643,7 +36644,98 @@ return (
           .map-shell.map-glass-command-trial .map-top.open .map-filter-row,
           .map-shell.map-glass-command-trial .map-top.open .map-day-presets,
           .map-shell.map-glass-command-trial .map-top.open .map-style-panel {
-            display: none !important;
+            display: grid !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-title-row {
+            order: 1 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-search {
+            order: 2 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-borough-control {
+            order: 3 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-filter-row {
+            order: 4 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-day-presets {
+            order: 5 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-style-panel {
+            order: 6 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-tools-flow-row {
+            order: 7 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .dispatch-dashboard-card {
+            order: 8 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-top-zone-rail {
+            order: 9 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-search {
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            min-height: 42px !important;
+            gap: 7px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-search input,
+          .map-shell.map-glass-command-trial .map-top.open .map-search button,
+          .map-shell.map-glass-command-trial .map-top.open .map-borough-control select,
+          .map-shell.map-glass-command-trial .map-top.open .map-borough-control button,
+          .map-shell.map-glass-command-trial .map-top.open .map-filter-row input,
+          .map-shell.map-glass-command-trial .map-top.open .map-filter-row button,
+          .map-shell.map-glass-command-trial .map-top.open .map-day-presets button,
+          .map-shell.map-glass-command-trial .map-top.open .map-style-panel select,
+          .map-shell.map-glass-command-trial .map-top.open .map-style-panel input {
+            min-height: 36px !important;
+            height: 36px !important;
+            border-radius: 13px !important;
+            font-size: 12px !important;
+            line-height: 1 !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-borough-control,
+          .map-shell.map-glass-command-trial .map-top.open .map-filter-row,
+          .map-shell.map-glass-command-trial .map-top.open .map-day-presets,
+          .map-shell.map-glass-command-trial .map-top.open .map-style-panel {
+            gap: 6px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-day-presets {
+            grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-tools-flow-row {
+            display: grid !important;
+            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-top.open .map-tools-flow-row button {
+            min-height: 38px !important;
+            height: 38px !important;
+            border-radius: 14px !important;
+            border: 1px solid rgba(20, 184, 166, 0.22) !important;
+            background:
+              linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(234, 255, 250, 0.94)) !important;
+            color: #063547 !important;
+            font-size: 11px !important;
+            font-weight: 950 !important;
+            line-height: 1 !important;
+            box-shadow:
+              0 10px 22px rgba(15, 23, 42, 0.10),
+              inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
           }
 
           .map-shell.map-glass-command-trial .map-top.open .map-title-row {
@@ -37475,6 +37567,27 @@ return (
             <span className="map-style-badge">Env key</span>
           ) : null}
           <span className="map-style-status">{mapTileStatus}</span>
+        </div>
+
+        <div className="map-tools-flow-row" aria-label="Field flow shortcuts">
+          <button type="button" onClick={() => setMapBoardOpen(true)}>
+            Layers
+          </button>
+          <button type="button" onClick={() => switchMapBoard("appointments", true)}>
+            Schedule
+          </button>
+          <button type="button" onClick={() => switchMapBoard("active", true)}>
+            Active
+          </button>
+          <button type="button" onClick={() => switchMapBoard("all", true)}>
+            All Jobs
+          </button>
+          <button type="button" onClick={() => {
+            setMapMenuOpen(false);
+            setDayAgentPanelOpen(true);
+          }}>
+            Agent
+          </button>
         </div>
       </header>
 
