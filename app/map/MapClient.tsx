@@ -10125,6 +10125,11 @@ function directionsUrl(job: JobRecord) {
 
     return counts;
   }, [jobs, mappedJobs, mapDaysBack, mapShowAllDays, mapBoroughFilter, search, countdownTick]);
+  const archivedLayerCount = useMemo(() => {
+    const rows = (mappedJobs.length ? mappedJobs : jobs) as MappedJob[];
+    const needle = search.trim().toLowerCase();
+    return rows.filter((job) => matchesMapBorough(job, mapBoroughFilter) && matchesMapSearch(job, needle) && workflowViewBucket(job) === "archived").length;
+  }, [jobs, mappedJobs, mapBoroughFilter, search, countdownTick]);
   const missingGeoCount = Math.max(0, jobs.length - plottedCount);
   const visibleMappedCount = filteredJobs.filter((job) => isNycMapCoordinate(job._lat, job._lng)).length;
   const visibleMissingGeoCount = Math.max(0, filteredJobs.length - visibleMappedCount);
@@ -10217,7 +10222,7 @@ function directionsUrl(job: JobRecord) {
     { view: "waiting72", label: "72h", count: workflowDashboardCounts.waiting72 },
     { view: "noaccess24", label: "T-24", count: workflowDashboardCounts.noaccess24 },
     { view: "ready2", label: "Ready 2nd", count: readySecondCount },
-    { view: "archived", label: "Archive", count: workflowDashboardCounts.archived },
+    { view: "archived", label: "Archive", count: archivedLayerCount },
     { view: "all", label: "All", count: workflowDashboardCounts.all },
   ];
   const fieldQueueJobs = useMemo(() => {
@@ -10492,7 +10497,17 @@ function directionsUrl(job: JobRecord) {
   }
 
   function switchMapBoard(view: WorkflowViewFilter, keepBoardOpen = false) {
+    const showCompleteLayer =
+      view === "all" ||
+      view === "appointments" ||
+      view === "waiting72" ||
+      view === "noaccess24" ||
+      view === "ready2" ||
+      view === "final" ||
+      view === "archived";
+
     setWorkflowViewFilter(view);
+    if (showCompleteLayer) setTodayZoneLimit("all");
     setClusterSheet(null);
     setMapJobBrief(null);
     setSelectedOnly(false);
@@ -10501,13 +10516,7 @@ function directionsUrl(job: JobRecord) {
     setFullMap(true);
     setUrlOmoRequest("");
     setSearch("");
-    setMapShowAllDays(
-      view === "all" ||
-        view === "appointments" ||
-        view === "waiting72" ||
-        view === "noaccess24" ||
-        view === "ready2"
-    );
+    setMapShowAllDays(showCompleteLayer);
     setMapMenuOpen(false);
     setMapBoardOpen(keepBoardOpen);
     clearManualMapControl();
@@ -36772,7 +36781,7 @@ return (
 
           .map-shell.map-glass-command-trial .map-top.open .map-tools-flow-row {
             display: grid !important;
-            grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+            grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
             gap: 6px !important;
           }
 
@@ -37471,6 +37480,15 @@ return (
             </button>
             <button
               type="button"
+              className={`dispatch-kpi is-archive ${workflowViewFilter === "archived" ? "active" : ""}`}
+              onClick={() => switchMapBoard("archived")}
+            >
+              <span>Archive</span>
+              <strong>{archivedLayerCount}</strong>
+              <small>closed work</small>
+            </button>
+            <button
+              type="button"
               className="dispatch-kpi is-missing"
               onClick={() => setActionNotice(`${missingGeoCount} job(s) need coordinates before mapping.`)}
             >
@@ -37636,6 +37654,9 @@ return (
           </button>
           <button type="button" onClick={() => switchMapBoard("active", true)}>
             Active
+          </button>
+          <button type="button" onClick={() => switchMapBoard("archived", true)}>
+            Archive
           </button>
           <button type="button" onClick={showAllMappedWorkOrders}>
             All Jobs
@@ -39720,7 +39741,7 @@ return (
                       </button>
                       <button type="button" className="status-archive-map" onClick={() => switchMapBoard("archived")}>
                         <strong>Archive Map</strong>
-                        <small>{workflowDashboardCounts.archived} closed</small>
+                        <small>{archivedLayerCount} closed</small>
                       </button>
                       <button type="button" className="status-clear" onClick={() => resetFieldJobForTesting(selected)}>
                         <strong>Clear Status</strong>
