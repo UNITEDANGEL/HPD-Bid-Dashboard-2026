@@ -1,0 +1,28 @@
+name: Deploy Cloudflare Status Worker
+
+on:
+  push:
+    branches:
+      - map-preview
+    paths:
+      - "cloudflare-worker/**"
+      - ".github/workflows/deploy-cloudflare-status-worker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy status and sync Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare-worker
+          command: deploy

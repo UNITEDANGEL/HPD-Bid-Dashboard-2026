@@ -4,6 +4,7 @@ import jobsData from "../../data/COA_Fetcher_2026.json";
 import { countFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import {
   shadowUpsert,
+  syncUnifiedMutations,
   type UnifiedStorageStatus,
   unifiedStorageStatus,
 } from "../../lib/unified-field-store";
@@ -43,6 +44,7 @@ type PlannedJob = {
 const BOROUGHS = ["Queens", "Brooklyn", "Bronx", "Manhattan", "Staten Island"];
 const BASE_POINT: Point = { lat: 40.6957, lng: -73.8331 };
 const LAST_LOCATION_STORAGE_KEY = "hpd-map-location-last-v1";
+const STATUS_WORKER_URL = process.env.NEXT_PUBLIC_HPD_STATUS_WORKER_URL || "https://hpd-status-worker.uac525.workers.dev";
 const DEFAULT_PLAN: LocalPlan = {
   boroughs: [],
   avoidBoroughs: [],
@@ -337,16 +339,34 @@ export default function PlanMyDayDrawer() {
 
   useEffect(() => {
     let active = true;
+    let syncTimer = 0;
+    let syncInFlight = false;
     const refresh = () => {
       void unifiedStorageStatus()
         .then((status) => { if (active) setOfflineStatus(status); })
         .catch(() => { if (active) setOfflineStatus({ enabled: false, available: false, queued: 0, errors: 0, migrated: {} }); });
     };
+    const sync = () => {
+      if (syncInFlight) return;
+      syncInFlight = true;
+      void syncUnifiedMutations(STATUS_WORKER_URL).then(refresh).finally(() => { syncInFlight = false; });
+    };
+    const handleStorageChange = () => {
+      refresh();
+      window.clearTimeout(syncTimer);
+      syncTimer = window.setTimeout(sync, 350);
+    };
     refresh();
-    window.addEventListener("hpd-unified-storage-change", refresh);
+    sync();
+    window.addEventListener("hpd-unified-storage-change", handleStorageChange);
+    window.addEventListener("online", sync);
+    const timer = window.setInterval(sync, 60_000);
     return () => {
       active = false;
-      window.removeEventListener("hpd-unified-storage-change", refresh);
+      window.removeEventListener("hpd-unified-storage-change", handleStorageChange);
+      window.removeEventListener("online", sync);
+      window.clearTimeout(syncTimer);
+      window.clearInterval(timer);
     };
   }, []);
 
@@ -539,7 +559,9 @@ export default function PlanMyDayDrawer() {
                       ? `${offlineStatus.errors} offline item${offlineStatus.errors === 1 ? "" : "s"} need attention`
                       : offlineStatus.queued
                         ? `${offlineStatus.queued} saved locally · waiting for cloud`
-                        : "Offline storage ready"}
+                        : offlineStatus.lastSyncedAt
+                          ? "Cloud synced · offline copy safe"
+                          : "Offline storage ready"}
               </small>
             </div>
             <div>

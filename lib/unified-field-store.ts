@@ -20,6 +20,13 @@ export type UnifiedStorageStatus = {
   migrated: Record<string, number>;
   quota?: number;
   usage?: number;
+  lastSyncedAt?: string;
+};
+
+export type UnifiedSyncResult = {
+  synced: number;
+  remaining: number;
+  error?: string;
 };
 
 const DB_NAME = "uac-field-v1";
@@ -38,6 +45,7 @@ const ENTITY_STORE_NAMES: Record<UnifiedEntityType, (typeof ENTITY_STORES)[numbe
   note: "notes",
   invoice: "invoices",
 };
+const CLOUD_SYNC_ENTITY_TYPES = new Set<UnifiedEntityType>(["visit", "job_event", "route", "route_stop"]);
 
 function browserReady() {
   return typeof window !== "undefined" && Boolean(window.indexedDB);
@@ -93,6 +101,49 @@ function transactionDone(transaction: IDBTransaction) {
     transaction.onerror = () => reject(transaction.error || new Error("Unified storage transaction failed."));
     transaction.onabort = () => reject(transaction.error || new Error("Unified storage transaction was aborted."));
   });
+}
+
+function requestResult<T>(request: IDBRequest<T>) {
+  return new Promise<T>((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error("Unified storage request failed."));
+  });
+}
+
+function cloudSafeEntity(entityType: UnifiedEntityType, value: Record<string, unknown>) {
+  const id = String(value.id || "");
+  const jobId = String(value.jobId || "");
+  if (entityType === "route") {
+    return {
+      id,
+      acceptedAt: String(value.acceptedAt || value.updatedAt || ""),
+      stopCount: Number(value.stop_count || value.stopCount || 0),
+      status: String(value.status || "planned"),
+    };
+  }
+  if (entityType === "route_stop") {
+    return {
+      id,
+      routeId: String(value.routeId || ""),
+      jobId,
+      stopIndex: Number(value.stopIndex || 0),
+      status: String(value.status || "planned"),
+    };
+  }
+  if (entityType === "job_event") {
+    return {
+      id,
+      jobId,
+      step: String(value.step || ""),
+      occurredAt: String(value.occurredAt || value.updatedAt || ""),
+    };
+  }
+  return {
+    id,
+    jobId,
+    status: String(value.status || value.outcome || "visited"),
+    occurredAt: String(value.visitedAt || value.occurredAt || value.updatedAt || ""),
+  };
 }
 
 export async function shadowUpsert(entityType: UnifiedEntityType, value: Record<string, unknown>) {
@@ -162,13 +213,77 @@ export async function unifiedStorageStatus(): Promise<UnifiedStorageStatus> {
   if (!enabled) return { enabled: false, available: browserReady(), queued: 0, errors: 0, migrated: {} };
   await copyLegacyFieldStorage();
   const db = await openDb();
-  const tx = db.transaction(["mutations", "settings"], "readonly");
+  const tx = db.transaction(["mutations", "settings", "sync_state"], "readonly");
   const queuedRequest = tx.objectStore("mutations").index("status").count("queued");
   const errorRequest = tx.objectStore("mutations").index("status").count("error");
   const migrationRequest = tx.objectStore("settings").get(MIGRATION_KEY);
+  const syncRequest = tx.objectStore("sync_state").get("last-sync");
   await transactionDone(tx);
   const estimate = await navigator.storage?.estimate?.().catch(() => undefined);
-  const result = { enabled, available: true, queued: queuedRequest.result, errors: errorRequest.result, migrated: migrationRequest.result?.counts || {}, quota: estimate?.quota, usage: estimate?.usage };
+  const result = { enabled, available: true, queued: queuedRequest.result, errors: errorRequest.result, migrated: migrationRequest.result?.counts || {}, quota: estimate?.quota, usage: estimate?.usage, lastSyncedAt: syncRequest.result?.syncedAt };
   db.close();
   return result;
+}
+
+export async function syncUnifiedMutations(workerUrl: string, limit = 50): Promise<UnifiedSyncResult> {
+  if (!unifiedFieldStoreEnabled() || !workerUrl) return { synced: 0, remaining: 0 };
+  const db = await openDb();
+  const all = await requestResult(db.transaction("mutations", "readonly").objectStore("mutations").getAll()) as UnifiedMutation[];
+  const batch = all
+    .filter((mutation) => CLOUD_SYNC_ENTITY_TYPES.has(mutation.entityType) && mutation.status !== "error" && mutation.attempts < 5)
+    .slice(0, Math.max(1, Math.min(50, limit)));
+  if (!batch.length) {
+    db.close();
+    return { synced: 0, remaining: all.filter((mutation) => mutation.status === "queued").length };
+  }
+
+  const storeNames = Array.from(new Set(batch.map((mutation) => ENTITY_STORE_NAMES[mutation.entityType])));
+  const read = db.transaction(storeNames, "readonly");
+  const readDone = transactionDone(read);
+  const payload = await Promise.all(batch.map(async (mutation) => {
+    const entity = await requestResult(read.objectStore(ENTITY_STORE_NAMES[mutation.entityType]).get(mutation.entityId));
+    return { ...mutation, entity: cloudSafeEntity(mutation.entityType, (entity || {}) as Record<string, unknown>) };
+  }));
+  await readDone;
+
+  const marking = db.transaction("mutations", "readwrite");
+  batch.forEach((mutation) => marking.objectStore("mutations").put({ ...mutation, status: "syncing" }));
+  await transactionDone(marking);
+
+  try {
+    const response = await fetch(`${workerUrl.replace(/\/$/, "")}/sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ deviceId: deviceId(), mutations: payload }),
+    });
+    if (!response.ok) throw new Error(`Cloud sync returned ${response.status}.`);
+    const result = await response.json() as { accepted?: string[]; syncedAt?: string };
+    const accepted = new Set(Array.isArray(result.accepted) ? result.accepted : []);
+    const syncedAt = result.syncedAt || new Date().toISOString();
+    const writeStores = Array.from(new Set(["mutations", "sync_state", ...storeNames]));
+    const saved = db.transaction(writeStores, "readwrite");
+    batch.forEach((mutation) => {
+      if (!accepted.has(mutation.id)) return;
+      saved.objectStore("mutations").delete(mutation.id);
+      const item = payload.find((row) => row.id === mutation.id)?.entity || {};
+      saved.objectStore(ENTITY_STORE_NAMES[mutation.entityType]).put({ ...item, id: mutation.entityId, syncStatus: "synced", syncedAt });
+    });
+    saved.objectStore("sync_state").put({ key: "last-sync", syncedAt, accepted: accepted.size });
+    await transactionDone(saved);
+    const remaining = Math.max(0, all.length - accepted.size);
+    db.close();
+    window.dispatchEvent(new CustomEvent("hpd-unified-storage-change"));
+    return { synced: accepted.size, remaining };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Cloud sync failed.";
+    const failed = db.transaction("mutations", "readwrite");
+    batch.forEach((mutation) => {
+      const attempts = mutation.attempts + 1;
+      failed.objectStore("mutations").put({ ...mutation, attempts, status: attempts >= 5 ? "error" : "queued", lastError: message });
+    });
+    await transactionDone(failed);
+    db.close();
+    window.dispatchEvent(new CustomEvent("hpd-unified-storage-change"));
+    return { synced: 0, remaining: all.length, error: message };
+  }
 }
