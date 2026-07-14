@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-07-10T23:05:50.369Z",
+  "generatedAt": "2026-07-14T23:06:48.811Z",
   "page": 3,
   "dpi": 150,
-  "totalJobs": 576,
-  "uniqueItbRefs": 576,
+  "totalJobs": 578,
+  "uniqueItbRefs": 578,
   "sourceDirectories": [
     "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5",
     "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Scripts\\Diagnostics script\\ITB_Downloads_V5",
@@ -4043,12 +4043,26 @@
       "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\EQ31362_070826123941.pdf",
       "sourceMatch": "exact",
       "pdf": "/documents/itb/EQ31362_070826123941.pdf"
+    },
+    "ER00857_071026025615.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00857_071026025615-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER00857_071026025615.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00857_071026025615.pdf"
+    },
+    "ER00862_071026025427.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00862_071026025427-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER00862_071026025427.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00862_071026025427.pdf"
     }
   },
   "summary": {
-    "rendered": 1,
-    "reused": 575,
-    "copiedPdfs": 1,
+    "rendered": 2,
+    "reused": 576,
+    "copiedPdfs": 2,
     "missingSource": 0,
     "failed": 0
   }
