@@ -557,6 +557,8 @@ function asArray(value: unknown): JobRecord[] {
     if (Array.isArray(obj.jobs)) return obj.jobs as JobRecord[];
     if (Array.isArray(obj.data)) return obj.data as JobRecord[];
     if (Array.isArray(obj.records)) return obj.records as JobRecord[];
+    if (Array.isArray(obj.default)) return obj.default as JobRecord[];
+    if (obj.default && typeof obj.default === "object") return asArray(obj.default);
   }
 
   return [];
@@ -704,6 +706,15 @@ function getStoredCoords(job: JobRecord) {
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
 
   return { lat, lng };
+}
+
+const BUNDLED_INITIAL_JOBS = asArray(bundledJobsData).map(normalizeStaticJob);
+
+function initialMappedJobRows(rows: JobRecord[]): MappedJob[] {
+  return rows.map((job) => {
+    const coords = getStoredCoords(job);
+    return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" } : { ...job };
+  });
 }
 
 function jobKey(job: JobRecord, index?: number) {
@@ -2696,8 +2707,8 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
     });
   }, []);
 
-  const [jobs, setJobs] = useState<JobRecord[]>([]);
-  const [mappedJobs, setMappedJobs] = useState<MappedJob[]>([]);
+  const [jobs, setJobs] = useState<JobRecord[]>(() => BUNDLED_INITIAL_JOBS);
+  const [mappedJobs, setMappedJobs] = useState<MappedJob[]>(() => initialMappedJobRows(BUNDLED_INITIAL_JOBS));
   const [selected, setSelected] = useState<MappedJob | null>(null);
   const [clusterSheet, setClusterSheet] = useState<ClusterSheetState | null>(null);
   const [mapJobBrief, setMapJobBrief] = useState<MapJobBriefState | null>(null);
@@ -2725,9 +2736,9 @@ const [appointmentDraft, setAppointmentDraft] = useState("");
 const [appointmentSaving, setAppointmentSaving] = useState(false);
 const [appointmentAlertPhone, setAppointmentAlertPhone] = useState("");
 const [appointmentAlertSaving, setAppointmentAlertSaving] = useState(false);
-const [workflowViewFilter, setWorkflowViewFilter] = useState<WorkflowViewFilter>("active");
-const [mapBoroughFilter, setMapBoroughFilter] = useState<MapBoroughFilter>("nearby");
-const [todayZoneLimit, setTodayZoneLimit] = useState<TodayZoneLimit>("20");
+const [workflowViewFilter, setWorkflowViewFilter] = useState<WorkflowViewFilter>("all");
+const [mapBoroughFilter, setMapBoroughFilter] = useState<MapBoroughFilter>("all");
+const [todayZoneLimit, setTodayZoneLimit] = useState<TodayZoneLimit>("all");
 const [countdownTick, setCountdownTick] = useState(0);
 const [mapZoom, setMapZoom] = useState(10);
 const [photoCaptureTarget, setPhotoCaptureTarget] = useState<FieldCaptureTarget | null>(null);
@@ -3684,7 +3695,7 @@ const [hideCompleted, setHideCompleted] = useState(false);
   }, []);
 
 const [mapDaysBack, setMapDaysBack] = useState("90");
-const [mapShowAllDays, setMapShowAllDays] = useState(false);
+const [mapShowAllDays, setMapShowAllDays] = useState(true);
 const [mapBaseStyle, setMapBaseStyle] = useState<MapBaseStyleId>("carto-voyager");
 const [mapTilerKey, setMapTilerKey] = useState(MAPTILER_ENV_KEY);
 const [mapTileStatus, setMapTileStatus] = useState(
@@ -5096,9 +5107,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           loadedJobsUrl = "bundled";
         }
 
-        let rows = asArray(Array.isArray(data) ? data : data.jobs || data.data || []).map(normalizeStaticJob);
+        let rows = asArray(data).map(normalizeStaticJob);
         if (!rows.length) {
-          rows = asArray(Array.isArray(bundledJobsData) ? bundledJobsData : []).map(normalizeStaticJob);
+          rows = asArray(bundledJobsData).map(normalizeStaticJob);
           loadedJobsUrl = "bundled";
         }
         if (!rows.length) {
@@ -5317,7 +5328,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         workflowViewFilter === "waiting72" ||
         workflowViewFilter === "noaccess24" ||
         workflowViewFilter === "ready2";
-      const clusterMarkersEnabled = true;
+      const clusterMarkersEnabled = false;
       const timerLayerNeedsClusters =
         clusterMarkersEnabled &&
         timerLayer &&
@@ -10180,6 +10191,8 @@ function directionsUrl(job: JobRecord) {
     mapBoroughFilter !== "all" ||
     workflowViewFilter !== "all" ||
     Boolean(search.trim());
+  const allInventoryMode = !mapFocusActive && !routeFocusActive;
+  const drawerJobRows = allInventoryMode ? filteredJobs : filteredJobs.slice(0, 60);
   const dashboardViewCopy: Record<WorkflowViewFilter, { label: string; detail: string }> = {
     active: { label: "Active Work", detail: "Pending work orders on the clean map." },
     pending: { label: "Pending Map", detail: "Only jobs that still need field attention." },
@@ -10546,7 +10559,12 @@ function directionsUrl(job: JobRecord) {
       view === "archived";
 
     setWorkflowViewFilter(view);
-    if (showCompleteLayer) setTodayZoneLimit("all");
+    if (view === "all") {
+      setMapBoroughFilter("all");
+      setTodayZoneLimit("all");
+    } else if (showCompleteLayer) {
+      setTodayZoneLimit("all");
+    }
     setClusterSheet(null);
     setMapJobBrief(null);
     setSelectedOnly(false);
@@ -38347,7 +38365,7 @@ return (
         <div className={`map-filter-count-hud ${mapShowAllDays ? "all-days" : "filtered-days"}`} aria-label={mapHudSummaryLabel}>
           <span>{dashboardView.label}</span>
           <strong>{filteredJobs.length} job{filteredJobs.length === 1 ? "" : "s"}</strong>
-          <small>{todayZoneLabel} - {mapDateFilterLabel()}</small>
+          <small>{allInventoryMode ? "All mapped work orders" : `${todayZoneLabel} - ${mapDateFilterLabel()}`}</small>
         </div>
 
         {showMapStatsPanel ? (
@@ -40940,7 +40958,7 @@ return (
             </div>
           ) : null}
 
-        {!selectedOnly ? filteredJobs.slice(0, 60).map((job, index) => (
+        {!selectedOnly ? drawerJobRows.map((job, index) => (
           <button
             className={`job-card compact-job-card job-status-card ${JobStatus.statusCardClass(job)}`}
             key={`${jobKey(job, index)}-${index}`}
