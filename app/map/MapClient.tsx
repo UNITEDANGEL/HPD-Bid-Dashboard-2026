@@ -2105,7 +2105,7 @@ function archiveCloseoutLabel(job: JobRecord) {
   if (status === "NO_ACCESS_COMPLETE" || raw.includes("no access complete") || raw.includes("no access 2") || raw.includes("no access - 2nd")) return "No Access 2nd";
   if (status === "REFUSED_ACCESS" || raw.includes("refused")) return "Refused Access";
   if (status === "COMPLETED_BY_OTHERS" || raw.includes("completed by others") || raw.includes("completed by other")) return "Done by Others";
-  if (status === "ARCHIVED" || (job as any).ArchivedFromMap || (job as any).archivedFromMap) return "Archived";
+  if (status === "ARCHIVED" || (job as any).ArchivedFromMap || (job as any).archivedFromMap) return "Manual Archive";
   return "";
 }
 
@@ -2116,7 +2116,7 @@ function archiveMarkerSignalLabel(job: JobRecord) {
 
 function workflowLabel(job: JobRecord) {
   const closeoutLabel = archiveCloseoutLabel(job);
-  if (closeoutLabel && closeoutLabel !== "Archived") return closeoutLabel;
+  if (closeoutLabel) return closeoutLabel;
   const status = workflowStatus(job);
 
   const labels: Record<string, string> = {
@@ -9343,7 +9343,7 @@ function localDatetimeValue(date = new Date()) {
 
 function workflowLabel(job: JobRecord) {
   const closeoutLabel = archiveCloseoutLabel(job);
-  if (closeoutLabel && closeoutLabel !== "Archived") return closeoutLabel;
+  if (closeoutLabel) return closeoutLabel;
   const status = workflowStatus(job);
 
   const labels: Record<string, string> = {
