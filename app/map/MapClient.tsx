@@ -9771,11 +9771,14 @@ function focusJob(job: MappedJob) {
     });
 
     if (isNycMapCoordinate(job._lat, job._lng) && mapRef.current) {
+      const targetPoint: [number, number] = [Number(job._lat), Number(job._lng)];
       markProgrammaticMapMove();
-      mapRef.current.flyTo([Number(job._lat), Number(job._lng)], 16, {
-        animate: true,
-        duration: 0.65,
-      });
+      window.setTimeout(() => {
+        const map = mapRef.current;
+        if (!map || !isValidMapCoordinate(targetPoint[0], targetPoint[1])) return;
+        map.invalidateSize();
+        map.setView(targetPoint, 16, { animate: true, duration: 0.45 });
+      }, 80);
     }
   }
 
