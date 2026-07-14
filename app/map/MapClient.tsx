@@ -1475,12 +1475,17 @@ function displayAmount(job: JobRecord | null | undefined) {
   return suspicious ? `${formatted} ⚠ check` : formatted;
 }
 
+function isValidMapCoordinate(lat: any, lng: any) {
+  const latitude = Number(lat);
+  const longitude = Number(lng);
+  return Number.isFinite(latitude) && Number.isFinite(longitude) && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180;
+}
+
 function isNycMapCoordinate(lat: any, lng: any) {
   const latitude = Number(lat);
   const longitude = Number(lng);
   return (
-    Number.isFinite(latitude) &&
-    Number.isFinite(longitude) &&
+    isValidMapCoordinate(latitude, longitude) &&
     latitude >= NYC_MAP_BOUNDS.minLat &&
     latitude <= NYC_MAP_BOUNDS.maxLat &&
     longitude >= NYC_MAP_BOUNDS.minLng &&
@@ -4621,8 +4626,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       .map((job) => [Number(job._lat), Number(job._lng)] as [number, number]);
     const bounds = [...jobBounds];
 
-    if (includeUserLocation && userLocation) {
-      const userPoint: [number, number] = [userLocation.lat, userLocation.lng];
+    if (includeUserLocation && userLocation && isValidMapCoordinate(userLocation.lat, userLocation.lng)) {
+      const userPoint: [number, number] = [Number(userLocation.lat), Number(userLocation.lng)];
       const locationAwareZoom = Math.min(maxZoom, USER_LOCATION_OVERVIEW_ZOOM);
       const contextBounds = [userPoint, ...jobBounds];
 
@@ -4936,10 +4941,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
   function centerMapOnUserLocation(location = userLocation) {
     const map = mapRef.current;
-    if (!map || !location) return false;
+    if (!map || !location || !isValidMapCoordinate(location.lat, location.lng)) return false;
     markProgrammaticMapMove();
 
-    const userPoint: [number, number] = [location.lat, location.lng];
+    const userPoint: [number, number] = [Number(location.lat), Number(location.lng)];
     map.flyTo(userPoint, USER_LOCATION_ME_ZOOM, { animate: true, duration: 0.75 });
     return true;
   }
