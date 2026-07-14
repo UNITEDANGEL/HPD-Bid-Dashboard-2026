@@ -36930,10 +36930,17 @@ return (
             overflow-x: hidden !important;
             overscroll-behavior-y: contain !important;
             scroll-behavior: auto !important;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
             -webkit-overflow-scrolling: touch !important;
             touch-action: pan-y !important;
             will-change: scroll-position !important;
             transform: translateZ(0) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus::-webkit-scrollbar {
+            width: 0 !important;
+            height: 0 !important;
           }
 
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
