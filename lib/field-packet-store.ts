@@ -36,7 +36,7 @@ function openDb(): Promise<IDBDatabase> {
       return;
     }
 
-    const request = window.indexedDB.open(DB_NAME, 1);
+    const request = window.indexedDB.open(DB_NAME, 3);
 
     request.onupgradeneeded = () => {
       const db = request.result;
