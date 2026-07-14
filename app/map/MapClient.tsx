@@ -3821,8 +3821,10 @@ function handleJobDrawerScroll(event: any) {
     return;
   }
 
-  const shouldFold = drawer.scrollTop > 116;
-  setJobCardHeaderFolded((current) => (current === shouldFold ? current : shouldFold));
+  setJobCardHeaderFolded((current) => {
+    const shouldFold = current ? drawer.scrollTop > 72 : drawer.scrollTop > 132;
+    return current === shouldFold ? current : shouldFold;
+  });
 }
 
 function mapOverlayTouchTarget(target: EventTarget | null) {
@@ -36921,6 +36923,49 @@ return (
             }
           }
 
+          /* JOB_CARD_SMOOTH_SCROLL_2026_07_13 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+            max-height: min(92dvh, calc(100dvh - max(52px, env(safe-area-inset-top)))) !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            overscroll-behavior-y: contain !important;
+            scroll-behavior: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+            will-change: scroll-position !important;
+            transform: translateZ(0) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 45 !important;
+            transform: translateZ(0) !important;
+            backface-visibility: hidden !important;
+            contain: paint !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .site-procedure-stage,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-hub,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-packet-vault {
+            overflow: visible !important;
+            overscroll-behavior: contain !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description p,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-evidence-gallery,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-lanes,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details[open] {
+            overscroll-behavior: contain !important;
+            -webkit-overflow-scrolling: touch !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head {
+            box-shadow: 0 12px 26px rgba(15, 23, 42, 0.16) !important;
+          }
           /* FINAL_MAP_TOP_SEARCH_CLEANUP_2026_07_11 */
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
             background: transparent !important;
