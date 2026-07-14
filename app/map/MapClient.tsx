@@ -3777,6 +3777,9 @@ function openMapLayersFromJobCard() {
 function stickyHeaderClearance(container: HTMLElement | null, stickyHead: HTMLElement | null, gap = 12) {
   if (!container || !stickyHead) return gap;
 
+  const style = window.getComputedStyle(stickyHead);
+  if (style.position !== "sticky" && style.position !== "fixed") return gap;
+
   const containerRect = container.getBoundingClientRect();
   const headRect = stickyHead.getBoundingClientRect();
   const headOffset = Math.max(0, headRect.top - containerRect.top);
@@ -37033,6 +37036,93 @@ return (
             width: 0 !important;
             height: 0 !important;
           }
+
+          /* JOB_CARD_FLOW_TRANSITION_2026_07_14 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+            scroll-behavior: smooth !important;
+            scroll-snap-type: y proximity !important;
+            scroll-padding-top: 12px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-hub,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .package-readiness-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-packet-vault,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .site-procedure-stage,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details {
+            scroll-snap-align: start !important;
+            scroll-margin-top: 12px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-smooth-flow-rail {
+            position: sticky !important;
+            top: 8px !important;
+            z-index: 48 !important;
+            margin: 10px 0 8px !important;
+            padding: 7px !important;
+            border-radius: 20px !important;
+            background:
+              linear-gradient(135deg, rgba(2, 10, 24, 0.94), rgba(3, 44, 64, 0.92)) !important;
+            border: 1px solid rgba(94, 234, 212, 0.28) !important;
+            box-shadow:
+              0 14px 28px rgba(2, 8, 23, 0.30),
+              0 0 0 1px rgba(255, 255, 255, 0.08) inset !important;
+            backdrop-filter: blur(14px) saturate(1.2) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-smooth-flow-rail button {
+            transition:
+              transform 180ms ease,
+              box-shadow 180ms ease,
+              background 180ms ease,
+              border-color 180ms ease !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-smooth-flow-rail button:active {
+            transform: translateY(1px) scale(0.985) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-hub,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .package-readiness-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-packet-vault,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .site-procedure-stage,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-appointment-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details {
+            animation: jobCardSectionRise 320ms ease both !important;
+          }
+
+          @keyframes jobCardSectionRise {
+            from {
+              opacity: 0.72;
+              transform: translateY(10px) scale(0.992);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+              scroll-behavior: auto !important;
+              scroll-snap-type: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-hub,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .package-readiness-card,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-packet-vault,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .site-procedure-stage,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-card,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-appointment-card,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details {
+              animation: none !important;
+            }
+          }
+
           /* FINAL_MAP_TOP_SEARCH_CLEANUP_2026_07_11 */
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
             background: transparent !important;
