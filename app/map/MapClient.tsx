@@ -30788,7 +30788,7 @@ return (
           }
 
           .job-drawer.selected-focus .job-appointment-card.mission-appointment {
-            order: 1 !important;
+            order: 0 !important;
           }
 
           .job-drawer.selected-focus .field-page3-description {
@@ -36973,6 +36973,66 @@ return (
           .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .drawer-head.selected-job-drawer-head {
             box-shadow: 0 12px 26px rgba(15, 23, 42, 0.16) !important;
           }
+
+          /* JOB_CARD_HEADER_DESCRIPTION_2026_07_13 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-job-description {
+            order: 0 !important;
+            grid-row: auto !important;
+            margin: 10px 0 12px !important;
+            padding: 11px 12px !important;
+            border-radius: 17px !important;
+            background:
+              linear-gradient(180deg, rgba(248, 252, 255, 0.98), rgba(224, 244, 255, 0.94)) !important;
+            border: 1px solid rgba(14, 165, 233, 0.30) !important;
+            box-shadow: 0 12px 28px rgba(8, 47, 73, 0.22) !important;
+            color: #082f49 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-job-description .field-page3-description-head {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 10px !important;
+            margin: 0 0 7px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-job-description .field-page3-description-head span {
+            color: #075985 !important;
+            font-size: 0.7rem !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+            font-weight: 950 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-job-description .field-page3-description-head button,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-job-description .field-page3-description-head small {
+            flex: 0 0 auto !important;
+            min-height: 32px !important;
+            padding: 0 11px !important;
+            border-radius: 999px !important;
+            font-size: 0.7rem !important;
+            font-weight: 950 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-job-description p {
+            display: block !important;
+            max-height: 96px !important;
+            margin: 0 !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            overscroll-behavior: contain !important;
+            -webkit-overflow-scrolling: touch !important;
+            scrollbar-width: none !important;
+            color: #082f49 !important;
+            font-size: clamp(0.84rem, 2.35vw, 0.96rem) !important;
+            line-height: 1.34 !important;
+            font-weight: 850 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-job-description p::-webkit-scrollbar {
+            width: 0 !important;
+            height: 0 !important;
+          }
           /* FINAL_MAP_TOP_SEARCH_CLEANUP_2026_07_11 */
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed {
             background: transparent !important;
@@ -38381,8 +38441,7 @@ return (
                         </span>
                       </a>
                     </div>
-                  </div>
-                  <div className="job-card-field-metas" aria-label="Job status summary">
+                  </div>                  <div className="job-card-field-metas" aria-label="Job status summary">
                     {(() => {
                       const headerStatusValue = workflowDisplayStatusValue(selected, draftWorkflowStatus);
                       return (
@@ -38410,6 +38469,38 @@ return (
                   Map
                 </button>
               </div>
+              
+              {(() => {
+                const headerDescription = displayDescription(selected);
+                const headerItbSource = itbSourceFor(selected, itbSourceManifest);
+                return (
+                  <div
+                    className={`field-page3-description header-job-description ${headerDescription ? "" : "is-missing"}`}
+                    data-job-card-description-focus="true"
+                    aria-label="ITB job description"
+                  >
+                    <div className="field-page3-description-head">
+                      <span>ITB Description Page</span>
+                      {headerItbSource?.itbPage3Published ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setItbSourceImageFailed("");
+                            setItbSourceOpen(true);
+                          }}
+                        >
+                          View ITB Page
+                        </button>
+                      ) : headerItbSource ? (
+                        <small>Needs ITB image</small>
+                      ) : (
+                        <small>No ITB PDF</small>
+                      )}
+                    </div>
+                    <p>{headerDescription || "No ITB description found for this job."}</p>
+                  </div>
+                );
+              })()}
               {(() => {
                 const stateBanner = workflowStateBannerInfo(selected, draftWorkflowStatus);
                 return (
