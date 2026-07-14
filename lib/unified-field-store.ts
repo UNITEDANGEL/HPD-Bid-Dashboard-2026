@@ -30,7 +30,7 @@ export type UnifiedSyncResult = {
 };
 
 const DB_NAME = "uac-field-v1";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const FLAG_KEY = "hpd-unified-field-store-v1";
 const DEVICE_KEY = "hpd-field-device-id-v1";
 const MIGRATION_KEY = "legacy-migration-v1";
@@ -84,11 +84,11 @@ function openDb(): Promise<IDBDatabase> {
       });
       if (!db.objectStoreNames.contains("settings")) db.createObjectStore("settings", { keyPath: "key" });
       if (!db.objectStoreNames.contains("sync_state")) db.createObjectStore("sync_state", { keyPath: "key" });
-      if (!db.objectStoreNames.contains("mutations")) {
-        const mutations = db.createObjectStore("mutations", { keyPath: "id" });
-        mutations.createIndex("status", "status", { unique: false });
-        mutations.createIndex("createdAt", "createdAt", { unique: false });
-      }
+      const mutations = db.objectStoreNames.contains("mutations")
+        ? request.transaction?.objectStore("mutations")
+        : db.createObjectStore("mutations", { keyPath: "id" });
+      if (mutations && !mutations.indexNames.contains("status")) mutations.createIndex("status", "status", { unique: false });
+      if (mutations && !mutations.indexNames.contains("createdAt")) mutations.createIndex("createdAt", "createdAt", { unique: false });
     };
     request.onerror = () => reject(request.error || new Error("Could not open unified field storage."));
     request.onsuccess = () => resolve(request.result);
