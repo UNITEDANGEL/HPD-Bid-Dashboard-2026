@@ -36944,12 +36944,12 @@ return (
           }
 
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
-            position: sticky !important;
-            top: 0 !important;
-            z-index: 45 !important;
+            position: relative !important;
+            top: auto !important;
+            z-index: 4 !important;
             transform: translateZ(0) !important;
             backface-visibility: hidden !important;
-            contain: paint !important;
+            contain: layout paint !important;
           }
 
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card,
