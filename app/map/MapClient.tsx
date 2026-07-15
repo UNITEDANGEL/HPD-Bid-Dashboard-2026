@@ -2740,6 +2740,7 @@ const [workflowViewFilter, setWorkflowViewFilter] = useState<WorkflowViewFilter>
 const [mapBoroughFilter, setMapBoroughFilter] = useState<MapBoroughFilter>("all");
 const [todayZoneLimit, setTodayZoneLimit] = useState<TodayZoneLimit>("all");
 const [countdownTick, setCountdownTick] = useState(0);
+const [clientMapReady, setClientMapReady] = useState(false);
 const [mapZoom, setMapZoom] = useState(10);
 const [photoCaptureTarget, setPhotoCaptureTarget] = useState<FieldCaptureTarget | null>(null);
 const photoCaptureTargetRef = useRef<FieldCaptureTarget | null>(null);
@@ -3914,6 +3915,10 @@ function handleMapTouchEnd(event: any) {
     }
   }, []);
 
+
+  useEffect(() => {
+    setClientMapReady(true);
+  }, []);
 
   // LIVE_72H_COUNTDOWN_TICK
   useEffect(() => {
@@ -10686,6 +10691,16 @@ function directionsUrl(job: JobRecord) {
       mapRef.current?.invalidateSize();
     });
   }
+
+if (!clientMapReady) {
+  return (
+    <main className="map-shell map-visual-preview map-glass-command-trial full-map-mode" suppressHydrationWarning>
+      <div style={{ minHeight: "100dvh", display: "grid", placeItems: "center", background: "#06101f", color: "#f8fbff", fontFamily: "Inter, ui-sans-serif, system-ui" }}>
+        <strong>Loading field map...</strong>
+      </div>
+    </main>
+  );
+}
 
 return (
     <main
