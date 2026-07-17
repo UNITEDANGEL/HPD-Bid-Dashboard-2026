@@ -2740,7 +2740,6 @@ const [workflowViewFilter, setWorkflowViewFilter] = useState<WorkflowViewFilter>
 const [mapBoroughFilter, setMapBoroughFilter] = useState<MapBoroughFilter>("all");
 const [todayZoneLimit, setTodayZoneLimit] = useState<TodayZoneLimit>("all");
 const [countdownTick, setCountdownTick] = useState(0);
-const [clientMapReady, setClientMapReady] = useState(false);
 const [mapZoom, setMapZoom] = useState(10);
 const [photoCaptureTarget, setPhotoCaptureTarget] = useState<FieldCaptureTarget | null>(null);
 const photoCaptureTargetRef = useRef<FieldCaptureTarget | null>(null);
@@ -3914,12 +3913,6 @@ function handleMapTouchEnd(event: any) {
       // Local storage is optional for private browser modes.
     }
   }, []);
-
-
-  useEffect(() => {
-    setClientMapReady(true);
-  }, []);
-
   // LIVE_72H_COUNTDOWN_TICK
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -5239,8 +5232,12 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     initMap();
+    const retryInitMap = window.setTimeout(initMap, 350);
+    const lateRetryInitMap = window.setTimeout(initMap, 1200);
 
     return () => {
+      window.clearTimeout(retryInitMap);
+      window.clearTimeout(lateRetryInitMap);
       cancelled = true;
       if (mapRef.current) {
         mapRef.current.remove();
@@ -10692,19 +10689,11 @@ function directionsUrl(job: JobRecord) {
     });
   }
 
-if (!clientMapReady) {
-  return (
-    <main className="map-shell map-visual-preview map-glass-command-trial full-map-mode" suppressHydrationWarning>
-      <div style={{ minHeight: "100dvh", display: "grid", placeItems: "center", background: "#06101f", color: "#f8fbff", fontFamily: "Inter, ui-sans-serif, system-ui" }}>
-        <strong>Loading field map...</strong>
-      </div>
-    </main>
-  );
-}
 
 return (
     <main
       className={`map-shell map-visual-preview map-glass-command-trial map-style-${activeMapBaseStyle.id} ${mapFocusActive ? "map-focus-active" : ""} ${showMapStatsPanel ? "map-stats-visible" : "map-stats-hidden"} ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""} ${clusterSheet ? "cluster-tray-open" : ""} ${mapJobBrief ? "map-brief-open" : ""} ${timerMapLayerActive ? "timer-map-layer" : ""}`}
+      style={{ position: "fixed", inset: 0, width: "100vw", height: "100dvh", minHeight: "100dvh", maxHeight: "100dvh", overflow: "hidden", background: "#07111f" }}
       onTouchStart={androidScrollFix ? undefined : handleMapTouchStart}
       onTouchEnd={androidScrollFix ? undefined : handleMapTouchEnd}
     >
@@ -37939,8 +37928,8 @@ return (
         </div>
       </header>
 
-      <section className="map-stage">
-        <div ref={mapNode} className="map-node" />
+      <section className="map-stage" style={{ position: "fixed", inset: 0, width: "100vw", height: "100dvh", minHeight: "100dvh", zIndex: 0 }}>
+        <div ref={mapNode} className="map-node" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
 
         {clusterNetwork.links.length && !drawerOpen && !clusterSheet ? (
           <svg
@@ -38404,9 +38393,9 @@ return (
           <span><b className="dot pending"></b>Pending</span>
         </div>
 
-        <div className="zoom-panel">
-          <button type="button" onClick={() => manualZoomMap("in")}>+</button>
-          <button type="button" onClick={() => manualZoomMap("out")}>−</button>
+        <div className="zoom-panel" style={{ position: "fixed", right: "max(8px, env(safe-area-inset-right))", bottom: "max(10px, env(safe-area-inset-bottom))", top: "auto", display: "grid", gridTemplateColumns: "54px", gap: 6, padding: 7, width: "auto", height: "auto", borderRadius: 20, background: "rgba(5, 14, 27, 0.94)", border: "1px solid rgba(148, 163, 184, 0.32)", boxShadow: "0 18px 46px rgba(2, 6, 23, 0.46), inset 0 1px 0 rgba(255,255,255,0.08)", zIndex: 2525 }}>
+          <button type="button" aria-label="Zoom in" title="Zoom in" onClick={() => manualZoomMap("in")}>+</button>
+          <button type="button" aria-label="Zoom out" title="Zoom out" onClick={() => manualZoomMap("out")}>−</button>
           <button type="button" onClick={() => {
             clearManualMapControl();
             fitVisibleJobsOnMap(MAP_LAYER_OVERVIEW_ZOOM, false);
@@ -38545,6 +38534,7 @@ return (
       <aside
         ref={jobDrawerRef}
         className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""} ${jobCardHeaderFolded ? "job-card-header-folded" : ""} ${clusterSheet ? "cluster-focus" : ""} ${fullMap && !drawerOpen ? "drawer-hard-hidden" : ""}`}
+        style={!selectedOnly && !clusterSheet ? { position: "fixed", left: "max(8px, env(safe-area-inset-left))", right: "max(74px, calc(env(safe-area-inset-right) + 74px))", bottom: "max(8px, env(safe-area-inset-bottom))", width: "auto", maxWidth: "none", height: "auto", maxHeight: "clamp(176px, 30svh, 238px)", overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", zIndex: 2420, transform: "none", overscrollBehavior: "contain", borderRadius: 22 } : undefined}
         onScroll={handleJobDrawerScroll}
       >
         <div className={`drawer-head ${selectedOnly && selected ? "selected-job-drawer-head" : ""}`}>
@@ -38572,7 +38562,8 @@ return (
                         </span>
                       </a>
                     </div>
-                  </div>                  <div className="job-card-field-metas" aria-label="Job status summary">
+                  </div>
+                  <div className="job-card-field-metas" aria-label="Job status summary">
                     {(() => {
                       const headerStatusValue = workflowDisplayStatusValue(selected, draftWorkflowStatus);
                       return (
@@ -38600,7 +38591,7 @@ return (
                   Map
                 </button>
               </div>
-              
+
               {(() => {
                 const headerDescription = displayDescription(selected);
                 const headerItbSource = itbSourceFor(selected, itbSourceManifest);
