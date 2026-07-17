@@ -1,15 +1,14 @@
 {
-  "generatedAt": "2026-07-14T23:06:48.811Z",
+  "generatedAt": "2026-07-17T10:50:42.542Z",
   "page": 3,
   "dpi": 150,
-  "totalJobs": 578,
-  "uniqueItbRefs": 578,
+  "totalJobs": 586,
+  "uniqueItbRefs": 586,
   "sourceDirectories": [
     "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5",
     "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Scripts\\Diagnostics script\\ITB_Downloads_V5",
     "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Scripts\\Diagnostics script\\ITB_Downloads_V6",
-    "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Invitations_to_Bid",
-    "C:\\Users\\uac52\\My Drive\\temp script\\UNITED ANGEL CONSTRUCTION BIDS 2024 ONE DRIVE 1"
+    "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Invitations_to_Bid"
   ],
   "entries": {
     "EQ15489_010226100207.pdf": {
@@ -4057,12 +4056,68 @@
       "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER00862_071026025427.pdf",
       "sourceMatch": "exact",
       "pdf": "/documents/itb/ER00862_071026025427.pdf"
+    },
+    "ER01032_071526124156.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER01032_071526124156-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER01032_071526124156.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER01032_071526124156.pdf"
+    },
+    "ER00588_071526035633.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00588_071526035633-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER00588_071526035633.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00588_071526035633.pdf"
+    },
+    "ER01159_071426043207.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER01159_071426043207-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER01159_071426043207.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER01159_071426043207.pdf"
+    },
+    "EQ30786_071526120751.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/EQ30786_071526120751-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\EQ30786_071526120751.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/EQ30786_071526120751.pdf"
+    },
+    "EQ31651_071526114333.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/EQ31651_071526114333-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\EQ31651_071526114333.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/EQ31651_071526114333.pdf"
+    },
+    "ER00322_071426054122.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00322_071426054122-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER00322_071426054122.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00322_071426054122.pdf"
+    },
+    "ER01150_071526093941.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER01150_071526093941-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER01150_071526093941.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER01150_071526093941.pdf"
+    },
+    "ER01115_071526034542.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER01115_071526034542-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER01115_071526034542.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER01115_071526034542.pdf"
     }
   },
   "summary": {
-    "rendered": 2,
-    "reused": 576,
-    "copiedPdfs": 2,
+    "rendered": 8,
+    "reused": 578,
+    "copiedPdfs": 8,
     "missingSource": 0,
     "failed": 0
   }
