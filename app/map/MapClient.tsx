@@ -3870,10 +3870,9 @@ function handleJobDrawerScroll(event: any) {
     return;
   }
 
-  setJobCardHeaderFolded((current) => {
-    const shouldFold = current ? drawer.scrollTop > 72 : drawer.scrollTop > 132;
-    return current === shouldFold ? current : shouldFold;
-  });
+  if (jobCardHeaderFolded || drawer.scrollTop > 0) {
+    setJobCardHeaderFolded(false);
+  }
 }
 
 function mapOverlayTouchTarget(target: EventTarget | null) {
@@ -39123,11 +39122,150 @@ return (
           }
 
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
-            max-height: calc(100dvh - 92px) !important;
-            overflow-y: auto !important;
+            max-height: none !important;
+            overflow: hidden !important;
             overscroll-behavior: contain !important;
           }
 
+          /* FIELD_CARD_COCKPIT_FLOW_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .job-card-field-sheet-head,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .header-job-description,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .header-field-flow-card {
+            display: grid !important;
+            max-height: none !important;
+            opacity: 1 !important;
+            transform: none !important;
+            pointer-events: auto !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-job-description,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details summary {
+            background: linear-gradient(180deg, rgba(10, 24, 44, 0.98), rgba(4, 12, 24, 0.98)) !important;
+            border: 1px solid rgba(34, 211, 238, 0.34) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 12px 26px rgba(2, 8, 23, 0.34) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-job-description > span,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card > span,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card > span {
+            color: #22d3ee !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0.04em !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-job-description > strong,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card strong,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card strong,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-job-description p,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card p,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card label {
+            color: #f8fafc !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card {
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+            padding: 8px !important;
+            display: block !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode {
+            display: grid !important;
+            grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) !important;
+            grid-template-areas: "contact status" "more more" !important;
+            gap: 8px !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card {
+            grid-area: contact !important;
+            min-height: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card {
+            grid-area: status !important;
+            min-height: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details {
+            grid-area: more !important;
+            margin: 0 !important;
+            max-height: 46px !important;
+            overflow: hidden !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode > .program-source-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode > .field-next-action-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode > .job-appointment-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode > .field-send-panel,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode > .package-readiness-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode > .field-media-option-hub,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode > .field-evidence-rail,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-flow-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-quick-choices {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-grid {
+            grid-template-columns: 1fr !important;
+            gap: 6px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-actions,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-actions {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-actions a,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-actions button,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-actions button,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-main select,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-main input {
+            min-height: 42px !important;
+            border-radius: 14px !important;
+            background: rgba(2, 10, 24, 0.98) !important;
+            color: #f8fafc !important;
+            border: 1px solid rgba(34, 211, 238, 0.4) !important;
+            box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.14), 0 10px 22px rgba(14, 165, 233, 0.14) !important;
+            font-weight: 1000 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-main {
+            grid-template-columns: 1fr !important;
+            gap: 7px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-current-strip {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-current-strip > div:nth-child(n+3) {
+            display: none !important;
+          }
+
+          @media (max-width: 720px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+              top: max(6px, env(safe-area-inset-top)) !important;
+              bottom: max(6px, env(safe-area-inset-bottom)) !important;
+              left: max(6px, env(safe-area-inset-left)) !important;
+              right: max(6px, env(safe-area-inset-right)) !important;
+              border-radius: 18px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode {
+              grid-template-columns: 1fr !important;
+              grid-template-areas: "contact" "status" "more" !important;
+            }
+          }
 
           }        `}
 
@@ -40561,7 +40699,7 @@ return (
           </button>
           <div className="today-route-list">
             {todayPriorityJobs.map((job) => (
-              <button type="button" key={jobKey(job)} onClick={() => openDispatchJob(jobKey(job))}>
+              <button type="button" key={jobKey(job)} onClick={() => focusJob(job)}>
                 <strong>{jobKey(job)}</strong>
                 <span>{dispatchJobReason(job)}</span>
               </button>
@@ -40616,7 +40754,7 @@ return (
                 <button type="button" onClick={runDayAgentCommand}>Go</button>
               </div>
               {agentFirstJob ? (
-                <div className="day-agent-next">
+                <button type="button" className="day-agent-next day-agent-next-button" onClick={() => focusJob(agentFirstJob)} aria-label={`Open first stop ${jobKey(agentFirstJob)}`}>
                   <div>
                     <span>First stop</span>
                     <strong>{jobKey(agentFirstJob)}</strong>
@@ -40624,7 +40762,7 @@ return (
                   </div>
                   <p>{manhattanExitGuidance(agentFirstJob)}</p>
                   <p>{dayAgentContactPlan(agentFirstJob)}</p>
-                </div>
+                </button>
               ) : (
                 <div className="day-agent-next empty">
                   <strong>No active stop selected yet.</strong>
