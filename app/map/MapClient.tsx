@@ -38914,6 +38914,43 @@ return (
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-field-flow-card {
             display: none !important;
           }
+          /* TENANT_CONTACT_VISIBLE_TOP_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .field-page3-description.header-job-description,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-field-flow-card {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .tenant-contact-card {
+            order: -11 !important;
+            display: grid !important;
+            visibility: visible !important;
+            background: linear-gradient(145deg, rgba(8, 17, 32, 0.98), rgba(15, 23, 42, 0.96)) !important;
+            border: 1px solid rgba(34, 211, 238, 0.34) !important;
+            color: #f8fafc !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description {
+            order: -10 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card :is(strong, b, p, small, a, button) {
+            color: #f8fafc !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card :is(span, label) {
+            color: #67e8f9 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-row {
+            background: rgba(2, 6, 23, 0.72) !important;
+            border-color: rgba(125, 211, 252, 0.24) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-actions :is(a, button) {
+            background: linear-gradient(145deg, #0369a1, #0f766e) !important;
+            border: 1px solid rgba(125, 211, 252, 0.42) !important;
+            box-shadow: 0 0 18px rgba(34, 211, 238, 0.16) !important;
+          }
           }        `}
         </style>
 
