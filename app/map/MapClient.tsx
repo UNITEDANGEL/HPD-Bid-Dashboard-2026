@@ -2779,7 +2779,7 @@ const [appointmentSaving, setAppointmentSaving] = useState(false);
 const [appointmentAlertPhone, setAppointmentAlertPhone] = useState("");
 const [appointmentAlertSaving, setAppointmentAlertSaving] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<WorkflowViewFilter>("all");
-const [mapBoroughFilter, setMapBoroughFilter] = useState<MapBoroughFilter>("all");
+const [mapBoroughFilter, setMapBoroughFilter] = useState<MapBoroughFilter>("nearby");
 const [todayZoneLimit, setTodayZoneLimit] = useState<TodayZoneLimit>("all");
 const [countdownTick, setCountdownTick] = useState(0);
 const [mapZoom, setMapZoom] = useState(10);
@@ -3023,7 +3023,7 @@ const dayAgentRouteScore = (job: MappedJob, command: string, requestedBorough = 
   if (appointmentHours !== null && appointmentHours >= 0 && appointmentHours <= 12) score += 5200;
   else if (appointmentHours !== null && appointmentHours > 12 && appointmentHours <= 24) score += 3200;
   if (q.includes("appointment") && appointmentHours !== null && appointmentHours >= 0) score += 2600;
-  if (typeof age === "number" && age >= 60) score += Math.min(1800, (age - 59) * 24);
+  if (typeof age === "number" && age > 60 && !(appointmentHours !== null && appointmentHours >= 0)) score -= 9000;
   score -= Math.max(0, estimatedMinutes - DAY_AGENT_DEFAULT_STOP_MINUTES) * 6;
   if (requestedBorough !== "all" && requestedBorough !== "unknown") {
     if (boroughKey === requestedBorough) score += 5200;
@@ -3062,7 +3062,7 @@ const buildDayAgentRoute = (commandText = dayAgentCommand, requestedBoroughOverr
     .filter((job) => requestedBorough === "all" || requestedBorough === "unknown" || matchesMapBorough(job, requestedBorough));
   const recentPool = boroughPool.filter((job) => {
       const age = mapDateAgeDays(job);
-      return (age !== null && age >= 0 && age <= 90) || hasUpcomingAppointment(job);
+      return (age !== null && age >= 0 && age <= 60) || hasUpcomingAppointment(job);
     });
   const pool = recentPool.length ? recentPool : boroughPool;
   const sorted = [...pool].sort((a, b) => {
@@ -3982,7 +3982,6 @@ function handleMapTouchEnd(event: any) {
     if (requestedWorkflowView) {
       setWorkflowViewFilter(requestedWorkflowView);
       if (
-        requestedWorkflowView === "all" ||
         requestedWorkflowView === "appointments" ||
         requestedWorkflowView === "waiting72" ||
         requestedWorkflowView === "noaccess24" ||
@@ -10584,7 +10583,6 @@ function directionsUrl(job: JobRecord) {
 
   function switchMapBoard(view: WorkflowViewFilter, keepBoardOpen = false) {
     const showCompleteLayer =
-      view === "all" ||
       view === "appointments" ||
       view === "waiting72" ||
       view === "noaccess24" ||
@@ -10593,10 +10591,7 @@ function directionsUrl(job: JobRecord) {
       view === "archived";
 
     setWorkflowViewFilter(view);
-    if (view === "all") {
-      setMapBoroughFilter("all");
-      setTodayZoneLimit("all");
-    } else if (showCompleteLayer) {
+    if (view !== "all" && showCompleteLayer) {
       setTodayZoneLimit("all");
     }
     setClusterSheet(null);
@@ -38673,6 +38668,20 @@ return (
           }
 
 
+
+          /* FIELD_FLOW_FAST_TOP_ONLY_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .job-appointment-card.mission-appointment,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .package-readiness-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-send-panel:not(.is-active),
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-evidence-rail.compact,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-alert-grid,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .generated-output-links {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-media-option-hub {
+            order: -5 !important;
+          }
 
           /* FIELD_FLOW_TRUE_TOP_ORDER_2026_07_20 */
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description {
