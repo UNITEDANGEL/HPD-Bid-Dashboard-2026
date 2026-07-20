@@ -3806,22 +3806,6 @@ function stickyHeaderClearance(container: HTMLElement | null, stickyHead: HTMLEl
 function positionSelectedCardInDrawer() {
   const drawer = jobDrawerRef.current;
   if (drawer) {
-    const fieldDataTarget =
-      drawer.querySelector<HTMLElement>("[data-job-card-description-focus='true']") ||
-      drawer.querySelector<HTMLElement>(".job-card-data-strip");
-    if (fieldDataTarget) {
-      const drawerRect = drawer.getBoundingClientRect();
-      const targetRect = fieldDataTarget.getBoundingClientRect();
-      const stickyHead = drawer.querySelector<HTMLElement>(".selected-job-drawer-head");
-      const top = drawer.scrollTop + targetRect.top - drawerRect.top - stickyHeaderClearance(drawer, stickyHead, 12);
-      drawer.scrollTo({
-        top: Math.max(0, top),
-        left: 0,
-        behavior: androidScrollFix ? "auto" : "smooth",
-      });
-      return;
-    }
-
     drawer.scrollTo({
       top: 0,
       left: 0,
@@ -26743,6 +26727,109 @@ return (
 
             .job-drawer.selected-focus .field-page3-description[data-job-card-description-focus="true"] {
               scroll-margin-top: 168px !important;
+            }
+          }
+
+
+          /* JOB_CARD_FLOW_FIX_1_TOP_SUMMARY_2026_07_20 */
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+            margin: 0 0 8px !important;
+            padding: 6px 7px !important;
+            border-radius: 16px !important;
+            overflow: visible !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-sheet-head {
+            gap: 6px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-row {
+            grid-template-columns: minmax(0, 1fr) 52px !important;
+            align-items: start !important;
+            gap: 8px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy {
+            gap: 2px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy strong {
+            font-size: clamp(21px, 5.4vw, 28px) !important;
+            line-height: 1 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-title-copy p {
+            color: #f0fdfa !important;
+            display: -webkit-box !important;
+            font-size: 14px !important;
+            line-height: 1.16 !important;
+            overflow: hidden !important;
+            overflow-wrap: anywhere !important;
+            -webkit-box-orient: vertical !important;
+            -webkit-line-clamp: 2 !important;
+          }
+
+          .job-drawer.selected-focus .job-card-address-route-row {
+            display: grid !important;
+            gap: 6px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-address-route-actions {
+            display: grid !important;
+            gap: 6px !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button {
+            border-radius: 12px !important;
+            min-height: 36px !important;
+            height: 36px !important;
+            padding: 0 8px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-head-button img {
+            flex-basis: 18px !important;
+            height: 18px !important;
+            width: 18px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-action-copy strong {
+            font-size: 11px !important;
+          }
+
+          .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .route-action-copy small {
+            display: none !important;
+          }
+
+          .job-drawer.selected-focus .job-card-map-back-pill {
+            align-self: start !important;
+            min-height: 38px !important;
+            min-width: 52px !important;
+            position: relative !important;
+            top: 0 !important;
+            width: 52px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas {
+            display: flex !important;
+            gap: 4px !important;
+            margin-top: 4px !important;
+          }
+
+          .job-drawer.selected-focus .job-card-field-metas .status,
+          .job-drawer.selected-focus .job-card-field-metas .maturity-pill {
+            font-size: 9px !important;
+            min-height: 22px !important;
+            padding: 0 7px !important;
+          }
+
+          @media (max-width: 520px) {
+            .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+              padding: 6px !important;
+            }
+
+            .job-drawer.selected-focus .job-card-field-title-row {
+              grid-template-columns: minmax(0, 1fr) 50px !important;
             }
           }
 
