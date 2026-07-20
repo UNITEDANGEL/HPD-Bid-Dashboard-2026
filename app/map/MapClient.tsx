@@ -26823,7 +26823,75 @@ return (
             padding: 0 7px !important;
           }
 
-          @media (max-width: 520px) {
+
+          /* JOB_CARD_FLOW_FIX_2_ITB_SCOPE_PREVIEW_2026_07_20 */
+          .job-drawer.selected-focus .header-job-description {
+            margin-top: 8px !important;
+            padding: 12px !important;
+            border-radius: 17px !important;
+            border: 1px solid rgba(14, 165, 233, 0.32) !important;
+            border-left: 6px solid #0ea5e9 !important;
+            background:
+              linear-gradient(180deg, rgba(239, 246, 255, 0.98), rgba(255, 255, 255, 0.98)) !important;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12) !important;
+          }
+
+          .job-drawer.selected-focus .header-job-description .field-page3-description-head {
+            align-items: center !important;
+            display: flex !important;
+            gap: 8px !important;
+            justify-content: space-between !important;
+            margin: 0 0 8px !important;
+          }
+
+          .job-drawer.selected-focus .header-job-description .field-page3-description-head span {
+            color: #075985 !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            line-height: 1 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .header-job-description .field-page3-description-head button,
+          .job-drawer.selected-focus .header-job-description .field-page3-description-head small {
+            align-items: center !important;
+            border-radius: 999px !important;
+            display: inline-flex !important;
+            flex: 0 0 auto !important;
+            font-size: 10px !important;
+            font-weight: 950 !important;
+            justify-content: center !important;
+            min-height: 32px !important;
+            padding: 0 12px !important;
+            white-space: nowrap !important;
+          }
+
+          .job-drawer.selected-focus .header-job-description p {
+            color: #142033 !important;
+            display: -webkit-box !important;
+            font-size: 15px !important;
+            font-weight: 850 !important;
+            line-height: 1.42 !important;
+            margin: 0 !important;
+            max-height: none !important;
+            overflow: hidden !important;
+            overflow-y: hidden !important;
+            -webkit-box-orient: vertical !important;
+            -webkit-line-clamp: 6 !important;
+          }
+
+          @media (max-width: 430px) {
+            .job-drawer.selected-focus .header-job-description {
+              padding: 11px !important;
+            }
+
+            .job-drawer.selected-focus .header-job-description p {
+              font-size: 14px !important;
+              line-height: 1.36 !important;
+              -webkit-line-clamp: 5 !important;
+            }
+          }          @media (max-width: 520px) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
               padding: 6px !important;
             }
@@ -38685,7 +38753,7 @@ return (
                     aria-label="ITB job description"
                   >
                     <div className="field-page3-description-head">
-                      <span>ITB Description Page</span>
+                      <span>ITB Page 3 Scope</span>
                       {headerItbSource?.itbPage3Published ? (
                         <button
                           type="button"
@@ -38694,7 +38762,7 @@ return (
                             setItbSourceOpen(true);
                           }}
                         >
-                          View ITB Page
+                          Open ITB Page
                         </button>
                       ) : headerItbSource ? (
                         <small>Needs ITB image</small>
@@ -39762,7 +39830,7 @@ return (
                       aria-label="ITB job description"
                     >
                       <div className="field-page3-description-head">
-                        <span>ITB Description Page</span>
+                        <span>ITB Page 3 Scope</span>
                         {missionItbSource?.itbPage3Published ? (
                           <button
                             type="button"
@@ -39771,7 +39839,7 @@ return (
                               setItbSourceOpen(true);
                             }}
                           >
-                            View ITB Page
+                            Open ITB Page
                           </button>
                         ) : missionItbSource ? (
                           <small>Needs ITB image</small>
@@ -41098,7 +41166,7 @@ return (
               <div className="itb-source-modal-head">
                 <div>
                   <strong>
-                    {jobKey(selected)} Original ITB Description Page
+                    {jobKey(selected)} Original ITB Page 3 Scope
                   </strong>
                   <span>
                     {source?.fileName || "No ITB file listed"} · {displayAddress(selected)}
