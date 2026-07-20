@@ -2784,7 +2784,7 @@ const [appointmentAlertPhone, setAppointmentAlertPhone] = useState("");
 const [appointmentAlertSaving, setAppointmentAlertSaving] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<WorkflowViewFilter>("all");
 const [mapBoroughFilter, setMapBoroughFilter] = useState<MapBoroughFilter>("nearby");
-const [todayZoneLimit, setTodayZoneLimit] = useState<TodayZoneLimit>("20");
+const [todayZoneLimit, setTodayZoneLimit] = useState<TodayZoneLimit>("all");
 const [countdownTick, setCountdownTick] = useState(0);
 const [mapZoom, setMapZoom] = useState(10);
 const [photoCaptureTarget, setPhotoCaptureTarget] = useState<FieldCaptureTarget | null>(null);
@@ -4483,20 +4483,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           const coords = getStoredCoords(job);
           return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" } : { ...job };
         });
+    const searchRows = filteredJobs.length ? filteredJobs : fallbackRows;
     const match =
-      fallbackRows.find((job) => String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "") === target) ||
-      fallbackRows.find((job) => compactMapSearchValue(displayAddress(job)) === compactMapSearchValue(urlOmoRequest)) ||
-      fallbackRows.find((job) => matchesMapSearch(job, urlOmoRequest)) ||
-      null;
+      searchRows.find((job) => String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "") === target) ||
+      searchRows.find((job) => compactMapSearchValue(displayAddress(job)) === compactMapSearchValue(urlOmoRequest)) ||
+      searchRows.find((job) => matchesMapSearch(job, urlOmoRequest)) ||
+      searchRows[0];
     if (!match) return;
 
-    setMapShowAllDays(true);
-    setMapBoroughFilter("all");
-    setWorkflowViewFilter("all");
     focusJob(match);
     setUrlOmoRequest("");
     setActionNotice(`Opened ${jobKey(match)} from map search.`);
-  }, [urlOmoRequest, jobs, mappedJobs]);
+  }, [urlOmoRequest, filteredJobs, jobs, mappedJobs]);
 
   const markerAutoFitKey = useMemo(() => {
     return filteredJobs
@@ -5451,7 +5449,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         : plottedItems.map((item) => ({ kind: "job", ...item }));
 
       const mapSize = map.getSize?.();
-      const shouldDrawClusterLinks = !mobileMap && filteredJobs.length <= 35 && mapZoom >= 13 && !routeFocusActive && !selectedOnly && !drawerOpen && !clusterSheet;
+      const shouldDrawClusterLinks = !mobileMap && !routeFocusActive && !selectedOnly && !drawerOpen && !clusterSheet;
       const clusterPoints = shouldDrawClusterLinks
         ? renderItems
         .filter((item) => item.kind === "cluster")
@@ -10230,7 +10228,7 @@ function directionsUrl(job: JobRecord) {
     workflowViewFilter !== "all" ||
     Boolean(search.trim());
   const allInventoryMode = !mapFocusActive && !routeFocusActive;
-  const drawerJobRows = selectedOnly ? [] : filteredJobs.slice(0, 30);
+  const drawerJobRows = allInventoryMode ? filteredJobs : filteredJobs.slice(0, 60);
   const dashboardViewCopy: Record<WorkflowViewFilter, { label: string; detail: string }> = {
     active: { label: "Active Work", detail: "Pending work orders on the clean map." },
     pending: { label: "Pending Map", detail: "Only jobs that still need field attention." },
@@ -38677,6 +38675,22 @@ return (
             }
           }
 
+
+
+          /* FIELD_FLOW_FAST_TOP_ONLY_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .job-appointment-card.mission-appointment,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .package-readiness-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-send-panel:not(.is-active),
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-evidence-rail.compact,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-alert-grid,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .generated-output-links {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-media-option-hub {
+            order: -5 !important;
+          }
+
           /* FIELD_FLOW_TRUE_TOP_ORDER_2026_07_20 */
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description {
             order: -10 !important;
@@ -38835,6 +38849,28 @@ return (
             border: 1px solid rgba(125, 211, 252, 0.28) !important;
           }
 
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-next-action-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-quick-choices,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-flow-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card > small,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-hub,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .package-readiness-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-appointment-card.mission-appointment,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-send-panel,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-evidence-rail.compact {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card::after {
+            content: "Appointment, before/after media, package, and admin data are under More details after status.";
+            display: block;
+            color: #cbd5e1;
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 1.25;
+            margin-top: 2px;
+          }
+
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details {
             display: block !important;
             order: 20 !important;
@@ -38850,51 +38886,27 @@ return (
           }
 
 
-          /* FIELD_WORKFLOW_VISIBLE_OVERRIDE_2026_07_20 */
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(
-            .field-next-action-card,
-            .field-status-flow-card,
-            .field-media-option-hub,
-            .package-readiness-card,
-            .field-evidence-rail.compact,
-            .field-workflow-grid,
-            .field-procedure-hero,
-            .field-flow-dock,
-            .field-media-console
-          ) {
-            display: grid !important;
-            visibility: visible !important;
-            height: auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-            opacity: 1 !important;
-            overflow: visible !important;
+          /* FIELD_CONSOLE_HIDE_LOWER_STACK_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-procedure-hero,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-flow-dock,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-workflow-grid,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-step-actions,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-packet-vault,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-evidence-gallery,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-media-console,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .site-procedure-stage:not(.is-active),
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .site-outcome-summary-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .site-evidence-count-grid,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-packet-empty {
+            display: none !important;
           }
 
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-quick-choices,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-appointment-card.mission-appointment,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .generated-output-links,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-alert-grid {
-            display: block !important;
-            visibility: visible !important;
-            height: auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-            opacity: 1 !important;
-            overflow: visible !important;
-          }
-
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-send-panel.is-active,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .site-procedure-stage.is-active {
-            display: grid !important;
-            visibility: visible !important;
-            height: auto !important;
-            max-height: none !important;
-            opacity: 1 !important;
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
+            max-height: calc(100dvh - 92px) !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain !important;
           }
           }        `}
-
-
         </style>
 
       <input
@@ -38985,7 +38997,6 @@ return (
         onClick={closeMapMenu}
       />
 
-      {mapMenuOpen ? (
       <header className={`map-top ${mapMenuOpen ? "open" : ""}`}>
         <div className="map-title-row">
           <div>
@@ -39252,7 +39263,6 @@ return (
           </button>
         </div>
       </header>
-      ) : null}
 
       <section className="map-stage" style={{ position: "fixed", inset: 0, width: "100vw", height: "100dvh", minHeight: "100dvh", zIndex: 0 }}>
         <div ref={mapNode} className="map-node" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
@@ -39291,7 +39301,6 @@ return (
           }
           aria-label="Map controls"
         >
-          {mapBoardOpen ? (
           <div className="map-command-banner" aria-label="Schedule board banner">
             <div>
               <span>Schedule Board</span>
@@ -39312,7 +39321,6 @@ return (
               </button>
             </div>
           </div>
-          ) : null}
           {!drawerOpen && !clusterSheet && !mapBoardOpen && !mapMenuOpen ? (
             <form
               className={`map-face-search ${search.trim() ? "has-query" : ""}`}
@@ -39560,7 +39568,6 @@ return (
               );
             })()
           ) : null}
-          {mapBoardOpen ? (<>
           <div className="map-board-switcher" aria-label="Switch map board">
             {mapBoardModes.map((mode) => (
               <button
@@ -39693,7 +39700,6 @@ return (
               Fit Layer
             </button>
           </div>
-          </>) : null}
         </section>
 
         <div className={`map-filter-count-hud ${mapShowAllDays ? "all-days" : "filtered-days"}`} aria-label={mapHudSummaryLabel}>
