@@ -27022,6 +27022,153 @@ return (
           .job-drawer.selected-focus .field-next-action-card.status-next-action .field-next-action-copy small {
             color: #052e2b !important;
             font-weight: 900 !important;
+          }
+          /* JOB_CARD_FLOW_FIX_4_EVIDENCE_HUB_2026_07_20 */
+          .job-drawer.selected-focus .field-media-option-hub {
+            padding: 12px !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(20, 184, 166, 0.22) !important;
+            background:
+              linear-gradient(180deg, rgba(240, 253, 250, 0.98), rgba(255, 255, 255, 0.98)) !important;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1) !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-head {
+            display: grid !important;
+            gap: 6px !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            margin-bottom: 9px !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-head span {
+            color: #0f766e !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-head strong {
+            color: #0f172a !important;
+            font-size: 18px !important;
+            line-height: 1.06 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-head small {
+            min-height: 30px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            border-radius: 999px !important;
+            padding: 0 10px !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            font-size: 10px !important;
+            font-weight: 950 !important;
+            white-space: nowrap !important;
+          }
+
+          .job-drawer.selected-focus .field-media-step-cue {
+            margin-bottom: 10px !important;
+            border-radius: 15px !important;
+            padding: 10px !important;
+            background: rgba(15, 23, 42, 0.06) !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .job-drawer.selected-focus .field-media-step-cue span {
+            color: #0f766e !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-step-cue strong {
+            color: #0f172a !important;
+            font-size: 17px !important;
+            line-height: 1.05 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-step-cue small {
+            color: #334155 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 9px !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column {
+            padding: 10px !important;
+            border-radius: 16px !important;
+            background: rgba(255, 255, 255, 0.96) !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column.before {
+            border-left: 5px solid #0284c7 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column.after {
+            border-left: 5px solid #16a34a !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column > div span {
+            color: #64748b !important;
+            font-size: 10px !important;
+            font-weight: 950 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column > div strong {
+            color: #0f172a !important;
+            font-size: 16px !important;
+            line-height: 1.05 !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column button {
+            min-height: 40px !important;
+            border-radius: 12px !important;
+            border: 1px solid rgba(15, 23, 42, 0.12) !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            font-size: 12px !important;
+            font-weight: 950 !important;
+            box-shadow: 0 10px 18px rgba(15, 23, 42, 0.14) !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-column button:nth-of-type(2),
+          .job-drawer.selected-focus .field-media-option-column button:nth-of-type(4) {
+            background: #ffffff !important;
+            color: #0f172a !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-footer {
+            margin-top: 10px !important;
+            gap: 7px !important;
+          }
+
+          .job-drawer.selected-focus .field-media-option-footer button,
+          .job-drawer.selected-focus .field-media-option-footer a {
+            min-height: 42px !important;
+            border-radius: 13px !important;
+            font-weight: 950 !important;
+          }
+
+          @media (max-width: 430px) {
+            .job-drawer.selected-focus .field-media-option-head {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .job-drawer.selected-focus .field-media-option-head small {
+              justify-self: start !important;
+            }
+
+            .job-drawer.selected-focus .field-media-option-grid {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
           }          @media (max-width: 430px) {
             .job-drawer.selected-focus .field-status-current-strip {
               grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
@@ -37866,7 +38013,28 @@ return (
               margin: 0 !important;
             }
           }
-        `}
+
+          /* JOB_CARD_FLOW_FINAL_SCROLL_FIX_2026_07_20 */
+          .job-drawer.selected-focus .header-job-description p,
+          .job-drawer.selected-focus .field-page3-description.header-job-description p,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-job-description p {
+            display: -webkit-box !important;
+            max-height: none !important;
+            overflow: hidden !important;
+            overflow-y: hidden !important;
+            overscroll-behavior: auto !important;
+            -webkit-box-orient: vertical !important;
+            -webkit-line-clamp: 6 !important;
+            -webkit-overflow-scrolling: auto !important;
+          }
+
+          @media (max-width: 430px) {
+            .job-drawer.selected-focus .header-job-description p,
+            .job-drawer.selected-focus .field-page3-description.header-job-description p,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-job-description p {
+              -webkit-line-clamp: 5 !important;
+            }
+          }        `}
         </style>
 
       <input
