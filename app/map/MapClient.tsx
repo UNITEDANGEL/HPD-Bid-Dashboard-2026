@@ -3736,8 +3736,8 @@ const [hideCompleted, setHideCompleted] = useState(false);
     };
   }, []);
 
-const [mapDaysBack, setMapDaysBack] = useState("90");
-const [mapShowAllDays, setMapShowAllDays] = useState(true);
+const [mapDaysBack, setMapDaysBack] = useState("30");
+const [mapShowAllDays, setMapShowAllDays] = useState(false);
 const [mapBaseStyle, setMapBaseStyle] = useState<MapBaseStyleId>("carto-voyager");
 const [mapTilerKey, setMapTilerKey] = useState(MAPTILER_ENV_KEY);
 const [mapTileStatus, setMapTileStatus] = useState(
@@ -38501,8 +38501,8 @@ return (
 
           /* FIELD_FLOW_SCOPE_FIRST_2026_07_20 */
           .header-field-flow-card,
+          .mission-field-flow-card,
           .job-card-data-strip,
-          .field-status-picker-card,
           .job-card-field-action-dock,
           .job-progress-timeline,
           .selected-overview-grid,
@@ -38620,6 +38620,36 @@ return (
             }
           }
 
+          /* FIELD_FLOW_REAL_STATUS_TOP_2026_07_20 */
+          .job-drawer.selected-focus .private-visit-card {
+            order: -4 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card {
+            order: -3 !important;
+            display: grid !important;
+            margin-top: 0 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card::before {
+            content: "2. What happened with this job?" !important;
+          }
+
+          .job-drawer.selected-focus .private-visit-card::before {
+            content: "1. Confirm you are here";
+            display: block;
+            color: #67e8f9;
+            font-size: 10px;
+            font-weight: 950;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+          }
+
+          .job-drawer.selected-focus .private-visit-actions button:first-child {
+            min-height: 46px !important;
+            font-size: 14px !important;
+          }
+
           /* JOB_CARD_FLOW_FINAL_SCROLL_FIX_2026_07_20 */
           .job-drawer.selected-focus .header-job-description p,
           .job-drawer.selected-focus .field-page3-description.header-job-description p,
@@ -38642,11 +38672,31 @@ return (
             }
           }
 
-          /* FIELD_FLOW_FINAL_DUPLICATE_SUPPRESS_2026_07_20 */
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .job-card-data-strip,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-status-picker-card,
-          .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .job-card-data-strip,
-          .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-status-picker-card {
+
+
+          /* FIELD_FLOW_TRUE_TOP_ORDER_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description {
+            order: -10 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .tenant-contact-card {
+            order: -9 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .program-source-card {
+            order: -8 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-card {
+            order: -7 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-status-picker-card {
+            order: -6 !important;
+            display: grid !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .job-card-data-strip {
             display: none !important;
             visibility: hidden !important;
             height: 0 !important;
@@ -38655,6 +38705,7 @@ return (
             margin: 0 !important;
             padding: 0 !important;
             overflow: hidden !important;
+          }
           }        `}
         </style>
 
