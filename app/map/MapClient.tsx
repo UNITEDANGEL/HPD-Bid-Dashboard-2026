@@ -635,10 +635,11 @@ function mapDistanceMiles(from: { lat: number; lng: number }, to: { lat: number;
   return radiusMiles * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function matchesMapBorough(job: JobRecord, filter: MapBoroughFilter) {
+function matchesMapBorough(job: JobRecord, filter: MapBoroughFilter, nearbyOrigin: { lat: number; lng: number } | null = DAY_AGENT_BASE_COORDS) {
   if (filter === "nearby") {
+    if (!nearbyOrigin) return true;
     const coords = jobMapPoint(job);
-    return Boolean(coords && mapDistanceMiles(DAY_AGENT_BASE_COORDS, coords) <= BASE_NEARBY_RADIUS_MILES);
+    return Boolean(coords && mapDistanceMiles(nearbyOrigin, coords) <= BASE_NEARBY_RADIUS_MILES);
   }
   return filter === "all" || jobBoroughKey(job) === filter;
 }
@@ -4320,9 +4321,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           return (age !== null && age >= 0 && age <= limit) || hasUpcomingAppointment(job);
         });
 
-    const boroughFiltered = dateFiltered.filter((job) => matchesMapBorough(job, mapBoroughFilter));
+    const liveNearbyOrigin = userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : null;
+    const boroughFiltered = dateFiltered.filter((job) => matchesMapBorough(job, mapBoroughFilter, mapBoroughFilter === "nearby" ? liveNearbyOrigin : DAY_AGENT_BASE_COORDS));
     const workflowFiltered = boroughFiltered.filter((job) => shouldShowForWorkflowView(job, workflowViewFilter));
-    const zoneOrigin = userLocation ? { lat: userLocation.lat, lng: userLocation.lng } : DAY_AGENT_BASE_COORDS;
+    const zoneOrigin = liveNearbyOrigin || DAY_AGENT_BASE_COORDS;
     const zoneFiltered =
       mapBoroughFilter === "nearby" && todayZoneLimit !== "all"
         ? [...workflowFiltered]
