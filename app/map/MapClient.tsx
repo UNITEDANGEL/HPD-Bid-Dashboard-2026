@@ -27233,7 +27233,112 @@ return (
             font-weight: 950 !important;
           }
 
+
+          /* JOB_CARD_FLOW_FIX_6_PACKAGE_REVIEW_2026_07_20 */
+          .job-drawer.selected-focus .package-readiness-card {
+            padding: 12px !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(59, 130, 246, 0.18) !important;
+            background:
+              linear-gradient(180deg, rgba(248, 250, 252, 0.98), rgba(255, 255, 255, 0.98)) !important;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1) !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-head {
+            display: grid !important;
+            gap: 8px !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-head span {
+            color: #1d4ed8 !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-head strong {
+            color: #0f172a !important;
+            font-size: 20px !important;
+            line-height: 1.05 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-head small,
+          .job-drawer.selected-focus .package-readiness-card p {
+            color: #334155 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-head b {
+            min-width: 52px !important;
+            min-height: 42px !important;
+            display: inline-grid !important;
+            place-items: center !important;
+            border-radius: 14px !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            font-size: 15px !important;
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.16) !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-meter {
+            height: 10px !important;
+            border-radius: 999px !important;
+            background: rgba(15, 23, 42, 0.1) !important;
+            overflow: hidden !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-meter i {
+            border-radius: inherit !important;
+            background: linear-gradient(90deg, #38bdf8, #22c55e) !important;
+            box-shadow: 0 0 18px rgba(34, 197, 94, 0.4) !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 7px !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid span {
+            min-height: 70px !important;
+            border-radius: 14px !important;
+            padding: 8px !important;
+            background: rgba(15, 23, 42, 0.045) !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid span.done {
+            background: rgba(34, 197, 94, 0.12) !important;
+            border-color: rgba(34, 197, 94, 0.28) !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid b {
+            color: #0369a1 !important;
+            font-size: 9px !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid strong {
+            color: #0f172a !important;
+            font-size: 13px !important;
+            line-height: 1.05 !important;
+          }
+
+          .job-drawer.selected-focus .package-readiness-grid small {
+            color: #475569 !important;
+            font-size: 10px !important;
+            line-height: 1.1 !important;
+            font-weight: 850 !important;
+          }
+
           @media (max-width: 430px) {
+            .job-drawer.selected-focus .package-readiness-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+          }          @media (max-width: 430px) {
             .job-drawer.selected-focus .field-status-date-tools {
               grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.6fr) minmax(0, 0.7fr) !important;
             }
