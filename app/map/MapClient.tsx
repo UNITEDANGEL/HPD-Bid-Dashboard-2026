@@ -39106,34 +39106,6 @@ return (
             }
           }
 
-
-          /* FIELD_CARD_SCOPE_STACK_FIX_2026_07_20 */
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-field-flow-card {
-            display: none !important;
-          }
-
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-job-description {
-            max-height: clamp(132px, 24dvh, 184px) !important;
-            min-height: 118px !important;
-            overflow: hidden !important;
-          }
-
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-job-description > p,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description p {
-            max-height: clamp(84px, 17dvh, 126px) !important;
-            min-height: 68px !important;
-          }
-
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
-            height: auto !important;
-            align-self: stretch !important;
-          }
-
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card {
-            height: auto !important;
-            max-height: 100% !important;
-          }
           /* FIELD_CONSOLE_HIDE_LOWER_STACK_2026_07_20 */
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-procedure-hero,
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-flow-dock,
