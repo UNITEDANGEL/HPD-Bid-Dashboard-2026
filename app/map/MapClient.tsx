@@ -1454,6 +1454,48 @@ function descriptionSummary(job: JobRecord | null | undefined) {
   const fallback = compact.slice(0, 260);
   return first || fallback;
 }
+function workOrderProgramInfo(job: JobRecord | null | undefined) {
+  const sourceText = [
+    (job as any)?.Program,
+    (job as any)?.program,
+    (job as any)?.JobProgram,
+    (job as any)?.jobProgram,
+    (job as any)?.WorkProgram,
+    (job as any)?.workProgram,
+    (job as any)?.Division,
+    (job as any)?.division,
+    (job as any)?.JobDescription,
+    (job as any)?.jobDescription,
+    (job as any)?.description,
+    displayDescription(job),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toUpperCase();
+
+  if (/\bAEP\b|ALTERNATE\s+ENFORCEMENT/.test(sourceText)) {
+    return {
+      code: "AEP",
+      label: "Alternate Enforcement Program",
+      detail: "Alternate Enforcement Program work order.",
+      tone: "aep",
+    };
+  }
+  if (/\bERP\b|EMERGENCY\s+REPAIR|EMERGENCY\s+OPERATIONS|ESSENTIAL\s+SERVICE/.test(sourceText)) {
+    return {
+      code: "ERP",
+      label: "Emergency Repair Program",
+      detail: "Emergency repair / essential service work order.",
+      tone: "erp",
+    };
+  }
+  return {
+    code: "HPD",
+    label: "HPD Work Order",
+    detail: "Program source not listed in available data.",
+    tone: "unknown",
+  };
+}
 function displayAmount(job: JobRecord | null | undefined) {
   if (!job) return "";
   const raw =
@@ -38456,26 +38498,163 @@ return (
               grid-template-columns: 1fr;
             }
           }
+
+          /* FIELD_FLOW_SCOPE_FIRST_2026_07_20 */
+          .header-field-flow-card,
+          .job-card-data-strip,
+          .field-status-picker-card,
+          .job-card-field-action-dock,
+          .job-progress-timeline,
+          .selected-overview-grid,
+          .quick-status-console {
+            display: none !important;
+          }
+
+          .field-mission-mode .field-page3-description {
+            order: -6;
+            padding: 14px !important;
+            border-radius: 18px;
+            border: 1px solid rgba(125, 211, 252, 0.28);
+            background: linear-gradient(145deg, rgba(8, 18, 35, 0.96), rgba(12, 28, 48, 0.94));
+            box-shadow: 0 16px 32px rgba(2, 6, 23, 0.26);
+          }
+
+          .field-mission-mode .field-page3-description > p,
+          .job-drawer .field-mission-mode .field-page3-description > p {
+            display: block !important;
+            max-height: min(34vh, 330px) !important;
+            overflow-y: auto !important;
+            color: #f8fafc !important;
+            font-size: 14px !important;
+            line-height: 1.42 !important;
+            white-space: pre-wrap !important;
+            -webkit-line-clamp: unset !important;
+            -webkit-box-orient: unset !important;
+            -webkit-overflow-scrolling: touch !important;
+            padding-right: 4px;
+          }
+
+          .tenant-contact-card {
+            order: -5;
+          }
+
+          .program-source-card {
+            order: -4;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 6px 12px;
+            align-items: center;
+            padding: 12px 14px;
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            background: rgba(15, 23, 42, 0.84);
+            color: #f8fafc;
+          }
+
+          .program-source-card div {
+            display: grid;
+            gap: 2px;
+          }
+
+          .program-source-card span {
+            color: #93c5fd;
+            font-size: 10px;
+            font-weight: 950;
+            text-transform: uppercase;
+          }
+
+          .program-source-card strong {
+            color: #ffffff;
+            font-size: 20px;
+            line-height: 1;
+          }
+
+          .program-source-card p,
+          .program-source-card small {
+            margin: 0;
+            color: #dbeafe;
+            font-weight: 850;
+            line-height: 1.25;
+          }
+
+          .program-source-card small {
+            grid-column: 1 / -1;
+            color: #cbd5e1;
+            font-size: 11px;
+          }
+
+          .program-source-card.tone-erp {
+            border-color: rgba(34, 211, 238, 0.38);
+            box-shadow: 0 0 24px rgba(34, 211, 238, 0.13);
+          }
+
+          .program-source-card.tone-aep {
+            border-color: rgba(250, 204, 21, 0.46);
+            box-shadow: 0 0 24px rgba(250, 204, 21, 0.14);
+          }
+
+          .mission-field-flow-card {
+            order: -3;
+          }
+
+          .field-flow-choice.is-locked {
+            opacity: 0.82;
+          }
+
+          .more-job-details,
+          .selected-alert-grid,
+          .generated-output-links {
+            content-visibility: auto;
+            contain-intrinsic-size: 260px;
+          }
+
+          @media (max-width: 520px) {
+            .field-mission-mode .field-page3-description > p,
+            .job-drawer .field-mission-mode .field-page3-description > p {
+              max-height: 30vh !important;
+              font-size: 13px !important;
+            }
+
+            .program-source-card {
+              grid-template-columns: 1fr;
+            }
+          }
+
           /* JOB_CARD_FLOW_FINAL_SCROLL_FIX_2026_07_20 */
           .job-drawer.selected-focus .header-job-description p,
           .job-drawer.selected-focus .field-page3-description.header-job-description p,
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-job-description p {
-            display: -webkit-box !important;
-            max-height: none !important;
-            overflow: hidden !important;
-            overflow-y: hidden !important;
-            overscroll-behavior: auto !important;
-            -webkit-box-orient: vertical !important;
-            -webkit-line-clamp: 6 !important;
-            -webkit-overflow-scrolling: auto !important;
+            display: block !important;
+            max-height: min(28vh, 260px) !important;
+            overflow-y: auto !important;
+            overscroll-behavior: contain !important;
+            white-space: pre-wrap !important;
+            -webkit-line-clamp: unset !important;
+            -webkit-box-orient: unset !important;
+            -webkit-overflow-scrolling: touch !important;
           }
 
           @media (max-width: 430px) {
             .job-drawer.selected-focus .header-job-description p,
             .job-drawer.selected-focus .field-page3-description.header-job-description p,
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-job-description p {
-              -webkit-line-clamp: 5 !important;
+              max-height: 24vh !important;
             }
+          }
+
+          /* FIELD_FLOW_FINAL_DUPLICATE_SUPPRESS_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .job-card-data-strip,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-status-picker-card,
+          .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .job-card-data-strip,
+          .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-status-picker-card {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            max-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
           }        `}
         </style>
 
@@ -39501,6 +39680,31 @@ return (
               {(() => {
                 const headerDescription = displayDescription(selected);
                 const headerItbSource = itbSourceFor(selected, itbSourceManifest);
+                const headerSecondAttempt = workflowSecondAttemptInfo(selected);
+                const headerNoAccessComplete = workflowStatus(selected) === "NO_ACCESS_COMPLETE";
+                const headerNoAccessTitle = headerNoAccessComplete
+                  ? "Closed"
+                  : headerSecondAttempt?.ready
+                    ? "2nd Attempt"
+                    : headerSecondAttempt
+                      ? headerSecondAttempt.label
+                      : "1st Attempt";
+                const headerNoAccessDetail = headerNoAccessComplete
+                  ? "No Access is complete. Use Clear Status to restart if needed."
+                  : headerSecondAttempt?.ready
+                    ? "Save the final no-access attempt and archive."
+                    : headerSecondAttempt
+                      ? "Already saved. Waiting before second attempt."
+                      : "Save status and start 72 hour timer.";
+                const headerNoAccessClick = () => {
+                  if (headerNoAccessComplete) {
+                    showActionNotice("No Access already closed. Use Clear Status if this was a mistake.");
+                  } else if (headerSecondAttempt?.ready) {
+                    markNoAccessSecondAttempt(selected);
+                  } else {
+                    startNoAccessCounter(selected);
+                  }
+                };
                 return (
                   <div
                     className={`field-page3-description header-job-description ${headerDescription ? "" : "is-missing"}`}
@@ -39541,10 +39745,10 @@ return (
                           <strong>Begin Job</strong>
                           <small>Save Work In Progress, then take/upload before media.</small>
                         </button>
-                        <button type="button" className="field-flow-choice waiting" onClick={() => startNoAccessCounter(selected)}>
+                        <button type="button" className="field-flow-choice waiting" onClick={headerNoAccessClick}>
                           <span>No Access</span>
-                          <strong>1st Attempt</strong>
-                          <small>Save status and start 72 hour timer.</small>
+                          <strong>{headerNoAccessTitle}</strong>
+                          <small>{headerNoAccessDetail}</small>
                         </button>
                         <button type="button" className="field-flow-choice danger" onClick={() => markRefusedAccess(selected)}>
                           <span>Refused</span>
@@ -40340,6 +40544,7 @@ return (
                   : jobDistanceLabel(selected);
                 const missionDescription = displayDescription(selected);
                 const missionTenantContact = tenantContactInfo(selected);
+                const missionProgramInfo = workOrderProgramInfo(selected);
                 const missionItbSource = itbSourceFor(selected, itbSourceManifest);
                 const missionStatusDateValue = workflowVisitDateValue();
                 const missionStatusDate = new Date(isoFromLocalDatetime(missionStatusDateValue));
@@ -40677,6 +40882,63 @@ return (
                         </>
                       ) : null}
                     </div>
+                    <div className={`program-source-card tone-${missionProgramInfo.tone}`} aria-label="HPD program source">
+                      <div>
+                        <span>Source Program</span>
+                        <strong>{missionProgramInfo.code}</strong>
+                      </div>
+                      <p>{missionProgramInfo.label}</p>
+                      <small>{missionProgramInfo.detail}</small>
+                    </div>
+                    <section className="field-flow-primary-card mission-field-flow-card" aria-label="Primary field status flow">
+                      <div className="field-flow-primary-head">
+                        <div>
+                          <span>Field Flow</span>
+                          <strong>What happened at the site?</strong>
+                          <small>Pick one action. Start Work opens before media. Closed statuses generate package review.</small>
+                        </div>
+                        <b>{currentStatusLabel}</b>
+                      </div>
+                      <div className="field-flow-choice-grid">
+                        <button type="button" className="field-flow-choice start" onClick={() => openStartJobChoices(selected)}>
+                          <span>Start Work</span>
+                          <strong>Work In Progress</strong>
+                          <small>Then take/upload before media.</small>
+                        </button>
+                        <button
+                          type="button"
+                          className={`field-flow-choice waiting ${isNoAccessSecond ? "is-locked" : ""}`}
+                          onClick={() => {
+                            if (isNoAccessSecond) {
+                              showActionNotice("No Access is already complete. Use Clear Status if you need to restart this job.");
+                            } else if (noAccessReadyForSecond) {
+                              markNoAccessSecondAttempt(selected);
+                            } else {
+                              startNoAccessCounter(selected);
+                            }
+                          }}
+                        >
+                          <span>No Access</span>
+                          <strong>{isNoAccessSecond ? "Complete" : noAccessReadyForSecond ? "2nd Attempt" : noAccessWaiting ? secondAttemptInfo?.label || "Waiting" : "1st Attempt"}</strong>
+                          <small>{isNoAccessSecond ? "Closed and archived." : noAccessReadyForSecond ? "Save final attempt now." : noAccessWaiting ? "First attempt already saved." : "Start 72h counter."}</small>
+                        </button>
+                        <button type="button" className="field-flow-choice danger" onClick={() => markRefusedAccess(selected)}>
+                          <span>Refused Access</span>
+                          <strong>Close Job</strong>
+                          <small>Archive and prepare no-work package.</small>
+                        </button>
+                        <button type="button" className="field-flow-choice other" onClick={() => markCompletedByOthers(selected)}>
+                          <span>Done By Others</span>
+                          <strong>Close Job</strong>
+                          <small>Archive and prepare package.</small>
+                        </button>
+                      </div>
+                      <div className="field-flow-next-row">
+                        <button type="button" onClick={() => openFinishJobChoices(selected)}>Complete Work / After Media</button>
+                        <button type="button" onClick={() => openFinishJobChoices(selected, true)}>Partial Work</button>
+                        <button type="button" onClick={() => resetFieldJobForTesting(selected)}>Clear Status</button>
+                      </div>
+                    </section>
                     <div className={`field-status-picker-card status-${workflowStatus(selected).toLowerCase().replace(/[^a-z0-9]+/g, "-") || "pending"} tone-${statusChoiceInfo.tone} ${draftWorkflowStatus ? "has-draft-status" : ""}`} aria-label="Status picker and saved status">
                       <div className="field-status-current-strip">
                         <div>
