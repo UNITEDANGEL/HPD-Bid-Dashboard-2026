@@ -38677,22 +38677,6 @@ return (
             }
           }
 
-
-
-          /* FIELD_FLOW_FAST_TOP_ONLY_2026_07_20 */
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .job-appointment-card.mission-appointment,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .package-readiness-card,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-send-panel:not(.is-active),
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-evidence-rail.compact,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-alert-grid,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .generated-output-links {
-            display: none !important;
-          }
-
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-media-option-hub {
-            order: -5 !important;
-          }
-
           /* FIELD_FLOW_TRUE_TOP_ORDER_2026_07_20 */
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description {
             order: -10 !important;
@@ -38849,28 +38833,6 @@ return (
             color: #f8fafc !important;
             background: rgba(2, 6, 23, 0.72) !important;
             border: 1px solid rgba(125, 211, 252, 0.28) !important;
-          }
-
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-next-action-card,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-quick-choices,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-flow-card,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card > small,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-hub,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .package-readiness-card,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-appointment-card.mission-appointment,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-send-panel,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-evidence-rail.compact {
-            display: none !important;
-          }
-
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card::after {
-            content: "Appointment, before/after media, package, and admin data are under More details after status.";
-            display: block;
-            color: #cbd5e1;
-            font-size: 11px;
-            font-weight: 800;
-            line-height: 1.25;
-            margin-top: 2px;
           }
 
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details {
