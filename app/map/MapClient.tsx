@@ -27157,7 +27157,87 @@ return (
             font-weight: 950 !important;
           }
 
+
+          /* JOB_CARD_FLOW_FIX_5_STATUS_DATE_PROOF_2026_07_20 */
+          .job-drawer.selected-focus .field-status-current-strip > div:nth-child(1) {
+            border-left: 5px solid #22c55e !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip > div:nth-child(2) {
+            border-left: 5px solid #38bdf8 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip > div:nth-child(3) {
+            border-left: 5px solid #a78bfa !important;
+          }
+
+          .job-drawer.selected-focus .field-status-date-label span {
+            color: #bae6fd !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-date-tools {
+            display: grid !important;
+            gap: 6px !important;
+            grid-template-columns: auto minmax(0, 1fr) auto !important;
+          }
+
+          .job-drawer.selected-focus .field-status-date-tools button {
+            min-height: 42px !important;
+            border-radius: 13px !important;
+            font-weight: 950 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-date-tools .save-status-btn,
+          .job-drawer.selected-focus .save-status-btn {
+            min-height: 46px !important;
+            border-radius: 14px !important;
+            background: linear-gradient(135deg, #19f0a2, #00d084 56%, #00ad74) !important;
+            color: #031527 !important;
+            font-weight: 1000 !important;
+            box-shadow: 0 14px 26px rgba(0, 208, 132, 0.26) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card {
+            border-radius: 14px !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            background: rgba(255, 255, 255, 0.09) !important;
+            padding: 10px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card span {
+            color: #67e8f9 !important;
+            font-size: 10px !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card strong {
+            color: #ffffff !important;
+            font-size: 15px !important;
+            line-height: 1.12 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-flow-card small {
+            color: #cbd5e1 !important;
+            font-weight: 850 !important;
+          }
+
+          .job-drawer.selected-focus .saved-status-note {
+            margin: 8px 0 0 !important;
+            padding: 9px 10px !important;
+            border-radius: 13px !important;
+            background: rgba(34, 197, 94, 0.16) !important;
+            border: 1px solid rgba(34, 197, 94, 0.28) !important;
+            color: #dcfce7 !important;
+            font-size: 12px !important;
+            font-weight: 950 !important;
+          }
+
           @media (max-width: 430px) {
+            .job-drawer.selected-focus .field-status-date-tools {
+              grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.6fr) minmax(0, 0.7fr) !important;
+            }
+          }          @media (max-width: 430px) {
             .job-drawer.selected-focus .field-media-option-head {
               grid-template-columns: minmax(0, 1fr) !important;
             }
