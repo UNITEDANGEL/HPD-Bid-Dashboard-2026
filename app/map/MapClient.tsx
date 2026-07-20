@@ -2640,7 +2640,10 @@ function workflowViewBucket(job: JobRecord) {
 }
 
 function shouldShowForWorkflowView(job: JobRecord, view: WorkflowViewFilter) {
-  if (view === "all") return true;
+  if (view === "all") {
+    const bucket = workflowViewBucket(job);
+    return bucket !== "archived" && bucket !== "final";
+  }
   if (view === "appointments") return hasPendingUpcomingAppointment(job);
   if (view === "noaccess24") return isNoAccessTwentyFourHourAlert(job);
   const bucket = workflowViewBucket(job);
@@ -9777,7 +9780,10 @@ function workflowViewBucket(job: JobRecord) {
 }
 
 function shouldShowForWorkflowView(job: JobRecord, view: WorkflowViewFilter) {
-  if (view === "all") return true;
+  if (view === "all") {
+    const bucket = workflowViewBucket(job);
+    return bucket !== "archived" && bucket !== "final";
+  }
   if (view === "appointments") return hasPendingUpcomingAppointment(job);
   if (view === "noaccess24") return isNoAccessTwentyFourHourAlert(job);
   const bucket = workflowViewBucket(job);
@@ -10232,7 +10238,7 @@ function directionsUrl(job: JobRecord) {
     ready2: { label: "Ready 2nd", detail: "Jobs ready for revisit now." },
     final: { label: "Review", detail: "Packages moving through review." },
     archived: { label: "Archive", detail: "Closed work kept off the clean map." },
-    all: { label: "All Work Orders", detail: "Every job, including closed and pending items." },
+    all: { label: "Field Map", detail: "Active and pending jobs only. Archive stays hidden unless selected." },
   };
   const mapReturnCopy: Record<WorkflowViewFilter, { label: string; detail: string }> = {
     active: { label: "Active Map", detail: "Back to clean pending jobs" },
