@@ -38850,6 +38850,48 @@ return (
           }
 
 
+          /* FIELD_WORKFLOW_VISIBLE_OVERRIDE_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(
+            .field-next-action-card,
+            .field-status-flow-card,
+            .field-media-option-hub,
+            .package-readiness-card,
+            .field-evidence-rail.compact,
+            .field-workflow-grid,
+            .field-procedure-hero,
+            .field-flow-dock,
+            .field-media-console
+          ) {
+            display: grid !important;
+            visibility: visible !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            opacity: 1 !important;
+            overflow: visible !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-quick-choices,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-appointment-card.mission-appointment,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .generated-output-links,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-alert-grid {
+            display: block !important;
+            visibility: visible !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            opacity: 1 !important;
+            overflow: visible !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-send-panel.is-active,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .site-procedure-stage.is-active {
+            display: grid !important;
+            visibility: visible !important;
+            height: auto !important;
+            max-height: none !important;
+            opacity: 1 !important;
+          }
           }        `}
 
 
