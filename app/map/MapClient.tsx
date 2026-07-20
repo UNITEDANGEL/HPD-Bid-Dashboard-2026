@@ -9334,6 +9334,18 @@ function localDatetimeValue(date = new Date()) {
     setMappedJobs((rows) => rows.map(applyPatch));
     setDraftWorkflowStatus("");
     setDraftWorkflowSaved(true);
+
+    if (patch.WorkflowStatus === "WORK_STARTED" || patch.workflowStatus === "WORK_STARTED") {
+      setFieldWorkChoice({ jobKey: key, phase: "start" });
+      setFieldFocusPane("capture");
+      setSelectedOnly(true);
+      setDrawerOpen(true);
+      setFullMap(false);
+      focusFieldWorkChoice();
+      showActionNotice(`${key}: Work In Progress saved. Choose before media, upload media, or continue without media.`);
+      return;
+    }
+
     openPaperworkPreviewForStatus(job, patch);
   }
 
@@ -38292,6 +38304,158 @@ return (
             }
           }
 
+          .field-flow-primary-card {
+            order: -2;
+            display: grid;
+            gap: 12px;
+            padding: 14px;
+            border-radius: 18px;
+            border: 1px solid rgba(45, 212, 191, 0.34);
+            background:
+              radial-gradient(circle at 12% 0%, rgba(34, 211, 238, 0.22), transparent 42%),
+              linear-gradient(145deg, rgba(3, 18, 34, 0.96), rgba(5, 46, 50, 0.92));
+            box-shadow: 0 18px 38px rgba(2, 6, 23, 0.32), inset 0 1px 0 rgba(255,255,255,0.12);
+          }
+
+          .field-flow-primary-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: start;
+          }
+
+          .field-flow-primary-head span,
+          .field-flow-choice span {
+            display: block;
+            color: #67e8f9;
+            font-size: 10px;
+            font-weight: 950;
+            letter-spacing: 0;
+            text-transform: uppercase;
+          }
+
+          .field-flow-primary-head strong {
+            display: block;
+            color: #f8fafc;
+            font-size: 18px;
+            line-height: 1.05;
+          }
+
+          .field-flow-primary-head small,
+          .field-flow-choice small {
+            display: block;
+            color: #cbd5e1;
+            font-size: 11px;
+            line-height: 1.25;
+            font-weight: 800;
+          }
+
+          .field-flow-primary-head b {
+            flex: 0 0 auto;
+            padding: 9px 11px;
+            border-radius: 14px;
+            color: #ecfeff;
+            background: rgba(15, 23, 42, 0.72);
+            border: 1px solid rgba(125, 211, 252, 0.28);
+            box-shadow: 0 0 18px rgba(34, 211, 238, 0.18);
+          }
+
+          .field-flow-choice-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+          }
+
+          .field-flow-choice {
+            min-height: 92px;
+            padding: 12px;
+            border-radius: 16px;
+            text-align: left;
+            align-items: start;
+            justify-content: start;
+            display: grid;
+            gap: 5px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: #f8fafc;
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.76));
+          }
+
+          .field-flow-choice strong {
+            color: #ffffff;
+            font-size: 16px;
+            line-height: 1.05;
+          }
+
+          .field-flow-choice.start {
+            border-color: rgba(45, 212, 191, 0.58);
+            box-shadow: 0 0 24px rgba(20, 184, 166, 0.22);
+          }
+
+          .field-flow-choice.waiting {
+            border-color: rgba(251, 191, 36, 0.58);
+            box-shadow: 0 0 24px rgba(245, 158, 11, 0.18);
+          }
+
+          .field-flow-choice.danger {
+            border-color: rgba(248, 113, 113, 0.60);
+            box-shadow: 0 0 24px rgba(239, 68, 68, 0.18);
+          }
+
+          .field-flow-choice.other {
+            border-color: rgba(167, 139, 250, 0.58);
+            box-shadow: 0 0 24px rgba(124, 58, 237, 0.18);
+          }
+
+          .field-flow-next-row {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .field-flow-next-row button,
+          .field-flow-next-row a {
+            min-height: 42px;
+            border-radius: 14px;
+            border: 1px solid rgba(125, 211, 252, 0.28);
+            background: rgba(248, 250, 252, 0.94);
+            color: #082f49;
+            font-size: 11px;
+            font-weight: 950;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            text-decoration: none;
+          }
+
+          .quick-status-console {
+            display: none !important;
+          }
+
+          @media (max-width: 520px) {
+            .field-flow-primary-card {
+              padding: 12px;
+              gap: 10px;
+            }
+
+            .field-flow-choice-grid {
+              gap: 8px;
+            }
+
+            .field-flow-choice {
+              min-height: 86px;
+              padding: 10px;
+            }
+
+            .field-flow-choice strong {
+              font-size: 14px;
+            }
+
+            .field-flow-next-row {
+              grid-template-columns: 1fr;
+            }
+          }
           /* JOB_CARD_FLOW_FINAL_SCROLL_FIX_2026_07_20 */
           .job-drawer.selected-focus .header-job-description p,
           .job-drawer.selected-focus .field-page3-description.header-job-description p,
@@ -39362,6 +39526,47 @@ return (
                       )}
                     </div>
                     <p>{headerDescription || "No ITB description found for this job."}</p>
+                    <section className="field-flow-primary-card header-field-flow-card" aria-label="Field workflow">
+                      <div className="field-flow-primary-head">
+                        <div>
+                          <span>Field Flow</span>
+                          <strong>Pick what happened at the site</strong>
+                          <small>Start work opens before/after media. No-work statuses close or start the 72h timer.</small>
+                        </div>
+                        <b>{workflowShortStatusLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus))}</b>
+                      </div>
+                      <div className="field-flow-choice-grid">
+                        <button type="button" className="field-flow-choice start" onClick={() => openStartJobChoices(selected)}>
+                          <span>Start Work</span>
+                          <strong>Begin Job</strong>
+                          <small>Save Work In Progress, then take/upload before media.</small>
+                        </button>
+                        <button type="button" className="field-flow-choice waiting" onClick={() => startNoAccessCounter(selected)}>
+                          <span>No Access</span>
+                          <strong>1st Attempt</strong>
+                          <small>Save status and start 72 hour timer.</small>
+                        </button>
+                        <button type="button" className="field-flow-choice danger" onClick={() => markRefusedAccess(selected)}>
+                          <span>Refused</span>
+                          <strong>Close Job</strong>
+                          <small>Archive and prepare no-work package.</small>
+                        </button>
+                        <button type="button" className="field-flow-choice other" onClick={() => markCompletedByOthers(selected)}>
+                          <span>Done By Others</span>
+                          <strong>Close Job</strong>
+                          <small>Archive and prepare package.</small>
+                        </button>
+                      </div>
+                      <div className="field-flow-next-row">
+                        <button type="button" onClick={() => openFinishJobChoices(selected)}>
+                          Complete Work / After Media
+                        </button>
+                        <button type="button" onClick={() => openFinishJobChoices(selected, true)}>
+                          Partial Work
+                        </button>
+                        <a href={paperworkAutoPdfOnlyHref(selected)}>Package Review</a>
+                      </div>
+                    </section>
                   </div>
                 );
               })()}
