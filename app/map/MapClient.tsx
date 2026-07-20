@@ -2144,7 +2144,7 @@ function workflowLabel(job: JobRecord) {
     NO_ACCESS_COMPLETE: "No Access Complete",
     REFUSED_ACCESS: "Refused Access",
     COMPLETED_BY_OTHERS: "Work Completed by Others",
-    BEFORE_EVIDENCE: "Before Evidence",
+    BEFORE_EVIDENCE: "Work In Progress",
     AFTER_EVIDENCE: "After Evidence",
     WORK_STARTED: "Work In Progress",
     WORK_COMPLETED: "Work Completed",
@@ -8562,16 +8562,39 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setPhotoCaptureTarget(null);
   }
 
+  function workStartedPatch(iso: string) {
+    return {
+      WorkflowStatus: "WORK_STARTED",
+      workflowStatus: "WORK_STARTED",
+      FieldOutcome: "WORK_STARTED",
+      fieldOutcome: "WORK_STARTED",
+      StatusOverride: "Work In Progress",
+      status: "Work In Progress",
+      JobStartedAt: iso,
+      jobStartedAt: iso,
+      FieldTimerStartedAt: iso,
+      fieldTimerStartedAt: iso,
+      ActualWorkStartDate: iso,
+      actualWorkStartDate: iso,
+      PendingCompletionOutcome: "",
+      pendingCompletionOutcome: "",
+      ...activeWorkflowArchiveFields(),
+    };
+  }
+
   function openStartJobChoices(job: MappedJob) {
     const key = jobKey(job);
     if (!key) return;
+    const iso = workflowActionIso();
+    const patch = workStartedPatch(iso);
+    const startedJob = { ...job, ...patch } as MappedJob;
     setFieldWorkChoice({ jobKey: key, phase: "start" });
     setFieldFocusPane("capture");
     setSelectedOnly(true);
     setDrawerOpen(true);
     setFullMap(false);
     focusFieldWorkChoice();
-    showActionNotice("Start Job: choose before media first, then after media or finish when the work is done.");
+    saveFieldWorkflowPatch(startedJob, patch, `${key}: Started saved. Choose before media, upload media, or continue without media.`);
   }
 
   function openFinishJobChoices(job: MappedJob, partial = false) {
@@ -8588,38 +8611,22 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
 
   function beforeEvidencePatch(iso: string) {
     return {
-      WorkflowStatus: "BEFORE_EVIDENCE",
-      workflowStatus: "BEFORE_EVIDENCE",
-      FieldOutcome: "BEFORE_EVIDENCE",
-      fieldOutcome: "BEFORE_EVIDENCE",
-      StatusOverride: "Before Evidence",
-      status: "Before Evidence",
-      PendingCompletionOutcome: "",
-      pendingCompletionOutcome: "",
+      ...workStartedPatch(iso),
+      BeforeEvidenceStatus: "REQUESTED",
+      beforeEvidenceStatus: "REQUESTED",
       BeforePhotosRequestedAt: iso,
       beforePhotosRequestedAt: iso,
-      ...activeWorkflowArchiveFields(),
     };
   }
 
   function completeBeforeEvidenceAndStartWork(job: MappedJob) {
     const iso = workflowActionIso();
     const patch = {
-      WorkflowStatus: "WORK_STARTED",
-      workflowStatus: "WORK_STARTED",
-      FieldOutcome: "WORK_STARTED",
-      fieldOutcome: "WORK_STARTED",
-      StatusOverride: "Work Started",
-      status: "Work Started",
-      JobStartedAt: iso,
-      jobStartedAt: iso,
-      FieldTimerStartedAt: iso,
-      fieldTimerStartedAt: iso,
-      ActualWorkStartDate: iso,
-      actualWorkStartDate: iso,
+      ...workStartedPatch(iso),
+      BeforeEvidenceStatus: "COMPLETE",
+      beforeEvidenceStatus: "COMPLETE",
       BeforePhotosRequestedAt: iso,
       beforePhotosRequestedAt: iso,
-      ...activeWorkflowArchiveFields(),
     };
     setFieldFocusPane("capture");
     setSelectedOnly(true);
@@ -8630,7 +8637,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     saveFieldWorkflowPatch(
       job,
       patch,
-      "Before evidence done. Job timer started."
+      "Before evidence done. Job is Work In Progress."
     );
   }
 
@@ -8646,7 +8653,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     saveFieldWorkflowPatch(
       job,
       patch,
-      "Start job: capture 2 before photos and 2 before videos."
+      "Work In Progress saved. Capture 2 before photos and 2 before videos."
     );
     beginGuidedEvidenceCapture(captureJob, "before");
   }
@@ -8667,7 +8674,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     saveFieldWorkflowPatch(
       job,
       patch,
-      "Start job: upload before image/video. The file will be labeled to this work order."
+      "Work In Progress saved. Upload before image/video; it will be labeled to this work order."
     );
     uploadFieldEvidenceStep(captureJob, "before");
   }
@@ -8675,25 +8682,11 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
   function startFieldJobWithoutMedia(job: MappedJob) {
     const iso = workflowActionIso();
     const patch = {
-      WorkflowStatus: "WORK_STARTED",
-      workflowStatus: "WORK_STARTED",
-      FieldOutcome: "WORK_STARTED",
-      fieldOutcome: "WORK_STARTED",
-      StatusOverride: "Work Started",
-      status: "Work Started",
-      JobStartedAt: iso,
-      jobStartedAt: iso,
-      FieldTimerStartedAt: iso,
-      fieldTimerStartedAt: iso,
-      ActualWorkStartDate: iso,
-      actualWorkStartDate: iso,
+      ...workStartedPatch(iso),
       BeforeMediaChoice: "Skipped",
       beforeMediaChoice: "Skipped",
       BeforeMediaSkippedAt: iso,
       beforeMediaSkippedAt: iso,
-      PendingCompletionOutcome: "",
-      pendingCompletionOutcome: "",
-      ...activeWorkflowArchiveFields(),
     };
     setFieldFocusPane("capture");
     setSelectedOnly(true);
@@ -8701,7 +8694,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setFullMap(false);
     setFieldWorkChoice(null);
     clearGuidedCaptureState();
-    saveFieldWorkflowPatch(job, patch, "Job started without before media. You can upload labeled evidence later if needed.");
+    saveFieldWorkflowPatch(job, patch, "Work In Progress saved without before media. You can upload labeled evidence later if needed.");
   }
 
   async function resetFieldJobForTesting(job: MappedJob) {
@@ -9358,7 +9351,7 @@ function workflowLabel(job: JobRecord) {
     NO_ACCESS_COMPLETE: "No Access Complete",
     REFUSED_ACCESS: "Refused Access",
     COMPLETED_BY_OTHERS: "Work Completed by Others",
-    BEFORE_EVIDENCE: "Before Evidence",
+    BEFORE_EVIDENCE: "Work In Progress",
     AFTER_EVIDENCE: "After Evidence",
     WORK_STARTED: "Work In Progress",
     WORK_COMPLETED: "Work Completed",
@@ -10518,6 +10511,11 @@ function directionsUrl(job: JobRecord) {
 
     if (stateBanner.action === "media") {
       jumpToMediaFlow(job);
+      return;
+    }
+
+    if (!hasSavedFieldWorkflow(job)) {
+      openStartJobChoices(job);
       return;
     }
 
@@ -38320,6 +38318,7 @@ return (
       <input
         ref={fieldPhotoInputRef}
         className="field-photo-input"
+        style={{ position: "fixed", width: 1, height: 1, opacity: 0, pointerEvents: "none", left: -10000, top: -10000 }}
         type="file"
         accept={fieldCaptureAccept}
         capture={fieldCaptureCamera ? "environment" : undefined}
@@ -39405,8 +39404,8 @@ return (
                   className={`route-head-arrived tone-${workflowChoiceInfo(workflowDisplayStatusValue(selected, draftWorkflowStatus)).tone} ${draftWorkflowStatus ? "has-draft-status" : ""}`}
                   onClick={() => runWorkflowNextAction(selected)}
                 >
-                  <strong>{!hasSavedFieldWorkflow(selected) && !draftWorkflowStatus ? "Start Visit" : workflowShortStatusLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus))}</strong>
-                  <small>{!hasSavedFieldWorkflow(selected) && !draftWorkflowStatus ? "choose outcome" : workflowButtonSubLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus), Boolean(draftWorkflowStatus))}</small>
+                  <strong>{!hasSavedFieldWorkflow(selected) && !draftWorkflowStatus ? "Start Job" : workflowShortStatusLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus))}</strong>
+                  <small>{!hasSavedFieldWorkflow(selected) && !draftWorkflowStatus ? "saves Started" : workflowButtonSubLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus), Boolean(draftWorkflowStatus))}</small>
                 </button>
               </div>
               {(() => {
@@ -41156,7 +41155,7 @@ return (
                 const stepText = activeGuide
                   ? activeGuide.text
                   : fieldFocusPane === "capture"
-                    ? "Start Job opens before media. No access, refused access, done by others, and completed work archive from the active map; media is optional."
+                    ? "Start Job saves Work In Progress first. Then choose before media, no media, or finish when the work is done."
                     : fieldFocusPane === "evidence"
                       ? "Confirm the saved images and videos are labeled before generating the package."
                       : fieldFocusPane === "package"
@@ -41405,7 +41404,7 @@ return (
                   </div>
                 ) : (
                   <div className="field-evidence-gallery-empty">
-                    <strong>Start Job opens Before Evidence</strong>
+                    <strong>Start Job saves Work In Progress</strong>
                     <span>Images and videos will appear here with labels after capture.</span>
                   </div>
                 )}
@@ -41682,7 +41681,7 @@ return (
             </div>
 
             <details className="more-job-details">
-              <summary>More job details</summary>
+              <summary>More details, tenant, contact, data</summary>
               <div className="detail-grid compact-detail-grid">
                 <div className="detail"><span>Award Date</span><strong>{maturityInfo(selected).award}</strong></div>
                 <div className="detail"><span>COA Counter</span><strong>{jobCounterLabel(selected)}</strong></div>
