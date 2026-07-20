@@ -2784,7 +2784,7 @@ const [appointmentAlertPhone, setAppointmentAlertPhone] = useState("");
 const [appointmentAlertSaving, setAppointmentAlertSaving] = useState(false);
 const [workflowViewFilter, setWorkflowViewFilter] = useState<WorkflowViewFilter>("all");
 const [mapBoroughFilter, setMapBoroughFilter] = useState<MapBoroughFilter>("nearby");
-const [todayZoneLimit, setTodayZoneLimit] = useState<TodayZoneLimit>("all");
+const [todayZoneLimit, setTodayZoneLimit] = useState<TodayZoneLimit>("20");
 const [countdownTick, setCountdownTick] = useState(0);
 const [mapZoom, setMapZoom] = useState(10);
 const [photoCaptureTarget, setPhotoCaptureTarget] = useState<FieldCaptureTarget | null>(null);
@@ -4483,18 +4483,20 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           const coords = getStoredCoords(job);
           return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" } : { ...job };
         });
-    const searchRows = filteredJobs.length ? filteredJobs : fallbackRows;
     const match =
-      searchRows.find((job) => String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "") === target) ||
-      searchRows.find((job) => compactMapSearchValue(displayAddress(job)) === compactMapSearchValue(urlOmoRequest)) ||
-      searchRows.find((job) => matchesMapSearch(job, urlOmoRequest)) ||
-      searchRows[0];
+      fallbackRows.find((job) => String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "") === target) ||
+      fallbackRows.find((job) => compactMapSearchValue(displayAddress(job)) === compactMapSearchValue(urlOmoRequest)) ||
+      fallbackRows.find((job) => matchesMapSearch(job, urlOmoRequest)) ||
+      null;
     if (!match) return;
 
+    setMapShowAllDays(true);
+    setMapBoroughFilter("all");
+    setWorkflowViewFilter("all");
     focusJob(match);
     setUrlOmoRequest("");
     setActionNotice(`Opened ${jobKey(match)} from map search.`);
-  }, [urlOmoRequest, filteredJobs, jobs, mappedJobs]);
+  }, [urlOmoRequest, jobs, mappedJobs]);
 
   const markerAutoFitKey = useMemo(() => {
     return filteredJobs
@@ -5449,7 +5451,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         : plottedItems.map((item) => ({ kind: "job", ...item }));
 
       const mapSize = map.getSize?.();
-      const shouldDrawClusterLinks = !mobileMap && !routeFocusActive && !selectedOnly && !drawerOpen && !clusterSheet;
+      const shouldDrawClusterLinks = !mobileMap && filteredJobs.length <= 35 && mapZoom >= 13 && !routeFocusActive && !selectedOnly && !drawerOpen && !clusterSheet;
       const clusterPoints = shouldDrawClusterLinks
         ? renderItems
         .filter((item) => item.kind === "cluster")
@@ -10228,7 +10230,7 @@ function directionsUrl(job: JobRecord) {
     workflowViewFilter !== "all" ||
     Boolean(search.trim());
   const allInventoryMode = !mapFocusActive && !routeFocusActive;
-  const drawerJobRows = allInventoryMode ? filteredJobs : filteredJobs.slice(0, 60);
+  const drawerJobRows = selectedOnly ? [] : filteredJobs.slice(0, 30);
   const dashboardViewCopy: Record<WorkflowViewFilter, { label: string; detail: string }> = {
     active: { label: "Active Work", detail: "Pending work orders on the clean map." },
     pending: { label: "Pending Map", detail: "Only jobs that still need field attention." },
@@ -38886,6 +38888,225 @@ return (
           }
 
 
+
+
+          /* FIELD_SHEET_FAST_NO_SCROLL_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+            top: max(8px, env(safe-area-inset-top)) !important;
+            bottom: max(8px, env(safe-area-inset-bottom)) !important;
+            left: max(8px, env(safe-area-inset-left)) !important;
+            right: max(8px, env(safe-area-inset-right)) !important;
+            width: auto !important;
+            max-width: none !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: hidden !important;
+            display: grid !important;
+            grid-template-rows: auto minmax(0, 1fr) !important;
+            border-radius: 22px !important;
+            background: rgba(3, 10, 22, 0.96) !important;
+            box-shadow: 0 28px 60px rgba(2, 6, 23, 0.56) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+            position: relative !important;
+            z-index: 5 !important;
+            overflow: visible !important;
+            padding: 8px !important;
+            border-bottom: 1px solid rgba(125, 211, 252, 0.16) !important;
+            background: linear-gradient(180deg, rgba(8, 17, 32, 0.98), rgba(8, 17, 32, 0.88)) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-sheet-head {
+            display: grid !important;
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-row {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) 58px !important;
+            align-items: start !important;
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-copy > span {
+            color: #67e8f9 !important;
+            font-size: 9px !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-copy > strong {
+            color: #ffffff !important;
+            font-size: clamp(24px, 7vw, 34px) !important;
+            line-height: 0.9 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row {
+            margin-top: 4px !important;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            align-items: center !important;
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row p {
+            color: #f8fafc !important;
+            font-size: clamp(15px, 4vw, 18px) !important;
+            font-weight: 1000 !important;
+            line-height: 1.08 !important;
+            margin: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-actions {
+            display: grid !important;
+            grid-template-columns: repeat(2, 42px) !important;
+            gap: 5px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .route-head-button {
+            width: 42px !important;
+            height: 42px !important;
+            min-height: 42px !important;
+            padding: 0 !important;
+            border-radius: 14px !important;
+            display: grid !important;
+            place-items: center !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .route-head-button img {
+            width: 24px !important;
+            height: 24px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .route-head-button .route-action-copy {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-metas {
+            margin-top: 6px !important;
+            display: flex !important;
+            gap: 6px !important;
+            overflow-x: auto !important;
+            scrollbar-width: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-job-description {
+            max-height: none !important;
+            padding: 9px !important;
+            display: grid !important;
+            gap: 7px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-job-description > p,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description p {
+            max-height: clamp(96px, 21dvh, 160px) !important;
+            min-height: 70px !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            scroll-behavior: smooth !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-field-flow-card {
+            margin-top: 0 !important;
+            padding: 9px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-field-flow-card .field-flow-primary-head small,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-current-state-banner,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-72h-counter,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-action-dock,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-progress-timeline,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-filter-menu,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-smooth-flow-rail {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
+            min-height: 0 !important;
+            height: 100% !important;
+            max-height: none !important;
+            overflow: hidden !important;
+            display: grid !important;
+            grid-template-rows: minmax(0, 1fr) !important;
+            padding: 0 !important;
+            border: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card > .selected-card-head {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card {
+            min-height: 0 !important;
+            height: 100% !important;
+            overflow: hidden !important;
+            padding: 8px !important;
+            display: grid !important;
+            grid-template-rows: auto minmax(0, 1fr) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-head {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode {
+            min-height: 0 !important;
+            overflow: hidden !important;
+            display: grid !important;
+            grid-template-rows: auto auto minmax(0, 1fr) !important;
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card {
+            padding: 9px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card {
+            min-height: 0 !important;
+            overflow: hidden !important;
+            padding: 9px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-main {
+            grid-template-columns: minmax(0, 1fr) minmax(124px, 0.72fr) !important;
+            align-items: end !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-actions {
+            grid-template-columns: 72px minmax(0, 1fr) 72px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details {
+            margin: 8px !important;
+            max-height: 48px !important;
+            overflow: hidden !important;
+          }
+
+          @media (max-width: 720px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-grid,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-current-strip {
+              grid-template-columns: 1fr !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-main,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-actions {
+              grid-template-columns: 1fr !important;
+            }
+          }
+
           /* FIELD_CONSOLE_HIDE_LOWER_STACK_2026_07_20 */
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-procedure-hero,
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card > .field-flow-dock,
@@ -38906,7 +39127,11 @@ return (
             overflow-y: auto !important;
             overscroll-behavior: contain !important;
           }
+
+
           }        `}
+
+
         </style>
 
       <input
@@ -38997,6 +39222,7 @@ return (
         onClick={closeMapMenu}
       />
 
+      {mapMenuOpen ? (
       <header className={`map-top ${mapMenuOpen ? "open" : ""}`}>
         <div className="map-title-row">
           <div>
@@ -39263,6 +39489,7 @@ return (
           </button>
         </div>
       </header>
+      ) : null}
 
       <section className="map-stage" style={{ position: "fixed", inset: 0, width: "100vw", height: "100dvh", minHeight: "100dvh", zIndex: 0 }}>
         <div ref={mapNode} className="map-node" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
@@ -39301,6 +39528,7 @@ return (
           }
           aria-label="Map controls"
         >
+          {mapBoardOpen ? (
           <div className="map-command-banner" aria-label="Schedule board banner">
             <div>
               <span>Schedule Board</span>
@@ -39321,6 +39549,7 @@ return (
               </button>
             </div>
           </div>
+          ) : null}
           {!drawerOpen && !clusterSheet && !mapBoardOpen && !mapMenuOpen ? (
             <form
               className={`map-face-search ${search.trim() ? "has-query" : ""}`}
@@ -39568,6 +39797,7 @@ return (
               );
             })()
           ) : null}
+          {mapBoardOpen ? (<>
           <div className="map-board-switcher" aria-label="Switch map board">
             {mapBoardModes.map((mode) => (
               <button
@@ -39700,6 +39930,7 @@ return (
               Fit Layer
             </button>
           </div>
+          </>) : null}
         </section>
 
         <div className={`map-filter-count-hud ${mapShowAllDays ? "all-days" : "filtered-days"}`} aria-label={mapHudSummaryLabel}>
