@@ -38951,6 +38951,92 @@ return (
             border: 1px solid rgba(125, 211, 252, 0.42) !important;
             box-shadow: 0 0 18px rgba(34, 211, 238, 0.16) !important;
           }
+
+          /* FIELD_CARD_REAL_FIRST_SCREEN_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
+            display: flex !important;
+            flex-direction: column !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card > .drawer-head {
+            order: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card > .field-workflow-card {
+            order: 1 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card > .job-card-field-action-dock,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card > .job-progress-timeline,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card > .job-card-smooth-flow-rail {
+            order: 2 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card > .private-visit-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card > .job-card-filter-menu,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card > .job-card-72h-counter {
+            order: 5 !important;
+          }
+
+          /* FIELD_CARD_SCOPE_CONTACT_FIRST_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description {
+            order: -12 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .tenant-contact-card {
+            order: -11 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-sheet-head > .private-visit-card {
+            order: 8 !important;
+            min-height: 0 !important;
+            padding: 8px 10px !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-sheet-head > .private-visit-card small {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-sheet-head > .private-visit-card .private-visit-actions {
+            display: flex !important;
+            gap: 6px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-sheet-head > .private-visit-card .private-visit-actions button {
+            min-height: 32px !important;
+            padding: 6px 10px !important;
+            font-size: 11px !important;
+          }
+
+          /* FIELD_CARD_REMOVE_HEADER_CLUTTER_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-sheet-head > .private-visit-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-sheet-head > .job-card-filter-menu {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-sheet-head {
+            gap: 7px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-row {
+            min-height: 52px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-current-state-banner {
+            min-height: 30px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-action-dock {
+            min-height: 42px !important;
+          }
+
+          /* FIELD_CARD_NO_DUPLICATE_HEADER_STATUS_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-sheet-head > .job-card-current-state-banner,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-sheet-head > .job-card-field-action-dock {
+            display: none !important;
+          }
           }        `}
         </style>
 
