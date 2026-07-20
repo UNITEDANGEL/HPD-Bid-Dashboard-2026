@@ -26891,6 +26891,150 @@ return (
               line-height: 1.36 !important;
               -webkit-line-clamp: 5 !important;
             }
+          }
+          /* JOB_CARD_FLOW_FIX_3_TODAYS_ACTION_2026_07_20 */
+          .job-drawer.selected-focus .field-status-picker-card {
+            padding: 12px !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(45, 212, 191, 0.28) !important;
+            background:
+              linear-gradient(180deg, rgba(8, 47, 73, 0.97), rgba(15, 23, 42, 0.98)) !important;
+            box-shadow:
+              0 18px 38px rgba(15, 23, 42, 0.22),
+              inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+            color: #f8fafc !important;
+          }
+
+          .job-drawer.selected-focus .field-status-picker-card::before {
+            content: "TODAY ACTION" !important;
+            color: #67e8f9 !important;
+            display: block !important;
+            font-size: 11px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            line-height: 1 !important;
+            margin-bottom: 8px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip {
+            display: grid !important;
+            gap: 6px !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            margin-bottom: 10px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip > div {
+            min-height: 52px !important;
+            padding: 8px !important;
+            border-radius: 13px !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip span {
+            color: rgba(226, 232, 240, 0.72) !important;
+            font-size: 9px !important;
+            font-weight: 950 !important;
+            letter-spacing: 0 !important;
+            text-transform: uppercase !important;
+          }
+
+          .job-drawer.selected-focus .field-status-current-strip strong {
+            color: #ffffff !important;
+            display: block !important;
+            font-size: 13px !important;
+            font-weight: 1000 !important;
+            line-height: 1.08 !important;
+            margin-top: 4px !important;
+            overflow-wrap: anywhere !important;
+          }
+
+          .job-drawer.selected-focus .field-status-command-center,
+          .job-drawer.selected-focus .field-status-command-main {
+            gap: 9px !important;
+          }
+
+          .job-drawer.selected-focus .field-status-select-label {
+            min-width: 0 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-select-label span {
+            color: #bae6fd !important;
+            font-weight: 1000 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-select-label select,
+          .job-drawer.selected-focus .field-status-date-label input {
+            min-height: 46px !important;
+            border-radius: 13px !important;
+            border: 1px solid rgba(125, 211, 252, 0.28) !important;
+            background: rgba(255, 255, 255, 0.96) !important;
+            color: #0f172a !important;
+            font-weight: 950 !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card.status-next-action {
+            padding: 12px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(186, 230, 253, 0.24) !important;
+            box-shadow:
+              0 16px 34px rgba(14, 165, 233, 0.18),
+              inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card.status-next-action .field-next-action-copy span {
+            color: #a7f3d0 !important;
+            font-size: 10px !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card.status-next-action .field-next-action-copy strong {
+            font-size: 21px !important;
+            line-height: 1.02 !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card.status-next-action button {
+            min-height: 58px !important;
+            border-radius: 14px !important;
+            background: linear-gradient(135deg, #19f0a2, #00d084 56%, #00ad74) !important;
+            box-shadow: 0 14px 28px rgba(0, 208, 132, 0.28) !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card.status-next-action button b,
+          .job-drawer.selected-focus .field-next-action-card.status-next-action button small {
+            color: #031527 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-quick-summary {
+            min-height: 40px !important;
+            border-radius: 13px !important;
+            background: rgba(255, 255, 255, 0.08) !important;
+            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+          }
+
+
+          .job-drawer.selected-focus .field-next-action-card.status-next-action .field-next-action-copy span,
+          .job-drawer.selected-focus .field-next-action-card.status-next-action .field-next-action-copy strong,
+          .job-drawer.selected-focus .field-next-action-card.status-next-action .field-next-action-copy small {
+            color: #031527 !important;
+            opacity: 1 !important;
+          }
+
+          .job-drawer.selected-focus .field-next-action-card.status-next-action .field-next-action-copy small {
+            color: #052e2b !important;
+            font-weight: 900 !important;
+          }          @media (max-width: 430px) {
+            .job-drawer.selected-focus .field-status-current-strip {
+              grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+            }
+
+            .job-drawer.selected-focus .field-status-current-strip > div:nth-child(3) {
+              grid-column: 1 / -1 !important;
+              min-height: 42px !important;
+            }
+
+            .job-drawer.selected-focus .field-next-action-card.status-next-action .field-next-action-copy strong {
+              font-size: 19px !important;
+            }
           }          @media (max-width: 520px) {
             .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
               padding: 6px !important;
@@ -39686,7 +39830,7 @@ return (
                 const oneBigNextAction = packageReviewApproved
                   ? {
                       tone: "send",
-                      eyebrow: "Next Action",
+                      eyebrow: "Next Step",
                       title: "Send ZIP Package",
                       detail: "Review is approved. Send the complete ZIP when ready.",
                       meta: "Ready to send",
@@ -39697,7 +39841,7 @@ return (
                   : packageReady
                     ? {
                         tone: "review",
-                        eyebrow: "Next Action",
+                        eyebrow: "Next Step",
                         title: "Review Package",
                         detail: "Open the review step, check the package, then approve it.",
                         meta: missionPackageLabel,
@@ -39709,7 +39853,7 @@ return (
                     : noAccessReadyForSecond
                       ? {
                           tone: "waiting",
-                          eyebrow: "Next Action",
+                          eyebrow: "Next Step",
                           title: "Save No Access 2nd",
                           detail: "The 72-hour counter is complete. Record the final attempt.",
                           meta: "Ready now",
@@ -39718,7 +39862,7 @@ return (
                       : noAccessWaiting
                         ? {
                             tone: "waiting",
-                            eyebrow: "Next Action",
+                            eyebrow: "Next Step",
                             title: "Wait for 2nd Attempt",
                             detail: `Second attempt unlocks ${displayWorkflowDate(secondAttemptInfo?.available.toISOString())}.`,
                             meta: secondAttemptInfo?.label || "72h timer",
@@ -39731,7 +39875,7 @@ return (
                         : finalOutcome
                           ? {
                               tone: "package",
-                              eyebrow: "Next Action",
+                              eyebrow: "Next Step",
                               title: counts.total === 0 && canGenerateWithoutMedia ? "Generate Without Media" : "Generate Package",
                               detail: counts.total === 0 && canGenerateWithoutMedia
                                 ? "Create the affidavit and invoice package now without images."
@@ -39744,7 +39888,7 @@ return (
                           : isWorkStarted && !counts.total
                             ? {
                                 tone: "media",
-                                eyebrow: "Next Action",
+                                eyebrow: "Next Step",
                                 title: "Add Before Media",
                                 detail: "Work is started. Add labeled before image/video, or continue without media if needed.",
                                 meta: "Before / After",
@@ -39753,7 +39897,7 @@ return (
                             : evidenceReady && outcomeChosen
                             ? {
                               tone: "media",
-                              eyebrow: "Next Action",
+                              eyebrow: "Next Step",
                               title: "Review Media",
                               detail: "Check the saved before/after media before packaging.",
                               meta: `${counts.total} file(s)`,
@@ -39762,7 +39906,7 @@ return (
                             : outcomeChosen
                               ? {
                                   tone: "media",
-                                  eyebrow: "Next Action",
+                                  eyebrow: "Next Step",
                                   title: "Add Optional Media",
                                   detail: "Take or upload labeled before/after media, or continue without it.",
                                   meta: "Before / After",
@@ -39770,7 +39914,7 @@ return (
                                 }
                               : {
                                   tone: "status",
-                                  eyebrow: "Next Action",
+                                  eyebrow: "Next Step",
                                   title: "Pick Status",
                                   detail: "Choose what happened at the site and save the date/time.",
                                   meta: "Start here",
