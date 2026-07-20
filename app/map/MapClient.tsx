@@ -27334,7 +27334,102 @@ return (
             font-weight: 850 !important;
           }
 
+
+          /* JOB_CARD_FLOW_FIX_7_TOOLS_DETAILS_2026_07_20 */
+          .job-drawer.selected-focus .field-status-map-tools {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 7px !important;
+            padding: 9px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(15, 23, 42, 0.08) !important;
+            background: rgba(248, 250, 252, 0.96) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-map-tools button {
+            min-height: 50px !important;
+            border-radius: 13px !important;
+            padding: 7px !important;
+            background: #ffffff !important;
+            border: 1px solid rgba(15, 23, 42, 0.1) !important;
+            box-shadow: none !important;
+          }
+
+          .job-drawer.selected-focus .field-status-map-tools button strong {
+            color: #0f172a !important;
+            font-size: 12px !important;
+            line-height: 1.05 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-map-tools button small {
+            color: #475569 !important;
+            font-size: 9px !important;
+            font-weight: 850 !important;
+            line-height: 1.05 !important;
+          }
+
+          .job-drawer.selected-focus .field-status-map-tools .status-layers {
+            background: linear-gradient(135deg, #0f172a, #155e75) !important;
+          }
+
+          .job-drawer.selected-focus .field-status-map-tools .status-layers strong,
+          .job-drawer.selected-focus .field-status-map-tools .status-layers small {
+            color: #ffffff !important;
+          }
+
+          .job-drawer.selected-focus .more-job-details {
+            margin-top: 10px !important;
+            border-radius: 16px !important;
+            border: 1px solid rgba(15, 23, 42, 0.1) !important;
+            background: rgba(248, 250, 252, 0.98) !important;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08) !important;
+            overflow: hidden !important;
+          }
+
+          .job-drawer.selected-focus .more-job-details summary {
+            min-height: 48px !important;
+            padding: 0 13px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            color: #0f172a !important;
+            font-size: 13px !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+            text-transform: none !important;
+          }
+
+          .job-drawer.selected-focus .more-job-details summary::after {
+            content: "Open" !important;
+            min-height: 28px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            border-radius: 999px !important;
+            padding: 0 10px !important;
+            background: #0f172a !important;
+            color: #ffffff !important;
+            font-size: 10px !important;
+            font-weight: 950 !important;
+          }
+
+          .job-drawer.selected-focus .more-job-details[open] summary::after {
+            content: "Close" !important;
+          }
+
+          .job-drawer.selected-focus .job-card-data-strip {
+            border-radius: 16px !important;
+          }
+
           @media (max-width: 430px) {
+            .job-drawer.selected-focus .field-status-map-tools {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .job-drawer.selected-focus .field-status-map-tools button {
+              grid-template-columns: minmax(0, 1fr) auto !important;
+              text-align: left !important;
+            }
+          }          @media (max-width: 430px) {
             .job-drawer.selected-focus .package-readiness-grid {
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             }
