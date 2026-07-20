@@ -39108,23 +39108,17 @@ return (
 
 
           /* FIELD_CARD_SCOPE_STACK_FIX_2026_07_20 */
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-field-flow-card,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .header-field-flow-card {
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-field-flow-card {
             display: none !important;
           }
 
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-job-description,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .header-job-description {
-            display: grid !important;
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-job-description {
             max-height: clamp(132px, 24dvh, 184px) !important;
             min-height: 118px !important;
             overflow: hidden !important;
-            opacity: 1 !important;
-            transform: none !important;
           }
 
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-job-description > p,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus.job-card-header-folded .header-job-description > p,
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description p {
             max-height: clamp(84px, 17dvh, 126px) !important;
             min-height: 68px !important;
