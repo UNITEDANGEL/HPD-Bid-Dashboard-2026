@@ -38906,6 +38906,14 @@ return (
             overflow-y: auto !important;
             overscroll-behavior: contain !important;
           }
+          /* FIELD_CARD_REMOVE_DUPLICATE_HEADER_SCOPE_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-job-description {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-field-flow-card {
+            display: none !important;
+          }
           }        `}
         </style>
 
