@@ -5232,12 +5232,8 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }
 
     initMap();
-    const retryInitMap = window.setTimeout(initMap, 350);
-    const lateRetryInitMap = window.setTimeout(initMap, 1200);
 
     return () => {
-      window.clearTimeout(retryInitMap);
-      window.clearTimeout(lateRetryInitMap);
       cancelled = true;
       if (mapRef.current) {
         mapRef.current.remove();
