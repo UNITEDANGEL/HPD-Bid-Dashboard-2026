@@ -1,41 +1,25 @@
 {
-  "generatedAt": "2026-07-21T18:13:40.644Z",
-  "totalJobs": 595,
+  "generatedAt": "2026-07-21T20:17:26.044Z",
+  "totalJobs": 596,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 3,
+  "missingItbPage3Descriptions": 1,
   "badDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 3,
+  "missingPage3Images": 1,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
     "missingDescriptions": [],
     "missingItbPage3Descriptions": [
       {
-        "OMO": "ER00695",
-        "Address": "326 THROOP AVENUE, 11206",
-        "ITB": "ER00695_071726040734.pdf",
+        "OMO": "ER00898",
+        "Address": "512 EAST 13 STREET, 10009",
+        "ITB": "ER00898_072026111221.pdf",
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
-        "Preview": ": AT PUBLIC HALL STAIRS 3RD STORY REPLACE UPPER AND LOWER COUNTER BALANCE NYC HPD EMERGENCY OPERATIONS DIVISION-ESSENTIAL SER VICE WORK. AT "
-      },
-      {
-        "OMO": "EQ31300",
-        "Address": "32-02 47 STREET, 11103",
-        "ITB": "EQ31300_072026032759.pdf",
-        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
-        "Status": "MATCHED",
-        "Preview": "FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS Provide/Install Abate Remove Dele"
-      },
-      {
-        "OMO": "ER01531",
-        "Address": "1019 WOODYCREST AVENUE, 10452",
-        "ITB": "ER01531_072026083315.pdf",
-        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
-        "Status": "MATCHED",
-        "Preview": ": WINDOW AT APT 3 NYC HPD EMERGENCY OPERATIONS DIVISION-ESSENTIAL SER VICE WORK. AT APT 3 DEFECTIVE WINDOW: MAKE ALL NECESSARY REPAIRS TO RE"
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ SCURE THE LOOSE MARBLE TREAD 3RD FROM BOTTOM UP AT 4TH STORY PUBLIC HAL"
       }
     ],
     "badDescriptions": [],
@@ -43,28 +27,12 @@
     "missingItbFiles": [],
     "missingPage3Images": [
       {
-        "OMO": "ER00695",
-        "Address": "326 THROOP AVENUE, 11206",
-        "ITB": "ER00695_071726040734.pdf",
+        "OMO": "ER00898",
+        "Address": "512 EAST 13 STREET, 10009",
+        "ITB": "ER00898_072026111221.pdf",
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
-        "Preview": ": AT PUBLIC HALL STAIRS 3RD STORY REPLACE UPPER AND LOWER COUNTER BALANCE NYC HPD EMERGENCY OPERATIONS DIVISION-ESSENTIAL SER VICE WORK. AT "
-      },
-      {
-        "OMO": "EQ31300",
-        "Address": "32-02 47 STREET, 11103",
-        "ITB": "EQ31300_072026032759.pdf",
-        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
-        "Status": "MATCHED",
-        "Preview": "FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS Provide/Install Abate Remove Dele"
-      },
-      {
-        "OMO": "ER01531",
-        "Address": "1019 WOODYCREST AVENUE, 10452",
-        "ITB": "ER01531_072026083315.pdf",
-        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
-        "Status": "MATCHED",
-        "Preview": ": WINDOW AT APT 3 NYC HPD EMERGENCY OPERATIONS DIVISION-ESSENTIAL SER VICE WORK. AT APT 3 DEFECTIVE WINDOW: MAKE ALL NECESSARY REPAIRS TO RE"
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ SCURE THE LOOSE MARBLE TREAD 3RD FROM BOTTOM UP AT 4TH STORY PUBLIC HAL"
       }
     ]
   }
