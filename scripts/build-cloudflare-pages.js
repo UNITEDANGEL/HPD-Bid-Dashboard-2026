@@ -187,6 +187,11 @@ if (missing.length) {
   throw new Error(`Cloudflare Pages build is missing expected output: ${missing.join(", ")}`);
 }
 
+const cloudflareHeadersFile = path.join(root, "public", "_headers");
+if (fs.existsSync(cloudflareHeadersFile)) {
+  fs.copyFileSync(cloudflareHeadersFile, path.join(outDir, "_headers"));
+}
+
 fs.writeFileSync(
   path.join(outDataDir, "build_health.json"),
   JSON.stringify(
