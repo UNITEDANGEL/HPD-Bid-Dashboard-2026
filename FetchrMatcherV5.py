@@ -204,6 +204,22 @@ def load_authorized_user_token_info():
         token_info["type"] = "authorized_user"
     return token_info# ------------------------- GMAIL AUTH -------------------------
 
+def can_open_local_oauth() -> bool:
+    return not (os.getenv("RENDER") or os.getenv("GITHUB_ACTIONS") or os.getenv("CI"))
+
+
+def run_local_oauth(reason: str):
+    if not can_open_local_oauth():
+        print(f"AUTH ERROR: {reason}. Recreate token.json locally, then update the GOOGLE_TOKEN_JSON GitHub secret.")
+        raise SystemExit(1)
+    print(f"{reason}. Opening local browser for Google OAuth.")
+    flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
+    creds = flow.run_local_server(port=0)
+    with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+        f.write(creds.to_json())
+    return creds
+
+
 def get_gmail_service():
     creds = None
 
@@ -218,14 +234,7 @@ def get_gmail_service():
             creds = None
 
     if not creds:
-        if os.getenv("RENDER"):
-            print("AUTH ERROR: token.json could not be loaded. Render cannot open browser OAuth.")
-            raise SystemExit(1)
-        print("No valid token.json found. Opening local browser for Google OAuth.")
-        flow = InstalledAppFlow.from_client_secrets_file(CREDENTIALS_FILE, SCOPES)
-        creds = flow.run_local_server(port=0)
-        with open(TOKEN_FILE, "w", encoding="utf-8") as f:
-            f.write(creds.to_json())
+        creds = run_local_oauth("No valid token.json found")
 
     if not creds.valid:
         try:
@@ -235,11 +244,10 @@ def get_gmail_service():
                 with open(TOKEN_FILE, "w", encoding="utf-8") as f:
                     f.write(creds.to_json())
             else:
-                print("AUTH ERROR: token.json is invalid and has no refresh_token. Recreate token.json locally, then update GOOGLE_TOKEN_JSON_BASE64 in Render.")
-                raise SystemExit(1)
+                creds = run_local_oauth("token.json is invalid and has no refresh_token")
         except Exception as e:
             print(f"AUTH REFRESH ERROR: {e}")
-            raise SystemExit(1)
+            creds = run_local_oauth("Saved Gmail token expired or was revoked")
 
     try:
         service = build("gmail", "v1", credentials=creds, cache_discovery=False)
@@ -248,7 +256,6 @@ def get_gmail_service():
         raise SystemExit(1)
 
     return service
-
 
 # ------------------------- COA PARSING -------------------------
 
