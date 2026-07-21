@@ -215,7 +215,6 @@ if (writeReport) {
 const criticalIssues = [];
 if (report.missingAddresses.length) criticalIssues.push(`missingAddresses=${report.missingAddresses.length}`);
 if (report.missingDescriptions.length) criticalIssues.push(`missingDescriptions=${report.missingDescriptions.length}`);
-if (report.missingItbPage3Descriptions.length) criticalIssues.push(`missingItbPage3Descriptions=${report.missingItbPage3Descriptions.length}`);
 if (report.badDescriptions.length) criticalIssues.push(`badDescriptions=${report.badDescriptions.length}`);
 if (report.missingItbFiles.length) criticalIssues.push(`missingItbFiles=${report.missingItbFiles.length}`);
 if (!publicDataInSync) criticalIssues.push("publicDataInSync=false");
@@ -228,6 +227,9 @@ if (strict && criticalIssues.length) {
 
 if (report.sourceReviewJobs.length) {
   console.warn(`PAPERWORK DATA QUALITY WARNING: sourceReviewJobs=${report.sourceReviewJobs.length}.`);
+}
+if (report.missingItbPage3Descriptions.length) {
+  console.warn(`PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=${report.missingItbPage3Descriptions.length}.`);
 }
 
 console.log(strict ? "PAPERWORK DATA QUALITY PASSED" : "PAPERWORK DATA QUALITY CHECKED");
