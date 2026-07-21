@@ -3928,9 +3928,15 @@ function handleMapTouchEnd(event: any) {
 
   useEffect(() => {
     try {
-      const savedStyle = window.localStorage.getItem(MAP_BASE_STYLE_STORAGE_KEY);
-      if (savedStyle && MAP_BASE_STYLES.some((style) => style.id === savedStyle)) {
-        setMapBaseStyle(savedStyle as MapBaseStyleId);
+      const forceNightMap = new URLSearchParams(window.location.search).get("map") === "1";
+      if (forceNightMap) {
+        setMapBaseStyle("carto-dark");
+        window.localStorage.setItem(MAP_BASE_STYLE_STORAGE_KEY, "carto-dark");
+      } else {
+        const savedStyle = window.localStorage.getItem(MAP_BASE_STYLE_STORAGE_KEY);
+        if (savedStyle && MAP_BASE_STYLES.some((style) => style.id === savedStyle)) {
+          setMapBaseStyle(savedStyle as MapBaseStyleId);
+        }
       }
 
       if (!MAPTILER_ENV_KEY) {
