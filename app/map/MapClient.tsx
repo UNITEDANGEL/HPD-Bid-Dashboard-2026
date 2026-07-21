@@ -39473,6 +39473,165 @@ return (
               display: none !important;
             }
           }
+
+          /* FIELD_CARD_COMPACT_BUTTON_SYSTEM_2026_07_21 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(
+            .tenant-contact-actions,
+            .field-status-command-actions,
+            .field-mission-actions,
+            .field-work-choice-grid,
+            .field-media-option-grid,
+            .field-media-option-actions,
+            .site-procedure-actions,
+            .site-procedure-package-actions,
+            .field-capture-actions,
+            .field-send-actions,
+            .field-packet-row,
+            .package-delivery-actions,
+            .package-main-actions,
+            .job-appointment-actions,
+            .appointment-hero-actions,
+            .field-status-action-grid,
+            .field-status-map-tools
+          ) {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)) !important;
+            gap: 6px !important;
+            margin: 6px 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(
+            .tenant-contact-actions,
+            .field-status-command-actions,
+            .field-mission-actions,
+            .field-work-choice-grid,
+            .field-media-option-grid,
+            .field-media-option-actions,
+            .site-procedure-actions,
+            .site-procedure-package-actions,
+            .field-capture-actions,
+            .field-send-actions,
+            .field-packet-row,
+            .package-delivery-actions,
+            .package-main-actions,
+            .job-appointment-actions,
+            .appointment-hero-actions,
+            .field-status-action-grid,
+            .field-status-map-tools
+          ) :is(button, a) {
+            min-height: 38px !important;
+            height: auto !important;
+            padding: 7px 8px !important;
+            border-radius: 10px !important;
+            display: grid !important;
+            align-content: center !important;
+            justify-items: center !important;
+            gap: 2px !important;
+            font-size: 12px !important;
+            line-height: 1.05 !important;
+            letter-spacing: 0 !important;
+            white-space: normal !important;
+            text-align: center !important;
+            box-shadow: 0 4px 10px rgba(2, 6, 23, 0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(
+            .tenant-contact-actions,
+            .field-status-command-actions,
+            .field-mission-actions,
+            .field-work-choice-grid,
+            .field-media-option-grid,
+            .field-media-option-actions,
+            .site-procedure-actions,
+            .site-procedure-package-actions,
+            .field-capture-actions,
+            .field-send-actions,
+            .field-packet-row,
+            .package-delivery-actions,
+            .package-main-actions,
+            .job-appointment-actions,
+            .appointment-hero-actions,
+            .field-status-action-grid,
+            .field-status-map-tools
+          ) :is(button, a) strong {
+            font-size: 12px !important;
+            line-height: 1.05 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(
+            .tenant-contact-actions,
+            .field-status-command-actions,
+            .field-mission-actions,
+            .field-work-choice-grid,
+            .field-media-option-grid,
+            .field-media-option-actions,
+            .site-procedure-actions,
+            .site-procedure-package-actions,
+            .field-capture-actions,
+            .field-send-actions,
+            .field-packet-row,
+            .package-delivery-actions,
+            .package-main-actions,
+            .job-appointment-actions,
+            .appointment-hero-actions,
+            .field-status-action-grid,
+            .field-status-map-tools
+          ) :is(button, a) small {
+            font-size: 9px !important;
+            line-height: 1 !important;
+            opacity: 0.82 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(.field-flow-choice, .field-mission-primary, .procedure-primary, .field-status-save-primary) {
+            min-height: 46px !important;
+            padding: 9px 10px !important;
+            font-size: 13px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(.field-media-option-hub, .package-readiness-card, .job-appointment-card, .field-status-picker-card) {
+            padding: 10px !important;
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-hub :is(.field-media-option-head, .field-media-option-section-head, .field-media-step-cue) {
+            margin-bottom: 4px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(.field-media-option-hub, .field-status-picker-card, .package-readiness-card) :is(h3, strong) {
+            letter-spacing: 0 !important;
+          }
+
+          @media (max-width: 520px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(
+              .tenant-contact-actions,
+              .field-status-command-actions,
+              .field-mission-actions,
+              .field-work-choice-grid,
+              .field-media-option-grid,
+              .field-media-option-actions,
+              .site-procedure-actions,
+              .site-procedure-package-actions,
+              .field-capture-actions,
+              .field-send-actions,
+              .field-packet-row,
+              .package-delivery-actions,
+              .package-main-actions,
+              .job-appointment-actions,
+              .appointment-hero-actions,
+              .field-status-action-grid,
+              .field-status-map-tools
+            ) {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(
+              .field-status-map-tools,
+              .tenant-contact-actions
+            ) :is(button, a) small {
+              display: none !important;
+            }
+          }
           }        `}
         </style>
 
