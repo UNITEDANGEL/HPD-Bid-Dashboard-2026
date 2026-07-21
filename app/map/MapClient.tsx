@@ -39810,6 +39810,135 @@ return (
             contain: none !important;
             will-change: auto !important;
           }
+
+          /* FIELD_CARD_COMPACT_ACTION_RAIL_2026_07_21 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-actions,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+            margin: 4px 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            order: 40 !important;
+            opacity: 0.92 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-actions button,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools button {
+            min-height: 34px !important;
+            height: 34px !important;
+            padding: 4px 8px !important;
+            border-radius: 10px !important;
+            background: rgba(10, 20, 38, 0.92) !important;
+            border: 1px solid rgba(103, 232, 249, 0.24) !important;
+            color: #f8fafc !important;
+            box-shadow: 0 8px 18px rgba(2, 6, 23, 0.2) !important;
+            font-size: 12px !important;
+            font-weight: 950 !important;
+            line-height: 1.05 !important;
+            white-space: nowrap !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools button strong {
+            display: block !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools button small {
+            display: block !important;
+            margin-top: 1px !important;
+            color: #67e8f9 !important;
+            font-size: 8px !important;
+            font-weight: 950 !important;
+            line-height: 1 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-actions button:first-child {
+            background: linear-gradient(135deg, rgba(8, 145, 178, 0.95), rgba(37, 99, 235, 0.95)) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-actions button:last-child {
+            background: linear-gradient(135deg, rgba(13, 148, 136, 0.95), rgba(37, 99, 235, 0.95)) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-choice-row {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 8px !important;
+            margin: 6px 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-choice-row :is(button, a) {
+            min-height: 42px !important;
+            border-radius: 12px !important;
+            padding: 7px 10px !important;
+            font-size: 12px !important;
+            line-height: 1.1 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+          }
+
+          @media (max-width: 430px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-actions,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools {
+              gap: 5px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools button {
+              min-width: 0 !important;
+              padding: 3px 5px !important;
+            }
+          }
+
+          /* FIELD_CARD_DARK_DETAILS_STRIP_2026_07_21 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details {
+            margin-top: 6px !important;
+            border-radius: 12px !important;
+            background: rgba(5, 12, 24, 0.86) !important;
+            border: 1px solid rgba(103, 232, 249, 0.18) !important;
+            box-shadow: none !important;
+            overflow: hidden !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details > summary {
+            min-height: 42px !important;
+            padding: 8px 10px !important;
+            border-radius: 12px !important;
+            background: rgba(10, 20, 38, 0.95) !important;
+            color: #f8fafc !important;
+            font-size: 13px !important;
+            font-weight: 950 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details > summary::after {
+            content: "Open" !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-width: 48px !important;
+            height: 26px !important;
+            border-radius: 999px !important;
+            background: rgba(37, 99, 235, 0.82) !important;
+            color: #ffffff !important;
+            font-size: 10px !important;
+            font-weight: 950 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details[open] > summary::after {
+            content: "Close" !important;
+          }
           }        `}
         </style>
 
