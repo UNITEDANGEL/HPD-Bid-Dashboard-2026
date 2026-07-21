@@ -41086,6 +41086,129 @@ return (
               box-shadow: 0 12px 24px rgba(0,0,0,0.36), 0 0 22px rgba(37,99,235,0.48) !important;
             }
 
+
+            /* EXACT_MOCKUP_TOP_ROW_FIX_V2 */
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed {
+              top: max(12px, env(safe-area-inset-top)) !important;
+              left: 66px !important;
+              right: 12px !important;
+              width: auto !important;
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) 104px !important;
+              gap: 8px !important;
+              align-items: center !important;
+              height: 58px !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search {
+              position: relative !important;
+              inset: auto !important;
+              width: 100% !important;
+              min-width: 0 !important;
+              height: 58px !important;
+              display: flex !important;
+              align-items: center !important;
+              gap: 0 !important;
+              border-radius: 26px !important;
+              padding: 0 18px 0 54px !important;
+              background: rgba(12, 23, 38, 0.9) !important;
+              border: 1px solid rgba(148, 163, 184, 0.36) !important;
+              box-shadow: 0 16px 36px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search::before {
+              content: "⌕" !important;
+              position: absolute !important;
+              left: 19px !important;
+              top: 50% !important;
+              transform: translateY(-50%) !important;
+              font-size: 34px !important;
+              line-height: 1 !important;
+              color: #f8fafc !important;
+              opacity: 1 !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search label {
+              width: 100% !important;
+              min-width: 0 !important;
+              display: block !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search label span,
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search button,
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search strong,
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search .map-face-search-clear {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search input {
+              width: 100% !important;
+              min-width: 0 !important;
+              height: 100% !important;
+              color: #f8fafc !important;
+              font-size: clamp(15px, 4vw, 18px) !important;
+              font-weight: 800 !important;
+              letter-spacing: 0 !important;
+              background: transparent !important;
+              border: 0 !important;
+              outline: 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search input::placeholder {
+              color: #cbd5e1 !important;
+              opacity: 0.92 !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-agent-top-button,
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button {
+              position: relative !important;
+              inset: auto !important;
+              width: 104px !important;
+              min-width: 104px !important;
+              max-width: 104px !important;
+              height: 58px !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              padding: 0 18px 0 14px !important;
+              border-radius: 23px !important;
+              background: rgba(9, 20, 36, 0.94) !important;
+              border: 1px solid rgba(59, 130, 246, 0.62) !important;
+              color: #ffffff !important;
+              font-size: 16px !important;
+              font-weight: 900 !important;
+              letter-spacing: 0 !important;
+              box-shadow: 0 0 28px rgba(37,99,235,0.28), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+              overflow: visible !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-agent-top-button::before {
+              content: "◉" !important;
+              margin-right: 7px !important;
+              color: #3b82f6 !important;
+              font-size: 15px !important;
+              line-height: 1 !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-agent-top-button::after,
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button::after {
+              right: 10px !important;
+              top: 10px !important;
+              width: 10px !important;
+              height: 10px !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-menu-fab {
+              top: 12px !important;
+              left: 8px !important;
+              width: 50px !important;
+              height: 50px !important;
+              border-radius: 20px !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode {
+              border-color: rgba(56, 189, 248, 0.28) !important;
+            }
             .map-shell.map-glass-command-trial.full-map-mode .map-cluster-link-layer,
             .map-shell.map-glass-command-trial.full-map-mode .map-filter-count-hud,
             .map-shell.map-glass-command-trial.full-map-mode .location-status-pill {
@@ -41532,7 +41655,7 @@ return (
                       submitMapFaceSearch();
                     }
                   }}
-                  placeholder="OMO/address"
+                  placeholder="Search jobs or address"
                   autoComplete="off"
                   spellCheck={false}
                 />
