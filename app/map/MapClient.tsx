@@ -39714,6 +39714,102 @@ return (
               -webkit-line-clamp: 4 !important;
             }
           }
+
+          /* FIELD_CARD_IPHONE_NATIVE_SCROLL_2026_07_21 */
+          @media (max-width: 820px), (pointer: coarse) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+              position: fixed !important;
+              inset: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left)) !important;
+              width: auto !important;
+              max-width: none !important;
+              height: auto !important;
+              max-height: none !important;
+              overflow-y: auto !important;
+              overflow-x: hidden !important;
+              -webkit-overflow-scrolling: touch !important;
+              overscroll-behavior-y: contain !important;
+              touch-action: pan-y !important;
+              contain: none !important;
+              transform: none !important;
+              will-change: auto !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
+              max-height: none !important;
+              height: auto !important;
+              min-height: calc(100dvh - 16px) !important;
+              overflow: visible !important;
+              -webkit-overflow-scrolling: auto !important;
+              overscroll-behavior: auto !important;
+              touch-action: auto !important;
+              contain: none !important;
+              transform: none !important;
+              will-change: auto !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(
+              .field-workflow-card,
+              .field-mission-mode,
+              .site-procedure-stage,
+              .field-media-option-hub,
+              .field-evidence-gallery,
+              .field-media-console,
+              .field-packet-vault,
+              .field-send-panel,
+              .more-job-details
+            ) {
+              overflow: visible !important;
+              max-height: none !important;
+              contain: none !important;
+              transform: none !important;
+              will-change: auto !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-job-drawer-head {
+              position: sticky !important;
+              top: 0 !important;
+              z-index: 5 !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-row {
+              min-height: 104px !important;
+            }
+          }
+
+          /* FIELD_CARD_ONE_NATIVE_SCROLL_SURFACE_2026_07_21 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch !important;
+            overscroll-behavior-y: contain !important;
+            touch-action: pan-y !important;
+            contain: none !important;
+            will-change: auto !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            -webkit-overflow-scrolling: auto !important;
+            overscroll-behavior: auto !important;
+            touch-action: auto !important;
+            contain: none !important;
+            will-change: auto !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-evidence-gallery,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-console,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .site-procedure-stage,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details {
+            overflow: visible !important;
+            max-height: none !important;
+            contain: none !important;
+            will-change: auto !important;
+          }
           }        `}
         </style>
 
