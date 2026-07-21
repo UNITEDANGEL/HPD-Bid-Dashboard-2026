@@ -40121,6 +40121,204 @@ return (
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             }
           }
+
+          /* HPD_DARK_DASHBOARD_SKIN_2026_07_21 */
+          .map-shell.map-glass-command-trial {
+            --hpd-bg: #050b14;
+            --hpd-panel: rgba(10, 18, 31, 0.96);
+            --hpd-card: rgba(13, 23, 38, 0.94);
+            --hpd-line: rgba(96, 165, 250, 0.18);
+            --hpd-blue: #2f80ff;
+            --hpd-green: #22c55e;
+            background:
+              radial-gradient(circle at 22% 8%, rgba(37, 99, 235, 0.20), transparent 34%),
+              radial-gradient(circle at 78% 16%, rgba(16, 185, 129, 0.12), transparent 30%),
+              #050b14 !important;
+            color: #f8fafc !important;
+          }
+
+          @media (min-width: 980px) {
+            .map-shell.map-glass-command-trial::before {
+              content: "HPD\A Bid Dashboard\A\A Overview\A Live Bids\A ITB/COA\A Map View\A Analytics\A Calendar\A Vendors\A Documents\A Reports\A Settings";
+              white-space: pre-line;
+              position: fixed;
+              inset: 0 auto 0 0;
+              width: 142px;
+              z-index: 2600;
+              padding: 22px 16px;
+              color: #dbeafe;
+              font-size: 12px;
+              line-height: 2.55;
+              font-weight: 850;
+              background: linear-gradient(180deg, rgba(5, 12, 24, 0.99), rgba(3, 7, 18, 0.99));
+              border-right: 1px solid rgba(96, 165, 250, 0.18);
+              box-shadow: 14px 0 42px rgba(0, 0, 0, 0.32);
+              pointer-events: none;
+            }
+
+            .map-shell.map-glass-command-trial::after {
+              content: "JD  John Doe\A Admin";
+              white-space: pre-line;
+              position: fixed;
+              left: 16px;
+              bottom: 16px;
+              width: 110px;
+              z-index: 2601;
+              padding: 10px 12px;
+              border-radius: 12px;
+              color: #f8fafc;
+              font-size: 11px;
+              line-height: 1.4;
+              font-weight: 800;
+              background: rgba(15, 23, 42, 0.88);
+              border: 1px solid rgba(96, 165, 250, 0.18);
+              pointer-events: none;
+            }
+
+            .map-shell.map-glass-command-trial .map-stage,
+            .map-shell.map-glass-command-trial .map-node,
+            .map-shell.map-glass-command-trial #map,
+            .map-shell.map-glass-command-trial .leaflet-container {
+              border-radius: 14px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-stage {
+              left: 154px !important;
+              right: 520px !important;
+              top: 10px !important;
+              bottom: 10px !important;
+              width: auto !important;
+              height: auto !important;
+              border: 1px solid rgba(96, 165, 250, 0.22) !important;
+              background: #08111f !important;
+              box-shadow: 0 18px 46px rgba(0, 0, 0, 0.38) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+              inset: 10px 10px 10px auto !important;
+              width: 500px !important;
+              border-radius: 14px !important;
+              background: linear-gradient(180deg, rgba(7, 13, 24, 0.99), rgba(9, 17, 30, 0.98)) !important;
+              border: 1px solid rgba(96, 165, 250, 0.22) !important;
+              box-shadow: 0 20px 52px rgba(0, 0, 0, 0.44) !important;
+            }
+          }
+
+          .map-shell.map-glass-command-trial .map-top,
+          .map-shell.map-glass-command-trial .map-face-search,
+          .map-shell.map-glass-command-trial .map-agent-top-button,
+          .map-shell.map-glass-command-trial .map-menu-fab,
+          .map-shell.map-glass-command-trial .map-day-agent-launcher,
+          .map-shell.map-glass-command-trial .map-day-route-tray {
+            background: rgba(10, 18, 31, 0.94) !important;
+            border: 1px solid rgba(96, 165, 250, 0.22) !important;
+            color: #f8fafc !important;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.34) !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .map-face-search input,
+          .map-shell.map-glass-command-trial input,
+          .map-shell.map-glass-command-trial select,
+          .map-shell.map-glass-command-trial textarea {
+            background: rgba(3, 7, 18, 0.78) !important;
+            border-color: rgba(96, 165, 250, 0.22) !important;
+            color: #f8fafc !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .program-source-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .site-procedure-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details {
+            background: rgba(13, 23, 38, 0.94) !important;
+            border: 1px solid rgba(96, 165, 250, 0.20) !important;
+            color: #f8fafc !important;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(h1,h2,h3,strong,b,.job-title,.job-address) {
+            color: #ffffff !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(p,small,span,label,em) {
+            color: #cbd5e1 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-title,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-row strong {
+            color: #60a5fa !important;
+            font-size: clamp(24px, 3vw, 34px) !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-address,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row p {
+            color: #ffffff !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus button,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus a.route-head-button,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-flow-choice,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-choice-row :is(button,a) {
+            border-radius: 12px !important;
+            color: #f8fafc !important;
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.94)) !important;
+            border: 1px solid rgba(96, 165, 250, 0.26) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 10px 22px rgba(0, 0, 0, 0.28) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(.field-flow-choice.start, .procedure-primary, .field-mission-primary, .job-card-arrived-action, .route-head-arrived, .field-status-save-primary) {
+            background: linear-gradient(145deg, #075ef7, #0ea5e9) !important;
+            border-color: rgba(147, 197, 253, 0.72) !important;
+            box-shadow: 0 0 24px rgba(37, 99, 235, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.20) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(.field-flow-choice.waiting, .status-warning) {
+            background: linear-gradient(145deg, rgba(120, 53, 15, 0.98), rgba(217, 119, 6, 0.78)) !important;
+            border-color: rgba(251, 191, 36, 0.48) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus :is(.field-flow-choice.danger, .status-danger) {
+            background: linear-gradient(145deg, rgba(127, 29, 29, 0.98), rgba(220, 38, 38, 0.74)) !important;
+            border-color: rgba(248, 113, 113, 0.54) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools {
+            opacity: 0.88 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools button {
+            background: rgba(8, 13, 24, 0.86) !important;
+            box-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description-head span,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-head span,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-head span {
+            color: #60a5fa !important;
+            font-weight: 950 !important;
+          }
+
+          .map-shell.map-glass-command-trial .leaflet-tile-pane {
+            filter: brightness(0.62) saturate(1.16) contrast(1.12) hue-rotate(184deg) !important;
+          }
+
+          .map-shell.map-glass-command-trial .leaflet-marker-pane {
+            filter: drop-shadow(0 0 10px rgba(47, 128, 255, 0.48)) !important;
+          }
+
+          @media (max-width: 979px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+              background: linear-gradient(180deg, rgba(7, 13, 24, 0.99), rgba(9, 17, 30, 0.98)) !important;
+            }
+          }
           }        `}
         </style>
 
