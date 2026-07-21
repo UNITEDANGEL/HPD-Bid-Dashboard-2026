@@ -325,8 +325,13 @@ async function main() {
     }
 
     if (fs.existsSync(path.join(ROOT, "scripts", "sync-itb-page3-descriptions.py"))) {
-      runStep("Sync ITB page 3 descriptions", "python", ["scripts/sync-itb-page3-descriptions.py"]);
-      syncPublicDataBackToData();
+      try {
+        runStep("Sync ITB page 3 descriptions", "python", ["scripts/sync-itb-page3-descriptions.py"]);
+        syncPublicDataBackToData();
+      } catch (err) {
+        appendLog(`WARNING: Sync ITB page 3 descriptions did not complete: ${err.message || String(err)}`);
+        appendLog("Continuing fetcher run; strict paperwork checks will report any description issues.");
+      }
     }
 
     const mappingOut = runStep("Verify mapping", "node", ["check-local-mapping.js"]);
