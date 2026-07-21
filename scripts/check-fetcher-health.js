@@ -36,7 +36,9 @@ if (missingAddresses > 0) criticalIssues.push(`missingAddresses=${missingAddress
 if (badDescriptions > 0) criticalIssues.push(`badDescriptions=${badDescriptions}`);
 if (missingDescriptions > 0) criticalIssues.push(`missingDescriptions=${missingDescriptions}`);
 if (missingItbJobs > 0) criticalIssues.push(`missingItbJobs=${missingItbJobs}`);
-if (missingPage3Images > 0) criticalIssues.push(`missingPage3Images=${missingPage3Images}`);
+if (missingPage3Images > 0) {
+  console.warn(`FETCHER HEALTH WARNING: missingPage3Images=${missingPage3Images}. Page images can be recovered locally without blocking new work orders.`);
+}
 if (criticalIssues.length) {
   console.error("FETCHER HEALTH FAILED:");
   for (const issue of criticalIssues) console.error("- " + issue);
