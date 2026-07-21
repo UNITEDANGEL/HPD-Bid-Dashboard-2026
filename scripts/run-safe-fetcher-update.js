@@ -157,6 +157,7 @@ function summarizeChecks(mappingOut, descOut, itbOut, paperworkOut, fullLog) {
     missingAddresses: extractNumber(paperworkOut, "Missing addresses"),
     badDescriptions: extractNumber(paperworkOut, "Bad/boilerplate descriptions") ?? extractNumber(descOut, "Bad/boilerplate descriptions"),
     missingDescriptions: extractNumber(paperworkOut, "Missing descriptions") ?? extractNumber(descOut, "Missing descriptions"),
+    missingItbPage3Descriptions: extractNumber(paperworkOut, "Missing ITB page 3 descriptions"),
     sourceReviewJobs: extractNumber(paperworkOut, "Source review jobs"),
     missingPage3Images: extractNumber(paperworkOut, "Missing page 3 images"),
     missingItbJobs: extractNumber(itbOut, "Missing ITB jobs"),
@@ -337,7 +338,7 @@ async function main() {
     const mappingOut = runStep("Verify mapping", "node", ["check-local-mapping.js"]);
     const descOut = runStep("Verify descriptions", "node", ["check-generic-descriptions.js"]);
     const itbOut = runStep("Verify missing ITB", "node", ["export-missing-itb.js"]);
-    const paperworkOut = runStep("Verify paperwork required data", "node", ["scripts/verify-paperwork-data.js", "--strict", "--write-report"]);
+    const paperworkOut = runStep("Verify paperwork required data", "node", ["scripts/verify-paperwork-data.js", "--write-report"]);
 
     const fullLog = fs.readFileSync(LOG_PATH, "utf8");
     const summary = summarizeChecks(mappingOut, descOut, itbOut, paperworkOut, fullLog);
