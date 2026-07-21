@@ -40639,6 +40639,184 @@ return (
               font-size: 9px !important;
             }
           }
+
+          /* HPD_FORCE_RIGHT_PANEL_VISIBLE_2026_07_21 */
+          @media (min-width: 430px) {
+            .map-shell.map-glass-command-trial::before,
+            .map-shell.map-glass-command-trial::after {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-sidebar {
+              display: grid !important;
+              grid-template-rows: auto 1fr auto !important;
+              position: fixed !important;
+              inset: 0 auto 0 0 !important;
+              width: clamp(82px, 18vw, 128px) !important;
+              padding: 12px 7px !important;
+              background: linear-gradient(180deg, rgba(5, 12, 24, 0.995), rgba(3, 7, 18, 0.995)) !important;
+              border-right: 1px solid rgba(96, 165, 250, 0.22) !important;
+              box-shadow: 16px 0 42px rgba(0, 0, 0, 0.34) !important;
+              pointer-events: auto !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-brand-lockup {
+              display: grid !important;
+              gap: 2px !important;
+              padding: 4px 5px 12px !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-brand-lockup b {
+              color: #ffffff !important;
+              font-size: clamp(14px, 2.2vw, 18px) !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-brand-lockup span {
+              color: #93a4bd !important;
+              font-size: 9px !important;
+              line-height: 1.1 !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-sidebar nav {
+              display: grid !important;
+              gap: 5px !important;
+              align-content: start !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-sidebar nav span {
+              min-height: 27px !important;
+              display: flex !important;
+              align-items: center !important;
+              padding: 0 7px !important;
+              border-radius: 8px !important;
+              color: #b6c3d5 !important;
+              font-size: clamp(8px, 1.35vw, 11px) !important;
+              font-weight: 850 !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-sidebar nav span:nth-child(4),
+            .map-shell.map-glass-command-trial .hpd-dashboard-sidebar nav span.active {
+              color: #eff6ff !important;
+              background: linear-gradient(135deg, rgba(37, 99, 235, 0.90), rgba(29, 78, 216, 0.72)) !important;
+              box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22) !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-user-chip {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-overview-panel {
+              display: grid !important;
+              position: fixed !important;
+              left: calc(clamp(82px, 18vw, 128px) + 8px) !important;
+              right: 8px !important;
+              top: 8px !important;
+              min-height: 112px !important;
+              gap: 8px !important;
+              padding: 9px !important;
+              border-radius: 13px !important;
+              background: linear-gradient(180deg, rgba(8, 15, 27, 0.97), rgba(7, 13, 24, 0.93)) !important;
+              border: 1px solid rgba(96, 165, 250, 0.22) !important;
+              box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34) !important;
+              pointer-events: auto !important;
+              z-index: 2555 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .hpd-dashboard-overview-panel {
+              right: clamp(330px, 48vw, 492px) !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-title-row strong {
+              color: #ffffff !important;
+              font-size: clamp(16px, 2.2vw, 22px) !important;
+              line-height: 1 !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-title-row small {
+              color: #9caec4 !important;
+              font-size: 9px !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-kpi-grid {
+              display: grid !important;
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              gap: 6px !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-kpi-grid article {
+              min-height: 56px !important;
+              padding: 7px !important;
+              border-radius: 9px !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-kpi-grid span,
+            .map-shell.map-glass-command-trial .hpd-kpi-grid small {
+              font-size: 8px !important;
+              line-height: 1.05 !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-kpi-grid strong {
+              color: #ffffff !important;
+              font-size: clamp(17px, 2.6vw, 26px) !important;
+              line-height: 1 !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-stage {
+              left: calc(clamp(82px, 18vw, 128px) + 8px) !important;
+              right: 8px !important;
+              top: 132px !important;
+              bottom: 8px !important;
+              width: auto !important;
+              height: auto !important;
+              border-radius: 13px !important;
+              border: 1px solid rgba(96, 165, 250, 0.22) !important;
+              box-shadow: 0 18px 42px rgba(0, 0, 0, 0.36) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .map-stage {
+              right: clamp(330px, 48vw, 492px) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus {
+              inset: 8px 8px 8px auto !important;
+              width: clamp(322px, 47vw, 484px) !important;
+              border-radius: 13px !important;
+              z-index: 2580 !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-top,
+            .map-shell.map-glass-command-trial .dispatch-dashboard-card,
+            .map-shell.map-glass-command-trial .field-map-queue,
+            .map-shell.map-glass-command-trial .map-borough-rail,
+            .map-shell.map-glass-command-trial .map-today-zone-rail,
+            .map-shell.map-glass-command-trial .map-board-switcher,
+            .map-shell.map-glass-command-trial .map-tools-flow-row,
+            .map-shell.map-glass-command-trial .map-command-banner,
+            .map-shell.map-glass-command-trial .map-style-panel,
+            .map-shell.map-glass-command-trial .map-day-presets,
+            .map-shell.map-glass-command-trial .map-filter-row,
+            .map-shell.map-glass-command-trial .map-borough-control,
+            .map-shell.map-glass-command-trial .map-search {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-face-search,
+            .map-shell.map-glass-command-trial .map-agent-top-button,
+            .map-shell.map-glass-command-trial .map-menu-fab {
+              transform: none !important;
+              top: 142px !important;
+              z-index: 2570 !important;
+            }
+          }
+
+          @media (max-width: 429px) {
+            .map-shell.map-glass-command-trial .hpd-dashboard-chrome {
+              display: none !important;
+            }
+          }
           }        `}
         </style>
 
