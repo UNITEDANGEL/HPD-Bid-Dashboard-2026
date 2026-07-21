@@ -316,7 +316,12 @@ async function main() {
       if (fs.existsSync(path.join(ROOT, "ITB_Downloads_V5"))) {
         process.env.HPD_ITB_PDF_DIR = path.join(ROOT, "ITB_Downloads_V5");
       }
-      runStep("Render ITB page 3 assets", "node", ["scripts/render-itb-page3-assets.js", "--copy-pdfs"]);
+      try {
+        runStep("Render ITB page 3 assets", "node", ["scripts/render-itb-page3-assets.js", "--copy-pdfs"]);
+      } catch (err) {
+        appendLog(`WARNING: Render ITB page 3 assets did not complete: ${err.message || String(err)}`);
+        appendLog("Continuing fetcher run; paperwork data quality checks will report any missing page images.");
+      }
     }
 
     if (fs.existsSync(path.join(ROOT, "scripts", "sync-itb-page3-descriptions.py"))) {
