@@ -39939,6 +39939,188 @@ return (
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details[open] > summary::after {
             content: "Close" !important;
           }
+
+          /* FIELD_PANEL_RESTORE_FLOW_2026_07_21 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+            position: fixed !important;
+            inset: max(6px, env(safe-area-inset-top)) max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left)) !important;
+            width: auto !important;
+            max-width: none !important;
+            max-height: none !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch !important;
+            overscroll-behavior-y: contain !important;
+            touch-action: pan-y !important;
+            contain: none !important;
+            transform: none !important;
+            will-change: auto !important;
+            border-radius: 22px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 8px !important;
+            min-height: calc(100svh - 14px) !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            padding-bottom: 18px !important;
+            -webkit-overflow-scrolling: auto !important;
+            contain: none !important;
+            transform: none !important;
+            will-change: auto !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 8 !important;
+            padding: 8px 9px !important;
+            background: rgba(3, 7, 18, 0.98) !important;
+            border-bottom: 1px solid rgba(56, 189, 248, 0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-row {
+            min-height: 86px !important;
+            padding: 8px !important;
+            grid-template-columns: minmax(0, 1fr) 48px !important;
+            gap: 7px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row {
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 6px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row p {
+            min-height: 38px !important;
+            padding: 7px 9px !important;
+            font-size: 13px !important;
+            font-weight: 950 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-actions {
+            grid-template-columns: repeat(2, 44px) !important;
+            gap: 5px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-actions .route-head-button {
+            min-height: 38px !important;
+            padding: 4px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .site-procedure-stage,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details {
+            overflow: visible !important;
+            max-height: none !important;
+            contain: none !important;
+            transform: none !important;
+            will-change: auto !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card {
+            padding: 8px !important;
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description {
+            order: -40 !important;
+            display: grid !important;
+            visibility: visible !important;
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 10px 11px !important;
+            border-left: 4px solid #38bdf8 !important;
+            background: linear-gradient(145deg, rgba(3, 7, 18, 0.99), rgba(8, 27, 48, 0.96)) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description p,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode .field-page3-description > p {
+            display: block !important;
+            max-height: none !important;
+            overflow: visible !important;
+            -webkit-line-clamp: unset !important;
+            -webkit-box-orient: unset !important;
+            color: #f8fafc !important;
+            font-size: 13px !important;
+            line-height: 1.42 !important;
+            padding-right: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .program-source-card {
+            order: -39 !important;
+            max-height: none !important;
+            overflow: visible !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .tenant-contact-card {
+            order: -38 !important;
+            display: grid !important;
+            visibility: visible !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-status-picker-card {
+            order: -37 !important;
+            display: grid !important;
+            visibility: visible !important;
+            margin-top: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools {
+            display: grid !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 5px !important;
+            margin: 4px 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools button {
+            min-height: 30px !important;
+            height: 30px !important;
+            padding: 3px 5px !important;
+            border-radius: 9px !important;
+            overflow: hidden !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools button strong {
+            font-size: 10px !important;
+            line-height: 1 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools button small {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-filter-menu,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-card {
+            display: none !important;
+          }
+
+          @media (max-width: 430px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-row {
+              min-height: 92px !important;
+              grid-template-columns: minmax(0, 1fr) 44px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-actions {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+          }
           }        `}
         </style>
 
