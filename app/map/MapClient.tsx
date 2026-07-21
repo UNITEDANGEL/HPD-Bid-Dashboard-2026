@@ -39367,6 +39367,62 @@ return (
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             }
           }
+
+          /* FIELD_CARD_SINGLE_SMOOTH_SCROLL_2026_07_21 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+            overflow: hidden !important;
+            touch-action: pan-y !important;
+            contain: layout paint !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
+            max-height: calc(100dvh - 88px) !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            overscroll-behavior: contain !important;
+            -webkit-overflow-scrolling: touch !important;
+            scroll-behavior: auto !important;
+            scrollbar-gutter: stable !important;
+            touch-action: pan-y !important;
+            will-change: scroll-position !important;
+            transform: translateZ(0) !important;
+            contain: layout paint !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description p,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode .field-page3-description > p {
+            max-height: none !important;
+            overflow: visible !important;
+            padding-right: 0 !important;
+            scrollbar-width: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description p::-webkit-scrollbar,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode .field-page3-description > p::-webkit-scrollbar {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .program-source-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            box-shadow: 0 8px 18px rgba(2, 6, 23, 0.22) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card {
+            transform: translateZ(0) !important;
+            contain: layout paint !important;
+          }
+
+          @media (max-width: 720px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
+              max-height: calc(100dvh - 78px) !important;
+            }
+          }
           }        `}
         </style>
 
