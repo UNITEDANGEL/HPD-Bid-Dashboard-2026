@@ -40532,6 +40532,113 @@ return (
               transform: translateY(166px) !important;
             }
           }
+
+          /* HPD_RIGHT_PANEL_DASHBOARD_FIX_2026_07_21 */
+          @media (min-width: 760px) {
+            .map-shell.map-glass-command-trial::before,
+            .map-shell.map-glass-command-trial::after {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-sidebar {
+              display: grid !important;
+              grid-template-rows: auto 1fr auto !important;
+              position: fixed !important;
+              inset: 0 auto 0 0 !important;
+              width: clamp(116px, 13vw, 146px) !important;
+              padding: 16px 10px !important;
+              background: linear-gradient(180deg, rgba(5, 12, 24, 0.99), rgba(3, 7, 18, 0.99)) !important;
+              border-right: 1px solid rgba(96, 165, 250, 0.20) !important;
+              box-shadow: 16px 0 42px rgba(0, 0, 0, 0.34) !important;
+              pointer-events: auto !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-overview-panel {
+              display: grid !important;
+              position: fixed !important;
+              left: calc(clamp(116px, 13vw, 146px) + 10px) !important;
+              right: ${selectedOnly ? "clamp(378px, 38vw, 500px)" : "10px"} !important;
+              top: 10px !important;
+              min-height: 136px !important;
+              gap: 10px !important;
+              padding: 11px !important;
+              border-radius: 14px !important;
+              background: linear-gradient(180deg, rgba(8, 15, 27, 0.96), rgba(7, 13, 24, 0.91)) !important;
+              border: 1px solid rgba(96, 165, 250, 0.20) !important;
+              box-shadow: 0 18px 46px rgba(0, 0, 0, 0.30) !important;
+              pointer-events: auto !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-kpi-grid {
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+              gap: 8px !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-kpi-grid article {
+              min-height: 66px !important;
+              padding: 9px !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-kpi-grid strong {
+              font-size: clamp(20px, 2.4vw, 28px) !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-stage {
+              left: calc(clamp(116px, 13vw, 146px) + 10px) !important;
+              right: ${selectedOnly ? "clamp(378px, 38vw, 500px)" : "10px"} !important;
+              top: 158px !important;
+              bottom: 10px !important;
+              width: auto !important;
+              height: auto !important;
+              border-radius: 14px !important;
+              border: 1px solid rgba(96, 165, 250, 0.22) !important;
+              background: #08111f !important;
+              box-shadow: 0 18px 46px rgba(0, 0, 0, 0.38) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+              inset: 10px 10px 10px auto !important;
+              width: clamp(368px, 37vw, 492px) !important;
+              border-radius: 14px !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .map-top,
+            .map-shell.map-glass-command-trial.drawer-selected .map-cockpit .map-command-banner,
+            .map-shell.map-glass-command-trial.drawer-selected .dispatch-dashboard-card,
+            .map-shell.map-glass-command-trial.drawer-selected .field-map-queue,
+            .map-shell.map-glass-command-trial.drawer-selected .map-borough-rail,
+            .map-shell.map-glass-command-trial.drawer-selected .map-today-zone-rail,
+            .map-shell.map-glass-command-trial.drawer-selected .map-board-switcher,
+            .map-shell.map-glass-command-trial.drawer-selected .map-tools-flow-row {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .map-face-search,
+            .map-shell.map-glass-command-trial.drawer-selected .map-agent-top-button,
+            .map-shell.map-glass-command-trial.drawer-selected .map-menu-fab {
+              top: 170px !important;
+              transform: none !important;
+              z-index: 2560 !important;
+            }
+          }
+
+          @media (min-width: 760px) and (max-width: 1040px) {
+            .map-shell.map-glass-command-trial .hpd-dashboard-sidebar nav span {
+              min-height: 28px !important;
+              padding: 0 8px !important;
+              font-size: 10px !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-title-row strong {
+              font-size: 19px !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-title-row small,
+            .map-shell.map-glass-command-trial .hpd-kpi-grid span,
+            .map-shell.map-glass-command-trial .hpd-kpi-grid small {
+              font-size: 9px !important;
+            }
+          }
           }        `}
         </style>
 
