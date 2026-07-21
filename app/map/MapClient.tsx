@@ -39256,6 +39256,117 @@ return (
             overflow: hidden !important;
             opacity: 0 !important;
           }
+
+          /* FIELD_CARD_ADDRESS_ROUTE_TOP_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-row {
+            min-height: 116px !important;
+            padding: 10px 10px !important;
+            grid-template-columns: minmax(0, 1fr) 54px !important;
+            gap: 8px !important;
+            overflow: visible !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-copy {
+            display: grid !important;
+            gap: 6px !important;
+            min-width: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-copy > span {
+            font-size: 10px !important;
+            color: #67e8f9 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            gap: 8px !important;
+            align-items: stretch !important;
+            margin-top: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row p {
+            display: flex !important;
+            align-items: center !important;
+            min-height: 42px !important;
+            margin: 0 !important;
+            padding: 8px 10px !important;
+            border-radius: 12px !important;
+            background: rgba(2, 6, 23, 0.74) !important;
+            border: 1px solid rgba(125, 211, 252, 0.24) !important;
+            color: #f8fafc !important;
+            font-size: 13px !important;
+            line-height: 1.25 !important;
+            white-space: normal !important;
+            overflow: visible !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-actions {
+            display: grid !important;
+            grid-template-columns: repeat(2, 54px) !important;
+            gap: 6px !important;
+            align-items: stretch !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-actions .route-head-button {
+            min-width: 0 !important;
+            min-height: 42px !important;
+            padding: 5px !important;
+            border-radius: 12px !important;
+            display: grid !important;
+            place-items: center !important;
+            gap: 2px !important;
+            background: linear-gradient(145deg, rgba(6, 78, 59, 0.98), rgba(3, 105, 161, 0.92)) !important;
+            border: 1px solid rgba(125, 211, 252, 0.35) !important;
+            box-shadow: 0 0 16px rgba(34, 211, 238, 0.16) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-actions .route-head-button img {
+            width: 18px !important;
+            height: 18px !important;
+            object-fit: contain !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-actions .route-action-copy strong {
+            color: #f8fafc !important;
+            font-size: 10px !important;
+            line-height: 1 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-actions .route-action-copy small {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-metas {
+            display: flex !important;
+            gap: 6px !important;
+            flex-wrap: wrap !important;
+            align-items: center !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-metas > span {
+            min-height: 24px !important;
+            padding: 5px 8px !important;
+            border-radius: 999px !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+          }
+
+          @media (max-width: 720px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-row {
+              min-height: 128px !important;
+              grid-template-columns: minmax(0, 1fr) 48px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row {
+              grid-template-columns: minmax(0, 1fr) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-actions {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+          }
           }        `}
         </style>
 
