@@ -40226,7 +40226,7 @@ return (
             width: auto !important;
             max-width: 460px !important;
             height: auto !important;
-            max-height: calc(100dvh - 24px) !important;
+            max-height: calc(100dvh - 112px) !important;
             margin: 0 auto !important;
             padding: 0 !important;
             overflow: visible !important;
@@ -40454,7 +40454,7 @@ return (
           }
 
           .omo-field-console-steps {
-            display: grid !important;
+            display: none !important;
             gap: 9px !important;
           }
 
@@ -40594,11 +40594,6 @@ return (
 
             .omo-field-console-actions {
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-            }
-
-            .omo-field-console-steps button {
-              min-height: 50px !important;
-              padding: 8px 10px !important;
             }
           }
           }        `}
