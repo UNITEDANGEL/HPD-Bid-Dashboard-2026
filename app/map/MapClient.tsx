@@ -40121,6 +40121,695 @@ return (
               grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             }
           }
+
+          /* IPHONE_GLASS_JOB_CARD_V1_2026_07_21
+             Target: approved iPhone mockup. Keep existing workflow logic, reshape the first job-card screen. */
+          @media (max-width: 760px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+              top: auto !important;
+              left: max(10px, env(safe-area-inset-left)) !important;
+              right: max(10px, env(safe-area-inset-right)) !important;
+              bottom: max(10px, env(safe-area-inset-bottom)) !important;
+              width: auto !important;
+              height: auto !important;
+              min-height: min(520px, calc(100svh - 118px)) !important;
+              max-height: min(620px, calc(100svh - 118px)) !important;
+              padding: 0 !important;
+              overflow-y: auto !important;
+              overflow-x: hidden !important;
+              border-radius: 28px 28px 24px 24px !important;
+              background:
+                radial-gradient(circle at 50% 100%, rgba(37, 99, 235, 0.28), transparent 30%),
+                linear-gradient(180deg, rgba(10, 18, 30, 0.96), rgba(2, 6, 13, 0.985)) !important;
+              border: 1px solid rgba(148, 163, 184, 0.34) !important;
+              box-shadow: 0 -20px 50px rgba(2, 6, 23, 0.55), 0 0 0 1px rgba(59, 130, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+              backdrop-filter: blur(22px) saturate(1.28) !important;
+              -webkit-backdrop-filter: blur(22px) saturate(1.28) !important;
+              z-index: 2800 !important;
+              scrollbar-width: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus::-webkit-scrollbar {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus::before {
+              content: "" !important;
+              position: sticky !important;
+              top: 10px !important;
+              z-index: 30 !important;
+              display: block !important;
+              width: 76px !important;
+              height: 7px !important;
+              margin: 10px auto 2px !important;
+              border-radius: 999px !important;
+              background: rgba(226, 232, 240, 0.72) !important;
+              box-shadow: 0 1px 0 rgba(255,255,255,0.22), 0 0 22px rgba(59,130,246,0.26) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+              position: relative !important;
+              top: auto !important;
+              padding: 14px 18px 4px !important;
+              background: transparent !important;
+              border: 0 !important;
+              box-shadow: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-sheet-head {
+              padding: 0 !important;
+              gap: 10px !important;
+              background: transparent !important;
+              border: 0 !important;
+              box-shadow: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-row {
+              min-height: 0 !important;
+              padding: 0 !important;
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) 72px !important;
+              align-items: start !important;
+              gap: 12px !important;
+              background: transparent !important;
+              border: 0 !important;
+              box-shadow: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-copy > span {
+              display: block !important;
+              color: #ffffff !important;
+              font-size: clamp(44px, 12vw, 58px) !important;
+              font-weight: 1000 !important;
+              line-height: 0.9 !important;
+              letter-spacing: 0 !important;
+              text-transform: uppercase !important;
+              visibility: hidden !important;
+              position: relative !important;
+              height: 52px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-copy > span::after {
+              content: "OMO" !important;
+              visibility: visible !important;
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              color: #ffffff !important;
+              text-shadow: 0 12px 28px rgba(0,0,0,0.48) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-copy > strong {
+              display: block !important;
+              margin-top: 4px !important;
+              color: #3b82f6 !important;
+              font-size: 24px !important;
+              font-weight: 1000 !important;
+              line-height: 1.05 !important;
+              text-shadow: 0 0 18px rgba(59, 130, 246, 0.36) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row {
+              display: flex !important;
+              align-items: center !important;
+              gap: 8px !important;
+              margin-top: 7px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row p {
+              min-height: 0 !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              background: transparent !important;
+              border: 0 !important;
+              box-shadow: none !important;
+              color: #ffffff !important;
+              font-size: clamp(22px, 6.3vw, 30px) !important;
+              font-weight: 1000 !important;
+              line-height: 1.1 !important;
+              letter-spacing: 0 !important;
+              text-transform: uppercase !important;
+              white-space: normal !important;
+              overflow: visible !important;
+              text-overflow: clip !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row::before {
+              content: "" !important;
+              flex: 0 0 17px !important;
+              width: 17px !important;
+              height: 22px !important;
+              background: #3b82f6 !important;
+              clip-path: path("M8.5 0C3.8 0 0 3.8 0 8.5C0 14.9 8.5 22 8.5 22S17 14.9 17 8.5C17 3.8 13.2 0 8.5 0ZM8.5 11.4A2.9 2.9 0 1 1 8.5 5.6A2.9 2.9 0 0 1 8.5 11.4Z") !important;
+              filter: drop-shadow(0 0 10px rgba(59,130,246,0.45)) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-actions {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-map-back-pill {
+              width: 68px !important;
+              height: 68px !important;
+              min-width: 68px !important;
+              border-radius: 20px !important;
+              font-size: 0 !important;
+              background: rgba(15, 23, 42, 0.78) !important;
+              border: 1px solid rgba(148, 163, 184, 0.26) !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 16px 28px rgba(0,0,0,0.34) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-map-back-pill::before {
+              content: "Map" !important;
+              font-size: 13px !important;
+              font-weight: 1000 !important;
+              color: #60a5fa !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-metas,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .header-job-description,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-current-state-banner,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-72h-counter,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-action-dock,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-progress-timeline,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card-head,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-data-strip,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .program-source-card,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .package-readiness-card,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-hub,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-alert,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-main,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-actions,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-choice-row {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
+              min-height: 0 !important;
+              height: auto !important;
+              padding: 0 18px 18px !important;
+              margin: 0 !important;
+              gap: 10px !important;
+              background: transparent !important;
+              border: 0 !important;
+              box-shadow: none !important;
+              overflow: visible !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode {
+              display: flex !important;
+              flex-direction: column !important;
+              gap: 10px !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              background: transparent !important;
+              border: 0 !important;
+              box-shadow: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-head,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-hero,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .site-procedure-stage:not([data-field-pane="capture"]),
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .tenant-contact-card,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card {
+              display: grid !important;
+              visibility: visible !important;
+              margin: 0 !important;
+              padding: 14px !important;
+              border-radius: 18px !important;
+              background: rgba(15, 23, 42, 0.58) !important;
+              border: 1px solid rgba(148, 163, 184, 0.18) !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.06) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description-head,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-head,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-flow-primary-head {
+              display: flex !important;
+              align-items: center !important;
+              gap: 12px !important;
+              margin: 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description-head::before,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-head::before {
+              content: "" !important;
+              width: 46px !important;
+              height: 46px !important;
+              border-radius: 14px !important;
+              background: rgba(30, 41, 59, 0.82) !important;
+              border: 1px solid rgba(148,163,184,0.18) !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 16px rgba(59,130,246,0.16) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description-head span,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-head strong,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-flow-primary-head strong {
+              color: #ffffff !important;
+              font-size: 18px !important;
+              font-weight: 1000 !important;
+              line-height: 1.08 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description-head span {
+              visibility: hidden !important;
+              position: relative !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description-head span::after {
+              content: "Scope" !important;
+              visibility: visible !important;
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description-head :is(button, small),
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-flow-primary-head :is(span, small, b),
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-head span {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description p,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode .field-page3-description > p {
+              margin: -31px 0 0 58px !important;
+              color: #cbd5e1 !important;
+              font-size: 16px !important;
+              line-height: 1.34 !important;
+              max-height: 44px !important;
+              overflow: hidden !important;
+              display: -webkit-box !important;
+              -webkit-line-clamp: 2 !important;
+              -webkit-box-orient: vertical !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-grid {
+              display: block !important;
+              margin: -20px 64px 0 58px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-row {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-row:nth-child(1),
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-row:nth-child(2) {
+              display: inline !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-row span {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-row strong {
+              color: #cbd5e1 !important;
+              font-size: 16px !important;
+              font-weight: 700 !important;
+              line-height: 1.2 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-row:nth-child(1)::after {
+              content: "  -  " !important;
+              color: #64748b !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-actions {
+              position: absolute !important;
+              right: 15px !important;
+              top: 50% !important;
+              transform: translateY(-50%) !important;
+              display: flex !important;
+              gap: 0 !important;
+              margin: 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card {
+              position: relative !important;
+              min-height: 76px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-actions a {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-actions a.contact-call {
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              width: 50px !important;
+              height: 50px !important;
+              border-radius: 999px !important;
+              font-size: 0 !important;
+              background: rgba(15, 23, 42, 0.92) !important;
+              border: 1px solid rgba(148, 163, 184, 0.28) !important;
+              box-shadow: 0 0 22px rgba(34,197,94,0.18), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-actions a.contact-call::before {
+              content: "Call" !important;
+              color: #4ade80 !important;
+              font-size: 13px !important;
+              font-weight: 1000 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card {
+              padding: 0 !important;
+              background: transparent !important;
+              border: 0 !important;
+              box-shadow: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-primary-head,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-next-row {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice-grid {
+              display: grid !important;
+              grid-template-columns: 1.1fr 1fr 0.82fr 0.62fr !important;
+              gap: 10px !important;
+              margin: 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice {
+              min-height: 64px !important;
+              padding: 0 12px !important;
+              display: flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              border-radius: 17px !important;
+              border-width: 1px !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 14px 28px rgba(0,0,0,0.28) !important;
+              overflow: hidden !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice span,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice small {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice strong {
+              color: inherit !important;
+              font-size: 14px !important;
+              font-weight: 1000 !important;
+              line-height: 1 !important;
+              white-space: nowrap !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.start {
+              background: linear-gradient(135deg, rgba(16, 185, 129, 0.34), rgba(22, 163, 74, 0.18)) !important;
+              border-color: rgba(34, 197, 94, 0.82) !important;
+              color: #ffffff !important;
+              box-shadow: 0 0 24px rgba(34,197,94,0.24), inset 0 1px 0 rgba(255,255,255,0.10) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.start strong {
+              visibility: hidden !important;
+              position: relative !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.start strong::after {
+              content: "Start Work" !important;
+              visibility: visible !important;
+              position: absolute !important;
+              inset: 0 auto auto 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.waiting {
+              background: rgba(69, 39, 6, 0.58) !important;
+              border-color: rgba(245, 158, 11, 0.74) !important;
+              color: #fbbf24 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.danger {
+              background: rgba(69, 10, 10, 0.62) !important;
+              border-color: rgba(248, 113, 113, 0.76) !important;
+              color: #f87171 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.other {
+              background: rgba(15, 23, 42, 0.76) !important;
+              border-color: rgba(148, 163, 184, 0.30) !important;
+              color: #cbd5e1 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.other strong {
+              visibility: hidden !important;
+              position: relative !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.other strong::after {
+              content: "More" !important;
+              visibility: visible !important;
+              position: absolute !important;
+              inset: 0 auto auto 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus::after {
+              content: "" !important;
+              display: block !important;
+              height: 2px !important;
+              margin: 0 18px 4px !important;
+              border-radius: 999px !important;
+              background: #38bdf8 !important;
+              box-shadow: 0 0 22px #38bdf8, 0 0 40px rgba(37,99,235,0.5) !important;
+            }
+          }
+
+          @media (max-width: 390px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+              min-height: min(500px, calc(100svh - 96px)) !important;
+              max-height: min(590px, calc(100svh - 96px)) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice-grid {
+              grid-template-columns: 1fr 1fr !important;
+            }
+          }
+
+          /* IPHONE_GLASS_JOB_CARD_V1_FIT_FIX_2026_07_21 */
+          @media (max-width: 760px) {
+            .map-shell.map-glass-command-trial .map-action-notice,
+            .map-shell.map-glass-command-trial .field-route-toast,
+            .map-shell.map-glass-command-trial .map-feedback-toast {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+              min-height: min(440px, calc(100svh - 88px)) !important;
+              max-height: min(560px, calc(100svh - 88px)) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+              padding: 10px 16px 2px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-row {
+              grid-template-columns: minmax(0, 1fr) 58px !important;
+              gap: 10px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-copy > span {
+              height: 40px !important;
+              font-size: clamp(36px, 10vw, 46px) !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-copy > strong {
+              margin-top: 1px !important;
+              font-size: 21px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row {
+              margin-top: 5px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-address-route-row p {
+              font-size: clamp(16px, 4.8vw, 22px) !important;
+              line-height: 1.08 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-map-back-pill {
+              width: 56px !important;
+              height: 56px !important;
+              min-width: 56px !important;
+              color: transparent !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-map-back-pill::before {
+              content: "Map" !important;
+              font-size: 12px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
+              padding: 0 16px 16px !important;
+              gap: 8px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode {
+              gap: 8px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .tenant-contact-card {
+              min-height: 66px !important;
+              padding: 10px 12px !important;
+              align-content: start !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description-head,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-head {
+              position: relative !important;
+              min-height: 42px !important;
+              padding-left: 54px !important;
+              align-items: start !important;
+              justify-content: start !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description-head::before,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-head::before {
+              position: absolute !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 42px !important;
+              height: 42px !important;
+              border-radius: 13px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description-head span,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-head strong {
+              display: block !important;
+              margin-top: 1px !important;
+              font-size: 16px !important;
+              line-height: 1.05 !important;
+              text-align: left !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description p,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode .field-page3-description > p {
+              margin: -22px 0 0 54px !important;
+              max-height: 38px !important;
+              font-size: 14px !important;
+              line-height: 1.28 !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-grid {
+              margin: -20px 58px 0 54px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-row strong {
+              font-size: 14px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-actions a.contact-call {
+              width: 44px !important;
+              height: 44px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice-grid {
+              gap: 8px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice {
+              min-height: 56px !important;
+              padding: 0 9px !important;
+              border-radius: 15px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice strong {
+              font-size: 13px !important;
+            }
+          }
+
+
+          /* IPHONE_GLASS_JOB_CARD_VISIBLE_FLOW_FIX_2026_07_21 */
+          @media (max-width: 760px) {
+            .map-shell.map-glass-command-trial .action-notice {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .program-source-card {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description {
+              order: -40 !important;
+              display: grid !important;
+              min-height: 62px !important;
+              height: auto !important;
+              max-height: 72px !important;
+              overflow: hidden !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .tenant-contact-card {
+              order: -39 !important;
+              display: grid !important;
+              min-height: 64px !important;
+              max-height: 72px !important;
+              overflow: hidden !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .mission-field-flow-card {
+              order: -38 !important;
+              display: grid !important;
+              margin-top: 0 !important;
+            }
+          }
+
+          /* IPHONE_GLASS_JOB_CARD_LABEL_FIX_2026_07_21 */
+          @media (max-width: 760px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-map-back-pill {
+              font-size: 0 !important;
+              color: transparent !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-map-back-pill > * {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice strong {
+              position: relative !important;
+              display: inline-block !important;
+              min-width: max-content !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.waiting strong,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.danger strong,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.other strong {
+              visibility: hidden !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.waiting strong::after,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.danger strong::after,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.other strong::after {
+              visibility: visible !important;
+              position: absolute !important;
+              left: 50% !important;
+              top: 50% !important;
+              transform: translate(-50%, -50%) !important;
+              white-space: nowrap !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.waiting strong::after {
+              content: "No Access" !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.danger strong::after {
+              content: "Refused" !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.other strong::after {
+              content: "More" !important;
+            }
+          }
           }        `}
         </style>
 
