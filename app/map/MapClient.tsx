@@ -39263,7 +39263,7 @@ return (
             padding: 10px 10px !important;
             grid-template-columns: minmax(0, 1fr) 54px !important;
             gap: 8px !important;
-            overflow: hidden !important;
+            overflow: visible !important;
           }
 
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-title-copy {
@@ -40254,6 +40254,7 @@ return (
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head,
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card-head,
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-head,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode,
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .site-procedure-card,
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details,
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-overview-grid,
@@ -40264,11 +40265,8 @@ return (
 
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
             display: block !important;
-            max-height: calc(100dvh - 24px) !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-            -webkit-overflow-scrolling: touch !important;
-            overscroll-behavior: contain !important;
+            max-height: none !important;
+            overflow: visible !important;
             padding: 0 !important;
             border: 0 !important;
             background: transparent !important;
@@ -40282,23 +40280,6 @@ return (
             border: 0 !important;
             background: transparent !important;
             box-shadow: none !important;
-          }
-
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode {
-            display: grid !important;
-            gap: 10px !important;
-            padding: 0 16px 16px !important;
-            background: transparent !important;
-            border: 0 !important;
-            box-shadow: none !important;
-          }
-
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode > .field-page3-description,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode > .tenant-contact-card,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode > .program-source-card,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode > .field-flow-primary-card,
-          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode > .job-card-data-strip {
-            display: none !important;
           }
 
           .omo-field-console-v2 {
