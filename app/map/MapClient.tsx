@@ -7,7 +7,7 @@ const APPOINTMENT_ALERT_PHONE_STORAGE_KEY = "hpd-appointment-alert-phone-v1";
 const APPOINTMENT_ALERT_WORKER_PATH = "/appointment-alerts";
 const MAPTILER_ENV_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
 const MAPTILER_KEY_STORAGE_KEY = "hpd-maptiler-browser-key-v1";
-const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v3";
+const MAP_BASE_STYLE_STORAGE_KEY = "hpd-map-base-style-v4";
 const LOCATION_ALWAYS_STORAGE_KEY = "hpd-map-location-always-v1";
 const LOCATION_LAST_STORAGE_KEY = "hpd-map-location-last-v1";
 const FIELD_VISIT_TRACKING_STORAGE_KEY = "hpd-private-field-visit-tracking-v1";
@@ -333,9 +333,10 @@ const MAP_BASE_STYLES: MapBaseStyle[] = [
 ];
 
 const SOFT_MAP_STYLE = MAP_BASE_STYLES.find((style) => style.id === "carto-voyager")!;
+const DEFAULT_MAP_STYLE = MAP_BASE_STYLES.find((style) => style.id === "carto-dark")!;
 
 function mapBaseStyleById(id: string): MapBaseStyle {
-  return MAP_BASE_STYLES.find((style) => style.id === id) || SOFT_MAP_STYLE;
+  return MAP_BASE_STYLES.find((style) => style.id === id) || DEFAULT_MAP_STYLE;
 }
 
 function resolveMapBaseStyle(styleId: MapBaseStyleId, mapTilerKey: string): MapBaseStyle {
@@ -3742,10 +3743,10 @@ const [hideCompleted, setHideCompleted] = useState(false);
 
 const [mapDaysBack, setMapDaysBack] = useState("30");
 const [mapShowAllDays, setMapShowAllDays] = useState(false);
-const [mapBaseStyle, setMapBaseStyle] = useState<MapBaseStyleId>("carto-voyager");
+const [mapBaseStyle, setMapBaseStyle] = useState<MapBaseStyleId>("carto-dark");
 const [mapTilerKey, setMapTilerKey] = useState(MAPTILER_ENV_KEY);
 const [mapTileStatus, setMapTileStatus] = useState(
-  "Soft Map selected."
+  "Night Map selected."
 );
   const [fullMap, setFullMap] = useState(false);
 const requestedMapBaseStyle = mapBaseStyleById(mapBaseStyle);
