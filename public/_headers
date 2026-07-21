@@ -1,0 +1,8 @@
+/map
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/map/*
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/data/*
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
