@@ -4010,11 +4010,15 @@ function handleMapTouchEnd(event: any) {
     }
     if (omo) {
       setSearch(omo.toUpperCase());
-      setUrlOmoRequest(omo);
+      if (!mapRequested) {
+        setUrlOmoRequest(omo);
+      }
       setMapBoroughFilter("all");
       setMapShowAllDays(true);
       setWorkflowViewFilter(requestedWorkflowView || "all");
-      setDrawerOpen(true);
+      if (!mapRequested) {
+        setDrawerOpen(true);
+      }
       setActionNotice(`Searching map for ${omo.toUpperCase()}.`);
     }
   }, []);
@@ -4350,8 +4354,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
     if (!needle) return zoneFiltered;
 
+    const omoHighlightOnly = fullMap && /^[a-z]{2}\d{3,}$/i.test(needle.trim());
+    if (omoHighlightOnly) return zoneFiltered;
+
     return zoneFiltered.filter((job) => matchesMapSearch(job, needle));
-  }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays, mapBoroughFilter, workflowViewFilter, countdownTick, routeFocusActive, routeFocusKeys, todayZoneLimit, userLocation]);
+  }, [jobs, mappedJobs, search, mapDaysBack, mapShowAllDays, mapBoroughFilter, workflowViewFilter, countdownTick, routeFocusActive, routeFocusKeys, todayZoneLimit, userLocation, fullMap]);
 
   useEffect(() => {
     function handleApprovedPlan(event: Event) {
@@ -5804,12 +5811,14 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         ];
         const iconAnchor: [number, number] = [Math.round(iconSize[0] / 2), Math.round(iconSize[1] / 2)];
         const popupJobId = jobKey(job, index);
+        const selectedMarkerKey = selected ? jobKey(selected) : search.trim().toUpperCase();
+        const isSelectedMapMarker = Boolean(selectedMarkerKey && jobKey(job).toUpperCase() === selectedMarkerKey.toUpperCase());
 
         const marker = L.marker([markerLatLng.lat, markerLatLng.lng], {
           title: `${popupJobId} ${displayAddress(job)}`,
           icon: L.divIcon({
             className: "maturity-map-marker",
-            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${hasOverdue ? "marker-has-overdue" : ""} ${visitedToday ? "marker-visited-today" : ""} ${noAccessTimerLabel ? "marker-has-no-access" : ""} ${noAccessSoon ? "marker-no-access-soon" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} ${appointmentPastDue ? "marker-appointment-past" : ""} ${pendingAppointmentPulse ? "marker-pending-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${noAccessReady ? "marker-ready-revisit" : ""}" style="border-color:${visitedToday ? "#53e69c" : hasOverdue ? "#ef4444" : appointmentPastDue ? "#dc2626" : noAccessSoon ? "#f97316" : appointmentLabel ? "#f59e0b" : noAccessReady ? "#22c55e" : markerColor};--marker-zoom-scale:${markerZoomScale.toFixed(2)};">
+            html: `<div class="maturity-marker-bubble map-signal-marker ${markerMode} ${isSelectedMapMarker ? "mockup-selected-marker" : ""} ${hasOverdue ? "marker-has-overdue" : ""} ${visitedToday ? "marker-visited-today" : ""} ${noAccessTimerLabel ? "marker-has-no-access" : ""} ${noAccessSoon ? "marker-no-access-soon" : ""} ${appointmentLabel ? "marker-has-appointment" : ""} ${appointmentPastDue ? "marker-appointment-past" : ""} ${pendingAppointmentPulse ? "marker-pending-appointment" : ""} maturity-${info.priority} ${JobStatus.statusMarkerClass(job)} ${noAccessReady ? "marker-ready-revisit" : ""}" style="border-color:${visitedToday ? "#53e69c" : hasOverdue ? "#ef4444" : appointmentPastDue ? "#dc2626" : noAccessSoon ? "#f97316" : appointmentLabel ? "#f59e0b" : noAccessReady ? "#22c55e" : markerColor};--marker-zoom-scale:${markerZoomScale.toFixed(2)};">
                     ${markerSignalLabelHtml(job, { overview: markerOverview, expanded: markerExpanded, detailed: markerDetailed, overdueLabel, noAccessTimerLabel, appointmentLabel, tapHint: selectedMarkerTapHint })}
                     ${visitedToday ? '<span class="marker-visit-badge">VISITED TODAY</span>' : ""}
                   </div>`,
@@ -40322,6 +40331,11 @@ return (
               background: transparent !important;
               border: 0 !important;
               box-shadow: none !important;
+              filter: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              text-shadow: none !important;
+              color: transparent !important;
               overflow: visible !important;
             }
 
@@ -40717,8 +40731,8 @@ return (
             }
 
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-actions a.contact-call {
-              width: 44px !important;
-              height: 44px !important;
+              width: 42px !important;
+              height: 42px !important;
             }
 
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice-grid {
@@ -40815,6 +40829,267 @@ return (
 
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .mission-field-flow-card .field-flow-choice.other strong::after {
               content: "More" !important;
+            }
+          }
+
+          /* IPHONE_EXACT_BIG_MAP_MOCKUP_V1_2026_07_21 */
+          @media (max-width: 1400px) {
+            .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark {
+              background: #020713 !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-stage {
+              background:
+                radial-gradient(circle at 50% 44%, rgba(37, 99, 235, 0.24), transparent 34%),
+                linear-gradient(180deg, #07182c 0%, #04101f 52%, #020713 100%) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-node {
+              background: #07182c !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-node .leaflet-tile {
+              opacity: 0.78 !important;
+              filter: brightness(0.92) contrast(1.18) saturate(1.45) hue-rotate(176deg) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-stage::after {
+              content: "" !important;
+              position: absolute !important;
+              inset: 0 !important;
+              z-index: 820 !important;
+              pointer-events: none !important;
+              background:
+                linear-gradient(180deg, rgba(7, 24, 44, 0.42), rgba(7, 18, 34, 0.16) 42%, rgba(2, 7, 19, 0.34)),
+                radial-gradient(circle at 50% 52%, rgba(37, 99, 235, 0.18), transparent 28%) !important;
+              mix-blend-mode: screen !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed {
+              top: max(14px, env(safe-area-inset-top)) !important;
+              left: max(60px, calc(env(safe-area-inset-left) + 60px)) !important;
+              right: max(82px, calc(env(safe-area-inset-right) + 82px)) !important;
+              height: 64px !important;
+              padding: 0 !important;
+              background: transparent !important;
+              border: 0 !important;
+              box-shadow: none !important;
+              z-index: 3100 !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search {
+              height: 64px !important;
+              border-radius: 26px !important;
+              padding: 0 18px !important;
+              background: rgba(12, 23, 38, 0.88) !important;
+              border: 1px solid rgba(148, 163, 184, 0.34) !important;
+              box-shadow: 0 16px 36px rgba(0,0,0,0.38), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+              backdrop-filter: blur(20px) saturate(1.3) !important;
+              -webkit-backdrop-filter: blur(20px) saturate(1.3) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search input,
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search input::placeholder {
+              color: #d1d5db !important;
+              font-size: 18px !important;
+              font-weight: 800 !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search::before {
+              color: #f8fafc !important;
+              opacity: 1 !important;
+              font-size: 26px !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-agent-top-button {
+              top: max(14px, env(safe-area-inset-top)) !important;
+              right: max(10px, env(safe-area-inset-right)) !important;
+              width: 74px !important;
+              height: 64px !important;
+              border-radius: 22px !important;
+              background: rgba(9, 20, 36, 0.9) !important;
+              border: 1px solid rgba(59, 130, 246, 0.55) !important;
+              color: #ffffff !important;
+              box-shadow: 0 0 26px rgba(37,99,235,0.22), inset 0 1px 0 rgba(255,255,255,0.08) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-agent-top-button::after {
+              content: "" !important;
+              position: absolute !important;
+              right: 10px !important;
+              top: 10px !important;
+              width: 10px !important;
+              height: 10px !important;
+              border-radius: 999px !important;
+              background: #4ade80 !important;
+              box-shadow: 0 0 12px rgba(74,222,128,0.7) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-menu-fab {
+              width: 50px !important;
+              height: 50px !important;
+              border-radius: 18px !important;
+              background: rgba(8, 19, 34, 0.92) !important;
+              border: 1px solid rgba(56, 189, 248, 0.38) !important;
+              box-shadow: 0 14px 30px rgba(0,0,0,0.38) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-menu-fab .map-menu-fab-label {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker {
+              z-index: 900 !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker {
+              width: 32px !important;
+              height: 44px !important;
+              min-width: 0 !important;
+              padding: 0 !important;
+              border: 0 !important;
+              background: transparent !important;
+              box-shadow: none !important;
+              filter: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              text-shadow: none !important;
+              color: transparent !important;
+              overflow: visible !important;
+              transform: translateZ(0) scale(var(--marker-zoom-scale, 1)) !important;
+            }
+            .map-shell.map-visual-preview.map-focus-active.map-glass-command-trial.full-map-mode .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-safe,
+            .map-shell.map-visual-preview.map-focus-active.map-glass-command-trial.full-map-mode .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-mini,
+            .map-shell.map-visual-preview.map-focus-active.map-glass-command-trial.full-map-mode .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview,
+            .map-shell.map-visual-preview.map-focus-active.map-glass-command-trial.full-map-mode .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-compact {
+              width: 32px !important;
+              height: 44px !important;
+              min-width: 0 !important;
+              padding: 0 !important;
+              border: 0 !important;
+              border-radius: 0 !important;
+              background: transparent !important;
+              box-shadow: none !important;
+              filter: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              color: transparent !important;
+              overflow: visible !important;
+            }
+            .map-shell.map-visual-preview.map-focus-active.map-glass-command-trial.full-map-mode .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-safe::before,
+            .map-shell.map-visual-preview.map-focus-active.map-glass-command-trial.full-map-mode .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-mini::before,
+            .map-shell.map-visual-preview.map-focus-active.map-glass-command-trial.full-map-mode .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview::before,
+            .map-shell.map-visual-preview.map-focus-active.map-glass-command-trial.full-map-mode .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-compact::before {
+              content: "" !important;
+              position: absolute !important;
+              left: 50% !important;
+              top: 3px !important;
+              width: 25px !important;
+              height: 25px !important;
+              border-radius: 999px !important;
+              transform: translateX(-50%) !important;
+              background: #05070b !important;
+              border: 2px solid rgba(255,255,255,0.46) !important;
+              box-shadow: 0 0 0 1px rgba(15,23,42,0.78) !important;
+            }
+
+            .map-shell.map-visual-preview.map-focus-active.map-glass-command-trial.full-map-mode .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-safe::after,
+            .map-shell.map-visual-preview.map-focus-active.map-glass-command-trial.full-map-mode .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-mini::after,
+            .map-shell.map-visual-preview.map-focus-active.map-glass-command-trial.full-map-mode .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overview::after,
+            .map-shell.map-visual-preview.map-focus-active.map-glass-command-trial.full-map-mode .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-compact::after {
+              content: "" !important;
+              position: absolute !important;
+              left: 50% !important;
+              top: 10px !important;
+              width: 9px !important;
+              height: 9px !important;
+              border-radius: 999px !important;
+              transform: translateX(-50%) !important;
+              background: #ffffff !important;
+              border: 0 !important;
+              box-shadow: 0 0 4px rgba(255,255,255,0.72) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker > *,
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker :is(.signal-top, .signal-eyebrow, .signal-address, .signal-start, .signal-footer, .marker-age-badge, .marker-md-badge, .marker-start-badge, .marker-overdue-badge, .marker-no-access-timer, .marker-appointment-badge, .marker-visit-badge, .signal-tap) {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker::before {
+              content: "" !important;
+              position: absolute !important;
+              left: 50% !important;
+              top: 3px !important;
+              width: 25px !important;
+              height: 25px !important;
+              border-radius: 999px !important;
+              transform: translateX(-50%) !important;
+              background: #05070b !important;
+              border: 2px solid rgba(255,255,255,0.46) !important;
+              box-shadow: 0 0 0 1px rgba(15,23,42,0.78) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker::after {
+              content: "" !important;
+              position: absolute !important;
+              left: 50% !important;
+              top: 10px !important;
+              width: 9px !important;
+              height: 9px !important;
+              border-radius: 999px !important;
+              transform: translateX(-50%) !important;
+              background: #ffffff !important;
+              box-shadow: 0 0 4px rgba(255,255,255,0.72) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker .signal-main {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker.mockup-selected-marker {
+              z-index: 950 !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker.mockup-selected-marker::before {
+              top: 0 !important;
+              width: 42px !important;
+              height: 42px !important;
+              background: linear-gradient(145deg, #60a5fa, #0b5fff 70%, #0944b5) !important;
+              border: 3px solid rgba(191, 219, 254, 0.72) !important;
+              box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.22), 0 0 26px rgba(59,130,246,0.86), 0 12px 18px rgba(0,0,0,0.48) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker.mockup-selected-marker::after {
+              top: 14px !important;
+              width: 11px !important;
+              height: 11px !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker.mockup-selected-marker .signal-main {
+              display: inline-flex !important;
+              position: absolute !important;
+              left: 50% !important;
+              top: 51px !important;
+              transform: translateX(-50%) !important;
+              height: 34px !important;
+              min-width: 92px !important;
+              padding: 0 13px !important;
+              align-items: center !important;
+              justify-content: center !important;
+              border-radius: 10px !important;
+              background: linear-gradient(135deg, #0b63ff, #0047d7) !important;
+              color: #ffffff !important;
+              font-size: 16px !important;
+              font-weight: 1000 !important;
+              line-height: 1 !important;
+              letter-spacing: 0 !important;
+              box-shadow: 0 12px 24px rgba(0,0,0,0.36), 0 0 22px rgba(37,99,235,0.48) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .map-cluster-link-layer,
+            .map-shell.map-glass-command-trial.full-map-mode .map-filter-count-hud,
+            .map-shell.map-glass-command-trial.full-map-mode .location-status-pill {
+              display: none !important;
             }
           }
           }        `}
