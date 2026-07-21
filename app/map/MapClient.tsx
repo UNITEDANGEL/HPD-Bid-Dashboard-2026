@@ -40319,9 +40319,250 @@ return (
               background: linear-gradient(180deg, rgba(7, 13, 24, 0.99), rgba(9, 17, 30, 0.98)) !important;
             }
           }
+
+          /* HPD_REAL_DASHBOARD_CHROME_2026_07_21 */
+          .map-shell.map-glass-command-trial .hpd-dashboard-chrome {
+            position: fixed;
+            inset: 0;
+            z-index: 2550;
+            pointer-events: none;
+          }
+
+          .map-shell.map-glass-command-trial .hpd-dashboard-sidebar {
+            display: none;
+          }
+
+          .map-shell.map-glass-command-trial .hpd-dashboard-overview-panel {
+            display: none;
+          }
+
+          @media (min-width: 980px) {
+            .map-shell.map-glass-command-trial::before,
+            .map-shell.map-glass-command-trial::after {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-sidebar {
+              display: grid;
+              grid-template-rows: auto 1fr auto;
+              position: fixed;
+              inset: 0 auto 0 0;
+              width: 146px;
+              padding: 18px 12px;
+              background: linear-gradient(180deg, rgba(5, 12, 24, 0.99), rgba(3, 7, 18, 0.99));
+              border-right: 1px solid rgba(96, 165, 250, 0.20);
+              box-shadow: 16px 0 42px rgba(0, 0, 0, 0.34);
+              pointer-events: auto;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-brand-lockup {
+              display: grid;
+              gap: 1px;
+              padding: 5px 4px 16px;
+              color: #f8fafc;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-brand-lockup b {
+              font-size: 18px;
+              line-height: 1;
+              letter-spacing: 0;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-brand-lockup span {
+              color: #93a4bd;
+              font-size: 10px;
+              font-weight: 800;
+              line-height: 1.1;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-sidebar nav {
+              display: grid;
+              gap: 6px;
+              align-content: start;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-sidebar nav span {
+              min-height: 31px;
+              display: flex;
+              align-items: center;
+              padding: 0 10px;
+              border-radius: 8px;
+              color: #b6c3d5;
+              font-size: 11px;
+              font-weight: 850;
+              letter-spacing: 0;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-sidebar nav span.active,
+            .map-shell.map-glass-command-trial .hpd-dashboard-sidebar nav span:nth-child(4) {
+              color: #eff6ff;
+              background: linear-gradient(135deg, rgba(37, 99, 235, 0.86), rgba(29, 78, 216, 0.72));
+              box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22);
+            }
+
+            .map-shell.map-glass-command-trial .hpd-user-chip {
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 8px;
+              border-radius: 11px;
+              background: rgba(15, 23, 42, 0.86);
+              border: 1px solid rgba(96, 165, 250, 0.18);
+              color: #e5edff;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-user-chip b {
+              width: 26px;
+              height: 26px;
+              display: grid;
+              place-items: center;
+              border-radius: 999px;
+              background: #2563eb;
+              font-size: 11px;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-user-chip span {
+              color: #cbd5e1;
+              font-size: 10px;
+              line-height: 1.15;
+              font-weight: 800;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-overview-panel {
+              display: grid;
+              gap: 12px;
+              position: fixed;
+              left: 158px;
+              right: 526px;
+              top: 10px;
+              min-height: 154px;
+              padding: 12px;
+              border-radius: 14px;
+              background: linear-gradient(180deg, rgba(8, 15, 27, 0.94), rgba(7, 13, 24, 0.90));
+              border: 1px solid rgba(96, 165, 250, 0.20);
+              box-shadow: 0 18px 46px rgba(0, 0, 0, 0.30);
+              pointer-events: auto;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-title-row {
+              display: flex;
+              align-items: start;
+              justify-content: space-between;
+              gap: 12px;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-title-row div {
+              display: grid;
+              gap: 3px;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-title-row strong {
+              color: #ffffff;
+              font-size: 22px;
+              line-height: 1;
+              letter-spacing: 0;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-title-row small {
+              color: #9caec4;
+              font-size: 11px;
+              font-weight: 750;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-dashboard-title-row button {
+              min-height: 32px;
+              padding: 0 14px;
+              border-radius: 8px;
+              color: #dbeafe;
+              background: rgba(15, 23, 42, 0.94);
+              border: 1px solid rgba(96, 165, 250, 0.22);
+              font-weight: 900;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-kpi-grid {
+              display: grid;
+              grid-template-columns: repeat(4, minmax(0, 1fr));
+              gap: 10px;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-kpi-grid article {
+              min-height: 78px;
+              display: grid;
+              align-content: center;
+              gap: 4px;
+              padding: 12px;
+              border-radius: 10px;
+              border: 1px solid rgba(96, 165, 250, 0.18);
+              background: linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(10, 18, 31, 0.88));
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+            }
+
+            .map-shell.map-glass-command-trial .hpd-kpi-grid article.blue { background: linear-gradient(145deg, rgba(30, 64, 175, 0.58), rgba(15, 23, 42, 0.92)); }
+            .map-shell.map-glass-command-trial .hpd-kpi-grid article.green { background: linear-gradient(145deg, rgba(22, 101, 52, 0.58), rgba(15, 23, 42, 0.92)); }
+            .map-shell.map-glass-command-trial .hpd-kpi-grid article.purple { background: linear-gradient(145deg, rgba(88, 28, 135, 0.58), rgba(15, 23, 42, 0.92)); }
+            .map-shell.map-glass-command-trial .hpd-kpi-grid article.amber { background: linear-gradient(145deg, rgba(113, 63, 18, 0.58), rgba(15, 23, 42, 0.92)); }
+
+            .map-shell.map-glass-command-trial .hpd-kpi-grid span {
+              color: #cbd5e1;
+              font-size: 11px;
+              font-weight: 850;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-kpi-grid strong {
+              color: #ffffff;
+              font-size: 28px;
+              line-height: 1;
+              letter-spacing: 0;
+            }
+
+            .map-shell.map-glass-command-trial .hpd-kpi-grid small {
+              color: #86efac;
+              font-size: 10px;
+              font-weight: 850;
+            }
+
+            .map-shell.map-glass-command-trial .map-stage {
+              top: 176px !important;
+            }
+
+            .map-shell.map-glass-command-trial .map-top,
+            .map-shell.map-glass-command-trial .map-face-search,
+            .map-shell.map-glass-command-trial .map-agent-top-button,
+            .map-shell.map-glass-command-trial .map-menu-fab {
+              transform: translateY(166px) !important;
+            }
+          }
           }        `}
         </style>
 
+      <div className="hpd-dashboard-chrome" aria-label="HPD dashboard overview">
+        <aside className="hpd-dashboard-sidebar" aria-label="Dashboard navigation">
+          <div className="hpd-brand-lockup"><b>HPD</b><span>Bid Dashboard</span></div>
+          <nav>
+            <span className="active">Overview</span>
+            <span>Live Bids</span>
+            <span>ITB/COA</span>
+            <span>Map View</span>
+            <span>Analytics</span>
+            <span>Calendar</span>
+            <span>Documents</span>
+            <span>Reports</span>
+          </nav>
+          <div className="hpd-user-chip"><b>JD</b><span>John Doe<br />Admin</span></div>
+        </aside>
+        <section className="hpd-dashboard-overview-panel" aria-label="Live dashboard metrics">
+          <div className="hpd-dashboard-title-row">
+            <div><strong>Overview</strong><small>Real-time overview of HPD bids and field work</small></div>
+            <button type="button" onClick={() => setMapMenuOpen(true)}>Filter</button>
+          </div>
+          <div className="hpd-kpi-grid">
+            <article className="blue"><span>Visible Jobs</span><strong>{filteredJobs.length}</strong><small>{visibleMappedCount} mapped</small></article>
+            <article className="green"><span>Mapped</span><strong>{mappedJobs.length || plottedCount}</strong><small>{plottedCount} plotted</small></article>
+            <article className="purple"><span>Ready 2nd</span><strong>{readySecondCount}</strong><small>No access revisit</small></article>
+            <article className="amber"><span>Archive</span><strong>{archivedLayerCount}</strong><small>closed jobs</small></article>
+          </div>
+        </section>
+      </div>
       <input
         ref={fieldPhotoInputRef}
         className="field-photo-input"
