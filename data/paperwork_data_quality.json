@@ -1,39 +1,21 @@
 {
-  "generatedAt": "2026-07-21T20:17:26.044Z",
+  "generatedAt": "2026-07-21T21:17:35.192Z",
   "totalJobs": 596,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 1,
+  "missingItbPage3Descriptions": 0,
   "badDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 1,
+  "missingPage3Images": 0,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
     "missingDescriptions": [],
-    "missingItbPage3Descriptions": [
-      {
-        "OMO": "ER00898",
-        "Address": "512 EAST 13 STREET, 10009",
-        "ITB": "ER00898_072026111221.pdf",
-        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
-        "Status": "MATCHED",
-        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ SCURE THE LOOSE MARBLE TREAD 3RD FROM BOTTOM UP AT 4TH STORY PUBLIC HAL"
-      }
-    ],
+    "missingItbPage3Descriptions": [],
     "badDescriptions": [],
     "sourceReviewJobs": [],
     "missingItbFiles": [],
-    "missingPage3Images": [
-      {
-        "OMO": "ER00898",
-        "Address": "512 EAST 13 STREET, 10009",
-        "ITB": "ER00898_072026111221.pdf",
-        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
-        "Status": "MATCHED",
-        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ SCURE THE LOOSE MARBLE TREAD 3RD FROM BOTTOM UP AT 4TH STORY PUBLIC HAL"
-      }
-    ]
+    "missingPage3Images": []
   }
 }
