@@ -39939,6 +39939,283 @@ return (
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .more-job-details[open] > summary::after {
             content: "Close" !important;
           }
+
+          /* FIELD_CONSOLE_JOB_CARD_V1_2026_07_21 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus {
+            background:
+              radial-gradient(circle at 20% 0%, rgba(37, 99, 235, 0.26), transparent 34%),
+              linear-gradient(180deg, rgba(3, 8, 18, 0.98), rgba(2, 6, 14, 0.98)) !important;
+            border-color: rgba(96, 165, 250, 0.32) !important;
+            box-shadow:
+              0 28px 80px rgba(0, 0, 0, 0.48),
+              inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
+            display: grid !important;
+            gap: 10px !important;
+            padding: 10px !important;
+            background:
+              linear-gradient(180deg, rgba(8, 15, 28, 0.94), rgba(3, 8, 18, 0.96)) !important;
+            border-color: rgba(96, 165, 250, 0.22) !important;
+            box-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card-head {
+            min-height: 0 !important;
+            padding: 12px !important;
+            border: 1px solid rgba(96, 165, 250, 0.24) !important;
+            border-radius: 18px !important;
+            background:
+              linear-gradient(135deg, rgba(12, 24, 45, 0.98), rgba(2, 8, 18, 0.96)) !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card .job-title {
+            color: #58a6ff !important;
+            font-size: clamp(30px, 8vw, 46px) !important;
+            line-height: 0.95 !important;
+            letter-spacing: 0 !important;
+            text-shadow: 0 0 18px rgba(37, 99, 235, 0.28) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card .job-address {
+            color: #ffffff !important;
+            font-size: clamp(19px, 5.6vw, 30px) !important;
+            line-height: 1.02 !important;
+            font-weight: 1000 !important;
+            text-transform: uppercase !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card .job-sub,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-chip-stack {
+            color: #aebed3 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card {
+            display: block !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode {
+            display: grid !important;
+            gap: 9px !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-topline,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-jobline,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-data-strip,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-flow-primary-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .site-procedure-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-route,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-stats,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-rail {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .program-source-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-hub,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .package-readiness-card {
+            border-radius: 18px !important;
+            background:
+              linear-gradient(135deg, rgba(10, 20, 36, 0.96), rgba(4, 10, 20, 0.94)) !important;
+            border: 1px solid rgba(96, 165, 250, 0.22) !important;
+            box-shadow:
+              inset 0 1px 0 rgba(255, 255, 255, 0.06),
+              0 12px 26px rgba(0, 0, 0, 0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description {
+            order: 1 !important;
+            padding: 12px !important;
+            max-height: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description-head span::before {
+            content: "Complete ";
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description p,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode .field-page3-description > p {
+            max-height: 118px !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            display: block !important;
+            color: #e9f2ff !important;
+            font-size: 14px !important;
+            line-height: 1.38 !important;
+            font-weight: 780 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card {
+            order: 2 !important;
+            padding: 11px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 7px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-row {
+            min-height: 48px !important;
+            padding: 8px !important;
+            border-radius: 13px !important;
+            background: rgba(8, 18, 34, 0.92) !important;
+            border: 1px solid rgba(103, 232, 249, 0.16) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-actions {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 7px !important;
+            margin-top: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-actions :is(a, button) {
+            min-height: 40px !important;
+            border-radius: 13px !important;
+            color: #ffffff !important;
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.95), rgba(14, 165, 233, 0.9)) !important;
+            box-shadow: 0 0 18px rgba(37, 99, 235, 0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .program-source-card {
+            order: 3 !important;
+            min-height: 0 !important;
+            padding: 9px 11px !important;
+            display: grid !important;
+            grid-template-columns: auto minmax(0, 1fr) !important;
+            gap: 8px !important;
+            align-items: center !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .program-source-card small {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card {
+            order: 4 !important;
+            padding: 12px !important;
+            background:
+              radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.22), transparent 34%),
+              linear-gradient(135deg, rgba(4, 24, 28, 0.98), rgba(2, 10, 22, 0.96)) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-current-strip {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-center {
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-main {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr) !important;
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-actions {
+            display: grid !important;
+            grid-template-columns: 0.7fr 1.4fr 0.7fr !important;
+            gap: 7px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-actions button,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-next-action-card button,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-column button,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-footer :is(button, a) {
+            border-radius: 14px !important;
+            color: #ffffff !important;
+            font-weight: 1000 !important;
+            border: 1px solid rgba(96, 165, 250, 0.28) !important;
+            background:
+              linear-gradient(135deg, rgba(37, 99, 235, 0.98), rgba(14, 165, 233, 0.88)) !important;
+            box-shadow:
+              0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+              0 0 22px rgba(37, 99, 235, 0.22) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-next-action-card {
+            margin-top: 8px !important;
+            border-radius: 16px !important;
+            background: rgba(2, 8, 18, 0.9) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-quick-choices,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-flow-card,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card > small {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-hub {
+            order: 5 !important;
+            padding: 12px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-grid {
+            gap: 8px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .package-readiness-card {
+            order: 6 !important;
+            padding: 11px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .package-readiness-grid,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .package-readiness-card p {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools {
+            order: 7 !important;
+            position: sticky !important;
+            bottom: 0 !important;
+            z-index: 6 !important;
+            padding: 8px 0 2px !important;
+            background: linear-gradient(180deg, transparent, rgba(3, 8, 18, 0.96) 28%) !important;
+          }
+
+          @media (max-width: 520px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card {
+              padding: 8px !important;
+              gap: 8px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .selected-card-head,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-card,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-hub,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .package-readiness-card {
+              border-radius: 16px !important;
+              padding: 10px !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-grid,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-current-strip,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-main,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-media-option-grid {
+              grid-template-columns: 1fr !important;
+            }
+
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description p,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode .field-page3-description > p {
+              max-height: 104px !important;
+            }
+          }
           }        `}
         </style>
 
