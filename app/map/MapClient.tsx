@@ -39037,6 +39037,25 @@ return (
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .job-card-field-sheet-head > .job-card-field-action-dock {
             display: none !important;
           }
+
+          /* FIELD_CARD_SOURCE_PROGRAM_VISIBLE_2026_07_20 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .program-source-card {
+            order: -11.5 !important;
+            display: grid !important;
+            visibility: visible !important;
+            background: linear-gradient(145deg, rgba(3, 18, 36, 0.98), rgba(8, 47, 73, 0.94)) !important;
+            border: 1px solid rgba(125, 211, 252, 0.38) !important;
+            color: #f8fafc !important;
+            box-shadow: 0 0 20px rgba(14, 165, 233, 0.16) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .program-source-card :is(strong, b, p, small) {
+            color: #f8fafc !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .program-source-card :is(span, label) {
+            color: #67e8f9 !important;
+          }
           }        `}
         </style>
 
