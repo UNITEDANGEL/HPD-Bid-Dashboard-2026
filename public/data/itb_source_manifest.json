@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-07-21T16:25:05.380Z",
+  "generatedAt": "2026-07-21T16:49:48.930Z",
   "page": 3,
   "dpi": 150,
-  "totalJobs": 593,
-  "uniqueItbRefs": 593,
+  "totalJobs": 594,
+  "uniqueItbRefs": 594,
   "sourceDirectories": [
     "D:\\dev\\HPD-Bid-Dashboard-2026\\ITB_Downloads_V5"
   ],
@@ -4158,12 +4158,19 @@
       "sourceFile": "D:\\dev\\HPD-Bid-Dashboard-2026\\ITB_Downloads_V5\\ER00862_071026025427.pdf",
       "sourceMatch": "exact",
       "pdf": "/documents/itb/ER00862_071026025427.pdf"
+    },
+    "ER00695_071726040734.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00695_071726040734-p3.png",
+      "sourceFile": "D:\\dev\\HPD-Bid-Dashboard-2026\\ITB_Downloads_V5\\ER00695_071726040734.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00695_071726040734.pdf"
     }
   },
   "summary": {
-    "rendered": 17,
-    "reused": 576,
-    "copiedPdfs": 17,
+    "rendered": 1,
+    "reused": 593,
+    "copiedPdfs": 1,
     "missingSource": 0,
     "failed": 0
   }
