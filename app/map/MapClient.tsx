@@ -39423,6 +39423,56 @@ return (
               max-height: calc(100dvh - 78px) !important;
             }
           }
+
+          /* FIELD_STATUS_TOOLS_COMPACT_2026_07_21 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+            margin: 4px 0 2px !important;
+            padding: 0 !important;
+            min-height: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools button {
+            min-height: 36px !important;
+            height: 36px !important;
+            padding: 5px 6px !important;
+            border-radius: 10px !important;
+            display: grid !important;
+            align-content: center !important;
+            gap: 1px !important;
+            background: rgba(2, 6, 23, 0.72) !important;
+            border: 1px solid rgba(125, 211, 252, 0.22) !important;
+            box-shadow: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools button strong {
+            color: #f8fafc !important;
+            font-size: 11px !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools button small {
+            color: #93c5fd !important;
+            font-size: 9px !important;
+            line-height: 1 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools .status-clear {
+            border-color: rgba(251, 113, 133, 0.28) !important;
+          }
+
+          @media (max-width: 420px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-map-tools button small {
+              display: none !important;
+            }
+          }
           }        `}
         </style>
 
@@ -42004,16 +42054,16 @@ return (
                     ) : null}
                     <div className="field-status-map-tools" aria-label="Map and status utility actions">
                       <button type="button" className="status-layers" onClick={openMapLayersFromJobCard}>
-                        <strong>Map Layers</strong>
-                        <small>Back to map</small>
+                        <strong>Layers</strong>
+                        <small>Map</small>
                       </button>
                       <button type="button" className="status-archive-map" onClick={() => switchMapBoard("archived")}>
-                        <strong>Archive Map</strong>
+                        <strong>Archive</strong>
                         <small>{archivedLayerCount} closed</small>
                       </button>
                       <button type="button" className="status-clear" onClick={() => resetFieldJobForTesting(selected)}>
-                        <strong>Clear Status</strong>
-                        <small>Back to pending</small>
+                        <strong>Clear</strong>
+                        <small>Pending</small>
                       </button>
                     </div>
                     {isNoAccessFirst || isNoAccessSecond ? (
