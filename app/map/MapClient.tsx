@@ -39632,6 +39632,88 @@ return (
               display: none !important;
             }
           }
+
+          /* FIELD_CARD_FAST_FLOW_PREVIEW_2026_07_21 */
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description {
+            max-height: 188px !important;
+            overflow: hidden !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description p,
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode .field-page3-description > p {
+            max-height: 92px !important;
+            overflow: hidden !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 5 !important;
+            -webkit-box-orient: vertical !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-status-picker-card {
+            order: -27 !important;
+            margin-top: 2px !important;
+            border: 1px solid rgba(52, 211, 153, 0.42) !important;
+            background: linear-gradient(145deg, rgba(3, 18, 36, 0.98), rgba(5, 46, 22, 0.9)) !important;
+            box-shadow: 0 0 18px rgba(16, 185, 129, 0.14) !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card::before {
+            content: "What happened with this job?" !important;
+            display: block !important;
+            color: #bbf7d0 !important;
+            font-size: 12px !important;
+            font-weight: 900 !important;
+            letter-spacing: 0 !important;
+            margin-bottom: 6px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card .field-mission-status-head {
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card .field-mission-status-head span {
+            display: none !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-picker-card .field-mission-status-head strong {
+            font-size: 14px !important;
+            line-height: 1.12 !important;
+            color: #f8fafc !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-current-strip {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 6px !important;
+            margin: 6px 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-current-strip > div {
+            min-height: 42px !important;
+            padding: 7px 8px !important;
+            border-radius: 10px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-select-label {
+            margin-top: 6px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-select-label select {
+            min-height: 40px !important;
+            font-size: 13px !important;
+          }
+
+          .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-status-command-actions {
+            margin-top: 6px !important;
+          }
+
+          @media (max-width: 520px) {
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-page3-description p,
+            .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode .field-page3-description > p {
+              max-height: 78px !important;
+              -webkit-line-clamp: 4 !important;
+            }
+          }
           }        `}
         </style>
 
