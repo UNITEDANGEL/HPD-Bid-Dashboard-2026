@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-07-21T17:28:59.748Z",
-  "totalJobs": 594,
+  "generatedAt": "2026-07-21T18:13:40.644Z",
+  "totalJobs": 595,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 2,
+  "missingItbPage3Descriptions": 3,
   "badDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 2,
+  "missingPage3Images": 3,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
@@ -28,6 +28,14 @@
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
         "Preview": "FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS Provide/Install Abate Remove Dele"
+      },
+      {
+        "OMO": "ER01531",
+        "Address": "1019 WOODYCREST AVENUE, 10452",
+        "ITB": "ER01531_072026083315.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": WINDOW AT APT 3 NYC HPD EMERGENCY OPERATIONS DIVISION-ESSENTIAL SER VICE WORK. AT APT 3 DEFECTIVE WINDOW: MAKE ALL NECESSARY REPAIRS TO RE"
       }
     ],
     "badDescriptions": [],
@@ -49,6 +57,14 @@
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
         "Preview": "FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS Provide/Install Abate Remove Dele"
+      },
+      {
+        "OMO": "ER01531",
+        "Address": "1019 WOODYCREST AVENUE, 10452",
+        "ITB": "ER01531_072026083315.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": WINDOW AT APT 3 NYC HPD EMERGENCY OPERATIONS DIVISION-ESSENTIAL SER VICE WORK. AT APT 3 DEFECTIVE WINDOW: MAKE ALL NECESSARY REPAIRS TO RE"
       }
     ]
   }
