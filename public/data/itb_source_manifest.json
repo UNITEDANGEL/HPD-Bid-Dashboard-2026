@@ -4154,12 +4154,33 @@
       "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\ITB_Downloads_V5\\ER01342_071726021504.pdf",
       "sourceMatch": "exact",
       "pdf": "/documents/itb/ER01342_071726021504.pdf"
+    },
+    "ER00695_071726040734.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00695_071726040734-p3.png",
+      "sourceFile": "public\\documents\\itb\\ER00695_071726040734.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00695_071726040734.pdf"
+    },
+    "EQ31300_072026032759.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/EQ31300_072026032759-p3.png",
+      "sourceFile": "public\\documents\\itb\\EQ31300_072026032759.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/EQ31300_072026032759.pdf"
+    },
+    "ER01531_072026083315.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER01531_072026083315-p3.png",
+      "sourceFile": "public\\documents\\itb\\ER01531_072026083315.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER01531_072026083315.pdf"
     }
   },
   "summary": {
-    "rendered": 2,
-    "reused": 590,
-    "copiedPdfs": 2,
+    "rendered": 3,
+    "reused": 592,
+    "copiedPdfs": 0,
     "missingSource": 0,
     "failed": 0
   }
