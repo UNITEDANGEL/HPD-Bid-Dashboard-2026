@@ -11888,7 +11888,7 @@ return (
               width: 46px !important;
               min-height: 42px !important;
               border-radius: 15px !important;
-              font-size: 16px !important;
+              font-size: 15px !important;
             }
 
             .job-drawer {
@@ -11912,7 +11912,7 @@ return (
             }
 
             .drawer-head strong {
-              font-size: 16px !important;
+              font-size: 15px !important;
             }
 
             .selected-card,
@@ -12179,7 +12179,7 @@ return (
             }
 
             .selected-description p {
-              font-size: 16px !important;
+              font-size: 15px !important;
               line-height: 1.6 !important;
             }
           }
@@ -16500,7 +16500,7 @@ return (
             }
 
             .days-back-control input {
-              font-size: 16px !important;
+              font-size: 15px !important;
             }
 
             .map-stats {
@@ -21301,7 +21301,7 @@ return (
 
             .map-job-brief-directions .direction-provider-button {
               min-height: 66px !important;
-              font-size: 16px !important;
+              font-size: 15px !important;
             }
 
             .site-visit-date-card {
@@ -35346,7 +35346,7 @@ return (
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-launcher strong {
-              font-size: 16px !important;
+              font-size: 15px !important;
               white-space: normal !important;
             }
 
@@ -36147,7 +36147,7 @@ return (
             }
 
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-card strong {
-              font-size: 16px !important;
+              font-size: 15px !important;
               line-height: 1.05 !important;
             }
 
@@ -40423,7 +40423,7 @@ return (
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode .field-page3-description > p {
               margin: -31px 0 0 58px !important;
               color: #cbd5e1 !important;
-              font-size: 16px !important;
+              font-size: 15px !important;
               line-height: 1.34 !important;
               max-height: 44px !important;
               overflow: hidden !important;
@@ -40452,7 +40452,7 @@ return (
 
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-row strong {
               color: #cbd5e1 !important;
-              font-size: 16px !important;
+              font-size: 15px !important;
               font-weight: 700 !important;
               line-height: 1.2 !important;
             }
@@ -40709,7 +40709,7 @@ return (
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-head strong {
               display: block !important;
               margin-top: 1px !important;
-              font-size: 16px !important;
+              font-size: 15px !important;
               line-height: 1.05 !important;
               text-align: left !important;
             }
@@ -40835,22 +40835,22 @@ return (
           /* IPHONE_EXACT_BIG_MAP_MOCKUP_V1_2026_07_21 */
           @media (max-width: 1400px) {
             .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark {
-              background: #020713 !important;
+              background: #071426 !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-stage {
               background:
-                radial-gradient(circle at 50% 44%, rgba(37, 99, 235, 0.24), transparent 34%),
-                linear-gradient(180deg, #07182c 0%, #04101f 52%, #020713 100%) !important;
+                radial-gradient(circle at 50% 42%, rgba(59, 130, 246, 0.18), transparent 36%),
+                linear-gradient(180deg, #10233d 0%, #0b1b31 52%, #081525 100%) !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-node {
-              background: #07182c !important;
+              background: #10233d !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-node .leaflet-tile {
-              opacity: 0.78 !important;
-              filter: brightness(0.92) contrast(1.18) saturate(1.45) hue-rotate(176deg) !important;
+              opacity: 0.96 !important;
+              filter: brightness(1.34) contrast(1.08) saturate(1.36) hue-rotate(188deg) !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-stage::after {
@@ -40860,9 +40860,9 @@ return (
               z-index: 820 !important;
               pointer-events: none !important;
               background:
-                linear-gradient(180deg, rgba(7, 24, 44, 0.42), rgba(7, 18, 34, 0.16) 42%, rgba(2, 7, 19, 0.34)),
-                radial-gradient(circle at 50% 52%, rgba(37, 99, 235, 0.18), transparent 28%) !important;
-              mix-blend-mode: screen !important;
+                linear-gradient(180deg, rgba(8, 28, 52, 0.12), rgba(8, 26, 48, 0.04) 42%, rgba(3, 12, 24, 0.12)),
+                radial-gradient(circle at 50% 52%, rgba(59, 130, 246, 0.10), transparent 30%) !important;
+              mix-blend-mode: soft-light !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed {
@@ -41079,7 +41079,7 @@ return (
               border-radius: 10px !important;
               background: linear-gradient(135deg, #0b63ff, #0047d7) !important;
               color: #ffffff !important;
-              font-size: 16px !important;
+              font-size: 15px !important;
               font-weight: 1000 !important;
               line-height: 1 !important;
               letter-spacing: 0 !important;
@@ -41094,7 +41094,7 @@ return (
               right: 12px !important;
               width: auto !important;
               display: grid !important;
-              grid-template-columns: minmax(0, 1fr) 104px !important;
+              grid-template-columns: minmax(0, 1fr) 94px !important;
               gap: 8px !important;
               align-items: center !important;
               height: 58px !important;
@@ -41110,7 +41110,7 @@ return (
               align-items: center !important;
               gap: 0 !important;
               border-radius: 26px !important;
-              padding: 0 18px 0 54px !important;
+              padding: 0 12px 0 42px !important;
               background: rgba(12, 23, 38, 0.9) !important;
               border: 1px solid rgba(148, 163, 184, 0.36) !important;
               box-shadow: 0 16px 36px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08) !important;
@@ -41119,10 +41119,10 @@ return (
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search::before {
               content: "⌕" !important;
               position: absolute !important;
-              left: 19px !important;
+              left: 14px !important;
               top: 50% !important;
               transform: translateY(-50%) !important;
-              font-size: 34px !important;
+              font-size: 26px !important;
               line-height: 1 !important;
               color: #f8fafc !important;
               opacity: 1 !important;
@@ -41146,7 +41146,7 @@ return (
               min-width: 0 !important;
               height: 100% !important;
               color: #f8fafc !important;
-              font-size: clamp(15px, 4vw, 18px) !important;
+              font-size: clamp(13px, 3.45vw, 16px) !important;
               font-weight: 800 !important;
               letter-spacing: 0 !important;
               background: transparent !important;
@@ -41163,19 +41163,19 @@ return (
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button {
               position: relative !important;
               inset: auto !important;
-              width: 104px !important;
-              min-width: 104px !important;
-              max-width: 104px !important;
+              width: 94px !important;
+              min-width: 94px !important;
+              max-width: 94px !important;
               height: 58px !important;
               display: flex !important;
               align-items: center !important;
               justify-content: center !important;
-              padding: 0 18px 0 14px !important;
+              padding: 0 14px 0 10px !important;
               border-radius: 23px !important;
               background: rgba(9, 20, 36, 0.94) !important;
               border: 1px solid rgba(59, 130, 246, 0.62) !important;
               color: #ffffff !important;
-              font-size: 16px !important;
+              font-size: 15px !important;
               font-weight: 900 !important;
               letter-spacing: 0 !important;
               box-shadow: 0 0 28px rgba(37,99,235,0.28), inset 0 1px 0 rgba(255,255,255,0.08) !important;
