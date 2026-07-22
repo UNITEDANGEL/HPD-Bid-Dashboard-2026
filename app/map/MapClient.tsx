@@ -41184,10 +41184,10 @@ return (
               left: 50% !important;
               right: auto !important;
               top: auto !important;
-              bottom: max(8px, env(safe-area-inset-bottom)) !important;
+              bottom: max(4px, env(safe-area-inset-bottom)) !important;
               width: min(430px, calc(100vw - 18px)) !important;
               height: auto !important;
-              max-height: min(58svh, 560px) !important;
+              max-height: min(90svh, 700px) !important;
               min-height: 0 !important;
               transform: translateX(-50%) !important;
               border-radius: 28px 28px 20px 20px !important;
@@ -41227,8 +41227,8 @@ return (
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
               margin: 0 10px 10px !important;
-              padding: 10px !important;
-              border-radius: 22px !important;
+              padding: 7px !important;
+              border-radius: 20px !important;
               background: rgba(4, 12, 26, 0.74) !important;
               border: 1px solid rgba(96, 165, 250, 0.22) !important;
               box-shadow: inset 0 1px 0 rgba(255,255,255,0.08) !important;
@@ -41237,8 +41237,8 @@ return (
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-field-title-copy strong,
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-field-title-copy h2 {
               color: #ffffff !important;
-              font-size: clamp(24px, 7vw, 38px) !important;
-              line-height: 0.98 !important;
+              font-size: clamp(22px, 7vw, 32px) !important;
+              line-height: 0.92 !important;
               letter-spacing: 0 !important;
               text-shadow: 0 0 18px rgba(59,130,246,0.22) !important;
             }
@@ -41250,13 +41250,41 @@ return (
               font-weight: 900 !important;
             }
 
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-field-sheet-head {
+              display: block !important;
+              gap: 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-field-title-row {
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) 54px !important;
+              gap: 8px !important;
+              align-items: start !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-field-title-copy {
+              min-width: 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-field-title-copy > span {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-map-back-pill {
+              width: 54px !important;
+              height: 54px !important;
+              min-width: 54px !important;
+              border-radius: 16px !important;
+              align-self: start !important;
+            }
+
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-row {
               display: grid !important;
               grid-template-columns: minmax(0, 1fr) auto !important;
               align-items: center !important;
               gap: 8px !important;
-              margin-top: 9px !important;
-              padding: 8px !important;
+              margin-top: 7px !important;
+              padding: 6px !important;
               border-radius: 16px !important;
               background: rgba(3, 11, 24, 0.78) !important;
               border: 1px solid rgba(96, 165, 250, 0.2) !important;
@@ -41282,20 +41310,20 @@ return (
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-actions {
               display: inline-grid !important;
-              grid-template-columns: 58px 58px !important;
+              grid-template-columns: 54px 54px !important;
               gap: 7px !important;
               align-items: center !important;
               justify-content: end !important;
-              min-width: 123px !important;
+              min-width: 115px !important;
             }
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-actions .route-head-button {
               display: grid !important;
               grid-template-rows: 22px 13px !important;
               place-items: center !important;
-              width: 58px !important;
-              height: 48px !important;
-              min-width: 58px !important;
+              width: 54px !important;
+              height: 46px !important;
+              min-width: 54px !important;
               padding: 5px 4px !important;
               border-radius: 14px !important;
               background: rgba(12, 25, 45, 0.96) !important;
@@ -41356,6 +41384,365 @@ return (
               background: rgba(6, 17, 34, 0.72) !important;
               border: 1px solid rgba(96, 165, 250, 0.18) !important;
               box-shadow: inset 0 1px 0 rgba(255,255,255,0.06) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .action-notice {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-page3-description.header-job-description {
+              display: grid !important;
+              gap: 7px !important;
+              margin: 7px 10px 0 !important;
+              padding: 8px !important;
+              border-radius: 18px !important;
+              background: rgba(5, 14, 29, 0.76) !important;
+              border: 1px solid rgba(96, 165, 250, 0.2) !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.07) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-page3-description.header-job-description .field-page3-description-head {
+              display: flex !important;
+              align-items: center !important;
+              justify-content: space-between !important;
+              gap: 8px !important;
+              margin: 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-page3-description.header-job-description .field-page3-description-head span {
+              color: #dff6ff !important;
+              font-size: 11px !important;
+              font-weight: 1000 !important;
+              letter-spacing: 0 !important;
+              text-transform: uppercase !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-page3-description.header-job-description .field-page3-description-head button,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-page3-description.header-job-description .field-page3-description-head small {
+              flex: 0 0 auto !important;
+              min-height: 30px !important;
+              padding: 0 10px !important;
+              border-radius: 11px !important;
+              font-size: 10px !important;
+              font-weight: 900 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-page3-description.header-job-description > p {
+              display: block !important;
+              max-height: 58px !important;
+              margin: 0 !important;
+              padding: 8px 9px !important;
+              border-radius: 13px !important;
+              background: rgba(2, 8, 19, 0.78) !important;
+              border: 1px solid rgba(148, 163, 184, 0.16) !important;
+              color: #f8fbff !important;
+              font-size: 12px !important;
+              font-weight: 800 !important;
+              line-height: 1.2 !important;
+              overflow-y: auto !important;
+              overscroll-behavior: contain !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand {
+              display: block !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              border: 0 !important;
+              background: transparent !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand summary {
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) auto !important;
+              align-items: center !important;
+              gap: 8px !important;
+              list-style: none !important;
+              cursor: pointer !important;
+              min-height: 48px !important;
+              padding: 8px 9px !important;
+              border-radius: 13px !important;
+              background: rgba(2, 8, 19, 0.78) !important;
+              border: 1px solid rgba(148, 163, 184, 0.16) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand summary::-webkit-details-marker {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand summary span {
+              display: -webkit-box !important;
+              color: #f8fbff !important;
+              font-size: 12px !important;
+              font-weight: 900 !important;
+              line-height: 1.18 !important;
+              white-space: normal !important;
+              overflow: hidden !important;
+              -webkit-line-clamp: 2 !important;
+              -webkit-box-orient: vertical !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand summary b {
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              min-height: 30px !important;
+              padding: 0 10px !important;
+              border-radius: 11px !important;
+              color: #bfdbfe !important;
+              background: rgba(37,99,235,0.18) !important;
+              border: 1px solid rgba(96,165,250,0.34) !important;
+              font-size: 10px !important;
+              font-weight: 1000 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand > p {
+              display: block !important;
+              max-height: 180px !important;
+              margin: 8px 0 0 !important;
+              padding: 9px !important;
+              border-radius: 12px !important;
+              background: rgba(2, 8, 19, 0.9) !important;
+              color: #f8fbff !important;
+              font-size: 12px !important;
+              font-weight: 800 !important;
+              line-height: 1.28 !important;
+              white-space: pre-wrap !important;
+              overflow-y: auto !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand[open]::before {
+              content: "" !important;
+              position: fixed !important;
+              inset: 0 !important;
+              z-index: 4900 !important;
+              background: rgba(2, 6, 23, 0.62) !important;
+              backdrop-filter: blur(5px) !important;
+              -webkit-backdrop-filter: blur(5px) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand[open] > p {
+              position: fixed !important;
+              left: max(14px, env(safe-area-inset-left)) !important;
+              right: max(14px, env(safe-area-inset-right)) !important;
+              top: max(78px, calc(env(safe-area-inset-top) + 58px)) !important;
+              z-index: 4910 !important;
+              max-height: min(68svh, 520px) !important;
+              margin: 0 !important;
+              padding: 16px !important;
+              border-radius: 22px !important;
+              background:
+                radial-gradient(circle at 16% 0%, rgba(59,130,246,0.24), transparent 34%),
+                linear-gradient(180deg, rgba(12, 24, 42, 0.98), rgba(3, 10, 24, 0.99)) !important;
+              border: 1px solid rgba(147, 197, 253, 0.34) !important;
+              box-shadow: 0 26px 70px rgba(0,0,0,0.62), inset 0 1px 0 rgba(255,255,255,0.12) !important;
+              color: #ffffff !important;
+              font-size: 15px !important;
+              line-height: 1.38 !important;
+              overflow-y: auto !important;
+              -webkit-overflow-scrolling: touch !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-tenant-contact-card {
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) auto !important;
+              align-items: center !important;
+              gap: 8px !important;
+              min-height: 52px !important;
+              padding: 7px 9px !important;
+              border-radius: 15px !important;
+              background: rgba(4, 18, 31, 0.84) !important;
+              border: 1px solid rgba(74, 222, 128, 0.25) !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.07) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-tenant-contact-card span {
+              display: block !important;
+              color: #7dd3fc !important;
+              font-size: 10px !important;
+              font-weight: 1000 !important;
+              text-transform: uppercase !important;
+              letter-spacing: 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-tenant-contact-card strong {
+              display: block !important;
+              margin-top: 2px !important;
+              color: #ffffff !important;
+              font-size: 12px !important;
+              font-weight: 1000 !important;
+              line-height: 1.1 !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-tenant-contact-card small {
+              display: block !important;
+              margin-top: 2px !important;
+              color: #b7c7d9 !important;
+              font-size: 10px !important;
+              font-weight: 800 !important;
+              line-height: 1.15 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-tenant-actions {
+              display: inline-flex !important;
+              gap: 6px !important;
+              align-items: center !important;
+              justify-content: flex-end !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-tenant-actions a {
+              display: inline-flex !important;
+              min-height: 32px !important;
+              padding: 0 9px !important;
+              align-items: center !important;
+              justify-content: center !important;
+              border-radius: 12px !important;
+              background: rgba(22, 101, 52, 0.32) !important;
+              border: 1px solid rgba(74, 222, 128, 0.45) !important;
+              color: #dcfce7 !important;
+              font-size: 10px !important;
+              font-weight: 1000 !important;
+              text-decoration: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card {
+              display: grid !important;
+              gap: 7px !important;
+              margin: 0 !important;
+              padding: 8px !important;
+              border-radius: 16px !important;
+              background: rgba(3, 12, 26, 0.82) !important;
+              border: 1px solid rgba(96, 165, 250, 0.22) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-primary-head {
+              display: none !important;
+              align-items: center !important;
+              justify-content: space-between !important;
+              gap: 8px !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-primary-head span,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-primary-head small {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-primary-head strong {
+              color: #ffffff !important;
+              font-size: 14px !important;
+              font-weight: 1000 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-primary-head b {
+              padding: 6px 9px !important;
+              border-radius: 999px !important;
+              color: #eaf4ff !important;
+              background: rgba(37, 99, 235, 0.22) !important;
+              border: 1px solid rgba(96, 165, 250, 0.34) !important;
+              font-size: 10px !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-choice-grid {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 7px !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-choice {
+              min-height: 56px !important;
+              padding: 8px !important;
+              border-radius: 15px !important;
+              text-align: left !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 18px rgba(0,0,0,0.2) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-choice span {
+              display: block !important;
+              color: #ffffff !important;
+              font-size: 12px !important;
+              font-weight: 1000 !important;
+              line-height: 1 !important;
+              text-transform: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-choice strong {
+              display: block !important;
+              margin-top: 4px !important;
+              color: #dbeafe !important;
+              font-size: 10px !important;
+              font-weight: 900 !important;
+              line-height: 1 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-choice small {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-choice.here {
+              background: linear-gradient(135deg, rgba(37, 99, 235, 0.62), rgba(14, 165, 233, 0.24)) !important;
+              border-color: rgba(96, 165, 250, 0.72) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-choice.start {
+              background: linear-gradient(135deg, rgba(22, 163, 74, 0.6), rgba(22, 101, 52, 0.24)) !important;
+              border-color: rgba(74, 222, 128, 0.62) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-choice.waiting {
+              background: linear-gradient(135deg, rgba(180, 83, 9, 0.52), rgba(120, 53, 15, 0.22)) !important;
+              border-color: rgba(251, 191, 36, 0.55) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-choice.danger {
+              background: linear-gradient(135deg, rgba(185, 28, 28, 0.54), rgba(127, 29, 29, 0.22)) !important;
+              border-color: rgba(248, 113, 113, 0.58) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-next-row {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-visit-stamp {
+              display: grid !important;
+              gap: 2px !important;
+              padding: 7px 9px !important;
+              border-radius: 13px !important;
+              background: rgba(15, 23, 42, 0.72) !important;
+              border: 1px solid rgba(96, 165, 250, 0.24) !important;
+              color: #eaf4ff !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-visit-stamp.visited-today {
+              border-color: rgba(74, 222, 128, 0.45) !important;
+              background: rgba(20, 83, 45, 0.26) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-visit-stamp span {
+              color: #93c5fd !important;
+              font-size: 10px !important;
+              font-weight: 1000 !important;
+              text-transform: uppercase !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-visit-stamp strong {
+              color: #ffffff !important;
+              font-size: 11px !important;
+              font-weight: 900 !important;
+              line-height: 1.1 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-current-state-banner,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-72h-counter,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus > .job-card-field-action-dock,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus > .job-progress-timeline,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus > .job-card-filter-menu {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .private-visit-card {
+              display: none !important;
             }
 
             .map-shell.map-glass-command-trial.drawer-selected .maturity-map-marker .map-signal-marker.mockup-selected-marker {
@@ -41558,6 +41945,94 @@ return (
             .map-shell.map-glass-command-trial.full-map-mode .map-cluster-link-layer,
             .map-shell.map-glass-command-trial.full-map-mode .map-filter-count-hud,
             .map-shell.map-glass-command-trial.full-map-mode .location-status-pill {
+              display: none !important;
+            }
+
+            /* FINAL_FIELD_CARD_FLOW_OVERRIDE_2026_07_22 */
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .field-page3-description.header-job-description {
+              display: grid !important;
+              visibility: visible !important;
+              gap: 7px !important;
+              margin: 7px 10px 0 !important;
+              padding: 8px !important;
+              border-radius: 18px !important;
+              background: rgba(5, 14, 29, 0.84) !important;
+              border: 1px solid rgba(96, 165, 250, 0.26) !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.08) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .field-page3-description.header-job-description > p {
+              display: block !important;
+              max-height: 58px !important;
+              margin: 0 !important;
+              padding: 8px 9px !important;
+              border-radius: 13px !important;
+              background: rgba(2, 8, 19, 0.78) !important;
+              border: 1px solid rgba(148, 163, 184, 0.16) !important;
+              color: #f8fbff !important;
+              font-size: 12px !important;
+              font-weight: 850 !important;
+              line-height: 1.2 !important;
+              white-space: pre-wrap !important;
+              overflow: hidden !important;
+              -webkit-line-clamp: 3 !important;
+              -webkit-box-orient: vertical !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-scope-expand {
+              display: block !important;
+              visibility: visible !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-scope-expand summary {
+              display: grid !important;
+              grid-template-columns: minmax(0, 1fr) auto !important;
+              visibility: visible !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-scope-expand > p {
+              display: block !important;
+              max-height: 180px !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-tenant-contact-card {
+              display: grid !important;
+              visibility: visible !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-field-flow-card {
+              display: grid !important;
+              visibility: visible !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-field-flow-card .field-flow-choice-grid {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-field-flow-card .field-flow-choice {
+              display: block !important;
+              visibility: visible !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-visit-stamp {
+              display: grid !important;
+              visibility: visible !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-current-state-banner,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-72h-counter,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus > .job-card-field-action-dock,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus > .job-progress-timeline,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus > .job-card-filter-menu {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .private-visit-card {
               display: none !important;
             }
           }
@@ -42586,6 +43061,18 @@ return (
               {(() => {
                 const headerDescription = displayDescription(selected);
                 const headerItbSource = itbSourceFor(selected, itbSourceManifest);
+                const headerTenantContact = tenantContactInfo(selected);
+                const headerVisit = visitSummaryFor(selected);
+                const headerVisitRecord = headerVisit?.today || headerVisit?.latest;
+                const headerScopeSummary = headerDescription
+                  ? headerDescription
+                      .replace(/\s+/g, " ")
+                      .split(/[.;]/)
+                      .map((part) => part.trim())
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .join(" · ")
+                  : "";
                 const headerSecondAttempt = workflowSecondAttemptInfo(selected);
                 const headerNoAccessComplete = workflowStatus(selected) === "NO_ACCESS_COMPLETE";
                 const headerNoAccessTitle = headerNoAccessComplete
@@ -42635,17 +43122,46 @@ return (
                         <small>No ITB PDF</small>
                       )}
                     </div>
-                    <p>{headerDescription || "No ITB description found for this job."}</p>
+                    <details className="header-scope-expand">
+                      <summary>
+                        <span>{headerScopeSummary || "No ITB description found for this job."}</span>
+                        <b>Full</b>
+                      </summary>
+                      <p>{headerDescription || "No ITB description found for this job."}</p>
+                    </details>
+                    <div className={`header-tenant-contact-card ${headerTenantContact.appointmentNeeded ? "needs-appointment" : "common-area"}`} aria-label="Tenant contact">
+                      <div>
+                        <span>{headerTenantContact.label}</span>
+                        <strong>
+                          {headerTenantContact.name || headerTenantContact.phone || headerTenantContact.apartment || headerTenantContact.status}
+                        </strong>
+                        <small>
+                          {[headerTenantContact.apartment, headerTenantContact.name && headerTenantContact.phone ? headerTenantContact.phone : "", !headerTenantContact.phone ? headerTenantContact.status : ""]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </small>
+                      </div>
+                      <div className="header-tenant-actions">
+                        {headerTenantContact.actionHref ? <a href={headerTenantContact.actionHref}>Call</a> : null}
+                        {headerTenantContact.smsHref ? <a href={headerTenantContact.smsHref}>Text</a> : null}
+                        {headerTenantContact.emailHref ? <a href={headerTenantContact.emailHref}>Request</a> : null}
+                      </div>
+                    </div>
                     <section className="field-flow-primary-card header-field-flow-card" aria-label="Field workflow">
                       <div className="field-flow-primary-head">
                         <div>
-                          <span>Field Flow</span>
-                          <strong>Pick what happened at the site</strong>
-                          <small>Start work opens before/after media. No-work statuses close or start the 72h timer.</small>
+                          <span>What happened?</span>
+                          <strong>Pick the field status</strong>
+                          <small>Tap I am here first when you arrive. Then choose the site result.</small>
                         </div>
                         <b>{workflowShortStatusLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus))}</b>
                       </div>
                       <div className="field-flow-choice-grid">
+                        <button type="button" className="field-flow-choice here" onClick={() => markFieldVisit(selected, "manual_here")} disabled={fieldVisitSaving}>
+                          <span>{fieldVisitSaving ? "Saving" : "I am here"}</span>
+                          <strong>Arrived</strong>
+                          <small>Record your private visit on the map.</small>
+                        </button>
                         <button type="button" className="field-flow-choice start" onClick={() => openStartJobChoices(selected)}>
                           <span>Start Work</span>
                           <strong>Begin Job</strong>
@@ -42661,11 +43177,14 @@ return (
                           <strong>Close Job</strong>
                           <small>Archive and prepare no-work package.</small>
                         </button>
-                        <button type="button" className="field-flow-choice other" onClick={() => markCompletedByOthers(selected)}>
-                          <span>Done By Others</span>
-                          <strong>Close Job</strong>
-                          <small>Archive and prepare package.</small>
-                        </button>
+                      </div>
+                      <div className={`header-visit-stamp ${headerVisit?.today ? "visited-today" : ""}`}>
+                        <span>{headerVisit?.today ? "I was here today" : headerVisitRecord ? "Last visit saved" : "No visit saved yet"}</span>
+                        <strong>
+                          {headerVisitRecord
+                            ? `${displayWorkflowDate(headerVisitRecord.visitedAt)} · ${visitDistanceLabel(headerVisitRecord)}`
+                            : "Tap I am here when you arrive"}
+                        </strong>
                       </div>
                       <div className="field-flow-next-row">
                         <button type="button" onClick={() => openFinishJobChoices(selected)}>
