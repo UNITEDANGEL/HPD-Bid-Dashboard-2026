@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-07-21T21:15:24.026Z",
+  "generatedAt": "2026-07-22T19:16:33.607Z",
   "page": 3,
   "dpi": 150,
-  "totalJobs": 596,
-  "uniqueItbRefs": 596,
+  "totalJobs": 600,
+  "uniqueItbRefs": 600,
   "sourceDirectories": [
-    "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\.automation-deploy-20260721-1910\\public\\documents\\itb"
+    "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\.automation-deploy-20260722-1900\\ITB_Downloads_V5"
   ],
   "entries": {
     "EQ15489_010226100207.pdf": {
@@ -4179,10 +4179,38 @@
       "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\.automation-deploy-20260721-1910\\public\\documents\\itb\\ER00898_072026111221.pdf",
       "sourceMatch": "exact",
       "pdf": "/documents/itb/ER00898_072026111221.pdf"
+    },
+    "ER00407_072026015819.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00407_072026015819-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\.automation-deploy-20260722-1900\\ITB_Downloads_V5\\ER00407_072026015819.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00407_072026015819.pdf"
+    },
+    "ER00120_072026100936.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00120_072026100936-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\.automation-deploy-20260722-1900\\ITB_Downloads_V5\\ER00120_072026100936.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00120_072026100936.pdf"
+    },
+    "ER00108_072026095252.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00108_072026095252-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\.automation-deploy-20260722-1900\\ITB_Downloads_V5\\ER00108_072026095252.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00108_072026095252.pdf"
+    },
+    "EQ31158_072026094704.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/EQ31158_072026094704-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\.automation-deploy-20260722-1900\\ITB_Downloads_V5\\EQ31158_072026094704.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/EQ31158_072026094704.pdf"
     }
   },
   "summary": {
-    "rendered": 0,
+    "rendered": 4,
     "reused": 596,
     "copiedPdfs": 0,
     "missingSource": 0,
