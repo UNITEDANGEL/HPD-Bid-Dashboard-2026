@@ -40840,17 +40840,17 @@ return (
 
             .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-stage {
               background:
-                radial-gradient(circle at 50% 42%, rgba(59, 130, 246, 0.18), transparent 36%),
-                linear-gradient(180deg, #10233d 0%, #0b1b31 52%, #081525 100%) !important;
+                radial-gradient(circle at 50% 42%, rgba(59, 130, 246, 0.14), transparent 38%),
+                linear-gradient(180deg, #193454 0%, #132844 52%, #10233d 100%) !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-node {
-              background: #10233d !important;
+              background: #18314f !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-node .leaflet-tile {
-              opacity: 0.98 !important;
-              filter: brightness(1.62) contrast(0.98) saturate(1.46) hue-rotate(188deg) !important;
+              opacity: 1 !important;
+              filter: brightness(1.72) contrast(0.90) sepia(0.42) saturate(2.20) hue-rotate(174deg) !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-stage::after {
@@ -40860,9 +40860,10 @@ return (
               z-index: 820 !important;
               pointer-events: none !important;
               background:
-                linear-gradient(180deg, rgba(8, 28, 52, 0.06), rgba(8, 26, 48, 0.02) 42%, rgba(3, 12, 24, 0.08)),
-                radial-gradient(circle at 50% 52%, rgba(59, 130, 246, 0.08), transparent 32%) !important;
-              mix-blend-mode: soft-light !important;
+                linear-gradient(180deg, rgba(33, 82, 140, 0.22), rgba(15, 55, 105, 0.16) 42%, rgba(5, 22, 48, 0.20)),
+                radial-gradient(circle at 50% 52%, rgba(59, 130, 246, 0.18), transparent 36%) !important;
+              mix-blend-mode: screen !important;
+              opacity: 0.28 !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed {
