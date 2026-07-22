@@ -1,39 +1,21 @@
 {
-  "generatedAt": "2026-07-22T20:09:39.725Z",
+  "generatedAt": "2026-07-22T22:01:30.845Z",
   "totalJobs": 601,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 1,
+  "missingItbPage3Descriptions": 0,
   "badDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 1,
+  "missingPage3Images": 0,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
     "missingDescriptions": [],
-    "missingItbPage3Descriptions": [
-      {
-        "OMO": "ER01415",
-        "Address": "767 BLAKE AVENUE, 11207",
-        "ITB": "ER01415_072026052232.pdf",
-        "Source": "",
-        "Status": "MATCHED",
-        "Preview": "General Decision Number: NY200003 04/10/2020Superse ded General Decision Number: NY190003 State: New York Page 3 of 3 OMO No: ER01415 Issuer"
-      }
-    ],
+    "missingItbPage3Descriptions": [],
     "badDescriptions": [],
     "sourceReviewJobs": [],
     "missingItbFiles": [],
-    "missingPage3Images": [
-      {
-        "OMO": "ER01415",
-        "Address": "767 BLAKE AVENUE, 11207",
-        "ITB": "ER01415_072026052232.pdf",
-        "Source": "",
-        "Status": "MATCHED",
-        "Preview": "General Decision Number: NY200003 04/10/2020Superse ded General Decision Number: NY190003 State: New York Page 3 of 3 OMO No: ER01415 Issuer"
-      }
-    ]
+    "missingPage3Images": []
   }
 }
