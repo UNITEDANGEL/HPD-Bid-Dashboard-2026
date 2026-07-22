@@ -11888,7 +11888,7 @@ return (
               width: 46px !important;
               min-height: 42px !important;
               border-radius: 15px !important;
-              font-size: 15px !important;
+              font-size: 14px !important;
             }
 
             .job-drawer {
@@ -11912,7 +11912,7 @@ return (
             }
 
             .drawer-head strong {
-              font-size: 15px !important;
+              font-size: 14px !important;
             }
 
             .selected-card,
@@ -12079,7 +12079,7 @@ return (
             }
 
             .selected-description p {
-              font-size: 15px !important;
+              font-size: 14px !important;
               line-height: 1.52 !important;
               font-weight: 700;
             }
@@ -12179,7 +12179,7 @@ return (
             }
 
             .selected-description p {
-              font-size: 15px !important;
+              font-size: 14px !important;
               line-height: 1.6 !important;
             }
           }
@@ -15863,7 +15863,7 @@ return (
           .overview-tile strong,
           .selected-alert-card strong,
           .detail strong {
-            font-size: 15px !important;
+            font-size: 14px !important;
           }
 
           .description-inline-actions button,
@@ -16500,7 +16500,7 @@ return (
             }
 
             .days-back-control input {
-              font-size: 15px !important;
+              font-size: 14px !important;
             }
 
             .map-stats {
@@ -16770,7 +16770,7 @@ return (
             display: block !important;
             margin-top: 2px !important;
             color: #f8fbff !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.15 !important;
           }
 
@@ -17582,7 +17582,7 @@ return (
           .field-packet-row button {
             min-height: 58px !important;
             border-radius: 14px !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
           }
 
           .field-workflow-grid {
@@ -18257,7 +18257,7 @@ return (
 
           .refused-description-head strong {
             color: #ffffff !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.2 !important;
             overflow-wrap: anywhere;
           }
@@ -18434,7 +18434,7 @@ return (
             display: block !important;
             max-width: none !important;
             color: #07111f !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             font-weight: 1000 !important;
             line-height: 1 !important;
             letter-spacing: 0 !important;
@@ -19877,7 +19877,7 @@ return (
             overflow-y: auto !important;
             -webkit-overflow-scrolling: touch !important;
             color: #f8fafc !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.36 !important;
             font-weight: 780 !important;
             letter-spacing: 0 !important;
@@ -20705,7 +20705,7 @@ return (
 
           .field-mission-counter b {
             color: #ffffff !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.05 !important;
             text-align: right !important;
           }
@@ -20750,7 +20750,7 @@ return (
             border: 1px solid rgba(186, 230, 253, 0.22) !important;
             background: rgba(15, 23, 42, 0.82) !important;
             color: #f8fafc !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1 !important;
             letter-spacing: 0 !important;
           }
@@ -20959,7 +20959,7 @@ return (
             }
 
             .job-drawer.selected-focus .selected-card .job-address {
-              font-size: 15px !important;
+              font-size: 14px !important;
             }
           }
 
@@ -21087,7 +21087,7 @@ return (
           .map-job-brief-address {
             margin: 0 !important;
             color: #e8f1ff !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             font-weight: 850 !important;
             line-height: 1.22 !important;
             overflow-wrap: anywhere !important;
@@ -21227,7 +21227,7 @@ return (
             background: rgba(8, 13, 20, 0.72) !important;
             color: #ffffff !important;
             padding: 0 10px !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             font-weight: 900 !important;
             letter-spacing: 0 !important;
           }
@@ -21301,7 +21301,7 @@ return (
 
             .map-job-brief-directions .direction-provider-button {
               min-height: 66px !important;
-              font-size: 15px !important;
+              font-size: 14px !important;
             }
 
             .site-visit-date-card {
@@ -21411,7 +21411,7 @@ return (
           }
 
           .field-mission-main small {
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.4 !important;
           }
 
@@ -21607,7 +21607,7 @@ return (
             min-height: 74px !important;
             border-radius: 18px !important;
             padding: 12px !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
           }
 
           .site-procedure-actions button strong,
@@ -21952,7 +21952,7 @@ return (
           }
 
           .site-section-head small {
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.35 !important;
           }
 
@@ -23332,7 +23332,7 @@ return (
             color: #ffffff !important;
             display: block !important;
             margin-top: 2px !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.05 !important;
             font-weight: 1000 !important;
           }
@@ -23600,7 +23600,7 @@ return (
           }
 
           .map-cockpit.board-collapsed .map-command-banner strong {
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1 !important;
             white-space: nowrap !important;
             overflow: hidden !important;
@@ -24307,7 +24307,7 @@ return (
           }
 
           .job-drawer.selected-focus .selected-card-head .job-address {
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.16 !important;
           }
 
@@ -24405,7 +24405,7 @@ return (
             }
 
             .job-drawer.selected-focus .selected-card-head .job-address {
-              font-size: 15px !important;
+              font-size: 14px !important;
             }
 
             .job-drawer.selected-focus .selected-overview-grid {
@@ -24630,7 +24630,7 @@ return (
 
           .job-card-field-action-dock .route-head-arrived strong {
             color: inherit !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1 !important;
             font-weight: 1000 !important;
             letter-spacing: 0 !important;
@@ -25045,7 +25045,7 @@ return (
           }
 
           .job-drawer.selected-focus .appointment-hero-contact div:first-child strong {
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.06 !important;
           }
 
@@ -25877,7 +25877,7 @@ return (
 
           .job-drawer.selected-focus .field-status-date-head strong {
             color: #0f172a !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.1 !important;
             font-weight: 1000 !important;
             text-align: right !important;
@@ -25957,7 +25957,7 @@ return (
 
           .job-drawer.selected-focus .field-status-action-grid button strong {
             color: inherit !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.05 !important;
             font-weight: 1000 !important;
           }
@@ -26069,7 +26069,7 @@ return (
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-head strong {
-            font-size: 15px !important;
+            font-size: 14px !important;
           }
 
           .job-drawer.selected-focus .field-work-choice-card.start .field-work-choice-head small {
@@ -26166,7 +26166,7 @@ return (
 
           .job-drawer.selected-focus .field-work-choice-grid button strong {
             color: inherit !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.05 !important;
             font-weight: 1000 !important;
           }
@@ -26941,7 +26941,7 @@ return (
           .job-drawer.selected-focus .header-job-description p {
             color: #142033 !important;
             display: -webkit-box !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             font-weight: 850 !important;
             line-height: 1.42 !important;
             margin: 0 !important;
@@ -27284,7 +27284,7 @@ return (
 
           .job-drawer.selected-focus .field-status-flow-card strong {
             color: #ffffff !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.12 !important;
           }
 
@@ -27350,7 +27350,7 @@ return (
             border-radius: 14px !important;
             background: #0f172a !important;
             color: #ffffff !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             box-shadow: 0 10px 20px rgba(15, 23, 42, 0.16) !important;
           }
 
@@ -27873,7 +27873,7 @@ return (
 
             .maturity-map-marker .map-signal-marker.marker-overview .signal-main,
             .maturity-map-marker .map-signal-marker.marker-compact .signal-main {
-              font-size: 15px !important;
+              font-size: 14px !important;
               max-width: 104px !important;
             }
 
@@ -28263,7 +28263,7 @@ return (
           }
 
           .map-stat strong {
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1 !important;
           }
 
@@ -29098,7 +29098,7 @@ return (
             }
 
             .map-stats .map-stat strong {
-              font-size: 15px !important;
+              font-size: 14px !important;
             }
 
             .map-stats .map-stat-primary strong {
@@ -30315,7 +30315,7 @@ return (
             box-shadow:
               0 0 0 4px rgba(37, 99, 235, 0.08),
               inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             font-weight: 1000 !important;
           }
 
@@ -30881,7 +30881,7 @@ return (
 
           .job-drawer.selected-focus .field-next-action-card button b {
             color: inherit !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1 !important;
             font-weight: 1000 !important;
             text-align: center !important;
@@ -31082,7 +31082,7 @@ return (
             place-items: center !important;
             padding: 7px 10px !important;
             border-radius: 11px !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             font-weight: 1000 !important;
             letter-spacing: 0 !important;
           }
@@ -31441,7 +31441,7 @@ return (
           }
 
           .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-current-state-banner strong {
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.05 !important;
           }
 
@@ -31527,7 +31527,7 @@ return (
           }
 
           .job-drawer.selected-focus .field-page3-description p {
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.48 !important;
           }
 
@@ -32312,7 +32312,7 @@ return (
           .maturity-map-marker .map-signal-marker.marker-compact .signal-main,
           .maturity-map-marker .map-signal-marker.marker-overview .signal-main {
             max-width: 104px !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
           }
 
           .maturity-map-marker .map-signal-marker.marker-compact .signal-address,
@@ -33747,7 +33747,7 @@ return (
             outline: none !important;
             background: transparent !important;
             color: #ffffff !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             font-weight: 950 !important;
             line-height: 1 !important;
             letter-spacing: 0 !important;
@@ -33863,7 +33863,7 @@ return (
 
           .map-shell.map-glass-command-trial .map-board-switcher button.priority-layer span {
             color: #ffffff !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1 !important;
             text-shadow: 0 1px 2px rgba(2, 6, 23, 0.34) !important;
           }
@@ -34157,7 +34157,7 @@ return (
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-open .map-layer-search input {
-            font-size: 15px !important;
+            font-size: 14px !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher {
@@ -34199,7 +34199,7 @@ return (
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.priority-layer span {
-            font-size: 15px !important;
+            font-size: 14px !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-open .map-board-switcher button.priority-layer b {
@@ -35346,18 +35346,18 @@ return (
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-launcher strong {
-              font-size: 15px !important;
+              font-size: 14px !important;
               white-space: normal !important;
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-command input {
               min-height: 44px !important;
-              font-size: 15px !important;
+              font-size: 14px !important;
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-borough select {
               min-height: 44px !important;
-              font-size: 15px !important;
+              font-size: 14px !important;
             }
 
             .map-shell.map-glass-command-trial .map-cockpit.board-open .map-day-agent-actions {
@@ -35730,7 +35730,7 @@ return (
 
           .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-main {
             max-width: 82px !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
           }
 
           .map-shell.map-glass-command-trial .maturity-map-marker .map-signal-marker.marker-overlap-safe .signal-address {
@@ -36147,7 +36147,7 @@ return (
             }
 
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .private-visit-card strong {
-              font-size: 15px !important;
+              font-size: 14px !important;
               line-height: 1.05 !important;
             }
 
@@ -36276,7 +36276,7 @@ return (
             margin: 0 !important;
             align-self: center !important;
             color: #ffffff !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.15 !important;
             font-weight: 1000 !important;
             letter-spacing: 0 !important;
@@ -36329,7 +36329,7 @@ return (
 
           .map-shell.map-glass-command-trial .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-address-route-row p {
             color: #ffffff !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.16 !important;
             font-weight: 1000 !important;
           }
@@ -36485,7 +36485,7 @@ return (
             max-height: 132px !important;
             overflow-y: auto !important;
             color: #142033 !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1.42 !important;
             font-weight: 850 !important;
           }
@@ -36910,7 +36910,7 @@ return (
 
           .map-shell.map-glass-command-trial .map-day-route-tray.is-hidden .map-day-route-actions button::after {
             content: "+" !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             line-height: 1 !important;
           }
 
@@ -36953,7 +36953,7 @@ return (
 
           .map-shell.map-glass-command-trial .map-day-route-selected-summary strong {
             color: #ffffff !important;
-            font-size: 15px !important;
+            font-size: 14px !important;
             font-weight: 1000 !important;
             line-height: 1.05 !important;
           }
@@ -40423,7 +40423,7 @@ return (
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .field-mission-mode .field-page3-description > p {
               margin: -31px 0 0 58px !important;
               color: #cbd5e1 !important;
-              font-size: 15px !important;
+              font-size: 14px !important;
               line-height: 1.34 !important;
               max-height: 44px !important;
               overflow: hidden !important;
@@ -40452,7 +40452,7 @@ return (
 
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-row strong {
               color: #cbd5e1 !important;
-              font-size: 15px !important;
+              font-size: 14px !important;
               font-weight: 700 !important;
               line-height: 1.2 !important;
             }
@@ -40709,7 +40709,7 @@ return (
             .map-shell.map-glass-command-trial .job-drawer.selected-focus .tenant-contact-head strong {
               display: block !important;
               margin-top: 1px !important;
-              font-size: 15px !important;
+              font-size: 14px !important;
               line-height: 1.05 !important;
               text-align: left !important;
             }
@@ -40849,8 +40849,8 @@ return (
             }
 
             .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-node .leaflet-tile {
-              opacity: 0.96 !important;
-              filter: brightness(1.34) contrast(1.08) saturate(1.36) hue-rotate(188deg) !important;
+              opacity: 0.98 !important;
+              filter: brightness(1.62) contrast(0.98) saturate(1.46) hue-rotate(188deg) !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode.map-style-carto-dark .map-stage::after {
@@ -40860,8 +40860,8 @@ return (
               z-index: 820 !important;
               pointer-events: none !important;
               background:
-                linear-gradient(180deg, rgba(8, 28, 52, 0.12), rgba(8, 26, 48, 0.04) 42%, rgba(3, 12, 24, 0.12)),
-                radial-gradient(circle at 50% 52%, rgba(59, 130, 246, 0.10), transparent 30%) !important;
+                linear-gradient(180deg, rgba(8, 28, 52, 0.06), rgba(8, 26, 48, 0.02) 42%, rgba(3, 12, 24, 0.08)),
+                radial-gradient(circle at 50% 52%, rgba(59, 130, 246, 0.08), transparent 32%) !important;
               mix-blend-mode: soft-light !important;
             }
 
@@ -40984,13 +40984,13 @@ return (
               position: absolute !important;
               left: 50% !important;
               top: 3px !important;
-              width: 25px !important;
-              height: 25px !important;
+              width: 29px !important;
+              height: 29px !important;
               border-radius: 999px !important;
               transform: translateX(-50%) !important;
-              background: #05070b !important;
-              border: 2px solid rgba(255,255,255,0.46) !important;
-              box-shadow: 0 0 0 1px rgba(15,23,42,0.78) !important;
+              background: linear-gradient(145deg, #475569, #111827 58%, #05070b) !important;
+              border: 2px solid rgba(226,232,240,0.82) !important;
+              box-shadow: 0 0 0 1px rgba(15,23,42,0.88), 0 9px 17px rgba(0,0,0,0.46), 0 0 16px rgba(203,213,225,0.26) !important;
             }
 
             .map-shell.map-visual-preview.map-focus-active.map-glass-command-trial.full-map-mode .maturity-map-marker .maturity-marker-bubble.map-signal-marker.marker-overlap-safe::after,
@@ -41000,9 +41000,9 @@ return (
               content: "" !important;
               position: absolute !important;
               left: 50% !important;
-              top: 10px !important;
-              width: 9px !important;
-              height: 9px !important;
+              top: 12px !important;
+              width: 10px !important;
+              height: 10px !important;
               border-radius: 999px !important;
               transform: translateX(-50%) !important;
               background: #ffffff !important;
@@ -41020,22 +41020,22 @@ return (
               position: absolute !important;
               left: 50% !important;
               top: 3px !important;
-              width: 25px !important;
-              height: 25px !important;
+              width: 29px !important;
+              height: 29px !important;
               border-radius: 999px !important;
               transform: translateX(-50%) !important;
-              background: #05070b !important;
-              border: 2px solid rgba(255,255,255,0.46) !important;
-              box-shadow: 0 0 0 1px rgba(15,23,42,0.78) !important;
+              background: linear-gradient(145deg, #475569, #111827 58%, #05070b) !important;
+              border: 2px solid rgba(226,232,240,0.82) !important;
+              box-shadow: 0 0 0 1px rgba(15,23,42,0.88), 0 9px 17px rgba(0,0,0,0.46), 0 0 16px rgba(203,213,225,0.26) !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker::after {
               content: "" !important;
               position: absolute !important;
               left: 50% !important;
-              top: 10px !important;
-              width: 9px !important;
-              height: 9px !important;
+              top: 12px !important;
+              width: 10px !important;
+              height: 10px !important;
               border-radius: 999px !important;
               transform: translateX(-50%) !important;
               background: #ffffff !important;
@@ -41079,7 +41079,7 @@ return (
               border-radius: 10px !important;
               background: linear-gradient(135deg, #0b63ff, #0047d7) !important;
               color: #ffffff !important;
-              font-size: 15px !important;
+              font-size: 14px !important;
               font-weight: 1000 !important;
               line-height: 1 !important;
               letter-spacing: 0 !important;
@@ -41090,12 +41090,12 @@ return (
             /* EXACT_MOCKUP_TOP_ROW_FIX_V2 */
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed {
               top: max(12px, env(safe-area-inset-top)) !important;
-              left: 66px !important;
-              right: 12px !important;
+              left: 58px !important;
+              right: 8px !important;
               width: auto !important;
               display: grid !important;
-              grid-template-columns: minmax(0, 1fr) 94px !important;
-              gap: 8px !important;
+              grid-template-columns: minmax(0, 1fr) 80px !important;
+              gap: 7px !important;
               align-items: center !important;
               height: 58px !important;
             }
@@ -41110,7 +41110,7 @@ return (
               align-items: center !important;
               gap: 0 !important;
               border-radius: 26px !important;
-              padding: 0 12px 0 42px !important;
+              padding: 0 9px 0 39px !important;
               background: rgba(12, 23, 38, 0.9) !important;
               border: 1px solid rgba(148, 163, 184, 0.36) !important;
               box-shadow: 0 16px 36px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08) !important;
@@ -41122,7 +41122,7 @@ return (
               left: 14px !important;
               top: 50% !important;
               transform: translateY(-50%) !important;
-              font-size: 26px !important;
+              font-size: 24px !important;
               line-height: 1 !important;
               color: #f8fafc !important;
               opacity: 1 !important;
@@ -41146,7 +41146,7 @@ return (
               min-width: 0 !important;
               height: 100% !important;
               color: #f8fafc !important;
-              font-size: clamp(13px, 3.45vw, 16px) !important;
+              font-size: clamp(11px, 2.78vw, 13px) !important;
               font-weight: 800 !important;
               letter-spacing: 0 !important;
               background: transparent !important;
@@ -41163,19 +41163,19 @@ return (
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button {
               position: relative !important;
               inset: auto !important;
-              width: 94px !important;
-              min-width: 94px !important;
-              max-width: 94px !important;
+              width: 80px !important;
+              min-width: 80px !important;
+              max-width: 80px !important;
               height: 58px !important;
               display: flex !important;
               align-items: center !important;
               justify-content: center !important;
-              padding: 0 14px 0 10px !important;
+              padding: 0 7px !important;
               border-radius: 23px !important;
               background: rgba(9, 20, 36, 0.94) !important;
               border: 1px solid rgba(59, 130, 246, 0.62) !important;
               color: #ffffff !important;
-              font-size: 15px !important;
+              font-size: 13px !important;
               font-weight: 900 !important;
               letter-spacing: 0 !important;
               box-shadow: 0 0 28px rgba(37,99,235,0.28), inset 0 1px 0 rgba(255,255,255,0.08) !important;
@@ -41184,18 +41184,18 @@ return (
 
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-agent-top-button::before {
               content: "◉" !important;
-              margin-right: 7px !important;
+              margin-right: 5px !important;
               color: #3b82f6 !important;
-              font-size: 15px !important;
+              font-size: 12px !important;
               line-height: 1 !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-agent-top-button::after,
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button::after {
-              right: 10px !important;
-              top: 10px !important;
-              width: 10px !important;
-              height: 10px !important;
+              right: 8px !important;
+              top: 9px !important;
+              width: 9px !important;
+              height: 9px !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode .map-menu-fab {
