@@ -4867,15 +4867,17 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       return null;
     }
 
-    if (!userLocation) {
-      showActionNotice("Turn on location, then tap Mark I'm Here again.");
-      startLocationTracking();
-      return null;
-    }
-
     setFieldVisitSaving(source === "manual_here");
     try {
-      const miles = distanceMiles(userLocation, coords);
+      if (!userLocation && source !== "manual_here") {
+        showActionNotice("Turn on location, then nearby visit tracking can save automatically.");
+        startLocationTracking();
+        return null;
+      }
+
+      const manualFallback = !userLocation && source === "manual_here";
+      const userCoords = userLocation || { lat: coords.lat, lng: coords.lng, accuracy: 0 };
+      const miles = manualFallback ? 0 : distanceMiles(userCoords, coords);
       const visitDate = fieldVisitDateKey();
       const row = await saveFieldVisit({
         id: `${key}-${visitDate}`,
@@ -4885,18 +4887,18 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         borough: jobBoroughLabel(job),
         jobLat: coords.lat,
         jobLng: coords.lng,
-        userLat: userLocation.lat,
-        userLng: userLocation.lng,
+        userLat: userCoords.lat,
+        userLng: userCoords.lng,
         distanceMiles: miles,
-        accuracy: Number(userLocation.accuracy || 0),
+        accuracy: Number(userCoords.accuracy || 0),
         visitDate,
         source,
-        note: source === "auto_nearby" ? "Auto-recorded when GPS was near the work order." : "Marked from the job card.",
+        note: source === "auto_nearby" ? "Auto-recorded when GPS was near the work order." : manualFallback ? "Manually marked from the job card; device location was not available." : "Marked from the job card.",
       });
 
       autoVisitRecordedRef.current[`${key}:${visitDate}`] = row.visitedAt;
       await refreshFieldVisitSummary();
-      showActionNotice(`${key} visit recorded privately: ${visitDistanceLabel(row)}.`);
+      showActionNotice(`${key} visit saved: ${displayWorkflowDate(row.visitedAt)}.`);
       return row;
     } catch (error) {
       console.error(error);
@@ -8653,6 +8655,98 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setFullMap(false);
     focusFieldWorkChoice();
     saveFieldWorkflowPatch(startedJob, patch, `${key}: Started saved. Choose before media, upload media, or continue without media.`);
+  }
+
+  function saveTopCardStartWork(job: MappedJob) {
+    const key = jobKey(job);
+    if (!key) return;
+    const iso = workflowActionIso();
+    const patch = workStartedPatch(iso);
+    setFieldWorkChoice(null);
+    setFieldFocusPane("capture");
+    setSelectedOnly(true);
+    setDrawerOpen(true);
+    saveFieldWorkflowPatch(
+      { ...job, ...patch } as MappedJob,
+      patch,
+      `${key}: Work In Progress saved at ${displayWorkflowDate(iso)}. Before media can be added next.`
+    );
+  }
+
+  function saveTopCardNoAccess(job: MappedJob) {
+    const key = jobKey(job);
+    if (!key) return;
+    const existingSecondAttempt = workflowSecondAttemptInfo(job);
+    if (existingSecondAttempt && !existingSecondAttempt.ready) {
+      showActionNotice(`No Access 1st already saved. 2nd attempt unlocks in ${existingSecondAttempt.hoursLeft}h.`);
+      return;
+    }
+    if (existingSecondAttempt?.ready) {
+      markNoAccessSecondAttempt(job);
+      return;
+    }
+    const when = workflowActionDate();
+    const iso = when.toISOString();
+    const available = new Date(when);
+    available.setHours(available.getHours() + 72);
+    const patch = {
+      WorkflowStatus: "NO_ACCESS_1_WAITING_72H",
+      workflowStatus: "NO_ACCESS_1_WAITING_72H",
+      FieldOutcome: "NO_ACCESS_1_WAITING_72H",
+      fieldOutcome: "NO_ACCESS_1_WAITING_72H",
+      StatusOverride: "No Access 1st - Waiting 72h",
+      status: "No Access 1st - Waiting 72h",
+      NoAccessFirstAttemptAt: iso,
+      noAccessFirstAttemptAt: iso,
+      SecondAttemptAvailableAt: available.toISOString(),
+      secondAttemptAvailableAt: available.toISOString(),
+      PendingCompletionOutcome: "",
+      pendingCompletionOutcome: "",
+      OutcomeLockedAt: iso,
+      outcomeLockedAt: iso,
+      ...activeWorkflowArchiveFields(),
+    };
+    setFieldWorkChoice(null);
+    setSelectedOnly(true);
+    setDrawerOpen(true);
+    saveFieldWorkflowPatch(
+      { ...job, ...patch } as MappedJob,
+      patch,
+      `${key}: No Access 1st saved at ${displayWorkflowDate(iso)}. 72h timer is running.`
+    );
+  }
+
+  function saveTopCardRefused(job: MappedJob) {
+    const key = jobKey(job);
+    if (!key) return;
+    const iso = workflowActionIso();
+    const description =
+      refusedDescriptionValue(job) ||
+      refusedDescriptionFromChoices(refusedDescriptionChoices(job));
+    const patch = {
+      WorkflowStatus: "REFUSED_ACCESS",
+      workflowStatus: "REFUSED_ACCESS",
+      FieldOutcome: "REFUSED_ACCESS",
+      fieldOutcome: "REFUSED_ACCESS",
+      StatusOverride: "Refused Access",
+      status: "Refused Access",
+      RefusalDate: iso,
+      refusalDate: iso,
+      PendingCompletionOutcome: "",
+      pendingCompletionOutcome: "",
+      OutcomeLockedAt: iso,
+      outcomeLockedAt: iso,
+      ...archiveCloseoutFields(iso),
+      ...refusedDescriptionPatch(description),
+    };
+    setFieldWorkChoice(null);
+    setSelectedOnly(true);
+    setDrawerOpen(true);
+    saveFieldWorkflowPatch(
+      { ...job, ...patch } as MappedJob,
+      patch,
+      `${key}: Refused Access saved at ${displayWorkflowDate(iso)}. Package can be reviewed next.`
+    );
   }
 
   function openFinishJobChoices(job: MappedJob, partial = false) {
@@ -41270,6 +41364,41 @@ return (
               display: none !important;
             }
 
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-visit-inline {
+              display: inline-flex !important;
+              width: fit-content !important;
+              max-width: 100% !important;
+              gap: 6px !important;
+              align-items: center !important;
+              margin: 4px 0 0 !important;
+              padding: 5px 8px !important;
+              border-radius: 999px !important;
+              background: rgba(15, 23, 42, 0.78) !important;
+              border: 1px solid rgba(96, 165, 250, 0.28) !important;
+              color: #dbeafe !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.08) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-visit-inline.visited-today {
+              background: rgba(20, 83, 45, 0.34) !important;
+              border-color: rgba(74, 222, 128, 0.56) !important;
+              color: #dcfce7 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-visit-inline span,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-visit-inline b {
+              display: inline !important;
+              color: inherit !important;
+              font-size: 10px !important;
+              font-weight: 1000 !important;
+              line-height: 1 !important;
+              white-space: nowrap !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-visit-inline b {
+              color: #ffffff !important;
+            }
+
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-map-back-pill {
               width: 54px !important;
               height: 54px !important;
@@ -42027,6 +42156,11 @@ return (
             }
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-workflow-card .tenant-contact-card,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-workflow-card .field-status-picker-card {
               display: none !important;
             }
 
@@ -43041,6 +43175,16 @@ return (
                 <div className="job-card-field-title-copy">
                   <span>Work order</span>
                   <strong>{jobKey(selected)}</strong>
+                  {(() => {
+                    const headerVisit = visitSummaryFor(selected);
+                    const headerVisitRecord = headerVisit?.today || headerVisit?.latest;
+                    return (
+                      <div className={`job-card-visit-inline ${headerVisit?.today ? "visited-today" : ""}`}>
+                        <span>{headerVisit?.today ? "I was here" : headerVisitRecord ? "Last here" : "Not here yet"}</span>
+                        <b>{headerVisitRecord ? displayWorkflowDate(headerVisitRecord.visitedAt) : "Tap I am here"}</b>
+                      </div>
+                    );
+                  })()}
                   <div className="job-card-address-route-row" aria-label="Job address and directions">
                     <p>{displayAddress(selected)}</p>
                     <div className="job-card-address-route-actions">
@@ -43202,17 +43346,17 @@ return (
                           <strong>Arrived</strong>
                           <small>Record your private visit on the map.</small>
                         </button>
-                        <button type="button" className="field-flow-choice start" onClick={() => openStartJobChoices(selected)}>
+                        <button type="button" className="field-flow-choice start" onClick={() => saveTopCardStartWork(selected)}>
                           <span>Start Work</span>
                           <strong>Begin Job</strong>
                           <small>Save Work In Progress, then take/upload before media.</small>
                         </button>
-                        <button type="button" className="field-flow-choice waiting" onClick={headerNoAccessClick}>
+                        <button type="button" className="field-flow-choice waiting" onClick={() => saveTopCardNoAccess(selected)}>
                           <span>No Access</span>
                           <strong>{headerNoAccessTitle}</strong>
                           <small>{headerNoAccessDetail}</small>
                         </button>
-                        <button type="button" className="field-flow-choice danger" onClick={() => markRefusedAccess(selected)}>
+                        <button type="button" className="field-flow-choice danger" onClick={() => saveTopCardRefused(selected)}>
                           <span>Refused</span>
                           <strong>Close Job</strong>
                           <small>Archive and prepare no-work package.</small>
