@@ -41857,32 +41857,7 @@ return (
             }
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-visit-stamp {
-              display: grid !important;
-              gap: 2px !important;
-              padding: 7px 9px !important;
-              border-radius: 13px !important;
-              background: rgba(15, 23, 42, 0.72) !important;
-              border: 1px solid rgba(96, 165, 250, 0.24) !important;
-              color: #eaf4ff !important;
-            }
-
-            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-visit-stamp.visited-today {
-              border-color: rgba(74, 222, 128, 0.45) !important;
-              background: rgba(20, 83, 45, 0.26) !important;
-            }
-
-            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-visit-stamp span {
-              color: #93c5fd !important;
-              font-size: 10px !important;
-              font-weight: 1000 !important;
-              text-transform: uppercase !important;
-            }
-
-            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-visit-stamp strong {
-              color: #ffffff !important;
-              font-size: 11px !important;
-              font-weight: 900 !important;
-              line-height: 1.1 !important;
+              display: none !important;
             }
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-current-state-banner,
@@ -42216,8 +42191,7 @@ return (
             }
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-visit-stamp {
-              display: grid !important;
-              visibility: visible !important;
+              display: none !important;
             }
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-current-state-banner,
@@ -43395,14 +43369,6 @@ return (
                           <strong>Close Job</strong>
                           <small>Archive and prepare no-work package.</small>
                         </button>
-                      </div>
-                      <div className={`header-visit-stamp ${headerVisit?.today ? "visited-today" : ""}`}>
-                        <span>{headerVisit?.today ? "I was here today" : headerVisitRecord ? "Last visit saved" : "No visit saved yet"}</span>
-                        <strong>
-                          {headerVisitRecord
-                            ? `${displayWorkflowDate(headerVisitRecord.visitedAt)} · ${visitDistanceLabel(headerVisitRecord)}`
-                            : "Tap I am here when you arrive"}
-                        </strong>
                       </div>
                       <div className="field-flow-next-row">
                         <button type="button" onClick={() => openFinishJobChoices(selected)}>
