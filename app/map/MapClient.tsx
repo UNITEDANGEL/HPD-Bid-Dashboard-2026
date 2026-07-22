@@ -41946,6 +41946,37 @@ return (
               box-shadow: 0 0 6px rgba(255,255,255,0.86) !important;
             }
 
+            .map-shell.map-glass-command-trial.drawer-selected .maturity-map-marker .map-signal-marker.mockup-selected-marker.marker-visited-today::before {
+              background: linear-gradient(145deg, #34d399, #0b5fff 64%, #064e3b) !important;
+              border-color: rgba(187, 247, 208, 0.88) !important;
+              box-shadow: 0 0 0 10px rgba(34, 197, 94, 0.28), 0 0 34px rgba(74,222,128,0.92), 0 14px 22px rgba(0,0,0,0.5) !important;
+              animation: visitedHerePulse 1.45s ease-in-out infinite !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .maturity-map-marker .map-signal-marker.mockup-selected-marker.marker-visited-today .signal-main::after {
+              content: "HERE" !important;
+              position: absolute !important;
+              left: 50% !important;
+              top: -22px !important;
+              transform: translateX(-50%) !important;
+              min-width: 48px !important;
+              height: 20px !important;
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              border-radius: 999px !important;
+              background: rgba(22, 163, 74, 0.96) !important;
+              color: #ffffff !important;
+              font-size: 10px !important;
+              font-weight: 1000 !important;
+              box-shadow: 0 0 18px rgba(74,222,128,0.72) !important;
+            }
+
+            @keyframes visitedHerePulse {
+              0%, 100% { filter: drop-shadow(0 0 0 rgba(74,222,128,0)); }
+              50% { filter: drop-shadow(0 0 12px rgba(74,222,128,0.95)); }
+            }
+
             .map-shell.map-glass-command-trial.drawer-selected .maturity-map-marker .map-signal-marker.mockup-selected-marker .signal-top {
               display: contents !important;
             }
@@ -43239,6 +43270,9 @@ return (
                 const headerTenantContact = tenantContactInfo(selected);
                 const headerVisit = visitSummaryFor(selected);
                 const headerVisitRecord = headerVisit?.today || headerVisit?.latest;
+                const headerSavedStatusIso = workflowSavedDateIso(selected);
+                const headerSavedStatusValue = workflowDisplayStatusValue(selected, draftWorkflowStatus);
+                const headerStarted = normalizeWorkflowChoice(headerSavedStatusValue) === "Work In Progress";
                 const headerScopeSummary = headerDescription
                   ? headerDescription
                       .replace(/\s+/g, " ")
@@ -43347,8 +43381,8 @@ return (
                           <small>Record your private visit on the map.</small>
                         </button>
                         <button type="button" className="field-flow-choice start" onClick={() => saveTopCardStartWork(selected)}>
-                          <span>Start Work</span>
-                          <strong>Begin Job</strong>
+                          <span>{headerStarted ? "Started" : "Start Work"}</span>
+                          <strong>{headerStarted && headerSavedStatusIso ? displayWorkflowDate(headerSavedStatusIso) : "Begin Job"}</strong>
                           <small>Save Work In Progress, then take/upload before media.</small>
                         </button>
                         <button type="button" className="field-flow-choice waiting" onClick={() => saveTopCardNoAccess(selected)}>
