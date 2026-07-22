@@ -41486,7 +41486,7 @@ return (
               align-items: center !important;
               justify-content: center !important;
               min-height: 30px !important;
-              padding: 0 10px !important;
+              padding: 0 11px !important;
               border-radius: 11px !important;
               color: #bfdbfe !important;
               background: rgba(37,99,235,0.18) !important;
@@ -41540,6 +41540,29 @@ return (
               line-height: 1.38 !important;
               overflow-y: auto !important;
               -webkit-overflow-scrolling: touch !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand .header-scope-close {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand[open] .header-scope-close {
+              position: fixed !important;
+              left: max(14px, env(safe-area-inset-left)) !important;
+              right: max(14px, env(safe-area-inset-right)) !important;
+              bottom: max(18px, env(safe-area-inset-bottom)) !important;
+              z-index: 4912 !important;
+              display: flex !important;
+              min-height: 52px !important;
+              align-items: center !important;
+              justify-content: center !important;
+              border-radius: 18px !important;
+              border: 1px solid rgba(96,165,250,0.6) !important;
+              background: linear-gradient(135deg, #2563eb, #0b5fff) !important;
+              color: #ffffff !important;
+              font-size: 15px !important;
+              font-weight: 1000 !important;
+              box-shadow: 0 18px 38px rgba(37,99,235,0.34), inset 0 1px 0 rgba(255,255,255,0.18) !important;
             }
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-tenant-contact-card {
@@ -41993,6 +42016,14 @@ return (
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-scope-expand > p {
               display: block !important;
               max-height: 180px !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-scope-expand .header-scope-close {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-scope-expand[open] .header-scope-close {
+              display: flex !important;
             }
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-workflow-card .field-mission-mode > .field-page3-description {
@@ -43125,9 +43156,18 @@ return (
                     <details className="header-scope-expand">
                       <summary>
                         <span>{headerScopeSummary || "No ITB description found for this job."}</span>
-                        <b>Full</b>
+                        <b>Open Scope</b>
                       </summary>
                       <p>{headerDescription || "No ITB description found for this job."}</p>
+                      <button
+                        type="button"
+                        className="header-scope-close"
+                        onClick={(event) => {
+                          event.currentTarget.closest("details")?.removeAttribute("open");
+                        }}
+                      >
+                        Close Scope
+                      </button>
                     </details>
                     <div className={`header-tenant-contact-card ${headerTenantContact.appointmentNeeded ? "needs-appointment" : "common-area"}`} aria-label="Tenant contact">
                       <div>
