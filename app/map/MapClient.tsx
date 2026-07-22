@@ -4010,15 +4010,11 @@ function handleMapTouchEnd(event: any) {
     }
     if (omo) {
       setSearch(omo.toUpperCase());
-      if (!mapRequested) {
-        setUrlOmoRequest(omo);
-      }
+      setUrlOmoRequest(omo);
       setMapBoroughFilter("all");
       setMapShowAllDays(true);
       setWorkflowViewFilter(requestedWorkflowView || "all");
-      if (!mapRequested) {
-        setDrawerOpen(true);
-      }
+      setDrawerOpen(true);
       setActionNotice(`Searching map for ${omo.toUpperCase()}.`);
     }
   }, []);
@@ -41087,6 +41083,260 @@ return (
               box-shadow: 0 12px 24px rgba(0,0,0,0.36), 0 0 22px rgba(37,99,235,0.48) !important;
             }
 
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker .marker-age-badge {
+              display: inline-flex !important;
+              position: absolute !important;
+              left: 50% !important;
+              top: 31px !important;
+              min-width: 36px !important;
+              height: 20px !important;
+              padding: 0 6px !important;
+              align-items: center !important;
+              justify-content: center !important;
+              border-radius: 8px !important;
+              transform: translateX(-50%) !important;
+              background: rgba(3, 10, 22, 0.88) !important;
+              border: 1px solid rgba(148, 163, 184, 0.62) !important;
+              color: #eaf4ff !important;
+              box-shadow: 0 8px 15px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.12) !important;
+              font-size: 10px !important;
+              font-weight: 1000 !important;
+              letter-spacing: 0 !important;
+              line-height: 1 !important;
+              z-index: 3 !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker .marker-age-badge b {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker .marker-age-badge strong {
+              display: inline !important;
+              color: inherit !important;
+              font-size: 10px !important;
+              line-height: 1 !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker.maturity-warning .marker-age-badge {
+              border-color: rgba(251, 191, 36, 0.82) !important;
+              color: #fde68a !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker.maturity-urgent .marker-age-badge,
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker.maturity-overdue .marker-age-badge {
+              border-color: rgba(248, 113, 113, 0.88) !important;
+              color: #fecaca !important;
+              animation: fullMapUrgentPulse 1.45s ease-in-out infinite !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker.maturity-normal::before {
+              border-color: rgba(147, 197, 253, 0.78) !important;
+              box-shadow: 0 0 0 1px rgba(15,23,42,0.88), 0 9px 17px rgba(0,0,0,0.46), 0 0 16px rgba(96,165,250,0.34) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker.maturity-warning::before {
+              border-color: rgba(251, 191, 36, 0.82) !important;
+              box-shadow: 0 0 0 1px rgba(15,23,42,0.88), 0 9px 17px rgba(0,0,0,0.46), 0 0 18px rgba(251,191,36,0.52) !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker.maturity-urgent::before,
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker .map-signal-marker.maturity-overdue::before {
+              border-color: rgba(248, 113, 113, 0.9) !important;
+              box-shadow: 0 0 0 1px rgba(15,23,42,0.88), 0 9px 17px rgba(0,0,0,0.46), 0 0 22px rgba(248,113,113,0.64) !important;
+              animation: fullMapPinPulse 1.45s ease-in-out infinite !important;
+            }
+
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker:hover .map-signal-marker .signal-main,
+            .map-shell.map-glass-command-trial.full-map-mode .maturity-map-marker:focus-within .map-signal-marker .signal-main {
+              display: inline-flex !important;
+              position: absolute !important;
+              left: 50% !important;
+              top: 54px !important;
+              transform: translateX(-50%) !important;
+              height: 28px !important;
+              min-width: 78px !important;
+              padding: 0 10px !important;
+              align-items: center !important;
+              justify-content: center !important;
+              border-radius: 10px !important;
+              background: rgba(5, 14, 28, 0.94) !important;
+              border: 1px solid rgba(96, 165, 250, 0.58) !important;
+              color: #ffffff !important;
+              font-size: 12px !important;
+              font-weight: 1000 !important;
+              line-height: 1 !important;
+              box-shadow: 0 12px 22px rgba(0,0,0,0.4), 0 0 18px rgba(59,130,246,0.38) !important;
+            }
+
+            @keyframes fullMapPinPulse {
+              0%, 100% { transform: translateX(-50%) scale(1); }
+              50% { transform: translateX(-50%) scale(1.12); }
+            }
+
+            @keyframes fullMapUrgentPulse {
+              0%, 100% { box-shadow: 0 8px 15px rgba(0,0,0,0.42), 0 0 0 rgba(248,113,113,0); }
+              50% { box-shadow: 0 8px 15px rgba(0,0,0,0.42), 0 0 16px rgba(248,113,113,0.72); }
+            }
+
+            /* IPHONE_BOTTOM_JOB_CARD_PREVIEW_2026_07_22 */
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus {
+              position: fixed !important;
+              left: 50% !important;
+              right: auto !important;
+              top: auto !important;
+              bottom: max(8px, env(safe-area-inset-bottom)) !important;
+              width: min(430px, calc(100vw - 18px)) !important;
+              height: auto !important;
+              max-height: min(58svh, 560px) !important;
+              min-height: 0 !important;
+              transform: translateX(-50%) !important;
+              border-radius: 28px 28px 20px 20px !important;
+              background:
+                radial-gradient(circle at 18% 0%, rgba(59,130,246,0.18), transparent 34%),
+                linear-gradient(180deg, rgba(8,18,32,0.96), rgba(3,8,18,0.98)) !important;
+              border: 1px solid rgba(125, 177, 255, 0.34) !important;
+              box-shadow:
+                0 -12px 44px rgba(0, 0, 0, 0.54),
+                0 0 0 1px rgba(255,255,255,0.04),
+                inset 0 1px 0 rgba(255,255,255,0.14) !important;
+              overflow-y: auto !important;
+              overflow-x: hidden !important;
+              overscroll-behavior: contain !important;
+              scrollbar-width: thin !important;
+              z-index: 2650 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus::-webkit-scrollbar {
+              width: 0 !important;
+              height: 0 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus::before {
+              content: "" !important;
+              position: sticky !important;
+              top: 7px !important;
+              display: block !important;
+              width: 58px !important;
+              height: 5px !important;
+              margin: 4px auto 8px !important;
+              border-radius: 999px !important;
+              background: rgba(226, 232, 240, 0.62) !important;
+              box-shadow: 0 0 14px rgba(96, 165, 250, 0.26) !important;
+              z-index: 3 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+              margin: 0 10px 10px !important;
+              padding: 10px !important;
+              border-radius: 22px !important;
+              background: rgba(4, 12, 26, 0.74) !important;
+              border: 1px solid rgba(96, 165, 250, 0.22) !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.08) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-field-title-copy strong,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-field-title-copy h2 {
+              color: #ffffff !important;
+              font-size: clamp(24px, 7vw, 38px) !important;
+              line-height: 0.98 !important;
+              letter-spacing: 0 !important;
+              text-shadow: 0 0 18px rgba(59,130,246,0.22) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-field-address,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-field-title-copy small {
+              color: #f8fbff !important;
+              font-size: clamp(13px, 3.6vw, 17px) !important;
+              font-weight: 900 !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-page3-description,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-tenant-card,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-status-picker-card,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-media-option-hub,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .site-procedure-card {
+              margin-left: 10px !important;
+              margin-right: 10px !important;
+              border-radius: 18px !important;
+              background: rgba(6, 17, 34, 0.72) !important;
+              border: 1px solid rgba(96, 165, 250, 0.18) !important;
+              box-shadow: inset 0 1px 0 rgba(255,255,255,0.06) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .maturity-map-marker .map-signal-marker.mockup-selected-marker {
+              width: 44px !important;
+              height: 78px !important;
+              min-width: 0 !important;
+              padding: 0 !important;
+              border: 0 !important;
+              border-radius: 0 !important;
+              background: transparent !important;
+              box-shadow: none !important;
+              color: transparent !important;
+              overflow: visible !important;
+              filter: none !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+              transform: translateY(74px) scale(var(--marker-zoom-scale, 1)) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .maturity-map-marker .map-signal-marker.mockup-selected-marker > *,
+            .map-shell.map-glass-command-trial.drawer-selected .maturity-map-marker .map-signal-marker.mockup-selected-marker :is(.signal-eyebrow, .signal-address, .signal-start, .signal-footer, .marker-age-badge, .marker-no-access-timer, .marker-appointment-badge, .marker-visit-badge, .signal-tap) {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .maturity-map-marker .map-signal-marker.mockup-selected-marker::before {
+              content: "" !important;
+              position: absolute !important;
+              left: 50% !important;
+              top: 0 !important;
+              width: 42px !important;
+              height: 42px !important;
+              border-radius: 999px 999px 999px 10px !important;
+              transform: translateX(-50%) rotate(-45deg) !important;
+              background: linear-gradient(145deg, #60a5fa, #0b5fff 70%, #0944b5) !important;
+              border: 3px solid rgba(191, 219, 254, 0.72) !important;
+              box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.22), 0 0 26px rgba(59,130,246,0.86), 0 12px 18px rgba(0,0,0,0.48) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .maturity-map-marker .map-signal-marker.mockup-selected-marker::after {
+              content: "" !important;
+              position: absolute !important;
+              left: 50% !important;
+              top: 13px !important;
+              width: 11px !important;
+              height: 11px !important;
+              border-radius: 999px !important;
+              transform: translateX(-50%) !important;
+              background: #ffffff !important;
+              box-shadow: 0 0 6px rgba(255,255,255,0.86) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .maturity-map-marker .map-signal-marker.mockup-selected-marker .signal-top {
+              display: contents !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .maturity-map-marker .map-signal-marker.mockup-selected-marker .signal-main {
+              display: inline-flex !important;
+              position: absolute !important;
+              left: 50% !important;
+              top: 50px !important;
+              transform: translateX(-50%) !important;
+              height: 32px !important;
+              min-width: 90px !important;
+              padding: 0 12px !important;
+              align-items: center !important;
+              justify-content: center !important;
+              border-radius: 10px !important;
+              background: linear-gradient(135deg, #0b63ff, #0047d7) !important;
+              color: #ffffff !important;
+              font-size: 14px !important;
+              font-weight: 1000 !important;
+              line-height: 1 !important;
+              letter-spacing: 0 !important;
+              box-shadow: 0 12px 24px rgba(0,0,0,0.36), 0 0 22px rgba(37,99,235,0.48) !important;
+            }
+
 
             /* EXACT_MOCKUP_TOP_ROW_FIX_V2 */
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed {
@@ -42179,7 +42429,7 @@ return (
 
       <aside
         ref={jobDrawerRef}
-        className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""} ${jobCardHeaderFolded ? "job-card-header-folded" : ""} ${clusterSheet ? "cluster-focus" : ""} ${fullMap && !drawerOpen ? "drawer-hard-hidden" : ""}`}
+        className={`job-drawer ${drawerOpen ? "" : "closed"} ${selectedOnly ? "selected-focus selected-focus-advanced" : ""} ${jobCardHeaderFolded ? "job-card-header-folded" : ""} ${clusterSheet ? "cluster-focus" : ""} ${fullMap && !drawerOpen && !selectedOnly ? "drawer-hard-hidden" : ""}`}
         style={!selectedOnly && !clusterSheet ? { position: "fixed", left: "max(8px, env(safe-area-inset-left))", right: "max(74px, calc(env(safe-area-inset-right) + 74px))", bottom: "max(8px, env(safe-area-inset-bottom))", width: "auto", maxWidth: "none", height: "auto", maxHeight: "clamp(176px, 30svh, 238px)", overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", zIndex: 2420, transform: "none", overscrollBehavior: "contain", borderRadius: 22 } : undefined}
         onScroll={handleJobDrawerScroll}
       >
