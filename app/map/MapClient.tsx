@@ -84,7 +84,7 @@ import {
   saveFieldPacket,
 } from "../../lib/field-packet-store";
 import { cleanJobLocation, cleanJobLocationText, isCommonAreaLocation } from "../../lib/jobLocation";
-import { paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
+import { type PaperworkOutcome, paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
 import { copyLegacyFieldStorage, shadowUpsert } from "../../lib/unified-field-store";
 import {
   type ChangeEvent,
@@ -8270,13 +8270,19 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     return "Generate Package";
   }
 
-  async function runPackagePrimaryAction(job: MappedJob, signatureMode: "with" | "without" = "with") {
+  async function runPackagePrimaryAction(job: MappedJob, signatureMode: "with" | "without" = "with", fallbackOutcome: PaperworkOutcome = "pending") {
+    const href = paperworkAutoPackageHref(job, signatureMode, fallbackOutcome);
+    if (href.includes("outcome=pending")) {
+      showActionNotice("Finish the job or save No Access / Refused before generating the package.");
+      return;
+    }
+
     showActionNotice(
       signatureMode === "without"
         ? "Opening unsigned package screen. It will create the package automatically."
         : "Opening package screen. It will create the package automatically."
     );
-    window.open(paperworkAutoPackageHref(job, signatureMode), "_blank", "noopener,noreferrer");
+    window.open(href, "_blank", "noopener,noreferrer");
   }
 
   async function shareStoredPackage(job: MappedJob, packet = latestFieldPacket(job, "affidavit_invoice_pdf") || latestFieldPacket(job), downloadFallback = true) {
@@ -10421,7 +10427,7 @@ function directionsUrl(job: JobRecord) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddress(job))}`;
   }
 
-  function packagePaperworkOutcome(job: JobRecord) {
+  function packagePaperworkOutcome(job: JobRecord, fallbackOutcome: PaperworkOutcome = "pending") {
     const currentOutcome = paperworkOutcomeFromValue(workflowStatus(job) || JobStatus.statusLabel(job));
     if (currentOutcome !== "pending") return currentOutcome;
 
@@ -10435,28 +10441,28 @@ function directionsUrl(job: JobRecord) {
       latestFieldPacket(job)?.fileName,
     ].filter(Boolean).join(" ");
     const packageOutcome = paperworkOutcomeFromValue(packageText);
-    return packageOutcome === "pending" ? currentOutcome : packageOutcome;
+    return packageOutcome === "pending" ? fallbackOutcome : packageOutcome;
   }
 
-  function paperworkHref(job: JobRecord, doc: "package" | "affidavit" | "invoice" = "package") {
+  function paperworkHref(job: JobRecord, doc: "package" | "affidavit" | "invoice" = "package", fallbackOutcome: PaperworkOutcome = "pending") {
     const outcome = doc === "package"
-      ? packagePaperworkOutcome(job)
+      ? packagePaperworkOutcome(job, fallbackOutcome)
       : paperworkOutcomeFromValue(workflowStatus(job) || JobStatus.statusLabel(job));
     const query = paperworkQuery(job, outcome);
     const separator = query ? "&" : "";
     return `/paperwork?${query}${separator}doc=${doc}`;
   }
 
-  function paperworkAutoPackageHref(job: JobRecord, signatureMode: "with" | "without" = "with") {
-    const href = paperworkHref(job, "package");
+  function paperworkAutoPackageHref(job: JobRecord, signatureMode: "with" | "without" = "with", fallbackOutcome: PaperworkOutcome = "pending") {
+    const href = paperworkHref(job, "package", fallbackOutcome);
     const autoHref = `${href}${href.includes("?") ? "&" : "?"}auto=package`;
     return signatureMode === "without"
       ? `${autoHref}${autoHref.includes("?") ? "&" : "?"}signature=none`
       : autoHref;
   }
 
-  function paperworkAutoPdfOnlyHref(job: JobRecord) {
-    const href = paperworkAutoPackageHref(job);
+  function paperworkAutoPdfOnlyHref(job: JobRecord, fallbackOutcome: PaperworkOutcome = "pending") {
+    const href = paperworkAutoPackageHref(job, "with", fallbackOutcome);
     return `${href}${href.includes("?") ? "&" : "?"}media=none`;
   }
 
@@ -45813,8 +45819,7 @@ return (
           .iphone-field-v2-nav-actions button,
           .iphone-field-v2-itb-actions a,
           .iphone-field-v2-itb-actions button,
-          .iphone-field-v2-choice-grid button,
-          .iphone-field-v2-choice-close {
+          .iphone-field-v2-choice-grid button {
             min-height: 42px;
             border: 1px solid rgba(96, 165, 250, 0.44);
             border-radius: 14px;
@@ -46312,12 +46317,6 @@ return (
           .iphone-field-v2-choice-grid .choice-danger {
             border-color: rgba(248, 113, 113, 0.62);
             color: #fecaca;
-          }
-
-          .iphone-field-v2-choice-close {
-            width: 100%;
-            color: #cbd5e1;
-            border-color: rgba(148, 163, 184, 0.4);
           }
 
           .iphone-field-v2-evidence-strip {
@@ -48623,11 +48622,7 @@ return (
         const fieldAddress = displayAddress(selected);
         const fieldStatusValue = workflowDisplayStatusValue(selected, draftWorkflowStatus);
         const fieldHasSavedWorkflow = hasSavedFieldWorkflow(selected);
-        const fieldStatusShort = fieldHasSavedWorkflow ? workflowShortStatusLabel(fieldStatusValue) : "Status Needed";
-        const fieldStatusFull = fieldHasSavedWorkflow ? workflowLabel(selected) || workflowShortStatusLabel(fieldStatusValue) : "No field status saved";
         const fieldSavedIso = workflowSavedDateIso(selected);
-        const fieldSavedLabel = fieldSavedIso && fieldHasSavedWorkflow ? displayWorkflowDate(fieldSavedIso) : "Save status to unlock packet";
-        const fieldPacketReady = fieldHasSavedWorkflow && workflowStatus(selected) !== "PENDING";
         const fieldContact = tenantContactInfo(selected);
         const fieldVisit = visitSummaryFor(selected);
         const fieldVisitRecord = fieldVisit?.today || fieldVisit?.latest;
@@ -48650,6 +48645,30 @@ return (
         ].includes(fieldStatus);
         const fieldHasArrived = Boolean(fieldVisitRecord);
         const fieldVisitReady = Boolean(fieldVisitStartedIso) || fieldStatus === "VISIT_STARTED" || fieldClosedOrStarted;
+        const fieldStatusShort = fieldStatus === "VISIT_STARTED"
+          ? "Visit Started"
+          : fieldHasSavedWorkflow
+          ? workflowShortStatusLabel(fieldStatusValue)
+          : fieldVisitReady
+            ? "Visit Started"
+            : fieldHasArrived
+              ? "Arrived"
+              : "Status Needed";
+        const fieldStatusFull = fieldHasSavedWorkflow
+          ? workflowLabel(selected) || workflowShortStatusLabel(fieldStatusValue)
+          : fieldVisitReady
+            ? "Visit started. Choose Start Work, No Access, or Refused."
+            : fieldHasArrived
+              ? "Arrived saved. Start the visit next."
+              : "No arrival or field status saved";
+        const fieldSavedLabel = fieldSavedIso && fieldHasSavedWorkflow
+          ? displayWorkflowDate(fieldSavedIso)
+          : fieldVisitReady && fieldVisitStartedIso
+            ? `Visit ${displayWorkflowDate(fieldVisitStartedIso)}`
+            : fieldHasArrived && fieldVisitIso
+              ? `Arrived ${displayWorkflowDate(fieldVisitIso)}`
+              : "Save arrival/status";
+        const fieldPacketReady = fieldHasSavedWorkflow && workflowStatus(selected) !== "PENDING";
         const fieldWorkReady = normalizeWorkflowChoice(fieldStatusValue) === "Work In Progress";
         const fieldDescription = displayDescription(selected);
         const fieldScopeSummary = fieldDescription
@@ -48697,21 +48716,31 @@ return (
           (selected as any).archivedFromMap ||
           /archive/i.test(fieldStatusFull)
         );
-        const fieldPackageActionsReady = fieldIsFinal || fieldHasPackageArchiveState || fieldAfterRows.length > 0 || Boolean(fieldPackagePreview) || Boolean(fieldInvoicePacket);
+        const fieldFinalPackageOutcome = (() => {
+          const packageOutcome = packagePaperworkOutcome(selected);
+          if (packageOutcome !== "pending") return packageOutcome;
+          if (!fieldIsFinal) return "pending";
+          const statusOutcome = paperworkOutcomeFromValue(`${fieldStatus} ${fieldWorkflowChoice} ${fieldStatusFull}`);
+          return statusOutcome === "pending" ? "work_completed" : statusOutcome;
+        })();
+        const fieldPackageGenerateReady = fieldFinalPackageOutcome !== "pending";
+        const fieldPackageActionsReady = fieldPackageGenerateReady || fieldHasPackageArchiveState || Boolean(fieldPackagePreview);
         const fieldPackageTitle = fieldPackagePreview
           ? "Complete package ready"
-          : fieldInvoicePacket
+          : fieldPackageGenerateReady && fieldInvoicePacket
             ? "Paperwork PDF ready"
-            : fieldIsFinal
+            : fieldPackageGenerateReady
               ? "Generate complete package"
               : fieldHasPackageArchiveState
                 ? "Package review"
               : "Finish media to package";
         const fieldPackageMeta = fieldPackagePreview
           ? `${fieldPackagePreview.imageCount} image(s) / ${fieldPackagePreview.videoCount} video(s)`
-          : fieldInvoicePacket
+          : fieldPackageGenerateReady && fieldInvoicePacket
             ? fieldInvoicePacket.fileName
-            : "Affidavit, invoice, images, videos, and manifest.";
+            : fieldPackageGenerateReady
+              ? "Affidavit, invoice, images, videos, and manifest."
+              : "Save Work Completed, No Access, or Refused before package generation.";
         const fieldSecondAttempt = workflowSecondAttemptInfo(selected);
         const fieldNoAccessLabel = workflowStatus(selected) === "NO_ACCESS_COMPLETE"
           ? "Closed"
@@ -48781,7 +48810,7 @@ return (
           { label: "Visit", done: fieldVisitReady, active: fieldHasArrived && !fieldVisitReady },
           { label: "Start", done: fieldWorkReady, active: fieldVisitReady && !fieldWorkReady },
           { label: "Finish", done: fieldIsFinal, active: fieldWorkReady && !fieldIsFinal },
-          { label: "Package", done: Boolean(fieldPackagePreview || fieldInvoicePacket), active: fieldIsFinal && !fieldPackagePreview && !fieldInvoicePacket },
+          { label: "Package", done: Boolean(fieldPackagePreview || (fieldPackageGenerateReady && fieldInvoicePacket)), active: fieldPackageGenerateReady && !fieldPackagePreview && !fieldInvoicePacket },
         ];
         const useIphoneJobCardV2 = iphoneJobCardVersion === "v2";
         if (useIphoneJobCardV2) {
@@ -48846,45 +48875,6 @@ return (
                           <span className="iphone-field-v2-label">Field Status</span>
                           <strong>{fieldStatusShort}</strong>
                           <small>{fieldStatusFull} · {fieldSavedLabel}</small>
-                          <div className="iphone-field-v2-packet" aria-label="Packet readiness">
-                            <button
-                              type="button"
-                              className={fieldPacketReady ? "ready" : "locked"}
-                              onClick={() => {
-                                if (fieldPacketReady) {
-                                  jumpToMediaFlow(selected);
-                                  return;
-                                }
-                                showActionNotice("Save field status first. Media opens after status.");
-                              }}
-                            >
-                              Media
-                            </button>
-                            <a
-                              className={fieldPacketReady ? "ready" : "locked"}
-                              href={fieldPacketReady ? paperworkHref(selected, "affidavit") : "#"}
-                              onClick={(event) => {
-                                if (!fieldPacketReady) {
-                                  event.preventDefault();
-                                  showActionNotice("Save field status first. Affidavit opens after status.");
-                                }
-                              }}
-                            >
-                              Affidavit
-                            </a>
-                            <a
-                              className={fieldPacketReady ? "ready" : "locked"}
-                              href={fieldPacketReady ? paperworkHref(selected, "invoice") : "#"}
-                              onClick={(event) => {
-                                if (!fieldPacketReady) {
-                                  event.preventDefault();
-                                  showActionNotice("Save field status first. Invoice opens after status.");
-                                }
-                              }}
-                            >
-                              Invoice
-                            </a>
-                          </div>
                         </div>
                       </div>
                       <div className="iphone-field-v2-guided-flow" aria-label="Guided field flow">
@@ -49053,11 +49043,11 @@ return (
                       <b>{fieldStatusFull}</b>
                     </div>
                     <div className="iphone-field-v2-actions">
-                      <button type="button" className={`iphone-field-v2-action arrived ${fieldHasArrived ? "is-saved" : ""}`} onClick={() => void markFieldVisit(selected, "manual_here")} disabled={fieldVisitSaving}>
+                      <button type="button" className={`iphone-field-v2-action arrived ${fieldHasArrived ? "is-saved" : ""}`} onClick={() => void markFieldVisit(selected, "manual_here")} disabled={fieldVisitSaving || fieldHasArrived}>
                         <span>{fieldVisitSaving ? "Saving" : "Arrived Saved"}</span>
                         <strong>{fieldHasArrived ? arrivedStamp : "Tap to save"}</strong>
                       </button>
-                      <button type="button" className={`iphone-field-v2-action visit ${fieldVisitReady ? "is-saved" : ""}`} onClick={() => saveTopCardStartVisit(selected)} disabled={!fieldHasArrived}>
+                      <button type="button" className={`iphone-field-v2-action visit ${fieldVisitReady ? "is-saved" : ""}`} onClick={() => saveTopCardStartVisit(selected)} disabled={!fieldHasArrived || fieldVisitReady}>
                         <span>Start Visit</span>
                         <strong>{visitStamp}</strong>
                       </button>
@@ -49209,9 +49199,6 @@ return (
                           </div>
                         </>
                       )}
-                      <button type="button" className="iphone-field-v2-choice-close" onClick={() => setFieldWorkChoice(null)}>
-                        Close Choices
-                      </button>
                     </section>
                   ) : null}
 
@@ -49258,9 +49245,6 @@ return (
                           <small>No media</small>
                         </button>
                       </div>
-                      <button type="button" className="iphone-field-v2-choice-close" onClick={() => setIphoneV2OutcomeChoice(null)}>
-                        Close Choices
-                      </button>
                     </section>
                   ) : null}
 
@@ -49302,18 +49286,20 @@ return (
                             <small>{fieldPackageMeta}</small>
                           </div>
                           <div className="iphone-field-v2-package-actions">
-                            <button type="button" className="package-primary" onClick={() => void runPackagePrimaryAction(selected, "with")}>
+                            <button type="button" className="package-primary" onClick={() => void runPackagePrimaryAction(selected, "with", fieldFinalPackageOutcome)} disabled={!fieldPackageGenerateReady}>
                               <span>With Signature</span>
-                              <small>Full package</small>
+                              <small>{fieldPackageGenerateReady ? "Full package" : "Save final status"}</small>
                             </button>
-                            <button type="button" className="package-unsigned" onClick={() => void runPackagePrimaryAction(selected, "without")}>
+                            <button type="button" className="package-unsigned" onClick={() => void runPackagePrimaryAction(selected, "without", fieldFinalPackageOutcome)} disabled={!fieldPackageGenerateReady}>
                               <span>No Signature</span>
-                              <small>Full package</small>
+                              <small>{fieldPackageGenerateReady ? "Full package" : "Save final status"}</small>
                             </button>
-                            <a className="package-secondary" href={paperworkAutoPdfOnlyHref(selected)}>
+                            {fieldPackageGenerateReady ? (
+                            <a className="package-secondary" href={paperworkAutoPdfOnlyHref(selected, fieldFinalPackageOutcome)}>
                               <span>PDF Only</span>
                               <small>No media</small>
                             </a>
+                            ) : null}
                             {fieldPackagePreview ? (
                               <button
                                 type="button"
@@ -49324,10 +49310,12 @@ return (
                                 <small>{fieldPackageApprovedAt ? displayWorkflowDate(fieldPackageApprovedAt) : "Review done"}</small>
                               </button>
                             ) : (
-                              <a className="package-secondary" href={paperworkHref(selected, "package")}>
+                              fieldPackageGenerateReady ? (
+                              <a className="package-secondary" href={paperworkHref(selected, "package", fieldFinalPackageOutcome)}>
                                 <span>Review</span>
                                 <small>Paperwork</small>
                               </a>
+                              ) : null
                             )}
                             {fieldPackagePreview ? (
                               <button type="button" className="package-secondary" onClick={() => void sendFullEvidencePackage(selected)} disabled={!fieldPackageApprovedAt}>
