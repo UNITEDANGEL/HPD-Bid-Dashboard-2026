@@ -48883,10 +48883,10 @@ return (
             : `Apt ${fieldTenantApartment}`
           : "";
         const fieldContactPrimary = fieldContact.name || fieldContact.phone || fieldContact.status || "No tenant contact";
-        const fieldContactMeta = [
+        const fieldContactMeta = Array.from(new Set([
           fieldContact.name && fieldContact.phone ? fieldContact.phone : "",
           !fieldContact.phone ? fieldContact.status : "",
-        ].filter(Boolean).join(" · ");
+        ].map((part) => String(part || "").trim()).filter((part) => part && part !== fieldContactPrimary))).join(" · ");
         const fieldItbSource = itbSourceFor(selected, itbSourceManifest);
         const fieldItbStatus = fieldItbSource?.itbPage3Published
           ? `Page image ready${fieldItbSource.page ? ` · PDF page ${fieldItbSource.page}` : ""}`
@@ -49178,7 +49178,7 @@ return (
                         {fieldTenantApartmentLabel ? <span className="iphone-field-v2-apt-pill">{fieldTenantApartmentLabel}</span> : null}
                         <strong>{fieldContactPrimary}</strong>
                       </div>
-                      <small>{fieldContactMeta || fieldContact.status}</small>
+                      {fieldContactMeta ? <small>{fieldContactMeta}</small> : null}
                     </div>
                     <div className="iphone-field-v2-contact-actions">
                       {fieldContact.actionHref ? <a href={fieldContact.actionHref}>Call</a> : null}
