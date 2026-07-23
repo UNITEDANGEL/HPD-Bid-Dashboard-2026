@@ -2846,6 +2846,10 @@ const [fieldWorkChoice, setFieldWorkChoice] = useState<{
   phase: "start" | "finish";
   partial?: boolean;
 } | null>(null);
+const [iphoneV2OutcomeChoice, setIphoneV2OutcomeChoice] = useState<{
+  jobKey: string;
+  kind: "no_access" | "refused_access";
+} | null>(null);
 const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
   jobKey: string;
   kind: FieldMediaKind;
@@ -8905,6 +8909,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     const patch = workStartedPatch(iso);
     const startedJob = { ...job, ...patch } as MappedJob;
     setFieldWorkChoice({ jobKey: key, phase: "start" });
+    setIphoneV2OutcomeChoice(null);
     setFieldFocusPane("capture");
     setSelectedOnly(true);
     setDrawerOpen(true);
@@ -8919,6 +8924,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     const iso = workflowActionIso();
     const patch = workStartedPatch(iso);
     setFieldWorkChoice(null);
+    setIphoneV2OutcomeChoice(null);
     setFieldFocusPane("capture");
     setSelectedOnly(true);
     setDrawerOpen(true);
@@ -8949,6 +8955,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       ...activeWorkflowArchiveFields(),
     };
     setFieldWorkChoice(null);
+    setIphoneV2OutcomeChoice(null);
     setSelectedOnly(true);
     setDrawerOpen(true);
     saveFieldWorkflowPatch(
@@ -8992,6 +8999,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       ...activeWorkflowArchiveFields(),
     };
     setFieldWorkChoice(null);
+    setIphoneV2OutcomeChoice(null);
     setSelectedOnly(true);
     setDrawerOpen(true);
     saveFieldWorkflowPatch(
@@ -9025,6 +9033,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       ...refusedDescriptionPatch(description),
     };
     setFieldWorkChoice(null);
+    setIphoneV2OutcomeChoice(null);
     setSelectedOnly(true);
     setDrawerOpen(true);
     saveFieldWorkflowPatch(
@@ -9092,6 +9101,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     const key = jobKey(job);
     if (!key) return;
     setFieldWorkChoice({ jobKey: key, phase: "finish", partial });
+    setIphoneV2OutcomeChoice(null);
     setFieldFocusPane("capture");
     setSelectedOnly(true);
     setDrawerOpen(true);
@@ -9124,6 +9134,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setDrawerOpen(true);
     setFullMap(false);
     setFieldWorkChoice(null);
+    setIphoneV2OutcomeChoice(null);
     clearGuidedCaptureState();
     saveFieldWorkflowPatch(
       job,
@@ -9141,6 +9152,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setDrawerOpen(true);
     setFullMap(false);
     setFieldWorkChoice(null);
+    setIphoneV2OutcomeChoice(null);
     saveFieldWorkflowPatch(
       job,
       patch,
@@ -9162,6 +9174,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setDrawerOpen(true);
     setFullMap(false);
     setFieldWorkChoice(null);
+    setIphoneV2OutcomeChoice(null);
     saveFieldWorkflowPatch(
       job,
       patch,
@@ -9184,6 +9197,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setDrawerOpen(true);
     setFullMap(false);
     setFieldWorkChoice(null);
+    setIphoneV2OutcomeChoice(null);
     clearGuidedCaptureState();
     saveFieldWorkflowPatch(job, patch, "Work In Progress saved without before media. You can upload labeled evidence later if needed.");
   }
@@ -9249,6 +9263,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     };
     setFieldFocusPane("package");
     setFieldWorkChoice(null);
+    setIphoneV2OutcomeChoice(null);
     clearGuidedCaptureState();
     saveFieldWorkflowPatch(
       job,
@@ -9284,6 +9299,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setDrawerOpen(true);
     setFullMap(false);
     setFieldWorkChoice(null);
+    setIphoneV2OutcomeChoice(null);
     saveFieldWorkflowPatch(
       job,
       patch,
@@ -9305,6 +9321,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setDrawerOpen(true);
     setFullMap(false);
     setFieldWorkChoice(null);
+    setIphoneV2OutcomeChoice(null);
     saveFieldWorkflowPatch(
       job,
       patch,
@@ -9338,6 +9355,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     };
     setFieldFocusPane("package");
     setFieldWorkChoice(null);
+    setIphoneV2OutcomeChoice(null);
     clearGuidedCaptureState();
     saveFieldWorkflowPatch(
       job,
@@ -45604,6 +45622,69 @@ return (
             padding: 14px;
           }
 
+          .iphone-field-v2-address-card {
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 12px;
+          }
+
+          .iphone-field-v2-address-copy {
+            min-width: 0;
+            display: grid;
+            gap: 4px;
+          }
+
+          .iphone-field-v2-address-copy strong {
+            color: #f8fafc;
+            font-size: 23px;
+            font-weight: 950;
+            line-height: 1.08;
+            letter-spacing: 0;
+          }
+
+          .iphone-field-v2-address-copy small {
+            color: rgba(203, 213, 225, 0.82);
+            font-size: 12px;
+            font-weight: 850;
+            line-height: 1.2;
+          }
+
+          .iphone-field-v2-nav-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 7px;
+          }
+
+          .iphone-field-v2-nav-actions a,
+          .iphone-field-v2-nav-actions button,
+          .iphone-field-v2-itb-actions a,
+          .iphone-field-v2-itb-actions button,
+          .iphone-field-v2-choice-grid button,
+          .iphone-field-v2-choice-close {
+            min-height: 42px;
+            border: 1px solid rgba(96, 165, 250, 0.44);
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 11px;
+            background: rgba(15, 35, 61, 0.76);
+            color: #dbeafe;
+            font-size: 12px;
+            font-weight: 950;
+            text-decoration: none;
+          }
+
+          .iphone-field-v2-nav-actions .waze {
+            border-color: rgba(74, 222, 128, 0.5);
+            color: #86efac;
+          }
+
+          .iphone-field-v2-nav-actions .google {
+            border-color: rgba(96, 165, 250, 0.54);
+            color: #bfdbfe;
+          }
+
           .iphone-field-v2-scope-button {
             width: 100%;
             border: 1px solid rgba(96, 165, 250, 0.38);
@@ -45627,6 +45708,23 @@ return (
             color: #bfdbfe;
             font-size: 12px;
             font-weight: 950;
+          }
+
+          .iphone-field-v2-itb-card {
+            border-color: rgba(59, 130, 246, 0.32);
+          }
+
+          .iphone-field-v2-itb-card strong {
+            color: #e5edf8;
+            font-size: 17px;
+            font-weight: 950;
+            line-height: 1.12;
+          }
+
+          .iphone-field-v2-itb-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
           }
 
           .iphone-field-v2-card p {
@@ -45860,6 +45958,123 @@ return (
             line-height: 1.14;
           }
 
+          .iphone-field-v2-next {
+            gap: 11px;
+            border-color: rgba(74, 222, 128, 0.3);
+            background: linear-gradient(145deg, rgba(6, 78, 59, 0.28), rgba(8, 18, 31, 0.72));
+          }
+
+          .iphone-field-v2-next-head {
+            display: grid;
+            gap: 4px;
+          }
+
+          .iphone-field-v2-next-head strong {
+            color: #f8fafc;
+            font-size: 18px;
+            font-weight: 950;
+            line-height: 1.08;
+          }
+
+          .iphone-field-v2-media-strip {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .iphone-field-v2-media-strip div {
+            min-width: 0;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 14px;
+            padding: 10px;
+            background: rgba(3, 9, 18, 0.36);
+          }
+
+          .iphone-field-v2-media-strip span,
+          .iphone-field-v2-choice-head span {
+            display: block;
+            color: #60a5fa;
+            font-size: 10px;
+            font-weight: 950;
+            line-height: 1.1;
+          }
+
+          .iphone-field-v2-media-strip strong {
+            display: block;
+            margin-top: 3px;
+            color: #f8fafc;
+            font-size: 18px;
+            font-weight: 950;
+            line-height: 1;
+          }
+
+          .iphone-field-v2-choice-card {
+            gap: 12px;
+            border-color: rgba(96, 165, 250, 0.42);
+            background: rgba(5, 13, 23, 0.82);
+          }
+
+          .iphone-field-v2-choice-head {
+            display: grid;
+            gap: 5px;
+          }
+
+          .iphone-field-v2-choice-head strong {
+            color: #f8fafc;
+            font-size: 20px;
+            font-weight: 950;
+            line-height: 1.08;
+          }
+
+          .iphone-field-v2-choice-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .iphone-field-v2-choice-grid button {
+            min-height: 58px;
+            flex-direction: column;
+            gap: 3px;
+            text-align: center;
+          }
+
+          .iphone-field-v2-choice-grid button strong {
+            color: currentColor;
+            font-size: 14px;
+            font-weight: 950;
+            line-height: 1.05;
+          }
+
+          .iphone-field-v2-choice-grid button small {
+            color: rgba(226, 232, 240, 0.76);
+            font-size: 10px;
+            font-weight: 850;
+            line-height: 1.1;
+          }
+
+          .iphone-field-v2-choice-grid .choice-camera,
+          .iphone-field-v2-choice-grid .choice-upload {
+            border-color: rgba(74, 222, 128, 0.46);
+            color: #86efac;
+          }
+
+          .iphone-field-v2-choice-grid .choice-skip {
+            border-color: rgba(251, 191, 36, 0.5);
+            color: #fde68a;
+          }
+
+          .iphone-field-v2-choice-grid .choice-danger {
+            border-color: rgba(248, 113, 113, 0.62);
+            color: #fecaca;
+          }
+
+          .iphone-field-v2-choice-close {
+            width: 100%;
+            color: #cbd5e1;
+            border-color: rgba(148, 163, 184, 0.4);
+          }
+
           .iphone-field-v2-detail-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -46084,6 +46299,18 @@ return (
               -webkit-line-clamp: 3;
             }
 
+            .iphone-field-v2-address-card {
+              grid-template-columns: minmax(0, 1fr);
+            }
+
+            .iphone-field-v2-address-copy strong {
+              font-size: 19px;
+            }
+
+            .iphone-field-v2-nav-actions {
+              grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+
             .iphone-field-v2-scope-modal-body p {
               display: block;
               overflow: visible;
@@ -46138,6 +46365,10 @@ return (
 
             .iphone-field-v2-action strong {
               font-size: 11px;
+            }
+
+            .iphone-field-v2-choice-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
             }
           }
 
@@ -48127,6 +48358,16 @@ return (
           fieldContact.name && fieldContact.phone ? fieldContact.phone : "",
           !fieldContact.phone ? fieldContact.status : "",
         ].filter(Boolean).join(" · ");
+        const fieldItbSource = itbSourceFor(selected, itbSourceManifest);
+        const fieldItbStatus = fieldItbSource?.itbPage3Published
+          ? `Page image ready${fieldItbSource.page ? ` · PDF page ${fieldItbSource.page}` : ""}`
+          : fieldItbSource
+            ? "ITB listed, page image not published yet"
+            : "No ITB file listed";
+        const fieldMediaCounts = fieldPhotoCountsFor(selected);
+        const activeIphoneV2WorkChoice = fieldWorkChoice?.jobKey === fieldJobKey ? fieldWorkChoice : null;
+        const activeIphoneV2OutcomeChoice = iphoneV2OutcomeChoice?.jobKey === fieldJobKey ? iphoneV2OutcomeChoice : null;
+        const fieldIsFinal = ["WORK_COMPLETED", "PARTIAL_WORK_COMPLETED", "REFUSED_ACCESS", "NO_ACCESS_COMPLETE", "COMPLETED_BY_OTHERS"].includes(fieldStatus);
         const fieldSecondAttempt = workflowSecondAttemptInfo(selected);
         const fieldNoAccessLabel = workflowStatus(selected) === "NO_ACCESS_COMPLETE"
           ? "Closed"
@@ -48311,22 +48552,24 @@ return (
                     </section>
                   </header>
 
-                  <button
-                    type="button"
-                    className="iphone-field-v2-card iphone-field-v2-scope-button"
-                    aria-label="Open full job scope"
-                    onClick={() => {
-                      setIphoneV2ScopeOpen(true);
-                      setIphoneFieldSheetSnap("middle");
-                    }}
-                  >
-                    <span className="iphone-field-v2-scope-head">
-                      <span className="iphone-field-v2-label">Scope</span>
-                      <span className="iphone-field-v2-open-copy">Open</span>
-                    </span>
-                    <p>{fieldScopeSummary}</p>
-                    <small>{fieldDescription ? "Tap for full scope." : "Description needs source review."}</small>
-                  </button>
+                  <section className="iphone-field-v2-card iphone-field-v2-address-card" aria-label="Job address and navigation">
+                    <div className="iphone-field-v2-address-copy">
+                      <span className="iphone-field-v2-label">Address</span>
+                      <strong>{fieldAddress}</strong>
+                      <small>{fieldRouteLabel} · {displayLocation(selected) || "Location not listed"}</small>
+                    </div>
+                    <div className="iphone-field-v2-nav-actions" aria-label="Navigation actions">
+                      <a className="waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                        Waze
+                      </a>
+                      <a className="google" href={googleDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                        Google
+                      </a>
+                      <button type="button" onClick={() => void routeSelectedJobOnMap(selected)}>
+                        Map
+                      </button>
+                    </div>
+                  </section>
 
                   <section className="iphone-field-v2-card iphone-field-v2-contact" aria-label="Tenant contact">
                     <div className="iphone-field-v2-contact-main">
@@ -48344,6 +48587,50 @@ return (
                     </div>
                   </section>
 
+                  <button
+                    type="button"
+                    className="iphone-field-v2-card iphone-field-v2-scope-button"
+                    aria-label="Open full job scope"
+                    onClick={() => {
+                      setIphoneV2ScopeOpen(true);
+                      setIphoneFieldSheetSnap("middle");
+                    }}
+                  >
+                    <span className="iphone-field-v2-scope-head">
+                      <span className="iphone-field-v2-label">Scope</span>
+                      <span className="iphone-field-v2-open-copy">Open</span>
+                    </span>
+                    <p>{fieldScopeSummary}</p>
+                    <small>{fieldDescription ? "Tap for full scope." : "Description needs source review."}</small>
+                  </button>
+
+                  <section className="iphone-field-v2-card iphone-field-v2-itb-card" aria-label="Complete invitation to bid">
+                    <span className="iphone-field-v2-label">Complete Invitation To Bid</span>
+                    <strong>{fieldItbSource?.fileName || "ITB source"}</strong>
+                    <small>{fieldItbStatus}</small>
+                    <div className="iphone-field-v2-itb-actions">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setItbSourceImageFailed("");
+                          setItbSourceOpen(true);
+                        }}
+                      >
+                        Open ITB
+                      </button>
+                      {fieldItbSource?.pdfPublished ? (
+                        <a href={fieldItbSource.pdfUrl} target="_blank" rel="noopener noreferrer">
+                          PDF Page
+                        </a>
+                      ) : null}
+                      {fieldItbSource?.pdfPublished ? (
+                        <a href={fieldItbSource.pdfDownloadUrl} target="_blank" rel="noopener noreferrer">
+                          Full PDF
+                        </a>
+                      ) : null}
+                    </div>
+                  </section>
+
                   <section className="iphone-field-v2-card iphone-field-v2-workflow" aria-label="Workflow">
                     <div className="iphone-field-v2-workflow-head">
                       <strong>Workflow</strong>
@@ -48358,18 +48645,38 @@ return (
                         <span>Start Visit</span>
                         <strong>{visitStamp}</strong>
                       </button>
-                      <button type="button" className={`iphone-field-v2-action work ${fieldWorkReady ? "is-saved" : ""}`} onClick={() => saveTopCardStartWork(selected)} disabled={!fieldVisitReady}>
+                      <button type="button" className={`iphone-field-v2-action work ${fieldWorkReady ? "is-saved" : ""}`} onClick={() => openStartJobChoices(selected)} disabled={!fieldVisitReady}>
                         <i className="iphone-field-v2-tool" aria-hidden="true" />
                         <span>Start Work</span>
                         <strong>{workStamp}</strong>
                       </button>
-                      <button type="button" className="iphone-field-v2-action no-access" onClick={() => saveTopCardNoAccess(selected)} disabled={fieldNoAccessDisabled}>
+                      <button
+                        type="button"
+                        className="iphone-field-v2-action no-access"
+                        onClick={() => {
+                          setFieldWorkChoice(null);
+                          setIphoneV2OutcomeChoice({ jobKey: fieldJobKey, kind: "no_access" });
+                          setFieldFocusPane("capture");
+                          showActionNotice("No Access: add evidence first or save the no-access attempt without media.");
+                        }}
+                        disabled={fieldNoAccessDisabled}
+                      >
                         <span>No Access</span>
                         <strong>{fieldNoAccessLabel}</strong>
                       </button>
-                      <button type="button" className="iphone-field-v2-action refused" onClick={() => saveTopCardRefused(selected)} disabled={!fieldVisitReady}>
+                      <button
+                        type="button"
+                        className="iphone-field-v2-action refused"
+                        onClick={() => {
+                          setFieldWorkChoice(null);
+                          setIphoneV2OutcomeChoice({ jobKey: fieldJobKey, kind: "refused_access" });
+                          setFieldFocusPane("capture");
+                          showActionNotice("Refused Access: add media first or close refused without media.");
+                        }}
+                        disabled={!fieldVisitReady}
+                      >
                         <span>Refused</span>
-                        <strong>Close job</strong>
+                        <strong>Ask media</strong>
                       </button>
                       <button type="button" className="iphone-field-v2-action clear" onClick={() => resetFieldJobForTesting(selected)}>
                         <span>Clear</span>
@@ -48377,6 +48684,136 @@ return (
                       </button>
                     </div>
                   </section>
+
+                  {activeIphoneV2WorkChoice ? (
+                    <section className="iphone-field-v2-card iphone-field-v2-choice-card" aria-label={activeIphoneV2WorkChoice.phase === "start" ? "Start work media choices" : "Finish work media choices"}>
+                      <div className="iphone-field-v2-choice-head">
+                        <span>{activeIphoneV2WorkChoice.phase === "start" ? "Start Work Media" : activeIphoneV2WorkChoice.partial ? "Partial Work Closeout" : "Finish Work Closeout"}</span>
+                        <strong>{activeIphoneV2WorkChoice.phase === "start" ? "Before media first" : "After media before closeout"}</strong>
+                        <small>
+                          {activeIphoneV2WorkChoice.phase === "start"
+                            ? "Take/upload before media now, or start without media and add it later."
+                            : "Take/upload after media, or finish without media and review the package."}
+                        </small>
+                      </div>
+                      {activeIphoneV2WorkChoice.phase === "start" ? (
+                        <div className="iphone-field-v2-choice-grid">
+                          <button type="button" className="choice-camera" onClick={() => startFieldJob(selected)}>
+                            <strong>Take</strong>
+                            <small>Before</small>
+                          </button>
+                          <button type="button" className="choice-upload" onClick={() => uploadBeforeAndStartJob(selected)}>
+                            <strong>Upload</strong>
+                            <small>Before</small>
+                          </button>
+                          <button type="button" className="choice-skip" onClick={() => startFieldJobWithoutMedia(selected)}>
+                            <strong>No Media</strong>
+                            <small>Start</small>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="iphone-field-v2-choice-grid">
+                          <button type="button" className="choice-camera" onClick={() => finishFieldJobWithMedia(selected, Boolean(activeIphoneV2WorkChoice.partial))}>
+                            <strong>Take</strong>
+                            <small>After</small>
+                          </button>
+                          <button type="button" className="choice-upload" onClick={() => uploadAfterAndFinishJob(selected, Boolean(activeIphoneV2WorkChoice.partial))}>
+                            <strong>Upload</strong>
+                            <small>After</small>
+                          </button>
+                          <button type="button" className="choice-skip" onClick={() => finishFieldJob(selected, Boolean(activeIphoneV2WorkChoice.partial))}>
+                            <strong>Finish</strong>
+                            <small>No media</small>
+                          </button>
+                        </div>
+                      )}
+                      <button type="button" className="iphone-field-v2-choice-close" onClick={() => setFieldWorkChoice(null)}>
+                        Close Choices
+                      </button>
+                    </section>
+                  ) : null}
+
+                  {activeIphoneV2OutcomeChoice ? (
+                    <section className="iphone-field-v2-card iphone-field-v2-choice-card" aria-label={activeIphoneV2OutcomeChoice.kind === "no_access" ? "No access media choices" : "Refused access media choices"}>
+                      <div className="iphone-field-v2-choice-head">
+                        <span>{activeIphoneV2OutcomeChoice.kind === "no_access" ? "No Access" : "Refused Access"}</span>
+                        <strong>{activeIphoneV2OutcomeChoice.kind === "no_access" ? "Add evidence or save attempt" : "Add media or close refused"}</strong>
+                        <small>
+                          {activeIphoneV2OutcomeChoice.kind === "no_access"
+                            ? "Use media when available. If not, save the attempt and the timer/status will be recorded."
+                            : "Use refused-access media when available. If not, close refused without media and review the package."}
+                        </small>
+                      </div>
+                      <div className="iphone-field-v2-choice-grid">
+                        <button
+                          type="button"
+                          className="choice-camera"
+                          onClick={() => requestFieldPhotoCapture(selected, activeIphoneV2OutcomeChoice.kind, "image/*,video/*", true)}
+                        >
+                          <strong>Take</strong>
+                          <small>Media</small>
+                        </button>
+                        <button
+                          type="button"
+                          className="choice-upload"
+                          onClick={() => requestFieldPhotoCapture(selected, activeIphoneV2OutcomeChoice.kind, "image/*,video/*", false)}
+                        >
+                          <strong>Upload</strong>
+                          <small>Media</small>
+                        </button>
+                        <button
+                          type="button"
+                          className={activeIphoneV2OutcomeChoice.kind === "refused_access" ? "choice-danger" : "choice-skip"}
+                          onClick={() => {
+                            if (activeIphoneV2OutcomeChoice.kind === "refused_access") {
+                              saveTopCardRefused(selected);
+                            } else {
+                              saveTopCardNoAccess(selected);
+                            }
+                          }}
+                        >
+                          <strong>{activeIphoneV2OutcomeChoice.kind === "refused_access" ? "Close" : "Save"}</strong>
+                          <small>No media</small>
+                        </button>
+                      </div>
+                      <button type="button" className="iphone-field-v2-choice-close" onClick={() => setIphoneV2OutcomeChoice(null)}>
+                        Close Choices
+                      </button>
+                    </section>
+                  ) : null}
+
+                  {(fieldWorkReady || fieldMediaCounts.total > 0 || fieldIsFinal) && !activeIphoneV2WorkChoice && !activeIphoneV2OutcomeChoice ? (
+                    <section className="iphone-field-v2-card iphone-field-v2-next" aria-label="Media and closeout next steps">
+                      <div className="iphone-field-v2-next-head">
+                        <span className="iphone-field-v2-label">Media / Closeout</span>
+                        <strong>{fieldIsFinal ? "Package review" : fieldWorkReady ? "Work started" : "Media saved"}</strong>
+                        <small>
+                          {fieldIsFinal
+                            ? "Review affidavit, invoice, and saved media."
+                            : "Add before/after media or finish the job when work is complete."}
+                        </small>
+                      </div>
+                      <div className="iphone-field-v2-media-strip">
+                        <div><span>Before</span><strong>{fieldMediaCounts.before}</strong></div>
+                        <div><span>After</span><strong>{fieldMediaCounts.after}</strong></div>
+                        <div><span>Total</span><strong>{fieldMediaCounts.total}</strong></div>
+                      </div>
+                      <div className="iphone-field-v2-choice-grid">
+                        <button type="button" className="choice-camera" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*,video/*", true)}>
+                          <strong>Before</strong>
+                          <small>Media</small>
+                        </button>
+                        <button type="button" className="choice-upload" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*,video/*", true)}>
+                          <strong>After</strong>
+                          <small>Media</small>
+                        </button>
+                        <button type="button" className="choice-skip" onClick={() => openFinishJobChoices(selected)}>
+                          <strong>Finish</strong>
+                          <small>Closeout</small>
+                        </button>
+                      </div>
+                    </section>
+                  ) : null}
 
                   {actionNotice ? (
                     <section className="iphone-field-v2-card" role="status" aria-live="polite">

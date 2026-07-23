@@ -77,6 +77,17 @@ Current V2.1 interaction slice:
 - The full-scope panel must close cleanly and return to the same V2 sheet.
 - Tenant Contact must show the apartment as a prominent iPhone-readable pill when apartment data exists.
 
+Current V2.2 restore-forward slice:
+
+- The rebuilt V2 card must restore important field modules from the older job card instead of hiding them.
+- Job address must be large and easy to read, with real Waze, Google, and in-map route actions beside it.
+- Tenant Contact follows the address and keeps the apartment prominent.
+- Scope stays tappable and readable.
+- Complete Invitation To Bid / original ITB Page 3 must be available from the V2 card and must use the real ITB source image/PDF state.
+- Start Work saves Work In Progress and then asks for before media: Take, Upload, or No Media.
+- Finish/closeout asks for after media: Take, Upload, or Finish No Media, then the existing package/paperwork review flow handles affidavit and invoice.
+- No Access and Refused must prompt for media first, with a real no-media save/close option.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.
