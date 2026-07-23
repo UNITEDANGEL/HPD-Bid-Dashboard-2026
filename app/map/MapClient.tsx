@@ -8270,9 +8270,13 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     return "Generate Package";
   }
 
-  async function runPackagePrimaryAction(job: MappedJob) {
-    showActionNotice("Opening package screen. It will create the package automatically.");
-    window.open(paperworkAutoPackageHref(job), "_blank", "noopener,noreferrer");
+  async function runPackagePrimaryAction(job: MappedJob, signatureMode: "with" | "without" = "with") {
+    showActionNotice(
+      signatureMode === "without"
+        ? "Opening unsigned package screen. It will create the package automatically."
+        : "Opening package screen. It will create the package automatically."
+    );
+    window.open(paperworkAutoPackageHref(job, signatureMode), "_blank", "noopener,noreferrer");
   }
 
   async function shareStoredPackage(job: MappedJob, packet = latestFieldPacket(job, "affidavit_invoice_pdf") || latestFieldPacket(job), downloadFallback = true) {
@@ -10424,9 +10428,12 @@ function directionsUrl(job: JobRecord) {
     return `/paperwork?${query}${separator}doc=${doc}`;
   }
 
-  function paperworkAutoPackageHref(job: JobRecord) {
+  function paperworkAutoPackageHref(job: JobRecord, signatureMode: "with" | "without" = "with") {
     const href = paperworkHref(job, "package");
-    return `${href}${href.includes("?") ? "&" : "?"}auto=package`;
+    const autoHref = `${href}${href.includes("?") ? "&" : "?"}auto=package`;
+    return signatureMode === "without"
+      ? `${autoHref}${autoHref.includes("?") ? "&" : "?"}signature=none`
+      : autoHref;
   }
 
   function paperworkAutoPdfOnlyHref(job: JobRecord) {
@@ -45981,6 +45988,90 @@ return (
             line-height: 1.08;
           }
 
+          .iphone-field-v2-package-panel {
+            display: grid;
+            gap: 10px;
+            border: 1px solid rgba(96, 165, 250, 0.28);
+            border-radius: 16px;
+            padding: 12px;
+            background: rgba(2, 6, 23, 0.32);
+          }
+
+          .iphone-field-v2-package-copy {
+            display: grid;
+            gap: 4px;
+          }
+
+          .iphone-field-v2-package-copy strong {
+            color: #f8fafc;
+            font-size: 18px;
+            font-weight: 950;
+            line-height: 1.08;
+          }
+
+          .iphone-field-v2-package-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .iphone-field-v2-package-actions a,
+          .iphone-field-v2-package-actions button {
+            min-width: 0;
+            min-height: 54px;
+            border: 1px solid rgba(96, 165, 250, 0.46);
+            border-radius: 14px;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 8px 10px;
+            background: rgba(15, 35, 61, 0.76);
+            color: #dbeafe;
+            font-size: 12px;
+            font-weight: 950;
+            line-height: 1.08;
+            text-align: center;
+            text-decoration: none;
+          }
+
+          .iphone-field-v2-package-actions .package-primary {
+            border-color: rgba(74, 222, 128, 0.58);
+            background: linear-gradient(145deg, rgba(20, 83, 45, 0.68), rgba(15, 35, 61, 0.8));
+            color: #bbf7d0;
+          }
+
+          .iphone-field-v2-package-actions .package-unsigned {
+            border-color: rgba(251, 191, 36, 0.58);
+            color: #fde68a;
+          }
+
+          .iphone-field-v2-package-actions .package-secondary {
+            border-color: rgba(148, 163, 184, 0.4);
+            color: #cbd5e1;
+          }
+
+          .iphone-field-v2-package-actions button:disabled {
+            opacity: 0.5;
+          }
+
+          .iphone-field-v2-package-actions span {
+            display: block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .iphone-field-v2-package-actions small {
+            display: block;
+            color: rgba(226, 232, 240, 0.72);
+            font-size: 10px;
+            font-weight: 850;
+            line-height: 1.1;
+          }
+
           .iphone-field-v2-media-strip {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -46419,6 +46510,28 @@ return (
             }
 
             .iphone-field-v2-action strong {
+              font-size: 11px;
+            }
+
+            .iphone-field-v2-package-panel {
+              border-radius: 14px;
+              padding: 10px;
+              gap: 8px;
+            }
+
+            .iphone-field-v2-package-copy strong {
+              font-size: 16px;
+            }
+
+            .iphone-field-v2-package-actions {
+              gap: 7px;
+            }
+
+            .iphone-field-v2-package-actions a,
+            .iphone-field-v2-package-actions button {
+              min-height: 48px;
+              border-radius: 12px;
+              padding: 7px 8px;
               font-size: 11px;
             }
 
@@ -48421,7 +48534,35 @@ return (
         const fieldAfterRows = fieldEvidenceRowsByKind(selected, "after").slice(0, 8);
         const activeIphoneV2WorkChoice = fieldWorkChoice?.jobKey === fieldJobKey ? fieldWorkChoice : null;
         const activeIphoneV2OutcomeChoice = iphoneV2OutcomeChoice?.jobKey === fieldJobKey ? iphoneV2OutcomeChoice : null;
-        const fieldIsFinal = ["WORK_COMPLETED", "PARTIAL_WORK_COMPLETED", "REFUSED_ACCESS", "NO_ACCESS_COMPLETE", "COMPLETED_BY_OTHERS"].includes(fieldStatus);
+        const fieldWorkflowChoice = normalizeWorkflowChoice(fieldStatusValue);
+        const fieldIsFinal =
+          ["WORK_COMPLETED", "PARTIAL_WORK_COMPLETED", "REFUSED_ACCESS", "NO_ACCESS_COMPLETE", "COMPLETED_BY_OTHERS"].includes(fieldStatus) ||
+          ["Work Completed", "Partial Work Completed", "Refused Access", "No Access - 2nd Attempt", "Completed by Others"].includes(fieldWorkflowChoice);
+        const fieldPackagePreview = fullPackagePreviewFor(selected);
+        const fieldPackageApprovedAt = fieldPackageReviewApprovedAt(selected);
+        const fieldInvoicePacket = latestFieldPacket(selected, "affidavit_invoice_pdf");
+        const fieldHasPackageArchiveState = Boolean(
+          (selected as any).PackageGeneratedAt ||
+          (selected as any).packageGeneratedAt ||
+          (selected as any).ArchivedFromMap ||
+          (selected as any).archivedFromMap ||
+          /archive/i.test(fieldStatusFull)
+        );
+        const fieldPackageActionsReady = fieldIsFinal || fieldHasPackageArchiveState || fieldAfterRows.length > 0 || Boolean(fieldPackagePreview) || Boolean(fieldInvoicePacket);
+        const fieldPackageTitle = fieldPackagePreview
+          ? "Complete package ready"
+          : fieldInvoicePacket
+            ? "Paperwork PDF ready"
+            : fieldIsFinal
+              ? "Generate complete package"
+              : fieldHasPackageArchiveState
+                ? "Package review"
+              : "Finish media to package";
+        const fieldPackageMeta = fieldPackagePreview
+          ? `${fieldPackagePreview.imageCount} image(s) / ${fieldPackagePreview.videoCount} video(s)`
+          : fieldInvoicePacket
+            ? fieldInvoicePacket.fileName
+            : "Affidavit, invoice, images, videos, and manifest.";
         const fieldSecondAttempt = workflowSecondAttemptInfo(selected);
         const fieldNoAccessLabel = workflowStatus(selected) === "NO_ACCESS_COMPLETE"
           ? "Closed"
@@ -48900,7 +49041,7 @@ return (
                     </section>
                   ) : null}
 
-                  {(fieldWorkReady || fieldMediaCounts.total > 0 || fieldIsFinal) && !activeIphoneV2WorkChoice && !activeIphoneV2OutcomeChoice ? (
+                  {(fieldWorkReady || fieldMediaCounts.total > 0 || fieldIsFinal || fieldPackageActionsReady) && !activeIphoneV2WorkChoice && !activeIphoneV2OutcomeChoice ? (
                     <section className="iphone-field-v2-card iphone-field-v2-next" aria-label="Media and closeout next steps">
                       <div className="iphone-field-v2-next-head">
                         <span className="iphone-field-v2-label">Media / Closeout</span>
@@ -48930,6 +49071,50 @@ return (
                           <small>Closeout</small>
                         </button>
                       </div>
+                      {fieldPackageActionsReady ? (
+                        <div className="iphone-field-v2-package-panel" aria-label="Generate complete package">
+                          <div className="iphone-field-v2-package-copy">
+                            <span className="iphone-field-v2-label">Package</span>
+                            <strong>{fieldPackageTitle}</strong>
+                            <small>{fieldPackageMeta}</small>
+                          </div>
+                          <div className="iphone-field-v2-package-actions">
+                            <button type="button" className="package-primary" onClick={() => void runPackagePrimaryAction(selected, "with")}>
+                              <span>With Signature</span>
+                              <small>Full package</small>
+                            </button>
+                            <button type="button" className="package-unsigned" onClick={() => void runPackagePrimaryAction(selected, "without")}>
+                              <span>No Signature</span>
+                              <small>Full package</small>
+                            </button>
+                            <a className="package-secondary" href={paperworkAutoPdfOnlyHref(selected)}>
+                              <span>PDF Only</span>
+                              <small>No media</small>
+                            </a>
+                            {fieldPackagePreview ? (
+                              <button
+                                type="button"
+                                className={fieldPackageApprovedAt ? "package-primary" : "package-secondary"}
+                                onClick={() => approveFullPackageReview(selected)}
+                              >
+                                <span>{fieldPackageApprovedAt ? "Approved" : "Approve"}</span>
+                                <small>{fieldPackageApprovedAt ? displayWorkflowDate(fieldPackageApprovedAt) : "Review done"}</small>
+                              </button>
+                            ) : (
+                              <a className="package-secondary" href={paperworkHref(selected, "package")}>
+                                <span>Review</span>
+                                <small>Paperwork</small>
+                              </a>
+                            )}
+                            {fieldPackagePreview ? (
+                              <button type="button" className="package-secondary" onClick={() => void sendFullEvidencePackage(selected)} disabled={!fieldPackageApprovedAt}>
+                                <span>Send ZIP</span>
+                                <small>{fieldPackageApprovedAt ? "Share files" : "Approve first"}</small>
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : null}
                     </section>
                   ) : null}
 

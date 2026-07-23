@@ -154,6 +154,7 @@ type GeneratePdfOptions = {
   markGenerated?: boolean;
   formOverride?: PackageForm;
   outcomeOverride?: PaperworkOutcome;
+  includeSignature?: boolean;
 };
 
 function shiftInvoiceAptLocationWidget(pdfForm: any) {
@@ -1028,6 +1029,7 @@ export default function PaperworkPage() {
   const [loadedQuery, setLoadedQuery] = useState(false);
   const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
+  const [includePackageSignature, setIncludePackageSignature] = useState(true);
   const [pdfStatus, setPdfStatus] = useState("");
   const [packagePreview, setPackagePreview] = useState<CompletePackagePreview | null>(null);
   const [packagePreviewOpen, setPackagePreviewOpen] = useState(false);
@@ -1090,6 +1092,8 @@ export default function PaperworkPage() {
     const packageParam = String(params.get("package") || params.get("type") || "").toLowerCase();
     const autoParam = String(params.get("auto") || params.get("generate") || "").toLowerCase();
     const mediaParam = String(params.get("media") || params.get("evidence") || "").toLowerCase();
+    const signatureParam = String(params.get("signature") || params.get("signatures") || params.get("signer") || "").toLowerCase();
+    const queryIncludesSignature = !["none", "no", "0", "false", "unsigned", "without"].includes(signatureParam);
     let nextOutcome = paperworkOutcomeFromValue(params.get("outcome") || "");
 
     if (nextOutcome === "pending") {
@@ -1100,12 +1104,14 @@ export default function PaperworkPage() {
     setSelectedId(job);
     setOutcome(nextOutcome);
     setIncludePackageMedia(!["none", "no", "0", "false", "pdf", "pdf-only"].includes(mediaParam));
+    setIncludePackageSignature(queryIncludesSignature);
     setAutoGeneratePackage(["package", "1", "true", "yes"].includes(autoParam));
     setForm((current) => ({
       ...current,
       affidavitType: affidavitTemplateLabel(nextOutcome),
       affidavitReason: affidavitReasonForOutcome(nextOutcome),
       description: invoiceDescriptionForOutcome(null, nextOutcome),
+      signer: queryIncludesSignature ? current.signer : "",
     }));
     setLoadedQuery(true);
   }, [loadedQuery]);
@@ -1121,8 +1127,9 @@ export default function PaperworkPage() {
           ? savedOutcomeForPackage(job, "no_work", outcome)
           : outcome;
     setOutcome(selectedOutcome);
-    setForm(formFromJob(job, selectedOutcome));
-  }, [jobs, selectedId]);
+    const nextForm = formFromJob(job, selectedOutcome);
+    setForm(includePackageSignature ? nextForm : { ...nextForm, signer: "" });
+  }, [jobs, selectedId, includePackageSignature]);
 
   const selectedJob = useMemo(() => findJob(jobs, selectedId), [jobs, selectedId]);
   const selectedJobId = selectedJob ? getJobId(selectedJob) : "";
@@ -1138,11 +1145,15 @@ export default function PaperworkPage() {
     }
 
     autoGenerateStartedRef.current = true;
-    setPdfStatus("Auto-generating package. If no media is saved, I will create the affidavit/invoice folder files so the first tap still finishes.");
+    setPdfStatus(
+      includePackageSignature
+        ? "Auto-generating package. If no media is saved, I will create the affidavit/invoice folder files so the first tap still finishes."
+        : "Auto-generating unsigned package. Signer fields will stay blank in the affidavit/invoice PDF."
+    );
     window.setTimeout(() => {
-      void generateCompletePackage(includePackageMedia);
+      void generateCompletePackage(includePackageMedia, includePackageSignature);
     }, 250);
-  }, [autoGeneratePackage, selectedId, jobs.length, selectedJob, form.jobId, includePackageMedia, outcome]);
+  }, [autoGeneratePackage, selectedId, jobs.length, selectedJob, form.jobId, includePackageMedia, includePackageSignature, outcome]);
 
   function clearPackagePreview() {
     setPackagePreview(null);
@@ -1162,7 +1173,8 @@ export default function PaperworkPage() {
         ? paperworkOutcomeFromJob(job)
         : savedOutcomeForPackage(job, packageTypeForOutcome(outcome), outcome);
     setOutcome(nextOutcome);
-    setForm(formFromJob(job, nextOutcome));
+    const nextForm = formFromJob(job, nextOutcome);
+    setForm(includePackageSignature ? nextForm : { ...nextForm, signer: "" });
   }
 
   function chooseOutcome(value: string) {
@@ -1175,6 +1187,7 @@ export default function PaperworkPage() {
       description: invoiceDescriptionForOutcome(selectedJob, nextOutcome),
       affidavitType: affidavitTemplateLabel(nextOutcome),
       affidavitReason: affidavitReasonForOutcome(nextOutcome),
+      signer: includePackageSignature ? current.signer : "",
     }));
   }
 
@@ -1223,6 +1236,7 @@ export default function PaperworkPage() {
     const markGenerated = options.markGenerated !== false;
     const activeForm = options.formOverride || form;
     const activeOutcome = options.outcomeOverride || outcome;
+    const includeSignature = options.includeSignature !== false;
     const useWorkTemplate = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
     const templateUrl = useWorkTemplate ? WORK_AFFIDAVIT_TEMPLATE : NO_WORK_AFFIDAVIT_TEMPLATE;
     const jobId = activeForm.jobId || selectedId || "HPD";
@@ -1241,8 +1255,8 @@ export default function PaperworkPage() {
     const firstAttempt = activeForm.firstAttempt || fieldDate;
     const secondAttempt = activeForm.secondAttempt || fieldDate;
     const invoiceDate = useWorkTemplate ? activeForm.workComplete || fieldDate : secondAttempt;
-    const signer = activeForm.signer || "JOTJAGRAJ SINGH";
-    const swornSigner = oathSigner(signer);
+    const signer = includeSignature ? activeForm.signer || "JOTJAGRAJ SINGH" : "";
+    const swornSigner = signer ? oathSigner(signer) : "";
     const locationText = upper(activeForm.location);
     const locationFontSize = pdfLocationFontSize(locationText);
 
@@ -1301,7 +1315,7 @@ export default function PaperworkPage() {
       setText("INCREASE DECREASE AMOUNT", changeAmount);
       setText("TOTAL CHARGE", chargeAmount);
       setText("NAME Please Print", signer.toUpperCase());
-      setText("TITLE", "VP");
+      setText("TITLE", signer ? "VP" : "");
       check("RC MINI NO");
       check("APPROVED INCREASE DECREASE NO");
       check("PERMIT REQUIRED NO");
@@ -1309,7 +1323,7 @@ export default function PaperworkPage() {
       if (useWorkTemplate) {
         const workDate = activeForm.workComplete || fieldDate;
         setText("COUNTY OF", AFFIDAVIT_NOTARY_COUNTY, 9);
-        setText("being duly sworn deposes and says", `I,  ${swornSigner}/ United Angel Construction Corp`);
+        setText("being duly sworn deposes and says", signer ? `I,  ${swornSigner}/ United Angel Construction Corp` : "");
         setText("Apt#", locationText, locationFontSize);
         setText("State", "NY");
         setText("PARTIAL WORK DESC", "");
@@ -1348,7 +1362,7 @@ export default function PaperworkPage() {
         setText("day of", monthName(secondAttempt));
         setText("Type or Print Name", signer.toUpperCase());
         setText("State", "NY");
-        setText("I swear statement", `I     ${swornSigner} / United Angel Construction Corp`);
+        setText("I swear statement", signer ? `I     ${swornSigner} / United Angel Construction Corp` : "");
         setText("START DATE", activeOutcome === "no_access" ? firstAttempt : "");
         setText("COMPLETE DATE", activeOutcome === "no_access" ? secondAttempt : "");
         setText("Work Description", activeForm.description || noWorkReason, 11);
@@ -1428,7 +1442,7 @@ export default function PaperworkPage() {
     }
   }
 
-  async function generateCompletePackage(includeMediaOverride = includePackageMedia) {
+  async function generateCompletePackage(includeMediaOverride = includePackageMedia, includeSignatureOverride = includePackageSignature) {
     const activeOutcome = outcome;
     const activeJob = selectedJob;
     if (selectedId && !activeJob) {
@@ -1436,7 +1450,9 @@ export default function PaperworkPage() {
       return;
     }
 
-    const activeForm = activeJob ? formWithLoadedJobData(form, activeJob, activeOutcome) : form;
+    const includeSignature = includeSignatureOverride !== false;
+    const activeFormBase = activeJob ? formWithLoadedJobData(form, activeJob, activeOutcome) : form;
+    const activeForm = includeSignature ? activeFormBase : { ...activeFormBase, signer: "" };
     if (activeJob && activeForm !== form) setForm(activeForm);
     const jobId = activeForm.jobId || selectedId;
     if (!jobId) {
@@ -1454,13 +1470,20 @@ export default function PaperworkPage() {
     const isWorkOutcome = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
     const mediaOptionalForOutcome = isWorkOutcome || isNoWorkOutcome(activeOutcome);
     setIncludePackageMedia(includeMedia);
+    setIncludePackageSignature(includeSignature);
     const allowPdfOnlyPackage = !includeMedia || mediaOptionalForOutcome;
     setPdfStatus(
       !includeMedia
-        ? "Generating affidavit and invoice only. No images or videos will be attached."
+        ? includeSignature
+          ? "Generating affidavit and invoice only. No images or videos will be attached."
+          : "Generating unsigned affidavit and invoice only. No images or videos will be attached."
         : mediaOptionalForOutcome
-          ? "Generating package. If no saved media exists, I will create the affidavit/invoice folder files."
-        : "Generating package: affidavit, invoice, images, and videos..."
+          ? includeSignature
+            ? "Generating package. If no saved media exists, I will create the affidavit/invoice folder files."
+            : "Generating unsigned package. Signer fields will stay blank in the affidavit/invoice PDF."
+        : includeSignature
+          ? "Generating package: affidavit, invoice, images, and videos..."
+          : "Generating unsigned package: affidavit, invoice, images, and videos..."
     );
 
     try {
@@ -1493,6 +1516,7 @@ export default function PaperworkPage() {
         markGenerated: false,
         formOverride: packageForm,
         outcomeOverride: activeOutcome,
+        includeSignature,
       });
       if (!pdf) return;
 
@@ -1584,7 +1608,9 @@ export default function PaperworkPage() {
         ? videoCount
           ? "Regular folder package is ready with the affidavit/invoice PDF, labeled images, labeled videos, and manifest."
           : "Regular folder package is ready with the affidavit/invoice PDF and labeled images. No videos were found for this OMO."
-        : "PDF-only folder package is ready. No images or videos were attached.";
+        : includeSignature
+          ? "PDF-only folder package is ready. No images or videos were attached."
+          : "Unsigned PDF-only folder package is ready. No images or videos were attached.";
 
       const preview: CompletePackagePreview = {
         jobId: pdf.jobId,

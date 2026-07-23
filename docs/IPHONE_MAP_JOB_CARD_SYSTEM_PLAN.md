@@ -98,6 +98,15 @@ Current V2.3 flexible media slice:
 - After media can be repeated as many times as needed; saved after media must appear as real thumbnails/previews on the V2 card.
 - Invoice material extraction from the scope/description is the next slice after the job-card media flow is stable.
 
+Current V2.4 package slice:
+
+- After finish/closeout media, V2 must show a real Package panel in the Media / Closeout card.
+- Package panel must include real full-package generation with signature and real full-package generation without signature.
+- The unsigned option must use the real paperwork generator with signer fields blank, not a fake button or fake package state.
+- Package panel must keep the existing PDF-only/no-media path available.
+- If a complete package already exists, V2 must expose real approve-review and send-ZIP actions from the existing package state.
+- Archived/package-generated jobs must still show the Package panel if their workflow code reloads as pending/manual archive.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.
