@@ -59,6 +59,7 @@ type PackageForm = {
 
 const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-completed-affidavit.pdf";
 const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-completed-affidavit.pdf";
+const DEFAULT_PACKAGE_SIGNER = "JOTJAGRAJ SINGH";
 const AFFIDAVIT_NOTARY_COUNTY = "QUEENS";
 const REFUSED_ACCESS_DESCRIPTION_EXAMPLE = "MALE, TALL, DARK HAIR";
 const NO_WORK_COMPLETED_BY_OTHERS_LINE_5_DATE = { x: 272, y: 245, size: 10 } as const;
@@ -298,7 +299,7 @@ function initialForm(): PackageForm {
     deniedPhone: "",
     workStart: "",
     workComplete: "",
-    signer: "",
+    signer: DEFAULT_PACKAGE_SIGNER,
     sourceStatus: "",
     notes: "",
   };
@@ -609,7 +610,7 @@ function pdfLocationFontSize(value: string) {
 }
 
 function oathSigner(value: string) {
-  const raw = String(value || "JOTJAGRAJ SINGH").trim();
+  const raw = String(value || DEFAULT_PACKAGE_SIGNER).trim();
   return raw
     .toLowerCase()
     .replace(/\b[a-z]/g, (char) => char.toUpperCase());
@@ -1111,7 +1112,7 @@ export default function PaperworkPage() {
       affidavitType: affidavitTemplateLabel(nextOutcome),
       affidavitReason: affidavitReasonForOutcome(nextOutcome),
       description: invoiceDescriptionForOutcome(null, nextOutcome),
-      signer: queryIncludesSignature ? current.signer : "",
+      signer: queryIncludesSignature ? current.signer || DEFAULT_PACKAGE_SIGNER : "",
     }));
     setLoadedQuery(true);
   }, [loadedQuery]);
@@ -1255,7 +1256,7 @@ export default function PaperworkPage() {
     const firstAttempt = activeForm.firstAttempt || fieldDate;
     const secondAttempt = activeForm.secondAttempt || fieldDate;
     const invoiceDate = useWorkTemplate ? activeForm.workComplete || fieldDate : secondAttempt;
-    const signer = includeSignature ? activeForm.signer || "JOTJAGRAJ SINGH" : "";
+    const signer = includeSignature ? activeForm.signer || DEFAULT_PACKAGE_SIGNER : "";
     const swornSigner = signer ? oathSigner(signer) : "";
     const locationText = upper(activeForm.location);
     const locationFontSize = pdfLocationFontSize(locationText);
