@@ -45540,7 +45540,7 @@ return (
 
           .iphone-field-v2-status-top {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-columns: minmax(0, 1fr);
             gap: 12px;
             align-items: start;
           }
@@ -45583,9 +45583,132 @@ return (
             color: #86efac;
           }
 
-          .iphone-field-v2-time {
-            min-width: 118px;
+          .iphone-field-v2-guided-flow {
+            border: 1px solid rgba(96, 165, 250, 0.32);
+            border-radius: 18px;
             display: grid;
+            gap: 12px;
+            padding: 12px;
+            background: linear-gradient(145deg, rgba(15, 35, 61, 0.72), rgba(2, 6, 23, 0.62));
+          }
+
+          .iphone-field-v2-guided-main {
+            min-width: 0;
+            display: grid;
+            gap: 3px;
+          }
+
+          .iphone-field-v2-guided-main strong {
+            color: #f8fafc;
+            font-size: 18px;
+            font-weight: 950;
+            line-height: 1.08;
+          }
+
+          .iphone-field-v2-guided-main small {
+            color: rgba(203, 213, 225, 0.88);
+            font-size: 13px;
+            font-weight: 820;
+            line-height: 1.25;
+          }
+
+          .iphone-field-v2-step-rail {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 6px;
+          }
+
+          .iphone-field-v2-step-rail span {
+            min-width: 0;
+            min-height: 50px;
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            border-radius: 13px;
+            display: grid;
+            align-content: center;
+            justify-items: center;
+            gap: 2px;
+            padding: 6px 4px;
+            background: rgba(15, 23, 42, 0.62);
+            color: rgba(203, 213, 225, 0.8);
+            text-align: center;
+          }
+
+          .iphone-field-v2-step-rail span.done {
+            border-color: rgba(74, 222, 128, 0.5);
+            background: rgba(20, 83, 45, 0.28);
+            color: #86efac;
+          }
+
+          .iphone-field-v2-step-rail span.active {
+            border-color: rgba(96, 165, 250, 0.72);
+            background: rgba(29, 78, 216, 0.34);
+            color: #bfdbfe;
+          }
+
+          .iphone-field-v2-step-rail b {
+            font-size: 10px;
+            font-weight: 950;
+            line-height: 1;
+          }
+
+          .iphone-field-v2-step-rail small {
+            max-width: 100%;
+            color: inherit;
+            font-size: 10px;
+            font-weight: 900;
+            line-height: 1.05;
+            overflow-wrap: anywhere;
+          }
+
+          .iphone-field-v2-advanced-status {
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            border-radius: 16px;
+            padding: 0;
+            background: rgba(15, 23, 42, 0.52);
+            overflow: hidden;
+          }
+
+          .iphone-field-v2-advanced-status summary {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 0 12px;
+            color: #dbeafe;
+            cursor: pointer;
+            list-style: none;
+          }
+
+          .iphone-field-v2-advanced-status summary::-webkit-details-marker {
+            display: none;
+          }
+
+          .iphone-field-v2-advanced-status summary span,
+          .iphone-field-v2-advanced-status summary strong {
+            font-size: 12px;
+            font-weight: 950;
+            line-height: 1;
+          }
+
+          .iphone-field-v2-advanced-status summary strong {
+            color: #fde68a;
+          }
+
+          .iphone-field-v2-advanced-status-body {
+            display: grid;
+            gap: 9px;
+            padding: 0 12px 12px;
+          }
+
+          .iphone-field-v2-advanced-status:not([open]) .iphone-field-v2-advanced-status-body {
+            display: none;
+          }
+
+          .iphone-field-v2-time {
+            display: grid;
+            grid-template-columns: 54px minmax(0, 1fr) 62px;
+            align-items: center;
             gap: 6px;
           }
 
@@ -45704,6 +45827,13 @@ return (
             font-size: 12px;
             font-weight: 950;
             text-decoration: none;
+          }
+
+          .iphone-field-v2-choice-grid button:disabled {
+            border-color: rgba(148, 163, 184, 0.28);
+            background: rgba(15, 23, 42, 0.58);
+            color: rgba(203, 213, 225, 0.58);
+            opacity: 0.62;
           }
 
           .iphone-field-v2-nav-actions .waze {
@@ -48604,6 +48734,55 @@ return (
           : fieldVisitReady
             ? "Before media first"
             : "Start visit first";
+        const fieldNextStep = (() => {
+          if (fieldPackagePreview) {
+            return {
+              title: fieldPackageApprovedAt ? "Send package" : "Approve package review",
+              detail: fieldPackageApprovedAt ? "The ZIP is approved. Send/share the full package." : "Review the PDF and folder files, then approve before sending.",
+            };
+          }
+          if (fieldIsFinal || fieldPackageActionsReady) {
+            return {
+              title: "Generate package",
+              detail: "Build the affidavit, invoice, media folder, and ZIP with or without signature.",
+            };
+          }
+          if (activeIphoneV2OutcomeChoice) {
+            return {
+              title: activeIphoneV2OutcomeChoice.kind === "no_access" ? "Save no access" : "Close refused access",
+              detail: "Add site media if you have it, or use the no-media close option.",
+            };
+          }
+          if (activeIphoneV2WorkChoice?.phase === "finish") {
+            return {
+              title: fieldAfterRows.length ? "Finish closeout" : "Add after media",
+              detail: fieldAfterRows.length ? "After media is saved. Tap Done to finish the work." : "Take/upload after media, or choose Finish No Media.",
+            };
+          }
+          if (activeIphoneV2WorkChoice?.phase === "start") {
+            return {
+              title: fieldBeforeRows.length ? "Start job now" : "Add before media",
+              detail: fieldBeforeRows.length ? "Before media is saved. Tap Done to start work." : "Take/upload before media, or choose No Media Start.",
+            };
+          }
+          if (!fieldHasArrived) {
+            return { title: "Arrive at site", detail: "Tap Arrived when you are at the location." };
+          }
+          if (!fieldVisitReady) {
+            return { title: "Start visit", detail: "Visit time unlocks work, no-access, and refused actions." };
+          }
+          if (!fieldWorkReady) {
+            return { title: "Start work", detail: "Open Start Work, then choose before media or No Media Start." };
+          }
+          return { title: "Finish closeout", detail: "Add after media or finish without media, then generate the package." };
+        })();
+        const fieldFlowSteps = [
+          { label: "Arrive", done: fieldHasArrived, active: !fieldHasArrived },
+          { label: "Visit", done: fieldVisitReady, active: fieldHasArrived && !fieldVisitReady },
+          { label: "Start", done: fieldWorkReady, active: fieldVisitReady && !fieldWorkReady },
+          { label: "Finish", done: fieldIsFinal, active: fieldWorkReady && !fieldIsFinal },
+          { label: "Package", done: Boolean(fieldPackagePreview || fieldInvoicePacket), active: fieldIsFinal && !fieldPackagePreview && !fieldInvoicePacket },
+        ];
         const useIphoneJobCardV2 = iphoneJobCardVersion === "v2";
         if (useIphoneJobCardV2) {
           return (
@@ -48707,62 +48886,85 @@ return (
                             </a>
                           </div>
                         </div>
-                        <div className="iphone-field-v2-time">
-                          <span className="iphone-field-v2-label">Time</span>
-                          <input
-                            type="datetime-local"
-                            value={workflowVisitDateValue()}
-                            onChange={(event) => setWorkflowVisitDate(event.target.value)}
-                            aria-label="Status date and time"
-                          />
-                          <button type="button" onClick={setWorkflowVisitDateToNow}>Now</button>
+                      </div>
+                      <div className="iphone-field-v2-guided-flow" aria-label="Guided field flow">
+                        <div className="iphone-field-v2-guided-main">
+                          <span className="iphone-field-v2-label">Next Step</span>
+                          <strong>{fieldNextStep.title}</strong>
+                          <small>{fieldNextStep.detail}</small>
+                        </div>
+                        <div className="iphone-field-v2-step-rail" aria-label="Workflow progress">
+                          {fieldFlowSteps.map((step) => (
+                            <span key={`iphone-v2-flow-${step.label}`} className={`${step.done ? "done" : ""} ${step.active ? "active" : ""}`}>
+                              <b>{step.done ? "OK" : step.active ? "Now" : "Next"}</b>
+                              <small>{step.label}</small>
+                            </span>
+                          ))}
                         </div>
                       </div>
-                      <div className="iphone-field-v2-status-row" aria-label="Save field status">
-                        <button
-                          type="button"
-                          className="iphone-field-v2-status-button"
-                          onClick={() => {
-                            setFieldFocusPane("capture");
-                            setWorkflowVisitDate(workflowVisitDateValue());
-                            showActionNotice(draftWorkflowStatus ? "Status ready. Tap Save." : "Choose a status, then tap Save.");
-                          }}
-                        >
-                          Status
-                        </button>
-                        <select
-                          value={draftWorkflowStatus}
-                          onChange={(event) => {
-                            const nextStatus = event.target.value;
-                            if (nextStatus) {
-                              pickDraftWorkflow(nextStatus);
-                            } else {
-                              setDraftWorkflowStatus("");
-                              setDraftWorkflowSaved(false);
-                            }
-                          }}
-                          aria-label="Choose field status"
-                        >
-                          <option value="">Choose status...</option>
-                          {workflowOptionGroups.map((group) => (
-                            <optgroup key={`iphone-v2-status-${group.group}`} label={group.group}>
-                              {group.options.map((option) => (
-                                <option key={`iphone-v2-status-${option.value}`} value={option.value}>
-                                  {option.label}
-                                </option>
+                      <details className="iphone-field-v2-advanced-status">
+                        <summary>
+                          <span>Status / Override</span>
+                          <strong>{draftWorkflowStatus ? "Ready to save" : "Manual status"}</strong>
+                        </summary>
+                        <div className="iphone-field-v2-advanced-status-body">
+                          <div className="iphone-field-v2-time">
+                            <span className="iphone-field-v2-label">Time</span>
+                            <input
+                              type="datetime-local"
+                              value={workflowVisitDateValue()}
+                              onChange={(event) => setWorkflowVisitDate(event.target.value)}
+                              aria-label="Status date and time"
+                            />
+                            <button type="button" onClick={setWorkflowVisitDateToNow}>Now</button>
+                          </div>
+                          <div className="iphone-field-v2-status-row" aria-label="Save field status">
+                            <button
+                              type="button"
+                              className="iphone-field-v2-status-button"
+                              onClick={() => {
+                                setFieldFocusPane("capture");
+                                setWorkflowVisitDate(workflowVisitDateValue());
+                                showActionNotice(draftWorkflowStatus ? "Status ready. Tap Save." : "Choose a status, then tap Save.");
+                              }}
+                            >
+                              Status
+                            </button>
+                            <select
+                              value={draftWorkflowStatus}
+                              onChange={(event) => {
+                                const nextStatus = event.target.value;
+                                if (nextStatus) {
+                                  pickDraftWorkflow(nextStatus);
+                                } else {
+                                  setDraftWorkflowStatus("");
+                                  setDraftWorkflowSaved(false);
+                                }
+                              }}
+                              aria-label="Choose field status"
+                            >
+                              <option value="">Choose status...</option>
+                              {workflowOptionGroups.map((group) => (
+                                <optgroup key={`iphone-v2-status-${group.group}`} label={group.group}>
+                                  {group.options.map((option) => (
+                                    <option key={`iphone-v2-status-${option.value}`} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </optgroup>
                               ))}
-                            </optgroup>
-                          ))}
-                        </select>
-                        <button
-                          type="button"
-                          className="iphone-field-v2-save"
-                          disabled={!draftWorkflowStatus}
-                          onClick={() => saveDraftWorkflow(selected)}
-                        >
-                          Save
-                        </button>
-                      </div>
+                            </select>
+                            <button
+                              type="button"
+                              className="iphone-field-v2-save"
+                              disabled={!draftWorkflowStatus}
+                              onClick={() => saveDraftWorkflow(selected)}
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      </details>
                     </section>
                   </header>
 
@@ -48940,6 +49142,7 @@ return (
                             <button
                               type="button"
                               className="choice-camera"
+                              disabled={!fieldBeforeRows.length}
                               onClick={() => {
                                 if (!fieldBeforeRows.length) {
                                   showActionNotice("Add before media first, or tap No Media Start.");
@@ -48949,7 +49152,7 @@ return (
                               }}
                             >
                               <strong>Done</strong>
-                              <small>Start job</small>
+                              <small>{fieldBeforeRows.length ? "Start job" : "Add media first"}</small>
                             </button>
                             <button type="button" className="choice-skip" onClick={() => startFieldJobWithoutMedia(selected)}>
                               <strong>No Media</strong>
@@ -48987,6 +49190,7 @@ return (
                             <button
                               type="button"
                               className="choice-camera"
+                              disabled={!fieldAfterRows.length}
                               onClick={() => {
                                 if (!fieldAfterRows.length) {
                                   showActionNotice("Add after media first, or tap Finish No Media.");
@@ -48996,7 +49200,7 @@ return (
                               }}
                             >
                               <strong>Done</strong>
-                              <small>Finish</small>
+                              <small>{fieldAfterRows.length ? "Finish" : "Add media first"}</small>
                             </button>
                             <button type="button" className="choice-skip" onClick={() => finishFieldJob(selected, Boolean(activeIphoneV2WorkChoice.partial))}>
                               <strong>Finish</strong>
