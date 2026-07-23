@@ -128,6 +128,26 @@ export async function saveFieldVisit(record: Omit<FieldVisitRecord, "id" | "visi
   return row;
 }
 
+export async function clearFieldVisits(jobId: string) {
+  const cleanJobId = String(jobId || "").trim();
+  if (!hasIndexedDb() || !cleanJobId) return 0;
+
+  const db = await openDb();
+  const existing = await listFieldVisits(cleanJobId);
+  const transaction = db.transaction(STORE_NAME, "readwrite");
+  const store = transaction.objectStore(STORE_NAME);
+  existing.forEach((row) => store.delete(row.id));
+
+  await new Promise<void>((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error || new Error("Could not clear private visits."));
+    transaction.onabort = () => reject(transaction.error || new Error("Private visit clear was aborted."));
+  });
+
+  db.close();
+  return existing.length;
+}
+
 export async function fieldVisitSummaryByJob() {
   const rows = await listFieldVisits();
   const summary: Record<string, { latest?: FieldVisitRecord; today?: FieldVisitRecord; count: number }> = {};
