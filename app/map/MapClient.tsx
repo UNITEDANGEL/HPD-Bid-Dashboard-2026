@@ -3863,16 +3863,9 @@ function closeMapMenu() {
 }
 
 function showCleanMapView() {
-  const selectedBucket = selected ? workflowViewBucket(selected) : "";
-  if (selectedBucket === "waiting72") {
-    setWorkflowViewFilter("waiting72");
-  } else if (selectedBucket === "ready2") {
-    setWorkflowViewFilter("ready2");
-  } else if (selectedBucket === "archived") {
-    setWorkflowViewFilter("archived");
-  } else if (selectedBucket === "final") {
-    setWorkflowViewFilter("final");
-  }
+  setWorkflowViewFilter("all");
+  setMapBoroughFilter("all");
+  setTodayZoneLimit("all");
   setClusterSheet(null);
   setMapJobBrief(null);
   setSelectedOnly(false);
@@ -10444,9 +10437,29 @@ function directionsUrl(job: JobRecord) {
     return packageOutcome === "pending" ? fallbackOutcome : packageOutcome;
   }
 
+  function inferredFinalPackageOutcome(job: JobRecord) {
+    const pendingCompletionOutcome = String(
+      (job as any).PendingCompletionOutcome ||
+      (job as any).pendingCompletionOutcome ||
+      ""
+    ).toUpperCase();
+
+    if (pendingCompletionOutcome === "PARTIAL_WORK_COMPLETED") return "partial_work_completed";
+    if (pendingCompletionOutcome === "WORK_COMPLETED") return "work_completed";
+
+    return paperworkOutcomeFromValue([
+      workflowStatus(job),
+      workflowLabel(job),
+      JobStatus.statusLabel(job),
+      (job as any).StatusOverride,
+      (job as any).status,
+    ].filter(Boolean).join(" "));
+  }
+
   function paperworkHref(job: JobRecord, doc: "package" | "affidavit" | "invoice" = "package", fallbackOutcome: PaperworkOutcome = "pending") {
+    const resolvedFallback = fallbackOutcome === "pending" ? inferredFinalPackageOutcome(job) : fallbackOutcome;
     const outcome = doc === "package"
-      ? packagePaperworkOutcome(job, fallbackOutcome)
+      ? packagePaperworkOutcome(job, resolvedFallback)
       : paperworkOutcomeFromValue(workflowStatus(job) || JobStatus.statusLabel(job));
     const query = paperworkQuery(job, outcome);
     const separator = query ? "&" : "";
@@ -18242,6 +18255,13 @@ return (
             visibility: visible !important;
             pointer-events: auto !important;
             transform: translateY(0) !important;
+          }
+
+          .job-drawer.drawer-hard-hidden:not(.selected-focus) {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
           }
 
           .job-drawer.selected-focus {
@@ -45533,6 +45553,9 @@ return (
             padding: 0 14px;
             border-radius: 14px;
             border: 1px solid rgba(59, 130, 246, 0.6);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             background: rgba(13, 31, 58, 0.74);
             color: #93c5fd;
             font-size: 16px;
@@ -46940,6 +46963,9 @@ return (
             padding: 0 14px;
             border-radius: 14px;
             border: 1px solid rgba(59, 130, 246, 0.64);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             background: rgba(13, 31, 58, 0.72);
             color: #93c5fd;
             font-size: 16px;
@@ -48724,15 +48750,13 @@ return (
           return statusOutcome === "pending" ? "work_completed" : statusOutcome;
         })();
         const fieldPackageGenerateReady = fieldFinalPackageOutcome !== "pending";
-        const fieldPackageActionsReady = fieldPackageGenerateReady || fieldHasPackageArchiveState || Boolean(fieldPackagePreview);
+        const fieldPackageActionsReady = fieldPackageGenerateReady || Boolean(fieldPackagePreview);
         const fieldPackageTitle = fieldPackagePreview
           ? "Complete package ready"
           : fieldPackageGenerateReady && fieldInvoicePacket
             ? "Paperwork PDF ready"
             : fieldPackageGenerateReady
               ? "Generate complete package"
-              : fieldHasPackageArchiveState
-                ? "Package review"
               : "Finish media to package";
         const fieldPackageMeta = fieldPackagePreview
           ? `${fieldPackagePreview.imageCount} image(s) / ${fieldPackagePreview.videoCount} video(s)`
@@ -48865,9 +48889,9 @@ return (
                         <strong>{fieldJobKey}</strong>
                         <small>{fieldAddress}</small>
                       </div>
-                      <button type="button" className="iphone-field-v2-hpd" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
+                      <span className="iphone-field-v2-hpd" aria-label="HPD work order">
                         HPD
-                      </button>
+                      </span>
                     </div>
                     <section className={`iphone-field-v2-status ${fieldHasSavedWorkflow ? "status-saved" : "status-needed"}`} aria-label="Current field status">
                       <div className="iphone-field-v2-status-top">
@@ -49434,9 +49458,9 @@ return (
                     <strong>{fieldJobKey}</strong>
                     <small>{fieldAddress}</small>
                   </div>
-                  <button type="button" className="iphone-field-hpd" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
+                  <span className="iphone-field-hpd" aria-label="HPD work order">
                     HPD
-                  </button>
+                  </span>
                 </header>
 
                 <section className={`iphone-field-status-strip ${fieldHasSavedWorkflow ? "status-saved" : "status-needed"}`} aria-label="Current field status">
@@ -49682,7 +49706,7 @@ return (
                   </div>
                 </div>
                 <button type="button" className="job-card-close-pill job-card-map-back-pill" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
-                  <span className="job-card-map-back-label">HPD</span>
+                  <span className="job-card-map-back-label">Map</span>
                 </button>
               </div>
 

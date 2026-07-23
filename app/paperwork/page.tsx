@@ -1141,6 +1141,17 @@ export default function PaperworkPage() {
     if (!autoGeneratePackage || autoGenerateStartedRef.current) return;
     if (!selectedId || !jobs.length || !selectedJob || !form.jobId) return;
     if (outcome === "pending") {
+      const savedOutcome = paperworkOutcomeFromJob(selectedJob);
+      if (savedOutcome !== "pending") {
+        setOutcome(savedOutcome);
+        setForm((current) => ({
+          ...current,
+          ...formFromJob(selectedJob, savedOutcome),
+          signer: includePackageSignature ? current.signer || DEFAULT_PACKAGE_SIGNER : "",
+        }));
+        setPdfStatus("Saved field status found. Preparing the package.");
+        return;
+      }
       setPdfStatus("Pick Work Completed or No Work Completed before generating this package.");
       return;
     }
