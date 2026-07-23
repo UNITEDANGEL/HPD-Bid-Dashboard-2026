@@ -3446,6 +3446,184 @@ export default function PaperworkPage() {
           }
         }
 
+        @media (max-width: 720px) {
+          .paperwork-readable-phone-guard {
+            --readable: 1;
+          }
+
+          .hpd-paperwork-shell {
+            padding: max(14px, env(safe-area-inset-top)) 10px max(24px, env(safe-area-inset-bottom));
+            font-size: 17px;
+          }
+
+          .paperwork-wrap {
+            gap: 12px;
+          }
+
+          .paperwork-top {
+            border-radius: 18px;
+            padding: 16px;
+          }
+
+          .paperwork-top h1 {
+            font-size: 38px;
+            line-height: 1.02;
+          }
+
+          .paperwork-top p,
+          .paperwork-card p,
+          .paperwork-field span,
+          .preview-muted,
+          .paperwork-package-review p {
+            font-size: 16px;
+            line-height: 1.4;
+          }
+
+          .paperwork-nav {
+            grid-template-columns: 1fr;
+          }
+
+          .paperwork-nav a,
+          .paperwork-nav button,
+          .paperwork-print,
+          .paperwork-secondary {
+            min-height: 58px;
+            border-radius: 16px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 14px;
+            font-size: 16px;
+            line-height: 1.15;
+          }
+
+          .paperwork-card,
+          .paperwork-preview,
+          .paperwork-package-review {
+            border-radius: 22px;
+            padding: 18px;
+          }
+
+          .paperwork-package-badge {
+            min-height: 42px;
+            padding: 0 13px;
+            font-size: 15px;
+          }
+
+          .package-choice {
+            min-height: 94px;
+            border-radius: 18px;
+            padding: 17px;
+          }
+
+          .package-choice strong {
+            font-size: 22px;
+            line-height: 1.1;
+          }
+
+          .package-choice span {
+            font-size: 15px;
+            line-height: 1.35;
+          }
+
+          .paperwork-summary-tile {
+            min-height: 88px;
+            border-radius: 18px;
+            padding: 15px;
+          }
+
+          .paperwork-summary-tile span,
+          .paperwork-summary-tile small {
+            font-size: 13px;
+            line-height: 1.32;
+          }
+
+          .paperwork-summary-tile strong {
+            font-size: 22px;
+            line-height: 1.1;
+          }
+
+          .paperwork-field input,
+          .paperwork-field textarea,
+          .paperwork-field select {
+            min-height: 56px;
+            border-radius: 16px;
+            font-size: 17px;
+          }
+
+          .paperwork-generate-choice .paperwork-print,
+          .paperwork-generate-choice .paperwork-secondary {
+            min-height: 76px;
+            border-radius: 20px;
+            font-size: 21px;
+          }
+
+          .paperwork-generate-choice small {
+            font-size: 14px;
+            line-height: 1.35;
+          }
+
+          .package-created-head h3 {
+            font-size: 40px;
+            line-height: 1.02;
+          }
+
+          .package-main-actions button {
+            min-height: 76px;
+            border-radius: 20px;
+            font-size: 21px;
+          }
+
+          .package-content-row strong {
+            font-size: 17px;
+            line-height: 1.22;
+          }
+
+          .package-content-row span,
+          .package-content-row small,
+          .package-content-row b,
+          .package-folder-file span,
+          .package-folder-file b {
+            font-size: 14px;
+            line-height: 1.35;
+          }
+
+          .package-primary-delivery button,
+          .package-primary-delivery a,
+          .package-secondary-delivery button,
+          .package-secondary-delivery a {
+            min-height: 68px;
+            border-radius: 18px;
+            font-size: 17px;
+          }
+
+          .package-pdf-preview-head strong {
+            font-size: 17px;
+          }
+
+          .package-pdf-preview-head small {
+            font-size: 14px;
+          }
+
+          .package-pdf-preview-head a,
+          .package-pdf-preview-head button,
+          .package-pdf-actions a,
+          .package-pdf-actions button {
+            min-height: 58px;
+            border-radius: 16px;
+            font-size: 15px;
+          }
+        }
+
+        @media (max-width: 390px) {
+          .paperwork-top h1 {
+            font-size: 34px;
+          }
+
+          .package-created-head h3 {
+            font-size: 36px;
+          }
+        }
         @media print {
           .paperwork-top,
           .paperwork-card {
