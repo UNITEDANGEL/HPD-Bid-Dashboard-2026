@@ -45343,9 +45343,9 @@ return (
             left: 0;
             right: 0;
             bottom: 0;
-            height: clamp(300px, 58svh, 500px);
+            height: clamp(350px, 60svh, 540px);
             min-height: 0;
-            max-height: calc(100svh - 168px);
+            max-height: calc(100svh - 148px);
             border-radius: 28px 28px 0 0;
             border: 1px solid rgba(148, 163, 184, 0.28);
             border-bottom: 0;
@@ -45434,7 +45434,7 @@ return (
             padding: 28px 18px max(20px, env(safe-area-inset-bottom));
             display: grid;
             align-content: start;
-            gap: 10px;
+            gap: 12px;
           }
 
           .iphone-field-title {
@@ -45449,7 +45449,7 @@ return (
           .iphone-field-status-strip span,
           .iphone-field-card-label {
             color: #60a5fa;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 900;
             line-height: 1.1;
             letter-spacing: 0;
@@ -45468,7 +45468,7 @@ return (
           .iphone-field-status-strip small,
           .iphone-field-card small {
             color: rgba(203, 213, 225, 0.75);
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 780;
             line-height: 1.18;
             letter-spacing: 0;
@@ -45496,9 +45496,9 @@ return (
           .iphone-field-status-strip {
             display: grid;
             grid-template-columns: minmax(0, 1fr) minmax(118px, 0.8fr);
-            gap: 8px;
+            gap: 10px;
             align-items: stretch;
-            padding: 10px;
+            padding: 12px;
           }
 
           .iphone-field-status-strip div {
@@ -45509,7 +45509,7 @@ return (
             display: block;
             overflow: hidden;
             color: #f8fafc;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 950;
             line-height: 1.12;
             text-overflow: ellipsis;
@@ -45520,22 +45520,22 @@ return (
           .iphone-field-package-status {
             display: flex;
             flex-wrap: wrap;
-            gap: 5px;
-            margin-top: 7px;
+            gap: 6px;
+            margin-top: 9px;
           }
 
           .iphone-field-package-status button,
           .iphone-field-package-status a {
-            min-height: 22px;
+            min-height: 26px;
             border: 1px solid rgba(148, 163, 184, 0.28);
             border-radius: 999px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 0 8px;
+            padding: 0 10px;
             background: rgba(15, 23, 42, 0.64);
             color: rgba(203, 213, 225, 0.8);
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 950;
             line-height: 1;
             letter-spacing: 0;
@@ -45557,21 +45557,21 @@ return (
           .iphone-field-status-command {
             grid-column: 1 / -1;
             display: grid;
-            grid-template-columns: 90px minmax(0, 1fr) 82px;
-            gap: 7px;
+            grid-template-columns: 96px minmax(0, 1fr) 86px;
+            gap: 8px;
             align-items: center;
-            margin-top: 9px;
+            margin-top: 10px;
           }
 
           .iphone-field-status-command button,
           .iphone-field-status-command select {
             min-width: 0;
-            height: 38px;
-            border-radius: 12px;
+            height: 44px;
+            border-radius: 14px;
             border: 1px solid rgba(96, 165, 250, 0.42);
             background: rgba(15, 23, 42, 0.76);
             color: #dbeafe;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 900;
             letter-spacing: 0;
           }
@@ -45605,12 +45605,12 @@ return (
           .iphone-field-time-row input,
           .iphone-field-time-row button {
             min-width: 0;
-            height: 32px;
-            border-radius: 10px;
+            height: 38px;
+            border-radius: 12px;
             border: 1px solid rgba(96, 165, 250, 0.34);
             background: rgba(15, 23, 42, 0.76);
             color: #dbeafe;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 850;
           }
 
@@ -45708,9 +45708,9 @@ return (
           .iphone-field-action {
             position: relative;
             min-width: 0;
-            min-height: 76px;
-            padding: 28px 6px 7px;
-            border-radius: 15px;
+            min-height: 88px;
+            padding: 34px 7px 9px;
+            border-radius: 17px;
             border: 1px solid rgba(96, 165, 250, 0.62);
             background: linear-gradient(145deg, rgba(20, 39, 65, 0.76), rgba(5, 13, 23, 0.9));
             color: #60a5fa;
@@ -45724,10 +45724,10 @@ return (
           .iphone-field-action::before {
             content: "";
             position: absolute;
-            top: 8px;
+            top: 10px;
             left: 50%;
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
             border: 2px solid currentColor;
             border-radius: 50%;
             transform: translateX(-50%);
@@ -45744,7 +45744,7 @@ return (
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 950;
           }
 
@@ -45753,16 +45753,16 @@ return (
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 950;
           }
 
           .iphone-field-action.work .iphone-field-tool-mark {
             position: absolute;
-            top: 8px;
+            top: 10px;
             left: 50%;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             border: 2px solid currentColor;
             border-radius: 50%;
             transform: translateX(-50%);
@@ -45818,17 +45818,17 @@ return (
 
           .iphone-field-action span {
             color: currentColor;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: 950;
             line-height: 1.05;
           }
 
           .iphone-field-action strong {
-            margin-top: 4px;
+            margin-top: 6px;
             color: rgba(226, 232, 240, 0.84);
-            font-size: 9px;
-            font-weight: 850;
-            line-height: 1.08;
+            font-size: 11px;
+            font-weight: 880;
+            line-height: 1.12;
           }
 
           .iphone-field-detail-grid {
@@ -45893,9 +45893,9 @@ return (
             }
 
             .iphone-field-sheet {
-              height: clamp(278px, 56svh, 390px);
+              height: clamp(318px, 66svh, 420px);
               min-height: 0;
-              max-height: calc(100svh - 158px);
+              max-height: calc(100svh - 128px);
             }
 
             .iphone-field-screen.sheet-collapsed .iphone-field-sheet {
@@ -45910,8 +45910,8 @@ return (
             }
 
             .iphone-field-scroll {
-              padding: 18px 14px max(14px, env(safe-area-inset-bottom));
-              gap: 5px;
+              padding: 20px 15px max(14px, env(safe-area-inset-bottom));
+              gap: 8px;
             }
 
             .iphone-field-title {
@@ -45920,49 +45920,50 @@ return (
             }
 
             .iphone-field-title strong {
-              font-size: 19px;
+              font-size: 22px;
             }
 
             .iphone-field-title small,
             .iphone-field-status-strip small,
             .iphone-field-card small {
-              font-size: 8px;
+              font-size: 10px;
+              line-height: 1.2;
             }
 
             .iphone-field-status-strip {
               grid-template-columns: minmax(0, 1fr) auto;
               align-items: center;
-              padding: 7px;
-              gap: 5px;
+              padding: 10px;
+              gap: 7px;
             }
 
             .iphone-field-status-strip strong {
-              font-size: 12px;
+              font-size: 14px;
             }
 
             .iphone-field-package-status {
-              gap: 3px;
-              margin-top: 5px;
+              gap: 5px;
+              margin-top: 7px;
             }
 
             .iphone-field-package-status button,
             .iphone-field-package-status a {
-              min-height: 18px;
-              padding: 0 6px;
-              font-size: 7px;
+              min-height: 23px;
+              padding: 0 8px;
+              font-size: 9px;
             }
 
             .iphone-field-status-command {
-              grid-template-columns: 68px minmax(0, 1fr) 58px;
-              gap: 5px;
-              margin-top: 6px;
+              grid-template-columns: 78px minmax(0, 1fr) 64px;
+              gap: 6px;
+              margin-top: 8px;
             }
 
             .iphone-field-status-command button,
             .iphone-field-status-command select {
-              height: 30px;
-              border-radius: 10px;
-              font-size: 9px;
+              height: 38px;
+              border-radius: 12px;
+              font-size: 11px;
             }
 
             .iphone-field-status-strip > div:last-child > span {
@@ -45978,9 +45979,9 @@ return (
             }
 
             .iphone-field-time-row button {
-              width: 44px;
-              height: 28px;
-              font-size: 10px;
+              width: 48px;
+              height: 34px;
+              font-size: 11px;
             }
 
             .iphone-field-hpd {
@@ -45991,76 +45992,76 @@ return (
             }
 
             .iphone-field-card {
-              padding: 8px;
-              gap: 3px;
+              padding: 10px;
+              gap: 5px;
               border-radius: 13px;
             }
 
             .iphone-field-card p {
               display: -webkit-box;
               overflow: hidden;
-              font-size: 12px;
-              line-height: 1.14;
+              font-size: 13px;
+              line-height: 1.22;
               -webkit-box-orient: vertical;
               -webkit-line-clamp: 2;
             }
 
             .iphone-field-tenant-card strong {
-              font-size: 13px;
-            }
-
-            .iphone-field-contact-actions a {
-              min-width: 34px;
-              min-height: 28px;
-              border-radius: 11px;
-              font-size: 9px;
-            }
-
-            .iphone-field-workflow {
-              padding: 8px;
-            }
-
-            .iphone-field-workflow-head {
-              margin-bottom: 5px;
-            }
-
-            .iphone-field-workflow-head strong {
               font-size: 15px;
             }
 
-            .iphone-field-workflow-head b {
-              font-size: 9px;
-            }
-
-            .iphone-field-workflow-grid {
-              gap: 6px;
-            }
-
-            .iphone-field-action {
-              min-height: 48px;
-              padding: 18px 3px 4px;
+            .iphone-field-contact-actions a {
+              min-width: 40px;
+              min-height: 34px;
               border-radius: 12px;
-            }
-
-            .iphone-field-action::before {
-              top: 5px;
-              width: 14px;
-              height: 14px;
               font-size: 10px;
             }
 
+            .iphone-field-workflow {
+              padding: 10px;
+            }
+
+            .iphone-field-workflow-head {
+              margin-bottom: 8px;
+            }
+
+            .iphone-field-workflow-head strong {
+              font-size: 18px;
+            }
+
+            .iphone-field-workflow-head b {
+              font-size: 10px;
+            }
+
+            .iphone-field-workflow-grid {
+              gap: 7px;
+            }
+
+            .iphone-field-action {
+              min-height: 68px;
+              padding: 27px 5px 7px;
+              border-radius: 14px;
+            }
+
+            .iphone-field-action::before {
+              top: 7px;
+              width: 18px;
+              height: 18px;
+              font-size: 12px;
+            }
+
             .iphone-field-action.work .iphone-field-tool-mark {
-              top: 5px;
-              width: 16px;
-              height: 16px;
+              top: 7px;
+              width: 20px;
+              height: 20px;
             }
 
             .iphone-field-action span {
-              font-size: 9px;
+              font-size: 12px;
             }
 
             .iphone-field-action strong {
-              font-size: 7px;
+              font-size: 10px;
             }
           }
           }        `}
