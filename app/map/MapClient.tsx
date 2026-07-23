@@ -45424,8 +45424,8 @@ return (
             left: 0;
             right: 0;
             bottom: 0;
-            height: clamp(390px, 66svh, 620px);
-            max-height: calc(100svh - 118px);
+            height: clamp(340px, 58svh, 590px);
+            max-height: calc(100svh - 188px);
             border-radius: 26px 26px 0 0;
             border: 1px solid rgba(148, 163, 184, 0.32);
             border-bottom: 0;
@@ -46524,8 +46524,8 @@ return (
             }
 
             .iphone-field-v2-sheet {
-              height: clamp(350px, 74svh, 440px);
-              max-height: calc(100svh - 104px);
+              height: clamp(260px, 54svh, 330px);
+              max-height: calc(100svh - 190px);
             }
 
             .iphone-field-v2-screen.sheet-expanded .iphone-field-v2-sheet {
