@@ -2850,6 +2850,7 @@ const [iphoneV2OutcomeChoice, setIphoneV2OutcomeChoice] = useState<{
   jobKey: string;
   kind: "no_access" | "refused_access";
 } | null>(null);
+const [iphoneV2ClearConfirmJobKey, setIphoneV2ClearConfirmJobKey] = useState("");
 const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
   jobKey: string;
   kind: FieldMediaKind;
@@ -9222,6 +9223,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     const resetPatch = clearedFieldWorkflowStatePatch();
     setFieldCaptureGuide(null);
     setFieldWorkChoice(null);
+    setIphoneV2ClearConfirmJobKey("");
     setFieldFocusPane("capture");
     fieldCaptureQueueRef.current = [];
     fieldCaptureJobRef.current = null;
@@ -48865,7 +48867,17 @@ return (
               ? `Arrived ${displayWorkflowDate(fieldVisitIso)}`
               : "Save arrival/status";
         const fieldPacketReady = fieldHasSavedWorkflow && workflowStatus(selected) !== "PENDING";
-        const fieldWorkReady = normalizeWorkflowChoice(fieldStatusValue) === "Work In Progress";
+        const fieldWorkStartedIso = String(
+          (selected as any).JobStartedAt ||
+            (selected as any).jobStartedAt ||
+            (selected as any).ActualWorkStartDate ||
+            (selected as any).actualWorkStartDate ||
+            ""
+        );
+        const fieldWorkReady =
+          Boolean(fieldWorkStartedIso) ||
+          normalizeWorkflowChoice(fieldStatusValue) === "Work In Progress" ||
+          ["WORK_STARTED", "BEFORE_EVIDENCE", "WORK_COMPLETED", "PARTIAL_WORK_COMPLETED"].includes(fieldStatus);
         const fieldDescription = displayDescription(selected);
         const fieldScopeSummary = fieldDescription
           ? fieldDescription
@@ -48898,6 +48910,7 @@ return (
         const fieldAfterRows = fieldEvidenceRowsByKind(selected, "after").slice(0, 8);
         const activeIphoneV2WorkChoice = fieldWorkChoice?.jobKey === fieldJobKey ? fieldWorkChoice : null;
         const activeIphoneV2OutcomeChoice = iphoneV2OutcomeChoice?.jobKey === fieldJobKey ? iphoneV2OutcomeChoice : null;
+        const activeIphoneV2ClearConfirm = iphoneV2ClearConfirmJobKey === fieldJobKey;
         const fieldWorkflowChoice = normalizeWorkflowChoice(fieldStatusValue);
         const fieldIsFinal =
           ["WORK_COMPLETED", "PARTIAL_WORK_COMPLETED", "REFUSED_ACCESS", "NO_ACCESS_COMPLETE", "COMPLETED_BY_OTHERS"].includes(fieldStatus) ||
@@ -48952,11 +48965,13 @@ return (
           : fieldHasArrived
             ? "Tap Start Visit"
             : "Arrive first";
-        const workStamp = fieldWorkReady && fieldSavedIso
-          ? displayWorkflowDate(fieldSavedIso)
-          : fieldVisitReady
-            ? "Before media first"
-            : "Start visit first";
+        const workStamp = fieldWorkStartedIso
+          ? displayWorkflowDate(fieldWorkStartedIso)
+          : fieldWorkReady
+            ? "Started, no time"
+            : fieldVisitReady
+              ? "Before media first"
+              : "Start visit first";
         const fieldNextStep = (() => {
           if (fieldPackagePreview) {
             return {
@@ -49018,8 +49033,14 @@ return (
                   <strong>{fieldJobKey}</strong>
                   <span>{fieldAddress}</span>
                 </div>
-                <button type="button" className="iphone-field-v2-icon" onClick={openMapMenu} aria-label="Open map menu">
-                  …
+                <button
+                  type="button"
+                  className="iphone-field-v2-icon"
+                  onClick={mapMenuOpen ? closeMapMenu : openMapMenu}
+                  aria-label={mapMenuOpen ? "Close map menu" : "Open map menu"}
+                  aria-pressed={mapMenuOpen}
+                >
+                  {mapMenuOpen ? "×" : "…"}
                 </button>
               </div>
               <button
@@ -49245,7 +49266,15 @@ return (
                         <span>Start Visit</span>
                         <strong>{visitStamp}</strong>
                       </button>
-                      <button type="button" className={`iphone-field-v2-action work ${fieldWorkReady ? "is-saved" : ""}`} onClick={() => openStartJobChoices(selected)} disabled={!fieldVisitReady}>
+                      <button
+                        type="button"
+                        className={`iphone-field-v2-action work ${fieldWorkReady ? "is-saved" : ""}`}
+                        onClick={() => {
+                          setIphoneV2ClearConfirmJobKey("");
+                          openStartJobChoices(selected);
+                        }}
+                        disabled={!fieldVisitReady}
+                      >
                         <i className="iphone-field-v2-tool" aria-hidden="true" />
                         <span>Start Work</span>
                         <strong>{workStamp}</strong>
@@ -49255,6 +49284,7 @@ return (
                         className="iphone-field-v2-action no-access"
                         onClick={() => {
                           setFieldWorkChoice(null);
+                          setIphoneV2ClearConfirmJobKey("");
                           setIphoneV2OutcomeChoice({ jobKey: fieldJobKey, kind: "no_access" });
                           setFieldFocusPane("capture");
                           showActionNotice("No Access: add evidence first or save the no-access attempt without media.");
@@ -49269,6 +49299,7 @@ return (
                         className="iphone-field-v2-action refused"
                         onClick={() => {
                           setFieldWorkChoice(null);
+                          setIphoneV2ClearConfirmJobKey("");
                           setIphoneV2OutcomeChoice({ jobKey: fieldJobKey, kind: "refused_access" });
                           setFieldFocusPane("capture");
                           showActionNotice("Refused Access: add media first or close refused without media.");
@@ -49278,7 +49309,17 @@ return (
                         <span>Refused</span>
                         <strong>Ask media</strong>
                       </button>
-                      <button type="button" className="iphone-field-v2-action clear" onClick={() => resetFieldJobForTesting(selected)}>
+                      <button
+                        type="button"
+                        className="iphone-field-v2-action clear"
+                        onClick={() => {
+                          setFieldWorkChoice(null);
+                          setIphoneV2OutcomeChoice(null);
+                          setIphoneV2ClearConfirmJobKey(fieldJobKey);
+                          setFieldFocusPane("capture");
+                          showActionNotice("Clear: confirm reset below or cancel to keep this job status.");
+                        }}
+                      >
                         <span>Clear</span>
                         <strong>Reset status</strong>
                       </button>
@@ -49442,7 +49483,34 @@ return (
                     </section>
                   ) : null}
 
-                  {(fieldWorkReady || fieldMediaCounts.total > 0 || fieldIsFinal || fieldPackageActionsReady) && !activeIphoneV2WorkChoice && !activeIphoneV2OutcomeChoice ? (
+                  {activeIphoneV2ClearConfirm ? (
+                    <section className="iphone-field-v2-card iphone-field-v2-choice-card" aria-label="Clear status confirmation">
+                      <div className="iphone-field-v2-choice-head">
+                        <span>Clear Status</span>
+                        <strong>Reset this job to Pending?</strong>
+                        <small>This clears saved test workflow and evidence on this phone. Use Cancel to keep the job as-is.</small>
+                      </div>
+                      <div className="iphone-field-v2-choice-grid">
+                        <button
+                          type="button"
+                          className="choice-skip"
+                          onClick={() => {
+                            setIphoneV2ClearConfirmJobKey("");
+                            showActionNotice("Clear canceled. Job status was not changed.");
+                          }}
+                        >
+                          <strong>Cancel</strong>
+                          <small>Keep status</small>
+                        </button>
+                        <button type="button" className="choice-danger" onClick={() => void resetFieldJobForTesting(selected, { confirm: false })}>
+                          <strong>Reset</strong>
+                          <small>Clear job</small>
+                        </button>
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {(fieldWorkReady || fieldMediaCounts.total > 0 || fieldIsFinal || fieldPackageActionsReady) && !activeIphoneV2WorkChoice && !activeIphoneV2OutcomeChoice && !activeIphoneV2ClearConfirm ? (
                     <section className="iphone-field-v2-card iphone-field-v2-next" aria-label="Media and closeout next steps">
                       <div className="iphone-field-v2-next-head">
                         <span className="iphone-field-v2-label">Media / Closeout</span>
