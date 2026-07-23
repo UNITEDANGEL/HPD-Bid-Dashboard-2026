@@ -45401,6 +45401,15 @@ return (
             cursor: grabbing;
           }
 
+          .iphone-field-sheet-handle:focus {
+            outline: none;
+          }
+
+          .iphone-field-sheet-handle:focus-visible span {
+            background: rgba(219, 234, 254, 0.78);
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.22), 0 0 18px rgba(96, 165, 250, 0.24);
+          }
+
           .iphone-field-sheet-handle span {
             width: 56px;
             height: 5px;
