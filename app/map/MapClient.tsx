@@ -3202,9 +3202,9 @@ async function fetchDayAgentRoadRoute(points: ReturnType<typeof dayAgentRoutePoi
   };
 }
 
-async function drawDayAgentRouteLine(routeJobs = dayAgentRoute, routeOrigin: UserLocationState | null = userLocation) {
+async function drawDayAgentRouteLine(routeJobs = dayAgentRoute, routeOrigin: UserLocationState | null = userLocation, includeReturnToBase = true) {
   if (!mapRef.current) return;
-  const points = dayAgentRoutePoints(routeJobs, true, routeOrigin);
+  const points = dayAgentRoutePoints(routeJobs, includeReturnToBase, routeOrigin);
   const fallbackLatLngs = points.map((point) => [point.coords.lat, point.coords.lng] as [number, number]);
   if (points.length < 2 || fallbackLatLngs.length < 2) {
     setActionNotice("Choose mapped jobs before drawing the agent route.");
@@ -3300,6 +3300,44 @@ async function drawDayAgentRouteLine(routeJobs = dayAgentRoute, routeOrigin: Use
     `${routeResult.summary.mode === "road" ? "Road route" : "Estimated route"} ready: ${formatDayAgentDuration(routeResult.summary.totalDurationSeconds)} / ${formatDayAgentDistance(routeResult.summary.totalDistanceMeters)}.`,
     routeJobs[0]
   );
+}
+
+async function routeSelectedJobOnMap(job: MappedJob) {
+  const coords = jobLatLng(job);
+  if (!coords) {
+    showActionNotice("This work order has no map location. Use the address links for directions.");
+    return;
+  }
+
+  const routeOrigin: UserLocationState = userLocation || {
+    ...DAY_AGENT_BASE_COORDS,
+    accuracy: 0,
+    updatedAt: new Date().toISOString(),
+  };
+  if (!userLocation || !isFreshRouteLocation(userLocation)) {
+    startLocationTracking({ followMap: false });
+  }
+
+  clearMarkerOverviewReturn();
+  setMapJobBrief(null);
+  setClusterSheet(null);
+  setDayAgentStarted(true);
+  setDayAgentRoute([job]);
+  setDayAgentCommand(`Route me to ${jobKey(job)}`);
+  setDayAgentReturnToBase(false);
+  setDayAgentRouteHidden(false);
+  setDayAgentSelectedStopIndex(0);
+  setDayAgentRouteSummary(null);
+  setMapBoardOpen(false);
+  setMapMenuOpen(false);
+  setDayAgentPanelOpen(false);
+  setFullMap(false);
+  setDrawerOpen(true);
+  setSelected(job);
+  setSelectedOnly(true);
+  appendDayAgentLog(`Route Me started for ${jobKey(job)}.`, job);
+  setActionNotice(`Route Me: drawing route ${userLocation ? "from your saved location" : "from base while GPS updates"} to ${jobKey(job)}.`);
+  await drawDayAgentRouteLine([job], routeOrigin, false);
 }
 
 const requestFreshDayAgentLocation = () => {
@@ -3810,6 +3848,14 @@ function showCleanMapView() {
   setMapBoardOpen(false);
   clearManualMapControl();
 
+  try {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("omo")) {
+      url.searchParams.delete("omo");
+      window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  } catch {}
+
   window.requestAnimationFrame(() => {
     mapRef.current?.invalidateSize();
   });
@@ -3929,10 +3975,10 @@ function handleMapTouchEnd(event: any) {
 
   useEffect(() => {
     try {
-      const forceNightMap = new URLSearchParams(window.location.search).get("map") === "1";
-      if (forceNightMap) {
-        setMapBaseStyle("carto-dark");
-        window.localStorage.setItem(MAP_BASE_STYLE_STORAGE_KEY, "carto-dark");
+      const openMapMode = new URLSearchParams(window.location.search).get("map") === "1";
+      if (openMapMode) {
+        setMapBaseStyle("carto-voyager");
+        window.localStorage.setItem(MAP_BASE_STYLE_STORAGE_KEY, "carto-voyager");
       } else {
         const savedStyle = window.localStorage.getItem(MAP_BASE_STYLE_STORAGE_KEY);
         if (savedStyle && MAP_BASE_STYLES.some((style) => style.id === savedStyle)) {
@@ -41574,9 +41620,9 @@ return (
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-row {
               display: grid !important;
-              grid-template-columns: minmax(0, 1fr) auto !important;
+              grid-template-columns: minmax(0, 1fr) !important;
               align-items: center !important;
-              gap: 8px !important;
+              gap: 7px !important;
               margin-top: 7px !important;
               padding: 6px !important;
               border-radius: 16px !important;
@@ -41604,11 +41650,12 @@ return (
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-actions {
               display: inline-grid !important;
-              grid-template-columns: 54px 54px !important;
+              grid-template-columns: minmax(0, 1fr) 54px 54px !important;
               gap: 7px !important;
               align-items: center !important;
-              justify-content: end !important;
-              min-width: 115px !important;
+              justify-content: stretch !important;
+              width: 100% !important;
+              min-width: 0 !important;
             }
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-actions .route-head-button {
@@ -41634,6 +41681,37 @@ return (
               border-color: rgba(74, 222, 128, 0.46) !important;
             }
 
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-actions .route-head-button.route-me {
+              width: auto !important;
+              min-width: 0 !important;
+              grid-template-columns: 28px minmax(0, 1fr) !important;
+              grid-template-rows: 1fr !important;
+              justify-content: start !important;
+              justify-items: start !important;
+              text-align: left !important;
+              background: linear-gradient(145deg, rgba(37, 99, 235, 0.42), rgba(12, 25, 45, 0.96)) !important;
+              border-color: rgba(96, 165, 250, 0.72) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-actions .route-head-button.route-me.has-route {
+              border-color: rgba(74, 222, 128, 0.64) !important;
+              background: linear-gradient(145deg, rgba(20, 83, 45, 0.42), rgba(12, 25, 45, 0.96)) !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-actions .route-me-icon {
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              width: 24px !important;
+              height: 24px !important;
+              border-radius: 999px !important;
+              background: rgba(219, 234, 254, 0.16) !important;
+              color: #bfdbfe !important;
+              font-size: 9px !important;
+              font-weight: 1000 !important;
+              letter-spacing: 0 !important;
+            }
+
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-actions .route-head-button img {
               display: block !important;
               width: 21px !important;
@@ -41654,6 +41732,13 @@ return (
               line-height: 1 !important;
             }
 
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-actions .route-head-button.route-me .route-action-copy {
+              max-width: 100% !important;
+              min-width: 0 !important;
+              text-align: left !important;
+              overflow: hidden !important;
+            }
+
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-actions .route-action-copy strong {
               display: block !important;
               color: #ffffff !important;
@@ -41665,6 +41750,15 @@ return (
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-actions .route-action-copy small {
               display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-actions .route-head-button.route-me .route-action-copy small {
+              display: block !important;
+              max-width: 100% !important;
+              margin-top: 2px !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+              white-space: nowrap !important;
             }
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-page3-description,
@@ -43247,7 +43341,6 @@ return (
             }
 
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-visit-inline,
-            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-address-route-row,
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-field-metas {
               display: none !important;
             }
@@ -43993,6 +44086,7 @@ return (
 
               .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .job-card-field-title-row {
                 grid-template-columns: 32px minmax(0, 1fr) 48px !important;
+                align-items: center !important;
                 min-height: 32px !important;
                 height: 32px !important;
                 gap: 8px !important;
@@ -44878,8 +44972,8 @@ return (
           .map-shell.map-glass-command-trial.drawer-selected .leaflet-container {
             pointer-events: auto !important;
             touch-action: pan-x pan-y !important;
-            background: #071521 !important;
-            filter: saturate(0.92) brightness(0.82) contrast(1.08) !important;
+            background: #18314f !important;
+            filter: saturate(1.02) brightness(1.02) contrast(1) !important;
           }
 
           .map-shell.map-glass-command-trial.drawer-selected .leaflet-map-pane,
@@ -44914,9 +45008,9 @@ return (
           .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus.selected-focus-advanced {
             top: auto !important;
             bottom: 0 !important;
-            height: min(max(58svh, min(470px, calc(100svh - 140px))), 600px) !important;
-            min-height: min(470px, calc(100svh - 140px)) !important;
-            max-height: min(64svh, calc(100svh - 118px)) !important;
+            height: min(52svh, 470px) !important;
+            min-height: min(390px, calc(100svh - 220px)) !important;
+            max-height: min(58svh, calc(100svh - 220px)) !important;
             overflow: hidden !important;
             border-radius: 30px 30px 0 0 !important;
             background:
@@ -44969,9 +45063,9 @@ return (
           @media (max-width: 700px) and (max-height: 700px) {
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus,
             .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus.selected-focus-advanced {
-              height: min(330px, calc(100svh - 150px)) !important;
-              min-height: min(310px, calc(100svh - 150px)) !important;
-              max-height: calc(100svh - 150px) !important;
+              height: min(270px, calc(100svh - 230px)) !important;
+              min-height: min(260px, calc(100svh - 230px)) !important;
+              max-height: calc(100svh - 230px) !important;
             }
           }
           }        `}
@@ -46089,25 +46183,6 @@ return (
                       </div>
                     );
                   })()}
-                  <div className="job-card-address-route-row" aria-label="Job address and directions">
-                    <p>{displayAddress(selected)}</p>
-                    <div className="job-card-address-route-actions">
-                      <a className="route-head-button waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer" aria-label="Open Waze directions">
-                        <img src={WAZE_LOGO_URL} alt="" loading="lazy" />
-                        <span className="route-action-copy">
-                          <strong>Waze</strong>
-                          <small>traffic</small>
-                        </span>
-                      </a>
-                      <a className="route-head-button google" href={directionsUrl(selected)} target="_blank" rel="noopener noreferrer" aria-label="Open Google Maps directions">
-                        <img src={GOOGLE_MAPS_LOGO_URL} alt="" loading="lazy" />
-                        <span className="route-action-copy">
-                          <strong>Google</strong>
-                          <small>maps</small>
-                        </span>
-                      </a>
-                    </div>
-                  </div>
                   <div className="job-card-field-metas" aria-label="Job status summary">
                     {(() => {
                       const headerStatusValue = workflowDisplayStatusValue(selected, draftWorkflowStatus);

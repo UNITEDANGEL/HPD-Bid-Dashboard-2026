@@ -51,6 +51,8 @@ The screen must feel like an iPhone field tool, not a desktop page squeezed down
 - The top map must remain visible and usable.
 - The bottom job card must scroll quickly and independently.
 - Map pan/zoom and card scroll must not fight each other.
+- Closing the selected job card must return to the all-jobs map, not leave the user trapped in one-work-order mode.
+- The map may be styled for dark glass, but it must still read as a real map with visible streets/tiles, not a black backdrop.
 
 ## Required Screen Structure
 
@@ -127,6 +129,8 @@ Map:
 - Top map can pan/zoom normally.
 - Route graphics/markers remain visible above the sheet.
 - Map controls must not be hidden by fake overlay rules.
+- Selected-job mode must leave enough top map visible on both iPhone-sized screens and the right in-app browser.
+- The `map=1` test URL is map mode, not permission to fake or black out the map.
 
 Bottom sheet:
 
