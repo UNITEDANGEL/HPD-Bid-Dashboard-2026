@@ -37,6 +37,24 @@ A real iPhone-style map + bottom-sheet job card for:
 
 The screen must feel like an iPhone field tool, not a desktop page squeezed down.
 
+## Rebuild Decision
+
+The selected-job mobile experience is being rebuilt instead of patched.
+
+Reason:
+
+- The current selected job drawer has too many overlapping legacy CSS/layout layers.
+- Status appears in several different places and can disappear depending on selected mode.
+- Incremental visual patches have been slow and brittle.
+
+New rebuild rule:
+
+- Keep the existing real map, real job data, real workflow save functions, real visit tracking, and real route functions.
+- Replace the selected-job mobile surface with one clean iPhone field sheet.
+- Hide the old selected-job drawer while the rebuild sheet is active so the user sees one job card, one status area, and one workflow.
+- Do not remove all-jobs map behavior.
+- Do not push or deploy a rebuild slice until it is locally checked in the right browser.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.
@@ -166,7 +184,8 @@ Use the in-app browser for visual testing when available. Always test the right 
 
 Current scheduler/build/push rule:
 
-- Continue the upgrade loop every 1 minute while this task is active.
+- The 1-minute upgrade loop is paused while the selected-job screen is being rebuilt.
+- Resume scheduled upgrades only after the rebuild direction is stable enough to test on iPhone.
 - Each cycle must make one small verified app improvement or report the exact blocker.
 - After code changes, run the relevant lint/build checks before telling the user to test.
 - Restart or confirm the local server on port `3278` after build output changes.
