@@ -70,6 +70,13 @@ V2 direction:
 - Keep snap positions: middle, expanded, collapsed-to-map.
 - Continue improving V2 only unless the user explicitly asks to compare or roll back to V1.
 
+Current V2.1 interaction slice:
+
+- `omo=EQ31289` must open the exact selected job card, not fall back to the first visible job.
+- Scope is a real tappable card that opens a large full-scope panel using the real job description.
+- The full-scope panel must close cleanly and return to the same V2 sheet.
+- Tenant Contact must show the apartment as a prominent iPhone-readable pill when apartment data exists.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.

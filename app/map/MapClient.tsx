@@ -2802,6 +2802,7 @@ const [iphoneFieldSheetSnap, setIphoneFieldSheetSnap] = useState<IphoneFieldShee
 const [iphoneJobCardVersion, setIphoneJobCardVersion] = useState<IphoneJobCardVersion>("v2");
 const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
 const [descriptionOpen, setDescriptionOpen] = useState(false);
+const [iphoneV2ScopeOpen, setIphoneV2ScopeOpen] = useState(false);
 const [itbSourceOpen, setItbSourceOpen] = useState(false);
 const [itbSourceImageFailed, setItbSourceImageFailed] = useState("");
 const [itbSourceManifest, setItbSourceManifest] = useState<Record<string, ItbSourceManifestEntry>>({});
@@ -4673,12 +4674,20 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" } : { ...job };
         });
     const searchRows = filteredJobs.length ? filteredJobs : fallbackRows;
+    const candidateRows = [...searchRows, ...fallbackRows].filter((job, index, rows) => {
+      const key = String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "");
+      return key && rows.findIndex((row) => String(jobKey(row)).toLowerCase().replace(/[^a-z0-9]+/g, "") === key) === index;
+    });
     const match =
-      searchRows.find((job) => String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "") === target) ||
-      searchRows.find((job) => compactMapSearchValue(displayAddress(job)) === compactMapSearchValue(urlOmoRequest)) ||
-      searchRows.find((job) => matchesMapSearch(job, urlOmoRequest)) ||
-      searchRows[0];
-    if (!match) return;
+      candidateRows.find((job) => String(jobKey(job)).toLowerCase().replace(/[^a-z0-9]+/g, "") === target) ||
+      candidateRows.find((job) => compactMapSearchValue(displayAddress(job)) === compactMapSearchValue(urlOmoRequest)) ||
+      candidateRows.find((job) => matchesMapSearch(job, urlOmoRequest));
+    if (!match) {
+      if (!candidateRows.length) return;
+      setUrlOmoRequest("");
+      setActionNotice(`Could not find ${urlOmoRequest.toUpperCase()} on the map.`);
+      return;
+    }
 
     focusJob(match);
     setUrlOmoRequest("");
@@ -45595,6 +45604,31 @@ return (
             padding: 14px;
           }
 
+          .iphone-field-v2-scope-button {
+            width: 100%;
+            border: 1px solid rgba(96, 165, 250, 0.38);
+            text-align: left;
+            cursor: pointer;
+          }
+
+          .iphone-field-v2-scope-button:active {
+            transform: scale(0.992);
+          }
+
+          .iphone-field-v2-scope-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+          }
+
+          .iphone-field-v2-open-copy {
+            flex: 0 0 auto;
+            color: #bfdbfe;
+            font-size: 12px;
+            font-weight: 950;
+          }
+
           .iphone-field-v2-card p {
             margin: 0;
             color: #e5edf8;
@@ -45607,6 +45641,35 @@ return (
           .iphone-field-v2-contact {
             grid-template-columns: minmax(0, 1fr) auto;
             align-items: center;
+          }
+
+          .iphone-field-v2-contact-main {
+            min-width: 0;
+            display: grid;
+            gap: 7px;
+          }
+
+          .iphone-field-v2-contact-line {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+          }
+
+          .iphone-field-v2-apt-pill {
+            flex: 0 0 auto;
+            min-height: 36px;
+            border: 1px solid rgba(96, 165, 250, 0.54);
+            border-radius: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 12px;
+            background: rgba(29, 78, 216, 0.28);
+            color: #dbeafe;
+            font-size: 16px;
+            font-weight: 950;
+            line-height: 1;
           }
 
           .iphone-field-v2-contact strong {
@@ -45821,6 +45884,79 @@ return (
             white-space: nowrap;
           }
 
+          .iphone-field-v2-scope-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 8;
+            display: flex;
+            align-items: flex-end;
+            padding: 14px max(14px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+            background: rgba(2, 6, 23, 0.42);
+            pointer-events: auto;
+          }
+
+          .iphone-field-v2-scope-modal {
+            width: 100%;
+            max-height: min(72svh, 620px);
+            border: 1px solid rgba(147, 197, 253, 0.42);
+            border-radius: 24px;
+            display: grid;
+            grid-template-rows: auto minmax(0, 1fr);
+            overflow: hidden;
+            background:
+              linear-gradient(180deg, rgba(12, 24, 39, 0.98), rgba(2, 8, 23, 0.99)),
+              rgba(2, 8, 23, 0.98);
+            box-shadow: 0 24px 70px rgba(2, 6, 23, 0.72), inset 0 1px 0 rgba(255,255,255,0.12);
+            backdrop-filter: blur(22px) saturate(1.26);
+            -webkit-backdrop-filter: blur(22px) saturate(1.26);
+          }
+
+          .iphone-field-v2-scope-modal-head {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: center;
+            padding: 17px 17px 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+          }
+
+          .iphone-field-v2-scope-modal-head strong {
+            display: block;
+            margin-top: 2px;
+            color: #f8fafc;
+            font-size: 22px;
+            font-weight: 950;
+            line-height: 1.05;
+          }
+
+          .iphone-field-v2-scope-modal-head button {
+            min-width: 70px;
+            min-height: 44px;
+            border: 1px solid rgba(96, 165, 250, 0.44);
+            border-radius: 15px;
+            background: rgba(15, 35, 61, 0.82);
+            color: #bfdbfe;
+            font-size: 14px;
+            font-weight: 950;
+          }
+
+          .iphone-field-v2-scope-modal-body {
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            padding: 16px 17px 20px;
+          }
+
+          .iphone-field-v2-scope-modal-body p {
+            margin: 0;
+            color: #e5edf8;
+            font-size: 19px;
+            font-weight: 780;
+            line-height: 1.38;
+            letter-spacing: 0;
+            white-space: pre-wrap;
+          }
+
           @media (max-width: 700px) and (max-height: 700px) {
             .iphone-field-v2-topbar {
               grid-template-columns: 42px minmax(0, 1fr) 42px;
@@ -45946,6 +46082,21 @@ return (
               line-height: 1.24;
               -webkit-box-orient: vertical;
               -webkit-line-clamp: 3;
+            }
+
+            .iphone-field-v2-scope-modal-body p {
+              display: block;
+              overflow: visible;
+              font-size: 17px;
+              line-height: 1.34;
+              -webkit-line-clamp: unset;
+            }
+
+            .iphone-field-v2-apt-pill {
+              min-height: 32px;
+              border-radius: 12px;
+              font-size: 14px;
+              padding: 0 10px;
             }
 
             .iphone-field-v2-contact strong {
@@ -47965,6 +48116,17 @@ return (
               .slice(0, 2)
               .join(". ")
           : "No ITB description found for this job.";
+        const fieldTenantApartment = String(fieldContact.apartment || "").trim();
+        const fieldTenantApartmentLabel = fieldTenantApartment
+          ? /^apt\b/i.test(fieldTenantApartment)
+            ? fieldTenantApartment
+            : `Apt ${fieldTenantApartment}`
+          : "";
+        const fieldContactPrimary = fieldContact.name || fieldContact.phone || fieldContact.status || "No tenant contact";
+        const fieldContactMeta = [
+          fieldContact.name && fieldContact.phone ? fieldContact.phone : "",
+          !fieldContact.phone ? fieldContact.status : "",
+        ].filter(Boolean).join(" · ");
         const fieldSecondAttempt = workflowSecondAttemptInfo(selected);
         const fieldNoAccessLabel = workflowStatus(selected) === "NO_ACCESS_COMPLETE"
           ? "Closed"
@@ -48149,21 +48311,31 @@ return (
                     </section>
                   </header>
 
-                  <section className="iphone-field-v2-card" aria-label="Scope">
-                    <span className="iphone-field-v2-label">Scope</span>
+                  <button
+                    type="button"
+                    className="iphone-field-v2-card iphone-field-v2-scope-button"
+                    aria-label="Open full job scope"
+                    onClick={() => {
+                      setIphoneV2ScopeOpen(true);
+                      setIphoneFieldSheetSnap("middle");
+                    }}
+                  >
+                    <span className="iphone-field-v2-scope-head">
+                      <span className="iphone-field-v2-label">Scope</span>
+                      <span className="iphone-field-v2-open-copy">Open</span>
+                    </span>
                     <p>{fieldScopeSummary}</p>
-                    <small>{fieldDescription ? "Scroll for remaining job details below." : "Description needs source review."}</small>
-                  </section>
+                    <small>{fieldDescription ? "Tap for full scope." : "Description needs source review."}</small>
+                  </button>
 
                   <section className="iphone-field-v2-card iphone-field-v2-contact" aria-label="Tenant contact">
-                    <div>
+                    <div className="iphone-field-v2-contact-main">
                       <span className="iphone-field-v2-label">Tenant Contact</span>
-                      <strong>{fieldContact.name || fieldContact.phone || fieldContact.apartment || fieldContact.status}</strong>
-                      <small>
-                        {[fieldContact.apartment, fieldContact.name && fieldContact.phone ? fieldContact.phone : "", !fieldContact.phone ? fieldContact.status : ""]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </small>
+                      <div className="iphone-field-v2-contact-line">
+                        {fieldTenantApartmentLabel ? <span className="iphone-field-v2-apt-pill">{fieldTenantApartmentLabel}</span> : null}
+                        <strong>{fieldContactPrimary}</strong>
+                      </div>
+                      <small>{fieldContactMeta || fieldContact.status}</small>
                     </div>
                     <div className="iphone-field-v2-contact-actions">
                       {fieldContact.actionHref ? <a href={fieldContact.actionHref}>Call</a> : null}
@@ -48236,6 +48408,28 @@ return (
                   </section>
                 </div>
               </article>
+              {iphoneV2ScopeOpen ? (
+                <div className="iphone-field-v2-scope-backdrop" role="presentation" onClick={() => setIphoneV2ScopeOpen(false)}>
+                  <section
+                    className="iphone-field-v2-scope-modal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`${fieldJobKey} full scope`}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <div className="iphone-field-v2-scope-modal-head">
+                      <div>
+                        <span className="iphone-field-v2-label">Complete Scope</span>
+                        <strong>{fieldJobKey}</strong>
+                      </div>
+                      <button type="button" onClick={() => setIphoneV2ScopeOpen(false)}>Close</button>
+                    </div>
+                    <div className="iphone-field-v2-scope-modal-body">
+                      <p>{fieldDescription || "No ITB description found for this job."}</p>
+                    </div>
+                  </section>
+                </div>
+              ) : null}
             </section>
           );
         }
