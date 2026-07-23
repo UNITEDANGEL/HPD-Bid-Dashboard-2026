@@ -88,6 +88,16 @@ Current V2.2 restore-forward slice:
 - Finish/closeout asks for after media: Take, Upload, or Finish No Media, then the existing package/paperwork review flow handles affidavit and invoice.
 - No Access and Refused must prompt for media first, with a real no-media save/close option.
 
+Current V2.3 flexible media slice:
+
+- Start Work must not force a fixed 4-item guided capture set.
+- Start Work opens a before-media panel with Take Image, Take Video, Upload, Done Start Job, and No Media Start.
+- Before media can be repeated as many times as needed; each saved item must appear as a real thumbnail/preview on the V2 card.
+- Done Start Job starts Work In Progress only after before media exists; No Media Start is the explicit no-media path.
+- Finish/closeout opens an after-media panel with Take Image, Take Video, Upload, Done Finish, and Finish No Media.
+- After media can be repeated as many times as needed; saved after media must appear as real thumbnails/previews on the V2 card.
+- Invoice material extraction from the scope/description is the next slice after the job-card media flow is stable.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.

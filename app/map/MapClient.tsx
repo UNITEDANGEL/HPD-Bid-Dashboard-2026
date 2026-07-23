@@ -8683,6 +8683,14 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
   }
 
   function showInlineCaptureComplete(target: FieldCaptureTarget) {
+    if (!target.step) {
+      setFieldCaptureGuide(null);
+      setFieldFocusPane("evidence");
+      focusFieldMedia(target.kind);
+      showActionNotice(`${fieldEvidenceLabel(target.kind)} saved to job card. Add more, or tap done to continue.`);
+      return;
+    }
+
     const captureJob =
       fieldCaptureJobRef.current ||
       (selected && jobKey(selected) === target.jobKey ? (selected as MappedJob) : null);
@@ -8905,9 +8913,6 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
   function openStartJobChoices(job: MappedJob) {
     const key = jobKey(job);
     if (!key) return;
-    const iso = workflowActionIso();
-    const patch = workStartedPatch(iso);
-    const startedJob = { ...job, ...patch } as MappedJob;
     setFieldWorkChoice({ jobKey: key, phase: "start" });
     setIphoneV2OutcomeChoice(null);
     setFieldFocusPane("capture");
@@ -8915,7 +8920,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setDrawerOpen(true);
     setFullMap(false);
     focusFieldWorkChoice();
-    saveFieldWorkflowPatch(startedJob, patch, `${key}: Started saved. Choose before media, upload media, or continue without media.`);
+    showActionNotice(`${key}: Choose before media, upload media, or No Media Start.`);
   }
 
   function saveTopCardStartWork(job: MappedJob) {
@@ -46028,7 +46033,7 @@ return (
 
           .iphone-field-v2-choice-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 8px;
           }
 
@@ -46073,6 +46078,56 @@ return (
             width: 100%;
             color: #cbd5e1;
             border-color: rgba(148, 163, 184, 0.4);
+          }
+
+          .iphone-field-v2-evidence-strip {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .iphone-field-v2-evidence-thumb {
+            min-width: 0;
+            aspect-ratio: 1;
+            border: 1px solid rgba(148, 163, 184, 0.24);
+            border-radius: 14px;
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            place-items: center;
+            background: rgba(3, 9, 18, 0.48);
+            color: #bfdbfe;
+            font-size: 11px;
+            font-weight: 950;
+          }
+
+          .iphone-field-v2-evidence-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+          }
+
+          .iphone-field-v2-evidence-thumb b {
+            position: absolute;
+            left: 6px;
+            bottom: 6px;
+            border-radius: 999px;
+            padding: 3px 6px;
+            background: rgba(2, 6, 23, 0.78);
+            color: #dbeafe;
+            font-size: 9px;
+            font-weight: 950;
+          }
+
+          .iphone-field-v2-empty-media {
+            border: 1px dashed rgba(148, 163, 184, 0.32);
+            border-radius: 14px;
+            padding: 12px;
+            color: rgba(203, 213, 225, 0.8);
+            font-size: 12px;
+            font-weight: 850;
+            line-height: 1.25;
           }
 
           .iphone-field-v2-detail-grid {
@@ -46367,9 +46422,6 @@ return (
               font-size: 11px;
             }
 
-            .iphone-field-v2-choice-grid {
-              grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
           }
 
           .iphone-field-screen {
@@ -48365,6 +48417,8 @@ return (
             ? "ITB listed, page image not published yet"
             : "No ITB file listed";
         const fieldMediaCounts = fieldPhotoCountsFor(selected);
+        const fieldBeforeRows = fieldEvidenceRowsByKind(selected, "before").slice(0, 8);
+        const fieldAfterRows = fieldEvidenceRowsByKind(selected, "after").slice(0, 8);
         const activeIphoneV2WorkChoice = fieldWorkChoice?.jobKey === fieldJobKey ? fieldWorkChoice : null;
         const activeIphoneV2OutcomeChoice = iphoneV2OutcomeChoice?.jobKey === fieldJobKey ? iphoneV2OutcomeChoice : null;
         const fieldIsFinal = ["WORK_COMPLETED", "PARTIAL_WORK_COMPLETED", "REFUSED_ACCESS", "NO_ACCESS_COMPLETE", "COMPLETED_BY_OTHERS"].includes(fieldStatus);
@@ -48388,7 +48442,7 @@ return (
         const workStamp = fieldWorkReady && fieldSavedIso
           ? displayWorkflowDate(fieldSavedIso)
           : fieldVisitReady
-            ? "Date/time saved here"
+            ? "Before media first"
             : "Start visit first";
         const useIphoneJobCardV2 = iphoneJobCardVersion === "v2";
         if (useIphoneJobCardV2) {
@@ -48697,35 +48751,99 @@ return (
                         </small>
                       </div>
                       {activeIphoneV2WorkChoice.phase === "start" ? (
-                        <div className="iphone-field-v2-choice-grid">
-                          <button type="button" className="choice-camera" onClick={() => startFieldJob(selected)}>
-                            <strong>Take</strong>
-                            <small>Before</small>
-                          </button>
-                          <button type="button" className="choice-upload" onClick={() => uploadBeforeAndStartJob(selected)}>
-                            <strong>Upload</strong>
-                            <small>Before</small>
-                          </button>
-                          <button type="button" className="choice-skip" onClick={() => startFieldJobWithoutMedia(selected)}>
-                            <strong>No Media</strong>
-                            <small>Start</small>
-                          </button>
-                        </div>
+                        <>
+                          {fieldBeforeRows.length ? (
+                            <div className="iphone-field-v2-evidence-strip" aria-label="Saved before media">
+                              {fieldBeforeRows.map((media) => (
+                                <div className="iphone-field-v2-evidence-thumb" key={`iphone-v2-before-${media.id}`}>
+                                  {fieldEvidencePreview(media) ? <img src={fieldEvidencePreview(media)} alt="" /> : <span>{media.mediaType === "video" ? "VIDEO" : "IMAGE"}</span>}
+                                  <b>{media.mediaType === "video" ? "VID" : "IMG"}</b>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="iphone-field-v2-empty-media">No before media saved yet. Take or upload as many photos/videos as needed.</div>
+                          )}
+                          <div className="iphone-field-v2-choice-grid">
+                            <button type="button" className="choice-camera" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*", true)}>
+                              <strong>Take Image</strong>
+                              <small>Before</small>
+                            </button>
+                            <button type="button" className="choice-camera" onClick={() => requestFieldPhotoCapture(selected, "before", "video/*", true)}>
+                              <strong>Take Video</strong>
+                              <small>Before</small>
+                            </button>
+                            <button type="button" className="choice-upload" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*,video/*", false)}>
+                              <strong>Upload</strong>
+                              <small>Before</small>
+                            </button>
+                            <button
+                              type="button"
+                              className="choice-camera"
+                              onClick={() => {
+                                if (!fieldBeforeRows.length) {
+                                  showActionNotice("Add before media first, or tap No Media Start.");
+                                  return;
+                                }
+                                completeBeforeEvidenceAndStartWork(selected);
+                              }}
+                            >
+                              <strong>Done</strong>
+                              <small>Start job</small>
+                            </button>
+                            <button type="button" className="choice-skip" onClick={() => startFieldJobWithoutMedia(selected)}>
+                              <strong>No Media</strong>
+                              <small>Start</small>
+                            </button>
+                          </div>
+                        </>
                       ) : (
-                        <div className="iphone-field-v2-choice-grid">
-                          <button type="button" className="choice-camera" onClick={() => finishFieldJobWithMedia(selected, Boolean(activeIphoneV2WorkChoice.partial))}>
-                            <strong>Take</strong>
-                            <small>After</small>
-                          </button>
-                          <button type="button" className="choice-upload" onClick={() => uploadAfterAndFinishJob(selected, Boolean(activeIphoneV2WorkChoice.partial))}>
-                            <strong>Upload</strong>
-                            <small>After</small>
-                          </button>
-                          <button type="button" className="choice-skip" onClick={() => finishFieldJob(selected, Boolean(activeIphoneV2WorkChoice.partial))}>
-                            <strong>Finish</strong>
-                            <small>No media</small>
-                          </button>
-                        </div>
+                        <>
+                          {fieldAfterRows.length ? (
+                            <div className="iphone-field-v2-evidence-strip" aria-label="Saved after media">
+                              {fieldAfterRows.map((media) => (
+                                <div className="iphone-field-v2-evidence-thumb" key={`iphone-v2-after-${media.id}`}>
+                                  {fieldEvidencePreview(media) ? <img src={fieldEvidencePreview(media)} alt="" /> : <span>{media.mediaType === "video" ? "VIDEO" : "IMAGE"}</span>}
+                                  <b>{media.mediaType === "video" ? "VID" : "IMG"}</b>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="iphone-field-v2-empty-media">No after media saved yet. Take or upload final photos/videos before closeout.</div>
+                          )}
+                          <div className="iphone-field-v2-choice-grid">
+                            <button type="button" className="choice-camera" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*", true)}>
+                              <strong>Take Image</strong>
+                              <small>After</small>
+                            </button>
+                            <button type="button" className="choice-camera" onClick={() => requestFieldPhotoCapture(selected, "after", "video/*", true)}>
+                              <strong>Take Video</strong>
+                              <small>After</small>
+                            </button>
+                            <button type="button" className="choice-upload" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*,video/*", false)}>
+                              <strong>Upload</strong>
+                              <small>After</small>
+                            </button>
+                            <button
+                              type="button"
+                              className="choice-camera"
+                              onClick={() => {
+                                if (!fieldAfterRows.length) {
+                                  showActionNotice("Add after media first, or tap Finish No Media.");
+                                  return;
+                                }
+                                completeAfterEvidenceAndFinishJob(selected, Boolean(activeIphoneV2WorkChoice.partial));
+                              }}
+                            >
+                              <strong>Done</strong>
+                              <small>Finish</small>
+                            </button>
+                            <button type="button" className="choice-skip" onClick={() => finishFieldJob(selected, Boolean(activeIphoneV2WorkChoice.partial))}>
+                              <strong>Finish</strong>
+                              <small>No media</small>
+                            </button>
+                          </div>
+                        </>
                       )}
                       <button type="button" className="iphone-field-v2-choice-close" onClick={() => setFieldWorkChoice(null)}>
                         Close Choices
@@ -48799,11 +48917,11 @@ return (
                         <div><span>Total</span><strong>{fieldMediaCounts.total}</strong></div>
                       </div>
                       <div className="iphone-field-v2-choice-grid">
-                        <button type="button" className="choice-camera" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*,video/*", true)}>
+                        <button type="button" className="choice-camera" onClick={() => openStartJobChoices(selected)}>
                           <strong>Before</strong>
                           <small>Media</small>
                         </button>
-                        <button type="button" className="choice-upload" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*,video/*", true)}>
+                        <button type="button" className="choice-upload" onClick={() => openFinishJobChoices(selected)}>
                           <strong>After</strong>
                           <small>Media</small>
                         </button>
