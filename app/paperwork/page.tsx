@@ -1095,18 +1095,20 @@ export default function PaperworkPage() {
     const mediaParam = String(params.get("media") || params.get("evidence") || "").toLowerCase();
     const signatureParam = String(params.get("signature") || params.get("signatures") || params.get("signer") || "").toLowerCase();
     const queryIncludesSignature = !["none", "no", "0", "false", "unsigned", "without"].includes(signatureParam);
+    const shouldAutoGeneratePackage = ["package", "1", "true", "yes"].includes(autoParam);
     let nextOutcome = paperworkOutcomeFromValue(params.get("outcome") || "");
 
     if (nextOutcome === "pending") {
       if (packageParam.includes("no")) nextOutcome = "no_access";
       else if (packageParam.includes("work")) nextOutcome = "work_completed";
+      else if (shouldAutoGeneratePackage) nextOutcome = "work_completed";
     }
 
     setSelectedId(job);
     setOutcome(nextOutcome);
     setIncludePackageMedia(!["none", "no", "0", "false", "pdf", "pdf-only"].includes(mediaParam));
     setIncludePackageSignature(queryIncludesSignature);
-    setAutoGeneratePackage(["package", "1", "true", "yes"].includes(autoParam));
+    setAutoGeneratePackage(shouldAutoGeneratePackage);
     setForm((current) => ({
       ...current,
       affidavitType: affidavitTemplateLabel(nextOutcome),
