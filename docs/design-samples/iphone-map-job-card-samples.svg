@@ -1,0 +1,415 @@
+﻿<svg width="1080" height="3260" viewBox="0 0 1080 3260" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">iPhone map and job card design samples</title>
+  <desc id="desc">Six dark glass iPhone-style layout samples for a live map on top and a real scrollable job card bottom sheet.</desc>
+  <defs>
+    <linearGradient id="pageBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#06111b"/>
+      <stop offset="0.52" stop-color="#101725"/>
+      <stop offset="1" stop-color="#06110f"/>
+    </linearGradient>
+    <linearGradient id="mapBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#07131e"/>
+      <stop offset="0.58" stop-color="#10253a"/>
+      <stop offset="1" stop-color="#071821"/>
+    </linearGradient>
+    <linearGradient id="sheetBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#142335" stop-opacity="0.97"/>
+      <stop offset="1" stop-color="#07101a" stop-opacity="0.98"/>
+    </linearGradient>
+    <linearGradient id="softSheetBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#172638" stop-opacity="0.96"/>
+      <stop offset="0.6" stop-color="#07131f" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#0a1515" stop-opacity="0.98"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    <filter id="glowBlue" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#4d96ff" flood-opacity="0.55"/>
+    </filter>
+    <filter id="glowGreen" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="0" stdDeviation="9" flood-color="#66f2a3" flood-opacity="0.65"/>
+    </filter>
+    <filter id="glowAmber" x="-60%" y="-60%" width="220%" height="220%">
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#ffc057" flood-opacity="0.5"/>
+    </filter>
+    <style>
+      .title { font: 700 44px Inter, Arial, sans-serif; fill: #eef6ff; letter-spacing: 0; }
+      .subtitle { font: 500 21px Inter, Arial, sans-serif; fill: #9fb2ca; letter-spacing: 0; }
+      .sample-title { font: 800 26px Inter, Arial, sans-serif; fill: #f3f8ff; letter-spacing: 0; }
+      .sample-note { font: 500 15px Inter, Arial, sans-serif; fill: #95a8c2; letter-spacing: 0; }
+      .phone { fill: #050a11; stroke: #2e4055; stroke-width: 2.5; }
+      .map { fill: url(#mapBg); }
+      .road { fill: none; stroke: #46617b; stroke-width: 3; opacity: 0.35; }
+      .road2 { fill: none; stroke: #6f849b; stroke-width: 2; opacity: 0.23; }
+      .route { fill: none; stroke: #5b9dff; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; filter: url(#glowBlue); }
+      .route-dash { fill: none; stroke: #67e8a2; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 11 12; opacity: 0.9; }
+      .map-pin { fill: #3082ff; stroke: #9dccff; stroke-width: 3; filter: url(#glowBlue); }
+      .you-dot { fill: #68f29b; stroke: #e8fff0; stroke-width: 3; filter: url(#glowGreen); }
+      .sheet { fill: url(#sheetBg); stroke: #40556c; stroke-width: 2.2; filter: url(#shadow); }
+      .sheet-soft { fill: url(#softSheetBg); stroke: #3e556e; stroke-width: 2.2; filter: url(#shadow); }
+      .handle { fill: #8aa0b6; opacity: 0.9; }
+      .glass { fill: rgba(13, 26, 40, 0.8); stroke: #344960; stroke-width: 1.8; }
+      .glass-strong { fill: rgba(15, 30, 46, 0.92); stroke: #438bff; stroke-width: 2; }
+      .card { fill: rgba(9, 18, 30, 0.74); stroke: #33485f; stroke-width: 1.8; }
+      .primary-card { fill: rgba(13, 24, 38, 0.88); stroke: #438bff; stroke-width: 2.3; }
+      .label { font: 800 19px Inter, Arial, sans-serif; fill: #5a9dff; letter-spacing: 0; }
+      .label-small { font: 800 15px Inter, Arial, sans-serif; fill: #6aa8ff; letter-spacing: 0; }
+      .text { font: 600 17px Inter, Arial, sans-serif; fill: #dbe8f7; letter-spacing: 0; }
+      .text-small { font: 600 13.5px Inter, Arial, sans-serif; fill: #b9c8dc; letter-spacing: 0; }
+      .muted { font: 600 14px Inter, Arial, sans-serif; fill: #8fa3bd; letter-spacing: 0; }
+      .job { font: 800 30px Inter, Arial, sans-serif; fill: #f3f8ff; letter-spacing: 0; }
+      .section { font: 800 22px Inter, Arial, sans-serif; fill: #65a5ff; letter-spacing: 0; }
+      .button-text { font: 800 16px Inter, Arial, sans-serif; letter-spacing: 0; }
+      .button-sub { font: 700 11px Inter, Arial, sans-serif; letter-spacing: 0; opacity: 0.88; }
+      .blue { fill: #5b9dff; }
+      .green { fill: #66f2a3; }
+      .amber { fill: #ffc057; }
+      .red { fill: #ff6b67; }
+      .white { fill: #f4f8ff; }
+      .stroke-blue { stroke: #4d96ff; }
+      .stroke-green { stroke: #66f2a3; }
+      .stroke-amber { stroke: #ffc057; }
+      .stroke-red { stroke: #ff6b67; }
+      .stroke-white { stroke: #b9c8dc; }
+      .icon-line { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 4; }
+      .chip { fill: rgba(11, 20, 32, 0.82); stroke: #3a5169; stroke-width: 1.7; }
+      .chip-blue { fill: rgba(16, 40, 76, 0.86); stroke: #438bff; stroke-width: 2; }
+      .micro { font: 800 11px Inter, Arial, sans-serif; fill: #89a0bb; text-transform: uppercase; letter-spacing: 0; }
+    </style>
+  </defs>
+
+  <rect width="1080" height="3260" fill="url(#pageBg)"/>
+  <text x="54" y="72" class="title">iPhone Map + Job Card Samples</text>
+  <text x="54" y="109" class="subtitle">Live map stays on top. Bottom job card scrolls fast. No fake phone chrome, no static card image.</text>
+
+  <!-- Sample 1 -->
+  <g transform="translate(54 170)">
+    <text x="0" y="-18" class="sample-title">Sample 1 - Glass Sheet Command</text>
+    <text x="0" y="10" class="sample-note">Closest to the dark glass reference, but the top is still a real map.</text>
+    <rect x="0" y="34" width="456" height="930" rx="54" class="phone"/>
+    <clipPath id="clip1"><rect x="8" y="42" width="440" height="914" rx="48"/></clipPath>
+    <g clip-path="url(#clip1)">
+      <rect x="8" y="42" width="440" height="914" class="map"/>
+      <path d="M32 106 C128 168 188 170 270 116 C345 70 390 84 442 127" class="road"/>
+      <path d="M20 230 C110 205 169 239 248 212 C330 183 376 205 452 182" class="road2"/>
+      <path d="M66 66 L138 255 L170 424" class="road2"/>
+      <path d="M215 57 L245 206 L315 373" class="road"/>
+      <path d="M376 48 L330 226 L341 349" class="road2"/>
+      <path d="M106 326 C175 284 238 296 289 237 C314 206 339 190 386 187" class="route"/>
+      <circle cx="108" cy="326" r="10" class="you-dot"/>
+      <path d="M388 186 C388 167 402 153 421 153 C440 153 454 167 454 186 C454 211 421 249 421 249 C421 249 388 211 388 186Z" transform="translate(-38 0)" class="map-pin"/>
+      <circle cx="383" cy="186" r="9" fill="#eaf4ff"/>
+      <rect x="130" y="70" width="196" height="48" rx="24" class="chip-blue"/>
+      <text x="164" y="101" class="button-text blue">EQ31289</text>
+      <rect x="244" y="268" width="170" height="62" rx="20" class="chip"/>
+      <text x="268" y="294" class="text-small">Route Me</text>
+      <text x="268" y="314" class="muted">ETA / distance</text>
+      <rect x="24" y="354" width="408" height="602" rx="38" class="sheet"/>
+      <rect x="190" y="372" width="76" height="8" rx="4" class="handle"/>
+      <rect x="44" y="406" width="56" height="56" rx="16" class="glass-strong"/>
+      <path d="M62 426 H82 M62 438 H85 M62 450 H78 M68 416 H80 M67 416 V454 H90 V421 H83" class="icon-line stroke-blue"/>
+      <text x="118" y="430" class="job">EQ31289</text>
+      <text x="119" y="456" class="muted">Work Order</text>
+      <rect x="332" y="412" width="76" height="40" rx="16" class="chip-blue"/>
+      <text x="353" y="438" class="button-text blue">HPD</text>
+      <rect x="44" y="488" width="368" height="116" rx="18" class="primary-card"/>
+      <text x="76" y="522" class="label">Scope</text>
+      <text x="76" y="552" class="text">Defective wall tiles in bathroom.</text>
+      <text x="76" y="578" class="text-small">Full real description opens inside card.</text>
+      <rect x="44" y="622" width="368" height="82" rx="18" class="card"/>
+      <text x="76" y="652" class="label">Tenant Contact</text>
+      <text x="76" y="680" class="text">Name, apt, phone from job data</text>
+      <circle cx="372" cy="663" r="25" fill="none" stroke="#4d96ff" stroke-width="2"/>
+      <path d="M363 654 C365 675 384 670 383 678" class="icon-line stroke-blue"/>
+      <text x="44" y="742" class="section">Workflow</text>
+      <g transform="translate(44 762)">
+        <rect x="0" y="0" width="112" height="86" rx="17" fill="rgba(30,78,58,0.72)" stroke="#66f2a3" stroke-width="2.2" filter="url(#glowGreen)"/>
+        <path d="M79 24 L89 34 L105 16" class="icon-line stroke-green"/>
+        <text x="16" y="41" class="button-text green">Arrived</text>
+        <text x="16" y="63" class="button-sub green">date/time</text>
+        <rect x="128" y="0" width="112" height="86" rx="17" fill="rgba(16,40,76,0.72)" stroke="#4d96ff" stroke-width="2.2"/>
+        <path d="M216 20 L216 50 L238 35 Z" fill="none" stroke="#5b9dff" stroke-width="4" stroke-linejoin="round"/>
+        <text x="144" y="41" class="button-text blue">Visit</text>
+        <text x="144" y="63" class="button-sub blue">date/time</text>
+        <rect x="256" y="0" width="112" height="86" rx="17" fill="rgba(16,40,76,0.72)" stroke="#4d96ff" stroke-width="2.2"/>
+        <path d="M328 22 L348 42 M343 23 L352 14 M323 49 L335 37" class="icon-line stroke-blue"/>
+        <text x="272" y="41" class="button-text blue">Work</text>
+        <text x="272" y="63" class="button-sub blue">date/time</text>
+        <rect x="0" y="100" width="112" height="76" rx="17" fill="rgba(69,45,20,0.72)" stroke="#ffc057" stroke-width="2.2"/>
+        <text x="17" y="142" class="button-text amber">No Access</text>
+        <rect x="128" y="100" width="112" height="76" rx="17" fill="rgba(74,28,35,0.72)" stroke="#ff6b67" stroke-width="2.2"/>
+        <text x="154" y="142" class="button-text red">Refused</text>
+        <rect x="256" y="100" width="112" height="76" rx="17" fill="rgba(22,34,48,0.72)" stroke="#9fb2ca" stroke-width="2.2"/>
+        <text x="294" y="142" class="button-text" fill="#c9d6e6">Clear</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Sample 2 -->
+  <g transform="translate(570 170)">
+    <text x="0" y="-18" class="sample-title">Sample 2 - Route First Navigator</text>
+    <text x="0" y="10" class="sample-note">More map height, route summary pinned above a compact work card.</text>
+    <rect x="0" y="34" width="456" height="930" rx="54" class="phone"/>
+    <clipPath id="clip2"><rect x="8" y="42" width="440" height="914" rx="48"/></clipPath>
+    <g clip-path="url(#clip2)">
+      <rect x="8" y="42" width="440" height="914" class="map"/>
+      <path d="M45 86 C151 126 229 75 310 103 C371 124 403 172 448 195" class="road"/>
+      <path d="M23 251 C128 270 225 259 304 310 C360 346 404 333 452 319" class="road2"/>
+      <path d="M135 48 C116 196 173 278 144 410" class="road2"/>
+      <path d="M275 44 C248 165 317 251 288 404" class="road"/>
+      <path d="M71 354 C143 314 196 314 237 260 C282 202 330 179 382 151" class="route-dash"/>
+      <circle cx="73" cy="354" r="10" class="you-dot"/>
+      <path d="M362 150 C362 132 376 119 394 119 C412 119 426 132 426 150 C426 174 394 210 394 210 C394 210 362 174 362 150Z" class="map-pin"/>
+      <circle cx="394" cy="150" r="8" fill="#eaf4ff"/>
+      <rect x="36" y="74" width="128" height="42" rx="21" class="chip"/>
+      <text x="57" y="101" class="button-text blue">Route Me</text>
+      <rect x="178" y="74" width="236" height="42" rx="21" class="chip"/>
+      <text x="199" y="101" class="text-small">where I am -> job, ETA from route</text>
+      <rect x="24" y="388" width="408" height="568" rx="34" class="sheet-soft"/>
+      <rect x="190" y="406" width="76" height="8" rx="4" class="handle"/>
+      <text x="44" y="450" class="job">EQ31289</text>
+      <text x="44" y="475" class="muted">560 Isham Street, 10034</text>
+      <rect x="298" y="427" width="106" height="48" rx="20" class="chip-blue"/>
+      <text x="327" y="457" class="button-text blue">Route</text>
+      <rect x="44" y="500" width="368" height="82" rx="17" class="primary-card"/>
+      <text x="64" y="528" class="label">Scope</text>
+      <text x="64" y="554" class="text-small">First card. Opens to full description without overlap.</text>
+      <rect x="44" y="596" width="368" height="72" rx="17" class="card"/>
+      <text x="64" y="624" class="label">Tenant Contact</text>
+      <text x="64" y="650" class="text-small">Real tenant data plus call action.</text>
+      <text x="44" y="708" class="section">Workflow</text>
+      <g transform="translate(44 728)">
+        <rect x="0" y="0" width="176" height="64" rx="17" fill="rgba(30,78,58,0.72)" stroke="#66f2a3" stroke-width="2.2"/>
+        <path d="M138 20 L149 31 L165 14" class="icon-line stroke-green"/>
+        <text x="18" y="28" class="button-text green">Arrived</text>
+        <text x="18" y="48" class="button-sub green">saved date/time</text>
+        <rect x="192" y="0" width="176" height="64" rx="17" fill="rgba(16,40,76,0.72)" stroke="#4d96ff" stroke-width="2.2"/>
+        <path d="M332 18 L332 46 L354 32 Z" fill="none" stroke="#5b9dff" stroke-width="4" stroke-linejoin="round"/>
+        <text x="210" y="28" class="button-text blue">Start Visit</text>
+        <text x="210" y="48" class="button-sub blue">date/time</text>
+        <rect x="0" y="78" width="176" height="64" rx="17" fill="rgba(16,40,76,0.72)" stroke="#4d96ff" stroke-width="2.2"/>
+        <path d="M130 95 L152 117 M146 96 L156 87 M124 126 L138 112" class="icon-line stroke-blue"/>
+        <text x="18" y="106" class="button-text blue">Start Work</text>
+        <text x="18" y="126" class="button-sub blue">date/time</text>
+        <rect x="192" y="78" width="84" height="64" rx="17" fill="rgba(69,45,20,0.72)" stroke="#ffc057" stroke-width="2.2"/>
+        <text x="205" y="116" class="button-text amber">No</text>
+        <text x="202" y="133" class="button-sub amber">Access</text>
+        <rect x="284" y="78" width="84" height="64" rx="17" fill="rgba(74,28,35,0.72)" stroke="#ff6b67" stroke-width="2.2"/>
+        <text x="297" y="116" class="button-text red">Refused</text>
+        <rect x="0" y="156" width="368" height="48" rx="16" class="card"/>
+        <text x="157" y="187" class="button-text" fill="#c9d6e6">Clear</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Sample 3 -->
+  <g transform="translate(54 1180)">
+    <text x="0" y="-18" class="sample-title">Sample 3 - Fast Field Console</text>
+    <text x="0" y="10" class="sample-note">Action strip is sticky; details scroll underneath for speed.</text>
+    <rect x="0" y="34" width="456" height="930" rx="54" class="phone"/>
+    <clipPath id="clip3"><rect x="8" y="42" width="440" height="914" rx="48"/></clipPath>
+    <g clip-path="url(#clip3)">
+      <rect x="8" y="42" width="440" height="914" class="map"/>
+      <path d="M24 110 C95 150 148 141 206 101 C295 41 371 90 440 70" class="road"/>
+      <path d="M25 255 C99 220 151 252 212 288 C269 321 335 310 440 360" class="road2"/>
+      <path d="M78 44 L153 402" class="road2"/>
+      <path d="M226 44 L255 390" class="road"/>
+      <path d="M366 45 L308 408" class="road2"/>
+      <path d="M88 294 C128 259 178 266 222 230 C267 192 325 166 374 130" class="route"/>
+      <circle cx="88" cy="294" r="10" class="you-dot"/>
+      <path d="M356 131 C356 113 370 100 388 100 C406 100 420 113 420 131 C420 155 388 191 388 191 C388 191 356 155 356 131Z" class="map-pin"/>
+      <circle cx="388" cy="131" r="8" fill="#eaf4ff"/>
+      <rect x="38" y="68" width="378" height="54" rx="24" class="chip"/>
+      <text x="62" y="101" class="text">Route Me</text>
+      <text x="171" y="101" class="muted">ETA / distance / current location</text>
+      <rect x="18" y="316" width="420" height="640" rx="30" class="sheet"/>
+      <rect x="190" y="334" width="76" height="8" rx="4" class="handle"/>
+      <text x="38" y="378" class="job">EQ31289</text>
+      <text x="38" y="404" class="muted">Work order card, no duplicated buttons</text>
+      <g transform="translate(38 426)">
+        <rect x="0" y="0" width="78" height="70" rx="16" fill="rgba(30,78,58,0.72)" stroke="#66f2a3" stroke-width="2"/>
+        <path d="M24 34 L34 45 L55 23" class="icon-line stroke-green"/>
+        <text x="14" y="61" class="button-sub green">Arrived</text>
+        <rect x="90" y="0" width="78" height="70" rx="16" fill="rgba(16,40,76,0.72)" stroke="#4d96ff" stroke-width="2"/>
+        <path d="M121 22 L121 50 L144 36 Z" fill="none" stroke="#5b9dff" stroke-width="4" stroke-linejoin="round"/>
+        <text x="109" y="61" class="button-sub blue">Visit</text>
+        <rect x="180" y="0" width="78" height="70" rx="16" fill="rgba(16,40,76,0.72)" stroke="#4d96ff" stroke-width="2"/>
+        <path d="M211 23 L232 44 M226 24 L236 14 M204 53 L218 39" class="icon-line stroke-blue"/>
+        <text x="203" y="61" class="button-sub blue">Work</text>
+        <rect x="270" y="0" width="110" height="70" rx="16" class="card"/>
+        <text x="292" y="29" class="button-text white">More</text>
+        <text x="289" y="50" class="button-sub" fill="#b9c8dc">No access etc.</text>
+      </g>
+      <rect x="38" y="522" width="380" height="116" rx="18" class="primary-card"/>
+      <text x="60" y="553" class="label">Scope</text>
+      <text x="60" y="581" class="text">Full description opens here.</text>
+      <text x="60" y="606" class="text-small">Text wraps, never overlaps action strip.</text>
+      <rect x="38" y="654" width="380" height="88" rx="18" class="card"/>
+      <text x="60" y="686" class="label">Tenant Contact</text>
+      <text x="60" y="714" class="text-small">Contact row with live call link.</text>
+      <rect x="38" y="758" width="118" height="76" rx="17" fill="rgba(69,45,20,0.72)" stroke="#ffc057" stroke-width="2.2"/>
+      <text x="57" y="801" class="button-text amber">No Access</text>
+      <rect x="168" y="758" width="118" height="76" rx="17" fill="rgba(74,28,35,0.72)" stroke="#ff6b67" stroke-width="2.2"/>
+      <text x="197" y="801" class="button-text red">Refused</text>
+      <rect x="298" y="758" width="120" height="76" rx="17" class="card"/>
+      <text x="337" y="801" class="button-text" fill="#c9d6e6">Clear</text>
+    </g>
+  </g>
+
+  <!-- Sample 4 -->
+  <g transform="translate(570 1180)">
+    <text x="0" y="-18" class="sample-title">Sample 4 - Two Step Bottom Sheet</text>
+    <text x="0" y="10" class="sample-note">Small route deck on map, larger sheet opens with drag handle.</text>
+    <rect x="0" y="34" width="456" height="930" rx="54" class="phone"/>
+    <clipPath id="clip4"><rect x="8" y="42" width="440" height="914" rx="48"/></clipPath>
+    <g clip-path="url(#clip4)">
+      <rect x="8" y="42" width="440" height="914" class="map"/>
+      <path d="M15 89 C90 122 131 118 191 79 C274 26 365 76 441 101" class="road"/>
+      <path d="M21 215 C120 204 184 250 256 230 C329 209 394 251 452 237" class="road2"/>
+      <path d="M92 45 L123 311" class="road2"/>
+      <path d="M219 46 L262 323" class="road"/>
+      <path d="M382 46 L337 331" class="road2"/>
+      <path d="M64 284 C129 256 183 231 244 180 C283 147 321 128 372 116" class="route-dash"/>
+      <circle cx="64" cy="284" r="10" class="you-dot"/>
+      <path d="M354 116 C354 98 368 85 386 85 C404 85 418 98 418 116 C418 140 386 176 386 176 C386 176 354 140 354 116Z" class="map-pin"/>
+      <rect x="34" y="342" width="388" height="94" rx="24" class="glass"/>
+      <text x="58" y="379" class="button-text blue">Route Me</text>
+      <text x="58" y="406" class="text-small">Top map shows current location, route, ETA, distance.</text>
+      <rect x="18" y="468" width="420" height="488" rx="30" class="sheet-soft"/>
+      <rect x="190" y="486" width="76" height="8" rx="4" class="handle"/>
+      <rect x="38" y="520" width="380" height="78" rx="20" class="primary-card"/>
+      <text x="62" y="550" class="job">EQ31289</text>
+      <text x="63" y="577" class="muted">560 Isham Street</text>
+      <rect x="38" y="618" width="380" height="72" rx="18" class="card"/>
+      <text x="62" y="647" class="label">Scope</text>
+      <text x="62" y="672" class="text-small">First, expandable, real description only.</text>
+      <rect x="38" y="704" width="380" height="68" rx="18" class="card"/>
+      <text x="62" y="733" class="label">Tenant Contact</text>
+      <text x="62" y="756" class="text-small">Second, real call link.</text>
+      <g transform="translate(38 792)">
+        <text x="0" y="0" class="section">Workflow</text>
+        <rect x="0" y="22" width="120" height="62" rx="16" fill="rgba(30,78,58,0.72)" stroke="#66f2a3" stroke-width="2"/>
+        <text x="21" y="53" class="button-text green">Arrived</text>
+        <text x="26" y="72" class="button-sub green">date/time</text>
+        <rect x="130" y="22" width="120" height="62" rx="16" fill="rgba(16,40,76,0.72)" stroke="#4d96ff" stroke-width="2"/>
+        <text x="150" y="53" class="button-text blue">Start Visit</text>
+        <text x="160" y="72" class="button-sub blue">date/time</text>
+        <rect x="260" y="22" width="120" height="62" rx="16" fill="rgba(16,40,76,0.72)" stroke="#4d96ff" stroke-width="2"/>
+        <text x="281" y="53" class="button-text blue">Start Work</text>
+        <text x="291" y="72" class="button-sub blue">date/time</text>
+        <rect x="0" y="96" width="120" height="52" rx="15" fill="rgba(69,45,20,0.72)" stroke="#ffc057" stroke-width="2"/>
+        <text x="21" y="129" class="button-text amber">No Access</text>
+        <rect x="130" y="96" width="120" height="52" rx="15" fill="rgba(74,28,35,0.72)" stroke="#ff6b67" stroke-width="2"/>
+        <text x="159" y="129" class="button-text red">Refused</text>
+        <rect x="260" y="96" width="120" height="52" rx="15" class="card"/>
+        <text x="299" y="129" class="button-text" fill="#c9d6e6">Clear</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Sample 5 -->
+  <g transform="translate(54 2190)">
+    <text x="0" y="-18" class="sample-title">Sample 5 - Dense Field Mode</text>
+    <text x="0" y="10" class="sample-note">Smallest scrolling distance; actions are compact and always reachable.</text>
+    <rect x="0" y="34" width="456" height="930" rx="54" class="phone"/>
+    <clipPath id="clip5"><rect x="8" y="42" width="440" height="914" rx="48"/></clipPath>
+    <g clip-path="url(#clip5)">
+      <rect x="8" y="42" width="440" height="914" class="map"/>
+      <path d="M25 88 C107 110 145 132 207 98 C280 58 354 79 442 48" class="road"/>
+      <path d="M23 221 C95 250 172 210 247 238 C326 268 392 240 450 280" class="road2"/>
+      <path d="M91 45 L162 335" class="road2"/>
+      <path d="M238 44 L251 332" class="road"/>
+      <path d="M354 43 L321 338" class="road2"/>
+      <path d="M75 282 C132 252 168 267 218 222 C268 176 314 158 379 139" class="route"/>
+      <circle cx="75" cy="282" r="10" class="you-dot"/>
+      <path d="M360 140 C360 122 374 109 392 109 C410 109 424 122 424 140 C424 164 392 200 392 200 C392 200 360 164 360 140Z" class="map-pin"/>
+      <rect x="28" y="64" width="166" height="44" rx="22" class="chip"/>
+      <text x="53" y="92" class="button-text blue">Route Me</text>
+      <rect x="18" y="324" width="420" height="632" rx="30" class="sheet"/>
+      <rect x="190" y="342" width="76" height="8" rx="4" class="handle"/>
+      <text x="38" y="384" class="job">EQ31289</text>
+      <text x="274" y="379" class="micro">live data</text>
+      <rect x="38" y="414" width="380" height="68" rx="16" class="primary-card"/>
+      <text x="58" y="441" class="label-small">Scope</text>
+      <text x="58" y="464" class="text-small">Expandable description, first.</text>
+      <rect x="38" y="494" width="380" height="68" rx="16" class="card"/>
+      <text x="58" y="521" class="label-small">Tenant Contact</text>
+      <text x="58" y="544" class="text-small">Second. Phone button stays right.</text>
+      <rect x="38" y="574" width="380" height="250" rx="20" class="card"/>
+      <text x="58" y="606" class="section">Workflow</text>
+      <g transform="translate(58 628)">
+        <rect x="0" y="0" width="340" height="44" rx="14" fill="rgba(30,78,58,0.72)" stroke="#66f2a3" stroke-width="2"/>
+        <text x="16" y="28" class="button-text green">Arrived Saved</text>
+        <text x="220" y="28" class="button-sub green">date/time</text>
+        <rect x="0" y="56" width="164" height="44" rx="14" fill="rgba(16,40,76,0.72)" stroke="#4d96ff" stroke-width="2"/>
+        <text x="24" y="84" class="button-text blue">Start Visit</text>
+        <rect x="176" y="56" width="164" height="44" rx="14" fill="rgba(16,40,76,0.72)" stroke="#4d96ff" stroke-width="2"/>
+        <path d="M194 68 L212 86 M207 69 L216 60 M188 94 L199 83" class="icon-line stroke-blue"/>
+        <text x="226" y="84" class="button-text blue">Start Work</text>
+        <rect x="0" y="112" width="108" height="48" rx="14" fill="rgba(69,45,20,0.72)" stroke="#ffc057" stroke-width="2"/>
+        <text x="15" y="142" class="button-text amber">No Access</text>
+        <rect x="116" y="112" width="108" height="48" rx="14" fill="rgba(74,28,35,0.72)" stroke="#ff6b67" stroke-width="2"/>
+        <text x="139" y="142" class="button-text red">Refused</text>
+        <rect x="232" y="112" width="108" height="48" rx="14" class="card"/>
+        <text x="266" y="142" class="button-text" fill="#c9d6e6">Clear</text>
+      </g>
+      <rect x="38" y="838" width="380" height="52" rx="16" class="chip"/>
+      <text x="58" y="871" class="text-small">Remaining job details below, fast native scroll.</text>
+    </g>
+  </g>
+
+  <!-- Sample 6 -->
+  <g transform="translate(570 2190)">
+    <text x="0" y="-18" class="sample-title">Sample 6 - Map Heavy Task Drawer</text>
+    <text x="0" y="10" class="sample-note">Maximum map visibility; card can be pulled up for full workflow/details.</text>
+    <rect x="0" y="34" width="456" height="930" rx="54" class="phone"/>
+    <clipPath id="clip6"><rect x="8" y="42" width="440" height="914" rx="48"/></clipPath>
+    <g clip-path="url(#clip6)">
+      <rect x="8" y="42" width="440" height="914" class="map"/>
+      <path d="M20 84 C102 144 190 113 236 81 C307 31 390 83 450 128" class="road"/>
+      <path d="M22 232 C110 226 154 270 225 263 C308 255 360 214 448 224" class="road2"/>
+      <path d="M64 45 L128 438" class="road2"/>
+      <path d="M221 43 L265 435" class="road"/>
+      <path d="M381 43 L330 441" class="road2"/>
+      <path d="M66 371 C132 338 181 321 224 270 C277 206 325 172 388 146" class="route"/>
+      <circle cx="66" cy="371" r="10" class="you-dot"/>
+      <path d="M370 146 C370 128 384 115 402 115 C420 115 434 128 434 146 C434 170 402 206 402 206 C402 206 370 170 370 146Z" class="map-pin"/>
+      <rect x="36" y="70" width="116" height="42" rx="21" class="chip"/>
+      <text x="55" y="97" class="button-text blue">Route Me</text>
+      <rect x="36" y="126" width="244" height="58" rx="20" class="chip"/>
+      <text x="58" y="153" class="text-small">Route summary</text>
+      <text x="58" y="172" class="muted">ETA / distance from live route</text>
+      <rect x="18" y="514" width="420" height="442" rx="30" class="sheet-soft"/>
+      <rect x="190" y="532" width="76" height="8" rx="4" class="handle"/>
+      <text x="38" y="576" class="job">EQ31289</text>
+      <text x="38" y="602" class="muted">Drag up for full card. Map remains usable above.</text>
+      <rect x="38" y="626" width="120" height="46" rx="15" class="chip-blue"/>
+      <text x="76" y="655" class="button-text blue">Scope</text>
+      <rect x="170" y="626" width="120" height="46" rx="15" class="chip"/>
+      <text x="191" y="655" class="button-text" fill="#c9d6e6">Tenant</text>
+      <rect x="302" y="626" width="116" height="46" rx="15" class="chip"/>
+      <text x="323" y="655" class="button-text" fill="#c9d6e6">Actions</text>
+      <rect x="38" y="694" width="380" height="80" rx="18" class="primary-card"/>
+      <text x="62" y="725" class="label">Scope</text>
+      <text x="62" y="750" class="text-small">First visible detail. Expands in-place.</text>
+      <rect x="38" y="790" width="380" height="72" rx="18" class="card"/>
+      <text x="62" y="819" class="label">Tenant Contact</text>
+      <text x="62" y="844" class="text-small">Second. Real call link.</text>
+      <g transform="translate(38 878)">
+        <rect x="0" y="0" width="72" height="52" rx="15" fill="rgba(30,78,58,0.72)" stroke="#66f2a3" stroke-width="2"/>
+        <text x="11" y="32" class="button-sub green">Arrived</text>
+        <rect x="78" y="0" width="72" height="52" rx="15" fill="rgba(16,40,76,0.72)" stroke="#4d96ff" stroke-width="2"/>
+        <text x="96" y="32" class="button-sub blue">Visit</text>
+        <rect x="156" y="0" width="72" height="52" rx="15" fill="rgba(16,40,76,0.72)" stroke="#4d96ff" stroke-width="2"/>
+        <text x="174" y="32" class="button-sub blue">Work</text>
+        <rect x="234" y="0" width="72" height="52" rx="15" fill="rgba(69,45,20,0.72)" stroke="#ffc057" stroke-width="2"/>
+        <text x="250" y="32" class="button-sub amber">No Acc.</text>
+        <rect x="312" y="0" width="68" height="52" rx="15" fill="rgba(74,28,35,0.72)" stroke="#ff6b67" stroke-width="2"/>
+        <text x="324" y="32" class="button-sub red">Refuse</text>
+      </g>
+    </g>
+  </g>
+</svg>
+
+

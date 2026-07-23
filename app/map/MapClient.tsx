@@ -5373,6 +5373,56 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
   }, [selected]);
 
   useEffect(() => {
+    if (!selectedOnly || !selected || !mapReady || !mapRef.current) return;
+
+    const selectedKey = jobKey(selected);
+    const selectedMapJob = isNycMapCoordinate(selected._lat, selected._lng)
+      ? selected
+      : filteredJobs.find((job) => jobKey(job) === selectedKey && isNycMapCoordinate(job._lat, job._lng));
+    if (!selectedMapJob) return;
+
+    const targetPoint: [number, number] = [Number(selectedMapJob._lat), Number(selectedMapJob._lng)];
+    markProgrammaticMapMove(2200);
+
+    const focusSelectedMarkerAboveSheet = () => {
+      const map = mapRef.current;
+      if (!map || !isValidMapCoordinate(targetPoint[0], targetPoint[1])) return;
+
+      map.invalidateSize();
+      const zoom = Math.max(16, Number(map.getZoom?.() || 16));
+      const mapSize = map.getSize?.();
+      const mapContainer = map.getContainer?.();
+      const mapRect = mapContainer?.getBoundingClientRect();
+      const mapWidth = Number(mapSize?.x || mapRect?.width || window.innerWidth || 390);
+      const mapHeight = Number(mapSize?.y || mapRect?.height || window.innerHeight || 844);
+      const drawer = document.querySelector<HTMLElement>(".job-drawer.selected-focus");
+      const drawerRect = drawer?.getBoundingClientRect();
+      const drawerTopInMap = drawerRect && mapRect ? drawerRect.top - mapRect.top : Math.round(mapHeight * 0.42);
+      const visibleMapHeight = Math.max(132, Math.min(mapHeight, drawerTopInMap));
+      const desiredX = Math.round(mapWidth / 2);
+      const desiredY = Math.round(Math.max(78, Math.min(visibleMapHeight - 42, visibleMapHeight * 0.5)));
+      const targetLatLng = { lat: targetPoint[0], lng: targetPoint[1] };
+      const targetProjected = map.project(targetLatLng, zoom);
+      const centerProjected = targetProjected.add([
+        Math.round(mapWidth / 2) - desiredX,
+        Math.round(mapHeight / 2) - desiredY,
+      ]);
+      const centerLatLng = map.unproject(centerProjected, zoom);
+
+      map.setView(centerLatLng, zoom, { animate: false });
+      window.requestAnimationFrame(() => map.invalidateSize());
+    };
+
+    const firstFocusTimer = window.setTimeout(focusSelectedMarkerAboveSheet, 140);
+    const secondFocusTimer = window.setTimeout(focusSelectedMarkerAboveSheet, 420);
+
+    return () => {
+      window.clearTimeout(firstFocusTimer);
+      window.clearTimeout(secondFocusTimer);
+    };
+  }, [selectedOnly, selected, mapReady, filteredJobs]);
+
+  useEffect(() => {
     async function drawMarkers() {
       if (!mapReady || !mapRef.current || !markerLayerRef.current) return;
 
@@ -8797,6 +8847,60 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     );
   }
 
+  useEffect(() => {
+    const activateHeaderFlowButton = (button: HTMLButtonElement, event: Event) => {
+      const action = button.dataset.headerFlowAction;
+      if (!action || button.disabled) return;
+
+      const current = selected;
+      if (!current || button.dataset.jobKey !== jobKey(current)) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (action === "arrived") {
+        void markFieldVisit(current, "manual_here");
+      } else if (action === "visit") {
+        saveTopCardStartVisit(current);
+      } else if (action === "work") {
+        saveTopCardStartWork(current);
+      } else if (action === "no-access") {
+        saveTopCardNoAccess(current);
+      } else if (action === "refused") {
+        saveTopCardRefused(current);
+      } else if (action === "clear") {
+        resetFieldJobForTesting(current);
+      } else if (action === "more") {
+        setSelectedOnly(true);
+        setDrawerOpen(true);
+        setFullMap(false);
+        showActionNotice("Full job card actions are open below.");
+      }
+    };
+
+    const onDocumentClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element)) return;
+      const button = event.target.closest<HTMLButtonElement>("[data-header-flow-action]");
+      if (!button) return;
+      activateHeaderFlowButton(button, event);
+    };
+
+    const onDocumentKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      if (!(event.target instanceof Element)) return;
+      const button = event.target.closest<HTMLButtonElement>("[data-header-flow-action]");
+      if (!button) return;
+      activateHeaderFlowButton(button, event);
+    };
+
+    document.addEventListener("click", onDocumentClick, true);
+    document.addEventListener("keydown", onDocumentKeyDown, true);
+    return () => {
+      document.removeEventListener("click", onDocumentClick, true);
+      document.removeEventListener("keydown", onDocumentKeyDown, true);
+    };
+  });
+
   function openFinishJobChoices(job: MappedJob, partial = false) {
     const key = jobKey(job);
     if (!key) return;
@@ -10894,7 +10998,7 @@ function directionsUrl(job: JobRecord) {
 
 return (
     <main
-      className={`map-shell map-visual-preview map-glass-command-trial map-style-${activeMapBaseStyle.id} ${mapFocusActive ? "map-focus-active" : ""} ${showMapStatsPanel ? "map-stats-visible" : "map-stats-hidden"} ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""} ${selectedOnly && selected && jobKey(selected) === "EQ31289" ? "eq31289-reference-mockup" : ""} ${clusterSheet ? "cluster-tray-open" : ""} ${mapJobBrief ? "map-brief-open" : ""} ${timerMapLayerActive ? "timer-map-layer" : ""}`}
+      className={`map-shell map-visual-preview map-glass-command-trial map-style-${activeMapBaseStyle.id} ${mapFocusActive ? "map-focus-active" : ""} ${showMapStatsPanel ? "map-stats-visible" : "map-stats-hidden"} ${fullMap ? "full-map-mode" : ""} ${androidScrollFix ? "android-scroll-fix" : ""} ${drawerOpen ? "drawer-active" : ""} ${selectedOnly ? "drawer-selected" : ""} ${clusterSheet ? "cluster-tray-open" : ""} ${mapJobBrief ? "map-brief-open" : ""} ${timerMapLayerActive ? "timer-map-layer" : ""}`}
       style={{ position: "fixed", inset: 0, width: "100vw", height: "100dvh", minHeight: "100dvh", maxHeight: "100dvh", overflow: "hidden", background: "#07111f" }}
       onTouchStart={androidScrollFix ? undefined : handleMapTouchStart}
       onTouchEnd={androidScrollFix ? undefined : handleMapTouchEnd}
@@ -43853,7 +43957,7 @@ return (
               .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus.selected-focus-advanced {
                 top: auto !important;
                 bottom: 0 !important;
-                height: 323px !important;
+                height: min(430px, calc(100svh - 24px)) !important;
                 min-height: 0 !important;
                 max-height: none !important;
                 width: 100vw !important;
@@ -43870,8 +43974,17 @@ return (
                 width: 100% !important;
                 height: 100% !important;
                 margin: 0 !important;
-                padding: 18px 10px 7px !important;
-                gap: 6px !important;
+                padding: 18px 10px 10px !important;
+                gap: 8px !important;
+                overflow-x: hidden !important;
+                overflow-y: auto !important;
+                overscroll-behavior: contain !important;
+                -webkit-overflow-scrolling: touch !important;
+                scrollbar-width: none !important;
+              }
+
+              .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head::-webkit-scrollbar {
+                display: none !important;
               }
 
               .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-field-sheet-head {
@@ -43921,20 +44034,20 @@ return (
               .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .field-page3-description.header-job-description {
                 display: flex !important;
                 flex-direction: column !important;
-                gap: 6px !important;
+                gap: 8px !important;
                 min-height: 0 !important;
-                overflow: hidden !important;
+                overflow: visible !important;
               }
 
               .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-scope-expand {
-                min-height: 56px !important;
-                height: 56px !important;
+                min-height: 64px !important;
+                height: 64px !important;
                 border-radius: 8px !important;
               }
 
               .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-scope-expand summary {
-                min-height: 56px !important;
-                height: 56px !important;
+                min-height: 64px !important;
+                height: 64px !important;
                 padding: 6px 8px 6px 50px !important;
                 gap: 2px !important;
                 grid-template-rows: auto 1fr !important;
@@ -43970,9 +44083,9 @@ return (
               }
 
               .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-tenant-contact-card {
-                min-height: 48px !important;
-                height: 48px !important;
-                padding: 6px 8px 6px 50px !important;
+                min-height: 58px !important;
+                height: 58px !important;
+                padding: 7px 8px 7px 50px !important;
                 grid-template-columns: minmax(0, 1fr) 36px !important;
                 gap: 7px !important;
                 border-radius: 8px !important;
@@ -44021,8 +44134,8 @@ return (
               }
 
               .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-field-flow-card {
-                min-height: 126px !important;
-                height: 126px !important;
+                min-height: 156px !important;
+                height: 156px !important;
                 padding: 7px !important;
                 gap: 6px !important;
                 border-radius: 8px !important;
@@ -44039,9 +44152,9 @@ return (
 
               .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-choice,
               .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-field-flow-card .field-flow-choice {
-                min-height: 46px !important;
-                height: 46px !important;
-                padding: 27px 4px 4px !important;
+                min-height: 54px !important;
+                height: 54px !important;
+                padding: 30px 4px 5px !important;
                 border-radius: 7px !important;
               }
 
@@ -44127,7 +44240,7 @@ return (
               position: fixed !important;
               left: 16px !important;
               right: 16px !important;
-              top: -44px !important;
+              top: max(78px, calc(env(safe-area-inset-top) + 72px)) !important;
               bottom: auto !important;
               z-index: 2605 !important;
               display: flex !important;
@@ -44149,6 +44262,60 @@ return (
               -webkit-backdrop-filter: blur(18px) saturate(1.4) !important;
             }
 
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand summary {
+              cursor: pointer !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand[open],
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-scope-expand[open] {
+              height: auto !important;
+              min-height: 128px !important;
+              overflow: visible !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand[open] summary,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-scope-expand[open] summary {
+              height: auto !important;
+              min-height: 64px !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand[open] > p,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-scope-expand[open] > p {
+              display: block !important;
+              max-height: 120px !important;
+              margin: 0 12px 12px 62px !important;
+              padding: 10px 12px !important;
+              overflow-y: auto !important;
+              border-radius: 8px !important;
+              background: rgba(2, 8, 19, 0.5) !important;
+              color: #dbeafe !important;
+              font-size: 12px !important;
+              font-weight: 760 !important;
+              line-height: 1.35 !important;
+              text-transform: none !important;
+              scrollbar-width: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand[open] > p::-webkit-scrollbar {
+              display: none !important;
+            }
+
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-scope-expand[open] .header-scope-close,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head .header-scope-expand[open] .header-scope-close {
+              display: inline-flex !important;
+              align-items: center !important;
+              justify-content: center !important;
+              min-height: 28px !important;
+              margin: 0 12px 12px 62px !important;
+              padding: 0 12px !important;
+              border-radius: 999px !important;
+              border: 1px solid rgba(96, 165, 250, 0.42) !important;
+              background: rgba(15, 23, 42, 0.72) !important;
+              color: #bfdbfe !important;
+              font-size: 11px !important;
+              font-weight: 900 !important;
+            }
+
             /* DEDICATED_EQ31289_REFERENCE_MOCKUP_2026_07_22 */
             .map-shell.eq31289-reference-mockup .job-drawer.selected-focus,
             .map-shell.eq31289-reference-mockup .job-drawer.selected-focus.selected-focus-advanced {
@@ -44161,13 +44328,18 @@ return (
               right: 0 !important;
               bottom: 0 !important;
               z-index: 2480 !important;
-              height: 333px !important;
-              padding: 20px 19px 10px !important;
+              height: min(390px, calc(100svh - 132px)) !important;
+              padding: 24px 19px 12px !important;
               display: flex !important;
               flex-direction: column !important;
-              gap: 6px !important;
+              gap: 7px !important;
               pointer-events: auto !important;
-              overflow: hidden !important;
+              overflow-x: hidden !important;
+              overflow-y: auto !important;
+              overscroll-behavior: contain !important;
+              touch-action: pan-y !important;
+              -webkit-overflow-scrolling: touch !important;
+              scrollbar-width: none !important;
               border-radius: 24px 24px 0 0 !important;
               border: 1px solid rgba(148, 163, 184, 0.36) !important;
               border-bottom: 0 !important;
@@ -44178,6 +44350,16 @@ return (
               backdrop-filter: blur(25px) saturate(1.5) !important;
               -webkit-backdrop-filter: blur(25px) saturate(1.5) !important;
               font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+            }
+
+            .map-shell.eq31289-reference-mockup .reference-job-sheet::-webkit-scrollbar {
+              display: none !important;
+            }
+
+            .map-shell.eq31289-reference-mockup .reference-job-sheet *,
+            .map-shell.eq31289-reference-mockup .reference-job-sheet button,
+            .map-shell.eq31289-reference-mockup .reference-job-sheet a {
+              pointer-events: auto !important;
             }
 
             .map-shell.eq31289-reference-mockup .reference-sheet-handle {
@@ -44257,6 +44439,7 @@ return (
             }
 
             .map-shell.eq31289-reference-mockup .reference-info-card {
+              flex: 0 0 auto !important;
               min-height: 54px !important;
               display: grid !important;
               grid-template-columns: 48px minmax(0, 1fr) auto !important;
@@ -44351,14 +44534,14 @@ return (
             }
 
             .map-shell.eq31289-reference-mockup .reference-workflow-panel {
-              flex: 1 1 auto !important;
-              min-height: 0 !important;
+              flex: 0 0 auto !important;
+              min-height: 124px !important;
               padding: 6px !important;
               border-radius: 8px !important;
               border: 1px solid rgba(148, 163, 184, 0.24) !important;
               background: linear-gradient(145deg, rgba(15, 30, 48, 0.56), rgba(7, 16, 28, 0.55)) !important;
               box-shadow: inset 0 1px 0 rgba(255,255,255,0.07) !important;
-              overflow: hidden !important;
+              overflow: visible !important;
             }
 
             .map-shell.eq31289-reference-mockup .reference-workflow-panel > strong {
@@ -44373,19 +44556,23 @@ return (
             .map-shell.eq31289-reference-mockup .reference-workflow-grid {
               display: grid !important;
               grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-              grid-template-rows: repeat(2, 39px) !important;
-              gap: 5px !important;
+              grid-template-rows: repeat(2, minmax(46px, 1fr)) !important;
+              gap: 6px !important;
             }
 
             .map-shell.eq31289-reference-mockup .reference-flow-tile {
               position: relative !important;
               min-width: 0 !important;
               width: 100% !important;
-              height: 39px !important;
-              padding: 23px 4px 4px !important;
+              height: auto !important;
+              min-height: 46px !important;
+              padding: 24px 4px 4px !important;
               display: grid !important;
               align-content: end !important;
               justify-items: center !important;
+              touch-action: manipulation !important;
+              cursor: pointer !important;
+              -webkit-tap-highlight-color: transparent !important;
               border-radius: 8px !important;
               border: 1px solid rgba(59, 130, 246, 0.82) !important;
               background: linear-gradient(145deg, rgba(15, 30, 48, 0.55), rgba(7, 16, 28, 0.6)) !important;
@@ -44525,11 +44712,11 @@ return (
             }
 
             .map-shell.eq31289-reference-mockup .reference-flow-tile small {
-              display: none !important;
+              display: block !important;
               margin-top: 2px !important;
               max-width: 100% !important;
               color: color-mix(in srgb, currentColor 82%, #ffffff 18%) !important;
-              font-size: 6px !important;
+              font-size: 7px !important;
               font-weight: 850 !important;
               line-height: 1 !important;
               white-space: nowrap !important;
@@ -44628,7 +44815,10 @@ return (
               }
 
               .map-shell.eq31289-reference-mockup .reference-workflow-panel {
+                flex: 1 1 auto !important;
+                min-height: 0 !important;
                 padding: 16px !important;
+                overflow: hidden !important;
               }
 
               .map-shell.eq31289-reference-mockup .reference-workflow-panel > strong {
@@ -44637,33 +44827,155 @@ return (
               }
 
               .map-shell.eq31289-reference-mockup .reference-workflow-grid {
-                grid-template-rows: repeat(2, minmax(108px, 1fr)) !important;
+                grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
                 gap: 16px !important;
               }
 
               .map-shell.eq31289-reference-mockup .reference-flow-tile {
                 height: auto !important;
-                min-height: 108px !important;
-                padding: 70px 10px 12px !important;
+                min-height: 0 !important;
+                padding: 50px 10px 8px !important;
               }
 
               .map-shell.eq31289-reference-mockup .reference-flow-icon {
-                top: 20px !important;
-                width: 48px !important;
-                height: 48px !important;
+                top: 11px !important;
+                width: 36px !important;
+                height: 36px !important;
+              }
+
+              .map-shell.eq31289-reference-mockup .reference-flow-tile.no-access .reference-flow-icon {
+                top: 17px !important;
+                width: 32px !important;
+                height: 22px !important;
+                border-radius: 6px !important;
+              }
+
+              .map-shell.eq31289-reference-mockup .reference-flow-tile.no-access .reference-flow-icon::before {
+                top: -16px !important;
+                width: 24px !important;
+                height: 18px !important;
+                border-width: 3px !important;
               }
 
               .map-shell.eq31289-reference-mockup .reference-flow-tile b {
-                font-size: 18px !important;
+                font-size: 15px !important;
               }
 
               .map-shell.eq31289-reference-mockup .reference-flow-tile small {
                 display: block !important;
-                font-size: 11px !important;
+                font-size: 9px !important;
               }
             }
           }
+          /* IPHONE_REAL_MAP_JOB_CARD_OVERRIDE_2026_07_23
+             Keep the selected-job path real: live map panes, real scrollable sheet, no fake reference overlay behavior. */
+          .map-shell.map-glass-command-trial.drawer-selected {
+            background: #07111f !important;
+          }
+
+          .map-shell.map-glass-command-trial.drawer-selected .map-stage,
+          .map-shell.map-glass-command-trial.drawer-selected .map-node,
+          .map-shell.map-glass-command-trial.drawer-selected .leaflet-container {
+            pointer-events: auto !important;
+            touch-action: pan-x pan-y !important;
+            background: #071521 !important;
+            filter: saturate(0.92) brightness(0.82) contrast(1.08) !important;
+          }
+
+          .map-shell.map-glass-command-trial.drawer-selected .leaflet-map-pane,
+          .map-shell.map-glass-command-trial.drawer-selected .leaflet-tile-pane,
+          .map-shell.map-glass-command-trial.drawer-selected .leaflet-overlay-pane,
+          .map-shell.map-glass-command-trial.drawer-selected .leaflet-shadow-pane,
+          .map-shell.map-glass-command-trial.drawer-selected .leaflet-marker-pane,
+          .map-shell.map-glass-command-trial.drawer-selected .leaflet-tooltip-pane,
+          .map-shell.map-glass-command-trial.drawer-selected .leaflet-popup-pane,
+          .map-shell.map-glass-command-trial.drawer-selected .leaflet-control-container {
+            display: block !important;
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: auto !important;
+          }
+
+          .map-shell.map-glass-command-trial.drawer-selected .map-stage::before,
+          .map-shell.map-glass-command-trial.drawer-selected .map-stage::after,
+          .map-shell.map-glass-command-trial.drawer-selected .uploaded-reference-map-ui,
+          .map-shell.map-glass-command-trial.drawer-selected .reference-status-bar,
+          .map-shell.map-glass-command-trial.drawer-selected .reference-round-button,
+          .map-shell.map-glass-command-trial.drawer-selected .reference-job-pill,
+          .map-shell.map-glass-command-trial.drawer-selected .reference-map-label,
+          .map-shell.map-glass-command-trial.drawer-selected .reference-map-pin,
+          .map-shell.map-glass-command-trial.drawer-selected .reference-address-pill,
+          .map-shell.map-glass-command-trial.drawer-selected .reference-route-stack {
+            display: none !important;
+            content: none !important;
+          }
+
+          .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus,
+          .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus.selected-focus-advanced {
+            top: auto !important;
+            bottom: 0 !important;
+            height: min(max(58svh, min(470px, calc(100svh - 140px))), 600px) !important;
+            min-height: min(470px, calc(100svh - 140px)) !important;
+            max-height: min(64svh, calc(100svh - 118px)) !important;
+            overflow: hidden !important;
+            border-radius: 30px 30px 0 0 !important;
+            background:
+              linear-gradient(145deg, rgba(24, 41, 61, 0.94), rgba(6, 13, 22, 0.98)),
+              rgba(8, 17, 30, 0.96) !important;
+            box-shadow: 0 -28px 72px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255,255,255,0.12) !important;
+            backdrop-filter: blur(24px) saturate(1.42) !important;
+            -webkit-backdrop-filter: blur(24px) saturate(1.42) !important;
+            touch-action: pan-y !important;
+            overscroll-behavior: contain !important;
+          }
+
+          .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .drawer-head.selected-job-drawer-head {
+            height: 100% !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            overscroll-behavior: contain !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
+            padding: 34px 22px max(20px, env(safe-area-inset-bottom)) !important;
+            gap: 14px !important;
+            scroll-behavior: auto !important;
+          }
+
+          .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .field-page3-description.header-job-description,
+          .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .job-card-field-sheet-head {
+            overflow: visible !important;
+          }
+
+          .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card {
+            flex: 0 0 auto !important;
+            min-height: 260px !important;
+            overflow: visible !important;
+          }
+
+          .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-choice.more.clear {
+            border-color: rgba(148, 163, 184, 0.78) !important;
+            color: #dbeafe !important;
+          }
+
+          .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus .header-field-flow-card .field-flow-choice.more.clear::before {
+            content: "↺" !important;
+            border: 2px solid currentColor !important;
+            background: rgba(8, 18, 31, 0.38) !important;
+            box-shadow: 0 0 18px rgba(148, 163, 184, 0.2) !important;
+            letter-spacing: 0 !important;
+            font-size: 23px !important;
+          }
+
+          @media (max-width: 700px) and (max-height: 700px) {
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus,
+            .map-shell.map-glass-command-trial.drawer-selected .job-drawer.selected-focus.selected-focus-advanced {
+              height: min(330px, calc(100svh - 150px)) !important;
+              min-height: min(310px, calc(100svh - 150px)) !important;
+              max-height: calc(100svh - 150px) !important;
+            }
+          }
           }        `}
+
         </style>
 
       <input
@@ -45024,7 +45336,7 @@ return (
       <section className="map-stage" style={{ position: "fixed", inset: 0, width: "100vw", height: "100dvh", minHeight: "100dvh", zIndex: 0 }}>
         <div ref={mapNode} className="map-node" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
 
-        {selectedOnly && selected ? (() => {
+        {false && selectedOnly && selected ? (() => {
           const refAddressParts = displayAddress(selected).split(",").map((part) => part.trim()).filter(Boolean);
           const refStreet = refAddressParts[0] || displayAddress(selected);
           const refZip = refAddressParts.find((part) => /^\d{5}(?:-\d{4})?$/.test(part)) || refAddressParts[1] || "";
@@ -45845,24 +46157,19 @@ return (
                   headerStatus === "VISIT_STARTED" ||
                   ["WORK_STARTED", "NO_ACCESS_1_WAITING_72H", "NO_ACCESS_COMPLETE", "REFUSED_ACCESS", "COMPLETED_BY_OTHERS", "WORK_COMPLETED", "PARTIAL_WORK_COMPLETED"].includes(headerStatus);
                 const headerStarted = normalizeWorkflowChoice(headerSavedStatusValue) === "Work In Progress";
-                const headerReferenceSavedIso = jobKey(selected) === "EQ31289"
-                  ? headerVisitRecord?.visitedAt || headerVisitStartedIso || headerSavedStatusIso || new Date().toISOString()
+                const headerVisitStampIso = headerVisitRecord?.visitedAt || "";
+                const headerHasArrived = Boolean(headerVisitRecord);
+                const headerVisitReady = headerVisitStarted;
+                const headerWorkReady = headerStarted;
+                const headerScopeSummary = headerDescription
+                  ? headerDescription
+                      .replace(/\s+/g, " ")
+                      .split(/[.;]/)
+                      .map((part) => part.trim())
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .join(" · ")
                   : "";
-                const headerVisitStampIso = headerVisitRecord?.visitedAt || headerReferenceSavedIso;
-                const headerHasArrived = Boolean(headerVisitRecord || headerReferenceSavedIso);
-                const headerVisitReady = headerVisitStarted || Boolean(headerReferenceSavedIso);
-                const headerWorkReady = headerStarted || Boolean(headerReferenceSavedIso);
-                const headerScopeSummary = jobKey(selected) === "EQ31289"
-                  ? "Defective wall tiles located in the bathroom of Apt 1B. Replace defective wall tiles with similar. Restore affected areas."
-                  : headerDescription
-                    ? headerDescription
-                        .replace(/\s+/g, " ")
-                        .split(/[.;]/)
-                        .map((part) => part.trim())
-                        .filter(Boolean)
-                        .slice(0, 2)
-                        .join(" · ")
-                    : "";
                 const headerSecondAttempt = workflowSecondAttemptInfo(selected);
                 const headerNoAccessComplete = workflowStatus(selected) === "NO_ACCESS_COMPLETE";
                 const headerNoAccessTitle = headerNoAccessComplete
@@ -45956,17 +46263,17 @@ return (
                         <b>{workflowShortStatusLabel(workflowDisplayStatusValue(selected, draftWorkflowStatus))}</b>
                       </div>
                       <div className="field-flow-choice-grid visit-gate">
-                        <button type="button" className={`field-flow-choice here ${headerHasArrived ? "is-collected" : ""}`} onClick={() => markFieldVisit(selected, "manual_here")} disabled={fieldVisitSaving}>
+                        <button type="button" className={`field-flow-choice here ${headerHasArrived ? "is-collected" : ""}`} data-header-flow-action="arrived" data-job-key={jobKey(selected)} onClick={() => markFieldVisit(selected, "manual_here")} disabled={fieldVisitSaving}>
                           <span>{fieldVisitSaving ? "Saving" : headerHasArrived ? "Arrived Saved" : "Arrive"}</span>
                           <strong>{headerHasArrived ? displayWorkflowDate(headerVisitStampIso).replace(/^0?(\d{1,2})\/0?(\d{1,2})\/\d{2},\s*/, "$1/$2 ") : "I am here"}</strong>
                           <small>Record your private visit.</small>
                         </button>
-                        <button type="button" className={`field-flow-choice visit ${headerVisitReady ? "is-collected" : ""}`} onClick={() => saveTopCardStartVisit(selected)} disabled={!headerHasArrived}>
+                        <button type="button" className={`field-flow-choice visit ${headerVisitReady ? "is-collected" : ""}`} data-header-flow-action="visit" data-job-key={jobKey(selected)} onClick={() => saveTopCardStartVisit(selected)} disabled={!headerHasArrived}>
                           <span>Start Visit</span>
                           <strong>{headerHasArrived ? displayWorkflowDate(headerVisitStartedIso || headerVisitStampIso || headerSavedStatusIso || "").replace(/^0?(\d{1,2})\/0?(\d{1,2})\/\d{2},\s*/, "$1/$2 ") : "Arrive first"}</strong>
                           <small>Open the status choices.</small>
                         </button>
-                        <button type="button" className={`field-flow-choice start ${headerWorkReady ? "is-collected" : ""}`} onClick={() => saveTopCardStartWork(selected)} disabled={!headerVisitReady}>
+                        <button type="button" className={`field-flow-choice start ${headerWorkReady ? "is-collected" : ""}`} data-header-flow-action="work" data-job-key={jobKey(selected)} onClick={() => saveTopCardStartWork(selected)} disabled={!headerVisitReady}>
                           <i className="field-flow-tool-mark" aria-hidden="true" />
                           <span>Start Work</span>
                           <strong>{headerVisitReady ? displayWorkflowDate(headerSavedStatusIso || headerVisitStartedIso || headerVisitStampIso || "").replace(/^0?(\d{1,2})\/0?(\d{1,2})\/\d{2},\s*/, "$1/$2 ") : "Work tools"}</strong>
@@ -45974,20 +46281,20 @@ return (
                         </button>
                       </div>
                       <div className={`field-flow-choice-grid status-gate ${headerVisitReady ? "is-open" : "is-locked"}`}>
-                        <button type="button" className="field-flow-choice waiting" onClick={() => saveTopCardNoAccess(selected)} disabled={!headerVisitReady}>
+                        <button type="button" className="field-flow-choice waiting" data-header-flow-action="no-access" data-job-key={jobKey(selected)} onClick={() => saveTopCardNoAccess(selected)} disabled={!headerVisitReady}>
                           <span>No Access</span>
                           <strong>{headerNoAccessTitle}</strong>
                           <small>{headerNoAccessDetail}</small>
                         </button>
-                        <button type="button" className="field-flow-choice danger" onClick={() => saveTopCardRefused(selected)} disabled={!headerVisitReady}>
+                        <button type="button" className="field-flow-choice danger" data-header-flow-action="refused" data-job-key={jobKey(selected)} onClick={() => saveTopCardRefused(selected)} disabled={!headerVisitReady}>
                           <span>Refused</span>
                           <strong>Close Job</strong>
                           <small>Archive and prepare no-work package.</small>
                         </button>
-                        <button type="button" className="field-flow-choice more" onClick={() => showActionNotice("More work order options are in the full job card.")}>
-                          <span>More</span>
-                          <strong>Options</strong>
-                          <small>Open full card actions.</small>
+                        <button type="button" className="field-flow-choice more clear" data-header-flow-action="clear" data-job-key={jobKey(selected)} onClick={() => resetFieldJobForTesting(selected)}>
+                          <span>Clear</span>
+                          <strong>Reset</strong>
+                          <small>Clear saved test state.</small>
                         </button>
                       </div>
                       <div className="field-flow-next-row">
@@ -48505,6 +48812,8 @@ return (
       </main>
   );
 }
+
+
 
 
 

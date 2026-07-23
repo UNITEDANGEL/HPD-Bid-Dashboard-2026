@@ -1,0 +1,281 @@
+﻿<svg width="1280" height="2380" viewBox="0 0 1280 2380" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Improved iPhone dark glass map and job card designs</title>
+  <desc id="desc">Four improved iPhone-style dark glass map and bottom job-card designs.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#050b12"/>
+      <stop offset="0.48" stop-color="#101827"/>
+      <stop offset="1" stop-color="#061410"/>
+    </linearGradient>
+    <linearGradient id="map" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071521"/>
+      <stop offset="0.52" stop-color="#0f2639"/>
+      <stop offset="1" stop-color="#061722"/>
+    </linearGradient>
+    <linearGradient id="sheet" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#18293d" stop-opacity="0.98"/>
+      <stop offset="0.45" stop-color="#0d1b2b" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#060d16" stop-opacity="0.99"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#132235" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#08131f" stop-opacity="0.96"/>
+    </linearGradient>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <filter id="blueGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="#4e96ff" flood-opacity="0.72"/>
+    </filter>
+    <filter id="greenGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feDropShadow dx="0" dy="0" stdDeviation="7" flood-color="#64f0a1" flood-opacity="0.7"/>
+    </filter>
+    <style>
+      .page-title { font: 800 42px Inter, Arial, sans-serif; fill:#f5f9ff; letter-spacing:0; }
+      .page-sub { font: 500 22px Inter, Arial, sans-serif; fill:#9fb0c6; letter-spacing:0; }
+      .sample-title { font: 800 28px Inter, Arial, sans-serif; fill:#f3f8ff; letter-spacing:0; }
+      .sample-sub { font: 500 16px Inter, Arial, sans-serif; fill:#92a5bc; letter-spacing:0; }
+      .phone { fill:#040810; stroke:#33475c; stroke-width:3; }
+      .map { fill:url(#map); }
+      .road { fill:none; stroke:#6a8197; stroke-width:3; opacity:.25; }
+      .road2 { fill:none; stroke:#49637b; stroke-width:2.2; opacity:.32; }
+      .route { fill:none; stroke:#5b9dff; stroke-width:8; stroke-linecap:round; stroke-linejoin:round; filter:url(#blueGlow); }
+      .routeAlt { fill:none; stroke:#66f2a3; stroke-width:6; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:14 14; filter:url(#greenGlow); }
+      .pin { fill:#2f86ff; stroke:#9dccff; stroke-width:4; filter:url(#blueGlow); }
+      .dot { fill:#65ee9b; stroke:#e9fff1; stroke-width:4; filter:url(#greenGlow); }
+      .sheet { fill:url(#sheet); stroke:#435c75; stroke-width:2.4; filter:url(#softShadow); }
+      .glass { fill:#0c1725; fill-opacity:.83; stroke:#354d64; stroke-width:2; }
+      .glassBlue { fill:#0d2342; fill-opacity:.78; stroke:#4592ff; stroke-width:2.4; }
+      .glassGreen { fill:#0d3026; fill-opacity:.78; stroke:#68f2a4; stroke-width:2.4; }
+      .glassAmber { fill:#382814; fill-opacity:.82; stroke:#ffc157; stroke-width:2.2; }
+      .glassRed { fill:#3a1820; fill-opacity:.82; stroke:#ff6b67; stroke-width:2.2; }
+      .handle { fill:#93a9bd; opacity:.9; }
+      .job { font: 800 28px Inter, Arial, sans-serif; fill:#f5f9ff; letter-spacing:0; }
+      .muted { font: 600 15px Inter, Arial, sans-serif; fill:#91a5bd; letter-spacing:0; }
+      .label { font: 800 18px Inter, Arial, sans-serif; fill:#65a5ff; letter-spacing:0; }
+      .body { font: 600 16px Inter, Arial, sans-serif; fill:#d7e4f4; letter-spacing:0; }
+      .small { font: 600 13px Inter, Arial, sans-serif; fill:#b7c6d8; letter-spacing:0; }
+      .tiny { font: 700 11px Inter, Arial, sans-serif; fill:#95a8bf; letter-spacing:0; }
+      .button { font: 800 16px Inter, Arial, sans-serif; letter-spacing:0; }
+      .buttonSmall { font: 800 13px Inter, Arial, sans-serif; letter-spacing:0; }
+      .blue { fill:#5b9dff; }
+      .green { fill:#66f2a3; }
+      .amber { fill:#ffc057; }
+      .red { fill:#ff6b67; }
+      .white { fill:#eef5ff; }
+      .lineBlue { fill:none; stroke:#5b9dff; stroke-width:4; stroke-linecap:round; stroke-linejoin:round; }
+      .lineGreen { fill:none; stroke:#66f2a3; stroke-width:4; stroke-linecap:round; stroke-linejoin:round; }
+      .lineAmber { fill:none; stroke:#ffc057; stroke-width:4; stroke-linecap:round; stroke-linejoin:round; }
+      .lineRed { fill:none; stroke:#ff6b67; stroke-width:4; stroke-linecap:round; stroke-linejoin:round; }
+      .lineWhite { fill:none; stroke:#c4d2e4; stroke-width:4; stroke-linecap:round; stroke-linejoin:round; }
+    </style>
+  </defs>
+  <rect width="1280" height="2380" fill="url(#bg)"/>
+  <text x="64" y="72" class="page-title">Better iPhone Dark-Glass Samples</text>
+  <text x="64" y="112" class="page-sub">Same style, cleaner spacing, real map on top, real bottom sheet target.</text>
+
+  <!-- shared phone symbol snippets are expanded per sample -->
+
+  <g transform="translate(70 180)">
+    <text x="0" y="0" class="sample-title">Sample 7 - Premium Route Glass</text>
+    <text x="0" y="30" class="sample-sub">Best visual match: route visible, polished sheet, big clean actions.</text>
+    <rect x="0" y="54" width="510" height="960" rx="58" class="phone"/>
+    <clipPath id="p7"><rect x="10" y="64" width="490" height="940" rx="50"/></clipPath>
+    <g clip-path="url(#p7)">
+      <rect x="10" y="64" width="490" height="940" class="map"/>
+      <path d="M40 130 C150 185 245 132 345 104 C420 82 462 128 502 156" class="road"/>
+      <path d="M32 300 C135 270 225 308 305 258 C386 207 438 226 506 206" class="road2"/>
+      <path d="M132 70 L184 430 M292 68 L338 430 M440 70 L382 430" class="road2"/>
+      <path d="M96 360 C170 325 240 314 300 256 C350 207 390 178 438 152" class="route"/>
+      <circle cx="96" cy="360" r="12" class="dot"/>
+      <path d="M412 152 C412 129 429 112 452 112 C475 112 492 129 492 152 C492 183 452 229 452 229 C452 229 412 183 412 152Z" class="pin"/>
+      <circle cx="452" cy="152" r="9" fill="#eff7ff"/>
+      <rect x="155" y="90" width="200" height="54" rx="27" class="glassBlue"/>
+      <text x="199" y="124" class="button blue">EQ31289</text>
+      <rect x="292" y="284" width="172" height="66" rx="22" class="glass"/>
+      <text x="318" y="311" class="buttonSmall blue">Route Me</text>
+      <text x="318" y="333" class="tiny">ETA + distance</text>
+      <rect x="24" y="410" width="462" height="594" rx="40" class="sheet"/>
+      <rect x="206" y="430" width="98" height="9" rx="5" class="handle"/>
+      <text x="54" y="486" class="job">EQ31289</text>
+      <text x="54" y="512" class="muted">Work Order · real selected job</text>
+      <rect x="390" y="462" width="70" height="44" rx="18" class="glassBlue"/>
+      <text x="410" y="490" class="buttonSmall blue">HPD</text>
+      <rect x="54" y="538" width="406" height="112" rx="20" class="glassBlue"/>
+      <text x="82" y="573" class="label">Scope</text>
+      <text x="82" y="604" class="body">Real description wraps here.</text>
+      <text x="82" y="628" class="small">Tap to expand full work scope.</text>
+      <rect x="54" y="672" width="406" height="82" rx="20" class="glass"/>
+      <text x="82" y="705" class="label">Tenant Contact</text>
+      <text x="82" y="733" class="small">Real name · apt · phone</text>
+      <circle cx="426" cy="713" r="27" fill="none" stroke="#5b9dff" stroke-width="2.4"/>
+      <path d="M417 702 C420 727 439 722 438 731" class="lineBlue"/>
+      <text x="54" y="800" class="label">Workflow</text>
+      <g transform="translate(54 822)">
+        <rect x="0" y="0" width="126" height="84" rx="18" class="glassGreen"/>
+        <path d="M88 23 L99 34 L114 17" class="lineGreen"/>
+        <text x="18" y="42" class="buttonSmall green">Arrived</text>
+        <text x="18" y="62" class="tiny">saved time</text>
+        <rect x="140" y="0" width="126" height="84" rx="18" class="glassBlue"/>
+        <path d="M229 23 L229 55 L253 39 Z" fill="none" stroke="#5b9dff" stroke-width="4" stroke-linejoin="round"/>
+        <text x="158" y="42" class="buttonSmall blue">Visit</text>
+        <text x="158" y="62" class="tiny">date/time</text>
+        <rect x="280" y="0" width="126" height="84" rx="18" class="glassBlue"/>
+        <path d="M358 22 L381 45 M374 23 L385 13 M351 56 L366 41" class="lineBlue"/>
+        <text x="298" y="42" class="buttonSmall blue">Work</text>
+        <text x="298" y="62" class="tiny">date/time</text>
+        <rect x="0" y="96" width="126" height="66" rx="17" class="glassAmber"/>
+        <text x="23" y="137" class="buttonSmall amber">No Access</text>
+        <rect x="140" y="96" width="126" height="66" rx="17" class="glassRed"/>
+        <text x="177" y="137" class="buttonSmall red">Refused</text>
+        <rect x="280" y="96" width="126" height="66" rx="17" class="glass"/>
+        <text x="326" y="137" class="buttonSmall white">Clear</text>
+      </g>
+    </g>
+  </g>
+
+  <g transform="translate(700 180)">
+    <text x="0" y="0" class="sample-title">Sample 8 - Timeline Workflow</text>
+    <text x="0" y="30" class="sample-sub">Best for real field state: actions read like a visit timeline.</text>
+    <rect x="0" y="54" width="510" height="960" rx="58" class="phone"/>
+    <clipPath id="p8"><rect x="10" y="64" width="490" height="940" rx="50"/></clipPath>
+    <g clip-path="url(#p8)">
+      <rect x="10" y="64" width="490" height="940" class="map"/>
+      <path d="M42 135 C130 105 205 170 292 128 C370 90 444 102 508 76" class="road"/>
+      <path d="M34 286 C112 334 190 272 280 312 C370 350 430 286 510 312" class="road2"/>
+      <path d="M110 68 L160 430 M260 68 L308 430 M420 68 L365 430" class="road2"/>
+      <path d="M88 366 C160 344 221 298 270 244 C323 184 378 154 442 134" class="routeAlt"/>
+      <circle cx="88" cy="366" r="12" class="dot"/>
+      <path d="M418 134 C418 111 435 94 458 94 C481 94 498 111 498 134 C498 165 458 211 458 211 C458 211 418 165 418 134Z" class="pin"/>
+      <rect x="34" y="88" width="158" height="52" rx="26" class="glass"/>
+      <text x="66" y="121" class="buttonSmall blue">Route Me</text>
+      <rect x="206" y="88" width="246" height="52" rx="26" class="glass"/>
+      <text x="232" y="120" class="tiny">current location -> job · ETA</text>
+      <rect x="24" y="390" width="462" height="614" rx="38" class="sheet"/>
+      <rect x="206" y="410" width="98" height="9" rx="5" class="handle"/>
+      <text x="54" y="462" class="job">EQ31289</text>
+      <text x="54" y="488" class="muted">560 Isham Street · real address</text>
+      <rect x="54" y="520" width="406" height="86" rx="20" class="glassBlue"/>
+      <text x="82" y="554" class="label">Scope</text>
+      <text x="82" y="582" class="small">First. Opens full real description.</text>
+      <rect x="54" y="622" width="406" height="74" rx="20" class="glass"/>
+      <text x="82" y="653" class="label">Tenant Contact</text>
+      <text x="82" y="678" class="small">Second. Real call link.</text>
+      <text x="54" y="736" class="label">Workflow</text>
+      <g transform="translate(62 758)">
+        <line x1="16" y1="16" x2="16" y2="162" stroke="#39556e" stroke-width="3"/>
+        <circle cx="16" cy="18" r="11" class="dot"/>
+        <rect x="44" y="0" width="356" height="48" rx="16" class="glassGreen"/>
+        <text x="64" y="30" class="buttonSmall green">Arrived Saved</text>
+        <text x="270" y="30" class="tiny">saved date/time</text>
+        <circle cx="16" cy="76" r="10" fill="#102846" stroke="#5b9dff" stroke-width="3"/>
+        <rect x="44" y="58" width="356" height="48" rx="16" class="glassBlue"/>
+        <text x="64" y="88" class="buttonSmall blue">Start Visit</text>
+        <text x="270" y="88" class="tiny">date/time</text>
+        <circle cx="16" cy="134" r="10" fill="#102846" stroke="#5b9dff" stroke-width="3"/>
+        <rect x="44" y="116" width="356" height="48" rx="16" class="glassBlue"/>
+        <text x="64" y="146" class="buttonSmall blue">Start Work</text>
+        <text x="270" y="146" class="tiny">date/time</text>
+        <rect x="44" y="178" width="112" height="54" rx="15" class="glassAmber"/>
+        <text x="63" y="212" class="buttonSmall amber">No Access</text>
+        <rect x="168" y="178" width="112" height="54" rx="15" class="glassRed"/>
+        <text x="202" y="212" class="buttonSmall red">Refused</text>
+        <rect x="292" y="178" width="108" height="54" rx="15" class="glass"/>
+        <text x="331" y="212" class="buttonSmall white">Clear</text>
+      </g>
+    </g>
+  </g>
+
+  <g transform="translate(70 1240)">
+    <text x="0" y="0" class="sample-title">Sample 9 - Map First Pull Sheet</text>
+    <text x="0" y="30" class="sample-sub">Best for route/map visibility: lower card, draggable full details.</text>
+    <rect x="0" y="54" width="510" height="960" rx="58" class="phone"/>
+    <clipPath id="p9"><rect x="10" y="64" width="490" height="940" rx="50"/></clipPath>
+    <g clip-path="url(#p9)">
+      <rect x="10" y="64" width="490" height="940" class="map"/>
+      <path d="M36 110 C145 170 240 130 315 100 C390 70 455 95 506 142" class="road"/>
+      <path d="M34 302 C115 274 205 320 280 270 C360 218 430 244 506 218" class="road2"/>
+      <path d="M98 70 L154 506 M266 68 L322 506 M432 70 L372 506" class="road2"/>
+      <path d="M82 422 C160 386 226 346 284 278 C340 214 384 172 442 142" class="route"/>
+      <circle cx="82" cy="422" r="12" class="dot"/>
+      <path d="M418 142 C418 119 435 102 458 102 C481 102 498 119 498 142 C498 173 458 219 458 219 C458 219 418 173 418 142Z" class="pin"/>
+      <rect x="36" y="94" width="148" height="52" rx="26" class="glass"/>
+      <text x="68" y="127" class="buttonSmall blue">Route Me</text>
+      <rect x="36" y="160" width="270" height="66" rx="22" class="glass"/>
+      <text x="62" y="188" class="buttonSmall white">Route summary</text>
+      <text x="62" y="211" class="tiny">ETA · distance · current location</text>
+      <rect x="24" y="535" width="462" height="469" rx="38" class="sheet"/>
+      <rect x="206" y="555" width="98" height="9" rx="5" class="handle"/>
+      <text x="54" y="610" class="job">EQ31289</text>
+      <text x="54" y="636" class="muted">Pull up for full job card</text>
+      <g transform="translate(54 664)">
+        <rect x="0" y="0" width="126" height="48" rx="16" class="glassBlue"/>
+        <text x="39" y="30" class="buttonSmall blue">Scope</text>
+        <rect x="140" y="0" width="126" height="48" rx="16" class="glass"/>
+        <text x="181" y="30" class="buttonSmall white">Tenant</text>
+        <rect x="280" y="0" width="126" height="48" rx="16" class="glass"/>
+        <text x="317" y="30" class="buttonSmall white">Work</text>
+      </g>
+      <rect x="54" y="734" width="406" height="82" rx="20" class="glassBlue"/>
+      <text x="82" y="766" class="label">Scope</text>
+      <text x="82" y="793" class="small">First visible detail. Expands cleanly.</text>
+      <rect x="54" y="834" width="406" height="70" rx="20" class="glass"/>
+      <text x="82" y="864" class="label">Tenant Contact</text>
+      <text x="82" y="888" class="small">Second. Real data only.</text>
+      <g transform="translate(54 923)">
+        <rect x="0" y="0" width="72" height="46" rx="15" class="glassGreen"/><text x="12" y="29" class="buttonSmall green">Arr.</text>
+        <rect x="82" y="0" width="72" height="46" rx="15" class="glassBlue"/><text x="99" y="29" class="buttonSmall blue">Visit</text>
+        <rect x="164" y="0" width="72" height="46" rx="15" class="glassBlue"/><text x="183" y="29" class="buttonSmall blue">Work</text>
+        <rect x="246" y="0" width="78" height="46" rx="15" class="glassAmber"/><text x="262" y="29" class="buttonSmall amber">No Acc.</text>
+        <rect x="334" y="0" width="72" height="46" rx="15" class="glassRed"/><text x="346" y="29" class="buttonSmall red">Ref.</text>
+      </g>
+    </g>
+  </g>
+
+  <g transform="translate(700 1240)">
+    <text x="0" y="0" class="sample-title">Sample 10 - Action Dock Glass</text>
+    <text x="0" y="30" class="sample-sub">Best for speed: clear top details, fixed action dock inside sheet.</text>
+    <rect x="0" y="54" width="510" height="960" rx="58" class="phone"/>
+    <clipPath id="p10"><rect x="10" y="64" width="490" height="940" rx="50"/></clipPath>
+    <g clip-path="url(#p10)">
+      <rect x="10" y="64" width="490" height="940" class="map"/>
+      <path d="M38 112 C118 144 206 136 282 98 C370 54 430 84 506 112" class="road"/>
+      <path d="M34 280 C122 244 200 296 278 252 C358 207 438 235 508 208" class="road2"/>
+      <path d="M100 70 L162 420 M272 68 L306 420 M426 70 L378 420" class="road2"/>
+      <path d="M90 360 C154 328 216 322 275 260 C325 208 378 174 442 148" class="route"/>
+      <circle cx="90" cy="360" r="12" class="dot"/>
+      <path d="M418 148 C418 125 435 108 458 108 C481 108 498 125 498 148 C498 179 458 225 458 225 C458 225 418 179 418 148Z" class="pin"/>
+      <rect x="34" y="88" width="160" height="52" rx="26" class="glass"/>
+      <text x="66" y="121" class="buttonSmall blue">Route Me</text>
+      <rect x="24" y="392" width="462" height="612" rx="38" class="sheet"/>
+      <rect x="206" y="412" width="98" height="9" rx="5" class="handle"/>
+      <text x="54" y="466" class="job">EQ31289</text>
+      <text x="54" y="492" class="muted">560 Isham Street · real job</text>
+      <rect x="54" y="520" width="406" height="86" rx="20" class="glassBlue"/>
+      <text x="82" y="554" class="label">Scope</text>
+      <text x="82" y="582" class="small">First. Full description opens below.</text>
+      <rect x="54" y="622" width="406" height="74" rx="20" class="glass"/>
+      <text x="82" y="653" class="label">Tenant Contact</text>
+      <text x="82" y="678" class="small">Second. Real call button.</text>
+      <rect x="54" y="720" width="406" height="220" rx="24" fill="url(#card)" stroke="#3b536b" stroke-width="2"/>
+      <text x="82" y="756" class="label">Workflow</text>
+      <g transform="translate(82 778)">
+        <rect x="0" y="0" width="348" height="52" rx="16" class="glassGreen"/>
+        <text x="18" y="32" class="buttonSmall green">Arrived Saved</text>
+        <text x="244" y="32" class="tiny">date/time</text>
+        <rect x="0" y="66" width="166" height="48" rx="15" class="glassBlue"/>
+        <text x="22" y="96" class="buttonSmall blue">Start Visit</text>
+        <text x="110" y="96" class="tiny">time</text>
+        <rect x="182" y="66" width="166" height="48" rx="15" class="glassBlue"/>
+        <path d="M204 78 L220 94 M216 79 L224 71 M200 102 L210 92" class="lineBlue"/>
+        <text x="232" y="96" class="buttonSmall blue">Start Work</text>
+        <rect x="0" y="128" width="108" height="48" rx="15" class="glassAmber"/>
+        <text x="16" y="158" class="buttonSmall amber">No Access</text>
+        <rect x="120" y="128" width="108" height="48" rx="15" class="glassRed"/>
+        <text x="153" y="158" class="buttonSmall red">Refused</text>
+        <rect x="240" y="128" width="108" height="48" rx="15" class="glass"/>
+        <text x="279" y="158" class="buttonSmall white">Clear</text>
+      </g>
+    </g>
+  </g>
+</svg>
