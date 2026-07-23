@@ -10421,8 +10421,27 @@ function directionsUrl(job: JobRecord) {
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(displayAddress(job))}`;
   }
 
+  function packagePaperworkOutcome(job: JobRecord) {
+    const currentOutcome = paperworkOutcomeFromValue(workflowStatus(job) || JobStatus.statusLabel(job));
+    if (currentOutcome !== "pending") return currentOutcome;
+
+    const packageText = [
+      (job as any).PackageFileName,
+      (job as any).packageFileName,
+      (job as any).PackageReadyMessage,
+      (job as any).packageReadyMessage,
+      latestFieldPacket(job, "full_evidence_zip")?.fileName,
+      latestFieldPacket(job, "affidavit_invoice_pdf")?.fileName,
+      latestFieldPacket(job)?.fileName,
+    ].filter(Boolean).join(" ");
+    const packageOutcome = paperworkOutcomeFromValue(packageText);
+    return packageOutcome === "pending" ? currentOutcome : packageOutcome;
+  }
+
   function paperworkHref(job: JobRecord, doc: "package" | "affidavit" | "invoice" = "package") {
-    const outcome = paperworkOutcomeFromValue(workflowStatus(job) || JobStatus.statusLabel(job));
+    const outcome = doc === "package"
+      ? packagePaperworkOutcome(job)
+      : paperworkOutcomeFromValue(workflowStatus(job) || JobStatus.statusLabel(job));
     const query = paperworkQuery(job, outcome);
     const separator = query ? "&" : "";
     return `/paperwork?${query}${separator}doc=${doc}`;

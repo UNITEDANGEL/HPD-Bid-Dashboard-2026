@@ -3710,10 +3710,6 @@ export default function PaperworkPage() {
                   <strong>Share / Save</strong>
                 </span>
               </div>
-              <div className="package-review-actions package-review-actions-simple package-main-actions">
-                <button type="button" onClick={sendCompletePackage}>Share Files</button>
-                <button type="button" onClick={saveCompletePackageFolder}>Save Folder</button>
-              </div>
               {packagePreviewOpen ? (
                 <div className="package-preview-panel" ref={packagePreviewPanelRef}>
                   <div className="package-pdf-preview-card">
@@ -3776,30 +3772,26 @@ export default function PaperworkPage() {
                       </div>
                       <b>{packetSizeLabel(packagePreview.zipSize)}</b>
                     </div>
-                    <div className="package-content-row">
-                      <div>
-                        <span>Application Files</span>
-                        <strong>{packagePreview.applicationFileName}</strong>
-                        <small>Affidavit/invoice PDF plus all labeled images</small>
+                    {(packagePreview.imageCount || packagePreview.videoCount) ? (
+                      <div className="package-content-row">
+                        <div>
+                          <span>Evidence Included</span>
+                          <strong>{packagePreview.imageCount} image(s) / {packagePreview.videoCount} video(s)</strong>
+                          <small>Before, after, and video evidence saved from this device</small>
+                        </div>
+                        <b>{packagePreview.beforeCount} before / {packagePreview.afterCount} after</b>
                       </div>
-                      <b>{packetSizeLabel(packagePreview.applicationSize)}</b>
-                    </div>
-                    <div className="package-content-row">
-                      <div>
-                        <span>Invoice / Affidavit PDF</span>
-                        <strong>{packagePreview.pdfFileName}</strong>
-                        <small>Borough, address, OMO, dates, amount, and description</small>
+                    ) : null}
+                    {packagePreview.videoPackageFileName ? (
+                      <div className="package-content-row">
+                        <div>
+                          <span>Video Files</span>
+                          <strong>{packagePreview.videoPackageFileName}</strong>
+                          <small>Before/after labeled video evidence</small>
+                        </div>
+                        <b>{packetSizeLabel(packagePreview.videoPackageSize)}</b>
                       </div>
-                      <b>PDF</b>
-                    </div>
-                    <div className="package-content-row">
-                      <div>
-                        <span>Video Files</span>
-                        <strong>{packagePreview.videoPackageFileName || "No video files"}</strong>
-                        <small>{packagePreview.videoCount ? "Before/after labeled video evidence" : "No videos found on this phone for this OMO"}</small>
-                      </div>
-                      <b>{packagePreview.videoPackageSize ? packetSizeLabel(packagePreview.videoPackageSize) : "0 KB"}</b>
-                    </div>
+                    ) : null}
                   </div>
                   <div className="package-folder-list" aria-label="Folder contents">
                     <div className="package-folder-list-head">
