@@ -86,7 +86,16 @@ import {
 import { cleanJobLocation, cleanJobLocationText, isCommonAreaLocation } from "../../lib/jobLocation";
 import { paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
 import { copyLegacyFieldStorage, shadowUpsert } from "../../lib/unified-field-store";
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  type PointerEvent as ReactPointerEvent,
+  type TouchEvent as ReactTouchEvent,
+  type WheelEvent as ReactWheelEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   type DayAgentRouteSummary,
   estimateDayAgentStopMinutes,
@@ -255,6 +264,23 @@ type MapBaseStyleId =
   | "carto-light"
   | "carto-dark"
   | "carto-voyager";
+
+type IphoneFieldSheetSnap = "collapsed" | "middle" | "expanded";
+
+type IphoneFieldSheetDrag = {
+  pointerId: number;
+  startY: number;
+  lastY: number;
+  moved: boolean;
+  startSnap: IphoneFieldSheetSnap;
+};
+
+type IphoneFieldSheetTouch = {
+  startY: number;
+  startScrollTop: number;
+  startSnap: IphoneFieldSheetSnap;
+  fired: boolean;
+};
 
 type MapBaseStyle = {
   id: MapBaseStyleId;
@@ -2767,7 +2793,11 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const swipeStartYRef = useRef<number | null>(null);
   const mapSwipeStartXRef = useRef<number | null>(null);
   const mapSwipeStartYRef = useRef<number | null>(null);
+  const iphoneFieldSheetDragRef = useRef<IphoneFieldSheetDrag | null>(null);
+  const iphoneFieldSheetTouchRef = useRef<IphoneFieldSheetTouch | null>(null);
+  const iphoneFieldSheetSuppressClickRef = useRef(false);
 const [selectedOnly, setSelectedOnly] = useState(false);
+const [iphoneFieldSheetSnap, setIphoneFieldSheetSnap] = useState<IphoneFieldSheetSnap>("middle");
 const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
 const [descriptionOpen, setDescriptionOpen] = useState(false);
 const [itbSourceOpen, setItbSourceOpen] = useState(false);
@@ -3972,13 +4002,111 @@ function handleMapTouchEnd(event: any) {
   if (mapMenuOpen && dx < 0) closeMapMenu();
 }
 
+const iphoneFieldSheetSnapOrder: IphoneFieldSheetSnap[] = ["collapsed", "middle", "expanded"];
+
+function iphoneFieldSheetStep(current: IphoneFieldSheetSnap, direction: "up" | "down") {
+  const currentIndex = iphoneFieldSheetSnapOrder.indexOf(current);
+  const nextIndex = direction === "up"
+    ? Math.min(iphoneFieldSheetSnapOrder.length - 1, currentIndex + 1)
+    : Math.max(0, currentIndex - 1);
+  return iphoneFieldSheetSnapOrder[nextIndex] || "middle";
+}
+
+function settleIphoneFieldSheet(deltaY: number, startSnap: IphoneFieldSheetSnap) {
+  if (Math.abs(deltaY) < 34) return startSnap;
+  if (deltaY < -132) return "expanded";
+  if (deltaY > 132) return "collapsed";
+  return iphoneFieldSheetStep(startSnap, deltaY < 0 ? "up" : "down");
+}
+
+function handleIphoneFieldSheetPointerDown(event: ReactPointerEvent<HTMLButtonElement>) {
+  iphoneFieldSheetDragRef.current = {
+    pointerId: event.pointerId,
+    startY: event.clientY,
+    lastY: event.clientY,
+    moved: false,
+    startSnap: iphoneFieldSheetSnap,
+  };
+  iphoneFieldSheetSuppressClickRef.current = false;
+  event.currentTarget.setPointerCapture?.(event.pointerId);
+}
+
+function handleIphoneFieldSheetPointerMove(event: ReactPointerEvent<HTMLButtonElement>) {
+  const drag = iphoneFieldSheetDragRef.current;
+  if (!drag || drag.pointerId !== event.pointerId) return;
+  drag.lastY = event.clientY;
+  if (Math.abs(event.clientY - drag.startY) > 7) drag.moved = true;
+}
+
+function finishIphoneFieldSheetPointer(event: ReactPointerEvent<HTMLButtonElement>) {
+  const drag = iphoneFieldSheetDragRef.current;
+  if (!drag || drag.pointerId !== event.pointerId) return;
+
+  const deltaY = drag.lastY - drag.startY;
+  if (drag.moved) {
+    setIphoneFieldSheetSnap(settleIphoneFieldSheet(deltaY, drag.startSnap));
+    iphoneFieldSheetSuppressClickRef.current = true;
+  }
+
+  event.currentTarget.releasePointerCapture?.(event.pointerId);
+  iphoneFieldSheetDragRef.current = null;
+}
+
+function handleIphoneFieldSheetHandleClick() {
+  if (iphoneFieldSheetSuppressClickRef.current) {
+    iphoneFieldSheetSuppressClickRef.current = false;
+    return;
+  }
+  setIphoneFieldSheetSnap((current) =>
+    current === "middle" ? "expanded" : current === "expanded" ? "collapsed" : "middle"
+  );
+}
+
+function handleIphoneFieldSheetWheel(event: ReactWheelEvent<HTMLDivElement>) {
+  const scrollTop = event.currentTarget.scrollTop;
+  if (scrollTop > 2) return;
+  if (event.deltaY < -24 && iphoneFieldSheetSnap !== "expanded") {
+    setIphoneFieldSheetSnap((current) => iphoneFieldSheetStep(current, "up"));
+  } else if (event.deltaY > 24 && iphoneFieldSheetSnap !== "collapsed") {
+    setIphoneFieldSheetSnap((current) => iphoneFieldSheetStep(current, "down"));
+  }
+}
+
+function handleIphoneFieldSheetTouchStart(event: ReactTouchEvent<HTMLDivElement>) {
+  const touch = event.touches[0];
+  if (!touch) return;
+  iphoneFieldSheetTouchRef.current = {
+    startY: touch.clientY,
+    startScrollTop: event.currentTarget.scrollTop,
+    startSnap: iphoneFieldSheetSnap,
+    fired: false,
+  };
+}
+
+function handleIphoneFieldSheetTouchMove(event: ReactTouchEvent<HTMLDivElement>) {
+  const touch = event.touches[0];
+  const sheetTouch = iphoneFieldSheetTouchRef.current;
+  if (!touch || !sheetTouch || sheetTouch.fired || sheetTouch.startScrollTop > 2) return;
+
+  const deltaY = touch.clientY - sheetTouch.startY;
+  if (Math.abs(deltaY) < 48) return;
+
+  setIphoneFieldSheetSnap(settleIphoneFieldSheet(deltaY, sheetTouch.startSnap));
+  sheetTouch.fired = true;
+}
+
+function clearIphoneFieldSheetTouch() {
+  iphoneFieldSheetTouchRef.current = null;
+}
+
 
   useEffect(() => {
     try {
       const openMapMode = new URLSearchParams(window.location.search).get("map") === "1";
       if (openMapMode) {
-        setMapBaseStyle("carto-voyager");
-        window.localStorage.setItem(MAP_BASE_STYLE_STORAGE_KEY, "carto-voyager");
+        setMapBaseStyle("osm-color");
+        setMapTileStatus("Open Map selected.");
+        window.localStorage.setItem(MAP_BASE_STYLE_STORAGE_KEY, "osm-color");
       } else {
         const savedStyle = window.localStorage.getItem(MAP_BASE_STYLE_STORAGE_KEY);
         if (savedStyle && MAP_BASE_STYLES.some((style) => style.id === savedStyle)) {
@@ -44976,6 +45104,28 @@ return (
             filter: saturate(1.02) brightness(1.02) contrast(1) !important;
           }
 
+          .map-shell.iphone-field-rebuild.drawer-selected,
+          .map-shell.iphone-field-rebuild.map-glass-command-trial.drawer-selected {
+            background: #dbe6ec !important;
+          }
+
+          .map-shell.iphone-field-rebuild.drawer-selected .map-stage,
+          .map-shell.iphone-field-rebuild.drawer-selected .map-node,
+          .map-shell.iphone-field-rebuild.drawer-selected .leaflet-container {
+            background: #dbe6ec !important;
+            filter: none !important;
+          }
+
+          .map-shell.iphone-field-rebuild.drawer-selected .map-node::after {
+            opacity: 0 !important;
+            background: transparent !important;
+          }
+
+          .map-shell.iphone-field-rebuild.drawer-selected .map-node .leaflet-tile {
+            opacity: 1 !important;
+            filter: saturate(0.98) contrast(0.98) brightness(1.04) !important;
+          }
+
           .map-shell.map-glass-command-trial.drawer-selected .leaflet-map-pane,
           .map-shell.map-glass-command-trial.drawer-selected .leaflet-tile-pane,
           .map-shell.map-glass-command-trial.drawer-selected .leaflet-overlay-pane,
@@ -45208,18 +45358,55 @@ return (
             pointer-events: auto;
             overflow: hidden;
             touch-action: pan-y;
+            transition: height 220ms ease, max-height 220ms ease, box-shadow 220ms ease;
+            will-change: height;
           }
 
           .iphone-field-sheet::before {
-            content: "";
+            display: none;
+            content: none;
+          }
+
+          .iphone-field-screen.sheet-collapsed .iphone-field-sheet {
+            height: clamp(126px, 24svh, 190px);
+            max-height: clamp(126px, 24svh, 190px);
+            box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255,255,255,0.12);
+          }
+
+          .iphone-field-screen.sheet-expanded .iphone-field-sheet {
+            height: calc(100svh - 96px);
+            max-height: calc(100svh - 96px);
+          }
+
+          .iphone-field-sheet-handle {
             position: absolute;
-            top: 10px;
+            top: 0;
             left: 50%;
+            z-index: 3;
+            width: 112px;
+            height: 30px;
+            border: 0;
+            border-radius: 0 0 18px 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            background: transparent;
+            cursor: grab;
+            touch-action: none;
+            transform: translateX(-50%);
+          }
+
+          .iphone-field-sheet-handle:active {
+            cursor: grabbing;
+          }
+
+          .iphone-field-sheet-handle span {
             width: 56px;
             height: 5px;
             border-radius: 999px;
-            background: rgba(203, 213, 225, 0.58);
-            transform: translateX(-50%);
+            background: rgba(203, 213, 225, 0.62);
+            box-shadow: 0 0 18px rgba(96, 165, 250, 0.16);
           }
 
           .iphone-field-scroll {
@@ -45693,6 +45880,16 @@ return (
               height: clamp(278px, 56svh, 390px);
               min-height: 0;
               max-height: calc(100svh - 158px);
+            }
+
+            .iphone-field-screen.sheet-collapsed .iphone-field-sheet {
+              height: clamp(116px, 25svh, 152px);
+              max-height: clamp(116px, 25svh, 152px);
+            }
+
+            .iphone-field-screen.sheet-expanded .iphone-field-sheet {
+              height: calc(100svh - 88px);
+              max-height: calc(100svh - 88px);
             }
 
             .iphone-field-scroll {
@@ -47007,7 +47204,7 @@ return (
             ? "Date/time saved here"
             : "Start visit first";
         return (
-          <section className="iphone-field-screen" data-iphone-field-screen="true" aria-label={`${fieldJobKey} iPhone field job card`}>
+          <section className={`iphone-field-screen sheet-${iphoneFieldSheetSnap}`} data-iphone-field-screen="true" aria-label={`${fieldJobKey} iPhone field job card`}>
             <div className="iphone-field-topbar">
               <button type="button" className="iphone-field-icon-button" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
                 ‹
@@ -47029,8 +47226,27 @@ return (
               <strong>Route Me</strong>
               <small>{fieldRouteLabel}</small>
             </button>
-            <article className="iphone-field-sheet" aria-label="Selected job field sheet">
-              <div className="iphone-field-scroll">
+            <article className="iphone-field-sheet" data-sheet-snap={iphoneFieldSheetSnap} aria-label="Selected job field sheet">
+              <button
+                type="button"
+                className="iphone-field-sheet-handle"
+                aria-label={`Job card is ${iphoneFieldSheetSnap}. Drag down to collapse or up to expand.`}
+                onPointerDown={handleIphoneFieldSheetPointerDown}
+                onPointerMove={handleIphoneFieldSheetPointerMove}
+                onPointerUp={finishIphoneFieldSheetPointer}
+                onPointerCancel={finishIphoneFieldSheetPointer}
+                onClick={handleIphoneFieldSheetHandleClick}
+              >
+                <span aria-hidden="true" />
+              </button>
+              <div
+                className="iphone-field-scroll"
+                onWheel={handleIphoneFieldSheetWheel}
+                onTouchStart={handleIphoneFieldSheetTouchStart}
+                onTouchMove={handleIphoneFieldSheetTouchMove}
+                onTouchEnd={clearIphoneFieldSheetTouch}
+                onTouchCancel={clearIphoneFieldSheetTouch}
+              >
                 <header className="iphone-field-title">
                   <div>
                     <span>Work Order</span>
