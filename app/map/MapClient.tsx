@@ -45358,8 +45358,9 @@ return (
             pointer-events: auto;
             overflow: hidden;
             touch-action: pan-y;
-            transition: height 220ms ease, max-height 220ms ease, box-shadow 220ms ease;
-            will-change: height;
+            transition: height 220ms ease, max-height 220ms ease, transform 240ms ease, box-shadow 220ms ease;
+            transform: translateY(0);
+            will-change: height, transform;
           }
 
           .iphone-field-sheet::before {
@@ -45370,7 +45371,13 @@ return (
           .iphone-field-screen.sheet-collapsed .iphone-field-sheet {
             height: clamp(126px, 24svh, 190px);
             max-height: clamp(126px, 24svh, 190px);
+            transform: translateY(calc(100% - 52px));
             box-shadow: 0 -18px 48px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255,255,255,0.12);
+          }
+
+          .iphone-field-screen.sheet-collapsed .iphone-field-scroll {
+            opacity: 0;
+            pointer-events: none;
           }
 
           .iphone-field-screen.sheet-expanded .iphone-field-sheet {
@@ -45894,6 +45901,7 @@ return (
             .iphone-field-screen.sheet-collapsed .iphone-field-sheet {
               height: clamp(116px, 25svh, 152px);
               max-height: clamp(116px, 25svh, 152px);
+              transform: translateY(calc(100% - 46px));
             }
 
             .iphone-field-screen.sheet-expanded .iphone-field-sheet {
