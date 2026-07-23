@@ -1138,6 +1138,7 @@ export default function PaperworkPage() {
   const selectedJobId = selectedJob ? getJobId(selectedJob) : "";
   const packageJobLoading = Boolean(selectedId && (!selectedJob || form.jobId !== selectedJobId));
   const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading);
+  const mapBackHref = selectedId ? `/map/?omo=${encodeURIComponent(selectedId)}&view=all&map=1` : "/map/?view=all&map=1";
 
   useEffect(() => {
     if (!autoGeneratePackage || autoGenerateStartedRef.current) return;
@@ -3661,7 +3662,7 @@ export default function PaperworkPage() {
             <p>Select the job, choose one package type, then generate the invoice package.</p>
           </div>
           <nav className="paperwork-nav" aria-label="Paperwork actions">
-            <a href="/map">Map</a>
+            <a href={mapBackHref}>Map</a>
             <a href="/outputs">Archive</a>
           </nav>
         </header>
