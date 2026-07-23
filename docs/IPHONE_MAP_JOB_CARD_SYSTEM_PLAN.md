@@ -55,6 +55,21 @@ New rebuild rule:
 - Do not remove all-jobs map behavior.
 - Do not push or deploy a rebuild slice until it is locally checked in the right browser.
 
+## Active V2 Path
+
+Version 2 is now the default selected-job card.
+
+- Default test URL uses V2: `http://127.0.0.1:3278/map/?omo=EQ31289&view=all&map=1`
+- Rollback/compare URL uses V1: `http://127.0.0.1:3278/map/?omo=EQ31289&view=all&map=1&card=v1`
+
+V2 direction:
+
+- Keep the real map and real data/handlers from `MapClient.tsx`.
+- Use isolated `.iphone-field-v2-*` CSS and markup so future changes do not keep fighting the old drawer/card CSS.
+- Prefer larger two-column workflow buttons over tiny dense controls.
+- Keep snap positions: middle, expanded, collapsed-to-map.
+- Continue improving V2 only unless the user explicitly asks to compare or roll back to V1.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.

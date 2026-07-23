@@ -266,6 +266,7 @@ type MapBaseStyleId =
   | "carto-voyager";
 
 type IphoneFieldSheetSnap = "collapsed" | "middle" | "expanded";
+type IphoneJobCardVersion = "v1" | "v2";
 
 type IphoneFieldSheetDrag = {
   pointerId: number;
@@ -2798,6 +2799,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const iphoneFieldSheetSuppressClickRef = useRef(false);
 const [selectedOnly, setSelectedOnly] = useState(false);
 const [iphoneFieldSheetSnap, setIphoneFieldSheetSnap] = useState<IphoneFieldSheetSnap>("middle");
+const [iphoneJobCardVersion, setIphoneJobCardVersion] = useState<IphoneJobCardVersion>("v2");
 const [generatedLinks, setGeneratedLinks] = useState<{ invoice?: string; affidavit?: string }>({});
 const [descriptionOpen, setDescriptionOpen] = useState(false);
 const [itbSourceOpen, setItbSourceOpen] = useState(false);
@@ -4102,7 +4104,9 @@ function clearIphoneFieldSheetTouch() {
 
   useEffect(() => {
     try {
-      const openMapMode = new URLSearchParams(window.location.search).get("map") === "1";
+      const params = new URLSearchParams(window.location.search);
+      const openMapMode = params.get("map") === "1";
+      setIphoneJobCardVersion(params.get("card") === "v1" ? "v1" : "v2");
       if (openMapMode) {
         setMapBaseStyle("osm-color");
         setMapTileStatus("Open Map selected.");
@@ -45224,6 +45228,768 @@ return (
             display: none !important;
           }
 
+          .iphone-field-v2-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 2480;
+            pointer-events: none;
+          }
+
+          .iphone-field-v2-topbar {
+            position: absolute;
+            top: max(10px, env(safe-area-inset-top));
+            left: max(10px, env(safe-area-inset-left));
+            right: max(10px, env(safe-area-inset-right));
+            display: grid;
+            grid-template-columns: 46px minmax(0, 1fr) 46px;
+            align-items: center;
+            gap: 9px;
+            pointer-events: auto;
+          }
+
+          .iphone-field-v2-icon,
+          .iphone-field-v2-pill,
+          .iphone-field-v2-route {
+            border: 1px solid rgba(15, 23, 42, 0.22);
+            background: rgba(15, 23, 42, 0.78);
+            color: #f8fafc;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.28), inset 0 1px 0 rgba(255,255,255,0.14);
+            backdrop-filter: blur(16px) saturate(1.28);
+            -webkit-backdrop-filter: blur(16px) saturate(1.28);
+          }
+
+          .iphone-field-v2-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 15px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+            font-weight: 950;
+          }
+
+          .iphone-field-v2-pill {
+            min-width: 0;
+            min-height: 46px;
+            border-radius: 16px;
+            display: grid;
+            align-content: center;
+            justify-items: center;
+            padding: 6px 14px;
+          }
+
+          .iphone-field-v2-pill strong,
+          .iphone-field-v2-pill span,
+          .iphone-field-v2-route strong,
+          .iphone-field-v2-route small {
+            display: block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            letter-spacing: 0;
+          }
+
+          .iphone-field-v2-pill strong {
+            color: #60a5fa;
+            font-size: 17px;
+            font-weight: 950;
+            line-height: 1;
+          }
+
+          .iphone-field-v2-pill span {
+            margin-top: 3px;
+            color: rgba(226, 232, 240, 0.78);
+            font-size: 10px;
+            font-weight: 850;
+          }
+
+          .iphone-field-v2-route {
+            position: absolute;
+            left: max(12px, env(safe-area-inset-left));
+            top: max(68px, calc(env(safe-area-inset-top) + 66px));
+            width: min(184px, calc(100vw - 24px));
+            min-height: 48px;
+            border-radius: 16px;
+            display: grid;
+            align-content: center;
+            justify-items: start;
+            padding: 8px 12px;
+            pointer-events: auto;
+            text-align: left;
+          }
+
+          .iphone-field-v2-route strong {
+            color: #bfdbfe;
+            font-size: 13px;
+            font-weight: 950;
+          }
+
+          .iphone-field-v2-route small {
+            margin-top: 3px;
+            color: rgba(219, 234, 254, 0.78);
+            font-size: 10px;
+            font-weight: 820;
+          }
+
+          .iphone-field-v2-sheet {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: clamp(390px, 66svh, 620px);
+            max-height: calc(100svh - 118px);
+            border-radius: 26px 26px 0 0;
+            border: 1px solid rgba(148, 163, 184, 0.32);
+            border-bottom: 0;
+            background:
+              linear-gradient(180deg, rgba(12, 24, 39, 0.97), rgba(2, 8, 23, 0.99)),
+              rgba(2, 8, 23, 0.96);
+            box-shadow: 0 -20px 60px rgba(2, 6, 23, 0.58), inset 0 1px 0 rgba(255,255,255,0.12);
+            backdrop-filter: blur(22px) saturate(1.34);
+            -webkit-backdrop-filter: blur(22px) saturate(1.34);
+            pointer-events: auto;
+            overflow: hidden;
+            transform: translateY(0);
+            transition: height 220ms ease, max-height 220ms ease, transform 240ms ease, box-shadow 220ms ease;
+            will-change: height, transform;
+          }
+
+          .iphone-field-v2-screen.sheet-expanded .iphone-field-v2-sheet {
+            height: calc(100svh - 76px);
+            max-height: calc(100svh - 76px);
+          }
+
+          .iphone-field-v2-screen.sheet-collapsed .iphone-field-v2-sheet {
+            height: clamp(118px, 23svh, 164px);
+            max-height: clamp(118px, 23svh, 164px);
+            transform: translateY(calc(100% - 52px));
+            box-shadow: 0 -14px 40px rgba(2, 6, 23, 0.46), inset 0 1px 0 rgba(255,255,255,0.12);
+          }
+
+          .iphone-field-v2-screen.sheet-collapsed .iphone-field-v2-scroll {
+            opacity: 0;
+            pointer-events: none;
+          }
+
+          .iphone-field-v2-handle {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            z-index: 3;
+            width: 122px;
+            height: 34px;
+            border: 0;
+            border-radius: 0 0 18px 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            background: transparent;
+            cursor: grab;
+            touch-action: none;
+            transform: translateX(-50%);
+          }
+
+          .iphone-field-v2-handle:focus {
+            outline: none;
+          }
+
+          .iphone-field-v2-handle span {
+            width: 58px;
+            height: 5px;
+            border-radius: 999px;
+            background: rgba(203, 213, 225, 0.72);
+            box-shadow: 0 0 18px rgba(96, 165, 250, 0.16);
+          }
+
+          .iphone-field-v2-scroll {
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+            padding: 34px 18px max(22px, env(safe-area-inset-bottom));
+            display: grid;
+            align-content: start;
+            gap: 14px;
+          }
+
+          .iphone-field-v2-hero,
+          .iphone-field-v2-card {
+            border: 1px solid rgba(148, 163, 184, 0.26);
+            border-radius: 18px;
+            background: rgba(8, 18, 31, 0.68);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+          }
+
+          .iphone-field-v2-hero {
+            display: grid;
+            gap: 12px;
+            padding: 14px;
+          }
+
+          .iphone-field-v2-title {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+          }
+
+          .iphone-field-v2-title span,
+          .iphone-field-v2-label {
+            color: #60a5fa;
+            font-size: 12px;
+            font-weight: 950;
+            line-height: 1.1;
+          }
+
+          .iphone-field-v2-title strong {
+            display: block;
+            margin-top: 2px;
+            color: #f8fafc;
+            font-size: 31px;
+            font-weight: 950;
+            line-height: 0.98;
+            letter-spacing: 0;
+          }
+
+          .iphone-field-v2-title small,
+          .iphone-field-v2-card small,
+          .iphone-field-v2-status-copy small {
+            color: rgba(203, 213, 225, 0.78);
+            font-size: 12px;
+            font-weight: 820;
+            line-height: 1.22;
+          }
+
+          .iphone-field-v2-hpd {
+            min-height: 44px;
+            padding: 0 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(59, 130, 246, 0.6);
+            background: rgba(13, 31, 58, 0.74);
+            color: #93c5fd;
+            font-size: 16px;
+            font-weight: 950;
+          }
+
+          .iphone-field-v2-status {
+            display: grid;
+            gap: 12px;
+          }
+
+          .iphone-field-v2-status-top {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 12px;
+            align-items: start;
+          }
+
+          .iphone-field-v2-status-copy strong {
+            display: block;
+            margin-top: 2px;
+            color: #f8fafc;
+            font-size: 19px;
+            font-weight: 950;
+            line-height: 1.05;
+          }
+
+          .iphone-field-v2-packet {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 7px;
+            margin-top: 9px;
+          }
+
+          .iphone-field-v2-packet button,
+          .iphone-field-v2-packet a {
+            min-height: 30px;
+            border: 1px solid rgba(148, 163, 184, 0.32);
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 11px;
+            background: rgba(15, 23, 42, 0.7);
+            color: rgba(226, 232, 240, 0.86);
+            font-size: 11px;
+            font-weight: 950;
+            text-decoration: none;
+          }
+
+          .iphone-field-v2-packet .ready {
+            border-color: rgba(74, 222, 128, 0.56);
+            background: rgba(20, 83, 45, 0.38);
+            color: #86efac;
+          }
+
+          .iphone-field-v2-time {
+            min-width: 118px;
+            display: grid;
+            gap: 6px;
+          }
+
+          .iphone-field-v2-time input {
+            width: 100%;
+            min-width: 0;
+            height: 40px;
+            border-radius: 13px;
+            border: 1px solid rgba(96, 165, 250, 0.34);
+            background: rgba(15, 23, 42, 0.8);
+            color: #dbeafe;
+            font-size: 12px;
+            font-weight: 850;
+          }
+
+          .iphone-field-v2-time button,
+          .iphone-field-v2-status-button,
+          .iphone-field-v2-save {
+            min-height: 44px;
+            border-radius: 14px;
+            border: 1px solid rgba(96, 165, 250, 0.42);
+            background: rgba(15, 23, 42, 0.78);
+            color: #dbeafe;
+            font-size: 13px;
+            font-weight: 950;
+          }
+
+          .iphone-field-v2-status-row {
+            display: grid;
+            grid-template-columns: 96px minmax(0, 1fr) 86px;
+            gap: 8px;
+            align-items: center;
+          }
+
+          .iphone-field-v2-status-row select {
+            min-width: 0;
+            height: 44px;
+            border-radius: 14px;
+            border: 1px solid rgba(96, 165, 250, 0.42);
+            background: rgba(15, 23, 42, 0.78);
+            color: #dbeafe;
+            font-size: 13px;
+            font-weight: 900;
+            padding: 0 10px;
+          }
+
+          .iphone-field-v2-status-button {
+            border-color: rgba(251, 191, 36, 0.68);
+            background: linear-gradient(145deg, rgba(113, 63, 18, 0.82), rgba(15, 23, 42, 0.86));
+            color: #fde68a;
+          }
+
+          .iphone-field-v2-save:not(:disabled) {
+            border-color: rgba(74, 222, 128, 0.58);
+            color: #86efac;
+          }
+
+          .iphone-field-v2-save:disabled {
+            opacity: 0.54;
+          }
+
+          .iphone-field-v2-card {
+            display: grid;
+            gap: 8px;
+            padding: 14px;
+          }
+
+          .iphone-field-v2-card p {
+            margin: 0;
+            color: #e5edf8;
+            font-size: 15px;
+            font-weight: 760;
+            line-height: 1.34;
+            letter-spacing: 0;
+          }
+
+          .iphone-field-v2-contact {
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+          }
+
+          .iphone-field-v2-contact strong {
+            display: block;
+            overflow: hidden;
+            color: #f8fafc;
+            font-size: 19px;
+            font-weight: 950;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .iphone-field-v2-contact-actions {
+            display: flex;
+            gap: 7px;
+          }
+
+          .iphone-field-v2-contact-actions a {
+            min-width: 48px;
+            min-height: 42px;
+            border-radius: 14px;
+            border: 1px solid rgba(96, 165, 250, 0.46);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 35, 61, 0.74);
+            color: #93c5fd;
+            font-size: 12px;
+            font-weight: 950;
+            text-decoration: none;
+          }
+
+          .iphone-field-v2-workflow-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+          }
+
+          .iphone-field-v2-workflow-head strong {
+            color: #60a5fa;
+            font-size: 22px;
+            font-weight: 950;
+            line-height: 1;
+          }
+
+          .iphone-field-v2-workflow-head b {
+            min-width: 0;
+            max-width: 48%;
+            overflow: hidden;
+            color: #bfdbfe;
+            font-size: 12px;
+            font-weight: 950;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          .iphone-field-v2-actions {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+          }
+
+          .iphone-field-v2-action {
+            position: relative;
+            min-width: 0;
+            min-height: 104px;
+            border-radius: 18px;
+            border: 1px solid rgba(96, 165, 250, 0.62);
+            display: grid;
+            align-content: end;
+            justify-items: start;
+            padding: 34px 12px 12px;
+            background: linear-gradient(145deg, rgba(20, 39, 65, 0.78), rgba(5, 13, 23, 0.92));
+            color: #60a5fa;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+            text-align: left;
+          }
+
+          .iphone-field-v2-action:disabled {
+            opacity: 0.48;
+          }
+
+          .iphone-field-v2-action::before {
+            content: "";
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 24px;
+            height: 24px;
+            border: 2px solid currentColor;
+            border-radius: 50%;
+            opacity: 0.95;
+          }
+
+          .iphone-field-v2-action.arrived {
+            border-color: rgba(74, 222, 128, 0.72);
+            color: #86efac;
+          }
+
+          .iphone-field-v2-action.arrived::before {
+            content: "✓";
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: 950;
+          }
+
+          .iphone-field-v2-action.visit::before {
+            content: "▷";
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: 950;
+          }
+
+          .iphone-field-v2-action.work::before {
+            content: none;
+          }
+
+          .iphone-field-v2-tool {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            width: 26px;
+            height: 26px;
+            border: 2px solid currentColor;
+            border-radius: 50%;
+          }
+
+          .iphone-field-v2-tool::before,
+          .iphone-field-v2-tool::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 15px;
+            height: 4px;
+            border-radius: 999px;
+            background: currentColor;
+            transform: translate(-50%, -50%) rotate(-45deg);
+          }
+
+          .iphone-field-v2-tool::after {
+            width: 5px;
+            height: 15px;
+          }
+
+          .iphone-field-v2-action.no-access {
+            border-color: rgba(251, 191, 36, 0.72);
+            color: #fbbf24;
+          }
+
+          .iphone-field-v2-action.refused {
+            border-color: rgba(248, 113, 113, 0.74);
+            color: #f87171;
+          }
+
+          .iphone-field-v2-action.clear {
+            border-color: rgba(148, 163, 184, 0.74);
+            color: #cbd5e1;
+          }
+
+          .iphone-field-v2-action span,
+          .iphone-field-v2-action strong {
+            display: block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            letter-spacing: 0;
+          }
+
+          .iphone-field-v2-action span {
+            color: currentColor;
+            font-size: 16px;
+            font-weight: 950;
+            line-height: 1.05;
+          }
+
+          .iphone-field-v2-action strong {
+            margin-top: 7px;
+            color: rgba(226, 232, 240, 0.88);
+            font-size: 12px;
+            font-weight: 880;
+            line-height: 1.14;
+          }
+
+          .iphone-field-v2-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 9px;
+          }
+
+          .iphone-field-v2-detail-grid div {
+            min-width: 0;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 14px;
+            padding: 11px;
+            background: rgba(3, 9, 18, 0.38);
+          }
+
+          .iphone-field-v2-detail-grid strong {
+            display: block;
+            overflow: hidden;
+            color: #e5edf8;
+            font-size: 14px;
+            font-weight: 920;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+
+          @media (max-width: 700px) and (max-height: 700px) {
+            .iphone-field-v2-topbar {
+              grid-template-columns: 42px minmax(0, 1fr) 42px;
+              gap: 8px;
+            }
+
+            .iphone-field-v2-icon {
+              width: 42px;
+              height: 42px;
+              border-radius: 14px;
+            }
+
+            .iphone-field-v2-pill {
+              min-height: 42px;
+              border-radius: 15px;
+            }
+
+            .iphone-field-v2-route {
+              top: 60px;
+              width: min(170px, calc(100vw - 24px));
+              min-height: 38px;
+              padding: 5px 10px;
+            }
+
+            .iphone-field-v2-route strong {
+              font-size: 11px;
+            }
+
+            .iphone-field-v2-route small {
+              font-size: 8px;
+            }
+
+            .iphone-field-v2-sheet {
+              height: clamp(350px, 74svh, 440px);
+              max-height: calc(100svh - 104px);
+            }
+
+            .iphone-field-v2-screen.sheet-expanded .iphone-field-v2-sheet {
+              height: calc(100svh - 68px);
+              max-height: calc(100svh - 68px);
+            }
+
+            .iphone-field-v2-screen.sheet-collapsed .iphone-field-v2-sheet {
+              height: clamp(116px, 25svh, 152px);
+              max-height: clamp(116px, 25svh, 152px);
+              transform: translateY(calc(100% - 46px));
+            }
+
+            .iphone-field-v2-scroll {
+              padding: 24px 14px max(14px, env(safe-area-inset-bottom));
+              gap: 10px;
+            }
+
+            .iphone-field-v2-hero,
+            .iphone-field-v2-card {
+              border-radius: 15px;
+              padding: 11px;
+            }
+
+            .iphone-field-v2-title strong {
+              font-size: 24px;
+            }
+
+            .iphone-field-v2-title small,
+            .iphone-field-v2-card small,
+            .iphone-field-v2-status-copy small {
+              font-size: 10px;
+            }
+
+            .iphone-field-v2-status-top {
+              grid-template-columns: minmax(0, 1fr) 50px;
+              gap: 8px;
+            }
+
+            .iphone-field-v2-status-copy strong {
+              font-size: 15px;
+            }
+
+            .iphone-field-v2-packet {
+              gap: 5px;
+              margin-top: 7px;
+            }
+
+            .iphone-field-v2-packet button,
+            .iphone-field-v2-packet a {
+              min-height: 24px;
+              padding: 0 8px;
+              font-size: 9px;
+            }
+
+            .iphone-field-v2-time {
+              min-width: 48px;
+            }
+
+            .iphone-field-v2-time input {
+              display: none;
+            }
+
+            .iphone-field-v2-time button {
+              min-height: 36px;
+              border-radius: 12px;
+              font-size: 11px;
+            }
+
+            .iphone-field-v2-status-row {
+              grid-template-columns: 80px minmax(0, 1fr) 66px;
+              gap: 6px;
+            }
+
+            .iphone-field-v2-status-row select,
+            .iphone-field-v2-status-button,
+            .iphone-field-v2-save {
+              min-height: 38px;
+              height: 38px;
+              border-radius: 12px;
+              font-size: 11px;
+            }
+
+            .iphone-field-v2-card p {
+              display: -webkit-box;
+              overflow: hidden;
+              font-size: 13px;
+              line-height: 1.24;
+              -webkit-box-orient: vertical;
+              -webkit-line-clamp: 3;
+            }
+
+            .iphone-field-v2-contact strong {
+              font-size: 16px;
+            }
+
+            .iphone-field-v2-contact-actions a {
+              min-width: 40px;
+              min-height: 36px;
+              border-radius: 12px;
+              font-size: 10px;
+            }
+
+            .iphone-field-v2-workflow-head strong {
+              font-size: 19px;
+            }
+
+            .iphone-field-v2-actions {
+              gap: 8px;
+            }
+
+            .iphone-field-v2-action {
+              min-height: 88px;
+              border-radius: 16px;
+              padding: 32px 10px 10px;
+            }
+
+            .iphone-field-v2-action::before,
+            .iphone-field-v2-tool {
+              top: 10px;
+              left: 10px;
+              width: 22px;
+              height: 22px;
+            }
+
+            .iphone-field-v2-action span {
+              font-size: 14px;
+            }
+
+            .iphone-field-v2-action strong {
+              font-size: 11px;
+            }
+          }
+
           .iphone-field-screen {
             position: fixed;
             inset: 0;
@@ -47221,6 +47987,258 @@ return (
           : fieldVisitReady
             ? "Date/time saved here"
             : "Start visit first";
+        const useIphoneJobCardV2 = iphoneJobCardVersion === "v2";
+        if (useIphoneJobCardV2) {
+          return (
+            <section className={`iphone-field-v2-screen sheet-${iphoneFieldSheetSnap}`} data-iphone-field-screen="true" data-iphone-card-version="v2" aria-label={`${fieldJobKey} iPhone field job card V2`}>
+              <div className="iphone-field-v2-topbar">
+                <button type="button" className="iphone-field-v2-icon" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
+                  ‹
+                </button>
+                <div className="iphone-field-v2-pill" aria-label="Selected work order">
+                  <strong>{fieldJobKey}</strong>
+                  <span>{fieldAddress}</span>
+                </div>
+                <button type="button" className="iphone-field-v2-icon" onClick={openMapMenu} aria-label="Open map menu">
+                  …
+                </button>
+              </div>
+              <button
+                type="button"
+                className="iphone-field-v2-route"
+                onClick={() => void routeSelectedJobOnMap(selected)}
+                aria-label={`Route me to ${fieldJobKey}. ${fieldRouteLabel}.`}
+              >
+                <strong>Route Me</strong>
+                <small>{fieldRouteLabel}</small>
+              </button>
+              <article className="iphone-field-v2-sheet" data-sheet-snap={iphoneFieldSheetSnap} aria-label="Selected job field sheet V2">
+                <button
+                  type="button"
+                  className="iphone-field-v2-handle"
+                  aria-label={`Job card is ${iphoneFieldSheetSnap}. Drag down to collapse or up to expand.`}
+                  onPointerDown={handleIphoneFieldSheetPointerDown}
+                  onPointerMove={handleIphoneFieldSheetPointerMove}
+                  onPointerUp={finishIphoneFieldSheetPointer}
+                  onPointerCancel={finishIphoneFieldSheetPointer}
+                  onClick={handleIphoneFieldSheetHandleClick}
+                >
+                  <span aria-hidden="true" />
+                </button>
+                <div
+                  className="iphone-field-v2-scroll"
+                  onWheel={handleIphoneFieldSheetWheel}
+                  onTouchStart={handleIphoneFieldSheetTouchStart}
+                  onTouchMove={handleIphoneFieldSheetTouchMove}
+                  onTouchEnd={clearIphoneFieldSheetTouch}
+                  onTouchCancel={clearIphoneFieldSheetTouch}
+                >
+                  <header className="iphone-field-v2-hero" aria-label="Work order and field status">
+                    <div className="iphone-field-v2-title">
+                      <div>
+                        <span>Work Order</span>
+                        <strong>{fieldJobKey}</strong>
+                        <small>{fieldAddress}</small>
+                      </div>
+                      <button type="button" className="iphone-field-v2-hpd" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
+                        HPD
+                      </button>
+                    </div>
+                    <section className={`iphone-field-v2-status ${fieldHasSavedWorkflow ? "status-saved" : "status-needed"}`} aria-label="Current field status">
+                      <div className="iphone-field-v2-status-top">
+                        <div className="iphone-field-v2-status-copy">
+                          <span className="iphone-field-v2-label">Field Status</span>
+                          <strong>{fieldStatusShort}</strong>
+                          <small>{fieldStatusFull} · {fieldSavedLabel}</small>
+                          <div className="iphone-field-v2-packet" aria-label="Packet readiness">
+                            <button
+                              type="button"
+                              className={fieldPacketReady ? "ready" : "locked"}
+                              onClick={() => {
+                                if (fieldPacketReady) {
+                                  jumpToMediaFlow(selected);
+                                  return;
+                                }
+                                showActionNotice("Save field status first. Media opens after status.");
+                              }}
+                            >
+                              Media
+                            </button>
+                            <a
+                              className={fieldPacketReady ? "ready" : "locked"}
+                              href={fieldPacketReady ? paperworkHref(selected, "affidavit") : "#"}
+                              onClick={(event) => {
+                                if (!fieldPacketReady) {
+                                  event.preventDefault();
+                                  showActionNotice("Save field status first. Affidavit opens after status.");
+                                }
+                              }}
+                            >
+                              Affidavit
+                            </a>
+                            <a
+                              className={fieldPacketReady ? "ready" : "locked"}
+                              href={fieldPacketReady ? paperworkHref(selected, "invoice") : "#"}
+                              onClick={(event) => {
+                                if (!fieldPacketReady) {
+                                  event.preventDefault();
+                                  showActionNotice("Save field status first. Invoice opens after status.");
+                                }
+                              }}
+                            >
+                              Invoice
+                            </a>
+                          </div>
+                        </div>
+                        <div className="iphone-field-v2-time">
+                          <span className="iphone-field-v2-label">Time</span>
+                          <input
+                            type="datetime-local"
+                            value={workflowVisitDateValue()}
+                            onChange={(event) => setWorkflowVisitDate(event.target.value)}
+                            aria-label="Status date and time"
+                          />
+                          <button type="button" onClick={setWorkflowVisitDateToNow}>Now</button>
+                        </div>
+                      </div>
+                      <div className="iphone-field-v2-status-row" aria-label="Save field status">
+                        <button
+                          type="button"
+                          className="iphone-field-v2-status-button"
+                          onClick={() => {
+                            setFieldFocusPane("capture");
+                            setWorkflowVisitDate(workflowVisitDateValue());
+                            showActionNotice(draftWorkflowStatus ? "Status ready. Tap Save." : "Choose a status, then tap Save.");
+                          }}
+                        >
+                          Status
+                        </button>
+                        <select
+                          value={draftWorkflowStatus}
+                          onChange={(event) => {
+                            const nextStatus = event.target.value;
+                            if (nextStatus) {
+                              pickDraftWorkflow(nextStatus);
+                            } else {
+                              setDraftWorkflowStatus("");
+                              setDraftWorkflowSaved(false);
+                            }
+                          }}
+                          aria-label="Choose field status"
+                        >
+                          <option value="">Choose status...</option>
+                          {workflowOptionGroups.map((group) => (
+                            <optgroup key={`iphone-v2-status-${group.group}`} label={group.group}>
+                              {group.options.map((option) => (
+                                <option key={`iphone-v2-status-${option.value}`} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="iphone-field-v2-save"
+                          disabled={!draftWorkflowStatus}
+                          onClick={() => saveDraftWorkflow(selected)}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </section>
+                  </header>
+
+                  <section className="iphone-field-v2-card" aria-label="Scope">
+                    <span className="iphone-field-v2-label">Scope</span>
+                    <p>{fieldScopeSummary}</p>
+                    <small>{fieldDescription ? "Scroll for remaining job details below." : "Description needs source review."}</small>
+                  </section>
+
+                  <section className="iphone-field-v2-card iphone-field-v2-contact" aria-label="Tenant contact">
+                    <div>
+                      <span className="iphone-field-v2-label">Tenant Contact</span>
+                      <strong>{fieldContact.name || fieldContact.phone || fieldContact.apartment || fieldContact.status}</strong>
+                      <small>
+                        {[fieldContact.apartment, fieldContact.name && fieldContact.phone ? fieldContact.phone : "", !fieldContact.phone ? fieldContact.status : ""]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </small>
+                    </div>
+                    <div className="iphone-field-v2-contact-actions">
+                      {fieldContact.actionHref ? <a href={fieldContact.actionHref}>Call</a> : null}
+                      {fieldContact.smsHref ? <a href={fieldContact.smsHref}>Text</a> : null}
+                      {fieldContact.emailHref ? <a href={fieldContact.emailHref}>Req</a> : null}
+                    </div>
+                  </section>
+
+                  <section className="iphone-field-v2-card iphone-field-v2-workflow" aria-label="Workflow">
+                    <div className="iphone-field-v2-workflow-head">
+                      <strong>Workflow</strong>
+                      <b>{fieldStatusFull}</b>
+                    </div>
+                    <div className="iphone-field-v2-actions">
+                      <button type="button" className={`iphone-field-v2-action arrived ${fieldHasArrived ? "is-saved" : ""}`} onClick={() => void markFieldVisit(selected, "manual_here")} disabled={fieldVisitSaving}>
+                        <span>{fieldVisitSaving ? "Saving" : "Arrived Saved"}</span>
+                        <strong>{fieldHasArrived ? arrivedStamp : "Tap to save"}</strong>
+                      </button>
+                      <button type="button" className={`iphone-field-v2-action visit ${fieldVisitReady ? "is-saved" : ""}`} onClick={() => saveTopCardStartVisit(selected)} disabled={!fieldHasArrived}>
+                        <span>Start Visit</span>
+                        <strong>{visitStamp}</strong>
+                      </button>
+                      <button type="button" className={`iphone-field-v2-action work ${fieldWorkReady ? "is-saved" : ""}`} onClick={() => saveTopCardStartWork(selected)} disabled={!fieldVisitReady}>
+                        <i className="iphone-field-v2-tool" aria-hidden="true" />
+                        <span>Start Work</span>
+                        <strong>{workStamp}</strong>
+                      </button>
+                      <button type="button" className="iphone-field-v2-action no-access" onClick={() => saveTopCardNoAccess(selected)} disabled={fieldNoAccessDisabled}>
+                        <span>No Access</span>
+                        <strong>{fieldNoAccessLabel}</strong>
+                      </button>
+                      <button type="button" className="iphone-field-v2-action refused" onClick={() => saveTopCardRefused(selected)} disabled={!fieldVisitReady}>
+                        <span>Refused</span>
+                        <strong>Close job</strong>
+                      </button>
+                      <button type="button" className="iphone-field-v2-action clear" onClick={() => resetFieldJobForTesting(selected)}>
+                        <span>Clear</span>
+                        <strong>Reset status</strong>
+                      </button>
+                    </div>
+                  </section>
+
+                  {actionNotice ? (
+                    <section className="iphone-field-v2-card" role="status" aria-live="polite">
+                      <span className="iphone-field-v2-label">Update</span>
+                      <p>{actionNotice}</p>
+                    </section>
+                  ) : null}
+
+                  <section className="iphone-field-v2-card" aria-label="More job details">
+                    <span className="iphone-field-v2-label">More Details</span>
+                    <div className="iphone-field-v2-detail-grid">
+                      <div>
+                        <small>Work Window</small>
+                        <strong>{fieldWorkWindow.statusLabel}</strong>
+                      </div>
+                      <div>
+                        <small>Map Layer</small>
+                        <strong>{workflowMapLayerLabel(selected)}</strong>
+                      </div>
+                      <div>
+                        <small>Private Visit</small>
+                        <strong>{fieldVisitRecord ? displayWorkflowDate(fieldVisitRecord.visitedAt) : "Not saved"}</strong>
+                      </div>
+                      <div>
+                        <small>Location</small>
+                        <strong>{displayLocation(selected) || "Not listed"}</strong>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+              </article>
+            </section>
+          );
+        }
         return (
           <section className={`iphone-field-screen sheet-${iphoneFieldSheetSnap}`} data-iphone-field-screen="true" aria-label={`${fieldJobKey} iPhone field job card`}>
             <div className="iphone-field-topbar">
