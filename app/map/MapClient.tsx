@@ -45193,9 +45193,9 @@ return (
             left: 0;
             right: 0;
             bottom: 0;
-            height: min(70svh, 612px);
-            min-height: min(560px, calc(100svh - 190px));
-            max-height: calc(100svh - 132px);
+            height: clamp(300px, 58svh, 500px);
+            min-height: 0;
+            max-height: calc(100svh - 168px);
             border-radius: 28px 28px 0 0;
             border: 1px solid rgba(148, 163, 184, 0.28);
             border-bottom: 0;
@@ -45321,7 +45321,8 @@ return (
             margin-top: 7px;
           }
 
-          .iphone-field-package-status b {
+          .iphone-field-package-status button,
+          .iphone-field-package-status a {
             min-height: 22px;
             border: 1px solid rgba(148, 163, 184, 0.28);
             border-radius: 999px;
@@ -45335,10 +45336,11 @@ return (
             font-weight: 950;
             line-height: 1;
             letter-spacing: 0;
+            text-decoration: none;
             white-space: nowrap;
           }
 
-          .iphone-field-package-status b.ready {
+          .iphone-field-package-status .ready {
             border-color: rgba(74, 222, 128, 0.52);
             background: rgba(20, 83, 45, 0.32);
             color: #86efac;
@@ -45347,6 +45349,48 @@ return (
           .iphone-field-status-strip.status-needed {
             border-color: rgba(251, 191, 36, 0.42);
             box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 0 22px rgba(251, 191, 36, 0.08);
+          }
+
+          .iphone-field-status-command {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 90px minmax(0, 1fr) 82px;
+            gap: 7px;
+            align-items: center;
+            margin-top: 9px;
+          }
+
+          .iphone-field-status-command button,
+          .iphone-field-status-command select {
+            min-width: 0;
+            height: 38px;
+            border-radius: 12px;
+            border: 1px solid rgba(96, 165, 250, 0.42);
+            background: rgba(15, 23, 42, 0.76);
+            color: #dbeafe;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0;
+          }
+
+          .iphone-field-status-command select {
+            padding: 0 8px;
+          }
+
+          .iphone-field-status-primary {
+            border-color: rgba(251, 191, 36, 0.68) !important;
+            background: linear-gradient(145deg, rgba(113, 63, 18, 0.78), rgba(15, 23, 42, 0.82)) !important;
+            color: #fde68a !important;
+            box-shadow: 0 0 24px rgba(251, 191, 36, 0.18), inset 0 1px 0 rgba(255,255,255,0.12) !important;
+          }
+
+          .iphone-field-status-save:not(:disabled) {
+            border-color: rgba(74, 222, 128, 0.58);
+            color: #86efac;
+          }
+
+          .iphone-field-status-save:disabled {
+            opacity: 0.54;
           }
 
           .iphone-field-time-row {
@@ -45646,9 +45690,9 @@ return (
             }
 
             .iphone-field-sheet {
-              height: calc(100svh - 100px);
-              min-height: calc(100svh - 100px);
-              max-height: calc(100svh - 100px);
+              height: clamp(278px, 56svh, 390px);
+              min-height: 0;
+              max-height: calc(100svh - 158px);
             }
 
             .iphone-field-scroll {
@@ -45687,10 +45731,24 @@ return (
               margin-top: 5px;
             }
 
-            .iphone-field-package-status b {
+            .iphone-field-package-status button,
+            .iphone-field-package-status a {
               min-height: 18px;
               padding: 0 6px;
               font-size: 7px;
+            }
+
+            .iphone-field-status-command {
+              grid-template-columns: 68px minmax(0, 1fr) 58px;
+              gap: 5px;
+              margin-top: 6px;
+            }
+
+            .iphone-field-status-command button,
+            .iphone-field-status-command select {
+              height: 30px;
+              border-radius: 10px;
+              font-size: 9px;
             }
 
             .iphone-field-status-strip > div:last-child > span {
@@ -46990,9 +47048,43 @@ return (
                     <strong>{fieldStatusShort}</strong>
                     <small>{fieldStatusFull} · {fieldSavedLabel}</small>
                     <div className="iphone-field-package-status" aria-label="Packet readiness">
-                      <b className={fieldPacketReady ? "ready" : "locked"}>Media</b>
-                      <b className={fieldPacketReady ? "ready" : "locked"}>Affidavit</b>
-                      <b className={fieldPacketReady ? "ready" : "locked"}>Invoice</b>
+                      <button
+                        type="button"
+                        className={fieldPacketReady ? "ready" : "locked"}
+                        onClick={() => {
+                          if (fieldPacketReady) {
+                            jumpToMediaFlow(selected);
+                            return;
+                          }
+                          showActionNotice("Save field status first. Media opens after status.");
+                        }}
+                      >
+                        Media
+                      </button>
+                      <a
+                        className={fieldPacketReady ? "ready" : "locked"}
+                        href={fieldPacketReady ? paperworkHref(selected, "affidavit") : "#"}
+                        onClick={(event) => {
+                          if (!fieldPacketReady) {
+                            event.preventDefault();
+                            showActionNotice("Save field status first. Affidavit opens after status.");
+                          }
+                        }}
+                      >
+                        Affidavit
+                      </a>
+                      <a
+                        className={fieldPacketReady ? "ready" : "locked"}
+                        href={fieldPacketReady ? paperworkHref(selected, "invoice") : "#"}
+                        onClick={(event) => {
+                          if (!fieldPacketReady) {
+                            event.preventDefault();
+                            showActionNotice("Save field status first. Invoice opens after status.");
+                          }
+                        }}
+                      >
+                        Invoice
+                      </a>
                     </div>
                   </div>
                   <div>
@@ -47006,6 +47098,51 @@ return (
                       />
                       <button type="button" onClick={setWorkflowVisitDateToNow}>Now</button>
                     </div>
+                  </div>
+                  <div className="iphone-field-status-command" aria-label="Save field status">
+                    <button
+                      type="button"
+                      className="iphone-field-status-primary"
+                      onClick={() => {
+                        setFieldFocusPane("capture");
+                        setWorkflowVisitDate(workflowVisitDateValue());
+                        showActionNotice(draftWorkflowStatus ? "Status ready. Tap Save." : "Choose a status, then tap Save.");
+                      }}
+                    >
+                      Status
+                    </button>
+                    <select
+                      value={draftWorkflowStatus}
+                      onChange={(event) => {
+                        const nextStatus = event.target.value;
+                        if (nextStatus) {
+                          pickDraftWorkflow(nextStatus);
+                        } else {
+                          setDraftWorkflowStatus("");
+                          setDraftWorkflowSaved(false);
+                        }
+                      }}
+                      aria-label="Choose field status"
+                    >
+                      <option value="">Choose status...</option>
+                      {workflowOptionGroups.map((group) => (
+                        <optgroup key={`iphone-status-${group.group}`} label={group.group}>
+                          {group.options.map((option) => (
+                            <option key={`iphone-status-${option.value}`} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      className="iphone-field-status-save"
+                      disabled={!draftWorkflowStatus}
+                      onClick={() => saveDraftWorkflow(selected)}
+                    >
+                      Save
+                    </button>
                   </div>
                 </section>
 
