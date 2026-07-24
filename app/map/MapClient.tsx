@@ -46550,14 +46550,41 @@ return (
               padding: 11px;
             }
 
+            .iphone-field-v2-hero {
+              gap: 8px;
+              padding: 9px 11px 10px;
+            }
+
+            .iphone-field-v2-title {
+              grid-template-columns: minmax(0, 1fr) 44px;
+              gap: 8px;
+              align-items: center;
+            }
+
             .iphone-field-v2-title strong {
-              font-size: 24px;
+              margin-top: 0;
+              font-size: 22px;
+            }
+
+            .iphone-field-v2-title small {
+              display: none;
             }
 
             .iphone-field-v2-title small,
             .iphone-field-v2-card small,
             .iphone-field-v2-status-copy small {
               font-size: 10px;
+            }
+
+            .iphone-field-v2-hpd {
+              min-height: 34px;
+              padding: 0 9px;
+              border-radius: 11px;
+              font-size: 12px;
+            }
+
+            .iphone-field-v2-status {
+              gap: 8px;
             }
 
             .iphone-field-v2-status-top {
@@ -46567,6 +46594,59 @@ return (
 
             .iphone-field-v2-status-copy strong {
               font-size: 15px;
+              line-height: 1;
+            }
+
+            .iphone-field-v2-status-copy small,
+            .iphone-field-v2-guided-main small {
+              display: -webkit-box;
+              overflow: hidden;
+              -webkit-box-orient: vertical;
+              -webkit-line-clamp: 1;
+            }
+
+            .iphone-field-v2-guided-flow {
+              grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+              align-items: center;
+              gap: 8px;
+              padding: 9px;
+              border-radius: 14px;
+            }
+
+            .iphone-field-v2-guided-main strong {
+              font-size: 15px;
+            }
+
+            .iphone-field-v2-guided-main small {
+              font-size: 11px;
+              line-height: 1.18;
+            }
+
+            .iphone-field-v2-step-rail {
+              gap: 4px;
+            }
+
+            .iphone-field-v2-step-rail span {
+              min-height: 34px;
+              border-radius: 10px;
+              padding: 3px 2px;
+            }
+
+            .iphone-field-v2-step-rail b {
+              font-size: 8px;
+            }
+
+            .iphone-field-v2-step-rail small {
+              font-size: 9px;
+            }
+
+            .iphone-field-v2-advanced-status {
+              border-radius: 13px;
+            }
+
+            .iphone-field-v2-advanced-status summary {
+              min-height: 36px;
+              padding: 0 10px;
             }
 
             .iphone-field-v2-packet {
