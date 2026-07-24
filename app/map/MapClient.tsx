@@ -46551,14 +46551,12 @@ return (
             }
 
             .iphone-field-v2-hero {
-              gap: 8px;
-              padding: 9px 11px 10px;
+              gap: 7px;
+              padding: 8px 11px 9px;
             }
 
             .iphone-field-v2-title {
-              grid-template-columns: minmax(0, 1fr) 44px;
-              gap: 8px;
-              align-items: center;
+              display: none;
             }
 
             .iphone-field-v2-title strong {
@@ -46584,12 +46582,21 @@ return (
             }
 
             .iphone-field-v2-status {
-              gap: 8px;
+              gap: 6px;
             }
 
             .iphone-field-v2-status-top {
               grid-template-columns: minmax(0, 1fr) 50px;
-              gap: 8px;
+              gap: 6px;
+            }
+
+            .iphone-field-v2-status-copy {
+              display: grid;
+              gap: 1px;
+            }
+
+            .iphone-field-v2-status-copy .iphone-field-v2-label {
+              font-size: 10px;
             }
 
             .iphone-field-v2-status-copy strong {
@@ -46605,21 +46612,25 @@ return (
               -webkit-line-clamp: 1;
             }
 
+            .iphone-field-v2-status-copy small {
+              line-height: 1.1;
+            }
+
             .iphone-field-v2-guided-flow {
               grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
               align-items: center;
-              gap: 8px;
-              padding: 9px;
-              border-radius: 14px;
+              gap: 6px;
+              padding: 7px 8px;
+              border-radius: 13px;
             }
 
             .iphone-field-v2-guided-main strong {
               font-size: 15px;
+              line-height: 1;
             }
 
             .iphone-field-v2-guided-main small {
-              font-size: 11px;
-              line-height: 1.18;
+              display: none;
             }
 
             .iphone-field-v2-step-rail {
@@ -46627,17 +46638,18 @@ return (
             }
 
             .iphone-field-v2-step-rail span {
-              min-height: 34px;
+              min-height: 28px;
               border-radius: 10px;
               padding: 3px 2px;
             }
 
             .iphone-field-v2-step-rail b {
-              font-size: 8px;
+              display: none;
             }
 
             .iphone-field-v2-step-rail small {
               font-size: 9px;
+              line-height: 1;
             }
 
             .iphone-field-v2-advanced-status {
@@ -46645,7 +46657,7 @@ return (
             }
 
             .iphone-field-v2-advanced-status summary {
-              min-height: 36px;
+              min-height: 32px;
               padding: 0 10px;
             }
 
@@ -48921,7 +48933,7 @@ return (
           "WORK_COMPLETED",
           "PARTIAL_WORK_COMPLETED",
         ].includes(fieldStatus);
-        const fieldHasArrived = Boolean(fieldVisitRecord);
+        const fieldHasArrived = Boolean(fieldVisitRecord) || Boolean(fieldVisitStartedIso) || fieldStatus === "VISIT_STARTED" || fieldClosedOrStarted;
         const fieldVisitReady = Boolean(fieldVisitStartedIso) || fieldStatus === "VISIT_STARTED" || fieldClosedOrStarted;
         const fieldStatusShort = fieldStatus === "VISIT_STARTED"
           ? "Visit Started"
@@ -49039,7 +49051,11 @@ return (
         const fieldNoAccessDisabled = !fieldVisitReady || Boolean(fieldSecondAttempt && !fieldSecondAttempt.ready);
         const fieldWorkWindow = workWindowInfo(selected);
         const fieldRouteLabel = jobDistanceLabel(selected) === "Turn on location for distance" ? "Location off" : jobDistanceLabel(selected);
-        const arrivedStamp = fieldVisitIso ? displayWorkflowDate(fieldVisitIso) : "Date/time saved here";
+        const arrivedStamp = fieldVisitIso
+          ? displayWorkflowDate(fieldVisitIso)
+          : fieldVisitStartedIso
+            ? displayWorkflowDate(fieldVisitStartedIso)
+            : "Date/time saved here";
         const visitStamp = fieldVisitReady
           ? displayWorkflowDate(fieldVisitStartedIso || fieldVisitIso || fieldSavedIso)
           : fieldHasArrived
