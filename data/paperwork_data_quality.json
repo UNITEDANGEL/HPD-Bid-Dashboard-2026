@@ -1,21 +1,55 @@
 {
-  "generatedAt": "2026-07-24T18:13:56.948Z",
-  "totalJobs": 601,
+  "generatedAt": "2026-07-24T20:14:47.155Z",
+  "totalJobs": 603,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 0,
+  "missingItbPage3Descriptions": 2,
   "badDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 0,
+  "missingPage3Images": 2,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
     "missingDescriptions": [],
-    "missingItbPage3Descriptions": [],
+    "missingItbPage3Descriptions": [
+      {
+        "OMO": "ER00769",
+        "Address": "3873 ORLOFF AVENUE, 10463",
+        "ITB": "ER00769_072226034111.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK“ AT APTARTMENT. # 8J, 6TH STORY: AT BATHROOM: APTARTMENT. # 8J, 6TH STORY:"
+      },
+      {
+        "OMO": "ER01714",
+        "Address": "3315 HULL AVENUE, 10467",
+        "ITB": "ER01714_072326113432.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": LOCATION: 1ST STORY PUBLIC HALL/ BUILDING ENTRANCE DOOR: (SELF CLOSE/ LATCH) -EMERGENCY OPERATIONS DIVISION \"ESS ENTIAL SERVICE REPAIRS\"- "
+      }
+    ],
     "badDescriptions": [],
     "sourceReviewJobs": [],
     "missingItbFiles": [],
-    "missingPage3Images": []
+    "missingPage3Images": [
+      {
+        "OMO": "ER00769",
+        "Address": "3873 ORLOFF AVENUE, 10463",
+        "ITB": "ER00769_072226034111.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK“ AT APTARTMENT. # 8J, 6TH STORY: AT BATHROOM: APTARTMENT. # 8J, 6TH STORY:"
+      },
+      {
+        "OMO": "ER01714",
+        "Address": "3315 HULL AVENUE, 10467",
+        "ITB": "ER01714_072326113432.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": LOCATION: 1ST STORY PUBLIC HALL/ BUILDING ENTRANCE DOOR: (SELF CLOSE/ LATCH) -EMERGENCY OPERATIONS DIVISION \"ESS ENTIAL SERVICE REPAIRS\"- "
+      }
+    ]
   }
 }
