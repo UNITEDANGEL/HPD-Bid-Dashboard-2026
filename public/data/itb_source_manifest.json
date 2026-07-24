@@ -4214,11 +4214,25 @@
       "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\.automation-deploy-20260722-2100\\public\\documents\\itb\\ER01415_072026052232.pdf",
       "sourceMatch": "exact",
       "pdf": "/documents/itb/ER01415_072026052232.pdf"
+    },
+    "ER00769_072226034111.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER00769_072226034111-p3.png",
+      "sourceFile": "public\\documents\\itb\\ER00769_072226034111.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER00769_072226034111.pdf"
+    },
+    "ER01714_072326113432.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER01714_072326113432-p3.png",
+      "sourceFile": "public\\documents\\itb\\ER01714_072326113432.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER01714_072326113432.pdf"
     }
   },
   "summary": {
-    "rendered": 1,
-    "reused": 600,
+    "rendered": 2,
+    "reused": 601,
     "copiedPdfs": 0,
     "missingSource": 0,
     "failed": 0
