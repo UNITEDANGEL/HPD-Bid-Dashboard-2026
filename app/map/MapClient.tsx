@@ -4194,6 +4194,47 @@ function clearIphoneFieldSheetTouch() {
   iphoneFieldSheetTouchRef.current = null;
 }
 
+  useEffect(() => {
+    if (!selectedOnly || !selected || iphoneJobCardVersion !== "v2") return;
+
+    const collapseSheetFromMapTap = (event: PointerEvent) => {
+      if (event.button !== 0) return;
+      if (iphoneV2ScopeOpen || mapMenuOpen) return;
+      if (!(event.target instanceof Element)) return;
+
+      const tappedCardUi = event.target.closest(
+        [
+          ".iphone-field-v2-sheet",
+          ".iphone-field-v2-topbar",
+          ".iphone-field-v2-route",
+          ".iphone-field-v2-scope-backdrop",
+          ".map-menu-fab",
+          ".map-menu-scrim",
+          ".map-top",
+          ".zoom-panel",
+          ".location-status-pill",
+          ".location-help-card",
+          ".map-job-brief-card",
+          "button",
+          "a",
+          "input",
+          "select",
+          "textarea",
+          "summary",
+          "details",
+        ].join(", ")
+      );
+
+      if (tappedCardUi) return;
+      setIphoneFieldSheetSnap("collapsed");
+    };
+
+    document.addEventListener("pointerdown", collapseSheetFromMapTap, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener("pointerdown", collapseSheetFromMapTap, { capture: true });
+    };
+  }, [selectedOnly, selected, iphoneJobCardVersion, iphoneV2ScopeOpen, mapMenuOpen]);
+
 
   useEffect(() => {
     try {

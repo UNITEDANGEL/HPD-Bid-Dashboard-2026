@@ -115,6 +115,12 @@ Current V2.5 field notes slice:
 - Saved notes must show timestamp and status context when available.
 - Notes are important downstream context for affidavit, invoice, media, package, return visit, and archive decisions.
 
+Current V2.6 map tap collapse slice:
+
+- When the user taps the real map/background outside the V2 job card controls, the job-card sheet must collapse down so the map becomes usable immediately.
+- This must not block real map pan/zoom/tap behavior.
+- Taps inside the job card, topbar, route chip, map menu, modals, form fields, or action buttons must not collapse the sheet.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.
