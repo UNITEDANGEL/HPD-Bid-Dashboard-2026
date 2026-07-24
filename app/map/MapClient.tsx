@@ -423,6 +423,13 @@ type FieldCaptureTarget = {
   step?: FieldCaptureStep;
 };
 
+type FieldNoteEntry = {
+  id: string;
+  text: string;
+  savedAt: string;
+  status?: string;
+};
+
 type RefusedDescriptorKey = "gender" | "height" | "hair";
 
 type RefusedDescriptorChoices = Record<RefusedDescriptorKey, string>;
@@ -785,6 +792,91 @@ function displayDescription(job: JobRecord | null | undefined) {
     .replace(/[ \t]{2,}/g, " ")
     .trim();
 }
+
+function cleanFieldNoteText(value: unknown) {
+  return String(value || "")
+    .replace(/\r/g, "\n")
+    .replace(/\n{4,}/g, "\n\n\n")
+    .trim()
+    .slice(0, 1200);
+}
+
+function normalizeFieldNoteEntry(value: unknown, index: number): FieldNoteEntry | null {
+  if (typeof value === "string") {
+    const text = cleanFieldNoteText(value);
+    return text ? { id: `legacy-note-${index}`, text, savedAt: "" } : null;
+  }
+  if (!value || typeof value !== "object") return null;
+
+  const row = value as Record<string, unknown>;
+  const text = cleanFieldNoteText(row.text || row.note || row.Note || row.body || row.Body);
+  if (!text) return null;
+
+  const savedAt = String(row.savedAt || row.SavedAt || row.createdAt || row.CreatedAt || row.at || row.At || "");
+  const status = String(row.status || row.Status || row.workflowStatus || row.WorkflowStatus || "").trim();
+  return {
+    id: String(row.id || row.Id || `field-note-${index}-${savedAt || text.slice(0, 16)}`),
+    text,
+    savedAt,
+    status,
+  };
+}
+
+function fieldNotesFor(job: JobRecord | null | undefined): FieldNoteEntry[] {
+  if (!job) return [];
+
+  const raw =
+    (job as any).FieldNotes ||
+    (job as any).fieldNotes ||
+    (job as any).VisitNotes ||
+    (job as any).visitNotes ||
+    null;
+  let rows: FieldNoteEntry[] = [];
+
+  if (Array.isArray(raw)) {
+    rows = raw.map(normalizeFieldNoteEntry).filter(Boolean) as FieldNoteEntry[];
+  } else if (typeof raw === "string" && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        rows = parsed.map(normalizeFieldNoteEntry).filter(Boolean) as FieldNoteEntry[];
+      } else {
+        const legacy = normalizeFieldNoteEntry(raw, 0);
+        rows = legacy ? [legacy] : [];
+      }
+    } catch {
+      const legacy = normalizeFieldNoteEntry(raw, 0);
+      rows = legacy ? [legacy] : [];
+    }
+  }
+
+  const latestText = cleanFieldNoteText(
+    (job as any).LatestFieldNote ||
+      (job as any).latestFieldNote ||
+      (job as any).TechnicianNote ||
+      (job as any).technicianNote ||
+      (job as any).Notes ||
+      (job as any).notes
+  );
+  if (latestText && !rows.some((note) => note.text === latestText)) {
+    rows.unshift({
+      id: "latest-field-note",
+      text: latestText,
+      savedAt: String((job as any).LatestFieldNoteAt || (job as any).latestFieldNoteAt || ""),
+      status: String((job as any).StatusOverride || (job as any).status || ""),
+    });
+  }
+
+  return rows
+    .filter((note, index, all) => all.findIndex((candidate) => candidate.id === note.id || (candidate.text === note.text && candidate.savedAt === note.savedAt)) === index)
+    .sort((a, b) => {
+      const aTime = Date.parse(a.savedAt || "");
+      const bTime = Date.parse(b.savedAt || "");
+      return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+    })
+    .slice(0, 50);
+}
+
 function normalizeMapSearchValue(value: unknown) {
   const normalized = String(value ?? "")
     .toLowerCase()
@@ -2851,6 +2943,8 @@ const [iphoneV2OutcomeChoice, setIphoneV2OutcomeChoice] = useState<{
   kind: "no_access" | "refused_access";
 } | null>(null);
 const [iphoneV2ClearConfirmJobKey, setIphoneV2ClearConfirmJobKey] = useState("");
+const [fieldNoteDrafts, setFieldNoteDrafts] = useState<Record<string, string>>({});
+const [fieldNoteSavingJobKey, setFieldNoteSavingJobKey] = useState("");
 const [fieldCaptureGuide, setFieldCaptureGuide] = useState<{
   jobKey: string;
   kind: FieldMediaKind;
@@ -7057,6 +7151,68 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
       .catch((error) => {
         console.error(error);
         showActionNotice("Review approval saved on this phone. Server sync needs retry.");
+      });
+  }
+
+  function updateFieldNoteDraft(job: MappedJob, value: string) {
+    const key = jobKey(job);
+    if (!key) return;
+    setFieldNoteDrafts((drafts) => ({ ...drafts, [key]: value }));
+  }
+
+  function appendFieldNoteTemplate(job: MappedJob, value: string) {
+    const key = jobKey(job);
+    if (!key) return;
+    setFieldNoteDrafts((drafts) => {
+      const current = cleanFieldNoteText(drafts[key]);
+      return { ...drafts, [key]: current ? `${current}\n${value}` : value };
+    });
+  }
+
+  function saveFieldNote(job: MappedJob) {
+    const key = jobKey(job);
+    if (!key) return;
+
+    const text = cleanFieldNoteText(fieldNoteDrafts[key]);
+    if (!text) {
+      showActionNotice("Write a note first, then tap Save Note.");
+      return;
+    }
+
+    const savedAt = new Date().toISOString();
+    const status = workflowLabel(job) || workflowShortStatusLabel(workflowDisplayStatusValue(job, draftWorkflowStatus)) || "Pending";
+    const note: FieldNoteEntry = {
+      id: `${key}-note-${Date.now()}`,
+      text,
+      savedAt,
+      status,
+    };
+    const nextNotes = [note, ...fieldNotesFor(job)].slice(0, 50);
+    const patch = {
+      FieldNotes: nextNotes,
+      fieldNotes: nextNotes,
+      LatestFieldNote: text,
+      latestFieldNote: text,
+      LatestFieldNoteAt: savedAt,
+      latestFieldNoteAt: savedAt,
+      updatedAt: savedAt,
+    };
+
+    setFieldNoteSavingJobKey(key);
+    workflowStorageSave(key, patch);
+    applyWorkflowPatchToState(key, patch);
+    invalidateFullPackagePreview(key, true);
+    setFieldNoteDrafts((drafts) => ({ ...drafts, [key]: "" }));
+    setDraftWorkflowSaved(true);
+
+    workflowServerSave(key, patch)
+      .then(() => showActionNotice(`${key}: Field note saved at ${displayWorkflowDate(savedAt)}.`))
+      .catch((error) => {
+        console.error(error);
+        showActionNotice("Note saved on this phone. Server sync needs retry.");
+      })
+      .finally(() => {
+        setFieldNoteSavingJobKey((current) => (current === key ? "" : current));
       });
   }
 
@@ -45644,12 +45800,14 @@ return (
           }
 
           .iphone-field-v2-step-rail {
+            counter-reset: iphone-field-step;
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 6px;
           }
 
           .iphone-field-v2-step-rail span {
+            counter-increment: iphone-field-step;
             min-width: 0;
             min-height: 50px;
             border: 1px solid rgba(148, 163, 184, 0.24);
@@ -46394,6 +46552,121 @@ return (
             line-height: 1.25;
           }
 
+          .iphone-field-v2-notes {
+            gap: 11px;
+            border-color: rgba(96, 165, 250, 0.34);
+            background: linear-gradient(145deg, rgba(13, 31, 58, 0.5), rgba(8, 18, 31, 0.76));
+          }
+
+          .iphone-field-v2-notes-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+          }
+
+          .iphone-field-v2-notes-head strong {
+            display: block;
+            margin-top: 3px;
+            color: #f8fafc;
+            font-size: 18px;
+            font-weight: 950;
+            line-height: 1.08;
+          }
+
+          .iphone-field-v2-notes-head b {
+            flex: 0 0 auto;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 999px;
+            padding: 5px 9px;
+            background: rgba(2, 6, 23, 0.34);
+            color: #cbd5e1;
+            font-size: 10px;
+            font-weight: 950;
+            line-height: 1;
+          }
+
+          .iphone-field-v2-notes textarea {
+            width: 100%;
+            min-height: 92px;
+            border: 1px solid rgba(147, 197, 253, 0.36);
+            border-radius: 15px;
+            padding: 12px;
+            background: rgba(2, 6, 23, 0.42);
+            color: #f8fafc;
+            font-size: 16px;
+            font-weight: 760;
+            line-height: 1.28;
+            letter-spacing: 0;
+            resize: vertical;
+            outline: none;
+          }
+
+          .iphone-field-v2-notes textarea::placeholder {
+            color: rgba(203, 213, 225, 0.56);
+          }
+
+          .iphone-field-v2-note-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+          }
+
+          .iphone-field-v2-note-actions button {
+            min-width: 0;
+            min-height: 48px;
+            border: 1px solid rgba(96, 165, 250, 0.42);
+            border-radius: 14px;
+            padding: 8px 9px;
+            background: rgba(15, 35, 61, 0.72);
+            color: #dbeafe;
+            font-size: 12px;
+            font-weight: 950;
+            line-height: 1.08;
+          }
+
+          .iphone-field-v2-note-actions .save-note {
+            border-color: rgba(74, 222, 128, 0.58);
+            background: linear-gradient(145deg, rgba(20, 83, 45, 0.62), rgba(15, 35, 61, 0.76));
+            color: #bbf7d0;
+          }
+
+          .iphone-field-v2-note-actions button:disabled {
+            opacity: 0.5;
+          }
+
+          .iphone-field-v2-note-list {
+            display: grid;
+            gap: 8px;
+          }
+
+          .iphone-field-v2-note-list article,
+          .iphone-field-v2-note-empty {
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 14px;
+            padding: 10px;
+            background: rgba(3, 9, 18, 0.34);
+          }
+
+          .iphone-field-v2-note-list p,
+          .iphone-field-v2-note-empty {
+            margin: 0;
+            color: #e5edf8;
+            font-size: 13px;
+            font-weight: 780;
+            line-height: 1.28;
+            white-space: pre-wrap;
+          }
+
+          .iphone-field-v2-note-list small {
+            display: block;
+            margin-top: 7px;
+            color: rgba(203, 213, 225, 0.72);
+            font-size: 10px;
+            font-weight: 850;
+            line-height: 1.15;
+          }
+
           .iphone-field-v2-detail-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -46617,10 +46890,10 @@ return (
             }
 
             .iphone-field-v2-guided-flow {
-              grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-              align-items: center;
-              gap: 6px;
-              padding: 7px 8px;
+              grid-template-columns: minmax(0, 1fr);
+              align-items: stretch;
+              gap: 8px;
+              padding: 8px;
               border-radius: 13px;
             }
 
@@ -46634,13 +46907,19 @@ return (
             }
 
             .iphone-field-v2-step-rail {
-              gap: 4px;
+              gap: 5px;
             }
 
             .iphone-field-v2-step-rail span {
-              min-height: 28px;
+              min-height: 34px;
               border-radius: 10px;
-              padding: 3px 2px;
+              padding: 4px 2px;
+              position: static;
+            }
+
+            .iphone-field-v2-step-rail span::before {
+              content: none;
+              display: none;
             }
 
             .iphone-field-v2-step-rail b {
@@ -46648,8 +46927,19 @@ return (
             }
 
             .iphone-field-v2-step-rail small {
-              font-size: 9px;
-              line-height: 1;
+              position: static;
+              width: auto;
+              height: auto;
+              margin: 0;
+              padding: 0;
+              overflow: visible;
+              clip: auto;
+              white-space: normal;
+              border: 0;
+              font-size: clamp(9px, 2.45vw, 11px);
+              line-height: 1.05;
+              overflow-wrap: normal;
+              word-break: normal;
             }
 
             .iphone-field-v2-advanced-status {
@@ -46708,6 +46998,44 @@ return (
               line-height: 1.24;
               -webkit-box-orient: vertical;
               -webkit-line-clamp: 3;
+            }
+
+            .iphone-field-v2-notes {
+              gap: 9px;
+            }
+
+            .iphone-field-v2-notes-head strong {
+              font-size: 16px;
+            }
+
+            .iphone-field-v2-notes textarea {
+              min-height: 78px;
+              border-radius: 13px;
+              padding: 10px;
+            }
+
+            .iphone-field-v2-note-actions {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              gap: 7px;
+            }
+
+            .iphone-field-v2-note-actions .save-note {
+              grid-column: 1 / -1;
+            }
+
+            .iphone-field-v2-note-actions button {
+              min-height: 42px;
+              border-radius: 12px;
+              font-size: 11px;
+            }
+
+            .iphone-field-v2-note-list p,
+            .iphone-field-v2-note-empty {
+              display: block;
+              overflow: visible;
+              font-size: 12px;
+              line-height: 1.24;
+              -webkit-line-clamp: unset;
             }
 
             .iphone-field-v2-address-card {
@@ -49117,6 +49445,9 @@ return (
           { label: "Finish", done: fieldIsFinal, active: fieldWorkReady && !fieldIsFinal },
           { label: "Package", done: Boolean(fieldPackagePreview || (fieldPackageGenerateReady && fieldInvoicePacket)), active: fieldPackageGenerateReady && !fieldPackagePreview && !fieldInvoicePacket },
         ];
+        const fieldNotes = fieldNotesFor(selected);
+        const fieldNoteDraft = fieldNoteDrafts[fieldJobKey] || "";
+        const fieldNoteSaving = fieldNoteSavingJobKey === fieldJobKey;
         const useIphoneJobCardV2 = iphoneJobCardVersion === "v2";
         if (useIphoneJobCardV2) {
           return (
@@ -49196,7 +49527,11 @@ return (
                         </div>
                         <div className="iphone-field-v2-step-rail" aria-label="Workflow progress">
                           {fieldFlowSteps.map((step) => (
-                            <span key={`iphone-v2-flow-${step.label}`} className={`${step.done ? "done" : ""} ${step.active ? "active" : ""}`}>
+                            <span
+                              key={`iphone-v2-flow-${step.label}`}
+                              className={`${step.done ? "done" : ""} ${step.active ? "active" : ""}`}
+                              aria-label={`${step.label} ${step.done ? "done" : step.active ? "current step" : "next"}`}
+                            >
                               <b>{step.done ? "OK" : step.active ? "Now" : "Next"}</b>
                               <small>{step.label}</small>
                             </span>
@@ -49420,6 +49755,52 @@ return (
                         <strong>Reset status</strong>
                       </button>
                     </div>
+                  </section>
+
+                  <section className="iphone-field-v2-card iphone-field-v2-notes" aria-label="Field notes">
+                    <div className="iphone-field-v2-notes-head">
+                      <div>
+                        <span className="iphone-field-v2-label">Field Notes</span>
+                        <strong>Measurements / return visit</strong>
+                      </div>
+                      <b>{fieldNotes.length ? `${fieldNotes.length} saved` : "No notes"}</b>
+                    </div>
+                    <textarea
+                      value={fieldNoteDraft}
+                      onChange={(event) => updateFieldNoteDraft(selected, event.target.value)}
+                      placeholder="Example: First visit measurements taken. Need material on hand before second visit repairs."
+                      aria-label="Add field note"
+                      maxLength={1200}
+                    />
+                    <div className="iphone-field-v2-note-actions">
+                      <button
+                        type="button"
+                        onClick={() => appendFieldNoteTemplate(selected, "First visit: measurements taken. Return repair visit needed once material is on hand.")}
+                      >
+                        Measurements
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => appendFieldNoteTemplate(selected, "Material on hand. Ready for second visit repairs.")}
+                      >
+                        Material ready
+                      </button>
+                      <button type="button" className="save-note" onClick={() => saveFieldNote(selected)} disabled={fieldNoteSaving || !fieldNoteDraft.trim()}>
+                        {fieldNoteSaving ? "Saving..." : "Save Note"}
+                      </button>
+                    </div>
+                    {fieldNotes.length ? (
+                      <div className="iphone-field-v2-note-list" aria-label="Saved field notes">
+                        {fieldNotes.slice(0, 4).map((note) => (
+                          <article key={note.id || `${note.savedAt}-${note.text.slice(0, 18)}`}>
+                            <p>{note.text}</p>
+                            <small>{note.savedAt ? displayWorkflowDate(note.savedAt) : "Saved note"}{note.status ? ` · ${note.status}` : ""}</small>
+                          </article>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="iphone-field-v2-note-empty">Save measurement, material, access, and return-visit details here so the next visit keeps the full story.</p>
+                    )}
                   </section>
 
                   {activeIphoneV2WorkChoice ? (

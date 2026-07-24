@@ -107,6 +107,14 @@ Current V2.4 package slice:
 - If a complete package already exists, V2 must expose real approve-review and send-ZIP actions from the existing package state.
 - Archived/package-generated jobs must still show the Package panel if their workflow code reloads as pending/manual archive.
 
+Current V2.5 field notes slice:
+
+- V2 must keep a real Field Notes section directly after Workflow.
+- Notes must save against the actual OMO/job workflow override state, not as fake display text.
+- Notes must support first-visit measurement notes and second-visit/material-on-hand repair notes.
+- Saved notes must show timestamp and status context when available.
+- Notes are important downstream context for affidavit, invoice, media, package, return visit, and archive decisions.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.
