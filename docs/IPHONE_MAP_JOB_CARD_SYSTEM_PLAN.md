@@ -136,6 +136,12 @@ Current V2.8 faster smoke-test slice:
 - Use `docs/IPHONE_FIELD_SMOKE_TEST.md` as the standard smoke-test checklist after each iPhone card change.
 - Smoke-test normal controls without side effects; do not click send/share/download/reset actions unless that cycle explicitly includes the side effect.
 
+Current V2.9 build freshness slice:
+
+- Show a small real build marker on the V2 card header using `/data/build_health.json`.
+- The marker must show the deployed short commit when Cloudflare serves the current build, or a local/unavailable state when the marker is not present.
+- Use `data-hpd-smoke="iphone-v2-build"` to confirm the iPhone is not viewing a stale cached card.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.

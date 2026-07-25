@@ -116,6 +116,11 @@ function fieldFlowTestModeEnabled() {
   return params.get("fieldFlowTest") === "1" || params.get("testFlow") === "1";
 }
 
+type BuildHealthState = {
+  builtAt?: string;
+  commit?: string;
+};
+
 type JobRecord = {
   [key: string]: any;
   id?: string;
@@ -2881,6 +2886,28 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
     });
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/data/build_health.json?t=${Date.now()}`, { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Build marker unavailable: ${response.status}`);
+        return (await response.json()) as BuildHealthState;
+      })
+      .then((payload) => {
+        if (cancelled) return;
+        setBuildHealth({
+          builtAt: typeof payload.builtAt === "string" ? payload.builtAt : "",
+          commit: typeof payload.commit === "string" ? payload.commit : "",
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setBuildHealth({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [jobs, setJobs] = useState<JobRecord[]>(() => BUNDLED_INITIAL_JOBS);
   const [mappedJobs, setMappedJobs] = useState<MappedJob[]>(() => initialMappedJobRows(BUNDLED_INITIAL_JOBS));
   const [selected, setSelected] = useState<MappedJob | null>(null);
@@ -2975,6 +3002,7 @@ const [followMyLocation, setFollowMyLocation] = useState(false);
 const [fieldVisitTrackingEnabled, setFieldVisitTrackingEnabled] = useState(false);
 const [fieldVisitSummary, setFieldVisitSummary] = useState<Record<string, { latest?: FieldVisitRecord; today?: FieldVisitRecord; count: number }>>({});
 const [fieldVisitSaving, setFieldVisitSaving] = useState(false);
+const [buildHealth, setBuildHealth] = useState<BuildHealthState | null>(null);
 const autoVisitRecordedRef = useRef<Record<string, string>>({});
   const [search, setSearch] = useState("");
   const [urlOmoRequest, setUrlOmoRequest] = useState("");
@@ -45807,6 +45835,13 @@ return (
             line-height: 1.22;
           }
 
+          .iphone-field-v2-title-badges {
+            display: grid;
+            gap: 6px;
+            justify-items: end;
+            min-width: 76px;
+          }
+
           .iphone-field-v2-hpd {
             min-height: 44px;
             padding: 0 14px;
@@ -45819,6 +45854,25 @@ return (
             color: #93c5fd;
             font-size: 16px;
             font-weight: 950;
+          }
+
+          .iphone-field-v2-build {
+            max-width: 92px;
+            min-height: 24px;
+            border: 1px solid rgba(34, 197, 94, 0.42);
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 8px;
+            background: rgba(6, 78, 59, 0.42);
+            color: #bbf7d0;
+            font-size: 10px;
+            font-weight: 950;
+            line-height: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
           }
 
           .iphone-field-v2-status {
@@ -49558,6 +49612,10 @@ return (
         const fieldNotes = fieldNotesFor(selected);
         const fieldNoteDraft = fieldNoteDrafts[fieldJobKey] || "";
         const fieldNoteSaving = fieldNoteSavingJobKey === fieldJobKey;
+        const buildCommit = typeof buildHealth?.commit === "string" ? buildHealth.commit.trim() : "";
+        const buildBuiltAt = typeof buildHealth?.builtAt === "string" ? buildHealth.builtAt.trim() : "";
+        const fieldBuildLabel = buildCommit ? `Live v${buildCommit.slice(0, 7)}` : "Local build";
+        const fieldBuildTitle = buildBuiltAt ? `Built ${displayWorkflowDate(buildBuiltAt)}` : "Build marker unavailable locally";
         const useIphoneJobCardV2 = iphoneJobCardVersion === "v2";
         if (useIphoneJobCardV2) {
           return (
@@ -49620,9 +49678,14 @@ return (
                         <strong>{fieldJobKey}</strong>
                         <small>{fieldAddress}</small>
                       </div>
-                      <span className="iphone-field-v2-hpd" aria-label="HPD work order">
-                        HPD
-                      </span>
+                      <div className="iphone-field-v2-title-badges">
+                        <span className="iphone-field-v2-hpd" aria-label="HPD work order">
+                          HPD
+                        </span>
+                        <span className="iphone-field-v2-build" data-hpd-smoke="iphone-v2-build" title={fieldBuildTitle}>
+                          {fieldBuildLabel}
+                        </span>
+                      </div>
                     </div>
                     <section className={`iphone-field-v2-status ${fieldHasSavedWorkflow ? "status-saved" : "status-needed"}`} aria-label="Current field status">
                       <div className="iphone-field-v2-status-top">

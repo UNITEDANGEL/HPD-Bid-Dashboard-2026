@@ -13,6 +13,7 @@ Use the deployed preview or local server with the same query:
 ## Required Map Checks
 
 - `data-hpd-smoke="iphone-v2-screen"` exists.
+- `data-hpd-smoke="iphone-v2-build"` shows the current deployed short commit or `Local build`.
 - Real Leaflet map exists and has tiles.
 - `data-hpd-smoke="iphone-v2-route"` clicks without showing stale `1 stop` or `Route leg loading`.
 - Tapping blank map area collapses or keeps the card below full-screen.
