@@ -4,6 +4,43 @@ This is the source-of-truth plan for the EQ31289 iPhone map/job-card work.
 
 The goal is a real mobile browser field experience: live map on top, real job card on the bottom, fast iPhone scrolling, real actions, real route behavior, and no fake UI/data.
 
+## July 25 Reset Plan
+
+This is the active working plan. Follow this first so the project does not lose track while testing different iPhone layouts.
+
+What the app is becoming:
+
+- A real iPhone field command center for HPD jobs.
+- The map is the main surface: it opens to the user's real/saved location, keeps nearby jobs visible, and stays under the user's control after the initial focus.
+- The job card is the work surface: it must restore the useful older job-card information while keeping the cleaner V2 mobile layout.
+- Route, status, media, package, affidavit, and invoice flows must be visible when needed, not hidden behind random menus.
+- Every visible control must use real job data and real handlers.
+
+Current problem to fix:
+
+- We have been patching small visual problems and losing the larger flow.
+- Some older job-card information was useful and needs to come back into the V2 card.
+- The app needs fewer experimental changes per cycle and more clear testable upgrades.
+
+Upgrade order from here:
+
+1. Startup map behavior: remove startup flash, open to real/saved location, briefly orient the map, then stop auto-moving so manual zoom/pan stays in control.
+2. Map zoom controls: make the main Map/Near Me control switch between nearby jobs and wider context without surprise zoom-outs.
+3. Route preview: Route Me must draw the route line inside the app first, then offer Google/Waze as external go buttons.
+4. Job-card top layout: address first, OMO/location/apt context second, route actions third, then Scope, Tenant Contact, Workflow/status.
+5. Job-card snap and scrolling: small peek, middle, full card; tap header opens full, swipe down collapses, map tap collapses, fast native scroll remains.
+6. Workflow restore: keep Arrive, Start Visit, Start Work, No Access, Refused, Clear, media, package, affidavit, invoice, and archive flow visible in the right order.
+7. Package/media reliability: after media is complete, package generation with and without signatures must always be available and tested.
+8. Polish only after flow works: marker style, compass, animation, glass styling, spacing, and proportional sizing.
+
+Working rule:
+
+- Make one upgrade slice at a time.
+- Test local/right-browser behavior.
+- Push only scoped app/plan changes that pass checks.
+- User tests on iPhone and reports what feels wrong.
+- If a new design direction is worse, compare against the prior commit or `card=v1` instead of guessing.
+
 ## Design Board
 
 ![Improved iPhone map and job card samples](design-samples/iphone-map-job-card-samples-v2.png)
