@@ -24,6 +24,23 @@ function asRuns(value: unknown): RunRecord[] {
   return [];
 }
 
+function fileHref(file: string) {
+  return `/api/automation/files/${file
+    .split("/")
+    .map((part) => encodeURIComponent(part))
+    .join("/")}`;
+}
+
+function automationStatusMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+
+  if (message.includes("AUTOMATION_WORKER_URL")) {
+    return "Automation worker not configured";
+  }
+
+  return `Worker/output API unavailable: ${message}`;
+}
+
 export default function OutputsPage() {
   const [runs, setRuns] = useState<RunRecord[]>([]);
   const [status, setStatus] = useState("Loading outputs...");
@@ -32,13 +49,16 @@ export default function OutputsPage() {
     async function load() {
       try {
         const res = await fetch("/api/automation/runs", { cache: "no-store" });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const rows = asRuns(await res.json());
+        const payload = await res.json();
+        if (!res.ok) {
+          throw new Error(typeof payload?.error === "string" ? payload.error : `HTTP ${res.status}`);
+        }
+        const rows = asRuns(payload);
         setRuns(rows);
         setStatus(rows.length ? `${rows.length} runs found` : "No runs yet");
       } catch (error) {
         console.error(error);
-        setStatus("Worker/output API not reachable yet");
+        setStatus(automationStatusMessage(error));
       }
     }
 
@@ -181,7 +201,7 @@ export default function OutputsPage() {
                   {files.length ? (
                     <div className="hpd-file-list">
                       {files.map((file) => (
-                        <a className="hpd-file-link" href={`/api/automation/files/${encodeURIComponent(file)}`} key={file}>
+                        <a className="hpd-file-link" href={fileHref(file)} key={file}>
                           {file}
                         </a>
                       ))}

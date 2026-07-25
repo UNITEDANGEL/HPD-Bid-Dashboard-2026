@@ -88,6 +88,7 @@ import { type PaperworkOutcome, paperworkOutcomeFromValue, paperworkQuery } from
 import { copyLegacyFieldStorage, shadowUpsert } from "../../lib/unified-field-store";
 import {
   type ChangeEvent,
+  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type TouchEvent as ReactTouchEvent,
   type WheelEvent as ReactWheelEvent,
@@ -4184,6 +4185,13 @@ function handleIphoneFieldSheetHandleClick() {
   );
 }
 
+function handleIphoneFieldV2TopbarClick(event: ReactMouseEvent<HTMLDivElement>) {
+  if (event.defaultPrevented) return;
+  if (event.target instanceof Element && event.target.closest("button, a, input, select, textarea")) return;
+
+  setIphoneFieldSheetSnap("collapsed");
+}
+
 function handleIphoneFieldSheetWheel(event: ReactWheelEvent<HTMLDivElement>) {
   const scrollTop = event.currentTarget.scrollTop;
   if (scrollTop > 2) return;
@@ -4232,7 +4240,6 @@ function clearIphoneFieldSheetTouch() {
       const tappedCardUi = event.target.closest(
         [
           ".iphone-field-v2-sheet",
-          ".iphone-field-v2-topbar",
           ".iphone-field-v2-route",
           ".iphone-field-v2-scope-backdrop",
           ".map-menu-fab",
@@ -49515,7 +49522,7 @@ return (
         if (useIphoneJobCardV2) {
           return (
             <section className={`iphone-field-v2-screen sheet-${iphoneFieldSheetSnap}`} data-iphone-field-screen="true" data-iphone-card-version="v2" aria-label={`${fieldJobKey} iPhone field job card V2`}>
-              <div className="iphone-field-v2-topbar">
+              <div className="iphone-field-v2-topbar" onClick={handleIphoneFieldV2TopbarClick}>
                 <button type="button" className="iphone-field-v2-icon" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
                   ‹
                 </button>

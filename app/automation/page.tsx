@@ -26,6 +26,16 @@ function asRuns(value: unknown): RunRecord[] {
   return [];
 }
 
+function automationStatusMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+
+  if (message.includes("AUTOMATION_WORKER_URL")) {
+    return "Automation worker not configured";
+  }
+
+  return `Worker/API unavailable: ${message}`;
+}
+
 export default function AutomationPage() {
   const [runs, setRuns] = useState<RunRecord[]>([]);
   const [status, setStatus] = useState("Checking worker...");
@@ -35,13 +45,16 @@ export default function AutomationPage() {
   async function loadRuns() {
     try {
       const res = await fetch("/api/automation/runs", { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const rows = asRuns(await res.json());
+      const payload = await res.json();
+      if (!res.ok) {
+        throw new Error(typeof payload?.error === "string" ? payload.error : `HTTP ${res.status}`);
+      }
+      const rows = asRuns(payload);
       setRuns(rows);
       setStatus("Worker/API reachable");
     } catch (error) {
       console.error(error);
-      setStatus("Worker not reachable from this deployment");
+      setStatus(automationStatusMessage(error));
     }
   }
 

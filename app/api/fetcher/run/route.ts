@@ -105,8 +105,12 @@ function readLocalDataSummary(root: string) {
 }
 
 function writeFetcherStatus(root: string, status: Record<string, unknown>) {
-  for (const rel of ["data/fetcher_latest_status.json", "public/data/fetcher_latest_status.json"]) {
-    const filePath = path.join(root, rel);
+  const statusFiles = [
+    path.join(root, "data", "fetcher_latest_status.json"),
+    path.join(root, "public", "data", "fetcher_latest_status.json"),
+  ];
+
+  for (const filePath of statusFiles) {
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, JSON.stringify(status, null, 2), "utf8");
   }
