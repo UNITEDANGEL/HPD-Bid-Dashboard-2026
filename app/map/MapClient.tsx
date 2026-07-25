@@ -45805,6 +45805,7 @@ return (
             grid-template-columns: minmax(0, 1fr);
             gap: 12px;
             align-items: start;
+            order: 1;
           }
 
           .iphone-field-v2-status-copy strong {
@@ -45852,6 +45853,7 @@ return (
             gap: 12px;
             padding: 12px;
             background: linear-gradient(145deg, rgba(15, 35, 61, 0.72), rgba(2, 6, 23, 0.62));
+            order: 3;
           }
 
           .iphone-field-v2-guided-main {
@@ -45877,24 +45879,29 @@ return (
           .iphone-field-v2-step-rail {
             counter-reset: iphone-field-step;
             display: grid;
-            grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 6px;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 7px;
           }
 
           .iphone-field-v2-step-rail span {
             counter-increment: iphone-field-step;
             min-width: 0;
-            min-height: 50px;
+            min-height: 56px;
             border: 1px solid rgba(148, 163, 184, 0.24);
             border-radius: 13px;
             display: grid;
             align-content: center;
             justify-items: center;
-            gap: 2px;
-            padding: 6px 4px;
+            gap: 4px;
+            padding: 7px 5px;
             background: rgba(15, 23, 42, 0.62);
             color: rgba(203, 213, 225, 0.8);
             text-align: center;
+            grid-column: span 2;
+          }
+
+          .iphone-field-v2-step-rail span:nth-child(4) {
+            grid-column: 2 / span 2;
           }
 
           .iphone-field-v2-step-rail span.done {
@@ -45910,6 +45917,9 @@ return (
           }
 
           .iphone-field-v2-step-rail b {
+            border-radius: 999px;
+            padding: 3px 7px;
+            background: rgba(2, 6, 23, 0.42);
             font-size: 10px;
             font-weight: 950;
             line-height: 1;
@@ -45918,10 +45928,10 @@ return (
           .iphone-field-v2-step-rail small {
             max-width: 100%;
             color: inherit;
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 900;
-            line-height: 1.05;
-            overflow-wrap: anywhere;
+            line-height: 1.08;
+            white-space: nowrap;
           }
 
           .iphone-field-v2-advanced-status {
@@ -45930,6 +45940,7 @@ return (
             padding: 0;
             background: rgba(15, 23, 42, 0.52);
             overflow: hidden;
+            order: 2;
           }
 
           .iphone-field-v2-advanced-status summary {
@@ -46982,13 +46993,13 @@ return (
             }
 
             .iphone-field-v2-step-rail {
-              gap: 5px;
+              gap: 7px;
             }
 
             .iphone-field-v2-step-rail span {
-              min-height: 34px;
-              border-radius: 10px;
-              padding: 4px 2px;
+              min-height: 54px;
+              border-radius: 13px;
+              padding: 7px 5px;
               position: static;
             }
 
@@ -46998,7 +47009,9 @@ return (
             }
 
             .iphone-field-v2-step-rail b {
-              display: none;
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
             }
 
             .iphone-field-v2-step-rail small {
@@ -47011,10 +47024,11 @@ return (
               clip: auto;
               white-space: normal;
               border: 0;
-              font-size: clamp(9px, 2.45vw, 11px);
-              line-height: 1.05;
+              font-size: 12px;
+              line-height: 1.08;
               overflow-wrap: normal;
               word-break: normal;
+              white-space: nowrap;
             }
 
             .iphone-field-v2-advanced-status {
@@ -49908,8 +49922,8 @@ return (
                               <small>Before</small>
                             </button>
                             <button type="button" className="choice-upload" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*,video/*", false)}>
-                              <strong>Upload</strong>
-                              <small>Before</small>
+                              <strong>Upload Media</strong>
+                              <small>Multiple</small>
                             </button>
                             <button
                               type="button"
@@ -49956,8 +49970,8 @@ return (
                               <small>After</small>
                             </button>
                             <button type="button" className="choice-upload" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*,video/*", false)}>
-                              <strong>Upload</strong>
-                              <small>After</small>
+                              <strong>Upload Media</strong>
+                              <small>Multiple</small>
                             </button>
                             <button
                               type="button"
@@ -50009,8 +50023,8 @@ return (
                           className="choice-upload"
                           onClick={() => requestFieldPhotoCapture(selected, activeIphoneV2OutcomeChoice.kind, "image/*,video/*", false)}
                         >
-                          <strong>Upload</strong>
-                          <small>Media</small>
+                          <strong>Upload Media</strong>
+                          <small>Multiple</small>
                         </button>
                         <button
                           type="button"
