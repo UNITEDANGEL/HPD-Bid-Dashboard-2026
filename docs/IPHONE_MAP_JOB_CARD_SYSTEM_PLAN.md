@@ -142,6 +142,13 @@ Current V2.9 build freshness slice:
 - The marker must show the deployed short commit when Cloudflare serves the current build, or a local/unavailable state when the marker is not present.
 - Use `data-hpd-smoke="iphone-v2-build"` to confirm the iPhone is not viewing a stale cached card.
 
+Current V2.10 scroll smoothing slice:
+
+- Keep the V2 sheet content scroll native and fast.
+- Do not change the sheet snap position during normal downward content scrolling.
+- Only settle snap after a deliberate top-edge pull gesture, handle drag, handle tap, or map tap.
+- Downward scroll must not jitter, bounce between snap states, or fight the map.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.

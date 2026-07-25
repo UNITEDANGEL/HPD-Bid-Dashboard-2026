@@ -290,9 +290,10 @@ type IphoneFieldSheetDrag = {
 
 type IphoneFieldSheetTouch = {
   startY: number;
+  lastY: number;
   startScrollTop: number;
   startSnap: IphoneFieldSheetSnap;
-  fired: boolean;
+  moved: boolean;
 };
 
 type MapBaseStyle = {
@@ -4271,10 +4272,8 @@ function collapseIphoneFieldSheetFromMapStage(event: ReactPointerEvent<HTMLEleme
 function handleIphoneFieldSheetWheel(event: ReactWheelEvent<HTMLDivElement>) {
   const scrollTop = event.currentTarget.scrollTop;
   if (scrollTop > 2) return;
-  if (event.deltaY < -24 && iphoneFieldSheetSnap !== "expanded") {
+  if (event.deltaY < -72 && iphoneFieldSheetSnap !== "expanded") {
     setIphoneFieldSheetSnap((current) => iphoneFieldSheetStep(current, "up"));
-  } else if (event.deltaY > 24 && iphoneFieldSheetSnap !== "collapsed") {
-    setIphoneFieldSheetSnap((current) => iphoneFieldSheetStep(current, "down"));
   }
 }
 
@@ -4283,25 +4282,35 @@ function handleIphoneFieldSheetTouchStart(event: ReactTouchEvent<HTMLDivElement>
   if (!touch) return;
   iphoneFieldSheetTouchRef.current = {
     startY: touch.clientY,
+    lastY: touch.clientY,
     startScrollTop: event.currentTarget.scrollTop,
     startSnap: iphoneFieldSheetSnap,
-    fired: false,
+    moved: false,
   };
 }
 
 function handleIphoneFieldSheetTouchMove(event: ReactTouchEvent<HTMLDivElement>) {
   const touch = event.touches[0];
   const sheetTouch = iphoneFieldSheetTouchRef.current;
-  if (!touch || !sheetTouch || sheetTouch.fired || sheetTouch.startScrollTop > 2) return;
+  if (!touch || !sheetTouch) return;
 
-  const deltaY = touch.clientY - sheetTouch.startY;
-  if (Math.abs(deltaY) < 48) return;
-
-  setIphoneFieldSheetSnap(settleIphoneFieldSheet(deltaY, sheetTouch.startSnap));
-  sheetTouch.fired = true;
+  sheetTouch.lastY = touch.clientY;
+  if (Math.abs(touch.clientY - sheetTouch.startY) > 10) sheetTouch.moved = true;
 }
 
-function clearIphoneFieldSheetTouch() {
+function finishIphoneFieldSheetTouch(event: ReactTouchEvent<HTMLDivElement>) {
+  const sheetTouch = iphoneFieldSheetTouchRef.current;
+  iphoneFieldSheetTouchRef.current = null;
+  if (!sheetTouch || !sheetTouch.moved || sheetTouch.startScrollTop > 2) return;
+
+  const deltaY = sheetTouch.lastY - sheetTouch.startY;
+  const endedAtTop = event.currentTarget.scrollTop <= 2;
+  if (!endedAtTop || Math.abs(deltaY) < 72) return;
+
+  setIphoneFieldSheetSnap(settleIphoneFieldSheet(deltaY, sheetTouch.startSnap));
+}
+
+function cancelIphoneFieldSheetTouch() {
   iphoneFieldSheetTouchRef.current = null;
 }
 
@@ -45781,6 +45790,7 @@ return (
             overflow-x: hidden;
             overscroll-behavior: contain;
             -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
             padding: 34px 18px max(22px, env(safe-area-inset-bottom));
             display: grid;
             align-content: start;
@@ -49668,8 +49678,8 @@ return (
                   onWheel={handleIphoneFieldSheetWheel}
                   onTouchStart={handleIphoneFieldSheetTouchStart}
                   onTouchMove={handleIphoneFieldSheetTouchMove}
-                  onTouchEnd={clearIphoneFieldSheetTouch}
-                  onTouchCancel={clearIphoneFieldSheetTouch}
+                  onTouchEnd={finishIphoneFieldSheetTouch}
+                  onTouchCancel={cancelIphoneFieldSheetTouch}
                 >
                   <header className="iphone-field-v2-hero" aria-label="Work order and field status">
                     <div className="iphone-field-v2-title">
@@ -50367,8 +50377,8 @@ return (
                 onWheel={handleIphoneFieldSheetWheel}
                 onTouchStart={handleIphoneFieldSheetTouchStart}
                 onTouchMove={handleIphoneFieldSheetTouchMove}
-                onTouchEnd={clearIphoneFieldSheetTouch}
-                onTouchCancel={clearIphoneFieldSheetTouch}
+                onTouchEnd={finishIphoneFieldSheetTouch}
+                onTouchCancel={cancelIphoneFieldSheetTouch}
               >
                 <header className="iphone-field-title">
                   <div>

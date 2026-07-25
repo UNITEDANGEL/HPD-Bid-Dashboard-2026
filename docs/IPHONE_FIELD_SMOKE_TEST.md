@@ -17,6 +17,7 @@ Use the deployed preview or local server with the same query:
 - Real Leaflet map exists and has tiles.
 - `data-hpd-smoke="iphone-v2-route"` clicks without showing stale `1 stop` or `Route leg loading`.
 - Tapping blank map area collapses or keeps the card below full-screen.
+- Scrolling down inside `iphone-v2-sheet` stays smooth and does not change snap state during normal content scroll.
 - `data-hpd-smoke="iphone-v2-menu"` opens and closes the real map menu.
 
 ## Required Job Card Checks
