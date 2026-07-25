@@ -1,5 +1,5 @@
-﻿import MobileCommandDashboard from "../components/MobileCommandDashboard";
+import DarkAnalyticsDashboard from "../components/DarkAnalyticsDashboard";
 
 export default function HomePage() {
-  return <MobileCommandDashboard />;
+  return <DarkAnalyticsDashboard />;
 }
