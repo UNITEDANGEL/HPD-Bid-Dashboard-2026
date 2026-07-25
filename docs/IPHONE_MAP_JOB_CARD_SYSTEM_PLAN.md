@@ -41,6 +41,20 @@ Working rule:
 - User tests on iPhone and reports what feels wrong.
 - If a new design direction is worse, compare against the prior commit or `card=v1` instead of guessing.
 
+Fast feedback rule:
+
+- The main components already exist. Do not rebuild or invent new components unless a real missing piece is proven.
+- Focus on making existing components run seamlessly together: address/route, scope, tenant, workflow, notes, media, package, affidavit, invoice, and archive.
+- Each upgrade should wire one handoff cleanly, then test it and push it.
+- For faster field feedback, the user can record a 30-60 second Windows screen clip with `Win + G`, test the exact iPhone/Cloudflare link, and upload the clip with the tap that felt wrong.
+
+Current V2 flow organization slice:
+
+- Reorder the V2 job card so Address + Route Me/Waze/Google comes first, field status/next step second, Scope third, Tenant Contact fourth, Workflow fifth, then active media/package/notes/ITB/details.
+- Route Me must collapse the job card enough to show the real map and real route line.
+- Workflow branch buttons must open the next real panel immediately: Start Work opens before media, Finish opens after media, No Access/Refused open media-or-no-media choices, Clear opens confirmation.
+- Keep all existing real handlers and data. Remove duplicate route controls from the selected-card view.
+
 ## Design Board
 
 ![Improved iPhone map and job card samples](design-samples/iphone-map-job-card-samples-v2.png)

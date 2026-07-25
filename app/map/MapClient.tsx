@@ -3512,6 +3512,7 @@ async function routeSelectedJobOnMap(job: MappedJob) {
   setDrawerOpen(true);
   setSelected(job);
   setSelectedOnly(true);
+  setIphoneFieldSheetSnap("collapsed");
   appendDayAgentLog(`Route Me started for ${jobKey(job)}.`, job);
   setActionNotice(`Route Me: drawing route ${userLocation ? "from your saved location" : "from base while GPS updates"} to ${jobKey(job)}.`);
   await drawDayAgentRouteLine([job], routeOrigin, false);
@@ -9349,6 +9350,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setSelectedOnly(true);
     setDrawerOpen(true);
     setFullMap(false);
+    setIphoneFieldSheetSnap("expanded");
     focusFieldWorkChoice();
     showActionNotice(`${key}: Choose before media, upload media, or No Media Start.`);
   }
@@ -9393,6 +9395,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setIphoneV2OutcomeChoice(null);
     setSelectedOnly(true);
     setDrawerOpen(true);
+    setIphoneFieldSheetSnap("middle");
     saveFieldWorkflowPatch(
       { ...job, ...patch } as MappedJob,
       patch,
@@ -9437,6 +9440,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setIphoneV2OutcomeChoice(null);
     setSelectedOnly(true);
     setDrawerOpen(true);
+    setIphoneFieldSheetSnap("expanded");
     saveFieldWorkflowPatch(
       { ...job, ...patch } as MappedJob,
       patch,
@@ -9471,6 +9475,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setIphoneV2OutcomeChoice(null);
     setSelectedOnly(true);
     setDrawerOpen(true);
+    setIphoneFieldSheetSnap("expanded");
     saveFieldWorkflowPatch(
       { ...job, ...patch } as MappedJob,
       patch,
@@ -9541,6 +9546,7 @@ function saveFieldWorkflowPatch(job: MappedJob, patch: Record<string, any>, noti
     setSelectedOnly(true);
     setDrawerOpen(true);
     setFullMap(false);
+    setIphoneFieldSheetSnap("expanded");
     focusFieldWorkChoice();
     showActionNotice(partial ? "Partial Work: choose after media, upload media, or save partial without media." : "Completed Work: choose after media, upload media, or finish without media.");
   }
@@ -46013,6 +46019,10 @@ return (
             text-align: left;
           }
 
+          .iphone-field-v2-screen .iphone-field-v2-route {
+            display: none;
+          }
+
           .iphone-field-v2-route strong {
             color: #bfdbfe;
             font-size: 13px;
@@ -46107,6 +46117,52 @@ return (
             display: grid;
             align-content: start;
             gap: 14px;
+          }
+
+          .iphone-field-v2-scroll > * {
+            min-width: 0;
+            order: 20;
+          }
+
+          .iphone-field-v2-scroll > .iphone-field-v2-address-card {
+            order: 1;
+          }
+
+          .iphone-field-v2-scroll > .iphone-field-v2-hero {
+            order: 2;
+          }
+
+          .iphone-field-v2-scroll > .iphone-field-v2-scope-button {
+            order: 3;
+          }
+
+          .iphone-field-v2-scroll > .iphone-field-v2-contact {
+            order: 4;
+          }
+
+          .iphone-field-v2-scroll > .iphone-field-v2-workflow {
+            order: 5;
+          }
+
+          .iphone-field-v2-scroll > .iphone-field-v2-choice-card,
+          .iphone-field-v2-scroll > .iphone-field-v2-next {
+            order: 6;
+          }
+
+          .iphone-field-v2-scroll > .iphone-field-v2-update {
+            order: 7;
+          }
+
+          .iphone-field-v2-scroll > .iphone-field-v2-notes {
+            order: 8;
+          }
+
+          .iphone-field-v2-scroll > .iphone-field-v2-itb-card {
+            order: 9;
+          }
+
+          .iphone-field-v2-scroll > .iphone-field-v2-more-details {
+            order: 10;
           }
 
           .iphone-field-v2-hero,
@@ -50144,7 +50200,7 @@ return (
                         Google
                       </a>
                       <button type="button" data-hpd-smoke="iphone-v2-map-route" onClick={() => void routeSelectedJobOnMap(selected)}>
-                        Map
+                        Route Me
                       </button>
                     </div>
                   </section>
@@ -50248,6 +50304,7 @@ return (
                           setIphoneV2ClearConfirmJobKey("");
                           setIphoneV2OutcomeChoice({ jobKey: fieldJobKey, kind: "no_access" });
                           setFieldFocusPane("capture");
+                          setIphoneFieldSheetSnap("expanded");
                           showActionNotice("No Access: add evidence first or save the no-access attempt without media.");
                         }}
                         disabled={fieldNoAccessDisabled}
@@ -50264,6 +50321,7 @@ return (
                           setIphoneV2ClearConfirmJobKey("");
                           setIphoneV2OutcomeChoice({ jobKey: fieldJobKey, kind: "refused_access" });
                           setFieldFocusPane("capture");
+                          setIphoneFieldSheetSnap("expanded");
                           showActionNotice("Refused Access: add media first or close refused without media.");
                         }}
                         disabled={!fieldVisitReady}
@@ -50280,6 +50338,7 @@ return (
                           setIphoneV2OutcomeChoice(null);
                           setIphoneV2ClearConfirmJobKey(fieldJobKey);
                           setFieldFocusPane("capture");
+                          setIphoneFieldSheetSnap("expanded");
                           showActionNotice("Clear: confirm reset below or cancel to keep this job status.");
                         }}
                       >
@@ -50619,13 +50678,13 @@ return (
                   ) : null}
 
                   {actionNotice ? (
-                    <section className="iphone-field-v2-card" role="status" aria-live="polite">
+                    <section className="iphone-field-v2-card iphone-field-v2-update" role="status" aria-live="polite">
                       <span className="iphone-field-v2-label">Update</span>
                       <p>{actionNotice}</p>
                     </section>
                   ) : null}
 
-                  <section className="iphone-field-v2-card" aria-label="More job details">
+                  <section className="iphone-field-v2-card iphone-field-v2-more-details" aria-label="More job details">
                     <span className="iphone-field-v2-label">More Details</span>
                     <div className="iphone-field-v2-detail-grid">
                       <div>
