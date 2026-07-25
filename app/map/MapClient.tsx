@@ -4020,9 +4020,13 @@ function clearDayAgentRouteFocus() {
 }
 
 function showCleanMapView() {
+  clearMarkerOverviewReturn();
   setWorkflowViewFilter("all");
   setMapBoroughFilter("all");
   setTodayZoneLimit("all");
+  setMapShowAllDays(true);
+  setSearch("");
+  setUrlOmoRequest("");
   setClusterSheet(null);
   setMapJobBrief(null);
   setSelectedOnly(false);
@@ -4051,6 +4055,10 @@ function showCleanMapView() {
   window.setTimeout(() => {
     mapRef.current?.invalidateSize();
   }, 280);
+
+  window.setTimeout(() => {
+    fitVisibleJobsOnMap(MAP_LAYER_OVERVIEW_ZOOM, false, cleanMapOverviewRows());
+  }, 360);
 }
 
 function openMapLayersFromJobCard() {
@@ -4225,6 +4233,31 @@ function handleIphoneFieldV2TopbarClick(event: ReactMouseEvent<HTMLDivElement>) 
   if (event.target instanceof Element && event.target.closest("button, a, input, select, textarea")) return;
 
   setIphoneFieldSheetSnap("collapsed");
+}
+
+function handleIphoneFieldV2SheetClick(event: ReactMouseEvent<HTMLElement>) {
+  if (iphoneFieldSheetSnap === "expanded" || event.defaultPrevented) return;
+  if (!(event.target instanceof Element)) return;
+  if (
+    event.target.closest(
+      [
+        ".iphone-field-v2-handle",
+        "button",
+        "a",
+        "input",
+        "select",
+        "textarea",
+        "summary",
+        "details",
+        "label",
+        "[role='button']",
+      ].join(", ")
+    )
+  ) {
+    return;
+  }
+
+  setIphoneFieldSheetSnap("expanded");
 }
 
 function isIphoneFieldMapUiTarget(target: EventTarget | null) {
@@ -5083,12 +5116,22 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }, delay);
   }
 
-  function fitVisibleJobsOnMap(maxZoom = 13, includeUserLocation = false) {
+  function cleanMapOverviewRows() {
+    const rows = mappedJobs.length
+      ? mappedJobs
+      : jobs.map((job) => {
+          const coords = getStoredCoords(job);
+          return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" } : { ...job };
+        });
+    return rows.filter((job) => isNycMapCoordinate(job._lat, job._lng) && shouldShowForWorkflowView(job, "all")) as MappedJob[];
+  }
+
+  function fitVisibleJobsOnMap(maxZoom = 13, includeUserLocation = false, sourceRows: MappedJob[] = filteredJobs) {
     const map = mapRef.current;
     if (!map) return;
     markProgrammaticMapMove();
 
-    const jobBounds = filteredJobs
+    const jobBounds = sourceRows
       .filter((job) => isNycMapCoordinate(job._lat, job._lng))
       .map((job) => [Number(job._lat), Number(job._lng)] as [number, number]);
     const bounds = [...jobBounds];
@@ -6283,8 +6326,20 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                       : zoomLevel <= 16
                         ? 1.14
                         : 1.22;
+        const selectedMarkerZoomScale =
+          zoomLevel <= 12
+            ? 0.72
+            : zoomLevel <= 13
+              ? 0.8
+              : zoomLevel <= 14
+                ? 0.9
+                : zoomLevel <= 15
+                  ? 1
+                  : zoomLevel <= 16
+                    ? 1.08
+                    : 1.16;
         const markerZoomScale = selectedOnly
-          ? 1
+          ? selectedMarkerZoomScale
           : collisionMiniMarker
             ? Math.max(rawZoomMarkerScale, 0.82)
             : rawZoomMarkerScale;
@@ -45715,14 +45770,13 @@ return (
 
           .iphone-field-v2-sheet {
             position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: clamp(340px, 58svh, 590px);
-            max-height: calc(100svh - 188px);
-            border-radius: 26px 26px 0 0;
+            left: max(8px, env(safe-area-inset-left));
+            right: max(8px, env(safe-area-inset-right));
+            bottom: max(6px, env(safe-area-inset-bottom));
+            height: clamp(316px, 53svh, 548px);
+            max-height: calc(100svh - 212px);
+            border-radius: 24px;
             border: 1px solid rgba(148, 163, 184, 0.32);
-            border-bottom: 0;
             background:
               linear-gradient(180deg, rgba(12, 24, 39, 0.97), rgba(2, 8, 23, 0.99)),
               rgba(2, 8, 23, 0.96);
@@ -45737,14 +45791,14 @@ return (
           }
 
           .iphone-field-v2-screen.sheet-expanded .iphone-field-v2-sheet {
-            height: calc(100svh - 76px);
-            max-height: calc(100svh - 76px);
+            height: calc(100svh - 104px);
+            max-height: calc(100svh - 104px);
           }
 
           .iphone-field-v2-screen.sheet-collapsed .iphone-field-v2-sheet {
-            height: clamp(118px, 23svh, 164px);
-            max-height: clamp(118px, 23svh, 164px);
-            transform: translateY(calc(100% - 52px));
+            height: clamp(112px, 21svh, 150px);
+            max-height: clamp(112px, 21svh, 150px);
+            transform: translateY(calc(100% - 54px));
             box-shadow: 0 -14px 40px rgba(2, 6, 23, 0.46), inset 0 1px 0 rgba(255,255,255,0.12);
           }
 
@@ -46973,19 +47027,23 @@ return (
             }
 
             .iphone-field-v2-sheet {
-              height: clamp(260px, 54svh, 330px);
-              max-height: calc(100svh - 190px);
+              left: max(7px, env(safe-area-inset-left));
+              right: max(7px, env(safe-area-inset-right));
+              bottom: max(5px, env(safe-area-inset-bottom));
+              height: clamp(244px, 50svh, 316px);
+              max-height: calc(100svh - 198px);
+              border-radius: 22px;
             }
 
             .iphone-field-v2-screen.sheet-expanded .iphone-field-v2-sheet {
-              height: calc(100svh - 68px);
-              max-height: calc(100svh - 68px);
+              height: calc(100svh - 88px);
+              max-height: calc(100svh - 88px);
             }
 
             .iphone-field-v2-screen.sheet-collapsed .iphone-field-v2-sheet {
-              height: clamp(116px, 25svh, 152px);
-              max-height: clamp(116px, 25svh, 152px);
-              transform: translateY(calc(100% - 46px));
+              height: clamp(108px, 22svh, 142px);
+              max-height: clamp(108px, 22svh, 142px);
+              transform: translateY(calc(100% - 48px));
             }
 
             .iphone-field-v2-scroll {
@@ -49659,7 +49717,13 @@ return (
                 <strong>Route Me</strong>
                 <small>{fieldRouteLabel}</small>
               </button>
-              <article className="iphone-field-v2-sheet" data-sheet-snap={iphoneFieldSheetSnap} data-hpd-smoke="iphone-v2-sheet" aria-label="Selected job field sheet V2">
+              <article
+                className="iphone-field-v2-sheet"
+                data-sheet-snap={iphoneFieldSheetSnap}
+                data-hpd-smoke="iphone-v2-sheet"
+                aria-label="Selected job field sheet V2"
+                onClick={handleIphoneFieldV2SheetClick}
+              >
                 <button
                   type="button"
                   className="iphone-field-v2-handle"

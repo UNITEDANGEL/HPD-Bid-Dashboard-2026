@@ -149,6 +149,20 @@ Current V2.10 scroll smoothing slice:
 - Only settle snap after a deliberate top-edge pull gesture, handle drag, handle tap, or map tap.
 - Downward scroll must not jitter, bounce between snap states, or fight the map.
 
+Current V2.11 back-to-map overview slice:
+
+- The V2 back/Map action must not leave the map narrowed to the selected OMO search.
+- Back/Map must clear `omo`, clear the OMO search text, close the selected card, and fit the real map to the all-job overview.
+- After returning to the map, manual zoom/pan must stay under user control and not snap back to the selected job.
+
+Current V2.12 sheet expansion and marker scale slice:
+
+- Tapping a non-control area of the V2 job card should expand the sheet upward.
+- A deliberate top-edge upward scroll/pull should settle into the expanded complete job-card view.
+- The middle sheet should be slightly inset and shorter so the real map remains visible around the card.
+- The collapsed sheet should leave the map as the main usable surface, with only a small real handle/card edge visible.
+- Selected-job markers must shrink at lower zoom and grow only as the user zooms closer.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.
