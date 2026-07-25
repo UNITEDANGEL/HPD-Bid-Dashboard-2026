@@ -172,6 +172,13 @@ Current V2.13 map rail slice:
 - Me centers on the user's saved/live location.
 - Compass requests real device orientation when supported and shows a real unavailable state when unsupported.
 
+Current V2.14 top map control proportion slice:
+
+- On iPhone width, the left Tools/menu button, search box, and Agent button must not overlap.
+- Search must start after the left menu with a visible gap.
+- Agent must stay compact and proportional to the search row.
+- Blank map taps use the map; job marker taps open a job card; blank map taps outside an open V2 card collapse the sheet.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.

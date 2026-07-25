@@ -42907,14 +42907,14 @@ return (
             /* EXACT_MOCKUP_TOP_ROW_FIX_V2 */
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed {
               top: max(12px, env(safe-area-inset-top)) !important;
-              left: 58px !important;
+              left: max(68px, calc(env(safe-area-inset-left) + 68px)) !important;
               right: 8px !important;
               width: auto !important;
               display: grid !important;
-              grid-template-columns: minmax(0, 1fr) 80px !important;
-              gap: 7px !important;
+              grid-template-columns: minmax(0, 1fr) 58px !important;
+              gap: 6px !important;
               align-items: center !important;
-              height: 58px !important;
+              height: 54px !important;
             }
 
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search {
@@ -42922,12 +42922,12 @@ return (
               inset: auto !important;
               width: 100% !important;
               min-width: 0 !important;
-              height: 58px !important;
+              height: 54px !important;
               display: flex !important;
               align-items: center !important;
               gap: 0 !important;
-              border-radius: 26px !important;
-              padding: 0 9px 0 39px !important;
+              border-radius: 22px !important;
+              padding: 0 8px 0 36px !important;
               background: rgba(12, 23, 38, 0.9) !important;
               border: 1px solid rgba(148, 163, 184, 0.36) !important;
               box-shadow: 0 16px 36px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08) !important;
@@ -42936,10 +42936,10 @@ return (
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed .map-face-search::before {
               content: "⌕" !important;
               position: absolute !important;
-              left: 14px !important;
+              left: 13px !important;
               top: 50% !important;
               transform: translateY(-50%) !important;
-              font-size: 24px !important;
+              font-size: 22px !important;
               line-height: 1 !important;
               color: #f8fafc !important;
               opacity: 1 !important;
@@ -42980,19 +42980,19 @@ return (
             .map-shell.map-glass-command-trial.full-map-mode .map-cockpit.board-collapsed:has(.map-day-route-tray.is-hidden) .map-agent-top-button {
               position: relative !important;
               inset: auto !important;
-              width: 80px !important;
-              min-width: 80px !important;
-              max-width: 80px !important;
-              height: 58px !important;
+              width: 58px !important;
+              min-width: 58px !important;
+              max-width: 58px !important;
+              height: 50px !important;
               display: flex !important;
               align-items: center !important;
               justify-content: center !important;
-              padding: 0 7px !important;
-              border-radius: 23px !important;
+              padding: 0 5px !important;
+              border-radius: 18px !important;
               background: rgba(9, 20, 36, 0.94) !important;
               border: 1px solid rgba(59, 130, 246, 0.62) !important;
               color: #ffffff !important;
-              font-size: 13px !important;
+              font-size: 10.5px !important;
               font-weight: 900 !important;
               letter-spacing: 0 !important;
               box-shadow: 0 0 28px rgba(37,99,235,0.28), inset 0 1px 0 rgba(255,255,255,0.08) !important;

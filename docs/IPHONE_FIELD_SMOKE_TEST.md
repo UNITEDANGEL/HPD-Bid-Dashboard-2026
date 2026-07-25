@@ -17,6 +17,8 @@ Use the deployed preview or local server with the same query:
 - Real Leaflet map exists and has tiles.
 - `data-hpd-smoke="iphone-v2-route"` clicks without showing stale `1 stop` or `Route leg loading`.
 - `data-hpd-smoke="iphone-v2-back"` returns to the full map, removes `omo` from the URL, and preserves the current map zoom/position instead of forcing a full overview.
+- On full-map iPhone width, the left Tools/menu button, search box, and Agent button have visible gaps and do not overlap.
+- Blank map taps do not open random UI; job marker taps open a job card; blank map taps behind an open V2 card collapse the sheet.
 - Tapping blank map area collapses or keeps the card below full-screen.
 - Scrolling down inside `iphone-v2-sheet` stays smooth and does not change snap state during normal content scroll.
 - Tapping a non-control area inside `iphone-v2-sheet` expands the sheet.
