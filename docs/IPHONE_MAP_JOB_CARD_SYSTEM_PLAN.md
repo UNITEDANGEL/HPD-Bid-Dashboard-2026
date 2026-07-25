@@ -129,6 +129,13 @@ Current V2.7 back-to-map controls slice:
 - The iPhone map control rail should stay simple: a `Map` button directly beside `Me`.
 - The iPhone field view does not need separate `+`, `-`, or `Fit` buttons because map gestures and the `Map` button cover the required field use.
 
+Current V2.8 faster smoke-test slice:
+
+- Use `testFlow=1` as the short safe-test alias for the existing `fieldFlowTest=1` route workflow behavior.
+- Keep stable `data-hpd-smoke` hooks on the real V2 card and paperwork package controls so browser tests do not depend on fragile text, screen position, or old drawer selectors.
+- Use `docs/IPHONE_FIELD_SMOKE_TEST.md` as the standard smoke-test checklist after each iPhone card change.
+- Smoke-test normal controls without side effects; do not click send/share/download/reset actions unless that cycle explicitly includes the side effect.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.

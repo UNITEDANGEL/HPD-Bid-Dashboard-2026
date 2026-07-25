@@ -3654,7 +3654,7 @@ export default function PaperworkPage() {
         }
       `}</style>
 
-      <section className="paperwork-wrap">
+      <section className="paperwork-wrap" data-hpd-smoke="paperwork-package-page">
         <header className="paperwork-top">
           <div>
             <p>Field paperwork</p>
@@ -3662,12 +3662,12 @@ export default function PaperworkPage() {
             <p>Select the job, choose one package type, then generate the invoice package.</p>
           </div>
           <nav className="paperwork-nav" aria-label="Paperwork actions">
-            <a href={mapBackHref}>Map</a>
-            <a href="/outputs">Archive</a>
+            <a data-hpd-smoke="paperwork-map-link" href={mapBackHref}>Map</a>
+            <a data-hpd-smoke="paperwork-archive-link" href="/outputs">Archive</a>
           </nav>
         </header>
 
-        <section className="paperwork-card">
+        <section className="paperwork-card" data-hpd-smoke="paperwork-package-card">
           <span className={`paperwork-package-badge ${packageTone}`}>{affidavitTemplateLabel(outcome)}</span>
           {form.sourceStatus ? (
             <p className="paperwork-source-status">
@@ -3682,7 +3682,7 @@ export default function PaperworkPage() {
 
           <label className="paperwork-field">
             Select Job
-            <select value={selectedId} onChange={(event) => chooseJob(event.target.value)}>
+            <select data-hpd-smoke="paperwork-job-select" value={selectedId} onChange={(event) => chooseJob(event.target.value)}>
               <option value="">Manual package</option>
               {jobs.slice(0, 700).map((job, index) => {
                 const id = getJobId(job, `JOB-${index + 1}`);
@@ -3695,9 +3695,10 @@ export default function PaperworkPage() {
             </select>
           </label>
 
-          <div className="paperwork-package-actions" aria-label="Package type">
+          <div className="paperwork-package-actions" data-hpd-smoke="paperwork-package-type" aria-label="Package type">
             <button
               className={`package-choice ${outcome === "work_completed" || outcome === "partial_work_completed" ? "active" : ""}`}
+              data-hpd-smoke="paperwork-type-work"
               type="button"
               onClick={() => choosePackage("work")}
             >
@@ -3706,6 +3707,7 @@ export default function PaperworkPage() {
             </button>
             <button
               className={`package-choice no-work ${isNoWorkOutcome(outcome) ? "active" : ""}`}
+              data-hpd-smoke="paperwork-type-no-work"
               type="button"
               onClick={() => choosePackage("no_work")}
             >
@@ -3868,18 +3870,18 @@ export default function PaperworkPage() {
           </details>
 
           {!packagePreview ? (
-            <div className="paperwork-generate-choice" aria-label="Package media choice">
-              <button className="paperwork-print" type="button" onClick={() => generateCompletePackage(true)} disabled={!canGeneratePackage}>
+            <div className="paperwork-generate-choice" data-hpd-smoke="paperwork-generate-choice" aria-label="Package media choice">
+              <button className="paperwork-print" data-hpd-smoke="paperwork-generate-full-package" type="button" onClick={() => generateCompletePackage(true)} disabled={!canGeneratePackage}>
                 {packageJobLoading ? "Loading Job Data..." : "Generate Full Package"}
               </button>
-              <button className="paperwork-secondary paperwork-pdf-only" type="button" onClick={() => generateCompletePackage(false)} disabled={!canGeneratePackage}>
+              <button className="paperwork-secondary paperwork-pdf-only" data-hpd-smoke="paperwork-generate-pdf-only" type="button" onClick={() => generateCompletePackage(false)} disabled={!canGeneratePackage}>
                 Affidavit + Invoice Only
               </button>
               <small>{packageJobLoading ? "Loading COA address and ITB page 3 description before package creation." : "Use the second button when you want no images or videos attached."}</small>
             </div>
           ) : null}
           {packagePreview ? (
-            <div className="paperwork-package-review">
+            <div className="paperwork-package-review" data-hpd-smoke="paperwork-package-review">
               <div className="package-created-head">
                 <div>
                   <span className="package-kicker">Package ready</span>
@@ -3888,7 +3890,7 @@ export default function PaperworkPage() {
                 </div>
                 <span>{packagePreview.imageCount} image(s) / {packagePreview.videoCount} video(s)</span>
               </div>
-              <div className="package-review-strip" aria-label="Package review flow">
+              <div className="package-review-strip" data-hpd-smoke="paperwork-package-review-flow" aria-label="Package review flow">
                 <span>
                   <b>Review</b>
                   <strong>PDF visible</strong>
@@ -3903,7 +3905,7 @@ export default function PaperworkPage() {
                 </span>
               </div>
               {packagePreviewOpen ? (
-                <div className="package-preview-panel" ref={packagePreviewPanelRef}>
+                <div className="package-preview-panel" data-hpd-smoke="paperwork-package-preview-panel" ref={packagePreviewPanelRef}>
                   <div className="package-pdf-preview-card">
                     <div className="package-pdf-preview-head">
                       <div>
@@ -3914,7 +3916,7 @@ export default function PaperworkPage() {
                           {packagePreview.pdfPreviewPageCount ? ` · Page 1 of ${packagePreview.pdfPreviewPageCount}` : ""}
                         </small>
                       </div>
-                      <button type="button" onClick={() => setFullScreenPdfOpen(true)}>
+                      <button type="button" data-hpd-smoke="paperwork-open-pdf" onClick={() => setFullScreenPdfOpen(true)}>
                         Open PDF
                       </button>
                     </div>
@@ -3928,7 +3930,7 @@ export default function PaperworkPage() {
                       <div className="package-pdf-fallback-card">
                         <strong>PDF created</strong>
                         <span>Preview image could not render cleanly on this device, so the app is hiding the browser PDF object instead of showing an annotation error.</span>
-                        <a href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
+                        <a data-hpd-smoke="paperwork-save-pdf-fallback" href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
                           Save PDF
                         </a>
                       </div>
@@ -3939,10 +3941,10 @@ export default function PaperworkPage() {
                       </small>
                     ) : null}
                     <div className="package-pdf-actions">
-                      <button type="button" onClick={() => setFullScreenPdfOpen(true)}>
+                      <button type="button" data-hpd-smoke="paperwork-full-screen-pdf" onClick={() => setFullScreenPdfOpen(true)}>
                         Full Screen PDF
                       </button>
-                      <a href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
+                      <a data-hpd-smoke="paperwork-save-pdf" href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
                         Save PDF
                       </a>
                     </div>
@@ -3985,7 +3987,7 @@ export default function PaperworkPage() {
                       </div>
                     ) : null}
                   </div>
-                  <div className="package-folder-list" aria-label="Folder contents">
+                  <div className="package-folder-list" data-hpd-smoke="paperwork-folder-contents" aria-label="Folder contents">
                     <div className="package-folder-list-head">
                       <strong>Folder Contents</strong>
                       <span>{packagePreview.folderFileCount} file(s)</span>
@@ -3998,34 +4000,34 @@ export default function PaperworkPage() {
                     ))}
                   </div>
                   <div className="package-delivery-actions package-primary-delivery">
-                    <button type="button" onClick={sendCompletePackage}>
+                    <button type="button" data-hpd-smoke="paperwork-share-files" onClick={sendCompletePackage}>
                       Share Files
                     </button>
-                    <button type="button" onClick={saveCompletePackageFolder}>
+                    <button type="button" data-hpd-smoke="paperwork-save-folder" onClick={saveCompletePackageFolder}>
                       Save Folder
                     </button>
-                    <button type="button" onClick={downloadCompletePackageFiles}>
+                    <button type="button" data-hpd-smoke="paperwork-download-files" onClick={downloadCompletePackageFiles}>
                       Download Files
                     </button>
                   </div>
                   <details className="package-backup-details">
                     <summary>Backup / separate files</summary>
                     <div className="package-delivery-actions package-secondary-delivery">
-                      <button type="button" onClick={sendZipPackage}>
+                      <button type="button" data-hpd-smoke="paperwork-share-zip" onClick={sendZipPackage}>
                         Share ZIP
                       </button>
-                      <a href={packagePreview.zipUrl} download={packagePreview.zipFileName}>
+                      <a data-hpd-smoke="paperwork-save-zip" href={packagePreview.zipUrl} download={packagePreview.zipFileName}>
                         Save ZIP
                       </a>
-                      <button type="button" onClick={sendApplicationPackage}>
+                      <button type="button" data-hpd-smoke="paperwork-share-application" onClick={sendApplicationPackage}>
                         Share Application Files
                       </button>
                       {packagePreview.videoPackageFileName ? (
-                        <button type="button" onClick={sendVideoPackage}>
+                        <button type="button" data-hpd-smoke="paperwork-share-video" onClick={sendVideoPackage}>
                           Share Video Files
                         </button>
                       ) : null}
-                      <button type="button" className="package-backup-send" onClick={sendEvidenceFilesBackup}>
+                      <button type="button" className="package-backup-send" data-hpd-smoke="paperwork-backup-send-files" onClick={sendEvidenceFilesBackup}>
                         Backup: Send Files
                       </button>
                     </div>
@@ -4084,7 +4086,7 @@ export default function PaperworkPage() {
                   <span>PDF Preview</span>
                   <strong>{packagePreview.pdfFileName}</strong>
                 </div>
-                <button className="fullscreen-pdf-close" type="button" onClick={() => setFullScreenPdfOpen(false)}>
+                <button className="fullscreen-pdf-close" data-hpd-smoke="paperwork-full-screen-close" type="button" onClick={() => setFullScreenPdfOpen(false)}>
                   Close
                 </button>
               </div>
@@ -4098,7 +4100,7 @@ export default function PaperworkPage() {
                   <div className="fullscreen-pdf-fallback">
                     <strong>PDF created</strong>
                     <span>The PDF preview image could not render cleanly, so the app is hiding the browser PDF object instead of showing an annotation error.</span>
-                    <a href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
+                    <a data-hpd-smoke="paperwork-full-screen-save-pdf" href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
                       Save PDF
                     </a>
                   </div>

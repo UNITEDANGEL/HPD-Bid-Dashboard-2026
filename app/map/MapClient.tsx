@@ -110,6 +110,12 @@ import {
 const WAZE_LOGO_URL = "https://www.google.com/s2/favicons?domain=waze.com&sz=64";
 const GOOGLE_MAPS_LOGO_URL = "https://www.google.com/s2/favicons?domain=maps.google.com&sz=64";
 
+function fieldFlowTestModeEnabled() {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.get("fieldFlowTest") === "1" || params.get("testFlow") === "1";
+}
+
 type JobRecord = {
   [key: string]: any;
   id?: string;
@@ -4791,7 +4797,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         return;
       }
 
-      const testOnly = new URLSearchParams(window.location.search).get("fieldFlowTest") === "1";
+      const testOnly = fieldFlowTestModeEnabled();
       if (testOnly) {
         applyWorkflowPatchToState(key, patch);
         showActionNotice(`[TEST ONLY] ${message}`);
@@ -4839,7 +4845,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const drawer = document.querySelector<HTMLElement>(".job-drawer");
         if (drawer) drawer.scrollLeft = 0;
       }, 0);
-      const testOnly = new URLSearchParams(window.location.search).get("fieldFlowTest") === "1";
+      const testOnly = fieldFlowTestModeEnabled();
       if (testOnly) {
         showActionNotice(`[TEST ONLY] ${fieldEvidenceLabel(kind)} media console opened for ${key}.`);
         return;
@@ -49555,9 +49561,9 @@ return (
         const useIphoneJobCardV2 = iphoneJobCardVersion === "v2";
         if (useIphoneJobCardV2) {
           return (
-            <section className={`iphone-field-v2-screen sheet-${iphoneFieldSheetSnap}`} data-iphone-field-screen="true" data-iphone-card-version="v2" aria-label={`${fieldJobKey} iPhone field job card V2`}>
+            <section className={`iphone-field-v2-screen sheet-${iphoneFieldSheetSnap}`} data-iphone-field-screen="true" data-iphone-card-version="v2" data-hpd-smoke="iphone-v2-screen" aria-label={`${fieldJobKey} iPhone field job card V2`}>
               <div className="iphone-field-v2-topbar" onClick={handleIphoneFieldV2TopbarClick}>
-                <button type="button" className="iphone-field-v2-icon" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
+                <button type="button" className="iphone-field-v2-icon" data-hpd-smoke="iphone-v2-back" onClick={showCleanMapView} aria-label={`Back to ${mapReturnView.label}`}>
                   ‹
                 </button>
                 <div className="iphone-field-v2-pill" aria-label="Selected work order">
@@ -49567,6 +49573,7 @@ return (
                 <button
                   type="button"
                   className="iphone-field-v2-icon"
+                  data-hpd-smoke="iphone-v2-menu"
                   onClick={mapMenuOpen ? closeMapMenu : openMapMenu}
                   aria-label={mapMenuOpen ? "Close map menu" : "Open map menu"}
                   aria-pressed={mapMenuOpen}
@@ -49577,16 +49584,18 @@ return (
               <button
                 type="button"
                 className="iphone-field-v2-route"
+                data-hpd-smoke="iphone-v2-route"
                 onClick={() => void routeSelectedJobOnMap(selected)}
                 aria-label={`Route me to ${fieldJobKey}. ${fieldRouteLabel}.`}
               >
                 <strong>Route Me</strong>
                 <small>{fieldRouteLabel}</small>
               </button>
-              <article className="iphone-field-v2-sheet" data-sheet-snap={iphoneFieldSheetSnap} aria-label="Selected job field sheet V2">
+              <article className="iphone-field-v2-sheet" data-sheet-snap={iphoneFieldSheetSnap} data-hpd-smoke="iphone-v2-sheet" aria-label="Selected job field sheet V2">
                 <button
                   type="button"
                   className="iphone-field-v2-handle"
+                  data-hpd-smoke="iphone-v2-handle"
                   aria-label={`Job card is ${iphoneFieldSheetSnap}. Drag down to collapse or up to expand.`}
                   onPointerDown={handleIphoneFieldSheetPointerDown}
                   onPointerMove={handleIphoneFieldSheetPointerMove}
@@ -49642,8 +49651,8 @@ return (
                           ))}
                         </div>
                       </div>
-                      <details className="iphone-field-v2-advanced-status">
-                        <summary>
+                      <details className="iphone-field-v2-advanced-status" data-hpd-smoke="iphone-v2-status-panel">
+                        <summary data-hpd-smoke="iphone-v2-status-summary">
                           <span>Status / Override</span>
                           <strong>{draftWorkflowStatus ? "Ready to save" : "Manual status"}</strong>
                         </summary>
@@ -49656,12 +49665,13 @@ return (
                               onChange={(event) => setWorkflowVisitDate(event.target.value)}
                               aria-label="Status date and time"
                             />
-                            <button type="button" onClick={setWorkflowVisitDateToNow}>Now</button>
+                            <button type="button" data-hpd-smoke="iphone-v2-status-now" onClick={setWorkflowVisitDateToNow}>Now</button>
                           </div>
                           <div className="iphone-field-v2-status-row" aria-label="Save field status">
                             <button
                               type="button"
                               className="iphone-field-v2-status-button"
+                              data-hpd-smoke="iphone-v2-status-button"
                               onClick={() => {
                                 setFieldFocusPane("capture");
                                 setWorkflowVisitDate(workflowVisitDateValue());
@@ -49671,6 +49681,7 @@ return (
                               Status
                             </button>
                             <select
+                              data-hpd-smoke="iphone-v2-status-select"
                               value={draftWorkflowStatus}
                               onChange={(event) => {
                                 const nextStatus = event.target.value;
@@ -49697,6 +49708,7 @@ return (
                             <button
                               type="button"
                               className="iphone-field-v2-save"
+                              data-hpd-smoke="iphone-v2-status-save"
                               disabled={!draftWorkflowStatus}
                               onClick={() => saveDraftWorkflow(selected)}
                             >
@@ -49708,26 +49720,26 @@ return (
                     </section>
                   </header>
 
-                  <section className="iphone-field-v2-card iphone-field-v2-address-card" aria-label="Job address and navigation">
+                  <section className="iphone-field-v2-card iphone-field-v2-address-card" data-hpd-smoke="iphone-v2-address" aria-label="Job address and navigation">
                     <div className="iphone-field-v2-address-copy">
                       <span className="iphone-field-v2-label">Address</span>
                       <strong>{fieldAddress}</strong>
                       <small>{fieldRouteLabel} · {displayLocation(selected) || "Location not listed"}</small>
                     </div>
                     <div className="iphone-field-v2-nav-actions" aria-label="Navigation actions">
-                      <a className="waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                      <a className="waze" data-hpd-smoke="iphone-v2-waze" href={wazeDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
                         Waze
                       </a>
-                      <a className="google" href={googleDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
+                      <a className="google" data-hpd-smoke="iphone-v2-google" href={googleDirectionsUrl(selected)} target="_blank" rel="noopener noreferrer">
                         Google
                       </a>
-                      <button type="button" onClick={() => void routeSelectedJobOnMap(selected)}>
+                      <button type="button" data-hpd-smoke="iphone-v2-map-route" onClick={() => void routeSelectedJobOnMap(selected)}>
                         Map
                       </button>
                     </div>
                   </section>
 
-                  <section className="iphone-field-v2-card iphone-field-v2-contact" aria-label="Tenant contact">
+                  <section className="iphone-field-v2-card iphone-field-v2-contact" data-hpd-smoke="iphone-v2-contact" aria-label="Tenant contact">
                     <div className="iphone-field-v2-contact-main">
                       <span className="iphone-field-v2-label">Tenant Contact</span>
                       <div className="iphone-field-v2-contact-line">
@@ -49746,6 +49758,7 @@ return (
                   <button
                     type="button"
                     className="iphone-field-v2-card iphone-field-v2-scope-button"
+                    data-hpd-smoke="iphone-v2-scope"
                     aria-label="Open full job scope"
                     onClick={() => {
                       setIphoneV2ScopeOpen(true);
@@ -49760,13 +49773,14 @@ return (
                     <small>{fieldDescription ? "Tap for full scope." : "Description needs source review."}</small>
                   </button>
 
-                  <section className="iphone-field-v2-card iphone-field-v2-itb-card" aria-label="Complete invitation to bid">
+                  <section className="iphone-field-v2-card iphone-field-v2-itb-card" data-hpd-smoke="iphone-v2-itb" aria-label="Complete invitation to bid">
                     <span className="iphone-field-v2-label">Complete Invitation To Bid</span>
                     <strong>{fieldItbSource?.fileName || "ITB source"}</strong>
                     <small>{fieldItbStatus}</small>
                     <div className="iphone-field-v2-itb-actions">
                       <button
                         type="button"
+                        data-hpd-smoke="iphone-v2-open-itb"
                         onClick={() => {
                           setItbSourceImageFailed("");
                           setItbSourceOpen(true);
@@ -49775,35 +49789,36 @@ return (
                         Open ITB
                       </button>
                       {fieldItbSource?.pdfPublished ? (
-                        <a href={fieldItbSource.pdfUrl} target="_blank" rel="noopener noreferrer">
+                        <a data-hpd-smoke="iphone-v2-pdf-page" href={fieldItbSource.pdfUrl} target="_blank" rel="noopener noreferrer">
                           PDF Page
                         </a>
                       ) : null}
                       {fieldItbSource?.pdfPublished ? (
-                        <a href={fieldItbSource.pdfDownloadUrl} target="_blank" rel="noopener noreferrer">
+                        <a data-hpd-smoke="iphone-v2-full-pdf" href={fieldItbSource.pdfDownloadUrl} target="_blank" rel="noopener noreferrer">
                           Full PDF
                         </a>
                       ) : null}
                     </div>
                   </section>
 
-                  <section className="iphone-field-v2-card iphone-field-v2-workflow" aria-label="Workflow">
+                  <section className="iphone-field-v2-card iphone-field-v2-workflow" data-hpd-smoke="iphone-v2-workflow" aria-label="Workflow">
                     <div className="iphone-field-v2-workflow-head">
                       <strong>Workflow</strong>
                       <b>{fieldStatusFull}</b>
                     </div>
                     <div className="iphone-field-v2-actions">
-                      <button type="button" className={`iphone-field-v2-action arrived ${fieldHasArrived ? "is-saved" : ""}`} onClick={() => void markFieldVisit(selected, "manual_here")} disabled={fieldVisitSaving || fieldHasArrived}>
+                      <button type="button" className={`iphone-field-v2-action arrived ${fieldHasArrived ? "is-saved" : ""}`} data-hpd-smoke="iphone-v2-arrived" onClick={() => void markFieldVisit(selected, "manual_here")} disabled={fieldVisitSaving || fieldHasArrived}>
                         <span>{fieldVisitSaving ? "Saving" : "Arrived Saved"}</span>
                         <strong>{fieldHasArrived ? arrivedStamp : "Tap to save"}</strong>
                       </button>
-                      <button type="button" className={`iphone-field-v2-action visit ${fieldVisitReady ? "is-saved" : ""}`} onClick={() => saveTopCardStartVisit(selected)} disabled={!fieldHasArrived || fieldVisitReady}>
+                      <button type="button" className={`iphone-field-v2-action visit ${fieldVisitReady ? "is-saved" : ""}`} data-hpd-smoke="iphone-v2-start-visit" onClick={() => saveTopCardStartVisit(selected)} disabled={!fieldHasArrived || fieldVisitReady}>
                         <span>Start Visit</span>
                         <strong>{visitStamp}</strong>
                       </button>
                       <button
                         type="button"
                         className={`iphone-field-v2-action work ${fieldWorkReady ? "is-saved" : ""}`}
+                        data-hpd-smoke="iphone-v2-start-work"
                         onClick={() => {
                           setIphoneV2ClearConfirmJobKey("");
                           openStartJobChoices(selected);
@@ -49817,6 +49832,7 @@ return (
                       <button
                         type="button"
                         className="iphone-field-v2-action no-access"
+                        data-hpd-smoke="iphone-v2-no-access"
                         onClick={() => {
                           setFieldWorkChoice(null);
                           setIphoneV2ClearConfirmJobKey("");
@@ -49832,6 +49848,7 @@ return (
                       <button
                         type="button"
                         className="iphone-field-v2-action refused"
+                        data-hpd-smoke="iphone-v2-refused"
                         onClick={() => {
                           setFieldWorkChoice(null);
                           setIphoneV2ClearConfirmJobKey("");
@@ -49847,6 +49864,7 @@ return (
                       <button
                         type="button"
                         className="iphone-field-v2-action clear"
+                        data-hpd-smoke="iphone-v2-clear"
                         onClick={() => {
                           setFieldWorkChoice(null);
                           setIphoneV2OutcomeChoice(null);
@@ -49861,7 +49879,7 @@ return (
                     </div>
                   </section>
 
-                  <section className="iphone-field-v2-card iphone-field-v2-notes" aria-label="Field notes">
+                  <section className="iphone-field-v2-card iphone-field-v2-notes" data-hpd-smoke="iphone-v2-notes" aria-label="Field notes">
                     <div className="iphone-field-v2-notes-head">
                       <div>
                         <span className="iphone-field-v2-label">Field Notes</span>
@@ -49870,6 +49888,7 @@ return (
                       <b>{fieldNotes.length ? `${fieldNotes.length} saved` : "No notes"}</b>
                     </div>
                     <textarea
+                      data-hpd-smoke="iphone-v2-note-draft"
                       value={fieldNoteDraft}
                       onChange={(event) => updateFieldNoteDraft(selected, event.target.value)}
                       placeholder="Example: First visit measurements taken. Need material on hand before second visit repairs."
@@ -49879,17 +49898,19 @@ return (
                     <div className="iphone-field-v2-note-actions">
                       <button
                         type="button"
+                        data-hpd-smoke="iphone-v2-note-measurements"
                         onClick={() => appendFieldNoteTemplate(selected, "First visit: measurements taken. Return repair visit needed once material is on hand.")}
                       >
                         Measurements
                       </button>
                       <button
                         type="button"
+                        data-hpd-smoke="iphone-v2-note-material"
                         onClick={() => appendFieldNoteTemplate(selected, "Material on hand. Ready for second visit repairs.")}
                       >
                         Material ready
                       </button>
-                      <button type="button" className="save-note" onClick={() => saveFieldNote(selected)} disabled={fieldNoteSaving || !fieldNoteDraft.trim()}>
+                      <button type="button" className="save-note" data-hpd-smoke="iphone-v2-note-save" onClick={() => saveFieldNote(selected)} disabled={fieldNoteSaving || !fieldNoteDraft.trim()}>
                         {fieldNoteSaving ? "Saving..." : "Save Note"}
                       </button>
                     </div>
@@ -49908,7 +49929,11 @@ return (
                   </section>
 
                   {activeIphoneV2WorkChoice ? (
-                    <section className="iphone-field-v2-card iphone-field-v2-choice-card" aria-label={activeIphoneV2WorkChoice.phase === "start" ? "Start work media choices" : "Finish work media choices"}>
+                    <section
+                      className="iphone-field-v2-card iphone-field-v2-choice-card"
+                      data-hpd-smoke={activeIphoneV2WorkChoice.phase === "start" ? "iphone-v2-start-work-media" : "iphone-v2-finish-work-media"}
+                      aria-label={activeIphoneV2WorkChoice.phase === "start" ? "Start work media choices" : "Finish work media choices"}
+                    >
                       <div className="iphone-field-v2-choice-head">
                         <span>{activeIphoneV2WorkChoice.phase === "start" ? "Start Work Media" : activeIphoneV2WorkChoice.partial ? "Partial Work Closeout" : "Finish Work Closeout"}</span>
                         <strong>{activeIphoneV2WorkChoice.phase === "start" ? "Before media first" : "After media before closeout"}</strong>
@@ -49933,21 +49958,22 @@ return (
                             <div className="iphone-field-v2-empty-media">No before media saved yet. Take or upload as many photos/videos as needed.</div>
                           )}
                           <div className="iphone-field-v2-choice-grid">
-                            <button type="button" className="choice-camera" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*", true)}>
+                            <button type="button" className="choice-camera" data-hpd-smoke="iphone-v2-before-take-image" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*", true)}>
                               <strong>Take Image</strong>
                               <small>Before</small>
                             </button>
-                            <button type="button" className="choice-camera" onClick={() => requestFieldPhotoCapture(selected, "before", "video/*", true)}>
+                            <button type="button" className="choice-camera" data-hpd-smoke="iphone-v2-before-take-video" onClick={() => requestFieldPhotoCapture(selected, "before", "video/*", true)}>
                               <strong>Take Video</strong>
                               <small>Before</small>
                             </button>
-                            <button type="button" className="choice-upload" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*,video/*", false)}>
+                            <button type="button" className="choice-upload" data-hpd-smoke="iphone-v2-before-upload" onClick={() => requestFieldPhotoCapture(selected, "before", "image/*,video/*", false)}>
                               <strong>Upload Media</strong>
                               <small>Multiple</small>
                             </button>
                             <button
                               type="button"
                               className="choice-camera"
+                              data-hpd-smoke="iphone-v2-before-done"
                               disabled={!fieldBeforeRows.length}
                               onClick={() => {
                                 if (!fieldBeforeRows.length) {
@@ -49960,7 +49986,7 @@ return (
                               <strong>Done</strong>
                               <small>{fieldBeforeRows.length ? "Start job" : "Add media first"}</small>
                             </button>
-                            <button type="button" className="choice-skip" onClick={() => startFieldJobWithoutMedia(selected)}>
+                            <button type="button" className="choice-skip" data-hpd-smoke="iphone-v2-before-no-media" onClick={() => startFieldJobWithoutMedia(selected)}>
                               <strong>No Media</strong>
                               <small>Start</small>
                             </button>
@@ -49981,21 +50007,22 @@ return (
                             <div className="iphone-field-v2-empty-media">No after media saved yet. Take or upload final photos/videos before closeout.</div>
                           )}
                           <div className="iphone-field-v2-choice-grid">
-                            <button type="button" className="choice-camera" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*", true)}>
+                            <button type="button" className="choice-camera" data-hpd-smoke="iphone-v2-after-take-image" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*", true)}>
                               <strong>Take Image</strong>
                               <small>After</small>
                             </button>
-                            <button type="button" className="choice-camera" onClick={() => requestFieldPhotoCapture(selected, "after", "video/*", true)}>
+                            <button type="button" className="choice-camera" data-hpd-smoke="iphone-v2-after-take-video" onClick={() => requestFieldPhotoCapture(selected, "after", "video/*", true)}>
                               <strong>Take Video</strong>
                               <small>After</small>
                             </button>
-                            <button type="button" className="choice-upload" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*,video/*", false)}>
+                            <button type="button" className="choice-upload" data-hpd-smoke="iphone-v2-after-upload" onClick={() => requestFieldPhotoCapture(selected, "after", "image/*,video/*", false)}>
                               <strong>Upload Media</strong>
                               <small>Multiple</small>
                             </button>
                             <button
                               type="button"
                               className="choice-camera"
+                              data-hpd-smoke="iphone-v2-after-done"
                               disabled={!fieldAfterRows.length}
                               onClick={() => {
                                 if (!fieldAfterRows.length) {
@@ -50008,7 +50035,7 @@ return (
                               <strong>Done</strong>
                               <small>{fieldAfterRows.length ? "Finish" : "Add media first"}</small>
                             </button>
-                            <button type="button" className="choice-skip" onClick={() => finishFieldJob(selected, Boolean(activeIphoneV2WorkChoice.partial))}>
+                            <button type="button" className="choice-skip" data-hpd-smoke="iphone-v2-after-no-media" onClick={() => finishFieldJob(selected, Boolean(activeIphoneV2WorkChoice.partial))}>
                               <strong>Finish</strong>
                               <small>No media</small>
                             </button>
@@ -50019,7 +50046,11 @@ return (
                   ) : null}
 
                   {activeIphoneV2OutcomeChoice ? (
-                    <section className="iphone-field-v2-card iphone-field-v2-choice-card" aria-label={activeIphoneV2OutcomeChoice.kind === "no_access" ? "No access media choices" : "Refused access media choices"}>
+                    <section
+                      className="iphone-field-v2-card iphone-field-v2-choice-card"
+                      data-hpd-smoke={activeIphoneV2OutcomeChoice.kind === "no_access" ? "iphone-v2-no-access-media" : "iphone-v2-refused-media"}
+                      aria-label={activeIphoneV2OutcomeChoice.kind === "no_access" ? "No access media choices" : "Refused access media choices"}
+                    >
                       <div className="iphone-field-v2-choice-head">
                         <span>{activeIphoneV2OutcomeChoice.kind === "no_access" ? "No Access" : "Refused Access"}</span>
                         <strong>{activeIphoneV2OutcomeChoice.kind === "no_access" ? "Add evidence or save attempt" : "Add media or close refused"}</strong>
@@ -50033,6 +50064,7 @@ return (
                         <button
                           type="button"
                           className="choice-camera"
+                          data-hpd-smoke={activeIphoneV2OutcomeChoice.kind === "no_access" ? "iphone-v2-no-access-take-media" : "iphone-v2-refused-take-media"}
                           onClick={() => requestFieldPhotoCapture(selected, activeIphoneV2OutcomeChoice.kind, "image/*,video/*", true)}
                         >
                           <strong>Take</strong>
@@ -50041,6 +50073,7 @@ return (
                         <button
                           type="button"
                           className="choice-upload"
+                          data-hpd-smoke={activeIphoneV2OutcomeChoice.kind === "no_access" ? "iphone-v2-no-access-upload" : "iphone-v2-refused-upload"}
                           onClick={() => requestFieldPhotoCapture(selected, activeIphoneV2OutcomeChoice.kind, "image/*,video/*", false)}
                         >
                           <strong>Upload Media</strong>
@@ -50049,6 +50082,7 @@ return (
                         <button
                           type="button"
                           className={activeIphoneV2OutcomeChoice.kind === "refused_access" ? "choice-danger" : "choice-skip"}
+                          data-hpd-smoke={activeIphoneV2OutcomeChoice.kind === "refused_access" ? "iphone-v2-refused-close-no-media" : "iphone-v2-no-access-save-no-media"}
                           onClick={() => {
                             if (activeIphoneV2OutcomeChoice.kind === "refused_access") {
                               saveTopCardRefused(selected);
@@ -50065,7 +50099,7 @@ return (
                   ) : null}
 
                   {activeIphoneV2ClearConfirm ? (
-                    <section className="iphone-field-v2-card iphone-field-v2-choice-card" aria-label="Clear status confirmation">
+                    <section className="iphone-field-v2-card iphone-field-v2-choice-card" data-hpd-smoke="iphone-v2-clear-confirm" aria-label="Clear status confirmation">
                       <div className="iphone-field-v2-choice-head">
                         <span>Clear Status</span>
                         <strong>Reset this job to Pending?</strong>
@@ -50075,6 +50109,7 @@ return (
                         <button
                           type="button"
                           className="choice-skip"
+                          data-hpd-smoke="iphone-v2-clear-cancel"
                           onClick={() => {
                             setIphoneV2ClearConfirmJobKey("");
                             showActionNotice("Clear canceled. Job status was not changed.");
@@ -50083,7 +50118,7 @@ return (
                           <strong>Cancel</strong>
                           <small>Keep status</small>
                         </button>
-                        <button type="button" className="choice-danger" onClick={() => void resetFieldJobForTesting(selected, { confirm: false })}>
+                        <button type="button" className="choice-danger" data-hpd-smoke="iphone-v2-clear-reset" onClick={() => void resetFieldJobForTesting(selected, { confirm: false })}>
                           <strong>Reset</strong>
                           <small>Clear job</small>
                         </button>
@@ -50092,7 +50127,7 @@ return (
                   ) : null}
 
                   {(fieldWorkReady || fieldMediaCounts.total > 0 || fieldIsFinal || fieldPackageActionsReady) && !activeIphoneV2WorkChoice && !activeIphoneV2OutcomeChoice && !activeIphoneV2ClearConfirm ? (
-                    <section className="iphone-field-v2-card iphone-field-v2-next" aria-label="Media and closeout next steps">
+                    <section className="iphone-field-v2-card iphone-field-v2-next" data-hpd-smoke="iphone-v2-media-closeout" aria-label="Media and closeout next steps">
                       <div className="iphone-field-v2-next-head">
                         <span className="iphone-field-v2-label">Media / Closeout</span>
                         <strong>{fieldIsFinal ? "Package review" : fieldWorkReady ? "Work started" : "Media saved"}</strong>
@@ -50108,37 +50143,37 @@ return (
                         <div><span>Total</span><strong>{fieldMediaCounts.total}</strong></div>
                       </div>
                       <div className="iphone-field-v2-choice-grid">
-                        <button type="button" className="choice-camera" onClick={() => openStartJobChoices(selected)}>
+                        <button type="button" className="choice-camera" data-hpd-smoke="iphone-v2-open-before-media" onClick={() => openStartJobChoices(selected)}>
                           <strong>Before</strong>
                           <small>Media</small>
                         </button>
-                        <button type="button" className="choice-upload" onClick={() => openFinishJobChoices(selected)}>
+                        <button type="button" className="choice-upload" data-hpd-smoke="iphone-v2-open-after-media" onClick={() => openFinishJobChoices(selected)}>
                           <strong>After</strong>
                           <small>Media</small>
                         </button>
-                        <button type="button" className="choice-skip" onClick={() => openFinishJobChoices(selected)}>
+                        <button type="button" className="choice-skip" data-hpd-smoke="iphone-v2-open-finish" onClick={() => openFinishJobChoices(selected)}>
                           <strong>Finish</strong>
                           <small>Closeout</small>
                         </button>
                       </div>
                       {fieldPackageActionsReady ? (
-                        <div className="iphone-field-v2-package-panel" aria-label="Generate complete package">
+                        <div className="iphone-field-v2-package-panel" data-hpd-smoke="iphone-v2-package-panel" aria-label="Generate complete package">
                           <div className="iphone-field-v2-package-copy">
                             <span className="iphone-field-v2-label">Package</span>
                             <strong>{fieldPackageTitle}</strong>
                             <small>{fieldPackageMeta}</small>
                           </div>
                           <div className="iphone-field-v2-package-actions">
-                            <button type="button" className="package-primary" onClick={() => void runPackagePrimaryAction(selected, "with", fieldFinalPackageOutcome)} disabled={!fieldPackageGenerateReady}>
+                            <button type="button" className="package-primary" data-hpd-smoke="iphone-v2-package-with-signature" onClick={() => void runPackagePrimaryAction(selected, "with", fieldFinalPackageOutcome)} disabled={!fieldPackageGenerateReady}>
                               <span>With Signature</span>
                               <small>{fieldPackageGenerateReady ? "Full package" : "Save final status"}</small>
                             </button>
-                            <button type="button" className="package-unsigned" onClick={() => void runPackagePrimaryAction(selected, "without", fieldFinalPackageOutcome)} disabled={!fieldPackageGenerateReady}>
+                            <button type="button" className="package-unsigned" data-hpd-smoke="iphone-v2-package-no-signature" onClick={() => void runPackagePrimaryAction(selected, "without", fieldFinalPackageOutcome)} disabled={!fieldPackageGenerateReady}>
                               <span>No Signature</span>
                               <small>{fieldPackageGenerateReady ? "Full package" : "Save final status"}</small>
                             </button>
                             {fieldPackageGenerateReady ? (
-                            <a className="package-secondary" href={paperworkAutoPdfOnlyHref(selected, fieldFinalPackageOutcome)}>
+                            <a className="package-secondary" data-hpd-smoke="iphone-v2-package-pdf-only" href={paperworkAutoPdfOnlyHref(selected, fieldFinalPackageOutcome)}>
                               <span>PDF Only</span>
                               <small>No media</small>
                             </a>
@@ -50147,6 +50182,7 @@ return (
                               <button
                                 type="button"
                                 className={fieldPackageApprovedAt ? "package-primary" : "package-secondary"}
+                                data-hpd-smoke="iphone-v2-package-approve"
                                 onClick={() => approveFullPackageReview(selected)}
                               >
                                 <span>{fieldPackageApprovedAt ? "Approved" : "Approve"}</span>
@@ -50154,14 +50190,14 @@ return (
                               </button>
                             ) : (
                               fieldPackageGenerateReady ? (
-                              <a className="package-secondary" href={paperworkHref(selected, "package", fieldFinalPackageOutcome)}>
+                              <a className="package-secondary" data-hpd-smoke="iphone-v2-package-review" href={paperworkHref(selected, "package", fieldFinalPackageOutcome)}>
                                 <span>Review</span>
                                 <small>Paperwork</small>
                               </a>
                               ) : null
                             )}
                             {fieldPackagePreview ? (
-                              <button type="button" className="package-secondary" onClick={() => void sendFullEvidencePackage(selected)} disabled={!fieldPackageApprovedAt}>
+                              <button type="button" className="package-secondary" data-hpd-smoke="iphone-v2-package-send-zip" onClick={() => void sendFullEvidencePackage(selected)} disabled={!fieldPackageApprovedAt}>
                                 <span>Send ZIP</span>
                                 <small>{fieldPackageApprovedAt ? "Share files" : "Approve first"}</small>
                               </button>
@@ -50203,7 +50239,7 @@ return (
                 </div>
               </article>
               {iphoneV2ScopeOpen ? (
-                <div className="iphone-field-v2-scope-backdrop" role="presentation" onClick={() => setIphoneV2ScopeOpen(false)}>
+                <div className="iphone-field-v2-scope-backdrop" data-hpd-smoke="iphone-v2-scope-modal" role="presentation" onClick={() => setIphoneV2ScopeOpen(false)}>
                   <section
                     className="iphone-field-v2-scope-modal"
                     role="dialog"
@@ -50216,7 +50252,7 @@ return (
                         <span className="iphone-field-v2-label">Complete Scope</span>
                         <strong>{fieldJobKey}</strong>
                       </div>
-                      <button type="button" onClick={() => setIphoneV2ScopeOpen(false)}>Close</button>
+                      <button type="button" data-hpd-smoke="iphone-v2-scope-close" onClick={() => setIphoneV2ScopeOpen(false)}>Close</button>
                     </div>
                     <div className="iphone-field-v2-scope-modal-body">
                       <p>{fieldDescription || "No ITB description found for this job."}</p>
@@ -53148,7 +53184,7 @@ return (
           const imageFailed = Boolean(source?.pageImageUrl && itbSourceImageFailed === source.pageImageUrl);
 
           return (
-            <div className="itb-source-modal" role="dialog" aria-modal="true" aria-label="Original ITB source page">
+            <div className="itb-source-modal" data-hpd-smoke="iphone-v2-itb-modal" role="dialog" aria-modal="true" aria-label="Original ITB source page">
               <div className="itb-source-modal-head">
                 <div>
                   <strong>
@@ -53175,7 +53211,7 @@ return (
                       Full PDF
                     </a>
                   ) : null}
-                  <button type="button" onClick={() => setItbSourceOpen(false)}>Close</button>
+                  <button type="button" data-hpd-smoke="iphone-v2-itb-modal-close" onClick={() => setItbSourceOpen(false)}>Close</button>
                 </div>
               </div>
 

@@ -62,6 +62,12 @@ const DEFAULT_PLAN: LocalPlan = {
   startMode: "current_location",
 };
 
+function fieldFlowTestModeEnabled() {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.get("fieldFlowTest") === "1" || params.get("testFlow") === "1";
+}
+
 function asArray(value: unknown): JobRecord[] {
   if (Array.isArray(value)) return value as JobRecord[];
   if (value && typeof value === "object") {
@@ -551,7 +557,7 @@ export default function PlanMyDayDrawer() {
   }
 
   async function confirmRequiredMedia(job: PlannedJob, kind: FieldMediaKind, next: FieldStep) {
-    const testOnly = new URLSearchParams(window.location.search).get("fieldFlowTest") === "1";
+    const testOnly = fieldFlowTestModeEnabled();
     if (!testOnly) {
       const counts = await countFieldPhotos(job.id);
       if (!counts[kind]) {
