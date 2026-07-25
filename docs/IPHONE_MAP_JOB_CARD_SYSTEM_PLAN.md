@@ -187,6 +187,13 @@ Current V2.15 live compass location dial slice:
 - The compass dial must move with the real Leaflet user-location marker as the map pans/zooms.
 - The dial needle rotates only from real device orientation heading when supported; otherwise it stays in a clear off/listening state.
 
+Current V2.16 selected job map focus slice:
+
+- Tapping a job marker/card must focus the exact clicked job, not make every visible job marker look selected.
+- The selected job can use the larger blue pin/target treatment.
+- Other jobs may remain visible as small context markers, but they must not open as large selected cards in the map background.
+- The selected marker should stay positioned in the visible map area above the bottom sheet so it visually points to the active job card.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.

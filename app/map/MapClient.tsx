@@ -5963,9 +5963,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         clusterMarkersEnabled &&
         (timerLayerNeedsClusters ||
           (denseLayer ? zoomLevel < (mobileMap ? 15 : 14) : zoomLevel < 13));
-      const focusedMarkerCards = selectedOnly;
-      const markerExpanded = selectedOnly && zoomLevel >= 15;
-      const markerDetailed = selectedOnly && zoomLevel >= 17;
+      const selectedMarkerKey = selected ? jobKey(selected) : search.trim().toUpperCase();
 
       layer.clearLayers();
 
@@ -6311,8 +6309,11 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         const noAccessSoon = isNoAccessTwentyFourHourAlert(job);
         const noAccessReady = workflowViewBucket(job) === "ready2";
         const noAccessTimerFocus = Boolean(noAccessTimerLabel) && showIndividualNoAccessTimers;
-        const selectedMarkerTapHint = selectedOnly;
-        const overlapSafeMarker = !selectedOnly && filteredCount > 1 && !noAccessTimerFocus && !selectedMarkerTapHint;
+        const isSelectedMapMarker = Boolean(selectedMarkerKey && jobKey(job).toUpperCase() === selectedMarkerKey.toUpperCase());
+        const selectedMarkerTapHint = selectedOnly && isSelectedMapMarker;
+        const markerExpanded = selectedMarkerTapHint && zoomLevel >= 15;
+        const markerDetailed = selectedMarkerTapHint && zoomLevel >= 17;
+        const overlapSafeMarker = !selectedMarkerTapHint && filteredCount > 1 && !noAccessTimerFocus;
         let collisionMiniMarker = routeFocusActive && !selectedOnly;
         const appointmentLabel = markerAppointmentReminderHtml(job);
         const appointmentDateValue = appointmentDate(job);
@@ -6394,7 +6395,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
                     ? 1.08
                     : 1.16;
         const markerZoomScale = selectedOnly
-          ? selectedMarkerZoomScale
+          ? selectedMarkerTapHint
+            ? selectedMarkerZoomScale
+            : Math.max(rawZoomMarkerScale, 0.78)
           : collisionMiniMarker
             ? Math.max(rawZoomMarkerScale, 0.82)
             : rawZoomMarkerScale;
@@ -6404,8 +6407,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         ];
         const iconAnchor: [number, number] = [Math.round(iconSize[0] / 2), Math.round(iconSize[1] / 2)];
         const popupJobId = jobKey(job, index);
-        const selectedMarkerKey = selected ? jobKey(selected) : search.trim().toUpperCase();
-        const isSelectedMapMarker = Boolean(selectedMarkerKey && jobKey(job).toUpperCase() === selectedMarkerKey.toUpperCase());
 
         const marker = L.marker([markerLatLng.lat, markerLatLng.lng], {
           title: `${popupJobId} ${displayAddress(job)}`,
@@ -38355,15 +38356,28 @@ return (
 
           .map-shell.map-glass-command-trial .zoom-panel .map-compass-dial {
             position: relative !important;
-            width: 27px !important;
-            height: 27px !important;
+            width: 30px !important;
+            height: 30px !important;
             display: block !important;
             border-radius: 999px !important;
-            border: 1px solid rgba(15, 23, 42, 0.58) !important;
+            border: 1px solid rgba(15, 23, 42, 0.64) !important;
             background:
-              radial-gradient(circle at center, #ffffff 0 26%, transparent 27%),
-              conic-gradient(from 0deg, rgba(37, 99, 235, 0.92), rgba(226, 232, 240, 0.76), rgba(37, 99, 235, 0.92), rgba(226, 232, 240, 0.76), rgba(37, 99, 235, 0.92)) !important;
-            box-shadow: inset 0 0 0 4px rgba(255,255,255,0.36), 0 4px 10px rgba(15,23,42,0.18) !important;
+              radial-gradient(circle at center, #ffffff 0 21%, rgba(255,255,255,0.5) 22% 29%, transparent 30%),
+              conic-gradient(from 0deg, rgba(37, 99, 235, 0.98) 0 8%, rgba(226, 232, 240, 0.78) 8% 25%, rgba(15,23,42,0.35) 25% 27%, rgba(226,232,240,0.78) 27% 50%, rgba(37,99,235,0.98) 50% 58%, rgba(226,232,240,0.78) 58% 75%, rgba(15,23,42,0.35) 75% 77%, rgba(226,232,240,0.78) 77% 100%) !important;
+            box-shadow: inset 0 0 0 3px rgba(255,255,255,0.42), 0 4px 10px rgba(15,23,42,0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial .zoom-panel .map-compass-dial::after {
+            content: "" !important;
+            position: absolute !important;
+            left: 50% !important;
+            top: 50% !important;
+            width: 6px !important;
+            height: 6px !important;
+            transform: translate(-50%, -50%) !important;
+            border-radius: 999px !important;
+            background: #ffffff !important;
+            box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.28), 0 0 8px rgba(37, 99, 235, 0.36) !important;
           }
 
           .map-shell.map-glass-command-trial .zoom-panel .map-compass-dial i {
@@ -38371,7 +38385,7 @@ return (
             left: 50% !important;
             top: 50% !important;
             width: 4px !important;
-            height: 12px !important;
+            height: 14px !important;
             border-radius: 999px 999px 3px 3px !important;
             background: #0f172a !important;
             transform-origin: 50% 100% !important;
@@ -38382,7 +38396,7 @@ return (
           .map-shell.map-glass-command-trial .zoom-panel .map-compass-dial b {
             position: absolute !important;
             left: 50% !important;
-            top: 2px !important;
+            top: 1px !important;
             transform: translateX(-50%) !important;
             color: #1d4ed8 !important;
             font-size: 7px !important;
