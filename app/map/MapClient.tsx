@@ -4192,6 +4192,48 @@ function handleIphoneFieldV2TopbarClick(event: ReactMouseEvent<HTMLDivElement>) 
   setIphoneFieldSheetSnap("collapsed");
 }
 
+function isIphoneFieldMapUiTarget(target: EventTarget | null) {
+  if (!(target instanceof Element)) return false;
+
+  return Boolean(
+    target.closest(
+      [
+        ".iphone-field-v2-sheet",
+        ".iphone-field-v2-topbar",
+        ".iphone-field-v2-route",
+        ".iphone-field-v2-scope-backdrop",
+        ".map-menu-fab",
+        ".map-menu-scrim",
+        ".map-top",
+        ".zoom-panel",
+        ".location-status-pill",
+        ".location-help-card",
+        ".map-job-brief-card",
+        ".maturity-map-marker",
+        ".leaflet-marker-icon",
+        "button",
+        "a",
+        "input",
+        "select",
+        "textarea",
+        "summary",
+        "details",
+      ].join(", ")
+    )
+  );
+}
+
+function collapseIphoneFieldSheetFromMapStage(event: ReactPointerEvent<HTMLElement>) {
+  if (!selectedOnly || !selected || iphoneJobCardVersion !== "v2") return;
+  if (iphoneV2ScopeOpen || mapMenuOpen) return;
+  if (event.button > 0) return;
+  if (isIphoneFieldMapUiTarget(event.target)) return;
+
+  window.setTimeout(() => {
+    setIphoneFieldSheetSnap("collapsed");
+  }, 80);
+}
+
 function handleIphoneFieldSheetWheel(event: ReactWheelEvent<HTMLDivElement>) {
   const scrollTop = event.currentTarget.scrollTop;
   if (scrollTop > 2) return;
@@ -4233,36 +4275,12 @@ function clearIphoneFieldSheetTouch() {
     if (!selectedOnly || !selected || iphoneJobCardVersion !== "v2") return;
 
     const collapseSheetFromMapTap = (event: PointerEvent) => {
-      if (event.button !== 0) return;
+      if (event.button > 0) return;
       if (iphoneV2ScopeOpen || mapMenuOpen) return;
-      if (!(event.target instanceof Element)) return;
-
-      const tappedCardUi = event.target.closest(
-        [
-          ".iphone-field-v2-sheet",
-          ".iphone-field-v2-route",
-          ".iphone-field-v2-scope-backdrop",
-          ".map-menu-fab",
-          ".map-menu-scrim",
-          ".map-top",
-          ".zoom-panel",
-          ".location-status-pill",
-          ".location-help-card",
-          ".map-job-brief-card",
-          "button",
-          "a",
-          "input",
-          "select",
-          "textarea",
-          "summary",
-          "details",
-        ].join(", ")
-      );
-
-      if (tappedCardUi) return;
+      if (isIphoneFieldMapUiTarget(event.target)) return;
       window.setTimeout(() => {
         setIphoneFieldSheetSnap("collapsed");
-      }, 0);
+      }, 80);
     };
 
     document.addEventListener("pointerup", collapseSheetFromMapTap, { capture: true, passive: true });
