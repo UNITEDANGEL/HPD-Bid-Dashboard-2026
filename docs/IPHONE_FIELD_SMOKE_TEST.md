@@ -16,12 +16,13 @@ Use the deployed preview or local server with the same query:
 - `data-hpd-smoke="iphone-v2-build"` shows the current deployed short commit or `Local build`.
 - Real Leaflet map exists and has tiles.
 - `data-hpd-smoke="iphone-v2-route"` clicks without showing stale `1 stop` or `Route leg loading`.
-- `data-hpd-smoke="iphone-v2-back"` returns to the full map, removes `omo` from the URL, and shows more than the selected OMO when jobs are available.
+- `data-hpd-smoke="iphone-v2-back"` returns to the full map, removes `omo` from the URL, and preserves the current map zoom/position instead of forcing a full overview.
 - Tapping blank map area collapses or keeps the card below full-screen.
 - Scrolling down inside `iphone-v2-sheet` stays smooth and does not change snap state during normal content scroll.
 - Tapping a non-control area inside `iphone-v2-sheet` expands the sheet.
 - The middle sheet leaves map visible around the side gutters, and the collapsed sheet leaves the map as the main surface.
 - Selected-job marker size gets smaller when zoomed out and larger only when zoomed in.
+- Full-map rail controls exist and work: Map keeps the current view, Me centers user location when available, and Compass starts real heading or shows an unavailable state.
 - `data-hpd-smoke="iphone-v2-menu"` opens and closes the real map menu.
 
 ## Required Job Card Checks

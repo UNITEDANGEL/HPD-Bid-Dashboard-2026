@@ -152,8 +152,10 @@ Current V2.10 scroll smoothing slice:
 Current V2.11 back-to-map overview slice:
 
 - The V2 back/Map action must not leave the map narrowed to the selected OMO search.
-- Back/Map must clear `omo`, clear the OMO search text, close the selected card, and fit the real map to the all-job overview.
+- Back/Map must clear `omo`, clear the OMO search text, and close the selected card.
+- Back/Map must preserve the current real map zoom and position; it must not force a full all-job zoom-out.
 - After returning to the map, manual zoom/pan must stay under user control and not snap back to the selected job.
+- Fitting the full layer is a separate explicit action, not the default Back/Map behavior.
 
 Current V2.12 sheet expansion and marker scale slice:
 
@@ -162,6 +164,13 @@ Current V2.12 sheet expansion and marker scale slice:
 - The middle sheet should be slightly inset and shorter so the real map remains visible around the card.
 - The collapsed sheet should leave the map as the main usable surface, with only a small real handle/card edge visible.
 - Selected-job markers must shrink at lower zoom and grow only as the user zooms closer.
+
+Current V2.13 map rail slice:
+
+- The bottom map rail should keep compact real controls: Map, Me, and Compass.
+- Map closes/clears the selected job card without changing the current viewport.
+- Me centers on the user's saved/live location.
+- Compass requests real device orientation when supported and shows a real unavailable state when unsupported.
 
 ## Non-Negotiables
 

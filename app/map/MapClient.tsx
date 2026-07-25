@@ -2924,6 +2924,7 @@ function applyWorkflowOverrideObjectToRows<T extends JobRecord>(rows: T[], overr
   const iphoneFieldSheetDragRef = useRef<IphoneFieldSheetDrag | null>(null);
   const iphoneFieldSheetTouchRef = useRef<IphoneFieldSheetTouch | null>(null);
   const iphoneFieldSheetSuppressClickRef = useRef(false);
+  const compassHandlerRef = useRef<((event: DeviceOrientationEvent) => void) | null>(null);
 const [selectedOnly, setSelectedOnly] = useState(false);
 const [iphoneFieldSheetSnap, setIphoneFieldSheetSnap] = useState<IphoneFieldSheetSnap>("middle");
 const [iphoneJobCardVersion, setIphoneJobCardVersion] = useState<IphoneJobCardVersion>("v2");
@@ -3000,6 +3001,9 @@ const [userLocation, setUserLocation] = useState<UserLocationState | null>(null)
 const [locationStatus, setLocationStatus] = useState("Location off");
 const [locationHelpOpen, setLocationHelpOpen] = useState(false);
 const [followMyLocation, setFollowMyLocation] = useState(false);
+const [compassActive, setCompassActive] = useState(false);
+const [compassHeading, setCompassHeading] = useState<number | null>(null);
+const [compassStatus, setCompassStatus] = useState("Compass off");
 const [fieldVisitTrackingEnabled, setFieldVisitTrackingEnabled] = useState(false);
 const [fieldVisitSummary, setFieldVisitSummary] = useState<Record<string, { latest?: FieldVisitRecord; today?: FieldVisitRecord; count: number }>>({});
 const [fieldVisitSaving, setFieldVisitSaving] = useState(false);
@@ -4056,9 +4060,7 @@ function showCleanMapView() {
     mapRef.current?.invalidateSize();
   }, 280);
 
-  window.setTimeout(() => {
-    fitVisibleJobsOnMap(MAP_LAYER_OVERVIEW_ZOOM, false, cleanMapOverviewRows());
-  }, 360);
+  showActionNotice("Map view restored. Current zoom and position kept.");
 }
 
 function openMapLayersFromJobCard() {
@@ -5116,16 +5118,6 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     }, delay);
   }
 
-  function cleanMapOverviewRows() {
-    const rows = mappedJobs.length
-      ? mappedJobs
-      : jobs.map((job) => {
-          const coords = getStoredCoords(job);
-          return coords ? { ...job, _lat: coords.lat, _lng: coords.lng, _source: "stored" } : { ...job };
-        });
-    return rows.filter((job) => isNycMapCoordinate(job._lat, job._lng) && shouldShowForWorkflowView(job, "all")) as MappedJob[];
-  }
-
   function fitVisibleJobsOnMap(maxZoom = 13, includeUserLocation = false, sourceRows: MappedJob[] = filteredJobs) {
     const map = mapRef.current;
     if (!map) return;
@@ -5531,6 +5523,61 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     window.setTimeout(() => mapRef.current?.invalidateSize(), 120);
   }
 
+  function stopCompassTracking(showNotice = true) {
+    if (typeof window !== "undefined" && compassHandlerRef.current) {
+      window.removeEventListener("deviceorientation", compassHandlerRef.current as EventListener, true);
+    }
+    compassHandlerRef.current = null;
+    setCompassActive(false);
+    setCompassStatus("Compass off");
+    if (showNotice) showActionNotice("Compass off. Map remains north-up.");
+  }
+
+  async function toggleCompassTracking() {
+    if (compassActive) {
+      stopCompassTracking();
+      return;
+    }
+
+    if (typeof window === "undefined" || !("DeviceOrientationEvent" in window)) {
+      setCompassStatus("Compass unavailable");
+      showActionNotice("Compass unavailable in this browser. Map remains north-up.");
+      return;
+    }
+
+    const orientationCtor = (window as any).DeviceOrientationEvent;
+    if (typeof orientationCtor?.requestPermission === "function") {
+      try {
+        const permission = await orientationCtor.requestPermission();
+        if (permission !== "granted") {
+          setCompassStatus("Compass blocked");
+          showActionNotice("Compass permission not allowed. Map remains north-up.");
+          return;
+        }
+      } catch {
+        setCompassStatus("Compass blocked");
+        showActionNotice("Compass permission could not be started. Map remains north-up.");
+        return;
+      }
+    }
+
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      const iosHeading = typeof (event as any).webkitCompassHeading === "number" ? Number((event as any).webkitCompassHeading) : null;
+      const alphaHeading = typeof event.alpha === "number" ? (360 - Number(event.alpha) + 360) % 360 : null;
+      const nextHeading = iosHeading ?? alphaHeading;
+      if (nextHeading === null || !Number.isFinite(nextHeading)) return;
+      const rounded = Math.round(nextHeading);
+      setCompassHeading(rounded);
+      setCompassStatus(`Heading ${rounded}`);
+    };
+
+    compassHandlerRef.current = handleOrientation;
+    window.addEventListener("deviceorientation", handleOrientation as EventListener, true);
+    setCompassActive(true);
+    setCompassStatus("Compass listening");
+    showActionNotice("Compass on. Move your iPhone to update heading.");
+  }
+
   function returnToMapOverview() {
     setMapJobBrief(null);
     setClusterSheet(null);
@@ -5560,6 +5607,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return () => {
       if (markerOverviewTimerRef.current !== null) {
         clearTimeout(markerOverviewTimerRef.current);
+      }
+      if (compassHandlerRef.current) {
+        window.removeEventListener("deviceorientation", compassHandlerRef.current as EventListener, true);
       }
     };
   }, []);
@@ -38169,7 +38219,7 @@ return (
             top: auto !important;
             bottom: calc(env(safe-area-inset-bottom) + clamp(34px, 8dvh, 56px)) !important;
             display: grid !important;
-            grid-template-columns: repeat(2, clamp(34px, 9vw, 40px)) !important;
+            grid-template-columns: repeat(3, clamp(34px, 9vw, 40px)) !important;
             gap: 5px !important;
             padding: 5px !important;
             border-radius: 16px !important;
@@ -38191,6 +38241,12 @@ return (
           .map-shell.map-glass-command-trial .zoom-panel button:nth-child(3),
           .map-shell.map-glass-command-trial .zoom-panel .live-location-btn {
             font-size: 11px !important;
+          }
+
+          .map-shell.map-glass-command-trial .zoom-panel .map-compass-btn.active {
+            background: linear-gradient(135deg, #38bdf8, #2563eb) !important;
+            color: #ffffff !important;
+            border-color: rgba(191, 219, 254, 0.72) !important;
           }
 
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-board-switcher {
@@ -49334,15 +49390,26 @@ return (
           <span><b className="dot pending"></b>Pending</span>
         </div>
 
-        <div className="zoom-panel" style={{ position: "fixed", right: "max(8px, env(safe-area-inset-right))", bottom: "max(10px, env(safe-area-inset-bottom))", top: "auto", display: "grid", gridTemplateColumns: "64px 54px", gap: 6, padding: 7, width: "auto", height: "auto", borderRadius: 20, background: "rgba(5, 14, 27, 0.94)", border: "1px solid rgba(148, 163, 184, 0.32)", boxShadow: "0 18px 46px rgba(2, 6, 23, 0.46), inset 0 1px 0 rgba(255,255,255,0.08)", zIndex: 2525 }}>
-          <button type="button" aria-label="Back to full map" title="Map" onClick={showCleanMapView}>Map</button>
+        <div className="zoom-panel" style={{ position: "fixed", right: "max(8px, env(safe-area-inset-right))", bottom: "max(10px, env(safe-area-inset-bottom))", top: "auto", display: "grid", gridTemplateColumns: "58px 48px 48px", gap: 6, padding: 7, width: "auto", height: "auto", borderRadius: 20, background: "rgba(5, 14, 27, 0.94)", border: "1px solid rgba(148, 163, 184, 0.32)", boxShadow: "0 18px 46px rgba(2, 6, 23, 0.46), inset 0 1px 0 rgba(255,255,255,0.08)", zIndex: 2525 }}>
+          <button type="button" data-hpd-smoke="map-rail-map" aria-label="Back to full map and keep current zoom" title="Map - keep current zoom" onClick={showCleanMapView}>Map</button>
           <button
             type="button"
+            data-hpd-smoke="map-rail-me"
             className={`live-location-btn ${followMyLocation ? "active" : ""}`}
             title={userLocation ? "Center on my location" : "Start live location"}
             onClick={showMyLocationOverview}
           >
             Me
+          </button>
+          <button
+            type="button"
+            data-hpd-smoke="map-rail-compass"
+            className={`map-compass-btn ${compassActive ? "active" : ""}`}
+            title={compassStatus}
+            aria-label={`Compass. ${compassStatus}`}
+            onClick={() => void toggleCompassTracking()}
+          >
+            {compassHeading !== null && compassActive ? compassHeading : "N"}
           </button>
         </div>
 
