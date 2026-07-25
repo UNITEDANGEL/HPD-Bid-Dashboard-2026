@@ -3861,7 +3861,7 @@ const [hideCompleted, setHideCompleted] = useState(false);
   useEffect(() => {
     if (!dayAgentRouteRestoredRef.current) return;
     try {
-      if (!dayAgentRoute.length) {
+      if (!dayAgentRoute.length || isRouteMeSingleStop(dayAgentRoute, dayAgentCommand)) {
         window.localStorage?.removeItem(DAY_AGENT_ROUTE_STORAGE_KEY);
         return;
       }
@@ -3875,6 +3875,12 @@ const [hideCompleted, setHideCompleted] = useState(false);
       }));
     } catch {}
   }, [dayAgentRoute, dayAgentCommand, dayAgentBoroughStart, dayAgentSelectedStopIndex, dayAgentRouteHidden]);
+
+  useEffect(() => {
+    if (selectedOnly || selected || drawerOpen) return;
+    if (!isRouteMeSingleStop(dayAgentRoute, dayAgentCommand)) return;
+    clearDayAgentRouteFocus();
+  }, [selectedOnly, selected, drawerOpen, dayAgentRoute, dayAgentCommand]);
 
   useEffect(() => {
     const stream = fieldCameraStreamRef.current;
@@ -3957,6 +3963,26 @@ function closeMapMenu() {
   setTimeout(() => mapRef.current?.invalidateSize(), 240);
 }
 
+function isRouteMeSingleStop(route = dayAgentRoute, command = dayAgentCommand) {
+  return route.length === 1 && /^route me to\b/i.test(String(command || "").trim());
+}
+
+function clearDayAgentRouteFocus() {
+  setDayAgentRoute([]);
+  setDayAgentRouteSummary(null);
+  setDayAgentRouteHidden(false);
+  setDayAgentSelectedStopIndex(0);
+  setDayAgentPanelOpen(false);
+  if (dayAgentRouteLayerRef.current && mapRef.current) {
+    mapRef.current.removeLayer(dayAgentRouteLayerRef.current);
+    dayAgentRouteLayerRef.current = null;
+    dayAgentRouteLineRef.current = null;
+  }
+  try {
+    window.localStorage?.removeItem(DAY_AGENT_ROUTE_STORAGE_KEY);
+  } catch {}
+}
+
 function showCleanMapView() {
   setWorkflowViewFilter("all");
   setMapBoroughFilter("all");
@@ -3971,6 +3997,7 @@ function showCleanMapView() {
   setFullMap(true);
   setMapMenuOpen(false);
   setMapBoardOpen(false);
+  clearDayAgentRouteFocus();
   clearManualMapControl();
 
   try {
@@ -49138,13 +49165,8 @@ return (
           <span><b className="dot pending"></b>Pending</span>
         </div>
 
-        <div className="zoom-panel" style={{ position: "fixed", right: "max(8px, env(safe-area-inset-right))", bottom: "max(10px, env(safe-area-inset-bottom))", top: "auto", display: "grid", gridTemplateColumns: "54px", gap: 6, padding: 7, width: "auto", height: "auto", borderRadius: 20, background: "rgba(5, 14, 27, 0.94)", border: "1px solid rgba(148, 163, 184, 0.32)", boxShadow: "0 18px 46px rgba(2, 6, 23, 0.46), inset 0 1px 0 rgba(255,255,255,0.08)", zIndex: 2525 }}>
-          <button type="button" aria-label="Zoom in" title="Zoom in" onClick={() => manualZoomMap("in")}>+</button>
-          <button type="button" aria-label="Zoom out" title="Zoom out" onClick={() => manualZoomMap("out")}>−</button>
-          <button type="button" onClick={() => {
-            clearManualMapControl();
-            fitVisibleJobsOnMap(MAP_LAYER_OVERVIEW_ZOOM, false);
-          }}>Fit</button>
+        <div className="zoom-panel" style={{ position: "fixed", right: "max(8px, env(safe-area-inset-right))", bottom: "max(10px, env(safe-area-inset-bottom))", top: "auto", display: "grid", gridTemplateColumns: "64px 54px", gap: 6, padding: 7, width: "auto", height: "auto", borderRadius: 20, background: "rgba(5, 14, 27, 0.94)", border: "1px solid rgba(148, 163, 184, 0.32)", boxShadow: "0 18px 46px rgba(2, 6, 23, 0.46), inset 0 1px 0 rgba(255,255,255,0.08)", zIndex: 2525 }}>
+          <button type="button" aria-label="Back to full map" title="Map" onClick={showCleanMapView}>Map</button>
           <button
             type="button"
             className={`live-location-btn ${followMyLocation ? "active" : ""}`}

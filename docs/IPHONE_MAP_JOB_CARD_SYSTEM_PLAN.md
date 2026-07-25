@@ -121,6 +121,14 @@ Current V2.6 map tap collapse slice:
 - This must not block real map pan/zoom/tap behavior.
 - Taps inside the job card, topbar, route chip, map menu, modals, form fields, or action buttons must not collapse the sheet.
 
+Current V2.7 back-to-map controls slice:
+
+- The selected-job back/map action must return to the full all-jobs map, not leave the user stuck in a one-job Route Me/day-route focus.
+- Back-to-map must clear the active day-route tray, route summary, selected route stop, and saved route-focus storage.
+- A single-job `Route Me` route must not persist as a day route after the selected job card closes or the URL is back to plain map mode.
+- The iPhone map control rail should stay simple: a `Map` button directly beside `Me`.
+- The iPhone field view does not need separate `+`, `-`, or `Fit` buttons because map gestures and the `Map` button cover the required field use.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.
