@@ -116,6 +116,11 @@ function fieldFlowTestModeEnabled() {
   return params.get("fieldFlowTest") === "1" || params.get("testFlow") === "1";
 }
 
+function normalizeCompassHeadingValue(value: number | null | undefined) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return ((Math.round(value) % 360) + 360) % 360;
+}
+
 type BuildHealthState = {
   builtAt?: string;
   commit?: string;
@@ -5568,7 +5573,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       if (nextHeading === null || !Number.isFinite(nextHeading)) return;
       const rounded = Math.round(nextHeading);
       setCompassHeading(rounded);
-      setCompassStatus(`Heading ${rounded}`);
+      setCompassStatus("Compass live");
     };
 
     compassHandlerRef.current = handleOrientation;
@@ -6452,19 +6457,34 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
 
       const map = mapRef.current;
       const latLng: [number, number] = [userLocation.lat, userLocation.lng];
+      const normalizedHeading = compassActive ? normalizeCompassHeadingValue(compassHeading) : null;
+      const headingLabel = compassActive ? normalizedHeading !== null ? "LIVE" : "..." : "GPS";
+      const compassClass = compassActive ? "compass-active" : "compass-off";
+      const markerHtml = `
+        <div class="user-location-dot ${compassClass}" style="--user-heading:${normalizedHeading ?? 0}deg">
+          <em>MY LOCATION</em>
+          <i class="user-location-compass" data-hpd-smoke="user-location-compass-dial" aria-hidden="true">
+            <b class="north">N</b><b class="east">E</b><b class="south">S</b><b class="west">W</b>
+            <strong class="needle"></strong>
+          </i>
+          <span></span>
+          <small>${headingLabel}</small>
+        </div>`;
+      const userLocationIcon = L.divIcon({
+        className: "user-location-marker",
+        html: markerHtml,
+        iconSize: [98, 98],
+        iconAnchor: [49, 49],
+      });
 
       if (!userLocationMarkerRef.current) {
         userLocationMarkerRef.current = L.marker(latLng, {
           zIndexOffset: 10000,
-          icon: L.divIcon({
-            className: "user-location-marker",
-            html: '<div class="user-location-dot"><em>MY LOCATION</em><span></span></div>',
-            iconSize: [76, 76],
-            iconAnchor: [38, 38],
-          }),
+          icon: userLocationIcon,
         }).addTo(map);
       } else {
         userLocationMarkerRef.current.setLatLng(latLng);
+        userLocationMarkerRef.current.setIcon(userLocationIcon);
       }
 
       if (!userLocationAccuracyRef.current) {
@@ -6491,7 +6511,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
     return () => {
       cancelled = true;
     };
-  }, [mapReady, userLocation, followMyLocation, selectedOnly, drawerOpen, filteredJobs]);
+  }, [mapReady, userLocation, followMyLocation, selectedOnly, drawerOpen, filteredJobs, compassActive, compassHeading]);
 
   useEffect(() => {
     function handlePopupOpen(event: MouseEvent) {
@@ -11178,6 +11198,7 @@ function directionsUrl(job: JobRecord) {
   };
   const dashboardView = dashboardViewCopy[workflowViewFilter];
   const mapReturnView = mapReturnCopy[workflowViewFilter];
+  const mapCompassHeading = compassActive ? normalizeCompassHeadingValue(compassHeading) : null;
   const activeBoroughFilter = boroughFilterMeta(mapBoroughFilter);
   const mapBoroughScopeLabel = mapBoroughFilter === "all" ? "All boroughs" : activeBoroughFilter.label;
   const todayZoneLabel =
@@ -14939,8 +14960,8 @@ return (
 
           .user-location-dot {
             position: relative;
-            width: 76px;
-            height: 76px;
+            width: 98px;
+            height: 98px;
             display: grid;
             place-items: center;
             border-radius: 999px;
@@ -14954,17 +14975,72 @@ return (
           .user-location-dot::before {
             content: "";
             position: absolute;
-            inset: 8px;
+            inset: 16px;
             border-radius: 999px;
             background: rgba(37, 99, 235, 0.18);
             animation: userLocationGuidePulse 2.8s ease-out infinite;
           }
 
+          .user-location-compass {
+            position: absolute;
+            inset: 9px;
+            z-index: 1;
+            display: block;
+            border-radius: 999px;
+            border: 1px solid rgba(248, 250, 252, 0.82);
+            background:
+              radial-gradient(circle at center, rgba(15, 23, 42, 0.08) 0 37%, transparent 38%),
+              conic-gradient(from 0deg, rgba(96, 165, 250, 0.34), rgba(15, 23, 42, 0.05), rgba(96, 165, 250, 0.34), rgba(15, 23, 42, 0.05), rgba(96, 165, 250, 0.34));
+            box-shadow:
+              inset 0 0 0 9px rgba(255, 255, 255, 0.10),
+              0 0 0 4px rgba(37, 99, 235, 0.10),
+              0 0 24px rgba(37, 99, 235, 0.30);
+          }
+
+          .user-location-compass b {
+            position: absolute;
+            z-index: 2;
+            color: rgba(15, 23, 42, 0.82);
+            font-size: 9px;
+            line-height: 1;
+            font-style: normal;
+            font-weight: 1000;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+          }
+
+          .user-location-compass .north { left: 50%; top: 5px; transform: translateX(-50%); color: #1d4ed8; }
+          .user-location-compass .east { right: 6px; top: 50%; transform: translateY(-50%); }
+          .user-location-compass .south { left: 50%; bottom: 5px; transform: translateX(-50%); }
+          .user-location-compass .west { left: 6px; top: 50%; transform: translateY(-50%); }
+
+          .user-location-compass .needle {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            z-index: 1;
+            width: 6px;
+            height: 32px;
+            transform-origin: 50% 100%;
+            transform: translate(-50%, -100%) rotate(var(--user-heading, 0deg));
+            border-radius: 999px 999px 4px 4px;
+            background: linear-gradient(180deg, #2563eb, #60a5fa 58%, rgba(96,165,250,0.12));
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.46);
+          }
+
+          .user-location-dot.compass-off .user-location-compass {
+            opacity: 0.56;
+          }
+
+          .user-location-dot.compass-off .user-location-compass .needle {
+            background: linear-gradient(180deg, #94a3b8, #cbd5e1 58%, rgba(203,213,225,0.12));
+            box-shadow: none;
+          }
+
           .user-location-dot em {
             position: absolute;
-            top: -10px;
+            top: -11px;
             left: 50%;
-            z-index: 2;
+            z-index: 4;
             transform: translateX(-50%);
             padding: 4px 9px;
             border-radius: 999px;
@@ -14980,7 +15056,7 @@ return (
 
           .user-location-dot span {
             position: relative;
-            z-index: 1;
+            z-index: 3;
             width: 26px;
             height: 26px;
             border-radius: 999px;
@@ -14989,6 +15065,28 @@ return (
             box-shadow:
               0 0 0 5px rgba(250, 204, 21, 0.45),
               0 8px 18px rgba(239, 68, 68, 0.36);
+          }
+
+          .user-location-dot small {
+            position: absolute;
+            left: 50%;
+            bottom: -6px;
+            z-index: 4;
+            min-width: 30px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 7px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            background: rgba(15, 23, 42, 0.94);
+            color: #ffffff;
+            font-size: 10px;
+            line-height: 1;
+            font-weight: 1000;
+            transform: translateX(-50%);
+            box-shadow: 0 8px 18px rgba(3, 9, 16, 0.24);
           }
 
           @keyframes userLocationGuidePulse {
@@ -38249,6 +38347,61 @@ return (
             border-color: rgba(191, 219, 254, 0.72) !important;
           }
 
+          .map-shell.map-glass-command-trial .zoom-panel .map-compass-btn {
+            display: grid !important;
+            place-items: center !important;
+            overflow: hidden !important;
+          }
+
+          .map-shell.map-glass-command-trial .zoom-panel .map-compass-dial {
+            position: relative !important;
+            width: 27px !important;
+            height: 27px !important;
+            display: block !important;
+            border-radius: 999px !important;
+            border: 1px solid rgba(15, 23, 42, 0.58) !important;
+            background:
+              radial-gradient(circle at center, #ffffff 0 26%, transparent 27%),
+              conic-gradient(from 0deg, rgba(37, 99, 235, 0.92), rgba(226, 232, 240, 0.76), rgba(37, 99, 235, 0.92), rgba(226, 232, 240, 0.76), rgba(37, 99, 235, 0.92)) !important;
+            box-shadow: inset 0 0 0 4px rgba(255,255,255,0.36), 0 4px 10px rgba(15,23,42,0.18) !important;
+          }
+
+          .map-shell.map-glass-command-trial .zoom-panel .map-compass-dial i {
+            position: absolute !important;
+            left: 50% !important;
+            top: 50% !important;
+            width: 4px !important;
+            height: 12px !important;
+            border-radius: 999px 999px 3px 3px !important;
+            background: #0f172a !important;
+            transform-origin: 50% 100% !important;
+            transform: translate(-50%, -100%) rotate(var(--compass-heading, 0deg)) !important;
+            box-shadow: 0 0 5px rgba(15,23,42,0.32) !important;
+          }
+
+          .map-shell.map-glass-command-trial .zoom-panel .map-compass-dial b {
+            position: absolute !important;
+            left: 50% !important;
+            top: 2px !important;
+            transform: translateX(-50%) !important;
+            color: #1d4ed8 !important;
+            font-size: 7px !important;
+            line-height: 1 !important;
+            font-weight: 1000 !important;
+            letter-spacing: 0 !important;
+          }
+
+          .map-shell.map-glass-command-trial .zoom-panel .map-compass-btn.active .map-compass-dial {
+            border-color: rgba(255, 255, 255, 0.82) !important;
+            background:
+              radial-gradient(circle at center, rgba(255,255,255,0.95) 0 26%, transparent 27%),
+              conic-gradient(from 0deg, #ffffff, #93c5fd, #ffffff, #93c5fd, #ffffff) !important;
+          }
+
+          .map-shell.map-glass-command-trial .zoom-panel .map-compass-btn.active .map-compass-dial i {
+            background: #1d4ed8 !important;
+          }
+
           .map-shell.map-glass-command-trial .map-cockpit.board-collapsed:is(:hover, :focus-within) .map-board-switcher {
             display: none !important;
           }
@@ -49405,11 +49558,15 @@ return (
             type="button"
             data-hpd-smoke="map-rail-compass"
             className={`map-compass-btn ${compassActive ? "active" : ""}`}
+            style={{ ["--compass-heading" as any]: `${mapCompassHeading ?? 0}deg` }}
             title={compassStatus}
             aria-label={`Compass. ${compassStatus}`}
             onClick={() => void toggleCompassTracking()}
           >
-            {compassHeading !== null && compassActive ? compassHeading : "N"}
+            <span className="map-compass-dial" aria-hidden="true">
+              <i />
+              <b>N</b>
+            </span>
           </button>
         </div>
 

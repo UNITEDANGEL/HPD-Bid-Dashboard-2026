@@ -24,7 +24,8 @@ Use the deployed preview or local server with the same query:
 - Tapping a non-control area inside `iphone-v2-sheet` expands the sheet.
 - The middle sheet leaves map visible around the side gutters, and the collapsed sheet leaves the map as the main surface.
 - Selected-job marker size gets smaller when zoomed out and larger only when zoomed in.
-- Full-map rail controls exist and work: Map keeps the current view, Me centers user location when available, and Compass starts real heading or shows an unavailable state.
+- Full-map rail controls exist and work: Map keeps the current view, Me centers user location when available, and Compass shows a dial/needle while starting real heading or showing an unavailable state.
+- When user location exists, the Leaflet `user-location-marker` includes `data-hpd-smoke="user-location-compass-dial"` and the dial stays attached to the real location marker.
 - `data-hpd-smoke="iphone-v2-menu"` opens and closes the real map menu.
 
 ## Required Job Card Checks

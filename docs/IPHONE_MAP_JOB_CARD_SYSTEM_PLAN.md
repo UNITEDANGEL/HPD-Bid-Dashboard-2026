@@ -179,6 +179,14 @@ Current V2.14 top map control proportion slice:
 - Agent must stay compact and proportional to the search row.
 - Blank map taps use the map; job marker taps open a job card; blank map taps outside an open V2 card collapse the sheet.
 
+Current V2.15 live compass location dial slice:
+
+- Compass should explain and show real heading behavior, not decorative/fake motion.
+- The visible Compass rail button should be a small dial/needle, not a raw heading number.
+- When the user has a GPS location marker, the marker should include a compass dial around the location dot.
+- The compass dial must move with the real Leaflet user-location marker as the map pans/zooms.
+- The dial needle rotates only from real device orientation heading when supported; otherwise it stays in a clear off/listening state.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.
