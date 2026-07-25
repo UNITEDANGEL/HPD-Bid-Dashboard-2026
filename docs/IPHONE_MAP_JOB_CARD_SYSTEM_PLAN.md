@@ -194,6 +194,13 @@ Current V2.16 selected job map focus slice:
 - Other jobs may remain visible as small context markers, but they must not open as large selected cards in the map background.
 - The selected marker should stay positioned in the visible map area above the bottom sheet so it visually points to the active job card.
 
+Current V2.17 live location presence slice:
+
+- The live user-location marker and accuracy circle must not block tapping a job marker underneath or near the same location.
+- The live marker should be visually distinct as the user's presence, but compact enough not to cover work-order markers.
+- The marker can glow or pulse to show presence.
+- Direction/heading visuals must use real device orientation when available; do not fake movement or fake a route direction.
+
 ## Non-Negotiables
 
 - No fake iPhone status bar.

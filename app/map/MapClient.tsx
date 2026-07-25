@@ -6462,10 +6462,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const headingLabel = compassActive ? normalizedHeading !== null ? "LIVE" : "..." : "GPS";
       const compassClass = compassActive ? "compass-active" : "compass-off";
       const markerHtml = `
-        <div class="user-location-dot ${compassClass}" style="--user-heading:${normalizedHeading ?? 0}deg">
-          <em>MY LOCATION</em>
+        <div class="user-location-dot user-presence-beacon ${compassClass}" style="--user-heading:${normalizedHeading ?? 0}deg">
+          <em>YOU</em>
           <i class="user-location-compass" data-hpd-smoke="user-location-compass-dial" aria-hidden="true">
-            <b class="north">N</b><b class="east">E</b><b class="south">S</b><b class="west">W</b>
+            <b class="north">N</b>
             <strong class="needle"></strong>
           </i>
           <span></span>
@@ -6474,13 +6474,16 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
       const userLocationIcon = L.divIcon({
         className: "user-location-marker",
         html: markerHtml,
-        iconSize: [98, 98],
-        iconAnchor: [49, 49],
+        iconSize: [82, 82],
+        iconAnchor: [41, 41],
       });
 
       if (!userLocationMarkerRef.current) {
         userLocationMarkerRef.current = L.marker(latLng, {
           zIndexOffset: 10000,
+          interactive: false,
+          keyboard: false,
+          bubblingMouseEvents: false,
           icon: userLocationIcon,
         }).addTo(map);
       } else {
@@ -6495,6 +6498,9 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
           weight: 1,
           fillColor: "#93c5fd",
           fillOpacity: 0.14,
+          interactive: false,
+          bubblingMouseEvents: false,
+          className: "user-location-accuracy",
         }).addTo(map);
       } else {
         userLocationAccuracyRef.current.setLatLng(latLng);
@@ -14959,95 +14965,115 @@ return (
             pointer-events: none !important;
           }
 
+          .user-location-marker *,
+          .user-location-accuracy {
+            pointer-events: none !important;
+          }
+
           .user-location-dot {
             position: relative;
-            width: 98px;
-            height: 98px;
+            width: 82px;
+            height: 82px;
             display: grid;
             place-items: center;
             border-radius: 999px;
-            background: rgba(37, 99, 235, 0.14);
-            border: 2px solid rgba(255, 255, 255, 0.92);
-            box-shadow:
-              0 0 0 12px rgba(37, 99, 235, 0.2),
-              0 12px 30px rgba(3, 9, 16, 0.32);
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+            isolation: isolate;
           }
 
           .user-location-dot::before {
             content: "";
             position: absolute;
-            inset: 16px;
+            inset: 11px;
+            z-index: 0;
             border-radius: 999px;
-            background: rgba(37, 99, 235, 0.18);
+            border: 1px solid rgba(147, 197, 253, 0.72);
+            background:
+              radial-gradient(circle at center, rgba(59, 130, 246, 0.22), rgba(37, 99, 235, 0.08) 54%, transparent 70%);
+            box-shadow:
+              0 0 0 7px rgba(37, 99, 235, 0.12),
+              0 0 28px rgba(37, 99, 235, 0.34);
             animation: userLocationGuidePulse 2.8s ease-out infinite;
+          }
+
+          .user-location-dot::after {
+            content: "";
+            position: absolute;
+            inset: 26px;
+            z-index: 2;
+            border-radius: 999px;
+            background: radial-gradient(circle at 35% 32%, #ffffff 0 18%, #7dd3fc 19% 38%, #2563eb 39% 76%, #0f172a 77% 100%);
+            border: 3px solid rgba(255, 255, 255, 0.98);
+            box-shadow:
+              0 0 0 5px rgba(96, 165, 250, 0.28),
+              0 0 22px rgba(37, 99, 235, 0.58),
+              0 10px 18px rgba(15, 23, 42, 0.32);
+            animation: userLocationCorePulse 1.7s ease-in-out infinite;
           }
 
           .user-location-compass {
             position: absolute;
-            inset: 9px;
+            inset: 0;
             z-index: 1;
             display: block;
             border-radius: 999px;
-            border: 1px solid rgba(248, 250, 252, 0.82);
+            border: 0;
             background:
-              radial-gradient(circle at center, rgba(15, 23, 42, 0.08) 0 37%, transparent 38%),
-              conic-gradient(from 0deg, rgba(96, 165, 250, 0.34), rgba(15, 23, 42, 0.05), rgba(96, 165, 250, 0.34), rgba(15, 23, 42, 0.05), rgba(96, 165, 250, 0.34));
-            box-shadow:
-              inset 0 0 0 9px rgba(255, 255, 255, 0.10),
-              0 0 0 4px rgba(37, 99, 235, 0.10),
-              0 0 24px rgba(37, 99, 235, 0.30);
+              conic-gradient(from var(--user-heading, 0deg), rgba(14, 165, 233, 0.32) 0 34deg, transparent 34deg 360deg);
+            filter: drop-shadow(0 0 14px rgba(59, 130, 246, 0.38));
           }
 
           .user-location-compass b {
             position: absolute;
             z-index: 2;
-            color: rgba(15, 23, 42, 0.82);
-            font-size: 9px;
+            left: 50%;
+            top: 3px;
+            transform: translateX(-50%);
+            color: rgba(29, 78, 216, 0.92);
+            font-size: 8px;
             line-height: 1;
             font-style: normal;
             font-weight: 1000;
-            text-shadow: 0 1px 0 rgba(255,255,255,0.8);
+            text-shadow: 0 1px 0 rgba(255,255,255,0.76);
           }
-
-          .user-location-compass .north { left: 50%; top: 5px; transform: translateX(-50%); color: #1d4ed8; }
-          .user-location-compass .east { right: 6px; top: 50%; transform: translateY(-50%); }
-          .user-location-compass .south { left: 50%; bottom: 5px; transform: translateX(-50%); }
-          .user-location-compass .west { left: 6px; top: 50%; transform: translateY(-50%); }
 
           .user-location-compass .needle {
             position: absolute;
             left: 50%;
             top: 50%;
             z-index: 1;
-            width: 6px;
-            height: 32px;
-            transform-origin: 50% 100%;
-            transform: translate(-50%, -100%) rotate(var(--user-heading, 0deg));
-            border-radius: 999px 999px 4px 4px;
-            background: linear-gradient(180deg, #2563eb, #60a5fa 58%, rgba(96,165,250,0.12));
-            box-shadow: 0 0 10px rgba(37, 99, 235, 0.46);
+            width: 0;
+            height: 0;
+            transform-origin: 50% 96%;
+            transform: translate(-50%, -96%) rotate(var(--user-heading, 0deg));
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 31px solid rgba(14, 165, 233, 0.92);
+            filter: drop-shadow(0 0 10px rgba(14, 165, 233, 0.72));
           }
 
           .user-location-dot.compass-off .user-location-compass {
-            opacity: 0.56;
+            opacity: 0.42;
           }
 
           .user-location-dot.compass-off .user-location-compass .needle {
-            background: linear-gradient(180deg, #94a3b8, #cbd5e1 58%, rgba(203,213,225,0.12));
-            box-shadow: none;
+            border-bottom-color: rgba(148, 163, 184, 0.82);
+            filter: none;
           }
 
           .user-location-dot em {
             position: absolute;
-            top: -11px;
+            top: 2px;
             left: 50%;
             z-index: 4;
             transform: translateX(-50%);
-            padding: 4px 9px;
+            padding: 3px 7px;
             border-radius: 999px;
-            background: rgba(15, 23, 42, 0.95);
+            background: rgba(15, 23, 42, 0.88);
             color: #ffffff;
-            font-size: 10px;
+            font-size: 9px;
             white-space: nowrap;
             font-style: normal;
             font-weight: 1000;
@@ -15057,33 +15083,33 @@ return (
 
           .user-location-dot span {
             position: relative;
-            z-index: 3;
-            width: 26px;
-            height: 26px;
+            z-index: 5;
+            width: 11px;
+            height: 11px;
             border-radius: 999px;
-            background: #ef4444;
-            border: 4px solid #ffffff;
+            background: #ffffff;
+            border: 2px solid #38bdf8;
             box-shadow:
-              0 0 0 5px rgba(250, 204, 21, 0.45),
-              0 8px 18px rgba(239, 68, 68, 0.36);
+              0 0 0 4px rgba(37, 99, 235, 0.32),
+              0 0 18px rgba(56, 189, 248, 0.7);
           }
 
           .user-location-dot small {
             position: absolute;
             left: 50%;
-            bottom: -6px;
+            bottom: 3px;
             z-index: 4;
-            min-width: 30px;
-            height: 20px;
+            min-width: 26px;
+            height: 18px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 0 7px;
+            padding: 0 6px;
             border-radius: 999px;
             border: 1px solid rgba(255, 255, 255, 0.8);
             background: rgba(15, 23, 42, 0.94);
             color: #ffffff;
-            font-size: 10px;
+            font-size: 9px;
             line-height: 1;
             font-weight: 1000;
             transform: translateX(-50%);
@@ -15102,6 +15128,15 @@ return (
             100% {
               transform: scale(1.35);
               opacity: 0;
+            }
+          }
+
+          @keyframes userLocationCorePulse {
+            0%, 100% {
+              transform: scale(0.96);
+            }
+            50% {
+              transform: scale(1.08);
             }
           }
 
