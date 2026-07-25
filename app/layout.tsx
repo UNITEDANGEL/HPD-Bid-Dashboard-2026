@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "HPD Bid Dashboard 2026",
-  description: "Mobile-ready HPD work order dashboard for awards, job packets, and field review.",
+  description: "Premium HPD bid analytics, field map, paperwork, and award tracking dashboard.",
 };
 
 export default function RootLayout({
@@ -15,19 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
-        <div className="site-shell">
-          <header className="topbar">
-            <div>
-              <p className="eyebrow">HPD Bid Management</p>
-              <h1>2026 Mobile Dashboard</h1>
-            </div>
-            <p className="topbar-note">Built for phone review, award tracking, and Cloudflare Pages.</p>
-          </header>
-          <main className="page-frame">{children}</main>
-        </div>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
-
