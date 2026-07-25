@@ -4260,12 +4260,14 @@ function clearIphoneFieldSheetTouch() {
       );
 
       if (tappedCardUi) return;
-      setIphoneFieldSheetSnap("collapsed");
+      window.setTimeout(() => {
+        setIphoneFieldSheetSnap("collapsed");
+      }, 0);
     };
 
-    document.addEventListener("pointerdown", collapseSheetFromMapTap, { capture: true, passive: true });
+    document.addEventListener("pointerup", collapseSheetFromMapTap, { capture: true, passive: true });
     return () => {
-      document.removeEventListener("pointerdown", collapseSheetFromMapTap, { capture: true });
+      document.removeEventListener("pointerup", collapseSheetFromMapTap, { capture: true });
     };
   }, [selectedOnly, selected, iphoneJobCardVersion, iphoneV2ScopeOpen, mapMenuOpen]);
 
