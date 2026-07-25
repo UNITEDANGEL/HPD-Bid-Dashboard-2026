@@ -4181,7 +4181,7 @@ function handleIphoneFieldSheetHandleClick() {
     return;
   }
   setIphoneFieldSheetSnap((current) =>
-    current === "middle" ? "expanded" : current === "expanded" ? "collapsed" : "middle"
+    current === "collapsed" ? "middle" : "collapsed"
   );
 }
 
