@@ -1,21 +1,39 @@
 {
-  "generatedAt": "2026-07-27T18:20:14.787Z",
-  "totalJobs": 603,
+  "generatedAt": "2026-07-27T20:16:57.562Z",
+  "totalJobs": 604,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 0,
+  "missingItbPage3Descriptions": 1,
   "badDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 0,
+  "missingPage3Images": 1,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
     "missingDescriptions": [],
-    "missingItbPage3Descriptions": [],
+    "missingItbPage3Descriptions": [
+      {
+        "OMO": "ER01474",
+        "Address": "260 PARKHILL AVENUE, 10304",
+        "ITB": "ER01474_072426113922.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOO"
+      }
+    ],
     "badDescriptions": [],
     "sourceReviewJobs": [],
     "missingItbFiles": [],
-    "missingPage3Images": []
+    "missingPage3Images": [
+      {
+        "OMO": "ER01474",
+        "Address": "260 PARKHILL AVENUE, 10304",
+        "ITB": "ER01474_072426113922.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOO"
+      }
+    ]
   }
 }
