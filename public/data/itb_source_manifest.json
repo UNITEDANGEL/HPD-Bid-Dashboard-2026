@@ -4235,11 +4235,18 @@
       "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\.automation-audit-20260728-1137\\public\\documents\\itb\\ER01474_072426113922.pdf",
       "sourceMatch": "exact",
       "pdf": "/documents/itb/ER01474_072426113922.pdf"
+    },
+    "EQ31241_072426102231.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/EQ31241_072426102231-p3.png",
+      "sourceFile": "C:\\Users\\uac52\\My Drive\\HPD_Bid_Management_Project\\Temp\\live-pages-main\\.automation-hpd-20260728-1700\\public\\documents\\itb\\EQ31241_072426102231.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/EQ31241_072426102231.pdf"
     }
   },
   "summary": {
     "rendered": 1,
-    "reused": 603,
+    "reused": 604,
     "copiedPdfs": 0,
     "missingSource": 0,
     "failed": 0
