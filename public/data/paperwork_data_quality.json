@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-07-28T12:50:24.628Z",
-  "totalJobs": 604,
+  "generatedAt": "2026-07-28T15:15:05.868Z",
+  "totalJobs": 605,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 1,
+  "missingItbPage3Descriptions": 2,
   "badDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
@@ -20,6 +20,14 @@
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
         "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOO"
+      },
+      {
+        "OMO": "EQ31241",
+        "Address": "129-25 101 AVENUE, 11419",
+        "ITB": "EQ31241_072426102231.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": REPAIR THE LOCKSET AT FIRE DOOR LEADING TO STAIR CA SE, PUBLIC HALL, 2ND STORY REPLACE LOCKSET ON BUILDING ENTRANCE DOOR. NYC HPD EMERGENC"
       }
     ],
     "badDescriptions": [],
@@ -27,12 +35,12 @@
     "missingItbFiles": [],
     "missingPage3Images": [
       {
-        "OMO": "ER01474",
-        "Address": "260 PARKHILL AVENUE, 10304",
-        "ITB": "ER01474_072426113922.pdf",
+        "OMO": "EQ31241",
+        "Address": "129-25 101 AVENUE, 11419",
+        "ITB": "EQ31241_072426102231.pdf",
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
-        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOO"
+        "Preview": ": REPAIR THE LOCKSET AT FIRE DOOR LEADING TO STAIR CA SE, PUBLIC HALL, 2ND STORY REPLACE LOCKSET ON BUILDING ENTRANCE DOOR. NYC HPD EMERGENC"
       }
     ]
   }
