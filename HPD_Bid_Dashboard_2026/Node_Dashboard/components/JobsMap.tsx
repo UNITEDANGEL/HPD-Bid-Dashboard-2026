@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { JobRecord } from "../lib/types";
-import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 
 type Props = {
@@ -10,7 +10,9 @@ type Props = {
   selectedId: string;
   onSelect: (id: string) => void;
   focusCenter?: [number, number] | null;
+  focusZoom?: number;
   focusKey?: string;
+  userLocation?: [number, number] | null;
   variant?: "pins" | "clusters";
 };
 
@@ -103,11 +105,13 @@ function MapViewport({
   jobs,
   selectedId,
   focusCenter,
+  focusZoom,
   focusKey = "",
 }: {
   jobs: JobRecord[];
   selectedId: string;
   focusCenter?: [number, number] | null;
+  focusZoom?: number;
   focusKey?: string;
 }) {
   const map = useMap();
@@ -127,6 +131,11 @@ function MapViewport({
     const focusChanged = lastFocusKey.current !== focusKey;
     if (focusChanged) {
       lastFocusKey.current = focusKey;
+      if (focusCenter && focusZoom) {
+        map.setView(focusCenter, focusZoom, { animate: false });
+        return () => window.clearTimeout(resizeTimer);
+      }
+
       if (points.length === 1) {
         map.setView(points[0], 14, { animate: false });
         return () => window.clearTimeout(resizeTimer);
@@ -159,12 +168,12 @@ function MapViewport({
       map.fitBounds(points, { padding: [30, 30], animate: false });
     }
     return () => window.clearTimeout(resizeTimer);
-  }, [focusCenter, focusKey, jobs, map, selectedId]);
+  }, [focusCenter, focusKey, focusZoom, jobs, map, selectedId]);
 
   return null;
 }
 
-export function JobsMap({ jobs, selectedId, onSelect, focusCenter, focusKey, variant = "pins" }: Props) {
+export function JobsMap({ jobs, selectedId, onSelect, focusCenter, focusZoom, focusKey, userLocation, variant = "pins" }: Props) {
   const clusters = variant === "clusters" ? clusteredJobs(jobs, selectedId) : [];
 
   return (
@@ -178,7 +187,17 @@ export function JobsMap({ jobs, selectedId, onSelect, focusCenter, focusKey, var
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
         url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
       />
-      <MapViewport jobs={jobs} selectedId={selectedId} focusCenter={focusCenter} focusKey={focusKey} />
+      <MapViewport jobs={jobs} selectedId={selectedId} focusCenter={focusCenter} focusZoom={focusZoom} focusKey={focusKey} />
+
+      {userLocation ? (
+        <CircleMarker
+          center={userLocation}
+          radius={9}
+          pathOptions={{ color: "#ffffff", fillColor: "#2f9cff", fillOpacity: 0.95, weight: 3 }}
+        >
+          <Popup>You are here</Popup>
+        </CircleMarker>
+      ) : null}
 
       {variant === "clusters" ? (
         clusters.map((cluster) => {
