@@ -221,6 +221,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const [toast, setToast] = useState("");
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [photoUrlsByJob, setPhotoUrlsByJob] = useState<Record<string, string[]>>({});
+  const [mapFitNonce, setMapFitNonce] = useState(0);
   const mobileBoroughRowRef = useRef<HTMLDivElement>(null);
 
   const mappableJobs = useMemo(() => jobs.filter((job) => job.hasMap), [jobs]);
@@ -275,7 +276,7 @@ export function JobsMapBoard({ jobs }: Props) {
   ].filter((item): item is { label: string; value: string; icon: string } => Boolean(item));
   const exportDataHref = `data:text/csv;charset=utf-8,${encodeURIComponent(jobsToCsv(filtered))}`;
   const exportFileName = `hpd-bids-${new Date().toISOString().slice(0, 10)}.csv`;
-  const mapFocusKey = `${borough || "All"}|${statusView}|${query}`;
+  const mapFocusKey = `${borough || "All"}|${statusView}|${query}|${mapFitNonce}`;
   const mapFocusCenter = borough ? BOROUGH_CENTERS[canonicalBorough(borough)] || null : null;
   const mobileBoroughStats = [
     { key: "", label: "All", count: mappableJobs.length },
@@ -378,7 +379,14 @@ export function JobsMapBoard({ jobs }: Props) {
 
   function selectBorough(name: string) {
     setSelectedId("");
+    setQuery("");
     setBorough((current) => (current === name ? "" : name));
+  }
+
+  function fitVisibleMap() {
+    setSelectedId("");
+    setActivePanel("");
+    setMapFitNonce((current) => current + 1);
   }
 
   function selectStatus(status: StatusView) {
@@ -851,11 +859,11 @@ export function JobsMapBoard({ jobs }: Props) {
           {selectedMapsHref ? (
             <a href={selectedMapsHref} target="_blank" rel="noreferrer" className="floating-map-button nav-arrow-icon" aria-label="Navigate" />
           ) : (
-            <button type="button" className="floating-map-button nav-arrow-icon" aria-label="Navigate" onClick={() => notify("Tap a pin or open the first job to navigate.")} />
+            <button type="button" className="floating-map-button nav-arrow-icon" aria-label="Fit visible jobs" onClick={fitVisibleMap} />
           )}
           <button type="button" className="floating-map-button layers-icon" aria-label="Open expanded map" onClick={() => setActivePanel("map")} />
-          <button type="button" className="floating-map-button locate-icon" aria-label="Center map" onClick={() => setSelectedId("")} />
-          <button type="button" className="visible-count-button" aria-label="Open visible job filters" onClick={() => setActivePanel("filters")}>
+          <button type="button" className="floating-map-button locate-icon" aria-label="Center map" onClick={fitVisibleMap} />
+          <button type="button" className="visible-count-button" aria-label="Open visible jobs" onClick={() => setActivePanel("jobs")}>
             <strong>{filtered.length}</strong>
             <span>Visible Jobs</span>
           </button>
@@ -963,10 +971,7 @@ export function JobsMapBoard({ jobs }: Props) {
           <button
             type="button"
             className="is-active"
-            onClick={() => {
-              setSelectedId("");
-              setActivePanel("");
-            }}
+            onClick={fitVisibleMap}
           >
             <span className="tab-map-icon" aria-hidden="true" />
             <strong>Map</strong>
@@ -1023,6 +1028,7 @@ export function JobsMapBoard({ jobs }: Props) {
                       className={!borough ? "is-active" : ""}
                       onClick={() => {
                         setSelectedId("");
+                        setQuery("");
                         setBorough("");
                       }}
                     >
