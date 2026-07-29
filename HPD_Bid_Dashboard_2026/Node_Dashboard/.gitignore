@@ -1,0 +1,8 @@
+.next/
+node_modules/
+dist/
+.sites-package-stage*/
+*.log
+*.tgz
+tsconfig.tsbuildinfo
+public/job-uploads/

@@ -2,9 +2,15 @@ export type JobRecord = {
   id: string;
   borough: string;
   status: string;
+  archived: boolean;
+  statusOverride: string;
+  workflowStatus: string;
+  updatedAt: string;
   address: string;
   trade: string;
   awardDate: string;
+  startDate: string;
+  completionDate: string;
   bidAmount: string;
   amountValue: number;
   description: string;

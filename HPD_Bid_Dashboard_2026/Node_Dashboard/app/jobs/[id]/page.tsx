@@ -4,6 +4,8 @@ import { getJobById } from "../../../lib/jobs";
 
 export const dynamic = "force-dynamic";
 
+const FIELD_MAP_HREF = "/map?view=all&map=1&look=iphone-size";
+
 function mapsHref(latitude: string, longitude: string, address: string) {
   const query = latitude && longitude ? `${latitude},${longitude}` : address;
   return query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : "";
@@ -24,6 +26,8 @@ export default async function JobDetailPage({
           <div className="breadcrumbs">
             <Link href="/">Dashboard</Link>
             <span>/</span>
+            <Link href={FIELD_MAP_HREF}>Field Map</Link>
+            <span>/</span>
             <Link href="/jobs">Jobs</Link>
           </div>
           <div className="job-profile-header" style={{ marginTop: 14 }}>
@@ -41,6 +45,8 @@ export default async function JobDetailPage({
     <div className="page-stack">
       <div className="breadcrumbs">
         <Link href="/">Dashboard</Link>
+        <span>/</span>
+        <Link href={FIELD_MAP_HREF}>Field Map</Link>
         <span>/</span>
         <Link href="/jobs">Jobs</Link>
         <span>/</span>
@@ -110,11 +116,14 @@ export default async function JobDetailPage({
         </div>
 
         <div className="detail-actions">
+          <Link href={FIELD_MAP_HREF} className="primary-link">
+            Back to Field Map
+          </Link>
           <Link href="/jobs" className="secondary-link">
             Back to jobs board
           </Link>
           {openMapsLink ? (
-            <a href={openMapsLink} target="_blank" rel="noreferrer" className="primary-link">
+            <a href={openMapsLink} target="_blank" rel="noreferrer" className="secondary-link">
               Open in Maps
             </a>
           ) : null}

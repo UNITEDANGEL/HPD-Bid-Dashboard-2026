@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { StatusBadge } from "./StatusBadge";
 import type { JobRecord } from "../lib/types";
+import { compareJobsBySearch, matchesJobSearch } from "../lib/search";
 
 type Props = {
   jobs: JobRecord[];
@@ -49,30 +50,15 @@ export function DashboardClient({ jobs, title, subtitle }: Props) {
   const boroughs = unique(jobs.map((job) => job.borough));
   const statuses = unique(jobs.map((job) => job.status));
 
-  const filteredJobs = jobs.filter((job) => {
-    if (borough && job.borough !== borough) return false;
-    if (status && job.status !== status) return false;
-    if (!query.trim()) return true;
+  const filteredJobs = jobs
+    .filter((job) => {
+      if (borough && job.borough !== borough) return false;
+      if (status && job.status !== status) return false;
+      return matchesJobSearch(job, query);
+    })
+    .sort(compareJobsBySearch(query));
 
-    const haystack = [
-      job.id,
-      job.address,
-      job.trade,
-      job.description,
-      job.status,
-      job.borough,
-    ]
-      .join(" ")
-      .toLowerCase();
-
-    return haystack.includes(query.trim().toLowerCase());
-  });
-
-  const selected =
-    filteredJobs.find((job) => job.id === selectedId) ||
-    filteredJobs[0] ||
-    jobs[0] ||
-    null;
+  const selected = filteredJobs.find((job) => job.id === selectedId) || filteredJobs[0] || null;
   const mappedJobs = filteredJobs.filter((job) => job.hasMap && job.latitude && job.longitude);
   const totalJobs = filteredJobs.length;
   const awardedCount = filteredJobs.filter((job) => job.status.toLowerCase() === "awarded").length;
@@ -238,12 +224,17 @@ export function DashboardClient({ jobs, title, subtitle }: Props) {
         </div>
 
         <div className="filters-grid">
-          <label>
-            Search
+          <label className="omo-search">
+            OMO Search
             <input
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="OMO, address, trade, description"
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setSelectedId("");
+              }}
+              aria-label="OMO search"
+              inputMode="search"
+              autoComplete="off"
             />
           </label>
           <label>

@@ -4,6 +4,8 @@ type Props = {
 
 function toneForStatus(status: string) {
   const normalized = status.toLowerCase();
+  if (normalized.includes("open")) return "is-open";
+  if (normalized.includes("archived")) return "is-archived";
   if (normalized.includes("completed")) return "is-completed";
   if (normalized.includes("awarded")) return "is-awarded";
   if (normalized.includes("progress")) return "is-progress";

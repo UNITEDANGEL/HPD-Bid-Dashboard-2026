@@ -18,11 +18,17 @@ export default function RootLayout({
       <body>
         <div className="site-shell">
           <header className="topbar">
-            <div>
-              <p className="eyebrow">HPD Bid Management</p>
-              <h1>2026 Mobile Dashboard</h1>
+            <div className="topbar-brand">
+              <span className="app-mark">HPD</span>
+              <div>
+                <p className="eyebrow">Bid Management</p>
+                <h1>2026 Field Command</h1>
+              </div>
             </div>
-            <p className="topbar-note">Built for phone review, award tracking, and Render hosting.</p>
+            <p className="topbar-note">
+              <span className="live-dot" aria-hidden="true" />
+              Local dashboard online
+            </p>
           </header>
           <main className="page-frame">{children}</main>
         </div>
