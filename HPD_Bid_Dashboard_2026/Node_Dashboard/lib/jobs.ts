@@ -20,6 +20,18 @@ function parseAmount(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function cleanSourceValue(value: string) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+
+  const normalized = text.toLowerCase().replace(/\s+/g, " ");
+  if (["john doe", "tenant name", "not available", "n/a", "na", "none", "null", "unknown"].includes(normalized)) {
+    return "";
+  }
+
+  return text;
+}
+
 function csvCandidates() {
   return [
     path.resolve(process.cwd(), "..", "Fetcher_Output", "HPD_Bid_Fetcher_Master_2026.csv"),
@@ -130,8 +142,8 @@ function normalizeJob(row: Record<string, string>, index: number): JobRecord {
     "Summary",
     "JobDescription",
   ]);
-  const tenantName = pick(row, ["TenantName", "Tenant", "tenant_name"]);
-  const tenantPhone = pick(row, ["TenantPhone", "Phone", "phone"]);
+  const tenantName = cleanSourceValue(pick(row, ["TenantName", "Tenant", "tenant_name"]));
+  const tenantPhone = cleanSourceValue(pick(row, ["TenantPhone", "Phone", "phone"]));
   const location = pick(row, ["Location", "location"]);
   const latitude = pick(row, ["Latitude", "latitude"]);
   const longitude = pick(row, ["Longitude", "longitude"]);

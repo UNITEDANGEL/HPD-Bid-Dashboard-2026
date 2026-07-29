@@ -59,6 +59,13 @@ function formatCurrency(amountValue: number, fallback: string) {
   }).format(amountValue);
 }
 
+function realFieldValue(value: string) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  if (/^(not listed|not available|date unavailable|n\/a|na|none|null|unknown|tenant name|john doe)$/i.test(text)) return "";
+  return text;
+}
+
 function usableDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
@@ -253,6 +260,19 @@ export function JobsMapBoard({ jobs }: Props) {
   const isSelectedSaved = Boolean(selected && savedIds.includes(selected.id));
   const selectedPhotoUrls = selected ? photoUrlsByJob[selected.id] || [] : [];
   const selectedPhotoUrl = selectedPhotoUrls[0] || "";
+  const selectedAddress = selected ? realFieldValue(selected.address) : "";
+  const selectedBorough = selected ? realFieldValue(selected.borough) : "";
+  const selectedTrade = selected ? realFieldValue(selected.trade) : "";
+  const selectedStartDate = selected ? realFieldValue(formatJobStartDate(selected)) : "";
+  const selectedCompletionDate = selected ? realFieldValue(formatJobCompletionDate(selected)) : "";
+  const selectedAmount = selected ? realFieldValue(formatCurrency(selected.amountValue, selected.bidAmount)) : "";
+  const selectedTenantName = selected ? realFieldValue(selected.tenantName) : "";
+  const selectedDetailItems = [
+    selectedStartDate ? { label: "Start", value: selectedStartDate, icon: "calendar-icon" } : null,
+    selectedAmount ? { label: "COA", value: selectedAmount, icon: "money-mini-icon" } : null,
+    selectedCompletionDate ? { label: "Complete", value: selectedCompletionDate, icon: "calendar-icon" } : null,
+    selectedTenantName ? { label: "Tenant", value: selectedTenantName, icon: "tenant-icon" } : null,
+  ].filter((item): item is { label: string; value: string; icon: string } => Boolean(item));
   const exportDataHref = `data:text/csv;charset=utf-8,${encodeURIComponent(jobsToCsv(filtered))}`;
   const exportFileName = `hpd-bids-${new Date().toISOString().slice(0, 10)}.csv`;
   const mapFocusKey = `${borough || "All"}|${statusView}|${query}`;
@@ -848,7 +868,7 @@ export function JobsMapBoard({ jobs }: Props) {
               <div className="field-card-main">
                 <div className="sheet-topline">
                   <StatusBadge status={displayStatus(selected)} />
-                  <span>OMO: {selected.id}</span>
+                  <span className="sheet-omo">OMO {selected.id}</span>
                   <button
                     type="button"
                     aria-label={isSelectedSaved ? "Unsave job" : "Save job"}
@@ -862,43 +882,35 @@ export function JobsMapBoard({ jobs }: Props) {
                       notify(isSelectedSaved ? "Job removed from saved list." : "Job saved.");
                     }}
                   />
-                  <button type="button" className="sheet-close-job" aria-label="Close job card" onClick={() => setSelectedId("")}>
-                    ×
+                  <button type="button" className="sheet-map-return" aria-label="Close job card and return to map" onClick={() => setSelectedId("")}>
+                    <span aria-hidden="true">×</span>
+                    Map
                   </button>
                 </div>
                 <h2>{selected.id}</h2>
-                <p>{selected.address || "No address listed"}</p>
-                <strong>{(selected.borough || "New York").toUpperCase()}</strong>
+                {selectedAddress ? <p>{selectedAddress}</p> : null}
+                <div className="field-card-tags">
+                  {selectedBorough ? <strong>{selectedBorough.toUpperCase()}</strong> : null}
+                  {selectedTrade ? <span>{selectedTrade}</span> : null}
+                </div>
               </div>
 
               <div className="field-card-details">
-                <div>
-                  <span className="field-detail-icon calendar-icon" aria-hidden="true" />
-                  <span>Start Date</span>
-                  <strong>{formatJobStartDate(selected)}</strong>
-                </div>
-                <div>
-                  <span className="field-detail-icon money-mini-icon" aria-hidden="true" />
-                  <span>COA Amount</span>
-                  <strong>{formatCurrency(selected.amountValue, selected.bidAmount)}</strong>
-                </div>
-                <div>
-                  <span className="field-detail-icon tenant-icon" aria-hidden="true" />
-                  <span>Tenant</span>
-                  <strong>{selected.tenantName || "Not listed"}</strong>
-                </div>
+                {selectedDetailItems.map((item) => (
+                  <div key={item.label}>
+                    <span className={`field-detail-icon ${item.icon}`} aria-hidden="true" />
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </div>
+                ))}
               </div>
 
-              <div className="field-photo-card">
-                {selectedPhotoUrl ? (
+              {selectedPhotoUrl ? (
+                <div className="field-photo-card">
                   <img src={selectedPhotoUrl} alt={`Uploaded field photo for ${selected.id}`} />
-                ) : (
-                  <div className="field-photo-empty" aria-label="No uploaded field photo">
-                    <span />
-                  </div>
-                )}
-                <span className="photo-count">{selectedPhotoUrls.length ? Math.min(selectedPhotoUrls.length, 4) : 0}/4</span>
-              </div>
+                  <span className="photo-count">{Math.min(selectedPhotoUrls.length, 4)}/4</span>
+                </div>
+              ) : null}
             </div>
 
             <div className="sheet-actions">
@@ -910,9 +922,7 @@ export function JobsMapBoard({ jobs }: Props) {
               {selectedPhoneHref ? (
                 <a href={selectedPhoneHref}><span className="action-phone" />Call Tenant</a>
               ) : (
-                <button type="button" onClick={() => setActivePanel("contact")}>
-                  <span className="action-phone" />Call Tenant
-                </button>
+                <a href={selectedDetailHref}><span className="action-phone" />Contact Info</a>
               )}
               <label className={uploadingPhotos ? "is-disabled" : ""}>
                 <span className="action-camera" />{uploadingPhotos ? "Saving" : "Photos"}
@@ -930,7 +940,7 @@ export function JobsMapBoard({ jobs }: Props) {
 
             <div className="sheet-pager">
               <button type="button" aria-label="Previous job" onClick={() => selectRelativeJob(-1)}>‹</button>
-              <span>{filtered.length ? selectedIndex + 1 : 0} of {filtered.length}</span>
+              <span>{filtered.length ? selectedIndex + 1 : 0} / {filtered.length}</span>
               <button type="button" aria-label="Next job" onClick={() => selectRelativeJob(1)}>›</button>
             </div>
           </article>
@@ -1239,9 +1249,9 @@ export function JobsMapBoard({ jobs }: Props) {
               <div className="drawer-stack">
                 <div className="drawer-selected-job">
                   <StatusBadge status={displayStatus(selected)} />
-                  <strong>{selected.tenantName || selected.id}</strong>
-                  <span>{selected.tenantPhone || "No phone number in source data"}</span>
-                  <span>{selected.address || "No address listed"}</span>
+                  <strong>{selectedTenantName || selected.id}</strong>
+                  {selected.tenantPhone ? <span>{selected.tenantPhone}</span> : null}
+                  {selectedAddress ? <span>{selectedAddress}</span> : null}
                 </div>
                 <div className="drawer-actions is-grid">
                   {selectedPhoneHref ? <a href={selectedPhoneHref}>Call now</a> : <a href={selectedDetailHref}>Open contact record</a>}

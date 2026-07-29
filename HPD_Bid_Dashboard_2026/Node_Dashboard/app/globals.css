@@ -1839,10 +1839,10 @@ tbody tr:hover {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    min-height: 112px;
-    margin: 14px 14px 12px;
-    padding: 14px 16px;
+    gap: 10px;
+    min-height: 88px;
+    margin: 10px 12px 8px;
+    padding: 10px 12px;
     border: 1px solid rgba(47, 156, 255, 0.36);
     border-radius: 24px;
     background:
@@ -1850,7 +1850,7 @@ tbody tr:hover {
       rgba(6, 18, 33, 0.96);
     box-shadow:
       inset 0 0 0 1px rgba(255, 255, 255, 0.04),
-      0 18px 46px rgba(0, 0, 0, 0.38),
+      0 12px 34px rgba(0, 0, 0, 0.36),
       0 0 32px rgba(47, 156, 255, 0.15);
     backdrop-filter: blur(16px);
   }
@@ -1859,15 +1859,15 @@ tbody tr:hover {
     display: flex;
     align-items: center;
     min-width: 0;
-    gap: 12px;
+    gap: 10px;
   }
 
   .mobile-hpd-shield {
     position: relative;
     display: grid;
     place-items: center;
-    width: 58px;
-    height: 66px;
+    width: 46px;
+    height: 52px;
     flex: 0 0 auto;
     border: 2px solid rgba(56, 185, 255, 0.8);
     border-radius: 18px 18px 24px 24px;
@@ -1881,14 +1881,14 @@ tbody tr:hover {
   }
 
   .mobile-hpd-shield strong {
-    font-size: 1.28rem;
+    font-size: 1rem;
     line-height: 1;
   }
 
   .mobile-hpd-shield span {
-    width: 28px;
-    height: 16px;
-    margin-top: -12px;
+    width: 22px;
+    height: 12px;
+    margin-top: -9px;
     border: 2px solid rgba(255, 255, 255, 0.9);
     border-top: 0;
     box-shadow:
@@ -1904,7 +1904,7 @@ tbody tr:hover {
 
   .mobile-command-brand p {
     color: #16a7ff;
-    font-size: 0.72rem;
+    font-size: 0.66rem;
     font-weight: 900;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -1914,7 +1914,7 @@ tbody tr:hover {
     margin-top: 2px;
     overflow: hidden;
     color: #ffffff;
-    font-size: clamp(1.38rem, 6.3vw, 1.72rem);
+    font-size: clamp(1.18rem, 5.5vw, 1.42rem);
     line-height: 1.02;
     text-overflow: ellipsis;
     text-transform: uppercase;
@@ -1924,16 +1924,16 @@ tbody tr:hover {
   .mobile-live-line {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 7px;
+    margin-top: 6px;
     color: #3dff93;
-    font-size: 0.82rem;
+    font-size: 0.76rem;
     font-weight: 900;
   }
 
   .mobile-live-line i {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 999px;
     background: #35ff86;
     box-shadow: 0 0 14px rgba(53, 255, 134, 0.9);
@@ -1941,25 +1941,25 @@ tbody tr:hover {
 
   .mobile-live-line small {
     color: #dce8f8;
-    font-size: 0.76rem;
+    font-size: 0.7rem;
     font-weight: 700;
   }
 
   .mobile-command-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     flex: 0 0 auto;
   }
 
   .mobile-notify-button,
   .mobile-menu-button {
     position: relative;
-    width: 56px;
-    height: 56px;
+    width: 46px;
+    height: 46px;
     flex: 0 0 auto;
     border: 1px solid rgba(47, 156, 255, 0.52);
-    border-radius: 18px;
+    border-radius: 16px;
     background:
       linear-gradient(135deg, rgba(18, 72, 132, 0.84), rgba(8, 23, 42, 0.9));
     box-shadow: inset 0 0 18px rgba(47, 156, 255, 0.18);
@@ -1968,8 +1968,8 @@ tbody tr:hover {
   .mobile-notify-button.bell-icon span {
     top: -7px;
     right: -5px;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     color: #ffffff;
     background: #ff5f78;
     box-shadow: 0 0 12px rgba(255, 95, 120, 0.85);
@@ -1983,8 +1983,8 @@ tbody tr:hover {
   .menu-lines-icon::after {
     content: "";
     position: absolute;
-    left: 16px;
-    right: 16px;
+    left: 13px;
+    right: 13px;
     height: 3px;
     border-radius: 999px;
     background: #dce8f8;
@@ -1992,11 +1992,11 @@ tbody tr:hover {
   }
 
   .menu-lines-icon::before {
-    top: 17px;
+    top: 13px;
   }
 
   .menu-lines-icon::after {
-    top: 37px;
+    top: 31px;
     box-shadow: none;
   }
 
@@ -2004,9 +2004,9 @@ tbody tr:hover {
     position: relative;
     z-index: 620;
     display: flex;
-    gap: 10px;
+    gap: 8px;
     overflow-x: auto;
-    padding: 0 14px 12px;
+    padding: 0 12px 8px;
     scrollbar-width: none;
   }
 
@@ -2017,12 +2017,12 @@ tbody tr:hover {
   .mobile-borough-pill {
     display: grid;
     place-items: center;
-    min-width: 106px;
-    min-height: 68px;
+    min-width: 86px;
+    min-height: 52px;
     flex: 0 0 auto;
-    padding: 10px 16px;
+    padding: 8px 12px;
     border: 1px solid rgba(47, 156, 255, 0.34);
-    border-radius: 24px;
+    border-radius: 18px;
     background: rgba(10, 27, 49, 0.86);
     color: #ffffff;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
@@ -2031,15 +2031,15 @@ tbody tr:hover {
 
   .mobile-borough-pill strong {
     color: var(--borough-color);
-    font-size: 0.86rem;
+    font-size: 0.76rem;
     line-height: 1.1;
     text-transform: uppercase;
   }
 
   .mobile-borough-pill span {
-    margin-top: 4px;
+    margin-top: 3px;
     color: #c5d5ec;
-    font-size: 0.78rem;
+    font-size: 0.7rem;
     font-weight: 800;
   }
 
@@ -2084,12 +2084,12 @@ tbody tr:hover {
   .mobile-search {
     position: relative;
     z-index: 620;
-    grid-template-columns: 24px minmax(0, 1fr) 46px;
-    min-height: 66px;
-    margin: 6px 14px 0;
-    padding: 0 12px 0 18px;
+    grid-template-columns: 22px minmax(0, 1fr) 40px;
+    min-height: 52px;
+    margin: 4px 12px 0;
+    padding: 0 8px 0 14px;
     border-color: rgba(0, 161, 255, 0.88);
-    border-radius: 24px;
+    border-radius: 18px;
     background: rgba(4, 15, 29, 0.86);
     box-shadow:
       0 0 18px rgba(0, 143, 255, 0.22),
@@ -2098,7 +2098,7 @@ tbody tr:hover {
 
   .mobile-search input {
     color: #ffffff;
-    font-size: 1rem;
+    font-size: 0.92rem;
   }
 
   .mobile-search input::placeholder {
@@ -2106,10 +2106,10 @@ tbody tr:hover {
   }
 
   .mobile-search-filter {
-    width: 42px;
-    height: 42px;
+    width: 36px;
+    height: 36px;
     border: 0;
-    border-radius: 14px;
+    border-radius: 12px;
     background:
       linear-gradient(135deg, rgba(0, 142, 255, 0.38), rgba(0, 213, 255, 0.16));
     transform: none;
@@ -2137,16 +2137,16 @@ tbody tr:hover {
   }
 
   .mobile-map-shell {
-    inset: 280px 0 88px;
+    inset: 214px 0 80px;
   }
 
   .mobile-map-shell::before {
-    height: 120px;
+    height: 84px;
     background: linear-gradient(180deg, rgba(2, 8, 15, 0.62), rgba(2, 8, 15, 0));
   }
 
   .mobile-map-shell::after {
-    height: 300px;
+    height: 220px;
     background: linear-gradient(0deg, rgba(2, 7, 13, 0.92), rgba(2, 7, 13, 0));
   }
 
@@ -2187,9 +2187,9 @@ tbody tr:hover {
 
   .floating-map-button,
   .visible-count-button {
-    right: 14px;
-    width: 58px;
-    height: 58px;
+    right: 12px;
+    width: 48px;
+    height: 48px;
     border-color: rgba(0, 161, 255, 0.88);
     border-radius: 999px;
     background:
@@ -2205,31 +2205,31 @@ tbody tr:hover {
   }
 
   .layers-icon {
-    top: 64px;
+    top: 56px;
   }
 
   .locate-icon {
-    top: 128px;
+    top: 112px;
   }
 
   .visible-count-button {
     position: absolute;
-    top: 192px;
+    top: 168px;
     z-index: 650;
     display: grid;
     place-items: center;
-    height: 64px;
+    height: 58px;
     color: #ffffff;
   }
 
   .visible-count-button strong {
-    font-size: 1.22rem;
+    font-size: 1.08rem;
     line-height: 1;
   }
 
   .visible-count-button span {
     color: #c8d8ef;
-    font-size: 0.7rem;
+    font-size: 0.64rem;
     font-weight: 700;
   }
 
@@ -2255,39 +2255,39 @@ tbody tr:hover {
   }
 
   .mobile-job-sheet {
-    right: 14px;
-    bottom: 96px;
-    left: 14px;
-    gap: 10px;
-    max-height: min(378px, calc(100svh - 410px));
-    padding: 10px 14px 14px;
+    right: 12px;
+    bottom: 88px;
+    left: 12px;
+    gap: 8px;
+    max-height: min(310px, calc(100svh - 360px));
+    padding: 8px 12px 10px;
     border-color: rgba(0, 161, 255, 0.48);
     border-radius: 24px;
     background:
       linear-gradient(135deg, rgba(18, 48, 80, 0.94), rgba(5, 18, 34, 0.96)),
       rgba(5, 18, 34, 0.94);
     box-shadow:
-      0 -18px 52px rgba(0, 0, 0, 0.48),
-      0 0 24px rgba(0, 143, 255, 0.2),
+      0 -14px 40px rgba(0, 0, 0, 0.45),
+      0 0 18px rgba(0, 143, 255, 0.18),
       inset 0 0 0 1px rgba(255, 255, 255, 0.03);
   }
 
   .mobile-job-sheet.is-job-command {
-    max-height: min(390px, calc(100svh - 386px));
+    max-height: min(304px, calc(100svh - 330px));
   }
 
   .sheet-handle {
-    width: 64px;
-    height: 5px;
+    width: 50px;
+    height: 4px;
     background: rgba(198, 226, 255, 0.58);
     box-shadow: 0 0 10px rgba(47, 156, 255, 0.34);
   }
 
   .field-card-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(104px, 0.72fr) 94px;
+    grid-template-columns: minmax(0, 1fr) minmax(106px, 0.58fr);
     gap: 10px;
-    align-items: center;
+    align-items: start;
   }
 
   .field-card-main {
@@ -2305,20 +2305,21 @@ tbody tr:hover {
     font-size: 0.66rem;
   }
 
-  .field-card-main .sheet-topline > span:not(.scope-badge) {
+  .field-card-main .sheet-omo {
     overflow: hidden;
     min-width: 0;
     color: #38a8ff;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
+    font-weight: 900;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .field-card-main h2 {
-    margin: 10px 0 6px;
+    margin: 7px 0 5px;
     overflow: hidden;
     color: #ffffff;
-    font-size: clamp(1.42rem, 6vw, 1.8rem);
+    font-size: clamp(1.24rem, 5.4vw, 1.52rem);
     line-height: 1;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2327,21 +2328,43 @@ tbody tr:hover {
   .field-card-main p {
     margin: 0;
     color: #dce8f8;
-    font-size: 0.86rem;
-    line-height: 1.35;
+    font-size: 0.82rem;
+    line-height: 1.28;
   }
 
-  .field-card-main > strong {
-    display: block;
+  .field-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-items: center;
     margin-top: 6px;
+  }
+
+  .field-card-tags strong,
+  .field-card-tags span {
+    min-height: 21px;
+    padding: 4px 8px;
+    border: 1px solid rgba(47, 156, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(47, 156, 255, 0.1);
+    font-size: 0.66rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .field-card-tags strong {
     color: #18a9ff;
-    font-size: 0.88rem;
     letter-spacing: 0.04em;
   }
 
+  .field-card-tags span {
+    color: #dbe8f7;
+  }
+
   .field-card-details {
+    grid-row: span 2;
     display: grid;
-    gap: 9px;
+    gap: 8px;
     min-width: 0;
     padding-left: 10px;
     border-left: 1px solid rgba(151, 177, 212, 0.28);
@@ -2349,16 +2372,16 @@ tbody tr:hover {
 
   .field-card-details div {
     display: grid;
-    grid-template-columns: 24px minmax(0, 1fr);
-    column-gap: 8px;
+    grid-template-columns: 20px minmax(0, 1fr);
+    column-gap: 7px;
     align-items: center;
     min-width: 0;
   }
 
   .field-detail-icon {
     grid-row: span 2;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border: 2px solid rgba(216, 234, 255, 0.9);
     border-radius: 999px;
   }
@@ -2366,7 +2389,7 @@ tbody tr:hover {
   .field-card-details span:not(.field-detail-icon) {
     overflow: hidden;
     color: #b7c7dc;
-    font-size: 0.72rem;
+    font-size: 0.64rem;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -2374,7 +2397,7 @@ tbody tr:hover {
   .field-card-details strong {
     overflow: hidden;
     color: #ffffff;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     font-weight: 800;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2382,41 +2405,21 @@ tbody tr:hover {
 
   .field-photo-card {
     position: relative;
-    align-self: stretch;
-    min-height: 108px;
+    grid-column: 1 / 2;
+    min-height: 72px;
     overflow: hidden;
     border: 1px solid rgba(151, 177, 212, 0.3);
     border-radius: 18px;
     background: #0b1d32;
   }
 
-  .field-photo-card img,
-  .field-photo-empty {
+  .field-photo-card img {
     width: 100%;
     height: 100%;
+  }
+
+  .field-photo-card img {
     object-fit: cover;
-  }
-
-  .field-photo-empty {
-    position: relative;
-    overflow: hidden;
-    background:
-      linear-gradient(180deg, rgba(86, 170, 255, 0.2), transparent 46%),
-      repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.16) 0 5px, transparent 5px 18px),
-      linear-gradient(135deg, #21445d, #0b1b2b);
-  }
-
-  .field-photo-empty span {
-    position: absolute;
-    right: 12px;
-    bottom: 0;
-    left: 12px;
-    height: 74%;
-    border-radius: 10px 10px 0 0;
-    background:
-      repeating-linear-gradient(0deg, transparent 0 12px, rgba(255, 255, 255, 0.1) 12px 14px),
-      repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.12) 0 9px, transparent 9px 19px),
-      rgba(168, 183, 202, 0.24);
   }
 
   .photo-count {
@@ -2434,16 +2437,47 @@ tbody tr:hover {
     font-weight: 900;
   }
 
-  .sheet-close-job,
   .star-icon {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
+  }
+
+  .sheet-map-return {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-height: 28px;
+    padding: 0 8px 0 6px;
+    border: 1px solid rgba(151, 177, 212, 0.24);
+    border-radius: 999px;
+    background: rgba(7, 18, 32, 0.7);
+    color: #dce8f8;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 900;
+  }
+
+  .sheet-map-return span {
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 0.92rem;
+    line-height: 1;
+  }
+
+  .sheet-map-return:hover,
+  .sheet-map-return:focus-visible {
+    border-color: rgba(47, 156, 255, 0.64);
+    color: #ffffff;
   }
 
   .sheet-actions {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
+    gap: 7px;
   }
 
   .sheet-actions button,
@@ -2452,20 +2486,22 @@ tbody tr:hover {
     display: grid;
     grid-template-columns: 1fr;
     place-items: center;
+    grid-template-columns: auto minmax(0, 1fr);
+    place-items: center start;
     gap: 7px;
-    min-height: 86px;
-    padding: 10px 6px;
-    border-radius: 18px;
-    font-size: 0.78rem;
+    min-height: 48px;
+    padding: 8px 9px;
+    border-radius: 14px;
+    font-size: 0.72rem;
     text-align: center;
   }
 
   .sheet-actions span {
     display: grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 12px;
+    width: 28px;
+    height: 28px;
+    border-radius: 10px;
     background: rgba(47, 156, 255, 0.14);
   }
 
@@ -2515,7 +2551,31 @@ tbody tr:hover {
   }
 
   .sheet-pager {
-    display: none;
+    display: grid;
+    grid-template-columns: 40px 1fr 40px;
+    align-items: center;
+    min-height: 36px;
+    overflow: hidden;
+    border: 1px solid rgba(151, 177, 212, 0.16);
+    border-radius: 14px;
+    background: rgba(8, 22, 39, 0.66);
+  }
+
+  .sheet-pager button {
+    height: 36px;
+    border: 0;
+    background: transparent;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 1.35rem;
+    line-height: 1;
+  }
+
+  .sheet-pager span {
+    color: #dce8f8;
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-align: center;
   }
 
   .mobile-job-sheet.is-summary,
@@ -2530,17 +2590,17 @@ tbody tr:hover {
 
   .mobile-tabbar {
     position: fixed;
-    right: 14px;
-    bottom: 10px;
-    left: 14px;
+    right: 12px;
+    bottom: 8px;
+    left: 12px;
     z-index: 720;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     align-items: center;
-    min-height: 78px;
-    padding: 8px 10px;
+    min-height: 68px;
+    padding: 6px 8px;
     border: 1px solid rgba(47, 156, 255, 0.16);
-    border-radius: 24px;
+    border-radius: 20px;
     background:
       linear-gradient(180deg, rgba(9, 26, 46, 0.9), rgba(4, 13, 25, 0.96));
     box-shadow: 0 -14px 34px rgba(0, 0, 0, 0.38);
@@ -2564,7 +2624,7 @@ tbody tr:hover {
   }
 
   .mobile-tabbar strong {
-    font-size: 0.76rem;
+    font-size: 0.68rem;
     font-weight: 800;
     text-transform: uppercase;
   }
@@ -2669,7 +2729,7 @@ tbody tr:hover {
   }
 
   .field-card-grid {
-    grid-template-columns: minmax(0, 1fr) 96px 78px;
+    grid-template-columns: minmax(0, 1fr) 96px;
     gap: 8px;
   }
 
