@@ -115,10 +115,18 @@ function jobTitle(job: JobRecord) {
 }
 
 function statusMatches(job: JobRecord, status: StatusView) {
+  const rawStatus = String(job.status || "").trim().toLowerCase();
   const normalized = displayStatus(job).toLowerCase();
   if (status === "All") return true;
-  if (status === "Open") return normalized === "open";
-  return normalized.includes(status.toLowerCase());
+  if (status === "Open") {
+    return (
+      normalized === "open" ||
+      rawStatus.includes("work in progress") ||
+      rawStatus.includes("no access") ||
+      rawStatus.includes("partial")
+    );
+  }
+  return normalized.includes(status.toLowerCase()) || rawStatus.includes(status.toLowerCase());
 }
 
 function boroughCode(name: string) {
@@ -263,6 +271,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const isSelectedSaved = Boolean(selected && savedIds.includes(selected.id));
   const selectedPhotoUrls = selected ? photoUrlsByJob[selected.id] || [] : [];
   const selectedPhotoUrl = selectedPhotoUrls[0] || "";
+  const selectedStatus = selected ? displayStatus(selected) : "";
   const selectedAddress = selected ? realFieldValue(selected.address) : "";
   const selectedBorough = selected ? realFieldValue(selected.borough) : "";
   const selectedTrade = selected ? realFieldValue(selected.trade) : "";
@@ -272,6 +281,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const selectedTenantName = selected ? realFieldValue(selected.tenantName) : "";
   const selectedLocation = selected ? realFieldValue(selected.location) : "";
   const selectedDetailItems = [
+    selectedStatus ? { label: "Status", value: selectedStatus, icon: "status-mini-icon" } : null,
     selectedStartDate ? { label: "Start Date", value: selectedStartDate, icon: "calendar-icon" } : null,
     selectedCompletionDate ? { label: "Completion", value: selectedCompletionDate, icon: "calendar-icon" } : null,
     selectedAmount ? { label: "COA Amount", value: selectedAmount, icon: "money-mini-icon" } : null,
@@ -292,6 +302,13 @@ export function JobsMapBoard({ jobs }: Props) {
       count: mappableJobs.filter((job) => job.borough === name).length,
     })),
   ];
+  const mobileStatusBase = mappableJobs
+    .filter((job) => !borough || job.borough === borough)
+    .filter((job) => matchesJobSearch(job, query));
+  const mobileStatusStats = (["All", "Open", "Awarded", "Pending"] as StatusView[]).map((status) => ({
+    status,
+    count: status === "All" ? mobileStatusBase.length : mobileStatusBase.filter((job) => statusMatches(job, status)).length,
+  }));
   const alertCount = Math.min(activityRows.length, 9);
   const boroughCounts = boroughs
     .map((name) => ({
@@ -860,6 +877,20 @@ export function JobsMapBoard({ jobs }: Props) {
               </button>
             );
           })}
+        </div>
+
+        <div className="mobile-status-tabs" aria-label="Status filters">
+          {mobileStatusStats.map((item) => (
+            <button
+              key={item.status}
+              type="button"
+              className={statusView === item.status ? "is-active" : ""}
+              onClick={() => selectStatus(item.status)}
+            >
+              <strong>{item.status === "All" ? "Status" : item.status}</strong>
+              <span>{item.count}</span>
+            </button>
+          ))}
         </div>
 
         <div className="mobile-search" role="search">

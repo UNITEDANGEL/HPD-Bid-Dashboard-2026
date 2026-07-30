@@ -2081,6 +2081,57 @@ tbody tr:hover {
     color: #dff7ff;
   }
 
+  .mobile-status-tabs {
+    position: relative;
+    z-index: 620;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    padding: 0 10px 6px;
+  }
+
+  .mobile-status-tabs button {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 32px;
+    padding: 4px 6px;
+    border: 1px solid rgba(151, 177, 212, 0.22);
+    border-radius: 12px;
+    background: rgba(5, 18, 34, 0.78);
+    color: #c9d8ec;
+    cursor: pointer;
+  }
+
+  .mobile-status-tabs button.is-active {
+    border-color: rgba(47, 156, 255, 0.82);
+    background: linear-gradient(180deg, rgba(47, 156, 255, 0.3), rgba(7, 24, 48, 0.9));
+    color: #ffffff;
+    box-shadow: 0 0 16px rgba(47, 156, 255, 0.24);
+  }
+
+  .mobile-status-tabs strong {
+    overflow: hidden;
+    max-width: 100%;
+    font-size: 0.58rem;
+    font-weight: 900;
+    line-height: 1.05;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .mobile-status-tabs span {
+    margin-top: 1px;
+    color: #96b1d0;
+    font-size: 0.56rem;
+    font-weight: 800;
+  }
+
+  .mobile-status-tabs button.is-active span {
+    color: #dff7ff;
+  }
+
   .mobile-search {
     position: relative;
     z-index: 620;
@@ -2825,6 +2876,25 @@ tbody tr:hover {
     font-size: 0.62rem;
   }
 
+  .mobile-status-tabs {
+    gap: 5px;
+    padding: 0 10px 6px;
+  }
+
+  .mobile-status-tabs button {
+    min-height: 30px;
+    padding: 3px 5px;
+    border-radius: 11px;
+  }
+
+  .mobile-status-tabs strong {
+    font-size: 0.55rem;
+  }
+
+  .mobile-status-tabs span {
+    font-size: 0.53rem;
+  }
+
   .mobile-search {
     grid-template-columns: 20px minmax(0, 1fr) 34px;
     min-height: 46px;
@@ -2858,7 +2928,7 @@ tbody tr:hover {
   }
 
   .mobile-map-shell {
-    inset: 194px 0 72px;
+    inset: 230px 0 72px;
   }
 
   .mobile-map-shell::before {
