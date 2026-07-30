@@ -224,6 +224,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const [mapFitNonce, setMapFitNonce] = useState(0);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const mobileBoroughRowRef = useRef<HTMLDivElement>(null);
+  const jobSheetTouchStartY = useRef<number | null>(null);
 
   const mappableJobs = useMemo(() => jobs.filter((job) => job.hasMap), [jobs]);
   const boroughs = useMemo(() => {
@@ -905,7 +906,20 @@ export function JobsMapBoard({ jobs }: Props) {
         </div>
 
         {selected ? (
-          <article className="mobile-job-sheet is-job-command">
+          <article
+            className="mobile-job-sheet is-job-command"
+            onTouchStart={(event) => {
+              jobSheetTouchStartY.current = event.touches[0]?.clientY ?? null;
+            }}
+            onTouchEnd={(event) => {
+              if (jobSheetTouchStartY.current === null) return;
+              const endY = event.changedTouches[0]?.clientY ?? jobSheetTouchStartY.current;
+              if (endY - jobSheetTouchStartY.current > 58) {
+                setSelectedId("");
+              }
+              jobSheetTouchStartY.current = null;
+            }}
+          >
             <div className="sheet-handle" />
             <div className="field-card-grid">
               <div className="field-card-main">

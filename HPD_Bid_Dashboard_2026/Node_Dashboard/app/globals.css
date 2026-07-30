@@ -2562,15 +2562,16 @@ tbody tr:hover {
     display: grid;
     grid-template-columns: 40px 1fr 40px;
     align-items: center;
-    min-height: 36px;
+    min-height: 34px;
+    margin-top: 6px;
     overflow: hidden;
-    border: 1px solid rgba(151, 177, 212, 0.16);
-    border-radius: 14px;
-    background: rgba(8, 22, 39, 0.66);
+    border: 1px solid rgba(151, 177, 212, 0.12);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(8, 22, 39, 0.56), rgba(5, 15, 28, 0.68));
   }
 
   .sheet-pager button {
-    height: 36px;
+    height: 34px;
     border: 0;
     background: transparent;
     color: #ffffff;
@@ -2580,8 +2581,8 @@ tbody tr:hover {
   }
 
   .sheet-pager span {
-    color: #dce8f8;
-    font-size: 0.78rem;
+    color: #bcd0e8;
+    font-size: 0.72rem;
     font-weight: 900;
     text-align: center;
   }
@@ -2944,11 +2945,12 @@ tbody tr:hover {
   }
 
   .sheet-pager {
-    min-height: 32px;
+    min-height: 30px;
+    margin-top: 5px;
   }
 
   .sheet-pager button {
-    height: 32px;
+    height: 30px;
   }
 
   .mobile-tabbar {
