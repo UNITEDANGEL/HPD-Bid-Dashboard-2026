@@ -1438,14 +1438,14 @@ tbody tr:hover {
 
   .mobile-map-shell::before {
     top: 0;
-    height: 88px;
-    background: linear-gradient(180deg, rgba(3, 9, 16, 0.82), rgba(3, 9, 16, 0));
+    height: 44px;
+    background: linear-gradient(180deg, rgba(3, 9, 16, 0.38), rgba(3, 9, 16, 0));
   }
 
   .mobile-map-shell::after {
     bottom: 0;
-    height: 240px;
-    background: linear-gradient(0deg, rgba(2, 7, 13, 0.92), rgba(2, 7, 13, 0));
+    height: 92px;
+    background: linear-gradient(0deg, rgba(2, 7, 13, 0.62), rgba(2, 7, 13, 0));
   }
 
   .mobile-map-shell .jobs-map,
@@ -1455,7 +1455,7 @@ tbody tr:hover {
   }
 
   .mobile-map-shell .leaflet-tile-pane {
-    filter: saturate(1.22) contrast(1.08) brightness(0.96);
+    filter: saturate(1.08) contrast(1.04) brightness(1.02);
   }
 
   .map-place-label {
@@ -2141,17 +2141,17 @@ tbody tr:hover {
   }
 
   .mobile-map-shell::before {
-    height: 84px;
-    background: linear-gradient(180deg, rgba(2, 8, 15, 0.62), rgba(2, 8, 15, 0));
+    height: 42px;
+    background: linear-gradient(180deg, rgba(2, 8, 15, 0.34), rgba(2, 8, 15, 0));
   }
 
   .mobile-map-shell::after {
-    height: 220px;
-    background: linear-gradient(0deg, rgba(2, 7, 13, 0.92), rgba(2, 7, 13, 0));
+    height: 86px;
+    background: linear-gradient(0deg, rgba(2, 7, 13, 0.58), rgba(2, 7, 13, 0));
   }
 
   .mobile-map-shell .leaflet-tile-pane {
-    filter: saturate(1.22) contrast(1.08) brightness(0.96) hue-rotate(4deg);
+    filter: saturate(1.08) contrast(1.04) brightness(1.02);
   }
 
   .map-place-label {
@@ -2846,7 +2846,7 @@ tbody tr:hover {
   }
 
   .mobile-map-shell::after {
-    height: 150px;
+    height: 62px;
   }
 
   .floating-map-button,
