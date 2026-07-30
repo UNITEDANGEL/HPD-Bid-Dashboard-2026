@@ -2719,6 +2719,267 @@ tbody tr:hover {
   }
 }
 
+@media (max-width: 760px) {
+  .mobile-field {
+    padding-top: 8px;
+    padding-bottom: 92px;
+  }
+
+  .mobile-command-card {
+    min-height: 74px;
+    margin: 6px 10px 6px;
+    padding: 8px 10px;
+    border-radius: 20px;
+  }
+
+  .mobile-command-brand {
+    gap: 8px;
+  }
+
+  .mobile-hpd-shield {
+    width: 38px;
+    height: 44px;
+    border-radius: 15px 15px 20px 20px;
+  }
+
+  .mobile-hpd-shield strong {
+    font-size: 0.9rem;
+  }
+
+  .mobile-hpd-shield span {
+    width: 18px;
+    height: 10px;
+    margin-top: -7px;
+    border-width: 1px;
+  }
+
+  .mobile-command-brand p {
+    font-size: 0.58rem;
+  }
+
+  .mobile-command-brand h1 {
+    font-size: clamp(1.05rem, 4.8vw, 1.24rem);
+  }
+
+  .mobile-live-line {
+    gap: 5px;
+    margin-top: 4px;
+    font-size: 0.68rem;
+  }
+
+  .mobile-live-line small {
+    font-size: 0.64rem;
+  }
+
+  .mobile-command-actions {
+    gap: 6px;
+  }
+
+  .mobile-notify-button,
+  .mobile-menu-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+  }
+
+  .mobile-notify-button.bell-icon span {
+    width: 19px;
+    height: 19px;
+    font-size: 0.66rem;
+  }
+
+  .menu-lines-icon::before,
+  .menu-lines-icon::after {
+    left: 12px;
+    right: 12px;
+    height: 2px;
+  }
+
+  .menu-lines-icon::before {
+    top: 12px;
+    box-shadow: 0 8px 0 #dce8f8;
+  }
+
+  .menu-lines-icon::after {
+    top: 28px;
+  }
+
+  .mobile-borough-tabs {
+    gap: 6px;
+    padding: 0 10px 6px;
+  }
+
+  .mobile-borough-pill {
+    min-width: 78px;
+    min-height: 44px;
+    padding: 6px 8px;
+    border-radius: 15px;
+  }
+
+  .mobile-borough-pill strong {
+    font-size: 0.64rem;
+  }
+
+  .mobile-borough-pill span {
+    margin-top: 2px;
+    font-size: 0.62rem;
+  }
+
+  .mobile-search {
+    grid-template-columns: 20px minmax(0, 1fr) 34px;
+    min-height: 46px;
+    margin: 2px 10px 0;
+    padding: 0 6px 0 12px;
+    border-radius: 16px;
+  }
+
+  .mobile-search > span {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+  }
+
+  .mobile-search input {
+    font-size: 0.84rem;
+  }
+
+  .mobile-search-filter {
+    width: 32px;
+    height: 32px;
+    border-radius: 11px;
+  }
+
+  .mobile-search-filter::before {
+    top: 11px;
+  }
+
+  .mobile-search-filter::after {
+    top: 24px;
+  }
+
+  .mobile-map-shell {
+    inset: 194px 0 72px;
+  }
+
+  .mobile-map-shell::before {
+    height: 18px;
+  }
+
+  .mobile-map-shell::after {
+    height: 40px;
+  }
+
+  .floating-map-button,
+  .visible-count-button {
+    right: 10px;
+    width: 42px;
+    height: 42px;
+  }
+
+  .layers-icon {
+    top: 50px;
+  }
+
+  .locate-icon {
+    top: 100px;
+  }
+
+  .visible-count-button {
+    top: 150px;
+    height: 52px;
+  }
+
+  .visible-count-button strong {
+    font-size: 0.96rem;
+  }
+
+  .visible-count-button span {
+    font-size: 0.58rem;
+  }
+
+  .mobile-job-sheet {
+    right: 10px;
+    bottom: 74px;
+    left: 10px;
+  }
+
+  .mobile-job-sheet.is-job-command {
+    max-height: min(272px, calc(100svh - 298px));
+    padding: 7px 10px 9px;
+    border-radius: 20px;
+  }
+
+  .field-card-grid {
+    gap: 6px;
+  }
+
+  .field-card-main h2 {
+    margin: 5px 0 4px;
+    font-size: clamp(1.12rem, 4.9vw, 1.34rem);
+  }
+
+  .field-card-main p {
+    font-size: 0.76rem;
+    -webkit-line-clamp: 1;
+  }
+
+  .field-card-details {
+    gap: 5px;
+  }
+
+  .field-card-details div {
+    min-height: 38px;
+    padding: 5px 7px;
+  }
+
+  .sheet-actions {
+    gap: 5px;
+  }
+
+  .sheet-actions button,
+  .sheet-actions a,
+  .sheet-actions label {
+    min-height: 40px;
+    padding: 6px 4px;
+    border-radius: 12px;
+    font-size: 0.64rem;
+  }
+
+  .sheet-actions span {
+    width: 22px;
+    height: 22px;
+  }
+
+  .sheet-pager {
+    min-height: 30px;
+    margin-top: 5px;
+  }
+
+  .sheet-pager button {
+    height: 30px;
+  }
+
+  .mobile-tabbar {
+    right: 10px;
+    bottom: 6px;
+    left: 10px;
+    min-height: 58px;
+    padding: 4px 6px;
+    border-radius: 18px;
+  }
+
+  .tab-add-button span {
+    width: 48px;
+    height: 48px;
+    margin-top: -18px;
+    font-size: 1.85rem;
+  }
+
+  .mobile-tabbar strong {
+    font-size: 0.62rem;
+  }
+}
+
 @media (max-width: 760px) and (max-height: 700px) {
   .mobile-field {
     padding: 6px 0 78px;
