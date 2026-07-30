@@ -8,7 +8,7 @@ function toneForStatus(status: string) {
   if (normalized.includes("archived")) return "is-archived";
   if (normalized.includes("completed")) return "is-completed";
   if (normalized.includes("awarded")) return "is-awarded";
-  if (normalized.includes("progress")) return "is-progress";
+  if (normalized.includes("progress") || normalized.includes("arrived") || normalized.includes("started")) return "is-progress";
   if (normalized.includes("access") || normalized.includes("refused")) return "is-access";
   return "is-pending";
 }

@@ -37,7 +37,7 @@ function statusColor(status: string, archived: boolean, borough: string) {
   if (boro.includes("staten")) return "#ff5f78";
 
   if (normalized.includes("awarded")) return "#2f9cff";
-  if (normalized.includes("progress")) return "#8a5cff";
+  if (normalized.includes("progress") || normalized.includes("arrived") || normalized.includes("started")) return "#8a5cff";
   return "#2dd47d";
 }
 

@@ -17,8 +17,16 @@ type TableMode = "live" | "queue" | "documents";
 type ActivePanel = "" | "filters" | "notifications" | "account" | "map" | "system" | "contact" | "jobs" | "add";
 type ChartPeriod = "Last 12 Months" | "2026 YTD" | "Last 90 Days";
 
+const STATUS_OVERRIDE_STORAGE_KEY = "hpd-job-status-overrides-v1";
 const CHART_PERIODS: ChartPeriod[] = ["Last 12 Months", "2026 YTD", "Last 90 Days"];
 const NYC_BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
+const FIELD_STATUS_ACTIONS = [
+  { label: "Arrived", value: "Arrived" },
+  { label: "Started", value: "Started" },
+  { label: "Progress", value: "Work In Progress" },
+  { label: "Complete", value: "Work Completed" },
+  { label: "No Access", value: "No Access - 1st Attempt" },
+] as const;
 const BOROUGH_CENTERS: Record<string, [number, number]> = {
   Manhattan: [40.7831, -73.9712],
   Brooklyn: [40.6782, -73.9442],
@@ -121,6 +129,8 @@ function statusMatches(job: JobRecord, status: StatusView) {
   if (status === "Open") {
     return (
       normalized === "open" ||
+      rawStatus.includes("arrived") ||
+      rawStatus.includes("started") ||
       rawStatus.includes("work in progress") ||
       rawStatus.includes("no access") ||
       rawStatus.includes("partial")
@@ -229,12 +239,26 @@ export function JobsMapBoard({ jobs }: Props) {
   const [toast, setToast] = useState("");
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [photoUrlsByJob, setPhotoUrlsByJob] = useState<Record<string, string[]>>({});
+  const [jobStatusOverrides, setJobStatusOverrides] = useState<Record<string, string>>({});
   const [mapFitNonce, setMapFitNonce] = useState(0);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const mobileBoroughRowRef = useRef<HTMLDivElement>(null);
   const jobSheetTouchStartY = useRef<number | null>(null);
 
-  const mappableJobs = useMemo(() => jobs.filter((job) => job.hasMap), [jobs]);
+  const effectiveJobs = useMemo(
+    () => jobs.map((job) => {
+      const override = realFieldValue(jobStatusOverrides[job.id] || "");
+      if (!override) return job;
+      return {
+        ...job,
+        status: override,
+        statusOverride: override,
+        workflowStatus: override,
+      };
+    }),
+    [jobStatusOverrides, jobs],
+  );
+  const mappableJobs = useMemo(() => effectiveJobs.filter((job) => job.hasMap), [effectiveJobs]);
   const boroughs = useMemo(() => {
     const dataBoroughs = unique(mappableJobs.map((job) => job.borough));
     return [
@@ -243,11 +267,11 @@ export function JobsMapBoard({ jobs }: Props) {
     ];
   }, [mappableJobs]);
   const totalAwardValue = useMemo(
-    () => jobs.reduce((sum, job) => sum + (Number.isFinite(job.amountValue) ? job.amountValue : 0), 0),
-    [jobs],
+    () => effectiveJobs.reduce((sum, job) => sum + (Number.isFinite(job.amountValue) ? job.amountValue : 0), 0),
+    [effectiveJobs],
   );
-  const coaCount = jobs.filter((job) => job.coaFile).length;
-  const itbCount = jobs.filter((job) => job.itbFile).length;
+  const coaCount = effectiveJobs.filter((job) => job.coaFile).length;
+  const itbCount = effectiveJobs.filter((job) => job.itbFile).length;
 
   const filtered = mappableJobs
     .filter((job) => {
@@ -257,14 +281,14 @@ export function JobsMapBoard({ jobs }: Props) {
     })
     .sort(compareJobsBySearch(query));
 
-  const selected = selectedId ? filtered.find((job) => job.id === selectedId) || null : null;
+  const selected = selectedId ? filtered.find((job) => job.id === selectedId) || mappableJobs.find((job) => job.id === selectedId) || null : null;
   const queuedRows = filtered.filter((job) => !job.coaFile || !job.itbFile || displayStatus(job).toLowerCase().includes("pending"));
   const documentRows = filtered.filter((job) => job.coaFile || job.itbFile);
   const tableSource = tableMode === "queue" ? queuedRows : tableMode === "documents" ? documentRows : filtered;
   const tableRows = tableSource.slice(0, 7);
   const activityRows = filtered.slice(0, 6);
-  const savedJobs = jobs.filter((job) => savedIds.includes(job.id));
-  const selectedIndex = selected ? Math.max(0, filtered.findIndex((job) => job.id === selected.id)) : -1;
+  const savedJobs = effectiveJobs.filter((job) => savedIds.includes(job.id));
+  const selectedIndex = selected ? filtered.findIndex((job) => job.id === selected.id) : -1;
   const selectedMapsHref = selected ? mapsHref(selected) : "";
   const selectedPhoneHref = selected ? phoneHref(selected) : "";
   const selectedDetailHref = selected ? jobDetailHref(selected) : "#";
@@ -319,12 +343,29 @@ export function JobsMapBoard({ jobs }: Props) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
   const chartTotal = chartPeriod === "2026 YTD"
-    ? jobs.filter((job) => job.awardDate.includes("2026")).length
+    ? effectiveJobs.filter((job) => job.awardDate.includes("2026")).length
     : chartPeriod === "Last 90 Days"
-      ? Math.max(1, Math.round(jobs.length / 4))
-      : jobs.length;
+      ? Math.max(1, Math.round(effectiveJobs.length / 4))
+      : effectiveJobs.length;
   const trend = trendPoints(chartTotal);
   const trendPath = sparklinePath(trend);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(STATUS_OVERRIDE_STORAGE_KEY);
+      if (!stored) return;
+
+      const parsed = JSON.parse(stored) as Record<string, string>;
+      const cleaned = Object.fromEntries(
+        Object.entries(parsed)
+          .map(([id, status]) => [id, realFieldValue(status)] as const)
+          .filter(([id, status]) => Boolean(id && status)),
+      );
+      setJobStatusOverrides(cleaned);
+    } catch {
+      setJobStatusOverrides({});
+    }
+  }, []);
 
   useEffect(() => {
     const handleKeydown = (event: KeyboardEvent) => {
@@ -441,6 +482,33 @@ export function JobsMapBoard({ jobs }: Props) {
   function selectStatus(status: StatusView) {
     setSelectedId("");
     setStatusView(status);
+  }
+
+  function updateSelectedStatus(nextStatus: string) {
+    if (!selected) return;
+
+    const jobId = selected.id;
+    setJobStatusOverrides((current) => {
+      const next = { ...current, [jobId]: nextStatus };
+      try {
+        window.localStorage.setItem(STATUS_OVERRIDE_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Keep the on-screen update even if browser storage is unavailable.
+      }
+      return next;
+    });
+
+    if (!statusMatches({ ...selected, status: nextStatus, statusOverride: nextStatus, workflowStatus: nextStatus }, statusView)) {
+      setStatusView("All");
+    }
+
+    notify(`${jobId} marked ${nextStatus}.`);
+
+    void fetch("/api/jobs/status", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: jobId, status: nextStatus }),
+    }).catch(() => undefined);
   }
 
   function exportFilteredJobs() {
@@ -1001,6 +1069,19 @@ export function JobsMapBoard({ jobs }: Props) {
               ) : null}
             </div>
 
+            <div className="job-card-status-actions" aria-label="Update job status">
+              {FIELD_STATUS_ACTIONS.map((action) => (
+                <button
+                  key={action.value}
+                  type="button"
+                  className={selectedStatus.toLowerCase() === action.value.toLowerCase() ? "is-active" : ""}
+                  onClick={() => updateSelectedStatus(action.value)}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+
             <div className="sheet-actions">
               {selectedMapsHref ? (
                 <a href={selectedMapsHref} target="_blank" rel="noreferrer"><span className="action-nav" />Navigate</a>
@@ -1028,7 +1109,7 @@ export function JobsMapBoard({ jobs }: Props) {
 
             <div className="sheet-pager">
               <button type="button" aria-label="Previous job" onClick={() => selectRelativeJob(-1)}>‹</button>
-              <span>{filtered.length ? selectedIndex + 1 : 0} / {filtered.length}</span>
+              <span>{filtered.length && selectedIndex >= 0 ? selectedIndex + 1 : 1} / {Math.max(filtered.length, 1)}</span>
               <button type="button" aria-label="Next job" onClick={() => selectRelativeJob(1)}>›</button>
             </div>
           </article>

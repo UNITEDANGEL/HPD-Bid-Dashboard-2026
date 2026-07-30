@@ -2535,6 +2535,37 @@ tbody tr:hover {
     color: #ffffff;
   }
 
+  .job-card-status-actions {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .job-card-status-actions button {
+    min-width: 0;
+    min-height: 34px;
+    padding: 4px 3px;
+    border: 1px solid rgba(151, 177, 212, 0.2);
+    border-radius: 12px;
+    background:
+      linear-gradient(180deg, rgba(16, 39, 66, 0.82), rgba(5, 16, 31, 0.9));
+    color: #c8d8ef;
+    cursor: pointer;
+    font-size: 0.58rem;
+    font-weight: 900;
+    line-height: 1.05;
+    text-align: center;
+  }
+
+  .job-card-status-actions button.is-active {
+    border-color: rgba(47, 156, 255, 0.78);
+    color: #ffffff;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(47, 156, 255, 0.34), transparent 58%),
+      linear-gradient(180deg, rgba(47, 156, 255, 0.32), rgba(5, 22, 42, 0.96));
+    box-shadow: 0 0 16px rgba(47, 156, 255, 0.22);
+  }
+
   .sheet-actions {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2974,7 +3005,7 @@ tbody tr:hover {
   }
 
   .mobile-job-sheet.is-job-command {
-    max-height: min(272px, calc(100svh - 298px));
+    max-height: min(306px, calc(100svh - 298px));
     padding: 7px 10px 9px;
     border-radius: 20px;
   }
@@ -3000,6 +3031,16 @@ tbody tr:hover {
   .field-card-details div {
     min-height: 38px;
     padding: 5px 7px;
+  }
+
+  .job-card-status-actions {
+    gap: 5px;
+  }
+
+  .job-card-status-actions button {
+    min-height: 30px;
+    border-radius: 11px;
+    font-size: 0.52rem;
   }
 
   .sheet-actions {
@@ -3222,7 +3263,7 @@ tbody tr:hover {
   .mobile-job-sheet.is-summary,
   .mobile-job-sheet.is-empty {
     bottom: 68px;
-    max-height: min(230px, calc(100svh - 236px));
+    max-height: min(260px, calc(100svh - 236px));
     padding: 7px 10px 8px;
     border-radius: 18px;
   }
@@ -3253,6 +3294,16 @@ tbody tr:hover {
 
   .field-card-details strong {
     font-size: 0.66rem;
+  }
+
+  .job-card-status-actions {
+    gap: 4px;
+  }
+
+  .job-card-status-actions button {
+    min-height: 28px;
+    padding: 3px 2px;
+    font-size: 0.49rem;
   }
 
   .sheet-actions {
