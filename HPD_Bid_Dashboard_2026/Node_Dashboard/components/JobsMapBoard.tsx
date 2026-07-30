@@ -269,12 +269,14 @@ export function JobsMapBoard({ jobs }: Props) {
   const selectedCompletionDate = selected ? realFieldValue(formatJobCompletionDate(selected)) : "";
   const selectedAmount = selected ? realFieldValue(formatCurrency(selected.amountValue, selected.bidAmount)) : "";
   const selectedTenantName = selected ? realFieldValue(selected.tenantName) : "";
+  const selectedLocation = selected ? realFieldValue(selected.location) : "";
   const selectedDetailItems = [
-    selectedStartDate ? { label: "Start", value: selectedStartDate, icon: "calendar-icon" } : null,
-    selectedAmount ? { label: "COA", value: selectedAmount, icon: "money-mini-icon" } : null,
-    selectedCompletionDate ? { label: "Complete", value: selectedCompletionDate, icon: "calendar-icon" } : null,
+    selectedStartDate ? { label: "Start Date", value: selectedStartDate, icon: "calendar-icon" } : null,
+    selectedCompletionDate ? { label: "Completion", value: selectedCompletionDate, icon: "calendar-icon" } : null,
+    selectedAmount ? { label: "COA Amount", value: selectedAmount, icon: "money-mini-icon" } : null,
     selectedTenantName ? { label: "Tenant", value: selectedTenantName, icon: "tenant-icon" } : null,
-  ].filter((item): item is { label: string; value: string; icon: string } => Boolean(item));
+    selectedLocation ? { label: "Location", value: selectedLocation, icon: "tenant-icon" } : null,
+  ].filter((item): item is { label: string; value: string; icon: string } => Boolean(item)).slice(0, 4);
   const exportDataHref = `data:text/csv;charset=utf-8,${encodeURIComponent(jobsToCsv(filtered))}`;
   const exportFileName = `hpd-bids-${new Date().toISOString().slice(0, 10)}.csv`;
   const mapFocusKey = `${borough || "All"}|${statusView}|${query}|${mapFitNonce}|${userLocation ? userLocation.join(",") : ""}`;

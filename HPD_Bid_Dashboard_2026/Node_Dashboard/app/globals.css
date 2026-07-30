@@ -2273,7 +2273,8 @@ tbody tr:hover {
   }
 
   .mobile-job-sheet.is-job-command {
-    max-height: min(304px, calc(100svh - 330px));
+    max-height: min(292px, calc(100svh - 330px));
+    padding-bottom: 12px;
   }
 
   .sheet-handle {
@@ -2285,8 +2286,8 @@ tbody tr:hover {
 
   .field-card-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(106px, 0.58fr);
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
     align-items: start;
   }
 
@@ -2327,9 +2328,13 @@ tbody tr:hover {
 
   .field-card-main p {
     margin: 0;
+    display: -webkit-box;
+    overflow: hidden;
     color: #dce8f8;
     font-size: 0.82rem;
     line-height: 1.28;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
   }
 
   .field-card-tags {
@@ -2362,26 +2367,30 @@ tbody tr:hover {
   }
 
   .field-card-details {
-    grid-row: span 2;
+    grid-column: 1 / -1;
     display: grid;
-    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
     min-width: 0;
-    padding-left: 10px;
-    border-left: 1px solid rgba(151, 177, 212, 0.28);
   }
 
   .field-card-details div {
     display: grid;
-    grid-template-columns: 20px minmax(0, 1fr);
-    column-gap: 7px;
+    grid-template-columns: 18px minmax(0, 1fr);
+    column-gap: 6px;
     align-items: center;
     min-width: 0;
+    min-height: 44px;
+    padding: 7px 8px;
+    border: 1px solid rgba(151, 177, 212, 0.16);
+    border-radius: 12px;
+    background: rgba(7, 20, 37, 0.58);
   }
 
   .field-detail-icon {
     grid-row: span 2;
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border: 2px solid rgba(216, 234, 255, 0.9);
     border-radius: 999px;
   }
@@ -2397,7 +2406,7 @@ tbody tr:hover {
   .field-card-details strong {
     overflow: hidden;
     color: #ffffff;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 800;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2405,8 +2414,9 @@ tbody tr:hover {
 
   .field-photo-card {
     position: relative;
-    grid-column: 1 / 2;
-    min-height: 72px;
+    grid-column: 1 / -1;
+    min-height: 64px;
+    max-height: 78px;
     overflow: hidden;
     border: 1px solid rgba(151, 177, 212, 0.3);
     border-radius: 18px;
@@ -2477,7 +2487,7 @@ tbody tr:hover {
   .sheet-actions {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 7px;
+    gap: 6px;
   }
 
   .sheet-actions button,
@@ -2486,11 +2496,9 @@ tbody tr:hover {
     display: grid;
     grid-template-columns: 1fr;
     place-items: center;
-    grid-template-columns: auto minmax(0, 1fr);
-    place-items: center start;
-    gap: 7px;
-    min-height: 48px;
-    padding: 8px 9px;
+    gap: 5px;
+    min-height: 46px;
+    padding: 7px 5px;
     border-radius: 14px;
     font-size: 0.72rem;
     text-align: center;
@@ -2499,8 +2507,8 @@ tbody tr:hover {
   .sheet-actions span {
     display: grid;
     place-items: center;
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     border-radius: 10px;
     background: rgba(47, 156, 255, 0.14);
   }
@@ -2888,7 +2896,7 @@ tbody tr:hover {
   }
 
   .field-card-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(96px, 0.52fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
   }
 
@@ -2902,8 +2910,13 @@ tbody tr:hover {
   }
 
   .field-card-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
-    padding-left: 8px;
+  }
+
+  .field-card-details div {
+    min-height: 38px;
+    padding: 5px 6px;
   }
 
   .field-card-details strong {
