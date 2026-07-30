@@ -179,8 +179,11 @@ function normalizeJob(row: Record<string, string>, index: number): JobRecord {
 }
 
 function isFrom2026Onward(job: JobRecord) {
-  const awardDate = parseJobDate(job.awardDate);
-  return Boolean(awardDate && awardDate.getFullYear() >= 2026);
+  const dates = [job.awardDate, job.startDate, job.completionDate]
+    .map((value) => parseJobDate(value))
+    .filter((date): date is Date => Boolean(date));
+
+  return dates.some((date) => date.getFullYear() >= 2026);
 }
 
 export function getJobs(): JobRecord[] {

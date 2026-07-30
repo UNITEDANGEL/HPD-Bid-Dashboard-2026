@@ -16,6 +16,11 @@ type StatusView = "All" | "Open" | "Awarded" | "Pending";
 type TableMode = "live" | "queue" | "documents";
 type ActivePanel = "" | "filters" | "notifications" | "account" | "map" | "system" | "contact" | "jobs" | "add";
 type ChartPeriod = "Last 12 Months" | "2026 YTD" | "Last 90 Days";
+type MediaFile = {
+  url: string;
+  name?: string;
+  type?: string;
+};
 
 const STATUS_OVERRIDE_STORAGE_KEY = "hpd-job-status-overrides-v1";
 const CHART_PERIODS: ChartPeriod[] = ["Last 12 Months", "2026 YTD", "Last 90 Days"];
@@ -72,6 +77,17 @@ function realFieldValue(value: string) {
   if (!text) return "";
   if (/^(not listed|not available|date unavailable|n\/a|na|none|null|unknown|tenant name|john doe)$/i.test(text)) return "";
   return text;
+}
+
+function imageUrlsFromMedia(files: MediaFile[]) {
+  return files
+    .filter((file) => {
+      const type = String(file.type || "").toLowerCase();
+      const source = `${file.name || ""} ${file.url || ""}`;
+      return type.startsWith("image/") || type === "image" || /\.(avif|gif|jpe?g|png|webp)(\?|$)/i.test(source);
+    })
+    .map((file) => file.url)
+    .filter(Boolean);
 }
 
 function usableDate(value: string) {
@@ -368,6 +384,29 @@ export function JobsMapBoard({ jobs }: Props) {
   }, []);
 
   useEffect(() => {
+    let active = true;
+
+    fetch("/api/jobs/status")
+      .then(async (response) => {
+        if (!response.ok) return;
+        const data = await response.json() as { ok?: boolean; statuses?: Record<string, string> };
+        if (!active || !data.ok || !data.statuses) return;
+        const cleaned = Object.fromEntries(
+          Object.entries(data.statuses)
+            .map(([id, status]) => [id, realFieldValue(status)] as const)
+            .filter(([id, status]) => Boolean(id && status)),
+        );
+        if (!Object.keys(cleaned).length) return;
+        setJobStatusOverrides((current) => ({ ...current, ...cleaned }));
+      })
+      .catch(() => undefined);
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     const handleKeydown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
@@ -392,26 +431,63 @@ export function JobsMapBoard({ jobs }: Props) {
     if (!selected || photoUrlsByJob[selected.id]) return;
 
     let active = true;
-    fetch(`/api/jobs/images?id=${encodeURIComponent(selected.id)}`)
-      .then(async (response) => {
-        if (!response.ok) return;
-        const data = await response.json() as { ok?: boolean; files?: Array<{ url: string }> };
+    async function loadMedia() {
+      if (!selected) return;
+
+      try {
+        const response = await fetch(`/api/jobs/media?jobId=${encodeURIComponent(selected.id)}`);
+        if (!response.ok) throw new Error("Media package unavailable");
+        const data = await response.json() as { ok?: boolean; files?: MediaFile[] };
         if (!active || !data.ok) return;
         setPhotoUrlsByJob((current) => (
           current[selected.id]
             ? current
-            : { ...current, [selected.id]: (data.files || []).map((file) => file.url).filter(Boolean) }
+            : { ...current, [selected.id]: imageUrlsFromMedia(data.files || []) }
         ));
-      })
-      .catch(() => {
-        if (!active) return;
-        setPhotoUrlsByJob((current) => ({ ...current, [selected.id]: [] }));
-      });
+      } catch {
+        try {
+          const response = await fetch(`/api/jobs/images?id=${encodeURIComponent(selected.id)}`);
+          if (!response.ok) throw new Error("Images unavailable");
+          const data = await response.json() as { ok?: boolean; files?: MediaFile[] };
+          if (!active || !data.ok) return;
+          setPhotoUrlsByJob((current) => (
+            current[selected.id]
+              ? current
+              : { ...current, [selected.id]: imageUrlsFromMedia(data.files || []) }
+          ));
+        } catch {
+          if (!active) return;
+          setPhotoUrlsByJob((current) => ({ ...current, [selected.id]: [] }));
+        }
+      }
+    }
+
+    void loadMedia();
 
     return () => {
       active = false;
     };
   }, [photoUrlsByJob, selected]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    if (filtered.some((job) => job.id === selectedId)) return;
+
+    setSelectedId("");
+  }, [filtered, selectedId]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedId("");
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [selectedId]);
 
   function notify(message: string) {
     setToast(message);
@@ -484,7 +560,7 @@ export function JobsMapBoard({ jobs }: Props) {
     setStatusView(status);
   }
 
-  function updateSelectedStatus(nextStatus: string) {
+  async function updateSelectedStatus(nextStatus: string) {
     if (!selected) return;
 
     const jobId = selected.id;
@@ -502,13 +578,22 @@ export function JobsMapBoard({ jobs }: Props) {
       setStatusView("All");
     }
 
-    notify(`${jobId} marked ${nextStatus}.`);
-
-    void fetch("/api/jobs/status", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: jobId, status: nextStatus }),
-    }).catch(() => undefined);
+    try {
+      const response = await fetch("/api/jobs/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: jobId, status: nextStatus }),
+      });
+      const data = await response.json() as { ok?: boolean; error?: string; status?: string };
+      if (!response.ok || !data.ok) throw new Error(data.error || "Unable to save status");
+      const savedStatus = realFieldValue(data.status || nextStatus);
+      if (savedStatus) {
+        setJobStatusOverrides((current) => ({ ...current, [jobId]: savedStatus }));
+      }
+      notify(`${jobId} saved: ${savedStatus || nextStatus}.`);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : `${jobId} updated on this device.`);
+    }
   }
 
   function exportFilteredJobs() {
@@ -538,8 +623,12 @@ export function JobsMapBoard({ jobs }: Props) {
       scrollToSection("live-map-preview");
     } else if (label === "Automation") {
       showTable("queue");
-    } else if (label === "Documents" && selected) {
-      window.location.href = selectedDetailHref;
+    } else if (label === "Documents") {
+      if (selected) {
+        window.location.href = selectedDetailHref;
+      } else {
+        showTable("documents");
+      }
     } else if (label === "Reports") {
       exportFilteredJobs();
     } else if (label === "System Status") {
@@ -565,13 +654,13 @@ export function JobsMapBoard({ jobs }: Props) {
 
     setUploadingPhotos(true);
     try {
-      const response = await fetch("/api/jobs/images", {
-        method: "POST",
-        body: formData,
-      });
+      let response = await fetch("/api/jobs/media", { method: "POST", body: formData });
+      if (!response.ok) {
+        response = await fetch("/api/jobs/images", { method: "POST", body: formData });
+      }
       const data = await response.json() as { ok?: boolean; error?: string; files?: Array<{ url: string }> };
       if (!response.ok || !data.ok) throw new Error(data.error || "Upload failed");
-      const uploadedUrls = (data.files || []).map((file) => file.url).filter(Boolean);
+      const uploadedUrls = imageUrlsFromMedia(data.files || []);
       setPhotoUrlsByJob((current) => ({
         ...current,
         [selected.id]: [...uploadedUrls, ...(current[selected.id] || [])],

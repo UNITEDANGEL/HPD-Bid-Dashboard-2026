@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { JobMediaPackage } from "../../../components/JobMediaPackage";
 import { StatusBadge } from "../../../components/StatusBadge";
 import { getJobById } from "../../../lib/jobs";
 
@@ -129,6 +130,8 @@ export default async function JobDetailPage({
           ) : null}
         </div>
       </section>
+
+      <JobMediaPackage job={job} />
 
       <section className="raw-card">
         <h3>Raw source fields</h3>
