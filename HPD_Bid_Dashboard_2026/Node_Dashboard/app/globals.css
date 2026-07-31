@@ -2500,7 +2500,7 @@ tbody tr:hover {
   }
 
   .mobile-map-shell {
-    inset: 214px 0 68px;
+    inset: 220px 0 68px;
   }
 
   .mobile-map-shell::before {
@@ -3271,7 +3271,7 @@ tbody tr:hover {
   }
 
   .mobile-map-shell {
-    inset: 196px 0 62px;
+    inset: 202px 0 62px;
   }
 
   .mobile-map-shell::before {
@@ -3535,7 +3535,7 @@ tbody tr:hover {
   }
 
   .mobile-map-shell {
-    inset: 164px 0 58px;
+    inset: 168px 0 58px;
   }
 
   .mobile-map-shell::after {
