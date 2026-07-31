@@ -82,6 +82,11 @@ function realFieldValue(value: string) {
   return text;
 }
 
+function sourceStatusForJob(job: JobRecord) {
+  const rawStatus = realFieldValue(job.raw?.Status || job.raw?.status || job.raw?.["Job Status"] || job.raw?.state || "");
+  return rawStatus || (job.awardDate ? "Awarded" : "Open");
+}
+
 function imageUrlsFromMedia(files: MediaFile[]) {
   return files
     .filter((file) => {
@@ -601,6 +606,40 @@ export function JobsMapBoard({ jobs }: Props) {
       notify(`${jobId} saved: ${savedStatus || nextStatus}.`);
     } catch (error) {
       notify(error instanceof Error ? error.message : `${jobId} updated on this device.`);
+    }
+  }
+
+  async function clearSelectedStatus() {
+    if (!selected) return;
+
+    const jobId = selected.id;
+    const sourceStatus = sourceStatusForJob(selected);
+
+    setJobStatusOverrides((current) => {
+      const next = { ...current };
+      delete next[jobId];
+      try {
+        window.localStorage.setItem(STATUS_OVERRIDE_STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // Clearing the screen state still works if browser storage is unavailable.
+      }
+      return next;
+    });
+
+    if (!statusMatches({ ...selected, status: sourceStatus, statusOverride: "", workflowStatus: "" }, statusView)) {
+      setStatusView("All");
+    }
+    notify(`${jobId} local status cleared.`);
+
+    try {
+      const response = await fetch(`/api/jobs/status?id=${encodeURIComponent(jobId)}`, {
+        method: "DELETE",
+      });
+      const data = await response.json() as { ok?: boolean; error?: string };
+      if (!response.ok || !data.ok) throw new Error(data.error || "Unable to clear shared status");
+      notify(`${jobId} status cleared.`);
+    } catch (error) {
+      notify(error instanceof Error ? `Local clear done. Shared clear: ${error.message}` : `${jobId} local status cleared.`);
     }
   }
 
@@ -1179,6 +1218,13 @@ export function JobsMapBoard({ jobs }: Props) {
                   {action.label}
                 </button>
               ))}
+              <button
+                type="button"
+                className="clear-status-button"
+                onClick={clearSelectedStatus}
+              >
+                Clear
+              </button>
             </div>
 
             <div className="sheet-actions">

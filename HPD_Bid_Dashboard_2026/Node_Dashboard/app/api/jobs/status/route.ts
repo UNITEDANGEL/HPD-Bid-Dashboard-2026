@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { appendStatusHistory, readStatusHistory } from "../../../../lib/job-field-events";
-import { archiveCompleted, readOverrides, upsertOverride } from "../../../../lib/job-overrides";
+import { archiveCompleted, clearOverride, readOverrides, upsertOverride } from "../../../../lib/job-overrides";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +39,30 @@ export async function PATCH(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to update job status";
+    return NextResponse.json({ ok: false, error: message }, { status: 400 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const url = new URL(request.url);
+    let id = String(url.searchParams.get("id") || "").trim();
+
+    if (!id) {
+      const body = await request.json().catch(() => ({}));
+      id = String(body.id || "").trim();
+    }
+
+    clearOverride(id);
+    appendStatusHistory(id, "Status Cleared");
+
+    return NextResponse.json({
+      ok: true,
+      status: "",
+      history: readStatusHistory(id),
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to clear job status";
     return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }
 }

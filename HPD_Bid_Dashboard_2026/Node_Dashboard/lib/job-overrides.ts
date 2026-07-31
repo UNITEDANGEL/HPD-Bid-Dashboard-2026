@@ -150,6 +150,27 @@ export function upsertOverride(input: JobOverrideInput) {
   return row;
 }
 
+export function clearOverride(id: string) {
+  const target = String(id || "").trim();
+  if (!target) {
+    throw new Error("Missing job id");
+  }
+
+  const rows = readOverrides();
+  const index = rows.findIndex((row) => matchesOverride(row, target));
+  if (index === -1) {
+    return null;
+  }
+
+  const row = rows[index];
+  row.StatusOverride = "";
+  row.WorkflowStatus = "";
+  row.FieldOutcome = "";
+  row.UpdatedAt = new Date().toISOString();
+  writeOverrides(rows);
+  return row;
+}
+
 export function archiveCompleted(ids: string[]) {
   const rows = readOverrides();
   const now = new Date().toISOString();

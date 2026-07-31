@@ -24,6 +24,16 @@ type StatusHistoryEvent = {
   UpdatedAt: string;
 };
 
+type FieldNote = {
+  id: string;
+  text: string;
+  status: string;
+  createdAt: string;
+};
+
+const STATUS_OVERRIDE_STORAGE_KEY = "hpd-job-status-overrides-v1";
+const FIELD_NOTE_STORAGE_KEY = "hpd-job-field-notes-v1";
+
 const FIELD_STATUS_ACTIONS = [
   { label: "Arrived", value: "Arrived On Site" },
   { label: "Started", value: "Work Started" },
@@ -60,10 +70,79 @@ function isImage(file: MediaFile) {
   return type.startsWith("image/") || type === "image" || /\.(avif|gif|jpe?g|png|webp)(\?|$)/i.test(source);
 }
 
+function sourceStatusForJob(job: JobRecord) {
+  const rawStatus = String(job.raw?.Status || job.raw?.status || job.raw?.["Job Status"] || job.raw?.state || "").trim();
+  return rawStatus || (job.awardDate ? "Awarded" : "Open");
+}
+
+function readLocalStatusMap() {
+  try {
+    const stored = window.localStorage.getItem(STATUS_OVERRIDE_STORAGE_KEY);
+    return stored ? JSON.parse(stored) as Record<string, string> : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalStatus(jobId: string, nextStatus: string) {
+  try {
+    window.localStorage.setItem(STATUS_OVERRIDE_STORAGE_KEY, JSON.stringify({ ...readLocalStatusMap(), [jobId]: nextStatus }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function clearLocalStatus(jobId: string) {
+  try {
+    const statuses = readLocalStatusMap();
+    delete statuses[jobId];
+    window.localStorage.setItem(STATUS_OVERRIDE_STORAGE_KEY, JSON.stringify(statuses));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function readLocalNoteMap() {
+  try {
+    const stored = window.localStorage.getItem(FIELD_NOTE_STORAGE_KEY);
+    return stored ? JSON.parse(stored) as Record<string, FieldNote[]> : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalNotes(jobId: string, notes: FieldNote[]) {
+  try {
+    const allNotes = readLocalNoteMap();
+    allNotes[jobId] = notes;
+    window.localStorage.setItem(FIELD_NOTE_STORAGE_KEY, JSON.stringify(allNotes));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function clearLocalNotes(jobId: string) {
+  try {
+    const allNotes = readLocalNoteMap();
+    delete allNotes[jobId];
+    window.localStorage.setItem(FIELD_NOTE_STORAGE_KEY, JSON.stringify(allNotes));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function JobMediaPackage({ job }: Props) {
-  const [status, setStatus] = useState(job.status || "Open");
+  const originalStatus = useMemo(() => sourceStatusForJob(job), [job]);
+  const [status, setStatus] = useState(job.status || originalStatus);
+  const [hasLocalStatus, setHasLocalStatus] = useState(false);
   const [history, setHistory] = useState<StatusHistoryEvent[]>([]);
   const [files, setFiles] = useState<MediaFile[]>([]);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [notes, setNotes] = useState<FieldNote[]>([]);
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState("");
@@ -88,27 +167,36 @@ export function JobMediaPackage({ job }: Props) {
 
     async function loadPackage() {
       try {
-        let urlStatus = "";
+        let localStatus = "";
         try {
-          urlStatus = new URLSearchParams(window.location.search).get("status") || "";
+          const urlStatus = new URLSearchParams(window.location.search).get("status") || "";
           if (urlStatus) {
+            localStatus = urlStatus;
             setStatus(urlStatus);
-            const stored = window.localStorage.getItem("hpd-job-status-overrides-v1");
-            const statuses = stored ? JSON.parse(stored) as Record<string, string> : {};
-            window.localStorage.setItem("hpd-job-status-overrides-v1", JSON.stringify({ ...statuses, [job.id]: urlStatus }));
+            setHasLocalStatus(true);
+            writeLocalStatus(job.id, urlStatus);
           }
         } catch {
           // The URL handoff is only a convenience; the page can still load without it.
         }
 
         try {
-          if (!urlStatus) {
-            const stored = window.localStorage.getItem("hpd-job-status-overrides-v1");
-            const statuses = stored ? JSON.parse(stored) as Record<string, string> : {};
-            if (statuses[job.id]) setStatus(statuses[job.id]);
+          if (!localStatus) {
+            const storedStatus = readLocalStatusMap()[job.id] || "";
+            if (storedStatus) {
+              localStatus = storedStatus;
+              setStatus(storedStatus);
+              setHasLocalStatus(true);
+            }
           }
         } catch {
           // The package still works if browser storage is unavailable.
+        }
+
+        try {
+          setNotes(readLocalNoteMap()[job.id] || []);
+        } catch {
+          setNotes([]);
         }
 
         const [statusResponse, mediaResponse] = await Promise.all([
@@ -124,15 +212,9 @@ export function JobMediaPackage({ job }: Props) {
           };
           if (active && statusData.ok) {
             const savedStatus = statusData.statuses?.[job.id];
-            if (savedStatus) {
-              if (!urlStatus) setStatus(savedStatus);
-              try {
-                const stored = window.localStorage.getItem("hpd-job-status-overrides-v1");
-                const statuses = stored ? JSON.parse(stored) as Record<string, string> : {};
-                window.localStorage.setItem("hpd-job-status-overrides-v1", JSON.stringify({ ...statuses, [job.id]: urlStatus || savedStatus }));
-              } catch {
-                // Keep the on-screen status even if browser storage is unavailable.
-              }
+            if (savedStatus && !localStatus) {
+              setStatus(savedStatus);
+              setHasLocalStatus(false);
             }
             setHistory(statusData.history || []);
           }
@@ -157,8 +239,14 @@ export function JobMediaPackage({ job }: Props) {
 
   async function updateStatus(nextStatus: string) {
     setStatus(nextStatus);
+    setHasLocalStatus(true);
+    writeLocalStatus(job.id, nextStatus);
+    setHistory((current) => [
+      { RowID: job.id, Status: nextStatus, UpdatedAt: new Date().toISOString() },
+      ...current,
+    ]);
     setIsSavingStatus(true);
-    setMessage("");
+    setMessage("Saved locally on this device.");
 
     try {
       const response = await fetch("/api/jobs/status", {
@@ -170,12 +258,63 @@ export function JobMediaPackage({ job }: Props) {
       if (!response.ok || !data.ok) throw new Error(data.error || "Unable to save status");
       setStatus(data.status || nextStatus);
       setHistory(data.history || []);
-      setMessage(`${job.id} saved.`);
+      setMessage(`${job.id} saved locally and synced.`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Unable to save status.");
+      setMessage(error instanceof Error ? `Saved locally. Shared sync: ${error.message}` : "Saved locally on this device.");
     } finally {
       setIsSavingStatus(false);
     }
+  }
+
+  async function clearSavedStatus() {
+    clearLocalStatus(job.id);
+    setStatus(originalStatus);
+    setHasLocalStatus(false);
+    setIsSavingStatus(true);
+    setMessage("Local status cleared.");
+
+    try {
+      const response = await fetch(`/api/jobs/status?id=${encodeURIComponent(job.id)}`, {
+        method: "DELETE",
+      });
+      const data = await response.json() as { ok?: boolean; error?: string; history?: StatusHistoryEvent[] };
+      if (!response.ok || !data.ok) throw new Error(data.error || "Unable to clear shared status");
+      setHistory(data.history || []);
+      setMessage(`${job.id} status cleared.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? `Local clear done. Shared clear: ${error.message}` : "Local status cleared.");
+    } finally {
+      setIsSavingStatus(false);
+    }
+  }
+
+  function saveNote() {
+    const text = noteDraft.trim();
+    if (!text) {
+      setMessage("Write a note before saving.");
+      return;
+    }
+
+    const nextNotes = [
+      {
+        id: `${job.id}-${Date.now()}`,
+        text,
+        status,
+        createdAt: new Date().toISOString(),
+      },
+      ...notes,
+    ].slice(0, 50);
+
+    setNotes(nextNotes);
+    setNoteDraft("");
+    setMessage(writeLocalNotes(job.id, nextNotes) ? "Note saved on this device." : "Note kept on screen. Browser storage is unavailable.");
+  }
+
+  function clearNotes() {
+    clearLocalNotes(job.id);
+    setNotes([]);
+    setNoteDraft("");
+    setMessage("Local notes cleared.");
   }
 
   async function uploadFiles(event: ChangeEvent<HTMLInputElement>) {
@@ -230,6 +369,48 @@ export function JobMediaPackage({ job }: Props) {
             {action.label}
           </button>
         ))}
+        <button
+          type="button"
+          className="package-clear-status"
+          disabled={isSavingStatus}
+          onClick={clearSavedStatus}
+        >
+          Clear
+        </button>
+      </div>
+
+      <div className="package-local-state">
+        <strong>{hasLocalStatus ? "Saved on this device" : "Using source status"}</strong>
+        <span>{hasLocalStatus ? "This status stays here until you clear it." : "Pick a field status to save it locally."}</span>
+      </div>
+
+      <div className="package-note-box">
+        <label htmlFor="field-note">Field notes</label>
+        <textarea
+          id="field-note"
+          value={noteDraft}
+          rows={3}
+          placeholder="Add access, tenant, materials, or next-step notes..."
+          onChange={(event) => setNoteDraft(event.target.value)}
+        />
+        <div className="package-note-actions">
+          <button type="button" onClick={saveNote}>Save Note</button>
+          <button type="button" className="package-clear-status" onClick={clearNotes} disabled={!notes.length && !noteDraft.trim()}>
+            Clear Notes
+          </button>
+        </div>
+        {notes.length ? (
+          <ul className="package-notes-list">
+            {notes.slice(0, 5).map((note) => (
+              <li key={note.id}>
+                <p>{note.text}</p>
+                <span>{formatEventTime(note.createdAt)} · {note.status}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="package-notes-empty">No local notes saved for this job.</p>
+        )}
       </div>
 
       <div className="package-upload-row">

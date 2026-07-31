@@ -1396,7 +1396,7 @@ tbody tr:hover {
 
 .package-status-actions {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: 16px;
 }
@@ -1414,10 +1414,107 @@ tbody tr:hover {
   box-shadow: 0 0 18px rgba(47, 156, 255, 0.22);
 }
 
+.package-status-actions .package-clear-status,
+.package-note-actions .package-clear-status,
+.job-card-status-actions .clear-status-button {
+  border-color: rgba(255, 115, 115, 0.32);
+  background: rgba(35, 13, 22, 0.76);
+  color: #ffd1d1;
+}
+
 .package-status-actions button:disabled,
 .package-upload-row label.is-disabled {
   cursor: wait;
   opacity: 0.66;
+}
+
+.package-local-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  color: #aebfd5;
+  font-size: 0.86rem;
+}
+
+.package-local-state strong {
+  color: #ffffff;
+}
+
+.package-note-box {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.package-note-box label {
+  color: #9fb0c7;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.package-note-box textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 86px;
+  border: 1px solid rgba(47, 156, 255, 0.28);
+  border-radius: var(--radius);
+  background: rgba(6, 18, 34, 0.72);
+  color: #edf6ff;
+  padding: 12px;
+  outline: 0;
+}
+
+.package-note-box textarea:focus {
+  border-color: rgba(47, 156, 255, 0.78);
+  box-shadow: 0 0 0 3px rgba(47, 156, 255, 0.14);
+}
+
+.package-note-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(120px, auto);
+  gap: 8px;
+}
+
+.package-note-actions button {
+  min-height: 40px;
+  border: 1px solid rgba(47, 156, 255, 0.48);
+  border-radius: var(--radius);
+  background: rgba(15, 111, 255, 0.18);
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.package-notes-list {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.package-notes-list li {
+  padding: 10px 12px;
+  border: 1px solid rgba(151, 177, 212, 0.18);
+  border-radius: var(--radius);
+  background: rgba(8, 20, 36, 0.62);
+}
+
+.package-notes-list p,
+.package-notes-empty {
+  margin: 0;
+  color: #edf6ff;
+}
+
+.package-notes-list span {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 .package-upload-row {
@@ -2849,7 +2946,7 @@ tbody tr:hover {
 
   .job-card-status-actions {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
   }
 
@@ -3742,11 +3839,19 @@ tbody tr:hover {
   }
 
   .package-status-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .package-status-actions button {
     min-height: 38px;
+  }
+
+  .package-local-state {
+    display: grid;
+  }
+
+  .package-note-actions {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .package-upload-row {
