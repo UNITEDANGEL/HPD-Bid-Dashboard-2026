@@ -22,19 +22,28 @@ type MediaFile = {
   type?: string;
 };
 
+type FieldFlowEvent = {
+  label: string;
+  status: string;
+  createdAt: string;
+};
+
 const STATUS_OVERRIDE_STORAGE_KEY = "hpd-job-status-overrides-v1";
+const FIELD_FLOW_STORAGE_KEY = "hpd-job-field-flow-events-v1";
 const CHART_PERIODS: ChartPeriod[] = ["Last 12 Months", "2026 YTD", "Last 90 Days"];
 const NYC_BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
 const FIELD_STATUS_ACTIONS = [
-  { label: "Arrived", value: "Arrived On Site" },
-  { label: "Started", value: "Work Started" },
-  { label: "Progress", value: "Work In Progress" },
-  { label: "Complete", value: "Work Completed" },
-  { label: "No Access", value: "No Access - 1st Attempt" },
-  { label: "Refused", value: "Refused Access" },
-  { label: "Materials", value: "Needs Materials" },
-  { label: "Follow Up", value: "Follow Up Required" },
+  { label: "Arrived", value: "Arrived On Site", phase: "visit" },
+  { label: "Started", value: "Work Started", phase: "visit" },
+  { label: "Progress", value: "Work In Progress", phase: "outcome" },
+  { label: "Complete", value: "Work Completed", phase: "outcome" },
+  { label: "No Access", value: "No Access - 1st Attempt", phase: "outcome" },
+  { label: "Refused", value: "Refused Access", phase: "outcome" },
+  { label: "Materials", value: "Needs Materials", phase: "outcome" },
+  { label: "Follow Up", value: "Follow Up Required", phase: "outcome" },
 ] as const;
+const VISIT_STATUS_ACTIONS = FIELD_STATUS_ACTIONS.filter((action) => action.phase === "visit");
+const OUTCOME_STATUS_ACTIONS = FIELD_STATUS_ACTIONS.filter((action) => action.phase === "outcome");
 const BOROUGH_CENTERS: Record<string, [number, number]> = {
   Manhattan: [40.7831, -73.9712],
   Brooklyn: [40.6782, -73.9442],
@@ -113,6 +122,15 @@ function formatShortDate(value: string) {
     month: "short",
     day: "2-digit",
     year: "numeric",
+  }).format(date);
+}
+
+function formatStampTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
   }).format(date);
 }
 
@@ -238,6 +256,27 @@ function jobsToCsv(records: JobRecord[]) {
   return [headers, ...rows].map((row) => row.map(csvValue).join(",")).join("\n");
 }
 
+function readLocalFlowMap() {
+  try {
+    const stored = window.localStorage.getItem(FIELD_FLOW_STORAGE_KEY);
+    return stored ? JSON.parse(stored) as Record<string, Record<string, FieldFlowEvent>> : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalFlowMap(events: Record<string, Record<string, FieldFlowEvent>>) {
+  try {
+    window.localStorage.setItem(FIELD_FLOW_STORAGE_KEY, JSON.stringify(events));
+  } catch {
+    // The UI still updates even when browser storage is unavailable.
+  }
+}
+
+function actionForStatus(status: string) {
+  return FIELD_STATUS_ACTIONS.find((action) => action.value.toLowerCase() === String(status || "").toLowerCase());
+}
+
 function trendPoints(total: number) {
   const base = Math.max(12, Math.round(total / 8));
   return [base, base + 44, base + 45, base + 96, base + 136, base + 70, base + 43, base + 66, base + 94, base + 137, base + 74];
@@ -269,6 +308,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [photoUrlsByJob, setPhotoUrlsByJob] = useState<Record<string, string[]>>({});
   const [jobStatusOverrides, setJobStatusOverrides] = useState<Record<string, string>>({});
+  const [fieldFlowEventsByJob, setFieldFlowEventsByJob] = useState<Record<string, Record<string, FieldFlowEvent>>>({});
   const [mapFitNonce, setMapFitNonce] = useState(0);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const mobileBoroughRowRef = useRef<HTMLDivElement>(null);
@@ -325,6 +365,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const selectedPhotoUrls = selected ? photoUrlsByJob[selected.id] || [] : [];
   const selectedPhotoUrl = selectedPhotoUrls[0] || "";
   const selectedStatus = selected ? displayStatus(selected) : "";
+  const selectedFlowEvents = selected ? fieldFlowEventsByJob[selected.id] || {} : {};
   const selectedAddress = selected ? realFieldValue(selected.address) : "";
   const selectedBorough = selected ? realFieldValue(selected.borough) : "";
   const selectedTrade = selected ? realFieldValue(selected.trade) : "";
@@ -382,7 +423,10 @@ export function JobsMapBoard({ jobs }: Props) {
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(STATUS_OVERRIDE_STORAGE_KEY);
-      if (!stored) return;
+      if (!stored) {
+        setFieldFlowEventsByJob(readLocalFlowMap());
+        return;
+      }
 
       const parsed = JSON.parse(stored) as Record<string, string>;
       const cleaned = Object.fromEntries(
@@ -391,8 +435,10 @@ export function JobsMapBoard({ jobs }: Props) {
           .filter(([id, status]) => Boolean(id && status)),
       );
       setJobStatusOverrides(cleaned);
+      setFieldFlowEventsByJob(readLocalFlowMap());
     } catch {
       setJobStatusOverrides({});
+      setFieldFlowEventsByJob({});
     }
   }, []);
 
@@ -577,6 +623,13 @@ export function JobsMapBoard({ jobs }: Props) {
     if (!selected) return;
 
     const jobId = selected.id;
+    const action = actionForStatus(nextStatus);
+    const stampedEvent: FieldFlowEvent = {
+      label: action?.label || nextStatus,
+      status: nextStatus,
+      createdAt: new Date().toISOString(),
+    };
+
     setJobStatusOverrides((current) => {
       const next = { ...current, [jobId]: nextStatus };
       try {
@@ -584,6 +637,17 @@ export function JobsMapBoard({ jobs }: Props) {
       } catch {
         // Keep the on-screen update even if browser storage is unavailable.
       }
+      return next;
+    });
+    setFieldFlowEventsByJob((current) => {
+      const next = {
+        ...current,
+        [jobId]: {
+          ...(current[jobId] || {}),
+          [nextStatus]: stampedEvent,
+        },
+      };
+      writeLocalFlowMap(next);
       return next;
     });
 
@@ -623,6 +687,12 @@ export function JobsMapBoard({ jobs }: Props) {
       } catch {
         // Clearing the screen state still works if browser storage is unavailable.
       }
+      return next;
+    });
+    setFieldFlowEventsByJob((current) => {
+      const next = { ...current };
+      delete next[jobId];
+      writeLocalFlowMap(next);
       return next;
     });
 
@@ -688,6 +758,25 @@ export function JobsMapBoard({ jobs }: Props) {
     const currentIndex = selectedIndex < 0 ? 0 : selectedIndex;
     const nextIndex = (currentIndex + direction + filtered.length) % filtered.length;
     setSelectedId(filtered[nextIndex].id);
+  }
+
+  function renderSelectedFlowButton(action: typeof FIELD_STATUS_ACTIONS[number]) {
+    const stamp = selectedFlowEvents[action.value];
+    const active = selectedStatus.toLowerCase() === action.value.toLowerCase();
+
+    return (
+      <button
+        key={action.value}
+        type="button"
+        className={`${active ? "is-active" : ""} ${stamp ? "is-stamped" : ""}`.trim()}
+        aria-pressed={active}
+        title={action.value}
+        onClick={() => updateSelectedStatus(action.value)}
+      >
+        <strong>{action.label}</strong>
+        <span>{stamp ? formatStampTime(stamp.createdAt) : "Tap"}</span>
+      </button>
+    );
   }
 
   async function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
@@ -1205,26 +1294,32 @@ export function JobsMapBoard({ jobs }: Props) {
               ) : null}
             </div>
 
-            <div className="job-card-status-actions" aria-label="Update job status">
-              {FIELD_STATUS_ACTIONS.map((action) => (
+            <div className="job-card-flow">
+              <div className="job-card-flow-head">
+                <div>
+                  <strong>Field Flow</strong>
+                  <span>Arrive, start, then choose what happened.</span>
+                </div>
                 <button
-                  key={action.value}
                   type="button"
-                  className={selectedStatus.toLowerCase() === action.value.toLowerCase() ? "is-active" : ""}
-                  aria-pressed={selectedStatus.toLowerCase() === action.value.toLowerCase()}
-                  title={action.value}
-                  onClick={() => updateSelectedStatus(action.value)}
+                  className="clear-status-button"
+                  onClick={clearSelectedStatus}
                 >
-                  {action.label}
+                  Clear
                 </button>
-              ))}
-              <button
-                type="button"
-                className="clear-status-button"
-                onClick={clearSelectedStatus}
-              >
-                Clear
-              </button>
+              </div>
+              <div className="job-card-flow-group">
+                <span className="job-card-flow-label">1. Site steps</span>
+                <div className="job-card-status-actions is-visit" aria-label="Site visit steps">
+                  {VISIT_STATUS_ACTIONS.map(renderSelectedFlowButton)}
+                </div>
+              </div>
+              <div className="job-card-flow-group">
+                <span className="job-card-flow-label">2. What happened?</span>
+                <div className="job-card-status-actions" aria-label="Update job outcome">
+                  {OUTCOME_STATUS_ACTIONS.map(renderSelectedFlowButton)}
+                </div>
+              </div>
             </div>
 
             <div className="sheet-actions">

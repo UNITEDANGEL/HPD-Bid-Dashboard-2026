@@ -1394,17 +1394,94 @@ tbody tr:hover {
   font-size: clamp(1.35rem, 4vw, 2rem);
 }
 
+.field-flow-card {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid rgba(47, 156, 255, 0.22);
+  border-radius: var(--radius);
+  background: rgba(5, 15, 28, 0.5);
+}
+
+.field-flow-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.field-flow-head div {
+  display: grid;
+  gap: 3px;
+}
+
+.field-flow-head strong {
+  color: #ffffff;
+  font-size: 0.88rem;
+}
+
+.field-flow-head span,
+.field-flow-label {
+  color: #9fb0c7;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.field-flow-head .package-clear-status {
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid rgba(255, 115, 115, 0.32);
+  border-radius: 999px;
+  background: rgba(35, 13, 22, 0.76);
+  color: #ffd1d1;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.field-flow-group {
+  display: grid;
+  gap: 7px;
+}
+
+.field-flow-label {
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
 .package-status-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
-  margin-top: 16px;
 }
 
 .package-status-actions button {
+  display: grid;
+  place-items: center;
+  gap: 3px;
+  min-height: 54px;
+  padding: 7px 6px;
   border: 1px solid rgba(47, 156, 255, 0.28);
   background: rgba(6, 18, 34, 0.72);
   color: #cfe0f6;
+  text-align: center;
+}
+
+.package-status-actions.is-visit {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.package-status-actions button strong {
+  color: inherit;
+  font-size: 0.78rem;
+  line-height: 1.05;
+}
+
+.package-status-actions button span {
+  color: #8fa5c0;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.05;
 }
 
 .package-status-actions button.is-active {
@@ -1412,6 +1489,14 @@ tbody tr:hover {
   background: linear-gradient(135deg, rgba(47, 156, 255, 0.42), rgba(15, 111, 255, 0.22));
   color: #ffffff;
   box-shadow: 0 0 18px rgba(47, 156, 255, 0.22);
+}
+
+.package-status-actions button.is-stamped {
+  border-color: rgba(45, 212, 125, 0.42);
+}
+
+.package-status-actions button.is-stamped span {
+  color: #55f2a0;
 }
 
 .package-status-actions .package-clear-status,
@@ -2950,10 +3035,17 @@ tbody tr:hover {
     gap: 6px;
   }
 
+  .job-card-status-actions.is-visit {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .job-card-status-actions button {
+    display: grid;
+    place-items: center;
+    gap: 3px;
     min-width: 0;
-    min-height: 34px;
-    padding: 4px 3px;
+    min-height: 42px;
+    padding: 5px 3px;
     border: 1px solid rgba(151, 177, 212, 0.2);
     border-radius: 12px;
     background:
@@ -2966,6 +3058,23 @@ tbody tr:hover {
     text-align: center;
   }
 
+  .job-card-status-actions button strong {
+    overflow: hidden;
+    max-width: 100%;
+    color: inherit;
+    font-size: 0.58rem;
+    line-height: 1.05;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .job-card-status-actions button span {
+    color: #8fa5c0;
+    font-size: 0.52rem;
+    font-weight: 800;
+    line-height: 1;
+  }
+
   .job-card-status-actions button.is-active {
     border-color: rgba(47, 156, 255, 0.78);
     color: #ffffff;
@@ -2973,6 +3082,68 @@ tbody tr:hover {
       radial-gradient(circle at 50% 0%, rgba(47, 156, 255, 0.34), transparent 58%),
       linear-gradient(180deg, rgba(47, 156, 255, 0.32), rgba(5, 22, 42, 0.96));
     box-shadow: 0 0 16px rgba(47, 156, 255, 0.22);
+  }
+
+  .job-card-status-actions button.is-stamped {
+    border-color: rgba(45, 212, 125, 0.42);
+  }
+
+  .job-card-status-actions button.is-stamped span {
+    color: #55f2a0;
+  }
+
+  .job-card-flow {
+    display: grid;
+    gap: 7px;
+    padding: 8px;
+    border: 1px solid rgba(47, 156, 255, 0.2);
+    border-radius: 14px;
+    background: rgba(5, 16, 31, 0.48);
+  }
+
+  .job-card-flow-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .job-card-flow-head div {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .job-card-flow-head strong {
+    color: #ffffff;
+    font-size: 0.7rem;
+  }
+
+  .job-card-flow-head span,
+  .job-card-flow-label {
+    color: #9fb0c7;
+    font-size: 0.55rem;
+    font-weight: 800;
+  }
+
+  .job-card-flow-head .clear-status-button {
+    min-height: 26px;
+    padding: 0 9px;
+    border: 1px solid rgba(255, 115, 115, 0.32);
+    border-radius: 999px;
+    background: rgba(35, 13, 22, 0.76);
+    color: #ffd1d1;
+    font-size: 0.58rem;
+    font-weight: 900;
+  }
+
+  .job-card-flow-group {
+    display: grid;
+    gap: 4px;
+  }
+
+  .job-card-flow-label {
+    text-transform: uppercase;
   }
 
   .sheet-actions {
@@ -3447,7 +3618,7 @@ tbody tr:hover {
   }
 
   .job-card-status-actions button {
-    min-height: 30px;
+    min-height: 38px;
     border-radius: 11px;
     font-size: 0.52rem;
   }
@@ -3710,7 +3881,7 @@ tbody tr:hover {
   }
 
   .job-card-status-actions button {
-    min-height: 28px;
+    min-height: 36px;
     padding: 3px 2px;
     font-size: 0.49rem;
   }

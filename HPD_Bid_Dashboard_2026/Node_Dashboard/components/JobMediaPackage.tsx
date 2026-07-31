@@ -31,19 +31,29 @@ type FieldNote = {
   createdAt: string;
 };
 
+type FieldFlowEvent = {
+  label: string;
+  status: string;
+  createdAt: string;
+};
+
 const STATUS_OVERRIDE_STORAGE_KEY = "hpd-job-status-overrides-v1";
 const FIELD_NOTE_STORAGE_KEY = "hpd-job-field-notes-v1";
+const FIELD_FLOW_STORAGE_KEY = "hpd-job-field-flow-events-v1";
 
 const FIELD_STATUS_ACTIONS = [
-  { label: "Arrived", value: "Arrived On Site" },
-  { label: "Started", value: "Work Started" },
-  { label: "Progress", value: "Work In Progress" },
-  { label: "Complete", value: "Work Completed" },
-  { label: "No Access", value: "No Access - 1st Attempt" },
-  { label: "Refused", value: "Refused Access" },
-  { label: "Materials", value: "Needs Materials" },
-  { label: "Follow Up", value: "Follow Up Required" },
+  { label: "Arrived", value: "Arrived On Site", phase: "visit" },
+  { label: "Started", value: "Work Started", phase: "visit" },
+  { label: "Progress", value: "Work In Progress", phase: "outcome" },
+  { label: "Complete", value: "Work Completed", phase: "outcome" },
+  { label: "No Access", value: "No Access - 1st Attempt", phase: "outcome" },
+  { label: "Refused", value: "Refused Access", phase: "outcome" },
+  { label: "Materials", value: "Needs Materials", phase: "outcome" },
+  { label: "Follow Up", value: "Follow Up Required", phase: "outcome" },
 ] as const;
+
+const VISIT_STATUS_ACTIONS = FIELD_STATUS_ACTIONS.filter((action) => action.phase === "visit");
+const OUTCOME_STATUS_ACTIONS = FIELD_STATUS_ACTIONS.filter((action) => action.phase === "outcome");
 
 function formatFileSize(value = 0) {
   if (!value) return "";
@@ -59,6 +69,15 @@ function formatEventTime(value: string) {
     month: "short",
     day: "2-digit",
     year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function formatStampTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
@@ -135,6 +154,54 @@ function clearLocalNotes(jobId: string) {
   }
 }
 
+function readLocalFlowMap() {
+  try {
+    const stored = window.localStorage.getItem(FIELD_FLOW_STORAGE_KEY);
+    return stored ? JSON.parse(stored) as Record<string, Record<string, FieldFlowEvent>> : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalFlowEvents(jobId: string, events: Record<string, FieldFlowEvent>) {
+  try {
+    const allEvents = readLocalFlowMap();
+    allEvents[jobId] = events;
+    window.localStorage.setItem(FIELD_FLOW_STORAGE_KEY, JSON.stringify(allEvents));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function clearLocalFlowEvents(jobId: string) {
+  try {
+    const allEvents = readLocalFlowMap();
+    delete allEvents[jobId];
+    window.localStorage.setItem(FIELD_FLOW_STORAGE_KEY, JSON.stringify(allEvents));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function actionForStatus(status: string) {
+  return FIELD_STATUS_ACTIONS.find((action) => action.value.toLowerCase() === String(status || "").toLowerCase());
+}
+
+function flowEventsFromHistory(history: StatusHistoryEvent[]) {
+  return history.reduce<Record<string, FieldFlowEvent>>((events, item) => {
+    const action = actionForStatus(item.Status);
+    if (!action || events[action.value]) return events;
+    events[action.value] = {
+      label: action.label,
+      status: action.value,
+      createdAt: item.UpdatedAt,
+    };
+    return events;
+  }, {});
+}
+
 export function JobMediaPackage({ job }: Props) {
   const originalStatus = useMemo(() => sourceStatusForJob(job), [job]);
   const [status, setStatus] = useState(job.status || originalStatus);
@@ -143,6 +210,7 @@ export function JobMediaPackage({ job }: Props) {
   const [files, setFiles] = useState<MediaFile[]>([]);
   const [noteDraft, setNoteDraft] = useState("");
   const [notes, setNotes] = useState<FieldNote[]>([]);
+  const [flowEvents, setFlowEvents] = useState<Record<string, FieldFlowEvent>>({});
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState("");
@@ -195,8 +263,10 @@ export function JobMediaPackage({ job }: Props) {
 
         try {
           setNotes(readLocalNoteMap()[job.id] || []);
+          setFlowEvents(readLocalFlowMap()[job.id] || {});
         } catch {
           setNotes([]);
+          setFlowEvents({});
         }
 
         const [statusResponse, mediaResponse] = await Promise.all([
@@ -216,7 +286,10 @@ export function JobMediaPackage({ job }: Props) {
               setStatus(savedStatus);
               setHasLocalStatus(false);
             }
-            setHistory(statusData.history || []);
+            const remoteHistory = statusData.history || [];
+            const localFlowEvents = readLocalFlowMap()[job.id] || {};
+            setHistory(remoteHistory);
+            setFlowEvents({ ...flowEventsFromHistory(remoteHistory), ...localFlowEvents });
           }
         }
 
@@ -238,9 +311,21 @@ export function JobMediaPackage({ job }: Props) {
   }, [job.id]);
 
   async function updateStatus(nextStatus: string) {
+    const action = actionForStatus(nextStatus);
+    const stampedEvent: FieldFlowEvent = {
+      label: action?.label || nextStatus,
+      status: nextStatus,
+      createdAt: new Date().toISOString(),
+    };
+
     setStatus(nextStatus);
     setHasLocalStatus(true);
     writeLocalStatus(job.id, nextStatus);
+    setFlowEvents((current) => {
+      const next = { ...current, [nextStatus]: stampedEvent };
+      writeLocalFlowEvents(job.id, next);
+      return next;
+    });
     setHistory((current) => [
       { RowID: job.id, Status: nextStatus, UpdatedAt: new Date().toISOString() },
       ...current,
@@ -257,7 +342,10 @@ export function JobMediaPackage({ job }: Props) {
       const data = await response.json() as { ok?: boolean; error?: string; status?: string; history?: StatusHistoryEvent[] };
       if (!response.ok || !data.ok) throw new Error(data.error || "Unable to save status");
       setStatus(data.status || nextStatus);
-      setHistory(data.history || []);
+      if (data.history) {
+        setHistory(data.history);
+        setFlowEvents((current) => ({ ...flowEventsFromHistory(data.history || []), ...current }));
+      }
       setMessage(`${job.id} saved locally and synced.`);
     } catch (error) {
       setMessage(error instanceof Error ? `Saved locally. Shared sync: ${error.message}` : "Saved locally on this device.");
@@ -268,8 +356,10 @@ export function JobMediaPackage({ job }: Props) {
 
   async function clearSavedStatus() {
     clearLocalStatus(job.id);
+    clearLocalFlowEvents(job.id);
     setStatus(originalStatus);
     setHasLocalStatus(false);
+    setFlowEvents({});
     setIsSavingStatus(true);
     setMessage("Local status cleared.");
 
@@ -317,6 +407,26 @@ export function JobMediaPackage({ job }: Props) {
     setMessage("Local notes cleared.");
   }
 
+  function renderFlowButton(action: typeof FIELD_STATUS_ACTIONS[number]) {
+    const stamp = flowEvents[action.value];
+    const active = status.toLowerCase() === action.value.toLowerCase();
+
+    return (
+      <button
+        key={action.value}
+        type="button"
+        className={`${active ? "is-active" : ""} ${stamp ? "is-stamped" : ""}`.trim()}
+        aria-pressed={active}
+        title={action.value}
+        disabled={isSavingStatus}
+        onClick={() => updateStatus(action.value)}
+      >
+        <strong>{action.label}</strong>
+        <span>{stamp ? formatStampTime(stamp.createdAt) : "Tap to stamp"}</span>
+      </button>
+    );
+  }
+
   async function uploadFiles(event: ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
     const selectedFiles = Array.from(input.files || []);
@@ -355,28 +465,33 @@ export function JobMediaPackage({ job }: Props) {
         <StatusBadge status={status} />
       </div>
 
-      <div className="package-status-actions" aria-label="Update job status">
-        {FIELD_STATUS_ACTIONS.map((action) => (
+      <div className="field-flow-card">
+        <div className="field-flow-head">
+          <div>
+            <strong>Visit Flow</strong>
+            <span>Tap Arrived, then Started, then choose what happened.</span>
+          </div>
           <button
-            key={action.value}
             type="button"
-            className={status.toLowerCase() === action.value.toLowerCase() ? "is-active" : ""}
-            aria-pressed={status.toLowerCase() === action.value.toLowerCase()}
-            title={action.value}
+            className="package-clear-status"
             disabled={isSavingStatus}
-            onClick={() => updateStatus(action.value)}
+            onClick={clearSavedStatus}
           >
-            {action.label}
+            Clear
           </button>
-        ))}
-        <button
-          type="button"
-          className="package-clear-status"
-          disabled={isSavingStatus}
-          onClick={clearSavedStatus}
-        >
-          Clear
-        </button>
+        </div>
+        <div className="field-flow-group">
+          <span className="field-flow-label">1. Site steps</span>
+          <div className="package-status-actions field-flow-actions is-visit" aria-label="Site visit steps">
+            {VISIT_STATUS_ACTIONS.map(renderFlowButton)}
+          </div>
+        </div>
+        <div className="field-flow-group">
+          <span className="field-flow-label">2. What happened?</span>
+          <div className="package-status-actions field-flow-actions" aria-label="Update job outcome">
+            {OUTCOME_STATUS_ACTIONS.map(renderFlowButton)}
+          </div>
+        </div>
       </div>
 
       <div className="package-local-state">
