@@ -76,10 +76,18 @@ export function JobMediaPackage({ job }: Props) {
   useEffect(() => {
     let active = true;
 
+    async function fetchStatusPackage() {
+      try {
+        return await fetch(`/api/jobs/status?id=${encodeURIComponent(job.id)}`);
+      } catch {
+        return fetch("/api/jobs/status");
+      }
+    }
+
     async function loadPackage() {
       try {
         const [statusResponse, mediaResponse] = await Promise.all([
-          fetch(`/api/jobs/status?id=${encodeURIComponent(job.id)}`),
+          fetchStatusPackage(),
           fetch(`/api/jobs/media?jobId=${encodeURIComponent(job.id)}`),
         ]);
 
