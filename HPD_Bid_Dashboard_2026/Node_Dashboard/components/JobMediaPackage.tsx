@@ -88,6 +88,14 @@ export function JobMediaPackage({ job }: Props) {
 
     async function loadPackage() {
       try {
+        try {
+          const stored = window.localStorage.getItem("hpd-job-status-overrides-v1");
+          const statuses = stored ? JSON.parse(stored) as Record<string, string> : {};
+          if (statuses[job.id]) setStatus(statuses[job.id]);
+        } catch {
+          // The package still works if browser storage is unavailable.
+        }
+
         const [statusResponse, mediaResponse] = await Promise.all([
           fetchStatusPackage(),
           fetch(`/api/jobs/media?jobId=${encodeURIComponent(job.id)}`),
@@ -101,7 +109,16 @@ export function JobMediaPackage({ job }: Props) {
           };
           if (active && statusData.ok) {
             const savedStatus = statusData.statuses?.[job.id];
-            if (savedStatus) setStatus(savedStatus);
+            if (savedStatus) {
+              setStatus(savedStatus);
+              try {
+                const stored = window.localStorage.getItem("hpd-job-status-overrides-v1");
+                const statuses = stored ? JSON.parse(stored) as Record<string, string> : {};
+                window.localStorage.setItem("hpd-job-status-overrides-v1", JSON.stringify({ ...statuses, [job.id]: savedStatus }));
+              } catch {
+                // Keep the on-screen status even if browser storage is unavailable.
+              }
+            }
             setHistory(statusData.history || []);
           }
         }
