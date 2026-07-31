@@ -196,8 +196,10 @@ function canonicalBorough(name: string) {
   return NYC_BOROUGHS.find((boroughName) => boroughName.toLowerCase() === normalized) || name;
 }
 
-function jobDetailHref(job: JobRecord) {
-  return `/jobs/${encodeURIComponent(job.id)}`;
+function jobDetailHref(job: JobRecord, statusText = "") {
+  const currentStatus = realFieldValue(statusText || displayStatus(job));
+  const statusQuery = currentStatus ? `?status=${encodeURIComponent(currentStatus)}` : "";
+  return `/jobs/${encodeURIComponent(job.id)}${statusQuery}`;
 }
 
 function mapsHref(job: JobRecord) {

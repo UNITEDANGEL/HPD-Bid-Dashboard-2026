@@ -88,10 +88,25 @@ export function JobMediaPackage({ job }: Props) {
 
     async function loadPackage() {
       try {
+        let urlStatus = "";
         try {
-          const stored = window.localStorage.getItem("hpd-job-status-overrides-v1");
-          const statuses = stored ? JSON.parse(stored) as Record<string, string> : {};
-          if (statuses[job.id]) setStatus(statuses[job.id]);
+          urlStatus = new URLSearchParams(window.location.search).get("status") || "";
+          if (urlStatus) {
+            setStatus(urlStatus);
+            const stored = window.localStorage.getItem("hpd-job-status-overrides-v1");
+            const statuses = stored ? JSON.parse(stored) as Record<string, string> : {};
+            window.localStorage.setItem("hpd-job-status-overrides-v1", JSON.stringify({ ...statuses, [job.id]: urlStatus }));
+          }
+        } catch {
+          // The URL handoff is only a convenience; the page can still load without it.
+        }
+
+        try {
+          if (!urlStatus) {
+            const stored = window.localStorage.getItem("hpd-job-status-overrides-v1");
+            const statuses = stored ? JSON.parse(stored) as Record<string, string> : {};
+            if (statuses[job.id]) setStatus(statuses[job.id]);
+          }
         } catch {
           // The package still works if browser storage is unavailable.
         }
@@ -110,11 +125,11 @@ export function JobMediaPackage({ job }: Props) {
           if (active && statusData.ok) {
             const savedStatus = statusData.statuses?.[job.id];
             if (savedStatus) {
-              setStatus(savedStatus);
+              if (!urlStatus) setStatus(savedStatus);
               try {
                 const stored = window.localStorage.getItem("hpd-job-status-overrides-v1");
                 const statuses = stored ? JSON.parse(stored) as Record<string, string> : {};
-                window.localStorage.setItem("hpd-job-status-overrides-v1", JSON.stringify({ ...statuses, [job.id]: savedStatus }));
+                window.localStorage.setItem("hpd-job-status-overrides-v1", JSON.stringify({ ...statuses, [job.id]: urlStatus || savedStatus }));
               } catch {
                 // Keep the on-screen status even if browser storage is unavailable.
               }
