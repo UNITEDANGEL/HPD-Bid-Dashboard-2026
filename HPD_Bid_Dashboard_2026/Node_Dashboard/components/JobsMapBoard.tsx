@@ -26,11 +26,14 @@ const STATUS_OVERRIDE_STORAGE_KEY = "hpd-job-status-overrides-v1";
 const CHART_PERIODS: ChartPeriod[] = ["Last 12 Months", "2026 YTD", "Last 90 Days"];
 const NYC_BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
 const FIELD_STATUS_ACTIONS = [
-  { label: "Arrived", value: "Arrived" },
-  { label: "Started", value: "Started" },
+  { label: "Arrived", value: "Arrived On Site" },
+  { label: "Started", value: "Work Started" },
   { label: "Progress", value: "Work In Progress" },
   { label: "Complete", value: "Work Completed" },
   { label: "No Access", value: "No Access - 1st Attempt" },
+  { label: "Refused", value: "Refused Access" },
+  { label: "Materials", value: "Needs Materials" },
+  { label: "Follow Up", value: "Follow Up Required" },
 ] as const;
 const BOROUGH_CENTERS: Record<string, [number, number]> = {
   Manhattan: [40.7831, -73.9712],
@@ -149,6 +152,9 @@ function statusMatches(job: JobRecord, status: StatusView) {
       rawStatus.includes("started") ||
       rawStatus.includes("work in progress") ||
       rawStatus.includes("no access") ||
+      rawStatus.includes("refused") ||
+      rawStatus.includes("needs materials") ||
+      rawStatus.includes("follow up") ||
       rawStatus.includes("partial")
     );
   }
@@ -1164,6 +1170,8 @@ export function JobsMapBoard({ jobs }: Props) {
                   key={action.value}
                   type="button"
                   className={selectedStatus.toLowerCase() === action.value.toLowerCase() ? "is-active" : ""}
+                  aria-pressed={selectedStatus.toLowerCase() === action.value.toLowerCase()}
+                  title={action.value}
                   onClick={() => updateSelectedStatus(action.value)}
                 >
                   {action.label}

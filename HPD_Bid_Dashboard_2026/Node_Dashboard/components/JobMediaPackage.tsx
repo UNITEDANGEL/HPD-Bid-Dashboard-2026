@@ -25,11 +25,14 @@ type StatusHistoryEvent = {
 };
 
 const FIELD_STATUS_ACTIONS = [
-  { label: "Arrived", value: "Arrived" },
-  { label: "Started", value: "Started" },
+  { label: "Arrived", value: "Arrived On Site" },
+  { label: "Started", value: "Work Started" },
   { label: "Progress", value: "Work In Progress" },
   { label: "Complete", value: "Work Completed" },
   { label: "No Access", value: "No Access - 1st Attempt" },
+  { label: "Refused", value: "Refused Access" },
+  { label: "Materials", value: "Needs Materials" },
+  { label: "Follow Up", value: "Follow Up Required" },
 ] as const;
 
 function formatFileSize(value = 0) {
@@ -177,6 +180,8 @@ export function JobMediaPackage({ job }: Props) {
             key={action.value}
             type="button"
             className={status.toLowerCase() === action.value.toLowerCase() ? "is-active" : ""}
+            aria-pressed={status.toLowerCase() === action.value.toLowerCase()}
+            title={action.value}
             disabled={isSavingStatus}
             onClick={() => updateStatus(action.value)}
           >
