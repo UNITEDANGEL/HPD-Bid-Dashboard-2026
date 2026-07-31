@@ -77,11 +77,13 @@ export function JobMediaPackage({ job }: Props) {
     let active = true;
 
     async function fetchStatusPackage() {
+      let response: Response | null = null;
       try {
-        return await fetch(`/api/jobs/status?id=${encodeURIComponent(job.id)}`);
+        response = await fetch(`/api/jobs/status?id=${encodeURIComponent(job.id)}`);
       } catch {
-        return fetch("/api/jobs/status");
+        response = null;
       }
+      return response?.ok ? response : fetch("/api/jobs/status");
     }
 
     async function loadPackage() {
