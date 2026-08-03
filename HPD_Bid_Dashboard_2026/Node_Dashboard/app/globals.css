@@ -2897,8 +2897,8 @@ tbody tr:hover {
   }
 
   .mobile-job-sheet.is-job-command {
-    max-height: min(292px, calc(100svh - 330px));
-    padding-bottom: 12px;
+    max-height: min(278px, calc(100svh - 342px));
+    padding-bottom: 10px;
   }
 
   .sheet-handle {
@@ -2915,19 +2915,28 @@ tbody tr:hover {
     align-items: start;
   }
 
+  .field-card-grid.has-photo {
+    grid-template-columns: minmax(0, 1fr) 88px;
+    grid-template-areas:
+      "main photo"
+      "details details";
+    align-items: stretch;
+  }
+
   .field-card-main {
+    grid-area: main;
     min-width: 0;
   }
 
   .field-card-main .sheet-topline {
-    gap: 7px;
+    gap: 6px;
     min-width: 0;
   }
 
   .field-card-main .status-badge {
-    min-height: 24px;
-    padding: 0 10px;
-    font-size: 0.66rem;
+    min-height: 22px;
+    padding: 0 8px;
+    font-size: 0.6rem;
   }
 
   .field-card-main .sheet-omo {
@@ -2941,10 +2950,10 @@ tbody tr:hover {
   }
 
   .field-card-main h2 {
-    margin: 7px 0 5px;
+    margin: 5px 0 4px;
     overflow: hidden;
     color: #ffffff;
-    font-size: clamp(1.24rem, 5.4vw, 1.52rem);
+    font-size: 1.22rem;
     line-height: 1;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -2955,28 +2964,28 @@ tbody tr:hover {
     display: -webkit-box;
     overflow: hidden;
     color: #dce8f8;
-    font-size: 0.82rem;
-    line-height: 1.28;
+    font-size: 0.76rem;
+    line-height: 1.22;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
+    -webkit-line-clamp: 1;
   }
 
   .field-card-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
+    gap: 4px;
     align-items: center;
-    margin-top: 6px;
+    margin-top: 5px;
   }
 
   .field-card-tags strong,
   .field-card-tags span {
-    min-height: 21px;
-    padding: 4px 8px;
+    min-height: 19px;
+    padding: 3px 7px;
     border: 1px solid rgba(47, 156, 255, 0.22);
     border-radius: 999px;
     background: rgba(47, 156, 255, 0.1);
-    font-size: 0.66rem;
+    font-size: 0.6rem;
     font-weight: 900;
     line-height: 1;
   }
@@ -2991,10 +3000,11 @@ tbody tr:hover {
   }
 
   .field-card-details {
+    grid-area: details;
     grid-column: 1 / -1;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
+    gap: 5px;
     min-width: 0;
   }
 
@@ -3004,10 +3014,10 @@ tbody tr:hover {
     column-gap: 6px;
     align-items: center;
     min-width: 0;
-    min-height: 44px;
-    padding: 7px 8px;
+    min-height: 36px;
+    padding: 5px 7px;
     border: 1px solid rgba(151, 177, 212, 0.16);
-    border-radius: 12px;
+    border-radius: 11px;
     background: rgba(7, 20, 37, 0.58);
   }
 
@@ -3022,7 +3032,7 @@ tbody tr:hover {
   .field-card-details span:not(.field-detail-icon) {
     overflow: hidden;
     color: #b7c7dc;
-    font-size: 0.64rem;
+    font-size: 0.58rem;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -3030,7 +3040,7 @@ tbody tr:hover {
   .field-card-details strong {
     overflow: hidden;
     color: #ffffff;
-    font-size: 0.7rem;
+    font-size: 0.66rem;
     font-weight: 800;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -3038,12 +3048,12 @@ tbody tr:hover {
 
   .field-photo-card {
     position: relative;
-    grid-column: 1 / -1;
-    min-height: 64px;
-    max-height: 78px;
+    grid-area: photo;
+    min-height: 82px;
+    max-height: 92px;
     overflow: hidden;
     border: 1px solid rgba(151, 177, 212, 0.3);
-    border-radius: 18px;
+    border-radius: 16px;
     background: #0b1d32;
   }
 
@@ -3080,14 +3090,14 @@ tbody tr:hover {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    min-height: 28px;
-    padding: 0 8px 0 6px;
+    min-height: 26px;
+    padding: 0 7px 0 5px;
     border: 1px solid rgba(151, 177, 212, 0.24);
     border-radius: 999px;
     background: rgba(7, 18, 32, 0.7);
     color: #dce8f8;
     cursor: pointer;
-    font-size: 0.7rem;
+    font-size: 0.64rem;
     font-weight: 900;
   }
 
@@ -3111,7 +3121,7 @@ tbody tr:hover {
   .job-card-status-actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    gap: 5px;
   }
 
   .job-card-status-actions.is-visit {
@@ -3123,15 +3133,15 @@ tbody tr:hover {
     place-items: center;
     gap: 3px;
     min-width: 0;
-    min-height: 42px;
-    padding: 5px 3px;
+    min-height: 36px;
+    padding: 4px 3px;
     border: 1px solid rgba(151, 177, 212, 0.2);
     border-radius: 12px;
     background:
       linear-gradient(180deg, rgba(16, 39, 66, 0.82), rgba(5, 16, 31, 0.9));
     color: #c8d8ef;
     cursor: pointer;
-    font-size: 0.58rem;
+    font-size: 0.53rem;
     font-weight: 900;
     line-height: 1.05;
     text-align: center;
@@ -3141,7 +3151,7 @@ tbody tr:hover {
     overflow: hidden;
     max-width: 100%;
     color: inherit;
-    font-size: 0.58rem;
+    font-size: 0.53rem;
     line-height: 1.05;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -3149,7 +3159,7 @@ tbody tr:hover {
 
   .job-card-status-actions button span {
     color: #8fa5c0;
-    font-size: 0.52rem;
+    font-size: 0.49rem;
     font-weight: 800;
     line-height: 1;
   }
@@ -3178,10 +3188,10 @@ tbody tr:hover {
 
   .job-card-flow {
     display: grid;
-    gap: 7px;
-    padding: 8px;
+    gap: 5px;
+    padding: 7px;
     border: 1px solid rgba(47, 156, 255, 0.2);
-    border-radius: 14px;
+    border-radius: 12px;
     background: rgba(5, 16, 31, 0.48);
   }
 
@@ -3189,7 +3199,7 @@ tbody tr:hover {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 6px;
   }
 
   .job-card-flow-head div {
@@ -3200,36 +3210,36 @@ tbody tr:hover {
 
   .job-card-flow-head strong {
     color: #ffffff;
-    font-size: 0.7rem;
+    font-size: 0.66rem;
   }
 
   .job-card-flow-head span,
   .job-card-flow-label {
     color: #9fb0c7;
-    font-size: 0.55rem;
+    font-size: 0.52rem;
     font-weight: 800;
   }
 
   .job-card-flow-head .clear-status-button {
-    min-height: 26px;
-    padding: 0 9px;
+    min-height: 24px;
+    padding: 0 8px;
     border: 1px solid rgba(255, 115, 115, 0.32);
     border-radius: 999px;
     background: rgba(35, 13, 22, 0.76);
     color: #ffd1d1;
-    font-size: 0.58rem;
+    font-size: 0.54rem;
     font-weight: 900;
   }
 
   .job-card-flow-progress {
-    gap: 5px;
+    gap: 4px;
   }
 
   .job-card-flow-progress > span {
     grid-template-columns: 10px minmax(0, 1fr);
     column-gap: 5px;
-    min-height: 32px;
-    padding: 5px;
+    min-height: 28px;
+    padding: 4px;
     border-radius: 10px;
   }
 
@@ -3249,7 +3259,7 @@ tbody tr:hover {
 
   .job-card-flow-group {
     display: grid;
-    gap: 4px;
+    gap: 3px;
   }
 
   .job-card-flow-label {
@@ -3259,7 +3269,7 @@ tbody tr:hover {
   .sheet-actions {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
+    gap: 5px;
   }
 
   .sheet-actions button,
@@ -3269,19 +3279,19 @@ tbody tr:hover {
     grid-template-columns: 1fr;
     place-items: center;
     gap: 5px;
-    min-height: 46px;
-    padding: 7px 5px;
-    border-radius: 14px;
-    font-size: 0.72rem;
+    min-height: 38px;
+    padding: 6px 4px;
+    border-radius: 12px;
+    font-size: 0.64rem;
     text-align: center;
   }
 
   .sheet-actions span {
     display: grid;
     place-items: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 10px;
+    width: 22px;
+    height: 22px;
+    border-radius: 8px;
     background: rgba(47, 156, 255, 0.14);
   }
 
@@ -3334,27 +3344,27 @@ tbody tr:hover {
     display: grid;
     grid-template-columns: 40px 1fr 40px;
     align-items: center;
-    min-height: 34px;
-    margin-top: 6px;
+    min-height: 28px;
+    margin-top: 4px;
     overflow: hidden;
     border: 1px solid rgba(151, 177, 212, 0.12);
-    border-radius: 12px;
+    border-radius: 10px;
     background: linear-gradient(180deg, rgba(8, 22, 39, 0.56), rgba(5, 15, 28, 0.68));
   }
 
   .sheet-pager button {
-    height: 34px;
+    height: 28px;
     border: 0;
     background: transparent;
     color: #ffffff;
     cursor: pointer;
-    font-size: 1.35rem;
+    font-size: 1.18rem;
     line-height: 1;
   }
 
   .sheet-pager span {
     color: #bcd0e8;
-    font-size: 0.72rem;
+    font-size: 0.66rem;
     font-weight: 900;
     text-align: center;
   }
@@ -3695,13 +3705,17 @@ tbody tr:hover {
   }
 
   .mobile-job-sheet.is-job-command {
-    max-height: min(300px, calc(100svh - 268px));
+    max-height: min(276px, calc(100svh - 286px));
     padding: 7px 10px 9px;
     border-radius: 20px;
   }
 
   .field-card-grid {
-    gap: 6px;
+    gap: 5px;
+  }
+
+  .field-card-grid.has-photo {
+    grid-template-columns: minmax(0, 1fr) 82px;
   }
 
   .field-card-main h2 {
@@ -3715,11 +3729,11 @@ tbody tr:hover {
   }
 
   .field-card-details {
-    gap: 5px;
+    gap: 4px;
   }
 
   .field-card-details div {
-    min-height: 38px;
+    min-height: 34px;
     padding: 5px 7px;
   }
 
@@ -3728,7 +3742,7 @@ tbody tr:hover {
   }
 
   .job-card-status-actions button {
-    min-height: 38px;
+    min-height: 34px;
     border-radius: 11px;
     font-size: 0.52rem;
   }
@@ -3740,7 +3754,7 @@ tbody tr:hover {
   .sheet-actions button,
   .sheet-actions a,
   .sheet-actions label {
-    min-height: 40px;
+    min-height: 36px;
     padding: 6px 4px;
     border-radius: 12px;
     font-size: 0.64rem;
@@ -3752,12 +3766,12 @@ tbody tr:hover {
   }
 
   .sheet-pager {
-    min-height: 30px;
+    min-height: 28px;
     margin-top: 5px;
   }
 
   .sheet-pager button {
-    height: 30px;
+    height: 28px;
   }
 
   .mobile-tabbar {
@@ -3953,14 +3967,18 @@ tbody tr:hover {
   .mobile-job-sheet.is-summary,
   .mobile-job-sheet.is-empty {
     bottom: 58px;
-    max-height: min(250px, calc(100svh - 218px));
+    max-height: min(242px, calc(100svh - 232px));
     padding: 7px 10px 8px;
     border-radius: 18px;
   }
 
   .field-card-grid {
     grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
+    gap: 5px;
+  }
+
+  .field-card-grid.has-photo {
+    grid-template-columns: minmax(0, 1fr) 76px;
   }
 
   .field-card-main h2 {
@@ -3974,11 +3992,11 @@ tbody tr:hover {
 
   .field-card-details {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
+    gap: 4px;
   }
 
   .field-card-details div {
-    min-height: 38px;
+    min-height: 34px;
     padding: 5px 6px;
   }
 
@@ -3991,7 +4009,7 @@ tbody tr:hover {
   }
 
   .job-card-status-actions button {
-    min-height: 36px;
+    min-height: 33px;
     padding: 3px 2px;
     font-size: 0.49rem;
   }
@@ -4003,7 +4021,7 @@ tbody tr:hover {
   .sheet-actions button,
   .sheet-actions a,
   .sheet-actions label {
-    min-height: 40px;
+    min-height: 36px;
     padding: 6px;
     gap: 5px;
     border-radius: 12px;
@@ -4017,12 +4035,12 @@ tbody tr:hover {
   }
 
   .sheet-pager {
-    min-height: 30px;
+    min-height: 28px;
     margin-top: 5px;
   }
 
   .sheet-pager button {
-    height: 30px;
+    height: 28px;
   }
 
   .mobile-tabbar {

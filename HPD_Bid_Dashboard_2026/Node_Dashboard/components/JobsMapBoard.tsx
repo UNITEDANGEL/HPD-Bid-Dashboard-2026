@@ -417,7 +417,6 @@ export function JobsMapBoard({ jobs }: Props) {
   const selectedTenantName = selected ? realFieldValue(selected.tenantName) : "";
   const selectedLocation = selected ? realFieldValue(selected.location) : "";
   const selectedDetailItems = [
-    selectedStatus ? { label: "Status", value: selectedStatus, icon: "status-mini-icon" } : null,
     selectedStartDate ? { label: "Start Date", value: selectedStartDate, icon: "calendar-icon" } : null,
     selectedCompletionDate ? { label: "Completion", value: selectedCompletionDate, icon: "calendar-icon" } : null,
     selectedAmount ? { label: "COA Amount", value: selectedAmount, icon: "money-mini-icon" } : null,
@@ -1288,7 +1287,7 @@ export function JobsMapBoard({ jobs }: Props) {
             }}
           >
             <div className="sheet-handle" />
-            <div className="field-card-grid">
+            <div className={selectedPhotoUrl ? "field-card-grid has-photo" : "field-card-grid"}>
               <div className="field-card-main">
                 <div className="sheet-topline">
                   <StatusBadge status={displayStatus(selected)} />
