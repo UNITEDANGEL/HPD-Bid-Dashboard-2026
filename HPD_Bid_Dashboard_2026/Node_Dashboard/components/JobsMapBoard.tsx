@@ -348,6 +348,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [toast, setToast] = useState("");
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [statusMediaPrompt, setStatusMediaPrompt] = useState<{ jobId: string; label: string } | null>(null);
   const [photoUrlsByJob, setPhotoUrlsByJob] = useState<Record<string, string[]>>({});
   const [jobStatusOverrides, setJobStatusOverrides] = useState<Record<string, string>>({});
   const [fieldFlowEventsByJob, setFieldFlowEventsByJob] = useState<Record<string, Record<string, FieldFlowEvent>>>({});
@@ -355,6 +356,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const mobileBoroughRowRef = useRef<HTMLDivElement>(null);
   const jobSheetTouchStartY = useRef<number | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const effectiveJobs = useMemo(
     () => jobs.map((job) => {
@@ -589,6 +591,10 @@ export function JobsMapBoard({ jobs }: Props) {
     return () => window.removeEventListener("keydown", handleEscape);
   }, [selectedId]);
 
+  useEffect(() => {
+    setStatusMediaPrompt(null);
+  }, [selected?.id]);
+
   function notify(message: string) {
     setToast(message);
     window.setTimeout(() => setToast(""), 2600);
@@ -691,6 +697,7 @@ export function JobsMapBoard({ jobs }: Props) {
       writeLocalFlowMap(next);
       return next;
     });
+    setStatusMediaPrompt(action?.phase === "outcome" ? { jobId, label: action.label } : null);
 
     if (!statusMatches({ ...selected, status: nextStatus, statusOverride: nextStatus, workflowStatus: nextStatus }, statusView)) {
       setStatusView("All");
@@ -736,6 +743,7 @@ export function JobsMapBoard({ jobs }: Props) {
       writeLocalFlowMap(next);
       return next;
     });
+    setStatusMediaPrompt(null);
 
     if (!statusMatches({ ...selected, status: sourceStatus, statusOverride: "", workflowStatus: "" }, statusView)) {
       setStatusView("All");
@@ -825,6 +833,7 @@ export function JobsMapBoard({ jobs }: Props) {
     const input = event.currentTarget;
     const files = Array.from(event.currentTarget.files || []);
     if (!selected || !files.length) return;
+    setStatusMediaPrompt(null);
 
     const formData = new FormData();
     formData.append("id", selected.id);
@@ -1373,6 +1382,32 @@ export function JobsMapBoard({ jobs }: Props) {
               </div>
             </div>
 
+            {statusMediaPrompt && selected.id === statusMediaPrompt.jobId ? (
+              <div className="status-media-prompt" aria-label={`Add media for ${statusMediaPrompt.label}`}>
+                <div>
+                  <strong>Add media?</strong>
+                  <span>{statusMediaPrompt.label} saved. Take photo/video now?</span>
+                </div>
+                <div className="status-media-prompt-actions">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const input = photoInputRef.current;
+                      if (!input) {
+                        notify("Media picker is not ready.");
+                        return;
+                      }
+                      input.click();
+                      setStatusMediaPrompt(null);
+                    }}
+                  >
+                    Yes
+                  </button>
+                  <button type="button" onClick={() => setStatusMediaPrompt(null)}>No</button>
+                </div>
+              </div>
+            ) : null}
+
             <div className="sheet-actions">
               {selectedMapsHref ? (
                 <a href={selectedMapsHref} target="_blank" rel="noreferrer"><span className="action-nav" />Navigate</a>
@@ -1387,9 +1422,10 @@ export function JobsMapBoard({ jobs }: Props) {
               <label className={uploadingPhotos ? "is-disabled" : ""}>
                 <span className="action-camera" />{uploadingPhotos ? "Saving" : "Photos"}
                 <input
+                  ref={photoInputRef}
                   className="sr-only-file"
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*"
                   multiple
                   disabled={uploadingPhotos}
                   onChange={handlePhotoChange}

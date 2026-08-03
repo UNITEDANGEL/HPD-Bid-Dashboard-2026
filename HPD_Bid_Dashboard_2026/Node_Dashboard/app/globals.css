@@ -3295,6 +3295,69 @@ tbody tr:hover {
     text-transform: uppercase;
   }
 
+  .status-media-prompt {
+    position: absolute;
+    right: 10px;
+    bottom: 46px;
+    left: 10px;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid rgba(85, 242, 160, 0.45);
+    border-radius: 14px;
+    background:
+      radial-gradient(circle at 18% 0%, rgba(85, 242, 160, 0.2), transparent 48%),
+      rgba(4, 18, 25, 0.94);
+    box-shadow: 0 0 22px rgba(85, 242, 160, 0.24), 0 12px 28px rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(12px);
+  }
+
+  .status-media-prompt > div:first-child {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .status-media-prompt strong {
+    color: #ffffff;
+    font-size: 0.68rem;
+  }
+
+  .status-media-prompt span {
+    overflow: hidden;
+    color: #aaf7c9;
+    font-size: 0.58rem;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .status-media-prompt-actions {
+    display: flex;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+
+  .status-media-prompt-actions button {
+    min-height: 30px;
+    padding: 0 10px;
+    border: 1px solid rgba(85, 242, 160, 0.55);
+    border-radius: 999px;
+    background: rgba(45, 212, 125, 0.18);
+    color: #ffffff;
+    font-size: 0.62rem;
+    font-weight: 950;
+  }
+
+  .status-media-prompt-actions button:last-child {
+    border-color: rgba(151, 177, 212, 0.28);
+    background: rgba(8, 20, 36, 0.86);
+    color: #dce8f8;
+  }
+
   .sheet-actions {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
