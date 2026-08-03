@@ -2897,7 +2897,7 @@ tbody tr:hover {
   }
 
   .mobile-job-sheet.is-job-command {
-    max-height: min(356px, calc(100svh - 252px));
+    max-height: min(392px, calc(100svh - 212px));
     padding-bottom: 10px;
   }
 
@@ -3179,11 +3179,39 @@ tbody tr:hover {
   }
 
   .job-card-status-actions button.is-stamped {
-    border-color: rgba(45, 212, 125, 0.42);
+    border-color: rgba(85, 242, 160, 0.88);
+    color: #f7fff9;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(85, 242, 160, 0.28), transparent 62%),
+      linear-gradient(180deg, rgba(20, 92, 57, 0.82), rgba(5, 26, 20, 0.95));
+    box-shadow:
+      0 0 0 1px rgba(85, 242, 160, 0.18),
+      0 0 18px rgba(85, 242, 160, 0.32),
+      inset 0 0 16px rgba(85, 242, 160, 0.08);
+  }
+
+  .job-card-status-actions button.is-active.is-stamped {
+    border-color: rgba(119, 255, 184, 0.98);
+    box-shadow:
+      0 0 0 1px rgba(119, 255, 184, 0.24),
+      0 0 24px rgba(85, 242, 160, 0.58),
+      inset 0 0 18px rgba(85, 242, 160, 0.12);
+  }
+
+  .job-card-status-actions button.is-stamped strong {
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(85, 242, 160, 0.6);
   }
 
   .job-card-status-actions button.is-stamped span {
-    color: #55f2a0;
+    display: inline-grid;
+    place-items: center;
+    min-height: 12px;
+    padding: 1px 4px;
+    border-radius: 999px;
+    background: rgba(85, 242, 160, 0.14);
+    color: #9dffc7;
+    box-shadow: inset 0 0 0 1px rgba(85, 242, 160, 0.18);
   }
 
   .job-card-flow {
@@ -3706,7 +3734,7 @@ tbody tr:hover {
   }
 
   .mobile-job-sheet.is-job-command {
-    max-height: min(356px, calc(100svh - 238px));
+    max-height: min(392px, calc(100svh - 212px));
     padding: 7px 10px 9px;
     border-radius: 20px;
   }
@@ -3969,7 +3997,7 @@ tbody tr:hover {
   .mobile-job-sheet.is-summary,
   .mobile-job-sheet.is-empty {
     bottom: 58px;
-    max-height: min(348px, calc(100svh - 226px));
+    max-height: min(386px, calc(100svh - 210px));
     padding: 7px 10px 8px;
     border-radius: 18px;
   }
