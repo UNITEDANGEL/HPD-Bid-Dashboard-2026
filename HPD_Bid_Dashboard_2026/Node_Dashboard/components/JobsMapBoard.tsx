@@ -422,7 +422,7 @@ export function JobsMapBoard({ jobs }: Props) {
     selectedAmount ? { label: "COA Amount", value: selectedAmount, icon: "money-mini-icon" } : null,
     selectedTenantName ? { label: "Tenant", value: selectedTenantName, icon: "tenant-icon" } : null,
     selectedLocation ? { label: "Location", value: selectedLocation, icon: "tenant-icon" } : null,
-  ].filter((item): item is { label: string; value: string; icon: string } => Boolean(item)).slice(0, 4);
+  ].filter((item): item is { label: string; value: string; icon: string } => Boolean(item)).slice(0, 3);
   const exportDataHref = `data:text/csv;charset=utf-8,${encodeURIComponent(jobsToCsv(filtered))}`;
   const exportFileName = `hpd-bids-${new Date().toISOString().slice(0, 10)}.csv`;
   const mapFocusKey = `${borough || "All"}|${statusView}|${query}|${mapFitNonce}|${userLocation ? userLocation.join(",") : ""}`;

@@ -2897,7 +2897,7 @@ tbody tr:hover {
   }
 
   .mobile-job-sheet.is-job-command {
-    max-height: min(278px, calc(100svh - 342px));
+    max-height: min(356px, calc(100svh - 252px));
     padding-bottom: 10px;
   }
 
@@ -3003,7 +3003,7 @@ tbody tr:hover {
     grid-area: details;
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 5px;
     min-width: 0;
   }
@@ -3120,8 +3120,8 @@ tbody tr:hover {
 
   .job-card-status-actions {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 5px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
   }
 
   .job-card-status-actions.is-visit {
@@ -3133,15 +3133,15 @@ tbody tr:hover {
     place-items: center;
     gap: 3px;
     min-width: 0;
-    min-height: 36px;
-    padding: 4px 3px;
+    min-height: 30px;
+    padding: 3px 2px;
     border: 1px solid rgba(151, 177, 212, 0.2);
     border-radius: 12px;
     background:
       linear-gradient(180deg, rgba(16, 39, 66, 0.82), rgba(5, 16, 31, 0.9));
     color: #c8d8ef;
     cursor: pointer;
-    font-size: 0.53rem;
+    font-size: 0.46rem;
     font-weight: 900;
     line-height: 1.05;
     text-align: center;
@@ -3151,7 +3151,7 @@ tbody tr:hover {
     overflow: hidden;
     max-width: 100%;
     color: inherit;
-    font-size: 0.53rem;
+    font-size: 0.46rem;
     line-height: 1.05;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -3159,7 +3159,7 @@ tbody tr:hover {
 
   .job-card-status-actions button span {
     color: #8fa5c0;
-    font-size: 0.49rem;
+    font-size: 0.43rem;
     font-weight: 800;
     line-height: 1;
   }
@@ -3188,8 +3188,8 @@ tbody tr:hover {
 
   .job-card-flow {
     display: grid;
-    gap: 5px;
-    padding: 7px;
+    gap: 4px;
+    padding: 6px;
     border: 1px solid rgba(47, 156, 255, 0.2);
     border-radius: 12px;
     background: rgba(5, 16, 31, 0.48);
@@ -3238,8 +3238,8 @@ tbody tr:hover {
   .job-card-flow-progress > span {
     grid-template-columns: 10px minmax(0, 1fr);
     column-gap: 5px;
-    min-height: 28px;
-    padding: 4px;
+    min-height: 26px;
+    padding: 3px 4px;
     border-radius: 10px;
   }
 
@@ -3263,6 +3263,7 @@ tbody tr:hover {
   }
 
   .job-card-flow-label {
+    display: none;
     text-transform: uppercase;
   }
 
@@ -3279,8 +3280,8 @@ tbody tr:hover {
     grid-template-columns: 1fr;
     place-items: center;
     gap: 5px;
-    min-height: 38px;
-    padding: 6px 4px;
+    min-height: 34px;
+    padding: 5px 4px;
     border-radius: 12px;
     font-size: 0.64rem;
     text-align: center;
@@ -3344,7 +3345,7 @@ tbody tr:hover {
     display: grid;
     grid-template-columns: 40px 1fr 40px;
     align-items: center;
-    min-height: 28px;
+    min-height: 26px;
     margin-top: 4px;
     overflow: hidden;
     border: 1px solid rgba(151, 177, 212, 0.12);
@@ -3353,7 +3354,7 @@ tbody tr:hover {
   }
 
   .sheet-pager button {
-    height: 28px;
+    height: 26px;
     border: 0;
     background: transparent;
     color: #ffffff;
@@ -3705,7 +3706,7 @@ tbody tr:hover {
   }
 
   .mobile-job-sheet.is-job-command {
-    max-height: min(276px, calc(100svh - 286px));
+    max-height: min(356px, calc(100svh - 238px));
     padding: 7px 10px 9px;
     border-radius: 20px;
   }
@@ -3729,6 +3730,7 @@ tbody tr:hover {
   }
 
   .field-card-details {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 4px;
   }
 
@@ -3742,9 +3744,9 @@ tbody tr:hover {
   }
 
   .job-card-status-actions button {
-    min-height: 34px;
+    min-height: 30px;
     border-radius: 11px;
-    font-size: 0.52rem;
+    font-size: 0.46rem;
   }
 
   .sheet-actions {
@@ -3967,7 +3969,7 @@ tbody tr:hover {
   .mobile-job-sheet.is-summary,
   .mobile-job-sheet.is-empty {
     bottom: 58px;
-    max-height: min(242px, calc(100svh - 232px));
+    max-height: min(348px, calc(100svh - 226px));
     padding: 7px 10px 8px;
     border-radius: 18px;
   }
@@ -3991,7 +3993,7 @@ tbody tr:hover {
   }
 
   .field-card-details {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 4px;
   }
 
@@ -4001,7 +4003,7 @@ tbody tr:hover {
   }
 
   .field-card-details strong {
-    font-size: 0.66rem;
+    font-size: 0.6rem;
   }
 
   .job-card-status-actions {
@@ -4009,9 +4011,9 @@ tbody tr:hover {
   }
 
   .job-card-status-actions button {
-    min-height: 33px;
+    min-height: 28px;
     padding: 3px 2px;
-    font-size: 0.49rem;
+    font-size: 0.43rem;
   }
 
   .sheet-actions {
@@ -4021,8 +4023,8 @@ tbody tr:hover {
   .sheet-actions button,
   .sheet-actions a,
   .sheet-actions label {
-    min-height: 36px;
-    padding: 6px;
+    min-height: 34px;
+    padding: 5px;
     gap: 5px;
     border-radius: 12px;
     font-size: 0.64rem;
@@ -4035,12 +4037,12 @@ tbody tr:hover {
   }
 
   .sheet-pager {
-    min-height: 28px;
+    min-height: 26px;
     margin-top: 5px;
   }
 
   .sheet-pager button {
-    height: 28px;
+    height: 26px;
   }
 
   .mobile-tabbar {
@@ -4095,16 +4097,20 @@ tbody tr:hover {
   }
 
   .field-card-grid {
-    grid-template-columns: minmax(0, 1fr) 96px;
-    gap: 8px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  .field-card-grid.has-photo {
+    grid-template-columns: minmax(0, 1fr) 76px;
   }
 
   .field-card-details strong {
-    font-size: 0.72rem;
+    font-size: 0.6rem;
   }
 
   .sheet-actions {
-    gap: 7px;
+    gap: 5px;
   }
 }
 
