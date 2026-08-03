@@ -61,6 +61,7 @@ function renderShell(content, title = "HPD Bid Dashboard 2026") {
 .detail-page .flow-actions button span,.detail-page .job-status-actions button span{font-size:.74rem!important;line-height:1.1!important}
 .detail-page .package-media-prompt{gap:10px!important;padding:14px!important;border-radius:16px!important}
 .detail-page .package-media-prompt[style*="flex"]{display:grid!important}
+.detail-page .package-media-prompt:empty{display:none!important;margin-top:0!important;padding:0!important;border:0!important;box-shadow:none!important}
 .detail-page .package-media-prompt-actions{display:grid!important;grid-template-columns:1fr 96px!important;gap:8px!important}
 .detail-page .package-media-prompt-actions button{min-height:44px!important;font-size:.82rem!important}
 .detail-page .local-state{display:grid!important;gap:4px!important;margin-top:12px!important;font-size:.92rem!important}
