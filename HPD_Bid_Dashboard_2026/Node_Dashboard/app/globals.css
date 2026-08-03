@@ -2573,11 +2573,11 @@ tbody tr:hover {
   .mobile-borough-tabs {
     position: relative;
     z-index: 620;
-    display: flex;
-    gap: 7px;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+    overflow: visible;
     padding: 0 10px 6px;
-    scrollbar-width: none;
   }
 
   .mobile-borough-tabs::-webkit-scrollbar {
@@ -2587,12 +2587,11 @@ tbody tr:hover {
   .mobile-borough-pill {
     display: grid;
     place-items: center;
-    min-width: 82px;
-    min-height: 46px;
-    flex: 0 0 auto;
-    padding: 6px 10px;
+    min-width: 0;
+    min-height: 42px;
+    padding: 5px 2px;
     border: 1px solid rgba(47, 156, 255, 0.34);
-    border-radius: 18px;
+    border-radius: 14px;
     background: rgba(10, 27, 49, 0.86);
     color: #ffffff;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
@@ -2600,16 +2599,20 @@ tbody tr:hover {
   }
 
   .mobile-borough-pill strong {
+    overflow: hidden;
+    max-width: 100%;
     color: var(--borough-color);
-    font-size: 0.76rem;
+    font-size: 0.58rem;
     line-height: 1.1;
+    text-overflow: ellipsis;
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
   .mobile-borough-pill span {
-    margin-top: 3px;
+    margin-top: 2px;
     color: #c5d5ec;
-    font-size: 0.7rem;
+    font-size: 0.62rem;
     font-weight: 800;
   }
 
@@ -3253,6 +3256,92 @@ tbody tr:hover {
     text-transform: uppercase;
   }
 
+  .job-card-note {
+    display: grid;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid rgba(151, 177, 212, 0.18);
+    border-radius: 14px;
+    background: rgba(5, 16, 31, 0.42);
+  }
+
+  .job-card-note-head,
+  .job-card-note-row,
+  .job-card-note-latest {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .job-card-note-head {
+    justify-content: space-between;
+  }
+
+  .job-card-note-head strong {
+    color: #ffffff;
+    font-size: 0.68rem;
+  }
+
+  .job-card-note-head span,
+  .job-card-note-latest button {
+    color: #9fb0c7;
+    font-size: 0.55rem;
+    font-weight: 850;
+  }
+
+  .job-card-note-row input {
+    min-width: 0;
+    width: 100%;
+    height: 34px;
+    padding: 0 9px;
+    border: 1px solid rgba(47, 156, 255, 0.24);
+    border-radius: 11px;
+    background: rgba(6, 18, 34, 0.72);
+    color: #edf6ff;
+    outline: 0;
+    font-size: 0.7rem;
+  }
+
+  .job-card-note-row input:focus {
+    border-color: rgba(47, 156, 255, 0.78);
+    box-shadow: 0 0 0 3px rgba(47, 156, 255, 0.12);
+  }
+
+  .job-card-note-row button {
+    flex: 0 0 auto;
+    height: 34px;
+    padding: 0 11px;
+    border: 1px solid rgba(47, 156, 255, 0.52);
+    border-radius: 11px;
+    background: rgba(15, 111, 255, 0.24);
+    color: #ffffff;
+    font-size: 0.66rem;
+    font-weight: 900;
+  }
+
+  .job-card-note-latest {
+    justify-content: space-between;
+    padding-top: 1px;
+  }
+
+  .job-card-note-latest p {
+    overflow: hidden;
+    margin: 0;
+    color: #dce8f8;
+    font-size: 0.64rem;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .job-card-note-latest button {
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    color: #ffd1d1;
+  }
+
   .sheet-actions {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -3574,24 +3663,24 @@ tbody tr:hover {
   }
 
   .mobile-borough-tabs {
-    gap: 6px;
+    gap: 4px;
     padding: 0 10px 5px;
   }
 
   .mobile-borough-pill {
-    min-width: 74px;
-    min-height: 38px;
-    padding: 5px 8px;
-    border-radius: 14px;
+    min-width: 0;
+    min-height: 36px;
+    padding: 4px 2px;
+    border-radius: 12px;
   }
 
   .mobile-borough-pill strong {
-    font-size: 0.64rem;
+    font-size: 0.52rem;
   }
 
   .mobile-borough-pill span {
-    margin-top: 2px;
-    font-size: 0.62rem;
+    margin-top: 1px;
+    font-size: 0.58rem;
   }
 
   .mobile-status-tabs {
@@ -3865,24 +3954,24 @@ tbody tr:hover {
   }
 
   .mobile-borough-tabs {
-    gap: 6px;
-    padding: 0 10px 6px;
+    gap: 4px;
+    padding: 0 10px 5px;
   }
 
   .mobile-borough-pill {
-    min-width: 72px;
+    min-width: 0;
     min-height: 36px;
-    padding: 5px 7px;
-    border-radius: 15px;
+    padding: 4px 2px;
+    border-radius: 12px;
   }
 
   .mobile-borough-pill strong {
-    font-size: 0.64rem;
+    font-size: 0.52rem;
   }
 
   .mobile-borough-pill span {
-    margin-top: 2px;
-    font-size: 0.62rem;
+    margin-top: 1px;
+    font-size: 0.58rem;
   }
 
   .mobile-search {
@@ -4070,7 +4159,7 @@ tbody tr:hover {
   }
 
   .mobile-borough-pill {
-    min-width: 72px;
+    min-width: 0;
   }
 
   .field-card-grid {

@@ -28,8 +28,16 @@ type FieldFlowEvent = {
   createdAt: string;
 };
 
+type FieldNote = {
+  id: string;
+  text: string;
+  status: string;
+  createdAt: string;
+};
+
 const STATUS_OVERRIDE_STORAGE_KEY = "hpd-job-status-overrides-v1";
 const FIELD_FLOW_STORAGE_KEY = "hpd-job-field-flow-events-v1";
+const FIELD_NOTE_STORAGE_KEY = "hpd-job-field-notes-v1";
 const CHART_PERIODS: ChartPeriod[] = ["Last 12 Months", "2026 YTD", "Last 90 Days"];
 const NYC_BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
 const FIELD_STATUS_ACTIONS = [
@@ -274,6 +282,23 @@ function writeLocalFlowMap(events: Record<string, Record<string, FieldFlowEvent>
   }
 }
 
+function readLocalNoteMap() {
+  try {
+    const stored = window.localStorage.getItem(FIELD_NOTE_STORAGE_KEY);
+    return stored ? JSON.parse(stored) as Record<string, FieldNote[]> : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalNoteMap(notes: Record<string, FieldNote[]>) {
+  try {
+    window.localStorage.setItem(FIELD_NOTE_STORAGE_KEY, JSON.stringify(notes));
+  } catch {
+    // Notes still stay visible for this session if browser storage is unavailable.
+  }
+}
+
 function actionForStatus(status: string) {
   return FIELD_STATUS_ACTIONS.find((action) => action.value.toLowerCase() === String(status || "").toLowerCase());
 }
@@ -351,6 +376,8 @@ export function JobsMapBoard({ jobs }: Props) {
   const [photoUrlsByJob, setPhotoUrlsByJob] = useState<Record<string, string[]>>({});
   const [jobStatusOverrides, setJobStatusOverrides] = useState<Record<string, string>>({});
   const [fieldFlowEventsByJob, setFieldFlowEventsByJob] = useState<Record<string, Record<string, FieldFlowEvent>>>({});
+  const [fieldNotesByJob, setFieldNotesByJob] = useState<Record<string, FieldNote[]>>({});
+  const [selectedNoteDraft, setSelectedNoteDraft] = useState("");
   const [mapFitNonce, setMapFitNonce] = useState(0);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const mobileBoroughRowRef = useRef<HTMLDivElement>(null);
@@ -408,6 +435,8 @@ export function JobsMapBoard({ jobs }: Props) {
   const selectedPhotoUrl = selectedPhotoUrls[0] || "";
   const selectedStatus = selected ? displayStatus(selected) : "";
   const selectedFlowEvents = selected ? fieldFlowEventsByJob[selected.id] || {} : {};
+  const selectedNotes = selected ? fieldNotesByJob[selected.id] || [] : [];
+  const latestSelectedNote = selectedNotes[0] || null;
   const selectedAddress = selected ? realFieldValue(selected.address) : "";
   const selectedBorough = selected ? realFieldValue(selected.borough) : "";
   const selectedTrade = selected ? realFieldValue(selected.trade) : "";
@@ -467,6 +496,7 @@ export function JobsMapBoard({ jobs }: Props) {
       const stored = window.localStorage.getItem(STATUS_OVERRIDE_STORAGE_KEY);
       if (!stored) {
         setFieldFlowEventsByJob(readLocalFlowMap());
+        setFieldNotesByJob(readLocalNoteMap());
         return;
       }
 
@@ -478,11 +508,17 @@ export function JobsMapBoard({ jobs }: Props) {
       );
       setJobStatusOverrides(cleaned);
       setFieldFlowEventsByJob(readLocalFlowMap());
+      setFieldNotesByJob(readLocalNoteMap());
     } catch {
       setJobStatusOverrides({});
       setFieldFlowEventsByJob({});
+      setFieldNotesByJob({});
     }
   }, []);
+
+  useEffect(() => {
+    setSelectedNoteDraft("");
+  }, [selected?.id]);
 
   useEffect(() => {
     let active = true;
@@ -753,6 +789,47 @@ export function JobsMapBoard({ jobs }: Props) {
     } catch (error) {
       notify(error instanceof Error ? `Local clear done. Shared clear: ${error.message}` : `${jobId} local status cleared.`);
     }
+  }
+
+  function saveSelectedNote() {
+    if (!selected) return;
+    const text = selectedNoteDraft.trim();
+    if (!text) {
+      notify("Write a note before saving.");
+      return;
+    }
+
+    const jobId = selected.id;
+    const nextNote: FieldNote = {
+      id: `${jobId}-${Date.now()}`,
+      text,
+      status: selectedStatus,
+      createdAt: new Date().toISOString(),
+    };
+
+    setFieldNotesByJob((current) => {
+      const next = {
+        ...current,
+        [jobId]: [nextNote, ...(current[jobId] || [])].slice(0, 50),
+      };
+      writeLocalNoteMap(next);
+      return next;
+    });
+    setSelectedNoteDraft("");
+    notify(`Note saved for ${jobId}.`);
+  }
+
+  function clearSelectedNotes() {
+    if (!selected) return;
+    const jobId = selected.id;
+    setFieldNotesByJob((current) => {
+      const next = { ...current };
+      delete next[jobId];
+      writeLocalNoteMap(next);
+      return next;
+    });
+    setSelectedNoteDraft("");
+    notify(`Notes cleared for ${jobId}.`);
   }
 
   function exportFilteredJobs() {
@@ -1372,6 +1449,34 @@ export function JobsMapBoard({ jobs }: Props) {
                   {OUTCOME_STATUS_ACTIONS.map(renderSelectedFlowButton)}
                 </div>
               </div>
+            </div>
+
+            <div className="job-card-note">
+              <div className="job-card-note-head">
+                <strong>Field Note</strong>
+                {latestSelectedNote ? <span>{formatStampTime(latestSelectedNote.createdAt)}</span> : <span>Local</span>}
+              </div>
+              <div className="job-card-note-row">
+                <input
+                  value={selectedNoteDraft}
+                  placeholder="Access, tenant, materials, follow-up..."
+                  aria-label="Quick field note"
+                  onChange={(event) => setSelectedNoteDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      saveSelectedNote();
+                    }
+                  }}
+                />
+                <button type="button" onClick={saveSelectedNote}>Save</button>
+              </div>
+              {latestSelectedNote ? (
+                <div className="job-card-note-latest">
+                  <p>{latestSelectedNote.text}</p>
+                  <button type="button" onClick={clearSelectedNotes}>Clear</button>
+                </div>
+              ) : null}
             </div>
 
             <div className="sheet-actions">
