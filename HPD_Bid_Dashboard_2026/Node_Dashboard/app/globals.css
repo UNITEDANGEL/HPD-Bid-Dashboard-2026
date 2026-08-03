@@ -1575,6 +1575,66 @@ tbody tr:hover {
   color: #55f2a0;
 }
 
+.package-media-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(85, 242, 160, 0.42);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(85, 242, 160, 0.18), transparent 52%),
+    rgba(5, 26, 20, 0.72);
+  box-shadow: 0 0 22px rgba(85, 242, 160, 0.16);
+}
+
+.package-media-prompt div:first-child {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.package-media-prompt strong {
+  color: #ffffff;
+  font-size: 0.9rem;
+}
+
+.package-media-prompt span {
+  color: #aaf7c9;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.package-media-prompt-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.package-media-prompt-actions button {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid rgba(85, 242, 160, 0.5);
+  border-radius: 999px;
+  background: rgba(45, 212, 125, 0.18);
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 950;
+}
+
+.package-media-prompt-actions button:last-child {
+  border-color: rgba(151, 177, 212, 0.28);
+  background: rgba(8, 20, 36, 0.76);
+  color: #dce8f8;
+}
+
+.package-media-prompt-actions button:disabled {
+  cursor: wait;
+  opacity: 0.66;
+}
+
 .package-status-actions .package-clear-status,
 .package-note-actions .package-clear-status,
 .job-card-status-actions .clear-status-button {
@@ -4252,6 +4312,15 @@ tbody tr:hover {
 
   .package-upload-row {
     display: grid;
+  }
+
+  .package-media-prompt {
+    display: grid;
+  }
+
+  .package-media-prompt-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(92px, auto);
   }
 
   .package-media-grid {

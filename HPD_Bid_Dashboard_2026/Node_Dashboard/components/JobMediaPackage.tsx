@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { StatusBadge } from "./StatusBadge";
 import type { JobRecord } from "../lib/types";
 
@@ -232,7 +232,10 @@ function flowProgressItems(events: Record<string, FieldFlowEvent>) {
 }
 
 function flowEventsFromHistory(history: StatusHistoryEvent[]) {
-  return history.reduce<Record<string, FieldFlowEvent>>((events, item) => {
+  const resetIndex = history.findIndex((item) => item.Status.toLowerCase() === "status cleared");
+  const activeHistory = resetIndex === -1 ? history : history.slice(0, resetIndex);
+
+  return activeHistory.reduce<Record<string, FieldFlowEvent>>((events, item) => {
     const action = actionForStatus(item.Status);
     if (!action || events[action.value]) return events;
     events[action.value] = {
@@ -253,9 +256,12 @@ export function JobMediaPackage({ job }: Props) {
   const [noteDraft, setNoteDraft] = useState("");
   const [notes, setNotes] = useState<FieldNote[]>([]);
   const [flowEvents, setFlowEvents] = useState<Record<string, FieldFlowEvent>>({});
+  const [statusMediaPrompt, setStatusMediaPrompt] = useState<{ status: string; label: string } | null>(null);
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [message, setMessage] = useState("");
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+  const promptMediaInputRef = useRef<HTMLInputElement>(null);
 
   const sourceFiles = useMemo(() => [
     job.coaFile ? { label: "COA", name: job.coaFile } : null,
@@ -283,8 +289,15 @@ export function JobMediaPackage({ job }: Props) {
           if (urlStatus) {
             localStatus = urlStatus;
             setStatus(urlStatus);
-            setHasLocalStatus(true);
-            writeLocalStatus(job.id, urlStatus);
+            const urlAction = actionForStatus(urlStatus);
+            if (urlAction?.phase === "outcome") {
+              setStatusMediaPrompt({ status: urlStatus, label: urlAction.label });
+            }
+            try {
+              window.history.replaceState(null, "", window.location.pathname);
+            } catch {
+              // The status handoff can still work if browser history cannot be updated.
+            }
           }
         } catch {
           // The URL handoff is only a convenience; the page can still load without it.
@@ -354,6 +367,18 @@ export function JobMediaPackage({ job }: Props) {
 
   async function updateStatus(nextStatus: string) {
     const action = actionForStatus(nextStatus);
+    const existingStamp = flowEvents[nextStatus];
+    if (existingStamp) {
+      setStatus(nextStatus);
+      setHasLocalStatus(true);
+      writeLocalStatus(job.id, nextStatus);
+      if (action?.phase === "outcome") {
+        setStatusMediaPrompt({ status: nextStatus, label: action.label });
+      }
+      setMessage(`${action?.label || nextStatus} already saved at ${formatStampTime(existingStamp.createdAt)}. Add media if needed.`);
+      return;
+    }
+
     const stampedEvent: FieldFlowEvent = {
       label: action?.label || nextStatus,
       status: nextStatus,
@@ -368,6 +393,11 @@ export function JobMediaPackage({ job }: Props) {
       writeLocalFlowEvents(job.id, next);
       return next;
     });
+    if (action?.phase === "outcome") {
+      setStatusMediaPrompt({ status: nextStatus, label: action.label });
+    } else {
+      setStatusMediaPrompt(null);
+    }
     setHistory((current) => [
       { RowID: job.id, Status: nextStatus, UpdatedAt: new Date().toISOString() },
       ...current,
@@ -402,8 +432,14 @@ export function JobMediaPackage({ job }: Props) {
     setStatus(originalStatus);
     setHasLocalStatus(false);
     setFlowEvents({});
+    setStatusMediaPrompt(null);
     setIsSavingStatus(true);
     setMessage("Local status cleared.");
+    try {
+      window.history.replaceState(null, "", window.location.pathname);
+    } catch {
+      // Clearing should still work even if browser history cannot be updated.
+    }
 
     try {
       const response = await fetch(`/api/jobs/status?id=${encodeURIComponent(job.id)}`, {
@@ -474,6 +510,7 @@ export function JobMediaPackage({ job }: Props) {
     const input = event.currentTarget;
     const selectedFiles = Array.from(input.files || []);
     if (!selectedFiles.length) return;
+    setStatusMediaPrompt(null);
 
     const formData = new FormData();
     formData.append("jobId", job.id);
@@ -546,6 +583,41 @@ export function JobMediaPackage({ job }: Props) {
         </div>
       </div>
 
+      {statusMediaPrompt ? (
+        <div className="package-media-prompt" role="status" aria-label={`Add media for ${statusMediaPrompt.label}`}>
+          <div>
+            <strong>Next step: take media</strong>
+            <span>{statusMediaPrompt.label} saved. Add a photo or video from this job now.</span>
+          </div>
+          <div className="package-media-prompt-actions">
+            <button
+              type="button"
+              disabled={isUploading}
+              onClick={() => {
+                const input = promptMediaInputRef.current || mediaInputRef.current;
+                if (!input) {
+                  setMessage("Media picker is not ready.");
+                  return;
+                }
+                input.click();
+              }}
+            >
+              Take Photo/Video
+            </button>
+            <button type="button" onClick={() => setStatusMediaPrompt(null)}>Not now</button>
+          </div>
+          <input
+            ref={promptMediaInputRef}
+            className="sr-only-file"
+            type="file"
+            accept="image/*,video/*"
+            capture="environment"
+            disabled={isUploading}
+            onChange={uploadFiles}
+          />
+        </div>
+      ) : null}
+
       <div className="package-local-state">
         <strong>{hasLocalStatus ? "Saved on this device" : "Using source status"}</strong>
         <span>{hasLocalStatus ? "This status stays here until you clear it." : "Pick a field status to save it locally."}</span>
@@ -584,10 +656,11 @@ export function JobMediaPackage({ job }: Props) {
         <label className={isUploading ? "is-disabled" : ""}>
           {isUploading ? "Saving files" : "Add photos or documents"}
           <input
+            ref={mediaInputRef}
             className="sr-only-file"
             type="file"
             multiple
-            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv"
+            accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.csv"
             disabled={isUploading}
             onChange={uploadFiles}
           />

@@ -671,6 +671,22 @@ export function JobsMapBoard({ jobs }: Props) {
 
     const jobId = selected.id;
     const action = actionForStatus(nextStatus);
+    const existingStamp = fieldFlowEventsByJob[jobId]?.[nextStatus];
+    if (existingStamp) {
+      setJobStatusOverrides((current) => {
+        const next = { ...current, [jobId]: nextStatus };
+        try {
+          window.localStorage.setItem(STATUS_OVERRIDE_STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          // Keep the on-screen update even if browser storage is unavailable.
+        }
+        return next;
+      });
+      setStatusMediaPrompt(action?.phase === "outcome" ? { jobId, label: action.label } : null);
+      notify(`${action?.label || nextStatus} already saved at ${formatStampTime(existingStamp.createdAt)}.`);
+      return;
+    }
+
     const stampedEvent: FieldFlowEvent = {
       label: action?.label || nextStatus,
       status: nextStatus,

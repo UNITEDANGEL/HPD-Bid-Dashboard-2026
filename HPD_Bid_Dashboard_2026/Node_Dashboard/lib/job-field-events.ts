@@ -30,7 +30,7 @@ export function readStatusHistory(id?: string) {
     skipEmptyLines: true,
   });
 
-  return ((parsed.data || []) as Partial<JobStatusEvent>[])
+  const rows = ((parsed.data || []) as Partial<JobStatusEvent>[])
     .map((row) => ({
       RowID: String(row.RowID || ""),
       Status: String(row.Status || ""),
@@ -38,6 +38,11 @@ export function readStatusHistory(id?: string) {
     }))
     .filter((row) => row.RowID && row.Status && (!target || normalizeId(row.RowID) === target))
     .sort((a, b) => b.UpdatedAt.localeCompare(a.UpdatedAt));
+
+  return rows.filter((row, index) => {
+    const previous = rows[index - 1];
+    return !previous || normalizeId(previous.RowID) !== normalizeId(row.RowID) || previous.Status !== row.Status;
+  });
 }
 
 export function appendStatusHistory(id: string, status: string) {
@@ -48,6 +53,11 @@ export function appendStatusHistory(id: string, status: string) {
   }
 
   const rows = readStatusHistory();
+  const latestForJob = rows.find((row) => normalizeId(row.RowID) === normalizeId(rowId));
+  if (latestForJob?.Status === nextStatus) {
+    return latestForJob;
+  }
+
   const next = [
     {
       RowID: rowId,
