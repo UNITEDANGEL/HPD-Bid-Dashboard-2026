@@ -4267,26 +4267,36 @@ tbody tr:hover {
 
 @media (max-width: 760px) {
   .page-stack {
-    width: min(100% - 20px, 430px);
-    gap: 12px;
-    padding: 12px 0 28px;
+    width: min(100% - 10px, 460px);
+    gap: 14px;
+    padding: 8px 0 30px;
   }
 
   .job-profile-card,
   .job-package-card,
   .raw-card {
-    padding: 14px;
-    border-radius: 14px;
+    padding: 18px 16px;
+    border-radius: 18px;
   }
 
   .profile-top,
   .job-package-head,
   .package-upload-row {
+    display: grid;
     align-items: flex-start;
+    justify-content: stretch;
+    gap: 10px;
   }
 
   .job-profile-header h2 {
-    font-size: 1.75rem;
+    font-size: clamp(2.35rem, 14vw, 3.15rem);
+    line-height: 0.95;
+  }
+
+  .job-profile-copy,
+  .description-card p {
+    font-size: 1rem;
+    line-height: 1.5;
   }
 
   .job-profile-grid,
@@ -4294,37 +4304,153 @@ tbody tr:hover {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .job-profile-grid div {
+    min-height: 84px;
+    padding: 14px;
+  }
+
+  .job-profile-grid strong,
+  .description-card strong,
+  .package-panel h4,
+  .package-note-box label,
+  .field-flow-label {
+    font-size: 0.78rem;
+  }
+
+  .job-profile-grid span,
+  .package-panel p {
+    font-size: 1rem;
+  }
+
+  .description-card,
+  .package-panel {
+    padding: 16px;
+  }
+
+  .detail-actions {
+    display: grid;
+  }
+
+  .primary-link,
+  .secondary-link {
+    min-height: 52px;
+    font-size: 0.96rem;
+  }
+
+  .job-package-head h3 {
+    font-size: 1.85rem;
+    line-height: 1.05;
+  }
+
+  .field-flow-card {
+    gap: 14px;
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .field-flow-head strong {
+    font-size: 1rem;
+  }
+
+  .field-flow-head span {
+    font-size: 0.82rem;
+  }
+
+  .field-flow-head .package-clear-status {
+    min-height: 36px;
+    font-size: 0.78rem;
+  }
+
+  .field-flow-progress {
+    gap: 9px;
+  }
+
+  .field-flow-progress > span {
+    grid-template-columns: 14px minmax(0, 1fr);
+    min-height: 52px;
+    padding: 8px;
+    border-radius: 14px;
+  }
+
+  .field-flow-progress i {
+    width: 12px;
+    height: 12px;
+  }
+
+  .field-flow-progress strong {
+    font-size: 0.78rem;
+  }
+
+  .field-flow-progress small {
+    font-size: 0.7rem;
+  }
+
   .package-status-actions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .package-status-actions button {
-    min-height: 38px;
+    min-height: 60px;
+    padding: 9px 8px;
+    border-radius: 15px;
+  }
+
+  .package-status-actions button strong {
+    font-size: 0.9rem;
+    white-space: normal;
+  }
+
+  .package-status-actions button span {
+    font-size: 0.74rem;
+    line-height: 1.1;
   }
 
   .package-local-state {
     display: grid;
+    gap: 4px;
+    font-size: 0.94rem;
   }
 
   .package-note-actions {
     grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+
+  .package-note-actions button,
+  .package-upload-row label {
+    min-height: 50px;
+    font-size: 0.95rem;
+  }
+
+  .package-note-box textarea {
+    min-height: 112px;
+    font-size: 1rem;
   }
 
   .package-upload-row {
-    display: grid;
+    margin-top: 16px;
   }
 
   .package-media-prompt {
     display: grid;
+    padding: 14px;
+    border-radius: 16px;
   }
 
   .package-media-prompt-actions {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(92px, auto);
+    gap: 8px;
+  }
+
+  .package-media-prompt-actions button {
+    min-height: 44px;
+    font-size: 0.82rem;
   }
 
   .package-media-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .raw-row {
