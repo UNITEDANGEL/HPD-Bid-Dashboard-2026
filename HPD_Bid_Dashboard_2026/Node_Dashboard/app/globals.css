@@ -1428,6 +1428,77 @@ tbody tr:hover {
   font-weight: 800;
 }
 
+.field-flow-progress {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.field-flow-progress > span {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 7px;
+  align-items: center;
+  min-height: 42px;
+  padding: 7px 8px;
+  border: 1px solid rgba(151, 177, 212, 0.18);
+  border-radius: var(--radius);
+  background: rgba(6, 18, 34, 0.52);
+}
+
+.field-flow-progress i {
+  grid-row: 1 / 3;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(159, 176, 199, 0.52);
+  border-radius: 999px;
+}
+
+.field-flow-progress strong {
+  overflow: hidden;
+  color: #edf6ff;
+  font-size: 0.74rem;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-flow-progress small {
+  overflow: hidden;
+  color: #8fa5c0;
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-flow-progress > span.is-done {
+  border-color: rgba(45, 212, 125, 0.34);
+  background: linear-gradient(180deg, rgba(45, 212, 125, 0.12), rgba(6, 18, 34, 0.56));
+}
+
+.field-flow-progress > span.is-done i {
+  border-color: rgba(85, 242, 160, 0.86);
+  background: #55f2a0;
+  box-shadow: 0 0 14px rgba(85, 242, 160, 0.32);
+}
+
+.field-flow-progress > span.is-done small {
+  color: #74f6af;
+}
+
+.field-flow-progress > span.is-next {
+  border-color: rgba(47, 156, 255, 0.58);
+  box-shadow: 0 0 16px rgba(47, 156, 255, 0.14);
+}
+
+.field-flow-progress > span.is-next i {
+  border-color: #2f9cff;
+  box-shadow: 0 0 0 4px rgba(47, 156, 255, 0.14);
+}
+
 .field-flow-head .package-clear-status {
   min-height: 34px;
   padding: 0 13px;
@@ -1489,6 +1560,11 @@ tbody tr:hover {
   background: linear-gradient(135deg, rgba(47, 156, 255, 0.42), rgba(15, 111, 255, 0.22));
   color: #ffffff;
   box-shadow: 0 0 18px rgba(47, 156, 255, 0.22);
+}
+
+.package-status-actions button.is-next {
+  border-color: rgba(47, 156, 255, 0.58);
+  color: #ffffff;
 }
 
 .package-status-actions button.is-stamped {
@@ -3084,6 +3160,11 @@ tbody tr:hover {
     box-shadow: 0 0 16px rgba(47, 156, 255, 0.22);
   }
 
+  .job-card-status-actions button.is-next {
+    border-color: rgba(47, 156, 255, 0.58);
+    color: #ffffff;
+  }
+
   .job-card-status-actions button.is-stamped {
     border-color: rgba(45, 212, 125, 0.42);
   }
@@ -3135,6 +3216,32 @@ tbody tr:hover {
     color: #ffd1d1;
     font-size: 0.58rem;
     font-weight: 900;
+  }
+
+  .job-card-flow-progress {
+    gap: 5px;
+  }
+
+  .job-card-flow-progress > span {
+    grid-template-columns: 10px minmax(0, 1fr);
+    column-gap: 5px;
+    min-height: 32px;
+    padding: 5px;
+    border-radius: 10px;
+  }
+
+  .job-card-flow-progress i {
+    width: 9px;
+    height: 9px;
+    border-width: 2px;
+  }
+
+  .job-card-flow-progress strong {
+    font-size: 0.56rem;
+  }
+
+  .job-card-flow-progress small {
+    font-size: 0.5rem;
   }
 
   .job-card-flow-group {

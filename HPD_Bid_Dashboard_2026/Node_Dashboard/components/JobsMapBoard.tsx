@@ -44,6 +44,7 @@ const FIELD_STATUS_ACTIONS = [
 ] as const;
 const VISIT_STATUS_ACTIONS = FIELD_STATUS_ACTIONS.filter((action) => action.phase === "visit");
 const OUTCOME_STATUS_ACTIONS = FIELD_STATUS_ACTIONS.filter((action) => action.phase === "outcome");
+type FieldStatusAction = (typeof FIELD_STATUS_ACTIONS)[number];
 const BOROUGH_CENTERS: Record<string, [number, number]> = {
   Manhattan: [40.7831, -73.9712],
   Brooklyn: [40.6782, -73.9442],
@@ -275,6 +276,47 @@ function writeLocalFlowMap(events: Record<string, Record<string, FieldFlowEvent>
 
 function actionForStatus(status: string) {
   return FIELD_STATUS_ACTIONS.find((action) => action.value.toLowerCase() === String(status || "").toLowerCase());
+}
+
+function latestStampedAction(
+  actions: readonly FieldStatusAction[],
+  events: Record<string, FieldFlowEvent>,
+): { action: FieldStatusAction; event: FieldFlowEvent } | null {
+  let latest: { action: FieldStatusAction; event: FieldFlowEvent } | null = null;
+  actions.forEach((action) => {
+    const event = events[action.value];
+    if (!event) return;
+    if (!latest || new Date(event.createdAt).getTime() > new Date(latest.event.createdAt).getTime()) {
+      latest = { action, event };
+    }
+  });
+  return latest;
+}
+
+function isNextFlowAction(action: FieldStatusAction, events: Record<string, FieldFlowEvent>) {
+  if (!events["Arrived On Site"]) return action.value === "Arrived On Site";
+  if (!events["Work Started"]) return action.value === "Work Started";
+  if (!latestStampedAction(OUTCOME_STATUS_ACTIONS, events)) return action.phase === "outcome";
+  return false;
+}
+
+function flowSummaryText(events: Record<string, FieldFlowEvent>) {
+  const arrived = events["Arrived On Site"];
+  const started = events["Work Started"];
+  const outcome = latestStampedAction(OUTCOME_STATUS_ACTIONS, events);
+  if (!arrived) return "Next: Arrived";
+  if (!started) return `Arrived ${formatStampTime(arrived.createdAt)}. Next: Started`;
+  if (!outcome) return `Started ${formatStampTime(started.createdAt)}. Choose outcome`;
+  return `${outcome.action.label} ${formatStampTime(outcome.event.createdAt)}`;
+}
+
+function flowProgressItems(events: Record<string, FieldFlowEvent>) {
+  const outcome = latestStampedAction(OUTCOME_STATUS_ACTIONS, events);
+  return [
+    { key: "arrived", label: "Arrived", event: events["Arrived On Site"], next: isNextFlowAction(FIELD_STATUS_ACTIONS[0], events) },
+    { key: "started", label: "Started", event: events["Work Started"], next: isNextFlowAction(FIELD_STATUS_ACTIONS[1], events) },
+    { key: "outcome", label: outcome?.action.label || "Outcome", event: outcome?.event, next: !outcome && Boolean(events["Work Started"]) },
+  ];
 }
 
 function trendPoints(total: number) {
@@ -760,21 +802,22 @@ export function JobsMapBoard({ jobs }: Props) {
     setSelectedId(filtered[nextIndex].id);
   }
 
-  function renderSelectedFlowButton(action: typeof FIELD_STATUS_ACTIONS[number]) {
+  function renderSelectedFlowButton(action: FieldStatusAction) {
     const stamp = selectedFlowEvents[action.value];
     const active = selectedStatus.toLowerCase() === action.value.toLowerCase();
+    const isNext = isNextFlowAction(action, selectedFlowEvents);
 
     return (
       <button
         key={action.value}
         type="button"
-        className={`${active ? "is-active" : ""} ${stamp ? "is-stamped" : ""}`.trim()}
+        className={`${active ? "is-active" : ""} ${stamp ? "is-stamped" : ""} ${isNext ? "is-next" : ""}`.trim()}
         aria-pressed={active}
         title={action.value}
         onClick={() => updateSelectedStatus(action.value)}
       >
         <strong>{action.label}</strong>
-        <span>{stamp ? formatStampTime(stamp.createdAt) : "Tap"}</span>
+        <span>{stamp ? `Done ${formatStampTime(stamp.createdAt)}` : isNext ? "Next" : "Tap"}</span>
       </button>
     );
   }
@@ -1298,7 +1341,7 @@ export function JobsMapBoard({ jobs }: Props) {
               <div className="job-card-flow-head">
                 <div>
                   <strong>Field Flow</strong>
-                  <span>Arrive, start, then choose what happened.</span>
+                  <span>{flowSummaryText(selectedFlowEvents)}</span>
                 </div>
                 <button
                   type="button"
@@ -1307,6 +1350,15 @@ export function JobsMapBoard({ jobs }: Props) {
                 >
                   Clear
                 </button>
+              </div>
+              <div className="field-flow-progress job-card-flow-progress" aria-label="Visit progress">
+                {flowProgressItems(selectedFlowEvents).map((item) => (
+                  <span key={item.key} className={`${item.event ? "is-done" : ""} ${item.next ? "is-next" : ""}`.trim()}>
+                    <i aria-hidden="true" />
+                    <strong>{item.label}</strong>
+                    <small>{item.event ? formatStampTime(item.event.createdAt) : item.next ? "Next" : "Waiting"}</small>
+                  </span>
+                ))}
               </div>
               <div className="job-card-flow-group">
                 <span className="job-card-flow-label">1. Site steps</span>
