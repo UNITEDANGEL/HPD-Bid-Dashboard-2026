@@ -54,11 +54,11 @@ function renderShell(content, title = "HPD Bid Dashboard 2026") {
 .detail-page .flow-progress i{width:12px!important;height:12px!important}
 .detail-page .flow-progress strong{font-size:.78rem!important}
 .detail-page .flow-progress small{font-size:.7rem!important}
-.detail-page .job-status-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
-.detail-page .job-status-actions.visit{grid-template-columns:repeat(2,minmax(0,1fr))!important}
-.detail-page .job-status-actions button{min-height:60px!important;padding:9px 7px!important;border-radius:15px!important;font-size:.82rem!important}
-.detail-page .job-status-actions button strong{font-size:.9rem!important;white-space:normal!important}
-.detail-page .job-status-actions button span{font-size:.74rem!important;line-height:1.1!important}
+.detail-page .flow-actions,.detail-page .job-status-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}
+.detail-page .flow-actions.visit,.detail-page .job-status-actions.visit{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.detail-page .flow-actions button,.detail-page .job-status-actions button{min-height:60px!important;padding:9px 7px!important;border-radius:15px!important;font-size:.82rem!important}
+.detail-page .flow-actions button strong,.detail-page .job-status-actions button strong{font-size:.9rem!important;white-space:normal!important}
+.detail-page .flow-actions button span,.detail-page .job-status-actions button span{font-size:.74rem!important;line-height:1.1!important}
 .detail-page .package-media-prompt{display:grid!important;gap:10px!important;padding:14px!important;border-radius:16px!important}
 .detail-page .package-media-prompt-actions{display:grid!important;grid-template-columns:1fr 96px!important;gap:8px!important}
 .detail-page .package-media-prompt-actions button{min-height:44px!important;font-size:.82rem!important}
@@ -77,8 +77,8 @@ function renderShell(content, title = "HPD Bid Dashboard 2026") {
 .detail-page .media-tile{font-size:.92rem!important}
 }
 @media (max-width:380px){
-.detail-page .job-status-actions button strong{font-size:.82rem!important}
-.detail-page .job-status-actions button span{font-size:.68rem!important}
+.detail-page .flow-actions button strong,.detail-page .job-status-actions button strong{font-size:.82rem!important}
+.detail-page .flow-actions button span,.detail-page .job-status-actions button span{font-size:.68rem!important}
 }
 /* end iphone job detail sizing */</style></head><body>${content}</body></html>`);
 }
