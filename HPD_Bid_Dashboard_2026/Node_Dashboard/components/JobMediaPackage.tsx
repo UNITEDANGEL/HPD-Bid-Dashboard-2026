@@ -167,7 +167,11 @@ function readLocalFlowMap() {
 function writeLocalFlowEvents(jobId: string, events: Record<string, FieldFlowEvent>) {
   try {
     const allEvents = readLocalFlowMap();
-    allEvents[jobId] = events;
+    if (Object.keys(events).length) {
+      allEvents[jobId] = events;
+    } else {
+      delete allEvents[jobId];
+    }
     window.localStorage.setItem(FIELD_FLOW_STORAGE_KEY, JSON.stringify(allEvents));
     return true;
   } catch {
@@ -245,6 +249,25 @@ function flowEventsFromHistory(history: StatusHistoryEvent[]) {
     };
     return events;
   }, {});
+}
+
+function latestClearTime(history: StatusHistoryEvent[]) {
+  const cleared = history.find((item) => item.Status.toLowerCase() === "status cleared");
+  if (!cleared) return 0;
+  const time = new Date(cleared.UpdatedAt).getTime();
+  return Number.isNaN(time) ? Number.MAX_SAFE_INTEGER : time;
+}
+
+function flowEventsAfterLatestClear(events: Record<string, FieldFlowEvent>, history: StatusHistoryEvent[]) {
+  const clearTime = latestClearTime(history);
+  if (!clearTime) return events;
+
+  return Object.fromEntries(
+    Object.entries(events).filter(([, event]) => {
+      const eventTime = new Date(event.createdAt).getTime();
+      return Number.isFinite(eventTime) && eventTime > clearTime;
+    }),
+  ) as Record<string, FieldFlowEvent>;
 }
 
 export function JobMediaPackage({ job }: Props) {
@@ -342,7 +365,11 @@ export function JobMediaPackage({ job }: Props) {
               setHasLocalStatus(false);
             }
             const remoteHistory = statusData.history || [];
-            const localFlowEvents = readLocalFlowMap()[job.id] || {};
+            const storedFlowEvents = readLocalFlowMap()[job.id] || {};
+            const localFlowEvents = flowEventsAfterLatestClear(storedFlowEvents, remoteHistory);
+            if (Object.keys(localFlowEvents).length !== Object.keys(storedFlowEvents).length) {
+              writeLocalFlowEvents(job.id, localFlowEvents);
+            }
             setHistory(remoteHistory);
             setFlowEvents({ ...flowEventsFromHistory(remoteHistory), ...localFlowEvents });
           }
@@ -367,7 +394,13 @@ export function JobMediaPackage({ job }: Props) {
 
   async function updateStatus(nextStatus: string) {
     const action = actionForStatus(nextStatus);
-    const existingStamp = flowEvents[nextStatus];
+    const activeFlowEvents = flowEventsAfterLatestClear(flowEvents, history);
+    const existingStamp = activeFlowEvents[nextStatus];
+    if (Object.keys(activeFlowEvents).length !== Object.keys(flowEvents).length) {
+      setFlowEvents(activeFlowEvents);
+      writeLocalFlowEvents(job.id, activeFlowEvents);
+    }
+
     if (existingStamp) {
       setStatus(nextStatus);
       setHasLocalStatus(true);
@@ -388,11 +421,9 @@ export function JobMediaPackage({ job }: Props) {
     setStatus(nextStatus);
     setHasLocalStatus(true);
     writeLocalStatus(job.id, nextStatus);
-    setFlowEvents((current) => {
-      const next = { ...current, [nextStatus]: stampedEvent };
-      writeLocalFlowEvents(job.id, next);
-      return next;
-    });
+    const nextFlowEvents = { ...activeFlowEvents, [nextStatus]: stampedEvent };
+    setFlowEvents(nextFlowEvents);
+    writeLocalFlowEvents(job.id, nextFlowEvents);
     if (action?.phase === "outcome") {
       setStatusMediaPrompt({ status: nextStatus, label: action.label });
     } else {
@@ -416,7 +447,12 @@ export function JobMediaPackage({ job }: Props) {
       setStatus(data.status || nextStatus);
       if (data.history) {
         setHistory(data.history);
-        setFlowEvents((current) => ({ ...flowEventsFromHistory(data.history || []), ...current }));
+        const syncedFlowEvents = {
+          ...flowEventsFromHistory(data.history || []),
+          [nextStatus]: stampedEvent,
+        };
+        setFlowEvents(syncedFlowEvents);
+        writeLocalFlowEvents(job.id, syncedFlowEvents);
       }
       setMessage(`${job.id} saved locally and synced.`);
     } catch (error) {
