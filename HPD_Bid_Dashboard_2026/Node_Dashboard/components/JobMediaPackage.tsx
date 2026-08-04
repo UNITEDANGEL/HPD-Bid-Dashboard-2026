@@ -382,7 +382,7 @@ export function JobMediaPackage({ job }: Props) {
           }
         }
       } catch {
-        if (active) setMessage("Package sync is temporarily unavailable.");
+        if (active) setMessage("Package update is temporarily unavailable.");
       }
     }
 
@@ -454,9 +454,9 @@ export function JobMediaPackage({ job }: Props) {
         setFlowEvents(syncedFlowEvents);
         writeLocalFlowEvents(job.id, syncedFlowEvents);
       }
-      setMessage(`${job.id} saved locally and synced.`);
+      setMessage(`${job.id} saved locally and shared.`);
     } catch (error) {
-      setMessage(error instanceof Error ? `Saved locally. Shared sync: ${error.message}` : "Saved locally on this device.");
+      setMessage(error instanceof Error ? `Saved locally. Shared save: ${error.message}` : "Saved locally on this device.");
     } finally {
       setIsSavingStatus(false);
     }

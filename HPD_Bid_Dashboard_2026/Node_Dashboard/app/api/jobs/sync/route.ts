@@ -15,7 +15,7 @@ function localSourcePayload() {
     lastSyncAt: source.updatedAt,
     source: "Bundled CSV",
     message: feedUrl()
-      ? "Live CSV feed is configured. Tap Sync Now to pull the latest file."
+      ? "Live CSV feed is configured. Tap Fetch Now to pull the latest file."
       : "Live CSV feed is not configured yet. Showing the last bundled dashboard CSV.",
   };
 }
@@ -31,7 +31,7 @@ export async function GET() {
       {
         ok: false,
         configured: Boolean(feedUrl()),
-        error: error instanceof Error ? error.message : "Unable to read sync status",
+        error: error instanceof Error ? error.message : "Unable to read fetch status",
       },
       { status: 500 },
     );
@@ -46,7 +46,7 @@ export async function POST() {
       {
         ok: false,
         ...fallback,
-        error: "Live CSV feed is not configured. Add JOBS_CSV_URL in Sites to sync new COA data automatically.",
+        error: "Live CSV feed is not configured. Add JOBS_CSV_URL in Sites to fetch new COA data automatically.",
       },
       { status: 503 },
     );
@@ -69,7 +69,7 @@ export async function POST() {
       jobs,
       lastSyncAt: now,
       source: "Live CSV",
-      message: `${jobs.length} 2026+ jobs synced from the live CSV feed.`,
+      message: `${jobs.length} 2026+ jobs fetched from the live CSV feed.`,
     });
   } catch (error) {
     const fallback = localSourcePayload();
@@ -77,7 +77,7 @@ export async function POST() {
       {
         ok: false,
         ...fallback,
-        error: error instanceof Error ? error.message : "Live sync failed",
+        error: error instanceof Error ? error.message : "Live fetch failed",
       },
       { status: 502 },
     );

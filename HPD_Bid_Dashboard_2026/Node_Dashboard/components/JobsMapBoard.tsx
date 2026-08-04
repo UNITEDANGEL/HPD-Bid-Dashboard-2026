@@ -16,6 +16,7 @@ type StatusView = "All" | "Open" | "Awarded" | "Pending";
 type TableMode = "live" | "queue" | "documents";
 type ActivePanel = "" | "filters" | "notifications" | "account" | "map" | "system" | "contact" | "jobs" | "add" | "sync";
 type ChartPeriod = "Last 12 Months" | "2026 YTD" | "Last 90 Days";
+type DateRangeView = "30d" | "60d" | "2026";
 type MediaFile = {
   url: string;
   name?: string;
@@ -40,6 +41,11 @@ type SyncState = {
 const STATUS_OVERRIDE_STORAGE_KEY = "hpd-job-status-overrides-v1";
 const FIELD_FLOW_STORAGE_KEY = "hpd-job-field-flow-events-v1";
 const CHART_PERIODS: ChartPeriod[] = ["Last 12 Months", "2026 YTD", "Last 90 Days"];
+const DATE_RANGE_OPTIONS: Array<{ value: DateRangeView; label: string; title: string }> = [
+  { value: "30d", label: "30D", title: "Last 30 days" },
+  { value: "60d", label: "60D", title: "Last 60 days" },
+  { value: "2026", label: "2026", title: "All 2026 jobs" },
+];
 const NYC_BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
 const FIELD_STATUS_ACTIONS = [
   { label: "Arrived", value: "Arrived On Site", phase: "visit" },
@@ -146,7 +152,7 @@ function formatStampTime(value: string) {
 
 function formatSyncTime(value: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "not synced";
+  if (Number.isNaN(date.getTime())) return "not fetched";
 
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -166,6 +172,47 @@ function formatJobStartDate(job: JobRecord) {
 
 function formatJobCompletionDate(job: JobRecord) {
   return formatShortDate(job.completionDate);
+}
+
+function jobRangeDates(job: JobRecord) {
+  return [job.awardDate, job.startDate, job.completionDate]
+    .map(usableDate)
+    .filter((date): date is Date => Boolean(date));
+}
+
+function startOfLocalDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function latestRangeAnchor(jobs: JobRecord[]) {
+  const timestamps = jobs
+    .flatMap(jobRangeDates)
+    .filter((date) => date.getFullYear() >= 2026)
+    .map((date) => startOfLocalDay(date).getTime());
+
+  return timestamps.length ? new Date(Math.max(...timestamps)) : startOfLocalDay(new Date());
+}
+
+function dateRangeMatches(job: JobRecord, range: DateRangeView, anchorDate = new Date()) {
+  const dates = jobRangeDates(job);
+  if (!dates.length) return false;
+
+  if (range === "2026") {
+    return dates.some((date) => startOfLocalDay(date).getFullYear() >= 2026);
+  }
+
+  const today = startOfLocalDay(anchorDate);
+  const days = range === "60d" ? 60 : 30;
+  const start = new Date(today);
+  start.setDate(today.getDate() - (days - 1));
+  return dates.some((date) => {
+    const jobDay = startOfLocalDay(date);
+    return jobDay >= start && jobDay <= today;
+  });
+}
+
+function dateRangeLabel(range: DateRangeView) {
+  return DATE_RANGE_OPTIONS.find((option) => option.value === range)?.label || "2026";
 }
 
 function displayStatus(job: JobRecord) {
@@ -365,6 +412,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const [query, setQuery] = useState("");
   const [borough, setBorough] = useState("");
   const [statusView, setStatusView] = useState<StatusView>("All");
+  const [dateRange, setDateRange] = useState<DateRangeView>("2026");
   const [selectedId, setSelectedId] = useState("");
   const [activeNav, setActiveNav] = useState("Overview");
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("Last 12 Months");
@@ -405,13 +453,18 @@ export function JobsMapBoard({ jobs }: Props) {
     [jobStatusOverrides, sourceJobs],
   );
   const mappableJobs = useMemo(() => effectiveJobs.filter(isActiveMapJob), [effectiveJobs]);
+  const dateRangeAnchor = useMemo(() => latestRangeAnchor(mappableJobs), [mappableJobs]);
+  const dateScopedJobs = useMemo(
+    () => mappableJobs.filter((job) => dateRangeMatches(job, dateRange, dateRangeAnchor)),
+    [dateRange, dateRangeAnchor, mappableJobs],
+  );
   const boroughs = useMemo(() => {
-    const dataBoroughs = unique(mappableJobs.map((job) => job.borough));
+    const dataBoroughs = unique(dateScopedJobs.map((job) => job.borough));
     return [
       ...NYC_BOROUGHS,
       ...dataBoroughs.filter((name) => !NYC_BOROUGHS.some((boroughName) => boroughName.toLowerCase() === name.toLowerCase())),
     ];
-  }, [mappableJobs]);
+  }, [dateScopedJobs]);
   const totalAwardValue = useMemo(
     () => effectiveJobs.reduce((sum, job) => sum + (Number.isFinite(job.amountValue) ? job.amountValue : 0), 0),
     [effectiveJobs],
@@ -419,7 +472,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const coaCount = effectiveJobs.filter((job) => job.coaFile).length;
   const itbCount = effectiveJobs.filter((job) => job.itbFile).length;
 
-  const filtered = mappableJobs
+  const filtered = dateScopedJobs
     .filter((job) => {
       if (borough && job.borough !== borough) return false;
       if (!statusMatches(job, statusView)) return false;
@@ -427,7 +480,7 @@ export function JobsMapBoard({ jobs }: Props) {
     })
     .sort(compareJobsBySearch(query));
 
-  const selected = selectedId ? filtered.find((job) => job.id === selectedId) || mappableJobs.find((job) => job.id === selectedId) || null : null;
+  const selected = selectedId ? filtered.find((job) => job.id === selectedId) || null : null;
   const queuedRows = filtered.filter((job) => !job.coaFile || !job.itbFile || displayStatus(job).toLowerCase().includes("pending"));
   const documentRows = filtered.filter((job) => job.coaFile || job.itbFile);
   const tableSource = tableMode === "queue" ? queuedRows : tableMode === "documents" ? documentRows : filtered;
@@ -460,31 +513,39 @@ export function JobsMapBoard({ jobs }: Props) {
   ].filter((item): item is { label: string; value: string; icon: string } => Boolean(item)).slice(0, 3);
   const exportDataHref = `data:text/csv;charset=utf-8,${encodeURIComponent(jobsToCsv(filtered))}`;
   const exportFileName = `hpd-bids-${new Date().toISOString().slice(0, 10)}.csv`;
-  const mapFocusKey = `${borough || "All"}|${statusView}|${query}|${mapFitNonce}|${userLocation ? userLocation.join(",") : ""}`;
+  const mapFocusKey = `${borough || "All"}|${statusView}|${dateRange}|${query}|${mapFitNonce}|${userLocation ? userLocation.join(",") : ""}`;
   const boroughFocusCenter = borough ? BOROUGH_CENTERS[canonicalBorough(borough)] || null : null;
   const mapFocusCenter = userLocation || boroughFocusCenter;
   const mapFocusZoom = userLocation ? 15 : undefined;
   const mobileBoroughStats = [
-    { key: "", label: "All", count: mappableJobs.length },
+    { key: "", label: "All", count: dateScopedJobs.length },
     ...NYC_BOROUGHS.map((name) => ({
       key: name,
       label: shortBoroughLabel(name),
-      count: mappableJobs.filter((job) => job.borough === name).length,
+      count: dateScopedJobs.filter((job) => job.borough === name).length,
     })),
   ];
-  const mobileStatusBase = mappableJobs
+  const mobileStatusBase = dateScopedJobs
     .filter((job) => !borough || job.borough === borough)
     .filter((job) => matchesJobSearch(job, query));
   const mobileStatusStats = (["All", "Open", "Awarded", "Pending"] as StatusView[]).map((status) => ({
     status,
     count: status === "All" ? mobileStatusBase.length : mobileStatusBase.filter((job) => statusMatches(job, status)).length,
   }));
+  const dateRangeBase = mappableJobs
+    .filter((job) => !borough || job.borough === borough)
+    .filter((job) => statusMatches(job, statusView))
+    .filter((job) => matchesJobSearch(job, query));
+  const mobileDateStats = DATE_RANGE_OPTIONS.map((option) => ({
+    ...option,
+    count: dateRangeBase.filter((job) => dateRangeMatches(job, option.value, dateRangeAnchor)).length,
+  }));
   const alertCount = Math.min(activityRows.length, 9);
   const boroughCounts = boroughs
     .map((name) => ({
       name,
       code: boroughCode(name),
-      count: mappableJobs.filter((job) => job.borough === name).length,
+      count: dateScopedJobs.filter((job) => job.borough === name).length,
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
@@ -678,6 +739,7 @@ export function JobsMapBoard({ jobs }: Props) {
     setQuery("");
     setBorough("");
     setStatusView("All");
+    setDateRange("2026");
     setSelectedId("");
     setUserLocation(null);
     notify("Filters reset.");
@@ -703,6 +765,13 @@ export function JobsMapBoard({ jobs }: Props) {
     setQuery("");
     setUserLocation(null);
     setBorough((current) => (current === name ? "" : name));
+  }
+
+  function selectDateRange(range: DateRangeView) {
+    setSelectedId("");
+    setUserLocation(null);
+    setDateRange(range);
+    setMapFitNonce((current) => current + 1);
   }
 
   function fitVisibleMap() {
@@ -873,7 +942,7 @@ export function JobsMapBoard({ jobs }: Props) {
     setSyncState((current) => ({
       ...current,
       status: "syncing",
-      message: "Syncing latest COA data...",
+      message: "Fetching latest COA data...",
     }));
 
     try {
@@ -883,7 +952,7 @@ export function JobsMapBoard({ jobs }: Props) {
         error?: string;
         jobs?: JobRecord[];
       };
-      const message = String(data.message || data.error || "Sync finished.");
+      const message = String(data.message || data.error || "Fetch finished.");
       const nextJobs = Array.isArray(data.jobs) ? data.jobs : [];
 
       setSyncState({
@@ -902,6 +971,10 @@ export function JobsMapBoard({ jobs }: Props) {
 
       if (nextJobs.length) {
         setSourceJobs(nextJobs);
+        setQuery("");
+        setBorough("");
+        setStatusView("All");
+        setDateRange("2026");
         setSelectedId("");
         setUserLocation(null);
         setMapFitNonce((current) => current + 1);
@@ -909,7 +982,7 @@ export function JobsMapBoard({ jobs }: Props) {
 
       notify(message);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Sync failed.";
+      const message = error instanceof Error ? error.message : "Fetch failed.";
       setSyncState((current) => ({
         ...current,
         status: "failed",
@@ -1027,20 +1100,21 @@ export function JobsMapBoard({ jobs }: Props) {
     contact: "Job Contact",
     jobs: "Visible Jobs",
     add: "Quick Actions",
-    sync: "Data Sync",
+    sync: "Data Fetcher",
   };
   const panelTitle = activePanel ? panelTitles[activePanel] : "";
   const systemReport = [
     "HPD Bid Dashboard 2026",
     `Generated: ${new Date().toLocaleString()}`,
     `Loaded jobs: ${sourceJobs.length}`,
-    `Mapped jobs: ${mappableJobs.length}`,
+    `Mapped jobs: ${dateScopedJobs.length}`,
     `Filtered jobs: ${filtered.length}`,
+    `Date range: ${dateRangeLabel(dateRange)}`,
     `ITB files: ${itbCount}`,
     `COA awards: ${coaCount}`,
     `Command queue: ${queuedRows.length}`,
     `Data source: ${syncState.source}`,
-    `Last sync: ${formatSyncTime(syncState.lastSyncAt)}`,
+    `Last fetch: ${formatSyncTime(syncState.lastSyncAt)}`,
   ].join("\n");
   const trimmedQuery = query.trim();
   const emptyMapScope = borough || (statusView !== "All" ? statusView : trimmedQuery ? "Search" : "No results");
@@ -1079,8 +1153,8 @@ export function JobsMapBoard({ jobs }: Props) {
 
           <div className="sidebar-map-card">
             <span>Map Preview</span>
-            <strong>{mappableJobs.length}</strong>
-            <p>Jobs with coordinates ready for field routing.</p>
+            <strong>{dateScopedJobs.length}</strong>
+            <p>{dateRangeLabel(dateRange)} jobs with coordinates ready for field routing.</p>
             <button
               type="button"
               onClick={() => {
@@ -1130,7 +1204,7 @@ export function JobsMapBoard({ jobs }: Props) {
                 <span className="account-logo">HPD</span>
                 <span>
                   <strong>Project Workspace</strong>
-                  <small>{mappableJobs.length} mapped jobs</small>
+                  <small>{dateScopedJobs.length} {dateRangeLabel(dateRange)} jobs</small>
                 </span>
                 <span aria-hidden="true">⌄</span>
               </button>
@@ -1349,13 +1423,13 @@ export function JobsMapBoard({ jobs }: Props) {
               <span className="mobile-live-line">
                 <i aria-hidden="true" />
                 Live
-                <small>{mappableJobs.length} Active Jobs</small>
+                <small>{dateScopedJobs.length} {dateRangeLabel(dateRange)} Jobs</small>
               </span>
               <span className={`mobile-sync-inline is-${syncState.status}`}>
                 <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
-                  {syncState.status === "syncing" ? "Syncing" : "Sync"}
+                  {syncState.status === "syncing" ? "Fetching" : "Fetch"}
                 </button>
-                <small>{syncState.status === "failed" ? "Sync needs setup" : `Last ${formatSyncTime(syncState.lastSyncAt)}`}</small>
+                <small>{syncState.status === "failed" ? "Fetch needs setup" : `Last fetch ${formatSyncTime(syncState.lastSyncAt)}`}</small>
               </span>
             </div>
           </div>
@@ -1403,6 +1477,20 @@ export function JobsMapBoard({ jobs }: Props) {
           ))}
         </div>
 
+        <div className="mobile-date-tabs" aria-label="Date range filters">
+          {mobileDateStats.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              className={dateRange === item.value ? "is-active" : ""}
+              onClick={() => selectDateRange(item.value)}
+            >
+              <strong>{item.label}</strong>
+              <span>{item.count}</span>
+            </button>
+          ))}
+        </div>
+
         <div className="mobile-search" role="search">
           <span aria-hidden="true" />
           <input
@@ -1442,7 +1530,7 @@ export function JobsMapBoard({ jobs }: Props) {
           <button type="button" className="floating-map-button locate-icon" aria-label="Locate me" onClick={locateUser} />
           <button type="button" className="visible-count-button" aria-label="Open visible jobs" onClick={() => setActivePanel("jobs")}>
             <strong>{filtered.length}</strong>
-            <span>Visible Jobs</span>
+            <span>{dateRangeLabel(dateRange)} Jobs</span>
           </button>
         </div>
 
@@ -1706,6 +1794,21 @@ export function JobsMapBoard({ jobs }: Props) {
                     ))}
                   </div>
                 </div>
+                <div>
+                  <h3>Date Range</h3>
+                  <div className="drawer-chip-grid">
+                    {mobileDateStats.map((item) => (
+                      <button
+                        key={item.value}
+                        type="button"
+                        className={dateRange === item.value ? "is-active" : ""}
+                        onClick={() => selectDateRange(item.value)}
+                      >
+                        {item.title} ({item.count})
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="drawer-actions">
                   <button type="button" onClick={resetFilters}>Reset filters</button>
                   <button type="button" onClick={() => setActivePanel("")}>Apply filters</button>
@@ -1746,7 +1849,7 @@ export function JobsMapBoard({ jobs }: Props) {
               <div className="drawer-stack">
                 <div className="drawer-stat-grid">
                   <div><span>Visible</span><strong>{filtered.length}</strong></div>
-                  <div><span>Mapped</span><strong>{mappableJobs.length}</strong></div>
+                  <div><span>{dateRangeLabel(dateRange)}</span><strong>{dateScopedJobs.length}</strong></div>
                 </div>
                 <div className="drawer-list">
                   {filtered.slice(0, 20).map((job) => (
@@ -1832,17 +1935,17 @@ export function JobsMapBoard({ jobs }: Props) {
                   <div>
                     <strong>Project Workspace</strong>
                     <span>Live dashboard data</span>
-                    <small>{savedJobs.length} saved jobs · {filtered.length} filtered records · Last sync {formatSyncTime(syncState.lastSyncAt)}</small>
+                    <small>{savedJobs.length} saved jobs · {filtered.length} filtered records · Last fetch {formatSyncTime(syncState.lastSyncAt)}</small>
                   </div>
                 </div>
                 <div className={`sync-drawer-card is-${syncState.status}`}>
                   <div>
                     <strong>{syncState.source}</strong>
                     <span>{syncState.message}</span>
-                    <small>{syncState.count} jobs · Last sync {formatSyncTime(syncState.lastSyncAt)}</small>
+                    <small>{syncState.count} jobs · Last fetch {formatSyncTime(syncState.lastSyncAt)}</small>
                   </div>
                   <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
-                    {syncState.status === "syncing" ? "Syncing" : "Sync Now"}
+                    {syncState.status === "syncing" ? "Fetching" : "Fetch Now"}
                   </button>
                 </div>
                 <div className="drawer-actions is-grid">
@@ -1873,12 +1976,12 @@ export function JobsMapBoard({ jobs }: Props) {
               <div className="drawer-stack">
                 <div className={`sync-drawer-card is-${syncState.status}`}>
                   <div>
-                    <strong>{syncState.status === "failed" ? "Sync needs attention" : syncState.source}</strong>
+                    <strong>{syncState.status === "failed" ? "Fetch needs setup" : syncState.source}</strong>
                     <span>{syncState.message}</span>
-                    <small>{syncState.count} jobs · Last sync {formatSyncTime(syncState.lastSyncAt)}</small>
+                    <small>{syncState.count} jobs · Last fetch {formatSyncTime(syncState.lastSyncAt)}</small>
                   </div>
                   <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
-                    {syncState.status === "syncing" ? "Syncing" : "Sync Now"}
+                    {syncState.status === "syncing" ? "Fetching" : "Fetch Now"}
                   </button>
                 </div>
                 <div className="drawer-actions is-grid">
@@ -1919,7 +2022,7 @@ export function JobsMapBoard({ jobs }: Props) {
               <div className="drawer-stack">
                 <div className="drawer-stat-grid">
                   <div><span>Loaded jobs</span><strong>{jobs.length}</strong></div>
-                  <div><span>Mapped jobs</span><strong>{mappableJobs.length}</strong></div>
+                  <div><span>{dateRangeLabel(dateRange)} jobs</span><strong>{dateScopedJobs.length}</strong></div>
                   <div><span>ITB files</span><strong>{itbCount}</strong></div>
                   <div><span>COA awards</span><strong>{coaCount}</strong></div>
                 </div>
