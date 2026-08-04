@@ -4,7 +4,9 @@ import Papa from "papaparse";
 import { effectiveStatus, getOverrideForJob, isArchived, readOverrides } from "./job-overrides";
 import type { JobRecord } from "./types";
 
-function pick(row: Record<string, string>, keys: string[]) {
+type SourceRow = Record<string, unknown>;
+
+function pick(row: SourceRow, keys: string[]) {
   for (const key of keys) {
     const value = row[key];
     if (value !== undefined && value !== null && String(value).trim() !== "") {
@@ -34,11 +36,30 @@ function cleanSourceValue(value: string) {
 
 export function csvCandidates() {
   return [
+    path.resolve(process.cwd(), "data", "COA_Fetcher_2026.csv"),
+    path.resolve(process.cwd(), "public", "data", "COA_Fetcher_2026.csv"),
     path.resolve(process.cwd(), "..", "Fetcher_Output", "HPD_Bid_Fetcher_Master_2026.csv"),
     path.resolve(process.cwd(), "data", "merged_job_data.csv"),
     path.resolve(process.cwd(), "..", "..", "Samples", "Merged Data", "merged_job_data.csv"),
     path.resolve(process.cwd(), "..", "..", "Fetcher_Output", "HPD_Bid_Fetcher_Master_2026.csv"),
   ];
+}
+
+export function jsonCandidates() {
+  return [
+    path.resolve(process.cwd(), "data", "COA_Fetcher_2026.json"),
+    path.resolve(process.cwd(), "public", "data", "COA_Fetcher_2026.json"),
+  ];
+}
+
+export function resolveJobsSourcePath() {
+  const jsonPath = jsonCandidates().find((candidate) => fs.existsSync(candidate));
+  if (jsonPath) return { path: jsonPath, type: "json" as const };
+
+  const csvPath = csvCandidates().find((candidate) => fs.existsSync(candidate));
+  if (csvPath) return { path: csvPath, type: "csv" as const };
+
+  throw new Error(`Required jobs data not found. Checked: ${jsonCandidates().concat(csvCandidates()).join(" | ")}`);
 }
 
 export function resolveCsvPath() {
@@ -93,7 +114,7 @@ function zipToBorough(zip: string) {
   return "";
 }
 
-function inferBorough(row: Record<string, string>, address: string) {
+function inferBorough(row: SourceRow, address: string) {
   const listed = pick(row, ["Borough", "Boro", "borough", "County", "county"]);
   if (listed) return listed;
 
@@ -105,10 +126,11 @@ function inferBorough(row: Record<string, string>, address: string) {
   return zipMatch ? zipToBorough(zipMatch[1]) : "";
 }
 
-function normalizeJob(row: Record<string, string>, index: number): JobRecord {
+function normalizeJob(row: SourceRow, index: number): JobRecord {
   const id = pick(row, ["OMO", "Job ID", "job_id", "id", "omo", "EQ No", "eq_no"]) || `JOB-${index + 1}`;
   const address = pick(row, [
     "BuildingAddress",
+    "buildingAddress",
     "Address",
     "address",
     "Property Address",
@@ -122,33 +144,42 @@ function normalizeJob(row: Record<string, string>, index: number): JobRecord {
   ]);
   const borough = inferBorough(row, address);
   const trade = pick(row, ["Trade", "Trade_Summary", "trade", "trade_summary"]);
-  const awardDate = pick(row, ["AwardDate", "Award_Date", "AwardDate_dt"]);
+  const awardDate = pick(row, ["AwardDate", "awardDate", "Award_Date", "AwardDate_dt"]);
   const parsedAwardDate = parseJobDate(awardDate);
-  const workStartDate = pick(row, ["WorkStartDate", "StartDate", "ActualWorkStartDate", "Work_Start_Date", "start_date"]);
+  const workStartDate = pick(row, [
+    "WorkStartDate",
+    "startDate",
+    "StartDate",
+    "ActualWorkStartDate",
+    "Work_Start_Date",
+    "start_date",
+  ]);
   const workCompletionDate = pick(row, [
     "WorkCompletionDate",
+    "completionDate",
     "CompletionDate",
     "ActualWorkCompletionDate",
     "Work_Completion_Date",
     "completion_date",
   ]);
   const status = pick(row, ["Status", "status", "job_status", "Job Status", "state"]) || (parsedAwardDate ? "Awarded" : "Open");
-  const bidAmount = pick(row, ["BidAmount", "AwardAmount", "Award_Amount", "bid_amount"]);
+  const bidAmount = pick(row, ["BidAmount", "bidAmount", "AwardAmount", "Award_Amount", "bid_amount", "amountValue"]);
   const description = pick(row, [
     "JobDescription",
+    "description",
     "DescriptionOfWork",
     "FullDescription",
     "Description",
     "Summary",
     "JobDescription",
   ]);
-  const tenantName = cleanSourceValue(pick(row, ["TenantName", "Tenant", "tenant_name"]));
-  const tenantPhone = cleanSourceValue(pick(row, ["TenantPhone", "Phone", "phone"]));
+  const tenantName = cleanSourceValue(pick(row, ["TenantName", "tenantName", "Tenant", "tenant_name"]));
+  const tenantPhone = cleanSourceValue(pick(row, ["TenantPhone", "tenantPhone", "Phone", "phone"]));
   const location = pick(row, ["Location", "location"]);
   const latitude = pick(row, ["Latitude", "latitude"]);
   const longitude = pick(row, ["Longitude", "longitude"]);
-  const coaFile = pick(row, ["COAFile", "COA_File", "coa_file"]);
-  const itbFile = pick(row, ["ITBFile", "ITB_File", "itb_file"]);
+  const coaFile = pick(row, ["COAFile", "coaFile", "COA_File", "coa_file"]);
+  const itbFile = pick(row, ["ITBFile", "itbFile", "ITB_File", "itb_file"]);
 
   return {
     id,
@@ -174,7 +205,7 @@ function normalizeJob(row: Record<string, string>, index: number): JobRecord {
     hasMap: Boolean(latitude && longitude),
     coaFile,
     itbFile,
-    raw: row,
+    raw: row as Record<string, string>,
   };
 }
 
@@ -192,8 +223,23 @@ export function parseJobsFromCsv(csvText: string, overrides = readOverrides()): 
     skipEmptyLines: true,
   });
 
-  return ((parsed.data ?? []) as Record<string, string>[])
-    .map((row: Record<string, string>, index: number) => {
+  return normalizeJobs((parsed.data ?? []) as SourceRow[], overrides);
+}
+
+export function parseJobsFromJson(jsonText: string, overrides = readOverrides()): JobRecord[] {
+  const parsed = JSON.parse(jsonText) as unknown;
+  const rows = Array.isArray(parsed)
+    ? parsed
+    : parsed && typeof parsed === "object" && Array.isArray((parsed as { jobs?: unknown[] }).jobs)
+      ? (parsed as { jobs: unknown[] }).jobs
+      : [];
+
+  return normalizeJobs(rows.filter((row): row is SourceRow => Boolean(row) && typeof row === "object"), overrides);
+}
+
+function normalizeJobs(rows: SourceRow[], overrides = readOverrides()): JobRecord[] {
+  return rows
+    .map((row: SourceRow, index: number) => {
       const job = normalizeJob(row, index);
       const override = getOverrideForJob(job.id, overrides);
       const status = effectiveStatus(job.status, override);
@@ -211,21 +257,22 @@ export function parseJobsFromCsv(csvText: string, overrides = readOverrides()): 
 }
 
 export function getJobsSourceInfo() {
-  const csvPath = resolveCsvPath();
-  const stat = fs.statSync(csvPath);
+  const source = resolveJobsSourcePath();
+  const stat = fs.statSync(source.path);
 
   return {
-    path: csvPath,
+    path: source.path,
+    type: source.type,
     updatedAt: stat.mtime.toISOString(),
     size: stat.size,
   };
 }
 
 export function getJobs(): JobRecord[] {
-  const csvPath = resolveCsvPath();
-  const csvText = fs.readFileSync(csvPath, "utf-8");
+  const source = resolveJobsSourcePath();
+  const text = fs.readFileSync(source.path, "utf-8");
 
-  return parseJobsFromCsv(csvText);
+  return source.type === "json" ? parseJobsFromJson(text) : parseJobsFromCsv(text);
 }
 
 export function getJobById(id: string) {

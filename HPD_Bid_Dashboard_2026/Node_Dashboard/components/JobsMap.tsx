@@ -62,7 +62,18 @@ function escapeHtml(value: string) {
 }
 
 function formatMapDate(value: string) {
-  const date = new Date(value || "");
+  const raw = String(value || "").trim();
+  const isoDateOnly = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  const slashDateOnly = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  const date = isoDateOnly
+    ? new Date(Number(isoDateOnly[1]), Number(isoDateOnly[2]) - 1, Number(isoDateOnly[3]))
+    : slashDateOnly
+      ? new Date(
+        Number(slashDateOnly[3]) < 100 ? 2000 + Number(slashDateOnly[3]) : Number(slashDateOnly[3]),
+        Number(slashDateOnly[1]) - 1,
+        Number(slashDateOnly[2]),
+      )
+      : new Date(raw);
   if (Number.isNaN(date.getTime())) return "No date";
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
