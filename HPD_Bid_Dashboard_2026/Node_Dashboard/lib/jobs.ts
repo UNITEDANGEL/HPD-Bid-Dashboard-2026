@@ -32,7 +32,7 @@ function cleanSourceValue(value: string) {
   return text;
 }
 
-function csvCandidates() {
+export function csvCandidates() {
   return [
     path.resolve(process.cwd(), "..", "Fetcher_Output", "HPD_Bid_Fetcher_Master_2026.csv"),
     path.resolve(process.cwd(), "data", "merged_job_data.csv"),
@@ -41,7 +41,7 @@ function csvCandidates() {
   ];
 }
 
-function resolveCsvPath() {
+export function resolveCsvPath() {
   const csvPath = csvCandidates().find((candidate) => fs.existsSync(candidate));
   if (!csvPath) {
     throw new Error(`Required CSV not found. Checked: ${csvCandidates().join(" | ")}`);
@@ -186,10 +186,7 @@ function isFrom2026Onward(job: JobRecord) {
   return dates.some((date) => date.getFullYear() >= 2026);
 }
 
-export function getJobs(): JobRecord[] {
-  const csvPath = resolveCsvPath();
-  const csvText = fs.readFileSync(csvPath, "utf-8");
-  const overrides = readOverrides();
+export function parseJobsFromCsv(csvText: string, overrides = readOverrides()): JobRecord[] {
   const parsed = Papa.parse(csvText, {
     header: true,
     skipEmptyLines: true,
@@ -211,6 +208,24 @@ export function getJobs(): JobRecord[] {
       };
     })
     .filter(isFrom2026Onward);
+}
+
+export function getJobsSourceInfo() {
+  const csvPath = resolveCsvPath();
+  const stat = fs.statSync(csvPath);
+
+  return {
+    path: csvPath,
+    updatedAt: stat.mtime.toISOString(),
+    size: stat.size,
+  };
+}
+
+export function getJobs(): JobRecord[] {
+  const csvPath = resolveCsvPath();
+  const csvText = fs.readFileSync(csvPath, "utf-8");
+
+  return parseJobsFromCsv(csvText);
 }
 
 export function getJobById(id: string) {

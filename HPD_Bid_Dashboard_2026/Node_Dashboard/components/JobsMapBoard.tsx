@@ -5,7 +5,7 @@ import type { ChangeEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StatusBadge } from "./StatusBadge";
 import type { JobRecord } from "../lib/types";
-import { isMainMapStatus } from "../lib/workflow";
+import { isMainMapStatus, isTerminalStatus } from "../lib/workflow";
 import { compareJobsBySearch, matchesJobSearch } from "../lib/search";
 
 type Props = {
@@ -14,7 +14,7 @@ type Props = {
 
 type StatusView = "All" | "Open" | "Awarded" | "Pending";
 type TableMode = "live" | "queue" | "documents";
-type ActivePanel = "" | "filters" | "notifications" | "account" | "map" | "system" | "contact" | "jobs" | "add";
+type ActivePanel = "" | "filters" | "notifications" | "account" | "map" | "system" | "contact" | "jobs" | "add" | "sync";
 type ChartPeriod = "Last 12 Months" | "2026 YTD" | "Last 90 Days";
 type MediaFile = {
   url: string;
@@ -26,6 +26,15 @@ type FieldFlowEvent = {
   label: string;
   status: string;
   createdAt: string;
+};
+
+type SyncState = {
+  status: "checking" | "current" | "syncing" | "failed";
+  configured: boolean;
+  count: number;
+  lastSyncAt: string;
+  source: string;
+  message: string;
 };
 
 const STATUS_OVERRIDE_STORAGE_KEY = "hpd-job-status-overrides-v1";
@@ -135,6 +144,18 @@ function formatStampTime(value: string) {
   }).format(date);
 }
 
+function formatSyncTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "not synced";
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
 function activityStamp(job: JobRecord) {
   return formatShortDate(job.awardDate);
 }
@@ -150,6 +171,10 @@ function formatJobCompletionDate(job: JobRecord) {
 function displayStatus(job: JobRecord) {
   if (!job.status || isMainMapStatus(job.status)) return "Open";
   return job.status;
+}
+
+function isActiveMapJob(job: JobRecord) {
+  return job.hasMap && !isTerminalStatus(job.status);
 }
 
 function jobTitle(job: JobRecord) {
@@ -176,7 +201,6 @@ function statusMatches(job: JobRecord, status: StatusView) {
       rawStatus.includes("started") ||
       rawStatus.includes("work in progress") ||
       rawStatus.includes("no access") ||
-      rawStatus.includes("refused") ||
       rawStatus.includes("needs materials") ||
       rawStatus.includes("follow up") ||
       rawStatus.includes("partial")
@@ -337,6 +361,7 @@ function sparklinePath(values: number[]) {
 }
 
 export function JobsMapBoard({ jobs }: Props) {
+  const [sourceJobs, setSourceJobs] = useState<JobRecord[]>(jobs);
   const [query, setQuery] = useState("");
   const [borough, setBorough] = useState("");
   const [statusView, setStatusView] = useState<StatusView>("All");
@@ -352,6 +377,14 @@ export function JobsMapBoard({ jobs }: Props) {
   const [photoUrlsByJob, setPhotoUrlsByJob] = useState<Record<string, string[]>>({});
   const [jobStatusOverrides, setJobStatusOverrides] = useState<Record<string, string>>({});
   const [fieldFlowEventsByJob, setFieldFlowEventsByJob] = useState<Record<string, Record<string, FieldFlowEvent>>>({});
+  const [syncState, setSyncState] = useState<SyncState>({
+    status: "checking",
+    configured: false,
+    count: jobs.length,
+    lastSyncAt: "",
+    source: "Bundled CSV",
+    message: "Checking data source...",
+  });
   const [mapFitNonce, setMapFitNonce] = useState(0);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const mobileBoroughRowRef = useRef<HTMLDivElement>(null);
@@ -359,7 +392,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   const effectiveJobs = useMemo(
-    () => jobs.map((job) => {
+    () => sourceJobs.map((job) => {
       const override = realFieldValue(jobStatusOverrides[job.id] || "");
       if (!override) return job;
       return {
@@ -369,9 +402,9 @@ export function JobsMapBoard({ jobs }: Props) {
         workflowStatus: override,
       };
     }),
-    [jobStatusOverrides, jobs],
+    [jobStatusOverrides, sourceJobs],
   );
-  const mappableJobs = useMemo(() => effectiveJobs.filter((job) => job.hasMap), [effectiveJobs]);
+  const mappableJobs = useMemo(() => effectiveJobs.filter(isActiveMapJob), [effectiveJobs]);
   const boroughs = useMemo(() => {
     const dataBoroughs = unique(mappableJobs.map((job) => job.borough));
     return [
@@ -464,6 +497,14 @@ export function JobsMapBoard({ jobs }: Props) {
   const trendPath = sparklinePath(trend);
 
   useEffect(() => {
+    setSourceJobs(jobs);
+    setSyncState((current) => ({
+      ...current,
+      count: jobs.length,
+    }));
+  }, [jobs]);
+
+  useEffect(() => {
     try {
       const stored = window.localStorage.getItem(STATUS_OVERRIDE_STORAGE_KEY);
       if (!stored) {
@@ -484,6 +525,39 @@ export function JobsMapBoard({ jobs }: Props) {
       setFieldFlowEventsByJob({});
     }
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    fetch("/api/jobs/sync")
+      .then(async (response) => {
+        const data = await response.json() as Partial<SyncState> & { ok?: boolean; error?: string };
+        if (!active) return;
+        setSyncState({
+          status: data.ok ? "current" : "failed",
+          configured: Boolean(data.configured),
+          count: Number(data.count || sourceJobs.length || jobs.length),
+          lastSyncAt: String(data.lastSyncAt || ""),
+          source: String(data.source || "Bundled CSV"),
+          message: String(data.message || data.error || "Data source checked."),
+        });
+      })
+      .catch(() => {
+        if (!active) return;
+        setSyncState({
+          status: "failed",
+          configured: false,
+          count: sourceJobs.length,
+          lastSyncAt: "",
+          source: "Bundled CSV",
+          message: "Unable to check data source right now.",
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [jobs.length]);
 
   useEffect(() => {
     let active = true;
@@ -671,6 +745,7 @@ export function JobsMapBoard({ jobs }: Props) {
 
     const jobId = selected.id;
     const action = actionForStatus(nextStatus);
+    const closesActiveMap = isTerminalStatus(nextStatus);
     const existingStamp = fieldFlowEventsByJob[jobId]?.[nextStatus];
     if (existingStamp) {
       setJobStatusOverrides((current) => {
@@ -682,8 +757,16 @@ export function JobsMapBoard({ jobs }: Props) {
         }
         return next;
       });
-      setStatusMediaPrompt(action?.phase === "outcome" ? { jobId, label: action.label } : null);
-      notify(`${action?.label || nextStatus} already saved at ${formatStampTime(existingStamp.createdAt)}.`);
+      setStatusMediaPrompt(action?.phase === "outcome" && !closesActiveMap ? { jobId, label: action.label } : null);
+      if (closesActiveMap) {
+        setSelectedId("");
+        setMapFitNonce((current) => current + 1);
+      }
+      notify(
+        closesActiveMap
+          ? `${action?.label || nextStatus} already saved at ${formatStampTime(existingStamp.createdAt)}. Removed from active map.`
+          : `${action?.label || nextStatus} already saved at ${formatStampTime(existingStamp.createdAt)}.`,
+      );
       return;
     }
 
@@ -713,9 +796,12 @@ export function JobsMapBoard({ jobs }: Props) {
       writeLocalFlowMap(next);
       return next;
     });
-    setStatusMediaPrompt(action?.phase === "outcome" ? { jobId, label: action.label } : null);
+    setStatusMediaPrompt(action?.phase === "outcome" && !closesActiveMap ? { jobId, label: action.label } : null);
 
-    if (!statusMatches({ ...selected, status: nextStatus, statusOverride: nextStatus, workflowStatus: nextStatus }, statusView)) {
+    if (closesActiveMap) {
+      setSelectedId("");
+      setMapFitNonce((current) => current + 1);
+    } else if (!statusMatches({ ...selected, status: nextStatus, statusOverride: nextStatus, workflowStatus: nextStatus }, statusView)) {
       setStatusView("All");
     }
 
@@ -731,9 +817,14 @@ export function JobsMapBoard({ jobs }: Props) {
       if (savedStatus) {
         setJobStatusOverrides((current) => ({ ...current, [jobId]: savedStatus }));
       }
-      notify(`${jobId} saved: ${savedStatus || nextStatus}.`);
+      notify(`${jobId} saved: ${savedStatus || nextStatus}.${isTerminalStatus(savedStatus || nextStatus) ? " Removed from active map." : ""}`);
     } catch (error) {
-      notify(error instanceof Error ? error.message : `${jobId} updated on this device.`);
+      const errorMessage = error instanceof Error ? error.message : "";
+      notify(
+        closesActiveMap
+          ? `${jobId} saved on this device and removed from active map.`
+          : errorMessage || `${jobId} updated on this device.`,
+      );
     }
   }
 
@@ -775,6 +866,56 @@ export function JobsMapBoard({ jobs }: Props) {
       notify(`${jobId} status cleared.`);
     } catch (error) {
       notify(error instanceof Error ? `Local clear done. Shared clear: ${error.message}` : `${jobId} local status cleared.`);
+    }
+  }
+
+  async function syncJobsNow() {
+    setSyncState((current) => ({
+      ...current,
+      status: "syncing",
+      message: "Syncing latest COA data...",
+    }));
+
+    try {
+      const response = await fetch("/api/jobs/sync", { method: "POST" });
+      const data = await response.json() as Partial<SyncState> & {
+        ok?: boolean;
+        error?: string;
+        jobs?: JobRecord[];
+      };
+      const message = String(data.message || data.error || "Sync finished.");
+      const nextJobs = Array.isArray(data.jobs) ? data.jobs : [];
+
+      setSyncState({
+        status: data.ok ? "current" : "failed",
+        configured: Boolean(data.configured),
+        count: Number(data.count || nextJobs.length || sourceJobs.length),
+        lastSyncAt: String(data.lastSyncAt || ""),
+        source: String(data.source || "Bundled CSV"),
+        message,
+      });
+
+      if (!response.ok || !data.ok) {
+        notify(message);
+        return;
+      }
+
+      if (nextJobs.length) {
+        setSourceJobs(nextJobs);
+        setSelectedId("");
+        setUserLocation(null);
+        setMapFitNonce((current) => current + 1);
+      }
+
+      notify(message);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Sync failed.";
+      setSyncState((current) => ({
+        ...current,
+        status: "failed",
+        message,
+      }));
+      notify(message);
     }
   }
 
@@ -886,17 +1027,20 @@ export function JobsMapBoard({ jobs }: Props) {
     contact: "Job Contact",
     jobs: "Visible Jobs",
     add: "Quick Actions",
+    sync: "Data Sync",
   };
   const panelTitle = activePanel ? panelTitles[activePanel] : "";
   const systemReport = [
     "HPD Bid Dashboard 2026",
     `Generated: ${new Date().toLocaleString()}`,
-    `Loaded jobs: ${jobs.length}`,
+    `Loaded jobs: ${sourceJobs.length}`,
     `Mapped jobs: ${mappableJobs.length}`,
     `Filtered jobs: ${filtered.length}`,
     `ITB files: ${itbCount}`,
     `COA awards: ${coaCount}`,
     `Command queue: ${queuedRows.length}`,
+    `Data source: ${syncState.source}`,
+    `Last sync: ${formatSyncTime(syncState.lastSyncAt)}`,
   ].join("\n");
   const trimmedQuery = query.trim();
   const emptyMapScope = borough || (statusView !== "All" ? statusView : trimmedQuery ? "Search" : "No results");
@@ -1205,7 +1349,13 @@ export function JobsMapBoard({ jobs }: Props) {
               <span className="mobile-live-line">
                 <i aria-hidden="true" />
                 Live
-                <small>{jobs.length} Active Jobs</small>
+                <small>{mappableJobs.length} Active Jobs</small>
+              </span>
+              <span className={`mobile-sync-inline is-${syncState.status}`}>
+                <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
+                  {syncState.status === "syncing" ? "Syncing" : "Sync"}
+                </button>
+                <small>{syncState.status === "failed" ? "Sync needs setup" : `Last ${formatSyncTime(syncState.lastSyncAt)}`}</small>
               </span>
             </div>
           </div>
@@ -1682,8 +1832,18 @@ export function JobsMapBoard({ jobs }: Props) {
                   <div>
                     <strong>Project Workspace</strong>
                     <span>Live dashboard data</span>
-                    <small>{savedJobs.length} saved jobs · {filtered.length} filtered records</small>
+                    <small>{savedJobs.length} saved jobs · {filtered.length} filtered records · Last sync {formatSyncTime(syncState.lastSyncAt)}</small>
                   </div>
+                </div>
+                <div className={`sync-drawer-card is-${syncState.status}`}>
+                  <div>
+                    <strong>{syncState.source}</strong>
+                    <span>{syncState.message}</span>
+                    <small>{syncState.count} jobs · Last sync {formatSyncTime(syncState.lastSyncAt)}</small>
+                  </div>
+                  <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
+                    {syncState.status === "syncing" ? "Syncing" : "Sync Now"}
+                  </button>
                 </div>
                 <div className="drawer-actions is-grid">
                   <a href="/jobs">Open jobs board</a>
@@ -1705,6 +1865,25 @@ export function JobsMapBoard({ jobs }: Props) {
                   )}
                   <a href={exportDataHref} download={exportFileName} onClick={() => notify(`${filtered.length} records exported.`)}>Download CSV</a>
                   <a href="/api/jobs" target="_blank" rel="noreferrer">Open API data</a>
+                </div>
+              </div>
+            ) : null}
+
+            {activePanel === "sync" ? (
+              <div className="drawer-stack">
+                <div className={`sync-drawer-card is-${syncState.status}`}>
+                  <div>
+                    <strong>{syncState.status === "failed" ? "Sync needs attention" : syncState.source}</strong>
+                    <span>{syncState.message}</span>
+                    <small>{syncState.count} jobs · Last sync {formatSyncTime(syncState.lastSyncAt)}</small>
+                  </div>
+                  <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
+                    {syncState.status === "syncing" ? "Syncing" : "Sync Now"}
+                  </button>
+                </div>
+                <div className="drawer-actions is-grid">
+                  <a href="/api/jobs" target="_blank" rel="noreferrer">Open jobs API</a>
+                  <button type="button" onClick={() => setActivePanel("")}>Back to map</button>
                 </div>
               </div>
             ) : null}

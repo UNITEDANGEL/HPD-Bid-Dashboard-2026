@@ -51,6 +51,30 @@ function markerIcon(color: string, selected: boolean) {
   });
 }
 
+function escapeHtml(value: string) {
+  return String(value || "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[character] || character));
+}
+
+function formatMapDate(value: string) {
+  const date = new Date(value || "");
+  if (Number.isNaN(date.getTime())) return "No date";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+function mapDateForJob(job: JobRecord) {
+  return formatMapDate(job.startDate || job.awardDate);
+}
+
 type JobCluster = {
   id: string;
   jobs: JobRecord[];
@@ -59,11 +83,15 @@ type JobCluster = {
   selected: boolean;
 };
 
-function clusterIcon(color: string, count: number, selected: boolean) {
+function clusterIcon(color: string, count: number, selected: boolean, leadJob: JobRecord) {
+  const label = selected
+    ? `<span class="job-cluster-label">${escapeHtml(leadJob.id)}<small>${escapeHtml(mapDateForJob(leadJob))}</small></span>`
+    : "";
+
   return L.divIcon({
     className: "job-cluster-icon",
-    html: `<span class="job-cluster ${selected ? "is-selected" : ""}" style="--pin-color: ${color}">${count}</span>`,
-    iconSize: selected ? [58, 58] : [38, 38],
+    html: `<span class="job-cluster-wrap"><span class="job-cluster ${selected ? "is-selected" : ""}" style="--pin-color: ${color}">${count}</span>${label}</span>`,
+    iconSize: selected ? [154, 58] : [38, 38],
     iconAnchor: selected ? [29, 29] : [19, 19],
     popupAnchor: [0, -22],
   });
@@ -206,16 +234,17 @@ export function JobsMap({ jobs, selectedId, onSelect, focusCenter, focusZoom, fo
             <Marker
               key={cluster.id}
               position={cluster.center}
-              icon={clusterIcon(cluster.color, cluster.jobs.length, cluster.selected)}
+              icon={clusterIcon(cluster.color, cluster.jobs.length, cluster.selected, leadJob)}
               eventHandlers={{
                 click: () => onSelect(leadJob.id),
               }}
             >
               <Popup>
                 <div className="map-popup">
-                  <strong>{cluster.jobs.length} mapped jobs</strong>
-                  <span>{leadJob.borough || "Unknown borough"}</span>
+                  <strong>{cluster.jobs.length === 1 ? leadJob.id : `${cluster.jobs.length} mapped jobs`}</strong>
+                  <span>OMO {leadJob.id} | Start {mapDateForJob(leadJob)}</span>
                   <span>{leadJob.address || "No address listed"}</span>
+                  <span>{leadJob.borough || "Unknown borough"} | {leadJob.bidAmount || "Amount not listed"}</span>
                   <button type="button" className="map-popup-button" onClick={() => onSelect(leadJob.id)}>
                     Open details
                   </button>
@@ -245,7 +274,7 @@ export function JobsMap({ jobs, selectedId, onSelect, focusCenter, focusZoom, fo
                   <strong>{job.id}</strong>
                   <span>{job.address || "No address listed"}</span>
                   <span>{job.borough || "Unknown borough"} | {job.trade || "Trade not listed"}</span>
-                  <span>{job.awardDate || "Award date not listed"}</span>
+                  <span>Start {mapDateForJob(job)}</span>
                   <span>{job.bidAmount || "Not listed"}</span>
                   <button type="button" className="map-popup-button" onClick={() => onSelect(job.id)}>
                     Open details
