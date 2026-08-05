@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-08-05T11:17:51.794Z",
-  "totalJobs": 610,
+  "generatedAt": "2026-08-05T12:50:09.547Z",
+  "totalJobs": 626,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 6,
+  "missingItbPage3Descriptions": 22,
   "badDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 5,
+  "missingPage3Images": 21,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
@@ -60,6 +60,134 @@
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
         "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "ER02050",
+        "Address": "520 WEST 114 STREET, 10025",
+        "ITB": "ER02050_073026010023.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT ENTRANCE DOOR TO APT 83. MAKE DOOR SELF CLOSING. NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT APT 83. INSTALL "
+      },
+      {
+        "OMO": "ER02061",
+        "Address": "65 WEST 127 STREET, 10027",
+        "ITB": "ER02061_073026034817.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT BLDG ENTRANCE DOOR, MAKE DOOR SELF CLOSING AND L ATCHING TOTAL DOORS= (1) NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE W"
+      },
+      {
+        "OMO": "ER01919",
+        "Address": "2205 WALTON AVENUE, 10453",
+        "ITB": "ER01919_073026120500.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK\" MAKE THE BUILDING ENTRANCE DOOR SELF CLOSE AND LATC H. AT BUILDING ENTRAN"
+      },
+      {
+        "OMO": "ER00460",
+        "Address": "81-19 101 AVENUE, 11416",
+        "ITB": "ER00460_072926013951.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": INSTALL PASSAGE LOCKSET AND INSTALL S.C HINGES NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK AT BLDG ENTRANCE- PROPERLY"
+      },
+      {
+        "OMO": "ER02178",
+        "Address": "133-24 SANFORD AVENUE, 11355",
+        "ITB": "ER02178_072926030454.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": #1: COMPACTOR CLOSET DOOR, LOCATED AT 2ND STORY, PU BLIC HALL.. #2: COMPACTOR CLOSET DOOR, LOCATED AT 1ST STORY, PU BLIC HALL.. #1: MAKE A"
+      },
+      {
+        "OMO": "ER02141",
+        "Address": "64 SCHOLES STREET, 11206",
+        "ITB": "ER02141_073026020300.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT APT 4D, 4th STORY, 4th APARTMENT FROM EAST AT SO UTH NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT APT 4D, 4th "
+      },
+      {
+        "OMO": "ER02022",
+        "Address": "162-18 108 AVENUE, 11433",
+        "ITB": "ER02022_072826102558.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS Provide/Install Abate Remove Dele"
+      },
+      {
+        "OMO": "ER01987",
+        "Address": "978 EAST 174 STREET, 10460",
+        "ITB": "ER01987_072826103856.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": LOCATION: APARTMENT 1A, 1ST STORY, 3RD APARTMENT FR OM EAST AT SOUTH (SELF CLOSE/ LATCH) -EMERGENCY OPERATIONS DIVISION \"ESSEN TIAL SERVIC"
+      },
+      {
+        "OMO": "ER02048",
+        "Address": "105 WEST 120 STREET, 10027",
+        "ITB": "ER02048_072926023827.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT APT 206 SECOND BATHROOM FROM EAST ( HALLWAY BATH ROOM), RESTORE LEAKY FAUCET NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVIC"
+      },
+      {
+        "OMO": "EQ32057",
+        "Address": "63 EAST 236 STREET, 10470",
+        "ITB": "EQ32057_072826043834.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": STOOP TREADS ( BLDG FRONT 7TH TRAD UP FROM THE BOTT OM ) CONCRETE AND REPAIR TREAD LOCATION: BUILDING FRONT STOOP – 7TH TREAD FROM BOT TOM"
+      },
+      {
+        "OMO": "ER01923",
+        "Address": "47 EAST 34 STREET, 10016",
+        "ITB": "ER01923_072826025149.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT DOOR LEADING TO REFUSE ROOM ( 16TH STORY), MAKE DOOR SELF CLOSING NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT"
+      },
+      {
+        "OMO": "ER01941",
+        "Address": "89-10 WHITNEY AVENUE, 11373",
+        "ITB": "ER01941_072726033628.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT COMPACTOR CLOSET DOOR 5TH STORY REPAIR FIRE DOOR TO ADHERE TO LOCAL "
+      },
+      {
+        "OMO": "ER01944",
+        "Address": "102-43 CORONA AVENUE, 11368",
+        "ITB": "ER01944_072726033741.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR, SECTION 102-45 REPAIR FIRE DOOR TO ADHERE TO"
+      },
+      {
+        "OMO": "ER01720",
+        "Address": "84-01 MAIN STREET, 11435",
+        "ITB": "ER01720_072726094239.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT APT: 408 LOCATION: BATHROOM REPAIR LEAK AND RESTORE BROKEN PLASTER. TRACE, LOCATE AND PROPERLY REPAIR THE SOURCES OF CO NCEALED WATER L"
+      },
+      {
+        "OMO": "ER01737",
+        "Address": "765 RIVERSIDE DRIVE, 10032",
+        "ITB": "ER01737_072726123759.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": MAKE DOORS SELF CLOSING AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th STORY. AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th ST ORY. MAK"
+      },
+      {
+        "OMO": "ER01282",
+        "Address": "1629 EAST 12 STREET, 11229",
+        "ITB": "ER01282_072726043234.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT DOOR LEADING TO NORTH YARD AT PUBLIC HALL, 1ST S TORY. REPAIR DOOR TO"
       }
     ],
     "badDescriptions": [],
@@ -105,6 +233,134 @@
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
         "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "ER02050",
+        "Address": "520 WEST 114 STREET, 10025",
+        "ITB": "ER02050_073026010023.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT ENTRANCE DOOR TO APT 83. MAKE DOOR SELF CLOSING. NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT APT 83. INSTALL "
+      },
+      {
+        "OMO": "ER02061",
+        "Address": "65 WEST 127 STREET, 10027",
+        "ITB": "ER02061_073026034817.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT BLDG ENTRANCE DOOR, MAKE DOOR SELF CLOSING AND L ATCHING TOTAL DOORS= (1) NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE W"
+      },
+      {
+        "OMO": "ER01919",
+        "Address": "2205 WALTON AVENUE, 10453",
+        "ITB": "ER01919_073026120500.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK\" MAKE THE BUILDING ENTRANCE DOOR SELF CLOSE AND LATC H. AT BUILDING ENTRAN"
+      },
+      {
+        "OMO": "ER00460",
+        "Address": "81-19 101 AVENUE, 11416",
+        "ITB": "ER00460_072926013951.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": INSTALL PASSAGE LOCKSET AND INSTALL S.C HINGES NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK AT BLDG ENTRANCE- PROPERLY"
+      },
+      {
+        "OMO": "ER02178",
+        "Address": "133-24 SANFORD AVENUE, 11355",
+        "ITB": "ER02178_072926030454.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": #1: COMPACTOR CLOSET DOOR, LOCATED AT 2ND STORY, PU BLIC HALL.. #2: COMPACTOR CLOSET DOOR, LOCATED AT 1ST STORY, PU BLIC HALL.. #1: MAKE A"
+      },
+      {
+        "OMO": "ER02141",
+        "Address": "64 SCHOLES STREET, 11206",
+        "ITB": "ER02141_073026020300.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT APT 4D, 4th STORY, 4th APARTMENT FROM EAST AT SO UTH NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT APT 4D, 4th "
+      },
+      {
+        "OMO": "ER02022",
+        "Address": "162-18 108 AVENUE, 11433",
+        "ITB": "ER02022_072826102558.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS Provide/Install Abate Remove Dele"
+      },
+      {
+        "OMO": "ER01987",
+        "Address": "978 EAST 174 STREET, 10460",
+        "ITB": "ER01987_072826103856.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": LOCATION: APARTMENT 1A, 1ST STORY, 3RD APARTMENT FR OM EAST AT SOUTH (SELF CLOSE/ LATCH) -EMERGENCY OPERATIONS DIVISION \"ESSEN TIAL SERVIC"
+      },
+      {
+        "OMO": "ER02048",
+        "Address": "105 WEST 120 STREET, 10027",
+        "ITB": "ER02048_072926023827.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT APT 206 SECOND BATHROOM FROM EAST ( HALLWAY BATH ROOM), RESTORE LEAKY FAUCET NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVIC"
+      },
+      {
+        "OMO": "EQ32057",
+        "Address": "63 EAST 236 STREET, 10470",
+        "ITB": "EQ32057_072826043834.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": STOOP TREADS ( BLDG FRONT 7TH TRAD UP FROM THE BOTT OM ) CONCRETE AND REPAIR TREAD LOCATION: BUILDING FRONT STOOP – 7TH TREAD FROM BOT TOM"
+      },
+      {
+        "OMO": "ER01923",
+        "Address": "47 EAST 34 STREET, 10016",
+        "ITB": "ER01923_072826025149.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT DOOR LEADING TO REFUSE ROOM ( 16TH STORY), MAKE DOOR SELF CLOSING NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT"
+      },
+      {
+        "OMO": "ER01941",
+        "Address": "89-10 WHITNEY AVENUE, 11373",
+        "ITB": "ER01941_072726033628.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT COMPACTOR CLOSET DOOR 5TH STORY REPAIR FIRE DOOR TO ADHERE TO LOCAL "
+      },
+      {
+        "OMO": "ER01944",
+        "Address": "102-43 CORONA AVENUE, 11368",
+        "ITB": "ER01944_072726033741.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR, SECTION 102-45 REPAIR FIRE DOOR TO ADHERE TO"
+      },
+      {
+        "OMO": "ER01720",
+        "Address": "84-01 MAIN STREET, 11435",
+        "ITB": "ER01720_072726094239.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT APT: 408 LOCATION: BATHROOM REPAIR LEAK AND RESTORE BROKEN PLASTER. TRACE, LOCATE AND PROPERLY REPAIR THE SOURCES OF CO NCEALED WATER L"
+      },
+      {
+        "OMO": "ER01737",
+        "Address": "765 RIVERSIDE DRIVE, 10032",
+        "ITB": "ER01737_072726123759.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": MAKE DOORS SELF CLOSING AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th STORY. AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th ST ORY. MAK"
+      },
+      {
+        "OMO": "ER01282",
+        "Address": "1629 EAST 12 STREET, 11229",
+        "ITB": "ER01282_072726043234.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT DOOR LEADING TO NORTH YARD AT PUBLIC HALL, 1ST S TORY. REPAIR DOOR TO"
       }
     ]
   }
