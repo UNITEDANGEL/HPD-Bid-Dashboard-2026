@@ -60,6 +60,7 @@ jobs:
         run: node scripts/check-fetcher-health.js
 
       - name: Sync public data
+        if: always()
         run: |
           cp data/COA_Fetcher_2026.json public/data/COA_Fetcher_2026.json
           cp data/fetcher_latest_status.json public/data/fetcher_latest_status.json
@@ -75,6 +76,7 @@ jobs:
         run: npm run build
 
       - name: Commit fetcher output
+        if: always()
         shell: bash
         run: |
           git config user.name "github-actions"

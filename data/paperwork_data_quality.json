@@ -1,21 +1,143 @@
 {
-  "generatedAt": "2026-07-21T17:02:56.925Z",
-  "totalJobs": 594,
+  "generatedAt": "2026-08-05T14:01:47.636Z",
+  "totalJobs": 623,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 0,
+  "missingItbPage3Descriptions": 7,
   "badDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 0,
+  "missingPage3Images": 8,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
     "missingDescriptions": [],
-    "missingItbPage3Descriptions": [],
+    "missingItbPage3Descriptions": [
+      {
+        "OMO": "ER01474",
+        "Address": "260 PARKHILL AVENUE, 10304",
+        "ITB": "ER01474_072426113922.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOO"
+      },
+      {
+        "OMO": "ER02022",
+        "Address": "162-18 108 AVENUE, 11433",
+        "ITB": "ER02022_073026021712.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "ER01987",
+        "Address": "978 EAST 174 STREET, 10460",
+        "ITB": "ER01987_073026020329.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "EQ32057",
+        "Address": "63 EAST 236 STREET, 10470",
+        "ITB": "EQ32057_072926055505.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "ER01923",
+        "Address": "47 EAST 34 STREET, 10016",
+        "ITB": "ER01923_072926025331.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "ER01941",
+        "Address": "89-10 WHITNEY AVENUE, 11373",
+        "ITB": "ER01941_072926021943.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "ER01944",
+        "Address": "102-43 CORONA AVENUE, 11368",
+        "ITB": "ER01944_072926021204.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      }
+    ],
     "badDescriptions": [],
     "sourceReviewJobs": [],
     "missingItbFiles": [],
-    "missingPage3Images": []
+    "missingPage3Images": [
+      {
+        "OMO": "ER01474",
+        "Address": "260 PARKHILL AVENUE, 10304",
+        "ITB": "ER01474_072426113922.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOO"
+      },
+      {
+        "OMO": "EQ31241",
+        "Address": "129-25 101 AVENUE, 11419",
+        "ITB": "EQ31241_072426102231.pdf",
+        "Source": "ITB_PAGE_3",
+        "Status": "MATCHED",
+        "Preview": "REPAIR THE LOCKSET AT FIRE DOOR LEADING TO STAIR CASE, PUBLIC HALL, 2ND STORY. REPLACE LOCKSET ON BUILDING ENTRANCE DOOR. NYC HPD EMERGENCY "
+      },
+      {
+        "OMO": "ER02022",
+        "Address": "162-18 108 AVENUE, 11433",
+        "ITB": "ER02022_073026021712.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "ER01987",
+        "Address": "978 EAST 174 STREET, 10460",
+        "ITB": "ER01987_073026020329.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "EQ32057",
+        "Address": "63 EAST 236 STREET, 10470",
+        "ITB": "EQ32057_072926055505.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "ER01923",
+        "Address": "47 EAST 34 STREET, 10016",
+        "ITB": "ER01923_072926025331.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "ER01941",
+        "Address": "89-10 WHITNEY AVENUE, 11373",
+        "ITB": "ER01941_072926021943.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "ER01944",
+        "Address": "102-43 CORONA AVENUE, 11368",
+        "ITB": "ER01944_072926021204.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      }
+    ]
   }
 }
