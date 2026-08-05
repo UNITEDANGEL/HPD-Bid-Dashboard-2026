@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-08-05T18:17:21.318Z",
-  "totalJobs": 627,
+  "generatedAt": "2026-08-05T20:22:25.445Z",
+  "totalJobs": 628,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 11,
+  "missingItbPage3Descriptions": 12,
   "badDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 22,
+  "missingPage3Images": 23,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
@@ -100,6 +100,14 @@
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
         "Preview": ": INSTALL LOCK SET AT BLDG ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BLDG ENTRANCE DOOR INSTALL NEW"
+      },
+      {
+        "OMO": "ER02482",
+        "Address": "24-16 QUEENS PLAZA SOUTH, 11101",
+        "ITB": "ER02482_080426103502.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": REPLACE 1ST STY HOPPER CHUTE NYC HPD EMERGENCY OPERATIONS DIVISION - (ESSENTIAL SERVICE WORK) AT HOPPER DOOR LOCATED AT :PUBLIC HALL, ( 1S"
       }
     ],
     "badDescriptions": [],
@@ -281,6 +289,14 @@
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
         "Preview": ": INSTALL LOCK SET AT BLDG ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BLDG ENTRANCE DOOR INSTALL NEW"
+      },
+      {
+        "OMO": "ER02482",
+        "Address": "24-16 QUEENS PLAZA SOUTH, 11101",
+        "ITB": "ER02482_080426103502.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": REPLACE 1ST STY HOPPER CHUTE NYC HPD EMERGENCY OPERATIONS DIVISION - (ESSENTIAL SERVICE WORK) AT HOPPER DOOR LOCATED AT :PUBLIC HALL, ( 1S"
       }
     ]
   }

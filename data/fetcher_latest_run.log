@@ -1,4 +1,4 @@
-Fetcher run started: 2026-08-05T18:16:29.789Z
+Fetcher run started: 2026-08-05T20:21:37.631Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -16,32 +16,32 @@ $ python FetchrMatcherV5.py --update --days 14
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
 GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/07/22 before:2026/08/06
-COA items parsed (latest per OMO): 31
-ITB items parsed (latest per OMO): 31
-Final JobRows: 31
+COA items parsed (latest per OMO): 32
+ITB items parsed (latest per OMO): 32
+Final JobRows: 32
 
 CSV saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.csv
 JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.json
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/31 [00:00<?, ?it/s]Downloading COA messages:   3%|▎         | 1/31 [00:00<00:03,  7.56it/s]Downloading COA messages:   6%|▋         | 2/31 [00:00<00:04,  6.41it/s]Downloading COA messages:  10%|▉         | 3/31 [00:00<00:05,  4.82it/s]Downloading COA messages:  13%|█▎        | 4/31 [00:00<00:05,  4.57it/s]Downloading COA messages:  16%|█▌        | 5/31 [00:01<00:07,  3.32it/s]Downloading COA messages:  19%|█▉        | 6/31 [00:01<00:06,  3.90it/s]Downloading COA messages:  23%|██▎       | 7/31 [00:02<00:11,  2.11it/s]Downloading COA messages:  26%|██▌       | 8/31 [00:02<00:08,  2.79it/s]Downloading COA messages:  29%|██▉       | 9/31 [00:02<00:06,  3.15it/s]Downloading COA messages:  35%|███▌      | 11/31 [00:03<00:06,  3.07it/s]Downloading COA messages:  39%|███▊      | 12/31 [00:03<00:05,  3.60it/s]Downloading COA messages:  42%|████▏     | 13/31 [00:04<00:06,  2.72it/s]Downloading COA messages:  45%|████▌     | 14/31 [00:04<00:05,  3.23it/s]Downloading COA messages:  48%|████▊     | 15/31 [00:04<00:05,  3.03it/s]Downloading COA messages:  52%|█████▏    | 16/31 [00:04<00:04,  3.41it/s]Downloading COA messages:  55%|█████▍    | 17/31 [00:04<00:03,  4.12it/s]Downloading COA messages:  58%|█████▊    | 18/31 [00:05<00:03,  3.51it/s]Downloading COA messages:  61%|██████▏   | 19/31 [00:05<00:02,  4.33it/s]Downloading COA messages:  65%|██████▍   | 20/31 [00:06<00:03,  3.08it/s]Downloading COA messages:  71%|███████   | 22/31 [00:06<00:01,  4.54it/s]Downloading COA messages:  77%|███████▋  | 24/31 [00:06<00:01,  5.74it/s]Downloading COA messages:  81%|████████  | 25/31 [00:06<00:01,  5.80it/s]Downloading COA messages:  84%|████████▍ | 26/31 [00:06<00:00,  6.44it/s]Downloading COA messages:  87%|████████▋ | 27/31 [00:06<00:00,  5.79it/s]Downloading COA messages:  94%|█████████▎| 29/31 [00:07<00:00,  6.96it/s]Downloading COA messages: 100%|██████████| 31/31 [00:07<00:00,  7.99it/s]Downloading COA messages: 100%|██████████| 31/31 [00:07<00:00,  4.25it/s]
-Geocoding COA addresses:   0%|          | 0/31 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 31/31 [00:00<00:00, 471099.36it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/31 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   3%|▎         | 1/31 [00:00<00:20,  1.45it/s]Fetching ITBs for COA OMOs:   6%|▋         | 2/31 [00:01<00:19,  1.49it/s]Fetching ITBs for COA OMOs:  10%|▉         | 3/31 [00:01<00:16,  1.65it/s]Fetching ITBs for COA OMOs:  13%|█▎        | 4/31 [00:02<00:16,  1.59it/s]Fetching ITBs for COA OMOs:  16%|█▌        | 5/31 [00:03<00:15,  1.66it/s]Fetching ITBs for COA OMOs:  19%|█▉        | 6/31 [00:03<00:14,  1.70it/s]Fetching ITBs for COA OMOs:  23%|██▎       | 7/31 [00:04<00:14,  1.69it/s]Fetching ITBs for COA OMOs:  26%|██▌       | 8/31 [00:04<00:12,  1.81it/s]Fetching ITBs for COA OMOs:  29%|██▉       | 9/31 [00:05<00:12,  1.76it/s]Fetching ITBs for COA OMOs:  32%|███▏      | 10/31 [00:05<00:11,  1.89it/s]Fetching ITBs for COA OMOs:  35%|███▌      | 11/31 [00:06<00:10,  1.92it/s]Fetching ITBs for COA OMOs:  39%|███▊      | 12/31 [00:06<00:09,  1.98it/s]Fetching ITBs for COA OMOs:  42%|████▏     | 13/31 [00:07<00:08,  2.05it/s]Fetching ITBs for COA OMOs:  45%|████▌     | 14/31 [00:07<00:07,  2.14it/s]Fetching ITBs for COA OMOs:  48%|████▊     | 15/31 [00:08<00:07,  2.16it/s]Fetching ITBs for COA OMOs:  52%|█████▏    | 16/31 [00:08<00:07,  1.89it/s]Fetching ITBs for COA OMOs:  55%|█████▍    | 17/31 [00:09<00:07,  1.96it/s]Fetching ITBs for COA OMOs:  58%|█████▊    | 18/31 [00:19<00:46,  3.60s/it]Fetching ITBs for COA OMOs:  61%|██████▏   | 19/31 [00:20<00:32,  2.67s/it]Fetching ITBs for COA OMOs:  65%|██████▍   | 20/31 [00:21<00:22,  2.02s/it]Fetching ITBs for COA OMOs:  68%|██████▊   | 21/31 [00:21<00:15,  1.59s/it]Fetching ITBs for COA OMOs:  71%|███████   | 22/31 [00:22<00:11,  1.25s/it]Fetching ITBs for COA OMOs:  74%|███████▍  | 23/31 [00:22<00:08,  1.01s/it]Fetching ITBs for COA OMOs:  77%|███████▋  | 24/31 [00:22<00:05,  1.20it/s]Fetching ITBs for COA OMOs:  81%|████████  | 25/31 [00:23<00:04,  1.42it/s]Fetching ITBs for COA OMOs:  84%|████████▍ | 26/31 [00:23<00:03,  1.61it/s]Fetching ITBs for COA OMOs:  87%|████████▋ | 27/31 [00:24<00:02,  1.58it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 28/31 [00:25<00:02,  1.49it/s]Fetching ITBs for COA OMOs:  94%|█████████▎| 29/31 [00:25<00:01,  1.69it/s]Fetching ITBs for COA OMOs:  97%|█████████▋| 30/31 [00:26<00:00,  1.84it/s]Fetching ITBs for COA OMOs: 100%|██████████| 31/31 [00:26<00:00,  2.01it/s]Fetching ITBs for COA OMOs: 100%|██████████| 31/31 [00:26<00:00,  1.17it/s]
+Downloading COA messages:   0%|          | 0/32 [00:00<?, ?it/s]Downloading COA messages:   3%|▎         | 1/32 [00:00<00:04,  7.22it/s]Downloading COA messages:   6%|▋         | 2/32 [00:00<00:04,  7.09it/s]Downloading COA messages:   9%|▉         | 3/32 [00:00<00:04,  6.62it/s]Downloading COA messages:  12%|█▎        | 4/32 [00:04<00:43,  1.56s/it]Downloading COA messages:  16%|█▌        | 5/32 [00:07<00:58,  2.16s/it]Downloading COA messages:  19%|█▉        | 6/32 [00:07<00:38,  1.46s/it]Downloading COA messages:  22%|██▏       | 7/32 [00:07<00:25,  1.04s/it]Downloading COA messages:  25%|██▌       | 8/32 [00:08<00:25,  1.08s/it]Downloading COA messages:  28%|██▊       | 9/32 [00:08<00:18,  1.27it/s]Downloading COA messages:  31%|███▏      | 10/32 [00:09<00:15,  1.41it/s]Downloading COA messages:  34%|███▍      | 11/32 [00:09<00:13,  1.58it/s]Downloading COA messages:  38%|███▊      | 12/32 [00:10<00:09,  2.05it/s]Downloading COA messages:  41%|████      | 13/32 [00:10<00:07,  2.56it/s]Downloading COA messages:  44%|████▍     | 14/32 [00:10<00:05,  3.29it/s]Downloading COA messages:  47%|████▋     | 15/32 [00:10<00:04,  4.09it/s]Downloading COA messages:  50%|█████     | 16/32 [00:10<00:03,  4.96it/s]Downloading COA messages:  53%|█████▎    | 17/32 [00:10<00:02,  5.57it/s]Downloading COA messages:  56%|█████▋    | 18/32 [00:10<00:02,  5.91it/s]Downloading COA messages:  62%|██████▎   | 20/32 [00:11<00:01,  6.80it/s]Downloading COA messages:  66%|██████▌   | 21/32 [00:11<00:01,  6.21it/s]Downloading COA messages:  69%|██████▉   | 22/32 [00:11<00:01,  6.22it/s]Downloading COA messages:  72%|███████▏  | 23/32 [00:11<00:01,  6.41it/s]Downloading COA messages:  75%|███████▌  | 24/32 [00:11<00:01,  6.51it/s]Downloading COA messages:  78%|███████▊  | 25/32 [00:11<00:01,  6.90it/s]Downloading COA messages:  81%|████████▏ | 26/32 [00:12<00:01,  5.89it/s]Downloading COA messages:  88%|████████▊ | 28/32 [00:12<00:00,  6.43it/s]Downloading COA messages:  91%|█████████ | 29/32 [00:12<00:00,  6.70it/s]Downloading COA messages:  97%|█████████▋| 31/32 [00:12<00:00,  7.67it/s]Downloading COA messages: 100%|██████████| 32/32 [00:12<00:00,  2.49it/s]
+Geocoding COA addresses:   0%|          | 0/32 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 32/32 [00:00<00:00, 586103.62it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/32 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   3%|▎         | 1/32 [00:00<00:27,  1.14it/s]Fetching ITBs for COA OMOs:   6%|▋         | 2/32 [00:01<00:19,  1.52it/s]Fetching ITBs for COA OMOs:   9%|▉         | 3/32 [00:01<00:15,  1.82it/s]Fetching ITBs for COA OMOs:  12%|█▎        | 4/32 [00:02<00:17,  1.63it/s]Fetching ITBs for COA OMOs:  16%|█▌        | 5/32 [00:03<00:16,  1.65it/s]Fetching ITBs for COA OMOs:  19%|█▉        | 6/32 [00:03<00:15,  1.71it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 7/32 [00:04<00:17,  1.45it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 8/32 [00:05<00:15,  1.52it/s]Fetching ITBs for COA OMOs:  28%|██▊       | 9/32 [00:05<00:13,  1.69it/s]Fetching ITBs for COA OMOs:  31%|███▏      | 10/32 [00:06<00:12,  1.83it/s]Fetching ITBs for COA OMOs:  34%|███▍      | 11/32 [00:06<00:10,  1.92it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 12/32 [00:06<00:10,  1.97it/s]Fetching ITBs for COA OMOs:  41%|████      | 13/32 [00:07<00:09,  2.08it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 14/32 [00:07<00:08,  2.23it/s]Fetching ITBs for COA OMOs:  47%|████▋     | 15/32 [00:08<00:07,  2.24it/s]Fetching ITBs for COA OMOs:  50%|█████     | 16/32 [00:08<00:06,  2.32it/s]Fetching ITBs for COA OMOs:  53%|█████▎    | 17/32 [00:09<00:06,  2.30it/s]Fetching ITBs for COA OMOs:  56%|█████▋    | 18/32 [00:09<00:07,  1.96it/s]Fetching ITBs for COA OMOs:  59%|█████▉    | 19/32 [00:10<00:06,  2.01it/s]Fetching ITBs for COA OMOs:  62%|██████▎   | 20/32 [00:10<00:05,  2.21it/s]Fetching ITBs for COA OMOs:  66%|██████▌   | 21/32 [00:10<00:04,  2.29it/s]Fetching ITBs for COA OMOs:  69%|██████▉   | 22/32 [00:11<00:04,  2.36it/s]Fetching ITBs for COA OMOs:  72%|███████▏  | 23/32 [00:11<00:03,  2.31it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 24/32 [00:12<00:03,  2.39it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 25/32 [00:12<00:02,  2.48it/s]Fetching ITBs for COA OMOs:  81%|████████▏ | 26/32 [00:13<00:02,  2.39it/s]Fetching ITBs for COA OMOs:  84%|████████▍ | 27/32 [00:13<00:02,  2.01it/s]Fetching ITBs for COA OMOs:  88%|████████▊ | 28/32 [00:14<00:02,  1.78it/s]Fetching ITBs for COA OMOs:  91%|█████████ | 29/32 [00:14<00:01,  1.97it/s]Fetching ITBs for COA OMOs:  94%|█████████▍| 30/32 [00:15<00:00,  2.04it/s]Fetching ITBs for COA OMOs:  97%|█████████▋| 31/32 [00:15<00:00,  2.16it/s]Fetching ITBs for COA OMOs: 100%|██████████| 32/32 [00:16<00:00,  2.23it/s]Fetching ITBs for COA OMOs: 100%|██████████| 32/32 [00:16<00:00,  1.99it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
 Safe merge complete
-Master before: 626
-Incoming rows: 31
+Master before: 627
+Incoming rows: 32
 Added new OMOs: 1
-Skipped existing OMOs: 30
+Skipped existing OMOs: 31
 Updated existing OMOs: 0
 Need geocode: 1
 Missing ITB: 0
 Missing description: 1
-Master after: 627
+Master after: 628
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
 
@@ -49,9 +49,9 @@ Report: ./data/safe_7day_merge_report.json
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
 Need geocode: 1
-OK ER02390 902 DE KALB AVENUE, 11221 40.69248 -73.939763 NYC_PLANNING_OK
-Geocoded: 1
-Failed: 0
+ERROR ER02482 24-16 QUEENS PLAZA SOUTH, 11101 NYC_PLANNING_HTTP_400
+Geocoded: 0
+Failed: 1
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
 
@@ -76,14 +76,14 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
 Matched ITBs needing description: 1
-DESCRIPTION OK ER02390 ER02390_080426103740.pdf
+DESCRIPTION OK ER02482 ER02482_080426103502.pdf
 Descriptions patched: 1
 Missing PDF: 0
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'ER02390', 'Address': '902 DE KALB AVENUE, 11221', 'RecoveredFrom': 'ER02390_080426103740.pdf', 'Preview': ': INSTALL LOCK SET AT BLDG ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BLDG ENTRANCE DOOR INSTALL NEW ADAMS RITE LOCK TO THE DOOR TO MAKE SEL F CLOSING AND LATCHING PROPERLY. TOTAL '}
+{'OMO': 'ER02482', 'Address': '24-16 QUEENS PLAZA SOUTH, 11101', 'RecoveredFrom': 'ER02482_080426103502.pdf', 'Preview': ': REPLACE 1ST STY HOPPER CHUTE  NYC HPD EMERGENCY OPERATIONS DIVISION - (ESSENTIAL SERVICE WORK)  AT HOPPER DOOR LOCATED AT :PUBLIC HALL, ( 1STY )  DEMO COMPLETELY REMOVE THE DEFECTIVE EXISTING HOPP ER DOOR AND FRAME. SU'}
 
 Synced 3 data file(s) to public/data.
 
@@ -130,17 +130,18 @@ Continuing fetcher run; strict paperwork checks will report any description issu
 
 ========== Verify mapping ==========
 $ node check-local-mapping.js
-Raw JSON rows: 627
-2026 rows: 576
+Raw JSON rows: 628
+2026 rows: 577
 2026 rows with any Latitude/Longitude: 576
 2026 rows with valid NYC coordinates: 576
-2026 rows NOT valid mapped: 0
+2026 rows NOT valid mapped: 1
 
 Not mapped sample:
-┌─────────┐
-│ (index) │
-├─────────┤
-└─────────┘
+┌─────────┬───────────┬───────────────────────────────────┬────────────┬───────────────┬──────────┬───────────┬─────────────┬──────────────────┬───────────┐
+│ (index) │ OMO       │ Address                           │ AwardDate  │ WorkStartDate │ Latitude │ Longitude │ Geocode     │ MissingITBReason │ Status    │
+├─────────┼───────────┼───────────────────────────────────┼────────────┼───────────────┼──────────┼───────────┼─────────────┼──────────────────┼───────────┤
+│ 0       │ 'ER02482' │ '24-16 QUEENS PLAZA SOUTH, 11101' │ '08/05/26' │ '8/5/26'      │ ''       │ ''        │ 'OSM_ERROR' │ ''               │ 'MATCHED' │
+└─────────┴───────────┴───────────────────────────────────┴────────────┴───────────────┴──────────┴───────────┴─────────────┴──────────────────┴───────────┘
 
 
 ========== Verify descriptions ==========
@@ -170,7 +171,7 @@ Missing sample:
 
 ========== Verify missing ITB ==========
 $ node export-missing-itb.js
-Total jobs: 627
+Total jobs: 628
 Missing ITB jobs: 0
 Exported: ./data/missing_itb_jobs_2026.csv
 ┌─────────┐
@@ -182,14 +183,14 @@ Exported: ./data/missing_itb_jobs_2026.csv
 ========== Verify paperwork required data ==========
 $ node scripts/verify-paperwork-data.js --write-report
 PAPERWORK DATA QUALITY
-Total jobs: 627
+Total jobs: 628
 Missing addresses: 0
 Missing descriptions: 0
-Missing ITB page 3 descriptions: 11
+Missing ITB page 3 descriptions: 12
 Bad/boilerplate descriptions: 0
 Source review jobs: 0
 Missing ITB files: 0
-Missing page 3 images: 22
+Missing page 3 images: 23
 Public data in sync: yes
 
 Source review sample:
@@ -202,45 +203,46 @@ Missing description sample:
 (none)
 
 Missing ITB page 3 description sample:
-┌─────────┬───────────┬───────────────────────────────┬────────────────────────────┬───────────────────────────────┬───────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ (index) │ OMO       │ Address                       │ ITB                        │ Source                        │ Status    │ Preview                                                                                                                                        │
-├─────────┼───────────┼───────────────────────────────┼────────────────────────────┼───────────────────────────────┼───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ 0       │ 'ER01474' │ '260 PARKHILL AVENUE, 10304'  │ 'ER01474_072426113922.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOO' │
-│ 1       │ 'ER02022' │ '162-18 108 AVENUE, 11433'    │ 'ER02022_073026021712.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 2       │ 'ER01987' │ '978 EAST 174 STREET, 10460'  │ 'ER01987_073026020329.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 3       │ 'EQ32057' │ '63 EAST 236 STREET, 10470'   │ 'EQ32057_072926055505.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 4       │ 'ER01923' │ '47 EAST 34 STREET, 10016'    │ 'ER01923_072926025331.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 5       │ 'ER01941' │ '89-10 WHITNEY AVENUE, 11373' │ 'ER01941_072926021943.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 6       │ 'ER01944' │ '102-43 CORONA AVENUE, 11368' │ 'ER01944_072926021204.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 7       │ 'ER01720' │ '84-01 MAIN STREET, 11435'    │ 'ER01720_072726094239.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': AT APT: 408 LOCATION: BATHROOM REPAIR LEAK AND RESTORE BROKEN PLASTER. TRACE, LOCATE AND PROPERLY REPAIR THE SOURCES OF CO NCEALED WATER L' │
-│ 8       │ 'ER01737' │ '765 RIVERSIDE DRIVE, 10032'  │ 'ER01737_072726123759.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': MAKE DOORS SELF CLOSING AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th STORY. AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th ST ORY. MAK' │
-│ 9       │ 'ER01282' │ '1629 EAST 12 STREET, 11229'  │ 'ER01282_072726043234.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT DOOR LEADING TO NORTH YARD AT PUBLIC HALL, 1ST S TORY. REPAIR DOOR TO' │
-│ 10      │ 'ER02390' │ '902 DE KALB AVENUE, 11221'   │ 'ER02390_080426103740.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': INSTALL LOCK SET AT BLDG ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BLDG ENTRANCE DOOR INSTALL NEW' │
-└─────────┴───────────┴───────────────────────────────┴────────────────────────────┴───────────────────────────────┴───────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────┬───────────┬───────────────────────────────────┬────────────────────────────┬───────────────────────────────┬───────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ (index) │ OMO       │ Address                           │ ITB                        │ Source                        │ Status    │ Preview                                                                                                                                        │
+├─────────┼───────────┼───────────────────────────────────┼────────────────────────────┼───────────────────────────────┼───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 0       │ 'ER01474' │ '260 PARKHILL AVENUE, 10304'      │ 'ER01474_072426113922.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOO' │
+│ 1       │ 'ER02022' │ '162-18 108 AVENUE, 11433'        │ 'ER02022_073026021712.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
+│ 2       │ 'ER01987' │ '978 EAST 174 STREET, 10460'      │ 'ER01987_073026020329.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
+│ 3       │ 'EQ32057' │ '63 EAST 236 STREET, 10470'       │ 'EQ32057_072926055505.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
+│ 4       │ 'ER01923' │ '47 EAST 34 STREET, 10016'        │ 'ER01923_072926025331.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
+│ 5       │ 'ER01941' │ '89-10 WHITNEY AVENUE, 11373'     │ 'ER01941_072926021943.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
+│ 6       │ 'ER01944' │ '102-43 CORONA AVENUE, 11368'     │ 'ER01944_072926021204.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
+│ 7       │ 'ER01720' │ '84-01 MAIN STREET, 11435'        │ 'ER01720_072726094239.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': AT APT: 408 LOCATION: BATHROOM REPAIR LEAK AND RESTORE BROKEN PLASTER. TRACE, LOCATE AND PROPERLY REPAIR THE SOURCES OF CO NCEALED WATER L' │
+│ 8       │ 'ER01737' │ '765 RIVERSIDE DRIVE, 10032'      │ 'ER01737_072726123759.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': MAKE DOORS SELF CLOSING AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th STORY. AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th ST ORY. MAK' │
+│ 9       │ 'ER01282' │ '1629 EAST 12 STREET, 11229'      │ 'ER01282_072726043234.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT DOOR LEADING TO NORTH YARD AT PUBLIC HALL, 1ST S TORY. REPAIR DOOR TO' │
+│ 10      │ 'ER02390' │ '902 DE KALB AVENUE, 11221'       │ 'ER02390_080426103740.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': INSTALL LOCK SET AT BLDG ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BLDG ENTRANCE DOOR INSTALL NEW' │
+│ 11      │ 'ER02482' │ '24-16 QUEENS PLAZA SOUTH, 11101' │ 'ER02482_080426103502.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': REPLACE 1ST STY HOPPER CHUTE NYC HPD EMERGENCY OPERATIONS DIVISION - (ESSENTIAL SERVICE WORK) AT HOPPER DOOR LOCATED AT :PUBLIC HALL, ( 1S' │
+└─────────┴───────────┴───────────────────────────────────┴────────────────────────────┴───────────────────────────────┴───────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 Bad description sample:
 (none)
 PAPERWORK DATA QUALITY CHECKED
 
-PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=11.
+PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=12.
 
 
-Fetcher run finished: 2026-08-05T18:17:21.330Z
+Fetcher run finished: 2026-08-05T20:22:25.456Z
 {
-  "fetchedCoaItems": 31,
-  "fetchedItbItems": 31,
-  "fetchedFinalJobRows": 31,
+  "fetchedCoaItems": 32,
+  "fetchedItbItems": 32,
+  "fetchedFinalJobRows": 32,
   "addedNewOmos": 1,
-  "skippedExistingOmos": 30,
-  "rawRows": 627,
-  "rows2026": 576,
+  "skippedExistingOmos": 31,
+  "rawRows": 628,
+  "rows2026": 577,
   "mapped2026": 576,
-  "notMapped2026": 0,
+  "notMapped2026": 1,
   "missingAddresses": 0,
   "badDescriptions": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 11,
+  "missingItbPage3Descriptions": 12,
   "sourceReviewJobs": 0,
-  "missingPage3Images": 22,
+  "missingPage3Images": 23,
   "missingItbJobs": 0
 }
