@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-08-05T15:11:22.582Z",
-  "totalJobs": 626,
+  "generatedAt": "2026-08-05T18:17:21.318Z",
+  "totalJobs": 627,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 10,
+  "missingItbPage3Descriptions": 11,
   "badDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 21,
+  "missingPage3Images": 22,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
@@ -92,6 +92,14 @@
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
         "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT DOOR LEADING TO NORTH YARD AT PUBLIC HALL, 1ST S TORY. REPAIR DOOR TO"
+      },
+      {
+        "OMO": "ER02390",
+        "Address": "902 DE KALB AVENUE, 11221",
+        "ITB": "ER02390_080426103740.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": INSTALL LOCK SET AT BLDG ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BLDG ENTRANCE DOOR INSTALL NEW"
       }
     ],
     "badDescriptions": [],
@@ -265,6 +273,14 @@
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
         "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT DOOR LEADING TO NORTH YARD AT PUBLIC HALL, 1ST S TORY. REPAIR DOOR TO"
+      },
+      {
+        "OMO": "ER02390",
+        "Address": "902 DE KALB AVENUE, 11221",
+        "ITB": "ER02390_080426103740.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": INSTALL LOCK SET AT BLDG ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BLDG ENTRANCE DOOR INSTALL NEW"
       }
     ]
   }
