@@ -1,0 +1,636 @@
+/* iOS-style app shell shared by the mobile-first dashboard and its sub-pages. */
+
+:root {
+  --ios-bg: #000000;
+  --ios-bg-2: #0b0b0f;
+  --ios-card: rgba(28, 28, 30, 0.92);
+  --ios-card-2: rgba(44, 44, 46, 0.7);
+  --ios-line: rgba(255, 255, 255, 0.09);
+  --ios-text: #f5f5f7;
+  --ios-secondary: rgba(235, 235, 245, 0.6);
+  --ios-tertiary: rgba(235, 235, 245, 0.35);
+  --ios-blue: #0a84ff;
+  --ios-green: #30d158;
+  --ios-indigo: #5e5ce6;
+  --ios-orange: #ff9f0a;
+  --ios-pink: #ff375f;
+  --ios-yellow: #ffd60a;
+  --ios-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Inter, system-ui, sans-serif;
+}
+
+.ios-app {
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  font-family: var(--ios-font);
+  color: var(--ios-text);
+  background: var(--ios-bg);
+  padding-bottom: max(96px, calc(env(safe-area-inset-bottom) + 84px));
+}
+
+.ios-app * {
+  box-sizing: border-box;
+}
+
+.ios-app a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ios-app button {
+  font: inherit;
+  color: inherit;
+}
+
+.ios-statusbar-spacer {
+  height: max(14px, env(safe-area-inset-top));
+}
+
+.ios-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  padding: 4px 16px 14px;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid var(--ios-line);
+}
+
+.ios-navbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 6px;
+}
+
+.ios-navbar-eyebrow {
+  color: var(--ios-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ios-live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  background: rgba(48, 209, 88, 0.16);
+  color: #7bf0a3;
+  padding: 5px 10px 5px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ios-live-dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ios-green);
+  box-shadow: 0 0 6px rgba(48, 209, 88, 0.8);
+}
+
+.ios-large-title {
+  margin: 2px 0 0;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+}
+
+.ios-navbar-sub {
+  margin: 4px 0 0;
+  color: var(--ios-secondary);
+  font-size: 13px;
+}
+
+.ios-content {
+  padding: 14px 16px 0;
+  display: grid;
+  gap: 22px;
+}
+
+.ios-section-label {
+  margin: 0 2px;
+  color: var(--ios-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* Search field */
+.ios-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ios-search-field svg {
+  position: absolute;
+  left: 12px;
+  width: 18px;
+  height: 18px;
+  color: var(--ios-tertiary);
+  pointer-events: none;
+}
+
+.ios-search-input {
+  width: 100%;
+  min-height: 40px;
+  border: none;
+  border-radius: 11px;
+  background: rgba(118, 118, 128, 0.24);
+  color: var(--ios-text);
+  padding: 0 12px 0 38px;
+  font-size: 16px;
+  font-weight: 500;
+  outline: none;
+}
+
+.ios-search-input::placeholder {
+  color: var(--ios-tertiary);
+}
+
+.ios-search-input:focus {
+  background: rgba(118, 118, 128, 0.34);
+}
+
+/* Result card */
+.ios-result-card {
+  border: 1px solid var(--ios-line);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(38, 38, 42, 0.92), rgba(20, 20, 24, 0.92));
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.ios-result-head h2 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.01em;
+}
+
+.ios-result-head p {
+  margin: 3px 0 0;
+  color: var(--ios-secondary);
+  font-size: 13px;
+}
+
+.ios-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ios-chip {
+  border-radius: 999px;
+  background: rgba(118, 118, 128, 0.24);
+  color: var(--ios-text);
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ios-chip.warn {
+  background: rgba(255, 159, 10, 0.18);
+  color: #ffcd8a;
+}
+
+.ios-empty-note {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 159, 10, 0.12);
+  color: #ffcd8a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ios-tenant-card {
+  border-radius: 14px;
+  padding: 12px;
+  background: rgba(255, 159, 10, 0.1);
+  border: 1px solid rgba(255, 159, 10, 0.22);
+  display: grid;
+  gap: 10px;
+}
+
+.ios-tenant-card.is-clear {
+  background: rgba(48, 209, 88, 0.08);
+  border-color: rgba(48, 209, 88, 0.22);
+}
+
+.ios-tenant-card-head span {
+  display: block;
+  color: var(--ios-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.ios-tenant-card-head strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+}
+
+.ios-tenant-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.ios-tenant-fields div {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 7px 8px;
+  min-width: 0;
+}
+
+.ios-tenant-fields span {
+  display: block;
+  color: var(--ios-secondary);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ios-tenant-fields strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.ios-tenant-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.ios-tenant-actions a {
+  min-height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ios-tenant-actions a.is-primary {
+  background: var(--ios-yellow);
+  color: #241300;
+}
+
+.ios-result-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ios-result-actions a {
+  min-height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.ios-result-actions a.primary {
+  background: var(--ios-blue);
+  color: white;
+}
+
+.ios-result-actions a.secondary {
+  background: rgba(118, 118, 128, 0.24);
+  color: var(--ios-text);
+}
+
+.ios-quick-matches {
+  display: grid;
+  gap: 6px;
+}
+
+.ios-quick-matches button {
+  width: 100%;
+  text-align: left;
+  min-height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ios-secondary);
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Stat widgets */
+.ios-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ios-stat-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  padding: 14px;
+  min-height: 96px;
+  background: var(--ios-card);
+  border: 1px solid var(--ios-line);
+}
+
+.ios-stat-icon {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: white;
+}
+
+.ios-stat-card strong {
+  display: block;
+  margin-top: 12px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.ios-stat-card span {
+  display: block;
+  margin-top: 2px;
+  color: var(--ios-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ios-stat-icon.blue { background: var(--ios-blue); }
+.ios-stat-icon.green { background: var(--ios-green); }
+.ios-stat-icon.indigo { background: var(--ios-indigo); }
+.ios-stat-icon.orange { background: var(--ios-orange); }
+
+/* Quick action buttons */
+.ios-primary-action {
+  min-height: 54px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  background: var(--ios-green);
+  color: #03170c;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.ios-action-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ios-action-card {
+  border-radius: 15px;
+  border: 1px solid var(--ios-line);
+  background: var(--ios-card);
+  padding: 12px;
+  min-height: 78px;
+}
+
+.ios-action-card strong {
+  display: block;
+  font-size: 14px;
+}
+
+.ios-action-card span {
+  display: block;
+  margin-top: 5px;
+  color: var(--ios-secondary);
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.ios-action-card.warn {
+  border-color: rgba(255, 159, 10, 0.28);
+}
+
+/* Grouped list */
+.ios-list-group {
+  border-radius: 15px;
+  overflow: hidden;
+  border: 1px solid var(--ios-line);
+  background: var(--ios-card);
+}
+
+.ios-list-row {
+  display: grid;
+  grid-template-columns: 38px 1fr auto 16px;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--ios-line);
+}
+
+.ios-list-row:last-child {
+  border-bottom: none;
+}
+
+.ios-list-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 132, 255, 0.18);
+  color: #7cc4ff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ios-list-row strong,
+.ios-list-row small {
+  display: block;
+  min-width: 0;
+}
+
+.ios-list-row strong {
+  font-size: 14px;
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ios-list-row small {
+  margin-top: 2px;
+  color: var(--ios-secondary);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ios-list-chevron {
+  color: var(--ios-tertiary);
+}
+
+.ios-status-pill {
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  background: rgba(118, 118, 128, 0.24);
+  color: var(--ios-secondary);
+  white-space: nowrap;
+}
+
+.ios-status-pill.green { background: rgba(48, 209, 88, 0.16); color: #7bf0a3; }
+.ios-status-pill.orange { background: rgba(255, 159, 10, 0.16); color: #ffcd8a; }
+.ios-status-pill.blue { background: rgba(10, 132, 255, 0.16); color: #7cc4ff; }
+
+.ios-empty-list {
+  margin: 0;
+  padding: 16px;
+  color: var(--ios-secondary);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Settings-style rows used on the More page */
+.ios-settings-row {
+  display: grid;
+  grid-template-columns: 30px 1fr 16px;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--ios-line);
+}
+
+.ios-settings-row:last-child {
+  border-bottom: none;
+}
+
+.ios-settings-row strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ios-settings-row small {
+  display: block;
+  margin-top: 2px;
+  color: var(--ios-secondary);
+  font-size: 12px;
+}
+
+/* Tab bar */
+.ios-tabbar {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 40;
+  width: 100%;
+  max-width: 480px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 6px 8px max(6px, env(safe-area-inset-bottom));
+  background: rgba(10, 10, 12, 0.86);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-top: 1px solid var(--ios-line);
+}
+
+.ios-tab {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 6px 2px;
+  border-radius: 10px;
+  color: var(--ios-tertiary);
+}
+
+.ios-tab svg {
+  width: 24px;
+  height: 24px;
+}
+
+.ios-tab span {
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.ios-tab.is-active {
+  color: var(--ios-blue);
+}
+
+/* Scale up on larger viewports while staying app-shaped */
+@media (min-width: 700px) {
+  .ios-app {
+    max-width: 620px;
+    margin-top: 28px;
+    margin-bottom: 28px;
+    border-radius: 40px;
+    overflow: hidden;
+    box-shadow: 0 40px 120px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .ios-tabbar {
+    max-width: 620px;
+    border-radius: 0 0 40px 40px;
+  }
+
+  .ios-large-title {
+    font-size: 36px;
+  }
+
+  .ios-content {
+    padding: 18px 22px 0;
+    gap: 26px;
+  }
+
+  .ios-stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .ios-stat-card strong {
+    font-size: 24px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .ios-app {
+    max-width: 760px;
+  }
+
+  .ios-tabbar {
+    max-width: 760px;
+  }
+
+  .ios-large-title {
+    font-size: 42px;
+  }
+
+  .ios-stat-card {
+    min-height: 108px;
+    padding: 18px;
+  }
+
+  .ios-stat-card strong {
+    font-size: 28px;
+  }
+}
