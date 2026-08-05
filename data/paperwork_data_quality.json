@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-07-28T15:15:05.868Z",
-  "totalJobs": 605,
+  "generatedAt": "2026-08-05T11:17:51.794Z",
+  "totalJobs": 610,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 2,
+  "missingItbPage3Descriptions": 6,
   "badDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 1,
+  "missingPage3Images": 5,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
@@ -22,12 +22,44 @@
         "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOO"
       },
       {
-        "OMO": "EQ31241",
-        "Address": "129-25 101 AVENUE, 11419",
-        "ITB": "EQ31241_072426102231.pdf",
+        "OMO": "ER02160",
+        "Address": "1829 ADAM C POWELL BOULEVARD, 10026",
+        "ITB": "ER02160_080326115347.pdf",
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
-        "Preview": ": REPAIR THE LOCKSET AT FIRE DOOR LEADING TO STAIR CA SE, PUBLIC HALL, 2ND STORY REPLACE LOCKSET ON BUILDING ENTRANCE DOOR. NYC HPD EMERGENC"
+        "Preview": ": AT THE BULKHEAD MAKE DOOR LATCH. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BULKHEAD AT THE BULKHEAD INSTALL PAS"
+      },
+      {
+        "OMO": "ER01935",
+        "Address": "12 WEST 129 STREET, 10027",
+        "ITB": "ER01935_080426015005.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "ER02654",
+        "Address": "1555 GRAND CONCOURSE, 10452",
+        "ITB": "ER02654_080326032359.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": ******AEP****** APT. #3A REPLACE THE BROKEN LOWER SASH GLASS PANE WINDOW AT BEDROOM (E1) PROVIDE AND INSTALL A NEW GLASS PANE AT LOWER SAS"
+      },
+      {
+        "OMO": "ER01932",
+        "Address": "3885 BROADWAY, 10032",
+        "ITB": "ER01932_080326020837.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT APT 40B. MAKE DOOR SELF CLOSING. NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT APT 40B . INSTALL HINGES AT THE "
+      },
+      {
+        "OMO": "ER02074",
+        "Address": "1116 SHERMAN AVENUE, 10456",
+        "ITB": "ER02074_080326125642.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
       }
     ],
     "badDescriptions": [],
@@ -35,12 +67,44 @@
     "missingItbFiles": [],
     "missingPage3Images": [
       {
-        "OMO": "EQ31241",
-        "Address": "129-25 101 AVENUE, 11419",
-        "ITB": "EQ31241_072426102231.pdf",
+        "OMO": "ER02160",
+        "Address": "1829 ADAM C POWELL BOULEVARD, 10026",
+        "ITB": "ER02160_080326115347.pdf",
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
-        "Preview": ": REPAIR THE LOCKSET AT FIRE DOOR LEADING TO STAIR CA SE, PUBLIC HALL, 2ND STORY REPLACE LOCKSET ON BUILDING ENTRANCE DOOR. NYC HPD EMERGENC"
+        "Preview": ": AT THE BULKHEAD MAKE DOOR LATCH. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BULKHEAD AT THE BULKHEAD INSTALL PAS"
+      },
+      {
+        "OMO": "ER01935",
+        "Address": "12 WEST 129 STREET, 10027",
+        "ITB": "ER01935_080426015005.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
+      },
+      {
+        "OMO": "ER02654",
+        "Address": "1555 GRAND CONCOURSE, 10452",
+        "ITB": "ER02654_080326032359.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": ******AEP****** APT. #3A REPLACE THE BROKEN LOWER SASH GLASS PANE WINDOW AT BEDROOM (E1) PROVIDE AND INSTALL A NEW GLASS PANE AT LOWER SAS"
+      },
+      {
+        "OMO": "ER01932",
+        "Address": "3885 BROADWAY, 10032",
+        "ITB": "ER01932_080326020837.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT APT 40B. MAKE DOOR SELF CLOSING. NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT APT 40B . INSTALL HINGES AT THE "
+      },
+      {
+        "OMO": "ER02074",
+        "Address": "1116 SHERMAN AVENUE, 10456",
+        "ITB": "ER02074_080326125642.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to "
       }
     ]
   }
