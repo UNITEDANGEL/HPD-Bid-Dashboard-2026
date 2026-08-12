@@ -1,4 +1,4 @@
-Fetcher run started: 2026-08-11T23:32:26.159Z
+Fetcher run started: 2026-08-12T11:41:15.539Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -15,230 +15,7 @@ $ python FetchrMatcherV5.py --update --days 14
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/07/28 before:2026/08/12
-COA items parsed (latest per OMO): 24
-ITB items parsed (latest per OMO): 24
-Final JobRows: 24
-
-CSV saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.csv
-JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.json
-
-=== FETCHR MATCHER V5 DONE ===
-
-Downloading COA messages:   0%|          | 0/24 [00:00<?, ?it/s]Downloading COA messages:   4%|▍         | 1/24 [00:00<00:05,  4.09it/s]Downloading COA messages:   8%|▊         | 2/24 [00:00<00:03,  6.00it/s]Downloading COA messages:  12%|█▎        | 3/24 [00:00<00:03,  6.57it/s]Downloading COA messages:  17%|█▋        | 4/24 [00:00<00:03,  6.63it/s]Downloading COA messages:  21%|██        | 5/24 [00:00<00:02,  7.06it/s]Downloading COA messages:  29%|██▉       | 7/24 [00:01<00:02,  7.27it/s]Downloading COA messages:  33%|███▎      | 8/24 [00:01<00:02,  7.46it/s]Downloading COA messages:  38%|███▊      | 9/24 [00:01<00:01,  7.70it/s]Downloading COA messages:  42%|████▏     | 10/24 [00:01<00:02,  6.20it/s]Downloading COA messages:  50%|█████     | 12/24 [00:01<00:01,  6.78it/s]Downloading COA messages:  58%|█████▊    | 14/24 [00:01<00:01,  7.73it/s]Downloading COA messages:  67%|██████▋   | 16/24 [00:02<00:00,  8.31it/s]Downloading COA messages:  71%|███████   | 17/24 [00:02<00:00,  8.35it/s]Downloading COA messages:  75%|███████▌  | 18/24 [00:02<00:00,  8.50it/s]Downloading COA messages:  79%|███████▉  | 19/24 [00:02<00:00,  8.34it/s]Downloading COA messages:  88%|████████▊ | 21/24 [00:03<00:00,  5.68it/s]Downloading COA messages:  92%|█████████▏| 22/24 [00:03<00:00,  6.25it/s]Downloading COA messages: 100%|██████████| 24/24 [00:03<00:00,  6.88it/s]Downloading COA messages: 100%|██████████| 24/24 [00:03<00:00,  7.04it/s]
-Geocoding COA addresses:   0%|          | 0/24 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 24/24 [00:00<00:00, 396312.19it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/24 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   4%|▍         | 1/24 [00:00<00:17,  1.31it/s]Fetching ITBs for COA OMOs:   8%|▊         | 2/24 [00:01<00:13,  1.65it/s]Fetching ITBs for COA OMOs:  12%|█▎        | 3/24 [00:01<00:12,  1.63it/s]Fetching ITBs for COA OMOs:  17%|█▋        | 4/24 [00:02<00:11,  1.69it/s]Fetching ITBs for COA OMOs:  21%|██        | 5/24 [00:02<00:10,  1.75it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 6/24 [00:03<00:10,  1.69it/s]Fetching ITBs for COA OMOs:  29%|██▉       | 7/24 [00:04<00:10,  1.64it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 8/24 [00:04<00:08,  1.86it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 9/24 [00:05<00:07,  1.90it/s]Fetching ITBs for COA OMOs:  42%|████▏     | 10/24 [00:05<00:08,  1.62it/s]Fetching ITBs for COA OMOs:  46%|████▌     | 11/24 [00:06<00:07,  1.72it/s]Fetching ITBs for COA OMOs:  50%|█████     | 12/24 [00:07<00:07,  1.70it/s]Fetching ITBs for COA OMOs:  54%|█████▍    | 13/24 [00:07<00:05,  1.88it/s]Fetching ITBs for COA OMOs:  58%|█████▊    | 14/24 [00:07<00:04,  2.06it/s]Fetching ITBs for COA OMOs:  62%|██████▎   | 15/24 [00:08<00:04,  2.19it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 16/24 [00:08<00:03,  2.34it/s]Fetching ITBs for COA OMOs:  71%|███████   | 17/24 [00:08<00:02,  2.42it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 18/24 [00:09<00:02,  2.23it/s]Fetching ITBs for COA OMOs:  79%|███████▉  | 19/24 [00:10<00:02,  1.91it/s]Fetching ITBs for COA OMOs:  83%|████████▎ | 20/24 [00:10<00:02,  1.78it/s]Fetching ITBs for COA OMOs:  88%|████████▊ | 21/24 [00:11<00:01,  1.94it/s]Fetching ITBs for COA OMOs:  92%|█████████▏| 22/24 [00:11<00:00,  2.01it/s]Fetching ITBs for COA OMOs:  96%|█████████▌| 23/24 [00:12<00:00,  2.14it/s]Fetching ITBs for COA OMOs: 100%|██████████| 24/24 [00:12<00:00,  2.34it/s]Fetching ITBs for COA OMOs: 100%|██████████| 24/24 [00:12<00:00,  1.93it/s]
+AUTH REFRESH ERROR: ('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})
 
 
-========== Safe merge fetcher output into dashboard data ==========
-$ node safe-merge-7day-fetch.js
-Safe merge complete
-Master before: 628
-Incoming rows: 24
-Added new OMOs: 0
-Skipped existing OMOs: 24
-Updated existing OMOs: 0
-Need geocode: 0
-Missing ITB: 0
-Missing description: 0
-Master after: 628
-Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
-Report: ./data/safe_7day_merge_report.json
-
-
-========== Geocode new safe-merged jobs ==========
-$ node geocode-new-safe-fetch-jobs.js
-Need geocode: 0
-Geocoded: 0
-Failed: 0
-Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
-
-
-========== Apply manual fallback geocodes ==========
-$ node manual-geocode-11-new-jobs.js
-Manual geocodes patched: 11
-Backup: ./data/COA_Fetcher_2026.before_manual_geocode_11_new.json
-
-
-========== Apply known cleanup geocodes ==========
-$ node manual-cleanup-geocode-known-jobs.js
-Manual geocode patched: 0
-Backup: ./data/COA_Fetcher_2026.before_manual_cleanup_geocode.json
-
-
-========== Apply known recovered Drive ITB matches ==========
-$ node patch-9-recovered-drive-itbs.js
-Recovered ITBs patched: 9
-Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
-
-
-========== Recover descriptions from matched ITBs ==========
-$ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 0
-Descriptions patched: 0
-Missing PDF: 0
-Failed: 0
-Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
-
-Samples:
-
-Synced 3 data file(s) to public/data.
-
-========== Render ITB page 3 assets ==========
-$ node scripts/render-itb-page3-assets.js --copy-pdfs
-/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:125
-  if (result.error) throw result.error;
-                    ^
-
-Error: spawnSync pdfinfo ENOENT
-    at Object.spawnSync (node:internal/child_process:1143:20)
-    at spawnSync (node:child_process:911:24)
-    at readPdfPageCount (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:124:18)
-    at cachedPdfPageCount (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:249:34)
-    at withPageCount (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:258:16)
-    at findUsableSource (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:282:32)
-    at Object.<anonymous> (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:324:32)
-    at Module._compile (node:internal/modules/cjs/loader:1871:14)
-    at Object..js (node:internal/modules/cjs/loader:2002:10)
-    at Module.load (node:internal/modules/cjs/loader:1594:32) {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'spawnSync pdfinfo',
-  path: 'pdfinfo',
-  spawnargs: [
-    '/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/ITB_Downloads_V5/EQ31241_072826091652.pdf'
-  ]
-}
-
-Node.js v24.18.0
-
-WARNING: Render ITB page 3 assets did not complete: Render ITB page 3 assets failed with exit code 1
-Continuing fetcher run; paperwork data quality checks will report any missing page images.
-
-========== Sync ITB page 3 descriptions ==========
-$ python scripts/sync-itb-page3-descriptions.py
-Traceback (most recent call last):
-  File "/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/sync-itb-page3-descriptions.py", line 5, in <module>
-    import pdfplumber
-ModuleNotFoundError: No module named 'pdfplumber'
-
-WARNING: Sync ITB page 3 descriptions did not complete: Sync ITB page 3 descriptions failed with exit code 1
-Continuing fetcher run; strict paperwork checks will report any description issues.
-
-========== Verify mapping ==========
-$ node check-local-mapping.js
-Raw JSON rows: 628
-2026 rows: 577
-2026 rows with any Latitude/Longitude: 577
-2026 rows with valid NYC coordinates: 577
-2026 rows NOT valid mapped: 0
-
-Not mapped sample:
-┌─────────┐
-│ (index) │
-├─────────┤
-└─────────┘
-
-
-========== Verify descriptions ==========
-$ node check-generic-descriptions.js
-Bad/boilerplate descriptions: 0
-Missing descriptions: 0
-Source review jobs: 0
-
-Bad sample:
-┌─────────┐
-│ (index) │
-├─────────┤
-└─────────┘
-
-Source review sample:
-┌─────────┐
-│ (index) │
-├─────────┤
-└─────────┘
-
-Missing sample:
-┌─────────┐
-│ (index) │
-├─────────┤
-└─────────┘
-
-
-========== Verify missing ITB ==========
-$ node export-missing-itb.js
-Total jobs: 628
-Missing ITB jobs: 0
-Exported: ./data/missing_itb_jobs_2026.csv
-┌─────────┐
-│ (index) │
-├─────────┤
-└─────────┘
-
-
-========== Verify paperwork required data ==========
-$ node scripts/verify-paperwork-data.js --write-report
-PAPERWORK DATA QUALITY
-Total jobs: 628
-Missing addresses: 0
-Missing descriptions: 0
-Missing ITB page 3 descriptions: 12
-Bad/boilerplate descriptions: 0
-Source review jobs: 0
-Missing ITB files: 0
-Missing page 3 images: 23
-Public data in sync: yes
-
-Source review sample:
-(none)
-
-Missing address sample:
-(none)
-
-Missing description sample:
-(none)
-
-Missing ITB page 3 description sample:
-┌─────────┬───────────┬───────────────────────────────────┬────────────────────────────┬───────────────────────────────┬───────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ (index) │ OMO       │ Address                           │ ITB                        │ Source                        │ Status    │ Preview                                                                                                                                        │
-├─────────┼───────────┼───────────────────────────────────┼────────────────────────────┼───────────────────────────────┼───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ 0       │ 'ER01474' │ '260 PARKHILL AVENUE, 10304'      │ 'ER01474_072426113922.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOO' │
-│ 1       │ 'ER02022' │ '162-18 108 AVENUE, 11433'        │ 'ER02022_073026021712.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 2       │ 'ER01987' │ '978 EAST 174 STREET, 10460'      │ 'ER01987_073026020329.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 3       │ 'EQ32057' │ '63 EAST 236 STREET, 10470'       │ 'EQ32057_072926055505.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 4       │ 'ER01923' │ '47 EAST 34 STREET, 10016'        │ 'ER01923_072926025331.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 5       │ 'ER01941' │ '89-10 WHITNEY AVENUE, 11373'     │ 'ER01941_072926021943.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 6       │ 'ER01944' │ '102-43 CORONA AVENUE, 11368'     │ 'ER01944_072926021204.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 7       │ 'ER01720' │ '84-01 MAIN STREET, 11435'        │ 'ER01720_072726094239.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': AT APT: 408 LOCATION: BATHROOM REPAIR LEAK AND RESTORE BROKEN PLASTER. TRACE, LOCATE AND PROPERLY REPAIR THE SOURCES OF CO NCEALED WATER L' │
-│ 8       │ 'ER01737' │ '765 RIVERSIDE DRIVE, 10032'      │ 'ER01737_072726123759.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': MAKE DOORS SELF CLOSING AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th STORY. AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th ST ORY. MAK' │
-│ 9       │ 'ER01282' │ '1629 EAST 12 STREET, 11229'      │ 'ER01282_072726043234.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT DOOR LEADING TO NORTH YARD AT PUBLIC HALL, 1ST S TORY. REPAIR DOOR TO' │
-│ 10      │ 'ER02390' │ '902 DE KALB AVENUE, 11221'       │ 'ER02390_080426103740.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': INSTALL LOCK SET AT BLDG ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BLDG ENTRANCE DOOR INSTALL NEW' │
-│ 11      │ 'ER02482' │ '24-16 QUEENS PLAZA SOUTH, 11101' │ 'ER02482_080426103502.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': REPLACE 1ST STY HOPPER CHUTE NYC HPD EMERGENCY OPERATIONS DIVISION - (ESSENTIAL SERVICE WORK) AT HOPPER DOOR LOCATED AT :PUBLIC HALL, ( 1S' │
-└─────────┴───────────┴───────────────────────────────────┴────────────────────────────┴───────────────────────────────┴───────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-
-Bad description sample:
-(none)
-PAPERWORK DATA QUALITY CHECKED
-
-PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=12.
-
-
-Fetcher run finished: 2026-08-11T23:32:52.495Z
-{
-  "fetchedCoaItems": 24,
-  "fetchedItbItems": 24,
-  "fetchedFinalJobRows": 24,
-  "addedNewOmos": 0,
-  "skippedExistingOmos": 24,
-  "rawRows": 628,
-  "rows2026": 577,
-  "mapped2026": 577,
-  "notMapped2026": 0,
-  "missingAddresses": 0,
-  "badDescriptions": 0,
-  "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 12,
-  "sourceReviewJobs": 0,
-  "missingPage3Images": 23,
-  "missingItbJobs": 0
-}
+FAILED: Run Gmail fetcher for last 14 days failed with exit code 1
