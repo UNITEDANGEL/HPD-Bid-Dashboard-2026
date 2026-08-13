@@ -24,7 +24,7 @@ function localSourcePayload() {
     jobs,
     message: configured
       ? "Live feed is configured. Tap Fetch Now to pull the latest file."
-      : "Reloaded the latest bundled job data. Live feed URL is not connected yet.",
+      : "Live feed URL is not connected yet. Connect JOBS_CSV_URL or JOBS_JSON_URL to enable live award fetch.",
   };
 }
 
