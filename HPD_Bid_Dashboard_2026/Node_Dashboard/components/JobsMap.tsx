@@ -94,6 +94,23 @@ type JobCluster = {
   selected: boolean;
 };
 
+const BOROUGH_LABELS: Array<{ label: string; position: [number, number] }> = [
+  { label: "The Bronx", position: [40.8448, -73.8648] },
+  { label: "Manhattan", position: [40.7831, -73.9712] },
+  { label: "Queens", position: [40.7282, -73.7949] },
+  { label: "Brooklyn", position: [40.6782, -73.9442] },
+  { label: "Staten Island", position: [40.5795, -74.1502] },
+];
+
+function boroughLabelIcon(label: string) {
+  return L.divIcon({
+    className: "map-borough-label-icon",
+    html: `<span class="map-borough-label">${escapeHtml(label)}</span>`,
+    iconSize: [126, 24],
+    iconAnchor: [63, 12],
+  });
+}
+
 function clusterIcon(color: string, count: number, selected: boolean, leadJob: JobRecord) {
   const label = selected
     ? `<span class="job-cluster-label">${escapeHtml(leadJob.id)}<small>${escapeHtml(mapDateForJob(leadJob))}</small></span>`
@@ -227,6 +244,17 @@ export function JobsMap({ jobs, selectedId, onSelect, focusCenter, focusZoom, fo
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <MapViewport jobs={jobs} selectedId={selectedId} focusCenter={focusCenter} focusZoom={focusZoom} focusKey={focusKey} />
+
+      {variant === "clusters" ? BOROUGH_LABELS.map((borough) => (
+        <Marker
+          key={`borough-label-${borough.label}`}
+          position={borough.position}
+          icon={boroughLabelIcon(borough.label)}
+          interactive={false}
+          keyboard={false}
+          zIndexOffset={-250}
+        />
+      )) : null}
 
       {userLocation ? (
         <CircleMarker

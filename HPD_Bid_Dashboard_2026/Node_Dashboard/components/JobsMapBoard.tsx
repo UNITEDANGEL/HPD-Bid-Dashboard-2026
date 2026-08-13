@@ -16,7 +16,7 @@ type StatusView = "All" | "Open" | "Awarded" | "Pending";
 type TableMode = "live" | "queue" | "documents";
 type ActivePanel = "" | "filters" | "notifications" | "account" | "map" | "system" | "contact" | "jobs" | "add" | "sync";
 type ChartPeriod = "Last 12 Months" | "2026 YTD" | "Last 90 Days";
-type DateRangeView = "30d" | "60d" | "2026";
+type DateRangeView = "30d" | "60d" | "all" | "custom";
 type MediaFile = {
   url: string;
   name?: string;
@@ -44,8 +44,10 @@ const CHART_PERIODS: ChartPeriod[] = ["Last 12 Months", "2026 YTD", "Last 90 Day
 const DATE_RANGE_OPTIONS: Array<{ value: DateRangeView; label: string; title: string }> = [
   { value: "30d", label: "30D", title: "Last 30 days" },
   { value: "60d", label: "60D", title: "Last 60 days" },
-  { value: "2026", label: "2026", title: "All 2026 jobs" },
+  { value: "all", label: "All", title: "All loaded jobs" },
 ];
+const DAY_PRESETS = [7, 14, 30, 60, 90, 180];
+const DEFAULT_CUSTOM_DAYS = 90;
 const NYC_BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
 const FIELD_STATUS_ACTIONS = [
   { label: "Arrived", value: "Arrived On Site", phase: "visit" },
@@ -109,6 +111,8 @@ function realFieldValue(value: string) {
 
 function sourceStatusForJob(job: JobRecord) {
   const rawStatus = realFieldValue(job.raw?.Status || job.raw?.status || job.raw?.["Job Status"] || job.raw?.state || "");
+  const normalized = rawStatus.toLowerCase().replace(/[\s-]+/g, "_");
+  if (["matched", "ok", "recovered_itb"].includes(normalized)) return job.awardDate ? "Awarded" : "Open";
   return rawStatus || (job.awardDate ? "Awarded" : "Open");
 }
 
@@ -197,35 +201,31 @@ function startOfLocalDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-function latestRangeAnchor(jobs: JobRecord[]) {
-  const timestamps = jobs
-    .flatMap(jobRangeDates)
-    .filter((date) => date.getFullYear() >= 2026)
-    .map((date) => startOfLocalDay(date).getTime());
-
-  return timestamps.length ? new Date(Math.max(...timestamps)) : startOfLocalDay(new Date());
+function currentRangeAnchor() {
+  return startOfLocalDay(new Date());
 }
 
-function dateRangeMatches(job: JobRecord, range: DateRangeView, anchorDate = new Date()) {
+function dateRangeMatches(job: JobRecord, range: DateRangeView, anchorDate = new Date(), customDays = DEFAULT_CUSTOM_DAYS) {
   const dates = jobRangeDates(job);
   if (!dates.length) return false;
 
-  if (range === "2026") {
-    return dates.some((date) => startOfLocalDay(date).getFullYear() >= 2026);
+  if (range === "all") {
+    return true;
   }
 
   const today = startOfLocalDay(anchorDate);
-  const days = range === "60d" ? 60 : 30;
+  const days = range === "custom" ? customDays : range === "60d" ? 60 : 30;
   const start = new Date(today);
-  start.setDate(today.getDate() - (days - 1));
+  start.setDate(today.getDate() - (Math.max(1, days) - 1));
   return dates.some((date) => {
     const jobDay = startOfLocalDay(date);
     return jobDay >= start && jobDay <= today;
   });
 }
 
-function dateRangeLabel(range: DateRangeView) {
-  return DATE_RANGE_OPTIONS.find((option) => option.value === range)?.label || "2026";
+function dateRangeLabel(range: DateRangeView, customDays = DEFAULT_CUSTOM_DAYS) {
+  if (range === "custom") return `${customDays}D`;
+  return DATE_RANGE_OPTIONS.find((option) => option.value === range)?.label || "All";
 }
 
 function displayStatus(job: JobRecord) {
@@ -425,7 +425,8 @@ export function JobsMapBoard({ jobs }: Props) {
   const [query, setQuery] = useState("");
   const [borough, setBorough] = useState("");
   const [statusView, setStatusView] = useState<StatusView>("All");
-  const [dateRange, setDateRange] = useState<DateRangeView>("2026");
+  const [dateRange, setDateRange] = useState<DateRangeView>("all");
+  const [customDays, setCustomDays] = useState(DEFAULT_CUSTOM_DAYS);
   const [selectedId, setSelectedId] = useState("");
   const [activeNav, setActiveNav] = useState("Overview");
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("Last 12 Months");
@@ -443,7 +444,7 @@ export function JobsMapBoard({ jobs }: Props) {
     configured: false,
     count: jobs.length,
     lastSyncAt: "",
-    source: "Bundled CSV",
+    source: "Bundled JSON",
     message: "Checking data source...",
   });
   const [mapFitNonce, setMapFitNonce] = useState(0);
@@ -466,10 +467,10 @@ export function JobsMapBoard({ jobs }: Props) {
     [jobStatusOverrides, sourceJobs],
   );
   const mappableJobs = useMemo(() => effectiveJobs.filter(isActiveMapJob), [effectiveJobs]);
-  const dateRangeAnchor = useMemo(() => latestRangeAnchor(mappableJobs), [mappableJobs]);
+  const dateRangeAnchor = useMemo(() => currentRangeAnchor(), [sourceJobs]);
   const dateScopedJobs = useMemo(
-    () => mappableJobs.filter((job) => dateRangeMatches(job, dateRange, dateRangeAnchor)),
-    [dateRange, dateRangeAnchor, mappableJobs],
+    () => mappableJobs.filter((job) => dateRangeMatches(job, dateRange, dateRangeAnchor, customDays)),
+    [customDays, dateRange, dateRangeAnchor, mappableJobs],
   );
   const boroughs = useMemo(() => {
     const dataBoroughs = unique(dateScopedJobs.map((job) => job.borough));
@@ -526,7 +527,7 @@ export function JobsMapBoard({ jobs }: Props) {
   ].filter((item): item is { label: string; value: string; icon: string } => Boolean(item)).slice(0, 3);
   const exportDataHref = `data:text/csv;charset=utf-8,${encodeURIComponent(jobsToCsv(filtered))}`;
   const exportFileName = `hpd-bids-${new Date().toISOString().slice(0, 10)}.csv`;
-  const mapFocusKey = `${borough || "All"}|${statusView}|${dateRange}|${query}|${mapFitNonce}|${userLocation ? userLocation.join(",") : ""}`;
+  const mapFocusKey = `${borough || "All"}|${statusView}|${dateRange}|${customDays}|${query}|${mapFitNonce}|${userLocation ? userLocation.join(",") : ""}`;
   const boroughFocusCenter = borough ? BOROUGH_CENTERS[canonicalBorough(borough)] || null : null;
   const mapFocusCenter = userLocation || boroughFocusCenter;
   const mapFocusZoom = userLocation ? 15 : undefined;
@@ -549,10 +550,8 @@ export function JobsMapBoard({ jobs }: Props) {
     .filter((job) => !borough || job.borough === borough)
     .filter((job) => statusMatches(job, statusView))
     .filter((job) => matchesJobSearch(job, query));
-  const mobileDateStats = DATE_RANGE_OPTIONS.map((option) => ({
-    ...option,
-    count: dateRangeBase.filter((job) => dateRangeMatches(job, option.value, dateRangeAnchor)).length,
-  }));
+  const customDateCount = dateRangeBase.filter((job) => dateRangeMatches(job, "custom", dateRangeAnchor, customDays)).length;
+  const allDateCount = dateRangeBase.filter((job) => dateRangeMatches(job, "all", dateRangeAnchor, customDays)).length;
   const alertCount = Math.min(activityRows.length, 9);
   const boroughCounts = boroughs
     .map((name) => ({
@@ -752,7 +751,7 @@ export function JobsMapBoard({ jobs }: Props) {
     setQuery("");
     setBorough("");
     setStatusView("All");
-    setDateRange("2026");
+    setDateRange("all");
     setSelectedId("");
     setUserLocation(null);
     notify("Filters reset.");
@@ -784,6 +783,27 @@ export function JobsMapBoard({ jobs }: Props) {
     setSelectedId("");
     setUserLocation(null);
     setDateRange(range);
+    setMapFitNonce((current) => current + 1);
+  }
+
+  function applyDaysFilter(showAll: boolean, days = customDays) {
+    setSelectedId("");
+    setUserLocation(null);
+    if (showAll) {
+      setDateRange("all");
+    } else {
+      setCustomDays(Math.max(1, Math.min(999, Math.round(Number(days) || DEFAULT_CUSTOM_DAYS))));
+      setDateRange("custom");
+    }
+    setMapFitNonce((current) => current + 1);
+  }
+
+  function updateCustomDays(value: string) {
+    const nextDays = Math.max(1, Math.min(999, Math.round(Number(value) || DEFAULT_CUSTOM_DAYS)));
+    setSelectedId("");
+    setUserLocation(null);
+    setCustomDays(nextDays);
+    setDateRange("custom");
     setMapFitNonce((current) => current + 1);
   }
 
@@ -987,7 +1007,7 @@ export function JobsMapBoard({ jobs }: Props) {
         setQuery("");
         setBorough("");
         setStatusView("All");
-        setDateRange("2026");
+        setDateRange("all");
         setSelectedId("");
         setUserLocation(null);
         setMapFitNonce((current) => current + 1);
@@ -1122,7 +1142,7 @@ export function JobsMapBoard({ jobs }: Props) {
     `Loaded jobs: ${sourceJobs.length}`,
     `Mapped jobs: ${dateScopedJobs.length}`,
     `Filtered jobs: ${filtered.length}`,
-    `Date range: ${dateRangeLabel(dateRange)}`,
+    `Date range: ${dateRangeLabel(dateRange, customDays)}`,
     `ITB files: ${itbCount}`,
     `COA awards: ${coaCount}`,
     `Command queue: ${queuedRows.length}`,
@@ -1167,7 +1187,7 @@ export function JobsMapBoard({ jobs }: Props) {
           <div className="sidebar-map-card">
             <span>Map Preview</span>
             <strong>{dateScopedJobs.length}</strong>
-            <p>{dateRangeLabel(dateRange)} jobs with coordinates ready for field routing.</p>
+            <p>{dateRangeLabel(dateRange, customDays)} jobs with coordinates ready for field routing.</p>
             <button
               type="button"
               onClick={() => {
@@ -1217,7 +1237,7 @@ export function JobsMapBoard({ jobs }: Props) {
                 <span className="account-logo">HPD</span>
                 <span>
                   <strong>Project Workspace</strong>
-                  <small>{dateScopedJobs.length} {dateRangeLabel(dateRange)} jobs</small>
+                  <small>{dateScopedJobs.length} {dateRangeLabel(dateRange, customDays)} jobs</small>
                 </span>
                 <span aria-hidden="true">⌄</span>
               </button>
@@ -1436,7 +1456,7 @@ export function JobsMapBoard({ jobs }: Props) {
               <span className="mobile-live-line">
                 <i aria-hidden="true" />
                 Live
-                <small>{dateScopedJobs.length} {dateRangeLabel(dateRange)} Jobs</small>
+                <small>{dateScopedJobs.length} {dateRangeLabel(dateRange, customDays)} Jobs</small>
               </span>
               <span className={`mobile-sync-inline is-${syncState.status}`}>
                 <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
@@ -1490,16 +1510,39 @@ export function JobsMapBoard({ jobs }: Props) {
           ))}
         </div>
 
-        <div className="mobile-date-tabs" aria-label="Date range filters">
-          {mobileDateStats.map((item) => (
+        <div className="mobile-days-filter" aria-label="Date range filters">
+          <label className={dateRange === "custom" ? "mobile-date-custom is-active" : "mobile-date-custom"}>
+            <span>Days</span>
+            <input
+              type="number"
+              min="1"
+              max="999"
+              inputMode="numeric"
+              value={customDays}
+              aria-label="Custom days back"
+              onFocus={() => selectDateRange("custom")}
+              onChange={(event) => updateCustomDays(event.target.value)}
+            />
+          </label>
+          <button className={dateRange === "custom" ? "is-active" : ""} type="button" onClick={() => applyDaysFilter(false)}>
+            <strong>Show</strong>
+            <span>{customDateCount}</span>
+          </button>
+          <button className={dateRange === "all" ? "is-active" : ""} type="button" onClick={() => applyDaysFilter(true)}>
+            <strong>All</strong>
+            <span>{allDateCount}</span>
+          </button>
+        </div>
+
+        <div className="mobile-day-presets" aria-label="Quick day filters">
+          {DAY_PRESETS.map((days) => (
             <button
-              key={item.value}
+              key={days}
               type="button"
-              className={dateRange === item.value ? "is-active" : ""}
-              onClick={() => selectDateRange(item.value)}
+              className={dateRange === "custom" && customDays === days ? "is-active" : ""}
+              onClick={() => applyDaysFilter(false, days)}
             >
-              <strong>{item.label}</strong>
-              <span>{item.count}</span>
+              {days}d
             </button>
           ))}
         </div>
@@ -1529,11 +1572,6 @@ export function JobsMapBoard({ jobs }: Props) {
             variant="clusters"
             userLocation={userLocation}
           />
-          <div className="map-place-label label-bronx">The Bronx</div>
-          <div className="map-place-label label-manhattan">Manhattan</div>
-          <div className="map-place-label label-queens">Queens</div>
-          <div className="map-place-label label-brooklyn">Brooklyn</div>
-          <div className="map-place-label label-staten">Staten Island</div>
           {selectedMapsHref ? (
             <a href={selectedMapsHref} target="_blank" rel="noreferrer" className="floating-map-button nav-arrow-icon" aria-label="Navigate" />
           ) : (
@@ -1543,7 +1581,7 @@ export function JobsMapBoard({ jobs }: Props) {
           <button type="button" className="floating-map-button locate-icon" aria-label="Locate me" onClick={locateUser} />
           <button type="button" className="visible-count-button" aria-label="Open visible jobs" onClick={() => setActivePanel("jobs")}>
             <strong>{filtered.length}</strong>
-            <span>{dateRangeLabel(dateRange)} Jobs</span>
+            <span>{dateRangeLabel(dateRange, customDays)} Jobs</span>
           </button>
         </div>
 
@@ -1810,14 +1848,41 @@ export function JobsMapBoard({ jobs }: Props) {
                 <div>
                   <h3>Date Range</h3>
                   <div className="drawer-chip-grid">
-                    {mobileDateStats.map((item) => (
+                    <label className={dateRange === "custom" ? "drawer-custom-days is-active" : "drawer-custom-days"}>
+                      <span>Custom days back</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="999"
+                        inputMode="numeric"
+                        value={customDays}
+                        onFocus={() => selectDateRange("custom")}
+                        onChange={(event) => updateCustomDays(event.target.value)}
+                      />
+                      <strong>{customDateCount} jobs</strong>
+                    </label>
+                    <button
+                      type="button"
+                      className={dateRange === "custom" ? "is-active" : ""}
+                      onClick={() => applyDaysFilter(false)}
+                    >
+                      Show {customDays} days ({customDateCount})
+                    </button>
+                    <button
+                      type="button"
+                      className={dateRange === "all" ? "is-active" : ""}
+                      onClick={() => applyDaysFilter(true)}
+                    >
+                      All loaded jobs ({allDateCount})
+                    </button>
+                    {DAY_PRESETS.map((days) => (
                       <button
-                        key={item.value}
+                        key={`${days}-drawer-days`}
                         type="button"
-                        className={dateRange === item.value ? "is-active" : ""}
-                        onClick={() => selectDateRange(item.value)}
+                        className={dateRange === "custom" && customDays === days ? "is-active" : ""}
+                        onClick={() => applyDaysFilter(false, days)}
                       >
-                        {item.title} ({item.count})
+                        {days} days
                       </button>
                     ))}
                   </div>
@@ -1862,7 +1927,7 @@ export function JobsMapBoard({ jobs }: Props) {
               <div className="drawer-stack">
                 <div className="drawer-stat-grid">
                   <div><span>Visible</span><strong>{filtered.length}</strong></div>
-                  <div><span>{dateRangeLabel(dateRange)}</span><strong>{dateScopedJobs.length}</strong></div>
+                  <div><span>{dateRangeLabel(dateRange, customDays)}</span><strong>{dateScopedJobs.length}</strong></div>
                 </div>
                 <div className="drawer-list">
                   {filtered.slice(0, 20).map((job) => (
@@ -2035,7 +2100,7 @@ export function JobsMapBoard({ jobs }: Props) {
               <div className="drawer-stack">
                 <div className="drawer-stat-grid">
                   <div><span>Loaded jobs</span><strong>{jobs.length}</strong></div>
-                  <div><span>{dateRangeLabel(dateRange)} jobs</span><strong>{dateScopedJobs.length}</strong></div>
+                  <div><span>{dateRangeLabel(dateRange, customDays)} jobs</span><strong>{dateScopedJobs.length}</strong></div>
                   <div><span>ITB files</span><strong>{itbCount}</strong></div>
                   <div><span>COA awards</span><strong>{coaCount}</strong></div>
                 </div>

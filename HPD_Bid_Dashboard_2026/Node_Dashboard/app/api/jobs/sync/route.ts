@@ -24,7 +24,7 @@ function localSourcePayload() {
     jobs,
     message: configured
       ? "Live feed is configured. Tap Fetch Now to pull the latest file."
-      : "Reloaded the latest bundled 2026 scheduled data. Live feed URL is not connected yet.",
+      : "Reloaded the latest bundled job data. Live feed URL is not connected yet.",
   };
 }
 
@@ -72,7 +72,7 @@ export async function POST() {
       jobs,
       lastSyncAt: now,
       source: `Live ${feed.type.toUpperCase()}`,
-      message: `${jobs.length} 2026+ jobs fetched from the live feed.`,
+      message: `${jobs.length} jobs fetched from the live feed.`,
     });
   } catch (error) {
     const fallback = localSourcePayload();

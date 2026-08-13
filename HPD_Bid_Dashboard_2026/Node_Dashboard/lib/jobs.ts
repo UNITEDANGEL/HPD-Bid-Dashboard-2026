@@ -126,6 +126,24 @@ function inferBorough(row: SourceRow, address: string) {
   return zipMatch ? zipToBorough(zipMatch[1]) : "";
 }
 
+function normalizeSourceStatus(status: string, hasAwardDate: boolean) {
+  const text = String(status || "").trim();
+  if (!text) return hasAwardDate ? "Awarded" : "Open";
+
+  const normalized = text.toLowerCase().replace(/[\s-]+/g, "_");
+  const pipelineStatuses = new Set([
+    "matched",
+    "ok",
+    "recovered_itb",
+    "cleaned_itb_description",
+    "pdf_page_3",
+    "contact_found",
+    "request_hpd_contact",
+  ]);
+
+  return pipelineStatuses.has(normalized) ? (hasAwardDate ? "Awarded" : "Open") : text;
+}
+
 function normalizeJob(row: SourceRow, index: number): JobRecord {
   const id = pick(row, ["OMO", "Job ID", "job_id", "id", "omo", "EQ No", "eq_no"]) || `JOB-${index + 1}`;
   const address = pick(row, [
@@ -162,7 +180,10 @@ function normalizeJob(row: SourceRow, index: number): JobRecord {
     "Work_Completion_Date",
     "completion_date",
   ]);
-  const status = pick(row, ["Status", "status", "job_status", "Job Status", "state"]) || (parsedAwardDate ? "Awarded" : "Open");
+  const status = normalizeSourceStatus(
+    pick(row, ["Status", "status", "job_status", "Job Status", "state"]),
+    Boolean(parsedAwardDate),
+  );
   const bidAmount = pick(row, ["BidAmount", "bidAmount", "AwardAmount", "Award_Amount", "bid_amount", "amountValue"]);
   const description = pick(row, [
     "JobDescription",

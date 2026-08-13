@@ -949,6 +949,43 @@ tbody tr:hover {
   background: rgba(47, 156, 255, 0.18);
 }
 
+.drawer-custom-days {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(0, 1fr) 86px auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid rgba(151, 177, 212, 0.2);
+  border-radius: var(--radius);
+  background: rgba(12, 28, 48, 0.86);
+  color: #c9d8ec;
+}
+
+.drawer-custom-days.is-active {
+  border-color: rgba(53, 255, 134, 0.62);
+  box-shadow: 0 0 16px rgba(45, 212, 125, 0.16);
+}
+
+.drawer-custom-days span,
+.drawer-custom-days strong {
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.drawer-custom-days input {
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid rgba(151, 177, 212, 0.22);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #ffffff;
+  text-align: center;
+  font-weight: 950;
+  outline: 0;
+}
+
 .drawer-list {
   display: grid;
   gap: 10px;
@@ -1139,6 +1176,34 @@ tbody tr:hover {
   background: var(--blue);
   color: #001320;
   font-weight: 900;
+}
+
+.map-borough-label-icon {
+  pointer-events: none;
+  background: transparent;
+  border: 0;
+}
+
+.map-borough-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 104px;
+  padding: 3px 9px;
+  border: 1px solid rgba(148, 190, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(2, 8, 15, 0.42);
+  color: rgba(221, 239, 255, 0.96);
+  box-shadow: 0 0 18px rgba(47, 156, 255, 0.16);
+  font-size: 0.72rem;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+  text-transform: uppercase;
+  white-space: nowrap;
+  backdrop-filter: blur(5px);
 }
 
 .job-pin-icon {
@@ -2122,43 +2187,6 @@ tbody tr:hover {
     filter: saturate(0.95) contrast(1.02) brightness(1.12);
   }
 
-  .map-place-label {
-    position: absolute;
-    z-index: 410;
-    color: rgba(255, 255, 255, 0.92);
-    font-size: 0.9rem;
-    font-weight: 900;
-    line-height: 1.05;
-    text-transform: uppercase;
-    text-shadow: 0 2px 14px rgba(0, 0, 0, 0.75);
-    pointer-events: none;
-  }
-
-  .label-bronx {
-    top: 8%;
-    right: 23%;
-  }
-
-  .label-manhattan {
-    top: 24%;
-    left: 33%;
-  }
-
-  .label-queens {
-    top: 36%;
-    right: 16%;
-  }
-
-  .label-brooklyn {
-    top: 56%;
-    left: 43%;
-  }
-
-  .label-staten {
-    bottom: 25%;
-    left: 8%;
-  }
-
   .floating-map-button {
     position: absolute;
     right: 16px;
@@ -2870,37 +2898,6 @@ tbody tr:hover {
 
   .mobile-map-shell .leaflet-tile-pane {
     filter: saturate(0.95) contrast(1.02) brightness(1.12);
-  }
-
-  .map-place-label {
-    color: rgba(221, 239, 255, 0.92);
-    font-size: 0.82rem;
-    letter-spacing: 0.04em;
-  }
-
-  .label-bronx {
-    top: 12%;
-    right: 17%;
-  }
-
-  .label-manhattan {
-    top: 30%;
-    left: 33%;
-  }
-
-  .label-queens {
-    top: 42%;
-    right: 18%;
-  }
-
-  .label-brooklyn {
-    top: 60%;
-    left: 49%;
-  }
-
-  .label-staten {
-    bottom: 21%;
-    left: 7%;
   }
 
   .floating-map-button,
@@ -4576,12 +4573,13 @@ tbody tr:hover {
     position: relative;
     z-index: 620;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 5px;
     padding: 0 10px 5px;
   }
 
-  .mobile-date-tabs button {
+  .mobile-date-tabs button,
+  .mobile-date-custom {
     display: grid;
     place-items: center;
     min-width: 0;
@@ -4594,7 +4592,8 @@ tbody tr:hover {
     cursor: pointer;
   }
 
-  .mobile-date-tabs button.is-active {
+  .mobile-date-tabs button.is-active,
+  .mobile-date-custom.is-active {
     border-color: rgba(53, 255, 134, 0.72);
     background: linear-gradient(180deg, rgba(45, 212, 125, 0.26), rgba(7, 24, 32, 0.92));
     color: #ffffff;
@@ -4602,7 +4601,8 @@ tbody tr:hover {
   }
 
   .mobile-date-tabs strong,
-  .mobile-date-tabs span {
+  .mobile-date-tabs span,
+  .mobile-date-custom input {
     overflow: hidden;
     max-width: 100%;
     font-size: 0.58rem;
@@ -4613,18 +4613,110 @@ tbody tr:hover {
     white-space: nowrap;
   }
 
-  .mobile-date-tabs span {
+  .mobile-date-custom input {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: #ffffff;
+    text-align: center;
+    outline: 0;
+  }
+
+  .mobile-date-tabs span,
+  .mobile-date-custom strong {
     margin-top: 1px;
     color: #96b1d0;
     font-weight: 800;
   }
 
-  .mobile-date-tabs button.is-active span {
+  .mobile-date-tabs button.is-active span,
+  .mobile-date-custom.is-active strong {
     color: #dff7ff;
   }
 
+  .mobile-days-filter {
+    position: relative;
+    z-index: 620;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 0.9fr));
+    gap: 6px;
+    padding: 0 10px 5px;
+  }
+
+  .mobile-days-filter button,
+  .mobile-days-filter .mobile-date-custom {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 36px;
+    padding: 4px 6px;
+    border: 1px solid rgba(151, 177, 212, 0.22);
+    border-radius: 13px;
+    background: rgba(5, 18, 34, 0.78);
+    color: #c9d8ec;
+  }
+
+  .mobile-days-filter button.is-active,
+  .mobile-days-filter .mobile-date-custom.is-active {
+    border-color: rgba(53, 255, 134, 0.72);
+    background: linear-gradient(180deg, rgba(45, 212, 125, 0.26), rgba(7, 24, 32, 0.92));
+    color: #ffffff;
+    box-shadow: 0 0 16px rgba(45, 212, 125, 0.22);
+  }
+
+  .mobile-days-filter strong,
+  .mobile-days-filter span,
+  .mobile-days-filter input {
+    max-width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 0.65rem;
+    font-weight: 950;
+    line-height: 1.05;
+    text-align: center;
+    text-transform: uppercase;
+    outline: 0;
+  }
+
+  .mobile-days-filter input {
+    width: 100%;
+    margin-top: 2px;
+    color: #ffffff;
+  }
+
+  .mobile-days-filter span {
+    color: #96b1d0;
+  }
+
+  .mobile-day-presets {
+    position: relative;
+    z-index: 620;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 5px;
+    padding: 0 10px 6px;
+  }
+
+  .mobile-day-presets button {
+    min-width: 0;
+    min-height: 26px;
+    border: 1px solid rgba(151, 177, 212, 0.2);
+    border-radius: 10px;
+    background: rgba(5, 18, 34, 0.66);
+    color: #a8d3ff;
+    font-size: 0.62rem;
+    font-weight: 950;
+  }
+
+  .mobile-day-presets button.is-active {
+    border-color: rgba(47, 156, 255, 0.74);
+    background: rgba(47, 156, 255, 0.28);
+    color: #ffffff;
+  }
+
   .mobile-map-shell {
-    inset: 238px 0 62px;
+    inset: 270px 0 62px;
   }
 }
 
@@ -4712,14 +4804,37 @@ tbody tr:hover {
     padding: 0 8px 7px;
   }
 
-  .mobile-date-tabs button {
+  .mobile-days-filter {
+    gap: 6px;
+    padding: 0 8px 6px;
+  }
+
+  .mobile-days-filter button,
+  .mobile-days-filter .mobile-date-custom {
+    min-height: 39px;
+    border-radius: 13px;
+  }
+
+  .mobile-day-presets {
+    gap: 5px;
+    padding: 0 8px 7px;
+  }
+
+  .mobile-day-presets button {
+    min-height: 28px;
+    font-size: 0.62rem;
+  }
+
+  .mobile-date-tabs button,
+  .mobile-date-custom {
     min-height: 38px;
     padding: 4px;
     border-radius: 13px;
   }
 
   .mobile-date-tabs strong,
-  .mobile-date-tabs span {
+  .mobile-date-tabs span,
+  .mobile-date-custom input {
     font-size: 0.68rem;
   }
 
@@ -4742,7 +4857,7 @@ tbody tr:hover {
   }
 
   .mobile-map-shell {
-    inset: 368px 0 66px;
+    inset: 404px 0 66px;
   }
 
   .floating-map-button,
