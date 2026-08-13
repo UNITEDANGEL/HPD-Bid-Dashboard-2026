@@ -80,6 +80,16 @@ function feedConfig(feedUrl = "", feedType?: string) {
   return null;
 }
 
+function isSameAppJobsFeed(request: Request, feedUrl: string) {
+  try {
+    const requestUrl = new URL(request.url);
+    const targetUrl = new URL(feedUrl);
+    return targetUrl.origin === requestUrl.origin && targetUrl.pathname === "/api/jobs";
+  } catch {
+    return false;
+  }
+}
+
 function localSourcePayload() {
   const source = getJobsSourceInfo();
   const jobs = getJobs();
@@ -148,6 +158,20 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (feed.manual && isSameAppJobsFeed(request, feed.url)) {
+      const fallback = localSourcePayload();
+      const now = new Date().toISOString();
+      return NextResponse.json({
+        ok: true,
+        configured: true,
+        count: fallback.count,
+        jobs: fallback.jobs,
+        lastSyncAt: now,
+        source: "Manual JSON",
+        message: `${fallback.count} jobs loaded from this app's API feed.`,
+      });
+    }
+
     const response = await fetch(feed.url, { cache: "no-store" });
     if (!response.ok) {
       throw new Error(`Live ${feed.type.toUpperCase()} returned ${response.status}`);
