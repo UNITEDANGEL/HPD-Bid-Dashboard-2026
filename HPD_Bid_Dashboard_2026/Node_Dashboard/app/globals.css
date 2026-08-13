@@ -4526,6 +4526,75 @@ tbody tr:hover {
   background: rgba(255, 159, 67, 0.16);
 }
 
+.mobile-map-data-badge {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  z-index: 720;
+  display: grid;
+  gap: 2px;
+  min-width: 154px;
+  max-width: min(58%, 226px);
+  padding: 8px 10px;
+  border: 1px solid rgba(47, 156, 255, 0.42);
+  border-radius: 15px;
+  background: linear-gradient(180deg, rgba(6, 19, 36, 0.88), rgba(4, 13, 25, 0.78));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32), 0 0 18px rgba(47, 156, 255, 0.14);
+  color: #ffffff;
+  text-align: left;
+  backdrop-filter: blur(12px);
+}
+
+.mobile-map-data-badge span,
+.mobile-map-data-badge strong,
+.mobile-map-data-badge small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-map-data-badge span {
+  color: #63c7ff;
+  font-size: 0.58rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mobile-map-data-badge strong {
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.mobile-map-data-badge small {
+  color: #b8cae1;
+  font-size: 0.58rem;
+  font-weight: 850;
+}
+
+.mobile-map-data-badge.is-current {
+  border-color: rgba(45, 212, 125, 0.48);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32), 0 0 18px rgba(45, 212, 125, 0.16);
+}
+
+.mobile-map-data-badge.is-current span {
+  color: #70ffae;
+}
+
+.mobile-map-data-badge.is-failed {
+  border-color: rgba(255, 159, 67, 0.5);
+}
+
+.mobile-map-data-badge.is-failed span {
+  color: #ffbd73;
+}
+
+.mobile-map-data-badge.is-syncing {
+  border-color: rgba(47, 156, 255, 0.72);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32), 0 0 24px rgba(47, 156, 255, 0.28);
+}
+
 .sync-drawer-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

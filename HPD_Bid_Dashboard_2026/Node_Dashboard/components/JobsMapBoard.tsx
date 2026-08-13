@@ -588,6 +588,19 @@ export function JobsMapBoard({ jobs }: Props) {
     : syncState.configured
     ? `${syncState.count} jobs · Last fetch ${formatSyncTime(syncState.lastSyncAt)}`
     : `${mappableJobs.length} mapped jobs · Auto fetch off`;
+  const mapDataBadgeTitle = syncState.status === "syncing"
+    ? "Fetching"
+    : syncState.configured
+      ? syncState.source
+      : hasManualFeed
+        ? "Manual Feed Ready"
+        : "Bundled Data";
+  const mapDataBadgeMeta = syncState.configured
+    ? `Last ${formatSyncTime(syncState.lastSyncAt)}`
+    : hasManualFeed
+      ? `${manualFeedType.toUpperCase()} feed saved`
+      : "Tap to connect feed";
+  const mapDataBadgeCounts = `${mappableJobs.length} mapped · ${filtered.length} visible`;
   const alertCount = Math.min(activityRows.length, 9);
   const boroughCounts = boroughs
     .map((name) => ({
@@ -1653,6 +1666,16 @@ export function JobsMapBoard({ jobs }: Props) {
             variant="clusters"
             userLocation={userLocation}
           />
+          <button
+            type="button"
+            className={`mobile-map-data-badge is-${syncState.status}`}
+            onClick={() => setActivePanel("sync")}
+            aria-label="Open data fetcher status"
+          >
+            <span>{mapDataBadgeTitle}</span>
+            <strong>{mapDataBadgeMeta}</strong>
+            <small>{mapDataBadgeCounts}</small>
+          </button>
           {selectedMapsHref ? (
             <a href={selectedMapsHref} target="_blank" rel="noreferrer" className="floating-map-button nav-arrow-icon" aria-label="Navigate" />
           ) : (
