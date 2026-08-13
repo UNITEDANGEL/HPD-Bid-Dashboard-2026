@@ -1,7 +1,7 @@
 {
   "state": "failed",
-  "startedAt": "2026-08-13T17:52:27.874Z",
-  "finishedAt": "2026-08-13T17:52:33.034Z",
+  "startedAt": "2026-08-13T19:53:05.005Z",
+  "finishedAt": "2026-08-13T19:53:10.538Z",
   "ok": false,
   "error": "Run Gmail fetcher for last 14 days failed with exit code 1",
   "summary": {
