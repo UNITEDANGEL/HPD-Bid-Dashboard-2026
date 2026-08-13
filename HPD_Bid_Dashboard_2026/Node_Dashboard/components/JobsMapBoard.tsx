@@ -17,6 +17,7 @@ type TableMode = "live" | "queue" | "documents";
 type ActivePanel = "" | "filters" | "notifications" | "account" | "map" | "system" | "contact" | "jobs" | "add" | "sync";
 type ChartPeriod = "Last 12 Months" | "2026 YTD" | "Last 90 Days";
 type DateRangeView = "30d" | "60d" | "all" | "custom";
+type ManualFeedType = "csv" | "json";
 type MediaFile = {
   url: string;
   name?: string;
@@ -40,6 +41,8 @@ type SyncState = {
 
 const STATUS_OVERRIDE_STORAGE_KEY = "hpd-job-status-overrides-v1";
 const FIELD_FLOW_STORAGE_KEY = "hpd-job-field-flow-events-v1";
+const MANUAL_FEED_URL_STORAGE_KEY = "hpd-live-feed-url-v1";
+const MANUAL_FEED_TYPE_STORAGE_KEY = "hpd-live-feed-type-v1";
 const CHART_PERIODS: ChartPeriod[] = ["Last 12 Months", "2026 YTD", "Last 90 Days"];
 const DATE_RANGE_OPTIONS: Array<{ value: DateRangeView; label: string; title: string }> = [
   { value: "30d", label: "30D", title: "Last 30 days" },
@@ -450,6 +453,8 @@ export function JobsMapBoard({ jobs }: Props) {
     source: "Bundled JSON",
     message: "Checking data source...",
   });
+  const [manualFeedUrl, setManualFeedUrl] = useState("");
+  const [manualFeedType, setManualFeedType] = useState<ManualFeedType>("csv");
   const [mapFitNonce, setMapFitNonce] = useState(0);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const mobileBoroughRowRef = useRef<HTMLDivElement>(null);
@@ -565,15 +570,22 @@ export function JobsMapBoard({ jobs }: Props) {
     status,
     count: dateRangeBase.filter((job) => statusMatches(job, status)).length,
   }));
-  const syncTitle = !syncState.configured
+  const hasManualFeed = manualFeedUrl.trim().length > 0;
+  const syncTitle = hasManualFeed && !syncState.configured
+    ? "Manual feed ready"
+    : !syncState.configured
     ? "Feed not connected"
     : syncState.status === "failed"
       ? "Fetch failed"
       : syncState.source;
-  const syncMessage = !syncState.configured
+  const syncMessage = hasManualFeed && !syncState.configured
+    ? "Tap Fetch Now to pull this pasted CSV or JSON feed into the map."
+    : !syncState.configured
     ? "Bundled 2026 map data is loaded. Connect JOBS_CSV_URL or JOBS_JSON_URL to pull new awards."
     : syncState.message;
-  const syncMetaText = syncState.configured
+  const syncMetaText = hasManualFeed && !syncState.configured
+    ? `${manualFeedType.toUpperCase()} URL saved on this device`
+    : syncState.configured
     ? `${syncState.count} jobs · Last fetch ${formatSyncTime(syncState.lastSyncAt)}`
     : `${mappableJobs.length} mapped jobs · Auto fetch off`;
   const alertCount = Math.min(activityRows.length, 9);
@@ -620,6 +632,18 @@ export function JobsMapBoard({ jobs }: Props) {
     } catch {
       setJobStatusOverrides({});
       setFieldFlowEventsByJob({});
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const savedUrl = window.localStorage.getItem(MANUAL_FEED_URL_STORAGE_KEY) || "";
+      const savedType = window.localStorage.getItem(MANUAL_FEED_TYPE_STORAGE_KEY);
+      setManualFeedUrl(savedUrl);
+      setManualFeedType(savedType === "json" ? "json" : "csv");
+    } catch {
+      setManualFeedUrl("");
+      setManualFeedType("csv");
     }
   }, []);
 
@@ -779,6 +803,38 @@ export function JobsMapBoard({ jobs }: Props) {
     setSelectedId("");
     setUserLocation(null);
     notify("Filters reset.");
+  }
+
+  function updateManualFeedUrl(value: string) {
+    setManualFeedUrl(value);
+    try {
+      if (value.trim()) {
+        window.localStorage.setItem(MANUAL_FEED_URL_STORAGE_KEY, value.trim());
+      } else {
+        window.localStorage.removeItem(MANUAL_FEED_URL_STORAGE_KEY);
+      }
+    } catch {
+      // The fetch still works for the current tap if local storage is unavailable.
+    }
+  }
+
+  function updateManualFeedType(value: ManualFeedType) {
+    setManualFeedType(value);
+    try {
+      window.localStorage.setItem(MANUAL_FEED_TYPE_STORAGE_KEY, value);
+    } catch {
+      // Non-blocking; the selected type is still held in state.
+    }
+  }
+
+  function clearManualFeedUrl() {
+    setManualFeedUrl("");
+    try {
+      window.localStorage.removeItem(MANUAL_FEED_URL_STORAGE_KEY);
+    } catch {
+      // Clearing the screen state is enough for this session.
+    }
+    notify("Feed URL cleared.");
   }
 
   function scrollToSection(id: string) {
@@ -980,6 +1036,15 @@ export function JobsMapBoard({ jobs }: Props) {
   }
 
   async function syncJobsNow() {
+    const feedUrl = manualFeedUrl.trim();
+    const request: RequestInit = feedUrl
+      ? {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ feedUrl, feedType: manualFeedType }),
+      }
+      : { method: "POST" };
+
     setSyncState((current) => ({
       ...current,
       status: "syncing",
@@ -987,7 +1052,7 @@ export function JobsMapBoard({ jobs }: Props) {
     }));
 
     try {
-      const response = await fetch("/api/jobs/sync", { method: "POST" });
+      const response = await fetch("/api/jobs/sync", request);
       const data = await response.json() as Partial<SyncState> & {
         ok?: boolean;
         error?: string;
@@ -2077,6 +2142,39 @@ export function JobsMapBoard({ jobs }: Props) {
                   <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
                     {syncState.status === "syncing" ? "Fetching" : "Fetch Now"}
                   </button>
+                </div>
+                <div className="feed-url-card">
+                  <label htmlFor="manualFeedUrl">
+                    <span>Live feed URL</span>
+                    <input
+                      id="manualFeedUrl"
+                      type="url"
+                      inputMode="url"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      value={manualFeedUrl}
+                      onChange={(event) => updateManualFeedUrl(event.target.value)}
+                      placeholder="Paste Google Sheets CSV, Drive file, JSON, or API URL"
+                    />
+                  </label>
+                  <div className="feed-url-actions">
+                    <div className="feed-type-toggle" role="group" aria-label="Feed file type">
+                      {(["csv", "json"] as ManualFeedType[]).map((type) => (
+                        <button
+                          key={type}
+                          type="button"
+                          className={manualFeedType === type ? "active" : ""}
+                          onClick={() => updateManualFeedType(type)}
+                        >
+                          {type.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                    <button type="button" onClick={clearManualFeedUrl} disabled={!manualFeedUrl.trim()}>
+                      Clear URL
+                    </button>
+                  </div>
                 </div>
                 <div className="data-health-grid" aria-label="Loaded data health">
                   {dataHealthStats.map((item) => (

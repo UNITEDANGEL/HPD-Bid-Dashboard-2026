@@ -4568,6 +4568,84 @@ tbody tr:hover {
   border-color: rgba(255, 159, 67, 0.42);
 }
 
+.feed-url-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(151, 177, 212, 0.2);
+  border-radius: 16px;
+  background: rgba(4, 15, 28, 0.68);
+}
+
+.feed-url-card label {
+  display: grid;
+  gap: 7px;
+}
+
+.feed-url-card span {
+  color: #a8d3ff;
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.feed-url-card input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid rgba(47, 156, 255, 0.34);
+  border-radius: 14px;
+  background: rgba(3, 12, 24, 0.86);
+  color: #ffffff;
+  font-size: 0.84rem;
+  outline: none;
+}
+
+.feed-url-card input:focus {
+  border-color: rgba(47, 156, 255, 0.85);
+  box-shadow: 0 0 0 3px rgba(47, 156, 255, 0.18);
+}
+
+.feed-url-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.feed-type-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid rgba(151, 177, 212, 0.18);
+  border-radius: 14px;
+  background: rgba(3, 12, 24, 0.72);
+}
+
+.feed-type-toggle button,
+.feed-url-actions > button {
+  min-height: 38px;
+  border: 1px solid rgba(151, 177, 212, 0.16);
+  border-radius: 12px;
+  background: rgba(8, 22, 40, 0.78);
+  color: #dce8f8;
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.feed-type-toggle button.active {
+  border-color: rgba(47, 156, 255, 0.72);
+  background: linear-gradient(180deg, rgba(21, 155, 255, 0.42), rgba(15, 87, 217, 0.3));
+  color: #ffffff;
+  box-shadow: 0 0 18px rgba(47, 156, 255, 0.18);
+}
+
+.feed-url-actions > button:disabled {
+  opacity: 0.48;
+}
+
 .data-health-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
