@@ -5,14 +5,14 @@ import type { ChangeEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StatusBadge } from "./StatusBadge";
 import type { JobRecord } from "../lib/types";
-import { isMainMapStatus, isTerminalStatus } from "../lib/workflow";
+import { isMainMapStatus } from "../lib/workflow";
 import { compareJobsBySearch, matchesJobSearch } from "../lib/search";
 
 type Props = {
   jobs: JobRecord[];
 };
 
-type StatusView = "All" | "Open" | "Awarded" | "Pending";
+type StatusView = "All" | "Open" | "Awarded" | "Pending" | "No Access" | "Refused" | "Completed";
 type TableMode = "live" | "queue" | "documents";
 type ActivePanel = "" | "filters" | "notifications" | "account" | "map" | "system" | "contact" | "jobs" | "add" | "sync";
 type ChartPeriod = "Last 12 Months" | "2026 YTD" | "Last 90 Days";
@@ -49,6 +49,7 @@ const DATE_RANGE_OPTIONS: Array<{ value: DateRangeView; label: string; title: st
 const DAY_PRESETS = [7, 14, 30, 60, 90, 180];
 const DEFAULT_CUSTOM_DAYS = 90;
 const NYC_BOROUGHS = ["Manhattan", "Brooklyn", "Queens", "Bronx", "Staten Island"];
+const STATUS_FILTERS: StatusView[] = ["All", "Open", "Awarded", "Pending", "No Access", "Refused", "Completed"];
 const FIELD_STATUS_ACTIONS = [
   { label: "Arrived", value: "Arrived On Site", phase: "visit" },
   { label: "Started", value: "Work Started", phase: "visit" },
@@ -234,7 +235,7 @@ function displayStatus(job: JobRecord) {
 }
 
 function isActiveMapJob(job: JobRecord) {
-  return job.hasMap && !isTerminalStatus(job.status);
+  return job.hasMap;
 }
 
 function jobTitle(job: JobRecord) {
@@ -260,12 +261,14 @@ function statusMatches(job: JobRecord, status: StatusView) {
       rawStatus.includes("arrived") ||
       rawStatus.includes("started") ||
       rawStatus.includes("work in progress") ||
-      rawStatus.includes("no access") ||
       rawStatus.includes("needs materials") ||
       rawStatus.includes("follow up") ||
       rawStatus.includes("partial")
     );
   }
+  if (status === "No Access") return normalized.includes("no access") || rawStatus.includes("no access");
+  if (status === "Refused") return normalized.includes("refused") || rawStatus.includes("refused");
+  if (status === "Completed") return normalized.includes("completed") || rawStatus.includes("completed");
   return normalized.includes(status.toLowerCase()) || rawStatus.includes(status.toLowerCase());
 }
 
@@ -542,7 +545,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const mobileStatusBase = dateScopedJobs
     .filter((job) => !borough || job.borough === borough)
     .filter((job) => matchesJobSearch(job, query));
-  const mobileStatusStats = (["All", "Open", "Awarded", "Pending"] as StatusView[]).map((status) => ({
+  const mobileStatusStats = STATUS_FILTERS.map((status) => ({
     status,
     count: status === "All" ? mobileStatusBase.length : mobileStatusBase.filter((job) => statusMatches(job, status)).length,
   }));
@@ -847,7 +850,6 @@ export function JobsMapBoard({ jobs }: Props) {
 
     const jobId = selected.id;
     const action = actionForStatus(nextStatus);
-    const closesActiveMap = isTerminalStatus(nextStatus);
     const existingStamp = fieldFlowEventsByJob[jobId]?.[nextStatus];
     if (existingStamp) {
       setJobStatusOverrides((current) => {
@@ -859,16 +861,8 @@ export function JobsMapBoard({ jobs }: Props) {
         }
         return next;
       });
-      setStatusMediaPrompt(action?.phase === "outcome" && !closesActiveMap ? { jobId, label: action.label } : null);
-      if (closesActiveMap) {
-        setSelectedId("");
-        setMapFitNonce((current) => current + 1);
-      }
-      notify(
-        closesActiveMap
-          ? `${action?.label || nextStatus} already saved at ${formatStampTime(existingStamp.createdAt)}. Removed from active map.`
-          : `${action?.label || nextStatus} already saved at ${formatStampTime(existingStamp.createdAt)}.`,
-      );
+      setStatusMediaPrompt(action?.phase === "outcome" ? { jobId, label: action.label } : null);
+      notify(`${action?.label || nextStatus} already saved at ${formatStampTime(existingStamp.createdAt)}.`);
       return;
     }
 
@@ -898,12 +892,9 @@ export function JobsMapBoard({ jobs }: Props) {
       writeLocalFlowMap(next);
       return next;
     });
-    setStatusMediaPrompt(action?.phase === "outcome" && !closesActiveMap ? { jobId, label: action.label } : null);
+    setStatusMediaPrompt(action?.phase === "outcome" ? { jobId, label: action.label } : null);
 
-    if (closesActiveMap) {
-      setSelectedId("");
-      setMapFitNonce((current) => current + 1);
-    } else if (!statusMatches({ ...selected, status: nextStatus, statusOverride: nextStatus, workflowStatus: nextStatus }, statusView)) {
+    if (!statusMatches({ ...selected, status: nextStatus, statusOverride: nextStatus, workflowStatus: nextStatus }, statusView)) {
       setStatusView("All");
     }
 
@@ -919,14 +910,10 @@ export function JobsMapBoard({ jobs }: Props) {
       if (savedStatus) {
         setJobStatusOverrides((current) => ({ ...current, [jobId]: savedStatus }));
       }
-      notify(`${jobId} saved: ${savedStatus || nextStatus}.${isTerminalStatus(savedStatus || nextStatus) ? " Removed from active map." : ""}`);
+      notify(`${jobId} saved: ${savedStatus || nextStatus}.`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "";
-      notify(
-        closesActiveMap
-          ? `${jobId} saved on this device and removed from active map.`
-          : errorMessage || `${jobId} updated on this device.`,
-      );
+      notify(errorMessage || `${jobId} updated on this device.`);
     }
   }
 
@@ -1504,7 +1491,7 @@ export function JobsMapBoard({ jobs }: Props) {
               className={statusView === item.status ? "is-active" : ""}
               onClick={() => selectStatus(item.status)}
             >
-              <strong>{item.status === "All" ? "Status" : item.status}</strong>
+              <strong>{item.status}</strong>
               <span>{item.count}</span>
             </button>
           ))}
@@ -1838,7 +1825,7 @@ export function JobsMapBoard({ jobs }: Props) {
                 <div>
                   <h3>Status</h3>
                   <div className="drawer-chip-grid">
-                    {(["All", "Open", "Awarded", "Pending"] as StatusView[]).map((status) => (
+                    {STATUS_FILTERS.map((status) => (
                       <button key={status} type="button" className={statusView === status ? "is-active" : ""} onClick={() => selectStatus(status)}>
                         {status}
                       </button>
