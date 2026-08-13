@@ -555,6 +555,27 @@ export function JobsMapBoard({ jobs }: Props) {
     .filter((job) => matchesJobSearch(job, query));
   const customDateCount = dateRangeBase.filter((job) => dateRangeMatches(job, "custom", dateRangeAnchor, customDays)).length;
   const allDateCount = dateRangeBase.filter((job) => dateRangeMatches(job, "all", dateRangeAnchor, customDays)).length;
+  const dataHealthStats = [
+    { label: "Loaded", value: effectiveJobs.length },
+    { label: "Mapped", value: mappableJobs.length },
+    { label: "Visible", value: filtered.length },
+    { label: dateRangeLabel(dateRange, customDays), value: dateScopedJobs.length },
+  ];
+  const dataStatusStats = STATUS_FILTERS.filter((status) => status !== "All").map((status) => ({
+    status,
+    count: dateRangeBase.filter((job) => statusMatches(job, status)).length,
+  }));
+  const syncTitle = !syncState.configured
+    ? "Feed not connected"
+    : syncState.status === "failed"
+      ? "Fetch failed"
+      : syncState.source;
+  const syncMessage = !syncState.configured
+    ? "Bundled 2026 map data is loaded. Connect JOBS_CSV_URL or JOBS_JSON_URL to pull new awards."
+    : syncState.message;
+  const syncMetaText = syncState.configured
+    ? `${syncState.count} jobs · Last fetch ${formatSyncTime(syncState.lastSyncAt)}`
+    : `${mappableJobs.length} mapped jobs · Auto fetch off`;
   const alertCount = Math.min(activityRows.length, 9);
   const boroughCounts = boroughs
     .map((name) => ({
@@ -610,7 +631,7 @@ export function JobsMapBoard({ jobs }: Props) {
         const data = await response.json() as Partial<SyncState> & { ok?: boolean; error?: string };
         if (!active) return;
         setSyncState({
-          status: data.ok ? "current" : "failed",
+          status: data.ok && data.configured ? "current" : "failed",
           configured: Boolean(data.configured),
           count: Number(data.count || sourceJobs.length || jobs.length),
           lastSyncAt: String(data.lastSyncAt || ""),
@@ -976,13 +997,14 @@ export function JobsMapBoard({ jobs }: Props) {
       const nextJobs = Array.isArray(data.jobs) ? data.jobs : [];
 
       setSyncState({
-        status: data.ok ? "current" : "failed",
+        status: data.ok && data.configured ? "current" : "failed",
         configured: Boolean(data.configured),
         count: Number(data.count || nextJobs.length || sourceJobs.length),
         lastSyncAt: String(data.lastSyncAt || ""),
         source: String(data.source || "Bundled CSV"),
         message,
       });
+      setActivePanel("sync");
 
       if (!response.ok || !data.ok) {
         notify(message);
@@ -1008,6 +1030,7 @@ export function JobsMapBoard({ jobs }: Props) {
         status: "failed",
         message,
       }));
+      setActivePanel("sync");
       notify(message);
     }
   }
@@ -1449,7 +1472,13 @@ export function JobsMapBoard({ jobs }: Props) {
                 <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
                   {syncState.status === "syncing" ? "Fetching" : "Fetch"}
                 </button>
-                <small>{syncState.status === "failed" ? "Fetch needs setup" : `Last fetch ${formatSyncTime(syncState.lastSyncAt)}`}</small>
+                <small>
+                  {!syncState.configured
+                    ? "Feed not connected"
+                    : syncState.status === "failed"
+                      ? "Fetch needs setup"
+                      : `Last fetch ${formatSyncTime(syncState.lastSyncAt)}`}
+                </small>
               </span>
             </div>
           </div>
@@ -1499,7 +1528,7 @@ export function JobsMapBoard({ jobs }: Props) {
 
         <div className="mobile-days-filter" aria-label="Date range filters">
           <label className={dateRange === "custom" ? "mobile-date-custom is-active" : "mobile-date-custom"}>
-            <span>Days</span>
+            <span>Custom</span>
             <input
               type="number"
               min="1"
@@ -2005,9 +2034,9 @@ export function JobsMapBoard({ jobs }: Props) {
                 </div>
                 <div className={`sync-drawer-card is-${syncState.status}`}>
                   <div>
-                    <strong>{syncState.source}</strong>
-                    <span>{syncState.message}</span>
-                    <small>{syncState.count} jobs · Last fetch {formatSyncTime(syncState.lastSyncAt)}</small>
+                    <strong>{syncTitle}</strong>
+                    <span>{syncMessage}</span>
+                    <small>{syncMetaText}</small>
                   </div>
                   <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
                     {syncState.status === "syncing" ? "Fetching" : "Fetch Now"}
@@ -2041,13 +2070,29 @@ export function JobsMapBoard({ jobs }: Props) {
               <div className="drawer-stack">
                 <div className={`sync-drawer-card is-${syncState.status}`}>
                   <div>
-                    <strong>{syncState.status === "failed" ? "Fetch needs setup" : syncState.source}</strong>
-                    <span>{syncState.message}</span>
-                    <small>{syncState.count} jobs · Last fetch {formatSyncTime(syncState.lastSyncAt)}</small>
+                    <strong>{syncTitle}</strong>
+                    <span>{syncMessage}</span>
+                    <small>{syncMetaText}</small>
                   </div>
                   <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
                     {syncState.status === "syncing" ? "Fetching" : "Fetch Now"}
                   </button>
+                </div>
+                <div className="data-health-grid" aria-label="Loaded data health">
+                  {dataHealthStats.map((item) => (
+                    <div key={item.label}>
+                      <span>{item.label}</span>
+                      <strong>{item.value}</strong>
+                    </div>
+                  ))}
+                </div>
+                <div className="data-status-strip" aria-label="Status counts in current map range">
+                  {dataStatusStats.map((item) => (
+                    <span key={item.status}>
+                      <strong>{item.count}</strong>
+                      {item.status}
+                    </span>
+                  ))}
                 </div>
                 <div className="drawer-actions is-grid">
                   <a href="/api/jobs" target="_blank" rel="noreferrer">Open jobs API</a>
