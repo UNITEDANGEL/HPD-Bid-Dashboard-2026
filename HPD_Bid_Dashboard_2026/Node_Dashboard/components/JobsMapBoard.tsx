@@ -14,7 +14,7 @@ type Props = {
 
 type StatusView = "All" | "Open" | "Awarded" | "Pending" | "No Access" | "Refused" | "Completed";
 type TableMode = "live" | "queue" | "documents";
-type ActivePanel = "" | "filters" | "status" | "notifications" | "account" | "map" | "system" | "contact" | "jobs" | "add" | "sync";
+type ActivePanel = "" | "filters" | "status" | "days" | "notifications" | "account" | "map" | "system" | "contact" | "jobs" | "add" | "sync";
 type ChartPeriod = "Last 12 Months" | "2026 YTD" | "Last 90 Days";
 type DateRangeView = "30d" | "60d" | "all" | "custom";
 type ManualFeedType = "csv" | "json";
@@ -561,6 +561,11 @@ export function JobsMapBoard({ jobs }: Props) {
     .filter((job) => matchesJobSearch(job, query));
   const customDateCount = dateRangeBase.filter((job) => dateRangeMatches(job, "custom", dateRangeAnchor, customDays)).length;
   const allDateCount = dateRangeBase.filter((job) => dateRangeMatches(job, "all", dateRangeAnchor, customDays)).length;
+  const activeDateRangeCount = dateRangeBase.filter((job) => dateRangeMatches(job, dateRange, dateRangeAnchor, customDays)).length;
+  const dayPresetStats = DAY_PRESETS.map((days) => ({
+    days,
+    count: dateRangeBase.filter((job) => dateRangeMatches(job, "custom", dateRangeAnchor, days)).length,
+  }));
   const dataHealthStats = [
     { label: "Loaded", value: effectiveJobs.length },
     { label: "Mapped", value: mappableJobs.length },
@@ -1216,6 +1221,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const panelTitles: Record<Exclude<ActivePanel, "">, string> = {
     filters: "Filters",
     status: "Status Filter",
+    days: "Days Filter",
     notifications: "Recent Activity",
     account: "Account Tools",
     map: "Expanded Map",
@@ -1592,55 +1598,33 @@ export function JobsMapBoard({ jobs }: Props) {
           })}
         </div>
 
-        <div className="mobile-status-compact" aria-label="Status filter">
-          <button
-            type="button"
-            className={statusView === "All" ? "" : "is-active"}
-            aria-haspopup="dialog"
-            onClick={() => setActivePanel("status")}
-          >
-            <span>Status</span>
-            <strong>{statusView === "All" ? "All" : statusView}</strong>
-            <em>{activeMobileStatus?.count ?? filtered.length} jobs</em>
-            <i aria-hidden="true">⌄</i>
-          </button>
-        </div>
-
-        <div className="mobile-days-filter" aria-label="Date range filters">
-          <label className={dateRange === "custom" ? "mobile-date-custom is-active" : "mobile-date-custom"}>
-            <span>Custom</span>
-            <input
-              type="number"
-              min="1"
-              max="999"
-              inputMode="numeric"
-              value={customDays}
-              aria-label="Custom days back"
-              onFocus={() => selectDateRange("custom")}
-              onChange={(event) => updateCustomDays(event.target.value)}
-            />
-          </label>
-          <button className={dateRange === "custom" ? "is-active" : ""} type="button" onClick={() => applyDaysFilter(false)}>
-            <strong>Show</strong>
-            <span>{customDateCount}</span>
-          </button>
-          <button className={dateRange === "all" ? "is-active" : ""} type="button" onClick={() => applyDaysFilter(true)}>
-            <strong>All</strong>
-            <span>{allDateCount}</span>
-          </button>
-        </div>
-
-        <div className="mobile-day-presets" aria-label="Quick day filters">
-          {DAY_PRESETS.map((days) => (
+        <div className="mobile-filter-row" aria-label="Map filters">
+          <div className="mobile-status-compact" aria-label="Status filter">
             <button
-              key={days}
               type="button"
-              className={dateRange === "custom" && customDays === days ? "is-active" : ""}
-              onClick={() => applyDaysFilter(false, days)}
+              className={statusView === "All" ? "" : "is-active"}
+              aria-haspopup="dialog"
+              onClick={() => setActivePanel("status")}
             >
-              {days}d
+              <span>Status</span>
+              <strong>{statusView === "All" ? "All" : statusView}</strong>
+              <em>{activeMobileStatus?.count ?? filtered.length} jobs</em>
+              <i aria-hidden="true">⌄</i>
             </button>
-          ))}
+          </div>
+          <div className="mobile-days-compact" aria-label="Date range filter">
+            <button
+              type="button"
+              className={dateRange === "all" ? "" : "is-active"}
+              aria-haspopup="dialog"
+              onClick={() => setActivePanel("days")}
+            >
+              <span>Days</span>
+              <strong>{dateRangeLabel(dateRange, customDays)}</strong>
+              <em>{activeDateRangeCount} jobs</em>
+              <i aria-hidden="true">⌄</i>
+            </button>
+          </div>
         </div>
 
         <div className="mobile-search" role="search">
@@ -2017,6 +2001,62 @@ export function JobsMapBoard({ jobs }: Props) {
                       <strong>{item.count}</strong>
                     </button>
                   ))}
+                </div>
+              </div>
+            ) : null}
+
+            {activePanel === "days" ? (
+              <div className="drawer-stack">
+                <label className={dateRange === "custom" ? "drawer-custom-days is-active" : "drawer-custom-days"}>
+                  <span>Custom days back</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="999"
+                    inputMode="numeric"
+                    value={customDays}
+                    onFocus={() => selectDateRange("custom")}
+                    onChange={(event) => updateCustomDays(event.target.value)}
+                  />
+                  <strong>{customDateCount} jobs</strong>
+                </label>
+                <div className="status-picker-list days-picker-list">
+                  <button
+                    type="button"
+                    className={dateRange === "custom" ? "is-active" : ""}
+                    onClick={() => {
+                      applyDaysFilter(false);
+                      setActivePanel("");
+                    }}
+                  >
+                    <span>{customDays} days</span>
+                    <strong>{customDateCount}</strong>
+                  </button>
+                  {dayPresetStats.filter((item) => item.days !== customDays).map((item) => (
+                    <button
+                      key={`${item.days}-compact-days`}
+                      type="button"
+                      className={dateRange === "custom" && customDays === item.days ? "is-active" : ""}
+                      onClick={() => {
+                        applyDaysFilter(false, item.days);
+                        setActivePanel("");
+                      }}
+                    >
+                      <span>{item.days} days</span>
+                      <strong>{item.count}</strong>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={dateRange === "all" ? "is-active" : ""}
+                    onClick={() => {
+                      applyDaysFilter(true);
+                      setActivePanel("");
+                    }}
+                  >
+                    <span>All loaded jobs</span>
+                    <strong>{allDateCount}</strong>
+                  </button>
                 </div>
               </div>
             ) : null}

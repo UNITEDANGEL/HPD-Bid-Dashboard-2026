@@ -26,20 +26,29 @@
     display: none;
   }
 
-  .mobile-status-compact {
+  .mobile-filter-row {
     position: relative;
     z-index: 5;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.86fr);
+    gap: 8px;
     padding: 0 8px 7px;
   }
 
-  .mobile-status-compact button {
+  .mobile-status-compact,
+  .mobile-days-compact {
+    min-width: 0;
+  }
+
+  .mobile-status-compact button,
+  .mobile-days-compact button {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto auto;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
     width: 100%;
     min-height: 42px;
-    padding: 6px 12px;
+    padding: 6px 10px;
     border: 1px solid rgba(47, 156, 255, 0.36);
     border-radius: 15px;
     background: linear-gradient(180deg, rgba(8, 24, 44, 0.92), rgba(4, 13, 26, 0.9));
@@ -47,31 +56,39 @@
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 10px 24px rgba(0, 0, 0, 0.2);
   }
 
-  .mobile-status-compact button.is-active {
+  .mobile-status-compact button.is-active,
+  .mobile-days-compact button.is-active {
     border-color: rgba(47, 156, 255, 0.74);
     box-shadow: 0 0 20px rgba(47, 156, 255, 0.2);
   }
 
   .mobile-status-compact span,
-  .mobile-status-compact em {
+  .mobile-status-compact em,
+  .mobile-days-compact span,
+  .mobile-days-compact em {
     color: #9eb4d0;
-    font-size: 0.68rem;
+    overflow: hidden;
+    font-size: 0.66rem;
     font-style: normal;
     font-weight: 900;
+    text-overflow: ellipsis;
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
-  .mobile-status-compact strong {
+  .mobile-status-compact strong,
+  .mobile-days-compact strong {
     min-width: 0;
     overflow: hidden;
     color: #ffffff;
-    font-size: 0.9rem;
+    font-size: 0.84rem;
     font-weight: 950;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .mobile-status-compact i {
+  .mobile-status-compact i,
+  .mobile-days-compact i {
     color: #62c8ff;
     font-style: normal;
     font-weight: 950;
@@ -107,7 +124,7 @@
   }
 
   .mobile-map-shell {
-    top: 368px;
+    top: 330px;
   }
 }
 
@@ -5219,7 +5236,7 @@ tbody tr:hover {
   }
 
   .mobile-map-shell {
-    inset: 404px 0 66px;
+    inset: 330px 0 66px;
   }
 
   .floating-map-button,
@@ -5356,6 +5373,6 @@ tbody tr:hover {
 
 @media (max-width: 760px) {
   .mobile-map-shell {
-    inset: 368px 0 66px;
+    inset: 330px 0 66px;
   }
 }
