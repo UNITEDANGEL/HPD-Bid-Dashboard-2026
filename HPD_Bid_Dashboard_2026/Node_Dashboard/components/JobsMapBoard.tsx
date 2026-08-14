@@ -14,7 +14,7 @@ type Props = {
 
 type StatusView = "All" | "Open" | "Awarded" | "Pending" | "No Access" | "Refused" | "Completed";
 type TableMode = "live" | "queue" | "documents";
-type ActivePanel = "" | "filters" | "notifications" | "account" | "map" | "system" | "contact" | "jobs" | "add" | "sync";
+type ActivePanel = "" | "filters" | "status" | "notifications" | "account" | "map" | "system" | "contact" | "jobs" | "add" | "sync";
 type ChartPeriod = "Last 12 Months" | "2026 YTD" | "Last 90 Days";
 type DateRangeView = "30d" | "60d" | "all" | "custom";
 type ManualFeedType = "csv" | "json";
@@ -554,6 +554,7 @@ export function JobsMapBoard({ jobs }: Props) {
     status,
     count: status === "All" ? mobileStatusBase.length : mobileStatusBase.filter((job) => statusMatches(job, status)).length,
   }));
+  const activeMobileStatus = mobileStatusStats.find((item) => item.status === statusView) || mobileStatusStats[0];
   const dateRangeBase = mappableJobs
     .filter((job) => !borough || job.borough === borough)
     .filter((job) => statusMatches(job, statusView))
@@ -1214,6 +1215,7 @@ export function JobsMapBoard({ jobs }: Props) {
 
   const panelTitles: Record<Exclude<ActivePanel, "">, string> = {
     filters: "Filters",
+    status: "Status Filter",
     notifications: "Recent Activity",
     account: "Account Tools",
     map: "Expanded Map",
@@ -1590,18 +1592,18 @@ export function JobsMapBoard({ jobs }: Props) {
           })}
         </div>
 
-        <div className="mobile-status-tabs" aria-label="Status filters">
-          {mobileStatusStats.map((item) => (
-            <button
-              key={item.status}
-              type="button"
-              className={statusView === item.status ? "is-active" : ""}
-              onClick={() => selectStatus(item.status)}
-            >
-              <strong>{item.status}</strong>
-              <span>{item.count}</span>
-            </button>
-          ))}
+        <div className="mobile-status-compact" aria-label="Status filter">
+          <button
+            type="button"
+            className={statusView === "All" ? "" : "is-active"}
+            aria-haspopup="dialog"
+            onClick={() => setActivePanel("status")}
+          >
+            <span>Status</span>
+            <strong>{statusView === "All" ? "All" : statusView}</strong>
+            <em>{activeMobileStatus?.count ?? filtered.length} jobs</em>
+            <i aria-hidden="true">⌄</i>
+          </button>
         </div>
 
         <div className="mobile-days-filter" aria-label="Date range filters">
@@ -1994,6 +1996,27 @@ export function JobsMapBoard({ jobs }: Props) {
                 <div className="drawer-actions">
                   <button type="button" onClick={resetFilters}>Reset filters</button>
                   <button type="button" onClick={() => setActivePanel("")}>Apply filters</button>
+                </div>
+              </div>
+            ) : null}
+
+            {activePanel === "status" ? (
+              <div className="drawer-stack">
+                <div className="status-picker-list">
+                  {mobileStatusStats.map((item) => (
+                    <button
+                      key={`${item.status}-drawer-status`}
+                      type="button"
+                      className={statusView === item.status ? "is-active" : ""}
+                      onClick={() => {
+                        selectStatus(item.status);
+                        setActivePanel("");
+                      }}
+                    >
+                      <span>{item.status === "All" ? "All Statuses" : item.status}</span>
+                      <strong>{item.count}</strong>
+                    </button>
+                  ))}
                 </div>
               </div>
             ) : null}

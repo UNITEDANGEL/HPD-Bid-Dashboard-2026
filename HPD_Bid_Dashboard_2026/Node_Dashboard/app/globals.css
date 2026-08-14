@@ -21,6 +21,96 @@
   --font-body: "Aptos", "Segoe UI", sans-serif;
 }
 
+@media (max-width: 760px) {
+  .mobile-status-tabs {
+    display: none;
+  }
+
+  .mobile-status-compact {
+    position: relative;
+    z-index: 5;
+    padding: 0 8px 7px;
+  }
+
+  .mobile-status-compact button {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 42px;
+    padding: 6px 12px;
+    border: 1px solid rgba(47, 156, 255, 0.36);
+    border-radius: 15px;
+    background: linear-gradient(180deg, rgba(8, 24, 44, 0.92), rgba(4, 13, 26, 0.9));
+    color: #ffffff;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03), 0 10px 24px rgba(0, 0, 0, 0.2);
+  }
+
+  .mobile-status-compact button.is-active {
+    border-color: rgba(47, 156, 255, 0.74);
+    box-shadow: 0 0 20px rgba(47, 156, 255, 0.2);
+  }
+
+  .mobile-status-compact span,
+  .mobile-status-compact em {
+    color: #9eb4d0;
+    font-size: 0.68rem;
+    font-style: normal;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .mobile-status-compact strong {
+    min-width: 0;
+    overflow: hidden;
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 950;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-status-compact i {
+    color: #62c8ff;
+    font-style: normal;
+    font-weight: 950;
+  }
+
+  .status-picker-list {
+    display: grid;
+    gap: 9px;
+  }
+
+  .status-picker-list button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 1px solid rgba(151, 177, 212, 0.22);
+    border-radius: 14px;
+    background: rgba(7, 18, 34, 0.9);
+    color: #edf6ff;
+    font-weight: 900;
+  }
+
+  .status-picker-list button.is-active {
+    border-color: rgba(47, 156, 255, 0.76);
+    background: linear-gradient(180deg, rgba(47, 156, 255, 0.26), rgba(7, 24, 48, 0.94));
+    box-shadow: 0 0 18px rgba(47, 156, 255, 0.22);
+  }
+
+  .status-picker-list strong {
+    color: #63c7ff;
+    font-size: 0.9rem;
+  }
+
+  .mobile-map-shell {
+    top: 368px;
+  }
+}
+
 @media (min-width: 761px) {
   .mobile-map-data-badge {
     position: absolute;
@@ -5261,5 +5351,11 @@ tbody tr:hover {
 
   .mobile-tabbar strong {
     font-size: 0.72rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .mobile-map-shell {
+    inset: 368px 0 66px;
   }
 }
