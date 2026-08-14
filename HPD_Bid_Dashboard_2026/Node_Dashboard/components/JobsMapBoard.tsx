@@ -572,34 +572,34 @@ export function JobsMapBoard({ jobs }: Props) {
   }));
   const hasManualFeed = manualFeedUrl.trim().length > 0;
   const syncTitle = hasManualFeed && !syncState.configured
-    ? "Manual feed ready"
+    ? "Manual Feed Ready"
     : !syncState.configured
-    ? "Feed not connected"
+    ? "Bundled Data Only"
     : syncState.status === "failed"
       ? "Fetch failed"
-      : syncState.source;
+      : "Live Feed Connected";
   const syncMessage = hasManualFeed && !syncState.configured
     ? "Tap Fetch Now to pull this pasted CSV or JSON feed into the map."
     : !syncState.configured
-    ? "Bundled 2026 map data is loaded. Connect JOBS_CSV_URL or JOBS_JSON_URL to pull new awards."
+    ? "Using the bundled 2026 jobs. Connect a live CSV or JSON feed to pull new awards."
     : syncState.message;
   const syncMetaText = hasManualFeed && !syncState.configured
     ? `${manualFeedType.toUpperCase()} URL saved on this device`
     : syncState.configured
-    ? `${syncState.count} jobs · Last fetch ${formatSyncTime(syncState.lastSyncAt)}`
-    : `${mappableJobs.length} mapped jobs · Auto fetch off`;
+    ? `${syncState.count} jobs · Last Fetch ${formatSyncTime(syncState.lastSyncAt)}`
+    : `${mappableJobs.length} mapped jobs · No live feed connected`;
   const mapDataBadgeTitle = syncState.status === "syncing"
     ? "Fetching"
     : syncState.configured
-      ? syncState.source
+      ? "Live Feed Connected"
       : hasManualFeed
         ? "Manual Feed Ready"
-        : "Bundled Data";
+        : "Bundled Data Only";
   const mapDataBadgeMeta = syncState.configured
-    ? `Last ${formatSyncTime(syncState.lastSyncAt)}`
+    ? `Last Fetch ${formatSyncTime(syncState.lastSyncAt)}`
     : hasManualFeed
       ? `${manualFeedType.toUpperCase()} feed saved`
-      : "Tap to connect feed";
+      : "No live feed connected";
   const mapDataBadgeCounts = `${mappableJobs.length} mapped · ${filtered.length} visible`;
   const alertCount = Math.min(activityRows.length, 9);
   const boroughCounts = boroughs
@@ -1552,10 +1552,10 @@ export function JobsMapBoard({ jobs }: Props) {
                 </button>
                 <small>
                   {!syncState.configured
-                    ? "Feed not connected"
+                    ? "Bundled data only"
                     : syncState.status === "failed"
                       ? "Fetch needs setup"
-                      : `Last fetch ${formatSyncTime(syncState.lastSyncAt)}`}
+                      : `Last Fetch ${formatSyncTime(syncState.lastSyncAt)}`}
                 </small>
               </span>
             </div>
