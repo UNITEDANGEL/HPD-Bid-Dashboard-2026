@@ -1,4 +1,4 @@
-Fetcher run started: 2026-08-23T15:14:51.125Z
+Fetcher run started: 2026-08-23T16:05:56.921Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -14,8 +14,246 @@ $ python FetchrMatcherV5.py --update --days 14
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
-Refreshing expired Gmail token headlessly.
-AUTH REFRESH ERROR: ('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/08/09 before:2026/08/24
+COA items parsed (latest per OMO): 4
+ITB items parsed (latest per OMO): 4
+Final JobRows: 4
+
+CSV saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.csv
+JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.json
+
+=== FETCHR MATCHER V5 DONE ===
+
+Downloading COA messages:   0%|          | 0/4 [00:00<?, ?it/s]Downloading COA messages:  50%|█████     | 2/4 [00:00<00:00, 15.53it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00, 15.91it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00, 15.84it/s]
+Geocoding COA addresses:   0%|          | 0/4 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 4/4 [00:00<00:00, 76260.07it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/4 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 1/4 [00:00<00:01,  2.99it/s]Fetching ITBs for COA OMOs:  50%|█████     | 2/4 [00:00<00:00,  3.59it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 3/4 [00:00<00:00,  3.38it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:01<00:00,  2.96it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:01<00:00,  3.10it/s]
 
 
-FAILED: Run Gmail fetcher for last 14 days failed with exit code 1
+========== Safe merge fetcher output into dashboard data ==========
+$ node safe-merge-7day-fetch.js
+Safe merge complete
+Master before: 628
+Incoming rows: 4
+Added new OMOs: 4
+Skipped existing OMOs: 0
+Updated existing OMOs: 0
+Need geocode: 4
+Missing ITB: 0
+Missing description: 4
+Master after: 632
+Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
+Report: ./data/safe_7day_merge_report.json
+
+
+========== Geocode new safe-merged jobs ==========
+$ node geocode-new-safe-fetch-jobs.js
+Need geocode: 4
+OK ER03099 213 EAST 26 STREET, 10010 40.740585 -73.980955 NYC_PLANNING_OK
+OK ER03009 351 TOMPKINS AVENUE, 11216 40.685811 -73.944108 NYC_PLANNING_OK
+OK ER03360 1520 BRUCKNER BOULEVARD, 10473 40.823365 -73.878204 NYC_PLANNING_OK
+OK ER02263 2264 MORRIS AVENUE, 10453 40.857632 -73.901956 NYC_PLANNING_OK
+Geocoded: 4
+Failed: 0
+Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
+
+
+========== Apply manual fallback geocodes ==========
+$ node manual-geocode-11-new-jobs.js
+Manual geocodes patched: 11
+Backup: ./data/COA_Fetcher_2026.before_manual_geocode_11_new.json
+
+
+========== Apply known cleanup geocodes ==========
+$ node manual-cleanup-geocode-known-jobs.js
+Manual geocode patched: 0
+Backup: ./data/COA_Fetcher_2026.before_manual_cleanup_geocode.json
+
+
+========== Apply known recovered Drive ITB matches ==========
+$ node patch-9-recovered-drive-itbs.js
+Recovered ITBs patched: 9
+Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
+
+
+========== Recover descriptions from matched ITBs ==========
+$ python recover-new-itb-descriptions.py
+Matched ITBs needing description: 4
+DESCRIPTION OK ER03099 ER03099_081326043154.pdf
+DESCRIPTION OK ER03009 ER03009_081326114532.pdf
+DESCRIPTION OK ER03360 ER03360_081326043931.pdf
+DESCRIPTION OK ER02263 ER02263_081326013321.pdf
+Descriptions patched: 4
+Missing PDF: 0
+Failed: 0
+Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
+
+Samples:
+{'OMO': 'ER03099', 'Address': '213 EAST 26 STREET, 10010', 'RecoveredFrom': 'ER03099_081326043154.pdf', 'Preview': ': AT BLDG ENTRANCE DOOR, MAKE DOOR SELF CLOSING TOTAL DOORS= (1) NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BLDG ENTRANCE DOOR, MAKE ALL NECESSARY REPAIRS T O MAKE DOOR SELF CLOSING AND LATCHIN'}
+{'OMO': 'ER03009', 'Address': '351 TOMPKINS AVENUE, 11216', 'RecoveredFrom': 'ER03009_081326114532.pdf', 'Preview': ': DEFECTIVE COUNTER BALANCE AT LOWER WINDOW SASH (GUI LLOTINE EFFECT) IN THE KITCHEN LOCATED AT APT 4, 4th STORY. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ INSTALL NEW COUNTERBALANCE AT THE LOWER '}
+{'OMO': 'ER03360', 'Address': '1520 BRUCKNER BOULEVARD, 10473', 'RecoveredFrom': 'ER03360_081326043931.pdf', 'Preview': ': LOCATION : AT BUILDING ENTRANCE DOOR -NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK- LOCATION: AT BUILDING ENTRANCE DOOR  MAKE ALL NECESSARY REPAIRS TO MAKE DOOR SELF CLOSI NG AND LATCHING INSTALL NEW'}
+{'OMO': 'ER02263', 'Address': '2264 MORRIS AVENUE, 10453', 'RecoveredFrom': 'ER02263_081326013321.pdf', 'Preview': ': REPAIR DOOR AT APT#7A ENTRANCE DOOR 7TH NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “  AT APT#7A ENTRANCE DOOR 7TH STORY -  INSTALL NEW SELF CLOSING HINGES TO MAKE DOOR SELF CLOSING AND MAKE ALL NEC'}
+
+Synced 3 data file(s) to public/data.
+
+========== Render ITB page 3 assets ==========
+$ node scripts/render-itb-page3-assets.js --copy-pdfs
+/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:125
+  if (result.error) throw result.error;
+                    ^
+
+Error: spawnSync pdfinfo ENOENT
+    at Object.spawnSync (node:internal/child_process:1160:20)
+    at spawnSync (node:child_process:928:24)
+    at readPdfPageCount (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:124:18)
+    at cachedPdfPageCount (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:249:34)
+    at withPageCount (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:258:16)
+    at findUsableSource (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:264:17)
+    at Object.<anonymous> (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:324:32)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'spawnSync pdfinfo',
+  path: 'pdfinfo',
+  spawnargs: [
+    '/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/ITB_Downloads_V5/ER03099_081326043154.pdf'
+  ]
+}
+
+Node.js v24.19.0
+
+WARNING: Render ITB page 3 assets did not complete: Render ITB page 3 assets failed with exit code 1
+Continuing fetcher run; paperwork data quality checks will report any missing page images.
+
+========== Sync ITB page 3 descriptions ==========
+$ python scripts/sync-itb-page3-descriptions.py
+Traceback (most recent call last):
+  File "/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/sync-itb-page3-descriptions.py", line 5, in <module>
+    import pdfplumber
+ModuleNotFoundError: No module named 'pdfplumber'
+
+WARNING: Sync ITB page 3 descriptions did not complete: Sync ITB page 3 descriptions failed with exit code 1
+Continuing fetcher run; strict paperwork checks will report any description issues.
+
+========== Verify mapping ==========
+$ node check-local-mapping.js
+Raw JSON rows: 632
+2026 rows: 581
+2026 rows with any Latitude/Longitude: 581
+2026 rows with valid NYC coordinates: 581
+2026 rows NOT valid mapped: 0
+
+Not mapped sample:
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+
+========== Verify descriptions ==========
+$ node check-generic-descriptions.js
+Bad/boilerplate descriptions: 0
+Missing descriptions: 0
+Source review jobs: 0
+
+Bad sample:
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+Source review sample:
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+Missing sample:
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+
+========== Verify missing ITB ==========
+$ node export-missing-itb.js
+Total jobs: 632
+Missing ITB jobs: 0
+Exported: ./data/missing_itb_jobs_2026.csv
+┌─────────┐
+│ (index) │
+├─────────┤
+└─────────┘
+
+
+========== Verify paperwork required data ==========
+$ node scripts/verify-paperwork-data.js --write-report
+PAPERWORK DATA QUALITY
+Total jobs: 632
+Missing addresses: 0
+Missing descriptions: 0
+Missing ITB page 3 descriptions: 16
+Bad/boilerplate descriptions: 0
+Source review jobs: 0
+Missing ITB files: 0
+Missing page 3 images: 27
+Public data in sync: yes
+
+Source review sample:
+(none)
+
+Missing address sample:
+(none)
+
+Missing description sample:
+(none)
+
+Missing ITB page 3 description sample:
+┌─────────┬───────────┬───────────────────────────────────┬────────────────────────────┬───────────────────────────────┬───────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ (index) │ OMO       │ Address                           │ ITB                        │ Source                        │ Status    │ Preview                                                                                                                                        │
+├─────────┼───────────┼───────────────────────────────────┼────────────────────────────┼───────────────────────────────┼───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 0       │ 'ER01474' │ '260 PARKHILL AVENUE, 10304'      │ 'ER01474_072426113922.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOO' │
+│ 1       │ 'ER02022' │ '162-18 108 AVENUE, 11433'        │ 'ER02022_073026021712.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
+│ 2       │ 'ER01987' │ '978 EAST 174 STREET, 10460'      │ 'ER01987_073026020329.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
+│ 3       │ 'EQ32057' │ '63 EAST 236 STREET, 10470'       │ 'EQ32057_072926055505.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
+│ 4       │ 'ER01923' │ '47 EAST 34 STREET, 10016'        │ 'ER01923_072926025331.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
+│ 5       │ 'ER01941' │ '89-10 WHITNEY AVENUE, 11373'     │ 'ER01941_072926021943.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
+│ 6       │ 'ER01944' │ '102-43 CORONA AVENUE, 11368'     │ 'ER01944_072926021204.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
+│ 7       │ 'ER01720' │ '84-01 MAIN STREET, 11435'        │ 'ER01720_072726094239.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': AT APT: 408 LOCATION: BATHROOM REPAIR LEAK AND RESTORE BROKEN PLASTER. TRACE, LOCATE AND PROPERLY REPAIR THE SOURCES OF CO NCEALED WATER L' │
+│ 8       │ 'ER01737' │ '765 RIVERSIDE DRIVE, 10032'      │ 'ER01737_072726123759.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': MAKE DOORS SELF CLOSING AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th STORY. AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th ST ORY. MAK' │
+│ 9       │ 'ER01282' │ '1629 EAST 12 STREET, 11229'      │ 'ER01282_072726043234.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT DOOR LEADING TO NORTH YARD AT PUBLIC HALL, 1ST S TORY. REPAIR DOOR TO' │
+│ 10      │ 'ER02390' │ '902 DE KALB AVENUE, 11221'       │ 'ER02390_080426103740.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': INSTALL LOCK SET AT BLDG ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BLDG ENTRANCE DOOR INSTALL NEW' │
+│ 11      │ 'ER02482' │ '24-16 QUEENS PLAZA SOUTH, 11101' │ 'ER02482_080426103502.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': REPLACE 1ST STY HOPPER CHUTE NYC HPD EMERGENCY OPERATIONS DIVISION - (ESSENTIAL SERVICE WORK) AT HOPPER DOOR LOCATED AT :PUBLIC HALL, ( 1S' │
+│ 12      │ 'ER03099' │ '213 EAST 26 STREET, 10010'       │ 'ER03099_081326043154.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': AT BLDG ENTRANCE DOOR, MAKE DOOR SELF CLOSING TOTAL DOORS= (1) NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BLDG ' │
+│ 13      │ 'ER03009' │ '351 TOMPKINS AVENUE, 11216'      │ 'ER03009_081326114532.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': DEFECTIVE COUNTER BALANCE AT LOWER WINDOW SASH (GUI LLOTINE EFFECT) IN THE KITCHEN LOCATED AT APT 4, 4th STORY. NYC HPD EMERGENCY OPERATIO' │
+│ 14      │ 'ER03360' │ '1520 BRUCKNER BOULEVARD, 10473'  │ 'ER03360_081326043931.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': LOCATION : AT BUILDING ENTRANCE DOOR -NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK- LOCATION: AT BUILDING ENTRANCE DOOR' │
+│ 15      │ 'ER02263' │ '2264 MORRIS AVENUE, 10453'       │ 'ER02263_081326013321.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': REPAIR DOOR AT APT#7A ENTRANCE DOOR 7TH NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT APT#7A ENTRANCE DOOR 7TH STOR' │
+└─────────┴───────────┴───────────────────────────────────┴────────────────────────────┴───────────────────────────────┴───────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Bad description sample:
+(none)
+PAPERWORK DATA QUALITY CHECKED
+
+PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=16.
+
+
+Fetcher run finished: 2026-08-23T16:06:12.483Z
+{
+  "fetchedCoaItems": 4,
+  "fetchedItbItems": 4,
+  "fetchedFinalJobRows": 4,
+  "addedNewOmos": 4,
+  "skippedExistingOmos": 0,
+  "rawRows": 632,
+  "rows2026": 581,
+  "mapped2026": 581,
+  "notMapped2026": 0,
+  "missingAddresses": 0,
+  "badDescriptions": 0,
+  "missingDescriptions": 0,
+  "missingItbPage3Descriptions": 16,
+  "sourceReviewJobs": 0,
+  "missingPage3Images": 27,
+  "missingItbJobs": 0
+}
