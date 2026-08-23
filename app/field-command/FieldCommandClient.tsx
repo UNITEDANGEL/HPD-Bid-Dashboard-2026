@@ -937,8 +937,22 @@ export default function FieldCommandClient() {
 
   function paperworkHref(job: JobRecord, media = true) {
     const id = jobId(job);
-    const outcome = paperworkOutcome(workflowStamps[id] || {});
-    return `/paperwork?job=${encodeURIComponent(id)}&outcome=${encodeURIComponent(outcome)}&auto=package&media=${media ? "all" : "none"}`;
+    const stamps = workflowStamps[id] || {};
+    const outcome = paperworkOutcome(stamps);
+    const params = new URLSearchParams({
+      job: id,
+      outcome,
+      auto: "package",
+      media: media ? "all" : "none",
+      fieldStatus: outcome === "work_completed" ? "WORK_COMPLETED" : outcome === "refused_access" ? "REFUSED_ACCESS" : "NO_ACCESS_1_WAITING_72H",
+    });
+    if (stamps.arrived) params.set("arrivedAt", stamps.arrived);
+    if (stamps.visit) params.set("visitStartedAt", stamps.visit);
+    if (stamps.work) params.set("workStartedAt", stamps.work);
+    if (outcome === "work_completed") params.set("workCompletedAt", new Date().toISOString());
+    if (outcome === "refused_access") params.set("refusedAt", new Date().toISOString());
+    if (outcome === "no_access") params.set("noAccessAt", new Date().toISOString());
+    return `/paperwork?${params.toString()}`;
   }
 
   return (

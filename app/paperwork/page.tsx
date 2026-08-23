@@ -467,6 +467,89 @@ function formWithLoadedJobData(current: PackageForm, job: JobRecord, outcome: Pa
   };
 }
 
+function workflowPatchFromQuery(params: URLSearchParams, outcome: PaperworkOutcome) {
+  const status = String(params.get("fieldStatus") || "").trim().toUpperCase();
+  const arrivedAt = String(params.get("arrivedAt") || "").trim();
+  const visitStartedAt = String(params.get("visitStartedAt") || "").trim();
+  const workStartedAt = String(params.get("workStartedAt") || "").trim();
+  const workCompletedAt = String(params.get("workCompletedAt") || "").trim();
+  const refusedAt = String(params.get("refusedAt") || "").trim();
+  const noAccessAt = String(params.get("noAccessAt") || "").trim();
+  const patch: Record<string, unknown> = {};
+
+  if (arrivedAt) {
+    patch.FieldArrivedAt = arrivedAt;
+    patch.fieldArrivedAt = arrivedAt;
+    patch.LastFieldVisitAt = arrivedAt;
+    patch.lastFieldVisitAt = arrivedAt;
+  }
+  if (visitStartedAt) {
+    patch.VisitStartedAt = visitStartedAt;
+    patch.visitStartedAt = visitStartedAt;
+  }
+  if (workStartedAt) {
+    patch.JobStartedAt = workStartedAt;
+    patch.jobStartedAt = workStartedAt;
+    patch.ActualWorkStartDate = workStartedAt;
+    patch.actualWorkStartDate = workStartedAt;
+  }
+
+  if (status === "REFUSED_ACCESS" || outcome === "refused_access") {
+    const iso = refusedAt || new Date().toISOString();
+    return {
+      ...patch,
+      WorkflowStatus: "REFUSED_ACCESS",
+      workflowStatus: "REFUSED_ACCESS",
+      FieldOutcome: "REFUSED_ACCESS",
+      fieldOutcome: "REFUSED_ACCESS",
+      StatusOverride: "Refused Access",
+      status: "Refused Access",
+      RefusalDate: iso,
+      refusalDate: iso,
+      OutcomeLockedAt: iso,
+      outcomeLockedAt: iso,
+    };
+  }
+
+  if (status === "NO_ACCESS_1_WAITING_72H" || outcome === "no_access") {
+    const iso = noAccessAt || new Date().toISOString();
+    return {
+      ...patch,
+      WorkflowStatus: "NO_ACCESS_1_WAITING_72H",
+      workflowStatus: "NO_ACCESS_1_WAITING_72H",
+      FieldOutcome: "NO_ACCESS_1_WAITING_72H",
+      fieldOutcome: "NO_ACCESS_1_WAITING_72H",
+      StatusOverride: "No Access 1st - Waiting 72h",
+      status: "No Access 1st - Waiting 72h",
+      NoAccessFirstAttemptAt: iso,
+      noAccessFirstAttemptAt: iso,
+      OutcomeLockedAt: iso,
+      outcomeLockedAt: iso,
+    };
+  }
+
+  if (status === "WORK_COMPLETED" || outcome === "work_completed") {
+    const iso = workCompletedAt || new Date().toISOString();
+    return {
+      ...patch,
+      WorkflowStatus: "WORK_COMPLETED",
+      workflowStatus: "WORK_COMPLETED",
+      FieldOutcome: "WORK_COMPLETED",
+      fieldOutcome: "WORK_COMPLETED",
+      StatusOverride: "Work Completed",
+      status: "Work Completed",
+      ActualWorkCompletionDate: iso,
+      actualWorkCompletionDate: iso,
+      JobFinishedAt: iso,
+      jobFinishedAt: iso,
+      OutcomeLockedAt: iso,
+      outcomeLockedAt: iso,
+    };
+  }
+
+  return patch;
+}
+
 function jobText(job: JobRecord | null | undefined, keys: string[]) {
   if (!job) return "";
 
@@ -1021,6 +1104,7 @@ export default function PaperworkPage() {
   const [selectedId, setSelectedId] = useState("");
   const [outcome, setOutcome] = useState<PaperworkOutcome>("pending");
   const [form, setForm] = useState<PackageForm>(initialForm);
+  const [queryWorkflowPatch, setQueryWorkflowPatch] = useState<Record<string, unknown>>({});
   const [loadedQuery, setLoadedQuery] = useState(false);
   const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
@@ -1100,6 +1184,7 @@ export default function PaperworkPage() {
 
     setSelectedId(job);
     setOutcome(nextOutcome);
+    setQueryWorkflowPatch(workflowPatchFromQuery(params, nextOutcome));
     setIncludePackageMedia(!["none", "no", "0", "false", "pdf", "pdf-only"].includes(mediaParam));
     setIncludePackageSignature(queryIncludesSignature);
     setAutoGeneratePackage(shouldAutoGeneratePackage);
@@ -1117,18 +1202,22 @@ export default function PaperworkPage() {
     if (!selectedId || !jobs.length) return;
     const job = findJob(jobs, selectedId);
     if (!job) return;
+    const jobWithQueryPatch = Object.keys(queryWorkflowPatch).length ? { ...job, ...queryWorkflowPatch } : job;
     const selectedOutcome =
       outcome === "pending"
-        ? paperworkOutcomeFromJob(job)
+        ? paperworkOutcomeFromJob(jobWithQueryPatch)
         : isNoWorkOutcome(outcome)
-          ? savedOutcomeForPackage(job, "no_work", outcome)
+          ? savedOutcomeForPackage(jobWithQueryPatch, "no_work", outcome)
           : outcome;
     setOutcome(selectedOutcome);
-    const nextForm = formFromJob(job, selectedOutcome);
+    const nextForm = formFromJob(jobWithQueryPatch, selectedOutcome);
     setForm(includePackageSignature ? nextForm : { ...nextForm, signer: "" });
-  }, [jobs, selectedId, includePackageSignature]);
+  }, [jobs, selectedId, includePackageSignature, queryWorkflowPatch]);
 
-  const selectedJob = useMemo(() => findJob(jobs, selectedId), [jobs, selectedId]);
+  const selectedJob = useMemo(() => {
+    const job = findJob(jobs, selectedId);
+    return job && Object.keys(queryWorkflowPatch).length ? { ...job, ...queryWorkflowPatch } : job;
+  }, [jobs, selectedId, queryWorkflowPatch]);
   const selectedJobId = selectedJob ? getJobId(selectedJob) : "";
   const packageJobLoading = Boolean(selectedId && (!selectedJob || form.jobId !== selectedJobId));
   const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading);
