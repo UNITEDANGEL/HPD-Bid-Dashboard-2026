@@ -98,6 +98,14 @@ function moveIfExists(from, to) {
   return false;
 }
 
+function copyRouteIfMissing(sourceRoute, targetRoute) {
+  const source = path.join(outDir, sourceRoute, "index.html");
+  const target = path.join(outDir, targetRoute, "index.html");
+  if (!fs.existsSync(source) || fs.existsSync(target)) return;
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.copyFileSync(source, target);
+}
+
 function restoreApiRouteDirectory(moved) {
   if (!moved) return;
 
@@ -167,9 +175,12 @@ try {
   removeIfExists(tempRoot, { allowEmptyDir: true });
 }
 
+copyRouteIfMissing("map", "field-command");
+
 const requiredFiles = [
   path.join(outDir, "index.html"),
   path.join(outDir, "map", "index.html"),
+  path.join(outDir, "field-command", "index.html"),
   path.join(outDir, "paperwork", "index.html"),
   path.join(outDir, "fetcher", "index.html"),
   path.join(outDir, "data", "COA_Fetcher_2026.json"),
