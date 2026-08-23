@@ -257,23 +257,31 @@ async function startLocalFetcher(daysBack: number) {
   running = true;
 
   const { spawn } = await import("node:child_process");
-  const child = spawn(process.execPath, ["-e", "require('./scripts/run-safe-fetcher-update.js')"], {
+  const child = spawn(process.execPath, [script], {
     cwd: root,
-    shell: process.platform === "win32",
     env: {
       ...process.env,
       FETCHER_LOOKBACK_DAYS: String(daysBack),
     },
     detached: false,
     stdio: "ignore",
+    windowsHide: true,
   });
 
   child.on("exit", () => {
     running = false;
   });
 
-  child.on("error", () => {
+  child.on("error", (spawnError) => {
     running = false;
+    const existing = readExistingStatus(root);
+    writeFetcherStatus(root, {
+      ...existing,
+      state: "failed",
+      ok: false,
+      finishedAt: new Date().toISOString(),
+      error: `Fetcher process failed to start: ${spawnError.message}`,
+    });
   });
 
   child.unref();

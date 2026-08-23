@@ -314,7 +314,7 @@ function LayersIcon() {
 }
 
 const LIGHT_TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-const DARK_TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+const DARK_TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 const CLUSTER_COLOR = "#38bdf8";
 
 function clusterByPixelDistance(
@@ -369,6 +369,7 @@ export default function FieldCommandClient() {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [borough, setBorough] = useState<BoroughKey | "ALL">("ALL");
   const [status, setStatus] = useState("all");
+  const [daysBack, setDaysBack] = useState<number | null>(60);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
   const [darkTiles, setDarkTiles] = useState(true);
@@ -418,6 +419,10 @@ export default function FieldCommandClient() {
   const filteredJobs = useMemo(() => {
     const q = search.trim().toLowerCase();
     return jobs.filter((job) => {
+      if (daysBack !== null) {
+        const age = jobAgeDays(job);
+        if (age === null || age > daysBack) return false;
+      }
       if (borough !== "ALL" && jobBorough(job) !== borough) return false;
       if (status !== "all" && statusGroup(job) !== status) return false;
       if (q) {
@@ -426,7 +431,7 @@ export default function FieldCommandClient() {
       }
       return true;
     });
-  }, [jobs, borough, status, search]);
+  }, [jobs, borough, status, search, daysBack]);
 
   useEffect(() => {
     if (!jobs.length) return;
@@ -568,7 +573,7 @@ export default function FieldCommandClient() {
       routeLayerRef.current.remove();
       routeLayerRef.current = null;
     }
-  }, [borough, status, search]);
+  }, [borough, status, search, daysBack]);
 
   useEffect(() => {
     if (selectedJob && !filteredJobs.includes(selectedJob)) {
@@ -691,8 +696,27 @@ export default function FieldCommandClient() {
           </div>
         </div>
         <div className="fc-live-row">
-          <span className="fc-live-dot">Live</span>
-          <span className="fc-active-count">{activeJobs.length} Active Jobs</span>
+          <div className="fc-live-copy">
+            <span className="fc-live-dot">Live</span>
+            <span className="fc-active-count">{activeJobs.length} Active Jobs</span>
+          </div>
+          <label className="fc-days-control">
+            <span>Days</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={daysBack ?? ""}
+              placeholder="All"
+              aria-label="Show jobs from last number of days"
+              onChange={(event) => {
+                const raw = event.target.value.trim();
+                const clean = raw.replace(/\D/g, "").slice(0, 3);
+                setDaysBack(clean ? Math.max(1, Number(clean)) : null);
+              }}
+            />
+            <strong>d</strong>
+          </label>
         </div>
       </header>
 

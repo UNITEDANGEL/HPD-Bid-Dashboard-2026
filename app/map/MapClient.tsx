@@ -4380,9 +4380,9 @@ function cancelIphoneFieldSheetTouch() {
       const openMapMode = params.get("map") === "1";
       setIphoneJobCardVersion(params.get("card") === "v1" ? "v1" : "v2");
       if (openMapMode) {
-        setMapBaseStyle("osm-color");
-        setMapTileStatus("Open Map selected.");
-        window.localStorage.setItem(MAP_BASE_STYLE_STORAGE_KEY, "osm-color");
+        setMapBaseStyle("carto-dark");
+        setMapTileStatus("Night Map selected.");
+        window.localStorage.setItem(MAP_BASE_STYLE_STORAGE_KEY, "carto-dark");
       } else {
         const savedStyle = window.localStorage.getItem(MAP_BASE_STYLE_STORAGE_KEY);
         if (savedStyle && MAP_BASE_STYLES.some((style) => style.id === savedStyle)) {
@@ -5952,7 +5952,7 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
         workflowViewFilter === "waiting72" ||
         workflowViewFilter === "noaccess24" ||
         workflowViewFilter === "ready2";
-      const clusterMarkersEnabled = false;
+      const clusterMarkersEnabled = true;
       const timerLayerNeedsClusters =
         clusterMarkersEnabled &&
         timerLayer &&
@@ -6217,10 +6217,10 @@ function applyWorkflowOverridesToRows<T extends JobRecord>(rows: T[]): T[] {
             icon: L.divIcon({
               className: "maturity-map-marker",
               html: `<div class="map-cluster-marker map-cluster-dot cluster-dispatch-badge ${compactCluster ? "cluster-compact-dot" : ""} ${statusClass} ${clusterSizeClass}" title="${escapeMarkerHtml(clusterLabel)}">
-                      <div class="cluster-topline">
+                      ${mapBoroughFilter === "nearby" ? "" : `<div class="cluster-topline">
                         <strong>${escapeMarkerHtml(clusterBoroughLabel)}</strong>
                         <em>Zone</em>
-                      </div>
+                      </div>`}
                       <span>${clusterItems.length}</span>
                       <small class="cluster-job-word">jobs</small>
                       <div class="cluster-focus-row ${clusterSignalClass}"><b>${clusterPriority.value}</b><small>${escapeMarkerHtml(clusterPriority.label)}</small></div>
@@ -47726,6 +47726,10 @@ return (
               line-height: 1.36;
             }
 
+            .iphone-field-v2-address-card {
+              grid-template-columns: minmax(0, 1fr);
+            }
+
             .iphone-field-v2-address-copy strong {
               font-size: 26px;
               line-height: 1.08;
@@ -47733,6 +47737,10 @@ return (
 
             .iphone-field-v2-address-copy small {
               font-size: 13px;
+            }
+
+            .iphone-field-v2-nav-actions {
+              grid-template-columns: repeat(3, minmax(0, 1fr));
             }
 
             .iphone-field-v2-nav-actions a,

@@ -1,0 +1,149 @@
+/* HPD real map view switch */
+.hpd-map-view-switch {
+  position: fixed !important;
+  top: calc(env(safe-area-inset-top) + 10px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 999999 !important;
+  display: inline-flex !important;
+  gap: 6px !important;
+  padding: 6px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  background: rgba(2, 6, 23, 0.82) !important;
+  backdrop-filter: blur(18px) !important;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42) !important;
+}
+.hpd-map-view-switch a {
+  min-height: 34px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 14px !important;
+  border-radius: 999px !important;
+  color: #cbd5e1 !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+}
+.hpd-map-view-switch a.active {
+  color: #02131f !important;
+  background: linear-gradient(135deg, #38bdf8, #22c55e) !important;
+}
+/* Strong iPhone mode overrides */
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial {
+  background: #020817 !important;
+}
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .map-top,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .map-top {
+  top: calc(env(safe-area-inset-top) + 56px) !important;
+  left: max(10px, env(safe-area-inset-left)) !important;
+  right: max(10px, env(safe-area-inset-right)) !important;
+  width: auto !important;
+  max-width: none !important;
+  border-radius: 24px !important;
+  background: rgba(2, 8, 23, 0.84) !important;
+  border: 1px solid rgba(148, 163, 184, 0.24) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42) !important;
+  z-index: 9000 !important;
+}
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .map-top h1,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .map-top h1 {
+  color: #ffffff !important;
+}
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .map-top p,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .map-top p {
+  color: #cbd5e1 !important;
+}
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .map-stage,
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .map-node,
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .leaflet-container,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .map-stage,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .map-node,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .leaflet-container {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  min-height: 100dvh !important;
+  max-height: 100dvh !important;
+  background: #020817 !important;
+}
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .map-node .leaflet-tile,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .map-node .leaflet-tile {
+  filter: saturate(1.2) contrast(1.12) brightness(0.62) hue-rotate(178deg) !important;
+}
+/* Hide desktop clutter in iPhone mode */
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .map-cockpit,
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .map-stats,
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .status-legend,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .map-cockpit,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .map-stats,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .status-legend {
+  display: none !important;
+}
+/* Keep useful controls visible */
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .zoom-panel,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .zoom-panel {
+  right: max(12px, env(safe-area-inset-right)) !important;
+  bottom: calc(env(safe-area-inset-bottom) + 96px) !important;
+  z-index: 9200 !important;
+}
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .map-filter-count-hud,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .map-filter-count-hud {
+  top: calc(env(safe-area-inset-top) + 150px) !important;
+  right: max(12px, env(safe-area-inset-right)) !important;
+  left: auto !important;
+  bottom: auto !important;
+  z-index: 9200 !important;
+  border-radius: 999px !important;
+  background: rgba(2, 8, 23, 0.82) !important;
+  color: #e0f2fe !important;
+  border: 1px solid rgba(56, 189, 248, 0.28) !important;
+}
+/* Bottom iPhone job sheet when a job is selected */
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .job-drawer.selected-focus,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .job-drawer.selected-focus {
+  position: fixed !important;
+  left: max(8px, env(safe-area-inset-left)) !important;
+  right: max(8px, env(safe-area-inset-right)) !important;
+  bottom: max(8px, env(safe-area-inset-bottom)) !important;
+  top: auto !important;
+  width: auto !important;
+  max-width: none !important;
+  height: auto !important;
+  max-height: min(52dvh, 560px) !important;
+  border-radius: 30px !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.97), rgba(2, 8, 23, 0.99)) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 -22px 70px rgba(0, 0, 0, 0.58) !important;
+  backdrop-filter: blur(22px) !important;
+  overflow: auto !important;
+  z-index: 9500 !important;
+}
+.hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .job-drawer.selected-focus *,
+body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .job-drawer.selected-focus * {
+  color: inherit;
+}
+.hpd-map-view-desktop .map-shell.map-visual-preview.map-glass-command-trial,
+body:has(.hpd-map-view-desktop) .map-shell.map-visual-preview.map-glass-command-trial {
+  background: #07111f !important;
+}
+@media (max-width: 700px) {
+  .hpd-map-view-switch {
+    top: calc(env(safe-area-inset-top) + 8px) !important;
+  }
+  .hpd-map-view-switch a {
+    min-height: 32px !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
+  }
+  .hpd-map-view-iphone .map-shell.map-visual-preview.map-glass-command-trial .map-top,
+  body:has(.hpd-map-view-iphone) .map-shell.map-visual-preview.map-glass-command-trial .map-top {
+    top: calc(env(safe-area-inset-top) + 50px) !important;
+  }
+}

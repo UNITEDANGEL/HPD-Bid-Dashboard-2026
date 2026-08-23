@@ -306,38 +306,90 @@ def extract_award_amount_no_dollar(text: str) -> str:
     return ""
 
 
+def is_bad_awarded_by(value: str) -> bool:
+    s = clean_singleline(value or "")
+    lower = s.lower()
+    if not s:
+        return True
+    bad_phrases = [
+        "davis bacon",
+        "this omo is not subject",
+        "if you accept a change order",
+        "residential building",
+        "seven (7) units",
+        "form 1123",
+        "omo no",
+        "rep:",
+        "obj:",
+        "award amount",
+        "awarded amount",
+        "confirmation of award",
+        "invitation to bid",
+        "work start",
+        "work completion",
+        "bldg address",
+        "location",
+    ]
+    if any(p in lower for p in bad_phrases):
+        return True
+    if len(s) > 80:
+        return True
+    if not re.search(r"[A-Za-z]{2,}", s):
+        return True
+    return False
 def extract_awarded_by(text: str) -> str:
     """
-    Extract 'Awarded By' name, e.g.
-    'Awarded By : Date : 10/28/25DHANYA RAJAN'
-    or name on the line after Awarded Amount.
+    Extract the actual HPD awarded-by name.
+    COA OCR often has:
+    '(212) 863 - 7805 Awarded Amount: 997.00 JUAN ISIDRO CARVAJAL DIMAS'
+    or:
+    'Date : 1/21/26 JUAN ISIDRO CARVAJAL DIMAS Awarded By :'
     """
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-
+    # Best source: same line as Awarded Amount.
     for ln in lines:
-        lower = ln.lower()
-        if "awarded by" in lower:
-            m_dates = re.findall(r"\d{1,2}/\d{1,2}/\d{2,4}", ln)
-            tail = ln
-            if m_dates:
-                last_date = m_dates[-1]
-                idx = ln.rfind(last_date)
-                if idx != -1:
-                    tail = ln[idx + len(last_date):]
-            else:
-                tail = re.sub(r"(?i)awarded\s*by\s*[:\-]?", "", ln)
-            name = tail.strip(" :-")
-            if name:
-                return clean_singleline(name)
-
-    for i, ln in enumerate(lines):
-        if "award" in ln.lower() and "amount" in ln.lower():
-            if i + 1 < len(lines):
-                nxt = lines[i + 1].strip()
-                if re.search(r"[A-Za-z]{3,}", nxt) and "award" not in nxt.lower():
-                    return clean_singleline(nxt)
+        if not re.search(r"(?i)awarded?\s+amount", ln):
+            continue
+        m = re.search(
+            r"(?i)awarded?\s+amount\s*[:\-]?\s*\$?\s*[0-9,]+(?:\.[0-9]{2})?\s+(.+)$",
+            ln,
+        )
+        if m:
+            name = clean_singleline(m.group(1)).strip(" :-")
+            name = re.sub(r"(?i)\s+awarded\s+by\s*:?\s*$", "", name).strip(" :-")
+            if not is_bad_awarded_by(name):
+                return name
+    # Second source: Date : 1/21/26 NAME Awarded By :
+    for ln in lines:
+        if "awarded" not in ln.lower() or "by" not in ln.lower():
+            continue
+        m = re.search(
+            r"(?i)date\s*:\s*\d{1,2}/\d{1,2}/\d{2,4}\s+(.+?)\s+awarded\s+by\s*:?",
+            ln,
+        )
+        if m:
+            name = clean_singleline(m.group(1)).strip(" :-")
+            if not is_bad_awarded_by(name):
+                return name
+    # Last source: original Awarded By line cleanup.
+    for ln in lines:
+        if "awarded by" not in ln.lower():
+            continue
+        m_dates = re.findall(r"\d{1,2}/\d{1,2}/\d{2,4}", ln)
+        tail = ln
+        if m_dates:
+            last_date = m_dates[-1]
+            idx = ln.rfind(last_date)
+            if idx != -1:
+                tail = ln[idx + len(last_date):]
+        else:
+            tail = re.sub(r"(?i)awarded\s*by\s*[:\-]?", "", ln)
+            tail = re.sub(r"(?i)\bdate\b\s*[:\-]?", "", tail)
+        name = clean_singleline(tail).strip(" :-")
+        name = re.sub(r"(?i)\s+awarded\s+by\s*:?\s*$", "", name).strip(" :-")
+        if not is_bad_awarded_by(name):
+            return name
     return ""
-
 
 def extract_dates(text: str) -> Tuple[str, str, str]:
     """
@@ -1200,6 +1252,8 @@ def infer_award_date_from_filename(path_or_name: str) -> str:
         yy = ts[4:6]
         return f"{mm}/{dd}/{yy}"
     return ""
+
+
 
 
 

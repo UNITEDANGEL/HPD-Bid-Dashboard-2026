@@ -63,8 +63,19 @@ function asArray(value: unknown): JobRecord[] {
 }
 
 function firstValue(job: JobRecord, keys: string[]) {
+  const record = job as Record<string, unknown>;
   for (const key of keys) {
-    const value = job[key];
+    const value = record[key];
+    if (value !== undefined && value !== null && String(value).trim()) return String(value).trim();
+  }
+  const lowerMap = new Map(
+    Object.keys(record).map((key) => [key.toLowerCase().replace(/[^a-z0-9]/g, ""), key])
+  );
+  for (const key of keys) {
+    const normalized = key.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const realKey = lowerMap.get(normalized);
+    if (!realKey) continue;
+    const value = record[realKey];
     if (value !== undefined && value !== null && String(value).trim()) return String(value).trim();
   }
   return "";
@@ -75,18 +86,53 @@ function jobId(job: JobRecord) {
 }
 
 function jobAddress(job: JobRecord) {
-  return firstValue(job, ["BuildingAddress", "Building Address", "Address", "address", "Location", "location"]);
+  return firstValue(job, [
+    "BuildingAddress",
+    "Building Address",
+    "building_address",
+    "PropertyAddress",
+    "Property Address",
+    "JobAddress",
+    "Job Address",
+    "Address",
+    "address",
+    "Location",
+    "location",
+    "Premises",
+    "premises",
+  ]);
 }
 
 function jobStatus(job: JobRecord) {
-  return firstValue(job, ["WorkflowStatus", "FieldOutcome", "StatusOverride", "status"]) || "Pending";
+  return firstValue(job, [
+    "WorkflowStatus",
+    "Workflow Status",
+    "FieldOutcome",
+    "Field Outcome",
+    "StatusOverride",
+    "Status Override",
+    "status",
+    "Status",
+    "JobStatus",
+    "Job Status",
+    "Outcome",
+    "outcome",
+  ]) || "Pending";
 }
 
 function jobBorough(job: JobRecord) {
-  const raw = firstValue(job, ["Borough", "borough"]);
-  if (raw) return raw.toUpperCase();
-
-  const text = jobAddress(job).toUpperCase();
+  const raw = firstValue(job, ["Borough", "borough", "Boro", "boro"]);
+  const address = jobAddress(job);
+  const zip = address.match(/\b\d{5}\b/)?.[0] || "";
+  if (zip) {
+    const z = Number(zip);
+    if ((z >= 10001 && z <= 10282) || z === 10039) return "MN";
+    if (z >= 10451 && z <= 10475) return "BX";
+    if (z >= 11201 && z <= 11256) return "BK";
+    if ((z >= 11004 && z <= 11109) || (z >= 11351 && z <= 11697)) return "QN";
+    if (z >= 10301 && z <= 10314) return "SI";
+  }
+  const text = `${raw} ${address}`.toUpperCase();
   if (text.includes("BROOKLYN") || /\bBK\b/.test(text)) return "BK";
   if (text.includes("MANHATTAN") || /\bMN\b/.test(text)) return "MN";
   if (text.includes("QUEENS") || /\bQN\b/.test(text)) return "QN";
@@ -103,16 +149,58 @@ function jobAwardDate(job: JobRecord) {
   return firstValue(job, ["AwardDate", "awardDate", "Date", "date"]);
 }
 
+function isLegalDisclaimer(value: string) {
+  const text = String(value || "").toLowerCase();
+  return (
+    text.includes("davis bacon") ||
+    text.includes("this omo is not subject") ||
+    text.includes("residential building of seven") ||
+    text.includes("if you accept a change order") ||
+    text.includes("falsification statement") ||
+    text.includes("form 1123")
+  );
+}
+function jobAwardedBy(job: JobRecord) {
+  const value = firstValue(job, ["AwardedBy", "awardedBy", "Awarded By", "awarded_by"]);
+  if (!value || isLegalDisclaimer(value)) return "";
+  return value;
+}
+function jobWorkStart(job: JobRecord) {
+  return firstValue(job, ["WorkStartDate", "workStartDate", "Work Start Date", "work_start_date"]);
+}
+function jobWorkCompletion(job: JobRecord) {
+  return firstValue(job, ["WorkCompletionDate", "workCompletionDate", "Work Completion Date", "work_completion_date"]);
+}
+function jobWorkDates(job: JobRecord) {
+  const start = jobWorkStart(job);
+  const end = jobWorkCompletion(job);
+  if (start && end) return `${start} - ${end}`;
+  if (start) return `Starts ${start}`;
+  if (end) return `Due ${end}`;
+  return "Dates pending";
+}
 function parseAmount(job: JobRecord) {
-  const raw = firstValue(job, ["BidAmount", "bidAmount", "Amount", "Total", "total"]);
-  const amount = Number(raw.replace(/[^0-9.-]/g, ""));
-  return Number.isFinite(amount) ? amount : 0;
+  const raw = (job as Record<string, unknown>)["AwardAmount"];
+  const amount = Number(String(raw ?? "").replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(amount) && amount > 0 ? amount : 0;
 }
 
 function hasCoord(job: JobRecord) {
-  const lat = Number(job.latitude ?? job.lat);
-  const lng = Number(job.longitude ?? job.lng ?? job.lon);
-  return Number.isFinite(lat) && Number.isFinite(lng);
+  const lat = Number(
+    job.Latitude ??
+    job.latitude ??
+    job.Lat ??
+    job.lat
+  );
+  const lng = Number(
+    job.Longitude ??
+    job.longitude ??
+    job.Lng ??
+    job.lng ??
+    job.Lon ??
+    job.lon
+  );
+  return Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) > 1 && Math.abs(lng) > 1;
 }
 
 function isActive(job: JobRecord) {
@@ -301,7 +389,7 @@ export default function DarkAnalyticsDashboard() {
 
     const boroughCounts = jobs.reduce<Record<string, number>>((acc, job) => {
       const borough = jobBorough(job);
-      const normalized = boroughs.includes(borough) ? borough : "BK";
+      const normalized = boroughs.includes(borough) ? borough : "NYC";
       acc[normalized] = (acc[normalized] || 0) + 1;
       return acc;
     }, {});
@@ -409,9 +497,9 @@ export default function DarkAnalyticsDashboard() {
             points={[30, 24, 28, 37, 35, 46, 51]}
           />
           <MetricCard
-            label="Total Value"
+            label="Total COA Awards"
             value={compactMoney(model.totalValue)}
-            detail={`${model.withAmount} jobs with amounts`}
+            detail={`${model.withAmount} jobs with COA award amounts`}
             accent="amber"
             icon="04"
             points={[20, 26, 32, 29, 45, 41, 56]}
@@ -443,22 +531,15 @@ export default function DarkAnalyticsDashboard() {
           <article className="panel map-panel">
             <div className="panel-head">
               <div>
-                <p className="eyebrow">Field View</p>
-                <h2>Bid Locations</h2>
+                <p className="eyebrow">Open the real map</p>
+                <h2>Map Preview</h2>
               </div>
               <Link href="/map/?view=all&map=1">View map</Link>
             </div>
-            <div className="mini-map">
-              <span className="pin pin-1" />
-              <span className="pin pin-2" />
-              <span className="pin pin-3" />
-              <span className="pin pin-4" />
-              <span className="route route-a" />
-              <span className="route route-b" />
-              <div>
-                <strong>{model.mapped}</strong>
-                <small>mapped jobs</small>
-              </div>
+            <div className="real-map-card">
+              <strong>{model.mapped}</strong>
+              <span>jobs with coordinates ready for the live field map</span>
+              <Link href="/map/?view=all&map=1">Open Real Field Map</Link>
             </div>
           </article>
 
@@ -492,25 +573,46 @@ export default function DarkAnalyticsDashboard() {
               </div>
               <Link href="/jobs">Open jobs</Link>
             </div>
-            <div className="bid-table">
-              <div className="table-row table-head">
-                <span>OMO</span>
-                <span>Address</span>
-                <span>Borough</span>
-                <span>Status</span>
-                <span>Amount</span>
-              </div>
-              {model.liveJobs.map((job) => (
-                <Link className="table-row" href={`/map?omo=${encodeURIComponent(jobId(job))}&view=all`} key={jobId(job) || jobAddress(job)}>
-                  <strong>{jobId(job) || "New"}</strong>
-                  <span>{jobAddress(job) || "Address pending"}</span>
-                  <span>{jobBorough(job)}</span>
-                  <span><StatusPill status={jobStatus(job)} /></span>
-                  <em>{money(parseAmount(job))}</em>
-                </Link>
-              ))}
-              {!model.liveJobs.length && <p className="empty-note">No live bid rows available.</p>}
-            </div>
+            <div className="bid-table" style={{ overflowX: "auto", width: "100%" }}>
+  <table style={{ width: "100%", minWidth: "940px", tableLayout: "fixed", borderCollapse: "separate", borderSpacing: "0 8px" }}>
+    <colgroup>
+      <col style={{ width: "90px" }} />
+      <col style={{ width: "270px" }} />
+      <col style={{ width: "115px" }} />
+      <col style={{ width: "105px" }} />
+      <col style={{ width: "110px" }} />
+      <col style={{ width: "110px" }} />
+      <col style={{ width: "140px" }} />
+    </colgroup>
+    <thead>
+      <tr>
+        <th style={{ textAlign: "left", padding: "10px 8px", fontSize: "12px" }}>OMO</th>
+        <th style={{ textAlign: "left", padding: "10px 8px", fontSize: "12px" }}>Address</th>
+        <th style={{ textAlign: "left", padding: "10px 8px", fontSize: "12px" }}>Borough</th>
+        <th style={{ textAlign: "left", padding: "10px 8px", fontSize: "12px" }}>Status</th>
+        <th style={{ textAlign: "left", padding: "10px 8px", fontSize: "12px" }}>COA Award</th>
+        <th style={{ textAlign: "left", padding: "10px 8px", fontSize: "12px" }}>Start Date</th>
+        <th style={{ textAlign: "left", padding: "10px 8px", fontSize: "12px" }}>Completion Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {model.liveJobs.map((job) => (
+        <tr key={jobId(job) || jobAddress(job)} style={{ background: "rgba(15, 23, 42, 0.72)" }}>
+          <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 900, borderTopLeftRadius: "14px", borderBottomLeftRadius: "14px" }}>
+            <Link href={`/map?omo=${encodeURIComponent(jobId(job))}&view=all`}>{jobId(job) || "New"}</Link>
+          </td>
+          <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 650 }}>{jobAddress(job) || "Address pending"}</td>
+          <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 650 }}>{jobBorough(job)}</td>
+          <td style={{ padding: "14px 8px", fontSize: "16px" }}><StatusPill status={jobStatus(job)} /></td>
+          <td style={{ padding: "14px 8px", fontSize: "19px", fontWeight: 950, color: "#fbbf24" }}>{money(parseAmount(job))}</td>
+          <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 800 }}>{jobWorkStart(job)}</td>
+          <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 800, borderTopRightRadius: "14px", borderBottomRightRadius: "14px" }}>{jobWorkCompletion(job)}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  {!model.liveJobs.length && <p className="empty-note">No live bid rows available.</p>}
+</div>
           </article>
         </section>
       </section>
@@ -1229,7 +1331,35 @@ export default function DarkAnalyticsDashboard() {
             display: none;
           }
         }
-      `}</style>
+      `}
+</style>
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

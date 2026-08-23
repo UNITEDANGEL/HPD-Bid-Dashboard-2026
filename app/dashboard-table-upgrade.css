@@ -1,0 +1,104 @@
+/* HPD dashboard command queue table alignment */
+.table-panel .bid-table {
+  width: 100% !important;
+  overflow-x: auto !important;
+}
+.table-panel .bid-table .table-row {
+  display: grid !important;
+  grid-template-columns: 105px minmax(280px, 2fr) 125px 120px 120px 120px 150px !important;
+  column-gap: 14px !important;
+  align-items: center !important;
+  width: 100% !important;
+  min-width: 1040px !important;
+  box-sizing: border-box !important;
+}
+.table-panel .bid-table .table-head {
+  min-height: 44px !important;
+  padding: 12px 16px !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+.table-panel .bid-table a.table-row {
+  min-height: 58px !important;
+  padding: 14px 16px !important;
+}
+.table-panel .bid-table .table-row > strong,
+.table-panel .bid-table .table-row > span,
+.table-panel .bid-table .table-row > em {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  line-height: 1.25 !important;
+  margin: 0 !important;
+}
+.table-panel .bid-table .table-row > strong {
+  font-size: 16px !important;
+  font-weight: 900 !important;
+}
+.table-panel .bid-table .table-row > span {
+  font-size: 15px !important;
+  font-weight: 650 !important;
+}
+.table-panel .bid-table .table-row > em {
+  font-size: 18px !important;
+  font-style: normal !important;
+  font-weight: 950 !important;
+  color: #fbbf24 !important;
+}
+.table-panel .bid-table .table-row > span:nth-child(6),
+.table-panel .bid-table .table-row > span:nth-child(7) {
+  font-weight: 850 !important;
+  color: rgba(248, 250, 252, 0.94) !important;
+}
+/* Dashboard table spacing */
+.bid-table table {
+  width: 100% !important;
+}
+.real-map-card {
+  min-height: 240px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  gap: 16px !important;
+  padding: 32px !important;
+  border-radius: 24px !important;
+  border: 1px solid rgba(56, 189, 248, 0.28) !important;
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.18), transparent 38%),
+    rgba(15, 23, 42, 0.78) !important;
+}
+.real-map-card strong {
+  display: block !important;
+  font-size: 64px !important;
+  line-height: 1 !important;
+  letter-spacing: -0.08em !important;
+  color: #f8fafc !important;
+}
+.real-map-card span {
+  display: block !important;
+  max-width: 430px !important;
+  color: #cbd5e1 !important;
+  font-size: 18px !important;
+  line-height: 1.35 !important;
+  font-weight: 800 !important;
+}
+.real-map-card a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 50px !important;
+  padding: 0 24px !important;
+  border-radius: 999px !important;
+  background: #38bdf8 !important;
+  color: #02131f !important;
+  font-size: 15px !important;
+  font-weight: 950 !important;
+  text-decoration: none !important;
+}

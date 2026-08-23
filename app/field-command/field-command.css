@@ -156,8 +156,17 @@
 .fc-live-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   margin-top: 8px;
+}
+
+.fc-live-copy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .fc-live-dot {
@@ -182,6 +191,51 @@
   color: var(--fc-secondary);
   font-size: 12px;
   font-weight: 600;
+}
+
+.fc-days-control {
+  flex: 0 0 122px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 3px 8px;
+  border: 1px solid rgba(96, 165, 250, 0.34);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.74);
+  color: #dbeafe;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.fc-days-control span {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.fc-days-control input {
+  width: 42px;
+  min-width: 42px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 1000;
+  text-align: right;
+  line-height: 1;
+}
+
+.fc-days-control input::placeholder {
+  color: rgba(219, 234, 254, 0.72);
+}
+
+.fc-days-control strong {
+  color: #93c5fd;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 /* Borough + status filter rows */
@@ -366,7 +420,7 @@
 }
 
 .fc-map-node.is-dark .leaflet-tile {
-  filter: saturate(1.08) contrast(1.06) brightness(0.95);
+  filter: saturate(0.94) contrast(1.12) brightness(0.76);
 }
 
 .fc-map-node.is-dark::after {
@@ -376,8 +430,8 @@
   pointer-events: none;
   z-index: 450;
   background:
-    linear-gradient(180deg, rgba(2, 6, 23, 0.32), rgba(2, 6, 23, 0.04) 44%, rgba(2, 6, 23, 0.3)),
-    linear-gradient(90deg, rgba(6, 78, 118, 0.2), transparent 32%, transparent 68%, rgba(15, 118, 110, 0.18));
+    linear-gradient(180deg, rgba(2, 6, 23, 0.18), rgba(2, 6, 23, 0.02) 44%, rgba(2, 6, 23, 0.2)),
+    linear-gradient(90deg, rgba(6, 78, 118, 0.12), transparent 32%, transparent 68%, rgba(15, 118, 110, 0.12));
 }
 
 .fc-map-controls {

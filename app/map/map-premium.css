@@ -1,0 +1,70 @@
+/* HPD premium map polish layer */
+.map-shell {
+  background:
+    radial-gradient(circle at 12% 10%, rgba(14, 165, 233, 0.16), transparent 32%),
+    radial-gradient(circle at 86% 12%, rgba(16, 185, 129, 0.12), transparent 28%),
+    #020617 !important;
+}
+.map-stage,
+.map-node,
+.leaflet-container {
+  border-radius: 24px !important;
+}
+.map-node {
+  box-shadow: 0 26px 90px rgba(0, 0, 0, 0.42) !important;
+  border: 1px solid rgba(148, 163, 184, 0.20) !important;
+  overflow: hidden !important;
+}
+.dispatch-dashboard-count,
+.map-data-health,
+.day-agent-panel,
+.ai-day-agent,
+.map-card,
+.job-card,
+.selected-job-card {
+  border-radius: 20px !important;
+  border: 1px solid rgba(148, 163, 184, 0.18) !important;
+  background: rgba(15, 23, 42, 0.88) !important;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.28) !important;
+  backdrop-filter: blur(18px) !important;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 18px !important;
+  background: rgba(15, 23, 42, 0.96) !important;
+  color: #f8fafc !important;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.40) !important;
+}
+.leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.96) !important;
+}
+.leaflet-control-zoom a {
+  background: rgba(15, 23, 42, 0.92) !important;
+  color: #e0f2fe !important;
+  border-color: rgba(148, 163, 184, 0.20) !important;
+}
+.leaflet-control-attribution {
+  background: rgba(2, 6, 23, 0.72) !important;
+  color: #94a3b8 !important;
+  border-radius: 999px !important;
+  margin: 8px !important;
+  padding: 4px 8px !important;
+}
+@media (min-width: 1100px) {
+  .map-shell {
+    min-height: 100dvh !important;
+  }
+  .map-stage {
+    min-height: calc(100dvh - 34px) !important;
+  }
+  .map-node,
+  .leaflet-container {
+    min-height: calc(100dvh - 44px) !important;
+  }
+}
+@media (max-width: 800px) {
+  .map-stage,
+  .map-node,
+  .leaflet-container {
+    border-radius: 18px !important;
+  }
+}

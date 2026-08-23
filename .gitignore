@@ -3,6 +3,7 @@ node_modules/
 out/
 .cloudflare-build/
 .next-dev*.log
+codex-*.log
 tmp/
 tsconfig.tsbuildinfo
 .env.local
