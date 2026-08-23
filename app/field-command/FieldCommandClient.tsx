@@ -420,6 +420,8 @@ export default function FieldCommandClient() {
   const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number }>>({});
   const [mediaBusy, setMediaBusy] = useState("");
   const [mediaMessage, setMediaMessage] = useState("");
+  const [clearJobId, setClearJobId] = useState("");
+  const [clearText, setClearText] = useState("");
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const pendingMediaKindRef = useRef<FieldMediaKind>("before");
   const [headerHidden, setHeaderHidden] = useState(false);
@@ -871,10 +873,17 @@ export default function FieldCommandClient() {
     }
   }
 
+  function beginClearWorkflow(job: JobRecord) {
+    setClearJobId(jobId(job));
+    setClearText("");
+  }
+
   function clearWorkflow(job: JobRecord) {
     const id = jobId(job);
-    const typed = window.prompt(`Type CLEAR to reset saved workflow for ${id}.`);
-    if (typed !== "CLEAR") return;
+    if (clearText.trim().toUpperCase() !== "CLEAR") {
+      setMediaMessage("Type CLEAR to reset this workflow.");
+      return;
+    }
     setWorkflowStamps((prev) => ({ ...prev, [id]: {} }));
     writeSharedWorkflowPatch(id, { __clearWorkflow: true });
     mergeWorkflowPatchIntoScreen(id, {
@@ -897,6 +906,8 @@ export default function FieldCommandClient() {
       OutcomeLockedAt: "",
       outcomeLockedAt: "",
     });
+    setClearJobId("");
+    setClearText("");
     setMediaMessage("Workflow cleared. Saved media stays unless you remove it from the media/package screen.");
   }
 
@@ -1181,12 +1192,28 @@ export default function FieldCommandClient() {
                   <b>Refused</b>
                   <small>Close job</small>
                 </button>
-                <button type="button" className="fc-workflow-btn clear" aria-label="Clear field workflow" onClick={() => clearWorkflow(selectedJob)}>
+                <button type="button" className="fc-workflow-btn clear" aria-label="Clear field workflow" onClick={() => beginClearWorkflow(selectedJob)}>
                   <span>0</span>
                   <b>Clear</b>
                   <small>Type CLEAR</small>
                 </button>
               </section>
+              {clearJobId === id ? (
+                <section className="fc-clear-confirm" aria-label="Confirm clear workflow">
+                  <input
+                    value={clearText}
+                    onChange={(event) => setClearText(event.target.value)}
+                    placeholder="Type CLEAR"
+                    autoCapitalize="characters"
+                  />
+                  <button type="button" onClick={() => clearWorkflow(selectedJob)} disabled={clearText.trim().toUpperCase() !== "CLEAR"}>
+                    Reset
+                  </button>
+                  <button type="button" onClick={() => setClearJobId("")}>
+                    Keep
+                  </button>
+                </section>
+              ) : null}
               <section className="fc-media-package-panel" aria-label="Media and package">
                 <input
                   ref={mediaInputRef}

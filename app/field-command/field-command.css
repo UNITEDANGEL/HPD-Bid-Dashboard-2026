@@ -1022,6 +1022,48 @@
   opacity: 0.48;
 }
 
+.fc-clear-confirm {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 7px;
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 15px;
+  background: rgba(2, 6, 23, 0.86);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+.fc-clear-confirm input {
+  min-width: 0;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 11px;
+  padding: 9px 10px;
+  background: rgba(15, 23, 42, 0.92);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  outline: none;
+}
+
+.fc-clear-confirm button {
+  border: 1px solid rgba(96, 165, 250, 0.25);
+  border-radius: 11px;
+  padding: 9px 10px;
+  background: rgba(30, 41, 59, 0.92);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 1000;
+}
+
+.fc-clear-confirm button:first-of-type:not(:disabled) {
+  border-color: rgba(248, 113, 113, 0.62);
+  background: linear-gradient(180deg, rgba(127, 29, 29, 0.9), rgba(69, 10, 10, 0.94));
+}
+
+.fc-clear-confirm button:disabled {
+  opacity: 0.46;
+}
+
 .fc-hidden-file {
   position: fixed;
   left: -9999px;
