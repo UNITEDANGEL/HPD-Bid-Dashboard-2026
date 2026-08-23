@@ -21,3 +21,202 @@
 .plan-my-day__offline-state{display:block;margin-top:6px;color:#76efaf;font-size:10px;font-weight:850;letter-spacing:0;line-height:1.25}
 
 .plan-my-day__choices{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;border:1px solid rgba(127,176,255,.22);border-radius:13px;background:rgba(79,140,255,.08);padding:10px}.plan-my-day__choices label{display:grid;gap:5px;color:#c9d7ec;font-size:11px;font-weight:900}.plan-my-day__choices select{width:100%;min-width:0;min-height:42px;border:1px solid rgba(255,255,255,.18);border-radius:10px;background:#fff;color:#07111f;padding:8px 30px 8px 10px;font:inherit;font-weight:800}.plan-my-day__choices>button{grid-column:1/-1;min-height:42px;border:0;border-radius:10px;background:#4f8cff;color:#fff;font-weight:950;cursor:pointer}.plan-my-day__choices>button:disabled{opacity:.5;cursor:not-allowed}@media(max-width:380px){.plan-my-day__choices{grid-template-columns:1fr}.plan-my-day__choices>button{grid-column:auto}}
+
+/* Field Command compact route sheet */
+.fc-app .plan-my-day {
+  left: 12px;
+  right: 12px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  width: auto;
+  max-width: 456px;
+  margin: 0 auto;
+}
+
+.fc-app .plan-my-day__toggle {
+  min-height: 50px;
+  border-radius: 14px;
+  padding: 7px 10px;
+  background: linear-gradient(135deg, rgba(8, 20, 38, 0.96), rgba(10, 25, 48, 0.9));
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.fc-app .plan-my-day__toggle span {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+
+.fc-app .plan-my-day__toggle strong {
+  font-size: 15px;
+}
+
+.fc-app .plan-my-day__panel:not(.is-job-view) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: min(58dvh, 470px);
+  padding: 10px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(7, 18, 34, 0.98), rgba(4, 12, 24, 0.98));
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.48), 0 0 0 1px rgba(96, 165, 250, 0.12);
+}
+
+.fc-app .plan-my-day__header {
+  position: sticky;
+  top: -10px;
+  z-index: 4;
+  align-items: center;
+  padding: 2px 0 8px;
+  background: linear-gradient(180deg, rgba(7, 18, 34, 0.98), rgba(7, 18, 34, 0.9));
+}
+
+.fc-app .plan-my-day__header h2 {
+  margin-top: 2px;
+  font-size: 17px;
+}
+
+.fc-app .plan-my-day__offline-state {
+  margin-top: 3px;
+  font-size: 9px;
+}
+
+.fc-app .plan-my-day__header > div:last-child {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.fc-app .plan-my-day__header button {
+  min-height: 28px;
+  border: 1px solid rgba(127, 176, 255, 0.18);
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  color: #dbeafe;
+}
+
+.fc-app .plan-my-day__choices {
+  order: 1;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  padding: 8px;
+}
+
+.fc-app .plan-my-day__choices select {
+  min-height: 36px;
+  font-size: 12px;
+}
+
+.fc-app .plan-my-day__choices > button {
+  min-height: 38px;
+}
+
+.fc-app .plan-my-day__suggestions {
+  order: 2;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.fc-app .plan-my-day__suggestions::-webkit-scrollbar {
+  display: none;
+}
+
+.fc-app .plan-my-day__suggestions button {
+  flex: 0 0 auto;
+  padding: 7px 9px;
+}
+
+.fc-app .plan-my-day__working-plan {
+  order: 3;
+  padding: 9px;
+}
+
+.fc-app .plan-my-day__working-plan p {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.fc-app .plan-my-day__results {
+  order: 4;
+  max-height: 168px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.fc-app .plan-my-day__results > article {
+  padding: 8px;
+  grid-template-columns: 28px minmax(0, 1fr);
+}
+
+.fc-app .plan-my-day__results nav {
+  gap: 5px;
+}
+
+.fc-app .plan-my-day__results nav a,
+.fc-app .plan-my-day__results nav button {
+  padding: 6px 7px;
+}
+
+.fc-app .plan-my-day__accept {
+  min-height: 42px;
+}
+
+.fc-app .plan-my-day__composer {
+  order: 5;
+}
+
+.fc-app .plan-my-day__composer label,
+.fc-app .plan-my-day__job-picker label {
+  margin-bottom: 4px;
+  font-size: 10px;
+}
+
+.fc-app .plan-my-day__composer textarea {
+  min-height: 42px;
+  max-height: 76px;
+  padding: 9px 10px;
+}
+
+.fc-app .plan-my-day__composer button {
+  min-height: 42px;
+}
+
+.fc-app .plan-my-day__chat {
+  order: 6;
+  min-height: 0;
+  max-height: 78px;
+}
+
+.fc-app .plan-my-day__bubble {
+  max-width: 100%;
+  padding: 8px 10px;
+}
+
+.fc-app .plan-my-day__bubble p {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.fc-app .plan-my-day__voice-row {
+  display: none;
+}
+
+.fc-app .plan-my-day__job-picker {
+  order: 7;
+}
+
+.fc-app .plan-my-day__job-picker > input {
+  padding: 9px 10px;
+}
+
+@media (max-width: 560px) {
+  .fc-app .plan-my-day__panel:not(.is-job-view) {
+    max-height: min(56dvh, 430px);
+  }
+}
