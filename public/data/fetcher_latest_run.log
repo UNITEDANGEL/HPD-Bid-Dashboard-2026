@@ -1,4 +1,4 @@
-Fetcher run started: 2026-08-23T16:05:56.921Z
+Fetcher run started: 2026-08-23T23:28:54.218Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -14,6 +14,7 @@ $ python FetchrMatcherV5.py --update --days 14
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
+Refreshing expired Gmail token headlessly.
 GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/08/09 before:2026/08/24
 COA items parsed (latest per OMO): 4
 ITB items parsed (latest per OMO): 4
@@ -24,22 +25,22 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/4 [00:00<?, ?it/s]Downloading COA messages:  50%|█████     | 2/4 [00:00<00:00, 15.53it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00, 15.91it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00, 15.84it/s]
-Geocoding COA addresses:   0%|          | 0/4 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 4/4 [00:00<00:00, 76260.07it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/4 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 1/4 [00:00<00:01,  2.99it/s]Fetching ITBs for COA OMOs:  50%|█████     | 2/4 [00:00<00:00,  3.59it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 3/4 [00:00<00:00,  3.38it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:01<00:00,  2.96it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:01<00:00,  3.10it/s]
+Downloading COA messages:   0%|          | 0/4 [00:00<?, ?it/s]Downloading COA messages:  25%|██▌       | 1/4 [00:00<00:00,  6.75it/s]Downloading COA messages:  50%|█████     | 2/4 [00:00<00:00,  8.27it/s]Downloading COA messages:  75%|███████▌  | 3/4 [00:00<00:00,  8.71it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00,  8.08it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00,  8.08it/s]
+Geocoding COA addresses:   0%|          | 0/4 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 4/4 [00:00<00:00, 101067.57it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/4 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 1/4 [00:00<00:02,  1.48it/s]Fetching ITBs for COA OMOs:  50%|█████     | 2/4 [00:01<00:01,  1.87it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 3/4 [00:01<00:00,  2.01it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:02<00:00,  1.92it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:02<00:00,  1.88it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
 Safe merge complete
-Master before: 628
+Master before: 632
 Incoming rows: 4
-Added new OMOs: 4
-Skipped existing OMOs: 0
+Added new OMOs: 0
+Skipped existing OMOs: 4
 Updated existing OMOs: 0
-Need geocode: 4
+Need geocode: 0
 Missing ITB: 0
-Missing description: 4
+Missing description: 0
 Master after: 632
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
@@ -47,12 +48,8 @@ Report: ./data/safe_7day_merge_report.json
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 4
-OK ER03099 213 EAST 26 STREET, 10010 40.740585 -73.980955 NYC_PLANNING_OK
-OK ER03009 351 TOMPKINS AVENUE, 11216 40.685811 -73.944108 NYC_PLANNING_OK
-OK ER03360 1520 BRUCKNER BOULEVARD, 10473 40.823365 -73.878204 NYC_PLANNING_OK
-OK ER02263 2264 MORRIS AVENUE, 10453 40.857632 -73.901956 NYC_PLANNING_OK
-Geocoded: 4
+Need geocode: 0
+Geocoded: 0
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -77,21 +74,13 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 4
-DESCRIPTION OK ER03099 ER03099_081326043154.pdf
-DESCRIPTION OK ER03009 ER03009_081326114532.pdf
-DESCRIPTION OK ER03360 ER03360_081326043931.pdf
-DESCRIPTION OK ER02263 ER02263_081326013321.pdf
-Descriptions patched: 4
+Matched ITBs needing description: 0
+Descriptions patched: 0
 Missing PDF: 0
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'ER03099', 'Address': '213 EAST 26 STREET, 10010', 'RecoveredFrom': 'ER03099_081326043154.pdf', 'Preview': ': AT BLDG ENTRANCE DOOR, MAKE DOOR SELF CLOSING TOTAL DOORS= (1) NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BLDG ENTRANCE DOOR, MAKE ALL NECESSARY REPAIRS T O MAKE DOOR SELF CLOSING AND LATCHIN'}
-{'OMO': 'ER03009', 'Address': '351 TOMPKINS AVENUE, 11216', 'RecoveredFrom': 'ER03009_081326114532.pdf', 'Preview': ': DEFECTIVE COUNTER BALANCE AT LOWER WINDOW SASH (GUI LLOTINE EFFECT) IN THE KITCHEN LOCATED AT APT 4, 4th STORY. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ INSTALL NEW COUNTERBALANCE AT THE LOWER '}
-{'OMO': 'ER03360', 'Address': '1520 BRUCKNER BOULEVARD, 10473', 'RecoveredFrom': 'ER03360_081326043931.pdf', 'Preview': ': LOCATION : AT BUILDING ENTRANCE DOOR -NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK- LOCATION: AT BUILDING ENTRANCE DOOR  MAKE ALL NECESSARY REPAIRS TO MAKE DOOR SELF CLOSI NG AND LATCHING INSTALL NEW'}
-{'OMO': 'ER02263', 'Address': '2264 MORRIS AVENUE, 10453', 'RecoveredFrom': 'ER02263_081326013321.pdf', 'Preview': ': REPAIR DOOR AT APT#7A ENTRANCE DOOR 7TH NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “  AT APT#7A ENTRANCE DOOR 7TH STORY -  INSTALL NEW SELF CLOSING HINGES TO MAKE DOOR SELF CLOSING AND MAKE ALL NEC'}
 
 Synced 3 data file(s) to public/data.
 
@@ -238,13 +227,13 @@ PAPERWORK DATA QUALITY CHECKED
 PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=16.
 
 
-Fetcher run finished: 2026-08-23T16:06:12.483Z
+Fetcher run finished: 2026-08-23T23:29:07.002Z
 {
   "fetchedCoaItems": 4,
   "fetchedItbItems": 4,
   "fetchedFinalJobRows": 4,
-  "addedNewOmos": 4,
-  "skippedExistingOmos": 0,
+  "addedNewOmos": 0,
+  "skippedExistingOmos": 4,
   "rawRows": 632,
   "rows2026": 581,
   "mapped2026": 581,
