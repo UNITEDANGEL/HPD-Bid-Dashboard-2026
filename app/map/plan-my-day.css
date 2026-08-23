@@ -55,6 +55,7 @@
   flex-direction: column;
   gap: 8px;
   max-height: min(48dvh, 390px);
+  max-height: 360px !important;
   padding: 10px;
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(7, 18, 34, 0.98), rgba(4, 12, 24, 0.98));
@@ -209,6 +210,7 @@
 
 .fc-app .plan-my-day__job-picker {
   order: 7;
+  display: none;
 }
 
 .fc-app .plan-my-day__job-picker > input {
@@ -218,5 +220,6 @@
 @media (max-width: 560px) {
   .fc-app .plan-my-day__panel:not(.is-job-view) {
     max-height: min(46dvh, 360px);
+    max-height: 330px !important;
   }
 }
