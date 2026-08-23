@@ -901,32 +901,32 @@ export default function FieldCommandClient() {
                 </div>
               </section>
               <section className="fc-workflow-panel" aria-label="Field workflow">
-                <button type="button" className={`fc-workflow-btn ${stamps.arrived ? "is-saved" : ""}`} onClick={() => saveWorkflowStamp(selectedJob, "arrived")}>
+                <button type="button" className={`fc-workflow-btn ${stamps.arrived ? "is-saved" : ""}`} aria-label="Save arrival time" onClick={() => saveWorkflowStamp(selectedJob, "arrived")}>
                   <span>1</span>
                   <b>{stamps.arrived ? "Arrived Saved" : "Arrive"}</b>
                   <small>{stamps.arrived ? formatSavedTime(stamps.arrived) : "I am here"}</small>
                 </button>
-                <button type="button" className={`fc-workflow-btn ${stamps.visit ? "is-saved" : ""}`} onClick={() => saveWorkflowStamp(selectedJob, "visit")} disabled={!stamps.arrived}>
+                <button type="button" className={`fc-workflow-btn ${stamps.visit ? "is-saved" : ""}`} aria-label="Start visit" onClick={() => saveWorkflowStamp(selectedJob, "visit")} disabled={!stamps.arrived}>
                   <span>2</span>
                   <b>{stamps.visit ? "Visit Started" : "Start Visit"}</b>
                   <small>{stamps.visit ? formatSavedTime(stamps.visit) : stamps.arrived ? "Begin visit" : "Arrive first"}</small>
                 </button>
-                <button type="button" className={`fc-workflow-btn ${stamps.work ? "is-saved" : ""}`} onClick={() => saveWorkflowStamp(selectedJob, "work", "Work Started")} disabled={!stamps.visit}>
+                <button type="button" className={`fc-workflow-btn ${stamps.work ? "is-saved" : ""}`} aria-label="Start work" onClick={() => saveWorkflowStamp(selectedJob, "work", "Work Started")} disabled={!stamps.visit}>
                   <span>3</span>
                   <b>{stamps.work ? "Work Started" : "Start Work"}</b>
                   <small>{stamps.work ? formatSavedTime(stamps.work) : "Before media next"}</small>
                 </button>
-                <button type="button" className="fc-workflow-btn no-access" onClick={() => saveWorkflowStamp(selectedJob, "status", "No Access")} disabled={!stamps.visit}>
+                <button type="button" className="fc-workflow-btn no-access" aria-label="Save no access status" onClick={() => saveWorkflowStamp(selectedJob, "status", "No Access")} disabled={!stamps.visit}>
                   <span>4</span>
                   <b>No Access</b>
                   <small>Save attempt</small>
                 </button>
-                <button type="button" className="fc-workflow-btn refused" onClick={() => saveWorkflowStamp(selectedJob, "status", "Refused")} disabled={!stamps.visit}>
+                <button type="button" className="fc-workflow-btn refused" aria-label="Save refused status" onClick={() => saveWorkflowStamp(selectedJob, "status", "Refused")} disabled={!stamps.visit}>
                   <span>5</span>
                   <b>Refused</b>
                   <small>Close job</small>
                 </button>
-                <button type="button" className="fc-workflow-btn clear" onClick={() => setWorkflowStamps((prev) => ({ ...prev, [id]: {} }))}>
+                <button type="button" className="fc-workflow-btn clear" aria-label="Clear field workflow" onClick={() => setWorkflowStamps((prev) => ({ ...prev, [id]: {} }))}>
                   <span>0</span>
                   <b>Clear</b>
                   <small>Reset test</small>
