@@ -54,7 +54,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: min(58dvh, 470px);
+  max-height: min(48dvh, 390px);
   padding: 10px;
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(7, 18, 34, 0.98), rgba(4, 12, 24, 0.98));
@@ -217,6 +217,6 @@
 
 @media (max-width: 560px) {
   .fc-app .plan-my-day__panel:not(.is-job-view) {
-    max-height: min(56dvh, 430px);
+    max-height: min(46dvh, 360px);
   }
 }

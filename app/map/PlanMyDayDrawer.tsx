@@ -457,15 +457,27 @@ export default function PlanMyDayDrawer() {
 
     const nextPlan = parseMessage(message, plan);
     const { point, label } = await getOrigin(nextPlan.startMode);
-    const nextResults = rankJobs(nextPlan, point);
-    setPlan(nextPlan);
+    let workingPlan = nextPlan;
+    let nextResults = rankJobs(workingPlan, point);
+    let widenedDateRange = false;
+    if (!nextResults.length && nextPlan.daysBack !== null) {
+      const widenedPlan = { ...nextPlan, daysBack: null };
+      const widenedResults = rankJobs(widenedPlan, point);
+      if (widenedResults.length) {
+        workingPlan = widenedPlan;
+        nextResults = widenedResults;
+        widenedDateRange = true;
+      }
+    }
+    setPlan(workingPlan);
     setResults(nextResults);
     setSelectedIds(nextResults.map((job) => job.id));
     setOriginLabel(label);
     setOriginPoint(point);
 
-    const missingIncluded = nextPlan.includeOmo.filter((id) => !nextResults.some((job) => job.id === id));
-    let reply = `I prepared ${nextResults.length} stops from ${label}. ${describePlan(nextPlan)}`;
+    const missingIncluded = workingPlan.includeOmo.filter((id) => !nextResults.some((job) => job.id === id));
+    let reply = `I prepared ${nextResults.length} stops from ${label}. ${describePlan(workingPlan)}`;
+    if (widenedDateRange) reply = `I found no matching jobs in that date range, so I widened the route to any date. ${reply}`;
     if (!nextResults.length) reply = "I could not find matching active jobs. Try removing a restriction, changing the borough, or asking for nearby jobs.";
     else if (missingIncluded.length) reply += ` I could not locate these active OMO numbers: ${missingIncluded.join(", ")}.`;
     else reply += " Review the stops below. You can tell me to add, remove, shorten, or reprioritize the route.";
