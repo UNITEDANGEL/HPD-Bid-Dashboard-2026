@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import FieldTabBar from "../../components/FieldTabBar";
+import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
 
@@ -378,6 +379,11 @@ export default function FieldCommandClient() {
   const [controlsOpen, setControlsOpen] = useState(false);
   const [routeSummary, setRouteSummary] = useState<{ stops: number; miles: number; firstStop: string; href: string } | null>(null);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
+  const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number }>>({});
+  const [mediaBusy, setMediaBusy] = useState("");
+  const [mediaMessage, setMediaMessage] = useState("");
+  const mediaInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingMediaKindRef = useRef<FieldMediaKind>("before");
   const [headerHidden, setHeaderHidden] = useState(false);
   const headerIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -589,6 +595,11 @@ export default function FieldCommandClient() {
   }, [selectedJob]);
 
   useEffect(() => {
+    if (!selectedJob) return;
+    refreshMediaCounts(selectedJob);
+  }, [selectedJob]);
+
+  useEffect(() => {
     if (locateStatus !== "error") return;
     const timer = setTimeout(() => setLocateStatus("idle"), 4000);
     return () => clearTimeout(timer);
@@ -674,6 +685,71 @@ export default function FieldCommandClient() {
         ...(statusLabel ? { status: statusLabel } : {}),
       },
     }));
+  }
+
+  async function refreshMediaCounts(job: JobRecord) {
+    const id = jobId(job);
+    const rows = await listFieldEvidence(id);
+    setMediaCounts((prev) => ({
+      ...prev,
+      [id]: {
+        before: rows.filter((media) => media.kind === "before").length,
+        after: rows.filter((media) => media.kind === "after").length,
+        total: rows.length,
+      },
+    }));
+  }
+
+  function requestMediaUpload(kind: FieldMediaKind) {
+    pendingMediaKindRef.current = kind;
+    mediaInputRef.current?.click();
+  }
+
+  async function handleMediaFiles(files: FileList | null) {
+    if (!selectedJob || !files?.length) return;
+    const kind = pendingMediaKindRef.current;
+    const id = jobId(selectedJob);
+    setMediaBusy(kind);
+    setMediaMessage("");
+    try {
+      const saved = await saveFieldPhotos(id, kind, Array.from(files), {
+        jobId: id,
+        address: jobAddress(selectedJob),
+        location: jobAddress(selectedJob),
+        borough: String(jobBorough(selectedJob)),
+        outcome: workflowStamps[id]?.status || jobStatus(selectedJob),
+        label: kind === "before" ? "Before Work Evidence" : "After Work Evidence",
+      });
+      await refreshMediaCounts(selectedJob);
+      setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}` : "No image or video was saved.");
+    } catch (error) {
+      setMediaMessage(error instanceof Error ? error.message : "Media save failed.");
+    } finally {
+      setMediaBusy("");
+      if (mediaInputRef.current) mediaInputRef.current.value = "";
+    }
+  }
+
+  function clearWorkflow(job: JobRecord) {
+    const id = jobId(job);
+    const typed = window.prompt(`Type CLEAR to reset saved workflow for ${id}.`);
+    if (typed !== "CLEAR") return;
+    setWorkflowStamps((prev) => ({ ...prev, [id]: {} }));
+    setMediaMessage("Workflow cleared. Saved media stays unless you remove it from the media/package screen.");
+  }
+
+  function paperworkOutcome(stamps: { arrived?: string; visit?: string; work?: string; status?: string }) {
+    const status = String(stamps.status || "").toLowerCase();
+    if (status.includes("refused")) return "refused_access";
+    if (status.includes("no access")) return "no_access";
+    if (stamps.work) return "work_completed";
+    return "work_completed";
+  }
+
+  function paperworkHref(job: JobRecord, media = true) {
+    const id = jobId(job);
+    const outcome = paperworkOutcome(workflowStamps[id] || {});
+    return `/paperwork?job=${encodeURIComponent(id)}&outcome=${encodeURIComponent(outcome)}&auto=package&media=${media ? "all" : "none"}`;
   }
 
   return (
@@ -849,6 +925,7 @@ export default function FieldCommandClient() {
           const scope = jobScope(selectedJob);
           const tenant = tenantInfo(selectedJob);
           const stamps = workflowStamps[id] || {};
+          const counts = mediaCounts[id] || { before: 0, after: 0, total: 0 };
           return (
             <div className="fc-job-sheet fc-job-sheet-flow">
               <button type="button" className="fc-job-sheet-close" aria-label="Close" onClick={() => setSelectedJob(null)}>
@@ -926,11 +1003,45 @@ export default function FieldCommandClient() {
                   <b>Refused</b>
                   <small>Close job</small>
                 </button>
-                <button type="button" className="fc-workflow-btn clear" aria-label="Clear field workflow" onClick={() => setWorkflowStamps((prev) => ({ ...prev, [id]: {} }))}>
+                <button type="button" className="fc-workflow-btn clear" aria-label="Clear field workflow" onClick={() => clearWorkflow(selectedJob)}>
                   <span>0</span>
                   <b>Clear</b>
-                  <small>Reset test</small>
+                  <small>Type CLEAR</small>
                 </button>
+              </section>
+              <section className="fc-media-package-panel" aria-label="Media and package">
+                <input
+                  ref={mediaInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  multiple
+                  capture="environment"
+                  className="fc-hidden-file"
+                  onChange={(event) => void handleMediaFiles(event.target.files)}
+                />
+                <div className="fc-media-head">
+                  <strong>Media + Package</strong>
+                  <span>{counts.total} saved</span>
+                </div>
+                <div className="fc-media-grid">
+                  <button type="button" onClick={() => requestMediaUpload("before")} disabled={!stamps.work || Boolean(mediaBusy)}>
+                    <b>Before</b>
+                    <small>{mediaBusy === "before" ? "Saving..." : `${counts.before} saved`}</small>
+                  </button>
+                  <button type="button" onClick={() => requestMediaUpload("after")} disabled={!stamps.work || Boolean(mediaBusy)}>
+                    <b>After</b>
+                    <small>{mediaBusy === "after" ? "Saving..." : `${counts.after} saved`}</small>
+                  </button>
+                  <a href={paperworkHref(selectedJob, true)}>
+                    <b>Package</b>
+                    <small>PDF + media</small>
+                  </a>
+                  <a href={paperworkHref(selectedJob, false)}>
+                    <b>No Media</b>
+                    <small>PDF only</small>
+                  </a>
+                </div>
+                <p>{mediaMessage || "Media is saved on this device and read by the paperwork package screen."}</p>
               </section>
             </div>
           );
