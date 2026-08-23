@@ -38,6 +38,30 @@
   padding: max(10px, env(safe-area-inset-top)) 14px 8px;
   background: linear-gradient(180deg, rgba(10, 14, 24, 0.98), rgba(6, 9, 16, 0.9));
   border-bottom: 1px solid var(--fc-line);
+  max-height: 160px;
+  overflow: hidden;
+  transition: max-height 0.28s ease, opacity 0.22s ease, padding 0.28s ease, border-color 0.28s ease;
+}
+
+.fc-search-row {
+  max-height: 72px;
+  overflow: hidden;
+  transition: max-height 0.28s ease, opacity 0.22s ease, padding 0.28s ease;
+}
+
+.fc-app.fc-header-hidden .fc-topbar {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-bottom-color: transparent;
+}
+
+.fc-app.fc-header-hidden .fc-search-row {
+  max-height: 0;
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
 }
 
 .fc-topbar-row {
@@ -342,7 +366,7 @@
 }
 
 .fc-map-node.is-dark .leaflet-tile {
-  filter: saturate(1.12) contrast(1.4) brightness(0.55);
+  filter: saturate(1.08) contrast(1.06) brightness(0.95);
 }
 
 .fc-map-node.is-dark::after {

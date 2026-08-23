@@ -286,7 +286,8 @@ function LayersIcon() {
   );
 }
 
-const TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+const LIGHT_TILE_URL = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+const DARK_TILE_URL = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
 const CLUSTER_COLOR = "#38bdf8";
 
 function clusterByPixelDistance(
@@ -347,6 +348,8 @@ export default function FieldCommandClient() {
   const [scopeOpen, setScopeOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
+  const [headerHidden, setHeaderHidden] = useState(false);
+  const headerIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -461,7 +464,7 @@ export default function FieldCommandClient() {
           attributionControl: true,
         }).setView([40.72, -73.95], 10);
         mapRef.current = map;
-        tileLayerRef.current = L.tileLayer(TILE_URL, { maxZoom: 20 }).addTo(map);
+        tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20 }).addTo(map);
         layerGroupRef.current = L.layerGroup().addTo(map);
 
         renderMarkersRef.current = () => {
@@ -497,6 +500,15 @@ export default function FieldCommandClient() {
         };
 
         map.on("moveend", () => renderMarkersRef.current());
+
+        map.on("movestart zoomstart dragstart", () => {
+          if (headerIdleTimerRef.current) clearTimeout(headerIdleTimerRef.current);
+          setHeaderHidden(true);
+        });
+        map.on("moveend zoomend dragend", () => {
+          if (headerIdleTimerRef.current) clearTimeout(headerIdleTimerRef.current);
+          headerIdleTimerRef.current = setTimeout(() => setHeaderHidden(false), 1000);
+        });
       }
 
       const map = mapRef.current;
@@ -515,6 +527,11 @@ export default function FieldCommandClient() {
       cancelled = true;
     };
   }, [filteredJobs, borough, search]);
+
+  useEffect(() => {
+    if (!mapRef.current || !tileLayerRef.current) return;
+    tileLayerRef.current.setUrl(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL);
+  }, [darkTiles]);
 
   useEffect(() => {
     if (selectedJob && !filteredJobs.includes(selectedJob)) {
@@ -584,7 +601,7 @@ export default function FieldCommandClient() {
   }
 
   return (
-    <main className={`fc-app ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""}`}>
+    <main className={`fc-app ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${headerHidden && !selectedJob ? "fc-header-hidden" : ""}`}>
       <header className="fc-topbar">
         <div className="fc-topbar-row">
           <div className="fc-brand-text">
