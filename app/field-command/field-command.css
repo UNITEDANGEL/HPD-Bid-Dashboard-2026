@@ -1105,15 +1105,33 @@
 }
 
 .fc-app.fc-has-job .fc-workflow-panel {
-  gap: 7px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
   margin-top: 8px;
-  padding-bottom: 8px;
+  padding-bottom: 2px;
 }
 
 .fc-app.fc-has-job .fc-workflow-btn {
-  min-height: 64px;
+  min-height: 52px;
   border-radius: 15px;
-  padding: 7px;
+  padding: 6px;
+  gap: 1px;
+}
+
+.fc-app.fc-has-job .fc-workflow-btn span {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+}
+
+.fc-app.fc-has-job .fc-workflow-btn b {
+  font-size: 11px;
+  line-height: 1;
+}
+
+.fc-app.fc-has-job .fc-workflow-btn small {
+  font-size: 9px;
+  line-height: 1.05;
 }
 
 .fc-cluster-label {
