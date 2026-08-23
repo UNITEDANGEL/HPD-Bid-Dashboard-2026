@@ -1,224 +1,21 @@
-Fetcher run started: 2026-08-05T16:29:35.455Z
+Fetcher run started: 2026-08-23T13:26:44.632Z
 credentials.json validated as JSON.
 token.json validated as JSON.
-Credentials file exists. Starting 7-day fetcher pipeline.
-Python fetcher dependencies already available.
+Credentials file exists. Starting 14-day fetcher pipeline.
 
-========== Run Gmail fetcher for last 7 days ==========
-$ python FetchrMatcherV5.py --update --days 7
+========== Install Python fetcher dependencies ==========
+$ python -m pip install --quiet --no-cache-dir --disable-pip-version-check requests tqdm PyPDF2 google-api-python-client google-auth-oauthlib google-auth-httplib2
 
-=== FETCHR MATCHER V5 START (Last 7 Days) ===
+========== Run Gmail fetcher for last 14 days ==========
+$ python FetchrMatcherV5.py --update --days 14
 
-Ã¢Å“â€¦ Google API key loaded for geocoding.
+=== FETCHR MATCHER V5 START (Last 14 Days) ===
+
+Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/07/29 before:2026/08/06
-COA items parsed (latest per OMO): 19
-ITB items parsed (latest per OMO): 19
-Final JobRows: 19
-
-CSV saved -> D:\dev\HPD-Bid-Dashboard-2026\mereged_data_csv_2025\COA_Fetcher_2026.csv
-JSON saved -> D:\dev\HPD-Bid-Dashboard-2026\mereged_data_csv_2025\COA_Fetcher_2026.json
-
-=== FETCHR MATCHER V5 DONE ===
-
-Downloading COA messages:   0%|          | 0/19 [00:00<?, ?it/s]Downloading COA messages:   5%|▌         | 1/19 [00:00<00:02,  7.12it/s]Downloading COA messages:  11%|█         | 2/19 [00:00<00:02,  6.43it/s]Downloading COA messages:  16%|█▌        | 3/19 [00:00<00:02,  6.52it/s]Downloading COA messages:  21%|██        | 4/19 [00:00<00:02,  6.58it/s]Downloading COA messages:  26%|██▋       | 5/19 [00:00<00:02,  5.62it/s]Downloading COA messages:  32%|███▏      | 6/19 [00:00<00:02,  6.01it/s]Downloading COA messages:  37%|███▋      | 7/19 [00:01<00:01,  6.21it/s]Downloading COA messages:  42%|████▏     | 8/19 [00:01<00:01,  6.03it/s]Downloading COA messages:  47%|████▋     | 9/19 [00:01<00:01,  6.33it/s]Downloading COA messages:  53%|█████▎    | 10/19 [00:02<00:03,  2.28it/s]Downloading COA messages:  58%|█████▊    | 11/19 [00:02<00:02,  2.83it/s]Downloading COA messages:  63%|██████▎   | 12/19 [00:02<00:02,  3.49it/s]Downloading COA messages:  68%|██████▊   | 13/19 [00:02<00:01,  4.16it/s]Downloading COA messages:  74%|███████▎  | 14/19 [00:03<00:01,  4.87it/s]Downloading COA messages:  79%|███████▉  | 15/19 [00:03<00:00,  5.37it/s]Downloading COA messages:  84%|████████▍ | 16/19 [00:03<00:00,  5.75it/s]Downloading COA messages:  95%|█████████▍| 18/19 [00:03<00:00,  6.48it/s]Downloading COA messages: 100%|██████████| 19/19 [00:03<00:00,  6.18it/s]Downloading COA messages: 100%|██████████| 19/19 [00:03<00:00,  5.01it/s]
-Geocoding COA addresses:   0%|          | 0/19 [00:00<?, ?it/s]Geocoding COA addresses:   5%|▌         | 1/19 [00:00<00:14,  1.27it/s]Geocoding COA addresses:  11%|█         | 2/19 [00:01<00:12,  1.31it/s]Geocoding COA addresses:  16%|█▌        | 3/19 [00:02<00:12,  1.32it/s]Geocoding COA addresses:  21%|██        | 4/19 [00:02<00:10,  1.40it/s]Geocoding COA addresses:  26%|██▋       | 5/19 [00:03<00:09,  1.44it/s]Geocoding COA addresses:  32%|███▏      | 6/19 [00:04<00:08,  1.62it/s]Geocoding COA addresses:  37%|███▋      | 7/19 [00:04<00:07,  1.62it/s]Geocoding COA addresses:  42%|████▏     | 8/19 [00:05<00:06,  1.62it/s]Geocoding COA addresses:  47%|████▋     | 9/19 [00:05<00:06,  1.61it/s]Geocoding COA addresses:  53%|█████▎    | 10/19 [00:06<00:05,  1.55it/s]Geocoding COA addresses:  58%|█████▊    | 11/19 [00:07<00:05,  1.36it/s]Geocoding COA addresses:  63%|██████▎   | 12/19 [00:08<00:05,  1.27it/s]Geocoding COA addresses:  68%|██████▊   | 13/19 [00:09<00:04,  1.37it/s]Geocoding COA addresses:  74%|███████▎  | 14/19 [00:09<00:03,  1.44it/s]Geocoding COA addresses:  79%|███████▉  | 15/19 [00:10<00:02,  1.47it/s]Geocoding COA addresses:  84%|████████▍ | 16/19 [00:10<00:01,  1.54it/s]Geocoding COA addresses:  89%|████████▉ | 17/19 [00:11<00:01,  1.41it/s]Geocoding COA addresses:  95%|█████████▍| 18/19 [00:12<00:00,  1.52it/s]Geocoding COA addresses: 100%|██████████| 19/19 [00:12<00:00,  1.60it/s]Geocoding COA addresses: 100%|██████████| 19/19 [00:12<00:00,  1.48it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/19 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   5%|▌         | 1/19 [00:01<00:21,  1.17s/it]Fetching ITBs for COA OMOs:  11%|█         | 2/19 [00:01<00:14,  1.18it/s]Fetching ITBs for COA OMOs:  16%|█▌        | 3/19 [00:02<00:12,  1.28it/s]Fetching ITBs for COA OMOs:  21%|██        | 4/19 [00:03<00:13,  1.10it/s]Fetching ITBs for COA OMOs:  26%|██▋       | 5/19 [00:04<00:12,  1.10it/s]Fetching ITBs for COA OMOs:  32%|███▏      | 6/19 [00:05<00:13,  1.00s/it]Fetching ITBs for COA OMOs:  37%|███▋      | 7/19 [00:06<00:11,  1.03it/s]Fetching ITBs for COA OMOs:  42%|████▏     | 8/19 [00:08<00:12,  1.18s/it]Fetching ITBs for COA OMOs:  47%|████▋     | 9/19 [00:09<00:10,  1.07s/it]Fetching ITBs for COA OMOs:  53%|█████▎    | 10/19 [00:10<00:10,  1.12s/it]Fetching ITBs for COA OMOs:  58%|█████▊    | 11/19 [00:11<00:08,  1.02s/it]Fetching ITBs for COA OMOs:  63%|██████▎   | 12/19 [00:11<00:06,  1.08it/s]Fetching ITBs for COA OMOs:  68%|██████▊   | 13/19 [00:12<00:05,  1.14it/s]Fetching ITBs for COA OMOs:  74%|███████▎  | 14/19 [00:13<00:03,  1.27it/s]Fetching ITBs for COA OMOs:  79%|███████▉  | 15/19 [00:14<00:03,  1.01it/s]Fetching ITBs for COA OMOs:  84%|████████▍ | 16/19 [00:16<00:03,  1.12s/it]Fetching ITBs for COA OMOs:  89%|████████▉ | 17/19 [00:16<00:01,  1.03it/s]Fetching ITBs for COA OMOs:  95%|█████████▍| 18/19 [00:17<00:00,  1.05it/s]Fetching ITBs for COA OMOs: 100%|██████████| 19/19 [00:18<00:00,  1.19it/s]Fetching ITBs for COA OMOs: 100%|██████████| 19/19 [00:18<00:00,  1.05it/s]
+AUTH REFRESH ERROR: ('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})
 
 
-========== Safe merge fetcher output into dashboard data ==========
-$ node safe-merge-7day-fetch.js
-Safe merge complete
-Master before: [33m623[39m
-Incoming rows: [33m234[39m
-Added new OMOs: [33m1[39m
-Skipped existing OMOs: [33m233[39m
-Updated existing OMOs: [33m0[39m
-Need geocode: [33m0[39m
-Missing ITB: [33m0[39m
-Missing description: [33m1[39m
-Master after: [33m624[39m
-Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
-Report: ./data/safe_7day_merge_report.json
-
-
-========== Geocode new safe-merged jobs ==========
-$ node geocode-new-safe-fetch-jobs.js
-Need geocode: [33m0[39m
-Geocoded: [33m0[39m
-Failed: [33m0[39m
-Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
-
-
-========== Apply manual fallback geocodes ==========
-$ node manual-geocode-11-new-jobs.js
-Manual geocodes patched: [33m11[39m
-Backup: ./data/COA_Fetcher_2026.before_manual_geocode_11_new.json
-
-
-========== Apply known cleanup geocodes ==========
-$ node manual-cleanup-geocode-known-jobs.js
-Manual geocode patched: [33m0[39m
-Backup: ./data/COA_Fetcher_2026.before_manual_cleanup_geocode.json
-
-
-========== Apply known recovered Drive ITB matches ==========
-$ node patch-9-recovered-drive-itbs.js
-Recovered ITBs patched: [33m9[39m
-Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
-
-
-========== Recover descriptions from matched ITBs ==========
-$ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 1
-DESCRIPTION OK ER02390 ER02390_080426103740.pdf
-Descriptions patched: 1
-Missing PDF: 0
-Failed: 0
-Backup: data\COA_Fetcher_2026.before_deep_description_recovery.json
-
-Samples:
-{'OMO': 'ER02390', 'Address': '902 DE KALB AVENUE, 11221', 'RecoveredFrom': 'ER02390_080426103740.pdf', 'Preview': ': INSTALL LOCK SET AT BLDG ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BLDG ENTRANCE DOOR INSTALL NEW ADAMS RITE LOCK TO THE DOOR TO MAKE SEL F CLOSING AND LATCHING PROPERLY. TOTAL '}
-
-Synced 3 data file(s) to public/data.
-
-========== Render ITB page 3 assets ==========
-$ node scripts/render-itb-page3-assets.js --copy-pdfs
-{
-  "rendered": 1,
-  "reused": 615,
-  "copiedPdfs": 1,
-  "missingSource": 8,
-  "failed": 0
-}
-ITB page manifest written to D:\dev\HPD-Bid-Dashboard-2026\public\data\itb_source_manifest.json
-8 ITB refs have no source PDF yet.
-
-
-========== Sync ITB page 3 descriptions ==========
-$ python scripts/sync-itb-page3-descriptions.py
-{
-  "jobs": 624,
-  "manifestEntries": 616,
-  "descriptionsAdded": 560,
-  "legacyDescriptionReplaced": 0,
-  "missingManifestEntry": 10,
-  "extractFailed": 54
-}
-
-Synced 2 public data file(s) back to data.
-
-========== Verify mapping ==========
-$ node check-local-mapping.js
-Raw JSON rows: [33m624[39m
-2026 rows: [33m573[39m
-2026 rows with any Latitude/Longitude: [33m573[39m
-2026 rows with valid NYC coordinates: [33m573[39m
-2026 rows NOT valid mapped: [33m0[39m
-
-Not mapped sample:
-┌─────────┐
-│ (index) │
-├─────────┤
-└─────────┘
-
-
-========== Verify descriptions ==========
-$ node check-generic-descriptions.js
-Bad/boilerplate descriptions: [33m0[39m
-Missing descriptions: [33m0[39m
-Source review jobs: [33m0[39m
-
-Bad sample:
-┌─────────┐
-│ (index) │
-├─────────┤
-└─────────┘
-
-Source review sample:
-┌─────────┐
-│ (index) │
-├─────────┤
-└─────────┘
-
-Missing sample:
-┌─────────┐
-│ (index) │
-├─────────┤
-└─────────┘
-
-
-========== Verify missing ITB ==========
-$ node export-missing-itb.js
-Total jobs: [33m624[39m
-Missing ITB jobs: [33m0[39m
-Exported: ./data/missing_itb_jobs_2026.csv
-┌─────────┐
-│ (index) │
-├─────────┤
-└─────────┘
-
-
-========== Verify paperwork required data ==========
-$ node scripts/verify-paperwork-data.js --write-report
-PAPERWORK DATA QUALITY
-Total jobs: 624
-Missing addresses: 0
-Missing descriptions: 0
-Missing ITB page 3 descriptions: 7
-Bad/boilerplate descriptions: 0
-Source review jobs: 0
-Missing ITB files: 0
-Missing page 3 images: 8
-Public data in sync: yes
-
-Source review sample:
-(none)
-
-Missing address sample:
-(none)
-
-Missing description sample:
-(none)
-
-Missing ITB page 3 description sample:
-┌─────────┬───────────┬───────────────────────────────┬────────────────────────────┬───────────────────────────────┬───────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ (index) │ OMO       │ Address                       │ ITB                        │ Source                        │ Status    │ Preview                                                                                                                                        │
-├─────────┼───────────┼───────────────────────────────┼────────────────────────────┼───────────────────────────────┼───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ 0       │ [32m'ER01474'[39m │ [32m'260 PARKHILL AVENUE, 10304'[39m  │ [32m'ER01474_072426113922.pdf'[39m │ [32m'DEEP_FAX_ITB_SCOPE_RECOVERY'[39m │ [32m'MATCHED'[39m │ [32m': NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOO'[39m │
-│ 1       │ [32m'ER02022'[39m │ [32m'162-18 108 AVENUE, 11433'[39m    │ [32m'ER02022_073026021712.pdf'[39m │ [32m'DEEP_FAX_ITB_SCOPE_RECOVERY'[39m │ [32m'MATCHED'[39m │ [32m'100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to '[39m │
-│ 2       │ [32m'ER01987'[39m │ [32m'978 EAST 174 STREET, 10460'[39m  │ [32m'ER01987_073026020329.pdf'[39m │ [32m'DEEP_FAX_ITB_SCOPE_RECOVERY'[39m │ [32m'MATCHED'[39m │ [32m'100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to '[39m │
-│ 3       │ [32m'EQ32057'[39m │ [32m'63 EAST 236 STREET, 10470'[39m   │ [32m'EQ32057_072926055505.pdf'[39m │ [32m'DEEP_FAX_ITB_SCOPE_RECOVERY'[39m │ [32m'MATCHED'[39m │ [32m'100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to '[39m │
-│ 4       │ [32m'ER01923'[39m │ [32m'47 EAST 34 STREET, 10016'[39m    │ [32m'ER01923_072926025331.pdf'[39m │ [32m'DEEP_FAX_ITB_SCOPE_RECOVERY'[39m │ [32m'MATCHED'[39m │ [32m'100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to '[39m │
-│ 5       │ [32m'ER01941'[39m │ [32m'89-10 WHITNEY AVENUE, 11373'[39m │ [32m'ER01941_072926021943.pdf'[39m │ [32m'DEEP_FAX_ITB_SCOPE_RECOVERY'[39m │ [32m'MATCHED'[39m │ [32m'100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to '[39m │
-│ 6       │ [32m'ER01944'[39m │ [32m'102-43 CORONA AVENUE, 11368'[39m │ [32m'ER01944_072926021204.pdf'[39m │ [32m'DEEP_FAX_ITB_SCOPE_RECOVERY'[39m │ [32m'MATCHED'[39m │ [32m'100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to '[39m │
-└─────────┴───────────┴───────────────────────────────┴────────────────────────────┴───────────────────────────────┴───────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-
-Bad description sample:
-(none)
-PAPERWORK DATA QUALITY CHECKED
-
-PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=7.
-
-
-Fetcher run finished: 2026-08-05T16:31:44.333Z
-{
-  "fetchedCoaItems": 19,
-  "fetchedItbItems": 19,
-  "fetchedFinalJobRows": 19,
-  "addedNewOmos": null,
-  "skippedExistingOmos": null,
-  "rawRows": null,
-  "rows2026": null,
-  "mapped2026": null,
-  "notMapped2026": null,
-  "missingAddresses": 0,
-  "badDescriptions": 0,
-  "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 7,
-  "sourceReviewJobs": 0,
-  "missingPage3Images": 8,
-  "missingItbJobs": null
-}
+FAILED: Run Gmail fetcher for last 14 days failed with exit code 1
