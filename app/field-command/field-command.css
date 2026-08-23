@@ -1030,6 +1030,14 @@
   display: none;
 }
 
+.fc-app.fc-has-job {
+  padding-bottom: 0;
+}
+
+.fc-app.fc-has-job .fc-tabbar {
+  display: none;
+}
+
 .fc-app.fc-has-job .fc-map-wrap {
   margin: 6px 8px 8px;
 }
