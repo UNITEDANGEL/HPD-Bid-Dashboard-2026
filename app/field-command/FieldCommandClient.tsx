@@ -418,7 +418,9 @@ export default function FieldCommandClient() {
 
   const filteredJobs = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const exactOmoQuery = q.toUpperCase().match(/^[A-Z]{1,3}\d{4,8}$/) ? q.toUpperCase() : "";
     return jobs.filter((job) => {
+      if (exactOmoQuery && jobId(job).toUpperCase() === exactOmoQuery) return true;
       if (daysBack !== null) {
         const age = jobAgeDays(job);
         if (age === null || age > daysBack) return false;
