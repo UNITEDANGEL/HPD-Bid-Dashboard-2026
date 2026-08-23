@@ -11,6 +11,9 @@ type JobRecord = Record<string, unknown>;
 
 type BoroughKey = "MN" | "BK" | "QN" | "BX" | "SI";
 
+const FIELD_WORKFLOW_STORAGE_KEY = "hpd-field-command-workflow";
+const SHARED_WORKFLOW_STORAGE_KEY = "hpd-job-workflow-overrides-v2";
+
 const BOROUGHS: { key: BoroughKey; label: string; center: [number, number]; color: string }[] = [
   { key: "MN", label: "Manhattan", center: [40.7831, -73.9712], color: "#0a84ff" },
   { key: "BK", label: "Brooklyn", center: [40.6782, -73.9442], color: "#30d158" },
@@ -108,6 +111,41 @@ function jobBorough(job: JobRecord): BoroughKey | "NYC" {
 function jobStatus(job: JobRecord) {
   return (
     value(job, ["WorkflowStatus", "FieldOutcome", "StatusOverride", "status", "Status", "JobStatus"]) || "Active"
+  );
+}
+
+function readJsonObject(key: string) {
+  if (typeof window === "undefined") return {};
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(key) || "{}");
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function readSharedWorkflowOverrides() {
+  const parsed = readJsonObject(SHARED_WORKFLOW_STORAGE_KEY);
+  const overrides = parsed.overrides && typeof parsed.overrides === "object" && !Array.isArray(parsed.overrides)
+    ? parsed.overrides
+    : parsed;
+  return overrides as Record<string, Record<string, unknown>>;
+}
+
+function writeSharedWorkflowPatch(id: string, patch: Record<string, unknown>) {
+  if (typeof window === "undefined" || !id) return;
+  const previous = readSharedWorkflowOverrides();
+  window.localStorage.setItem(
+    SHARED_WORKFLOW_STORAGE_KEY,
+    JSON.stringify({
+      ...previous,
+      [id]: {
+        ...(previous[id] || {}),
+        ...patch,
+        updatedAt: new Date().toISOString(),
+        UpdatedAt: new Date().toISOString(),
+      },
+    })
   );
 }
 
@@ -406,14 +444,14 @@ export default function FieldCommandClient() {
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem("hpd-field-command-workflow");
+      const saved = window.localStorage.getItem(FIELD_WORKFLOW_STORAGE_KEY);
       if (saved) setWorkflowStamps(JSON.parse(saved));
     } catch {}
   }, []);
 
   useEffect(() => {
     try {
-      window.localStorage.setItem("hpd-field-command-workflow", JSON.stringify(workflowStamps));
+      window.localStorage.setItem(FIELD_WORKFLOW_STORAGE_KEY, JSON.stringify(workflowStamps));
     } catch {}
   }, [workflowStamps]);
 
@@ -674,9 +712,110 @@ export default function FieldCommandClient() {
     });
   }
 
+  function mergeWorkflowPatchIntoScreen(id: string, patch: Record<string, unknown>) {
+    setJobs((prev) => prev.map((row) => (jobId(row) === id ? { ...row, ...patch } : row)));
+    setSelectedJob((prev) => (prev && jobId(prev) === id ? { ...prev, ...patch } : prev));
+  }
+
+  function workflowPatchForAction(
+    key: "arrived" | "visit" | "work" | "status" | "complete",
+    iso: string,
+    statusLabel?: string
+  ) {
+    if (key === "arrived") {
+      return {
+        FieldArrivedAt: iso,
+        fieldArrivedAt: iso,
+        LastFieldVisitAt: iso,
+        lastFieldVisitAt: iso,
+        StatusOverride: "Arrived",
+        status: "Arrived",
+      };
+    }
+    if (key === "visit") {
+      return {
+        WorkflowStatus: "VISIT_STARTED",
+        workflowStatus: "VISIT_STARTED",
+        FieldOutcome: "VISIT_STARTED",
+        fieldOutcome: "VISIT_STARTED",
+        StatusOverride: "Visit Started",
+        status: "Visit Started",
+        VisitStartedAt: iso,
+        visitStartedAt: iso,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+      };
+    }
+    if (key === "work") {
+      return {
+        WorkflowStatus: "WORK_STARTED",
+        workflowStatus: "WORK_STARTED",
+        FieldOutcome: "WORK_STARTED",
+        fieldOutcome: "WORK_STARTED",
+        StatusOverride: "Work In Progress",
+        status: "Work In Progress",
+        JobStartedAt: iso,
+        jobStartedAt: iso,
+        ActualWorkStartDate: iso,
+        actualWorkStartDate: iso,
+        FieldTimerStartedAt: iso,
+        fieldTimerStartedAt: iso,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+      };
+    }
+    if (key === "complete") {
+      return {
+        WorkflowStatus: "WORK_COMPLETED",
+        workflowStatus: "WORK_COMPLETED",
+        FieldOutcome: "WORK_COMPLETED",
+        fieldOutcome: "WORK_COMPLETED",
+        StatusOverride: "Work Completed",
+        status: "Work Completed",
+        ActualWorkCompletionDate: iso,
+        actualWorkCompletionDate: iso,
+        JobFinishedAt: iso,
+        jobFinishedAt: iso,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+        ArchivedFromMap: true,
+      };
+    }
+    if (String(statusLabel || "").toLowerCase().includes("refused")) {
+      return {
+        WorkflowStatus: "REFUSED_ACCESS",
+        workflowStatus: "REFUSED_ACCESS",
+        FieldOutcome: "REFUSED_ACCESS",
+        fieldOutcome: "REFUSED_ACCESS",
+        StatusOverride: "Refused Access",
+        status: "Refused Access",
+        RefusalDate: iso,
+        refusalDate: iso,
+        OutcomeLockedAt: iso,
+        outcomeLockedAt: iso,
+        ArchivedFromMap: true,
+      };
+    }
+    return {
+      WorkflowStatus: "NO_ACCESS_1_WAITING_72H",
+      workflowStatus: "NO_ACCESS_1_WAITING_72H",
+      FieldOutcome: "NO_ACCESS_1_WAITING_72H",
+      fieldOutcome: "NO_ACCESS_1_WAITING_72H",
+      StatusOverride: "No Access 1st - Waiting 72h",
+      status: "No Access 1st - Waiting 72h",
+      NoAccessFirstAttemptAt: iso,
+      noAccessFirstAttemptAt: iso,
+      SecondAttemptAvailableAt: new Date(new Date(iso).getTime() + 72 * 60 * 60 * 1000).toISOString(),
+      secondAttemptAvailableAt: new Date(new Date(iso).getTime() + 72 * 60 * 60 * 1000).toISOString(),
+      OutcomeLockedAt: iso,
+      outcomeLockedAt: iso,
+    };
+  }
+
   function saveWorkflowStamp(job: JobRecord, key: "arrived" | "visit" | "work" | "status", statusLabel?: string) {
     const id = jobId(job);
     const now = new Date().toISOString();
+    const patch = workflowPatchForAction(key, now, statusLabel);
     setWorkflowStamps((prev) => ({
       ...prev,
       [id]: {
@@ -685,6 +824,8 @@ export default function FieldCommandClient() {
         ...(statusLabel ? { status: statusLabel } : {}),
       },
     }));
+    writeSharedWorkflowPatch(id, patch);
+    mergeWorkflowPatchIntoScreen(id, patch);
   }
 
   async function refreshMediaCounts(job: JobRecord) {
@@ -735,7 +876,44 @@ export default function FieldCommandClient() {
     const typed = window.prompt(`Type CLEAR to reset saved workflow for ${id}.`);
     if (typed !== "CLEAR") return;
     setWorkflowStamps((prev) => ({ ...prev, [id]: {} }));
+    writeSharedWorkflowPatch(id, { __clearWorkflow: true });
+    mergeWorkflowPatchIntoScreen(id, {
+      WorkflowStatus: "",
+      workflowStatus: "",
+      FieldOutcome: "",
+      fieldOutcome: "",
+      StatusOverride: "",
+      status: "Pending",
+      FieldArrivedAt: "",
+      fieldArrivedAt: "",
+      LastFieldVisitAt: "",
+      lastFieldVisitAt: "",
+      VisitStartedAt: "",
+      visitStartedAt: "",
+      JobStartedAt: "",
+      jobStartedAt: "",
+      ActualWorkStartDate: "",
+      actualWorkStartDate: "",
+      OutcomeLockedAt: "",
+      outcomeLockedAt: "",
+    });
     setMediaMessage("Workflow cleared. Saved media stays unless you remove it from the media/package screen.");
+  }
+
+  function completeWorkForPackage(job: JobRecord) {
+    const id = jobId(job);
+    const now = new Date().toISOString();
+    const patch = workflowPatchForAction("complete", now);
+    setWorkflowStamps((prev) => ({
+      ...prev,
+      [id]: {
+        ...(prev[id] || {}),
+        work: prev[id]?.work || now,
+        status: "Work Completed",
+      },
+    }));
+    writeSharedWorkflowPatch(id, patch);
+    mergeWorkflowPatchIntoScreen(id, patch);
   }
 
   function paperworkOutcome(stamps: { arrived?: string; visit?: string; work?: string; status?: string }) {
@@ -1032,11 +1210,11 @@ export default function FieldCommandClient() {
                     <b>After</b>
                     <small>{mediaBusy === "after" ? "Saving..." : `${counts.after} saved`}</small>
                   </button>
-                  <a href={paperworkHref(selectedJob, true)}>
+                  <a href={paperworkHref(selectedJob, true)} onClick={() => completeWorkForPackage(selectedJob)}>
                     <b>Package</b>
                     <small>PDF + media</small>
                   </a>
-                  <a href={paperworkHref(selectedJob, false)}>
+                  <a href={paperworkHref(selectedJob, false)} onClick={() => completeWorkForPackage(selectedJob)}>
                     <b>No Media</b>
                     <small>PDF only</small>
                   </a>
