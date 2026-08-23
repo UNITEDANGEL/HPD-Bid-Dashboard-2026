@@ -1142,7 +1142,22 @@
 }
 
 .fc-app .plan-my-day {
+  position: absolute;
+  left: 20px;
+  right: 20px;
   bottom: calc(88px + env(safe-area-inset-bottom));
+  width: auto;
+}
+
+.fc-app .plan-my-day .plan-my-day__toggle {
+  border-radius: 18px;
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(8, 14, 26, 0.86);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(10, 132, 255, 0.12);
+}
+
+.fc-app .plan-my-day .plan-my-day__panel {
+  border-radius: 20px;
 }
 
 .fc-app .plan-my-day.is-open .plan-my-day__panel {
