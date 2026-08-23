@@ -226,6 +226,33 @@ function jobLatLng(job: JobRecord) {
   return { lat, lng };
 }
 
+function distanceMiles(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+  const toRad = (n: number) => (n * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const lat1 = toRad(a.lat);
+  const lat2 = toRad(b.lat);
+  const h =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return 2 * 3958.8 * Math.asin(Math.sqrt(h));
+}
+
+function googleRouteHref(points: { lat: number; lng: number }[]) {
+  if (points.length < 2) return "https://www.google.com/maps";
+  const [origin, ...rest] = points;
+  const destination = rest[rest.length - 1];
+  const waypoints = rest.slice(0, -1);
+  const params = new URLSearchParams({
+    api: "1",
+    travelmode: "driving",
+    origin: `${origin.lat},${origin.lng}`,
+    destination: `${destination.lat},${destination.lng}`,
+  });
+  if (waypoints.length) params.set("waypoints", waypoints.map((p) => `${p.lat},${p.lng}`).join("|"));
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
 function BellIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -335,6 +362,7 @@ export default function FieldCommandClient() {
   const mapRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
   const layerGroupRef = useRef<any>(null);
+  const routeLayerRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
   const pointsRef = useRef<{ job: JobRecord; lng: number; lat: number }[]>([]);
   const renderMarkersRef = useRef<() => void>(() => {});
@@ -347,6 +375,7 @@ export default function FieldCommandClient() {
   const [locateStatus, setLocateStatus] = useState<"idle" | "loading" | "error">("idle");
   const [scopeOpen, setScopeOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [routeSummary, setRouteSummary] = useState<{ stops: number; miles: number; firstStop: string; href: string } | null>(null);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
   const [headerHidden, setHeaderHidden] = useState(false);
   const headerIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -534,6 +563,14 @@ export default function FieldCommandClient() {
   }, [darkTiles]);
 
   useEffect(() => {
+    setRouteSummary(null);
+    if (routeLayerRef.current) {
+      routeLayerRef.current.remove();
+      routeLayerRef.current = null;
+    }
+  }, [borough, status, search]);
+
+  useEffect(() => {
     if (selectedJob && !filteredJobs.includes(selectedJob)) {
       setSelectedJob(null);
     }
@@ -585,6 +622,38 @@ export default function FieldCommandClient() {
       () => setLocateStatus("error"),
       { enableHighAccuracy: true, timeout: 8000 }
     );
+  }
+
+  async function previewLocalRoute() {
+    if (!mapRef.current || !pointsRef.current.length) return;
+    const leafletModule = await import("leaflet");
+    const L = (leafletModule as any).default || leafletModule;
+    const center = userMarkerRef.current?.getLatLng?.() || mapRef.current.getCenter();
+    const origin = { lat: Number(center.lat), lng: Number(center.lng) };
+    const stops = pointsRef.current
+      .filter(({ job }) => {
+        const age = jobAgeDays(job);
+        return age === null || age <= 90;
+      })
+      .map((point) => ({ ...point, miles: distanceMiles(origin, { lat: point.lat, lng: point.lng }) }))
+      .sort((a, b) => a.miles - b.miles)
+      .slice(0, 6);
+
+    if (!stops.length) return;
+    if (routeLayerRef.current) routeLayerRef.current.remove();
+    const routePoints = [origin, ...stops.map((point) => ({ lat: point.lat, lng: point.lng }))];
+    const latLngs = routePoints.map((point) => [point.lat, point.lng]);
+    routeLayerRef.current = L.featureGroup([
+      L.polyline(latLngs, { color: "#020617", weight: 10, opacity: 0.72, lineCap: "round", lineJoin: "round" }),
+      L.polyline(latLngs, { color: "#1d8cff", weight: 5, opacity: 0.94, dashArray: "12 10", lineCap: "round", lineJoin: "round" }),
+    ]).addTo(mapRef.current);
+    mapRef.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [42, 42], maxZoom: 14 });
+    setRouteSummary({
+      stops: stops.length,
+      miles: stops.reduce((sum, stop) => sum + stop.miles, 0),
+      firstStop: jobId(stops[0].job),
+      href: googleRouteHref(routePoints),
+    });
   }
 
   function saveWorkflowStamp(job: JobRecord, key: "arrived" | "visit" | "work" | "status", statusLabel?: string) {
@@ -701,7 +770,22 @@ export default function FieldCommandClient() {
           >
             <LayersIcon />
           </button>
+          <button
+            type="button"
+            className={`fc-map-fab fc-route-fab ${routeSummary ? "is-active" : ""}`}
+            aria-label="Preview smart route"
+            onClick={previewLocalRoute}
+          >
+            R
+          </button>
         </div>
+        {routeSummary ? (
+          <a className="fc-route-summary" href={routeSummary.href} target="_blank" rel="noreferrer">
+            <strong>{routeSummary.stops} stops</strong>
+            <span>{routeSummary.miles.toFixed(1)} mi nearby</span>
+            <small>First: {routeSummary.firstStop}</small>
+          </a>
+        ) : null}
         <div className="fc-visible-badge">
           <strong>{filteredJobs.length}</strong>
           <span>Visible Jobs</span>
