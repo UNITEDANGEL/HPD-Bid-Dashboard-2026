@@ -1,4 +1,4 @@
-Fetcher run started: 2026-08-29T04:07:02.307Z
+Fetcher run started: 2026-08-30T01:12:00.070Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -15,7 +15,7 @@ $ python FetchrMatcherV5.py --update --days 14
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/08/15 before:2026/08/30
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/08/16 before:2026/08/31
 COA items parsed (latest per OMO): 0
 No OMOs from COA Ã¢â‚¬â€ skipping ITB lookup.
 Final JobRows: 0
@@ -208,7 +208,7 @@ PAPERWORK DATA QUALITY CHECKED
 PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=16.
 
 
-Fetcher run finished: 2026-08-29T04:07:08.489Z
+Fetcher run finished: 2026-08-30T01:12:10.221Z
 {
   "fetchedCoaItems": 0,
   "fetchedItbItems": null,
