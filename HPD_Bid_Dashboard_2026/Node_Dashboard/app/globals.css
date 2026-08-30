@@ -5494,7 +5494,9 @@ tbody tr:hover {
   }
 
   .mobile-map-shell .map-borough-label-icon,
-  .mobile-map-shell .borough-label-icon {
+  .mobile-map-shell .borough-label-icon,
+  .mobile-map-shell .borough-overlay,
+  .mobile-map-shell .borough-label {
     display: none;
   }
 
