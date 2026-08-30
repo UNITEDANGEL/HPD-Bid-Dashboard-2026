@@ -639,6 +639,86 @@
   flex: 0 0 auto;
 }
 
+/* Jobs list page */
+.fc-jobs-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 14px 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.fc-jobs-empty {
+  text-align: center;
+  color: var(--fc-secondary);
+  font-size: 13px;
+  padding: 40px 20px;
+}
+
+.fc-job-card {
+  text-align: left;
+  border: 1px solid var(--fc-line);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.fc-job-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fc-job-card-id {
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.fc-job-card-status {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: #fff;
+  flex: 0 0 auto;
+}
+
+.fc-job-card-address {
+  margin: 0;
+  font-size: 13px;
+  color: var(--fc-secondary);
+  line-height: 1.35;
+}
+
+.fc-job-card-tags {
+  display: flex;
+  gap: 6px;
+}
+
+.fc-job-card-tag {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--fc-secondary);
+  background: rgba(255, 255, 255, 0.07);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.fc-job-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: rgba(2, 4, 10, 0.6);
+}
+
 .fc-job-sheet {
   position: absolute;
   left: 10px;
