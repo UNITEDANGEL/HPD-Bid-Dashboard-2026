@@ -1,4 +1,4 @@
-Fetcher run started: 2026-08-23T23:28:54.218Z
+Fetcher run started: 2026-08-30T01:12:00.070Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -15,28 +15,27 @@ $ python FetchrMatcherV5.py --update --days 14
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/08/09 before:2026/08/24
-COA items parsed (latest per OMO): 4
-ITB items parsed (latest per OMO): 4
-Final JobRows: 4
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/08/16 before:2026/08/31
+COA items parsed (latest per OMO): 0
+No OMOs from COA Ã¢â‚¬â€ skipping ITB lookup.
+Final JobRows: 0
 
 CSV saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.csv
 JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.json
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/4 [00:00<?, ?it/s]Downloading COA messages:  25%|██▌       | 1/4 [00:00<00:00,  6.75it/s]Downloading COA messages:  50%|█████     | 2/4 [00:00<00:00,  8.27it/s]Downloading COA messages:  75%|███████▌  | 3/4 [00:00<00:00,  8.71it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00,  8.08it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00,  8.08it/s]
-Geocoding COA addresses:   0%|          | 0/4 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 4/4 [00:00<00:00, 101067.57it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/4 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 1/4 [00:00<00:02,  1.48it/s]Fetching ITBs for COA OMOs:  50%|█████     | 2/4 [00:01<00:01,  1.87it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 3/4 [00:01<00:00,  2.01it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:02<00:00,  1.92it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:02<00:00,  1.88it/s]
+Downloading COA messages: 0it [00:00, ?it/s]Downloading COA messages: 0it [00:00, ?it/s]
+Geocoding COA addresses: 0it [00:00, ?it/s]Geocoding COA addresses: 0it [00:00, ?it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
 Safe merge complete
 Master before: 632
-Incoming rows: 4
+Incoming rows: 0
 Added new OMOs: 0
-Skipped existing OMOs: 4
+Skipped existing OMOs: 0
 Updated existing OMOs: 0
 Need geocode: 0
 Missing ITB: 0
@@ -86,34 +85,16 @@ Synced 3 data file(s) to public/data.
 
 ========== Render ITB page 3 assets ==========
 $ node scripts/render-itb-page3-assets.js --copy-pdfs
-/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:125
-  if (result.error) throw result.error;
-                    ^
-
-Error: spawnSync pdfinfo ENOENT
-    at Object.spawnSync (node:internal/child_process:1160:20)
-    at spawnSync (node:child_process:928:24)
-    at readPdfPageCount (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:124:18)
-    at cachedPdfPageCount (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:249:34)
-    at withPageCount (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:258:16)
-    at findUsableSource (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:264:17)
-    at Object.<anonymous> (/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/scripts/render-itb-page3-assets.js:324:32)
-    at Module._compile (node:internal/modules/cjs/loader:1872:14)
-    at Object..js (node:internal/modules/cjs/loader:2003:10)
-    at Module.load (node:internal/modules/cjs/loader:1594:32) {
-  errno: -2,
-  code: 'ENOENT',
-  syscall: 'spawnSync pdfinfo',
-  path: 'pdfinfo',
-  spawnargs: [
-    '/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/ITB_Downloads_V5/ER03099_081326043154.pdf'
-  ]
+{
+  "rendered": 0,
+  "reused": 605,
+  "copiedPdfs": 0,
+  "missingSource": 27,
+  "failed": 0
 }
+ITB page manifest written to /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/public/data/itb_source_manifest.json
+27 ITB refs have no source PDF yet.
 
-Node.js v24.19.0
-
-WARNING: Render ITB page 3 assets did not complete: Render ITB page 3 assets failed with exit code 1
-Continuing fetcher run; paperwork data quality checks will report any missing page images.
 
 ========== Sync ITB page 3 descriptions ==========
 $ python scripts/sync-itb-page3-descriptions.py
@@ -227,13 +208,13 @@ PAPERWORK DATA QUALITY CHECKED
 PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=16.
 
 
-Fetcher run finished: 2026-08-23T23:29:07.002Z
+Fetcher run finished: 2026-08-30T01:12:10.221Z
 {
-  "fetchedCoaItems": 4,
-  "fetchedItbItems": 4,
-  "fetchedFinalJobRows": 4,
+  "fetchedCoaItems": 0,
+  "fetchedItbItems": null,
+  "fetchedFinalJobRows": 0,
   "addedNewOmos": 0,
-  "skippedExistingOmos": 4,
+  "skippedExistingOmos": 0,
   "rawRows": 632,
   "rows2026": 581,
   "mapped2026": 581,
