@@ -47,7 +47,7 @@ const CHART_PERIODS: ChartPeriod[] = ["Last 12 Months", "2026 YTD", "Last 90 Day
 const DATE_RANGE_OPTIONS: Array<{ value: DateRangeView; label: string; title: string }> = [
   { value: "30d", label: "30D", title: "Last 30 days" },
   { value: "60d", label: "60D", title: "Last 60 days" },
-  { value: "all", label: "All", title: "All loaded jobs" },
+  { value: "all", label: "All", title: "All 2026 jobs" },
 ];
 const DAY_PRESETS = [7, 14, 30, 60, 90, 180];
 const DEFAULT_CUSTOM_DAYS = 90;
@@ -1963,7 +1963,7 @@ export function JobsMapBoard({ jobs }: Props) {
                       className={dateRange === "all" ? "is-active" : ""}
                       onClick={() => applyDaysFilter(true)}
                     >
-                      All loaded jobs ({allDateCount})
+                      All 2026 jobs ({allDateCount})
                     </button>
                     {DAY_PRESETS.map((days) => (
                       <button
@@ -2054,7 +2054,7 @@ export function JobsMapBoard({ jobs }: Props) {
                       setActivePanel("");
                     }}
                   >
-                    <span>All loaded jobs</span>
+                    <span>All 2026 jobs</span>
                     <strong>{allDateCount}</strong>
                   </button>
                 </div>
