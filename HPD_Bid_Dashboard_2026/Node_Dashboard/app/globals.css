@@ -5415,24 +5415,24 @@ tbody tr:hover {
   }
 
   .mobile-borough-tabs {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 5px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
     overflow: visible;
-    padding: 0 8px 5px;
+    padding: 0 8px 4px;
   }
 
   .mobile-borough-pill {
-    min-height: 40px;
-    padding: 4px 3px;
-    border-radius: 13px;
+    min-height: 38px;
+    padding: 4px 2px;
+    border-radius: 12px;
   }
 
   .mobile-borough-pill strong {
-    font-size: 0.62rem;
+    font-size: 0.5rem;
   }
 
   .mobile-borough-pill span {
-    font-size: 0.64rem;
+    font-size: 0.58rem;
   }
 
   .mobile-filter-row {
@@ -5443,7 +5443,7 @@ tbody tr:hover {
 
   .mobile-status-compact button,
   .mobile-days-compact button {
-    min-height: 44px;
+    min-height: 40px;
     padding: 6px 9px;
     border-radius: 14px;
   }
@@ -5462,7 +5462,7 @@ tbody tr:hover {
 
   .mobile-search {
     grid-template-columns: 22px minmax(0, 1fr) 38px;
-    min-height: 46px;
+    min-height: 44px;
     margin: 0 8px;
     padding: 0 8px 0 13px;
     border-radius: 17px;
@@ -5486,7 +5486,7 @@ tbody tr:hover {
   }
 
   .mobile-map-shell {
-    inset: 304px 0 72px;
+    inset: 228px 0 72px;
   }
 
   .mobile-map-data-badge {
@@ -5514,8 +5514,13 @@ tbody tr:hover {
   }
 
   .visible-count-button {
-    top: 166px;
-    height: 58px;
+    top: auto;
+    right: auto;
+    bottom: 8px;
+    left: 8px;
+    width: 72px;
+    height: 46px;
+    border-radius: 16px;
   }
 
   .mobile-job-sheet,
@@ -5525,7 +5530,7 @@ tbody tr:hover {
     right: 8px;
     bottom: 68px;
     left: 8px;
-    max-height: min(400px, calc(100svh - 250px));
+    max-height: min(430px, calc(100svh - 210px));
     padding: 10px;
     border-radius: 20px;
   }
@@ -5537,7 +5542,7 @@ tbody tr:hover {
   }
 
   .mobile-borough-pill strong {
-    font-size: 0.56rem;
+    font-size: 0.46rem;
   }
 
   .mobile-status-compact strong,
@@ -5546,6 +5551,6 @@ tbody tr:hover {
   }
 
   .mobile-map-shell {
-    inset: 308px 0 72px;
+    inset: 232px 0 72px;
   }
 }
