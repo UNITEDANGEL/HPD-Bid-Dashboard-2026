@@ -539,12 +539,15 @@ export function JobsMapBoard({ jobs }: Props) {
   const boroughFocusCenter = borough ? BOROUGH_CENTERS[canonicalBorough(borough)] || null : null;
   const mapFocusCenter = userLocation || boroughFocusCenter;
   const mapFocusZoom = userLocation ? 15 : undefined;
+  const mobileBoroughBase = dateScopedJobs
+    .filter((job) => statusMatches(job, statusView))
+    .filter((job) => matchesJobSearch(job, query));
   const mobileBoroughStats = [
-    { key: "", label: "All", count: dateScopedJobs.length },
+    { key: "", label: "All", count: mobileBoroughBase.length },
     ...NYC_BOROUGHS.map((name) => ({
       key: name,
       label: shortBoroughLabel(name),
-      count: dateScopedJobs.filter((job) => job.borough === name).length,
+      count: mobileBoroughBase.filter((job) => job.borough === name).length,
     })),
   ];
   const mobileStatusBase = dateScopedJobs
@@ -599,6 +602,13 @@ export function JobsMapBoard({ jobs }: Props) {
     { label: "All 2026", count: allDateCount, onClick: () => applyDaysFilter(true) },
   ];
   const unmappedPreview = unmappedJobs.slice(0, 4).map((job) => job.id).filter(Boolean).join(", ");
+  const mobileVisibleLabel = query.trim()
+    ? "Matches"
+    : statusView !== "All"
+      ? `${statusView} Jobs`
+      : borough
+        ? `${shortBoroughLabel(borough)} Jobs`
+        : `${dateRangeLabel(dateRange, customDays)} Jobs`;
   const syncTitle = hasManualFeed && !syncState.configured
     ? "Manual Feed Ready"
     : !syncState.configured
@@ -1574,7 +1584,7 @@ export function JobsMapBoard({ jobs }: Props) {
               <span className="mobile-live-line">
                 <i aria-hidden="true" />
                 Live
-                <small>{dateScopedJobs.length} {dateRangeLabel(dateRange, customDays)} Jobs</small>
+                <small>{filtered.length} {mobileVisibleLabel}</small>
               </span>
               <span className={`mobile-sync-inline is-${syncState.status}`}>
                 <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
@@ -1693,7 +1703,7 @@ export function JobsMapBoard({ jobs }: Props) {
           <button type="button" className="floating-map-button locate-icon" aria-label="Locate me" onClick={locateUser} />
           <button type="button" className="visible-count-button" aria-label="Open visible jobs" onClick={() => setActivePanel("jobs")}>
             <strong>{filtered.length}</strong>
-            <span>{dateRangeLabel(dateRange, customDays)} Jobs</span>
+            <span>{mobileVisibleLabel}</span>
           </button>
         </div>
 
