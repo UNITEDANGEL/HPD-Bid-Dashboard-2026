@@ -421,7 +421,7 @@
 }
 
 .fc-map-node.is-dark .leaflet-tile {
-  filter: saturate(0.94) contrast(1.12) brightness(0.76);
+  filter: saturate(1.08) contrast(1.05) brightness(0.96);
 }
 
 .fc-map-node.is-dark::after {
