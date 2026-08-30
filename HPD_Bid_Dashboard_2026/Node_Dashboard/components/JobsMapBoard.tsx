@@ -566,17 +566,39 @@ export function JobsMapBoard({ jobs }: Props) {
     days,
     count: dateRangeBase.filter((job) => dateRangeMatches(job, "custom", dateRangeAnchor, days)).length,
   }));
+  const hasManualFeed = manualFeedUrl.trim().length > 0;
+  const all2026MappableCount = mappableJobs.filter((job) => dateRangeMatches(job, "all", dateRangeAnchor, customDays)).length;
+  const unmappedJobs = effectiveJobs.filter((job) => !isActiveMapJob(job));
+  const healthFeedMode = syncState.configured
+    ? "Live feed connected"
+    : hasManualFeed
+      ? `${manualFeedType.toUpperCase()} URL ready`
+      : "Bundled data only";
   const dataHealthStats = [
-    { label: "Loaded", value: effectiveJobs.length },
-    { label: "Mapped", value: mappableJobs.length },
+    { label: "2026 Jobs", value: all2026MappableCount },
     { label: "Visible", value: filtered.length },
+    { label: "Mapped", value: mappableJobs.length },
+    { label: "Unmapped", value: unmappedJobs.length },
     { label: dateRangeLabel(dateRange, customDays), value: dateScopedJobs.length },
+    { label: "Loaded", value: effectiveJobs.length },
   ];
   const dataStatusStats = STATUS_FILTERS.filter((status) => status !== "All").map((status) => ({
     status,
-    count: dateRangeBase.filter((job) => statusMatches(job, status)).length,
+    count: mobileStatusBase.filter((job) => statusMatches(job, status)).length,
   }));
-  const hasManualFeed = manualFeedUrl.trim().length > 0;
+  const dataHealthDetails = [
+    { label: "Source", value: syncState.source || "Bundled JSON" },
+    { label: "Last Fetch", value: formatSyncTime(syncState.lastSyncAt) },
+    { label: "Feed", value: healthFeedMode },
+    { label: "Status", value: syncState.message || "Data source checked." },
+  ];
+  const healthDateStats = [
+    { label: `${customDays} days`, count: customDateCount, onClick: () => applyDaysFilter(false) },
+    { label: "30 days", count: dayPresetStats.find((item) => item.days === 30)?.count || 0, onClick: () => applyDaysFilter(false, 30) },
+    { label: "60 days", count: dayPresetStats.find((item) => item.days === 60)?.count || 0, onClick: () => applyDaysFilter(false, 60) },
+    { label: "All 2026", count: allDateCount, onClick: () => applyDaysFilter(true) },
+  ];
+  const unmappedPreview = unmappedJobs.slice(0, 4).map((job) => job.id).filter(Boolean).join(", ");
   const syncTitle = hasManualFeed && !syncState.configured
     ? "Manual Feed Ready"
     : !syncState.configured
@@ -2270,6 +2292,14 @@ export function JobsMapBoard({ jobs }: Props) {
                     </div>
                   ))}
                 </div>
+                <div className="data-range-actions" aria-label="Quick date range checks">
+                  {healthDateStats.map((item) => (
+                    <button key={item.label} type="button" onClick={item.onClick}>
+                      <span>{item.label}</span>
+                      <strong>{item.count}</strong>
+                    </button>
+                  ))}
+                </div>
                 <div className="data-status-strip" aria-label="Status counts in current map range">
                   {dataStatusStats.map((item) => (
                     <span key={item.status}>
@@ -2277,6 +2307,19 @@ export function JobsMapBoard({ jobs }: Props) {
                       {item.status}
                     </span>
                   ))}
+                </div>
+                <div className="data-health-details" aria-label="Data source details">
+                  {dataHealthDetails.map((item) => (
+                    <div key={item.label}>
+                      <span>{item.label}</span>
+                      <strong>{item.value}</strong>
+                    </div>
+                  ))}
+                </div>
+                <div className={unmappedJobs.length ? "data-health-note is-warning" : "data-health-note is-good"}>
+                  {unmappedJobs.length
+                    ? `Missing coordinates: ${unmappedPreview || `${unmappedJobs.length} records`}${unmappedJobs.length > 4 ? "..." : ""}`
+                    : "All loaded jobs have map coordinates."}
                 </div>
                 <div className="drawer-actions is-grid">
                   <a href="/api/jobs" target="_blank" rel="noreferrer">Open jobs API</a>

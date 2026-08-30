@@ -4895,13 +4895,13 @@ tbody tr:hover {
 
 .data-health-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
 .data-health-grid div {
   min-width: 0;
-  padding: 10px 8px;
+  padding: 12px 10px;
   border: 1px solid rgba(151, 177, 212, 0.18);
   border-radius: 14px;
   background: rgba(6, 18, 34, 0.68);
@@ -4945,6 +4945,87 @@ tbody tr:hover {
 .data-status-strip strong {
   color: #ffffff;
   font-size: 0.78rem;
+}
+
+.data-range-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.data-range-actions button {
+  display: grid;
+  gap: 3px;
+  place-items: center;
+  min-height: 48px;
+  border: 1px solid rgba(47, 156, 255, 0.24);
+  border-radius: 13px;
+  background: rgba(5, 20, 38, 0.78);
+  color: #ffffff;
+}
+
+.data-range-actions span {
+  color: #8ecbff;
+  font-size: 0.62rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.data-range-actions strong {
+  font-size: 0.9rem;
+}
+
+.data-health-details {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid rgba(151, 177, 212, 0.18);
+  border-radius: 14px;
+  background: rgba(3, 12, 24, 0.62);
+}
+
+.data-health-details div {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.data-health-details span {
+  color: #8da3bd;
+  font-size: 0.64rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.data-health-details strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: #edf7ff;
+  font-size: 0.74rem;
+  line-height: 1.25;
+}
+
+.data-health-note {
+  padding: 10px 11px;
+  border: 1px solid rgba(151, 177, 212, 0.18);
+  border-radius: 14px;
+  color: #dce8f8;
+  font-size: 0.76rem;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.data-health-note.is-good {
+  border-color: rgba(45, 212, 125, 0.24);
+  background: rgba(45, 212, 125, 0.08);
+  color: #9dffc7;
+}
+
+.data-health-note.is-warning {
+  border-color: rgba(255, 159, 67, 0.28);
+  background: rgba(255, 159, 67, 0.08);
+  color: #ffd8a8;
 }
 
 @media (max-width: 760px) {
