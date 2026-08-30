@@ -5376,3 +5376,176 @@ tbody tr:hover {
     inset: 330px 0 66px;
   }
 }
+
+/* Final iPhone field-map polish: keep every control above the map, with no floating data card. */
+@media (max-width: 760px) {
+  .mobile-field {
+    padding-top: 4px;
+    padding-bottom: 78px;
+  }
+
+  .mobile-command-card {
+    min-height: 78px;
+    margin: 4px 8px 6px;
+    padding: 7px 9px;
+    border-radius: 18px;
+  }
+
+  .mobile-command-brand {
+    gap: 8px;
+  }
+
+  .mobile-hpd-shield {
+    width: 34px;
+    height: 40px;
+  }
+
+  .mobile-command-brand h1 {
+    font-size: 1.18rem;
+  }
+
+  .mobile-sync-inline small {
+    max-width: 142px;
+  }
+
+  .mobile-notify-button,
+  .mobile-menu-button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .mobile-borough-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    overflow: visible;
+    padding: 0 8px 5px;
+  }
+
+  .mobile-borough-pill {
+    min-height: 40px;
+    padding: 4px 3px;
+    border-radius: 13px;
+  }
+
+  .mobile-borough-pill strong {
+    font-size: 0.62rem;
+  }
+
+  .mobile-borough-pill span {
+    font-size: 0.64rem;
+  }
+
+  .mobile-filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 0 8px 6px;
+  }
+
+  .mobile-status-compact button,
+  .mobile-days-compact button {
+    min-height: 44px;
+    padding: 6px 9px;
+    border-radius: 14px;
+  }
+
+  .mobile-status-compact span,
+  .mobile-status-compact em,
+  .mobile-days-compact span,
+  .mobile-days-compact em {
+    font-size: 0.6rem;
+  }
+
+  .mobile-status-compact strong,
+  .mobile-days-compact strong {
+    font-size: 0.82rem;
+  }
+
+  .mobile-search {
+    grid-template-columns: 22px minmax(0, 1fr) 38px;
+    min-height: 46px;
+    margin: 0 8px;
+    padding: 0 8px 0 13px;
+    border-radius: 17px;
+  }
+
+  .mobile-search input {
+    font-size: 0.94rem;
+  }
+
+  .mobile-search-filter {
+    position: relative;
+    overflow: hidden;
+    width: 36px;
+    height: 36px;
+  }
+
+  .mobile-search-filter::before,
+  .mobile-search-filter::after {
+    left: 10px;
+    right: 10px;
+  }
+
+  .mobile-map-shell {
+    inset: 304px 0 72px;
+  }
+
+  .mobile-map-data-badge {
+    display: none;
+  }
+
+  .mobile-map-shell .map-borough-label-icon,
+  .mobile-map-shell .borough-label-icon {
+    display: none;
+  }
+
+  .floating-map-button,
+  .visible-count-button {
+    right: 8px;
+    width: 46px;
+    height: 46px;
+  }
+
+  .layers-icon {
+    top: 58px;
+  }
+
+  .locate-icon {
+    top: 112px;
+  }
+
+  .visible-count-button {
+    top: 166px;
+    height: 58px;
+  }
+
+  .mobile-job-sheet,
+  .mobile-job-sheet.is-job-command,
+  .mobile-job-sheet.is-summary,
+  .mobile-job-sheet.is-empty {
+    right: 8px;
+    bottom: 68px;
+    left: 8px;
+    max-height: min(400px, calc(100svh - 250px));
+    padding: 10px;
+    border-radius: 20px;
+  }
+}
+
+@media (max-width: 380px) {
+  .mobile-command-brand h1 {
+    font-size: 1.06rem;
+  }
+
+  .mobile-borough-pill strong {
+    font-size: 0.56rem;
+  }
+
+  .mobile-status-compact strong,
+  .mobile-days-compact strong {
+    font-size: 0.74rem;
+  }
+
+  .mobile-map-shell {
+    inset: 308px 0 72px;
+  }
+}
