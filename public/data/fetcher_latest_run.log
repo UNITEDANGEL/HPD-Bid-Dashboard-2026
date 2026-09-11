@@ -1,4 +1,4 @@
-Fetcher run started: 2026-09-10T00:58:38.945Z
+Fetcher run started: 2026-09-11T00:55:26.355Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -15,7 +15,7 @@ $ python FetchrMatcherV5.py --update --days 14
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-AUTH REFRESH ERROR: ('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})
+AUTH REFRESH ERROR: ('invalid_grant: Bad Request', {'error': 'invalid_grant', 'error_description': 'Bad Request'})
 AUTH ERROR: Saved Gmail token expired or was revoked. Recreate token.json locally, then update the GOOGLE_TOKEN_JSON GitHub secret.
 
 
