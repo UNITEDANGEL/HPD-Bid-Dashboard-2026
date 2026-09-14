@@ -1555,12 +1555,12 @@ tbody tr:hover {
   display: grid;
   place-items: center;
   flex: 0 0 auto;
-  min-width: 58px;
-  width: auto;
+  width: 42px;
+  min-width: 42px;
   height: 42px;
-  padding: 0 10px 8px;
+  padding: 0 0 7px;
   border: 3px solid color-mix(in srgb, var(--pin-color), #ffffff 32%);
-  border-radius: 16px;
+  border-radius: 999px;
   background:
     radial-gradient(circle at 45% 28%, rgba(255, 255, 255, 0.28), transparent 34%),
     var(--pin-color);
@@ -1574,16 +1574,27 @@ tbody tr:hover {
   pointer-events: auto;
 }
 
+.job-cluster.shows-date {
+  min-width: 58px;
+  width: auto;
+  padding: 0 10px 8px;
+  border-radius: 16px;
+}
+
 .job-cluster strong {
   max-width: 58px;
   overflow: hidden;
   margin-top: -1px;
   color: #ffffff;
-  font-size: 0.68rem;
+  font-size: 0.88rem;
   font-weight: 950;
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.job-cluster.shows-date strong {
+  font-size: 0.68rem;
 }
 
 .job-cluster-count {
@@ -9224,4 +9235,255 @@ body:has(.command-app.is-phone-preview) .page-frame {
 .command-app.is-phone-preview .job-card-next-actions button:disabled {
   cursor: wait;
   opacity: 0.68;
+}
+
+@media (max-width: 760px) {
+  .command-app:not(.is-phone-preview) {
+    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
+    background: #02070d;
+  }
+
+  .command-app:not(.is-phone-preview) .desktop-dashboard {
+    display: none;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-field {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    padding: max(14px, env(safe-area-inset-top)) 0 calc(62px + env(safe-area-inset-bottom));
+    overflow: hidden;
+    background: #02070d;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-field::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    z-index: 410;
+    height: 174px;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(2, 7, 13, 0.86), rgba(2, 7, 13, 0.46) 58%, rgba(2, 7, 13, 0));
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-map-shell {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: 0;
+    background: #08131f;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-map-shell::before {
+    height: 178px;
+    background: linear-gradient(180deg, rgba(2, 7, 13, 0.56), rgba(2, 7, 13, 0));
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-map-shell::after {
+    height: 178px;
+    background: linear-gradient(0deg, rgba(2, 7, 13, 0.78), rgba(2, 7, 13, 0));
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-map-shell .jobs-map,
+  .command-app:not(.is-phone-preview) .mobile-map-shell .jobs-map.leaflet-container {
+    height: 100%;
+    min-height: 100%;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-map-data-badge,
+  .command-app:not(.is-phone-preview) .visible-count-button,
+  .command-app:not(.is-phone-preview) .mobile-map-shell .map-borough-label-icon,
+  .command-app:not(.is-phone-preview) .mobile-map-shell .borough-label-icon,
+  .command-app:not(.is-phone-preview) .mobile-map-shell .borough-overlay,
+  .command-app:not(.is-phone-preview) .mobile-map-shell .borough-label {
+    display: none;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-command-card,
+  .command-app:not(.is-phone-preview) .mobile-borough-tabs,
+  .command-app:not(.is-phone-preview) .mobile-filter-row,
+  .command-app:not(.is-phone-preview) .mobile-search {
+    position: relative;
+    z-index: 620;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-command-card {
+    min-height: 50px;
+    margin: 22px 8px 5px;
+    padding: 6px 8px;
+    border-radius: 17px;
+    background: rgba(6, 18, 33, 0.7);
+    box-shadow:
+      0 10px 24px rgba(0, 0, 0, 0.24),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-command-brand p,
+  .command-app:not(.is-phone-preview) .mobile-sync-inline,
+  .command-app:not(.is-phone-preview) .mobile-live-line small,
+  .command-app:not(.is-phone-preview) .mobile-borough-pill span,
+  .command-app:not(.is-phone-preview) .mobile-status-compact em,
+  .command-app:not(.is-phone-preview) .mobile-days-compact em {
+    display: none;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-hpd-shield {
+    width: 30px;
+    height: 34px;
+    border-radius: 13px 13px 18px 18px;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-command-brand h1 {
+    margin-top: 0;
+    font-size: 0.92rem;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-live-line {
+    margin-top: 2px;
+    font-size: 0.58rem;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-notify-button,
+  .command-app:not(.is-phone-preview) .mobile-menu-button {
+    width: 34px;
+    height: 34px;
+    border-radius: 14px;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-borough-tabs {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    padding: 0 8px 5px;
+    scrollbar-width: none;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-borough-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-borough-pill {
+    min-width: 45px;
+    min-height: 28px;
+    padding: 4px 6px;
+    border-radius: 12px;
+    background: rgba(5, 16, 31, 0.68);
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-borough-pill strong {
+    font-size: 0.48rem;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-filter-row {
+    gap: 5px;
+    padding: 0 8px 5px;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-status-compact button,
+  .command-app:not(.is-phone-preview) .mobile-days-compact button {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    min-height: 32px;
+    padding: 4px 7px;
+    border-radius: 12px;
+    background: rgba(4, 14, 27, 0.7);
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-status-compact span,
+  .command-app:not(.is-phone-preview) .mobile-days-compact span {
+    font-size: 0.5rem;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-status-compact strong,
+  .command-app:not(.is-phone-preview) .mobile-days-compact strong {
+    font-size: 0.68rem;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-search {
+    grid-template-columns: 18px minmax(0, 1fr) 32px;
+    min-height: 36px;
+    margin: 0 8px;
+    border-radius: 14px;
+    background: rgba(3, 12, 23, 0.74);
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-search input {
+    font-size: 0.8rem;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-search-filter {
+    width: 32px;
+    height: 32px;
+    border-radius: 11px;
+  }
+
+  .command-app:not(.is-phone-preview) .floating-map-button {
+    right: 10px;
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+  }
+
+  .command-app:not(.is-phone-preview) .nav-arrow-icon {
+    top: clamp(176px, 42%, 342px);
+  }
+
+  .command-app:not(.is-phone-preview) .layers-icon {
+    top: calc(clamp(176px, 42%, 342px) + 49px);
+  }
+
+  .command-app:not(.is-phone-preview) .locate-icon {
+    top: calc(clamp(176px, 42%, 342px) + 98px);
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet {
+    right: 8px;
+    bottom: calc(62px + env(safe-area-inset-bottom));
+    left: 8px;
+    padding: 7px 9px 8px;
+    border-radius: 18px;
+    background:
+      linear-gradient(135deg, rgba(13, 31, 52, 0.82), rgba(3, 12, 23, 0.92)),
+      rgba(3, 12, 23, 0.86);
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-today-mode {
+    max-height: 68px;
+    overflow: hidden;
+    align-content: center;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-today-mode .sheet-handle,
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-today-mode .scope-badge,
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-today-mode .today-mode-stats,
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-today-mode .today-job-list {
+    display: none;
+  }
+
+  .command-app:not(.is-phone-preview) .today-mode-head {
+    gap: 6px;
+  }
+
+  .command-app:not(.is-phone-preview) .today-mode-head h2 {
+    font-size: 0.84rem;
+  }
+
+  .command-app:not(.is-phone-preview) .today-mode-locate,
+  .command-app:not(.is-phone-preview) .today-route-button {
+    min-height: 32px;
+    padding: 0 8px;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command,
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-route-mode {
+    max-height: min(368px, 58%);
+  }
+
+  .command-app:not(.is-phone-preview) .field-card-details {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

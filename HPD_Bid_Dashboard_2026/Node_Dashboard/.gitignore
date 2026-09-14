@@ -2,6 +2,7 @@
 node_modules/
 dist/
 .sites-package-stage*/
+.sites-runtime/
 *.log
 *.tgz
 tsconfig.tsbuildinfo

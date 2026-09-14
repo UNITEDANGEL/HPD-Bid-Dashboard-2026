@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { JobRecord } from "../lib/types";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -171,10 +171,10 @@ function boroughLabelIcon(label: string) {
   });
 }
 
-function clusterIcon(cluster: JobCluster, leadJob: JobRecord) {
+function clusterIcon(cluster: JobCluster, leadJob: JobRecord, showDate: boolean) {
   const maturityLabel = mapMaturityLabel(leadJob);
-  const maturityShort = mapMaturityShortLabel(leadJob);
-  const count = cluster.jobs.length > 1 ? `<small class="job-cluster-count">${cluster.jobs.length}</small>` : "";
+  const coreLabel = showDate ? mapMaturityShortLabel(leadJob) : String(cluster.jobs.length);
+  const count = showDate && cluster.jobs.length > 1 ? `<small class="job-cluster-count">${cluster.jobs.length}</small>` : "";
   const label = cluster.selected
     ? `<span class="job-cluster-label">${escapeHtml(leadJob.id)}<small>${escapeHtml(maturityLabel)}</small></span>`
     : "";
@@ -183,9 +183,9 @@ function clusterIcon(cluster: JobCluster, leadJob: JobRecord) {
 
   return L.divIcon({
     className: "job-cluster-icon",
-    html: `<span class="job-cluster-wrap"><span class="job-cluster ${cluster.selected ? "is-selected" : ""}" style="--pin-color: ${cluster.color}"><strong>${escapeHtml(maturityShort)}</strong>${count}<span class="job-cluster-mix">${mix}</span>${fresh}</span>${label}</span>`,
-    iconSize: cluster.selected ? [174, 58] : [68, 46],
-    iconAnchor: cluster.selected ? [34, 32] : [34, 42],
+    html: `<span class="job-cluster-wrap"><span class="job-cluster ${cluster.selected ? "is-selected" : ""} ${showDate ? "shows-date" : ""}" style="--pin-color: ${cluster.color}"><strong>${escapeHtml(coreLabel)}</strong>${count}<span class="job-cluster-mix">${mix}</span>${fresh}</span>${label}</span>`,
+    iconSize: cluster.selected ? [168, 58] : showDate ? [68, 46] : [44, 44],
+    iconAnchor: cluster.selected ? [30, 32] : showDate ? [34, 42] : [22, 22],
     popupAnchor: [0, -22],
   });
 }
@@ -214,8 +214,17 @@ function userLocationIcon() {
   });
 }
 
-function clusteredJobs(jobs: JobRecord[], selectedId: string, freshIds: Set<string>, latestIds: Set<string>) {
-  const gridSize = 0.023;
+function gridSizeForZoom(zoom: number) {
+  if (zoom >= 16) return 0.0018;
+  if (zoom >= 15) return 0.0032;
+  if (zoom >= 14) return 0.006;
+  if (zoom >= 13) return 0.011;
+  if (zoom >= 12) return 0.018;
+  return 0.032;
+}
+
+function clusteredJobs(jobs: JobRecord[], selectedId: string, freshIds: Set<string>, latestIds: Set<string>, zoom: number) {
+  const gridSize = gridSizeForZoom(zoom);
   const groups = new Map<string, JobRecord[]>();
 
   for (const job of jobs) {
@@ -321,6 +330,64 @@ function MapViewport({
   return null;
 }
 
+function MapZoomWatcher({ onZoom }: { onZoom: (zoom: number) => void }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const syncZoom = () => onZoom(map.getZoom());
+    syncZoom();
+    map.on("zoomend", syncZoom);
+    return () => {
+      map.off("zoomend", syncZoom);
+    };
+  }, [map, onZoom]);
+
+  return null;
+}
+
+function ClusterMarker({
+  cluster,
+  leadJob,
+  mapZoom,
+  onSelect,
+}: {
+  cluster: JobCluster;
+  leadJob: JobRecord;
+  mapZoom: number;
+  onSelect: (id: string) => void;
+}) {
+  const map = useMap();
+  const showDate = cluster.selected || (cluster.jobs.length === 1 && mapZoom >= 15);
+
+  return (
+    <Marker
+      key={cluster.id}
+      position={cluster.center}
+      icon={clusterIcon(cluster, leadJob, showDate)}
+      eventHandlers={{
+        click: () => {
+          if (cluster.jobs.length > 1 && mapZoom < 15) {
+            map.setView(cluster.center, Math.min(15, mapZoom + 2), { animate: true });
+          }
+          onSelect(leadJob.id);
+        },
+      }}
+    >
+      <Popup>
+        <div className="map-popup">
+          <strong>{cluster.jobs.length === 1 ? leadJob.id : `${cluster.jobs.length} mapped jobs`}</strong>
+          <span>OMO {leadJob.id} | {mapMaturityLabel(leadJob)}</span>
+          <span>{leadJob.address || "No address listed"}</span>
+          <span>{leadJob.borough || "Unknown borough"} | {leadJob.bidAmount || "Amount not listed"}</span>
+          <button type="button" className="map-popup-button" onClick={() => onSelect(leadJob.id)}>
+            Open details
+          </button>
+        </div>
+      </Popup>
+    </Marker>
+  );
+}
+
 export function JobsMap({
   jobs,
   selectedId,
@@ -335,9 +402,13 @@ export function JobsMap({
   latestAwardIds = [],
   variant = "pins",
 }: Props) {
-  const freshIdSet = new Set(newAwardIds);
-  const latestIdSet = new Set(latestAwardIds);
-  const clusters = variant === "clusters" ? clusteredJobs(jobs, selectedId, freshIdSet, latestIdSet) : [];
+  const [mapZoom, setMapZoom] = useState(11);
+  const freshIdSet = useMemo(() => new Set(newAwardIds), [newAwardIds]);
+  const latestIdSet = useMemo(() => new Set(latestAwardIds), [latestAwardIds]);
+  const clusters = useMemo(
+    () => variant === "clusters" ? clusteredJobs(jobs, selectedId, freshIdSet, latestIdSet, mapZoom) : [],
+    [freshIdSet, jobs, latestIdSet, mapZoom, selectedId, variant],
+  );
   const routePositions = [
     ...(userLocation ? [userLocation] : []),
     ...routeJobs.map(coordsFor).filter((coords): coords is [number, number] => Boolean(coords)),
@@ -356,6 +427,7 @@ export function JobsMap({
         className="map-tile-layer"
       />
       <MapViewport jobs={jobs} selectedId={selectedId} focusCenter={focusCenter} focusZoom={focusZoom} focusKey={focusKey} />
+      <MapZoomWatcher onZoom={setMapZoom} />
 
       {routePositions.length > 1 ? (
         <>
@@ -403,13 +475,13 @@ export function JobsMap({
           >
             <Popup>
               <div className="map-popup">
-                  <strong>Stop {index + 1}: {job.id}</strong>
-                  <span>{job.address || "No address listed"}</span>
-                  <span>{job.borough || "Unknown borough"} | {job.trade || "Trade not listed"}</span>
-                  <span>{mapMaturityLabel(job)}</span>
-                  <button type="button" className="map-popup-button" onClick={() => onSelect(job.id)}>
-                    Open stop
-                  </button>
+                <strong>Stop {index + 1}: {job.id}</strong>
+                <span>{job.address || "No address listed"}</span>
+                <span>{job.borough || "Unknown borough"} | {job.trade || "Trade not listed"}</span>
+                <span>{mapMaturityLabel(job)}</span>
+                <button type="button" className="map-popup-button" onClick={() => onSelect(job.id)}>
+                  Open stop
+                </button>
               </div>
             </Popup>
           </Marker>
@@ -420,26 +492,13 @@ export function JobsMap({
         clusters.map((cluster) => {
           const leadJob = cluster.jobs.find((job) => job.id === selectedId) || cluster.jobs[0];
           return (
-            <Marker
+            <ClusterMarker
               key={cluster.id}
-              position={cluster.center}
-              icon={clusterIcon(cluster, leadJob)}
-              eventHandlers={{
-                click: () => onSelect(leadJob.id),
-              }}
-            >
-              <Popup>
-                <div className="map-popup">
-                  <strong>{cluster.jobs.length === 1 ? leadJob.id : `${cluster.jobs.length} mapped jobs`}</strong>
-                  <span>OMO {leadJob.id} | {mapMaturityLabel(leadJob)}</span>
-                  <span>{leadJob.address || "No address listed"}</span>
-                  <span>{leadJob.borough || "Unknown borough"} | {leadJob.bidAmount || "Amount not listed"}</span>
-                  <button type="button" className="map-popup-button" onClick={() => onSelect(leadJob.id)}>
-                    Open details
-                  </button>
-                </div>
-              </Popup>
-            </Marker>
+              cluster={cluster}
+              leadJob={leadJob}
+              mapZoom={mapZoom}
+              onSelect={onSelect}
+            />
           );
         })
       ) : jobs
