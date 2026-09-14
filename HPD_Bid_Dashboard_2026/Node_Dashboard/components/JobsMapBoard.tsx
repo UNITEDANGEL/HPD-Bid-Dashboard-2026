@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, MouseEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StatusBadge } from "./StatusBadge";
 import type { JobRecord } from "../lib/types";
@@ -629,6 +629,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const [dateRange, setDateRange] = useState<DateRangeView>("all");
   const [customDays, setCustomDays] = useState(DEFAULT_CUSTOM_DAYS);
   const [selectedId, setSelectedId] = useState("");
+  const [jobSheetExpanded, setJobSheetExpanded] = useState(false);
   const [activeNav, setActiveNav] = useState("Overview");
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("Last 12 Months");
   const [tableMode, setTableMode] = useState<TableMode>("live");
@@ -1489,15 +1490,24 @@ export function JobsMapBoard({ jobs }: Props) {
     if (!job) return;
     setActiveRouteIndex(index);
     setSelectedId(job.id);
+    setJobSheetExpanded(false);
     setActivePanel("");
   }
 
   function selectMapJob(id: string) {
+    setJobSheetExpanded(false);
     if (routeMode) {
       const routeIndex = routeStops.findIndex((job) => job.id === id);
       if (routeIndex >= 0) setActiveRouteIndex(routeIndex);
     }
     setSelectedId(id);
+  }
+
+  function handleJobSheetPreviewClick(event: MouseEvent<HTMLElement>) {
+    if (jobSheetExpanded) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("a, button, input, label, select, textarea")) return;
+    setJobSheetExpanded(true);
   }
 
   function skipRouteStop(job: JobRecord, index: number) {
@@ -1883,6 +1893,7 @@ export function JobsMapBoard({ jobs }: Props) {
     const currentIndex = selectedIndex < 0 ? 0 : selectedIndex;
     const nextIndex = (currentIndex + direction + filtered.length) % filtered.length;
     setSelectedId(filtered[nextIndex].id);
+    setJobSheetExpanded(false);
   }
 
   function renderSelectedFlowButton(action: FieldStatusAction) {
@@ -2604,7 +2615,8 @@ export function JobsMapBoard({ jobs }: Props) {
 
         {!routeMode && selected ? (
           <article
-            className="mobile-job-sheet is-job-command"
+            className={jobSheetExpanded ? "mobile-job-sheet is-job-command is-expanded" : "mobile-job-sheet is-job-command is-compact"}
+            onClick={handleJobSheetPreviewClick}
             onTouchStart={(event) => {
               jobSheetTouchStartY.current = event.touches[0]?.clientY ?? null;
             }}
@@ -2618,7 +2630,7 @@ export function JobsMapBoard({ jobs }: Props) {
             }}
           >
             <div className="sheet-handle" />
-            <div className={selectedPhotoUrl ? "field-card-grid has-photo" : "field-card-grid"}>
+            <div className={selectedPhotoUrl || !jobSheetExpanded ? "field-card-grid has-photo" : "field-card-grid"}>
               <div className="field-card-main">
                 <div className="sheet-topline">
                   <StatusBadge status={displayStatus(selected)} />
@@ -2636,6 +2648,14 @@ export function JobsMapBoard({ jobs }: Props) {
                       notify(isSelectedSaved ? "Job removed from saved list." : "Job saved.");
                     }}
                   />
+                  <button
+                    type="button"
+                    className="job-card-expand-button"
+                    aria-label={jobSheetExpanded ? "Compact job card" : "Open full job card"}
+                    onClick={() => setJobSheetExpanded((current) => !current)}
+                  >
+                    {jobSheetExpanded ? "Compact" : "Open"}
+                  </button>
                   <button type="button" className="sheet-map-return" aria-label="Close job card and return to map" onClick={() => setSelectedId("")}>
                     <span aria-hidden="true">×</span>
                     Map
@@ -2663,6 +2683,11 @@ export function JobsMapBoard({ jobs }: Props) {
                 <div className="field-photo-card">
                   <img src={selectedPhotoUrl} alt={`Uploaded field photo for ${selected.id}`} />
                   <span className="photo-count">{Math.min(selectedPhotoUrls.length, 4)}/4</span>
+                </div>
+              ) : !jobSheetExpanded ? (
+                <div className="field-photo-card is-empty" aria-hidden="true">
+                  <span className="action-camera" />
+                  <strong>Photo</strong>
                 </div>
               ) : null}
             </div>

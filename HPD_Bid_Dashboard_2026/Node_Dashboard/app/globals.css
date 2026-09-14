@@ -9487,3 +9487,255 @@ body:has(.command-app.is-phone-preview) .page-frame {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact {
+  max-height: 190px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-expanded {
+  max-height: min(520px, calc(100% - 118px));
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .job-card-flow,
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .job-card-affidavit-check,
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .job-card-generated-package,
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .status-media-prompt,
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .sheet-actions,
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .sheet-pager {
+  display: none;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .field-card-grid {
+  gap: 6px;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .field-card-grid.has-photo {
+  grid-template-columns: minmax(0, 1fr) 76px;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .field-card-main h2 {
+  margin: 4px 0 3px;
+  font-size: 1.02rem;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .field-card-main p {
+  font-size: 0.68rem;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .field-card-tags {
+  margin-top: 4px;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .field-card-details {
+  display: none;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .field-photo-card {
+  min-height: 74px;
+  max-height: 78px;
+  border-radius: 14px;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .field-photo-card.is-empty {
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  background:
+    linear-gradient(180deg, rgba(47, 156, 255, 0.18), rgba(7, 20, 37, 0.76)),
+    rgba(7, 20, 37, 0.86);
+  color: #cfe7ff;
+  font-size: 0.58rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .field-photo-card.is-empty .action-camera {
+  position: relative;
+  display: block;
+  width: 28px;
+  height: 22px;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .field-photo-card.is-empty .action-camera::before,
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .field-photo-card.is-empty .action-camera::after {
+  content: "";
+  position: absolute;
+  display: block;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .field-photo-card.is-empty .action-camera::before {
+  inset: 5px 2px 2px;
+  border: 2px solid #dff2ff;
+  border-radius: 6px;
+  box-shadow: 7px -5px 0 -5px #dff2ff;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .field-photo-card.is-empty .action-camera::after {
+  top: 10px;
+  left: 11px;
+  width: 6px;
+  height: 6px;
+  border: 2px solid #dff2ff;
+  border-radius: 999px;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .job-card-next-step {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .job-card-next-step small {
+  display: none;
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .job-card-next-actions {
+  grid-template-columns: 60px minmax(86px, 1fr);
+}
+
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .job-card-next-actions a,
+.command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact .job-card-next-actions button {
+  min-height: 32px;
+}
+
+.command-app.is-phone-preview .job-card-expand-button {
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid rgba(85, 242, 160, 0.32);
+  border-radius: 999px;
+  background: rgba(8, 36, 31, 0.78);
+  color: #aaf7c9;
+  cursor: pointer;
+  font-size: 0.6rem;
+  font-weight: 950;
+}
+
+@media (max-width: 760px) {
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact {
+    max-height: 190px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-expanded {
+    max-height: min(520px, calc(100% - 118px));
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .job-card-flow,
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .job-card-affidavit-check,
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .job-card-generated-package,
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .status-media-prompt,
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .sheet-actions,
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .sheet-pager {
+    display: none;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .field-card-grid {
+    gap: 6px;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .field-card-grid.has-photo {
+    grid-template-columns: minmax(0, 1fr) 76px;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .field-card-main h2 {
+    margin: 4px 0 3px;
+    font-size: 1.02rem;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .field-card-main p {
+    font-size: 0.68rem;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .field-card-tags {
+    margin-top: 4px;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .field-card-details {
+    display: none;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .field-photo-card {
+    min-height: 74px;
+    max-height: 78px;
+    border-radius: 14px;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .field-photo-card.is-empty {
+    display: grid;
+    place-items: center;
+    gap: 4px;
+    background:
+      linear-gradient(180deg, rgba(47, 156, 255, 0.18), rgba(7, 20, 37, 0.76)),
+      rgba(7, 20, 37, 0.86);
+    color: #cfe7ff;
+    font-size: 0.58rem;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .field-photo-card.is-empty .action-camera {
+    position: relative;
+    display: block;
+    width: 28px;
+    height: 22px;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .field-photo-card.is-empty .action-camera::before,
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .field-photo-card.is-empty .action-camera::after {
+    content: "";
+    position: absolute;
+    display: block;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .field-photo-card.is-empty .action-camera::before {
+    inset: 5px 2px 2px;
+    border: 2px solid #dff2ff;
+    border-radius: 6px;
+    box-shadow: 7px -5px 0 -5px #dff2ff;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .field-photo-card.is-empty .action-camera::after {
+    top: 10px;
+    left: 11px;
+    width: 6px;
+    height: 6px;
+    border: 2px solid #dff2ff;
+    border-radius: 999px;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .job-card-next-step {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    padding: 7px;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .job-card-next-step small {
+    display: none;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .job-card-next-actions {
+    grid-template-columns: 60px minmax(86px, 1fr);
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .job-card-next-actions a,
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact .job-card-next-actions button {
+    min-height: 32px;
+  }
+
+  .command-app:not(.is-phone-preview) .job-card-expand-button {
+    min-height: 26px;
+    padding: 0 8px;
+    border: 1px solid rgba(85, 242, 160, 0.32);
+    border-radius: 999px;
+    background: rgba(8, 36, 31, 0.78);
+    color: #aaf7c9;
+    cursor: pointer;
+    font-size: 0.6rem;
+    font-weight: 950;
+  }
+}

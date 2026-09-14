@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { JobRecord } from "../lib/types";
-import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 
 type Props = {
@@ -372,19 +372,7 @@ function ClusterMarker({
           onSelect(leadJob.id);
         },
       }}
-    >
-      <Popup>
-        <div className="map-popup">
-          <strong>{cluster.jobs.length === 1 ? leadJob.id : `${cluster.jobs.length} mapped jobs`}</strong>
-          <span>OMO {leadJob.id} | {mapMaturityLabel(leadJob)}</span>
-          <span>{leadJob.address || "No address listed"}</span>
-          <span>{leadJob.borough || "Unknown borough"} | {leadJob.bidAmount || "Amount not listed"}</span>
-          <button type="button" className="map-popup-button" onClick={() => onSelect(leadJob.id)}>
-            Open details
-          </button>
-        </div>
-      </Popup>
-    </Marker>
+    />
   );
 }
 
@@ -454,9 +442,7 @@ export function JobsMap({
           interactive={false}
           keyboard={false}
           zIndexOffset={700}
-        >
-          <Popup>You are here</Popup>
-        </Marker>
+        />
       ) : null}
 
       {routeJobs.map((job, index) => {
@@ -472,19 +458,7 @@ export function JobsMap({
             eventHandlers={{
               click: () => onSelect(job.id),
             }}
-          >
-            <Popup>
-              <div className="map-popup">
-                <strong>Stop {index + 1}: {job.id}</strong>
-                <span>{job.address || "No address listed"}</span>
-                <span>{job.borough || "Unknown borough"} | {job.trade || "Trade not listed"}</span>
-                <span>{mapMaturityLabel(job)}</span>
-                <button type="button" className="map-popup-button" onClick={() => onSelect(job.id)}>
-                  Open stop
-                </button>
-              </div>
-            </Popup>
-          </Marker>
+          />
         );
       })}
 
@@ -518,20 +492,7 @@ export function JobsMap({
               eventHandlers={{
                 click: () => onSelect(job.id),
               }}
-            >
-              <Popup>
-                <div className="map-popup">
-                  <strong>{job.id}</strong>
-                  <span>{job.address || "No address listed"}</span>
-                  <span>{job.borough || "Unknown borough"} | {job.trade || "Trade not listed"}</span>
-                  <span>{mapMaturityLabel(job)}</span>
-                  <span>{job.bidAmount || "Not listed"}</span>
-                  <button type="button" className="map-popup-button" onClick={() => onSelect(job.id)}>
-                    Open details
-                  </button>
-                </div>
-              </Popup>
-            </Marker>
+            />
           );
         })}
     </MapContainer>
