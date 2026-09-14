@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { JobRecord } from "../lib/types";
-import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 
 type Props = {
@@ -13,6 +13,10 @@ type Props = {
   focusZoom?: number;
   focusKey?: string;
   userLocation?: [number, number] | null;
+  routeJobs?: JobRecord[];
+  activeRouteStopId?: string;
+  newAwardIds?: string[];
+  latestAwardIds?: string[];
   variant?: "pins" | "clusters";
 };
 
@@ -41,12 +45,57 @@ function statusColor(status: string, archived: boolean, borough: string) {
   return "#2dd47d";
 }
 
-function markerIcon(color: string, selected: boolean) {
+function statusTone(job: JobRecord) {
+  if (job.archived) return "archived";
+  const normalized = String(job.status || "").toLowerCase();
+  if (normalized.includes("completed")) return "complete";
+  if (normalized.includes("access") || normalized.includes("refused")) return "blocked";
+  if (
+    normalized.includes("arrived") ||
+    normalized.includes("started") ||
+    normalized.includes("progress") ||
+    normalized.includes("materials") ||
+    normalized.includes("follow")
+  ) {
+    return "active";
+  }
+  if (normalized.includes("award") || normalized.includes("match") || normalized.includes("recovered")) return "awarded";
+  return "open";
+}
+
+function pinLabelForTone(tone: string) {
+  if (tone === "complete") return "OK";
+  if (tone === "blocked") return "!";
+  if (tone === "active") return "GO";
+  if (tone === "awarded") return "$";
+  if (tone === "archived") return "-";
+  return "+";
+}
+
+function markerIcon({
+  color,
+  selected,
+  tone,
+  freshLabel,
+  dateLabel,
+}: {
+  color: string;
+  selected: boolean;
+  tone: string;
+  freshLabel?: string;
+  dateLabel?: string;
+}) {
   return L.divIcon({
     className: "job-pin-icon",
-    html: `<span class="job-pin ${selected ? "is-selected" : ""}" style="--pin-color: ${color}"><span></span></span>`,
-    iconSize: selected ? [42, 42] : [30, 38],
-    iconAnchor: selected ? [21, 21] : [15, 36],
+    html: [
+      `<span class="job-pin tone-${tone} ${selected ? "is-selected" : ""} ${freshLabel ? "is-fresh" : ""}" style="--pin-color: ${color}">`,
+      `<span class="job-pin-core">${escapeHtml(pinLabelForTone(tone))}</span>`,
+      dateLabel ? `<span class="job-pin-date">${escapeHtml(dateLabel)}</span>` : "",
+      freshLabel ? `<span class="job-pin-new">${escapeHtml(freshLabel)}</span>` : "",
+      "</span>",
+    ].join(""),
+    iconSize: selected ? [82, 46] : [68, 42],
+    iconAnchor: selected ? [41, 34] : [34, 36],
     popupAnchor: [0, -30],
   });
 }
@@ -61,7 +110,7 @@ function escapeHtml(value: string) {
   }[character] || character));
 }
 
-function formatMapDate(value: string) {
+function formatMapShortDate(value: string) {
   const raw = String(value || "").trim();
   const isoDateOnly = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
   const slashDateOnly = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
@@ -74,16 +123,25 @@ function formatMapDate(value: string) {
         Number(slashDateOnly[2]),
       )
       : new Date(raw);
-  if (Number.isNaN(date.getTime())) return "No date";
+  if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
-    day: "2-digit",
-    year: "numeric",
+    day: "numeric",
   }).format(date);
 }
 
-function mapDateForJob(job: JobRecord) {
-  return formatMapDate(job.startDate || job.awardDate);
+function maturityDateValue(job: JobRecord) {
+  return job.completionDate || job.startDate || job.awardDate;
+}
+
+function mapMaturityLabel(job: JobRecord) {
+  const label = job.completionDate ? "Due" : job.startDate ? "Start" : "Award";
+  const date = formatMapShortDate(maturityDateValue(job));
+  return date ? `${label} ${date}` : "No date";
+}
+
+function mapMaturityShortLabel(job: JobRecord) {
+  return formatMapShortDate(maturityDateValue(job)) || "Date";
 }
 
 type JobCluster = {
@@ -92,6 +150,8 @@ type JobCluster = {
   center: [number, number];
   color: string;
   selected: boolean;
+  freshLabel: string;
+  statusMix: string[];
 };
 
 const BOROUGH_LABELS: Array<{ label: string; position: [number, number] }> = [
@@ -111,21 +171,50 @@ function boroughLabelIcon(label: string) {
   });
 }
 
-function clusterIcon(color: string, count: number, selected: boolean, leadJob: JobRecord) {
-  const label = selected
-    ? `<span class="job-cluster-label">${escapeHtml(leadJob.id)}<small>${escapeHtml(mapDateForJob(leadJob))}</small></span>`
+function clusterIcon(cluster: JobCluster, leadJob: JobRecord) {
+  const maturityLabel = mapMaturityLabel(leadJob);
+  const maturityShort = mapMaturityShortLabel(leadJob);
+  const count = cluster.jobs.length > 1 ? `<small class="job-cluster-count">${cluster.jobs.length}</small>` : "";
+  const label = cluster.selected
+    ? `<span class="job-cluster-label">${escapeHtml(leadJob.id)}<small>${escapeHtml(maturityLabel)}</small></span>`
     : "";
+  const mix = cluster.statusMix.map((tone) => `<i class="cluster-mix-dot tone-${escapeHtml(tone)}"></i>`).join("");
+  const fresh = cluster.freshLabel ? `<span class="job-cluster-new">${escapeHtml(cluster.freshLabel)}</span>` : "";
 
   return L.divIcon({
     className: "job-cluster-icon",
-    html: `<span class="job-cluster-wrap"><span class="job-cluster ${selected ? "is-selected" : ""}" style="--pin-color: ${color}">${count}</span>${label}</span>`,
-    iconSize: selected ? [154, 58] : [38, 38],
-    iconAnchor: selected ? [29, 29] : [19, 19],
+    html: `<span class="job-cluster-wrap"><span class="job-cluster ${cluster.selected ? "is-selected" : ""}" style="--pin-color: ${cluster.color}"><strong>${escapeHtml(maturityShort)}</strong>${count}<span class="job-cluster-mix">${mix}</span>${fresh}</span>${label}</span>`,
+    iconSize: cluster.selected ? [174, 58] : [68, 46],
+    iconAnchor: cluster.selected ? [34, 32] : [34, 42],
     popupAnchor: [0, -22],
   });
 }
 
-function clusteredJobs(jobs: JobRecord[], selectedId: string) {
+function routeStopIcon(index: number, active: boolean, job: JobRecord, freshLabel: string) {
+  const color = statusColor(job.status, job.archived, job.borough);
+  const tone = statusTone(job);
+  const fresh = freshLabel ? `<span class="route-stop-new">${escapeHtml(freshLabel)}</span>` : "";
+
+  return L.divIcon({
+    className: "route-stop-marker-icon",
+    html: `<span class="route-stop-marker tone-${tone} ${active ? "is-active" : ""}" style="--pin-color: ${color}"><strong>${index}</strong>${fresh}</span>`,
+    iconSize: active ? [52, 52] : [40, 40],
+    iconAnchor: active ? [26, 26] : [20, 20],
+    popupAnchor: [0, -22],
+  });
+}
+
+function userLocationIcon() {
+  return L.divIcon({
+    className: "user-location-marker-icon",
+    html: '<span class="user-location-marker"><span></span></span>',
+    iconSize: [46, 46],
+    iconAnchor: [23, 23],
+    popupAnchor: [0, -18],
+  });
+}
+
+function clusteredJobs(jobs: JobRecord[], selectedId: string, freshIds: Set<string>, latestIds: Set<string>) {
   const gridSize = 0.023;
   const groups = new Map<string, JobRecord[]>();
 
@@ -146,6 +235,7 @@ function clusteredJobs(jobs: JobRecord[], selectedId: string) {
     ];
     const selected = records.some((job) => job.id === selectedId);
     const leadJob = records.find((job) => job.id === selectedId) || records[0];
+    const tones = Array.from(new Set(records.map(statusTone)));
 
     return {
       id: key,
@@ -153,6 +243,8 @@ function clusteredJobs(jobs: JobRecord[], selectedId: string) {
       center,
       color: statusColor(leadJob.status, leadJob.archived, leadJob.borough),
       selected,
+      freshLabel: records.some((job) => freshIds.has(job.id)) ? "NEW" : records.some((job) => latestIds.has(job.id)) ? "LATEST" : "",
+      statusMix: tones.slice(0, 3),
     } satisfies JobCluster;
   });
 }
@@ -229,8 +321,27 @@ function MapViewport({
   return null;
 }
 
-export function JobsMap({ jobs, selectedId, onSelect, focusCenter, focusZoom, focusKey, userLocation, variant = "pins" }: Props) {
-  const clusters = variant === "clusters" ? clusteredJobs(jobs, selectedId) : [];
+export function JobsMap({
+  jobs,
+  selectedId,
+  onSelect,
+  focusCenter,
+  focusZoom,
+  focusKey,
+  userLocation,
+  routeJobs = [],
+  activeRouteStopId = "",
+  newAwardIds = [],
+  latestAwardIds = [],
+  variant = "pins",
+}: Props) {
+  const freshIdSet = new Set(newAwardIds);
+  const latestIdSet = new Set(latestAwardIds);
+  const clusters = variant === "clusters" ? clusteredJobs(jobs, selectedId, freshIdSet, latestIdSet) : [];
+  const routePositions = [
+    ...(userLocation ? [userLocation] : []),
+    ...routeJobs.map(coordsFor).filter((coords): coords is [number, number] => Boolean(coords)),
+  ];
 
   return (
     <MapContainer
@@ -242,8 +353,16 @@ export function JobsMap({ jobs, selectedId, onSelect, focusCenter, focusZoom, fo
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        className="map-tile-layer"
       />
       <MapViewport jobs={jobs} selectedId={selectedId} focusCenter={focusCenter} focusZoom={focusZoom} focusKey={focusKey} />
+
+      {routePositions.length > 1 ? (
+        <>
+          <Polyline className="map-route-line-glow" positions={routePositions} pathOptions={{ color: "#2dd47d", opacity: 0.24, weight: 12 }} />
+          <Polyline className="map-route-line" positions={routePositions} pathOptions={{ color: "#2f9cff", opacity: 0.88, weight: 5, dashArray: "10 8" }} />
+        </>
+      ) : null}
 
       {variant === "clusters" ? BOROUGH_LABELS.map((borough) => (
         <Marker
@@ -257,14 +376,45 @@ export function JobsMap({ jobs, selectedId, onSelect, focusCenter, focusZoom, fo
       )) : null}
 
       {userLocation ? (
-        <CircleMarker
-          center={userLocation}
-          radius={9}
-          pathOptions={{ color: "#ffffff", fillColor: "#2f9cff", fillOpacity: 0.95, weight: 3 }}
+        <Marker
+          position={userLocation}
+          icon={userLocationIcon()}
+          interactive={false}
+          keyboard={false}
+          zIndexOffset={700}
         >
           <Popup>You are here</Popup>
-        </CircleMarker>
+        </Marker>
       ) : null}
+
+      {routeJobs.map((job, index) => {
+        const coords = coordsFor(job);
+        if (!coords) return null;
+        const freshLabel = freshIdSet.has(job.id) ? "NEW" : latestIdSet.has(job.id) ? "LATEST" : "";
+        return (
+          <Marker
+            key={`${job.id}-route-stop-${index}`}
+            position={coords}
+            icon={routeStopIcon(index + 1, job.id === activeRouteStopId, job, freshLabel)}
+            zIndexOffset={job.id === activeRouteStopId ? 1000 : 850}
+            eventHandlers={{
+              click: () => onSelect(job.id),
+            }}
+          >
+            <Popup>
+              <div className="map-popup">
+                  <strong>Stop {index + 1}: {job.id}</strong>
+                  <span>{job.address || "No address listed"}</span>
+                  <span>{job.borough || "Unknown borough"} | {job.trade || "Trade not listed"}</span>
+                  <span>{mapMaturityLabel(job)}</span>
+                  <button type="button" className="map-popup-button" onClick={() => onSelect(job.id)}>
+                    Open stop
+                  </button>
+              </div>
+            </Popup>
+          </Marker>
+        );
+      })}
 
       {variant === "clusters" ? (
         clusters.map((cluster) => {
@@ -273,7 +423,7 @@ export function JobsMap({ jobs, selectedId, onSelect, focusCenter, focusZoom, fo
             <Marker
               key={cluster.id}
               position={cluster.center}
-              icon={clusterIcon(cluster.color, cluster.jobs.length, cluster.selected, leadJob)}
+              icon={clusterIcon(cluster, leadJob)}
               eventHandlers={{
                 click: () => onSelect(leadJob.id),
               }}
@@ -281,7 +431,7 @@ export function JobsMap({ jobs, selectedId, onSelect, focusCenter, focusZoom, fo
               <Popup>
                 <div className="map-popup">
                   <strong>{cluster.jobs.length === 1 ? leadJob.id : `${cluster.jobs.length} mapped jobs`}</strong>
-                  <span>OMO {leadJob.id} | Start {mapDateForJob(leadJob)}</span>
+                  <span>OMO {leadJob.id} | {mapMaturityLabel(leadJob)}</span>
                   <span>{leadJob.address || "No address listed"}</span>
                   <span>{leadJob.borough || "Unknown borough"} | {leadJob.bidAmount || "Amount not listed"}</span>
                   <button type="button" className="map-popup-button" onClick={() => onSelect(leadJob.id)}>
@@ -298,12 +448,14 @@ export function JobsMap({ jobs, selectedId, onSelect, focusCenter, focusZoom, fo
           if (!coords) return null;
           const selected = job.id === selectedId;
           const color = statusColor(job.status, job.archived, job.borough);
+          const freshLabel = freshIdSet.has(job.id) ? "NEW" : latestIdSet.has(job.id) ? "LATEST" : "";
+          const dateLabel = mapMaturityShortLabel(job);
 
           return (
             <Marker
               key={`${job.id}-${job.latitude}-${job.longitude}`}
               position={coords}
-              icon={markerIcon(color, selected)}
+              icon={markerIcon({ color, selected, tone: statusTone(job), freshLabel, dateLabel })}
               eventHandlers={{
                 click: () => onSelect(job.id),
               }}
@@ -313,7 +465,7 @@ export function JobsMap({ jobs, selectedId, onSelect, focusCenter, focusZoom, fo
                   <strong>{job.id}</strong>
                   <span>{job.address || "No address listed"}</span>
                   <span>{job.borough || "Unknown borough"} | {job.trade || "Trade not listed"}</span>
-                  <span>Start {mapDateForJob(job)}</span>
+                  <span>{mapMaturityLabel(job)}</span>
                   <span>{job.bidAmount || "Not listed"}</span>
                   <button type="button" className="map-popup-button" onClick={() => onSelect(job.id)}>
                     Open details

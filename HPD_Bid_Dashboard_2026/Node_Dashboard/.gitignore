@@ -6,3 +6,4 @@ dist/
 *.tgz
 tsconfig.tsbuildinfo
 public/job-uploads/
+Generated_Documents/

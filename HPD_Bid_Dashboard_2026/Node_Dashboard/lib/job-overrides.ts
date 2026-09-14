@@ -26,6 +26,7 @@ export type JobOverrideInput = {
   id: string;
   status?: string;
   archived?: boolean;
+  statusDate?: string;
 };
 
 export const OVERRIDE_HEADERS = [
@@ -77,6 +78,12 @@ export function normalizeWorkflowStatus(status: string) {
     .replace(/&/g, "AND")
     .replace(/[^A-Z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
+}
+
+function statusDateValue(inputDate?: string) {
+  const text = String(inputDate || "").trim();
+  if (text) return text;
+  return new Date().toISOString();
 }
 
 export function readOverrides(): JobOverride[] {
@@ -132,9 +139,30 @@ export function upsertOverride(input: JobOverrideInput) {
   let statusRequiresArchive = false;
   if (input.status !== undefined) {
     const status = String(input.status || "Pending").trim();
+    const normalizedStatus = status.toLowerCase();
+    const dateValue = statusDateValue(input.statusDate);
     row.StatusOverride = status;
     row.FieldOutcome = status;
     row.WorkflowStatus = normalizeWorkflowStatus(status);
+    if (normalizedStatus.includes("work completed") && !normalizedStatus.includes("other")) {
+      row.ActualWorkCompletionDate = dateValue;
+      row.WorkCompletionDateOverride = dateValue;
+      row.ActualWorkStartDate = row.ActualWorkStartDate || dateValue;
+      row.WorkStartDateOverride = row.WorkStartDateOverride || dateValue;
+    }
+    if (normalizedStatus.includes("refused")) {
+      row.RefusalDate = dateValue;
+    }
+    if (normalizedStatus.includes("no access")) {
+      if (normalizedStatus.includes("2nd") || row.NoAccessFirstAttemptAt) {
+        row.NoAccessSecondAttemptAt = dateValue;
+      } else {
+        row.NoAccessFirstAttemptAt = dateValue;
+      }
+    }
+    if (normalizedStatus.includes("completed by other") || normalizedStatus.includes("done by other")) {
+      row.VerifiedByOthersDate = dateValue;
+    }
     statusRequiresArchive = shouldAutoArchiveStatus(status);
     if (statusRequiresArchive) {
       row.ArchivedFromMap = "true";

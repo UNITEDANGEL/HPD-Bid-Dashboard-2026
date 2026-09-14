@@ -12,6 +12,16 @@ function mapsHref(latitude: string, longitude: string, address: string) {
   return query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : "";
 }
 
+function formatRawValue(value: unknown) {
+  if (value === undefined || value === null || value === "") return "-";
+  if (["string", "number", "boolean"].includes(typeof value)) return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
 export default async function JobDetailPage({
   params,
 }: {
@@ -139,7 +149,7 @@ export default async function JobDetailPage({
           {Object.entries(job.raw).map(([key, value]) => (
             <div key={key} className="raw-row">
               <strong>{key}</strong>
-              <span>{value || "-"}</span>
+              <span>{formatRawValue(value)}</span>
             </div>
           ))}
         </div>

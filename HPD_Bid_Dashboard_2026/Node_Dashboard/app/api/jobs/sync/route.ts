@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
-import { getJobs, getJobsSourceInfo, parseJobsFromCsv, parseJobsFromJson } from "../../../../lib/jobs";
+import { spawnSync } from "child_process";
+import fs from "fs";
+import path from "path";
+import {
+  fetcherRootCandidates,
+  getJobs,
+  getJobsCoverageInfo,
+  getJobsSourceInfo,
+  parseJobsFromCsv,
+  parseJobsFromJson,
+} from "../../../../lib/jobs";
 
 type FeedType = "csv" | "json";
+
+export const runtime = "nodejs";
 
 const ALLOWED_FEED_HOSTS = [
   "docs.google.com",
@@ -90,18 +102,178 @@ function isSameAppJobsFeed(request: Request, feedUrl: string) {
   }
 }
 
+function newestExistingPath(candidates: string[]) {
+  return candidates
+    .filter((candidate) => fs.existsSync(candidate))
+    .map((candidate) => ({ candidate, updatedAt: fs.statSync(candidate).mtimeMs }))
+    .sort((a, b) => b.updatedAt - a.updatedAt)[0]?.candidate;
+}
+
+function readFetcherRunInfo() {
+  const root = process.cwd();
+  const candidates = [
+    ...fetcherRootCandidates().flatMap((candidateRoot) => [
+      path.resolve(candidateRoot, "data", "fetcher_latest_status.json"),
+      path.resolve(candidateRoot, "public", "data", "fetcher_latest_status.json"),
+    ]),
+    path.resolve(root, "data", "fetcher_latest_status.json"),
+    path.resolve(root, "public", "data", "fetcher_latest_status.json"),
+  ];
+  const latestStatusPath = newestExistingPath(candidates);
+
+  if (latestStatusPath) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(latestStatusPath, "utf-8")) as Record<string, unknown>;
+      const logPath = newestExistingPath([
+        path.resolve(path.dirname(latestStatusPath), "fetcher_latest_run.log"),
+        ...fetcherRootCandidates().flatMap((candidateRoot) => [
+          path.resolve(candidateRoot, "data", "fetcher_latest_run.log"),
+          path.resolve(candidateRoot, "public", "data", "fetcher_latest_run.log"),
+        ]),
+        path.resolve(root, "data", "fetcher_latest_run.log"),
+        path.resolve(root, "public", "data", "fetcher_latest_run.log"),
+      ]) || path.resolve(path.dirname(latestStatusPath), "fetcher_latest_run.log");
+      const logTail = fs.existsSync(logPath)
+        ? fs.readFileSync(logPath, "utf-8").split(/\r?\n/).slice(-80).join("\n")
+        : "";
+      const authError = /invalid_grant|expired|revoked/i.test(logTail)
+        ? "Google token expired or revoked. Reconnect Google auth before running the Gmail fetcher."
+        : "";
+
+      return {
+        fetcherState: String(parsed.state || ""),
+        fetcherOk: Boolean(parsed.ok),
+        fetcherStartedAt: String(parsed.startedAt || ""),
+        fetcherFinishedAt: String(parsed.finishedAt || ""),
+        fetcherError: authError || String(parsed.error || ""),
+        fetcherLogPath: logPath,
+      };
+    } catch {
+      return {
+        fetcherState: "status_parse_error",
+        fetcherOk: false,
+        fetcherStartedAt: "",
+        fetcherFinishedAt: "",
+        fetcherError: "Could not parse fetcher_latest_status.json",
+        fetcherLogPath: "",
+      };
+    }
+  }
+
+  return {
+    fetcherState: "",
+    fetcherOk: false,
+    fetcherStartedAt: "",
+    fetcherFinishedAt: "",
+    fetcherError: "",
+    fetcherLogPath: "",
+  };
+}
+
+function localFetcherRoot() {
+  return fetcherRootCandidates().find((candidate) => (
+    fs.existsSync(path.resolve(candidate, "scripts", "run-safe-fetcher-update.js")) &&
+    fs.existsSync(path.resolve(candidate, "FetchrMatcherV5.py"))
+  ));
+}
+
+function runLocalGmailFetcher() {
+  const fetcherRoot = localFetcherRoot();
+  if (!fetcherRoot) {
+    throw new Error("Local Gmail fetcher is not installed for this dashboard.");
+  }
+
+  const result = spawnSync(process.execPath, ["scripts/run-safe-fetcher-update.js"], {
+    cwd: fetcherRoot,
+    shell: false,
+    encoding: "utf-8",
+    timeout: 10 * 60 * 1000,
+    env: {
+      ...process.env,
+      FETCHER_LOOKBACK_DAYS: process.env.FETCHER_LOOKBACK_DAYS || "30",
+      HPD_DASHBOARD_DATA_DIR: path.resolve(process.cwd(), "data"),
+      PYTHONIOENCODING: "utf-8",
+      PYTHONUTF8: "1",
+    },
+  });
+
+  if (result.error) {
+    throw new Error(`Local Gmail fetch failed: ${result.error.message}`);
+  }
+
+  if (result.status !== 0) {
+    const output = `${result.stderr || ""}\n${result.stdout || ""}`.trim().split(/\r?\n/).slice(-8).join(" ");
+    throw new Error(output || `Local Gmail fetch failed with exit code ${result.status}.`);
+  }
+}
+
+function sourceLabel(type: "csv" | "json", sourcePath: string) {
+  return sourcePath.toLowerCase().includes(".automation-hpd") ? `Fetcher ${type.toUpperCase()}` : `Bundled ${type.toUpperCase()}`;
+}
+
+function dateKeyFromIso(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function startOfDateKey(value: string) {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function daysBehindDateKey(value: string) {
+  const date = startOfDateKey(value);
+  if (!date) return null;
+
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  return Math.max(0, Math.round((todayStart.getTime() - date.getTime()) / 86400000));
+}
+
+function coverageWithFetcherRun(coverage: ReturnType<typeof getJobsCoverageInfo>, fetcher: ReturnType<typeof readFetcherRunInfo>) {
+  const fetchThroughDate = fetcher.fetcherOk ? dateKeyFromIso(fetcher.fetcherFinishedAt) : "";
+  const fetchDaysBehind = fetchThroughDate ? daysBehindDateKey(fetchThroughDate) : null;
+
+  return {
+    ...coverage,
+    inferredDataThroughDate: coverage.dataThroughDate,
+    fetchThroughDate,
+    dataThroughDate: fetchThroughDate || coverage.dataThroughDate,
+    daysBehind: fetchDaysBehind ?? coverage.daysBehind,
+  };
+}
+
 function localSourcePayload() {
   const source = getJobsSourceInfo();
   const jobs = getJobs();
   const configured = Boolean(feedConfig());
+  const coverage = getJobsCoverageInfo(jobs);
+  const fetcher = readFetcherRunInfo();
+  const effectiveCoverage = coverageWithFetcherRun(coverage, fetcher);
+  const fetcherAuthError = /invalid_grant|expired|revoked|auth/i.test(fetcher.fetcherError);
 
   return {
     configured,
     count: jobs.length,
     lastSyncAt: source.updatedAt,
-    source: `Bundled ${source.type.toUpperCase()}`,
+    sourceUpdatedAt: source.updatedAt,
+    source: sourceLabel(source.type, source.path),
+    ...effectiveCoverage,
+    ...fetcher,
     jobs,
-    message: configured
+    message: fetcherAuthError
+      ? "Gmail fetch needs Google re-auth before jobs can be updated through today."
+      : fetcher.fetcherOk
+      ? "Gmail fetch completed. Latest fetched jobs are loaded from this machine."
+      : configured
       ? "Live feed is configured. Tap Fetch Now to pull the latest file."
       : "Live feed URL is not connected yet. Connect JOBS_CSV_URL or JOBS_JSON_URL to enable live award fetch.",
   };
@@ -151,10 +323,25 @@ export async function POST(request: Request) {
   }
 
   if (!feed) {
-    return NextResponse.json({
-      ok: true,
-      ...localSourcePayload(),
-    });
+    try {
+      runLocalGmailFetcher();
+      return NextResponse.json({
+        ok: true,
+        ...localSourcePayload(),
+        message: "Gmail fetch completed. Latest fetched jobs are loaded permanently on this machine.",
+      });
+    } catch (error) {
+      const fallback = localSourcePayload();
+      return NextResponse.json(
+        {
+          ok: false,
+          ...fallback,
+          message: "Local Gmail fetch needs attention.",
+          error: error instanceof Error ? error.message : "Local Gmail fetch failed.",
+        },
+        { status: 502 },
+      );
+    }
   }
 
   try {
@@ -167,6 +354,8 @@ export async function POST(request: Request) {
         count: fallback.count,
         jobs: fallback.jobs,
         lastSyncAt: now,
+        sourceUpdatedAt: fallback.sourceUpdatedAt,
+        ...coverageWithFetcherRun(getJobsCoverageInfo(fallback.jobs), readFetcherRunInfo()),
         source: "Manual JSON",
         message: `${fallback.count} jobs loaded from this app's API feed.`,
       });
@@ -188,6 +377,9 @@ export async function POST(request: Request) {
       count: jobs.length,
       jobs,
       lastSyncAt: now,
+      sourceUpdatedAt: now,
+      ...getJobsCoverageInfo(jobs),
+      ...readFetcherRunInfo(),
       source,
       message: `${jobs.length} jobs fetched from the ${feed.manual ? "pasted" : "live"} feed.`,
     });

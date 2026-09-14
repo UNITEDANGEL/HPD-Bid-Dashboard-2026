@@ -6,6 +6,39 @@ import type { JobRecord } from "./types";
 
 type SourceRow = Record<string, unknown>;
 
+function uniquePaths(values: string[]) {
+  return Array.from(new Set(values.filter(Boolean).map((value) => path.resolve(value))));
+}
+
+function envPath(name: string) {
+  const value = process.env[name]?.trim();
+  return value ? path.resolve(value) : "";
+}
+
+export function fetcherRootCandidates() {
+  return uniquePaths([
+    envPath("HPD_FETCHER_ROOT"),
+    path.resolve(process.cwd(), "..", "..", ".automation-hpd-20260814-1301"),
+  ]);
+}
+
+function fetcherDataDirCandidates() {
+  return uniquePaths([
+    envPath("HPD_JOBS_DATA_DIR"),
+    ...fetcherRootCandidates().flatMap((root) => [
+      path.resolve(root, "data"),
+      path.resolve(root, "public", "data"),
+    ]),
+  ]);
+}
+
+function newestExistingPath(candidates: string[]) {
+  return candidates
+    .filter((candidate) => fs.existsSync(candidate))
+    .map((candidate) => ({ candidate, updatedAt: fs.statSync(candidate).mtimeMs }))
+    .sort((a, b) => b.updatedAt - a.updatedAt)[0]?.candidate;
+}
+
 function pick(row: SourceRow, keys: string[]) {
   for (const key of keys) {
     const value = row[key];
@@ -35,35 +68,39 @@ function cleanSourceValue(value: string) {
 }
 
 export function csvCandidates() {
-  return [
+  return uniquePaths([
+    envPath("HPD_JOBS_CSV_PATH"),
+    ...fetcherDataDirCandidates().map((dir) => path.resolve(dir, "COA_Fetcher_2026.csv")),
     path.resolve(process.cwd(), "data", "COA_Fetcher_2026.csv"),
     path.resolve(process.cwd(), "public", "data", "COA_Fetcher_2026.csv"),
     path.resolve(process.cwd(), "..", "Fetcher_Output", "HPD_Bid_Fetcher_Master_2026.csv"),
     path.resolve(process.cwd(), "data", "merged_job_data.csv"),
     path.resolve(process.cwd(), "..", "..", "Samples", "Merged Data", "merged_job_data.csv"),
     path.resolve(process.cwd(), "..", "..", "Fetcher_Output", "HPD_Bid_Fetcher_Master_2026.csv"),
-  ];
+  ]);
 }
 
 export function jsonCandidates() {
-  return [
+  return uniquePaths([
+    envPath("HPD_JOBS_JSON_PATH"),
+    ...fetcherDataDirCandidates().map((dir) => path.resolve(dir, "COA_Fetcher_2026.json")),
     path.resolve(process.cwd(), "data", "COA_Fetcher_2026.json"),
     path.resolve(process.cwd(), "public", "data", "COA_Fetcher_2026.json"),
-  ];
+  ]);
 }
 
 export function resolveJobsSourcePath() {
-  const jsonPath = jsonCandidates().find((candidate) => fs.existsSync(candidate));
+  const jsonPath = newestExistingPath(jsonCandidates());
   if (jsonPath) return { path: jsonPath, type: "json" as const };
 
-  const csvPath = csvCandidates().find((candidate) => fs.existsSync(candidate));
+  const csvPath = newestExistingPath(csvCandidates());
   if (csvPath) return { path: csvPath, type: "csv" as const };
 
   throw new Error(`Required jobs data not found. Checked: ${jsonCandidates().concat(csvCandidates()).join(" | ")}`);
 }
 
 export function resolveCsvPath() {
-  const csvPath = csvCandidates().find((candidate) => fs.existsSync(candidate));
+  const csvPath = newestExistingPath(csvCandidates());
   if (!csvPath) {
     throw new Error(`Required CSV not found. Checked: ${csvCandidates().join(" | ")}`);
   }
@@ -103,6 +140,18 @@ function formatDateForRecord(date: Date | null, fallback: string) {
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
   const day = `${date.getDate()}`.padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function formatDateKey(date: Date | null) {
+  if (!date) return "";
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 function zipToBorough(zip: string) {
@@ -286,6 +335,45 @@ export function getJobsSourceInfo() {
     type: source.type,
     updatedAt: stat.mtime.toISOString(),
     size: stat.size,
+  };
+}
+
+export function getJobsCoverageInfo(jobs: JobRecord[] = getJobs()) {
+  const today = startOfDay(new Date());
+  const awardDates: Date[] = [];
+  const allDates: Date[] = [];
+  let jobsAfterToday = 0;
+
+  for (const job of jobs) {
+    const jobDates = [job.awardDate, job.startDate, job.completionDate]
+      .map((value) => parseJobDate(value))
+      .filter((date): date is Date => Boolean(date));
+
+    if (jobDates.some((date) => startOfDay(date) > today)) {
+      jobsAfterToday += 1;
+    }
+
+    const awardDate = parseJobDate(job.awardDate);
+    if (awardDate) awardDates.push(awardDate);
+    allDates.push(...jobDates);
+  }
+
+  const newestAwardDate = awardDates.length ? new Date(Math.max(...awardDates.map((date) => date.getTime()))) : null;
+  const newestJobDate = allDates.length ? new Date(Math.max(...allDates.map((date) => date.getTime()))) : null;
+  const oldestJobDate = allDates.length ? new Date(Math.min(...allDates.map((date) => date.getTime()))) : null;
+  const dataThroughDate = newestAwardDate || newestJobDate;
+  const daysBehind = dataThroughDate
+    ? Math.max(0, Math.round((today.getTime() - startOfDay(dataThroughDate).getTime()) / 86400000))
+    : null;
+
+  return {
+    today: formatDateKey(today),
+    oldestJobDate: formatDateKey(oldestJobDate),
+    newestAwardDate: formatDateKey(newestAwardDate),
+    newestJobDate: formatDateKey(newestJobDate),
+    dataThroughDate: formatDateKey(dataThroughDate),
+    daysBehind,
+    jobsAfterToday,
   };
 }
 

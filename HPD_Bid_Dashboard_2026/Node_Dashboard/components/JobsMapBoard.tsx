@@ -5,6 +5,12 @@ import type { ChangeEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StatusBadge } from "./StatusBadge";
 import type { JobRecord } from "../lib/types";
+import {
+  AFFIDAVIT_VERSION_LABEL,
+  affidavitSetForAwardDate,
+  affidavitTemplateForStatus,
+  affidavitTypeForStatus,
+} from "../lib/affidavits";
 import { isMainMapStatus } from "../lib/workflow";
 import { compareJobsBySearch, matchesJobSearch } from "../lib/search";
 
@@ -18,6 +24,10 @@ type ActivePanel = "" | "filters" | "status" | "days" | "notifications" | "accou
 type ChartPeriod = "Last 12 Months" | "2026 YTD" | "Last 90 Days";
 type DateRangeView = "30d" | "60d" | "all" | "custom";
 type ManualFeedType = "csv" | "json";
+type SyncJobsOptions = {
+  automatic?: boolean;
+  openPanel?: boolean;
+};
 type MediaFile = {
   url: string;
   name?: string;
@@ -30,19 +40,49 @@ type FieldFlowEvent = {
   createdAt: string;
 };
 
+type GeneratedDocuments = {
+  job_card_path?: string;
+  invoice_path?: string;
+  affidavit_path?: string;
+  affidavit_type?: string;
+  affidavit_template_version?: string;
+  saved_folder?: string;
+  saved_at?: string;
+  affidavit_preview_paths?: string[];
+  affidavit_preview_urls?: string[];
+  affidavit_preview_error?: string;
+  file_urls?: Record<string, string>;
+};
+
+type GeneratedDocumentKey = "job_card_path" | "invoice_path" | "affidavit_path";
+
 type SyncState = {
   status: "checking" | "current" | "syncing" | "failed";
   configured: boolean;
   count: number;
   lastSyncAt: string;
+  sourceUpdatedAt: string;
   source: string;
   message: string;
+  today: string;
+  dataThroughDate: string;
+  inferredDataThroughDate: string;
+  fetchThroughDate: string;
+  newestAwardDate: string;
+  newestJobDate: string;
+  daysBehind: number | null;
+  jobsAfterToday: number;
+  fetcherState: string;
+  fetcherOk: boolean;
+  fetcherFinishedAt: string;
+  fetcherError: string;
 };
 
 const STATUS_OVERRIDE_STORAGE_KEY = "hpd-job-status-overrides-v1";
 const FIELD_FLOW_STORAGE_KEY = "hpd-job-field-flow-events-v1";
 const MANUAL_FEED_URL_STORAGE_KEY = "hpd-live-feed-url-v1";
 const MANUAL_FEED_TYPE_STORAGE_KEY = "hpd-live-feed-type-v1";
+const NEW_AWARD_IDS_STORAGE_KEY = "hpd-new-award-ids-v1";
 const CHART_PERIODS: ChartPeriod[] = ["Last 12 Months", "2026 YTD", "Last 90 Days"];
 const DATE_RANGE_OPTIONS: Array<{ value: DateRangeView; label: string; title: string }> = [
   { value: "30d", label: "30D", title: "Last 30 days" },
@@ -60,6 +100,7 @@ const FIELD_STATUS_ACTIONS = [
   { label: "Complete", value: "Work Completed", phase: "outcome" },
   { label: "No Access", value: "No Access - 1st Attempt", phase: "outcome" },
   { label: "Refused", value: "Refused Access", phase: "outcome" },
+  { label: "By Other", value: "Work Completed by Other", phase: "outcome" },
   { label: "Materials", value: "Needs Materials", phase: "outcome" },
   { label: "Follow Up", value: "Follow Up Required", phase: "outcome" },
 ] as const;
@@ -131,6 +172,26 @@ function imageUrlsFromMedia(files: MediaFile[]) {
     .filter(Boolean);
 }
 
+function generatedFileUrl(filePath = "") {
+  return filePath ? `/api/jobs/file?path=${encodeURIComponent(filePath)}` : "";
+}
+
+function generatedDocumentUrl(docs: GeneratedDocuments | null, key: GeneratedDocumentKey) {
+  const filePath = docs?.[key];
+  return docs?.file_urls?.[key] || (filePath ? generatedFileUrl(filePath) : "");
+}
+
+function generatedDocumentName(docs: GeneratedDocuments | null, key: GeneratedDocumentKey) {
+  const filePath = docs?.[key];
+  return filePath ? filePath.split(/[\\/]/).pop() || undefined : undefined;
+}
+
+function affidavitPreviewUrls(docs: GeneratedDocuments | null) {
+  if (!docs) return [];
+  if (docs.affidavit_preview_urls?.length) return docs.affidavit_preview_urls;
+  return (docs.affidavit_preview_paths || []).map(generatedFileUrl);
+}
+
 function usableDate(value: string) {
   const raw = String(value || "").trim();
   if (!raw) return null;
@@ -181,6 +242,22 @@ function formatSyncTime(value: string) {
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
+}
+
+function coverageLabel(value: string) {
+  const formatted = formatShortDate(value);
+  return formatted === "Date unavailable" ? "unknown" : formatted;
+}
+
+function freshnessLabel(daysBehind: number | null) {
+  if (daysBehind === null) return "Coverage unknown";
+  if (daysBehind <= 0) return "Up to today";
+  return `${daysBehind} day${daysBehind === 1 ? "" : "s"} behind`;
+}
+
+function numberOrNull(value: unknown) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
 }
 
 function activityStamp(job: JobRecord) {
@@ -238,7 +315,7 @@ function displayStatus(job: JobRecord) {
 }
 
 function isActiveMapJob(job: JobRecord) {
-  return job.hasMap;
+  return job.hasMap && !job.archived;
 }
 
 function jobTitle(job: JobRecord) {
@@ -324,6 +401,124 @@ function mapsHref(job: JobRecord) {
 function phoneHref(job: JobRecord) {
   const cleaned = String(job.tenantPhone || "").replace(/[^\d+]/g, "");
   return cleaned ? `tel:${cleaned}` : "";
+}
+
+function coordsForJob(job: JobRecord): [number, number] | null {
+  const latitude = Number(job.latitude);
+  const longitude = Number(job.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  return [latitude, longitude];
+}
+
+function distanceMilesBetween(a: [number, number], b: [number, number]) {
+  const earthRadiusMiles = 3958.8;
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const dLat = toRadians(b[0] - a[0]);
+  const dLon = toRadians(b[1] - a[1]);
+  const lat1 = toRadians(a[0]);
+  const lat2 = toRadians(b[0]);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return 2 * earthRadiusMiles * Math.asin(Math.sqrt(h));
+}
+
+function formatDistanceMiles(value: number | null) {
+  if (value === null) return "";
+  if (value < 0.1) return "here";
+  if (value < 10) return `${value.toFixed(1)} mi`;
+  return `${Math.round(value)} mi`;
+}
+
+function isFieldRouteCandidate(job: JobRecord) {
+  const normalized = displayStatus(job).toLowerCase();
+  return Boolean(
+    coordsForJob(job) &&
+    !job.archived &&
+    !normalized.includes("completed") &&
+    !normalized.includes("refused"),
+  );
+}
+
+function buildFieldRoute(origin: [number, number] | null, jobs: JobRecord[], limit = 8) {
+  const route: JobRecord[] = [];
+  const remaining = jobs.filter(isFieldRouteCandidate);
+  let current = origin;
+
+  while (remaining.length && route.length < limit) {
+    let nextIndex = 0;
+
+    if (current) {
+      let bestMiles = Number.POSITIVE_INFINITY;
+      remaining.forEach((job, index) => {
+        const coords = coordsForJob(job);
+        if (!coords) return;
+        const miles = distanceMilesBetween(current as [number, number], coords);
+        if (miles < bestMiles) {
+          bestMiles = miles;
+          nextIndex = index;
+        }
+      });
+    } else {
+      nextIndex = remaining.reduce((bestIndex, job, index) => {
+        const currentDate = dateKeyForValue(job.awardDate);
+        const bestDate = dateKeyForValue(remaining[bestIndex].awardDate);
+        return currentDate.localeCompare(bestDate) > 0 ? index : bestIndex;
+      }, 0);
+    }
+
+    const [nextJob] = remaining.splice(nextIndex, 1);
+    if (!nextJob) break;
+    route.push(nextJob);
+    current = coordsForJob(nextJob) || current;
+  }
+
+  return route;
+}
+
+function googleRouteHref(origin: [number, number] | null, stops: JobRecord[]) {
+  if (!origin) return "";
+  const stopCoords = stops
+    .map(coordsForJob)
+    .filter((coords): coords is [number, number] => Boolean(coords))
+    .slice(0, 8);
+  if (!stopCoords.length) return "";
+
+  const destination = stopCoords[stopCoords.length - 1];
+  const params = new URLSearchParams({
+    api: "1",
+    origin: `${origin[0]},${origin[1]}`,
+    destination: `${destination[0]},${destination[1]}`,
+    travelmode: "driving",
+  });
+  const waypoints = stopCoords
+    .slice(0, -1)
+    .map((coords) => `${coords[0]},${coords[1]}`)
+    .join("|");
+  if (waypoints) params.set("waypoints", waypoints);
+
+  return `https://www.google.com/maps/dir/?${params.toString()}`;
+}
+
+function dateKeyFromDate(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function todayDateKey() {
+  return dateKeyFromDate(new Date());
+}
+
+function dateKeyForValue(value: string) {
+  const date = usableDate(value);
+  return date ? dateKeyFromDate(date) : "";
+}
+
+function syncCoversToday(state: Pick<SyncState, "today" | "fetchThroughDate" | "daysBehind" | "fetcherOk">) {
+  const today = state.today || todayDateKey();
+  return Boolean(state.fetcherOk && (state.fetchThroughDate === today || state.daysBehind === 0));
 }
 
 function csvValue(value: string | number) {
@@ -441,25 +636,54 @@ export function JobsMapBoard({ jobs }: Props) {
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [toast, setToast] = useState("");
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [closingOutId, setClosingOutId] = useState("");
+  const [archivingPackageId, setArchivingPackageId] = useState("");
+  const [generatedDocsByJob, setGeneratedDocsByJob] = useState<Record<string, GeneratedDocuments>>({});
   const [statusMediaPrompt, setStatusMediaPrompt] = useState<{ jobId: string; label: string } | null>(null);
   const [photoUrlsByJob, setPhotoUrlsByJob] = useState<Record<string, string[]>>({});
   const [jobStatusOverrides, setJobStatusOverrides] = useState<Record<string, string>>({});
   const [fieldFlowEventsByJob, setFieldFlowEventsByJob] = useState<Record<string, Record<string, FieldFlowEvent>>>({});
+  const [newAwardIds, setNewAwardIds] = useState<string[]>([]);
+  const [routeMode, setRouteMode] = useState(false);
+  const [routeSkippedIds, setRouteSkippedIds] = useState<string[]>([]);
+  const [activeRouteIndex, setActiveRouteIndex] = useState(0);
   const [syncState, setSyncState] = useState<SyncState>({
     status: "checking",
     configured: false,
     count: jobs.length,
     lastSyncAt: "",
+    sourceUpdatedAt: "",
     source: "Bundled JSON",
     message: "Checking data source...",
+    today: "",
+    dataThroughDate: "",
+    inferredDataThroughDate: "",
+    fetchThroughDate: "",
+    newestAwardDate: "",
+    newestJobDate: "",
+    daysBehind: null,
+    jobsAfterToday: 0,
+    fetcherState: "",
+    fetcherOk: false,
+    fetcherFinishedAt: "",
+    fetcherError: "",
   });
   const [manualFeedUrl, setManualFeedUrl] = useState("");
   const [manualFeedType, setManualFeedType] = useState<ManualFeedType>("csv");
   const [mapFitNonce, setMapFitNonce] = useState(0);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [locationState, setLocationState] = useState<"idle" | "locating" | "found" | "blocked">("idle");
+  const [phonePreviewMode, setPhonePreviewMode] = useState(false);
+  const autoLocationRequested = useRef(false);
+  const autoSyncRequested = useRef(false);
   const mobileBoroughRowRef = useRef<HTMLDivElement>(null);
   const jobSheetTouchStartY = useRef<number | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setPhonePreviewMode(params.get("look") === "iphone-size" || params.get("phone") === "1");
+  }, []);
 
   const effectiveJobs = useMemo(
     () => sourceJobs.map((job) => {
@@ -517,7 +741,28 @@ export function JobsMapBoard({ jobs }: Props) {
   const selectedPhotoUrls = selected ? photoUrlsByJob[selected.id] || [] : [];
   const selectedPhotoUrl = selectedPhotoUrls[0] || "";
   const selectedStatus = selected ? displayStatus(selected) : "";
+  const selectedAffidavitSet = affidavitSetForAwardDate(selected?.awardDate || "");
+  const selectedAffidavitTemplate = affidavitTemplateForStatus(selectedStatus, selected?.awardDate || "");
+  const selectedGeneratedDocs = selected ? generatedDocsByJob[selected.id] || null : null;
   const selectedFlowEvents = selected ? fieldFlowEventsByJob[selected.id] || {} : {};
+  const selectedOutcome = latestStampedAction(OUTCOME_STATUS_ACTIONS, selectedFlowEvents);
+  const selectedNextSiteAction = !selectedFlowEvents["Arrived On Site"]
+    ? VISIT_STATUS_ACTIONS[0] || null
+    : !selectedFlowEvents["Work Started"]
+      ? VISIT_STATUS_ACTIONS[1] || null
+      : null;
+  const selectedPrimaryFlowLabel = selectedNextSiteAction
+    ? selectedNextSiteAction.value === "Arrived On Site" ? "Arrive" : "Start"
+    : !selectedOutcome ? "Pick Outcome" : selectedGeneratedDocs ? "Save" : "Generate";
+  const selectedPrimaryFlowStage = selectedNextSiteAction
+    ? selectedNextSiteAction.value === "Arrived On Site" ? "On Site" : "Work Order"
+    : !selectedOutcome ? "Close Out" : selectedGeneratedDocs ? "Package Ready" : "Paperwork";
+  const selectedPrimaryFlowHint = selectedNextSiteAction
+    ? selectedNextSiteAction.value === "Arrived On Site" ? "Confirm arrival before work starts" : "Mark the work as started"
+    : !selectedOutcome ? "Choose what happened first"
+      : selectedGeneratedDocs ? "Preview checked, then archive"
+        : "Generate invoice and affidavit";
+  const selectedPrimaryFlowBusy = Boolean(selected && (closingOutId === selected.id || archivingPackageId === selected.id));
   const selectedAddress = selected ? realFieldValue(selected.address) : "";
   const selectedBorough = selected ? realFieldValue(selected.borough) : "";
   const selectedTrade = selected ? realFieldValue(selected.trade) : "";
@@ -526,6 +771,78 @@ export function JobsMapBoard({ jobs }: Props) {
   const selectedAmount = selected ? realFieldValue(formatCurrency(selected.amountValue, selected.bidAmount)) : "";
   const selectedTenantName = selected ? realFieldValue(selected.tenantName) : "";
   const selectedLocation = selected ? realFieldValue(selected.location) : "";
+  const newAwardIdSet = useMemo(() => new Set(newAwardIds), [newAwardIds]);
+  const latestAwardDateKey = useMemo(() => {
+    const awardKeys = effectiveJobs
+      .map((job) => dateKeyForValue(job.awardDate))
+      .filter(Boolean)
+      .sort();
+    return awardKeys[awardKeys.length - 1] || "";
+  }, [effectiveJobs]);
+  const latestAwardIdSet = useMemo(
+    () => new Set(effectiveJobs
+      .filter((job) => latestAwardDateKey && dateKeyForValue(job.awardDate) === latestAwardDateKey)
+      .map((job) => job.id)),
+    [effectiveJobs, latestAwardDateKey],
+  );
+  const latestAwardIds = useMemo(() => Array.from(latestAwardIdSet), [latestAwardIdSet]);
+  const todayFieldJobs = useMemo(() => {
+    const ranked = filtered
+      .filter((job) => coordsForJob(job))
+      .map((job) => {
+        const coords = coordsForJob(job);
+        const distanceMiles = userLocation && coords ? distanceMilesBetween(userLocation, coords) : null;
+        return {
+          job,
+          distanceMiles,
+          newAward: newAwardIdSet.has(job.id),
+          latestAward: latestAwardIdSet.has(job.id),
+        };
+      });
+
+    return ranked
+      .sort((a, b) => {
+        if (userLocation) return (a.distanceMiles ?? Number.POSITIVE_INFINITY) - (b.distanceMiles ?? Number.POSITIVE_INFINITY);
+        if (a.newAward !== b.newAward) return a.newAward ? -1 : 1;
+        return dateKeyForValue(b.job.awardDate).localeCompare(dateKeyForValue(a.job.awardDate));
+      })
+      .slice(0, 5);
+  }, [filtered, latestAwardIdSet, newAwardIdSet, userLocation]);
+  const todayNewCount = newAwardIds.filter((id) => effectiveJobs.some((job) => job.id === id)).length;
+  const todayLatestCount = latestAwardIdSet.size;
+  const nearestDistanceText = todayFieldJobs[0]?.distanceMiles !== null && todayFieldJobs[0]?.distanceMiles !== undefined
+    ? formatDistanceMiles(todayFieldJobs[0].distanceMiles)
+    : locationState === "blocked"
+      ? "location off"
+      : "locating";
+  const todayModeTitle = userLocation ? "Closest Jobs" : "Today Field Mode";
+  const routeSkippedIdSet = useMemo(() => new Set(routeSkippedIds), [routeSkippedIds]);
+  const routeStops = useMemo(
+    () => buildFieldRoute(userLocation, filtered.filter((job) => !routeSkippedIdSet.has(job.id)), 8),
+    [filtered, routeSkippedIdSet, userLocation],
+  );
+  const activeRouteStopIndex = routeStops.length ? Math.min(activeRouteIndex, routeStops.length - 1) : 0;
+  const activeRouteJob = routeStops[activeRouteStopIndex] || null;
+  const routeStopItems = useMemo(() => {
+    let previous = userLocation;
+    return routeStops.map((job) => {
+      const coords = coordsForJob(job);
+      const legMiles = previous && coords ? distanceMilesBetween(previous, coords) : null;
+      previous = coords || previous;
+      return { job, legMiles };
+    });
+  }, [routeStops, userLocation]);
+  const routeTotalMiles = userLocation && routeStopItems.length
+    ? routeStopItems.reduce((sum, item) => sum + (item.legMiles || 0), 0)
+    : null;
+  const routeMapsHref = googleRouteHref(userLocation, routeStops);
+  const routeTotalText = routeTotalMiles !== null
+    ? formatDistanceMiles(routeTotalMiles)
+    : locationState === "blocked"
+      ? "location off"
+      : "locating";
+  const mapRouteJobs = routeMode ? routeStops : [];
+  const activeRouteStopId = routeMode ? activeRouteJob?.id || "" : "";
   const selectedDetailItems = [
     selectedStartDate ? { label: "Start Date", value: selectedStartDate, icon: "calendar-icon" } : null,
     selectedCompletionDate ? { label: "Completion", value: selectedCompletionDate, icon: "calendar-icon" } : null,
@@ -570,13 +887,34 @@ export function JobsMapBoard({ jobs }: Props) {
     count: dateRangeBase.filter((job) => dateRangeMatches(job, "custom", dateRangeAnchor, days)).length,
   }));
   const hasManualFeed = manualFeedUrl.trim().length > 0;
+  const coverageDate = syncState.fetchThroughDate || syncState.dataThroughDate || syncState.newestAwardDate;
+  const dataThroughText = coverageLabel(coverageDate);
+  const latestAwardText = coverageLabel(syncState.newestAwardDate);
+  const dataFreshnessText = freshnessLabel(syncState.daysBehind);
+  const dataNeedsRefresh = typeof syncState.daysBehind === "number" && syncState.daysBehind > 0;
+  const fetcherNeedsAuth = /invalid_grant|expired|revoked|auth/i.test(syncState.fetcherError);
+  const fetcherIsCurrent = Boolean(syncState.fetcherOk && syncState.fetchThroughDate && !dataNeedsRefresh);
+  const todayModeMeta = syncState.status === "syncing"
+    ? "fetching"
+    : fetcherIsCurrent
+      ? "current"
+      : dataNeedsRefresh
+        ? dataFreshnessText
+        : "checking";
+  const todayHighlightLabel = todayNewCount ? "New" : "Latest";
+  const lastFetchAttemptText = syncState.fetcherFinishedAt ? formatSyncTime(syncState.fetcherFinishedAt) : "not attempted";
+  const sourceUpdatedText = formatSyncTime(syncState.sourceUpdatedAt || syncState.lastSyncAt);
   const all2026MappableCount = mappableJobs.filter((job) => dateRangeMatches(job, "all", dateRangeAnchor, customDays)).length;
   const unmappedJobs = effectiveJobs.filter((job) => !isActiveMapJob(job));
-  const healthFeedMode = syncState.configured
+  const healthFeedMode = fetcherIsCurrent
+    ? "Fetched through today"
+    : syncState.configured
     ? "Live feed connected"
     : hasManualFeed
       ? `${manualFeedType.toUpperCase()} URL ready`
-      : "Bundled data only";
+      : fetcherNeedsAuth
+        ? "Google auth needed"
+        : "Bundled data only";
   const dataHealthStats = [
     { label: "2026 Jobs", value: all2026MappableCount },
     { label: "Visible", value: filtered.length },
@@ -591,7 +929,11 @@ export function JobsMapBoard({ jobs }: Props) {
   }));
   const dataHealthDetails = [
     { label: "Source", value: syncState.source || "Bundled JSON" },
-    { label: "Last Fetch", value: formatSyncTime(syncState.lastSyncAt) },
+    { label: "Data Through", value: dataThroughText },
+    { label: "Latest Award", value: latestAwardText },
+    { label: "Today Gap", value: dataFreshnessText },
+    { label: "Last Attempt", value: lastFetchAttemptText },
+    { label: "Source Updated", value: sourceUpdatedText },
     { label: "Feed", value: healthFeedMode },
     { label: "Status", value: syncState.message || "Data source checked." },
   ];
@@ -611,34 +953,59 @@ export function JobsMapBoard({ jobs }: Props) {
         : `${dateRangeLabel(dateRange, customDays)} Jobs`;
   const syncTitle = hasManualFeed && !syncState.configured
     ? "Manual Feed Ready"
+    : fetcherNeedsAuth
+      ? "Google Auth Needed"
+    : fetcherIsCurrent
+      ? "Fetched Through Today"
     : !syncState.configured
     ? "Bundled Data Only"
     : syncState.status === "failed"
       ? "Fetch failed"
-      : "Live Feed Connected";
+      : dataNeedsRefresh
+        ? "Refresh Needed"
+        : "Live Feed Connected";
   const syncMessage = hasManualFeed && !syncState.configured
     ? "Tap Fetch Now to pull this pasted CSV or JSON feed into the map."
+    : fetcherNeedsAuth
+      ? "Saved Gmail token is expired or revoked. Reconnect Google, then fetch jobs through today."
+    : fetcherIsCurrent
+      ? `Gmail fetch is current through today. Latest award found: ${latestAwardText}.`
     : !syncState.configured
-    ? "Using the bundled 2026 jobs. Connect a live CSV or JSON feed to pull new awards."
+    ? "Using bundled 2026 jobs. Connect Gmail fetcher or a live feed to pull new awards."
     : syncState.message;
+  const coverageMetaText = coverageDate
+    ? `Data through ${dataThroughText} · ${dataFreshnessText}`
+    : "Data coverage unknown";
   const syncMetaText = hasManualFeed && !syncState.configured
     ? `${manualFeedType.toUpperCase()} URL saved on this device`
     : syncState.configured
-    ? `${syncState.count} jobs · Last Fetch ${formatSyncTime(syncState.lastSyncAt)}`
-    : `${mappableJobs.length} mapped jobs · No live feed connected`;
+    ? `${syncState.count} jobs · ${coverageMetaText}`
+    : `${mappableJobs.length} mapped jobs · ${coverageMetaText}`;
   const mapDataBadgeTitle = syncState.status === "syncing"
     ? "Fetching"
+    : fetcherNeedsAuth
+      ? "Google Auth Needed"
+      : fetcherIsCurrent
+        ? "Fetched Through Today"
+      : dataNeedsRefresh
+        ? "Refresh Needed"
     : syncState.configured
       ? "Live Feed Connected"
       : hasManualFeed
         ? "Manual Feed Ready"
         : "Bundled Data Only";
   const mapDataBadgeMeta = syncState.configured
-    ? `Last Fetch ${formatSyncTime(syncState.lastSyncAt)}`
+    ? `Through ${dataThroughText}`
     : hasManualFeed
       ? `${manualFeedType.toUpperCase()} feed saved`
-      : "No live feed connected";
-  const mapDataBadgeCounts = `${mappableJobs.length} mapped · ${filtered.length} visible`;
+      : fetcherIsCurrent
+        ? `Through ${dataThroughText}`
+      : syncState.dataThroughDate
+        ? `Through ${dataThroughText}`
+        : "No live feed connected";
+  const mapDataBadgeCounts = dataNeedsRefresh
+    ? `${filtered.length} visible · ${dataFreshnessText}`
+    : `${mappableJobs.length} mapped · ${filtered.length} visible`;
   const alertCount = Math.min(activityRows.length, 9);
   const boroughCounts = boroughs
     .map((name) => ({
@@ -699,20 +1066,63 @@ export function JobsMapBoard({ jobs }: Props) {
   }, []);
 
   useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(NEW_AWARD_IDS_STORAGE_KEY);
+      const parsed = stored ? JSON.parse(stored) : [];
+      setNewAwardIds(Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : []);
+    } catch {
+      setNewAwardIds([]);
+    }
+  }, []);
+
+  useEffect(() => {
     let active = true;
 
     fetch("/api/jobs/sync")
       .then(async (response) => {
-        const data = await response.json() as Partial<SyncState> & { ok?: boolean; error?: string };
+        const data = await response.json() as Partial<SyncState> & { ok?: boolean; error?: string; jobs?: JobRecord[] };
         if (!active) return;
+        const savedFeedUrl = window.localStorage.getItem(MANUAL_FEED_URL_STORAGE_KEY) || "";
+        const nextJobs = Array.isArray(data.jobs) ? data.jobs : [];
         setSyncState({
-          status: data.ok && data.configured ? "current" : "failed",
+          status: data.ok ? "current" : "failed",
           configured: Boolean(data.configured),
           count: Number(data.count || sourceJobs.length || jobs.length),
           lastSyncAt: String(data.lastSyncAt || ""),
+          sourceUpdatedAt: String(data.sourceUpdatedAt || data.lastSyncAt || ""),
           source: String(data.source || "Bundled CSV"),
           message: String(data.message || data.error || "Data source checked."),
+          today: String(data.today || ""),
+          dataThroughDate: String(data.dataThroughDate || ""),
+          inferredDataThroughDate: String(data.inferredDataThroughDate || ""),
+          fetchThroughDate: String(data.fetchThroughDate || ""),
+          newestAwardDate: String(data.newestAwardDate || ""),
+          newestJobDate: String(data.newestJobDate || ""),
+          daysBehind: numberOrNull(data.daysBehind),
+          jobsAfterToday: Number(data.jobsAfterToday || 0),
+          fetcherState: String(data.fetcherState || ""),
+          fetcherOk: Boolean(data.fetcherOk),
+          fetcherFinishedAt: String(data.fetcherFinishedAt || ""),
+          fetcherError: String(data.fetcherError || ""),
         });
+        if (nextJobs.length) {
+          setSourceJobs(nextJobs);
+        }
+        if (
+          data.ok &&
+          !savedFeedUrl.trim() &&
+          !autoSyncRequested.current &&
+          !/invalid_grant|expired|revoked|auth/i.test(String(data.fetcherError || "")) &&
+          !syncCoversToday({
+            today: String(data.today || ""),
+            fetchThroughDate: String(data.fetchThroughDate || ""),
+            daysBehind: numberOrNull(data.daysBehind),
+            fetcherOk: Boolean(data.fetcherOk),
+          })
+        ) {
+          autoSyncRequested.current = true;
+          void syncJobsNow({ automatic: true, openPanel: false });
+        }
       })
       .catch(() => {
         if (!active) return;
@@ -721,8 +1131,21 @@ export function JobsMapBoard({ jobs }: Props) {
           configured: false,
           count: sourceJobs.length,
           lastSyncAt: "",
+          sourceUpdatedAt: "",
           source: "Bundled CSV",
           message: "Unable to check data source right now.",
+          today: "",
+          dataThroughDate: "",
+          inferredDataThroughDate: "",
+          fetchThroughDate: "",
+          newestAwardDate: "",
+          newestJobDate: "",
+          daysBehind: null,
+          jobsAfterToday: 0,
+          fetcherState: "",
+          fetcherOk: false,
+          fetcherFinishedAt: "",
+          fetcherError: "",
         });
       });
 
@@ -764,6 +1187,14 @@ export function JobsMapBoard({ jobs }: Props) {
 
     window.addEventListener("keydown", handleKeydown);
     return () => window.removeEventListener("keydown", handleKeydown);
+  }, []);
+
+  useEffect(() => {
+    if (autoLocationRequested.current) return;
+    autoLocationRequested.current = true;
+
+    const timer = window.setTimeout(() => locateUser(), 600);
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -825,6 +1256,25 @@ export function JobsMapBoard({ jobs }: Props) {
   }, [filtered, selectedId]);
 
   useEffect(() => {
+    if (!routeMode) return;
+
+    if (!routeStops.length) {
+      if (activeRouteIndex !== 0) setActiveRouteIndex(0);
+      if (selectedId) setSelectedId("");
+      return;
+    }
+
+    if (activeRouteStopIndex !== activeRouteIndex) {
+      setActiveRouteIndex(activeRouteStopIndex);
+      return;
+    }
+
+    if (activeRouteJob && selectedId !== activeRouteJob.id) {
+      setSelectedId(activeRouteJob.id);
+    }
+  }, [activeRouteIndex, activeRouteJob, activeRouteStopIndex, routeMode, routeStops.length, selectedId]);
+
+  useEffect(() => {
     if (!selectedId) return;
 
     const handleEscape = (event: KeyboardEvent) => {
@@ -846,13 +1296,31 @@ export function JobsMapBoard({ jobs }: Props) {
     window.setTimeout(() => setToast(""), 2600);
   }
 
+  function rememberNewAwardIds(ids: string[]) {
+    const cleaned = Array.from(new Set(ids.filter(Boolean))).slice(0, 40);
+    setNewAwardIds(cleaned);
+    try {
+      if (cleaned.length) {
+        window.localStorage.setItem(NEW_AWARD_IDS_STORAGE_KEY, JSON.stringify(cleaned));
+      } else {
+        window.localStorage.removeItem(NEW_AWARD_IDS_STORAGE_KEY);
+      }
+    } catch {
+      // The badge is still useful for the current session.
+    }
+  }
+
   function resetFilters() {
     setQuery("");
     setBorough("");
     setStatusView("All");
     setDateRange("all");
     setSelectedId("");
+    setRouteMode(false);
+    setRouteSkippedIds([]);
+    setActiveRouteIndex(0);
     setUserLocation(null);
+    setLocationState("idle");
     notify("Filters reset.");
   }
 
@@ -905,21 +1373,33 @@ export function JobsMapBoard({ jobs }: Props) {
 
   function selectBorough(name: string) {
     setSelectedId("");
+    setRouteMode(false);
+    setRouteSkippedIds([]);
+    setActiveRouteIndex(0);
     setQuery("");
     setUserLocation(null);
+    setLocationState("idle");
     setBorough((current) => (current === name ? "" : name));
   }
 
   function selectDateRange(range: DateRangeView) {
     setSelectedId("");
+    setRouteMode(false);
+    setRouteSkippedIds([]);
+    setActiveRouteIndex(0);
     setUserLocation(null);
+    setLocationState("idle");
     setDateRange(range);
     setMapFitNonce((current) => current + 1);
   }
 
   function applyDaysFilter(showAll: boolean, days = customDays) {
     setSelectedId("");
+    setRouteMode(false);
+    setRouteSkippedIds([]);
+    setActiveRouteIndex(0);
     setUserLocation(null);
+    setLocationState("idle");
     if (showAll) {
       setDateRange("all");
     } else {
@@ -932,7 +1412,11 @@ export function JobsMapBoard({ jobs }: Props) {
   function updateCustomDays(value: string) {
     const nextDays = Math.max(1, Math.min(999, Math.round(Number(value) || DEFAULT_CUSTOM_DAYS)));
     setSelectedId("");
+    setRouteMode(false);
+    setRouteSkippedIds([]);
+    setActiveRouteIndex(0);
     setUserLocation(null);
+    setLocationState("idle");
     setCustomDays(nextDays);
     setDateRange("custom");
     setMapFitNonce((current) => current + 1);
@@ -940,9 +1424,29 @@ export function JobsMapBoard({ jobs }: Props) {
 
   function fitVisibleMap() {
     setSelectedId("");
+    setRouteMode(false);
+    setRouteSkippedIds([]);
+    setActiveRouteIndex(0);
     setActivePanel("");
-    setUserLocation(null);
     setMapFitNonce((current) => current + 1);
+  }
+
+  function startRouteMode() {
+    setRouteMode(true);
+    setRouteSkippedIds([]);
+    setActiveRouteIndex(0);
+    setSelectedId("");
+    setActivePanel("");
+    if (!userLocation && locationState !== "locating") {
+      locateUser();
+    }
+  }
+
+  function closeRouteMode() {
+    setRouteMode(false);
+    setRouteSkippedIds([]);
+    setActiveRouteIndex(0);
+    setSelectedId("");
   }
 
   function locateUser() {
@@ -950,19 +1454,23 @@ export function JobsMapBoard({ jobs }: Props) {
     setActivePanel("");
 
     if (!navigator.geolocation) {
+      setLocationState("blocked");
       notify("Location is not available in this browser.");
       return;
     }
 
-    notify("Finding your location...");
+    setLocationState("locating");
+    notify("Centering on your location...");
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setUserLocation([position.coords.latitude, position.coords.longitude]);
+        setLocationState("found");
         setMapFitNonce((current) => current + 1);
-        notify("Location found.");
+        notify("Centered on your location.");
       },
       () => {
-        notify("Allow location permission to show where you are.");
+        setLocationState("blocked");
+        notify("Allow location permission to center the map.");
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
     );
@@ -970,15 +1478,50 @@ export function JobsMapBoard({ jobs }: Props) {
 
   function selectStatus(status: StatusView) {
     setSelectedId("");
+    setRouteMode(false);
+    setRouteSkippedIds([]);
+    setActiveRouteIndex(0);
     setStatusView(status);
   }
 
-  async function updateSelectedStatus(nextStatus: string) {
-    if (!selected) return;
+  function selectRouteStop(index: number) {
+    const job = routeStops[index];
+    if (!job) return;
+    setActiveRouteIndex(index);
+    setSelectedId(job.id);
+    setActivePanel("");
+  }
 
-    const jobId = selected.id;
+  function selectMapJob(id: string) {
+    if (routeMode) {
+      const routeIndex = routeStops.findIndex((job) => job.id === id);
+      if (routeIndex >= 0) setActiveRouteIndex(routeIndex);
+    }
+    setSelectedId(id);
+  }
+
+  function skipRouteStop(job: JobRecord, index: number) {
+    setRouteSkippedIds((current) => (current.includes(job.id) ? current : [...current, job.id]));
+    if (index < activeRouteIndex) {
+      setActiveRouteIndex(Math.max(0, activeRouteIndex - 1));
+    }
+    notify(`${job.id} skipped for this route.`);
+  }
+
+  async function completeRouteStop(job: JobRecord, index: number) {
+    await updateJobStatus(job, "Work Completed", { promptMedia: false });
+    setRouteSkippedIds((current) => (current.includes(job.id) ? current : [...current, job.id]));
+    if (index < activeRouteIndex) {
+      setActiveRouteIndex(Math.max(0, activeRouteIndex - 1));
+    }
+  }
+
+  async function updateJobStatus(job: JobRecord, nextStatus: string, options: { promptMedia?: boolean } = {}) {
+    const jobId = job.id;
     const action = actionForStatus(nextStatus);
     const existingStamp = fieldFlowEventsByJob[jobId]?.[nextStatus];
+    const shouldPromptMedia = options.promptMedia !== false && action?.phase === "outcome";
+
     if (existingStamp) {
       setJobStatusOverrides((current) => {
         const next = { ...current, [jobId]: nextStatus };
@@ -989,7 +1532,7 @@ export function JobsMapBoard({ jobs }: Props) {
         }
         return next;
       });
-      setStatusMediaPrompt(action?.phase === "outcome" ? { jobId, label: action.label } : null);
+      setStatusMediaPrompt(shouldPromptMedia ? { jobId, label: action.label } : null);
       notify(`${action?.label || nextStatus} already saved at ${formatStampTime(existingStamp.createdAt)}.`);
       return;
     }
@@ -1020,9 +1563,9 @@ export function JobsMapBoard({ jobs }: Props) {
       writeLocalFlowMap(next);
       return next;
     });
-    setStatusMediaPrompt(action?.phase === "outcome" ? { jobId, label: action.label } : null);
+    setStatusMediaPrompt(shouldPromptMedia ? { jobId, label: action.label } : null);
 
-    if (!statusMatches({ ...selected, status: nextStatus, statusOverride: nextStatus, workflowStatus: nextStatus }, statusView)) {
+    if (!statusMatches({ ...job, status: nextStatus, statusOverride: nextStatus, workflowStatus: nextStatus }, statusView)) {
       setStatusView("All");
     }
 
@@ -1030,7 +1573,7 @@ export function JobsMapBoard({ jobs }: Props) {
       const response = await fetch("/api/jobs/status", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: jobId, status: nextStatus }),
+        body: JSON.stringify({ id: jobId, status: nextStatus, statusDate: todayDateKey() }),
       });
       const data = await response.json() as { ok?: boolean; error?: string; status?: string };
       if (!response.ok || !data.ok) throw new Error(data.error || "Unable to save status");
@@ -1043,6 +1586,11 @@ export function JobsMapBoard({ jobs }: Props) {
       const errorMessage = error instanceof Error ? error.message : "";
       notify(errorMessage || `${jobId} updated on this device.`);
     }
+  }
+
+  async function updateSelectedStatus(nextStatus: string) {
+    if (!selected) return;
+    await updateJobStatus(selected, nextStatus);
   }
 
   async function clearSelectedStatus() {
@@ -1086,7 +1634,118 @@ export function JobsMapBoard({ jobs }: Props) {
     }
   }
 
-  async function syncJobsNow() {
+  async function generateSelectedPackagePreview() {
+    if (!selected) return;
+    if (!selectedAffidavitTemplate) {
+      notify("Choose Work Completed, Refused, No Access, or Completed by Other first.");
+      return;
+    }
+
+    const jobId = selected.id;
+    setClosingOutId(jobId);
+    setStatusMediaPrompt(null);
+
+    try {
+      const response = await fetch("/api/jobs/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: jobId,
+          action: "bundle",
+          status: selectedStatus,
+          closeout: false,
+          affidavitType: affidavitTypeForStatus(selectedStatus),
+          statusDate: todayDateKey(),
+        }),
+      });
+      const data = await response.json() as GeneratedDocuments & { ok?: boolean; error?: string };
+      if (!response.ok || !data.ok) throw new Error(data.error || "Unable to generate package.");
+
+      setGeneratedDocsByJob((current) => ({ ...current, [jobId]: data }));
+      notify(`${jobId} invoice and affidavit generated. Review preview, then save.`);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Unable to generate package.");
+    } finally {
+      setClosingOutId("");
+    }
+  }
+
+  async function saveAndArchiveSelectedPackage() {
+    if (!selected) return;
+
+    const jobId = selected.id;
+    const docs = generatedDocsByJob[jobId];
+    if (!docs) {
+      notify("Generate the invoice and affidavit before saving the close-out.");
+      return;
+    }
+
+    setArchivingPackageId(jobId);
+    try {
+      const response = await fetch("/api/jobs/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: jobId,
+          status: selectedStatus,
+          archived: true,
+          statusDate: todayDateKey(),
+        }),
+      });
+      const data = await response.json() as { ok?: boolean; error?: string };
+      if (!response.ok || !data.ok) throw new Error(data.error || "Unable to archive job.");
+
+      setJobStatusOverrides((current) => {
+        const next = { ...current, [jobId]: selectedStatus };
+        try {
+          window.localStorage.setItem(STATUS_OVERRIDE_STORAGE_KEY, JSON.stringify(next));
+        } catch {
+          // The server-side archive has already been saved.
+        }
+        return next;
+      });
+      setSourceJobs((current) => current.map((job) => (
+        job.id === jobId
+          ? {
+            ...job,
+            status: selectedStatus,
+            statusOverride: selectedStatus,
+            workflowStatus: selectedStatus,
+            archived: true,
+          }
+          : job
+      )));
+      notify(`${jobId} paperwork saved and archived.`);
+      setSelectedId("");
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Unable to archive job.");
+    } finally {
+      setArchivingPackageId("");
+    }
+  }
+
+  async function handleSelectedPrimaryFlow() {
+    if (!selected) return;
+
+    if (selectedNextSiteAction) {
+      await updateSelectedStatus(selectedNextSiteAction.value);
+      return;
+    }
+
+    if (!selectedOutcome) {
+      notify("Choose Work Completed, Refused Access, No Access, or Completed by Other first.");
+      return;
+    }
+
+    if (selectedGeneratedDocs) {
+      await saveAndArchiveSelectedPackage();
+      return;
+    }
+
+    await generateSelectedPackagePreview();
+  }
+
+  async function syncJobsNow(options: SyncJobsOptions = {}) {
     const feedUrl = manualFeedUrl.trim();
     const request: RequestInit = feedUrl
       ? {
@@ -1095,11 +1754,12 @@ export function JobsMapBoard({ jobs }: Props) {
         body: JSON.stringify({ feedUrl, feedType: manualFeedType }),
       }
       : { method: "POST" };
+    const beforeIds = new Set(sourceJobs.map((job) => job.id));
 
     setSyncState((current) => ({
       ...current,
       status: "syncing",
-      message: "Fetching latest COA data...",
+      message: options.automatic ? "Checking today's HPD awards..." : "Fetching latest COA data...",
     }));
 
     try {
@@ -1111,34 +1771,59 @@ export function JobsMapBoard({ jobs }: Props) {
       };
       const message = String(data.message || data.error || "Fetch finished.");
       const nextJobs = Array.isArray(data.jobs) ? data.jobs : [];
+      let addedCount = 0;
 
       setSyncState({
-        status: data.ok && data.configured ? "current" : "failed",
+        status: data.ok ? "current" : "failed",
         configured: Boolean(data.configured),
         count: Number(data.count || nextJobs.length || sourceJobs.length),
         lastSyncAt: String(data.lastSyncAt || ""),
+        sourceUpdatedAt: String(data.sourceUpdatedAt || data.lastSyncAt || ""),
         source: String(data.source || "Bundled CSV"),
         message,
+        today: String(data.today || ""),
+        dataThroughDate: String(data.dataThroughDate || ""),
+        inferredDataThroughDate: String(data.inferredDataThroughDate || ""),
+        fetchThroughDate: String(data.fetchThroughDate || ""),
+        newestAwardDate: String(data.newestAwardDate || ""),
+        newestJobDate: String(data.newestJobDate || ""),
+        daysBehind: numberOrNull(data.daysBehind),
+        jobsAfterToday: Number(data.jobsAfterToday || 0),
+        fetcherState: String(data.fetcherState || ""),
+        fetcherOk: Boolean(data.fetcherOk),
+        fetcherFinishedAt: String(data.fetcherFinishedAt || ""),
+        fetcherError: String(data.fetcherError || ""),
       });
-      setActivePanel("sync");
+      if (options.openPanel !== false) {
+        setActivePanel("sync");
+      }
 
       if (!response.ok || !data.ok) {
         notify(message);
         return;
       }
 
-      if (nextJobs.length) {
+      if (nextJobs.length && (data.configured || data.fetcherOk)) {
+        const addedIds = nextJobs.map((job) => job.id).filter((id) => id && !beforeIds.has(id));
+        addedCount = addedIds.length;
+        rememberNewAwardIds(addedIds);
         setSourceJobs(nextJobs);
+        if (data.configured) {
         setQuery("");
         setBorough("");
         setStatusView("All");
         setDateRange("all");
         setSelectedId("");
+        setRouteMode(false);
+        setRouteSkippedIds([]);
+        setActiveRouteIndex(0);
         setUserLocation(null);
+        setLocationState("idle");
+      }
         setMapFitNonce((current) => current + 1);
       }
 
-      notify(message);
+      notify(addedCount ? `${addedCount} new award${addedCount === 1 ? "" : "s"} loaded.` : message);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Fetch failed.";
       setSyncState((current) => ({
@@ -1146,7 +1831,9 @@ export function JobsMapBoard({ jobs }: Props) {
         status: "failed",
         message,
       }));
-      setActivePanel("sync");
+      if (options.openPanel !== false) {
+        setActivePanel("sync");
+      }
       notify(message);
     }
   }
@@ -1287,7 +1974,7 @@ export function JobsMapBoard({ jobs }: Props) {
     : "Try another status, borough, or search term to bring jobs back onto the map.";
 
   return (
-    <main className="command-app">
+    <main className={phonePreviewMode ? "command-app is-phone-preview" : "command-app"}>
       <section className="desktop-dashboard">
         <aside className="command-sidebar">
           <div className="sidebar-brand">
@@ -1350,6 +2037,9 @@ export function JobsMapBoard({ jobs }: Props) {
                 value={query}
                 onChange={(event) => {
                   setSelectedId("");
+                  setRouteMode(false);
+                  setRouteSkippedIds([]);
+                  setActiveRouteIndex(0);
                   setQuery(event.target.value);
                 }}
                 aria-label="Search jobs"
@@ -1468,11 +2158,15 @@ export function JobsMapBoard({ jobs }: Props) {
                 <JobsMap
                   jobs={filtered.slice(0, 120)}
                   selectedId={selected?.id || ""}
-                  onSelect={setSelectedId}
+                  onSelect={selectMapJob}
                   focusCenter={mapFocusCenter}
                   focusZoom={mapFocusZoom}
                   focusKey={mapFocusKey}
                   userLocation={userLocation}
+                  routeJobs={mapRouteJobs}
+                  activeRouteStopId={activeRouteStopId}
+                  newAwardIds={newAwardIds}
+                  latestAwardIds={latestAwardIds}
                 />
               </div>
             </section>
@@ -1587,15 +2281,17 @@ export function JobsMapBoard({ jobs }: Props) {
                 <small>{filtered.length} {mobileVisibleLabel}</small>
               </span>
               <span className={`mobile-sync-inline is-${syncState.status}`}>
-                <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
+                <button type="button" onClick={() => syncJobsNow()} disabled={syncState.status === "syncing"}>
                   {syncState.status === "syncing" ? "Fetching" : "Fetch"}
                 </button>
                 <small>
-                  {!syncState.configured
-                    ? "Bundled data only"
-                    : syncState.status === "failed"
-                      ? "Fetch needs setup"
-                      : `Last Fetch ${formatSyncTime(syncState.lastSyncAt)}`}
+                  {fetcherNeedsAuth
+                    ? "Google auth needed"
+                    : syncState.status === "failed" && !syncState.configured
+                      ? `Data through ${dataThroughText}`
+                      : syncState.status === "failed"
+                        ? "Fetch needs setup"
+                        : `Data through ${dataThroughText}`}
                 </small>
               </span>
             </div>
@@ -1665,6 +2361,9 @@ export function JobsMapBoard({ jobs }: Props) {
             value={query}
             onChange={(event) => {
               setSelectedId("");
+              setRouteMode(false);
+              setRouteSkippedIds([]);
+              setActiveRouteIndex(0);
               setQuery(event.target.value);
             }}
             placeholder="Search jobs, address, OMO, tenant..."
@@ -1677,12 +2376,16 @@ export function JobsMapBoard({ jobs }: Props) {
           <JobsMap
             jobs={filtered}
             selectedId={selected?.id || ""}
-            onSelect={setSelectedId}
+            onSelect={selectMapJob}
             focusCenter={mapFocusCenter}
             focusZoom={mapFocusZoom}
             focusKey={mapFocusKey}
             variant="clusters"
             userLocation={userLocation}
+            routeJobs={mapRouteJobs}
+            activeRouteStopId={activeRouteStopId}
+            newAwardIds={newAwardIds}
+            latestAwardIds={latestAwardIds}
           />
           <button
             type="button"
@@ -1700,14 +2403,206 @@ export function JobsMapBoard({ jobs }: Props) {
             <button type="button" className="floating-map-button nav-arrow-icon" aria-label="Fit visible jobs" onClick={fitVisibleMap} />
           )}
           <button type="button" className="floating-map-button layers-icon" aria-label="Open expanded map" onClick={() => setActivePanel("map")} />
-          <button type="button" className="floating-map-button locate-icon" aria-label="Locate me" onClick={locateUser} />
+          <button
+            type="button"
+            className={`floating-map-button locate-icon is-${locationState}`}
+            aria-label="Locate me"
+            aria-busy={locationState === "locating"}
+            onClick={locateUser}
+          />
           <button type="button" className="visible-count-button" aria-label="Open visible jobs" onClick={() => setActivePanel("jobs")}>
             <strong>{filtered.length}</strong>
             <span>{mobileVisibleLabel}</span>
           </button>
         </div>
 
-        {selected ? (
+        {routeMode ? (
+          <article className="mobile-job-sheet is-route-mode" aria-label="Route Mode">
+            <div className="sheet-handle" />
+            <div className="route-mode-head">
+              <div>
+                <span className="scope-badge">{routeStops.length ? `${routeStops.length} stops` : locationState === "locating" ? "building" : "route"}</span>
+                <h2>Route Today</h2>
+              </div>
+              <button type="button" className="route-mode-close" onClick={closeRouteMode}>
+                Done
+              </button>
+            </div>
+            <div className="route-mode-stats">
+              <div><span>Active</span><strong>{routeStops.length ? `${activeRouteStopIndex + 1}/${routeStops.length}` : "0/0"}</strong></div>
+              <div><span>Miles</span><strong>{routeTotalText}</strong></div>
+              <div><span>Data</span><strong>{dataThroughText}</strong></div>
+            </div>
+            {routeMapsHref ? (
+              <a className="route-map-link" href={routeMapsHref} target="_blank" rel="noreferrer">
+                <span className="quick-action-icon action-mini-route" aria-hidden="true" />
+                Open full route in Google Maps
+              </a>
+            ) : (
+              <button type="button" className="route-map-link" onClick={locateUser}>
+                <span className="quick-action-icon action-mini-locate" aria-hidden="true" />
+                {locationState === "blocked" ? "Allow location to route" : "Locate to build route"}
+              </button>
+            )}
+            <div className="route-stop-list">
+              {routeStopItems.map(({ job, legMiles }, index) => {
+                const jobMapsHref = mapsHref(job);
+                const jobEvents = fieldFlowEventsByJob[job.id] || {};
+                const arrived = Boolean(jobEvents["Arrived On Site"]);
+                const active = index === activeRouteStopIndex;
+
+                return (
+                  <article key={`${job.id}-route`} className={active ? "route-stop-card is-active" : "route-stop-card"}>
+                    <button type="button" className="route-stop-main" onClick={() => selectRouteStop(index)}>
+                      <span>{index + 1}</span>
+                      <strong>{job.id}</strong>
+                      <small>{job.address || "No address listed"}</small>
+                      <em>{formatDistanceMiles(legMiles) || "stop"}</em>
+                    </button>
+                    <div className="route-stop-meta">
+                      <StatusBadge status={displayStatus(job)} />
+                      <span>{job.borough || "NYC"}</span>
+                    </div>
+                    <div className="route-stop-actions" aria-label={`${job.id} route actions`}>
+                      {jobMapsHref ? (
+                        <a href={jobMapsHref} target="_blank" rel="noreferrer">
+                          <span className="quick-action-icon action-mini-nav" aria-hidden="true" />
+                          Nav
+                        </a>
+                      ) : (
+                        <a href={jobDetailHref(job)}>
+                          <span className="quick-action-icon action-mini-map" aria-hidden="true" />
+                          Map
+                        </a>
+                      )}
+                      <button type="button" onClick={() => skipRouteStop(job, index)}>
+                        <span className="quick-action-icon action-mini-skip" aria-hidden="true" />
+                        Skip
+                      </button>
+                      <button type="button" onClick={() => updateJobStatus(job, "Arrived On Site", { promptMedia: false })}>
+                        <span className="quick-action-icon action-mini-arrived" aria-hidden="true" />
+                        {arrived ? "Here" : "Arrived"}
+                      </button>
+                      <button type="button" onClick={() => void completeRouteStop(job, index)}>
+                        <span className="quick-action-icon action-mini-complete" aria-hidden="true" />
+                        Complete
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+              {!routeStopItems.length ? (
+                <div className="route-empty">
+                  <strong>No open mapped stops</strong>
+                  <span>Reset filters or switch status to All to build a field route.</span>
+                  <button type="button" onClick={resetFilters}>Reset</button>
+                </div>
+              ) : null}
+            </div>
+          </article>
+        ) : null}
+
+        {!routeMode && !selected && filtered.length > 0 ? (
+          <article className="mobile-job-sheet is-today-mode" aria-label="Today Field Mode">
+            <div className="sheet-handle" />
+            <div className="today-mode-head">
+              <div>
+                <span className="scope-badge">{todayModeMeta}</span>
+                <h2>{todayModeTitle}</h2>
+              </div>
+              <div className="today-mode-head-actions">
+                <button
+                  type="button"
+                  className="today-mode-locate"
+                  onClick={() => {
+                    if (syncState.status !== "syncing" && !syncCoversToday(syncState)) {
+                      void syncJobsNow({ automatic: true, openPanel: false });
+                    }
+                    locateUser();
+                  }}
+                >
+                  <span className="quick-action-icon action-mini-locate" aria-hidden="true" />
+                  {userLocation ? "Recenter" : "Locate"}
+                </button>
+                <button
+                  type="button"
+                  className="today-route-button"
+                  disabled={!todayFieldJobs.length}
+                  onClick={startRouteMode}
+                >
+                  <span className="quick-action-icon action-mini-route" aria-hidden="true" />
+                  Route
+                </button>
+              </div>
+            </div>
+            <div className="today-mode-stats">
+              <div><span>Data</span><strong>{dataThroughText}</strong></div>
+              <div><span>Nearest</span><strong>{nearestDistanceText}</strong></div>
+              <div><span>{todayHighlightLabel}</span><strong>{todayNewCount || todayLatestCount}</strong></div>
+            </div>
+            <div className="today-job-list">
+              {todayFieldJobs.map(({ job, distanceMiles, newAward, latestAward }, index) => {
+                const jobMapsHref = mapsHref(job);
+                const jobPhoneHref = phoneHref(job);
+                const jobEvents = fieldFlowEventsByJob[job.id] || {};
+                const arrived = Boolean(jobEvents["Arrived On Site"]);
+                const highlight = newAward || (!todayNewCount && latestAward);
+
+                return (
+                  <article key={`${job.id}-today`} className={highlight ? "today-job-card is-highlighted" : "today-job-card"}>
+                    <button
+                      type="button"
+                      className="today-job-open"
+                      onClick={() => {
+                        setSelectedId(job.id);
+                        setActivePanel("");
+                      }}
+                    >
+                      <span>{formatDistanceMiles(distanceMiles) || `#${index + 1}`}</span>
+                      <strong>{job.id}</strong>
+                      <small>{job.address || "No address listed"}</small>
+                      {highlight ? <em>{newAward ? "New" : "Latest"}</em> : null}
+                    </button>
+                    <div className="today-job-actions" aria-label={`${job.id} quick actions`}>
+                      {jobMapsHref ? (
+                        <a href={jobMapsHref} target="_blank" rel="noreferrer">
+                          <span className="quick-action-icon action-mini-nav" aria-hidden="true" />
+                          Nav
+                        </a>
+                      ) : (
+                        <a href={jobDetailHref(job)}>
+                          <span className="quick-action-icon action-mini-map" aria-hidden="true" />
+                          Map
+                        </a>
+                      )}
+                      {jobPhoneHref ? (
+                        <a href={jobPhoneHref}>
+                          <span className="quick-action-icon action-mini-phone" aria-hidden="true" />
+                          Call
+                        </a>
+                      ) : (
+                        <a href={jobDetailHref(job)}>
+                          <span className="quick-action-icon action-mini-phone" aria-hidden="true" />
+                          Contact
+                        </a>
+                      )}
+                      <a href={jobDetailHref(job)}>
+                        <span className="quick-action-icon action-mini-doc" aria-hidden="true" />
+                        Docs
+                      </a>
+                      <button type="button" onClick={() => updateJobStatus(job, "Arrived On Site", { promptMedia: false })}>
+                        <span className="quick-action-icon action-mini-arrived" aria-hidden="true" />
+                        {arrived ? "Here" : "Arrived"}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </article>
+        ) : null}
+
+        {!routeMode && selected ? (
           <article
             className="mobile-job-sheet is-job-command"
             onTouchStart={(event) => {
@@ -1772,6 +2667,35 @@ export function JobsMapBoard({ jobs }: Props) {
               ) : null}
             </div>
 
+            <div className="job-card-next-step">
+              <div>
+                <span>{selectedPrimaryFlowStage}</span>
+                <strong>{selectedPrimaryFlowLabel}</strong>
+                <small>{selectedPrimaryFlowHint}</small>
+              </div>
+              <div className="job-card-next-actions">
+                {selectedMapsHref ? (
+                  <a href={selectedMapsHref} target="_blank" rel="noreferrer">
+                    <span className="quick-action-icon action-mini-nav" aria-hidden="true" />
+                    Nav
+                  </a>
+                ) : (
+                  <button type="button" disabled>
+                    <span className="quick-action-icon action-mini-map" aria-hidden="true" />
+                    Map
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="job-card-next-primary"
+                  disabled={selectedPrimaryFlowBusy}
+                  onClick={handleSelectedPrimaryFlow}
+                >
+                  {closingOutId === selected.id ? "Generating" : archivingPackageId === selected.id ? "Saving" : selectedPrimaryFlowLabel}
+                </button>
+              </div>
+            </div>
+
             <div className="job-card-flow">
               <div className="job-card-flow-head">
                 <div>
@@ -1808,6 +2732,79 @@ export function JobsMapBoard({ jobs }: Props) {
                 </div>
               </div>
             </div>
+
+            <div className="job-card-affidavit-check">
+              <span className="affidavit-check-icon" aria-hidden="true" />
+              <div>
+                <strong>Affidavit Check</strong>
+                <small>{selectedAffidavitSet.label}</small>
+                <em>
+                  {selectedAffidavitTemplate
+                    ? `${selectedAffidavitTemplate.shortTitle} ready`
+                    : "Pick outcome to choose form"}
+                </em>
+              </div>
+              {selectedAffidavitTemplate ? (
+                <button
+                  type="button"
+                  disabled={closingOutId === selected.id}
+                  onClick={generateSelectedPackagePreview}
+                >
+                  {closingOutId === selected.id ? "Generating" : selectedGeneratedDocs ? "Regenerate" : "Generate"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => notify(`${AFFIDAVIT_VERSION_LABEL}: choose a final field outcome first.`)}
+                >
+                  Check
+                </button>
+              )}
+            </div>
+
+            {selectedGeneratedDocs ? (
+              <div className="job-card-generated-package">
+                <div className="job-card-generated-head">
+                  <div>
+                    <strong>Review Package</strong>
+                    <span>{selectedGeneratedDocs.saved_at ? `Saved ${formatSyncTime(selectedGeneratedDocs.saved_at)}` : "Saved to project"}</span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={archivingPackageId === selected.id}
+                    onClick={saveAndArchiveSelectedPackage}
+                  >
+                    {archivingPackageId === selected.id ? "Saving" : "Save & Archive"}
+                  </button>
+                </div>
+                <div className="job-card-generated-links">
+                  {([
+                    ["Invoice", "invoice_path"],
+                    ["Affidavit", "affidavit_path"],
+                  ] as Array<[string, GeneratedDocumentKey]>).map(([label, key]) => {
+                    const href = generatedDocumentUrl(selectedGeneratedDocs, key);
+                    const filename = generatedDocumentName(selectedGeneratedDocs, key);
+                    return href ? (
+                      <span key={key}>
+                        <a href={href} target="_blank" rel="noreferrer">Open {label}</a>
+                        <a href={href} download={filename}>Save {label}</a>
+                      </span>
+                    ) : null;
+                  })}
+                </div>
+                {affidavitPreviewUrls(selectedGeneratedDocs).length ? (
+                  <div className="job-card-affidavit-preview">
+                    {affidavitPreviewUrls(selectedGeneratedDocs).map((url, index) => (
+                      <a key={url} href={generatedDocumentUrl(selectedGeneratedDocs, "affidavit_path")} target="_blank" rel="noreferrer">
+                        <img src={url} alt={`Generated affidavit page ${index + 1}`} loading="lazy" />
+                      </a>
+                    ))}
+                  </div>
+                ) : selectedGeneratedDocs.affidavit_preview_error ? (
+                  <p className="job-card-preview-error">{selectedGeneratedDocs.affidavit_preview_error}</p>
+                ) : null}
+              </div>
+            ) : null}
 
             {statusMediaPrompt && selected.id === statusMediaPrompt.jobId ? (
               <div className="status-media-prompt" aria-label={`Add media for ${statusMediaPrompt.label}`}>
@@ -1867,7 +2864,7 @@ export function JobsMapBoard({ jobs }: Props) {
               <button type="button" aria-label="Next job" onClick={() => selectRelativeJob(1)}>›</button>
             </div>
           </article>
-        ) : filtered.length === 0 ? (
+        ) : !routeMode && filtered.length === 0 ? (
           <article className="mobile-job-sheet is-empty">
             <div className="sheet-handle" />
             <div className="sheet-topline">
@@ -1930,6 +2927,9 @@ export function JobsMapBoard({ jobs }: Props) {
                     value={query}
                     onChange={(event) => {
                       setSelectedId("");
+                      setRouteMode(false);
+                      setRouteSkippedIds([]);
+                      setActiveRouteIndex(0);
                       setQuery(event.target.value);
                     }}
                     aria-label="Search jobs"
@@ -1943,8 +2943,12 @@ export function JobsMapBoard({ jobs }: Props) {
                       className={!borough ? "is-active" : ""}
                       onClick={() => {
                         setSelectedId("");
+                        setRouteMode(false);
+                        setRouteSkippedIds([]);
+                        setActiveRouteIndex(0);
                         setQuery("");
                         setUserLocation(null);
+                        setLocationState("idle");
                         setBorough("");
                       }}
                     >
@@ -2221,7 +3225,7 @@ export function JobsMapBoard({ jobs }: Props) {
                     <span>{syncMessage}</span>
                     <small>{syncMetaText}</small>
                   </div>
-                  <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
+                  <button type="button" onClick={() => syncJobsNow()} disabled={syncState.status === "syncing"}>
                     {syncState.status === "syncing" ? "Fetching" : "Fetch Now"}
                   </button>
                 </div>
@@ -2257,7 +3261,7 @@ export function JobsMapBoard({ jobs }: Props) {
                     <span>{syncMessage}</span>
                     <small>{syncMetaText}</small>
                   </div>
-                  <button type="button" onClick={syncJobsNow} disabled={syncState.status === "syncing"}>
+                  <button type="button" onClick={() => syncJobsNow()} disabled={syncState.status === "syncing"}>
                     {syncState.status === "syncing" ? "Fetching" : "Fetch Now"}
                   </button>
                 </div>
@@ -2344,11 +3348,15 @@ export function JobsMapBoard({ jobs }: Props) {
                   <JobsMap
                     jobs={filtered}
                     selectedId={selected?.id || ""}
-                    onSelect={setSelectedId}
+                    onSelect={selectMapJob}
                     focusCenter={mapFocusCenter}
                     focusZoom={mapFocusZoom}
                     focusKey={mapFocusKey}
                     userLocation={userLocation}
+                    routeJobs={mapRouteJobs}
+                    activeRouteStopId={activeRouteStopId}
+                    newAwardIds={newAwardIds}
+                    latestAwardIds={latestAwardIds}
                   />
                 </div>
                 {selected ? (

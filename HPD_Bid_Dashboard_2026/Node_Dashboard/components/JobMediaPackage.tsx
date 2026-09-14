@@ -4,6 +4,11 @@ import type { ChangeEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StatusBadge } from "./StatusBadge";
 import type { JobRecord } from "../lib/types";
+import {
+  affidavitSetForAwardDate,
+  affidavitTemplateForStatus,
+  affidavitTypeForStatus,
+} from "../lib/affidavits";
 
 type Props = {
   job: JobRecord;
@@ -37,6 +42,22 @@ type FieldFlowEvent = {
   createdAt: string;
 };
 
+type GeneratedDocuments = {
+  job_card_path?: string;
+  invoice_path?: string;
+  affidavit_path?: string;
+  affidavit_type?: string;
+  affidavit_template_version?: string;
+  saved_folder?: string;
+  saved_at?: string;
+  affidavit_preview_paths?: string[];
+  affidavit_preview_urls?: string[];
+  affidavit_preview_error?: string;
+  file_urls?: Record<string, string>;
+};
+
+type GeneratedDocumentKey = "job_card_path" | "invoice_path" | "affidavit_path";
+
 const STATUS_OVERRIDE_STORAGE_KEY = "hpd-job-status-overrides-v1";
 const FIELD_NOTE_STORAGE_KEY = "hpd-job-field-notes-v1";
 const FIELD_FLOW_STORAGE_KEY = "hpd-job-field-flow-events-v1";
@@ -48,6 +69,7 @@ const FIELD_STATUS_ACTIONS = [
   { label: "Complete", value: "Work Completed", phase: "outcome" },
   { label: "No Access", value: "No Access - 1st Attempt", phase: "outcome" },
   { label: "Refused", value: "Refused Access", phase: "outcome" },
+  { label: "By Other", value: "Work Completed by Other", phase: "outcome" },
   { label: "Materials", value: "Needs Materials", phase: "outcome" },
   { label: "Follow Up", value: "Follow Up Required", phase: "outcome" },
 ] as const;
@@ -61,6 +83,22 @@ function formatFileSize(value = 0) {
   if (value < 1024) return `${value} B`;
   if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function generatedDocumentUrl(docs: GeneratedDocuments | null, key: GeneratedDocumentKey) {
+  const filePath = docs?.[key];
+  return docs?.file_urls?.[key] || (filePath ? `/api/jobs/file?path=${encodeURIComponent(filePath)}` : "");
+}
+
+function generatedDocumentName(docs: GeneratedDocuments | null, key: GeneratedDocumentKey) {
+  const filePath = docs?.[key];
+  return filePath ? filePath.split(/[\\/]/).pop() || undefined : undefined;
+}
+
+function affidavitPreviewUrls(docs: GeneratedDocuments | null) {
+  if (!docs) return [];
+  if (docs.affidavit_preview_urls?.length) return docs.affidavit_preview_urls;
+  return (docs.affidavit_preview_paths || []).map((filePath) => `/api/jobs/file?path=${encodeURIComponent(filePath)}`);
 }
 
 function formatEventTime(value: string) {
@@ -82,6 +120,14 @@ function formatStampTime(value: string) {
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
+}
+
+function todayDateKey() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function isImage(file: MediaFile) {
@@ -282,6 +328,9 @@ export function JobMediaPackage({ job }: Props) {
   const [statusMediaPrompt, setStatusMediaPrompt] = useState<{ status: string; label: string } | null>(null);
   const [isSavingStatus, setIsSavingStatus] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isClosingOut, setIsClosingOut] = useState(false);
+  const [isArchivingPackage, setIsArchivingPackage] = useState(false);
+  const [generatedDocuments, setGeneratedDocuments] = useState<GeneratedDocuments | null>(null);
   const [message, setMessage] = useState("");
   const mediaInputRef = useRef<HTMLInputElement>(null);
   const promptMediaInputRef = useRef<HTMLInputElement>(null);
@@ -290,6 +339,8 @@ export function JobMediaPackage({ job }: Props) {
     job.coaFile ? { label: "COA", name: job.coaFile } : null,
     job.itbFile ? { label: "ITB", name: job.itbFile } : null,
   ].filter((item): item is { label: string; name: string } => Boolean(item)), [job.coaFile, job.itbFile]);
+  const affidavitSet = useMemo(() => affidavitSetForAwardDate(job.awardDate), [job.awardDate]);
+  const recommendedAffidavit = useMemo(() => affidavitTemplateForStatus(status, job.awardDate), [job.awardDate, status]);
 
   useEffect(() => {
     let active = true;
@@ -396,6 +447,7 @@ export function JobMediaPackage({ job }: Props) {
     const action = actionForStatus(nextStatus);
     const activeFlowEvents = flowEventsAfterLatestClear(flowEvents, history);
     const existingStamp = activeFlowEvents[nextStatus];
+    setGeneratedDocuments(null);
     if (Object.keys(activeFlowEvents).length !== Object.keys(flowEvents).length) {
       setFlowEvents(activeFlowEvents);
       writeLocalFlowEvents(job.id, activeFlowEvents);
@@ -440,7 +492,7 @@ export function JobMediaPackage({ job }: Props) {
       const response = await fetch("/api/jobs/status", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: job.id, status: nextStatus }),
+        body: JSON.stringify({ id: job.id, status: nextStatus, statusDate: todayDateKey() }),
       });
       const data = await response.json() as { ok?: boolean; error?: string; status?: string; history?: StatusHistoryEvent[] };
       if (!response.ok || !data.ok) throw new Error(data.error || "Unable to save status");
@@ -469,6 +521,7 @@ export function JobMediaPackage({ job }: Props) {
     setHasLocalStatus(false);
     setFlowEvents({});
     setStatusMediaPrompt(null);
+    setGeneratedDocuments(null);
     setIsSavingStatus(true);
     setMessage("Local status cleared.");
     try {
@@ -571,6 +624,73 @@ export function JobMediaPackage({ job }: Props) {
     }
   }
 
+  async function generatePackagePreview() {
+    if (!recommendedAffidavit) {
+      setMessage("Choose a final outcome before generating close-out documents.");
+      return;
+    }
+
+    setIsClosingOut(true);
+    setGeneratedDocuments(null);
+    setMessage("Generating invoice, affidavit, and preview...");
+    try {
+      const response = await fetch("/api/jobs/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: job.id,
+          action: "bundle",
+          status,
+          closeout: false,
+          affidavitType: affidavitTypeForStatus(status),
+          statusDate: todayDateKey(),
+        }),
+      });
+      const data = await response.json() as GeneratedDocuments & { ok?: boolean; error?: string };
+      if (!response.ok || !data.ok) throw new Error(data.error || "Unable to generate close-out documents.");
+
+      setGeneratedDocuments(data);
+      setMessage(`${job.id} invoice and ${recommendedAffidavit.shortTitle.toLowerCase()} affidavit generated. Review the preview, then save/archive.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to generate close-out documents.");
+    } finally {
+      setIsClosingOut(false);
+    }
+  }
+
+  async function saveAndArchiveGeneratedPackage() {
+    if (!generatedDocuments) {
+      setMessage("Generate the invoice and affidavit before saving the close-out.");
+      return;
+    }
+
+    setIsArchivingPackage(true);
+    setMessage("Saving close-out and archiving job...");
+    try {
+      const response = await fetch("/api/jobs/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: job.id,
+          status,
+          archived: true,
+          statusDate: todayDateKey(),
+        }),
+      });
+      const data = await response.json() as { ok?: boolean; error?: string; status?: string; history?: StatusHistoryEvent[] };
+      if (!response.ok || !data.ok) throw new Error(data.error || "Unable to archive job.");
+
+      setHasLocalStatus(false);
+      if (data.status) setStatus(data.status);
+      if (data.history) setHistory(data.history);
+      setMessage(`${job.id} paperwork saved and job archived.`);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Unable to archive job.");
+    } finally {
+      setIsArchivingPackage(false);
+    }
+  }
+
   return (
     <section className="job-package-card">
       <div className="job-package-head">
@@ -617,6 +737,98 @@ export function JobMediaPackage({ job }: Props) {
             {OUTCOME_STATUS_ACTIONS.map(renderFlowButton)}
           </div>
         </div>
+      </div>
+
+      <div className="affidavit-check-card">
+        <div className="affidavit-check-head">
+          <span className="affidavit-check-icon" aria-hidden="true" />
+          <div>
+            <strong>Affidavit Check</strong>
+            <span>{affidavitSet.label}</span>
+          </div>
+        </div>
+        <p>
+          {recommendedAffidavit
+            ? `${recommendedAffidavit.shortTitle} is ready for ${status}. Award date ${job.awardDate || "missing"} follows: ${affidavitSet.rule}.`
+            : `Choose the field outcome before final paperwork. Award date ${job.awardDate || "missing"} follows: ${affidavitSet.rule}.`}
+        </p>
+        <div className="affidavit-closeout-row">
+          <button
+            type="button"
+            disabled={!recommendedAffidavit || isClosingOut}
+            onClick={generatePackagePreview}
+          >
+            {isClosingOut ? "Generating..." : "Generate Package"}
+          </button>
+          <span>Creates invoice and affidavit together, then shows the real affidavit image.</span>
+        </div>
+        <div className="affidavit-template-grid">
+          {affidavitSet.templates.map((template) => {
+            const active = recommendedAffidavit?.kind === template.kind;
+            return (
+              <a
+                key={template.kind}
+                href={template.href}
+                target="_blank"
+                rel="noreferrer"
+                className={active ? "is-recommended" : ""}
+              >
+                <strong>{template.shortTitle}</strong>
+                <span>{active ? "Recommended now" : template.useWhen}</span>
+              </a>
+            );
+          })}
+        </div>
+        {generatedDocuments ? (
+          <div className="generated-package-panel">
+            <div className="generated-package-head">
+              <div>
+                <strong>Generated Package</strong>
+                <span>{generatedDocuments.saved_at ? `Saved ${formatEventTime(generatedDocuments.saved_at)}` : "Saved to project documents"}</span>
+              </div>
+              <button
+                type="button"
+                disabled={isArchivingPackage}
+                onClick={saveAndArchiveGeneratedPackage}
+              >
+                {isArchivingPackage ? "Saving..." : "Save & Archive"}
+              </button>
+            </div>
+            <div className="generated-document-links">
+              {([
+                ["Job Card", "job_card_path"],
+                ["Invoice", "invoice_path"],
+                ["Affidavit", "affidavit_path"],
+              ] as Array<[string, GeneratedDocumentKey]>).map(([label, key]) => {
+                const href = generatedDocumentUrl(generatedDocuments, key);
+                const filename = generatedDocumentName(generatedDocuments, key);
+                return href ? (
+                  <span key={key}>
+                    <a href={href} target="_blank" rel="noreferrer">Open {label}</a>
+                    <a href={href} download={filename}>Save {label}</a>
+                  </span>
+                ) : null;
+              })}
+            </div>
+            {affidavitPreviewUrls(generatedDocuments).length ? (
+              <div className="affidavit-preview-panel">
+                <div className="affidavit-preview-head">
+                  <strong>Affidavit Preview</strong>
+                  <span>Actual generated PDF image</span>
+                </div>
+                <div className="affidavit-preview-pages">
+                  {affidavitPreviewUrls(generatedDocuments).map((url, index) => (
+                    <a key={url} href={generatedDocumentUrl(generatedDocuments, "affidavit_path")} target="_blank" rel="noreferrer">
+                      <img src={url} alt={`Generated affidavit page ${index + 1}`} loading="lazy" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : generatedDocuments.affidavit_preview_error ? (
+              <p className="affidavit-preview-error">{generatedDocuments.affidavit_preview_error}</p>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {statusMediaPrompt ? (

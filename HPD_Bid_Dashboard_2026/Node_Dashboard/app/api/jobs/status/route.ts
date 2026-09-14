@@ -28,6 +28,7 @@ export async function PATCH(request: Request) {
       id: body.id,
       status: body.status,
       archived: body.archived,
+      statusDate: body.statusDate,
     });
     const event = body.status ? appendStatusHistory(body.id, body.status) : null;
 

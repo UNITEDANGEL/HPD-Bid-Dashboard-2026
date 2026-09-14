@@ -13,6 +13,7 @@ if str(SUPPORT_DIR) not in sys.path:
 
 from unified_dashboard_support import (  # noqa: E402
     GeneratedBundle,
+    affidavit_template_version_for_row,
     generate_affidavit_pdf,
     generate_document_bundle,
     generate_invoice_pdf,
@@ -46,9 +47,33 @@ def main() -> None:
         choices=["Work Completed", "No Work Completed"],
         help="Affidavit type when action includes an affidavit.",
     )
+    parser.add_argument(
+        "--status",
+        default="",
+        help="Field outcome/status to apply while generating documents.",
+    )
+    parser.add_argument(
+        "--status-date",
+        default="",
+        help="Date to use for the selected field outcome when generating close-out documents.",
+    )
     args = parser.parse_args()
 
     row = get_row_by_omo(args.omo)
+    if args.status:
+        row["Status"] = args.status
+        row["statusOverride"] = args.status
+        if args.affidavit_type == "No Work Completed":
+            row["no_work_reason"] = row.get("no_work_reason") or args.status
+    if args.status_date:
+        row["field_status_date"] = args.status_date
+        if args.affidavit_type == "Work Completed":
+            row["work_completion_date"] = args.status_date
+            row["WorkCompletionDate"] = args.status_date
+            row["work_start_date"] = row.get("work_start_date") or row.get("WorkStartDate") or args.status_date
+        else:
+            row["work_completion_date"] = args.status_date
+            row["WorkCompletionDate"] = args.status_date
 
     if args.action == "job_card":
         path = str(generate_job_card_pdf(row))
@@ -74,6 +99,7 @@ def main() -> None:
                     "ok": True,
                     "affidavit_path": path,
                     "affidavit_type": safe_text(args.affidavit_type),
+                    "affidavit_template_version": affidavit_template_version_for_row(row),
                 }
             )
         )
@@ -88,6 +114,7 @@ def main() -> None:
                 "invoice_path": bundle.invoice_path,
                 "affidavit_path": bundle.affidavit_path,
                 "affidavit_type": bundle.affidavit_type,
+                "affidavit_template_version": affidavit_template_version_for_row(row),
             }
         )
     )

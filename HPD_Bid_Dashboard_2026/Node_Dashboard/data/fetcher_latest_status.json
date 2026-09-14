@@ -1,0 +1,20 @@
+{
+  "state": "failed",
+  "startedAt": "2026-09-14T18:16:47.813Z",
+  "finishedAt": "2026-09-14T18:18:40.501Z",
+  "ok": false,
+  "error": "Run Gmail fetcher for last 30 days failed with exit code 1",
+  "summary": {
+    "rawRows": 654,
+    "rows2026": 603,
+    "mapped2026": 603,
+    "notMapped2026": 0,
+    "missingAddresses": 0,
+    "badDescriptions": 0,
+    "missingDescriptions": 0,
+    "sourceReviewJobs": 0,
+    "missingPage3Images": 23,
+    "missingItbJobs": 0
+  },
+  "logPath": "data/fetcher_latest_run.log"
+}
