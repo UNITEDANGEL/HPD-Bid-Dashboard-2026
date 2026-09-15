@@ -672,6 +672,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const [manualFeedUrl, setManualFeedUrl] = useState("");
   const [manualFeedType, setManualFeedType] = useState<ManualFeedType>("csv");
   const [mapFitNonce, setMapFitNonce] = useState(0);
+  const [mapOverview, setMapOverview] = useState(false);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
   const [locationState, setLocationState] = useState<"idle" | "locating" | "found" | "blocked">("idle");
   const [phonePreviewMode, setPhonePreviewMode] = useState(false);
@@ -855,8 +856,8 @@ export function JobsMapBoard({ jobs }: Props) {
   const exportFileName = `hpd-bids-${new Date().toISOString().slice(0, 10)}.csv`;
   const mapFocusKey = `${borough || "All"}|${statusView}|${dateRange}|${customDays}|${query}|${mapFitNonce}|${userLocation ? userLocation.join(",") : ""}`;
   const boroughFocusCenter = borough ? BOROUGH_CENTERS[canonicalBorough(borough)] || null : null;
-  const mapFocusCenter = userLocation || boroughFocusCenter;
-  const mapFocusZoom = userLocation ? 15 : undefined;
+  const mapFocusCenter = mapOverview ? null : userLocation || boroughFocusCenter;
+  const mapFocusZoom = !mapOverview && userLocation ? 15 : undefined;
   const mobileBoroughBase = dateScopedJobs
     .filter((job) => statusMatches(job, statusView))
     .filter((job) => matchesJobSearch(job, query));
@@ -1424,6 +1425,7 @@ export function JobsMapBoard({ jobs }: Props) {
   }
 
   function fitVisibleMap() {
+    setMapOverview(true);
     setSelectedId("");
     setRouteMode(false);
     setRouteSkippedIds([]);
@@ -1451,6 +1453,7 @@ export function JobsMapBoard({ jobs }: Props) {
   }
 
   function locateUser() {
+    setMapOverview(false);
     setSelectedId("");
     setActivePanel("");
 

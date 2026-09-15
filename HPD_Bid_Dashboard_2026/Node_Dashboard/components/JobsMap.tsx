@@ -214,23 +214,18 @@ function userLocationIcon() {
   });
 }
 
-function gridSizeForZoom(zoom: number) {
-  if (zoom >= 16) return 0.0018;
-  if (zoom >= 15) return 0.0032;
-  if (zoom >= 14) return 0.006;
-  if (zoom >= 13) return 0.011;
-  if (zoom >= 12) return 0.018;
-  return 0.032;
-}
-
 function clusteredJobs(jobs: JobRecord[], selectedId: string, freshIds: Set<string>, latestIds: Set<string>, zoom: number) {
-  const gridSize = gridSizeForZoom(zoom);
   const groups = new Map<string, JobRecord[]>();
+  const anchors: Array<{ key: string; point: L.Point }> = [];
 
   for (const job of jobs) {
     const coords = coordsFor(job);
     if (!coords) continue;
-    const key = `${Math.round(coords[0] / gridSize)}:${Math.round(coords[1] / gridSize)}`;
+    // Cluster in screen pixels so marker spacing stays readable at every zoom.
+    const point = L.CRS.EPSG3857.latLngToPoint(L.latLng(coords), zoom);
+    const nearby = anchors.find((anchor) => anchor.point.distanceTo(point) < 80);
+    const key = nearby?.key || job.id;
+    if (!nearby) anchors.push({ key, point });
     groups.set(key, [...(groups.get(key) || []), job]);
   }
 
@@ -238,10 +233,7 @@ function clusteredJobs(jobs: JobRecord[], selectedId: string, freshIds: Set<stri
     const coords = records
       .map(coordsFor)
       .filter((point): point is [number, number] => Boolean(point));
-    const center: [number, number] = [
-      coords.reduce((sum, point) => sum + point[0], 0) / Math.max(1, coords.length),
-      coords.reduce((sum, point) => sum + point[1], 0) / Math.max(1, coords.length),
-    ];
+    const center: [number, number] = coords[0];
     const selected = records.some((job) => job.id === selectedId);
     const leadJob = records.find((job) => job.id === selectedId) || records[0];
     const tones = Array.from(new Set(records.map(statusTone)));
@@ -273,6 +265,8 @@ function MapViewport({
 }) {
   const map = useMap();
   const lastFocusKey = useRef("");
+  const lastSelection = useRef(selectedId);
+  const initialized = useRef(false);
 
   useEffect(() => {
     const resizeTimer = window.setTimeout(() => map.invalidateSize(), 150);
@@ -285,7 +279,10 @@ function MapViewport({
       .map(coordsFor)
       .filter((coords): coords is [number, number] => Boolean(coords));
 
-    const focusChanged = lastFocusKey.current !== focusKey;
+    const focusChanged = !initialized.current || lastFocusKey.current !== focusKey;
+    const selectionChanged = lastSelection.current !== selectedId;
+    lastSelection.current = selectedId;
+    initialized.current = true;
     if (focusChanged) {
       lastFocusKey.current = focusKey;
       if (focusCenter && focusZoom) {
@@ -309,6 +306,7 @@ function MapViewport({
       }
     }
 
+    if (!selectionChanged) return () => window.clearTimeout(resizeTimer);
     const selected = jobs.find((job) => job.id === selectedId && coordsFor(job));
     const selectedCoords = selected ? coordsFor(selected) : null;
     if (selectedCoords) {
@@ -366,8 +364,9 @@ function ClusterMarker({
       icon={clusterIcon(cluster, leadJob, showDate)}
       eventHandlers={{
         click: () => {
-          if (cluster.jobs.length > 1 && mapZoom < 15) {
-            map.setView(cluster.center, Math.min(15, mapZoom + 2), { animate: true });
+          if (cluster.jobs.length > 1 && mapZoom < map.getMaxZoom()) {
+            map.setView(cluster.center, Math.min(map.getMaxZoom(), mapZoom + 2), { animate: true });
+            return;
           }
           onSelect(leadJob.id);
         },
