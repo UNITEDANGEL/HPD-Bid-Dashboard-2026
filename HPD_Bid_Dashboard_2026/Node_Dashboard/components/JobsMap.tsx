@@ -131,17 +131,16 @@ function formatMapShortDate(value: string) {
 }
 
 function maturityDateValue(job: JobRecord) {
-  return job.completionDate || job.startDate || job.awardDate;
+  return job.completionDate;
 }
 
 function mapMaturityLabel(job: JobRecord) {
-  const label = job.completionDate ? "Due" : job.startDate ? "Start" : "Award";
   const date = formatMapShortDate(maturityDateValue(job));
-  return date ? `${label} ${date}` : "No date";
+  return date ? `Maturity ${date}` : "Maturity unknown";
 }
 
 function mapMaturityShortLabel(job: JobRecord) {
-  return formatMapShortDate(maturityDateValue(job)) || "Date";
+  return formatMapShortDate(maturityDateValue(job)) || "No date";
 }
 
 type JobCluster = {

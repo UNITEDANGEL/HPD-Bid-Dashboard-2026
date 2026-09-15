@@ -2667,8 +2667,8 @@ export function JobsMapBoard({ jobs }: Props) {
                 <h2>{selected.id}</h2>
                 {selectedAddress ? <p>{selectedAddress}</p> : null}
                 <div className="field-card-tags">
-                  {selectedBorough ? <strong>{selectedBorough.toUpperCase()}</strong> : null}
-                  {selectedTrade ? <span>{selectedTrade}</span> : null}
+                  <span>Award: {formatShortDate(selected.awardDate)}</span>
+                  <span>Maturity: {formatJobCompletionDate(selected)}</span>
                 </div>
               </div>
 
