@@ -9736,3 +9736,37 @@ body:has(.command-app.is-phone-preview) .page-frame {
     font-weight: 950;
   }
 }
+
+/* Keep map filters in the drawer and reserve the bottom sheet for a selected job. */
+.command-app.is-phone-preview .mobile-borough-tabs,
+.command-app.is-phone-preview .mobile-filter-row,
+.command-app.is-phone-preview .mobile-job-sheet.is-today-mode {
+  display: none;
+}
+
+.command-app.is-phone-preview .mobile-map-shell::before,
+.command-app.is-phone-preview .mobile-map-shell::after {
+  display: none;
+}
+
+.command-app.is-phone-preview .mobile-command-card {
+  min-height: 40px;
+  padding: 3px 8px;
+  margin-bottom: 4px;
+}
+
+@media (max-width: 760px) {
+  .command-app:not(.is-phone-preview) .mobile-borough-tabs,
+  .command-app:not(.is-phone-preview) .mobile-filter-row,
+  .command-app:not(.is-phone-preview) .mobile-job-sheet.is-today-mode,
+  .command-app:not(.is-phone-preview) .mobile-map-shell::before,
+  .command-app:not(.is-phone-preview) .mobile-map-shell::after {
+    display: none;
+  }
+
+  .command-app:not(.is-phone-preview) .mobile-command-card {
+    min-height: 40px;
+    padding: 3px 8px;
+    margin-bottom: 4px;
+  }
+}
