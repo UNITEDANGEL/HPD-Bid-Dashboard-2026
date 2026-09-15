@@ -9486,8 +9486,8 @@ body:has(.command-app.is-phone-preview) .page-frame {
 }
 
 .command-app.is-phone-preview .mobile-job-sheet.is-job-command.is-compact {
-  max-height: 190px;
-  overflow: hidden;
+  max-height: min(230px, 48%);
+  overflow-y: auto;
   cursor: pointer;
 }
 
@@ -9612,8 +9612,8 @@ body:has(.command-app.is-phone-preview) .page-frame {
 
 @media (max-width: 760px) {
   .command-app:not(.is-phone-preview) .mobile-job-sheet.is-job-command.is-compact {
-    max-height: 190px;
-    overflow: hidden;
+    max-height: min(230px, 48%);
+    overflow-y: auto;
     cursor: pointer;
   }
 
@@ -9735,6 +9735,38 @@ body:has(.command-app.is-phone-preview) .page-frame {
     font-size: 0.6rem;
     font-weight: 950;
   }
+}
+
+.mobile-job-sheet.is-job-command .job-sheet-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 6px;
+}
+
+.mobile-job-sheet.is-job-command .job-sheet-toolbar > button {
+  position: static;
+  flex: 0 0 auto;
+  min-height: 30px;
+}
+
+.mobile-job-sheet.is-job-command .job-sheet-toolbar .sheet-omo {
+  display: none;
+}
+
+.mobile-job-sheet.is-job-command .job-sheet-toolbar .star-icon {
+  margin-left: auto;
+}
+
+.mobile-job-sheet.is-job-command .field-card-main {
+  min-width: 0;
+}
+
+.mobile-job-sheet.is-job-command .field-card-main p {
+  overflow-wrap: anywhere;
 }
 
 /* Keep map filters in the drawer and reserve the bottom sheet for a selected job. */

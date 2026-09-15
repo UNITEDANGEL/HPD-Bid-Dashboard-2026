@@ -2633,9 +2633,7 @@ export function JobsMapBoard({ jobs }: Props) {
             }}
           >
             <div className="sheet-handle" />
-            <div className={selectedPhotoUrl || !jobSheetExpanded ? "field-card-grid has-photo" : "field-card-grid"}>
-              <div className="field-card-main">
-                <div className="sheet-topline">
+                <div className="sheet-topline job-sheet-toolbar">
                   <StatusBadge status={displayStatus(selected)} />
                   <span className="sheet-omo">OMO {selected.id}</span>
                   <button
@@ -2664,6 +2662,8 @@ export function JobsMapBoard({ jobs }: Props) {
                     Map
                   </button>
                 </div>
+            <div className={selectedPhotoUrl || !jobSheetExpanded ? "field-card-grid has-photo" : "field-card-grid"}>
+              <div className="field-card-main">
                 <h2>{selected.id}</h2>
                 {selectedAddress ? <p>{selectedAddress}</p> : null}
                 <div className="field-card-tags">
