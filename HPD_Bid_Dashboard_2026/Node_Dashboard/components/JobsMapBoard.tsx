@@ -631,6 +631,7 @@ export function JobsMapBoard({ jobs }: Props) {
   const [customDays, setCustomDays] = useState(DEFAULT_CUSTOM_DAYS);
   const [selectedId, setSelectedId] = useState("");
   const [jobSheetExpanded, setJobSheetExpanded] = useState(false);
+  const [reviewedPackages, setReviewedPackages] = useState<Record<string, boolean>>({});
   const [mapToolsOpen, setMapToolsOpen] = useState(false);
   const mapToolsTouchY = useRef<number | null>(null);
   const [activeNav, setActiveNav] = useState("Overview");
@@ -1679,6 +1680,8 @@ export function JobsMapBoard({ jobs }: Props) {
       if (!response.ok || !data.ok) throw new Error(data.error || "Unable to generate package.");
 
       setGeneratedDocsByJob((current) => ({ ...current, [jobId]: data }));
+      setReviewedPackages((current) => ({ ...current, [jobId]: false }));
+      setJobSheetExpanded(true);
       notify(`${jobId} invoice and affidavit generated. Review preview, then save.`);
     } catch (error) {
       notify(error instanceof Error ? error.message : "Unable to generate package.");
@@ -1694,6 +1697,12 @@ export function JobsMapBoard({ jobs }: Props) {
     const docs = generatedDocsByJob[jobId];
     if (!docs) {
       notify("Generate the invoice and affidavit before saving the close-out.");
+      return;
+    }
+
+    if (!reviewedPackages[jobId]) {
+      setJobSheetExpanded(true);
+      notify("Review the affidavit and invoice, then confirm the package before archiving.");
       return;
     }
 
@@ -2810,7 +2819,7 @@ export function JobsMapBoard({ jobs }: Props) {
                   </div>
                   <button
                     type="button"
-                    disabled={archivingPackageId === selected.id}
+                    disabled={archivingPackageId === selected.id || !reviewedPackages[selected.id]}
                     onClick={saveAndArchiveSelectedPackage}
                   >
                     {archivingPackageId === selected.id ? "Saving" : "Save & Archive"}
@@ -2831,6 +2840,11 @@ export function JobsMapBoard({ jobs }: Props) {
                     ) : null;
                   })}
                 </div>
+                <label className="package-review-confirmation">
+                  <input type="checkbox" checked={Boolean(reviewedPackages[selected.id])}
+                    onChange={(event) => setReviewedPackages((current) => ({ ...current, [selected.id]: event.target.checked }))} />
+                  Affidavit and invoice reviewed
+                </label>
                 {affidavitPreviewUrls(selectedGeneratedDocs).length ? (
                   <div className="job-card-affidavit-preview">
                     {affidavitPreviewUrls(selectedGeneratedDocs).map((url, index) => (
