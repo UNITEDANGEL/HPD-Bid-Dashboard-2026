@@ -2623,7 +2623,10 @@ export function JobsMapBoard({ jobs }: Props) {
             className={jobSheetExpanded ? "mobile-job-sheet is-job-command is-expanded" : "mobile-job-sheet is-job-command is-compact"}
             onClick={handleJobSheetPreviewClick}
             onTouchStart={(event) => {
-              jobSheetTouchStartY.current = event.touches[0]?.clientY ?? null;
+              const target = event.target as HTMLElement;
+              jobSheetTouchStartY.current = target.closest(".sheet-handle, .job-sheet-toolbar")
+                ? event.touches[0]?.clientY ?? null
+                : null;
             }}
             onTouchEnd={(event) => {
               if (jobSheetTouchStartY.current === null) return;
@@ -2660,14 +2663,14 @@ export function JobsMapBoard({ jobs }: Props) {
                     aria-label={jobSheetExpanded ? "Compact job card" : "Open full job card"}
                     onClick={() => setJobSheetExpanded((current) => !current)}
                   >
-                    {jobSheetExpanded ? "Compact" : "Open"}
+                    {jobSheetExpanded ? "Less" : "Details"}
                   </button>
                   <button type="button" className="sheet-map-return" aria-label="Close job card and return to map" onClick={() => setSelectedId("")}>
                     <span aria-hidden="true">×</span>
                     Map
                   </button>
                 </div>
-            <div className={selectedPhotoUrl || !jobSheetExpanded ? "field-card-grid has-photo" : "field-card-grid"}>
+            <div className={selectedPhotoUrl ? "field-card-grid has-photo" : "field-card-grid"}>
               <div className="field-card-main">
                 <h2>{selected.id}</h2>
                 {selectedAddress ? <p>{selectedAddress}</p> : null}
@@ -2691,11 +2694,6 @@ export function JobsMapBoard({ jobs }: Props) {
                 <div className="field-photo-card">
                   <img src={selectedPhotoUrl} alt={`Uploaded field photo for ${selected.id}`} />
                   <span className="photo-count">{Math.min(selectedPhotoUrls.length, 4)}/4</span>
-                </div>
-              ) : !jobSheetExpanded ? (
-                <div className="field-photo-card is-empty" aria-hidden="true">
-                  <span className="action-camera" />
-                  <strong>Photo</strong>
                 </div>
               ) : null}
             </div>

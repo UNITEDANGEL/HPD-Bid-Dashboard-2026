@@ -9906,6 +9906,55 @@ body:has(.command-app.is-phone-preview) .page-frame {
   background: #425d4f;
 }
 
+.command-app .mobile-field.map-first .mobile-job-sheet.is-compact .field-card-grid:not(.has-photo) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.command-app .mobile-field.map-first .mobile-job-sheet.is-compact .job-card-next-step {
+  display: block;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+
+.command-app .mobile-field.map-first .mobile-job-sheet.is-compact .job-card-next-step > div:first-child {
+  display: none;
+}
+
+.command-app .mobile-field.map-first .mobile-job-sheet.is-compact .job-card-next-actions {
+  display: grid;
+  grid-template-columns: minmax(64px, 1fr) minmax(0, 2fr);
+  gap: 8px;
+}
+
+.command-app .mobile-field.map-first .job-card-next-actions a,
+.command-app .mobile-field.map-first .job-card-next-actions button {
+  min-height: 38px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.command-app .mobile-field.map-first .job-card-next-primary {
+  background: #b7ebca;
+  color: #153625;
+}
+
+.command-app .mobile-field.map-first .field-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.command-app .mobile-field.map-first .field-card-tags span {
+  padding: 0;
+  background: transparent;
+  border: 0;
+  color: #d7e7dc;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: normal;
+}
+
 /* Keep map filters in the drawer and reserve the bottom sheet for a selected job. */
 .command-app.is-phone-preview .mobile-borough-tabs,
 .command-app.is-phone-preview .mobile-filter-row,
