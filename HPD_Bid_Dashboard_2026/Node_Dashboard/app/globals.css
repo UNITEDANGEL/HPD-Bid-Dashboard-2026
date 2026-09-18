@@ -10015,6 +10015,42 @@ body:has(.command-app.is-phone-preview) .page-frame {
   color: #f3f5f1;
 }
 
+.command-app .mobile-field.map-first .work-order-label,
+.command-app .mobile-field.map-first .job-card-expand-button,
+.command-app .mobile-field.map-first .job-card-next-primary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.command-app .mobile-field.map-first .job-card-next-primary {
+  justify-content: center;
+}
+
+.command-app .mobile-field.map-first .construction-marker {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  width: 44px;
+  height: 44px;
+  padding: 3px;
+  border-radius: 8px;
+  background: #272c28;
+  border: 2px solid var(--pin-color);
+  color: #f0cc49;
+}
+
+.command-app .mobile-field.map-first .construction-marker.shows-date {
+  min-width: 58px;
+  width: 58px;
+}
+
+.command-app .mobile-field.map-first .construction-marker strong {
+  font-size: 10px;
+  color: #ffffff;
+}
+
 /* Keep map filters in the drawer and reserve the bottom sheet for a selected job. */
 .command-app.is-phone-preview .mobile-borough-tabs,
 .command-app.is-phone-preview .mobile-filter-row,

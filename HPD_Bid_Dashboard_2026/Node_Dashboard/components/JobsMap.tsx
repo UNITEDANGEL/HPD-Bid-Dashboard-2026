@@ -4,6 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { JobRecord } from "../lib/types";
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
+import { HardHat } from "lucide-react";
+import { renderToStaticMarkup } from "react-dom/server";
+
+const hardHatIcon = renderToStaticMarkup(<HardHat size={18} strokeWidth={2} aria-hidden="true" />);
 
 type Props = {
   jobs: JobRecord[];
@@ -182,7 +186,7 @@ function clusterIcon(cluster: JobCluster, leadJob: JobRecord, showDate: boolean)
 
   return L.divIcon({
     className: "job-cluster-icon",
-    html: `<span class="job-cluster-wrap"><span class="job-cluster ${cluster.selected ? "is-selected" : ""} ${showDate ? "shows-date" : ""}" style="--pin-color: ${cluster.color}"><strong>${escapeHtml(coreLabel)}</strong>${count}<span class="job-cluster-mix">${mix}</span>${fresh}</span>${label}</span>`,
+    html: `<span class="job-cluster-wrap"><span class="job-cluster construction-marker ${cluster.selected ? "is-selected" : ""} ${showDate ? "shows-date" : ""}" style="--pin-color: ${cluster.color}">${hardHatIcon}<strong>${escapeHtml(coreLabel)}</strong>${count}<span class="job-cluster-mix">${mix}</span>${fresh}</span>${label}</span>`,
     iconSize: cluster.selected ? [168, 58] : showDate ? [68, 46] : [44, 44],
     iconAnchor: cluster.selected ? [30, 32] : showDate ? [34, 42] : [22, 22],
     popupAnchor: [0, -22],

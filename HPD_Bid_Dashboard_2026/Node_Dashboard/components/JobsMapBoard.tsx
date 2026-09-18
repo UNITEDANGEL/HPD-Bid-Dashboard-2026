@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { ClipboardList, HardHat, Hammer } from "lucide-react";
 import type { ChangeEvent, MouseEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { StatusBadge } from "./StatusBadge";
@@ -2663,7 +2664,7 @@ export function JobsMapBoard({ jobs }: Props) {
                     aria-label={jobSheetExpanded ? "Compact job card" : "Open full job card"}
                     onClick={() => setJobSheetExpanded((current) => !current)}
                   >
-                    {jobSheetExpanded ? "Less" : "Details"}
+                    <ClipboardList size={14} aria-hidden="true" />{jobSheetExpanded ? "Less" : "Details"}
                   </button>
                   <button type="button" className="sheet-map-return" aria-label="Close job card and return to map" onClick={() => setSelectedId("")}>
                     <span aria-hidden="true">×</span>
@@ -2672,7 +2673,7 @@ export function JobsMapBoard({ jobs }: Props) {
                 </div>
             <div className={selectedPhotoUrl ? "field-card-grid has-photo" : "field-card-grid"}>
               <div className="field-card-main">
-                <h2><small className="work-order-label">WORK ORDER</small>{selected.id}</h2>
+                <h2><small className="work-order-label"><HardHat size={15} aria-hidden="true" /> WORK ORDER</small>{selected.id}</h2>
                 {selectedAddress ? <p>{selectedAddress}</p> : null}
                 <div className="field-card-tags">
                   <span>Award: {formatShortDate(selected.awardDate)}</span>
@@ -2722,6 +2723,7 @@ export function JobsMapBoard({ jobs }: Props) {
                   disabled={selectedPrimaryFlowBusy}
                   onClick={handleSelectedPrimaryFlow}
                 >
+                  <Hammer size={16} aria-hidden="true" />
                   {closingOutId === selected.id ? "Generating" : archivingPackageId === selected.id ? "Saving" : selectedPrimaryFlowLabel}
                 </button>
               </div>
