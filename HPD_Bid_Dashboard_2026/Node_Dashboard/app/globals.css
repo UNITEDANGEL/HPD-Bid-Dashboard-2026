@@ -9955,6 +9955,66 @@ body:has(.command-app.is-phone-preview) .page-frame {
   white-space: normal;
 }
 
+.command-app .mobile-field.map-first .mobile-job-sheet.is-job-command {
+  background: #202421;
+  border: 1px solid #6b716c;
+  border-top: 3px solid #f0cc49;
+  border-radius: 8px;
+}
+
+.command-app .mobile-field.map-first .work-order-label {
+  display: block;
+  margin-bottom: 3px;
+  color: #f0cc49;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.command-app .mobile-field.map-first .field-card-main h2 {
+  color: #ffffff;
+  font-size: 19px;
+  line-height: 1.15;
+}
+
+.command-app .mobile-field.map-first .field-card-main p {
+  color: #f0f2ef;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.command-app .mobile-field.map-first .field-card-tags {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #555d56;
+}
+
+.command-app .mobile-field.map-first .field-card-tags span {
+  color: #e3e7e0;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.command-app .mobile-field.map-first .field-card-tags span:last-child {
+  color: #f5dc79;
+}
+
+.command-app .mobile-field.map-first .job-card-next-primary {
+  background: #f0cc49;
+  border: 1px solid #f5dc79;
+  color: #24291f;
+  font-weight: 800;
+}
+
+.command-app .mobile-field.map-first .job-card-expand-button,
+.command-app .mobile-field.map-first .sheet-map-return {
+  background: #303832;
+  border-color: #687369;
+  color: #f3f5f1;
+}
+
 /* Keep map filters in the drawer and reserve the bottom sheet for a selected job. */
 .command-app.is-phone-preview .mobile-borough-tabs,
 .command-app.is-phone-preview .mobile-filter-row,

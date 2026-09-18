@@ -2672,7 +2672,7 @@ export function JobsMapBoard({ jobs }: Props) {
                 </div>
             <div className={selectedPhotoUrl ? "field-card-grid has-photo" : "field-card-grid"}>
               <div className="field-card-main">
-                <h2>{selected.id}</h2>
+                <h2><small className="work-order-label">WORK ORDER</small>{selected.id}</h2>
                 {selectedAddress ? <p>{selectedAddress}</p> : null}
                 <div className="field-card-tags">
                   <span>Award: {formatShortDate(selected.awardDate)}</span>
