@@ -10051,6 +10051,22 @@ body:has(.command-app.is-phone-preview) .page-frame {
   color: #ffffff;
 }
 
+.command-app .mobile-field.map-first .job-outcome-shortcut {
+  min-height: 32px;
+  width: 100%;
+  border: 1px solid #687369;
+  border-radius: 6px;
+  background: transparent;
+  color: #f5dc79;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.command-app .mobile-field.map-first .job-card-next-primary {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* Keep map filters in the drawer and reserve the bottom sheet for a selected job. */
 .command-app.is-phone-preview .mobile-borough-tabs,
 .command-app.is-phone-preview .mobile-filter-row,

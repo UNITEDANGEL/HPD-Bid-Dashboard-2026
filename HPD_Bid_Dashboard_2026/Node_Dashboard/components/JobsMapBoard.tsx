@@ -751,14 +751,14 @@ export function JobsMapBoard({ jobs }: Props) {
   const selectedGeneratedDocs = selected ? generatedDocsByJob[selected.id] || null : null;
   const selectedFlowEvents = selected ? fieldFlowEventsByJob[selected.id] || {} : {};
   const selectedOutcome = latestStampedAction(OUTCOME_STATUS_ACTIONS, selectedFlowEvents);
-  const selectedNextSiteAction = !selectedFlowEvents["Arrived On Site"]
+  const selectedNextSiteAction = selectedOutcome ? null : !selectedFlowEvents["Arrived On Site"]
     ? VISIT_STATUS_ACTIONS[0] || null
     : !selectedFlowEvents["Work Started"]
       ? VISIT_STATUS_ACTIONS[1] || null
       : null;
   const selectedPrimaryFlowLabel = selectedNextSiteAction
     ? selectedNextSiteAction.value === "Arrived On Site" ? "Arrive" : "Start"
-    : !selectedOutcome ? "Pick Outcome" : selectedGeneratedDocs ? "Save" : "Generate";
+    : !selectedOutcome ? "Outcome" : selectedGeneratedDocs ? "Save & archive" : "Generate documents";
   const selectedPrimaryFlowStage = selectedNextSiteAction
     ? selectedNextSiteAction.value === "Arrived On Site" ? "On Site" : "Work Order"
     : !selectedOutcome ? "Close Out" : selectedGeneratedDocs ? "Package Ready" : "Paperwork";
@@ -1501,6 +1501,7 @@ export function JobsMapBoard({ jobs }: Props) {
   }
 
   function selectMapJob(id: string) {
+    setMapToolsOpen(false);
     setJobSheetExpanded(false);
     if (routeMode) {
       const routeIndex = routeStops.findIndex((job) => job.id === id);
@@ -1749,7 +1750,7 @@ export function JobsMapBoard({ jobs }: Props) {
     }
 
     if (!selectedOutcome) {
-      notify("Choose Work Completed, Refused Access, No Access, or Completed by Other first.");
+      setJobSheetExpanded(true);
       return;
     }
 
@@ -2729,6 +2730,11 @@ export function JobsMapBoard({ jobs }: Props) {
               </div>
             </div>
 
+            {!jobSheetExpanded && selectedFlowEvents["Arrived On Site"] && !selectedOutcome ? (
+              <button type="button" className="job-outcome-shortcut" onClick={() => setJobSheetExpanded(true)}>
+                Record outcome / no access
+              </button>
+            ) : null}
             <div className="job-card-flow">
               <div className="job-card-flow-head">
                 <div>
