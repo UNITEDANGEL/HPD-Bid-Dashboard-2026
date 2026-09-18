@@ -23,6 +23,8 @@ scenarios = [
     ("current-refused", "2026-09-15", "Refused Access", "No Work Completed", "current"),
     ("current-other", "2026-09-15", "Work Completed by Other", "No Work Completed", "current"),
     ("legacy-no-work", "2026-08-27", "No Access", "No Work Completed", "legacy"),
+    ("current-partial", "2026-09-15", "Partial Work", "Work Completed", "current"),
+    ("legacy-partial", "2026-08-27", "Partial Work", "Work Completed", "legacy"),
 ]
 results = []
 for name, award, status, kind, version in scenarios:
@@ -35,7 +37,13 @@ for name, award, status, kind, version in scenarios:
         "no_work_reason": status, "denied_person_name": "Sample Person",
         "denied_relationship": "Sample tenant", "denied_description": "Test description",
         "other_worker_name": "Sample Contractor", "other_worker_relationship": "Owner contractor",
+        "attempt2_date": "2026-09-19",
     }
+    if "partial" in name:
+        row.update(partial_reason="TEST ONLY: Remaining work requires replacement hardware.",
+                   partial_amount_1="50.00", partial_amount_2="50.00",
+                   name_of_person="Sample Person", relationship_to_building="Tenant",
+                   description_of_person="Sample description")
     assert support.affidavit_template_version_for_row(row) == version
     bundle = support.generate_document_bundle(row, kind)
     for path in (bundle.invoice_path, bundle.affidavit_path, bundle.job_card_path):
@@ -53,4 +61,17 @@ for name, award, status, kind, version in scenarios:
     results.append({"scenario": name, "version": version, "affidavit": bundle.affidavit_path,
                     "invoice": bundle.invoice_path, "previews": previews})
 (OUT / "results.json").write_text(json.dumps(results, indent=2), encoding="utf-8")
-print(json.dumps({"passed": len(results), "output": str(OUT)}, indent=2))
+from PIL import Image, ImageDraw
+for result in results:
+    pages = [Image.open(path).convert("RGB") for path in result["previews"]]
+    invoice = fitz.open(result["invoice"])
+    for page in invoice:
+        pix = page.get_pixmap(matrix=fitz.Matrix(1.4, 1.4))
+        pages.append(Image.frombytes("RGB", (pix.width, pix.height), pix.samples))
+    sheet = Image.new("RGB", (600 * len(pages), 820), "white")
+    for index, page in enumerate(pages):
+        page.thumbnail((590, 780))
+        sheet.paste(page, (600 * index, 30))
+    ImageDraw.Draw(sheet).text((10, 8), result["scenario"] + " - affidavit pages then invoice", fill="black")
+    sheet.save(OUT / (result["scenario"] + "-review.png"))
+print(json.dumps({"generation_checks_passed": len(results), "visual_approval": "Requires separate review; generation does not establish correctness", "output": str(OUT)}, indent=2))
