@@ -630,6 +630,8 @@ export function JobsMapBoard({ jobs }: Props) {
   const [customDays, setCustomDays] = useState(DEFAULT_CUSTOM_DAYS);
   const [selectedId, setSelectedId] = useState("");
   const [jobSheetExpanded, setJobSheetExpanded] = useState(false);
+  const [mapToolsOpen, setMapToolsOpen] = useState(false);
+  const mapToolsTouchY = useRef<number | null>(null);
   const [activeNav, setActiveNav] = useState("Overview");
   const [chartPeriod, setChartPeriod] = useState<ChartPeriod>("Last 12 Months");
   const [tableMode, setTableMode] = useState<TableMode>("live");
@@ -2279,7 +2281,7 @@ export function JobsMapBoard({ jobs }: Props) {
         </div>
       </section>
 
-      <section className="mobile-field">
+      <section className={`mobile-field map-first ${mapToolsOpen ? "tools-open" : "tools-closed"}`}>
         <header className="mobile-command-card">
           <div className="mobile-command-brand">
             <div className="mobile-hpd-shield" aria-hidden="true">
@@ -2627,7 +2629,10 @@ export function JobsMapBoard({ jobs }: Props) {
               if (jobSheetTouchStartY.current === null) return;
               const endY = event.changedTouches[0]?.clientY ?? jobSheetTouchStartY.current;
               if (endY - jobSheetTouchStartY.current > 58) {
-                setSelectedId("");
+                if (jobSheetExpanded) setJobSheetExpanded(false);
+                else setSelectedId("");
+              } else if (jobSheetTouchStartY.current - endY > 58) {
+                setJobSheetExpanded(true);
               }
               jobSheetTouchStartY.current = null;
             }}
@@ -2907,6 +2912,23 @@ export function JobsMapBoard({ jobs }: Props) {
             </div>
           </article>
         ) : null}
+        <button
+          type="button"
+          className="map-tools-handle"
+          aria-label={mapToolsOpen ? "Hide map controls" : "Show map controls"}
+          aria-expanded={mapToolsOpen}
+          onClick={() => setMapToolsOpen((open) => !open)}
+          onTouchStart={(event) => { mapToolsTouchY.current = event.touches[0]?.clientY ?? null; }}
+          onTouchEnd={(event) => {
+            if (mapToolsTouchY.current === null) return;
+            const delta = (event.changedTouches[0]?.clientY ?? mapToolsTouchY.current) - mapToolsTouchY.current;
+            if (Math.abs(delta) > 20) {
+              event.preventDefault();
+              setMapToolsOpen(delta < 0);
+            }
+            mapToolsTouchY.current = null;
+          }}
+        ><span aria-hidden="true" /></button>
         <nav className="mobile-tabbar" aria-label="Field command navigation">
           <button
             type="button"

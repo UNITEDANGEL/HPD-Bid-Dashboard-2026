@@ -9769,6 +9769,48 @@ body:has(.command-app.is-phone-preview) .page-frame {
   overflow-wrap: anywhere;
 }
 
+.command-app .mobile-field.map-first .mobile-command-card,
+.command-app .mobile-field.map-first.tools-closed .mobile-tabbar,
+.command-app .mobile-field.map-first.tools-closed .floating-map-button {
+  display: none;
+}
+
+.command-app .mobile-field.map-first .mobile-search {
+  margin: 26px 8px 0;
+}
+
+.command-app .mobile-field.map-first .map-tools-handle {
+  position: absolute;
+  z-index: 650;
+  bottom: 12px;
+  left: calc(50% - 30px);
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #82949b;
+  border-radius: 8px;
+  background: #14242b;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.command-app .mobile-field.map-first .map-tools-handle span {
+  width: 26px;
+  height: 4px;
+  border-radius: 2px;
+  background: #ffffff;
+}
+
+.command-app .mobile-field.map-first.tools-open .map-tools-handle {
+  bottom: 78px;
+}
+
+.command-app .mobile-field.map-first.tools-closed .mobile-job-sheet.is-job-command {
+  bottom: 48px;
+}
+
 /* Keep map filters in the drawer and reserve the bottom sheet for a selected job. */
 .command-app.is-phone-preview .mobile-borough-tabs,
 .command-app.is-phone-preview .mobile-filter-row,
