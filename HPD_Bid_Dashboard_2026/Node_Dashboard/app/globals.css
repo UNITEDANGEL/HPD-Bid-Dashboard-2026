@@ -9811,6 +9811,81 @@ body:has(.command-app.is-phone-preview) .page-frame {
   bottom: 48px;
 }
 
+/* Restrained map surfaces keep streets and selected jobs readable. */
+.command-app .mobile-field.map-first .mobile-search {
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 1px solid #d5dddf;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px #10251c26;
+  backdrop-filter: none;
+}
+
+.command-app .mobile-field.map-first .mobile-search input {
+  color: #172b25;
+  font-size: 13px;
+  min-width: 0;
+}
+
+.command-app .mobile-field.map-first .mobile-search input::placeholder {
+  color: #61716c;
+  opacity: 1;
+}
+
+.command-app .mobile-field.map-first .mobile-search > span {
+  border-color: #61716c;
+}
+
+.command-app .mobile-field.map-first .mobile-search > span::after {
+  background: #61716c;
+}
+
+.command-app .mobile-field.map-first .mobile-search-filter,
+.command-app .mobile-field.map-first .floating-map-button {
+  background: #233b32;
+  border: 1px solid #71877c;
+  box-shadow: 0 2px 6px #13241c26;
+  border-radius: 8px;
+}
+
+.command-app .mobile-field.map-first .mobile-search-filter::before,
+.command-app .mobile-field.map-first .mobile-search-filter::after {
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.command-app .mobile-field.map-first .mobile-tabbar,
+.command-app .mobile-field.map-first .mobile-job-sheet.is-job-command {
+  background: #172822;
+  border: 1px solid #61766b;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px #14221b33;
+  backdrop-filter: none;
+}
+
+.command-app .mobile-field.map-first .job-cluster.is-selected {
+  background: #147757;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px #147757;
+}
+
+.command-app .mobile-field.map-first .job-card-next-step {
+  background: #223c31;
+  box-shadow: none;
+  border-radius: 6px;
+}
+
+.command-app .mobile-field.map-first .map-tools-handle {
+  background: #ffffff;
+  border-color: #bac9c0;
+  box-shadow: 0 2px 8px #14221b26;
+}
+
+.command-app .mobile-field.map-first .map-tools-handle span {
+  background: #425d4f;
+}
+
 /* Keep map filters in the drawer and reserve the bottom sheet for a selected job. */
 .command-app.is-phone-preview .mobile-borough-tabs,
 .command-app.is-phone-preview .mobile-filter-row,

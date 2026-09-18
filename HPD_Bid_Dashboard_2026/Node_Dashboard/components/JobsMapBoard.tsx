@@ -2382,7 +2382,7 @@ export function JobsMapBoard({ jobs }: Props) {
               setActiveRouteIndex(0);
               setQuery(event.target.value);
             }}
-            placeholder="Search jobs, address, OMO, tenant..."
+            placeholder="Search jobs or address"
             aria-label="Search field map"
           />
           <button type="button" className="mobile-search-filter" aria-label="Open search filters" onClick={() => setActivePanel("filters")} />
