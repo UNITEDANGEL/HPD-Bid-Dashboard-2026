@@ -9815,11 +9815,12 @@ body:has(.command-app.is-phone-preview) .page-frame {
 .command-app .mobile-field.map-first .mobile-search {
   min-height: 44px;
   padding: 4px 8px;
-  border: 1px solid #d5dddf;
+  border: 1px solid rgba(255, 255, 255, 0.65);
   border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 3px 12px #10251c26;
-  backdrop-filter: none;
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: 0 2px 8px #10251c1a;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .command-app .mobile-field.map-first .mobile-search input {
@@ -9855,6 +9856,23 @@ body:has(.command-app.is-phone-preview) .page-frame {
   box-shadow: none;
 }
 
+.command-app .mobile-field.map-first .mobile-search-filter {
+  background: rgba(255, 255, 255, 0.25);
+  border: 0;
+  box-shadow: none;
+}
+
+.command-app .mobile-field.map-first .mobile-search-filter::before {
+  top: 10px;
+  background: #294637;
+  box-shadow: 0 6px 0 #294637;
+}
+
+.command-app .mobile-field.map-first .mobile-search-filter::after {
+  top: 22px;
+  background: #294637;
+}
+
 .command-app .mobile-field.map-first .mobile-tabbar,
 .command-app .mobile-field.map-first .mobile-job-sheet.is-job-command {
   background: #172822;
@@ -9877,7 +9895,9 @@ body:has(.command-app.is-phone-preview) .page-frame {
 }
 
 .command-app .mobile-field.map-first .map-tools-handle {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-color: #bac9c0;
   box-shadow: 0 2px 8px #14221b26;
 }
