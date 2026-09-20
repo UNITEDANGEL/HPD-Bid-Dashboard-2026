@@ -1,15 +1,10 @@
 {
-  "state": "complete",
-  "startedAt": "2026-08-30T01:12:00.070Z",
-  "finishedAt": "2026-08-30T01:12:10.221Z",
-  "ok": true,
-  "error": "",
+  "state": "failed",
+  "startedAt": "2026-09-20T00:56:59.844Z",
+  "finishedAt": "2026-09-20T00:57:05.826Z",
+  "ok": false,
+  "error": "Run Gmail fetcher for last 14 days failed with exit code 1",
   "summary": {
-    "fetchedCoaItems": 0,
-    "fetchedItbItems": null,
-    "fetchedFinalJobRows": 0,
-    "addedNewOmos": 0,
-    "skippedExistingOmos": 0,
     "rawRows": 632,
     "rows2026": 581,
     "mapped2026": 581,
@@ -17,7 +12,6 @@
     "missingAddresses": 0,
     "badDescriptions": 0,
     "missingDescriptions": 0,
-    "missingItbPage3Descriptions": 16,
     "sourceReviewJobs": 0,
     "missingPage3Images": 27,
     "missingItbJobs": 0
