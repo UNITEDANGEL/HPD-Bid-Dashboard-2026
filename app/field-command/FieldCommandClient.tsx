@@ -207,10 +207,15 @@ function jobAgeDays(job: JobRecord) {
 
 function ageMarkerHtml(color: string, days: number | null) {
   const label = days === null ? "?" : String(days);
-  const fontSize = label.length > 2 ? 10 : 12;
+  const fontSize = label.length > 2 ? 9 : 11;
+  const overdue = days !== null && days > 30;
   return `<div style="position:relative;width:30px;height:30px;">` +
     `<div style="position:absolute;inset:-9px;border-radius:50%;background:radial-gradient(circle, ${color}59, transparent 68%);"></div>` +
-    `<div style="position:relative;width:30px;height:30px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,.92);box-shadow:0 0 10px ${color},0 0 24px ${color}80,0 3px 8px rgba(0,0,0,.5);display:grid;place-items:center;color:#fff;font-weight:900;font-size:${fontSize}px;font-family:-apple-system,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.5);">${label}</div>` +
+    `<div style="position:relative;width:30px;height:30px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,.92);box-shadow:0 0 10px ${color},0 0 24px ${color}80,0 3px 8px rgba(0,0,0,.5);display:grid;place-items:center;color:#fff;font-weight:900;font-size:${fontSize}px;font-family:-apple-system,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.5);">` +
+    `<svg width="11" height="11" viewBox="0 0 24 24" style="position:absolute;top:4px;">${HARDHAT_ICON_PATH}</svg>` +
+    `<span style="margin-top:7px;">${label}</span>` +
+    (overdue ? `<div style="position:absolute;top:-8px;left:-8px;padding:1px 5px;border-radius:999px;background:#b42332;color:#fff;font-size:8px;font-weight:900;box-shadow:0 3px 8px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.4);">!</div>` : "") +
+    `</div>` +
     `</div>`;
 }
 
@@ -348,6 +353,16 @@ function LayersIcon() {
       <polygon points="12 2 2 7 12 12 22 7 12 2" />
       <polyline points="2 17 12 22 22 17" />
       <polyline points="2 12 12 17 22 12" />
+    </svg>
+  );
+}
+
+function RouteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6" cy="19" r="2.5" />
+      <circle cx="18" cy="5" r="2.5" />
+      <path d="M8.2 18 15 8a3 3 0 0 1 3-1.5" />
     </svg>
   );
 }
@@ -997,20 +1012,25 @@ export default function FieldCommandClient() {
           </div>
           <label className="fc-days-control">
             <span>Days</span>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
+            <select
               value={daysBack ?? ""}
-              placeholder="All"
               aria-label="Show jobs from last number of days"
               onChange={(event) => {
-                const raw = event.target.value.trim();
-                const clean = raw.replace(/\D/g, "").slice(0, 3);
-                setDaysBack(clean ? Math.max(1, Number(clean)) : null);
+                const raw = event.target.value;
+                setDaysBack(raw ? Number(raw) : null);
               }}
-            />
-            <strong>d</strong>
+            >
+              <option value="">Any</option>
+              <option value="1">1</option>
+              <option value="3">3</option>
+              <option value="7">7</option>
+              <option value="14">14</option>
+              <option value="30">30</option>
+              <option value="60">60</option>
+              <option value="90">90</option>
+              <option value="180">180</option>
+              <option value="365">365</option>
+            </select>
           </label>
         </div>
       </header>
@@ -1095,7 +1115,7 @@ export default function FieldCommandClient() {
             aria-label="Preview smart route"
             onClick={previewLocalRoute}
           >
-            R
+            <RouteIcon />
           </button>
         </div>
         {routeSummary ? (
