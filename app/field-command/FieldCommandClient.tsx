@@ -386,13 +386,25 @@ function clusterByPixelDistance(
   return clusters;
 }
 
-function clusterMarkerHtml(count: number) {
+const HARDHAT_ICON_PATH =
+  '<path d="M4 12.5A8 8 0 0 1 20 12.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>' +
+  '<rect x="2.5" y="12" width="19" height="2.6" rx="1.3" fill="#fff"/>' +
+  '<rect x="11" y="6.5" width="2" height="3.5" rx="1" fill="#fff"/>';
+
+function clusterMarkerHtml(count: number, oldestDays: number | null) {
   const size = Math.min(56, Math.max(34, 26 + Math.sqrt(count) * 7));
   const glow = Math.round(size * 0.35);
   const fontSize = Math.min(16, 11 + count / 40);
+  const overdue = oldestDays !== null && oldestDays > 30;
+  const badge = overdue
+    ? `<div style="position:absolute;top:-8px;left:-8px;min-width:26px;padding:2px 6px;border-radius:999px;background:#b42332;color:#fff;font-size:10px;font-weight:900;text-align:center;box-shadow:0 3px 8px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.4);">${oldestDays}d</div>`
+    : "";
   return `<div style="position:relative;width:${size}px;height:${size}px;">` +
     `<div style="position:absolute;inset:-${glow}px;border-radius:50%;background:radial-gradient(circle, ${CLUSTER_COLOR}59, transparent 68%);"></div>` +
-    `<div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;background:${CLUSTER_COLOR};border:3px solid rgba(255,255,255,.92);box-shadow:0 0 14px ${CLUSTER_COLOR},0 0 32px ${CLUSTER_COLOR}77,0 4px 10px rgba(0,0,0,.5);display:grid;place-items:center;color:#fff;font-weight:900;font-size:${fontSize}px;text-shadow:0 1px 2px rgba(0,0,0,.5);">${count}</div>` +
+    `<div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;background:${CLUSTER_COLOR};border:3px solid rgba(255,255,255,.92);box-shadow:0 0 14px ${CLUSTER_COLOR},0 0 32px ${CLUSTER_COLOR}77,0 4px 10px rgba(0,0,0,.5);display:grid;place-items:center;color:#fff;font-weight:900;font-size:${fontSize}px;text-shadow:0 1px 2px rgba(0,0,0,.5);">` +
+    `<svg width="14" height="14" viewBox="0 0 24 24" style="position:absolute;top:${Math.round(size * 0.14)}px;">${HARDHAT_ICON_PATH}</svg>` +
+    `<span style="margin-top:9px;">${count}</span>` +
+    `</div>${badge}` +
     `</div>`;
 }
 
@@ -567,8 +579,10 @@ export default function FieldCommandClient() {
               title = `${jobId(job)} - ${meta.label} - ${days === null ? "age unknown" : `${days}d old`}`;
               onClick = () => setSelectedJob(job);
             } else {
-              html = clusterMarkerHtml(cluster.jobs.length);
-              title = `${cluster.jobs.length} jobs`;
+              const ages = cluster.jobs.map((job) => jobAgeDays(job)).filter((d): d is number => d !== null);
+              const oldestDays = ages.length ? Math.max(...ages) : null;
+              html = clusterMarkerHtml(cluster.jobs.length, oldestDays);
+              title = `${cluster.jobs.length} jobs${oldestDays !== null && oldestDays > 30 ? ` - oldest ${oldestDays}d` : ""}`;
               onClick = () => {
                 map.flyTo([cluster.lat, cluster.lng], Math.min(20, map.getZoom() + 2.5));
               };

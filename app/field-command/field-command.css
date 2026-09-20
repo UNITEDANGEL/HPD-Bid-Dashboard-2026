@@ -1466,19 +1466,68 @@
 
 /* Scale up on larger viewports; map still stays the dominant element */
 @media (min-width: 700px) {
+  body:has(.fc-app) {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(circle at 50% -12%, rgba(10, 132, 255, 0.16), transparent 34%),
+      radial-gradient(circle at 15% 90%, rgba(48, 209, 88, 0.08), transparent 28%),
+      linear-gradient(135deg, #0d1118, #03050a 62%, #111827);
+  }
+
   .fc-app {
-    max-width: 640px;
-    margin-top: 24px;
-    margin-bottom: 24px;
-    height: calc(100dvh - 48px);
-    max-height: calc(100dvh - 48px);
-    border-radius: 36px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 40px 120px rgba(0, 0, 0, 0.55);
+    box-sizing: border-box;
+    position: relative;
+    width: min(390px, calc(100vw - 24px));
+    max-width: min(390px, calc(100vw - 24px));
+    height: min(844px, calc(100dvh - 24px));
+    max-height: min(844px, calc(100dvh - 24px));
+    margin-top: 0;
+    margin-bottom: 0;
+    border-radius: 46px;
+    border: 10px solid #05070d;
+    box-shadow:
+      0 30px 90px rgba(0, 0, 0, 0.62),
+      0 0 0 1px rgba(255, 255, 255, 0.08),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    isolation: isolate;
+  }
+
+  .fc-app::before,
+  .fc-app::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    z-index: 900;
+    pointer-events: none;
+    transform: translateX(-50%);
+  }
+
+  .fc-app::before {
+    top: 8px;
+    width: 116px;
+    height: 28px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 999px;
+    background: #03050a;
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.07);
+  }
+
+  .fc-app::after {
+    bottom: 8px;
+    width: 128px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
   }
 
   .fc-title {
     font-size: 19px;
+  }
+
+  .fc-topbar {
+    padding-top: 30px;
   }
 
   .fc-pill strong {
