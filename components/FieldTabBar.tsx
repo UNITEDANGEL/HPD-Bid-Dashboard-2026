@@ -74,10 +74,10 @@ export default function FieldTabBar() {
           <PlusIcon />
         </button>
       </div>
-      <button type="button" className="fc-tab" aria-label="Alerts">
+      <Link href="/alerts" className={`fc-tab ${pathname === "/alerts" ? "is-active" : ""}`}>
         <AlertIcon />
         <span>Alerts</span>
-      </button>
+      </Link>
       <Link href="/more" className={`fc-tab ${pathname === "/more" ? "is-active" : ""}`}>
         <MoreIcon />
         <span>More</span>

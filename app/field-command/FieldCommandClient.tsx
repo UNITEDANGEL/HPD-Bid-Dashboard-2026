@@ -489,6 +489,14 @@ export default function FieldCommandClient() {
     [jobs]
   );
 
+  const overdueCount = useMemo(
+    () => activeJobs.filter((job) => {
+      const days = jobAgeDays(job);
+      return days !== null && days > 30;
+    }).length,
+    [activeJobs]
+  );
+
   const filteredJobs = useMemo(() => {
     const q = search.trim().toLowerCase();
     const exactOmoQuery = q.toUpperCase().match(/^[A-Z]{1,3}\d{4,8}$/) ? q.toUpperCase() : "";
@@ -996,11 +1004,11 @@ export default function FieldCommandClient() {
             </div>
           </div>
           <div className="fc-topbar-actions">
-            <button type="button" className="fc-icon-btn" aria-label="Alerts">
+            <Link href="/alerts" className="fc-icon-btn" aria-label="Alerts">
               <BellIcon />
-              <span className="fc-icon-badge">6</span>
-            </button>
-            <Link href="/" className="fc-icon-btn" aria-label="Menu">
+              {overdueCount > 0 ? <span className="fc-icon-badge">{overdueCount}</span> : null}
+            </Link>
+            <Link href="/more" className="fc-icon-btn" aria-label="More">
               <MenuIcon />
             </Link>
           </div>
