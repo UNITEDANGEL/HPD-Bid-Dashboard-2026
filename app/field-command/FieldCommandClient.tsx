@@ -367,6 +367,41 @@ function RouteIcon() {
   );
 }
 
+function NavigateIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 11l18-8-8 18-2.5-7.5L3 11z" />
+    </svg>
+  );
+}
+
+function CallIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+  );
+}
+
+function PhotosIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="15" rx="2" />
+      <circle cx="8.5" cy="10.5" r="1.5" />
+      <path d="M21 16l-5-5-9 9" />
+    </svg>
+  );
+}
+
+function DocumentsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+    </svg>
+  );
+}
+
 const LIGHT_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
 const DARK_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
 const CLUSTER_COLOR = "#38bdf8";
@@ -406,8 +441,11 @@ const HARDHAT_ICON_PATH =
   '<rect x="2.5" y="12" width="19" height="2.6" rx="1.3" fill="#fff"/>' +
   '<rect x="11" y="6.5" width="2" height="3.5" rx="1" fill="#fff"/>';
 
-function boroughLabelHtml(label: string) {
-  return `<span style="display:inline-block;color:rgba(71,85,105,.85);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;text-shadow:0 1px 0 rgba(255,255,255,.55),-1px 0 0 rgba(255,255,255,.4),1px 0 0 rgba(255,255,255,.4),0 -1px 0 rgba(255,255,255,.4);pointer-events:none;">${label}</span>`;
+function boroughLabelHtml(label: string, dark: boolean) {
+  const style = dark
+    ? "color:rgba(255,255,255,.88);text-shadow:0 1px 4px rgba(0,0,0,.9),0 1px 8px rgba(0,0,0,.7);"
+    : "color:rgba(71,85,105,.85);text-shadow:0 1px 0 rgba(255,255,255,.55),-1px 0 0 rgba(255,255,255,.4),1px 0 0 rgba(255,255,255,.4),0 -1px 0 rgba(255,255,255,.4);";
+  return `<span style="display:inline-block;${style}font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;pointer-events:none;">${label}</span>`;
 }
 
 function clusterMarkerHtml(count: number, oldestDays: number | null) {
@@ -443,7 +481,7 @@ export default function FieldCommandClient() {
   const [daysBack, setDaysBack] = useState<number | null>(60);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
-  const [darkTiles, setDarkTiles] = useState(false);
+  const [darkTiles, setDarkTiles] = useState(true);
   const [locateStatus, setLocateStatus] = useState<"idle" | "loading" | "error">("idle");
   const [scopeOpen, setScopeOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
@@ -586,7 +624,8 @@ export default function FieldCommandClient() {
           attributionControl: true,
         }).setView([40.72, -73.95], 10);
         mapRef.current = map;
-        tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20 }).addTo(map);
+        tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20, maxNativeZoom: 16 }).addTo(map);
+        L.control.scale({ position: "bottomright", metric: false, imperial: true }).addTo(map);
 
         map.createPane("boroughLabels");
         map.getPane("boroughLabels").style.zIndex = "350";
@@ -595,7 +634,7 @@ export default function FieldCommandClient() {
         boroughLabelLayerRef.current = L.layerGroup(
           BOROUGHS.map((b) =>
             L.marker(b.center, {
-              icon: L.divIcon({ className: "", html: boroughLabelHtml(b.label), iconSize: [140, 24], iconAnchor: [70, 12] }),
+              icon: L.divIcon({ className: "", html: boroughLabelHtml(b.label, darkTiles), iconSize: [140, 24], iconAnchor: [70, 12] }),
               interactive: false,
               pane: "boroughLabels",
             })
@@ -1229,6 +1268,31 @@ export default function FieldCommandClient() {
                   {stamps.status || jobStatusMeta(selectedJob).label}
                 </span>
                 {jobAgeDays(selectedJob) !== null ? <span className="fc-job-sheet-tag fc-age-tag">{jobAgeDays(selectedJob)}d old</span> : null}
+              </div>
+              <div className="fc-quick-actions">
+                <a className="fc-quick-action is-navigate" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">
+                  <NavigateIcon />
+                  <span>Navigate</span>
+                </a>
+                {tenant.phone ? (
+                  <a className="fc-quick-action is-call" href={`tel:${tenant.phone}`}>
+                    <CallIcon />
+                    <span>Call Tenant</span>
+                  </a>
+                ) : (
+                  <span className="fc-quick-action is-call is-disabled">
+                    <CallIcon />
+                    <span>Call Tenant</span>
+                  </span>
+                )}
+                <button type="button" className="fc-quick-action is-photos" onClick={() => requestMediaUpload("before")}>
+                  <PhotosIcon />
+                  <span>Photos</span>
+                </button>
+                <Link className="fc-quick-action is-documents" href={`/jobs/${id}`}>
+                  <DocumentsIcon />
+                  <span>Documents</span>
+                </Link>
               </div>
               <section className={`fc-flow-card fc-scope-card ${scopeOpen ? "is-open" : ""}`}>
                 <button type="button" className="fc-flow-card-main" onClick={() => setScopeOpen((open) => !open)}>

@@ -283,11 +283,23 @@
   color: #ffffff;
 }
 
+.fc-borough-chip.fc-mn { border-color: color-mix(in srgb, var(--fc-mn), transparent 55%); }
+.fc-borough-chip.fc-bk { border-color: color-mix(in srgb, var(--fc-bk), transparent 55%); }
+.fc-borough-chip.fc-qn { border-color: color-mix(in srgb, var(--fc-qn), transparent 55%); }
+.fc-borough-chip.fc-bx { border-color: color-mix(in srgb, var(--fc-bx), transparent 55%); }
+.fc-borough-chip.fc-si { border-color: color-mix(in srgb, var(--fc-si), transparent 55%); }
+
 .fc-borough-chip.fc-mn strong { color: var(--fc-mn); }
 .fc-borough-chip.fc-bk strong { color: var(--fc-bk); }
 .fc-borough-chip.fc-qn strong { color: var(--fc-qn); }
 .fc-borough-chip.fc-bx strong { color: var(--fc-bx); }
 .fc-borough-chip.fc-si strong { color: var(--fc-si); }
+
+.fc-borough-chip.fc-mn.is-active { background: var(--fc-mn); border-color: var(--fc-mn); }
+.fc-borough-chip.fc-bk.is-active { background: var(--fc-bk); border-color: var(--fc-bk); }
+.fc-borough-chip.fc-qn.is-active { background: var(--fc-qn); border-color: var(--fc-qn); }
+.fc-borough-chip.fc-bx.is-active { background: var(--fc-bx); border-color: var(--fc-bx); }
+.fc-borough-chip.fc-si.is-active { background: var(--fc-si); border-color: var(--fc-si); }
 
 .fc-borough-chip.is-active strong {
   color: #ffffff;
@@ -475,7 +487,7 @@
 }
 
 .fc-map-node.is-dark .leaflet-tile {
-  filter: saturate(1.08) contrast(1.05) brightness(0.96);
+  filter: brightness(0.5) contrast(1.35) saturate(1.5) hue-rotate(8deg);
 }
 
 .fc-map-node.is-dark::after {
@@ -487,6 +499,22 @@
   background:
     linear-gradient(180deg, rgba(2, 6, 23, 0.18), rgba(2, 6, 23, 0.02) 44%, rgba(2, 6, 23, 0.2)),
     linear-gradient(90deg, rgba(6, 78, 118, 0.12), transparent 32%, transparent 68%, rgba(15, 118, 110, 0.12));
+}
+
+.leaflet-control-scale {
+  margin-bottom: 10px !important;
+  margin-right: 10px !important;
+}
+
+.leaflet-control-scale-line {
+  border: 2px solid rgba(255, 255, 255, 0.55) !important;
+  border-top: none !important;
+  background: rgba(5, 7, 13, 0.5) !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  padding: 1px 4px !important;
+  backdrop-filter: blur(4px);
 }
 
 .fc-map-controls {
@@ -798,6 +826,60 @@
 .fc-job-sheet-tags {
   display: flex;
   gap: 6px;
+}
+
+.fc-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fc-quick-action {
+  display: grid;
+  place-items: center;
+  gap: 5px;
+  min-height: 64px;
+  border: 1px solid;
+  border-radius: 14px;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.fc-quick-action svg {
+  width: 18px;
+  height: 18px;
+}
+
+.fc-quick-action.is-navigate {
+  border-color: rgba(10, 132, 255, 0.4);
+  color: #0a84ff;
+  background: rgba(10, 132, 255, 0.1);
+}
+
+.fc-quick-action.is-call {
+  border-color: rgba(48, 209, 88, 0.4);
+  color: #30d158;
+  background: rgba(48, 209, 88, 0.1);
+}
+
+.fc-quick-action.is-photos {
+  border-color: rgba(191, 90, 242, 0.4);
+  color: #bf5af2;
+  background: rgba(191, 90, 242, 0.1);
+}
+
+.fc-quick-action.is-documents {
+  border-color: rgba(100, 210, 255, 0.4);
+  color: #64d2ff;
+  background: rgba(100, 210, 255, 0.1);
+}
+
+.fc-quick-action.is-disabled {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .fc-job-sheet-tag {
