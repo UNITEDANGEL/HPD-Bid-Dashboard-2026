@@ -234,6 +234,65 @@
 }
 
 /* Borough + status filter rows */
+.fc-borough-row {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.fc-borough-row::-webkit-scrollbar {
+  display: none;
+}
+
+.fc-borough-chip {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--fc-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+}
+
+.fc-borough-chip strong {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.fc-borough-chip span {
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--fc-secondary);
+}
+
+.fc-borough-chip.is-active {
+  background: var(--fc-mn);
+  border-color: var(--fc-mn);
+}
+
+.fc-borough-chip.is-active strong,
+.fc-borough-chip.is-active span {
+  color: #ffffff;
+}
+
+.fc-borough-chip.fc-mn strong { color: var(--fc-mn); }
+.fc-borough-chip.fc-bk strong { color: var(--fc-bk); }
+.fc-borough-chip.fc-qn strong { color: var(--fc-qn); }
+.fc-borough-chip.fc-bx strong { color: var(--fc-bx); }
+.fc-borough-chip.fc-si strong { color: var(--fc-si); }
+
+.fc-borough-chip.is-active strong {
+  color: #ffffff;
+}
+
 .fc-pill-row {
   flex: 0 0 auto;
   display: grid;
@@ -456,38 +515,30 @@
   height: 18px;
 }
 
-.fc-visible-badge {
-  position: absolute;
-  left: 10px;
-  top: 10px;
-  z-index: 500;
-  border-radius: 14px;
-  background: rgba(10, 14, 24, 0.88);
-  backdrop-filter: blur(10px);
-  padding: 8px 12px;
+.fc-visible-fab {
+  width: 60px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  gap: 1px;
   text-align: center;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  padding: 4px;
 }
 
-.fc-app.fc-controls-open .fc-visible-badge {
-  display: none;
-}
-
-.fc-visible-badge strong {
-  display: block;
-  font-size: 18px;
+.fc-visible-fab strong {
+  font-size: 17px;
   font-weight: 900;
   line-height: 1;
+  color: #ffffff;
 }
 
-.fc-visible-badge span {
-  display: block;
-  margin-top: 2px;
-  color: var(--fc-secondary);
-  font-size: 9px;
+.fc-visible-fab span {
+  font-size: 8px;
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
+  color: var(--fc-secondary);
+  line-height: 1.15;
 }
 
 .fc-map-hint {
@@ -1260,8 +1311,7 @@
   margin: 6px 8px 8px;
 }
 
-.fc-app.fc-has-job .fc-legend,
-.fc-app.fc-has-job .fc-visible-badge {
+.fc-app.fc-has-job .fc-legend {
   display: none;
 }
 

@@ -406,6 +406,10 @@ const HARDHAT_ICON_PATH =
   '<rect x="2.5" y="12" width="19" height="2.6" rx="1.3" fill="#fff"/>' +
   '<rect x="11" y="6.5" width="2" height="3.5" rx="1" fill="#fff"/>';
 
+function boroughLabelHtml(label: string) {
+  return `<span style="display:inline-block;color:rgba(71,85,105,.85);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;text-shadow:0 1px 0 rgba(255,255,255,.55),-1px 0 0 rgba(255,255,255,.4),1px 0 0 rgba(255,255,255,.4),0 -1px 0 rgba(255,255,255,.4);pointer-events:none;">${label}</span>`;
+}
+
 function clusterMarkerHtml(count: number, oldestDays: number | null) {
   const size = Math.min(56, Math.max(34, 26 + Math.sqrt(count) * 7));
   const glow = Math.round(size * 0.35);
@@ -428,6 +432,7 @@ export default function FieldCommandClient() {
   const mapRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
   const layerGroupRef = useRef<any>(null);
+  const boroughLabelLayerRef = useRef<any>(null);
   const routeLayerRef = useRef<any>(null);
   const userMarkerRef = useRef<any>(null);
   const pointsRef = useRef<{ job: JobRecord; lng: number; lat: number }[]>([]);
@@ -438,7 +443,7 @@ export default function FieldCommandClient() {
   const [daysBack, setDaysBack] = useState<number | null>(60);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
-  const [darkTiles, setDarkTiles] = useState(true);
+  const [darkTiles, setDarkTiles] = useState(false);
   const [locateStatus, setLocateStatus] = useState<"idle" | "loading" | "error">("idle");
   const [scopeOpen, setScopeOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
@@ -582,6 +587,30 @@ export default function FieldCommandClient() {
         }).setView([40.72, -73.95], 10);
         mapRef.current = map;
         tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20 }).addTo(map);
+
+        map.createPane("boroughLabels");
+        map.getPane("boroughLabels").style.zIndex = "350";
+        map.getPane("boroughLabels").style.pointerEvents = "none";
+
+        boroughLabelLayerRef.current = L.layerGroup(
+          BOROUGHS.map((b) =>
+            L.marker(b.center, {
+              icon: L.divIcon({ className: "", html: boroughLabelHtml(b.label), iconSize: [140, 24], iconAnchor: [70, 12] }),
+              interactive: false,
+              pane: "boroughLabels",
+            })
+          )
+        ).addTo(map);
+
+        const updateBoroughLabelVisibility = () => {
+          const visible = map.getZoom() <= 12;
+          boroughLabelLayerRef.current?.eachLayer((layer: any) => {
+            layer.setOpacity(visible ? 1 : 0);
+          });
+        };
+        map.on("zoomend", updateBoroughLabelVisibility);
+        updateBoroughLabelVisibility();
+
         layerGroupRef.current = L.layerGroup().addTo(map);
 
         renderMarkersRef.current = () => {
@@ -1043,6 +1072,24 @@ export default function FieldCommandClient() {
         </div>
       </header>
 
+      <div className="fc-borough-row" role="group" aria-label="Borough filter">
+        <button type="button" className={`fc-borough-chip ${borough === "ALL" ? "is-active" : ""}`} onClick={() => setBorough("ALL")}>
+          <strong>All</strong>
+          <span>{jobs.length}</span>
+        </button>
+        {BOROUGHS.map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            className={`fc-borough-chip fc-${key.toLowerCase()} ${borough === key ? "is-active" : ""}`}
+            onClick={() => setBorough(key)}
+          >
+            <strong>{label}</strong>
+            <span>{boroughCounts[key]}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="fc-search-row">
         <div className="fc-search-field">
           <SearchIcon />
@@ -1065,24 +1112,6 @@ export default function FieldCommandClient() {
       </div>
 
       <section className="fc-control-drawer" aria-label="Map filters">
-        <div className="fc-pill-row" role="group" aria-label="Borough filter">
-          <button type="button" className={`fc-pill ${borough === "ALL" ? "is-active" : ""}`} onClick={() => setBorough("ALL")}>
-            <strong>All</strong>
-            <span>{jobs.length}</span>
-          </button>
-          {BOROUGHS.map(({ key, label }) => (
-            <button
-              key={key}
-              type="button"
-              className={`fc-pill fc-${key.toLowerCase()} ${borough === key ? "is-active" : ""}`}
-              onClick={() => setBorough(key)}
-            >
-              <strong>{key}</strong>
-              <span>{boroughCounts[key]}</span>
-            </button>
-          ))}
-        </div>
-
         <div className="fc-pill-row fc-status-pill-row" role="group" aria-label="Status filter">
           {STATUS_FILTERS.map(({ key, label }) => (
             <button
@@ -1125,6 +1154,10 @@ export default function FieldCommandClient() {
           >
             <RouteIcon />
           </button>
+          <div className="fc-map-fab fc-visible-fab" aria-label="Visible jobs">
+            <strong>{filteredJobs.length}</strong>
+            <span>Visible Jobs</span>
+          </div>
         </div>
         {routeSummary ? (
           <a className="fc-route-summary" href={routeSummary.href} target="_blank" rel="noreferrer">
@@ -1133,10 +1166,6 @@ export default function FieldCommandClient() {
             <small>First: {routeSummary.firstStop}</small>
           </a>
         ) : null}
-        <div className="fc-visible-badge">
-          <strong>{filteredJobs.length}</strong>
-          <span>Visible Jobs</span>
-        </div>
 
         {locateStatus === "error" ? (
           <p className="fc-map-hint fc-map-hint-warn">Couldn&apos;t get your location</p>
