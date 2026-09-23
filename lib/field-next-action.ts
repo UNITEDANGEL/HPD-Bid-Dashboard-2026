@@ -1,5 +1,14 @@
 export type FieldStamps = { arrived?: string; visit?: string; work?: string; status?: string };
 
+export function arrivalVisitPatch(now: string) {
+  return { FieldArrivedAt: now, fieldArrivedAt: now, LastFieldVisitAt: now, lastFieldVisitAt: now,
+    VisitStartedAt: now, visitStartedAt: now, StatusOverride: "Arrived", status: "Arrived" };
+}
+
+export function suggestedPhotoKind(stamps: FieldStamps) {
+  return stamps.work ? "after" as const : "before" as const;
+}
+
 export function nextFieldAction(stamps: FieldStamps, media: { before: number; after: number }, status = "") {
   const outcome = `${stamps.status || status}`.toLowerCase().replaceAll("_", " ");
   if (/appointment|scheduled/.test(outcome)) return { key: "record", label: "Review visit notes" } as const;

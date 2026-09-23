@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import FieldTabBar from "../../components/FieldTabBar";
 import { jobPriority, maturityDate, isPendingJob, matchesMapStatus } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
-import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch } from "../../lib/field-next-action";
+import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, suggestedPhotoKind } from "../../lib/field-next-action";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
@@ -951,14 +951,7 @@ export default function FieldCommandClient() {
     statusLabel?: string
   ) {
     if (key === "arrived") {
-      return {
-        FieldArrivedAt: iso,
-        fieldArrivedAt: iso,
-        LastFieldVisitAt: iso,
-        lastFieldVisitAt: iso,
-        StatusOverride: "Arrived",
-        status: "Arrived",
-      };
+      return arrivalVisitPatch(iso);
     }
     if (key === "visit") {
       return {
@@ -1054,6 +1047,7 @@ export default function FieldCommandClient() {
       [id]: {
         ...(prev[id] || {}),
         [key]: now,
+        ...(key === "arrived" ? { visit: now } : {}),
         ...(statusLabel ? { status: statusLabel } : {}),
       },
     }));
@@ -1065,7 +1059,14 @@ export default function FieldCommandClient() {
     requestAnimationFrame(() => outcomePanelRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
   }
 
-  function saveVisitOutcome(job: JobRecord) {
+  function chooseOutcome(outcome: string) {
+    if (!selectedJob) return;
+    const id = jobId(selectedJob);
+    setOutcomeDrafts((prev) => ({ ...prev, [id]: { note: prev[id]?.note || "", outcome } }));
+    openOutcomePanel();
+  }
+
+  function saveVisitOutcome(job: JobRecord, review = false) {
     const id = jobId(job);
     const draft = outcomeDrafts[id] || { outcome: "", note: "" };
     try {
@@ -1075,6 +1076,7 @@ export default function FieldCommandClient() {
       if (draft.outcome) setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[draft.outcome] } }));
       setOutcomeDrafts((prev) => ({ ...prev, [id]: { outcome: "", note: "" } }));
       setOutcomeMessage("Saved on this device. Not archived or emailed.");
+      if (review) window.location.assign(paperworkReviewHref(id));
     } catch (error) {
       setOutcomeMessage(error instanceof Error ? error.message : "Save failed. Your draft is still here.");
     }
@@ -1378,9 +1380,9 @@ export default function FieldCommandClient() {
                     <span>No phone</span>
                   </span>
                 )}
-                <button type="button" className="fc-quick-action is-photos" onClick={() => requestMediaUpload("before")}>
+                <button type="button" className="fc-quick-action is-photos" aria-label={`Add ${suggestedPhotoKind(stamps)} photos`} onClick={() => requestMediaUpload(suggestedPhotoKind(stamps))}>
                   <PhotosIcon />
-                  <span>Photos</span>
+                  <span>{suggestedPhotoKind(stamps) === "after" ? "After photos" : "Before photos"}</span>
                 </button>
                 <Link className="fc-quick-action is-documents" href={`/jobs/${id}`}>
                   <DocumentsIcon />
@@ -1408,6 +1410,7 @@ export default function FieldCommandClient() {
                 <label>Outcome<select value={draft.outcome} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, outcome: event.target.value } }))}><option value="">Select outcome</option>{Object.entries(FIELD_OUTCOMES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
                 <label>Visit note<textarea value={draft.note} rows={3} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
                 <button type="button" className="fc-next-action" onClick={() => saveVisitOutcome(selectedJob)} disabled={!draft.outcome && !draft.note.trim()}>Save visit record</button>
+                {draft.outcome && draft.outcome !== "APPOINTMENT_REQUESTED" ? <button type="button" className="fc-save-review" onClick={() => saveVisitOutcome(selectedJob, true)}>Save &amp; review paperwork <span aria-hidden="true">&rarr;</span></button> : null}
                 <p role="status">{outcomeMessage || "Device storage only. Appointment requests are not confirmed bookings."}</p>
                 {Array.isArray(selectedJob.FieldVisitHistory) && selectedJob.FieldVisitHistory.length > 0 ? <details className="fc-visit-history"><summary>Visit history ({selectedJob.FieldVisitHistory.length})</summary><ol>{selectedJob.FieldVisitHistory.map((entry: { recordedAt?: string; outcome?: string; note?: string }, index: number) => <li key={index}><time>{entry.recordedAt ? formatSavedTime(entry.recordedAt) : "Date not recorded"}</time><strong>{FIELD_OUTCOMES[entry.outcome || ""] || "Visit note"}</strong><p>{entry.note}</p></li>)}</ol></details> : null}
               </section>
@@ -1448,12 +1451,12 @@ export default function FieldCommandClient() {
                   <b>{stamps.work ? "Work Started" : "Start Work"}</b>
                   <small>{stamps.work ? formatSavedTime(stamps.work) : "Before media next"}</small>
                 </button>
-                <button type="button" className="fc-workflow-btn no-access" aria-label="Save no access status" onClick={() => saveWorkflowStamp(selectedJob, "status", "No Access")} disabled={!stamps.visit}>
+                <button type="button" className="fc-workflow-btn no-access" aria-label="Record no access" onClick={() => chooseOutcome("NO_ACCESS_1_WAITING_72H")}>
                   <span>4</span>
                   <b>No Access</b>
                   <small>Save attempt</small>
                 </button>
-                <button type="button" className="fc-workflow-btn refused" aria-label="Save refused status" onClick={() => saveWorkflowStamp(selectedJob, "status", "Refused")} disabled={!stamps.visit}>
+                <button type="button" className="fc-workflow-btn refused" aria-label="Record refused access" onClick={() => chooseOutcome("REFUSED_ACCESS")}>
                   <span>5</span>
                   <b>Refused</b>
                   <small>Record refusal</small>

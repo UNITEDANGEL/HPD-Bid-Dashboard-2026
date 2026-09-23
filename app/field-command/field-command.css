@@ -1882,3 +1882,4 @@
 .fc-card-footer { display: grid; grid-template-columns: 1fr 1fr; margin-top: 6px; border-top: 1px solid #ffffff18; }
 .fc-app.fc-reference.fc-clean-streets .fc-card-footer :is(.fc-job-details-toggle,.fc-outcome-link) { min-height: 44px; margin: 0; padding: 6px; border: 0; text-decoration: none; font-size: 12px; font-weight: 500; color: #c4dacf; }
 .fc-app.fc-reference.fc-clean-streets .fc-card-footer .fc-job-details-toggle { border-left: 1px solid #ffffff18; }
+.fc-save-review { width: 100%; min-height: 44px; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid #759587; border-radius: 6px; background: transparent; color: #d0e7da; font: inherit; font-size: 13px; }
