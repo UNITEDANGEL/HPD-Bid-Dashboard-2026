@@ -695,6 +695,9 @@ export default function FieldCommandClient() {
 
       if (points.length === 1) {
         map.setView([points[0].lat, points[0].lng], 15);
+      } else if (points.length > 1 && borough === "ALL" && !search.trim()) {
+        // Keep the initial city view useful even when a record lies far outside NYC.
+        map.setView([40.72, -73.95], 11);
       } else if (points.length > 1) {
         const bounds = points.map((p) => [p.lat, p.lng]) as [number, number][];
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });

@@ -1746,6 +1746,7 @@
   .fc-app.fc-reference::before, .fc-app.fc-reference::after { display: none; }
 }
 @media (max-width:350px) {
+  .fc-app.fc-reference .fc-borough-chip strong { font-size: 7px; }
   .fc-app.fc-reference .fc-title { font-size: 16px; }
   .fc-app.fc-reference .fc-eyebrow { font-size: 8px; }
   .fc-app.fc-reference .fc-brand-icon { width: 30px; height: 36px; }
