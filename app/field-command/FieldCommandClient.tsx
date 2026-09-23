@@ -15,11 +15,11 @@ const FIELD_WORKFLOW_STORAGE_KEY = "hpd-field-command-workflow";
 const SHARED_WORKFLOW_STORAGE_KEY = "hpd-job-workflow-overrides-v2";
 
 const BOROUGHS: { key: BoroughKey; label: string; center: [number, number]; color: string }[] = [
-  { key: "MN", label: "Manhattan", center: [40.7831, -73.9712], color: "#0a84ff" },
-  { key: "BK", label: "Brooklyn", center: [40.6782, -73.9442], color: "#30d158" },
+  { key: "MN", label: "Manhattan", center: [40.7831, -73.9712], color: "#2dd4bf" },
+  { key: "BK", label: "Brooklyn", center: [40.6782, -73.9442], color: "#ff9f0a" },
   { key: "QN", label: "Queens", center: [40.7282, -73.7949], color: "#bf5af2" },
-  { key: "BX", label: "Bronx", center: [40.8448, -73.8648], color: "#ff9f0a" },
-  { key: "SI", label: "Staten Is.", center: [40.5795, -74.1502], color: "#ff453a" },
+  { key: "BX", label: "Bronx", center: [40.8448, -73.8648], color: "#ff453a" },
+  { key: "SI", label: "Staten Is.", center: [40.5795, -74.1502], color: "#30d158" },
 ];
 
 const STATUS_FILTERS = [
@@ -402,6 +402,49 @@ function DocumentsIcon() {
   );
 }
 
+function CalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+  );
+}
+
+function DollarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 6v12M15 9.5c0-1.4-1.34-2.5-3-2.5s-3 1.1-3 2.5 1.34 2.5 3 2.5 3 1.1 3 2.5-1.34 2.5-3 2.5-3-1.1-3-2.5" />
+    </svg>
+  );
+}
+
+function PersonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4 3.6-7 8-7s8 3 8 7" />
+    </svg>
+  );
+}
+
+function ExpandIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3" />
+    </svg>
+  );
+}
+
+function CollapseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 3v4a2 2 0 0 1-2 2H3M15 3v4a2 2 0 0 0 2 2h4M21 15h-4a2 2 0 0 0-2 2v4M3 15h4a2 2 0 0 1 2 2v4" />
+    </svg>
+  );
+}
+
 const LIGHT_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
 const DARK_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
 const CLUSTER_COLOR = "#38bdf8";
@@ -485,6 +528,7 @@ export default function FieldCommandClient() {
   const [locateStatus, setLocateStatus] = useState<"idle" | "loading" | "error">("idle");
   const [scopeOpen, setScopeOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [mapFullscreen, setMapFullscreen] = useState(false);
   const [routeSummary, setRouteSummary] = useState<{ stops: number; miles: number; firstStop: string; href: string } | null>(null);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
   const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number }>>({});
@@ -1061,11 +1105,16 @@ export default function FieldCommandClient() {
   }
 
   return (
-    <main className={`fc-app ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${headerHidden && !selectedJob ? "fc-header-hidden" : ""}`}>
+    <main className={`fc-app ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${headerHidden && !selectedJob ? "fc-header-hidden" : ""} ${mapFullscreen ? "fc-map-fullscreen" : ""}`}>
       <header className="fc-topbar">
         <div className="fc-topbar-row">
           <div className="fc-brand-text">
-            <span className="fc-brand-icon">HPD</span>
+            <span className="fc-brand-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2 4 5v6c0 5 3.4 8.7 8 10 4.6-1.3 8-5 8-10V5l-8-3z" fill="rgba(255,255,255,.14)" />
+              </svg>
+              <b>HPD</b>
+            </span>
             <div className="fc-brand-copy">
               <p className="fc-eyebrow">HPD Bid Dashboard 2026</p>
               <h1 className="fc-title">HPD Field Command</h1>
@@ -1171,11 +1220,11 @@ export default function FieldCommandClient() {
         <div className="fc-map-controls">
           <button
             type="button"
-            className={`fc-map-fab ${locateStatus === "loading" ? "is-busy" : ""}`}
-            aria-label="Locate me"
-            onClick={locateMe}
+            className={`fc-map-fab fc-route-fab ${routeSummary ? "is-active" : ""}`}
+            aria-label="Preview smart route"
+            onClick={previewLocalRoute}
           >
-            <LocateIcon />
+            <RouteIcon />
           </button>
           <button
             type="button"
@@ -1187,16 +1236,24 @@ export default function FieldCommandClient() {
           </button>
           <button
             type="button"
-            className={`fc-map-fab fc-route-fab ${routeSummary ? "is-active" : ""}`}
-            aria-label="Preview smart route"
-            onClick={previewLocalRoute}
+            className={`fc-map-fab ${locateStatus === "loading" ? "is-busy" : ""}`}
+            aria-label="Locate me"
+            onClick={locateMe}
           >
-            <RouteIcon />
+            <LocateIcon />
           </button>
           <div className="fc-map-fab fc-visible-fab" aria-label="Visible jobs">
             <strong>{filteredJobs.length}</strong>
             <span>Visible Jobs</span>
           </div>
+          <button
+            type="button"
+            className={`fc-map-fab ${mapFullscreen ? "is-active" : ""}`}
+            aria-label={mapFullscreen ? "Exit full map view" : "Full map view"}
+            onClick={() => setMapFullscreen((open) => !open)}
+          >
+            {mapFullscreen ? <CollapseIcon /> : <ExpandIcon />}
+          </button>
         </div>
         {routeSummary ? (
           <a className="fc-route-summary" href={routeSummary.href} target="_blank" rel="noreferrer">
@@ -1268,6 +1325,29 @@ export default function FieldCommandClient() {
                   {stamps.status || jobStatusMeta(selectedJob).label}
                 </span>
                 {jobAgeDays(selectedJob) !== null ? <span className="fc-job-sheet-tag fc-age-tag">{jobAgeDays(selectedJob)}d old</span> : null}
+              </div>
+              <div className="fc-info-row">
+                <div className="fc-info-item">
+                  <CalendarIcon />
+                  <div>
+                    <small>Start Date</small>
+                    <strong>{value(selectedJob, ["AwardDate", "awardDate", "WorkStartDate", "workStartDate"]) || "Not listed"}</strong>
+                  </div>
+                </div>
+                <div className="fc-info-item">
+                  <DollarIcon />
+                  <div>
+                    <small>COA Amount</small>
+                    <strong>{jobAwardAmount(selectedJob) > 0 ? `$${jobAwardAmount(selectedJob).toLocaleString()}` : "Not listed"}</strong>
+                  </div>
+                </div>
+                <div className="fc-info-item">
+                  <PersonIcon />
+                  <div>
+                    <small>Tenant</small>
+                    <strong>{tenant.name || "Not listed"}</strong>
+                  </div>
+                </div>
               </div>
               <div className="fc-quick-actions">
                 <a className="fc-quick-action is-navigate" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">

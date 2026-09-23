@@ -1,9 +1,12 @@
 :root {
-  --fc-mn: #0a84ff;
-  --fc-bk: #30d158;
+  --fc-mn: #2dd4bf;
+  --fc-bk: #ff9f0a;
   --fc-qn: #bf5af2;
-  --fc-bx: #ff9f0a;
-  --fc-si: #ff453a;
+  --fc-bx: #ff453a;
+  --fc-si: #30d158;
+  --fc-accent: #0a84ff;
+  --fc-alert: #ff453a;
+  --fc-live: #30d158;
   --fc-line: rgba(255, 255, 255, 0.1);
   --fc-secondary: rgba(235, 235, 245, 0.62);
 }
@@ -30,6 +33,25 @@
 .fc-app button {
   font: inherit;
   color: inherit;
+}
+
+.fc-app.fc-map-fullscreen {
+  padding-bottom: 0;
+}
+
+.fc-app.fc-map-fullscreen .fc-topbar,
+.fc-app.fc-map-fullscreen .fc-borough-row,
+.fc-app.fc-map-fullscreen .fc-search-row,
+.fc-app.fc-map-fullscreen .fc-control-drawer,
+.fc-app.fc-map-fullscreen .plan-my-day,
+.fc-app.fc-map-fullscreen .fc-tabbar {
+  display: none;
+}
+
+.fc-app.fc-map-fullscreen .fc-map-wrap {
+  margin: 0;
+  border-radius: 0;
+  border: none;
 }
 
 /* Top bar */
@@ -72,6 +94,7 @@
 }
 
 .fc-brand-icon {
+  position: relative;
   width: 34px;
   height: 34px;
   border-radius: 10px;
@@ -81,6 +104,20 @@
   font-size: 11px;
   font-weight: 900;
   flex: 0 0 auto;
+}
+
+.fc-brand-icon svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.fc-brand-icon b {
+  position: relative;
+  font-size: 10px;
+  font-weight: 900;
 }
 
 .fc-brand-text {
@@ -145,7 +182,7 @@
   height: 15px;
   padding: 0 3px;
   border-radius: 999px;
-  background: var(--fc-si);
+  background: var(--fc-alert);
   color: white;
   font-size: 9px;
   font-weight: 800;
@@ -183,7 +220,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--fc-bk);
+  background: var(--fc-live);
   box-shadow: 0 0 6px rgba(48, 209, 88, 0.85);
 }
 
@@ -274,8 +311,8 @@
 }
 
 .fc-borough-chip.is-active {
-  background: var(--fc-mn);
-  border-color: var(--fc-mn);
+  background: var(--fc-accent);
+  border-color: var(--fc-accent);
 }
 
 .fc-borough-chip.is-active strong,
@@ -351,8 +388,8 @@
 .fc-pill.fc-si strong { color: var(--fc-si); }
 
 .fc-pill.is-active {
-  background: var(--fc-mn);
-  border-color: var(--fc-mn);
+  background: var(--fc-accent);
+  border-color: var(--fc-accent);
 }
 
 .fc-pill.is-active strong,
@@ -592,7 +629,7 @@
 }
 
 .fc-map-fab.is-active {
-  background: var(--fc-mn);
+  background: var(--fc-accent);
   color: white;
 }
 
@@ -647,7 +684,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--fc-mn);
+  background: var(--fc-accent);
   border: 3px solid #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   position: relative;
@@ -828,6 +865,50 @@
   gap: 6px;
 }
 
+.fc-info-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.fc-info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fc-info-item svg {
+  width: 15px;
+  height: 15px;
+  color: var(--fc-secondary);
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+.fc-info-item div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.fc-info-item small {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fc-secondary);
+}
+
+.fc-info-item strong {
+  font-size: 12px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .fc-quick-actions {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -926,7 +1007,7 @@
   margin-top: 12px;
   min-height: 42px;
   border-radius: 12px;
-  background: var(--fc-mn);
+  background: var(--fc-accent);
   color: white;
   display: grid;
   place-items: center;
@@ -1565,7 +1646,7 @@
 }
 
 .fc-tab.is-active {
-  color: var(--fc-mn);
+  color: var(--fc-accent);
 }
 
 .fc-tab-fab {
