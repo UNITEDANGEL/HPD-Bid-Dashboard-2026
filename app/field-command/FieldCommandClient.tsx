@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import FieldTabBar from "../../components/FieldTabBar";
 import { jobPriority, maturityDate, isPendingJob } from "../../lib/job-priority";
+import { fieldStatusLabel } from "../../lib/field-status";
 import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch } from "../../lib/field-next-action";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
@@ -182,7 +183,9 @@ const STATUS_META: { key: StatusKey; label: string; color: string; match: (s: st
 ];
 
 function jobStatusMeta(job: JobRecord) {
-  const s = jobStatus(job).toLowerCase();
+  const specific = fieldStatusLabel(jobStatus(job));
+  if (specific) return specific;
+  const s = jobStatus(job).toLowerCase().replace(/_/g, " ");
   return STATUS_META.find((meta) => meta.match(s, job)) || STATUS_META[STATUS_META.length - 1];
 }
 
@@ -251,8 +254,11 @@ function formatSavedTime(iso?: string) {
 }
 
 function statusGroup(job: JobRecord) {
-  const s = jobStatus(job).toLowerCase();
+  const s = jobStatus(job).toLowerCase().replace(/_/g, " ");
+  if (s.includes("partial") || s.includes("progress")) return "open";
+  if (s.includes("appointment")) return "pending";
   if (s.includes("no access") || s.includes("refused")) return "closed";
+  if (s.includes("complet")) return "closed";
   if (s.includes("pending")) return "pending";
   if (s.includes("award") || jobAwardAmount(job) > 0) return "awarded";
   return "open";

@@ -6,6 +6,8 @@
     "node": ">=20.9.0"
   },
   "scripts": {
+    "prebuild": "node scripts/import-saved-job-statuses.cjs --write",
+    "test:saved-statuses": "node scripts/test-saved-job-statuses.cjs",
     "postinstall": "node scripts/prepare-map-worker.cjs",
     "dev": "next dev",
     "build": "next build",

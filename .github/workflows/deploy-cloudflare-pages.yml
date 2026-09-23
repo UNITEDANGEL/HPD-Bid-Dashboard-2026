@@ -51,6 +51,9 @@ jobs:
       - name: Test field workflow guidance
         run: npm run test:field-flow
 
+      - name: Test saved status import
+        run: npm run test:saved-statuses
+
       - name: Build Cloudflare Pages output
         run: npm run build:cloudflare
 
