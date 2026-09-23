@@ -1776,6 +1776,24 @@
 .fc-app.fc-reference.fc-full-map:not(.fc-chrome-open) :is(.fc-topbar,.fc-borough-row,.fc-search-row,.fc-tabbar,.plan-my-day,.fc-map-controls,.fc-status-pill-row) { display: none; }
 .fc-reveal-controls { position: absolute; z-index: 1600; top: max(12px,env(safe-area-inset-top)); right: 12px; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #dce1e8; border-radius: 50%; background: #fffffff0; color: #007aff !important; box-shadow: 0 2px 8px #20304022; }
 .fc-reveal-controls svg { width: 21px; height: 21px; }
+.fc-clean-streets .fc-map-node { background: #e7eef0; }
+.fc-clean-streets .leaflet-gl-layer { z-index: 2; }
+.fc-work-pin { position: relative; width: 32px; height: 32px; display: grid; place-items: center; border: 2px solid white; border-radius: 50%; background: var(--pin-color); box-shadow: 0 2px 5px #243b5340; color: white; }
+.fc-work-pin svg { width: 24px; height: 24px; }
+.fc-work-pin > span { position: absolute; top: 28px; left: 50%; transform: translateX(-50%); padding: 1px 4px; border: 1px solid #ffffff; border-radius: 4px; background: var(--pin-color); font: 700 9px/12px system-ui,sans-serif; white-space: nowrap; }
+.fc-app.fc-clean-streets.fc-has-job .fc-job-sheet.fc-job-sheet-flow { background: #fffffff5; border-color: #d9e0e6; color: #1c2833; box-shadow: 0 -3px 20px #1b354326; backdrop-filter: blur(16px); }
+.fc-app.fc-clean-streets .fc-sheet-handle { background: #fffffff5; }
+.fc-app.fc-clean-streets .fc-sheet-handle span { background: #b5bdc5; }
+.fc-app.fc-clean-streets :is(.fc-job-sheet-id,.fc-address-row p,.fc-reference-job-summary dd) { color: #1c2833; }
+.fc-app.fc-clean-streets .fc-address-row p { background: transparent; padding: 0; box-shadow: none; }
+.fc-app.fc-clean-streets .fc-reference-job-summary dt { color: #5c6b77; }
+.fc-app.fc-clean-streets .fc-quick-action.is-navigate { background: #e7f1ff; color: #0069d9; border-color: #bfd9fb; }
+.fc-app.fc-clean-streets .fc-quick-action.is-call { background: #e7f6ed; color: #167a40; border-color: #bfe5cc; }
+.fc-app.fc-clean-streets .fc-quick-action.is-photos { background: #f2edfc; color: #7841b4; border-color: #dcccf0; }
+.fc-app.fc-clean-streets .fc-quick-action.is-documents { background: #e3f6f7; color: #007b88; border-color: #b9e5e9; }
+.fc-app.fc-clean-streets .fc-search-field { background: #ffffffe8; border-color: #d6dfe5; box-shadow: 0 2px 12px #263e4d20; backdrop-filter: blur(16px); }
+.fc-app.fc-clean-streets .fc-search-field input { color: #23313e; }
+.fc-app.fc-clean-streets .fc-search-field input::placeholder { color: #667582; }
 .fc-full-map.fc-chrome-open .fc-search-row { position: absolute; top: max(12px,env(safe-area-inset-top)); left: 12px; right: 66px; z-index: 1500; padding: 0; }
 .fc-full-map.fc-chrome-open .fc-topbar { display: none; }
 .fc-full-map.fc-chrome-open .fc-borough-row { position: absolute; top: calc(68px + env(safe-area-inset-top)); left: 0; right: 0; z-index: 1400; }

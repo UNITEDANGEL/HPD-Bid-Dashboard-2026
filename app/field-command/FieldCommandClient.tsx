@@ -7,6 +7,7 @@ import { jobPriority, maturityDate, isPendingJob } from "../../lib/job-priority"
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 type JobRecord = Record<string, unknown>;
 
@@ -210,7 +211,7 @@ function ageMarkerHtml(days: number | null, pending: boolean) {
   const label = !pending ? "Done" : days === null ? "?" : days === 0 ? "Due" : days < 0 ? `+${-days}` : String(days);
   const overdue = days !== null && days > 30;
   const fill = !pending || days === null ? "#64717d" : overdue ? "#c73843" : "#007aff";
-  return `<div style="width:34px;height:34px;border-radius:50% 50% 50% 8px;transform:rotate(-45deg);background:${fill};border:2px solid white;box-shadow:0 2px 5px #17354b40;display:grid;place-items:center;color:#fff;"><span style="transform:rotate(45deg);font:700 11px system-ui,sans-serif;">${label}</span></div>`;
+  return `<div class="fc-work-pin" style="--pin-color:${fill}"><svg viewBox="0 0 24 24" aria-hidden="true">${HARDHAT_ICON_PATH}</svg><span>${label}${days !== null && days > 0 && pending ? "d" : ""}</span></div>`;
 }
 
 function jobAwardAmount(job: JobRecord) {
@@ -454,6 +455,8 @@ export default function FieldCommandClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
+  const vectorLayerRef = useRef<any>(null);
+  const darkTilesRef = useRef(false);
   const layerGroupRef = useRef<any>(null);
   const boroughLabelLayerRef = useRef<any>(null);
   const routeLayerRef = useRef<any>(null);
@@ -613,6 +616,53 @@ export default function FieldCommandClient() {
         }).setView([40.72, -73.95], 10);
         mapRef.current = map;
         tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20, maxNativeZoom: darkTiles ? 16 : 19, attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, contributors' }).addTo(map);
+        // Keep raster streets underneath until the vector map is ready, including on unsupported devices.
+        import("@maplibre/maplibre-gl-leaflet").then(async ({ maplibreGL }) => {
+          const { setWorkerUrl } = await import("maplibre-gl");
+          setWorkerUrl("/map-worker/maplibre-gl-worker.mjs");
+          if (mapRef.current !== map) return;
+          let vector: any;
+          try {
+            vector = maplibreGL({
+              style: "https://tiles.openfreemap.org/styles/liberty",
+              attributionControl: false,
+              interactive: false,
+              pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+            }).addTo(map);
+            vectorLayerRef.current = vector;
+            vector.getContainer().style.opacity = darkTilesRef.current ? "0" : "1";
+            const gl = vector.getMaplibreMap();
+            gl.once("style.load", () => {
+              for (const layer of gl.getStyle().layers) {
+                if (layer.type === "background") gl.setPaintProperty(layer.id, "background-color", "#f4f5f2");
+                if (layer.type === "fill") {
+                  const colors: Record<string, string> = {
+                    water: "#b7ddeb", landuse_residential: "#eef0ed", building: "#dce1de",
+                    park: "#cce5c5", landcover_wood: "#c4debd", landcover_grass: "#d6e9cf",
+                  };
+                  if (colors[layer.id]) gl.setPaintProperty(layer.id, "fill-color", colors[layer.id]);
+                }
+                if (layer.type === "line" && /^(road|bridge|tunnel)_/.test(layer.id) && !/rail|path/.test(layer.id)) {
+                  gl.setPaintProperty(layer.id, "line-color", layer.id.endsWith("_casing") ? "#d2d9d9" : "#ffffff");
+                }
+              }
+            });
+            gl.once("load", () => {
+              if (mapRef.current !== map || vectorLayerRef.current !== vector) return;
+              vector.getContainer().dataset.ready = "true";
+              vector.getContainer().style.opacity = darkTilesRef.current ? "0" : "1";
+              map.attributionControl.addAttribution('<a href="https://openfreemap.org/">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>');
+            });
+            gl.on("error", (event: { error?: Error }) => {
+              console.warn("Clean Streets map unavailable; using street-map fallback.", event.error?.message);
+              // A failed style or tile must not leave an empty map above the fallback.
+              if (vectorLayerRef.current === vector) vector.getContainer().style.opacity = "0";
+            });
+          } catch {
+            vector?.remove();
+            vectorLayerRef.current = null;
+          }
+        }).catch(() => { /* Raster streets remain available if the vector bundle cannot load. */ });
         L.control.scale({ position: "bottomright", metric: false, imperial: true }).addTo(map);
 
         map.createPane("boroughLabels");
@@ -708,10 +758,20 @@ export default function FieldCommandClient() {
   }, [filteredJobs, borough, search]);
 
   useEffect(() => {
+    darkTilesRef.current = darkTiles;
     if (!mapRef.current || !tileLayerRef.current) return;
     tileLayerRef.current.options.maxNativeZoom = darkTiles ? 16 : 19;
     tileLayerRef.current.setUrl(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL);
+    const container = vectorLayerRef.current?.getContainer();
+    if (container) container.style.opacity = !darkTiles && container.dataset.ready === "true" ? "1" : "0";
   }, [darkTiles]);
+
+  useEffect(() => () => {
+    if (headerIdleTimerRef.current) clearTimeout(headerIdleTimerRef.current);
+    mapRef.current?.remove();
+    mapRef.current = null;
+    vectorLayerRef.current = null;
+  }, []);
 
   useEffect(() => {
     setRouteSummary(null);
@@ -1078,7 +1138,7 @@ export default function FieldCommandClient() {
   }
 
   return (
-    <main className={`fc-app fc-reference fc-full-map ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
+    <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
       <button type="button" className="fc-reveal-controls" aria-label={chromeOpen ? "Hide all map controls" : "Show map controls"} title={chromeOpen ? "Hide controls" : "Map menu"} aria-expanded={chromeOpen} onClick={() => { setChromeOpen((open) => !open); setSelectedJob(null); }}><MenuIcon /></button>
       <div className="fc-search-row">
         <div className="fc-search-field">
