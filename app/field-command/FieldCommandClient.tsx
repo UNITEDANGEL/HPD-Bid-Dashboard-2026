@@ -497,7 +497,12 @@ export default function FieldCommandClient() {
   const [clearJobId, setClearJobId] = useState("");
   const [clearText, setClearText] = useState("");
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const mediaChoiceRef = useRef<HTMLDivElement | null>(null);
+  const [mediaChoice, setMediaChoice] = useState<FieldMediaKind | null>(null);
   const pendingMediaKindRef = useRef<FieldMediaKind>("before");
+
+  useEffect(() => { setMediaChoice(null); }, [selectedJob ? jobId(selectedJob) : ""]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1096,8 +1101,17 @@ export default function FieldCommandClient() {
   }
 
   function requestMediaUpload(kind: FieldMediaKind) {
+    setMediaChoice(kind);
+    requestAnimationFrame(() => mediaChoiceRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
+  }
+
+  function chooseMediaSource(source: "camera" | "library") {
+    if (!mediaChoice || mediaBusy) return;
+    const kind = mediaChoice;
     pendingMediaKindRef.current = kind;
-    mediaInputRef.current?.click();
+    if (source === "camera") cameraInputRef.current?.click();
+    else mediaInputRef.current?.click();
+    setMediaChoice(null);
   }
 
   async function handleMediaFiles(files: FileList | null) {
@@ -1122,6 +1136,7 @@ export default function FieldCommandClient() {
     } finally {
       setMediaBusy("");
       if (mediaInputRef.current) mediaInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
   }
 
@@ -1390,6 +1405,13 @@ export default function FieldCommandClient() {
                 </Link>
               </div>
               <div className="fc-next-step">
+                {mediaChoice ? <div ref={mediaChoiceRef} className="fc-photo-choice" role="group" aria-label={`${mediaChoice} photo source`}>
+                  <div className="fc-photo-choice-heading"><strong>{mediaChoice === "before" ? "Before work" : "After work"}</strong><button type="button" aria-label="Cancel photo selection" onClick={() => setMediaChoice(null)}>&times;</button></div>
+                  <div className="fc-photo-source-actions">
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("camera")}><PhotosIcon />Take {mediaChoice} photo</button>
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("library")}><DocumentsIcon />Add {mediaChoice} photos</button>
+                  </div>
+                </div> : null}
                 {next.key === "review" ? (
                   <a href={paperworkReviewHref(id)} className="fc-next-action">{next.label}<span aria-hidden="true">&rarr;</span></a>
                 ) : next.key === "record" ? (
@@ -1489,20 +1511,20 @@ export default function FieldCommandClient() {
                   type="file"
                   accept="image/*,video/*"
                   multiple
-                  capture="environment"
                   className="fc-hidden-file"
                   onChange={(event) => void handleMediaFiles(event.target.files)}
                 />
+                <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
                 <div className="fc-media-head">
                   <strong>Media + Package</strong>
                   <span>{counts.total} saved</span>
                 </div>
                 <div className="fc-media-grid">
-                  <button type="button" onClick={() => requestMediaUpload("before")} disabled={!stamps.visit || Boolean(mediaBusy)}>
+                  <button type="button" onClick={() => requestMediaUpload("before")} disabled={Boolean(mediaBusy)}>
                     <b>Before</b>
                     <small>{mediaBusy === "before" ? "Saving..." : `${counts.before} saved`}</small>
                   </button>
-                  <button type="button" onClick={() => requestMediaUpload("after")} disabled={!stamps.work || Boolean(mediaBusy)}>
+                  <button type="button" onClick={() => requestMediaUpload("after")} disabled={Boolean(mediaBusy)}>
                     <b>After</b>
                     <small>{mediaBusy === "after" ? "Saving..." : `${counts.after} saved`}</small>
                   </button>

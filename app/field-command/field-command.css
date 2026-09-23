@@ -1883,3 +1883,9 @@
 .fc-app.fc-reference.fc-clean-streets .fc-card-footer :is(.fc-job-details-toggle,.fc-outcome-link) { min-height: 44px; margin: 0; padding: 6px; border: 0; text-decoration: none; font-size: 12px; font-weight: 500; color: #c4dacf; }
 .fc-app.fc-reference.fc-clean-streets .fc-card-footer .fc-job-details-toggle { border-left: 1px solid #ffffff18; }
 .fc-save-review { width: 100%; min-height: 44px; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid #759587; border-radius: 6px; background: transparent; color: #d0e7da; font: inherit; font-size: 13px; }
+.fc-photo-choice { padding: 8px 0; border-top: 1px solid #ffffff28; border-bottom: 1px solid #ffffff28; }
+.fc-photo-choice-heading { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.fc-photo-choice-heading button { width: 44px; height: 44px; border: 0; background: transparent; color: #deece3; font-size: 24px; }
+.fc-photo-source-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.fc-photo-source-actions button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px; padding: 8px; background: #274638; border: 1px solid #719985; border-radius: 6px; color: #eff7f1; font: inherit; font-size: 12px; overflow-wrap: anywhere; }
+.fc-photo-source-actions svg { width: 20px; height: 20px; flex-shrink: 0; }
