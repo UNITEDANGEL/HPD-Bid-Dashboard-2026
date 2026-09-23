@@ -22,11 +22,16 @@ export function maturityDate(job: Job): string {
 }
 
 export function isPendingJob(job: Job): boolean {
-  if ([job.archived, job.Archived].some((v) => v === true || v === 1 || String(v).toLowerCase() === "true")) return false;
-  const status = ["WorkflowStatus", "FieldOutcome", "StatusOverride", "status", "Status", "JobStatus"].map((k) => job[k]).find((v) => v !== undefined && v !== null && String(v).trim());
+  if ([job.archived, job.Archived, job.ArchivedFromMap, job.archivedFromMap].some((v) => v === true || v === 1 || String(v).toLowerCase() === "true")) return false;
+  const status = ["WorkflowStatus", "workflowStatus", "FieldOutcome", "fieldOutcome", "StatusOverride", "status", "Status", "JobStatus"].map((k) => job[k]).find((v) => v !== undefined && v !== null && String(v).trim());
   const normalized = String(status || "").toLowerCase().replace(/[_-]+/g, " ");
+  if (/refused|\bno access.*(2nd|second)\b/.test(normalized)) return false;
   if (/partial|not completed|incomplete/.test(normalized)) return true;
   return !/\b(completed|complete|closed|archived|cancelled|canceled)\b/.test(normalized);
+}
+
+export function matchesMapStatus(job: Job, scope: string) {
+  return scope === "all" || (scope === "pending" ? isPendingJob(job) : !isPendingJob(job));
 }
 
 export function jobPriority(job: Job, now = new Date()) {

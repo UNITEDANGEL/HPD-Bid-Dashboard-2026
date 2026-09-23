@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import FieldTabBar from "../../components/FieldTabBar";
-import { jobPriority, maturityDate, isPendingJob } from "../../lib/job-priority";
+import { jobPriority, maturityDate, isPendingJob, matchesMapStatus } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch } from "../../lib/field-next-action";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
@@ -27,10 +27,9 @@ const BOROUGHS: { key: BoroughKey; label: string; center: [number, number]; colo
 ];
 
 const STATUS_FILTERS = [
-  { key: "all", label: "Status" },
-  { key: "open", label: "Open" },
-  { key: "awarded", label: "Awarded" },
   { key: "pending", label: "Pending" },
+  { key: "closed", label: "Handled" },
+  { key: "all", label: "All jobs" },
 ];
 
 function value(job: JobRecord, keys: string[]) {
@@ -465,6 +464,7 @@ export default function FieldCommandClient() {
   const [outcomeDrafts, setOutcomeDrafts] = useState<Record<string, { outcome: string; note: string }>>({});
   const [outcomeMessage, setOutcomeMessage] = useState("");
   const mapRef = useRef<any>(null);
+  const mapFramingRef = useRef("");
   const tileLayerRef = useRef<any>(null);
   const vectorLayerRef = useRef<any>(null);
   const darkTilesRef = useRef(false);
@@ -476,7 +476,8 @@ export default function FieldCommandClient() {
   const renderMarkersRef = useRef<() => void>(() => {});
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [borough, setBorough] = useState<BoroughKey | "ALL">("ALL");
-  const [status, setStatus] = useState("all");
+  const [status, setStatus] = useState("pending");
+  const requestedJobLoaded = useRef(false);
   const [daysBack, setDaysBack] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
@@ -500,19 +501,35 @@ export default function FieldCommandClient() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" })
-      .then((r) => r.json())
+    let loading = false;
+    function refreshJobs() {
+      if (loading) return;
+      loading = true;
+      fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" })
+      .then((r) => { if (!r.ok) throw new Error("Job refresh failed"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        const rows = Array.isArray(data) ? data : data.jobs || data.data || data.records || [];
+        const rows = Array.isArray(data) ? data : data.jobs || data.data || data.records;
+        if (!Array.isArray(rows)) throw new Error("Invalid job response");
         const overrides = readSharedWorkflowOverrides();
-        setJobs(rows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}) })));
+        const next = rows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}) }));
+        setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
       })
-      .catch(() => {
-        if (!cancelled) setJobs([]);
-      });
+      .catch(() => { /* Keep the last loaded jobs if refresh is unavailable. */ })
+      .finally(() => { loading = false; });
+    }
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === SHARED_WORKFLOW_STORAGE_KEY) refreshJobs();
+    };
+    refreshJobs();
+    window.addEventListener("focus", refreshJobs);
+    window.addEventListener("storage", onStorage);
+    const timer = window.setInterval(refreshJobs, 60000);
     return () => {
       cancelled = true;
+      window.removeEventListener("focus", refreshJobs);
+      window.removeEventListener("storage", onStorage);
+      window.clearInterval(timer);
     };
   }, []);
 
@@ -554,15 +571,13 @@ export default function FieldCommandClient() {
 
   const filteredJobs = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const exactOmoQuery = q.toUpperCase().match(/^[A-Z]{1,3}\d{4,8}$/) ? q.toUpperCase() : "";
     return jobs.filter((job) => {
-      if (exactOmoQuery && jobId(job).toUpperCase() === exactOmoQuery) return true;
+      if (!matchesMapStatus(job, status)) return false;
       if (daysBack !== null) {
         const age = jobAgeDays(job);
         if (age === null || age > daysBack) return false;
       }
       if (borough !== "ALL" && jobBorough(job) !== borough) return false;
-      if (status !== "all" && statusGroup(job) !== status) return false;
       if (q) {
         const haystack = [jobId(job), jobAddress(job), jobBorough(job), jobStatus(job)].join(" ").toLowerCase();
         if (!haystack.includes(q)) return false;
@@ -572,14 +587,15 @@ export default function FieldCommandClient() {
   }, [jobs, borough, status, search, daysBack]);
 
   useEffect(() => {
-    if (!jobs.length) return;
+    if (!jobs.length || requestedJobLoaded.current) return;
+    requestedJobLoaded.current = true;
     const params = new URLSearchParams(window.location.search);
     const requested = (params.get("omo") || params.get("job") || params.get("q") || "").trim().toUpperCase();
     if (!requested || selectedJob) return;
     const match = jobs.find((job) => jobId(job).toUpperCase() === requested);
     if (match) {
       setSelectedJob(match);
-      setSearch(requested);
+      if (isPendingJob(match)) setSearch(requested);
       const boro = jobBorough(match);
       if (boro !== "NYC") setBorough(boro);
     }
@@ -595,9 +611,9 @@ export default function FieldCommandClient() {
   }, [jobs]);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { open: 0, awarded: 0, pending: 0 };
+    const counts: Record<string, number> = { closed: 0, pending: 0 };
     jobs.forEach((job) => {
-      const g = statusGroup(job);
+      const g = isPendingJob(job) ? "pending" : "closed";
       if (g in counts) counts[g] += 1;
     });
     return counts;
@@ -759,14 +775,18 @@ export default function FieldCommandClient() {
 
       const map = mapRef.current;
 
-      if (points.length === 1) {
-        map.setView([points[0].lat, points[0].lng], 15);
-      } else if (points.length > 1 && borough === "ALL" && !search.trim()) {
-        // Keep the initial city view useful even when a record lies far outside NYC.
-        map.setView([40.72, -73.95], 11);
-      } else if (points.length > 1) {
-        const bounds = points.map((p) => [p.lat, p.lng]) as [number, number][];
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+      const framing = `${borough}|${search}|${status}|${daysBack}`;
+      if (mapFramingRef.current !== framing && points.length) {
+        mapFramingRef.current = framing;
+        if (points.length === 1) {
+          map.setView([points[0].lat, points[0].lng], 15);
+        } else if (points.length > 1 && borough === "ALL" && !search.trim()) {
+          // Keep the initial city view useful even when a record lies far outside NYC.
+          map.setView([40.72, -73.95], 11);
+        } else if (points.length > 1) {
+          const bounds = points.map((p) => [p.lat, p.lng]) as [number, number][];
+          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+        }
       }
       renderMarkersRef.current();
     }
@@ -775,7 +795,7 @@ export default function FieldCommandClient() {
     return () => {
       cancelled = true;
     };
-  }, [filteredJobs, borough, search]);
+  }, [filteredJobs, borough, search, status, daysBack]);
 
   useEffect(() => {
     darkTilesRef.current = darkTiles;
@@ -801,15 +821,15 @@ export default function FieldCommandClient() {
       routeLayerRef.current.remove();
       routeLayerRef.current = null;
     }
-  }, [borough, status, search, daysBack]);
+  }, [borough, status, search, daysBack, jobs]);
 
   useEffect(() => {
     if (selectedJob) {
-      const match = filteredJobs.find((job) => jobId(job) === jobId(selectedJob));
+      const match = jobs.find((job) => jobId(job) === jobId(selectedJob));
       if (!match) setSelectedJob(null);
       else if (match !== selectedJob) setSelectedJob(match);
     }
-  }, [filteredJobs, selectedJob]);
+  }, [jobs, selectedJob]);
 
   useEffect(() => {
     setScopeOpen(false);
@@ -1227,6 +1247,7 @@ export default function FieldCommandClient() {
               key={key}
               type="button"
               className={`fc-pill ${status === key ? "is-active" : ""}`}
+              aria-pressed={status === key}
               onClick={() => setStatus(key)}
             >
               <strong>{label}</strong>
@@ -1503,7 +1524,7 @@ export default function FieldCommandClient() {
         })() : null}
       </div>
 
-      <PlanMyDayDrawer />
+      <PlanMyDayDrawer records={jobs} />
       <FieldTabBar />
     </main>
   );

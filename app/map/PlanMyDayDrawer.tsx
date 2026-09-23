@@ -271,8 +271,8 @@ async function getOrigin(startMode: LocalPlan["startMode"]): Promise<{ point: Po
   });
 }
 
-function rankJobs(plan: LocalPlan, origin: Point) {
-  const records = asArray(jobsData).filter((job) => !isClosed(job));
+function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
+  const records = source.filter((job) => !isClosed(job));
   const includeSet = new Set(plan.includeOmo);
   const excludeSet = new Set(plan.excludeOmo);
   const required = records.filter((job) => includeSet.has(jobId(job)) && !excludeSet.has(jobId(job)));
@@ -344,7 +344,7 @@ function selectableJob(record: JobRecord, origin?: Point, reason = "Selected by 
   };
 }
 
-export default function PlanMyDayDrawer() {
+export default function PlanMyDayDrawer({ records = jobsData }: { records?: JobRecord[] } = {}) {
   const chatRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -370,7 +370,7 @@ export default function PlanMyDayDrawer() {
     () => [...messages].reverse().find((message) => message.role === "assistant")?.text || "",
     [messages],
   );
-  const activeJobs = useMemo(() => asArray(jobsData).filter((job) => !isClosed(job) && jobId(job)), []);
+  const activeJobs = useMemo(() => asArray(records).filter((job) => !isClosed(job) && jobId(job)), [records]);
   const searchMatches = useMemo(() => {
     const query = jobSearch.trim().toLowerCase();
     if (query.length < 2) return [];
@@ -381,7 +381,7 @@ export default function PlanMyDayDrawer() {
       })
       .slice(0, 8);
   }, [activeJobs, jobSearch]);
-  const selectedResults = useMemo(() => results.filter((job) => selectedIds.includes(job.id)), [results, selectedIds]);
+  const selectedResults = useMemo(() => results.filter((job) => selectedIds.includes(job.id) && activeJobs.some((record) => jobId(record) === job.id)), [results, selectedIds, activeJobs]);
   const viewingJob = useMemo(() => results.find((job) => job.id === viewingJobId) || null, [results, viewingJobId]);
 
   useEffect(() => {
@@ -457,11 +457,11 @@ export default function PlanMyDayDrawer() {
     const nextPlan = parseMessage(message, plan);
     const { point, label } = await getOrigin(nextPlan.startMode);
     let workingPlan = nextPlan;
-    let nextResults = rankJobs(workingPlan, point);
+    let nextResults = rankJobs(workingPlan, point, records);
     let widenedDateRange = false;
     if (!nextResults.length && nextPlan.daysBack !== null) {
       const widenedPlan = { ...nextPlan, daysBack: null };
-      const widenedResults = rankJobs(widenedPlan, point);
+      const widenedResults = rankJobs(widenedPlan, point, records);
       if (widenedResults.length) {
         workingPlan = widenedPlan;
         nextResults = widenedResults;
