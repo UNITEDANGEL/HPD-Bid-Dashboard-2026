@@ -1835,4 +1835,20 @@
 .fc-app.fc-reference.fc-clean-streets .fc-quick-action.is-navigate svg { background: #b1dbbc; color: #173326; border-color: #c8ebd1; }
 .fc-app.fc-reference.fc-clean-streets .fc-job-sheet.fc-job-sheet-flow { border-top: 3px solid #8cbd9e; }
 .fc-app.fc-reference.fc-clean-streets .fc-job-details-toggle { border-top: 1px solid #ffffff18; margin-top: 4px; }
+.fc-next-step { display: grid; gap: 2px; margin-top: 8px; }
+.fc-next-action { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 10px 14px; border: 1px solid #87b899; border-radius: 8px; background: #b1dbbc; color: #173326; text-decoration: none; font: 600 14px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+.fc-next-action:disabled { opacity: .6; }
+.fc-outcome-link { min-height: 36px; display: flex; align-items: center; justify-content: center; color: #c4ddcf; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+.fc-outcome-link { background: none; border: 0; width: 100%; }
+.fc-outcome-panel { padding: 14px 0; border-top: 1px solid #ffffff20; }
+.fc-outcome-panel label { display: grid; gap: 6px; margin-bottom: 12px; font-size: 13px; }
+.fc-outcome-panel :is(select,textarea) { width: 100%; min-height: 44px; background: #10291d; color: #eff7f1; border: 1px solid #64816d; border-radius: 6px; padding: 10px; font: inherit; }
+.fc-outcome-panel p { color: #b7cebf; font-size: 12px; line-height: 1.4; }
+.fc-app.fc-reference.fc-clean-streets .fc-next-action { color: #173326 !important; font-weight: 650; }
+.fc-save-message { color: #d2e5d8; font-size: 12px; margin: 4px 0; }
+.fc-visit-history summary { min-height: 44px; padding: 12px 0; cursor: pointer; }
+.fc-visit-history ol { margin: 0; padding-left: 18px; }
+.fc-visit-history li { margin: 10px 0; }
+.fc-visit-history :is(time,strong) { display: block; font-size: 12px; }
+.fc-visit-history p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .fc-app.fc-reference.fc-has-job.fc-sheet-expanded .fc-job-sheet.fc-job-sheet-flow { height: calc(100% - 16px); max-height: calc(100% - 16px); }

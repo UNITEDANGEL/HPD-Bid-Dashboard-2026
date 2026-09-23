@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import FieldTabBar from "../../components/FieldTabBar";
 import { jobPriority, maturityDate, isPendingJob } from "../../lib/job-priority";
+import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch } from "../../lib/field-next-action";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
@@ -454,6 +455,9 @@ function clusterMarkerHtml(count: number, oldestDays: number | null) {
 export default function FieldCommandClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
   const jobSheetRef = useRef<HTMLDivElement | null>(null);
+  const outcomePanelRef = useRef<HTMLElement | null>(null);
+  const [outcomeDrafts, setOutcomeDrafts] = useState<Record<string, { outcome: string; note: string }>>({});
+  const [outcomeMessage, setOutcomeMessage] = useState("");
   const mapRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
   const vectorLayerRef = useRef<any>(null);
@@ -479,6 +483,7 @@ export default function FieldCommandClient() {
   const [controlsOpen, setControlsOpen] = useState(false);
   const [routeSummary, setRouteSummary] = useState<{ stops: number; miles: number; firstStop: string; href: string } | null>(null);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
+  const [workflowLoaded, setWorkflowLoaded] = useState(false);
   const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number }>>({});
   const [mediaBusy, setMediaBusy] = useState("");
   const [mediaMessage, setMediaMessage] = useState("");
@@ -494,7 +499,8 @@ export default function FieldCommandClient() {
       .then((data) => {
         if (cancelled) return;
         const rows = Array.isArray(data) ? data : data.jobs || data.data || data.records || [];
-        setJobs(rows);
+        const overrides = readSharedWorkflowOverrides();
+        setJobs(rows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}) })));
       })
       .catch(() => {
         if (!cancelled) setJobs([]);
@@ -508,14 +514,24 @@ export default function FieldCommandClient() {
     try {
       const saved = window.localStorage.getItem(FIELD_WORKFLOW_STORAGE_KEY);
       if (saved) setWorkflowStamps(JSON.parse(saved));
+      const drafts = window.localStorage.getItem("hpd-field-visit-drafts");
+      if (drafts) setOutcomeDrafts(JSON.parse(drafts));
     } catch {}
+    setWorkflowLoaded(true);
   }, []);
 
   useEffect(() => {
+    if (!workflowLoaded) return;
     try {
       window.localStorage.setItem(FIELD_WORKFLOW_STORAGE_KEY, JSON.stringify(workflowStamps));
     } catch {}
-  }, [workflowStamps]);
+  }, [workflowStamps, workflowLoaded]);
+
+  useEffect(() => {
+    if (!workflowLoaded) return;
+    try { window.localStorage.setItem("hpd-field-visit-drafts", JSON.stringify(outcomeDrafts)); }
+    catch { setOutcomeMessage("Draft could not be saved on this device. Keep this screen open."); }
+  }, [outcomeDrafts, workflowLoaded]);
 
   const activeJobs = useMemo(
     () => jobs.filter(isPendingJob),
@@ -782,8 +798,10 @@ export default function FieldCommandClient() {
   }, [borough, status, search, daysBack]);
 
   useEffect(() => {
-    if (selectedJob && !filteredJobs.includes(selectedJob)) {
-      setSelectedJob(null);
+    if (selectedJob) {
+      const match = filteredJobs.find((job) => jobId(job) === jobId(selectedJob));
+      if (!match) setSelectedJob(null);
+      else if (match !== selectedJob) setSelectedJob(match);
     }
   }, [filteredJobs, selectedJob]);
 
@@ -962,7 +980,7 @@ export default function FieldCommandClient() {
         jobFinishedAt: iso,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
-        ArchivedFromMap: true,
+        PackageReviewStatus: "Pending",
       };
     }
     if (String(statusLabel || "").toLowerCase().includes("refused")) {
@@ -977,7 +995,7 @@ export default function FieldCommandClient() {
         refusalDate: iso,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
-        ArchivedFromMap: true,
+        PackageReviewStatus: "Pending",
       };
     }
     return {
@@ -1000,6 +1018,11 @@ export default function FieldCommandClient() {
     const id = jobId(job);
     const now = new Date().toISOString();
     const patch = workflowPatchForAction(key, now, statusLabel);
+    try { writeSharedWorkflowPatch(id, patch); }
+    catch {
+      setOutcomeMessage("Could not save this step on this device. Please retry.");
+      return;
+    }
     setWorkflowStamps((prev) => ({
       ...prev,
       [id]: {
@@ -1008,8 +1031,27 @@ export default function FieldCommandClient() {
         ...(statusLabel ? { status: statusLabel } : {}),
       },
     }));
-    writeSharedWorkflowPatch(id, patch);
     mergeWorkflowPatchIntoScreen(id, patch);
+  }
+
+  function openOutcomePanel() {
+    setSheetExpanded(true);
+    requestAnimationFrame(() => outcomePanelRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  }
+
+  function saveVisitOutcome(job: JobRecord) {
+    const id = jobId(job);
+    const draft = outcomeDrafts[id] || { outcome: "", note: "" };
+    try {
+      const patch = fieldOutcomePatch(job, draft.outcome, draft.note, new Date().toISOString());
+      writeSharedWorkflowPatch(id, patch);
+      mergeWorkflowPatchIntoScreen(id, patch);
+      if (draft.outcome) setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[draft.outcome] } }));
+      setOutcomeDrafts((prev) => ({ ...prev, [id]: { outcome: "", note: "" } }));
+      setOutcomeMessage("Saved on this device. Not archived or emailed.");
+    } catch (error) {
+      setOutcomeMessage(error instanceof Error ? error.message : "Save failed. Your draft is still here.");
+    }
   }
 
   async function refreshMediaCounts(job: JobRecord) {
@@ -1091,50 +1133,6 @@ export default function FieldCommandClient() {
     setClearJobId("");
     setClearText("");
     setMediaMessage("Workflow cleared. Saved media stays unless you remove it from the media/package screen.");
-  }
-
-  function completeWorkForPackage(job: JobRecord) {
-    const id = jobId(job);
-    const now = new Date().toISOString();
-    const patch = workflowPatchForAction("complete", now);
-    setWorkflowStamps((prev) => ({
-      ...prev,
-      [id]: {
-        ...(prev[id] || {}),
-        work: prev[id]?.work || now,
-        status: "Work Completed",
-      },
-    }));
-    writeSharedWorkflowPatch(id, patch);
-    mergeWorkflowPatchIntoScreen(id, patch);
-  }
-
-  function paperworkOutcome(stamps: { arrived?: string; visit?: string; work?: string; status?: string }) {
-    const status = String(stamps.status || "").toLowerCase();
-    if (status.includes("refused")) return "refused_access";
-    if (status.includes("no access")) return "no_access";
-    if (stamps.work) return "work_completed";
-    return "work_completed";
-  }
-
-  function paperworkHref(job: JobRecord, media = true) {
-    const id = jobId(job);
-    const stamps = workflowStamps[id] || {};
-    const outcome = paperworkOutcome(stamps);
-    const params = new URLSearchParams({
-      job: id,
-      outcome,
-      auto: "package",
-      media: media ? "all" : "none",
-      fieldStatus: outcome === "work_completed" ? "WORK_COMPLETED" : outcome === "refused_access" ? "REFUSED_ACCESS" : "NO_ACCESS_1_WAITING_72H",
-    });
-    if (stamps.arrived) params.set("arrivedAt", stamps.arrived);
-    if (stamps.visit) params.set("visitStartedAt", stamps.visit);
-    if (stamps.work) params.set("workStartedAt", stamps.work);
-    if (outcome === "work_completed") params.set("workCompletedAt", new Date().toISOString());
-    if (outcome === "refused_access") params.set("refusedAt", new Date().toISOString());
-    if (outcome === "no_access") params.set("noAccessAt", new Date().toISOString());
-    return `/paperwork?${params.toString()}`;
   }
 
   return (
@@ -1306,6 +1304,8 @@ export default function FieldCommandClient() {
           const tenant = tenantInfo(selectedJob);
           const stamps = workflowStamps[id] || {};
           const counts = mediaCounts[id] || { before: 0, after: 0, total: 0 };
+          const next = nextFieldAction(stamps, counts, jobStatus(selectedJob));
+          const draft = outcomeDrafts[id] || { outcome: "", note: "" };
           return (
             <div ref={jobSheetRef} className="fc-job-sheet fc-job-sheet-flow" aria-label="Selected job">
               <button type="button" className="fc-sheet-handle" aria-label={sheetExpanded ? "Collapse job details" : "Expand job details"} aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}><span /></button>
@@ -1367,7 +1367,28 @@ export default function FieldCommandClient() {
                   <span>Documents</span>
                 </Link>
               </div>
+              <div className="fc-next-step">
+                {next.key === "review" ? (
+                  <a href={paperworkReviewHref(id)} className="fc-next-action">{next.label}<span aria-hidden="true">&rarr;</span></a>
+                ) : next.key === "record" ? (
+                  <button type="button" className="fc-next-action" onClick={openOutcomePanel}>{next.label}<span aria-hidden="true">&rarr;</span></button>
+                ) : (
+                  <button type="button" className="fc-next-action" disabled={!workflowLoaded || Boolean(mediaBusy)} onClick={() => {
+                    if (next.key === "before" || next.key === "after") requestMediaUpload(next.key);
+                    else saveWorkflowStamp(selectedJob, next.key, next.key === "work" ? "Work Started" : undefined);
+                  }}>{mediaBusy ? "Saving media..." : next.label}<span aria-hidden="true">&rarr;</span></button>
+                )}
+                <button type="button" className="fc-outcome-link" onClick={openOutcomePanel}>Record outcome or add a note</button>
+                {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
+              </div>
               <button type="button" className="fc-job-details-toggle" aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}>{sheetExpanded ? "Less detail" : "Job details"}<span aria-hidden="true">{sheetExpanded ? "\u2304" : "\u2303"}</span></button>
+              <section ref={outcomePanelRef} className="fc-outcome-panel" aria-label="Visit outcome">
+                <label>Outcome<select value={draft.outcome} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, outcome: event.target.value } }))}><option value="">Select outcome</option>{Object.entries(FIELD_OUTCOMES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+                <label>Visit note<textarea value={draft.note} rows={3} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
+                <button type="button" className="fc-next-action" onClick={() => saveVisitOutcome(selectedJob)} disabled={!draft.outcome && !draft.note.trim()}>Save visit record</button>
+                <p role="status">{outcomeMessage || "Device storage only. Appointment requests are not confirmed bookings."}</p>
+                {Array.isArray(selectedJob.FieldVisitHistory) && selectedJob.FieldVisitHistory.length > 0 ? <details className="fc-visit-history"><summary>Visit history ({selectedJob.FieldVisitHistory.length})</summary><ol>{selectedJob.FieldVisitHistory.map((entry: { recordedAt?: string; outcome?: string; note?: string }, index: number) => <li key={index}><time>{entry.recordedAt ? formatSavedTime(entry.recordedAt) : "Date not recorded"}</time><strong>{FIELD_OUTCOMES[entry.outcome || ""] || "Visit note"}</strong><p>{entry.note}</p></li>)}</ol></details> : null}
+              </section>
               <section className={`fc-flow-card fc-scope-card ${scopeOpen ? "is-open" : ""}`}>
                 <button type="button" className="fc-flow-card-main" onClick={() => setScopeOpen((open) => !open)}>
                   <span className="fc-flow-icon">S</span>
@@ -1413,7 +1434,7 @@ export default function FieldCommandClient() {
                 <button type="button" className="fc-workflow-btn refused" aria-label="Save refused status" onClick={() => saveWorkflowStamp(selectedJob, "status", "Refused")} disabled={!stamps.visit}>
                   <span>5</span>
                   <b>Refused</b>
-                  <small>Close job</small>
+                  <small>Record refusal</small>
                 </button>
                 <button type="button" className="fc-workflow-btn clear" aria-label="Clear field workflow" onClick={() => beginClearWorkflow(selectedJob)}>
                   <span>0</span>
@@ -1452,7 +1473,7 @@ export default function FieldCommandClient() {
                   <span>{counts.total} saved</span>
                 </div>
                 <div className="fc-media-grid">
-                  <button type="button" onClick={() => requestMediaUpload("before")} disabled={!stamps.work || Boolean(mediaBusy)}>
+                  <button type="button" onClick={() => requestMediaUpload("before")} disabled={!stamps.visit || Boolean(mediaBusy)}>
                     <b>Before</b>
                     <small>{mediaBusy === "before" ? "Saving..." : `${counts.before} saved`}</small>
                   </button>
@@ -1460,13 +1481,13 @@ export default function FieldCommandClient() {
                     <b>After</b>
                     <small>{mediaBusy === "after" ? "Saving..." : `${counts.after} saved`}</small>
                   </button>
-                  <a href={paperworkHref(selectedJob, true)} onClick={() => completeWorkForPackage(selectedJob)}>
-                    <b>Package</b>
-                    <small>PDF + media</small>
+                  <a href={paperworkReviewHref(id, true)}>
+                    <b>Review package</b>
+                    <small>Affidavit + invoice</small>
                   </a>
-                  <a href={paperworkHref(selectedJob, false)} onClick={() => completeWorkForPackage(selectedJob)}>
-                    <b>No Media</b>
-                    <small>PDF only</small>
+                  <a href={paperworkReviewHref(id, false)}>
+                    <b>Review documents</b>
+                    <small>Without media</small>
                   </a>
                 </div>
                 <p>{mediaMessage || "Media is saved on this device and read by the paperwork package screen."}</p>
