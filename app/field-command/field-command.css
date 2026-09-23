@@ -1726,6 +1726,7 @@
 .fc-app.fc-reference .plan-my-day.is-open { left: 12px; right: 12px; width: auto; z-index: 1600; }
 .fc-app.fc-reference.fc-has-job .fc-job-sheet.fc-job-sheet-flow { top: auto; left: 8px; right: 8px; bottom: 8px; height: min(230px,55%); max-height: 55%; min-height: 180px; padding: 0 10px 12px; border-radius: 8px; background: #06111f; border: 1px solid #2b506a; box-shadow: 0 -4px 18px #0006; transition: height .2s ease; }
 .fc-app.fc-reference.fc-has-job.fc-sheet-expanded .fc-job-sheet.fc-job-sheet-flow { height: calc(100% - 16px); max-height: calc(100% - 16px); }
+
 .fc-app.fc-clean-streets { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 .fc-app.fc-clean-streets .fc-reveal-controls { background: #193d2beb; color: #d5efdf !important; border-color: #ffffff30; backdrop-filter: blur(18px); box-shadow: 0 3px 12px #15232733; }
 .fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-close { top: 22px; right: 8px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: #ffffff0d; color: #d6dfe2; box-shadow: none; font-size: 28px; font-weight: 400; }
@@ -1852,3 +1853,32 @@
 .fc-visit-history :is(time,strong) { display: block; font-size: 12px; }
 .fc-visit-history p { white-space: pre-wrap; overflow-wrap: anywhere; }
 .fc-app.fc-reference.fc-has-job.fc-sheet-expanded .fc-job-sheet.fc-job-sheet-flow { height: calc(100% - 16px); max-height: calc(100% - 16px); }
+
+/* Compact field card: one primary step and a shared secondary-action row. */
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet.fc-job-sheet-flow { padding: 0 14px 0; background: #172b25f7; border: 1px solid #749887; border-top: 2px solid #9ec5ab; box-shadow: 0 -6px 24px #14241e40; }
+.fc-app.fc-reference.fc-clean-streets:not(.fc-sheet-expanded) .fc-job-sheet.fc-job-sheet-flow { max-height: 62%; padding-bottom: 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-sheet-handle { height: 20px; background: #172b25; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-hero { display: flex; align-items: center; justify-content: flex-start; gap: 10px; min-height: 20px; padding-right: 40px; margin: 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-id { font-size: 12px; font-weight: 600; color: #bad0c6; line-height: 20px; }
+.fc-card-borough { color: #93b4a3; font-size: 12px; line-height: 20px; border-left: 1px solid #ffffff28; padding-left: 10px; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-close { top: 14px; right: 4px; width: 44px; height: 44px; background: transparent; }
+.fc-app.fc-reference.fc-clean-streets .fc-address-row { margin: 6px 0; padding-right: 24px; }
+.fc-app.fc-reference.fc-clean-streets .fc-address-row p { font-size: 19px; font-weight: 650; line-height: 1.25; overflow-wrap: anywhere; margin: 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 7px 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-tag { font-size: 10px; line-height: 16px; padding: 2px 6px; }
+.fc-app.fc-reference.fc-clean-streets .fc-reference-job-summary { padding: 8px 0; margin: 6px 0; border-color: #ffffff16; }
+.fc-app.fc-reference.fc-clean-streets .fc-reference-job-summary dl { gap: 8px; align-items: center; }
+.fc-app.fc-reference.fc-clean-streets .fc-reference-job-summary dt { font-size: 10px; line-height: 16px; color: #a8bcb2; }
+.fc-app.fc-reference.fc-clean-streets .fc-reference-job-summary dd { margin: 0; font-size: 13px; line-height: 18px; font-weight: 600; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-actions { margin: 6px 0; gap: 8px; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action { min-height: 56px; padding: 0; gap: 3px; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action svg { width: 36px; height: 36px; padding: 8px; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action.is-call svg { background: #203e36; color: #a9dfbf; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action.is-photos svg { background: #303848; color: #c7c9f4; border-color: #66758b; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action.is-documents svg { background: #244048; color: #b6e3ec; border-color: #567e87; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action span { font-size: 10px; line-height: 16px; }
+.fc-app.fc-reference.fc-clean-streets .fc-next-step { margin-top: 4px; }
+.fc-app.fc-reference.fc-clean-streets .fc-next-action { min-height: 46px; border-radius: 6px; background: #c0e4c9; border-color: #c0e4c9; }
+.fc-card-footer { display: grid; grid-template-columns: 1fr 1fr; margin-top: 6px; border-top: 1px solid #ffffff18; }
+.fc-app.fc-reference.fc-clean-streets .fc-card-footer :is(.fc-job-details-toggle,.fc-outcome-link) { min-height: 44px; margin: 0; padding: 6px; border: 0; text-decoration: none; font-size: 12px; font-weight: 500; color: #c4dacf; }
+.fc-app.fc-reference.fc-clean-streets .fc-card-footer .fc-job-details-toggle { border-left: 1px solid #ffffff18; }

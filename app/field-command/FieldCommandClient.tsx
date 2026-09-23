@@ -1340,15 +1340,8 @@ export default function FieldCommandClient() {
                 <span aria-hidden="true">&times;</span>
               </button>
               <div className="fc-job-sheet-hero">
-                <div>
-                  <span className="fc-job-sheet-kicker">OMO</span>
-                  <strong className="fc-job-sheet-id">{id}</strong>
-                  <div className={`fc-arrival-pill ${stamps.arrived ? "is-saved" : ""}`}>
-                    <span>{stamps.arrived ? "Arrived saved" : "Not here yet"}</span>
-                    <b>{stamps.arrived ? formatSavedTime(stamps.arrived) : "Tap Arrive"}</b>
-                  </div>
-                </div>
-                <span className="fc-building-icon" aria-hidden="true">HPD</span>
+                <strong className="fc-job-sheet-id">{id}</strong>
+                <span className="fc-card-borough">{BOROUGHS.find((item) => item.key === jobBorough(selectedJob))?.label || "NYC"}</span>
               </div>
               <div className="fc-address-row">
                 <p>{jobAddress(selectedJob)}</p>
@@ -1377,12 +1370,12 @@ export default function FieldCommandClient() {
                 {tenant.phone ? (
                   <a className="fc-quick-action is-call" href={`tel:${tenant.phone}`}>
                     <CallIcon />
-                    <span>Call Tenant</span>
+                    <span>Call</span>
                   </a>
                 ) : (
-                  <span className="fc-quick-action is-call is-disabled">
+                  <span className="fc-quick-action is-call is-disabled" aria-label="Tenant phone unavailable" title="No tenant phone on file">
                     <CallIcon />
-                    <span>Call Tenant</span>
+                    <span>No phone</span>
                   </span>
                 )}
                 <button type="button" className="fc-quick-action is-photos" onClick={() => requestMediaUpload("before")}>
@@ -1405,10 +1398,12 @@ export default function FieldCommandClient() {
                     else saveWorkflowStamp(selectedJob, next.key, next.key === "work" ? "Work Started" : undefined);
                   }}>{mediaBusy ? "Saving media..." : next.label}<span aria-hidden="true">&rarr;</span></button>
                 )}
-                <button type="button" className="fc-outcome-link" onClick={openOutcomePanel}>Record outcome or add a note</button>
                 {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
               </div>
+              <div className="fc-card-footer">
+              <button type="button" className="fc-outcome-link" onClick={openOutcomePanel}>Outcome / note</button>
               <button type="button" className="fc-job-details-toggle" aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}>{sheetExpanded ? "Less detail" : "Job details"}<span aria-hidden="true">{sheetExpanded ? "\u2304" : "\u2303"}</span></button>
+              </div>
               <section ref={outcomePanelRef} className="fc-outcome-panel" aria-label="Visit outcome">
                 <label>Outcome<select value={draft.outcome} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, outcome: event.target.value } }))}><option value="">Select outcome</option>{Object.entries(FIELD_OUTCOMES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
                 <label>Visit note<textarea value={draft.note} rows={3} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
