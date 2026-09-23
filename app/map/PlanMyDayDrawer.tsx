@@ -1,6 +1,7 @@
 "use client";
 
 import jobsData from "../../data/COA_Fetcher_2026.json";
+import { isPendingJob, jobPriority } from "../../lib/job-priority";
 import { countFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import {
   shadowUpsert,
@@ -122,14 +123,12 @@ function jobStatus(record: JobRecord) {
 }
 
 function isClosed(record: JobRecord) {
-  return /completed|complete|closed|archived|cancelled|canceled/i.test(jobStatus(record));
+  return !isPendingJob(record);
 }
 
 function isUrgent(record: JobRecord) {
   const status = jobStatus(record);
-  const due = textValue(record, ["DueDate", "dueDate", "WorkCompletionDate", "workCompletionDate"]);
-  const date = due ? new Date(due) : null;
-  const overdue = Boolean(date && !Number.isNaN(date.getTime()) && date.getTime() < Date.now());
+  const overdue = (jobPriority(record).days ?? 0) > 0;
   return /urgent|emergency|priority|overdue|no\s*access|ready\s*(?:for\s*)?(?:second|2)/i.test(status) || overdue;
 }
 

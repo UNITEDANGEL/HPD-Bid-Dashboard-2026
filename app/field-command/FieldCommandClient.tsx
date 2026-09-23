@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import FieldTabBar from "../../components/FieldTabBar";
+import { jobPriority, maturityDate, isPendingJob } from "../../lib/job-priority";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
@@ -205,18 +206,11 @@ function jobAgeDays(job: JobRecord) {
   return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
 }
 
-function ageMarkerHtml(color: string, days: number | null) {
-  const label = days === null ? "?" : String(days);
-  const fontSize = label.length > 2 ? 9 : 11;
+function ageMarkerHtml(days: number | null, pending: boolean) {
+  const label = !pending ? "Done" : days === null ? "?" : days === 0 ? "Due" : days < 0 ? `+${-days}` : String(days);
   const overdue = days !== null && days > 30;
-  return `<div style="position:relative;width:30px;height:30px;">` +
-    `<div style="position:absolute;inset:-9px;border-radius:50%;background:radial-gradient(circle, ${color}59, transparent 68%);"></div>` +
-    `<div style="position:relative;width:30px;height:30px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,.92);box-shadow:0 0 10px ${color},0 0 24px ${color}80,0 3px 8px rgba(0,0,0,.5);display:grid;place-items:center;color:#fff;font-weight:900;font-size:${fontSize}px;font-family:-apple-system,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.5);">` +
-    `<svg width="11" height="11" viewBox="0 0 24 24" style="position:absolute;top:4px;">${HARDHAT_ICON_PATH}</svg>` +
-    `<span style="margin-top:7px;">${label}</span>` +
-    (overdue ? `<div style="position:absolute;top:-8px;left:-8px;padding:1px 5px;border-radius:999px;background:#b42332;color:#fff;font-size:8px;font-weight:900;box-shadow:0 3px 8px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.4);">!</div>` : "") +
-    `</div>` +
-    `</div>`;
+  const fill = !pending || days === null ? "#64717d" : overdue ? "#c73843" : "#007aff";
+  return `<div style="width:34px;height:34px;border-radius:50% 50% 50% 8px;transform:rotate(-45deg);background:${fill};border:2px solid white;box-shadow:0 2px 5px #17354b40;display:grid;place-items:center;color:#fff;"><span style="transform:rotate(45deg);font:700 11px system-ui,sans-serif;">${label}</span></div>`;
 }
 
 function jobAwardAmount(job: JobRecord) {
@@ -402,8 +396,8 @@ function DocumentsIcon() {
   );
 }
 
-const LIGHT_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
-const DARK_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
+const LIGHT_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
+const DARK_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
 const CLUSTER_COLOR = "#38bdf8";
 
 function clusterByPixelDistance(
@@ -472,8 +466,9 @@ export default function FieldCommandClient() {
   const [daysBack, setDaysBack] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
-  const [darkTiles, setDarkTiles] = useState(true);
+  const [darkTiles, setDarkTiles] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
+  const [chromeOpen, setChromeOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [locateStatus, setLocateStatus] = useState<"idle" | "loading" | "error">("idle");
   const [scopeOpen, setScopeOpen] = useState(false);
@@ -521,13 +516,13 @@ export default function FieldCommandClient() {
   }, [workflowStamps]);
 
   const activeJobs = useMemo(
-    () => jobs.filter((job) => statusGroup(job) !== "closed"),
+    () => jobs.filter(isPendingJob),
     [jobs]
   );
 
   const overdueCount = useMemo(
     () => activeJobs.filter((job) => {
-      const days = jobAgeDays(job);
+      const days = jobPriority(job).days;
       return days !== null && days > 30;
     }).length,
     [activeJobs]
@@ -617,7 +612,7 @@ export default function FieldCommandClient() {
           attributionControl: true,
         }).setView([40.72, -73.95], 10);
         mapRef.current = map;
-        tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20, maxNativeZoom: darkTiles ? 19 : 16, attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, contributors' }).addTo(map);
+        tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20, maxNativeZoom: darkTiles ? 16 : 19, attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, contributors' }).addTo(map);
         L.control.scale({ position: "bottomright", metric: false, imperial: true }).addTo(map);
 
         map.createPane("boroughLabels");
@@ -658,15 +653,16 @@ export default function FieldCommandClient() {
             if (cluster.jobs.length === 1) {
               const job = cluster.jobs[0];
               const meta = jobStatusMeta(job);
-              const days = jobAgeDays(job);
-              html = ageMarkerHtml(meta.color, days);
-              title = `${jobId(job)} - ${meta.label} - ${days === null ? "age unknown" : `${days}d old`}`;
+              const priority = jobPriority(job);
+              const days = priority.days;
+              html = ageMarkerHtml(days, priority.pending);
+              title = `${jobId(job)} - ${meta.label} - ${priority.label}`;
               onClick = () => setSelectedJob(job);
             } else {
-              const ages = cluster.jobs.map((job) => jobAgeDays(job)).filter((d): d is number => d !== null);
+              const ages = cluster.jobs.map((job) => jobPriority(job).days).filter((d): d is number => d !== null);
               const oldestDays = ages.length ? Math.max(...ages) : null;
               html = clusterMarkerHtml(cluster.jobs.length, oldestDays);
-              title = `${cluster.jobs.length} jobs${oldestDays !== null && oldestDays > 30 ? ` - oldest ${oldestDays}d` : ""}`;
+              title = `${cluster.jobs.length} jobs${oldestDays !== null && oldestDays > 0 ? ` - most overdue ${oldestDays} days` : ""}`;
               onClick = () => {
                 map.flyTo([cluster.lat, cluster.lng], Math.min(20, map.getZoom() + 2.5));
               };
@@ -713,7 +709,7 @@ export default function FieldCommandClient() {
 
   useEffect(() => {
     if (!mapRef.current || !tileLayerRef.current) return;
-    tileLayerRef.current.options.maxNativeZoom = darkTiles ? 19 : 16;
+    tileLayerRef.current.options.maxNativeZoom = darkTiles ? 16 : 19;
     tileLayerRef.current.setUrl(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL);
   }, [darkTiles]);
 
@@ -749,6 +745,19 @@ export default function FieldCommandClient() {
     }
     return () => { cancelled = true; };
   }, [selectedJob]);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const map = mapRef.current;
+      if (!map) return;
+      map.invalidateSize({ pan: false });
+      const point = selectedJob && jobLatLng(selectedJob);
+      if (point && !sheetExpanded) {
+        map.panInside([point.lat, point.lng], { paddingTopLeft: [24, 24], paddingBottomRight: [60, Math.min(280, map.getSize().y * .6) + 20] });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [selectedJob, sheetExpanded]);
 
   useEffect(() => {
     if (!selectedJob) return;
@@ -794,7 +803,7 @@ export default function FieldCommandClient() {
         mapRef.current.flyTo([latitude, longitude], 15);
       },
       () => setLocateStatus("error"),
-      { enableHighAccuracy: true, timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
     );
   }
 
@@ -805,12 +814,9 @@ export default function FieldCommandClient() {
     const center = userMarkerRef.current?.getLatLng?.() || mapRef.current.getCenter();
     const origin = { lat: Number(center.lat), lng: Number(center.lng) };
     const stops = pointsRef.current
-      .filter(({ job }) => {
-        const age = jobAgeDays(job);
-        return age === null || age <= 90;
-      })
+      .filter(({ job }) => isPendingJob(job))
       .map((point) => ({ ...point, miles: distanceMiles(origin, { lat: point.lat, lng: point.lng }) }))
-      .sort((a, b) => a.miles - b.miles)
+      .sort((a, b) => Math.max(0, jobPriority(b.job).days || 0) - Math.max(0, jobPriority(a.job).days || 0) || a.miles - b.miles)
       .slice(0, 6);
 
     if (!stops.length) return;
@@ -824,7 +830,7 @@ export default function FieldCommandClient() {
     mapRef.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [42, 42], maxZoom: 14 });
     setRouteSummary({
       stops: stops.length,
-      miles: stops.reduce((sum, stop) => sum + stop.miles, 0),
+      miles: routePoints.slice(1).reduce((sum, point, index) => sum + distanceMiles(routePoints[index], point), 0),
       firstStop: jobId(stops[0].job),
       href: googleRouteHref(routePoints),
     });
@@ -1072,7 +1078,8 @@ export default function FieldCommandClient() {
   }
 
   return (
-    <main className={`fc-app fc-reference ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
+    <main className={`fc-app fc-reference fc-full-map ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
+      <button type="button" className="fc-reveal-controls" aria-label={chromeOpen ? "Hide all map controls" : "Show map controls"} title={chromeOpen ? "Hide controls" : "Map menu"} aria-expanded={chromeOpen} onClick={() => { setChromeOpen((open) => !open); setSelectedJob(null); }}><MenuIcon /></button>
       <div className="fc-search-row">
         <div className="fc-search-field">
           <SearchIcon />
@@ -1187,7 +1194,7 @@ export default function FieldCommandClient() {
           <button
             type="button"
             className={`fc-map-fab fc-route-fab ${routeSummary ? "is-active" : ""}`}
-            aria-label="Preview smart route"
+            aria-label="Preview overdue stops"
             onClick={previewLocalRoute}
           >
             <RouteIcon />
@@ -1200,7 +1207,8 @@ export default function FieldCommandClient() {
         {routeSummary ? (
           <a className="fc-route-summary" href={routeSummary.href} target="_blank" rel="noreferrer">
             <strong>{routeSummary.stops} stops</strong>
-            <span>{routeSummary.miles.toFixed(1)} mi nearby</span>
+            <span>{routeSummary.miles.toFixed(1)} mi estimated straight-line distance</span>
+            <small>Stop preview, not driving directions</small>
             <small>First: {routeSummary.firstStop}</small>
           </a>
         ) : null}
@@ -1267,12 +1275,12 @@ export default function FieldCommandClient() {
                 <span className="fc-job-sheet-tag" style={{ background: jobStatusMeta(selectedJob).color }}>
                   {stamps.status || jobStatusMeta(selectedJob).label}
                 </span>
-                {jobAgeDays(selectedJob) !== null ? <span className="fc-job-sheet-tag fc-age-tag">{jobAgeDays(selectedJob)}d old</span> : null}
+                <span className="fc-job-sheet-tag fc-age-tag" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>
               </div>
               <div className="fc-reference-job-summary">
                 <dl>
                   <div><dt>Award date</dt><dd>{value(selectedJob, ["AwardDate", "awardDate"]) || "Not available"}</dd></div>
-                  <div><dt>Maturity date</dt><dd>{value(selectedJob, ["MaturityDate", "maturityDate"]) || "Not available"}</dd></div>
+                  <div><dt>Maturity date</dt><dd>{maturityDate(selectedJob) || "Not available"}</dd></div>
                   <div><dt>COA amount</dt><dd>{jobAwardAmount(selectedJob) ? jobAwardAmount(selectedJob).toLocaleString("en-US", { style: "currency", currency: "USD" }) : "Not available"}</dd></div>
                 </dl>
                 {selectedPhoto ? <img src={selectedPhoto} alt={`Saved job photo for ${id}`} /> : null}

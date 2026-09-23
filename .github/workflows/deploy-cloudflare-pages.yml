@@ -45,6 +45,9 @@ jobs:
       - name: Type check
         run: npm run lint
 
+      - name: Test maturity date priorities
+        run: npm run test:job-priority
+
       - name: Build Cloudflare Pages output
         run: npm run build:cloudflare
 

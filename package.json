@@ -16,6 +16,7 @@
     "sync:itb-tenants": "node scripts/sync-itb-page2-tenants.js",
     "start": "next start",
     "lint": "next typegen && tsc --noEmit",
+    "test:job-priority": "node scripts/test-job-priority.cjs",
     "export": "next build",
     "static": "next build",
     "fetcher-api": "node server/fetcher-api.js"
