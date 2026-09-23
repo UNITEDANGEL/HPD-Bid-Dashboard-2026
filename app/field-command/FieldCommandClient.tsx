@@ -634,16 +634,16 @@ export default function FieldCommandClient() {
             const gl = vector.getMaplibreMap();
             gl.once("style.load", () => {
               for (const layer of gl.getStyle().layers) {
-                if (layer.type === "background") gl.setPaintProperty(layer.id, "background-color", "#f4f5f2");
+                if (layer.type === "background") gl.setPaintProperty(layer.id, "background-color", "#d8dfdc");
                 if (layer.type === "fill") {
                   const colors: Record<string, string> = {
-                    water: "#b7ddeb", landuse_residential: "#eef0ed", building: "#dce1de",
-                    park: "#cce5c5", landcover_wood: "#c4debd", landcover_grass: "#d6e9cf",
+                    water: "#83b7ca", landuse_residential: "#d4dcd8", building: "#b6c2bd",
+                    park: "#a5c59a", landcover_wood: "#96b98c", landcover_grass: "#b0cda4",
                   };
                   if (colors[layer.id]) gl.setPaintProperty(layer.id, "fill-color", colors[layer.id]);
                 }
                 if (layer.type === "line" && /^(road|bridge|tunnel)_/.test(layer.id) && !/rail|path/.test(layer.id)) {
-                  gl.setPaintProperty(layer.id, "line-color", layer.id.endsWith("_casing") ? "#d2d9d9" : "#ffffff");
+                  gl.setPaintProperty(layer.id, "line-color", layer.id.endsWith("_casing") ? "#aab8b5" : "#edf0eb");
                 }
               }
             });
