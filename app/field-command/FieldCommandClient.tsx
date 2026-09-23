@@ -403,7 +403,7 @@ function DocumentsIcon() {
 }
 
 const LIGHT_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
-const DARK_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+const DARK_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
 const CLUSTER_COLOR = "#38bdf8";
 
 function clusterByPixelDistance(
@@ -449,20 +449,11 @@ function boroughLabelHtml(label: string, dark: boolean) {
 }
 
 function clusterMarkerHtml(count: number, oldestDays: number | null) {
-  const size = Math.min(56, Math.max(34, 26 + Math.sqrt(count) * 7));
-  const glow = Math.round(size * 0.35);
-  const fontSize = Math.min(16, 11 + count / 40);
-  const overdue = oldestDays !== null && oldestDays > 30;
-  const badge = overdue
-    ? `<div style="position:absolute;top:-8px;left:-8px;min-width:26px;padding:2px 6px;border-radius:999px;background:#b42332;color:#fff;font-size:10px;font-weight:900;text-align:center;box-shadow:0 3px 8px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.4);">${oldestDays}d</div>`
+  const size = count > 99 ? 42 : 34;
+  const age = oldestDays !== null && oldestDays > 30
+    ? `<span style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:#921f32;border:1px solid #f36e7d;border-radius:4px;padding:1px 4px;font-size:8px;white-space:nowrap;">${oldestDays}d</span>`
     : "";
-  return `<div style="position:relative;width:${size}px;height:${size}px;">` +
-    `<div style="position:absolute;inset:-${glow}px;border-radius:50%;background:radial-gradient(circle, ${CLUSTER_COLOR}59, transparent 68%);"></div>` +
-    `<div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;background:${CLUSTER_COLOR};border:3px solid rgba(255,255,255,.92);box-shadow:0 0 14px ${CLUSTER_COLOR},0 0 32px ${CLUSTER_COLOR}77,0 4px 10px rgba(0,0,0,.5);display:grid;place-items:center;color:#fff;font-weight:900;font-size:${fontSize}px;text-shadow:0 1px 2px rgba(0,0,0,.5);">` +
-    `<svg width="14" height="14" viewBox="0 0 24 24" style="position:absolute;top:${Math.round(size * 0.14)}px;">${HARDHAT_ICON_PATH}</svg>` +
-    `<span style="margin-top:9px;">${count}</span>` +
-    `</div>${badge}` +
-    `</div>`;
+  return `<div style="position:relative;width:${size}px;height:${size}px;display:grid;place-items:center;border-radius:50%;background:#004bea;border:2px solid #59b9ff;box-shadow:0 0 0 3px #005fff33,0 2px 6px #0005;color:#fff;font-size:14px;font-weight:800;">${count}${age}</div>`;
 }
 
 export default function FieldCommandClient() {
@@ -478,10 +469,12 @@ export default function FieldCommandClient() {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [borough, setBorough] = useState<BoroughKey | "ALL">("ALL");
   const [status, setStatus] = useState("all");
-  const [daysBack, setDaysBack] = useState<number | null>(60);
+  const [daysBack, setDaysBack] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
   const [darkTiles, setDarkTiles] = useState(true);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [locateStatus, setLocateStatus] = useState<"idle" | "loading" | "error">("idle");
   const [scopeOpen, setScopeOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
@@ -624,7 +617,7 @@ export default function FieldCommandClient() {
           attributionControl: true,
         }).setView([40.72, -73.95], 10);
         mapRef.current = map;
-        tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20, maxNativeZoom: 16 }).addTo(map);
+        tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20, maxNativeZoom: darkTiles ? 19 : 16, attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, contributors' }).addTo(map);
         L.control.scale({ position: "bottomright", metric: false, imperial: true }).addTo(map);
 
         map.createPane("boroughLabels");
@@ -717,6 +710,7 @@ export default function FieldCommandClient() {
 
   useEffect(() => {
     if (!mapRef.current || !tileLayerRef.current) return;
+    tileLayerRef.current.options.maxNativeZoom = darkTiles ? 19 : 16;
     tileLayerRef.current.setUrl(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL);
   }, [darkTiles]);
 
@@ -736,7 +730,21 @@ export default function FieldCommandClient() {
 
   useEffect(() => {
     setScopeOpen(false);
+    setSheetExpanded(false);
+    if (selectedJob) setControlsOpen(false);
     window.scrollTo({ top: 0, behavior: "auto" });
+  }, [selectedJob]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setSelectedPhoto(null);
+    if (selectedJob) {
+      listFieldEvidence(jobId(selectedJob)).then((items) => {
+        const photo = items.find((item) => item.mediaType === "image");
+        if (!cancelled) setSelectedPhoto(photo?.dataUrl || null);
+      }).catch(() => { if (!cancelled) setSelectedPhoto(null); });
+    }
+    return () => { cancelled = true; };
   }, [selectedJob]);
 
   useEffect(() => {
@@ -1061,14 +1069,24 @@ export default function FieldCommandClient() {
   }
 
   return (
-    <main className={`fc-app ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${headerHidden && !selectedJob ? "fc-header-hidden" : ""}`}>
+    <main className={`fc-app fc-reference ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
+      <div className="fc-search-row">
+        <div className="fc-search-field">
+          <SearchIcon />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search address or job" aria-label="Search jobs" />
+        </div>
+        <button type="button" className={`fc-search-list-btn fc-tools-toggle ${controlsOpen ? "is-open" : ""}`} aria-label={controlsOpen ? "Hide map filters" : "Show map filters"} title="Map filters and navigation" aria-expanded={controlsOpen} aria-controls="field-map-filters" onClick={() => setControlsOpen((open) => !open)}>
+          <ListIcon />
+        </button>
+      </div>
+      <section id="field-map-filters" className="fc-control-drawer" aria-label="Map filters">
       <header className="fc-topbar">
         <div className="fc-topbar-row">
           <div className="fc-brand-text">
             <span className="fc-brand-icon">HPD</span>
             <div className="fc-brand-copy">
               <p className="fc-eyebrow">HPD Bid Dashboard 2026</p>
-              <h1 className="fc-title">HPD Field Command</h1>
+              <h1 className="fc-title">FIELD COMMAND</h1>
             </div>
           </div>
           <div className="fc-topbar-actions">
@@ -1083,7 +1101,7 @@ export default function FieldCommandClient() {
         </div>
         <div className="fc-live-row">
           <div className="fc-live-copy">
-            <span className="fc-live-dot">Live</span>
+            <span className="fc-live-dot">Loaded</span>
             <span className="fc-active-count">{activeJobs.length} Active Jobs</span>
           </div>
           <label className="fc-days-control">
@@ -1129,28 +1147,6 @@ export default function FieldCommandClient() {
         ))}
       </div>
 
-      <div className="fc-search-row">
-        <div className="fc-search-field">
-          <SearchIcon />
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search jobs, address, OMO, tenant..."
-            aria-label="Search jobs"
-          />
-        </div>
-        <button
-          type="button"
-          className={`fc-search-list-btn fc-tools-toggle ${controlsOpen ? "is-open" : ""}`}
-          aria-label={controlsOpen ? "Hide map filters" : "Show map filters"}
-          onClick={() => setControlsOpen((open) => !open)}
-        >
-          <ListIcon />
-          <span>Tools</span>
-        </button>
-      </div>
-
-      <section className="fc-control-drawer" aria-label="Map filters">
         <div className="fc-pill-row fc-status-pill-row" role="group" aria-label="Status filter">
           {STATUS_FILTERS.map(({ key, label }) => (
             <button
@@ -1240,7 +1236,8 @@ export default function FieldCommandClient() {
           const stamps = workflowStamps[id] || {};
           const counts = mediaCounts[id] || { before: 0, after: 0, total: 0 };
           return (
-            <div className="fc-job-sheet fc-job-sheet-flow">
+            <div className="fc-job-sheet fc-job-sheet-flow" aria-label="Selected job">
+              <button type="button" className="fc-sheet-handle" aria-label={sheetExpanded ? "Collapse job details" : "Expand job details"} aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}><span /></button>
               <button type="button" className="fc-job-sheet-close" aria-label="Close" onClick={() => setSelectedJob(null)}>
                 Map
               </button>
@@ -1268,6 +1265,14 @@ export default function FieldCommandClient() {
                   {stamps.status || jobStatusMeta(selectedJob).label}
                 </span>
                 {jobAgeDays(selectedJob) !== null ? <span className="fc-job-sheet-tag fc-age-tag">{jobAgeDays(selectedJob)}d old</span> : null}
+              </div>
+              <div className="fc-reference-job-summary">
+                <dl>
+                  <div><dt>Award date</dt><dd>{value(selectedJob, ["AwardDate", "awardDate"]) || "Not available"}</dd></div>
+                  <div><dt>Maturity date</dt><dd>{value(selectedJob, ["MaturityDate", "maturityDate"]) || "Not available"}</dd></div>
+                  <div><dt>COA amount</dt><dd>{jobAwardAmount(selectedJob) ? jobAwardAmount(selectedJob).toLocaleString("en-US", { style: "currency", currency: "USD" }) : "Not available"}</dd></div>
+                </dl>
+                {selectedPhoto ? <img src={selectedPhoto} alt={`Saved job photo for ${id}`} /> : null}
               </div>
               <div className="fc-quick-actions">
                 <a className="fc-quick-action is-navigate" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">
