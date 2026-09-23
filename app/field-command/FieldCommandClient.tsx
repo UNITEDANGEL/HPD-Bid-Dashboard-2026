@@ -633,11 +633,11 @@ export default function FieldCommandClient() {
             const gl = vector.getMaplibreMap();
             gl.once("style.load", () => {
               for (const layer of gl.getStyle().layers) {
-                if (layer.type === "background") gl.setPaintProperty(layer.id, "background-color", "#d8dfdc");
+                if (layer.type === "background") gl.setPaintProperty(layer.id, "background-color", "#cbd9cc");
                 if (layer.type === "fill") {
                   const colors: Record<string, string> = {
-                    water: "#83b7ca", landuse_residential: "#d4dcd8", building: "#b6c2bd",
-                    park: "#a5c59a", landcover_wood: "#96b98c", landcover_grass: "#b0cda4",
+                    water: "#78b6bd", landuse_residential: "#c6d6c7", building: "#a6bba9",
+                    park: "#91b887", landcover_wood: "#7da774", landcover_grass: "#a4c397",
                   };
                   if (colors[layer.id]) gl.setPaintProperty(layer.id, "fill-color", colors[layer.id]);
                 }
