@@ -453,6 +453,7 @@ function clusterMarkerHtml(count: number, oldestDays: number | null) {
 
 export default function FieldCommandClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
+  const jobSheetRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const tileLayerRef = useRef<any>(null);
   const vectorLayerRef = useRef<any>(null);
@@ -485,8 +486,6 @@ export default function FieldCommandClient() {
   const [clearText, setClearText] = useState("");
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const pendingMediaKindRef = useRef<FieldMediaKind>("before");
-  const [headerHidden, setHeaderHidden] = useState(false);
-  const headerIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -651,12 +650,17 @@ export default function FieldCommandClient() {
               if (mapRef.current !== map || vectorLayerRef.current !== vector) return;
               vector.getContainer().dataset.ready = "true";
               vector.getContainer().style.opacity = darkTilesRef.current ? "0" : "1";
+              if (!darkTilesRef.current) tileLayerRef.current?.remove();
               map.attributionControl.addAttribution('<a href="https://openfreemap.org/">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>');
             });
             gl.on("error", (event: { error?: Error }) => {
               console.warn("Clean Streets map unavailable; using street-map fallback.", event.error?.message);
               // A failed style or tile must not leave an empty map above the fallback.
-              if (vectorLayerRef.current === vector) vector.getContainer().style.opacity = "0";
+              if (mapRef.current === map && vectorLayerRef.current === vector) {
+                vector.getContainer().style.opacity = "0";
+                vector.getContainer().dataset.ready = "false";
+                tileLayerRef.current?.addTo(map);
+              }
             });
           } catch {
             vector?.remove();
@@ -725,16 +729,9 @@ export default function FieldCommandClient() {
           });
         };
 
-        map.on("moveend", () => renderMarkersRef.current());
+        // Panning translates every point equally, so cluster membership changes only on zoom/data updates.
+        map.on("zoomend", () => renderMarkersRef.current());
 
-        map.on("movestart zoomstart dragstart", () => {
-          if (headerIdleTimerRef.current) clearTimeout(headerIdleTimerRef.current);
-          setHeaderHidden(true);
-        });
-        map.on("moveend zoomend dragend", () => {
-          if (headerIdleTimerRef.current) clearTimeout(headerIdleTimerRef.current);
-          headerIdleTimerRef.current = setTimeout(() => setHeaderHidden(false), 1000);
-        });
       }
 
       const map = mapRef.current;
@@ -763,11 +760,13 @@ export default function FieldCommandClient() {
     tileLayerRef.current.options.maxNativeZoom = darkTiles ? 16 : 19;
     tileLayerRef.current.setUrl(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL);
     const container = vectorLayerRef.current?.getContainer();
-    if (container) container.style.opacity = !darkTiles && container.dataset.ready === "true" ? "1" : "0";
+    const useVector = !darkTiles && container?.dataset.ready === "true";
+    if (container) container.style.opacity = useVector ? "1" : "0";
+    if (useVector) tileLayerRef.current.remove();
+    else tileLayerRef.current.addTo(mapRef.current);
   }, [darkTiles]);
 
   useEffect(() => () => {
-    if (headerIdleTimerRef.current) clearTimeout(headerIdleTimerRef.current);
     mapRef.current?.remove();
     mapRef.current = null;
     vectorLayerRef.current = null;
@@ -813,7 +812,7 @@ export default function FieldCommandClient() {
       map.invalidateSize({ pan: false });
       const point = selectedJob && jobLatLng(selectedJob);
       if (point && !sheetExpanded) {
-        map.panInside([point.lat, point.lng], { paddingTopLeft: [24, 24], paddingBottomRight: [60, Math.min(280, map.getSize().y * .6) + 20] });
+        map.panInside([point.lat, point.lng], { paddingTopLeft: [24, 24], paddingBottomRight: [60, (jobSheetRef.current?.offsetHeight || 280) + 20] });
       }
     });
     return () => cancelAnimationFrame(frame);
@@ -1307,7 +1306,7 @@ export default function FieldCommandClient() {
           const stamps = workflowStamps[id] || {};
           const counts = mediaCounts[id] || { before: 0, after: 0, total: 0 };
           return (
-            <div className="fc-job-sheet fc-job-sheet-flow" aria-label="Selected job">
+            <div ref={jobSheetRef} className="fc-job-sheet fc-job-sheet-flow" aria-label="Selected job">
               <button type="button" className="fc-sheet-handle" aria-label={sheetExpanded ? "Collapse job details" : "Expand job details"} aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}><span /></button>
               <button type="button" className="fc-job-sheet-close" aria-label="Close" title="Close job details" onClick={() => setSelectedJob(null)}>
                 <span aria-hidden="true">&times;</span>
@@ -1370,6 +1369,7 @@ export default function FieldCommandClient() {
                   <span>Documents</span>
                 </Link>
               </div>
+              <button type="button" className="fc-job-details-toggle" aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}>{sheetExpanded ? "Less detail" : "Job details"}<span aria-hidden="true">{sheetExpanded ? "\u2304" : "\u2303"}</span></button>
               <section className={`fc-flow-card fc-scope-card ${scopeOpen ? "is-open" : ""}`}>
                 <button type="button" className="fc-flow-card-main" onClick={() => setScopeOpen((open) => !open)}>
                   <span className="fc-flow-icon">S</span>

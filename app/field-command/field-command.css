@@ -1816,4 +1816,10 @@
   .fc-app.fc-reference.fc-has-job .fc-topbar, .fc-app.fc-reference.fc-has-job .fc-borough-row { display: none; }
 }
 .fc-app.fc-reference.fc-has-job .fc-job-sheet.fc-job-sheet-flow { height: min(280px,60%); max-height: 60%; }
+.fc-app.fc-reference.fc-clean-streets.fc-has-job:not(.fc-sheet-expanded) .fc-job-sheet.fc-job-sheet-flow { height: auto; max-height: 58%; padding-bottom: 8px; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-id { font-size: 14px; color: #b7c2c5; }
+.fc-app.fc-reference.fc-clean-streets .fc-address-row p { font-size: 17px; font-weight: 600; line-height: 1.3; }
+.fc-app.fc-clean-streets:not(.fc-sheet-expanded) .fc-job-sheet > section { display: none; }
+.fc-job-details-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; background: transparent; border: 0; color: #a2d3ff; font-size: 13px; font-weight: 600; }
+.fc-job-details-toggle span { font-size: 20px; }
 .fc-app.fc-reference.fc-has-job.fc-sheet-expanded .fc-job-sheet.fc-job-sheet-flow { height: calc(100% - 16px); max-height: calc(100% - 16px); }
