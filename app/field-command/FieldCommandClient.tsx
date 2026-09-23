@@ -1309,8 +1309,8 @@ export default function FieldCommandClient() {
           return (
             <div className="fc-job-sheet fc-job-sheet-flow" aria-label="Selected job">
               <button type="button" className="fc-sheet-handle" aria-label={sheetExpanded ? "Collapse job details" : "Expand job details"} aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}><span /></button>
-              <button type="button" className="fc-job-sheet-close" aria-label="Close" onClick={() => setSelectedJob(null)}>
-                Map
+              <button type="button" className="fc-job-sheet-close" aria-label="Close" title="Close job details" onClick={() => setSelectedJob(null)}>
+                <span aria-hidden="true">&times;</span>
               </button>
               <div className="fc-job-sheet-hero">
                 <div>

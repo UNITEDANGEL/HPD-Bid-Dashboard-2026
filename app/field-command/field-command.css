@@ -1726,6 +1726,18 @@
 .fc-app.fc-reference .plan-my-day.is-open { left: 12px; right: 12px; width: auto; z-index: 1600; }
 .fc-app.fc-reference.fc-has-job .fc-job-sheet.fc-job-sheet-flow { top: auto; left: 8px; right: 8px; bottom: 8px; height: min(230px,55%); max-height: 55%; min-height: 180px; padding: 0 10px 12px; border-radius: 8px; background: #06111f; border: 1px solid #2b506a; box-shadow: 0 -4px 18px #0006; transition: height .2s ease; }
 .fc-app.fc-reference.fc-has-job.fc-sheet-expanded .fc-job-sheet.fc-job-sheet-flow { height: calc(100% - 16px); max-height: calc(100% - 16px); }
+.fc-app.fc-clean-streets { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.fc-app.fc-clean-streets .fc-reveal-controls { background: #303638eb; color: #a2d3ff !important; border-color: #ffffff30; backdrop-filter: blur(18px); box-shadow: 0 3px 12px #15232733; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-close { top: 22px; right: 8px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: #ffffff0d; color: #d6dfe2; box-shadow: none; font-size: 28px; font-weight: 400; }
+.fc-app.fc-clean-streets .fc-job-sheet-hero { padding-right: 48px; }
+.fc-app.fc-clean-streets .fc-address-row p { border: 0; border-radius: 0; font-size: 13px; line-height: 1.4; }
+.fc-app.fc-clean-streets .fc-reference-job-summary { padding: 9px 0; border-top: 1px solid #ffffff18; border-bottom: 1px solid #ffffff18; }
+.fc-app.fc-clean-streets .fc-reference-job-summary dt { font-size: 10px; }
+.fc-app.fc-clean-streets .fc-reference-job-summary dd { font-size: 12px; font-variant-numeric: tabular-nums; }
+.fc-app.fc-clean-streets .fc-quick-action { box-shadow: none; min-height: 64px; }
+.fc-app.fc-clean-streets .fc-quick-action span { font-size: 11px; font-weight: 500; }
+.fc-app.fc-clean-streets .fc-quick-action:active { transform: scale(.97); }
+.fc-app.fc-clean-streets .fc-job-sheet { overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #6d777a transparent; }
 .fc-app.fc-reference .fc-address-row { display: block; }
 .fc-app.fc-reference.fc-has-job .leaflet-control-scale { display: none; }
 .fc-app.fc-reference .fc-sheet-handle { position: sticky; top: 0; z-index: 2; display: grid; place-items: center; width: 100%; height: 24px; border: 0; background: #06111f; }
