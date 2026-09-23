@@ -1827,4 +1827,12 @@
 .fc-app.fc-reference.fc-clean-streets .fc-quick-action.is-navigate svg { background: #397c56; border-color: #74b68d; color: white; }
 .fc-app.fc-reference.fc-clean-streets .fc-job-details-toggle { color: #a5e1ba; }
 .fc-app.fc-reference.fc-clean-streets .fc-age-tag:is([data-priority="31-60"],[data-priority="61-90"],[data-priority="91-150"],[data-priority="150+"]) { background: #efbe58; color: #302409; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-status { background: #ffffff0e; border: 1px solid #8bb79c50; color: #c5e1cf; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-tags { gap: 8px; margin: 10px 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-tag { font-size: 11px; padding: 4px 8px; border-radius: 4px; }
+.fc-app.fc-reference.fc-clean-streets .fc-reference-job-summary dt { font-size: 11px; color: #aec9b9; }
+.fc-app.fc-reference.fc-clean-streets .fc-reference-job-summary dd { font-size: 13px; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action.is-navigate svg { background: #b1dbbc; color: #173326; border-color: #c8ebd1; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet.fc-job-sheet-flow { border-top: 3px solid #8cbd9e; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-details-toggle { border-top: 1px solid #ffffff18; margin-top: 4px; }
 .fc-app.fc-reference.fc-has-job.fc-sheet-expanded .fc-job-sheet.fc-job-sheet-flow { height: calc(100% - 16px); max-height: calc(100% - 16px); }

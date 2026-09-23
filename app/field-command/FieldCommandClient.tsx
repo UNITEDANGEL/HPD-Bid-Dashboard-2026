@@ -211,7 +211,7 @@ function ageMarkerHtml(days: number | null, pending: boolean) {
   const label = !pending ? "Done" : days === null ? "?" : days === 0 ? "Due" : days < 0 ? `+${-days}` : String(days);
   const overdue = days !== null && days > 30;
   const fill = !pending || days === null ? "#64717d" : overdue ? "#c73843" : "#007aff";
-  return `<div class="fc-work-pin" style="--pin-color:${fill}"><svg viewBox="0 0 24 24" aria-hidden="true">${HARDHAT_ICON_PATH}</svg><span>${label}${days !== null && days > 0 && pending ? "d" : ""}</span></div>`;
+  return `<div class="fc-work-pin" style="--pin-color:${fill}"><svg viewBox="0 0 24 24" aria-hidden="true">${HARDHAT_ICON_PATH.replaceAll("#fff", "#ffda70")}</svg><span>${label}${days !== null && days > 0 && pending ? "d" : ""}</span></div>`;
 }
 
 function jobAwardAmount(job: JobRecord) {
@@ -633,6 +633,7 @@ export default function FieldCommandClient() {
             const gl = vector.getMaplibreMap();
             gl.once("style.load", () => {
               for (const layer of gl.getStyle().layers) {
+                if (layer.type === "symbol" && layer["source-layer"] === "poi") gl.setLayoutProperty(layer.id, "visibility", "none");
                 if (layer.type === "background") gl.setPaintProperty(layer.id, "background-color", "#cbd9cc");
                 if (layer.type === "fill") {
                   const colors: Record<string, string> = {
@@ -1328,10 +1329,7 @@ export default function FieldCommandClient() {
                 <a className="fc-route-btn fc-route-google" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">Google</a>
               </div>
               <div className="fc-job-sheet-tags">
-                <span className="fc-job-sheet-tag" style={{ background: boroughColor(jobBorough(selectedJob)) }}>
-                  {jobBorough(selectedJob)}
-                </span>
-                <span className="fc-job-sheet-tag" style={{ background: jobStatusMeta(selectedJob).color }}>
+                <span className="fc-job-sheet-tag fc-job-status">
                   {stamps.status || jobStatusMeta(selectedJob).label}
                 </span>
                 <span className="fc-job-sheet-tag fc-age-tag" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>
