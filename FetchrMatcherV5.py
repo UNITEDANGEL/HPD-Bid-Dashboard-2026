@@ -731,7 +731,7 @@ def gmail_fetch_coa_messages(service, days: int) -> List[Dict]:
             service.users()
             .messages()
             .list(userId="me", q=query, maxResults=100, pageToken=token)
-            .execute()
+            .execute(num_retries=3)
         )
         msgs.extend(resp.get("messages", []))
         token = resp.get("nextPageToken")
@@ -745,7 +745,7 @@ def gmail_fetch_coa_messages(service, days: int) -> List[Dict]:
                 service.users()
                 .messages()
                 .get(userId="me", id=m["id"], format="full")
-                .execute()
+                .execute(num_retries=3)
             )
             full_msgs.append(full)
             if DEBUG:
@@ -783,7 +783,7 @@ def download_coa_attachments(service, msg: Dict) -> List[str]:
                 .messages()
                 .attachments()
                 .get(userId="me", messageId=msg_id, id=att_id)
-                .execute()
+                .execute(num_retries=3)
             )
         except HttpError as e:
             print(f"COA attachment download error: {e}")
@@ -873,7 +873,7 @@ def download_itb_attachments(service, msg: Dict) -> List[Tuple[str, str]]:
                 .messages()
                 .attachments()
                 .get(userId="me", messageId=msg_id, id=att_id)
-                .execute()
+                .execute(num_retries=3)
             )
         except HttpError as e:
             print(f"ITB attachment download error: {e}")
@@ -952,7 +952,7 @@ def build_itb_lookup_from_gmail_for_omos(
                     service.users()
                     .messages()
                     .list(userId="me", q=query, maxResults=10)
-                    .execute()
+                    .execute(num_retries=3)
                 )
             except HttpError as e:
                 print(f"ITB search error for {omo}: {e}")
@@ -979,7 +979,7 @@ def build_itb_lookup_from_gmail_for_omos(
                     service.users()
                     .messages()
                     .get(userId="me", id=m["id"], format="full")
-                    .execute()
+                    .execute(num_retries=3)
                 )
             except HttpError as e:
                 print(f"ITB read error for {omo}: {e}")
