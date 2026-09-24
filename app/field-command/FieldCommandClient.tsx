@@ -461,6 +461,21 @@ export default function FieldCommandClient() {
   const [status, setStatus] = useState("pending");
   const requestedJobLoaded = useRef(false);
   const [daysBack, setDaysBack] = useState<number | null>(null);
+  const [dateFilterLoaded, setDateFilterLoaded] = useState(false);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("hpd-map-award-days");
+      if (saved !== null && /^\d+$/.test(saved) && Number(saved) <= 3650) setDaysBack(Number(saved));
+    } catch { /* Map filtering remains available without device storage. */ }
+    setDateFilterLoaded(true);
+  }, []);
+  useEffect(() => {
+    if (!dateFilterLoaded) return;
+    try {
+      if (daysBack === null) localStorage.removeItem("hpd-map-award-days");
+      else localStorage.setItem("hpd-map-award-days", String(daysBack));
+    } catch { /* Keep the current filter when storage is unavailable. */ }
+  }, [daysBack, dateFilterLoaded]);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
   const [darkTiles, setDarkTiles] = useState(false);
@@ -1216,14 +1231,19 @@ export default function FieldCommandClient() {
       </div>
 
         <div className="fc-award-filter">
+          <div className="fc-date-presets" role="group" aria-label="Award date ranges">
+            {[null, 30, 90, 180, 365].map((days) => <button key={days ?? "all"} type="button" aria-pressed={daysBack === days} onClick={() => setDaysBack(days)}>{days === null ? "All dates" : `${days}d`}</button>)}
+          </div>
+          <div className="fc-date-custom">
           <label htmlFor="award-lookback">Awarded within</label>
           <input id="award-lookback" type="number" inputMode="numeric" min="0" max="3650" step="1" placeholder="All" value={daysBack ?? ""} onChange={(event) => {
             const raw = event.target.value;
             if (!raw) setDaysBack(null);
             else if (event.target.validity.valid) setDaysBack(Number(raw));
           }} />
-          <span>days · {filteredJobs.length} jobs</span>
-          <button type="button" onClick={() => setDaysBack(null)} aria-pressed={daysBack === null}>All dates</button>
+          <span>days</span>
+          <output aria-live="polite">{filteredJobs.length ? `${filteredJobs.length} jobs` : "No matches"}</output>
+          </div>
         </div>
         <div className="fc-pill-row fc-status-pill-row" role="group" aria-label="Status filter">
           {STATUS_FILTERS.map(({ key, label }) => (
@@ -1242,6 +1262,7 @@ export default function FieldCommandClient() {
       </section>
 
       <div className="fc-map-wrap">
+        {daysBack !== null && !(controlsOpen && chromeOpen) ? <button className="fc-active-date" type="button" onClick={() => { setChromeOpen(true); setControlsOpen(true); }}>Awarded: {daysBack} days</button> : null}
         <div ref={mapNode} className={`fc-map-node ${darkTiles ? "is-dark" : ""}`} />
         <div className="fc-map-controls">
           <button
