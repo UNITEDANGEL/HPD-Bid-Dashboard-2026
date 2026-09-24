@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-08-30T01:12:10.213Z",
-  "totalJobs": 632,
+  "generatedAt": "2026-09-24T19:47:46.518Z",
+  "totalJobs": 672,
   "missingAddresses": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 16,
+  "missingItbPage3Descriptions": 56,
   "badDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 27,
+  "missingPage3Images": 67,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
@@ -140,6 +140,78 @@
         "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
         "Status": "MATCHED",
         "Preview": ": REPAIR DOOR AT APT#7A ENTRANCE DOOR 7TH NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT APT#7A ENTRANCE DOOR 7TH STOR"
+      },
+      {
+        "OMO": "ER05941",
+        "Address": "777 ST MARKS AVENUE, 11213",
+        "ITB": "ER05941_091826113559.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS Provide/Install Abate Remove Dele"
+      },
+      {
+        "OMO": "ER05581",
+        "Address": "981 COLUMBUS AVENUE, 10025",
+        "ITB": "ER05581_091726010711.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT APT 2G. REPLACE SPRING BALANCE. NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT APT 2G. REPLACE 2NOS FIRE ESCAPE "
+      },
+      {
+        "OMO": "EQ22032",
+        "Address": "37 ORCHARD STREET, 10002",
+        "ITB": "EQ22032_091626025932.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": LOCATION AT APARMTENT 15 -NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK- LOCATION : AT APARMTENT 15 MAKE ALL NECESSARY R"
+      },
+      {
+        "OMO": "ER05733",
+        "Address": "25 SHERMAN AVENUE, 10040",
+        "ITB": "ER05733_091626015743.pdf",
+        "Source": "",
+        "Status": "MATCHED",
+        "Preview": "General Decision Number: NY200003 04/10/2020Superse ded General Decision Number: NY190003 State: New York Page 3 of 3 OMO No: ER05733 Issuer"
+      },
+      {
+        "OMO": "ER05727",
+        "Address": "228 AUDUBON AVENUE, 10033",
+        "ITB": "ER05727_091626014757.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": REPAIR BUILDING ENTRANCE DOOR LOCK NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR INSTALL NEW"
+      },
+      {
+        "OMO": "ER05729",
+        "Address": "500 FT WASHINGTON AVENUE, 10033",
+        "ITB": "ER05729_091626014921.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": AT SECTION \"B\" REPAIR BUILDING ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT SECTION \"B\" BULDING ENTR"
+      },
+      {
+        "OMO": "ER03614",
+        "Address": "357 49 STREET, 11220",
+        "ITB": "ER03614_091626013926.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR, PUBLIC HALL 1ST STORY. REPAIR DOOR TO ADHERE "
+      },
+      {
+        "OMO": "EQ28161",
+        "Address": "1911 ALBEMARLE ROAD, 11226",
+        "ITB": "EQ28161_090926102840.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": DOOR ( BLDG 2ND FL COMPACTOR CLOSET ) INSTALL PASSA GE LOCK -NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK- LOCATION : B"
+      },
+      {
+        "OMO": "ER03173",
+        "Address": "519 TOMPKINS AVENUE, 10305",
+        "ITB": "ER03173_091426101737.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": ": NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ MAKR THE BLDGE ENTRANCE DOOR SELF CLOSING AND LATCH ING. PROPERLY INSTA"
       }
     ],
     "badDescriptions": [],
