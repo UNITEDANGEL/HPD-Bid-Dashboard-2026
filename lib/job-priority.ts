@@ -34,6 +34,16 @@ export function matchesMapStatus(job: Job, scope: string) {
   return scope === "all" || (scope === "pending" ? isPendingJob(job) : !isPendingJob(job));
 }
 
+export function matchesAwardLookback(job: Job, days: number | null, now = new Date()): boolean {
+  if (days === null) return true;
+  if (!Number.isInteger(days) || days < 0) return false;
+  const award = calendarDay(String(job.AwardDate || job.awardDate || ""));
+  const today = calendarDay(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York" }).format(now));
+  if (award === null || today === null) return false;
+  const age = today - award;
+  return age >= 0 && age <= days;
+}
+
 export function jobPriority(job: Job, now = new Date()) {
   const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
   const part = (name: string) => parts.find((p) => p.type === name)?.value || "";

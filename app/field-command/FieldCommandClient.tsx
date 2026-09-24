@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import FieldTabBar from "../../components/FieldTabBar";
-import { jobPriority, maturityDate, isPendingJob, matchesMapStatus } from "../../lib/job-priority";
+import { jobPriority, maturityDate, isPendingJob, matchesMapStatus, matchesAwardLookback } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, suggestedPhotoKind } from "../../lib/field-next-action";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
@@ -190,24 +190,6 @@ function jobStatusMeta(job: JobRecord) {
 
 function statusMarkerHtml(color: string, iconKey: StatusKey) {
   return `<div style="width:28px;height:28px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.45);display:grid;place-items:center;"><svg width="15" height="15" viewBox="0 0 24 24">${STATUS_ICON_PATHS[iconKey]}</svg></div>`;
-}
-
-function parseUsDate(raw: string) {
-  const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-  if (!m) return null;
-  const [, mo, da, yr] = m;
-  const year = yr.length === 2 ? 2000 + Number(yr) : Number(yr);
-  const date = new Date(year, Number(mo) - 1, Number(da));
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function jobAgeDays(job: JobRecord) {
-  const raw = value(job, ["AwardDate", "awardDate", "WorkStartDate", "workStartDate"]);
-  if (!raw) return null;
-  const date = parseUsDate(raw);
-  if (!date) return null;
-  const diffMs = Date.now() - date.getTime();
-  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
 }
 
 function ageMarkerHtml(days: number | null, pending: boolean) {
@@ -578,10 +560,7 @@ export default function FieldCommandClient() {
     const q = search.trim().toLowerCase();
     return jobs.filter((job) => {
       if (!matchesMapStatus(job, status)) return false;
-      if (daysBack !== null) {
-        const age = jobAgeDays(job);
-        if (age === null || age > daysBack) return false;
-      }
+      if (!matchesAwardLookback(job, daysBack)) return false;
       if (borough !== "ALL" && jobBorough(job) !== borough) return false;
       if (q) {
         const haystack = [jobId(job), jobAddress(job), jobBorough(job), jobStatus(job)].join(" ").toLowerCase();
@@ -1215,28 +1194,6 @@ export default function FieldCommandClient() {
             <span className="fc-live-dot">Loaded</span>
             <span className="fc-active-count">{activeJobs.length} Active Jobs</span>
           </div>
-          <label className="fc-days-control">
-            <span>Days</span>
-            <select
-              value={daysBack ?? ""}
-              aria-label="Show jobs from last number of days"
-              onChange={(event) => {
-                const raw = event.target.value;
-                setDaysBack(raw ? Number(raw) : null);
-              }}
-            >
-              <option value="">Any</option>
-              <option value="1">1</option>
-              <option value="3">3</option>
-              <option value="7">7</option>
-              <option value="14">14</option>
-              <option value="30">30</option>
-              <option value="60">60</option>
-              <option value="90">90</option>
-              <option value="180">180</option>
-              <option value="365">365</option>
-            </select>
-          </label>
         </div>
       </header>
 
@@ -1258,6 +1215,16 @@ export default function FieldCommandClient() {
         ))}
       </div>
 
+        <div className="fc-award-filter">
+          <label htmlFor="award-lookback">Awarded within</label>
+          <input id="award-lookback" type="number" inputMode="numeric" min="0" max="3650" step="1" placeholder="All" value={daysBack ?? ""} onChange={(event) => {
+            const raw = event.target.value;
+            if (!raw) setDaysBack(null);
+            else if (event.target.validity.valid) setDaysBack(Number(raw));
+          }} />
+          <span>days · {filteredJobs.length} jobs</span>
+          <button type="button" onClick={() => setDaysBack(null)} aria-pressed={daysBack === null}>All dates</button>
+        </div>
         <div className="fc-pill-row fc-status-pill-row" role="group" aria-label="Status filter">
           {STATUS_FILTERS.map(({ key, label }) => (
             <button
