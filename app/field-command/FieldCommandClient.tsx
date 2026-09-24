@@ -461,11 +461,15 @@ export default function FieldCommandClient() {
   const [status, setStatus] = useState("pending");
   const requestedJobLoaded = useRef(false);
   const [daysBack, setDaysBack] = useState<number | null>(null);
+  const [customDateRange, setCustomDateRange] = useState(false);
   const [dateFilterLoaded, setDateFilterLoaded] = useState(false);
   useEffect(() => {
     try {
       const saved = localStorage.getItem("hpd-map-award-days");
-      if (saved !== null && /^\d+$/.test(saved) && Number(saved) <= 3650) setDaysBack(Number(saved));
+      if (saved !== null && /^\d+$/.test(saved) && Number(saved) <= 3650) {
+        setDaysBack(Number(saved));
+        setCustomDateRange(![30,90,180,365].includes(Number(saved)));
+      }
     } catch { /* Map filtering remains available without device storage. */ }
     setDateFilterLoaded(true);
   }, []);
@@ -1231,17 +1235,22 @@ export default function FieldCommandClient() {
       </div>
 
         <div className="fc-award-filter">
-          <div className="fc-date-presets" role="group" aria-label="Award date ranges">
-            {[null, 30, 90, 180, 365].map((days) => <button key={days ?? "all"} type="button" aria-pressed={daysBack === days} onClick={() => setDaysBack(days)}>{days === null ? "All dates" : `${days}d`}</button>)}
-          </div>
           <div className="fc-date-custom">
-          <label htmlFor="award-lookback">Awarded within</label>
-          <input id="award-lookback" type="number" inputMode="numeric" min="0" max="3650" step="1" placeholder="All" value={daysBack ?? ""} onChange={(event) => {
+          <label htmlFor="award-range">Awarded</label>
+          <select id="award-range" aria-label="Award date range" value={customDateRange || (daysBack !== null && ![30,90,180,365].includes(daysBack)) ? "custom" : daysBack ?? "all"} onChange={(event) => {
+            const selected = event.target.value;
+            setCustomDateRange(selected === "custom");
+            if (selected !== "custom") setDaysBack(selected === "all" ? null : Number(selected));
+          }}>
+            <option value="all">All dates</option>
+            {[30,90,180,365].map((days) => <option key={days} value={days}>Last {days} days</option>)}
+            <option value="custom">Custom</option>
+          </select>
+          {customDateRange || (daysBack !== null && ![30,90,180,365].includes(daysBack)) ? <input id="award-lookback" aria-label="Custom days back" title="Days back" type="number" inputMode="numeric" min="0" max="3650" step="1" placeholder="Days" value={daysBack ?? ""} onChange={(event) => {
             const raw = event.target.value;
             if (!raw) setDaysBack(null);
             else if (event.target.validity.valid) setDaysBack(Number(raw));
-          }} />
-          <span>days</span>
+          }} /> : null}
           <output aria-live="polite">{filteredJobs.length ? `${filteredJobs.length} jobs` : "No matches"}</output>
           </div>
         </div>
