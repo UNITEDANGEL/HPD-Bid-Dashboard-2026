@@ -46,6 +46,7 @@ from tqdm import tqdm
 from PyPDF2 import PdfReader
 
 from googleapiclient.discovery import build
+from scripts.gmail_transport import GmailRequest
 from googleapiclient.errors import HttpError
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -250,7 +251,7 @@ def get_gmail_service():
             creds = run_local_oauth("Saved Gmail token expired or was revoked")
 
     try:
-        service = build("gmail", "v1", credentials=creds, cache_discovery=False)
+        service = build("gmail", "v1", credentials=creds, cache_discovery=False, requestBuilder=GmailRequest)
     except HttpError as e:
         print(f"GMAIL BUILD ERROR: {e}")
         raise SystemExit(1)

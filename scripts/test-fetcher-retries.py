@@ -1,5 +1,8 @@
 """Verify Gmail calls opt into bounded retries and transient timeouts recover."""
 import ast
+from http.client import IncompleteRead
+from unittest.mock import patch
+from gmail_transport import GmailRequest
 from pathlib import Path
 from googleapiclient.http import HttpRequest
 from httplib2 import Response
@@ -36,3 +39,14 @@ try:
 except TimeoutError:
     assert failed.calls == 4
 print('PASS: six Gmail calls retry; transient timeout recovers; persistent timeout stops after four attempts')
+
+req = GmailRequest(Transport(0), lambda response, content: content, 'https://example.invalid/test')
+with patch.object(HttpRequest, 'execute', side_effect=[IncompleteRead(b'partial'), b'complete']), patch('gmail_transport.time.sleep'):
+    assert req.execute(num_retries=3) == b'complete'
+with patch.object(HttpRequest, 'execute', side_effect=IncompleteRead(b'partial')) as execute, patch('gmail_transport.time.sleep'):
+    try:
+        req.execute(num_retries=3)
+        raise AssertionError('Partial downloads must not succeed')
+    except IncompleteRead:
+        assert execute.call_count == 4
+print('PASS: truncated attachments retry; persistent truncation fails without returning partial data')
