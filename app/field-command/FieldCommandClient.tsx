@@ -418,6 +418,7 @@ function boroughLabelHtml(label: string, dark: boolean) {
 export default function FieldCommandClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
   const jobSheetRef = useRef<HTMLDivElement | null>(null);
+  const sheetTouchStart = useRef<number | null>(null);
   const outcomePanelRef = useRef<HTMLElement | null>(null);
   const [outcomeDrafts, setOutcomeDrafts] = useState<Record<string, { outcome: string; note: string }>>({});
   const [outcomeMessage, setOutcomeMessage] = useState("");
@@ -1314,7 +1315,14 @@ export default function FieldCommandClient() {
           const draft = outcomeDrafts[id] || { outcome: "", note: "" };
           return (
             <div ref={jobSheetRef} className="fc-job-sheet fc-job-sheet-flow" aria-label="Selected job">
-              <button type="button" className="fc-sheet-handle" aria-label={sheetExpanded ? "Collapse job details" : "Expand job details"} aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}><span /></button>
+              <button type="button" className="fc-sheet-handle" aria-label={sheetExpanded ? "Collapse job details" : "Expand job details"} aria-expanded={sheetExpanded} onTouchStart={(event) => { sheetTouchStart.current = event.touches[0].clientY; }} onTouchEnd={(event) => {
+                const start = sheetTouchStart.current;
+                sheetTouchStart.current = null;
+                if (start !== null && Math.abs(event.changedTouches[0].clientY - start) > 30) {
+                  event.preventDefault();
+                  setSheetExpanded(event.changedTouches[0].clientY < start);
+                }
+              }} onTouchCancel={() => { sheetTouchStart.current = null; }} onClick={() => setSheetExpanded((expanded) => !expanded)}><span /></button>
               <button type="button" className="fc-job-sheet-close" aria-label="Close" title="Close job details" onClick={() => setSelectedJob(null)}>
                 <span aria-hidden="true">&times;</span>
               </button>
@@ -1341,13 +1349,14 @@ export default function FieldCommandClient() {
                 </dl>
                 {selectedPhoto ? <img src={selectedPhoto} alt={`Saved job photo for ${id}`} /> : null}
               </div>
+              <div className="fc-card-maturity"><span>Maturity</span><strong>{maturityDate(selectedJob) || "Not available"}</strong></div>
               <div className="fc-quick-actions">
-                <a className="fc-quick-action is-navigate" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">
+                <a className="fc-quick-action is-navigate" title="Navigate to job" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">
                   <NavigateIcon />
                   <span>Navigate</span>
                 </a>
                 {tenant.phone ? (
-                  <a className="fc-quick-action is-call" href={`tel:${tenant.phone}`}>
+                  <a className="fc-quick-action is-call" title="Call tenant" href={`tel:${tenant.phone}`}>
                     <CallIcon />
                     <span>Call</span>
                   </a>
