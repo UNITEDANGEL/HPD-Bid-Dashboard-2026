@@ -2,10 +2,18 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const file = ts.createSourceFile('map.tsx', fs.readFileSync('app/field-command/FieldCommandClient.tsx', 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-const names = new Set(['groupByLocation', 'ageMarkerHtml']);
+const names = new Set(['groupByLocation', 'ageMarkerHtml', 'individualPinOffset']);
 const functions = file.statements.filter(s => ts.isFunctionDeclaration(s) && names.has(s.name?.text)).map(s => s.getText(file)).join('\n');
 const code = ts.transpileModule(functions, {compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
-const {groupByLocation, ageMarkerHtml} = new Function('HARDHAT_ICON_PATH','STATUS_ICON_PATHS', code + '\nreturn {groupByLocation, ageMarkerHtml};')('hat', {pending:'clock',refused:'cross',complete:'check'});
+const {groupByLocation, ageMarkerHtml, individualPinOffset} = new Function('HARDHAT_ICON_PATH','STATUS_ICON_PATHS', code + '\nreturn {groupByLocation, ageMarkerHtml, individualPinOffset};')('hat', {pending:'clock',refused:'cross',complete:'check'});
+assert.deepEqual(individualPinOffset(0,1), {x:0,y:0});
+for (const count of [2,3,4,10,30]) {
+  const offsets = Array.from({length:count}, (_,i)=>individualPinOffset(i,count));
+  assert.equal(new Set(offsets.map(p=>`${p.x}|${p.y}`)).size,count);
+  for (let i=0;i<count;i++) for(let j=i+1;j<count;j++) {
+    assert.ok(Math.abs(offsets[i].x-offsets[j].x)>=54 || Math.abs(offsets[i].y-offsets[j].y)>=40);
+  }
+}
 const a = {job:{OMO:'A'}, lat:40.7, lng:-73.9};
 const b = {job:{OMO:'B'}, lat:40.700001, lng:-73.9};
 const c = {...a, job:{OMO:'C'}};

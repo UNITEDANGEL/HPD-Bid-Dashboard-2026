@@ -387,6 +387,12 @@ function DocumentsIcon() {
 const LIGHT_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
 const DARK_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
 
+function individualPinOffset(index: number, count: number) {
+  const columns = Math.min(3, count);
+  const rows = Math.ceil(count / columns);
+  return { x: ((index % columns) - (columns - 1) / 2) * 54, y: (Math.floor(index / columns) - (rows - 1) / 2) * 40 };
+}
+
 function groupByLocation(
   points: { job: JobRecord; lng: number; lat: number }[],
 ) {
@@ -455,8 +461,6 @@ export default function FieldCommandClient() {
   }, [daysBack, dateFilterLoaded]);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
-  const [pinJobs, setPinJobs] = useState<JobRecord[]>([]);
-  useEffect(() => setPinJobs([]), [daysBack, borough, status, search, jobs]);
   const [darkTiles, setDarkTiles] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [chromeOpen, setChromeOpen] = useState(false);
@@ -714,39 +718,24 @@ export default function FieldCommandClient() {
         renderMarkersRef.current = () => {
           if (!layerGroupRef.current) return;
           layerGroupRef.current.clearLayers();
-          const clusters = groupByLocation(pointsRef.current);
-
-          clusters.forEach((cluster) => {
-            let html: string;
-            let onClick: () => void;
-            let title: string;
-
-            if (cluster.jobs.length === 1) {
-              const job = cluster.jobs[0];
+          groupByLocation(pointsRef.current).forEach((location) => {
+            location.jobs.forEach((job, index) => {
               const meta = jobStatusMeta(job);
               const priority = jobPriority(job);
-              const days = priority.days;
-              html = ageMarkerHtml(days, priority.pending, map.getZoom(), false, meta.color, meta.key);
-              title = `${jobId(job)} - ${meta.label} - ${priority.label}`;
-              onClick = () => { setPinJobs([]); setSelectedJob(job); };
-            } else {
-              const ages = cluster.jobs.filter(isPendingJob).map((job) => jobPriority(job).days).filter((d): d is number => d !== null);
-              const oldestDays = ages.length ? Math.max(...ages) : null;
-              const representative = cluster.jobs.find(isPendingJob) || cluster.jobs[0];
-              const meta = jobStatusMeta(representative);
-              html = ageMarkerHtml(oldestDays, cluster.jobs.some(isPendingJob), map.getZoom(), true, meta.color, meta.key);
-              title = `${cluster.jobs.length} jobs${oldestDays !== null && oldestDays > 0 ? ` - most overdue ${oldestDays} days` : ""}`;
-              onClick = () => {
-                setSelectedJob(null);
-                setPinJobs(cluster.jobs);
-              };
-            }
-
-            const icon = L.divIcon({ className: "", html, iconSize: [44, 32], iconAnchor: [22, 16] });
-            const marker = L.marker([cluster.lat, cluster.lng], { icon, title });
-            marker.on("click", onClick);
-            marker.addTo(layerGroupRef.current);
-            marker.getElement()?.setAttribute("aria-label", title);
+              const html = ageMarkerHtml(priority.days, priority.pending, map.getZoom(), false, meta.color, meta.key);
+              const title = `${jobId(job)} - ${meta.label} - ${priority.label}`;
+              const offset = individualPinOffset(index, location.jobs.length);
+              const origin = map.latLngToLayerPoint([location.lat, location.lng]);
+              const position = map.layerPointToLatLng(L.point(origin.x + offset.x, origin.y + offset.y));
+              if (location.jobs.length > 1) {
+                L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
+              }
+              const icon = L.divIcon({ className: "", html, iconSize: [44, 32], iconAnchor: [22, 16] });
+              const marker = L.marker(position, { icon, title });
+              marker.on("click", () => setSelectedJob(job));
+              marker.addTo(layerGroupRef.current);
+              marker.getElement()?.setAttribute("aria-label", title);
+            });
           });
         };
 
@@ -1157,7 +1146,7 @@ export default function FieldCommandClient() {
 
   return (
     <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
-      <button type="button" className="fc-reveal-controls" aria-label={chromeOpen ? "Hide all map controls" : "Show map controls"} title={chromeOpen ? "Hide controls" : "Map menu"} aria-expanded={chromeOpen} onClick={() => { setChromeOpen((open) => !open); setControlsOpen(false); setSelectedJob(null); setPinJobs([]); }}><MenuIcon /></button>
+      <button type="button" className="fc-reveal-controls" aria-label={chromeOpen ? "Hide all map controls" : "Show map controls"} title={chromeOpen ? "Hide controls" : "Map menu"} aria-expanded={chromeOpen} onClick={() => { setChromeOpen((open) => !open); setControlsOpen(false); setSelectedJob(null); }}><MenuIcon /></button>
       <div className="fc-search-row">
         <div className="fc-search-field">
           <SearchIcon />
@@ -1250,10 +1239,6 @@ export default function FieldCommandClient() {
       </section>
 
       <div className="fc-map-wrap">
-        {pinJobs.length > 0 ? <section className="fc-pin-jobs" aria-label="Jobs at this pin">
-          <header><strong>{pinJobs.length} jobs at this pin</strong><button type="button" aria-label="Close pin jobs" onClick={() => setPinJobs([])}>×</button></header>
-          <div>{pinJobs.map((job) => <button type="button" key={jobId(job)} onClick={() => { setSelectedJob(job); setPinJobs([]); }}><strong>{jobId(job)} · {jobAddress(job)}</strong><span>{jobStatusMeta(job).label} · {jobPriority(job).label}</span></button>)}</div>
-        </section> : null}
         {daysBack !== null && !(controlsOpen && chromeOpen) ? <button className="fc-active-date" type="button" onClick={() => { setChromeOpen(true); setControlsOpen(true); }}>Awarded: {daysBack} days</button> : null}
         <div ref={mapNode} className={`fc-map-node ${darkTiles ? "is-dark" : ""}`} />
         <div className="fc-map-controls">
