@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import FieldTabBar from "../../components/FieldTabBar";
-import { jobPriority, maturityDate, isPendingJob, matchesMapStatus, matchesAwardLookback } from "../../lib/job-priority";
+import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
+import { JOB_QUEUES, jobQueue, matchesJobQueue } from "../../lib/job-queue";
 import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, suggestedPhotoKind } from "../../lib/field-next-action";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
@@ -26,11 +27,7 @@ const BOROUGHS: { key: BoroughKey; label: string; center: [number, number]; colo
   { key: "SI", label: "Staten Is.", center: [40.5795, -74.1502], color: "#ff453a" },
 ];
 
-const STATUS_FILTERS = [
-  { key: "pending", label: "Pending" },
-  { key: "closed", label: "Handled" },
-  { key: "all", label: "All jobs" },
-];
+const STATUS_FILTERS = JOB_QUEUES;
 
 function value(job: JobRecord, keys: string[]) {
   for (const key of keys) {
@@ -542,7 +539,7 @@ export default function FieldCommandClient() {
   }, [outcomeDrafts, workflowLoaded]);
 
   const activeJobs = useMemo(
-    () => jobs.filter(isPendingJob),
+    () => jobs.filter((job) => matchesJobQueue(job, "pending")),
     [jobs]
   );
 
@@ -557,7 +554,7 @@ export default function FieldCommandClient() {
   const filteredJobs = useMemo(() => {
     const q = search.trim().toLowerCase();
     return jobs.filter((job) => {
-      if (!matchesMapStatus(job, status)) return false;
+      if (!matchesJobQueue(job, status)) return false;
       if (!matchesAwardLookback(job, daysBack)) return false;
       if (borough !== "ALL" && jobBorough(job) !== borough) return false;
       if (q) {
@@ -593,9 +590,9 @@ export default function FieldCommandClient() {
   }, [jobs]);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { closed: 0, pending: 0 };
+    const counts: Record<string, number> = { pending: 0, followup: 0, completed: 0, archived: 0 };
     jobs.forEach((job) => {
-      const g = isPendingJob(job) ? "pending" : "closed";
+      const g = jobQueue(job);
       if (g in counts) counts[g] += 1;
     });
     return counts;
@@ -889,7 +886,7 @@ export default function FieldCommandClient() {
     const center = userMarkerRef.current?.getLatLng?.() || mapRef.current.getCenter();
     const origin = { lat: Number(center.lat), lng: Number(center.lng) };
     const stops = pointsRef.current
-      .filter(({ job }) => isPendingJob(job))
+      .filter(({ job }) => matchesJobQueue(job, "pending"))
       .map((point) => ({ ...point, miles: distanceMiles(origin, { lat: point.lat, lng: point.lng }) }))
       .sort((a, b) => Math.max(0, jobPriority(b.job).days || 0) - Math.max(0, jobPriority(a.job).days || 0) || a.miles - b.miles)
       .slice(0, 6);

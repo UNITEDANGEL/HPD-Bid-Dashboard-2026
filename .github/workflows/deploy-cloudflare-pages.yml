@@ -54,6 +54,11 @@ jobs:
       - name: Test saved status import
         run: npm run test:saved-statuses
 
+      - name: Test job queues and individual map pins
+        run: |
+          node scripts/test-job-queues.cjs
+          node scripts/test-map-pins.cjs
+
       - name: Build Cloudflare Pages output
         run: npm run build:cloudflare
 

@@ -314,8 +314,11 @@
 }
 
 .fc-pill-row.fc-status-pill-row {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(72px, 1fr));
+  overflow-x: auto;
 }
+
+.fc-status-pill-row > .fc-pill { flex: 0 0 auto; min-width: 72px; }
 
 .fc-pill {
   min-width: 0;

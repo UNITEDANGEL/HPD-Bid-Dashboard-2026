@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { JOB_QUEUES, jobQueue, matchesJobQueue, savedJobStatus } from "../lib/job-queue";
+import { readLocalWorkflowOverrides } from "../lib/paperwork";
+import { fieldStatusLabel } from "../lib/field-status";
 import FieldTabBar from "./FieldTabBar";
 import "../app/field-command/field-command.css";
 import type { JobRecord } from "../lib/types";
@@ -16,12 +19,7 @@ const BOROUGHS: { key: BoroughKey; label: string }[] = [
   { key: "SI", label: "Staten Is." },
 ];
 
-const STATUS_FILTERS = [
-  { key: "all", label: "Status" },
-  { key: "open", label: "Open" },
-  { key: "awarded", label: "Awarded" },
-  { key: "pending", label: "Pending" },
-];
+const STATUS_FILTERS = JOB_QUEUES;
 
 type StatusKey = "complete" | "noaccess" | "refused" | "pending" | "awarded" | "open";
 
@@ -52,6 +50,8 @@ function jobBorough(job: JobRecord): BoroughKey | "NYC" {
 }
 
 function jobStatusMeta(job: JobRecord) {
+  const specific = fieldStatusLabel(job.status || "");
+  if (specific) return specific;
   const s = (job.status || "").toLowerCase();
   return STATUS_META.find((meta) => meta.match(s, job)) || STATUS_META[STATUS_META.length - 1];
 }
@@ -83,10 +83,24 @@ function matchesSearch(job: JobRecord, query: string) {
   );
 }
 
-export function MobileJobsBoard({ jobs }: { jobs: JobRecord[]; title?: string; subtitle?: string }) {
+export function MobileJobsBoard({ jobs: sourceJobs }: { jobs: JobRecord[]; title?: string; subtitle?: string }) {
+  const [jobs, setJobs] = useState(sourceJobs);
+  useEffect(() => {
+    function refresh() {
+      const overrides = readLocalWorkflowOverrides();
+      setJobs(sourceJobs.map(job => {
+        const raw = { ...job.raw, ...overrides[job.id] };
+        return { ...job, status: savedJobStatus(raw), raw } as JobRecord;
+      }));
+    }
+    refresh();
+    window.addEventListener("focus", refresh);
+    window.addEventListener("storage", refresh);
+    return () => { window.removeEventListener("focus", refresh); window.removeEventListener("storage", refresh); };
+  }, [sourceJobs]);
   const [search, setSearch] = useState("");
   const [borough, setBorough] = useState<BoroughKey | "ALL">("ALL");
-  const [status, setStatus] = useState("all");
+  const [status, setStatus] = useState("pending");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
 
   const boroughCounts = useMemo(() => {
@@ -99,12 +113,9 @@ export function MobileJobsBoard({ jobs }: { jobs: JobRecord[]; title?: string; s
   }, [jobs]);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { open: 0, awarded: 0, pending: 0 };
+    const counts: Record<string, number> = { pending: 0, followup: 0, completed: 0, archived: 0 };
     jobs.forEach((job) => {
-      const s = (job.status || "").toLowerCase();
-      if (s.includes("award") || job.amountValue > 0) counts.awarded += 1;
-      else if (s.includes("pending")) counts.pending += 1;
-      else counts.open += 1;
+      counts[jobQueue({ ...job.raw, status: job.status })] += 1;
     });
     return counts;
   }, [jobs]);
@@ -112,12 +123,7 @@ export function MobileJobsBoard({ jobs }: { jobs: JobRecord[]; title?: string; s
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
       if (borough !== "ALL" && jobBorough(job) !== borough) return false;
-      if (status !== "all") {
-        const s = (job.status || "").toLowerCase();
-        if (status === "awarded" && !(s.includes("award") || job.amountValue > 0)) return false;
-        if (status === "pending" && !s.includes("pending")) return false;
-        if (status === "open" && (s.includes("award") || job.amountValue > 0 || s.includes("pending"))) return false;
-      }
+      if (!matchesJobQueue({ ...job.raw, status: job.status }, status)) return false;
       if (!matchesSearch(job, search)) return false;
       return true;
     });
