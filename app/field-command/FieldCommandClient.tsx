@@ -1329,6 +1329,7 @@ export default function FieldCommandClient() {
               <div className="fc-job-sheet-hero">
                 <strong className="fc-job-sheet-id">{id}</strong>
                 <span className="fc-card-borough">{BOROUGHS.find((item) => item.key === jobBorough(selectedJob))?.label || "NYC"}</span>
+                <span className="fc-card-status"><i aria-hidden="true" style={{ background: jobStatusMeta(selectedJob).color }} />{stamps.status || jobStatusMeta(selectedJob).label}</span>
               </div>
               <div className="fc-address-row">
                 <p>{jobAddress(selectedJob)}</p>
@@ -1336,9 +1337,7 @@ export default function FieldCommandClient() {
                 <a className="fc-route-btn fc-route-google" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">Google</a>
               </div>
               <div className="fc-job-sheet-tags">
-                <span className="fc-job-sheet-tag fc-job-status">
-                  {stamps.status || jobStatusMeta(selectedJob).label}
-                </span>
+                <span className="fc-card-maturity"><span>Maturity</span><strong>{maturityDate(selectedJob) || "Not available"}</strong></span>
                 <span className="fc-job-sheet-tag fc-age-tag" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>
               </div>
               <div className="fc-reference-job-summary">
@@ -1349,7 +1348,6 @@ export default function FieldCommandClient() {
                 </dl>
                 {selectedPhoto ? <img src={selectedPhoto} alt={`Saved job photo for ${id}`} /> : null}
               </div>
-              <div className="fc-card-maturity"><span>Maturity</span><strong>{maturityDate(selectedJob) || "Not available"}</strong></div>
               <div className="fc-quick-actions">
                 <a className="fc-quick-action is-navigate" title="Navigate to job" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">
                   <NavigateIcon />
