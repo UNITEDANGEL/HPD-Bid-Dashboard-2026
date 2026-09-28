@@ -58,6 +58,7 @@ jobs:
         run: |
           node scripts/test-job-queues.cjs
           node scripts/test-map-pins.cjs
+          node scripts/test-field-ticket.cjs
 
       - name: Build Cloudflare Pages output
         run: npm run build:cloudflare

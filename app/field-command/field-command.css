@@ -1946,3 +1946,21 @@
 .fc-app.fc-reference.fc-clean-streets:not(.fc-sheet-expanded) .fc-quick-action.is-navigate { color: #b9f1d9; border-color: #8edbb64d; background: #84e7bf12; }
 .fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-close { font-size: 24px; color: #bac3c8; }
 .fc-app.fc-reference.fc-clean-streets .fc-card-footer :is(.fc-job-details-toggle,.fc-outcome-link) { color: #bac3c8; }
+
+/* Field ticket keeps the next action and real job evidence within thumb reach. */
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet.fc-job-sheet-flow { border-left: 3px solid #84e7bf; padding-left: 12px; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-id { font-size: 18px; line-height: 24px; color: #f3f5f5; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-hero { gap: 3px 7px; }
+.fc-ticket-preview { display: grid; grid-template-columns: minmax(0,1fr) 64px; gap: 12px; align-items: center; margin: 6px 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-ticket-preview .fc-address-row { padding: 0; margin: 0; min-width: 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-ticket-preview .fc-address-row p { font-size: 14px; font-weight: 500; line-height: 1.4; }
+.fc-ticket-photo { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 64px; height: 64px; overflow: hidden; border: 1px solid #ffffff25; border-radius: 6px; background: #ffffff08; color: #c9ded5; text-decoration: none; padding: 0; }
+.fc-ticket-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.fc-ticket-photo svg { width: 23px; height: 23px; }
+.fc-ticket-photo span { font: 500 10px/16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+.fc-ticket-photo:not(.is-empty) span { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; background: #151b18db; color: white; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-tags { margin: 6px 0 8px; }
+.fc-app.fc-reference.fc-clean-streets .fc-age-tag:is([data-priority="31-60"],[data-priority="61-90"],[data-priority="91-150"],[data-priority="150+"]) { color: #ffd28a; background: #d9952220; border: 1px solid #e7ae5140; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action { min-height: 44px; }
+.fc-app.fc-reference.fc-clean-streets .fc-next-action { min-height: 46px; }
+.fc-day-pin::before { content: ''; position: absolute; left: calc(50% - 4px); bottom: -5px; width: 6px; height: 6px; transform: rotate(45deg); background: var(--pin-color); border-right: 2px solid white; border-bottom: 2px solid white; }

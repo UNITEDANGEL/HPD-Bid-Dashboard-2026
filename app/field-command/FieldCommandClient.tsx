@@ -1331,10 +1331,22 @@ export default function FieldCommandClient() {
                 <span className="fc-card-borough">{BOROUGHS.find((item) => item.key === jobBorough(selectedJob))?.label || "NYC"}</span>
                 <span className="fc-card-status"><i aria-hidden="true" style={{ background: jobStatusMeta(selectedJob).color }} />{stamps.status || jobStatusMeta(selectedJob).label}</span>
               </div>
+              <div className="fc-ticket-preview">
               <div className="fc-address-row">
                 <p>{jobAddress(selectedJob)}</p>
                 <a className="fc-route-btn fc-route-waze" href={wazeHref(selectedJob)} target="_blank" rel="noreferrer">Waze</a>
                 <a className="fc-route-btn fc-route-google" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">Google</a>
+              </div>
+              {selectedPhoto ? (
+                <a className="fc-ticket-photo" href={`/jobs/${id}`} title="Open saved job photos">
+                  <img src={selectedPhoto} alt={`Saved job photo for ${id}`} onError={() => setSelectedPhoto(null)} />
+                  <span>Photos</span>
+                </a>
+              ) : (
+                <button type="button" className="fc-ticket-photo is-empty" aria-label={`Add ${suggestedPhotoKind(stamps)} job photo`} onClick={() => requestMediaUpload(suggestedPhotoKind(stamps))}>
+                  <PhotosIcon /><span>Add photo</span>
+                </button>
+              )}
               </div>
               <div className="fc-job-sheet-tags">
                 <span className="fc-card-maturity"><span>Maturity</span><strong>{maturityDate(selectedJob) || "Not available"}</strong></span>
@@ -1346,32 +1358,6 @@ export default function FieldCommandClient() {
                   <div><dt>Maturity date</dt><dd>{maturityDate(selectedJob) || "Not available"}</dd></div>
                   <div><dt>COA amount</dt><dd>{jobAwardAmount(selectedJob) ? jobAwardAmount(selectedJob).toLocaleString("en-US", { style: "currency", currency: "USD" }) : "Not available"}</dd></div>
                 </dl>
-                {selectedPhoto ? <img src={selectedPhoto} alt={`Saved job photo for ${id}`} /> : null}
-              </div>
-              <div className="fc-quick-actions">
-                <a className="fc-quick-action is-navigate" title="Navigate to job" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">
-                  <NavigateIcon />
-                  <span>Navigate</span>
-                </a>
-                {tenant.phone ? (
-                  <a className="fc-quick-action is-call" title="Call tenant" href={`tel:${tenant.phone}`}>
-                    <CallIcon />
-                    <span>Call</span>
-                  </a>
-                ) : (
-                  <span className="fc-quick-action is-call is-disabled" aria-label="Tenant phone unavailable" title="No tenant phone on file">
-                    <CallIcon />
-                    <span>No phone</span>
-                  </span>
-                )}
-                <button type="button" className="fc-quick-action is-photos" aria-label={`Add ${suggestedPhotoKind(stamps)} photos`} onClick={() => requestMediaUpload(suggestedPhotoKind(stamps))}>
-                  <PhotosIcon />
-                  <span>{suggestedPhotoKind(stamps) === "after" ? "After photos" : "Before photos"}</span>
-                </button>
-                <Link className="fc-quick-action is-documents" href={`/jobs/${id}`}>
-                  <DocumentsIcon />
-                  <span>Documents</span>
-                </Link>
               </div>
               <div className="fc-next-step">
                 {mediaChoice ? <div ref={mediaChoiceRef} className="fc-photo-choice" role="group" aria-label={`${mediaChoice} photo source`}>
@@ -1392,6 +1378,26 @@ export default function FieldCommandClient() {
                   }}>{mediaBusy ? "Saving media..." : next.label}<span aria-hidden="true">&rarr;</span></button>
                 )}
                 {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
+              </div>
+              <div className="fc-quick-actions">
+                <a className="fc-quick-action is-navigate" title="Navigate to job" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">
+                  <NavigateIcon /><span>Navigate</span>
+                </a>
+                {tenant.phone ? (
+                  <a className="fc-quick-action is-call" title="Call tenant" href={`tel:${tenant.phone}`}>
+                    <CallIcon /><span>Call</span>
+                  </a>
+                ) : (
+                  <span className="fc-quick-action is-call is-disabled" aria-label="Tenant phone unavailable" title="No tenant phone on file">
+                    <CallIcon /><span>No phone</span>
+                  </span>
+                )}
+                <button type="button" className="fc-quick-action is-photos" aria-label={`Add ${suggestedPhotoKind(stamps)} photos`} onClick={() => requestMediaUpload(suggestedPhotoKind(stamps))}>
+                  <PhotosIcon /><span>{suggestedPhotoKind(stamps) === "after" ? "After photos" : "Before photos"}</span>
+                </button>
+                <Link className="fc-quick-action is-documents" href={`/jobs/${id}`}>
+                  <DocumentsIcon /><span>Documents</span>
+                </Link>
               </div>
               <div className="fc-card-footer">
               <button type="button" className="fc-outcome-link" onClick={openOutcomePanel}>Outcome / note</button>
