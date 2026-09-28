@@ -178,7 +178,7 @@ const STATUS_META: { key: StatusKey; label: string; color: string; match: (s: st
     color: "#0a84ff",
     match: (s, job) => s.includes("award") || jobAwardAmount(job) > 0,
   },
-  { key: "open", label: "Open", color: "#64d2ff", match: () => true },
+  { key: "open", label: "Pending", color: "#0a84ff", match: () => true },
 ];
 
 function jobStatusMeta(job: JobRecord) {
@@ -192,11 +192,10 @@ function statusMarkerHtml(color: string, iconKey: StatusKey) {
   return `<div style="width:28px;height:28px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.45);display:grid;place-items:center;"><svg width="15" height="15" viewBox="0 0 24 24">${STATUS_ICON_PATHS[iconKey]}</svg></div>`;
 }
 
-function ageMarkerHtml(days: number | null, pending: boolean) {
-  const label = !pending ? "Done" : days === null ? "?" : days === 0 ? "Due" : days < 0 ? `+${-days}` : String(days);
-  const overdue = days !== null && days > 30;
-  const fill = !pending || days === null ? "#64717d" : overdue ? "#c73843" : "#007aff";
-  return `<div class="fc-work-pin" style="--pin-color:${fill}"><svg viewBox="0 0 24 24" aria-hidden="true">${HARDHAT_ICON_PATH.replaceAll("#fff", "#ffda70")}</svg><span>${label}${days !== null && days > 0 && pending ? "d" : ""}</span></div>`;
+function ageMarkerHtml(days: number | null, pending: boolean, zoom = 16, multiple = false, color = "#0a84ff", icon: StatusKey = "pending") {
+  const label = !pending ? "" : days === null ? "?" : days === 0 ? "0" : days < 0 ? `+${-days}` : String(days);
+  const symbol = pending && icon === "awarded" ? HARDHAT_ICON_PATH : STATUS_ICON_PATHS[icon];
+  return `<div class="fc-day-pin ${multiple ? "has-more" : ""} ${zoom < 14 || label.length > 3 ? "is-distant" : ""}" style="--pin-color:${color}"><svg viewBox="0 0 24 24" aria-hidden="true">${symbol}</svg>${pending ? `<strong>${label}<small>d</small></strong>` : ""}</div>`;
 }
 
 function jobAwardAmount(job: JobRecord) {
@@ -387,36 +386,18 @@ function DocumentsIcon() {
 
 const LIGHT_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
 const DARK_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
-const CLUSTER_COLOR = "#38bdf8";
 
-function clusterByPixelDistance(
+function groupByLocation(
   points: { job: JobRecord; lng: number; lat: number }[],
-  map: any,
-  radiusPx: number
 ) {
-  const projected = points.map((p) => ({ ...p, screen: map.latLngToContainerPoint([p.lat, p.lng]) }));
-  const clusters: { lng: number; lat: number; jobs: JobRecord[] }[] = [];
-  const used = new Array(projected.length).fill(false);
-
-  for (let i = 0; i < projected.length; i += 1) {
-    if (used[i]) continue;
-    const group = [projected[i]];
-    used[i] = true;
-    for (let j = i + 1; j < projected.length; j += 1) {
-      if (used[j]) continue;
-      const dx = projected[i].screen.x - projected[j].screen.x;
-      const dy = projected[i].screen.y - projected[j].screen.y;
-      if (Math.sqrt(dx * dx + dy * dy) <= radiusPx) {
-        group.push(projected[j]);
-        used[j] = true;
-      }
-    }
-    const lng = group.reduce((sum, p) => sum + p.lng, 0) / group.length;
-    const lat = group.reduce((sum, p) => sum + p.lat, 0) / group.length;
-    clusters.push({ lng, lat, jobs: group.map((p) => p.job) });
+  const locations = new Map<string, { lng: number; lat: number; jobs: JobRecord[] }>();
+  for (const point of points) {
+    const key = `${point.lat}|${point.lng}`;
+    const existing = locations.get(key);
+    if (existing) existing.jobs.push(point.job);
+    else locations.set(key, { lat: point.lat, lng: point.lng, jobs: [point.job] });
   }
-
-  return clusters;
+  return [...locations.values()];
 }
 
 const HARDHAT_ICON_PATH =
@@ -429,14 +410,6 @@ function boroughLabelHtml(label: string, dark: boolean) {
     ? "color:rgba(255,255,255,.88);text-shadow:0 1px 4px rgba(0,0,0,.9),0 1px 8px rgba(0,0,0,.7);"
     : "color:rgba(71,85,105,.85);text-shadow:0 1px 0 rgba(255,255,255,.55),-1px 0 0 rgba(255,255,255,.4),1px 0 0 rgba(255,255,255,.4),0 -1px 0 rgba(255,255,255,.4);";
   return `<span style="display:inline-block;${style}font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;pointer-events:none;">${label}</span>`;
-}
-
-function clusterMarkerHtml(count: number, oldestDays: number | null) {
-  const size = count > 99 ? 42 : 34;
-  const age = oldestDays !== null && oldestDays > 30
-    ? `<span style="position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:#921f32;border:1px solid #f36e7d;border-radius:4px;padding:1px 4px;font-size:8px;white-space:nowrap;">${oldestDays}d</span>`
-    : "";
-  return `<div style="position:relative;width:${size}px;height:${size}px;display:grid;place-items:center;border-radius:50%;background:#004bea;border:2px solid #59b9ff;box-shadow:0 0 0 3px #005fff33,0 2px 6px #0005;color:#fff;font-size:14px;font-weight:800;">${count}${age}</div>`;
 }
 
 export default function FieldCommandClient() {
@@ -482,6 +455,8 @@ export default function FieldCommandClient() {
   }, [daysBack, dateFilterLoaded]);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
+  const [pinJobs, setPinJobs] = useState<JobRecord[]>([]);
+  useEffect(() => setPinJobs([]), [daysBack, borough, status, search, jobs]);
   const [darkTiles, setDarkTiles] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [chromeOpen, setChromeOpen] = useState(false);
@@ -739,7 +714,7 @@ export default function FieldCommandClient() {
         renderMarkersRef.current = () => {
           if (!layerGroupRef.current) return;
           layerGroupRef.current.clearLayers();
-          const clusters = clusterByPixelDistance(pointsRef.current, map, 44);
+          const clusters = groupByLocation(pointsRef.current);
 
           clusters.forEach((cluster) => {
             let html: string;
@@ -751,27 +726,31 @@ export default function FieldCommandClient() {
               const meta = jobStatusMeta(job);
               const priority = jobPriority(job);
               const days = priority.days;
-              html = ageMarkerHtml(days, priority.pending);
+              html = ageMarkerHtml(days, priority.pending, map.getZoom(), false, meta.color, meta.key);
               title = `${jobId(job)} - ${meta.label} - ${priority.label}`;
-              onClick = () => setSelectedJob(job);
+              onClick = () => { setPinJobs([]); setSelectedJob(job); };
             } else {
-              const ages = cluster.jobs.map((job) => jobPriority(job).days).filter((d): d is number => d !== null);
+              const ages = cluster.jobs.filter(isPendingJob).map((job) => jobPriority(job).days).filter((d): d is number => d !== null);
               const oldestDays = ages.length ? Math.max(...ages) : null;
-              html = clusterMarkerHtml(cluster.jobs.length, oldestDays);
+              const representative = cluster.jobs.find(isPendingJob) || cluster.jobs[0];
+              const meta = jobStatusMeta(representative);
+              html = ageMarkerHtml(oldestDays, cluster.jobs.some(isPendingJob), map.getZoom(), true, meta.color, meta.key);
               title = `${cluster.jobs.length} jobs${oldestDays !== null && oldestDays > 0 ? ` - most overdue ${oldestDays} days` : ""}`;
               onClick = () => {
-                map.flyTo([cluster.lat, cluster.lng], Math.min(20, map.getZoom() + 2.5));
+                setSelectedJob(null);
+                setPinJobs(cluster.jobs);
               };
             }
 
-            const icon = L.divIcon({ className: "", html, iconSize: [30, 30], iconAnchor: [15, 15] });
+            const icon = L.divIcon({ className: "", html, iconSize: [44, 32], iconAnchor: [22, 16] });
             const marker = L.marker([cluster.lat, cluster.lng], { icon, title });
             marker.on("click", onClick);
             marker.addTo(layerGroupRef.current);
+            marker.getElement()?.setAttribute("aria-label", title);
           });
         };
 
-        // Panning translates every point equally, so cluster membership changes only on zoom/data updates.
+        // Update pin detail at neighborhood/street zoom; panning needs no rebuild.
         map.on("zoomend", () => renderMarkersRef.current());
 
       }
@@ -785,7 +764,7 @@ export default function FieldCommandClient() {
           map.setView([points[0].lat, points[0].lng], 15);
         } else if (points.length > 1 && borough === "ALL" && !search.trim()) {
           // Keep the initial city view useful even when a record lies far outside NYC.
-          map.setView([40.72, -73.95], 11);
+          map.setView([40.72, -73.95], 14);
         } else if (points.length > 1) {
           const bounds = points.map((p) => [p.lat, p.lng]) as [number, number][];
           map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
@@ -1178,13 +1157,13 @@ export default function FieldCommandClient() {
 
   return (
     <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
-      <button type="button" className="fc-reveal-controls" aria-label={chromeOpen ? "Hide all map controls" : "Show map controls"} title={chromeOpen ? "Hide controls" : "Map menu"} aria-expanded={chromeOpen} onClick={() => { setChromeOpen((open) => !open); setSelectedJob(null); }}><MenuIcon /></button>
+      <button type="button" className="fc-reveal-controls" aria-label={chromeOpen ? "Hide all map controls" : "Show map controls"} title={chromeOpen ? "Hide controls" : "Map menu"} aria-expanded={chromeOpen} onClick={() => { setChromeOpen((open) => !open); setControlsOpen(false); setSelectedJob(null); setPinJobs([]); }}><MenuIcon /></button>
       <div className="fc-search-row">
         <div className="fc-search-field">
           <SearchIcon />
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search address or job" aria-label="Search jobs" />
         </div>
-        <button type="button" className={`fc-search-list-btn fc-tools-toggle ${controlsOpen ? "is-open" : ""}`} aria-label={controlsOpen ? "Hide map filters" : "Show map filters"} title="Map filters and navigation" aria-expanded={controlsOpen} aria-controls="field-map-filters" onClick={() => setControlsOpen((open) => !open)}>
+        <button type="button" className={`fc-search-list-btn fc-tools-toggle ${controlsOpen ? "is-open" : ""}`} aria-label={controlsOpen ? "Hide map filters" : "Show map filters"} title="Map filters and navigation" aria-expanded={controlsOpen} aria-controls="field-map-filters" onClick={() => { setChromeOpen(true); setControlsOpen((open) => !open); }}>
           <ListIcon />
         </button>
       </div>
@@ -1271,6 +1250,10 @@ export default function FieldCommandClient() {
       </section>
 
       <div className="fc-map-wrap">
+        {pinJobs.length > 0 ? <section className="fc-pin-jobs" aria-label="Jobs at this pin">
+          <header><strong>{pinJobs.length} jobs at this pin</strong><button type="button" aria-label="Close pin jobs" onClick={() => setPinJobs([])}>×</button></header>
+          <div>{pinJobs.map((job) => <button type="button" key={jobId(job)} onClick={() => { setSelectedJob(job); setPinJobs([]); }}><strong>{jobId(job)} · {jobAddress(job)}</strong><span>{jobStatusMeta(job).label} · {jobPriority(job).label}</span></button>)}</div>
+        </section> : null}
         {daysBack !== null && !(controlsOpen && chromeOpen) ? <button className="fc-active-date" type="button" onClick={() => { setChromeOpen(true); setControlsOpen(true); }}>Awarded: {daysBack} days</button> : null}
         <div ref={mapNode} className={`fc-map-node ${darkTiles ? "is-dark" : ""}`} />
         <div className="fc-map-controls">

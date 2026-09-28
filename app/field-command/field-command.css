@@ -1786,13 +1786,27 @@
 .fc-app.fc-reference .fc-reference-job-summary img { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; }
 .fc-app.fc-reference.fc-full-map { padding: 0; }
 .fc-app.fc-reference.fc-full-map .fc-map-wrap { position: absolute; inset: 0; margin: 0; }
-.fc-app.fc-reference.fc-full-map:not(.fc-chrome-open) :is(.fc-topbar,.fc-borough-row,.fc-search-row,.fc-tabbar,.plan-my-day,.fc-map-controls,.fc-status-pill-row) { display: none; }
+.fc-app.fc-reference.fc-full-map:not(.fc-chrome-open) :is(.fc-topbar,.fc-borough-row,.fc-tabbar,.plan-my-day,.fc-map-controls,.fc-status-pill-row) { display: none; }
 .fc-reveal-controls { position: absolute; z-index: 1600; top: max(12px,env(safe-area-inset-top)); right: 12px; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #dce1e8; border-radius: 50%; background: #fffffff0; color: #007aff !important; box-shadow: 0 2px 8px #20304022; }
 .fc-reveal-controls svg { width: 21px; height: 21px; }
 .fc-clean-streets .fc-map-node { background: #e7eef0; }
 .fc-clean-streets .leaflet-gl-layer { z-index: 2; }
 .fc-work-pin { position: relative; width: 32px; height: 32px; display: grid; place-items: center; border: 2px solid white; border-radius: 50%; background: var(--pin-color); box-shadow: 0 2px 5px #243b5340; color: white; }
 .fc-work-pin svg { width: 24px; height: 24px; }
+.fc-pin-jobs { position: absolute; z-index: 1600; left: 8px; right: 8px; bottom: 12px; background: #172b25f7; color: #eff7f1; border: 1px solid #749887; border-radius: 8px; padding: 8px 12px; }
+.fc-chrome-open .fc-pin-jobs { bottom: 72px; }
+.fc-pin-jobs header { display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+.fc-pin-jobs button { color: inherit; background: none; border: 0; min-height: 44px; text-align: left; }
+.fc-pin-jobs header button { width: 44px; text-align: center; font-size: 24px; }
+.fc-pin-jobs > div { max-height: 28vh; overflow: auto; }
+.fc-pin-jobs > div button { display: grid; gap: 4px; width: 100%; padding: 10px 0; border-top: 1px solid #ffffff25; font-size: 13px; overflow-wrap: anywhere; }
+.fc-pin-jobs span { color: #b1dbbc; font-size: 12px; }
+.fc-day-pin { box-sizing: border-box; position: relative; display: flex; align-items: center; justify-content: center; gap: 2px; width: 44px; height: 30px; padding: 0 2px; background: var(--pin-color); color: white; border: 2px solid white; border-radius: 7px; box-shadow: 0 2px 5px #172b2533; }
+.fc-day-pin svg { width: 11px; height: 11px; flex-shrink: 0; }
+.fc-day-pin strong { font: 750 11px/1 system-ui,sans-serif; white-space: nowrap; }
+.fc-day-pin small { font-size: 9px; margin-left: 1px; }
+.fc-day-pin.is-distant:has(strong) svg { display: none; }
+.fc-day-pin.has-more::after { content: ''; position: absolute; right: -4px; top: -4px; width: 6px; height: 6px; border: 1px solid var(--pin-color); background: white; border-radius: 50%; }
 .fc-work-pin > span { position: absolute; top: 28px; left: 50%; transform: translateX(-50%); padding: 1px 4px; border: 1px solid #ffffff; border-radius: 4px; background: var(--pin-color); font: 700 9px/12px system-ui,sans-serif; white-space: nowrap; }
 .fc-app.fc-clean-streets.fc-has-job .fc-job-sheet.fc-job-sheet-flow { background: #173326f5; border-color: #4b715d; color: #f3f5f5; box-shadow: 0 -3px 20px #17201f40; backdrop-filter: blur(16px); }
 .fc-app.fc-clean-streets .fc-sheet-handle { background: #173326; }
@@ -1807,7 +1821,7 @@
 .fc-app.fc-clean-streets .fc-search-field { background: #173326eb; border-color: #4b715d; box-shadow: 0 2px 12px #263e4d30; backdrop-filter: blur(16px); }
 .fc-app.fc-clean-streets .fc-search-field input { color: #f3f5f5; }
 .fc-app.fc-clean-streets .fc-search-field input::placeholder { color: #b7c2c5; }
-.fc-full-map.fc-chrome-open .fc-search-row { position: absolute; top: max(12px,env(safe-area-inset-top)); left: 12px; right: 66px; z-index: 1500; padding: 0; }
+.fc-full-map .fc-search-row { position: absolute; top: max(12px,env(safe-area-inset-top)); left: 12px; right: 66px; z-index: 1500; padding: 0; }
 .fc-full-map.fc-chrome-open .fc-topbar { display: none; }
 .fc-full-map.fc-chrome-open .fc-borough-row { position: absolute; top: calc(68px + env(safe-area-inset-top)); left: 0; right: 0; z-index: 1400; }
 .fc-full-map.fc-chrome-open .fc-status-pill-row { position: absolute; top: calc(125px + env(safe-area-inset-top)); left: 0; right: 0; z-index: 1400; background: #051120; }
@@ -1820,7 +1834,7 @@
 .fc-date-custom input { width: 54px; flex-shrink: 0; }
 .fc-date-custom { display: flex; align-items: center; gap: 6px; }
 .fc-date-custom output { margin-left: auto; text-align: right; font-size: 11px; }
-.fc-active-date { position: absolute; top: 14px; left: 12px; z-index: 1200; min-height: 32px; border: 1px solid #668675; border-radius: 6px; background: #173326ee; color: #eff7f1; padding: 6px 10px; font-size: 12px; }
+.fc-active-date { position: absolute; top: calc(72px + env(safe-area-inset-top)); left: 12px; z-index: 1200; min-height: 32px; border: 1px solid #668675; border-radius: 6px; background: #173326ee; color: #eff7f1; padding: 6px 10px; font-size: 12px; }
 .fc-chrome-open .fc-active-date { top: 72px; }
 .fc-full-map.fc-chrome-open.fc-has-job .fc-topbar { display: none; }
 @media (max-height:650px) {
