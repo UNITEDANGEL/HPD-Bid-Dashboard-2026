@@ -652,16 +652,16 @@ export default function FieldCommandClient() {
             gl.once("style.load", () => {
               for (const layer of gl.getStyle().layers) {
                 if (layer.type === "symbol" && layer["source-layer"] === "poi") gl.setLayoutProperty(layer.id, "visibility", "none");
-                if (layer.type === "background") gl.setPaintProperty(layer.id, "background-color", "#cbd9cc");
+                if (layer.type === "background") gl.setPaintProperty(layer.id, "background-color", "#eef0ed");
                 if (layer.type === "fill") {
                   const colors: Record<string, string> = {
-                    water: "#78b6bd", landuse_residential: "#c6d6c7", building: "#a6bba9",
-                    park: "#91b887", landcover_wood: "#7da774", landcover_grass: "#a4c397",
+                    water: "#a5d7e5", landuse_residential: "#e9ede8", building: "#d3d9d5",
+                    park: "#b8d8ab", landcover_wood: "#a9ce9e", landcover_grass: "#c5dfb8",
                   };
                   if (colors[layer.id]) gl.setPaintProperty(layer.id, "fill-color", colors[layer.id]);
                 }
                 if (layer.type === "line" && /^(road|bridge|tunnel)_/.test(layer.id) && !/rail|path/.test(layer.id)) {
-                  gl.setPaintProperty(layer.id, "line-color", layer.id.endsWith("_casing") ? "#aab8b5" : "#edf0eb");
+                  gl.setPaintProperty(layer.id, "line-color", layer.id.endsWith("_casing") ? "#cbd2d0" : "#ffffff");
                 }
               }
             });

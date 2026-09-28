@@ -1932,9 +1932,17 @@
 
 /* A single translucent search surface keeps the map visually continuous. */
 .fc-app.fc-reference.fc-clean-streets .fc-search-row { gap: 0; }
-.fc-app.fc-reference.fc-clean-streets .fc-search-field { background: #252a2deb; border-color: #ffffff35; box-shadow: 0 3px 14px #00000020; border-radius: 8px 0 0 8px; }
-.fc-app.fc-reference.fc-clean-streets .fc-tools-toggle { background: #252a2deb; border-color: #ffffff35; color: #bdebd3; backdrop-filter: blur(16px); }
-.fc-app.fc-reference.fc-clean-streets .fc-reveal-controls { background: #252a2deb; color: #eff5f2 !important; border-color: #ffffff35; }
-.fc-app.fc-reference.fc-clean-streets .fc-search-field input { font-size: 13px; }
+.fc-app.fc-reference.fc-clean-streets .fc-search-field { background: #fffffff0; border-color: #d2dad9; box-shadow: 0 3px 14px #233b4220; border-radius: 8px 0 0 8px; }
+.fc-app.fc-reference.fc-clean-streets .fc-tools-toggle { background: #fffffff0; border-color: #d2dad9; color: #426659; backdrop-filter: blur(16px); }
+.fc-app.fc-reference.fc-clean-streets .fc-reveal-controls { background: #fffffff0; color: #354940 !important; border-color: #d2dad9; }
+.fc-app.fc-reference.fc-clean-streets .fc-search-field input { font-size: 13px; color: #25332f; }
+.fc-app.fc-reference.fc-clean-streets .fc-search-field input::placeholder { color: #65756f; }
+.fc-app.fc-reference.fc-clean-streets .fc-search-field svg { color: #65756f; }
+.fc-app.fc-reference.fc-clean-streets .fc-map-fab { color: #426659; background: #fffffff0; border-color: #d2dad9; backdrop-filter: blur(16px); }
+.fc-app.fc-reference.fc-clean-streets .fc-map-fab.is-active { color: #fff; background: #287558; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-id { color: #e5eeea; font-size: 14px; }
+.fc-app.fc-reference.fc-clean-streets .fc-sheet-handle span { background: #909b98; }
+.fc-app.fc-reference.fc-clean-streets .fc-next-action { background: #84e7bf; border-color: #84e7bf; }
+.fc-app.fc-reference.fc-clean-streets:not(.fc-sheet-expanded) .fc-quick-action.is-navigate { color: #b9f1d9; border-color: #8edbb64d; background: #84e7bf12; }
 .fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-close { font-size: 24px; color: #bac3c8; }
 .fc-app.fc-reference.fc-clean-streets .fc-card-footer :is(.fc-job-details-toggle,.fc-outcome-link) { color: #bac3c8; }
