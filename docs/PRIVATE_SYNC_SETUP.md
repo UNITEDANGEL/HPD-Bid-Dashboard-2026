@@ -14,6 +14,40 @@ remains authoritative until a reviewed import succeeds.
 
 ### Implementation sequence
 
+Full backup increment (deployment verification tracked in the working plan):
+`DriveAutoBackup` checks once a minute while open/visible/online after an explicit
+per-device opt-in. It backs up the four record stores plus saved photos/videos,
+generated PDF/ZIP packets, visits and unified field records from their existing
+IndexedDB stores. Unsaved forms and arbitrary localStorage/auth/settings are not
+included. It is automatic one-way BACKUP, not background execution with the app
+closed and not automatic two-way sync. Every device must connect and opt in.
+
+Version-2 snapshots are split into 1 MB byte chunks and an integrity manifest,
+with a 128 MB full-package limit and existing Drive quota checks. Unsupported
+binary field types fail instead of disappearing during JSON serialization. Each
+part gets a preallocated stable ID; the entire pending package is persisted in a
+separate IndexedDB queue before upload. Retries reuse IDs and exact content. Parts
+are not shown as complete backups; the manifest is uploaded last. The last content
+fingerprint skips unchanged uploads. Web Locks serialize backup/restore across tabs.
+No filenames, snapshots or credentials are committed to Git. No billing changes.
+
+Recovery reassembles and verifies every part and the full digest before preview.
+Restore saves a local pre-restore snapshot, adds missing entries/files only, and
+preserves all differing existing records for conflict review. IndexedDB reads/adds
+share a readwrite transaction, and localStorage is reread synchronously before
+merging missing entries. Cross-store restore is not globally atomic; a quota/error
+can leave some missing records already added, and a repeat skips them safely.
+No restore propagates deletes, overwrites existing versions, or auto-archives jobs.
+Real two-way updates/deletion/conflict resolution remain a separate journal/revision
+project; do not claim complete cross-device sync. Original app DB versions/indexes
+are preserved. The control queue never becomes a field-data authority.
+
+Tests: `node scripts/test-drive-full-backup.mjs` uses isolated fake IndexedDB to
+cover photo/PDF byte fidelity, multi-part integrity, interrupted resume, stable IDs,
+unchanged deduplication, missing-only restore, conflict preservation, repeat restore
+and the existing stores' index compatibility. Real browser tests must separately
+verify enabling, full upload/readback, reload preference and restore preview.
+
 Manual backup increment: authenticated `/api/drive/{backup-id,save-backup,backups,backup,test-backup}`
 uses the same approved Google identity and private session. A review screen precedes
 every real upload. Four explicit localStorage stores are included: workflow overrides

@@ -20,3 +20,5 @@
 .drive-backup-list small { display: block; margin-top: 4px; }
 .drive-section h3 { font-size: 17px; }
 .drive-section button { overflow-wrap: anywhere; cursor: pointer; }
+.drive-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; }
+.drive-toggle input { width: 24px; height: 24px; flex: 0 0 24px; accent-color: #91e5bd; }

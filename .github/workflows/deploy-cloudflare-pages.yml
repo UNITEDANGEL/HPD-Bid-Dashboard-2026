@@ -62,6 +62,7 @@ jobs:
           node scripts/test-appointments.cjs
           node scripts/test-drive-auth.mjs
           node scripts/test-drive-backups.mjs
+          node scripts/test-drive-full-backup.mjs
 
       - name: Build Cloudflare Pages output
         run: npm run build:cloudflare

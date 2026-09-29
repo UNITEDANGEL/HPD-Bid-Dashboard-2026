@@ -1,4 +1,4 @@
-import { validateBackup, backupSummary, backupDigest, MAX_BACKUP_BYTES } from "../lib/drive-backup-format.mjs";
+import { validateEnvelope, backupSummary, backupDigest, MAX_BACKUP_BYTES } from "../lib/drive-backup-format.mjs";
 
 const API = "https://www.googleapis.com/drive/v3";
 const KIND = "hpd-field-backup-v1";
@@ -36,7 +36,7 @@ export async function handleDriveBackups(request, action, authHeaders, fetcher) 
     if (!validId(id)) fail("Invalid backup ID.", 400);
     const file = await getJson(`${API}/files/${id}?fields=${FIELDS}`);
     if (!file.ownedByMe || file.shared || file.trashed || file.mimeType !== "application/json"
-      || ![KIND, `${KIND}-test`].includes(file.appProperties?.hpdKind)) fail("Not a private HPD backup owned by this account.", 403);
+      || ![KIND, `${KIND}-test`, `${KIND}-part`].includes(file.appProperties?.hpdKind)) fail("Not a private HPD backup owned by this account.", 403);
     return file;
   };
   const read = async (id) => {
@@ -47,7 +47,7 @@ export async function handleDriveBackups(request, action, authHeaders, fetcher) 
     const text = await boundedText(response);
     if (await backupDigest(text) !== file.appProperties.sha256) fail("Backup integrity check failed. No records restored.", 409);
     let snapshot;
-    try { snapshot = validateBackup(JSON.parse(text)); } catch { fail("Invalid backup contents. No records restored.", 400); }
+    try { snapshot = validateEnvelope(JSON.parse(text)); } catch { fail("Invalid backup contents. No records restored.", 400); }
     return { file, snapshot };
   };
   try {
@@ -67,9 +67,12 @@ export async function handleDriveBackups(request, action, authHeaders, fetcher) 
     }
     if (action === "backup") return reply(await read(new URL(request.url).searchParams.get("id")));
     if (action === "backup-id") {
-      const result = await getJson(`${API}/files/generateIds?count=1&space=drive&type=files`);
+      const count = Number(new URL(request.url).searchParams.get("count") || 1);
+      if (!Number.isInteger(count) || count < 1 || count > 100) fail("Invalid ID count.", 400);
+      const result = await getJson(`${API}/files/generateIds?count=${count}&space=drive&type=files`);
       if (!validId(result.ids?.[0])) fail("Drive did not allocate a backup ID.");
-      return reply({ id: result.ids[0] });
+      if (result.ids.length !== count || !result.ids.every(validId)) fail("Drive did not allocate enough backup IDs.");
+      return reply({ id: result.ids[0], ids: result.ids });
     }
     const testing = action === "test-backup";
     let id; let snapshot;
@@ -83,8 +86,8 @@ export async function handleDriveBackups(request, action, authHeaders, fetcher) 
       try { body = JSON.parse(await boundedText(request)); }
       catch (e) { if (e.status) throw e; fail("Invalid backup request.", 400); }
       id = body.id;
-      try { snapshot = validateBackup(body.snapshot); } catch (e) { fail(e.message, 400); }
-      if (!backupSummary(snapshot).records) fail("No local job updates to back up.", 400);
+      try { snapshot = validateEnvelope(body.snapshot); } catch (e) { fail(e.message, 400); }
+      if (snapshot.format === "hpd-field-backup" && !backupSummary(snapshot).records && !snapshot.assets?.length) fail("No local job updates to back up.", 400);
     }
     if (!validId(id)) fail("Invalid backup ID.", 400);
     const text = JSON.stringify(snapshot);
@@ -95,7 +98,7 @@ export async function handleDriveBackups(request, action, authHeaders, fetcher) 
     }
     const boundary = `hpd_${crypto.randomUUID()}`;
     const meta = { id, name: `${testing ? "HPD TEST" : "HPD Field Records"} ${snapshot.capturedAt.replace(/[:.]/g, "-")}.json`, mimeType: "application/json",
-      appProperties: { hpdKind: testing ? `${KIND}-test` : KIND, sha256: digest } };
+      appProperties: { hpdKind: testing ? `${KIND}-test` : snapshot.format === "hpd-field-backup-part" ? `${KIND}-part` : KIND, sha256: digest } };
     const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${text}\r\n--${boundary}--`;
     const upload = await call("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id", {
       method: "POST", headers: { "Content-Type": `multipart/related; boundary=${boundary}` }, body,
@@ -104,7 +107,7 @@ export async function handleDriveBackups(request, action, authHeaders, fetcher) 
     if (!upload.ok && upload.status !== 409) fail(`Drive backup upload failed (HTTP ${upload.status}). Local records were kept; retry is safe.`);
     const verified = await read(id);
     if (verified.file.appProperties.sha256 !== digest) fail("Backup ID already belongs to different content. Nothing was replaced.", 409);
-    return reply({ id, verifiedAt: new Date().toISOString(), ...backupSummary(snapshot), test: testing });
+    return reply({ id, verifiedAt: new Date().toISOString(), ...(snapshot.format === "hpd-field-backup" ? backupSummary(snapshot) : {}), test: testing });
   } catch (e) {
     return reply({ error: e.status ? e.message : "Drive backup failed. Local records and previous backups were kept." }, e.status || 503);
   }

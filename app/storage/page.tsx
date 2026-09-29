@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import DriveBackups from "../../components/DriveBackups";
+import DriveBackupSettings from "../../components/DriveBackupSettings";
 import "../ios-app.css";
 import "./storage.css";
 
@@ -59,6 +60,7 @@ export default function StoragePage() {
         <button className={status?.connected ? "drive-disconnect" : undefined} disabled={!status?.configured || busy || checking}>{busy ? "Opening..." : status?.connected ? "Disconnect this device" : "Connect Google Drive"}</button>
       </form>
     </section>
+    <DriveBackupSettings connected={Boolean(status?.connected)} />
     <DriveBackups connected={Boolean(status?.connected)} />
   </main>;
 }

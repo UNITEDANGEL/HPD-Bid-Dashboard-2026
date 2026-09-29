@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { captureBackup, backupSummary, validateBackup } from "../lib/drive-backup-format.mjs";
+import { captureFullBackup, loadRecovery, planRestore, restoreMissing, withBackupLock } from "../lib/drive-backup-client.mjs";
 
 const PENDING = "hpd-drive-backup-pending-v1";
 type Snapshot = ReturnType<typeof captureBackup>;
@@ -22,6 +23,7 @@ export default function DriveBackups({ connected }: { connected: boolean }) {
   const [review, setReview] = useState<Snapshot | null>(null);
   const [files, setFiles] = useState<BackupFile[] | null>(null);
   const [preview, setPreview] = useState<{ file: BackupFile; snapshot: Snapshot } | null>(null);
+  const [restorePlan, setRestorePlan] = useState<ReturnType<typeof planRestore> | null>(null);
   async function run(work: () => Promise<void>) {
     setBusy(true); setError(""); setMessage("");
     try { await work(); } catch (e) { setError(e instanceof Error ? e.message : "Backup failed. Local records kept."); }
@@ -59,13 +61,12 @@ export default function DriveBackups({ connected }: { connected: boolean }) {
     link.click(); setTimeout(() => URL.revokeObjectURL(url), 30000);
   }
   return <section className="drive-section">
-    <h2>Job update backups</h2>
-    <dl><div><dt>Backup mode</dt><dd>Manual</dd></div><div><dt>Automatic sync</dt><dd>Not enabled</dd></div></dl>
-    <p>Includes this device&apos;s saved statuses, appointments, workflow notes and visit drafts. Photos, PDFs, signatures, unsaved forms and other devices are not included.</p>
+    <h2>Recovery &amp; record backups</h2>
+    <p>Record-only backups include statuses, appointments, workflow notes and visit drafts. Full backups above also include saved media and packages.</p>
     <div className="drive-actions">
       <button disabled={!connected || busy} onClick={prepare}>Review local backup</button>
       <button className="drive-secondary" disabled={!connected || busy} onClick={() => run(async () => {
-        setFiles((await api("backups")).files); setPreview(null);
+        setFiles((await api("backups")).files); setPreview(null); setRestorePlan(null);
       })}>View Drive backups</button>
       <button className="drive-secondary" disabled={!connected || busy} onClick={() => run(async () => {
         const result = await api("test-backup", {});
@@ -87,15 +88,29 @@ export default function DriveBackups({ connected }: { connected: boolean }) {
       <h3>Saved backups</h3>
       {!files.length && <p>No job backups yet. Test files are excluded.</p>}
       {files.map((file) => <button className="drive-secondary" disabled={busy || !connected} key={file.id} onClick={() => run(async () => {
-        const result = await api(`backup?id=${encodeURIComponent(file.id)}`);
-        validateBackup(result.snapshot); setPreview(result);
+        const result = await loadRecovery(file.id);
+        validateBackup(result.snapshot); setPreview(result); setRestorePlan(null);
       })}>{new Date(file.createdTime).toLocaleString()}<small>{Math.ceil(Number(file.size || 0) / 1024)} KB</small></button>)}
     </div>}
     {preview && <section className="drive-review" aria-label="Recovery preview">
       <h3>Recovery preview</h3>
       <p>{backupSummary(preview.snapshot).jobs} jobs / {backupSummary(preview.snapshot).records} entries. Integrity verified.</p>
-      <p>Captured {new Date(preview.snapshot.capturedAt).toLocaleString()}. No local records changed. In-app merge and conflict resolution are not enabled yet.</p>
-      <button onClick={download}>Download recovery file</button>
+      <p>Captured {new Date(preview.snapshot.capturedAt).toLocaleString()}. Backup read and integrity verified.</p>
+      <div className="drive-actions"><button onClick={download}>Download recovery file</button>
+      <button className="drive-secondary" disabled={busy} onClick={() => run(async () => {
+        setRestorePlan(planRestore(await captureFullBackup(), preview.snapshot));
+      })}>Preview restore</button></div>
+      {restorePlan && <div className="drive-review">
+        <h3>Restore review</h3>
+        <p>{restorePlan.additions.length} missing entries / {restorePlan.assets.length} missing files and records / {restorePlan.identical} already present</p>
+        <p>{restorePlan.conflicts.length} conflicts will be left unchanged. Existing records and files will not be replaced or deleted.</p>
+        {restorePlan.conflicts.length > 0 && <details><summary>Conflicting records</summary><ul>{restorePlan.conflicts.map((c, i) => <li key={i}>{c.id} ({c.store})</li>)}</ul></details>}
+        <button disabled={busy || (!restorePlan.additions.length && !restorePlan.assets.length)} onClick={() => run(async () => {
+          const result = await withBackupLock(() => restoreMissing(preview.snapshot));
+          setMessage(`${result.added} missing records restored. ${result.conflicts} conflicts preserved. Reopen the map to load restored records.`);
+          setRestorePlan(null); window.dispatchEvent(new Event("hpd-drive-backup-settings"));
+        })}>Restore missing records only</button>
+      </div>}
     </section>}
   </section>;
 }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { handleDriveBackups } from "../server/drive-backups.mjs";
-import { captureBackup, validateBackup, backupSummary, MAX_BACKUP_BYTES } from "../lib/drive-backup-format.mjs";
+import { captureBackup, validateBackup, backupSummary, backupDigest, MAX_BACKUP_BYTES } from "../lib/drive-backup-format.mjs";
 
 const origin = "https://app.example.test";
 const key = "hpd-job-workflow-overrides-v2";
@@ -75,4 +75,14 @@ result = await invoke("test-backup", {});
 assert.equal(result.status, 200); assert.equal((await result.json()).test, true);
 assert.equal((await (await invoke("backups")).json()).files.length, 0, "Synthetic probes excluded from job backups");
 assert.equal(source.get(key), JSON.stringify(snapshot.stores[key]), "Source unchanged");
+const part = { format: "hpd-field-backup-part", version: 1, capturedAt: snapshot.capturedAt, data: Buffer.from(JSON.stringify(snapshot)).toString("base64") };
+const partId = "synthetic_part_002";
+assert.equal((await invoke("save-backup", { id: partId, snapshot: part })).status, 200);
+assert.equal((await (await invoke("backups")).json()).files.length, 0, "Chunks excluded from root backup list");
+assert.deepEqual((await (await invoke(`backup?id=${partId}`)).json()).snapshot, part);
+const manifest = { format: "hpd-field-backup-manifest", version: 1, capturedAt: snapshot.capturedAt,
+  bytes: Buffer.byteLength(JSON.stringify(snapshot)), sha256: await backupDigest(JSON.stringify(snapshot)),
+  parts: [{ id: partId, sha256: await backupDigest(JSON.stringify(part)) }] };
+assert.equal((await invoke("save-backup", { id: "synthetic_manifest_003", snapshot: manifest })).status, 200);
+assert.equal((await (await invoke("backups")).json()).files.length, 1, "Complete manifest listed");
 console.log("PASS Drive backups: allowlisted stores, invalid/oversize/prototype input, immutable retries, conflicts, paginated list, private ownership, integrity, quota, failed upload, readback and synthetic-only probe.");
