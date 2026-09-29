@@ -14,6 +14,34 @@ remains authoritative until a reviewed import succeeds.
 
 ### Implementation sequence
 
+Authorization increment: `/storage/` (also More > Google Drive) and the
+`/api/drive/{session,start,callback,disconnect}` Pages Functions are implemented.
+The local Next preview intentionally reports setup pending. These handlers never
+write job files and always return `syncEnabled: false`. Synthetic tests:
+`node scripts/test-drive-auth.mjs`.
+
+Production configuration required before the Connect button is enabled:
+
+- A separate Google **Web application** OAuth client; leave Desktop Gmail clients unchanged.
+- Exact redirect: `https://hpd-bid-dashboard-2026.pages.dev/api/drive/callback`.
+- `HPD_DRIVE_APP_ORIGIN=https://hpd-bid-dashboard-2026.pages.dev`.
+- `HPD_DRIVE_ALLOWED_EMAIL`: approved owner from the working plan.
+- `HPD_DRIVE_CLIENT_ID`, `HPD_DRIVE_CLIENT_SECRET`: new client's server-only settings.
+- `HPD_DRIVE_ENCRYPTION_KEY`: independent random 32-byte base64url secret.
+- `HPD_DRIVE_SESSIONS`: dedicated private KV binding for encrypted authorization
+  sessions only, not job records. Use existing free capacity; do not enable billing.
+
+Setting up the client/secrets/binding requires explicit security-access approval.
+No credentials should be pasted in chat, committed, or included in static output.
+The Google flow requests openid/email/drive.file, state and S256 PKCE. It checks
+identity directly with Google's userinfo endpoint and rejects unverified or
+unapproved email. Browser cookies hold opaque session IDs, not Google tokens.
+Encrypted sessions expire after 30 days; this does not guarantee Google consent
+will remain valid for 30 days. Disconnect removes this device's session only,
+not Google-wide consent or other devices. KV deletion can propagate with delay;
+do not treat it as immediate global revocation. Token refresh, upload endpoints,
+outbox integration, global revocation and actual cross-device sync are pending.
+
 1. Configure separate Google web-app OAuth authorization using `drive.file` and
    authenticated account identity. Restrict sign-in to the approved owner from
    the working plan. Do not reuse or replace Gmail fetch credentials. Verify
