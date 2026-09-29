@@ -1,4 +1,20 @@
 type Job = Record<string, unknown>;
+export const JOB_DATE_FIELDS = { maturity: "Maturity", award: "Award", start: "Contract start", finish: "Contract finish" } as const;
+export type JobDateField = keyof typeof JOB_DATE_FIELDS;
+export function jobDate(job: Job, field: JobDateField): string {
+  if (field === "maturity") return maturityDate(job);
+  const keys = field === "award" ? ["AwardDate", "awardDate"] : field === "start"
+    ? ["WorkStartDate", "workStartDate", "Work Start Date"] : ["WorkCompletionDate", "workCompletionDate", "Work Completion Date"];
+  return String(keys.map((key) => job[key]).find((value) => value !== undefined && value !== null && String(value).trim()) || "").trim();
+}
+export function matchesJobDateRange(job: Job, field: JobDateField, from: string, to: string): boolean {
+  if (!from && !to) return true;
+  const lower = from ? calendarDay(from) : null;
+  const upper = to ? calendarDay(to) : null;
+  if ((from && lower === null) || (to && upper === null) || (lower !== null && upper !== null && lower > upper)) return false;
+  const date = calendarDay(jobDate(job, field));
+  return date !== null && (lower === null || date >= lower) && (upper === null || date <= upper);
+}
 
 export function calendarDay(raw: string): number | null {
   const iso = raw.trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);

@@ -1808,6 +1808,8 @@
 .fc-pin-jobs span { color: #b1dbbc; font-size: 12px; }
 .fc-day-pin { box-sizing: border-box; position: relative; display: flex; align-items: center; justify-content: center; gap: 2px; width: 44px; height: 30px; padding: 0 2px; background: var(--pin-color); color: white; border: 2px solid white; border-radius: 7px; box-shadow: 0 2px 5px #172b2533; }
 .fc-day-pin svg { width: 11px; height: 11px; flex-shrink: 0; }
+.fc-job-dot { display: block; box-sizing: border-box; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; background: var(--pin-color); box-shadow: 0 1px 3px #172b2540; }
+.fc-dot-marker:focus-visible { outline: 3px solid #173326; outline-offset: 3px; border-radius: 50%; }
 .fc-day-pin strong { font: 750 11px/1 system-ui,sans-serif; white-space: nowrap; }
 .fc-day-pin small { font-size: 9px; margin-left: 1px; }
 .fc-day-pin.is-distant:has(strong) svg { display: none; }
@@ -1833,6 +1835,15 @@
 .fc-full-map.fc-chrome-open .fc-map-controls { top: calc(186px + env(safe-area-inset-top)); }
 .fc-full-map.fc-chrome-open.fc-controls-open .fc-map-controls { top: calc(256px + env(safe-area-inset-top)); }
 .fc-award-filter { display: none; }
+.fc-full-map.fc-chrome-open.fc-controls-open .fc-map-controls { display: none; }
+.fc-full-map.fc-chrome-open.fc-controls-open .fc-award-filter { max-height: calc(100% - 205px); overflow-y: auto; }
+.fc-date-picker { display: grid; gap: 8px; padding-top: 8px; border-top: 1px solid #ffffff26; }
+.fc-date-picker label { display: grid; gap: 4px; min-width: 0; }
+.fc-date-bounds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.fc-award-filter .fc-date-picker :is(input,select) { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; min-height: 44px; padding: 6px; color-scheme: dark; background: #202426; color: #eff7f1; border: 1px solid #668675; border-radius: 6px; font: inherit; }
+.fc-date-picker button { min-height: 44px; border: 0; background: transparent; color: #b1dbbc; text-align: left; font: inherit; }
+.fc-date-picker [role=alert] { color: #ffb8ae; }
+.fc-reference-job-summary dd { overflow-wrap: anywhere; }
 .fc-full-map.fc-chrome-open.fc-controls-open .fc-award-filter { display: grid; gap: 4px; position: absolute; top: calc(181px + env(safe-area-inset-top)); left: 8px; right: 8px; z-index: 1400; padding: 6px 8px; border: 1px solid #668675; border-radius: 8px; background: #173326f5; color: #eff7f1; font-size: 12px; }
 .fc-award-filter input { width: 64px; min-width: 0; min-height: 44px; padding: 6px; border: 1px solid #799b88; border-radius: 6px; background: #10291d; color: white; font: inherit; }
 .fc-date-custom select { min-width: 0; flex: 1; min-height: 44px; max-width: 150px; padding: 4px 6px; border: 1px solid #668675; border-radius: 6px; background: #10291d; color: #eff7f1; font: inherit; }

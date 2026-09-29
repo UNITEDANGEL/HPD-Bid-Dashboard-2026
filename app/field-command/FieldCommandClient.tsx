@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import FieldTabBar from "../../components/FieldTabBar";
 import AppointmentEditor from "./AppointmentEditor";
 import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointments";
-import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback } from "../../lib/job-priority";
+import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue } from "../../lib/job-queue";
 import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, suggestedPhotoKind } from "../../lib/field-next-action";
@@ -390,7 +390,13 @@ const DARK_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canv
 function individualPinOffset(index: number, count: number) {
   const columns = Math.min(3, count);
   const rows = Math.ceil(count / columns);
-  return { x: ((index % columns) - (columns - 1) / 2) * 54, y: (Math.floor(index / columns) - (rows - 1) / 2) * 40 };
+  return { x: ((index % columns) - (columns - 1) / 2) * 62, y: (Math.floor(index / columns) - (rows - 1) / 2) * 48 };
+}
+
+function reservePinLabel(x: number, y: number, occupied: { x: number; y: number }[]) {
+  if (occupied.some(p => Math.abs(p.x - x) < 58 && Math.abs(p.y - y) < 44)) return false;
+  occupied.push({ x, y });
+  return true;
 }
 
 function groupByLocation(
@@ -444,10 +450,14 @@ export default function FieldCommandClient() {
   const [status, setStatus] = useState("pending");
   const requestedJobLoaded = useRef(false);
   const [daysBack, setDaysBack] = useState<number | null>(null);
+  const [dateRange, setDateRange] = useState<{ field: JobDateField; from: string; to: string }>({ field: "maturity", from: "", to: "" });
   const [customDateRange, setCustomDateRange] = useState(false);
   const [dateFilterLoaded, setDateFilterLoaded] = useState(false);
   useEffect(() => {
     try {
+      const range = JSON.parse(localStorage.getItem("hpd-map-date-range-v1") || "null");
+      if (range && Object.hasOwn(JOB_DATE_FIELDS, range.field) && typeof range.from === "string" && typeof range.to === "string"
+        && (!range.from || calendarDay(range.from) !== null) && (!range.to || calendarDay(range.to) !== null)) setDateRange(range);
       const saved = localStorage.getItem("hpd-map-award-days");
       if (saved !== null && /^\d+$/.test(saved) && Number(saved) <= 3650) {
         setDaysBack(Number(saved));
@@ -463,6 +473,10 @@ export default function FieldCommandClient() {
       else localStorage.setItem("hpd-map-award-days", String(daysBack));
     } catch { /* Keep the current filter when storage is unavailable. */ }
   }, [daysBack, dateFilterLoaded]);
+  useEffect(() => {
+    if (!dateFilterLoaded) return;
+    try { localStorage.setItem("hpd-map-date-range-v1", JSON.stringify(dateRange)); } catch { /* Filtering still works without storage. */ }
+  }, [dateRange, dateFilterLoaded]);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
   const [darkTiles, setDarkTiles] = useState(false);
@@ -563,6 +577,7 @@ export default function FieldCommandClient() {
     return jobs.filter((job) => {
       if (!matchesJobQueue(job, status)) return false;
       if (!matchesAwardLookback(job, daysBack)) return false;
+      if (!matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
       if (borough !== "ALL" && jobBorough(job) !== borough) return false;
       if (q) {
         const haystack = [jobId(job), jobAddress(job), jobBorough(job), jobStatus(job)].join(" ").toLowerCase();
@@ -570,7 +585,7 @@ export default function FieldCommandClient() {
       }
       return true;
     });
-  }, [jobs, borough, status, search, daysBack]);
+  }, [jobs, borough, status, search, daysBack, dateRange]);
 
   useEffect(() => {
     if (!jobs.length || requestedJobLoaded.current) return;
@@ -722,35 +737,44 @@ export default function FieldCommandClient() {
         renderMarkersRef.current = () => {
           if (!layerGroupRef.current) return;
           layerGroupRef.current.clearLayers();
+          const occupied: { x: number; y: number }[] = [];
           groupByLocation(pointsRef.current).forEach((location) => {
             location.jobs.forEach((job, index) => {
               const meta = jobStatusMeta(job);
               const priority = jobPriority(job);
-              const html = ageMarkerHtml(priority.days, priority.pending, map.getZoom(), false, meta.color, meta.key);
               const title = `${jobId(job)} - ${meta.label} - ${priority.label}`;
-              const offset = individualPinOffset(index, location.jobs.length);
+              const offset = map.getZoom() >= 17 ? individualPinOffset(index, location.jobs.length) : { x: 0, y: 0 };
               const origin = map.latLngToLayerPoint([location.lat, location.lng]);
               const position = map.layerPointToLatLng(L.point(origin.x + offset.x, origin.y + offset.y));
-              if (location.jobs.length > 1) {
+              if (!map.getBounds().pad(0.1).contains(position)) return;
+              const screen = map.latLngToContainerPoint(position);
+              const showLabel = reservePinLabel(screen.x, screen.y, occupied);
+              const html = showLabel
+                ? ageMarkerHtml(priority.days, priority.pending, map.getZoom(), false, meta.color, meta.key)
+                : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`;
+              if (map.getZoom() >= 17 && location.jobs.length > 1) {
                 L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
               }
-              const icon = L.divIcon({ className: "", html, iconSize: [44, 32], iconAnchor: [22, 16] });
-              const marker = L.marker(position, { icon, title });
-              marker.on("click", () => setSelectedJob(job));
+              const icon = L.divIcon({ className: showLabel ? "fc-label-marker" : "fc-dot-marker", html, iconSize: showLabel ? [44, 32] : [14, 14], iconAnchor: showLabel ? [22, 16] : [7, 7] });
+              const marker = L.marker(position, { icon, title, zIndexOffset: showLabel ? 1000 : 0 });
+              marker.on("click", () => {
+                if (!showLabel || location.jobs.length > 1) map.setView([location.lat, location.lng], Math.max(17, map.getZoom()));
+                setSelectedJob(job);
+              });
               marker.addTo(layerGroupRef.current);
               marker.getElement()?.setAttribute("aria-label", title);
             });
           });
         };
 
-        // Update pin detail at neighborhood/street zoom; panning needs no rebuild.
-        map.on("zoomend", () => renderMarkersRef.current());
+        // Recompute visible labels after movement; retain individual dots for crowded jobs.
+        map.on("moveend", () => renderMarkersRef.current());
 
       }
 
       const map = mapRef.current;
 
-      const framing = `${borough}|${search}|${status}|${daysBack}`;
+      const framing = `${borough}|${search}|${status}|${daysBack}|${JSON.stringify(dateRange)}`;
       if (mapFramingRef.current !== framing && points.length) {
         mapFramingRef.current = framing;
         if (points.length === 1) {
@@ -770,7 +794,7 @@ export default function FieldCommandClient() {
     return () => {
       cancelled = true;
     };
-  }, [filteredJobs, borough, search, status, daysBack]);
+  }, [filteredJobs, borough, search, status, daysBack, dateRange]);
 
   useEffect(() => {
     darkTilesRef.current = darkTiles;
@@ -796,7 +820,7 @@ export default function FieldCommandClient() {
       routeLayerRef.current.remove();
       routeLayerRef.current = null;
     }
-  }, [borough, status, search, daysBack, jobs]);
+  }, [borough, status, search, daysBack, dateRange, jobs]);
 
   useEffect(() => {
     if (selectedJob) {
@@ -1240,6 +1264,17 @@ export default function FieldCommandClient() {
           }} /> : null}
           <output aria-live="polite">{filteredJobs.length ? `${filteredJobs.length} jobs` : "No matches"}</output>
           </div>
+          <div className="fc-date-picker">
+            <label>Date type<select aria-label="Date type" value={dateRange.field} onChange={(e) => setDateRange({ ...dateRange, field: e.target.value as JobDateField })}>
+              {Object.entries(JOB_DATE_FIELDS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select></label>
+            <div className="fc-date-bounds">
+              <label>From<input type="date" aria-label="Date from" value={dateRange.from} onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })} /></label>
+              <label>Through<input type="date" aria-label="Date through" value={dateRange.to} onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })} /></label>
+            </div>
+            {dateRange.from && dateRange.to && dateRange.from > dateRange.to ? <span role="alert">From must be on or before Through.</span> : null}
+            <button type="button" onClick={() => { setDateRange({ field: "maturity", from: "", to: "" }); setDaysBack(null); setCustomDateRange(false); }}>Clear date filters</button>
+          </div>
         </div>
         <div className="fc-pill-row fc-status-pill-row" role="group" aria-label="Status filter">
           {STATUS_FILTERS.map(({ key, label }) => (
@@ -1258,7 +1293,7 @@ export default function FieldCommandClient() {
       </section>
 
       <div className="fc-map-wrap">
-        {daysBack !== null && !(controlsOpen && chromeOpen) ? <button className="fc-active-date" type="button" onClick={() => { setChromeOpen(true); setControlsOpen(true); }}>Awarded: {daysBack} days</button> : null}
+        {(daysBack !== null || dateRange.from || dateRange.to) && !(controlsOpen && chromeOpen) ? <button className="fc-active-date" type="button" onClick={() => { setChromeOpen(true); setControlsOpen(true); }}>{dateRange.from || dateRange.to ? `${JOB_DATE_FIELDS[dateRange.field]} date filter${daysBack !== null ? " + award age" : ""}` : `Awarded: ${daysBack} days`}</button> : null}
         <div ref={mapNode} className={`fc-map-node ${darkTiles ? "is-dark" : ""}`} />
         <div className="fc-map-controls">
           <button
@@ -1385,7 +1420,11 @@ export default function FieldCommandClient() {
               <div className="fc-reference-job-summary">
                 <dl>
                   <div><dt>Award date</dt><dd>{value(selectedJob, ["AwardDate", "awardDate"]) || "Not available"}</dd></div>
-                  <div><dt>Maturity date</dt><dd>{maturityDate(selectedJob) || "Not available"}</dd></div>
+                  <div><dt>Maturity date{!["MaturityDate", "maturityDate", "DueDate", "dueDate"].some(key => selectedJob[key] !== undefined && selectedJob[key] !== null) ? " (contract finish)" : ""}</dt><dd>{maturityDate(selectedJob) || "Not available"}</dd></div>
+                  <div><dt>Contract start</dt><dd>{jobDate(selectedJob, "start") || "Not available"}</dd></div>
+                  <div><dt>Contract finish</dt><dd>{jobDate(selectedJob, "finish") || "Not available"}</dd></div>
+                  <div><dt>Actual work start</dt><dd>{value(selectedJob, ["ActualWorkStartDate", "actualWorkStartDate"]) || "Not recorded"}</dd></div>
+                  <div><dt>Actual work finish</dt><dd>{value(selectedJob, ["ActualWorkCompletionDate", "actualWorkCompletionDate"]) || "Not recorded"}</dd></div>
                   <div><dt>COA amount</dt><dd>{jobAwardAmount(selectedJob) ? jobAwardAmount(selectedJob).toLocaleString("en-US", { style: "currency", currency: "USD" }) : "Not available"}</dd></div>
                 </dl>
               </div>

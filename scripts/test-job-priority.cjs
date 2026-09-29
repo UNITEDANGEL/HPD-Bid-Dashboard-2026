@@ -7,6 +7,23 @@ new Function('exports', 'module', source)(moduleUnderTest.exports, moduleUnderTe
 const { calendarDay, maturityDate, isPendingJob, jobPriority, matchesMapStatus } = moduleUnderTest.exports;
 const now = new Date('2026-09-23T16:00:00Z');
 const { matchesAwardLookback } = moduleUnderTest.exports;
+const { jobDate, matchesJobDateRange } = moduleUnderTest.exports;
+const separateDates = { AwardDate: '08/28/26', WorkStartDate: '09/01/26', WorkCompletionDate: '09/10/26', MaturityDate: '09/12/26', ActualWorkStartDate: '09/02/26', ActualWorkCompletionDate: '09/08/26' };
+for (const [field, value] of Object.entries({ award: '2026-08-28', start: '2026-09-01', finish: '2026-09-10', maturity: '2026-09-12' })) {
+  assert.equal(calendarDay(jobDate(separateDates, field)), calendarDay(value));
+  assert.equal(matchesJobDateRange(separateDates, field, value, value), true);
+  assert.equal(matchesJobDateRange(separateDates, field, value, ''), true);
+  assert.equal(matchesJobDateRange(separateDates, field, '', value), true);
+  assert.equal(matchesJobDateRange(separateDates, field, '2026-09-20', '2026-09-01'), false);
+  assert.equal(matchesJobDateRange(separateDates, field, 'bad', ''), false);
+  assert.equal(matchesJobDateRange({}, field, value, value), false);
+  assert.equal(matchesJobDateRange({}, field, '', ''), true);
+}
+assert.equal(matchesJobDateRange(separateDates, 'finish', '2026-09-08', '2026-09-08'), false);
+assert.equal(matchesJobDateRange(separateDates, 'award', '2026-09-01', '2026-09-30'), false);
+assert.equal(matchesJobDateRange(separateDates, 'maturity', '2026-09-01', '2026-09-30'), true);
+assert.equal(jobDate({ ActualWorkCompletionDate: '09/08/26' }, 'finish'), '');
+console.log('PASS: independent date types, inclusive/open ranges, invalid ranges, and missing dates');
 assert.equal(matchesAwardLookback({AwardDate:'08/28/26'},26,new Date('2026-09-23T16:00:00Z')),true);
 assert.equal(matchesAwardLookback({AwardDate:'08/28/26'},25,now),false);
 assert.equal(matchesAwardLookback({AwardDate:'2026-09-23'},0,now),true);
