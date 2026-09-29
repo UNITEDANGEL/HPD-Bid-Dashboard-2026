@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import FieldTabBar from "../../components/FieldTabBar";
+import AppointmentEditor from "./AppointmentEditor";
+import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointments";
 import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue } from "../../lib/job-queue";
@@ -149,7 +151,7 @@ function writeSharedWorkflowPatch(id: string, patch: Record<string, unknown>) {
   );
 }
 
-type StatusKey = "complete" | "noaccess" | "refused" | "pending" | "awarded" | "open";
+type StatusKey = "complete" | "noaccess" | "refused" | "pending" | "awarded" | "open" | "appointment";
 
 const STATUS_ICON_PATHS: Record<StatusKey, string> = {
   complete:
@@ -162,6 +164,7 @@ const STATUS_ICON_PATHS: Record<StatusKey, string> = {
   awarded:
     '<path d="M12 3.5l2.47 5.18 5.53.63-4.1 3.86 1.08 5.5L12 15.9l-4.98 2.77 1.08-5.5-4.1-3.86 5.53-.63L12 3.5z" fill="#fff"/>',
   open: '<circle cx="12" cy="12" r="4.5" fill="#fff"/>',
+  appointment: '<rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="white" stroke-width="2"/><path d="M8 3v5M16 3v5M4 10h16" fill="none" stroke="white" stroke-width="2"/>',
 };
 
 const STATUS_META: { key: StatusKey; label: string; color: string; match: (s: string, job: JobRecord) => boolean }[] = [
@@ -192,7 +195,7 @@ function statusMarkerHtml(color: string, iconKey: StatusKey) {
 function ageMarkerHtml(days: number | null, pending: boolean, zoom = 16, multiple = false, color = "#0a84ff", icon: StatusKey = "pending") {
   const label = !pending ? "" : days === null ? "?" : days === 0 ? "0" : days < 0 ? `+${-days}` : String(days);
   const symbol = pending && icon === "awarded" ? HARDHAT_ICON_PATH : STATUS_ICON_PATHS[icon];
-  return `<div class="fc-day-pin ${multiple ? "has-more" : ""} ${zoom < 14 || label.length > 3 ? "is-distant" : ""}" style="--pin-color:${color}"><svg viewBox="0 0 24 24" aria-hidden="true">${symbol}</svg>${pending ? `<strong>${label}<small>d</small></strong>` : ""}</div>`;
+  return `<div class="fc-day-pin ${icon === "appointment" ? "is-appointment" : ""} ${multiple ? "has-more" : ""} ${zoom < 14 || label.length > 3 ? "is-distant" : ""}" style="--pin-color:${color}"><svg viewBox="0 0 24 24" aria-hidden="true">${symbol}</svg>${pending ? `<strong>${label}<small>d</small></strong>` : ""}</div>`;
 }
 
 function jobAwardAmount(job: JobRecord) {
@@ -422,6 +425,9 @@ export default function FieldCommandClient() {
   const outcomePanelRef = useRef<HTMLElement | null>(null);
   const [outcomeDrafts, setOutcomeDrafts] = useState<Record<string, { outcome: string; note: string }>>({});
   const [outcomeMessage, setOutcomeMessage] = useState("");
+  const [appointmentOpen, setAppointmentOpen] = useState(false);
+  const [agendaOpen, setAgendaOpen] = useState(false);
+  const appointmentRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const mapFramingRef = useRef("");
   const tileLayerRef = useRef<any>(null);
@@ -1028,6 +1034,21 @@ export default function FieldCommandClient() {
     requestAnimationFrame(() => outcomePanelRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
   }
 
+  function openAppointment() {
+    setAppointmentOpen(true);
+    setSheetExpanded(true);
+    requestAnimationFrame(() => appointmentRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  }
+
+  function saveAppointment(job: JobRecord, appointment: Appointment) {
+    const id = jobId(job);
+    const latest = { ...job, ...readSharedWorkflowOverrides()[id] };
+    const patch = appointmentPatch(latest, appointment);
+    writeSharedWorkflowPatch(id, patch);
+    mergeWorkflowPatchIntoScreen(id, patch);
+    setWorkflowStamps(prev => ({ ...prev, [id]: { ...prev[id], status: patch.status } }));
+  }
+
   function chooseOutcome(outcome: string) {
     if (!selectedJob) return;
     const id = jobId(selectedJob);
@@ -1248,6 +1269,7 @@ export default function FieldCommandClient() {
           >
             <LocateIcon />
           </button>
+          <button type="button" className="fc-map-fab" aria-label="Today's appointments" title="Today's appointments" onClick={() => { setAgendaOpen(true); setSelectedJob(null); }}><ListIcon /></button>
           <button
             type="button"
             className={`fc-map-fab ${darkTiles ? "is-active" : ""}`}
@@ -1305,6 +1327,14 @@ export default function FieldCommandClient() {
           </div>
         ) : null}
 
+        {agendaOpen ? <aside className="fc-appointment-agenda" aria-label="Today's appointments">
+          <header><strong>Today&apos;s appointments</strong><button type="button" aria-label="Close appointments" onClick={() => setAgendaOpen(false)}>&times;</button></header>
+          <p>{nyToday()} · New York · This device</p>
+          {(() => {
+            const today = jobs.filter(row => { const a = row.Appointment as Appointment | undefined; return a && a.date === nyToday() && ['requested', 'confirmed'].includes(a.state); }).sort((a, b) => (a.Appointment as Appointment).start.localeCompare((b.Appointment as Appointment).start));
+            return today.length ? today.map(row => { const a = row.Appointment as Appointment; return <button type="button" key={jobId(row)} onClick={() => { setAgendaOpen(false); setStatus('all'); setDaysBack(null); setSearch(jobId(row)); setSelectedJob(row); setSheetExpanded(false); }}><strong>{a.start}-{a.end} · {a.state}</strong><span>{jobId(row)} · {jobAddress(row)}</span></button>; }) : <p>No appointments saved for today.</p>;
+          })()}
+        </aside> : null}
         {selectedJob ? (() => {
           const id = jobId(selectedJob);
           const scope = jobScope(selectedJob);
@@ -1401,12 +1431,17 @@ export default function FieldCommandClient() {
               </div>
               <div className="fc-card-footer">
               <button type="button" className="fc-outcome-link" onClick={openOutcomePanel}>Outcome / note</button>
+              <button type="button" className="fc-outcome-link" onClick={openAppointment}>Appointment</button>
               <button type="button" className="fc-job-details-toggle" aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}>{sheetExpanded ? "Less detail" : "Job details"}<span aria-hidden="true">{sheetExpanded ? "\u2304" : "\u2303"}</span></button>
+              </div>
+              {selectedJob.Appointment ? <button type="button" className="fc-appointment-summary" onClick={openAppointment}>{(selectedJob.Appointment as Appointment).date} · {(selectedJob.Appointment as Appointment).start}-{(selectedJob.Appointment as Appointment).end} · {(selectedJob.Appointment as Appointment).state}</button> : null}
+              <div ref={appointmentRef} hidden={!appointmentOpen || !sheetExpanded}>
+                {appointmentOpen && <AppointmentEditor key={id} job={selectedJob} jobs={jobs.map(row => ({ ...row, id: jobId(row) }))} id={id} address={jobAddress(selectedJob)} contact={tenant.name} phone={tenant.phone} note={draft.note} save={a => saveAppointment(selectedJob, a)} />}
               </div>
               <section ref={outcomePanelRef} className="fc-outcome-panel" aria-label="Visit outcome">
                 <label>Outcome<select value={draft.outcome} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, outcome: event.target.value } }))}><option value="">Select outcome</option>{Object.entries(FIELD_OUTCOMES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
                 <label>Visit note<textarea value={draft.note} rows={3} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
-                <button type="button" className="fc-next-action" onClick={() => saveVisitOutcome(selectedJob)} disabled={!draft.outcome && !draft.note.trim()}>Save visit record</button>
+                {draft.outcome === "APPOINTMENT_REQUESTED" ? <button type="button" className="fc-next-action" onClick={openAppointment}>Set appointment details</button> : <button type="button" className="fc-next-action" onClick={() => saveVisitOutcome(selectedJob)} disabled={!draft.outcome && !draft.note.trim()}>Save visit record</button>}
                 {draft.outcome && draft.outcome !== "APPOINTMENT_REQUESTED" ? <button type="button" className="fc-save-review" onClick={() => saveVisitOutcome(selectedJob, true)}>Save &amp; review paperwork <span aria-hidden="true">&rarr;</span></button> : null}
                 <p role="status">{outcomeMessage || "Device storage only. Appointment requests are not confirmed bookings."}</p>
                 {Array.isArray(selectedJob.FieldVisitHistory) && selectedJob.FieldVisitHistory.length > 0 ? <details className="fc-visit-history"><summary>Visit history ({selectedJob.FieldVisitHistory.length})</summary><ol>{selectedJob.FieldVisitHistory.map((entry: { recordedAt?: string; outcome?: string; note?: string }, index: number) => <li key={index}><time>{entry.recordedAt ? formatSavedTime(entry.recordedAt) : "Date not recorded"}</time><strong>{FIELD_OUTCOMES[entry.outcome || ""] || "Visit note"}</strong><p>{entry.note}</p></li>)}</ol></details> : null}

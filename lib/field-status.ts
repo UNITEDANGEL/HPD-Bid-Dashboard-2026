@@ -7,6 +7,6 @@ export function fieldStatusLabel(raw: string) {
   if (s.includes('partial')) return { key: 'open' as const, label: 'Partial work', color: '#ff9f0a' };
   if (s.includes('complet') && s.includes('other')) return { key: 'complete' as const, label: 'Completed by others', color: '#64d2ff' };
   if (s.includes('progress')) return { key: 'open' as const, label: 'Work in progress', color: '#30d158' };
-  if (s.includes('appointment')) return { key: 'pending' as const, label: 'Appointment requested', color: '#ff9f0a' };
+  if (s.includes('appointment')) return { key: 'appointment' as const, label: s.includes('confirmed') ? 'Appointment confirmed' : s.includes('cancelled') ? 'Appointment cancelled' : s.includes('missed') ? 'Appointment missed' : 'Appointment requested', color: s.includes('confirmed') ? '#179c97' : '#ff9f0a' };
   return null;
 }

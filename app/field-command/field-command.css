@@ -1919,7 +1919,7 @@
 .fc-app.fc-reference.fc-clean-streets:not(.fc-sheet-expanded) .fc-quick-action span { font-size: 12px; }
 .fc-app.fc-reference.fc-clean-streets .fc-next-step { margin-top: 4px; }
 .fc-app.fc-reference.fc-clean-streets .fc-next-action { min-height: 48px; border-radius: 7px; background: #a9e8c5; border-color: #a9e8c5; }
-.fc-card-footer { display: grid; grid-template-columns: 1fr 1fr; margin-top: 6px; border-top: 1px solid #ffffff18; }
+.fc-card-footer { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 6px; border-top: 1px solid #ffffff18; }
 .fc-app.fc-reference.fc-clean-streets .fc-card-footer :is(.fc-job-details-toggle,.fc-outcome-link) { min-height: 44px; margin: 0; padding: 6px; border: 0; text-decoration: none; font-size: 12px; font-weight: 500; color: #c4dacf; }
 .fc-app.fc-reference.fc-clean-streets .fc-card-footer .fc-job-details-toggle { border-left: 1px solid #ffffff18; }
 .fc-save-review { width: 100%; min-height: 44px; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid #759587; border-radius: 6px; background: transparent; color: #d0e7da; font: inherit; font-size: 13px; }
@@ -1964,3 +1964,18 @@
 .fc-app.fc-reference.fc-clean-streets .fc-quick-action { min-height: 44px; }
 .fc-app.fc-reference.fc-clean-streets .fc-next-action { min-height: 46px; }
 .fc-day-pin::before { content: ''; position: absolute; left: calc(50% - 4px); bottom: -5px; width: 6px; height: 6px; transform: rotate(45deg); background: var(--pin-color); border-right: 2px solid white; border-bottom: 2px solid white; }
+.fc-appointment-editor { padding: 14px 0; border-top: 1px solid #ffffff25; }
+.fc-appointment-editor h3 { font-size: 17px; margin: 0 0 8px; }
+.fc-appointment-editor label { display: grid; gap: 6px; font-size: 13px; margin: 12px 0; min-width: 0; }
+.fc-appointment-editor :is(input,select,textarea) { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; background: #2c3330; color: #f2f5f3; border: 1px solid #718179; border-radius: 6px; padding: 8px; font: inherit; color-scheme: dark; }
+.fc-appointment-editor p { font-size: 12px; line-height: 1.5; color: #c6d3ce; overflow-wrap: anywhere; }
+.fc-appointment-editor [role=alert] { color: #ffd28a; }
+.fc-appointment-times { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fc-appointment-summary { width: 100%; min-height: 44px; border: 0; border-top: 1px solid #ffffff20; color: #bce9d8; background: transparent; font-size: 12px; }
+.fc-day-pin.is-appointment.is-distant:has(strong) svg { display: block; }
+.fc-appointment-agenda { position: absolute; z-index: 2100; left: 8px; right: 8px; bottom: 8px; max-height: 60%; overflow: auto; padding: 12px; background: #202426fa; border: 1px solid #ffffff30; border-radius: 8px; color: #f3f5f5; }
+.fc-appointment-agenda header { display: flex; align-items: center; justify-content: space-between; }
+.fc-appointment-agenda header button { width: 44px; height: 44px; border: 0; background: transparent; color: inherit; font-size: 24px; }
+.fc-appointment-agenda p { font-size: 12px; color: #c4d4cc; }
+.fc-appointment-agenda > button { display: grid; gap: 5px; width: 100%; min-height: 60px; padding: 10px 0; border: 0; border-top: 1px solid #ffffff25; text-align: left; background: transparent; color: inherit; font-size: 13px; }
+.fc-appointment-agenda span { overflow-wrap: anywhere; }
