@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { IDBFactory } from "fake-indexeddb";
-import { captureFullBackup, runFullBackup, loadRecovery, planRestore, restoreMissing, makePackage, backupState } from "../lib/drive-backup-client.mjs";
+import { captureFullBackup, runFullBackup, loadRecovery, planRestore, restoreMissing, makePackage, backupState, driveApi } from "../lib/drive-backup-client.mjs";
 import { validateBackup, validateEnvelope, backupDigest, contentFingerprint, ASSET_STORES } from "../lib/drive-backup-format.mjs";
 
 class MemoryStorage {
@@ -50,12 +50,29 @@ const api = async (action, body) => {
   if (!saved.has(id)) throw new Error("Missing part");
   return { file: { id }, snapshot: saved.get(id) };
 };
+// Seed an interrupted older 1 MB queue. Migration must preserve every byte before resizing.
+const legacySnapshot = await captureFullBackup();
+const legacyBytes = Buffer.from(JSON.stringify(legacySnapshot)); const legacyParts = [];
+for (let i = 0; i < legacyBytes.length; i += 1048576) legacyParts.push({ id: `legacy_part_${String(i).padStart(8, "0")}`,
+  snapshot: { format: "hpd-field-backup-part", version: 1, capturedAt: legacySnapshot.capturedAt, data: legacyBytes.subarray(i, i + 1048576).toString("base64") } });
+const legacyRoot = { id: "legacy_manifest_0001", snapshot: { format: "hpd-field-backup-manifest", version: 1,
+  capturedAt: legacySnapshot.capturedAt, bytes: legacyBytes.length, sha256: await backupDigest(legacyBytes.toString()),
+  parts: await Promise.all(legacyParts.map(async (p) => ({ id: p.id, sha256: await backupDigest(JSON.stringify(p.snapshot)) }))) } };
+legacyParts.push(legacyRoot);
+const control = await new Promise((resolve) => { const r = indexedDB.open("hpd-drive-backup-control-v1", 1); r.onsuccess = () => resolve(r.result); });
+await new Promise((resolve, reject) => { const tx = control.transaction(["state", "parts"], "readwrite");
+  legacyParts.forEach((p) => tx.objectStore("parts").put(p));
+  tx.objectStore("state").put({ id: "pending", ids: legacyParts.map((p) => p.id), root: legacyRoot.id, index: 0 });
+  tx.oncomplete = resolve; tx.onerror = () => reject(tx.error);
+}); control.close();
 await assert.rejects(() => runFullBackup({ api }), /offline/);
 assert.match((await backupState()).error, /offline/);
 const allocated = sequence;
 failAt = -1;
 const success = await runFullBackup({ api });
 assert.equal(sequence, allocated, "Resume retains allocated IDs");
+assert.ok([...saved.keys()].every((id) => !id.startsWith("legacy_")), "Large pending queue migrated to smaller parts");
+assert.ok([...saved.values()].filter((v) => v.format === "hpd-field-backup-part").every((v) => Buffer.from(v.data, "base64").length <= 262144));
 assert.equal(success.summary.media, 1); assert.equal(success.summary.documents, 1);
 const count = uploaded;
 await runFullBackup({ api }); assert.equal(uploaded, count, "Unchanged files are not uploaded again");
@@ -83,4 +100,9 @@ for (const [dbName, names] of Object.entries(ASSET_STORES)) {
 }
 globalThis.indexedDB = deviceOne;
 await assert.rejects(() => makePackage(sample, async () => []), /allocation/);
+const originalFetch = globalThis.fetch; let attempts = 0;
+globalThis.fetch = async () => { attempts++; return new Response("<html>temporary gateway</html>", { status: 500 }); };
+await assert.rejects(() => driveApi("backup-id", {}), /HTTP 500/);
+assert.equal(attempts, 3, "Transient service errors retry a bounded number of times");
+globalThis.fetch = originalFetch;
 console.log("PASS full backup: IndexedDB photo/PDF fidelity, chunk integrity, interrupted durable resume, stable IDs, unchanged deduplication, isolated second-device restore, conflicts, repeat restore and app schema compatibility.");

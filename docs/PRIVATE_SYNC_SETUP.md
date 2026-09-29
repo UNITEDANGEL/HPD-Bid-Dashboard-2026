@@ -22,13 +22,17 @@ IndexedDB stores. Unsaved forms and arbitrary localStorage/auth/settings are not
 included. It is automatic one-way BACKUP, not background execution with the app
 closed and not automatic two-way sync. Every device must connect and opt in.
 
-Version-2 snapshots are split into 1 MB byte chunks and an integrity manifest,
+Version-2 snapshots are split into 256 KB byte chunks and an integrity manifest,
 with a 128 MB full-package limit and existing Drive quota checks. Unsupported
 binary field types fail instead of disappearing during JSON serialization. Each
 part gets a preallocated stable ID; the entire pending package is persisted in a
 separate IndexedDB queue before upload. Retries reuse IDs and exact content. Parts
 are not shown as complete backups; the manifest is uploaded last. The last content
 fingerprint skips unchanged uploads. Web Locks serialize backup/restore across tabs.
+An older pending 1 MB-part queue is reconstructed and checksum-verified locally
+before an atomic replacement with smaller parts. Previously uploaded files are
+not deleted. Requests report non-JSON HTTP failures explicitly and retry transient
+429/500/502/503/504, network and timeout failures at most three times per operation.
 No filenames, snapshots or credentials are committed to Git. No billing changes.
 
 Recovery reassembles and verifies every part and the full digest before preview.

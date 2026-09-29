@@ -13,7 +13,7 @@ export default function DriveBackupSettings({ connected }: { connected: boolean 
     const refresh = () => {
       try { setEnabled(localStorage.getItem(AUTO_KEY) === "on"); } catch { setError("Device storage is unavailable."); }
       setOnline(navigator.onLine);
-      backupState().then(setState).catch(() => setError("Backup queue is unavailable on this device."));
+      backupState().then((next) => { setState(next); if (!next.queued && next.verifiedAt && !next.error) setError(""); }).catch(() => setError("Backup queue is unavailable on this device."));
     };
     refresh();
     const timer = window.setInterval(refresh, 5000);
@@ -34,11 +34,11 @@ export default function DriveBackupSettings({ connected }: { connected: boolean 
     <div><dt>Two-way sync</dt><dd>Not enabled</dd></div></dl>
     {state?.verifiedAt && <p role="status">Last full backup: {new Date(state.verifiedAt).toLocaleString()}<br />{state.summary?.jobs || 0} jobs, {state.summary?.media || 0} media, {state.summary?.documents || 0} packages</p>}
     {state?.queued > 0 && <p role="status">{state.queued} backup parts pending. Local files are retained until verification.</p>}
-    {(error || state?.error) && <p role="alert" className="drive-error">{error || state.error}</p>}
+    {(error || state?.error) && <p role="alert" className="drive-error">{state?.error || error}</p>}
     <button disabled={!connected || busy || !online} onClick={async () => {
       setBusy(true); setError("");
       try { setState(await withBackupLock(() => runFullBackup())); }
-      catch (e) { setError(e instanceof Error ? e.message : "Backup failed. Local records kept."); }
+      catch (e) { setError(e instanceof Error ? e.message.includes("Another app tab") ? "" : e.message : "Backup failed. Local records kept."); }
       finally { setBusy(false); window.dispatchEvent(new Event("hpd-drive-backup-status")); }
     }}>{busy ? "Saving and verifying..." : "Back up everything now"}</button>
     <p>Previous versions stay in Drive. Restore adds missing records; conflicting versions stay separate. Limit: 128 MB per full backup. Google Drive storage limits still apply.</p>
