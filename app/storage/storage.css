@@ -13,3 +13,10 @@
 .drive-section button:disabled { background: #303c36; border-color: #526158; color: #c4cec8; cursor: not-allowed; }
 .drive-section .drive-error { color: #ffb3a7; }
 .drive-section .drive-disconnect { margin-top: 12px; background: transparent; color: #c6d1cb; border-color: #526158; }
+.drive-actions { display: grid; gap: 10px; }
+.drive-section .drive-secondary { background: transparent; border-color: #526158; color: #d9e5df; }
+.drive-review { margin-top: 24px; padding-top: 16px; border-top: 1px solid #526158; }
+.drive-backup-list { display: grid; gap: 10px; margin-top: 24px; }
+.drive-backup-list small { display: block; margin-top: 4px; }
+.drive-section h3 { font-size: 17px; }
+.drive-section button { overflow-wrap: anywhere; cursor: pointer; }

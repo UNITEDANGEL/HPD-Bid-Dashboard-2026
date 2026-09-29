@@ -72,6 +72,14 @@ assert.deepEqual(await status.json(), { configured: true, connected: true, email
 assert.equal((await handleDriveAuth(request("check", "POST", ""), env, noNetwork)).status, 401);
 assert.equal((await handleDriveAuth(request("check", "GET", sessionCookie), env, noNetwork)).status, 405);
 assert.equal((await handleDriveAuth(request("check", "POST", sessionCookie, "https://evil.test"), env, noNetwork)).status, 403);
+for (const action of ["backup-id", "save-backup", "test-backup"]) {
+  assert.equal((await handleDriveAuth(request(action, "POST"), env, noNetwork)).status, 401);
+  assert.equal((await handleDriveAuth(request(action, "GET", sessionCookie), env, noNetwork)).status, 405);
+  assert.equal((await handleDriveAuth(request(action, "POST", sessionCookie, "https://evil.test"), env, noNetwork)).status, 403);
+}
+for (const action of ["backups", "backup"]) {
+  assert.equal((await handleDriveAuth(request(action), env, noNetwork)).status, 401);
+}
 const beforeRefresh = [...records.values()][0];
 const outage = await handleDriveAuth(request("check", "POST", sessionCookie), env, async () => Response.json({ error: "temporarily_unavailable" }, { status: 503 }));
 assert.equal(outage.status, 503);
@@ -98,6 +106,11 @@ assert.equal(JSON.parse(renewedBody).connected, true);
 assert.ok(JSON.parse(renewedBody).verifiedAt);
 assert.equal((await handleDriveAuth(request("check", "POST", sessionCookie), env, refreshMock)).status, 200);
 assert.equal(refreshCount, 2, "Refresh token retained when Google omits replacement");
+const allocated = await handleDriveAuth(request("backup-id", "POST", sessionCookie), env, async (url, options) =>
+  url.includes("generateIds") ? Response.json({ ids: ["synthetic_file_id_001"] }) : refreshMock(url, options));
+assert.equal(allocated.status, 200);
+assert.equal((await allocated.json()).id, "synthetic_file_id_001");
+assert.equal(allocated.headers.get("Set-Cookie"), null, "Recent backup operations avoid redundant KV writes");
 const lastGood = [...records.values()][0];
 const driveDenied = await handleDriveAuth(request("check", "POST", sessionCookie), env, async (url, options) =>
   url.includes("/drive/v3/about") ? Response.json({ error: "api_unavailable" }, { status: 403 }) : refreshMock(url, options));

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import DriveBackups from "../../components/DriveBackups";
 import "../ios-app.css";
 import "./storage.css";
 
@@ -50,7 +51,7 @@ export default function StoragePage() {
       <h2>Google Drive</h2>
       <p role="status">{!status ? error ? "Connection unavailable" : "Checking connection..." : status.connected ? "Account connected" : status.configured ? "Not connected" : "Connection setup pending"}</p>
       {status?.email && <p className="drive-account">{status.email}</p>}
-      <dl><div><dt>Job records</dt><dd>On this device</dd></div><div><dt>Cloud saving</dt><dd>Not enabled</dd></div></dl>
+      <dl><div><dt>Working records</dt><dd>On this device</dd></div><div><dt>Drive backups</dt><dd>{status?.connected ? "Available below" : "Connect first"}</dd></div></dl>
       {status?.verifiedAt && <p role="status">Connection verified: {new Date(status.verifiedAt).toLocaleString()}</p>}
       {error && <p role="alert" className="drive-error">{error}</p>}
       {status?.connected && <button type="button" onClick={checkConnection} disabled={checking || busy}>{checking ? "Checking..." : "Check connection"}</button>}
@@ -58,5 +59,6 @@ export default function StoragePage() {
         <button className={status?.connected ? "drive-disconnect" : undefined} disabled={!status?.configured || busy || checking}>{busy ? "Opening..." : status?.connected ? "Disconnect this device" : "Connect Google Drive"}</button>
       </form>
     </section>
+    <DriveBackups connected={Boolean(status?.connected)} />
   </main>;
 }

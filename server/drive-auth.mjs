@@ -1,3 +1,5 @@
+import { handleDriveBackups } from "./drive-backups.mjs";
+const BACKUP_ACTIONS = ["backups", "backup", "backup-id", "save-backup", "test-backup"];
 const SCOPE = "https://www.googleapis.com/auth/drive.file";
 const SESSION = "__Host-hpd-drive-session";
 const FLOW = "__Host-hpd-drive-flow";
@@ -52,15 +54,15 @@ async function session(request, env, cfg) {
   return value?.email === cfg.email ? { ...value, id } : null;
 }
 
-// This handler establishes authorization only. It never imports or writes job data.
+// All private file operations pass the same owner/session/Google identity checks.
 export async function handleDriveAuth(request, env, fetcher = fetch) {
   const url = new URL(request.url);
   const action = url.pathname.replace(/\/$/, "").split("/").pop();
   const cfg = config(env);
   if (!cfg) return json({ configured: false, connected: false, syncEnabled: false, error: "Drive connection setup is pending." }, action === "session" ? 200 : 503);
   if (url.origin !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
-  if (!["session", "start", "callback", "disconnect", "check"].includes(action)) return json({ error: "Not found." }, 404);
-  const method = ["start", "disconnect", "check"].includes(action) ? "POST" : "GET";
+  if (!["session", "start", "callback", "disconnect", "check", ...BACKUP_ACTIONS].includes(action)) return json({ error: "Not found." }, 404);
+  const method = ["start", "disconnect", "check", "backup-id", "save-backup", "test-backup"].includes(action) ? "POST" : "GET";
   if (request.method !== method) return json({ error: "Method not allowed." }, 405);
   if (method === "POST" && request.headers.get("Origin") !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
   try {
@@ -68,7 +70,7 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
       const saved = await session(request, env, cfg);
       return json({ configured: true, connected: Boolean(saved), email: saved?.email || null, verifiedAt: saved?.verifiedAt || null, syncEnabled: false });
     }
-    if (action === "check") {
+    if (action === "check" || BACKUP_ACTIONS.includes(action)) {
       const saved = await session(request, env, cfg);
       if (!saved) return json({ reconnectRequired: true, error: "Sign in to Google Drive again." }, 401);
       const renewed = await fetcher("https://oauth2.googleapis.com/token", {
@@ -101,9 +103,13 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
       const verifiedAt = new Date().toISOString();
       const { id, ...previous } = saved;
       const value = { ...previous, refreshToken: token.refresh_token || saved.refreshToken, verifiedAt, expires: Date.now() + TTL * 1000 };
-      await env.HPD_DRIVE_SESSIONS.put(`session:${id}`, await seal(env, value, `session:${id}`), { expirationTtl: TTL });
-      const response = json({ configured: true, connected: true, email: cfg.email, verifiedAt, syncEnabled: false });
-      response.headers.append("Set-Cookie", cookie(SESSION, id, TTL));
+      const renewSession = action === "check" || Boolean(token.refresh_token) || !saved.verifiedAt
+        || Date.now() - Date.parse(saved.verifiedAt) >= 6 * 3600000;
+      if (renewSession) await env.HPD_DRIVE_SESSIONS.put(`session:${id}`, await seal(env, value, `session:${id}`), { expirationTtl: TTL });
+      const response = BACKUP_ACTIONS.includes(action)
+        ? await handleDriveBackups(request, action, authHeaders, fetcher)
+        : json({ configured: true, connected: true, email: cfg.email, verifiedAt, syncEnabled: false });
+      if (renewSession) response.headers.append("Set-Cookie", cookie(SESSION, id, TTL));
       return response;
     }
     if (action === "disconnect") {

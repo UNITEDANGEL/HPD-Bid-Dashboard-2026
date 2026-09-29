@@ -7,12 +7,34 @@ and rejected payment/billing activation. This supersedes the Cloudflare design
 below. Do not activate Zero Trust billing, provision R2, or apply the D1 migration.
 The empty database is unused and must not be deleted without authorization.
 
-Status: Drive connector access was verified, but the deployed app does NOT yet
-have Drive authorization, durable cloud sync, uploads or restore verification.
+Status: app Drive authorization and renewal are verified in production. Durable
+cloud sync and in-app restore/merge are not yet enabled.
 The connector session must never be copied into the app. Existing local data
 remains authoritative until a reviewed import succeeds.
 
 ### Implementation sequence
+
+Manual backup increment: authenticated `/api/drive/{backup-id,save-backup,backups,backup,test-backup}`
+uses the same approved Google identity and private session. A review screen precedes
+every real upload. Four explicit localStorage stores are included: workflow overrides
+v1/v2, field-command workflow stamps, and visit drafts. No general localStorage dump,
+credentials, IndexedDB media, PDFs or signatures. This is NOT a complete application
+backup or automatic sync. Other-origin/browser records are not included.
+
+Backups are immutable JSON files in private My Drive root, tagged with appProperties.
+This initial increment does not create or inherit permissions from a folder. IDs are
+allocated by Drive and saved with the exact snapshot locally before upload, so retries
+use the same ID. No PATCH/delete/permission writes exist. SHA-256 and actual readback
+must match before reporting success; ownedByMe and shared=false are required. File
+listings are paginated; quota and 2 MB body limits fail closed. Interrupted pending
+backups remain on-device for an explicit retry. Existing local records are unchanged.
+
+Storage offers a synthetic empty-file write/readback test, manual backup review,
+paginated backup listing, integrity-checked recovery preview and JSON download.
+Test files are excluded from real backup listings. In-app restore and conflict-aware
+merge, outbox autosaving and real two-device transfer remain separate release gates.
+Never label a successful empty-file probe as a completed job backup. Tests:
+`node scripts/test-drive-auth.mjs` and `node scripts/test-drive-backups.mjs`.
 
 Authorization increment: `/storage/` (also More > Google Drive) and the
 `/api/drive/{session,start,callback,disconnect}` Pages Functions are implemented.
