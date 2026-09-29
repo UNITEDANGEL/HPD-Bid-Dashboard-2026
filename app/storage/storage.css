@@ -12,3 +12,4 @@
 .drive-section button { width: 100%; min-height: 48px; padding: 12px; border: 1px solid #91e5bd; border-radius: 8px; background: #91e5bd; color: #10251a; font: inherit; font-weight: 600; }
 .drive-section button:disabled { background: #303c36; border-color: #526158; color: #c4cec8; cursor: not-allowed; }
 .drive-section .drive-error { color: #ffb3a7; }
+.drive-section .drive-disconnect { margin-top: 12px; background: transparent; color: #c6d1cb; border-color: #526158; }

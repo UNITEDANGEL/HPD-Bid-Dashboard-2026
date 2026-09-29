@@ -68,7 +68,45 @@ assert.ok(!sessionCookie.includes("private-refresh"));
 assert.ok(![...records.values()][0].includes("private-refresh"));
 const status = await handleDriveAuth(request("session", "GET", sessionCookie), env, noNetwork);
 assert.equal(status.headers.get("Cache-Control"), "no-store");
-assert.deepEqual(await status.json(), { configured: true, connected: true, email: identity.email, syncEnabled: false });
+assert.deepEqual(await status.json(), { configured: true, connected: true, email: identity.email, verifiedAt: null, syncEnabled: false });
+assert.equal((await handleDriveAuth(request("check", "POST", ""), env, noNetwork)).status, 401);
+assert.equal((await handleDriveAuth(request("check", "GET", sessionCookie), env, noNetwork)).status, 405);
+assert.equal((await handleDriveAuth(request("check", "POST", sessionCookie, "https://evil.test"), env, noNetwork)).status, 403);
+const beforeRefresh = [...records.values()][0];
+const outage = await handleDriveAuth(request("check", "POST", sessionCookie), env, async () => Response.json({ error: "temporarily_unavailable" }, { status: 503 }));
+assert.equal(outage.status, 503);
+assert.equal([...records.values()][0], beforeRefresh);
+let refreshCount = 0;
+const refreshMock = async (url, options) => {
+  if (url === "https://oauth2.googleapis.com/token") {
+    assert.equal(options.body.get("grant_type"), "refresh_token");
+    assert.equal(options.body.get("refresh_token"), "private-refresh");
+    refreshCount++;
+    return Response.json({ access_token: "renewed-access" });
+  }
+  assert.equal(options.headers.Authorization, "Bearer renewed-access");
+  if (url === "https://openidconnect.googleapis.com/v1/userinfo") return Response.json(identity);
+  assert.equal(url, "https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)");
+  return Response.json({ user: { emailAddress: identity.email } });
+};
+const renew = await handleDriveAuth(request("check", "POST", sessionCookie), env, refreshMock);
+assert.equal(renew.status, 200);
+assert.match(renew.headers.get("Set-Cookie"), /Max-Age=2592000/);
+const renewedBody = await renew.text();
+assert.ok(!renewedBody.includes("renewed-access"));
+assert.equal(JSON.parse(renewedBody).connected, true);
+assert.ok(JSON.parse(renewedBody).verifiedAt);
+assert.equal((await handleDriveAuth(request("check", "POST", sessionCookie), env, refreshMock)).status, 200);
+assert.equal(refreshCount, 2, "Refresh token retained when Google omits replacement");
+const lastGood = [...records.values()][0];
+const driveDenied = await handleDriveAuth(request("check", "POST", sessionCookie), env, async (url, options) =>
+  url.includes("/drive/v3/about") ? Response.json({ error: "api_unavailable" }, { status: 403 }) : refreshMock(url, options));
+assert.equal(driveDenied.status, 503);
+assert.equal([...records.values()][0], lastGood, "Unavailable Drive API preserves credential");
+const wrongRenewedAccount = await handleDriveAuth(request("check", "POST", sessionCookie), env, async (url, options) =>
+  url.includes("/userinfo") ? Response.json({ ...identity, sub: "someone-else" }) : refreshMock(url, options));
+assert.equal(wrongRenewedAccount.status, 403);
+assert.equal([...records.values()][0], lastGood);
 Date.now = () => now() + 31 * 86400000;
 assert.equal((await (await handleDriveAuth(request("session", "GET", sessionCookie), env)).json()).connected, false);
 Date.now = now;
@@ -82,4 +120,11 @@ const brokenEnv = { ...env, HPD_DRIVE_SESSIONS: { get: async () => { throw new E
 const failure = await handleDriveAuth(request("session", "GET", sessionCookie), brokenEnv);
 assert.equal(failure.status, 503);
 assert.ok(!(await failure.text()).includes("private-storage-details"));
+const revokedLogin = await callback(await begin(), googleMock());
+const revokedCookie = revokedLogin.headers.getSetCookie().find((v) => v.startsWith("__Host-hpd-drive-session=")).split(";")[0];
+const revoked = await handleDriveAuth(request("check", "POST", revokedCookie), env, async () => Response.json({ error: "invalid_grant" }, { status: 400 }));
+assert.equal(revoked.status, 401);
+assert.equal((await revoked.json()).reconnectRequired, true);
+assert.equal(records.size, 0);
+console.log("PASS renewal: refresh-token reuse, live Drive identity check, no token exposure, sliding cookie, transient preservation, revoked access.");
 console.log("PASS Drive auth: fail-closed config, methods/origin, PKCE, state/tamper/expiry, denied/wrong account/scope, encrypted session, expiry and disconnect. No real accounts or files changed.");

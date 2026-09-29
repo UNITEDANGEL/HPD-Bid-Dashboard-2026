@@ -39,8 +39,22 @@ unapproved email. Browser cookies hold opaque session IDs, not Google tokens.
 Encrypted sessions expire after 30 days; this does not guarantee Google consent
 will remain valid for 30 days. Disconnect removes this device's session only,
 not Google-wide consent or other devices. KV deletion can propagate with delay;
-do not treat it as immediate global revocation. Token refresh, upload endpoints,
+do not treat it as immediate global revocation. Upload endpoints,
 outbox integration, global revocation and actual cross-device sync are pending.
+
+Renewal increment: authenticated same-origin POST `/api/drive/check` now exchanges
+the stored refresh token, rechecks Google identity and performs a read-only Drive
+about request. Successful verification records `verifiedAt` and renews the opaque
+device cookie/encrypted KV session for 30 days. Missing replacement refresh tokens
+preserve the existing token. Transient failures preserve credentials; Google's
+`invalid_grant` clears the unusable device session and asks for reconnection.
+The app checks on use/focus/online and hourly while open, only renewing when the
+last successful verification is at least six hours old. Offline use never opens
+consent. Storage includes a manual Check connection action. No credentials are
+stored in localStorage, and neither check nor renewal uploads job records.
+This is a rolling active-use session, not permanent authentication: after 30 days
+without renewal, cleared cookies, revoked consent or Google policy changes,
+sign-in can be required. Cloud job saving is still not enabled.
 
 1. Configure separate Google web-app OAuth authorization using `drive.file` and
    authenticated account identity. Restrict sign-in to the approved owner from

@@ -59,14 +59,52 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
   const cfg = config(env);
   if (!cfg) return json({ configured: false, connected: false, syncEnabled: false, error: "Drive connection setup is pending." }, action === "session" ? 200 : 503);
   if (url.origin !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
-  if (!["session", "start", "callback", "disconnect"].includes(action)) return json({ error: "Not found." }, 404);
-  const method = action === "start" || action === "disconnect" ? "POST" : "GET";
+  if (!["session", "start", "callback", "disconnect", "check"].includes(action)) return json({ error: "Not found." }, 404);
+  const method = ["start", "disconnect", "check"].includes(action) ? "POST" : "GET";
   if (request.method !== method) return json({ error: "Method not allowed." }, 405);
   if (method === "POST" && request.headers.get("Origin") !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
   try {
     if (action === "session") {
       const saved = await session(request, env, cfg);
-      return json({ configured: true, connected: Boolean(saved), email: saved?.email || null, syncEnabled: false });
+      return json({ configured: true, connected: Boolean(saved), email: saved?.email || null, verifiedAt: saved?.verifiedAt || null, syncEnabled: false });
+    }
+    if (action === "check") {
+      const saved = await session(request, env, cfg);
+      if (!saved) return json({ reconnectRequired: true, error: "Sign in to Google Drive again." }, 401);
+      const renewed = await fetcher("https://oauth2.googleapis.com/token", {
+        method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ client_id: env.HPD_DRIVE_CLIENT_ID, client_secret: env.HPD_DRIVE_CLIENT_SECRET,
+          refresh_token: saved.refreshToken, grant_type: "refresh_token" }), signal: AbortSignal.timeout(15000),
+      });
+      const token = await renewed.json();
+      if (!renewed.ok) {
+        if (token.error === "invalid_grant") {
+          await env.HPD_DRIVE_SESSIONS.delete(`session:${saved.id}`);
+          const response = json({ reconnectRequired: true, error: "Google revoked or expired access (invalid_grant). Reconnect Google Drive." }, 401);
+          response.headers.append("Set-Cookie", cookie(SESSION, "", 0));
+          return response;
+        }
+        return json({ error: "Google access renewal failed. Your saved connection and local records were kept." }, 503);
+      }
+      if (!token.access_token) return json({ error: "Google did not return renewed access. Try again later." }, 503);
+      const authHeaders = { Authorization: `Bearer ${token.access_token}` };
+      const identityResponse = await fetcher("https://openidconnect.googleapis.com/v1/userinfo", { headers: authHeaders, signal: AbortSignal.timeout(15000) });
+      if (!identityResponse.ok) return json({ error: "Could not verify the renewed Google connection." }, 503);
+      const identity = await identityResponse.json();
+      if (identity.sub !== saved.sub || identity.email_verified !== true || identity.email?.toLowerCase() !== cfg.email) {
+        return json({ error: "Renewed Google identity did not match the approved account." }, 403);
+      }
+      const driveResponse = await fetcher("https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)", { headers: authHeaders, signal: AbortSignal.timeout(15000) });
+      if (!driveResponse.ok) return json({ error: `Google Drive access check failed (HTTP ${driveResponse.status}). Connection kept; check API availability and permission.` }, 503);
+      const drive = await driveResponse.json();
+      if (drive.user?.emailAddress?.toLowerCase() !== cfg.email) return json({ error: "Google Drive account did not match." }, 403);
+      const verifiedAt = new Date().toISOString();
+      const { id, ...previous } = saved;
+      const value = { ...previous, refreshToken: token.refresh_token || saved.refreshToken, verifiedAt, expires: Date.now() + TTL * 1000 };
+      await env.HPD_DRIVE_SESSIONS.put(`session:${id}`, await seal(env, value, `session:${id}`), { expirationTtl: TTL });
+      const response = json({ configured: true, connected: true, email: cfg.email, verifiedAt, syncEnabled: false });
+      response.headers.append("Set-Cookie", cookie(SESSION, id, TTL));
+      return response;
     }
     if (action === "disconnect") {
       const saved = await session(request, env, cfg);
