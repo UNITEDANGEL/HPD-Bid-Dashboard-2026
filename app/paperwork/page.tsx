@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PDFDocument } from "pdf-lib";
+import { calendarDay } from "../../lib/job-priority";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
 import { type FieldMedia, dataUrlToBytes, listFieldEvidence } from "../../lib/field-photo-store";
 import {
@@ -431,7 +432,7 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     deniedRelationship,
     deniedDescription,
     deniedPhone,
-    workStart: displayDate(actualStartAt || getJobDate(job, "start")),
+    workStart: displayDate(actualStartAt),
     workComplete: displayDate(outcome === "work_completed" || outcome === "partial_work_completed" ? workCompleteAt : noWorkCompleteAt),
     sourceStatus,
     notes: getJobDescription(job).slice(0, 650),
@@ -626,7 +627,7 @@ function statusEventDateForJob(job: JobRecord | null | undefined, outcome: Paper
 }
 
 function fieldEventDateForPackage(job: JobRecord | null | undefined, outcome: PaperworkOutcome, rows: FieldMedia[]) {
-  return latestEvidenceCapturedAt(rows) || statusEventDateForJob(job, outcome);
+  return statusEventDateForJob(job, outcome) || latestEvidenceCapturedAt(rows);
 }
 
 function formWithFieldEventDate(form: PackageForm, outcome: PaperworkOutcome, eventDate: string, job: JobRecord | null) {
@@ -638,23 +639,23 @@ function formWithFieldEventDate(form: PackageForm, outcome: PaperworkOutcome, ev
   const next: PackageForm = {
     ...form,
     invoiceDate: fieldDate,
-    fieldDate,
+    fieldDate: form.fieldDate || fieldDate,
   };
 
   if (outcome === "work_completed" || outcome === "partial_work_completed") {
     return {
       ...next,
-      workStart: displayDate(actualStartAt) || fieldDate,
-      workComplete: fieldDate,
+      workStart: form.workStart || displayDate(actualStartAt),
+      workComplete: form.workComplete || fieldDate,
     };
   }
 
   if (isNoWorkOutcome(outcome)) {
     return {
       ...next,
-      firstAttempt: displayDate(noAccessFirstAt) || form.firstAttempt || fieldDate,
-      secondAttempt: fieldDate,
-      workComplete: fieldDate,
+      firstAttempt: form.firstAttempt || displayDate(noAccessFirstAt) || fieldDate,
+      secondAttempt: form.secondAttempt || fieldDate,
+      workComplete: form.workComplete || fieldDate,
     };
   }
 
@@ -1336,6 +1337,13 @@ export default function PaperworkPage() {
     const activeOutcome = options.outcomeOverride || outcome;
     const includeSignature = options.includeSignature !== false;
     const useWorkTemplate = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
+    const awardDay = calendarDay(getJobDate(selectedJob, "award"));
+    if (awardDay === null || awardDay < calendarDay("2026-08-28")!) {
+      setPdfStatus(awardDay === null
+        ? "Verify the job award date before generating an affidavit. Work dates cannot select the affidavit version."
+        : "This award needs the pre-August 28, 2026 affidavit. Legacy field mapping is not yet verified; generation stopped to avoid using the wrong form.");
+      return null;
+    }
     const templateUrl = useWorkTemplate ? WORK_AFFIDAVIT_TEMPLATE : NO_WORK_AFFIDAVIT_TEMPLATE;
     const jobId = activeForm.jobId || selectedId || "HPD";
     const archiveJobId = activeForm.jobId || selectedId;
@@ -1436,8 +1444,8 @@ export default function PaperworkPage() {
       setAffidavitText("OMO", jobId);
       setAffidavitText("OMO Header2", jobId);
       setAffidavitText("Building Address", upper(activeForm.address), activeForm.address.length > 42 ? 7 : 8);
-      setAffidavitText("State", "NY");
-      setAffidavitText("County Of", AFFIDAVIT_NOTARY_COUNTY, 9);
+      setAffidavitText("State", "");
+      setAffidavitText("County Of", "", 9);
       setAffidavitText("Type or Print Name", signer.toUpperCase());
 
       if (useWorkTemplate) {
@@ -1451,13 +1459,14 @@ export default function PaperworkPage() {
           8
         );
         setAffidavitText("Partial Amount", activeOutcome === "partial_work_completed" ? chargeAmount : "");
-        setAffidavitText("Notary Day Month", `${dayOfMonth(workDate)} DAY OF ${monthName(workDate)}`, 8);
-        setAffidavitText("Notary Year", String(new Date(workDate || Date.now()).getFullYear()).slice(-2), 8);
+        setAffidavitText("Notary Day Month", "", 8);
+        setAffidavitText("Notary Year", "", 8);
 
         if (activeOutcome === "partial_work_completed") {
           setAffidavitText("Denied Name", upper(activeForm.deniedName), 8);
           setAffidavitText("Denied Relationship", upper(activeForm.deniedRelationship), 8);
           setAffidavitText("Denied Description", upper(activeForm.deniedDescription), 8);
+          setAffidavitText("Denied Actions", activeForm.notes || "", 8);
         }
 
         setInvoiceText("START DATE", activeOutcome === "work_completed" ? activeForm.workStart || activeForm.fieldDate : "");
@@ -1473,16 +1482,16 @@ export default function PaperworkPage() {
 
         setAffidavitText("Deponent Name", signer.toUpperCase(), 8);
         setAffidavitText("Service Charge Amount", chargeAmount);
-        setAffidavitText("Notary Day", dayOfMonth(secondAttempt));
-        setAffidavitText("Notary Month", monthName(secondAttempt));
-        setAffidavitText("Notary Year", String(new Date(secondAttempt || Date.now()).getFullYear()).slice(-2));
+        setAffidavitText("Notary Day", "");
+        setAffidavitText("Notary Month", "");
+        setAffidavitText("Notary Year", "");
 
         if (activeOutcome === "no_access") {
           setAffidavitText("Inaccessible Reason", noWorkReason || "NO ACCESS TO MAKE REPAIRS", 8);
           setAffidavitText("Attempt1 Date", firstAttempt, 8);
           setAffidavitText("Attempt2 Date", secondAttempt, 8);
-          setAffidavitText("Phone1 Date", firstAttempt, 8);
-          setAffidavitText("Phone2 Date", secondAttempt, 8);
+          setAffidavitText("Phone1 Date", "", 8);
+          setAffidavitText("Phone2 Date", "", 8);
         }
 
         if (activeOutcome === "completed_by_others") {
@@ -1506,6 +1515,17 @@ export default function PaperworkPage() {
       affidavitForm.flatten();
       invoiceForm.updateFieldAppearances();
       invoiceForm.flatten();
+
+      // Flattened template widgets can leave dangling annotation references.
+      for (const document of [affidavitDoc, invoiceDoc]) {
+        for (const page of document.getPages()) {
+          const annotations = page.node.Annots();
+          if (!annotations) continue;
+          for (let index = annotations.size() - 1; index >= 0; index -= 1) {
+            if (!document.context.lookup(annotations.get(index))) annotations.remove(index);
+          }
+        }
+      }
 
       const invoicePage = invoiceDoc.getPages()[0];
       if (useWorkTemplate && activeOutcome === "partial_work_completed" && invoicePage) {
@@ -1632,6 +1652,10 @@ export default function PaperworkPage() {
 
       const includedMedia = evidenceRows.filter(mediaHasPackageBytes);
       const skippedMedia = evidenceRows.filter((media) => !mediaHasPackageBytes(media));
+      if (skippedMedia.length) {
+        setPdfStatus(`${skippedMedia.length} saved media file(s) are missing their original bytes. Package stopped. Restore or re-upload these files before generating the complete package.`);
+        return;
+      }
       const skippedVideos = skippedMedia.filter((media) => media.mediaType === "video");
       if (skippedVideos.length && !allowPdfOnlyPackage) {
         setPdfStatus(
