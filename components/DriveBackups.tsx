@@ -62,7 +62,7 @@ export default function DriveBackups({ connected }: { connected: boolean }) {
   }
   return <section className="drive-section">
     <h2>Recovery &amp; record backups</h2>
-    <p>Record-only backups include statuses, appointments, workflow notes and visit drafts. Full backups above also include saved media and packages.</p>
+    <p>Record-only backups include statuses, appointments, workflow notes, visit drafts and today's route. Route recovery keeps existing plans unchanged; starting location stays on your device. Full backups above also include saved media and packages.</p>
     <div className="drive-actions">
       <button disabled={!connected || busy} onClick={prepare}>Review local backup</button>
       <button className="drive-secondary" disabled={!connected || busy} onClick={() => run(async () => {
@@ -78,7 +78,7 @@ export default function DriveBackups({ connected }: { connected: boolean }) {
     {error && <p role="alert" className="drive-error">{error}</p>}
     {review && <section className="drive-review" aria-label="Backup review">
       <h3>Review before upload</h3>
-      <p>{backupSummary(review).jobs} jobs / {backupSummary(review).records} saved entries</p>
+      <p>{backupSummary(review).jobs} jobs / {backupSummary(review).routes || 0} routes / {backupSummary(review).records} saved entries</p>
       <p>Captured {new Date(review.capturedAt).toLocaleString()}</p>
       <p>Save these job updates, including tenant contact details in appointments and notes, to your connected Google Drive. A new private recovery file is created; previous backups are kept.</p>
       <div className="drive-actions"><button disabled={busy || !connected} onClick={save}>Save this backup to Drive</button>
@@ -94,7 +94,7 @@ export default function DriveBackups({ connected }: { connected: boolean }) {
     </div>}
     {preview && <section className="drive-review" aria-label="Recovery preview">
       <h3>Recovery preview</h3>
-      <p>{backupSummary(preview.snapshot).jobs} jobs / {backupSummary(preview.snapshot).records} entries. Integrity verified.</p>
+      <p>{backupSummary(preview.snapshot).jobs} jobs / {backupSummary(preview.snapshot).routes || 0} routes / {backupSummary(preview.snapshot).records} entries. Integrity verified.</p>
       <p>Captured {new Date(preview.snapshot.capturedAt).toLocaleString()}. Backup read and integrity verified.</p>
       <div className="drive-actions"><button onClick={download}>Download recovery file</button>
       <button className="drive-secondary" disabled={busy} onClick={() => run(async () => {

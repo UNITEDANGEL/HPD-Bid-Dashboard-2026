@@ -12,9 +12,10 @@ export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect}:
   const [ready,setReady]=useState(false);
   const [message,setMessage]=useState('');
   const bodyRef=useRef<HTMLDivElement>(null);
+  const lastSaved=useRef('');
   const preview=useRef(onPreview); preview.current=onPreview;
-  useEffect(()=>{try {const saved=JSON.parse(localStorage.getItem(KEY)||'null'); if(saved && validRouteSettings(saved.settings) && Array.isArray(saved.ids) && saved.ids.every((id:unknown)=>typeof id==='string')) {setSettings(saved.settings);setIds([...new Set<string>(saved.ids)]);if(Number.isFinite(saved.origin?.point?.lat)&&Number.isFinite(saved.origin?.point?.lng)&&typeof saved.origin?.label==='string')setOrigin(saved.origin);}} catch {setMessage('Saved route could not be read.');} setReady(true);},[]);
-  useEffect(()=>{if(!ready)return;try{localStorage.setItem(KEY,JSON.stringify({settings,ids,origin}));setMessage('Saved on this device');}catch{setMessage('Route could not be saved. Keep this page open.');}},[settings,ids,origin,ready]);
+  useEffect(()=>{lastSaved.current=JSON.stringify({settings,ids,origin});try {const saved=JSON.parse(localStorage.getItem(KEY)||'null'); if(saved && validRouteSettings(saved.settings) && Array.isArray(saved.ids) && saved.ids.every((id:unknown)=>typeof id==='string')) {setSettings(saved.settings);setIds([...new Set<string>(saved.ids)]);if(Number.isFinite(saved.origin?.point?.lat)&&Number.isFinite(saved.origin?.point?.lng)&&typeof saved.origin?.label==='string')setOrigin(saved.origin);}} catch {setMessage('Saved route could not be read.');} setReady(true);},[]);
+  useEffect(()=>{if(!ready||!validRouteSettings(settings))return;const text=JSON.stringify({settings,ids,origin});if(text===lastSaved.current)return;try{localStorage.setItem(KEY,text);lastSaved.current=text;setMessage('Saved on this device');}catch{setMessage('Route could not be saved. Keep this page open.');}},[settings,ids,origin,ready]);
   const eligible=useMemo(()=>eligibleRouteJobs(jobs,settings),[jobs,settings]);
   const selected=useMemo(()=>ids.map(id=>eligible.find(j=>j.id===id)).filter((j):j is RouteJob=>!!j),[ids,eligible]);
   const stops=useMemo(()=>origin?scheduleStops(selected,settings,origin.point):[],[selected,settings,origin]);
@@ -48,6 +49,7 @@ export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect}:
       {selected.length<ids.length&&<p>{ids.length-selected.length} saved stops unavailable or no longer eligible.</p>}
       <label>Add stop<select aria-label="Add route stop" value="" onChange={e=>{if(e.target.value)setIds([...ids,e.target.value]);}}><option value="">Select job</option>{eligible.filter(j=>!ids.includes(j.id)).map(j=><option key={j.id} value={j.id}>{j.id} · {j.address}</option>)}</select></label>
       <p role="status">{message}</p>
+      <a href="/storage/">Drive backup / recovery</a>
       {ids.length>0&&<button type="button" className="fc-route-toggle" onClick={()=>setIds([])}>Clear route</button>}
     </div>}
   </aside>;

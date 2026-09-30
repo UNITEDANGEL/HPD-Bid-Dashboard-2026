@@ -10,6 +10,28 @@ class MemoryStorage {
 }
 globalThis.indexedDB = new IDBFactory();
 globalThis.localStorage = new MemoryStorage();
+// Routes restore atomically; a device's existing plan always wins.
+const routeKey = "hpd-today-route-v1";
+const route = { settings: { date: "2026-09-30", start: "08:00", end: "17:00", minutes: 45, borough: "BK" }, ids: ["TEST2", "TEST1"], origin: { point: { lat: 40.7, lng: -73.9 }, label: "Your location" } };
+const routeStorage = new MemoryStorage();
+routeStorage.setItem(routeKey, JSON.stringify(route));
+const routeSnapshot = await captureFullBackup(routeStorage);
+assert.deepEqual(routeSnapshot.stores[routeKey], { ...route, origin: null }, "Starting location must not leave device");
+const freshDevice = new MemoryStorage();
+assert.equal((await restoreMissing(routeSnapshot, freshDevice)).added, 1);
+assert.deepEqual(JSON.parse(freshDevice.getItem(routeKey)), { ...route, origin: null });
+assert.equal((await restoreMissing(routeSnapshot, freshDevice)).added, 0);
+freshDevice.setItem(routeKey, JSON.stringify({ ...route, ids: [] }));
+const conflict = await restoreMissing(routeSnapshot, freshDevice);
+assert.equal(conflict.added, 0);
+assert.equal(conflict.conflicts, 1);
+assert.deepEqual(JSON.parse(freshDevice.getItem(routeKey)).ids, [], "Cleared routes must not resurrect old stops");
+assert.throws(() => validateBackup({ ...routeSnapshot, stores: { [routeKey]: { ...route, origin: null, ids: ["TEST1", "TEST1"] } } }), /Invalid/);
+assert.throws(() => validateBackup({ ...routeSnapshot, stores: { [routeKey]: route } }), /Invalid/);
+const routePackage = await makePackage(routeSnapshot, async count => Array.from({length:count},(_,i)=>`route_test_part_${i}`));
+const recoveredRoute = await loadRecovery(routePackage.root, async action => ({ snapshot: routePackage.parts.find(p=>p.id===new URL(`https://test/${action}`).searchParams.get('id')).snapshot }));
+assert.deepEqual(recoveredRoute.snapshot, routeSnapshot);
+console.log("PASS: route round-trip, ordered stops/settings, origin exclusion, cleared/current plan conflicts and malformed route rejection");
 const key = "hpd-job-workflow-overrides-v2";
 localStorage.setItem(key, JSON.stringify({ TEST1: { notes: "Test only", WorkflowStatus: "Appointment", appointmentHistory: [{ state: "confirmed" }] } }));
 const empty = await captureFullBackup();

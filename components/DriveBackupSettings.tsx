@@ -29,10 +29,10 @@ export default function DriveBackupSettings({ connected }: { connected: boolean 
   return <section className="drive-section">
     <h2>Automatic backup</h2>
     <label className="drive-toggle"><span>Save this device to Drive</span><input type="checkbox" checked={enabled} disabled={!connected || busy} onChange={(e) => toggle(e.target.checked)} /></label>
-    <p>Saved job updates, photos, videos, visit records and generated PDF/ZIP packages. Checks every minute while the app is open and visible; retries after reconnecting. Unsaved forms are excluded.</p>
+    <p>Saved job updates, today's route, photos, videos, visit records and generated PDF/ZIP packages. Checks every minute while the app is open and visible; retries after reconnecting. Unsaved forms and route starting locations are excluded.</p>
     <dl><div><dt>Automatic backup</dt><dd>{!enabled ? "Off" : !connected ? "Reconnect required" : !online ? "Waiting for internet" : "On while app is open"}</dd></div>
     <div><dt>Two-way sync</dt><dd>Not enabled</dd></div></dl>
-    {state?.verifiedAt && <p role="status">Last full backup: {new Date(state.verifiedAt).toLocaleString()}<br />{state.summary?.jobs || 0} jobs, {state.summary?.media || 0} media, {state.summary?.documents || 0} packages</p>}
+    {state?.verifiedAt && <p role="status">Last full backup: {new Date(state.verifiedAt).toLocaleString()}<br />{state.summary?.jobs || 0} jobs, {state.summary?.routes || 0} routes, {state.summary?.media || 0} media, {state.summary?.documents || 0} packages</p>}
     {state?.queued > 0 && <p role="status">{state.queued} backup parts pending. Local files are retained until verification.</p>}
     {(error || state?.error) && <p role="alert" className="drive-error">{state?.error || error}</p>}
     <button disabled={!connected || busy || !online} onClick={async () => {
