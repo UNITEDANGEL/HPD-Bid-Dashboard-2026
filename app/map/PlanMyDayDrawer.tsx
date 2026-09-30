@@ -200,8 +200,7 @@ function parseMessage(message: string, current: LocalPlan): LocalPlan {
   const wantsAppointments = /appointment/.test(clean);
 
   if (wantsShortestDrive) {
-    next.areaMode = "nearby";
-    next.boroughs = [];
+    if (!next.boroughs.length) next.areaMode = "nearby";
     next.startMode = "current_location";
     next.routePreference = "shortest_drive";
   }
@@ -356,6 +355,7 @@ export default function PlanMyDayDrawer({ records = jobsData }: { records?: JobR
   const speechGeneration = useRef(0);
   const stopDictation = useRef<(() => void) | null>(null);
   const [listening, setListening] = useState(false);
+  const [micConsent, setMicConsent] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", text: "Where would you like to work today? I can plan nearby stops, focus on a borough, or prioritize urgent jobs." },
@@ -458,10 +458,10 @@ export default function PlanMyDayDrawer({ records = jobsData }: { records?: JobR
     const host = window as Window & { SpeechRecognition?: RecognitionConstructor; webkitSpeechRecognition?: RecognitionConstructor };
     const Engine = host.SpeechRecognition || host.webkitSpeechRecognition;
     if (!Engine) { setVoiceStatus("Voice input unavailable. Use keyboard dictation or type."); return; }
-    if (!window.confirm("Your browser may send microphone audio to its speech service. Start voice input?")) return;
+    if (!micConsent) return;
     stopVoice();
     setListening(true);
-    setVoiceStatus("Listening");
+    setVoiceStatus("Starting microphone");
     stopDictation.current = startDictation(Engine, (text) => setInput((current) => [current.trim(), text].filter(Boolean).join(" ")), setVoiceStatus, () => setListening(false));
   }
 
@@ -501,18 +501,8 @@ export default function PlanMyDayDrawer({ records = jobsData }: { records?: JobR
     try {
     const nextPlan = parseMessage(message, plan);
     const { point, label } = await getOrigin(nextPlan.startMode);
-    let workingPlan = nextPlan;
-    let nextResults = rankJobs(workingPlan, point, records);
-    let widenedDateRange = false;
-    if (!nextResults.length && nextPlan.daysBack !== null) {
-      const widenedPlan = { ...nextPlan, daysBack: null };
-      const widenedResults = rankJobs(widenedPlan, point, records);
-      if (widenedResults.length) {
-        workingPlan = widenedPlan;
-        nextResults = widenedResults;
-        widenedDateRange = true;
-      }
-    }
+    const workingPlan = nextPlan;
+    const nextResults = rankJobs(workingPlan, point, records);
     setPlan(workingPlan);
     setResults(nextResults);
     setSelectedIds(nextResults.map((job) => job.id));
@@ -521,7 +511,6 @@ export default function PlanMyDayDrawer({ records = jobsData }: { records?: JobR
 
     const missingIncluded = workingPlan.includeOmo.filter((id) => !nextResults.some((job) => job.id === id));
     let reply = `I prepared ${nextResults.length} stops from ${label}. ${describePlan(workingPlan)}`;
-    if (widenedDateRange) reply = `I found no matching jobs in that date range, so I widened the route to any date. ${reply}`;
     if (!nextResults.length) reply = "I could not find matching active jobs. Try removing a restriction, changing the borough, or asking for nearby jobs.";
     else if (missingIncluded.length) reply += ` I could not locate these active OMO numbers: ${missingIncluded.join(", ")}.`;
     else reply += " Review the stops below. You can tell me to add, remove, shorten, or reprioritize the route.";
@@ -771,7 +760,8 @@ export default function PlanMyDayDrawer({ records = jobsData }: { records?: JobR
           </section>
 
           <div className="plan-my-day__voice-row">
-            <button type="button" onClick={dictate} disabled={busy || listening}>Talk</button>
+            <label><input type="checkbox" checked={micConsent} onChange={(event) => { setMicConsent(event.target.checked); if (!event.target.checked) stopVoice(); }} /> Allow browser speech service to process my microphone audio</label>
+            <button type="button" onClick={dictate} disabled={busy || listening || !micConsent}>Talk</button>
             <button type="button" onClick={readLastReply} disabled={!lastAssistantReply || listening}>Read Reply</button>
             <button type="button" onClick={() => { stopVoice(); setVoiceStatus("Stopped"); }} disabled={!listening && !speaking}>Stop</button>
             <small role="status">{voiceStatus}</small>
