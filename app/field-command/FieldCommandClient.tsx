@@ -1342,7 +1342,6 @@ export default function FieldCommandClient() {
       </section>
 
       <div className="fc-map-wrap">
-        {(daysBack !== null || dateRange.from || dateRange.to) && !(controlsOpen && chromeOpen) ? <button className="fc-active-date" type="button" onClick={() => { setChromeOpen(true); setControlsOpen(true); }}>{dateRange.from || dateRange.to ? `${JOB_DATE_FIELDS[dateRange.field]} date filter${daysBack !== null ? " + award age" : ""}` : `Awarded: ${daysBack} days`}</button> : null}
         <div ref={mapNode} className={`fc-map-node ${darkTiles ? "is-dark" : ""}`} />
         <div className="fc-map-controls">
           <button
