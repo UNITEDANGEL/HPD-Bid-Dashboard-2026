@@ -520,6 +520,8 @@ export default function FieldCommandClient() {
   const [clearText, setClearText] = useState("");
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const videoCameraInputRef = useRef<HTMLInputElement | null>(null);
+  const videoLibraryInputRef = useRef<HTMLInputElement | null>(null);
   const mediaChoiceRef = useRef<HTMLDivElement | null>(null);
   const [mediaChoice, setMediaChoice] = useState<FieldMediaKind | null>(null);
   const pendingMediaKindRef = useRef<FieldMediaKind>("before");
@@ -1207,11 +1209,13 @@ export default function FieldCommandClient() {
     requestAnimationFrame(() => mediaChoiceRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
   }
 
-  function chooseMediaSource(source: "camera" | "library") {
+  function chooseMediaSource(source: "camera" | "library" | "video-camera" | "video-library") {
     if (!mediaChoice || mediaBusy) return;
     const kind = mediaChoice;
     pendingMediaKindRef.current = kind;
-    if (source === "camera") cameraInputRef.current?.click();
+    if (source === "video-camera") videoCameraInputRef.current?.click();
+    else if (source === "video-library") videoLibraryInputRef.current?.click();
+    else if (source === "camera") cameraInputRef.current?.click();
     else mediaInputRef.current?.click();
     setMediaChoice(null);
   }
@@ -1232,13 +1236,16 @@ export default function FieldCommandClient() {
         label: kind === "before" ? "Before Work Evidence" : "After Work Evidence",
       });
       await refreshMediaCounts(selectedJob);
-      setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}` : "No image or video was saved.");
+      const unstamped = saved.filter(item => item.mediaType === "video" && item.stamped === false).length;
+      setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}.${unstamped ? ` ${unstamped} video(s) saved as originals without burned-in labels; review before submitting.` : ""}` : "No image or video was saved.");
     } catch (error) {
       setMediaMessage(error instanceof Error ? error.message : "Media save failed.");
     } finally {
       setMediaBusy("");
       if (mediaInputRef.current) mediaInputRef.current.value = "";
       if (cameraInputRef.current) cameraInputRef.current.value = "";
+      if (videoCameraInputRef.current) videoCameraInputRef.current.value = "";
+      if (videoLibraryInputRef.current) videoLibraryInputRef.current.value = "";
     }
   }
 
@@ -1549,6 +1556,8 @@ export default function FieldCommandClient() {
                   <div className="fc-photo-source-actions">
                     <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("camera")}><PhotosIcon />Take {mediaChoice} photo</button>
                     <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("library")}><DocumentsIcon />Add {mediaChoice} photos</button>
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-camera")}>Record {mediaChoice} video</button>
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-library")}>Add {mediaChoice} videos</button>
                   </div>
                 </div> : null}
                 {next.key === "review" ? (
@@ -1673,23 +1682,25 @@ export default function FieldCommandClient() {
                 <input
                   ref={mediaInputRef}
                   type="file"
-                  accept="image/*,video/*"
+                  accept="image/*"
                   multiple
                   className="fc-hidden-file"
                   onChange={(event) => void handleMediaFiles(event.target.files)}
                 />
                 <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
+                <input ref={videoCameraInputRef} type="file" accept="video/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
+                <input ref={videoLibraryInputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
                 <div className="fc-media-head">
                   <strong>Media + Package</strong>
                   <span>{counts.total} saved</span>
                 </div>
                 <div className="fc-media-grid">
                   <button type="button" onClick={() => requestMediaUpload("before")} disabled={Boolean(mediaBusy)}>
-                    <b>Before</b>
+                    <b>Before photos / videos</b>
                     <small>{mediaBusy === "before" ? "Saving..." : `${counts.before} saved`}</small>
                   </button>
                   <button type="button" onClick={() => requestMediaUpload("after")} disabled={Boolean(mediaBusy)}>
-                    <b>After</b>
+                    <b>After photos / videos</b>
                     <small>{mediaBusy === "after" ? "Saving..." : `${counts.after} saved`}</small>
                   </button>
                   <a href={paperworkReviewHref(id, true)}>
