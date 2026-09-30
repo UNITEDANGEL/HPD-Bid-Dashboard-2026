@@ -1,7 +1,8 @@
 "use client";
 
 import jobsData from "../../data/COA_Fetcher_2026.json";
-import { isPendingJob, jobPriority } from "../../lib/job-priority";
+import { jobPriority } from "../../lib/job-priority";
+import { jobQueue, visitState } from "../../lib/job-queue";
 import { countFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import {
   shadowUpsert,
@@ -123,7 +124,7 @@ function jobStatus(record: JobRecord) {
 }
 
 function isClosed(record: JobRecord) {
-  return !isPendingJob(record);
+  return jobQueue(record) !== "pending" || visitState(record).blocked;
 }
 
 function isUrgent(record: JobRecord) {
