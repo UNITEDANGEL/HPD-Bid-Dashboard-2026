@@ -2009,5 +2009,5 @@
 .fc-appointment-agenda > button { display: grid; gap: 5px; width: 100%; min-height: 60px; padding: 10px 0; border: 0; border-top: 1px solid #ffffff25; text-align: left; background: transparent; color: inherit; font-size: 13px; }
 .fc-appointment-agenda span { overflow-wrap: anywhere; }
 .fc-visit-summary { display:grid; gap:4px; border-left:4px solid; padding:8px 10px; margin:8px 0; font-size:12px; overflow-wrap:anywhere; }
-.fc-visit-summary button { min-height:44px; }
+.fc-visit-summary button { min-height:44px; background:#273c34; color:#fff; border:1px solid #839d91; border-radius:4px; padding:8px; font-weight:600; }
 .fc-visit-pin-count { position:absolute; right:-4px; top:-8px; background:#fff; color:#202522; border:1px solid #65746b; border-radius:4px; font-size:10px; line-height:14px; padding:0 2px; pointer-events:none; }
