@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { AUTO_KEY, driveApi, runFullBackup, withBackupLock } from "../lib/drive-backup-client.mjs";
+import { AUTO_KEY, SYNC_KEY, driveApi, runFullBackup, syncMissingRecords, withBackupLock } from "../lib/drive-backup-client.mjs";
 
 export default function DriveAutoBackup() {
   useEffect(() => {
@@ -14,7 +14,13 @@ export default function DriveAutoBackup() {
         working = true;
         const session = await driveApi("session");
         if (!session.connected || !enabled()) return;
-        await withBackupLock(() => runFullBackup({ shouldContinue: enabled }));
+        await withBackupLock(async () => {
+          await runFullBackup({ shouldContinue: enabled });
+          if (localStorage.getItem(SYNC_KEY) === "on") {
+            await syncMissingRecords({ shouldContinue: enabled });
+            if (enabled()) await runFullBackup({ shouldContinue: enabled });
+          }
+        });
       } catch { /* Queue and previous files remain intact; storage screen displays failures. */ }
       finally { working = false; window.dispatchEvent(new Event("hpd-drive-backup-status")); }
     }
