@@ -205,8 +205,13 @@
 }
 
 .fc-app .plan-my-day__voice-row {
-  display: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
+
+.fc-app .plan-my-day__voice-row button { min-height: 44px; padding: 8px 10px; border-radius: 8px; }
+.fc-app .plan-my-day__voice-row small { flex: 1 1 100%; overflow-wrap: anywhere; }
 
 .fc-app .plan-my-day__job-picker {
   order: 7;
