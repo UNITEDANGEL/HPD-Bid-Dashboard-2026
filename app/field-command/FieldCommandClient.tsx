@@ -12,6 +12,7 @@ import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkReviewHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
+import { fetchServerWorkflowOverrides } from "../../lib/paperwork";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
@@ -612,13 +613,15 @@ export default function FieldCommandClient() {
     function refreshJobs() {
       if (loading) return;
       loading = true;
-      fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" })
-      .then((r) => { if (!r.ok) throw new Error("Job refresh failed"); return r.json(); })
-      .then((data) => {
+      Promise.all([
+        fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error("Job refresh failed"); return r.json(); }),
+        fetchServerWorkflowOverrides().catch(() => ({})),
+      ])
+      .then(([data, serverOverrides]) => {
         if (cancelled) return;
         const rows = Array.isArray(data) ? data : data.jobs || data.data || data.records;
         if (!Array.isArray(rows)) throw new Error("Invalid job response");
-        const overrides = readSharedWorkflowOverrides();
+        const overrides = { ...readSharedWorkflowOverrides(), ...serverOverrides };
         const next = rows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}) }));
         setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
       })
