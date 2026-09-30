@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { nyToday } from '../../lib/appointments';
+import { drivingLink } from '../../lib/driving-link';
 import { eligibleRouteJobs, planDay, routeTime, scheduleStops, validRouteSettings, type RouteJob, type RoutePoint, type RouteSettings } from '../../lib/day-route';
 
 const KEY='hpd-today-route-v1';
@@ -36,14 +37,15 @@ export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect}:
       {settings.date<nyToday()&&<p role="status">Saved plan is from a previous day. Choose today and rebuild.</p>}
       <button className="fc-next-action" type="button" disabled={!mapReady||!validRouteSettings(settings)} onClick={build}>{ids.length?'Rebuild route':'Build route'}</button>
       <button type="button" className="fc-route-toggle" onClick={()=>setOrigin(getOrigin())}>Update start from location / map</button>
-      <p>{origin?.label || 'Map center'} · New York time · Estimated travel/work times, no live traffic. Dashed line is stop order, not a road route.</p>
+      <p>{origin?.label || 'Map center'} · New York time · Estimated travel/work times, no live traffic. Line is stop order, not a road route.</p>
       </details>
       {ids.length>0&&<p>Estimated times · Stop order, not a road route</p>}
+      {selected[0]&&drivingLink(selected[0])&&<a className="fc-route-drive" href={drivingLink(selected[0])!} target="_blank" rel="noreferrer">Navigate next stop · {selected[0].id}<small>Google Maps · Driving directions</small></a>}
       {stops.some(s=>s.warning)&&<p role="alert">Route needs review: appointment or workday conflicts below.</p>}
       <ol>{stops.map((stop,index)=><li key={stop.job.id}>
         <button className="fc-route-stop" type="button" onClick={()=>{setOpen(false);onSelect(stop.job.id);}}><b>{index+1}. {stop.job.id}</b><span>{stop.job.address}</span><span>{routeTime(stop.arrival)}-{routeTime(stop.finish)} · {stop.travel} min travel est.</span><span>{stop.job.appointment?.state==='confirmed'?`Appointment ${stop.job.appointment.start}-${stop.job.appointment.end}`:stop.job.days===null?'Maturity unavailable':stop.job.days>0?`${stop.job.days} days overdue`:`Due in ${-stop.job.days} days`}</span></button>
         {stop.warning&&<strong role="alert">{stop.warning}</strong>}
-        <div className="fc-route-stop-actions"><button type="button" title="Move stop earlier" aria-label={`Move ${stop.job.id} earlier`} disabled={index===0} onClick={()=>move(index,-1)}>↑</button><button type="button" title="Move stop later" aria-label={`Move ${stop.job.id} later`} disabled={index===stops.length-1} onClick={()=>move(index,1)}>↓</button><button type="button" onClick={()=>setIds(ids.filter(id=>id!==stop.job.id))}>Skip</button><a href={`https://www.google.com/maps/dir/?api=1&destination=${stop.job.lat},${stop.job.lng}`} target="_blank" rel="noreferrer">Navigate</a></div>
+        <div className="fc-route-stop-actions"><button type="button" title="Move stop earlier" aria-label={`Move ${stop.job.id} earlier`} disabled={index===0} onClick={()=>move(index,-1)}>↑</button><button type="button" title="Move stop later" aria-label={`Move ${stop.job.id} later`} disabled={index===stops.length-1} onClick={()=>move(index,1)}>↓</button><button type="button" onClick={()=>setIds(ids.filter(id=>id!==stop.job.id))}>Skip</button><a href={drivingLink(stop.job)||undefined} target="_blank" rel="noreferrer">Navigate</a></div>
       </li>)}</ol>
       {!stops.length&&<p>No planned stops. Build a route or choose another area.</p>}
       {selected.length<ids.length&&<p>{ids.length-selected.length} saved stops unavailable or no longer eligible.</p>}

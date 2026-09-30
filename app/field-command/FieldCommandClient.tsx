@@ -938,12 +938,27 @@ export default function FieldCommandClient() {
     const L = (leafletModule as any).default || leafletModule;
     dayRouteLayerRef.current?.remove();
     if (!stops.length) return;
+    for (const [name, z] of [["fc-route-path", "610"], ["fc-route-stops", "620"]]) {
+      const pane = mapRef.current.getPane(name) || mapRef.current.createPane(name);
+      pane.style.zIndex = z;
+    }
     const line = [origin, ...stops].map(p => [p.lat, p.lng]);
     dayRouteLayerRef.current = L.featureGroup([
-      L.polyline(line, { color: "#176b51", weight: 3, dashArray: "7 9", opacity: 0.8, interactive: false }),
+      L.polyline(line, { pane:"fc-route-path", color: "#ffffff", weight: 11, opacity: 0.95, interactive: false }),
+      L.polyline(line, { pane:"fc-route-path", color: "#1267df", weight: 7, opacity: 1, interactive: false }),
+      L.polyline(line, { pane:"fc-route-path", color: "#d8f8ff", weight: 3, dashArray: "3 19", opacity: 1, interactive: false, className: "fc-route-flow" }),
+      ...stops.flatMap((job, index) => {
+        const previous = index ? stops[index-1] : origin;
+        const from = mapRef.current.project([previous.lat, previous.lng], 14);
+        const to = mapRef.current.project([job.lat, job.lng], 14);
+        if (from.distanceTo(to) < 24) return [];
+        const angle = Math.atan2(to.y-from.y, to.x-from.x)*180/Math.PI;
+        const midpoint = mapRef.current.unproject([(from.x+to.x)/2, (from.y+to.y)/2],14);
+        return [L.marker(midpoint, {pane:"fc-route-stops", interactive:false, icon:L.divIcon({className:"fc-route-direction",html:`<span style="transform:rotate(${angle}deg)"></span>`,iconSize:[18,18],iconAnchor:[9,9]})})];
+      }),
       ...stops.map((job, index) => L.marker([job.lat, job.lng], {
-        icon: L.divIcon({className:"fc-route-number",html:String(index+1),iconSize:[28,28],iconAnchor:[14,14]}),
-        title: `Route stop ${index+1}: ${job.id}`, zIndexOffset: 2000,
+        icon: L.divIcon({className:`fc-route-number${index===0?' is-next':''}`,html:String(index+1),iconSize:[32,32],iconAnchor:[16,16]}),
+        pane:"fc-route-stops", title: `Route stop ${index+1}: ${job.id}`, zIndexOffset: 2000,
       }).on('click',()=>setSelectedJob(jobs.find(row=>jobId(row)===job.id)||null)))
     ]).addTo(mapRef.current);
     mapRef.current.fitBounds(dayRouteLayerRef.current.getBounds(), {padding:[36,60],maxZoom:15});
@@ -972,8 +987,9 @@ export default function FieldCommandClient() {
     const routePoints = [origin, ...stops.map((point) => ({ lat: point.lat, lng: point.lng }))];
     const latLngs = routePoints.map((point) => [point.lat, point.lng]);
     routeLayerRef.current = L.featureGroup([
-      L.polyline(latLngs, { color: "#020617", weight: 10, opacity: 0.72, lineCap: "round", lineJoin: "round" }),
-      L.polyline(latLngs, { color: "#1d8cff", weight: 5, opacity: 0.94, dashArray: "12 10", lineCap: "round", lineJoin: "round" }),
+      L.polyline(latLngs, { color: "#ffffff", weight: 11, opacity: 0.95, interactive:false }),
+      L.polyline(latLngs, { color: "#1267df", weight: 7, opacity: 1, interactive:false }),
+      L.polyline(latLngs, { color: "#d8f8ff", weight: 3, opacity: 1, dashArray: "3 19", interactive:false, className:"fc-route-flow" }),
     ]).addTo(mapRef.current);
     mapRef.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [42, 42], maxZoom: 14 });
     setRouteSummary({
