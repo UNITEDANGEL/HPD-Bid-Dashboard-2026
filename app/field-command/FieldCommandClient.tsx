@@ -9,7 +9,7 @@ import type { RouteJob, RoutePoint } from "../../lib/day-route";
 import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointments";
 import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
-import { JOB_QUEUES, jobQueue, matchesJobQueue } from "../../lib/job-queue";
+import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, suggestedPhotoKind } from "../../lib/field-next-action";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
@@ -760,9 +760,11 @@ export default function FieldCommandClient() {
           const occupied: { x: number; y: number }[] = [];
           groupByLocation(pointsRef.current).forEach((location) => {
             location.jobs.forEach((job, index) => {
-              const meta = jobStatusMeta(job);
+              const meta = { ...jobStatusMeta(job) };
+              const visit = visitState(job);
+              meta.color = visit.color;
               const priority = jobPriority(job);
-              const title = `${jobId(job)} - ${meta.label} - ${priority.label}`;
+              const title = `${jobId(job)} - ${meta.label} - ${priority.label} - ${visit.label} - ${visit.count} visits`;
               const offset = map.getZoom() >= 17 ? individualPinOffset(index, location.jobs.length) : { x: 0, y: 0 };
               const origin = map.latLngToLayerPoint([location.lat, location.lng]);
               const position = map.layerPointToLatLng(L.point(origin.x + offset.x, origin.y + offset.y));
@@ -770,7 +772,7 @@ export default function FieldCommandClient() {
               const screen = map.latLngToContainerPoint(position);
               const showLabel = reservePinLabel(screen.x, screen.y, occupied);
               const html = showLabel
-                ? ageMarkerHtml(priority.days, priority.pending, map.getZoom(), false, meta.color, meta.key)
+                ? ageMarkerHtml(priority.days, priority.pending, map.getZoom(), false, meta.color, meta.key) + (visit.count ? `<span class="fc-visit-pin-count">${visit.count}v</span>` : "")
                 : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`;
               if (map.getZoom() >= 17 && location.jobs.length > 1) {
                 L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
@@ -951,7 +953,7 @@ export default function FieldCommandClient() {
   const routeJobs = useMemo<RouteJob[]>(() => jobs.flatMap(job => {
     const point = jobLatLng(job); if (!point) return [];
     const queue = jobQueue(job);
-    return [{id:jobId(job),address:jobAddress(job),borough:jobBorough(job),...point,days:jobPriority(job).days,pending:queue==='pending',closed:queue==='completed'||queue==='archived',appointment:job.Appointment as Appointment|undefined}];
+    return [{id:jobId(job),address:jobAddress(job),borough:jobBorough(job),...point,days:jobPriority(job).days,pending:queue==='pending',closed:queue==='completed'||queue==='archived',blocked:visitState(job).blocked,appointment:job.Appointment as Appointment|undefined}];
   }), [jobs, calendarDate]);
 
   async function previewLocalRoute() {
@@ -961,7 +963,7 @@ export default function FieldCommandClient() {
     const center = userMarkerRef.current?.getLatLng?.() || mapRef.current.getCenter();
     const origin = { lat: Number(center.lat), lng: Number(center.lng) };
     const stops = pointsRef.current
-      .filter(({ job }) => matchesJobQueue(job, "pending"))
+      .filter(({ job }) => matchesJobQueue(job, "pending") && !visitState(job).blocked)
       .map((point) => ({ ...point, miles: distanceMiles(origin, { lat: point.lat, lng: point.lng }) }))
       .sort((a, b) => Math.max(0, jobPriority(b.job).days || 0) - Math.max(0, jobPriority(a.job).days || 0) || a.miles - b.miles)
       .slice(0, 6);
@@ -1472,6 +1474,20 @@ export default function FieldCommandClient() {
                 <span className="fc-job-sheet-tag fc-age-tag" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>
               </div>
               {jobDateWarning(selectedJob) && <p role="status">{jobDateWarning(selectedJob)}</p>}
+              <div className="fc-visit-summary" style={{borderLeftColor:visitState(selectedJob).color}}>
+                <strong>{visitState(selectedJob).label} · {visitState(selectedJob).count} recorded visits</strong>
+                {visitState(selectedJob).lastAt && <span>Last visit: {/^\d{4}-\d{2}-\d{2}$/.test(visitState(selectedJob).lastAt) ? visitState(selectedJob).lastAt : formatSavedTime(visitState(selectedJob).lastAt)}</span>}
+                {visitState(selectedJob).count > 0 && <span>{FIELD_OUTCOMES[visitState(selectedJob).lastOutcome] || visitState(selectedJob).lastOutcome}</span>}
+                {visitState(selectedJob).note && <span>{visitState(selectedJob).note}</span>}
+                {selectedJob.Appointment ? (() => { const a = selectedJob.Appointment as Appointment; return <span>Appointment: {a.date} {a.start}-{a.end} ({a.state})</span>; })() : null}
+                {visitState(selectedJob).kind === "blocked" && <span>Excluded from routes. Review required before returning.</span>}
+                {["blocked","return"].includes(visitState(selectedJob).kind) && <button type="button" onClick={() => {
+                  if (!window.confirm("Approve a return visit to this job? Existing visit records will be kept.")) return;
+                  const patch = {RevisitApprovedAt:new Date().toISOString()};
+                  try { writeSharedWorkflowPatch(jobId(selectedJob),patch); mergeWorkflowPatchIntoScreen(jobId(selectedJob),patch); }
+                  catch { setOutcomeMessage("Return approval could not be saved. Try again."); }
+                }}>Approve return visit</button>}
+              </div>
               <div className="fc-reference-job-summary">
                 <dl>
                   <div><dt>Award date</dt><dd>{value(selectedJob, ["AwardDate", "awardDate"]) || "Not available"}</dd></div>

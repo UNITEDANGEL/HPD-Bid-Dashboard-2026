@@ -8,6 +8,8 @@ const s={date:'2026-09-30',start:'08:00',end:'17:00',minutes:45,borough:'ALL'};
 const origin={lat:40.7,lng:-73.9};
 const job=(id,days,extra={})=>({id,address:id,borough:'BK',...origin,days,pending:true,closed:false,...extra});
 const appointment=job('appt',20,{pending:false,appointment:{state:'confirmed',date:s.date,start:'10:00',end:'11:00'}});
+assert.equal(eligibleRouteJobs([{...appointment,blocked:true}],s).length,0,'A confirmed appointment cannot silently override do-not-revisit');
+assert.equal(eligibleRouteJobs([job('blocked',200,{blocked:true})],s).length,0);
 const jobs=[job('young',2),job('old',150),appointment,job('closed',400,{closed:true}),job('refused',300,{pending:false}),job('future',60,{appointment:{state:'confirmed',date:'2026-10-01',start:'10:00',end:'11:00'}}),job('requested',40,{appointment:{...appointment.appointment,state:'requested'}})];
 assert.deepEqual(eligibleRouteJobs(jobs,s).map(j=>j.id),['young','old','appt']);
 const plan=planDay(jobs,s,origin);assert.equal(plan[0].id,'old');assert.ok(plan.includes(appointment));

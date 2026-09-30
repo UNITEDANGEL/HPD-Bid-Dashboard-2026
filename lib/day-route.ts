@@ -1,4 +1,4 @@
-export type RouteJob = { id: string; address: string; borough: string; lat: number; lng: number; days: number | null; pending: boolean; closed: boolean; appointment?: { date: string; start: string; end: string; state: string } };
+export type RouteJob = { id: string; address: string; borough: string; lat: number; lng: number; days: number | null; pending: boolean; closed: boolean; blocked?: boolean; appointment?: { date: string; start: string; end: string; state: string } };
 export type RoutePoint = { lat: number; lng: number };
 export type RouteSettings = { date: string; start: string; end: string; minutes: number; borough: string };
 export type RouteStop = { job: RouteJob; arrival: number; finish: number; travel: number; warning: string };
@@ -19,7 +19,7 @@ export function travelEstimate(a: RoutePoint, b: RoutePoint) {
   return Math.ceil(3959 * 2 * Math.asin(Math.sqrt(Math.min(1,h))) / 15 * 60) + 5;
 }
 export function eligibleRouteJobs(jobs: RouteJob[], s: RouteSettings) {
-  return jobs.filter(j => !j.closed && Number.isFinite(j.lat) && Number.isFinite(j.lng) && Math.abs(j.lat)<=90 && Math.abs(j.lng)<=180 && !(j.lat===0 && j.lng===0) && (s.borough==='ALL' || j.borough===s.borough) &&
+  return jobs.filter(j => !j.closed && !j.blocked && Number.isFinite(j.lat) && Number.isFinite(j.lng) && Math.abs(j.lat)<=90 && Math.abs(j.lng)<=180 && !(j.lat===0 && j.lng===0) && (s.borough==='ALL' || j.borough===s.borough) &&
     (j.appointment && ['confirmed','requested'].includes(j.appointment.state)
       ? j.appointment.state==='confirmed' && j.appointment.date===s.date
       : j.pending));
