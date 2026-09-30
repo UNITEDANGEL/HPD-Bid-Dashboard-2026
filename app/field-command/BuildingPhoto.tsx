@@ -44,7 +44,7 @@ export default function BuildingPhoto({ id, address, borough, point }: {
 
   return <section className="fc-building" aria-label="Building photo">
     {photo ? <button className="fc-building-image" type="button" aria-label={expanded ? "Collapse building photo" : "Enlarge building photo"} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
-      <img src={photo.dataUrl} alt={`Building exterior at ${address}`} />
+      <img src={photo.dataUrl} alt={`Building exterior at ${address}`} onError={() => { setPhoto(null); setError("Saved photo could not be displayed. Add a readable image; the saved file is retained."); }} />
     </button> : <span className="fc-building-empty">No building photo</span>}
     <div className="fc-building-actions">
       <strong>Building</strong>
