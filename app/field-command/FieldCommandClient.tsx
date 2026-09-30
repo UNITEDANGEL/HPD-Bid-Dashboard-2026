@@ -505,6 +505,7 @@ export default function FieldCommandClient() {
   const [darkTiles, setDarkTiles] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [chromeOpen, setChromeOpen] = useState(false);
+  const [plannerRequest,setPlannerRequest] = useState(0);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [locateStatus, setLocateStatus] = useState<"idle" | "loading" | "error">("idle");
   const [scopeOpen, setScopeOpen] = useState(false);
@@ -1301,6 +1302,7 @@ export default function FieldCommandClient() {
       </div>
       {chromeOpen && !controlsOpen && <nav className="fc-organized-menu" aria-label="Map menu">
         <strong>Map menu</strong>
+        <button type="button" onClick={()=>{setChromeOpen(false);setControlsOpen(false);setPlannerRequest(value=>value+1);}}><ListIcon />Plan my day</button>
         <button type="button" aria-controls="field-map-filters" onClick={() => setControlsOpen(true)}><ListIcon />Filters</button>
         <Link href="/jobs/"><ListIcon />Jobs</Link>
         <Link href="/alerts/"><BellIcon />Alerts</Link>
@@ -1726,7 +1728,7 @@ export default function FieldCommandClient() {
         })() : null}
       </div>
 
-      <PlanMyDayDrawer records={jobs} />
+      <PlanMyDayDrawer records={jobs} openRequest={plannerRequest} />
     </main>
   );
 }

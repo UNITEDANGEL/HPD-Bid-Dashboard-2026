@@ -2029,3 +2029,8 @@
 .fc-organized-menu svg { width:20px; height:20px; flex:none; }
 .fc-app.fc-reference.fc-chrome-open:not(.fc-controls-open) .fc-control-drawer { display:none; }
 .fc-app.fc-reference.fc-chrome-open:not(.fc-controls-open) .fc-map-controls { display:none; }
+.fc-app.fc-reference.fc-full-map .plan-my-day:not(.is-open):not(.is-media-paused) { display:none; }
+.fc-app.fc-reference.fc-full-map .plan-my-day.is-open { display:block; z-index:1700; bottom:24px; }
+.fc-app.fc-reference.fc-full-map .plan-my-day.is-open .plan-my-day__toggle { display:none; }
+.fc-app.fc-reference.fc-full-map .plan-my-day.is-open .plan-my-day__panel { max-height:calc(100dvh - 130px) !important; border-radius:8px; }
+.fc-app:has(.plan-my-day.is-open) :is(.fc-today-route,.fc-current-job) { visibility:hidden; }

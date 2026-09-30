@@ -49,7 +49,6 @@ type PlannedJob = {
 
 const BOROUGHS = ["Queens", "Brooklyn", "Bronx", "Manhattan", "Staten Island"];
 const BASE_POINT: Point = { lat: 40.6957, lng: -73.8331 };
-const LAST_LOCATION_STORAGE_KEY = "hpd-map-location-last-v1";
 const STATUS_WORKER_URL = process.env.NEXT_PUBLIC_HPD_STATUS_WORKER_URL || "https://hpd-status-worker.uac525.workers.dev";
 const DEFAULT_PLAN: LocalPlan = {
   areaMode: "all",
@@ -249,25 +248,13 @@ function describePlan(plan: LocalPlan) {
 }
 
 async function getOrigin(startMode: LocalPlan["startMode"]): Promise<{ point: Point; label: string }> {
-  if (startMode === "office" || !navigator.geolocation) return Promise.resolve({ point: BASE_POINT, label: "Richmond Hill office" });
-  try {
-    const saved = JSON.parse(window.localStorage.getItem(LAST_LOCATION_STORAGE_KEY) || "null");
-    if (Number.isFinite(saved?.lat) && Number.isFinite(saved?.lng)) {
-      return { point: { lat: saved.lat, lng: saved.lng }, label: "your saved location" };
-    }
-  } catch {}
-  try {
-    const permissions = (navigator as any).permissions;
-    if (permissions?.query) {
-      const permission = await permissions.query({ name: "geolocation" });
-      if (permission.state === "denied") return { point: BASE_POINT, label: "Richmond Hill office fallback" };
-    }
-  } catch {}
-  return new Promise((resolve) => {
+  if (startMode === "office") return { point: BASE_POINT, label: "Richmond Hill office" };
+  if (!navigator.geolocation) throw new Error("Location unavailable. Enable location or request a route starting from the office.");
+  return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
       (position) => resolve({ point: { lat: position.coords.latitude, lng: position.coords.longitude }, label: "your current location" }),
-      () => resolve({ point: BASE_POINT, label: "Richmond Hill office fallback" }),
-      { enableHighAccuracy: true, maximumAge: 300_000, timeout: 2_500 },
+      () => reject(new Error("Could not get your location. Allow location and retry, or request a route starting from the office.")),
+      { enableHighAccuracy: true, maximumAge: 30_000, timeout: 10_000 },
     );
   });
 }
@@ -345,9 +332,10 @@ function selectableJob(record: JobRecord, origin?: Point, reason = "Selected by 
   };
 }
 
-export default function PlanMyDayDrawer({ records = jobsData }: { records?: JobRecord[] } = {}) {
+export default function PlanMyDayDrawer({ records = jobsData, openRequest = 0 }: { records?: JobRecord[]; openRequest?: number } = {}) {
   const chatRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
+  useEffect(() => { if (openRequest > 0) { setOpen(true); setMediaPaused(false); } }, [openRequest]);
   const [input, setInput] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const voiceAllowed = useRef(false);
@@ -517,8 +505,8 @@ export default function PlanMyDayDrawer({ records = jobsData }: { records?: JobR
 
     setMessages((current) => [...current, { role: "assistant", text: reply }]);
     speakReply(reply);
-    } catch {
-      setMessages((current) => [...current, { role: "assistant", text: "I could not prepare that route. Your job records are unchanged. Please try again." }]);
+    } catch (error) {
+      setMessages((current) => [...current, { role: "assistant", text: error instanceof Error ? error.message : "I could not prepare that route. Your job records are unchanged. Please try again." }]);
     } finally {
       setBusy(false);
     }

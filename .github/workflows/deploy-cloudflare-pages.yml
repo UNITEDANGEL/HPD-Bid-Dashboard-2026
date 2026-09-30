@@ -62,6 +62,8 @@ jobs:
           node scripts/test-appointments.cjs
           node scripts/test-day-route.cjs
           node scripts/test-current-job.cjs
+          node scripts/test-planner-location.cjs
+          node scripts/test-planner-constraints.cjs
           node scripts/test-driving-link.cjs
           node scripts/test-drive-auth.mjs
           node scripts/test-drive-backups.mjs

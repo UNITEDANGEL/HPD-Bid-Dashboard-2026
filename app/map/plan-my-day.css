@@ -212,6 +212,15 @@
 
 .fc-app .plan-my-day__voice-row button { min-height: 44px; padding: 8px 10px; border-radius: 8px; }
 .fc-app .plan-my-day__voice-row small { flex: 1 1 100%; overflow-wrap: anywhere; }
+.fc-app .plan-my-day__voice-row label { display:flex; align-items:center; gap:8px; font-size:12px; line-height:1.4; }
+.fc-app .plan-my-day__voice-row input[type=checkbox] { width:20px; height:20px; min-height:20px; flex:0 0 20px; margin:0; }
+.fc-app .plan-my-day__panel > .plan-my-day__chat { order:1; min-height:90px; max-height:160px; overflow:auto; flex-shrink:0; }
+.fc-app .plan-my-day__panel > .plan-my-day__composer { order:2; }
+.fc-app .plan-my-day__panel > .plan-my-day__voice-row { order:3; }
+.fc-app .plan-my-day__panel > .plan-my-day__suggestions { order:4; }
+.fc-app .plan-my-day__panel > .plan-my-day__choices { order:5; }
+.fc-app .plan-my-day__panel > .plan-my-day__working-plan { order:6; }
+.fc-app .plan-my-day__panel > .plan-my-day__results { order:7; }
 
 .fc-app .plan-my-day__job-picker {
   order: 7;
