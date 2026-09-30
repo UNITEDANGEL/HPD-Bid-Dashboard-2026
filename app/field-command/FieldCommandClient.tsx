@@ -7,7 +7,7 @@ import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
 import type { RouteJob, RoutePoint } from "../../lib/day-route";
 import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointments";
-import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning } from "../../lib/job-priority";
+import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue } from "../../lib/job-queue";
 import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, suggestedPhotoKind } from "../../lib/field-next-action";
@@ -468,15 +468,16 @@ export default function FieldCommandClient() {
   const [status, setStatus] = useState("pending");
   const requestedJobLoaded = useRef(false);
   const [daysBack, setDaysBack] = useState<number | null>(null);
-  const [dateRange, setDateRange] = useState<{ field: JobDateField; from: string; to: string }>({ field: "maturity", from: "", to: "" });
+  const [dateRange, setDateRange] = useState<{ field: JobDateField; from: string; to: string; preset?: boolean }>(currentYearRange);
+  useEffect(() => { setDateRange(previous => previous.preset ? currentYearRange() : previous); }, [calendarDate]);
   const [customDateRange, setCustomDateRange] = useState(false);
   const [dateFilterLoaded, setDateFilterLoaded] = useState(false);
   useEffect(() => {
     try {
-      const range = JSON.parse(localStorage.getItem("hpd-map-date-range-v1") || "null");
+      const range = JSON.parse(localStorage.getItem("hpd-map-date-range-v2") || "null");
       if (range && Object.hasOwn(JOB_DATE_FIELDS, range.field) && typeof range.from === "string" && typeof range.to === "string"
-        && (!range.from || calendarDay(range.from) !== null) && (!range.to || calendarDay(range.to) !== null)) setDateRange(range);
-      const saved = localStorage.getItem("hpd-map-award-days");
+        && (!range.from || calendarDay(range.from) !== null) && (!range.to || calendarDay(range.to) !== null)) setDateRange(range.preset ? currentYearRange() : range);
+      const saved = range ? localStorage.getItem("hpd-map-award-days") : null;
       if (saved !== null && /^\d+$/.test(saved) && Number(saved) <= 3650) {
         setDaysBack(Number(saved));
         setCustomDateRange(![30,90,180,365].includes(Number(saved)));
@@ -493,7 +494,7 @@ export default function FieldCommandClient() {
   }, [daysBack, dateFilterLoaded]);
   useEffect(() => {
     if (!dateFilterLoaded) return;
-    try { localStorage.setItem("hpd-map-date-range-v1", JSON.stringify(dateRange)); } catch { /* Filtering still works without storage. */ }
+    try { localStorage.setItem("hpd-map-date-range-v2", JSON.stringify(dateRange)); } catch { /* Filtering still works without storage. */ }
   }, [dateRange, dateFilterLoaded]);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
@@ -1291,11 +1292,13 @@ export default function FieldCommandClient() {
         <div className="fc-award-filter">
           <div className="fc-date-custom">
           <label htmlFor="award-range">Awarded</label>
-          <select id="award-range" aria-label="Award date range" value={customDateRange || (daysBack !== null && ![30,90,180,365].includes(daysBack)) ? "custom" : daysBack ?? "all"} onChange={(event) => {
+          <select id="award-range" aria-label="Award date range" value={dateRange.preset ? "year" : customDateRange || (daysBack !== null && ![30,90,180,365].includes(daysBack)) ? "custom" : daysBack ?? "all"} onChange={(event) => {
             const selected = event.target.value;
+            setDateRange(selected === "year" ? currentYearRange() : { field: "award", from: "", to: "" });
             setCustomDateRange(selected === "custom");
-            if (selected !== "custom") setDaysBack(selected === "all" ? null : Number(selected));
+            if (selected !== "custom") setDaysBack(selected === "all" || selected === "year" ? null : Number(selected));
           }}>
+            <option value="year">Current year</option>
             <option value="all">All dates</option>
             {[30,90,180,365].map((days) => <option key={days} value={days}>Last {days} days</option>)}
             <option value="custom">Custom</option>
@@ -1308,15 +1311,16 @@ export default function FieldCommandClient() {
           <output aria-live="polite">{filteredJobs.length ? `${filteredJobs.length} jobs` : "No matches"}</output>
           </div>
           <div className="fc-date-picker">
-            <label>Date type<select aria-label="Date type" value={dateRange.field} onChange={(e) => setDateRange({ ...dateRange, field: e.target.value as JobDateField })}>
+            <label>Date type<select aria-label="Date type" value={dateRange.field} onChange={(e) => setDateRange({ ...dateRange, preset: false, field: e.target.value as JobDateField })}>
               {Object.entries(JOB_DATE_FIELDS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
             </select></label>
             <div className="fc-date-bounds">
-              <label>From<input type="date" aria-label="Date from" value={dateRange.from} onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })} /></label>
-              <label>Through<input type="date" aria-label="Date through" value={dateRange.to} onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })} /></label>
+              <label>From<input type="date" aria-label="Date from" value={dateRange.from} onChange={(e) => { setDaysBack(null); setDateRange({ ...dateRange, preset: false, from: e.target.value }); }} /></label>
+              <label>Through<input type="date" aria-label="Date through" value={dateRange.to} onChange={(e) => { setDaysBack(null); setDateRange({ ...dateRange, preset: false, to: e.target.value }); }} /></label>
             </div>
             {dateRange.from && dateRange.to && dateRange.from > dateRange.to ? <span role="alert">From must be on or before Through.</span> : null}
-            <button type="button" onClick={() => { setDateRange({ field: "maturity", from: "", to: "" }); setDaysBack(null); setCustomDateRange(false); }}>Clear date filters</button>
+            <button type="button" onClick={() => { setDateRange(currentYearRange()); setDaysBack(null); setCustomDateRange(false); }}>Current year</button>
+            <button type="button" onClick={() => { setDateRange({ field: "award", from: "", to: "" }); setDaysBack(null); setCustomDateRange(false); }}>All dates</button>
           </div>
         </div>
         <div className="fc-pill-row fc-status-pill-row" role="group" aria-label="Status filter">

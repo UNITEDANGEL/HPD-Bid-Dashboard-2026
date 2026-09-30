@@ -1,6 +1,10 @@
 type Job = Record<string, unknown>;
 export const JOB_DATE_FIELDS = { maturity: "Maturity", award: "Award", start: "Contract start", finish: "Contract finish" } as const;
 export type JobDateField = keyof typeof JOB_DATE_FIELDS;
+export function currentYearRange(now = new Date()): { field: JobDateField; from: string; to: string; preset: boolean } {
+  const year = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric" }).format(now);
+  return { field: "award", from: `${year}-01-01`, to: `${year}-12-31`, preset: true };
+}
 export function jobDate(job: Job, field: JobDateField): string {
   if (field === "maturity") return maturityDate(job);
   const keys = field === "award" ? ["AwardDate", "awardDate"] : field === "start"
