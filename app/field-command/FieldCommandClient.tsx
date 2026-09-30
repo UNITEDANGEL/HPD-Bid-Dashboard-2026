@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
+import BuildingPhoto from "./BuildingPhoto";
 import type { RouteJob, RoutePoint } from "../../lib/day-route";
 import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/current-job";
 import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointments";
@@ -506,7 +507,6 @@ export default function FieldCommandClient() {
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [chromeOpen, setChromeOpen] = useState(false);
   const [plannerRequest,setPlannerRequest] = useState(0);
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [locateStatus, setLocateStatus] = useState<"idle" | "loading" | "error">("idle");
   const [scopeOpen, setScopeOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
@@ -901,17 +901,6 @@ export default function FieldCommandClient() {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [selectedJob]);
 
-  useEffect(() => {
-    let cancelled = false;
-    setSelectedPhoto(null);
-    if (selectedJob) {
-      listFieldEvidence(jobId(selectedJob)).then((items) => {
-        const photo = items.find((item) => item.mediaType === "image");
-        if (!cancelled) setSelectedPhoto(photo?.dataUrl || null);
-      }).catch(() => { if (!cancelled) setSelectedPhoto(null); });
-    }
-    return () => { cancelled = true; };
-  }, [selectedJob]);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -1522,17 +1511,8 @@ export default function FieldCommandClient() {
                 <a className="fc-route-btn fc-route-waze" href={wazeHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Waze</a>
                 <a className="fc-route-btn fc-route-google" href={directionsHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Google</a>
               </div>
-              {selectedPhoto ? (
-                <a className="fc-ticket-photo" href={`/jobs/${id}`} title="Open saved job photos">
-                  <img src={selectedPhoto} alt={`Saved job photo for ${id}`} onError={() => setSelectedPhoto(null)} />
-                  <span>Photos</span>
-                </a>
-              ) : (
-                <button type="button" className="fc-ticket-photo is-empty" aria-label={`Add ${suggestedPhotoKind(stamps)} job photo`} onClick={() => requestMediaUpload(suggestedPhotoKind(stamps))}>
-                  <PhotosIcon /><span>Add photo</span>
-                </button>
-              )}
               </div>
+              <BuildingPhoto key={id} id={id} address={jobAddress(selectedJob)} borough={String(jobBorough(selectedJob))} point={jobLatLng(selectedJob)} />
               <div className="fc-job-sheet-tags">
                 <span className="fc-card-maturity"><span>Maturity</span><strong>{maturityDate(selectedJob) || "Not available"}</strong></span>
                 <span className="fc-job-sheet-tag fc-age-tag" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>

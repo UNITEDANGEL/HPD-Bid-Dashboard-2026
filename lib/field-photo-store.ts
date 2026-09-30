@@ -354,6 +354,7 @@ function drawFittedStampText(
 }
 
 function stampStageTitle(kind: FieldMediaKind, label: string) {
+  if (kind === "general" && label === "Building exterior") return "BUILDING EXTERIOR";
   const titles: Record<FieldMediaKind, string> = {
     before: "BEFORE",
     after: "AFTER",

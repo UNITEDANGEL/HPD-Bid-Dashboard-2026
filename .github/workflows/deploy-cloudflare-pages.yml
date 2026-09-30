@@ -63,6 +63,8 @@ jobs:
           node scripts/test-day-route.cjs
           node scripts/test-current-job.cjs
           node scripts/test-planner-location.cjs
+          node scripts/test-building-photo.cjs
+          node scripts/test-saved-package.cjs
           node scripts/test-planner-constraints.cjs
           node scripts/test-driving-link.cjs
           node scripts/test-drive-auth.mjs

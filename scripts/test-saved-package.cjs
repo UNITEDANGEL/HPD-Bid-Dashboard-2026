@@ -1,0 +1,32 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const ts = require('typescript');
+const { indexedDB } = require('fake-indexeddb');
+const mod = { exports: {} };
+const shadow = [];
+const source = ts.transpileModule(fs.readFileSync('lib/field-packet-store.ts', 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+new Function('exports', 'require', 'window', source)(mod.exports, name => {
+  assert.equal(name, './unified-field-store');
+  return { shadowUpsert: async (...args) => shadow.push(args) };
+}, { indexedDB, btoa: value => Buffer.from(value, 'binary').toString('base64') });
+(async () => {
+  const { saveFieldPacket, listFieldPackets, bytesToDataUrl } = mod.exports;
+  const bytes = new Uint8Array([80, 75, 3, 4, 0, 1, 255]);
+  const dataUrl = bytesToDataUrl(bytes, 'application/zip');
+  const packet = { jobId: 'TEST-PACKAGE', fileName: 'TEST-PACKAGE.zip', mimeType: 'application/zip', dataUrl, size: bytes.length, evidenceCount: 3, imageCount: 3, videoCount: 0, packetType: 'full_evidence_zip', note: 'Isolated test only' };
+  await saveFieldPacket({ ...packet, generatedAt: '2026-09-29T10:00:00Z' });
+  await saveFieldPacket({ ...packet, generatedAt: '2026-09-30T10:00:00Z' });
+  const rows = await listFieldPackets('TEST-PACKAGE');
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].generatedAt, '2026-09-30T10:00:00Z');
+  assert.equal(rows[0].dataUrl, dataUrl);
+  assert.deepEqual(Buffer.from(rows[0].dataUrl.split(',')[1], 'base64'), Buffer.from(bytes));
+  assert.equal(shadow.length, 2);
+  assert.equal(shadow[0][0], 'document');
+  assert.equal((await listFieldPackets('OTHER-JOB')).length, 0);
+  const page = fs.readFileSync('app/paperwork/page.tsx', 'utf8');
+  const save = page.indexOf('packetType: "full_evidence_zip"');
+  assert.ok(save > 0 && save < page.indexOf('setPackagePreview(preview)'));
+  assert.ok(page.includes('? "building" : fieldEvidenceKindClass'));
+  console.log('PASS: complete package durable round-trip, versions retained, job isolation, document mirror and save-before-preview');
+})().catch(error => { console.error(error); process.exitCode = 1; });

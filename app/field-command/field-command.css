@@ -1991,7 +1991,19 @@
 .fc-app.fc-reference.fc-clean-streets .fc-job-sheet.fc-job-sheet-flow { border-left: 3px solid #84e7bf; padding-left: 12px; }
 .fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-id { font-size: 18px; line-height: 24px; color: #f3f5f5; }
 .fc-app.fc-reference.fc-clean-streets .fc-job-sheet-hero { gap: 3px 7px; }
-.fc-ticket-preview { display: grid; grid-template-columns: minmax(0,1fr) 64px; gap: 12px; align-items: center; margin: 6px 0; }
+.fc-app.fc-clean-streets .fc-job-sheet > .fc-building, .fc-app.fc-clean-streets:not(.fc-sheet-expanded) .fc-job-sheet > .fc-building { display: grid; grid-template-columns: 72px minmax(0,1fr); gap: 10px; padding: 10px 0; border-bottom: 1px solid #8baca533; }
+.fc-building-image, .fc-building-empty { width: 72px; height: 80px; border: 1px solid #8baca555; border-radius: 6px; overflow: hidden; padding: 0; background: #16332c; color: #dceae5; }
+.fc-building-empty { display: grid; place-items: center; text-align: center; font-size: 11px; }
+.fc-building-image img { width: 100%; height: 100%; object-fit: cover; }
+.fc-building-actions { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 12px; }
+.fc-building-actions div { display: flex; gap: 8px; flex-wrap: wrap; }
+.fc-building-actions button { min-height: 36px; padding: 5px 9px; border-radius: 6px; border: 1px solid #8baca566; background: #16332c; color: #f0faf5; font-size: 12px; }
+.fc-building-actions a { color: #8be2bc; overflow-wrap: anywhere; }
+.fc-building-expanded { grid-column: 1/-1; width: 100%; max-height: 320px; object-fit: contain; }
+.fc-building > [role] { grid-column: 1/-1; font-size: 12px; }
+.fc-building-package { display: flex; flex-direction: column; gap: 5px; }
+.fc-building-package a { color: #8be2bc; }
+.fc-ticket-preview { display: grid; grid-template-columns: minmax(0,1fr); gap: 12px; align-items: center; margin: 6px 0; }
 .fc-app.fc-reference.fc-clean-streets .fc-ticket-preview .fc-address-row { padding: 0; margin: 0; min-width: 0; }
 .fc-app.fc-reference.fc-clean-streets .fc-ticket-preview .fc-address-row p { font-size: 14px; font-weight: 500; line-height: 1.4; }
 .fc-ticket-photo { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 64px; height: 64px; overflow: hidden; border: 1px solid #ffffff25; border-radius: 6px; background: #ffffff08; color: #c9ded5; text-decoration: none; padding: 0; }

@@ -881,7 +881,7 @@ function packageStatusLabel(outcome: PaperworkOutcome) {
 
 function fullPackageMediaPath(jobId: string, media: FieldMedia, index: number, statusSlug = "field-status") {
   const mediaFolder = media.mediaType === "video" ? "videos" : "images";
-  const folder = fieldEvidenceKindClass(media.kind || "general");
+  const folder = media.kind === "general" && media.evidenceLabel === "Building exterior" ? "building" : fieldEvidenceKindClass(media.kind || "general");
   const label = zipSafePart(media.evidenceLabel || "Field Evidence", "evidence");
   const fallbackName = `${safeFilename(jobId)}-${statusSlug}-${String(index + 1).padStart(2, "0")}-${folder}${mediaExtension(media)}`;
   const fileName = safeAttachmentName(media.name, fallbackName);
@@ -1721,6 +1721,18 @@ export default function PaperworkPage() {
         path: `${folderName}/${entry.path}`,
         bytes: entry.bytes,
       })));
+      await saveFieldPacket({
+        jobId: pdf.jobId,
+        fileName: zipFileName,
+        mimeType: "application/zip",
+        dataUrl: bytesToDataUrl(zipBytes, "application/zip"),
+        size: zipBytes.byteLength,
+        evidenceCount: includedMedia.length,
+        imageCount: imageMedia.length,
+        videoCount: videoMedia.length,
+        packetType: "full_evidence_zip",
+        note: "Affidavit/invoice and attached media. Review before forwarding to HPD.",
+      });
       const zipUrl = bytesToObjectUrl(zipBytes, "application/zip");
       const pdfUrl = bytesToObjectUrl(pdf.bytes, "application/pdf");
       const pdfPreview = await renderPdfFirstPageImage(pdf.bytes);
