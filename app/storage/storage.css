@@ -1,0 +1,24 @@
+.drive-storage { max-width: 480px; margin: 0 auto; min-height: 100dvh; background: #18201e; color: #f2f5f3; letter-spacing: 0; }
+.drive-storage .ios-navbar { padding: 20px; background: #18201e; }
+.drive-storage h1 { margin: 20px 0 0; font-size: 26px; }
+.drive-back { color: #91e5bd; text-decoration: none; display: inline-flex; align-items: center; min-height: 44px; }
+.drive-section { padding: 20px; border-top: 1px solid #3b4843; }
+.drive-section h2 { font-size: 20px; margin: 0 0 12px; }
+.drive-section p { color: #c6d1cb; line-height: 1.5; }
+.drive-account { overflow-wrap: anywhere; }
+.drive-section dl { margin: 24px 0; }
+.drive-section dl div { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid #3b4843; }
+.drive-section dd { margin: 0; text-align: right; color: #e1be73; }
+.drive-section button { width: 100%; min-height: 48px; padding: 12px; border: 1px solid #91e5bd; border-radius: 8px; background: #91e5bd; color: #10251a; font: inherit; font-weight: 600; }
+.drive-section button:disabled { background: #303c36; border-color: #526158; color: #c4cec8; cursor: not-allowed; }
+.drive-section .drive-error { color: #ffb3a7; }
+.drive-section .drive-disconnect { margin-top: 12px; background: transparent; color: #c6d1cb; border-color: #526158; }
+.drive-actions { display: grid; gap: 10px; }
+.drive-section .drive-secondary { background: transparent; border-color: #526158; color: #d9e5df; }
+.drive-review { margin-top: 24px; padding-top: 16px; border-top: 1px solid #526158; }
+.drive-backup-list { display: grid; gap: 10px; margin-top: 24px; }
+.drive-backup-list small { display: block; margin-top: 4px; }
+.drive-section h3 { font-size: 17px; }
+.drive-section button { overflow-wrap: anywhere; cursor: pointer; }
+.drive-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; }
+.drive-toggle input { width: 24px; height: 24px; flex: 0 0 24px; accent-color: #91e5bd; }

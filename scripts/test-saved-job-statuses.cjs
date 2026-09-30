@@ -1,0 +1,31 @@
+const assert = require('node:assert/strict');
+const { importStatuses } = require('./import-saved-job-statuses.cjs');
+const source = { RowID: 'SAMPLE|address', StatusOverride: 'Refused Access', RefusedAccessDate: '2026-02-01', StatusUpdatedAt: '2026-02-02 10:00:00' };
+const job = { OMO: 'SAMPLE', AwardDate: '2026-01-01', MaturityDate: '2026-01-15', WorkCompletionDate: '2026-01-15', Latitude: 40.7, FieldVisitHistory: [{ note: 'Keep' }] };
+const result = importStatuses([job], [source]);
+assert.equal(result.rows[0].WorkflowStatus, 'REFUSED_ACCESS');
+assert.equal(result.rows[0].RefusalDate, '2026-02-01');
+for (const key of Object.keys(job)) assert.deepEqual(result.rows[0][key], job[key]);
+assert.equal(result.rows[0].ArchivedFromMap, undefined);
+assert.equal(job.WorkflowStatus, undefined);
+assert.equal(importStatuses(result.rows, [source]).report.applied.length, 0);
+assert.equal(importStatuses([{ ...job, WorkflowStatus: 'WORK_COMPLETED' }], [source]).rows[0].WorkflowStatus, 'WORK_COMPLETED');
+assert.deepEqual(importStatuses([job], [source, source]).report.conflicts, ['SAMPLE']);
+assert.equal(importStatuses([job, job], [source]).report.applied.length, 0);
+assert.deepEqual(importStatuses([], [source]).report.unmatched, ['SAMPLE']);
+for (const [label, code] of [['No Access - 1st Attempt', 'NO_ACCESS_1_WAITING_72H'], ['No Access - 2nd Attempt', 'NO_ACCESS_COMPLETE'], ['Work Completed by Other', 'WORK_COMPLETED_BY_OTHERS']]) {
+  assert.equal(importStatuses([job], [{ ...source, StatusOverride: label }]).rows[0].WorkflowStatus, code);
+}
+console.log('Saved status import: preservation, distinct outcomes, conflicts and idempotency passed.');
+const fs = require('node:fs');
+const ts = require('typescript');
+const mod = { exports: {} };
+new Function('exports', 'module', ts.transpileModule(fs.readFileSync(require.resolve('../lib/field-status.ts'), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(mod.exports, mod);
+const label = mod.exports.fieldStatusLabel;
+assert.equal(label('NO_ACCESS_1_WAITING_72H').label, 'No access - 1st attempt');
+assert.equal(label('NO_ACCESS_COMPLETE').key, 'noaccess');
+assert.equal(label('No Access - 2nd Attempt').label, 'No access - 2nd attempt');
+assert.equal(label('PARTIAL_WORK').label, 'Partial work');
+assert.equal(label('WORK_COMPLETED_BY_OTHERS').label, 'Completed by others');
+assert.equal(label('REFUSED_ACCESS').label, 'Refused access');
+console.log('Map outcome labels: no-access, refusal, partial and third-party work remain distinct.');

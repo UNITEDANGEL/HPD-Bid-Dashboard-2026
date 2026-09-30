@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),ts=require('typescript');
+const mod={exports:{}};
+new Function('exports',ts.transpileModule(fs.readFileSync('lib/driving-link.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(mod.exports);
+const {drivingLink}=mod.exports;
+const url=new URL(drivingLink({lat:40.7,lng:-73.9}));
+assert.equal(url.origin,'https://www.google.com');
+assert.equal(url.searchParams.get('destination'),'40.7,-73.9');
+assert.equal(url.searchParams.get('travelmode'),'driving');
+assert.equal(url.searchParams.get('dir_action'),'navigate');
+assert.equal(url.searchParams.has('origin'),false);
+for(const point of [{lat:NaN,lng:1},{lat:91,lng:1},{lat:1,lng:181},{lat:0,lng:0}])assert.equal(drivingLink(point),null);
+console.log('PASS: driving handoff, phone-origin default, encoded destination, invalid coordinate rejection');

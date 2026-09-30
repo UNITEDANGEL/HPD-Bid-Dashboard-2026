@@ -1,0 +1,13 @@
+const assert = require('node:assert/strict');
+const { mergeNewJobs } = require('./import-fetched-jobs.cjs');
+const old = { OMO: 'TEST1', StatusOverride: 'REFUSED_ACCESS', notes: ['keep'], AwardDate: '08/01/26' };
+const fresh = { OMO: 'TEST2', BuildingAddress: 'Test address', Latitude: 40.7, Longitude: -73.9 };
+const result = mergeNewJobs([old], [{ ...old, StatusOverride: 'Pending' }, fresh]);
+assert.deepEqual(result.jobs[0], old);
+assert.equal(result.jobs[0], old);
+assert.deepEqual(result.added, ['TEST2']);
+assert.deepEqual(mergeNewJobs(result.jobs, [fresh]).added, []);
+assert.throws(() => mergeNewJobs([old], [fresh, fresh]));
+assert.throws(() => mergeNewJobs([old], [{ ...fresh, Latitude: 0 }]));
+assert.throws(() => mergeNewJobs([old], [{ ...fresh, BuildingAddress: '' }]));
+console.log('PASS: preserve existing fields, add valid missing jobs, reject duplicates and invalid map records, idempotent import');

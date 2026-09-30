@@ -1,6 +1,9 @@
 "use client";
 
 import jobsData from "../../data/COA_Fetcher_2026.json";
+import { jobPriority } from "../../lib/job-priority";
+import { startDictation, type RecognitionConstructor } from "../../lib/planner-dictation";
+import { jobQueue, visitState } from "../../lib/job-queue";
 import { countFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import {
   shadowUpsert,
@@ -46,7 +49,6 @@ type PlannedJob = {
 
 const BOROUGHS = ["Queens", "Brooklyn", "Bronx", "Manhattan", "Staten Island"];
 const BASE_POINT: Point = { lat: 40.6957, lng: -73.8331 };
-const LAST_LOCATION_STORAGE_KEY = "hpd-map-location-last-v1";
 const STATUS_WORKER_URL = process.env.NEXT_PUBLIC_HPD_STATUS_WORKER_URL || "https://hpd-status-worker.uac525.workers.dev";
 const DEFAULT_PLAN: LocalPlan = {
   areaMode: "all",
@@ -122,14 +124,12 @@ function jobStatus(record: JobRecord) {
 }
 
 function isClosed(record: JobRecord) {
-  return /completed|complete|closed|archived|cancelled|canceled/i.test(jobStatus(record));
+  return jobQueue(record) !== "pending" || visitState(record).blocked;
 }
 
 function isUrgent(record: JobRecord) {
   const status = jobStatus(record);
-  const due = textValue(record, ["DueDate", "dueDate", "WorkCompletionDate", "workCompletionDate"]);
-  const date = due ? new Date(due) : null;
-  const overdue = Boolean(date && !Number.isNaN(date.getTime()) && date.getTime() < Date.now());
+  const overdue = (jobPriority(record).days ?? 0) > 0;
   return /urgent|emergency|priority|overdue|no\s*access|ready\s*(?:for\s*)?(?:second|2)/i.test(status) || overdue;
 }
 
@@ -199,8 +199,7 @@ function parseMessage(message: string, current: LocalPlan): LocalPlan {
   const wantsAppointments = /appointment/.test(clean);
 
   if (wantsShortestDrive) {
-    next.areaMode = "nearby";
-    next.boroughs = [];
+    if (!next.boroughs.length) next.areaMode = "nearby";
     next.startMode = "current_location";
     next.routePreference = "shortest_drive";
   }
@@ -249,31 +248,19 @@ function describePlan(plan: LocalPlan) {
 }
 
 async function getOrigin(startMode: LocalPlan["startMode"]): Promise<{ point: Point; label: string }> {
-  if (startMode === "office" || !navigator.geolocation) return Promise.resolve({ point: BASE_POINT, label: "Richmond Hill office" });
-  try {
-    const saved = JSON.parse(window.localStorage.getItem(LAST_LOCATION_STORAGE_KEY) || "null");
-    if (Number.isFinite(saved?.lat) && Number.isFinite(saved?.lng)) {
-      return { point: { lat: saved.lat, lng: saved.lng }, label: "your saved location" };
-    }
-  } catch {}
-  try {
-    const permissions = (navigator as any).permissions;
-    if (permissions?.query) {
-      const permission = await permissions.query({ name: "geolocation" });
-      if (permission.state === "denied") return { point: BASE_POINT, label: "Richmond Hill office fallback" };
-    }
-  } catch {}
-  return new Promise((resolve) => {
+  if (startMode === "office") return { point: BASE_POINT, label: "Richmond Hill office" };
+  if (!navigator.geolocation) throw new Error("Location unavailable. Enable location or request a route starting from the office.");
+  return new Promise((resolve, reject) => {
     navigator.geolocation.getCurrentPosition(
       (position) => resolve({ point: { lat: position.coords.latitude, lng: position.coords.longitude }, label: "your current location" }),
-      () => resolve({ point: BASE_POINT, label: "Richmond Hill office fallback" }),
-      { enableHighAccuracy: true, maximumAge: 300_000, timeout: 2_500 },
+      () => reject(new Error("Could not get your location. Allow location and retry, or request a route starting from the office.")),
+      { enableHighAccuracy: true, maximumAge: 30_000, timeout: 10_000 },
     );
   });
 }
 
-function rankJobs(plan: LocalPlan, origin: Point) {
-  const records = asArray(jobsData).filter((job) => !isClosed(job));
+function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
+  const records = source.filter((job) => !isClosed(job));
   const includeSet = new Set(plan.includeOmo);
   const excludeSet = new Set(plan.excludeOmo);
   const required = records.filter((job) => includeSet.has(jobId(job)) && !excludeSet.has(jobId(job)));
@@ -345,13 +332,21 @@ function selectableJob(record: JobRecord, origin?: Point, reason = "Selected by 
   };
 }
 
-export default function PlanMyDayDrawer() {
+export default function PlanMyDayDrawer({ records = jobsData, openRequest = 0 }: { records?: JobRecord[]; openRequest?: number } = {}) {
   const chatRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
+  useEffect(() => { if (openRequest > 0) { setOpen(true); setMediaPaused(false); } }, [openRequest]);
   const [input, setInput] = useState("");
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const voiceAllowed = useRef(false);
+  const panelOpen = useRef(false);
+  const speechGeneration = useRef(0);
+  const stopDictation = useRef<(() => void) | null>(null);
+  const [listening, setListening] = useState(false);
+  const [micConsent, setMicConsent] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "assistant", text: "Good morning. Tell me how you want to plan today. I work locally and do not require an API key." },
+    { role: "assistant", text: "Where would you like to work today? I can plan nearby stops, focus on a borough, or prioritize urgent jobs." },
   ]);
   const [plan, setPlan] = useState<LocalPlan>(DEFAULT_PLAN);
   const [results, setResults] = useState<PlannedJob[]>([]);
@@ -363,7 +358,7 @@ export default function PlanMyDayDrawer() {
   const [mediaPaused, setMediaPaused] = useState(false);
   const [busy, setBusy] = useState(false);
   const [originLabel, setOriginLabel] = useState("");
-  const [voiceStatus, setVoiceStatus] = useState("Tap Read Reply on iPhone");
+  const [voiceStatus, setVoiceStatus] = useState("Voice off");
   const [offlineStatus, setOfflineStatus] = useState<UnifiedStorageStatus | null>(null);
 
   const planSummary = useMemo(() => describePlan(plan), [plan]);
@@ -371,7 +366,7 @@ export default function PlanMyDayDrawer() {
     () => [...messages].reverse().find((message) => message.role === "assistant")?.text || "",
     [messages],
   );
-  const activeJobs = useMemo(() => asArray(jobsData).filter((job) => !isClosed(job) && jobId(job)), []);
+  const activeJobs = useMemo(() => asArray(records).filter((job) => !isClosed(job) && jobId(job)), [records]);
   const searchMatches = useMemo(() => {
     const query = jobSearch.trim().toLowerCase();
     if (query.length < 2) return [];
@@ -382,7 +377,7 @@ export default function PlanMyDayDrawer() {
       })
       .slice(0, 8);
   }, [activeJobs, jobSearch]);
-  const selectedResults = useMemo(() => results.filter((job) => selectedIds.includes(job.id)), [results, selectedIds]);
+  const selectedResults = useMemo(() => results.filter((job) => selectedIds.includes(job.id) && activeJobs.some((record) => jobId(record) === job.id)), [results, selectedIds, activeJobs]);
   const viewingJob = useMemo(() => results.find((job) => job.id === viewingJobId) || null, [results, viewingJobId]);
 
   useEffect(() => {
@@ -427,23 +422,59 @@ export default function PlanMyDayDrawer() {
     };
   }, []);
 
+  function stopVoice() {
+    speechGeneration.current += 1;
+    stopDictation.current?.();
+    stopDictation.current = null;
+    window.speechSynthesis?.cancel();
+    setSpeaking(false);
+    setListening(false);
+  }
+
+  useEffect(() => {
+    panelOpen.current = open;
+    if (!open) stopVoice();
+    return () => {
+      panelOpen.current = false;
+      speechGeneration.current += 1;
+      stopDictation.current?.();
+      window.speechSynthesis?.cancel();
+    };
+  }, [open]);
+
+  function dictate() {
+    const host = window as Window & { SpeechRecognition?: RecognitionConstructor; webkitSpeechRecognition?: RecognitionConstructor };
+    const Engine = host.SpeechRecognition || host.webkitSpeechRecognition;
+    if (!Engine) { setVoiceStatus("Voice input unavailable. Use keyboard dictation or type."); return; }
+    if (!micConsent) return;
+    stopVoice();
+    setListening(true);
+    setVoiceStatus("Starting microphone");
+    stopDictation.current = startDictation(Engine, (text) => setInput((current) => [current.trim(), text].filter(Boolean).join(" ")), setVoiceStatus, () => setListening(false));
+  }
+
   function speakReply(text: string, force = false) {
-    if ((!voiceEnabled && !force) || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    if ((!voiceAllowed.current && !force) || !panelOpen.current) return;
+    if (!("speechSynthesis" in window)) { setVoiceStatus("Spoken replies unavailable in this browser."); return; }
     if (!text.trim()) return;
+    stopVoice();
+    const generation = speechGeneration.current;
     window.speechSynthesis.resume();
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
     utterance.rate = 0.92;
     utterance.volume = 1;
-    utterance.onstart = () => setVoiceStatus("Speaking now");
-    utterance.onend = () => setVoiceStatus("Finished · tap to replay");
-    utterance.onerror = () => setVoiceStatus("Tap Read Reply again");
+    setSpeaking(true);
+    utterance.onstart = () => { if (generation === speechGeneration.current) { setSpeaking(true); setVoiceStatus("Speaking"); } };
+    utterance.onend = () => { if (generation === speechGeneration.current) { setSpeaking(false); setVoiceStatus("Finished"); } };
+    utterance.onerror = () => { if (generation === speechGeneration.current) { setSpeaking(false); setVoiceStatus("Could not play audio. Try Read Reply."); } };
     window.speechSynthesis.speak(utterance);
   }
 
   function readLastReply() {
     setVoiceEnabled(true);
+    voiceAllowed.current = true;
     setVoiceStatus("Starting voice…");
     speakReply(lastAssistantReply, true);
   }
@@ -455,20 +486,11 @@ export default function PlanMyDayDrawer() {
     setBusy(true);
     setMessages((current) => [...current, { role: "user", text: message }]);
 
+    try {
     const nextPlan = parseMessage(message, plan);
     const { point, label } = await getOrigin(nextPlan.startMode);
-    let workingPlan = nextPlan;
-    let nextResults = rankJobs(workingPlan, point);
-    let widenedDateRange = false;
-    if (!nextResults.length && nextPlan.daysBack !== null) {
-      const widenedPlan = { ...nextPlan, daysBack: null };
-      const widenedResults = rankJobs(widenedPlan, point);
-      if (widenedResults.length) {
-        workingPlan = widenedPlan;
-        nextResults = widenedResults;
-        widenedDateRange = true;
-      }
-    }
+    const workingPlan = nextPlan;
+    const nextResults = rankJobs(workingPlan, point, records);
     setPlan(workingPlan);
     setResults(nextResults);
     setSelectedIds(nextResults.map((job) => job.id));
@@ -477,14 +499,17 @@ export default function PlanMyDayDrawer() {
 
     const missingIncluded = workingPlan.includeOmo.filter((id) => !nextResults.some((job) => job.id === id));
     let reply = `I prepared ${nextResults.length} stops from ${label}. ${describePlan(workingPlan)}`;
-    if (widenedDateRange) reply = `I found no matching jobs in that date range, so I widened the route to any date. ${reply}`;
     if (!nextResults.length) reply = "I could not find matching active jobs. Try removing a restriction, changing the borough, or asking for nearby jobs.";
     else if (missingIncluded.length) reply += ` I could not locate these active OMO numbers: ${missingIncluded.join(", ")}.`;
     else reply += " Review the stops below. You can tell me to add, remove, shorten, or reprioritize the route.";
 
     setMessages((current) => [...current, { role: "assistant", text: reply }]);
     speakReply(reply);
-    setBusy(false);
+    } catch (error) {
+      setMessages((current) => [...current, { role: "assistant", text: error instanceof Error ? error.message : "I could not prepare that route. Your job records are unchanged. Please try again." }]);
+    } finally {
+      setBusy(false);
+    }
   }
 
   function submit(event: FormEvent) {
@@ -533,6 +558,7 @@ export default function PlanMyDayDrawer() {
   }
 
   function newChat() {
+    stopVoice();
     if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
     setPlan(DEFAULT_PLAN);
     setResults([]);
@@ -659,7 +685,7 @@ export default function PlanMyDayDrawer() {
               </small>
             </div>
             <div>
-              <button type="button" onClick={() => setVoiceEnabled((value) => !value)} aria-pressed={voiceEnabled}>
+              <button type="button" onClick={() => { voiceAllowed.current = !voiceAllowed.current; setVoiceEnabled(voiceAllowed.current); if (!voiceAllowed.current) { stopVoice(); setVoiceStatus("Voice off"); } else readLastReply(); }} aria-pressed={voiceEnabled}>
                 {voiceEnabled ? "Voice on" : "Voice off"}
               </button>
               <button type="button" onClick={newChat}>Reset Route</button>
@@ -722,8 +748,11 @@ export default function PlanMyDayDrawer() {
           </section>
 
           <div className="plan-my-day__voice-row">
-            <button type="button" onClick={readLastReply} disabled={!lastAssistantReply}>🔊 Read Reply</button>
-            <small>{voiceStatus}</small>
+            <label><input type="checkbox" checked={micConsent} onChange={(event) => { setMicConsent(event.target.checked); if (!event.target.checked) stopVoice(); }} /> Allow browser speech service to process my microphone audio</label>
+            <button type="button" onClick={dictate} disabled={busy || listening || !micConsent}>Talk</button>
+            <button type="button" onClick={readLastReply} disabled={!lastAssistantReply || listening}>Read Reply</button>
+            <button type="button" onClick={() => { stopVoice(); setVoiceStatus("Stopped"); }} disabled={!listening && !speaking}>Stop</button>
+            <small role="status">{voiceStatus}</small>
           </div>
 
           <form className="plan-my-day__composer" onSubmit={submit}>
@@ -735,9 +764,9 @@ export default function PlanMyDayDrawer() {
                 onChange={(event) => setInput(event.target.value)}
                 placeholder="Example: Plan 6 urgent jobs near me, include EQ24929, finish by 3 PM."
                 rows={3}
-                disabled={busy}
+                disabled={busy || listening}
               />
-              <button type="submit" disabled={busy || !input.trim()}>{busy ? "Planning…" : "Plan route"}</button>
+              <button type="submit" disabled={busy || listening || !input.trim()}>{busy ? "Planning…" : "Plan route"}</button>
             </div>
           </form>
 

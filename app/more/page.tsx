@@ -4,6 +4,7 @@ import "../field-command/field-command.css";
 import FieldTabBar from "../../components/FieldTabBar";
 
 const LINKS = [
+  { href: "/storage", title: "Google Drive", detail: "Account and storage connection" },
   { href: "/jobs", title: "Live Bids", detail: "Full job list and filters" },
   { href: "/fetcher", title: "ITB / COA", detail: "Invitation and confirmation files" },
   { href: "/automation", title: "Automation", detail: "Fetcher and sync jobs" },

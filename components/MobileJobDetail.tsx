@@ -126,9 +126,9 @@ export function MobileJobDetail({ job }: { job: JobRecord }) {
             <span className="fc-flow-icon">S</span>
             <span>
               <b>Complete Scope</b>
-              <small>{job.description || "Scope not captured yet."}</small>
             </span>
           </div>
+          <p className="fc-scope-full" style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", display: "block", WebkitLineClamp: "unset", maxHeight: "none", overflow: "visible", fontSize: 14, fontWeight: 400, lineHeight: 1.5 }}>{job.description || "Scope not captured yet."}</p>
         </section>
 
         {job.tenantName || job.tenantPhone ? (

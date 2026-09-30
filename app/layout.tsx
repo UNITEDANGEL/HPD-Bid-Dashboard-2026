@@ -3,6 +3,8 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import "./dashboard-table-upgrade.css";
+import DriveSessionKeeper from "../components/DriveSessionKeeper";
+import DriveAutoBackup from "../components/DriveAutoBackup";
 
 export const metadata: Metadata = {
   title: "HPD Bid Dashboard 2026",
@@ -21,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body><DriveSessionKeeper /><DriveAutoBackup />{children}</body>
     </html>
   );
 }

@@ -354,6 +354,7 @@ function drawFittedStampText(
 }
 
 function stampStageTitle(kind: FieldMediaKind, label: string) {
+  if (kind === "general" && label === "Building exterior") return "BUILDING EXTERIOR";
   const titles: Record<FieldMediaKind, string> = {
     before: "BEFORE",
     after: "AFTER",
@@ -974,7 +975,9 @@ export async function countFieldEvidence(jobId: string) {
 }
 
 export function dataUrlToBytes(dataUrl: string) {
-  const [, payload = ""] = dataUrl.split(",");
+  const marker = dataUrl.indexOf(";base64,");
+  if (!dataUrl.startsWith("data:") || marker < 0) throw new Error("Invalid saved media encoding.");
+  const payload = dataUrl.slice(marker + 8);
   const binary = window.atob(payload);
   const bytes = new Uint8Array(binary.length);
   for (let index = 0; index < binary.length; index += 1) {

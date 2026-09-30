@@ -2,10 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import FieldTabBar from "../../components/FieldTabBar";
+import AppointmentEditor from "./AppointmentEditor";
+import TodayRoute from "./TodayRoute";
+import BuildingPhoto from "./BuildingPhoto";
+import type { RouteJob, RoutePoint } from "../../lib/day-route";
+import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/current-job";
+import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointments";
+import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
+import { fieldStatusLabel } from "../../lib/field-status";
+import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
+import { nextFieldAction, paperworkReviewHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 
 type JobRecord = Record<string, unknown>;
 
@@ -22,12 +32,7 @@ const BOROUGHS: { key: BoroughKey; label: string; center: [number, number]; colo
   { key: "SI", label: "Staten Is.", center: [40.5795, -74.1502], color: "#30d158" },
 ];
 
-const STATUS_FILTERS = [
-  { key: "all", label: "Status" },
-  { key: "open", label: "Open" },
-  { key: "awarded", label: "Awarded" },
-  { key: "pending", label: "Pending" },
-];
+const STATUS_FILTERS = JOB_QUEUES;
 
 function value(job: JobRecord, keys: string[]) {
   for (const key of keys) {
@@ -149,7 +154,7 @@ function writeSharedWorkflowPatch(id: string, patch: Record<string, unknown>) {
   );
 }
 
-type StatusKey = "complete" | "noaccess" | "refused" | "pending" | "awarded" | "open";
+type StatusKey = "complete" | "noaccess" | "refused" | "pending" | "awarded" | "open" | "appointment";
 
 const STATUS_ICON_PATHS: Record<StatusKey, string> = {
   complete:
@@ -162,6 +167,7 @@ const STATUS_ICON_PATHS: Record<StatusKey, string> = {
   awarded:
     '<path d="M12 3.5l2.47 5.18 5.53.63-4.1 3.86 1.08 5.5L12 15.9l-4.98 2.77 1.08-5.5-4.1-3.86 5.53-.63L12 3.5z" fill="#fff"/>',
   open: '<circle cx="12" cy="12" r="4.5" fill="#fff"/>',
+  appointment: '<rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="white" stroke-width="2"/><path d="M8 3v5M16 3v5M4 10h16" fill="none" stroke="white" stroke-width="2"/>',
 };
 
 const STATUS_META: { key: StatusKey; label: string; color: string; match: (s: string, job: JobRecord) => boolean }[] = [
@@ -175,11 +181,13 @@ const STATUS_META: { key: StatusKey; label: string; color: string; match: (s: st
     color: "#0a84ff",
     match: (s, job) => s.includes("award") || jobAwardAmount(job) > 0,
   },
-  { key: "open", label: "Open", color: "#64d2ff", match: () => true },
+  { key: "open", label: "Pending", color: "#0a84ff", match: () => true },
 ];
 
 function jobStatusMeta(job: JobRecord) {
-  const s = jobStatus(job).toLowerCase();
+  const specific = fieldStatusLabel(jobStatus(job));
+  if (specific) return specific;
+  const s = jobStatus(job).toLowerCase().replace(/_/g, " ");
   return STATUS_META.find((meta) => meta.match(s, job)) || STATUS_META[STATUS_META.length - 1];
 }
 
@@ -187,36 +195,10 @@ function statusMarkerHtml(color: string, iconKey: StatusKey) {
   return `<div style="width:28px;height:28px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.45);display:grid;place-items:center;"><svg width="15" height="15" viewBox="0 0 24 24">${STATUS_ICON_PATHS[iconKey]}</svg></div>`;
 }
 
-function parseUsDate(raw: string) {
-  const m = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-  if (!m) return null;
-  const [, mo, da, yr] = m;
-  const year = yr.length === 2 ? 2000 + Number(yr) : Number(yr);
-  const date = new Date(year, Number(mo) - 1, Number(da));
-  return Number.isNaN(date.getTime()) ? null : date;
-}
-
-function jobAgeDays(job: JobRecord) {
-  const raw = value(job, ["AwardDate", "awardDate", "WorkStartDate", "workStartDate"]);
-  if (!raw) return null;
-  const date = parseUsDate(raw);
-  if (!date) return null;
-  const diffMs = Date.now() - date.getTime();
-  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-}
-
-function ageMarkerHtml(color: string, days: number | null) {
-  const label = days === null ? "?" : String(days);
-  const fontSize = label.length > 2 ? 9 : 11;
-  const overdue = days !== null && days > 30;
-  return `<div style="position:relative;width:30px;height:30px;">` +
-    `<div style="position:absolute;inset:-9px;border-radius:50%;background:radial-gradient(circle, ${color}59, transparent 68%);"></div>` +
-    `<div style="position:relative;width:30px;height:30px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,.92);box-shadow:0 0 10px ${color},0 0 24px ${color}80,0 3px 8px rgba(0,0,0,.5);display:grid;place-items:center;color:#fff;font-weight:900;font-size:${fontSize}px;font-family:-apple-system,sans-serif;text-shadow:0 1px 2px rgba(0,0,0,.5);">` +
-    `<svg width="11" height="11" viewBox="0 0 24 24" style="position:absolute;top:4px;">${HARDHAT_ICON_PATH}</svg>` +
-    `<span style="margin-top:7px;">${label}</span>` +
-    (overdue ? `<div style="position:absolute;top:-8px;left:-8px;padding:1px 5px;border-radius:999px;background:#b42332;color:#fff;font-size:8px;font-weight:900;box-shadow:0 3px 8px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.4);">!</div>` : "") +
-    `</div>` +
-    `</div>`;
+function ageMarkerHtml(days: number | null, pending: boolean, zoom = 16, multiple = false, color = "#0a84ff", icon: StatusKey = "pending") {
+  const label = !pending ? "" : days === null ? "?" : days === 0 ? "0" : days < 0 ? `+${-days}` : String(days);
+  const symbol = pending && icon === "awarded" ? HARDHAT_ICON_PATH : STATUS_ICON_PATHS[icon];
+  return `<div class="fc-day-pin ${icon === "appointment" ? "is-appointment" : ""} ${multiple ? "has-more" : ""} ${zoom < 14 || label.length > 3 ? "is-distant" : ""}" style="--pin-color:${color}"><svg viewBox="0 0 24 24" aria-hidden="true">${symbol}</svg>${pending ? `<strong>${label}<small>d</small></strong>` : ""}</div>`;
 }
 
 function jobAwardAmount(job: JobRecord) {
@@ -232,7 +214,7 @@ function boroughColor(key: BoroughKey | "NYC") {
 function directionsHref(job: JobRecord) {
   const ll = jobLatLng(job);
   const query = ll ? `${ll.lat},${ll.lng}` : jobAddress(job);
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}&travelmode=driving&dir_action=navigate`;
 }
 
 function wazeHref(job: JobRecord) {
@@ -255,8 +237,11 @@ function formatSavedTime(iso?: string) {
 }
 
 function statusGroup(job: JobRecord) {
-  const s = jobStatus(job).toLowerCase();
+  const s = jobStatus(job).toLowerCase().replace(/_/g, " ");
+  if (s.includes("partial") || s.includes("progress")) return "open";
+  if (s.includes("appointment")) return "pending";
   if (s.includes("no access") || s.includes("refused")) return "closed";
+  if (s.includes("complet")) return "closed";
   if (s.includes("pending")) return "pending";
   if (s.includes("award") || jobAwardAmount(job) > 0) return "awarded";
   return "open";
@@ -429,54 +414,33 @@ function PersonIcon() {
   );
 }
 
-function ExpandIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3" />
-    </svg>
-  );
-}
 
-function CollapseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 3v4a2 2 0 0 1-2 2H3M15 3v4a2 2 0 0 0 2 2h4M21 15h-4a2 2 0 0 0-2 2v4M3 15h4a2 2 0 0 1 2 2v4" />
-    </svg>
-  );
-}
-
-const LIGHT_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+const LIGHT_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
 const DARK_TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
-const CLUSTER_COLOR = "#38bdf8";
 
-function clusterByPixelDistance(
+function individualPinOffset(index: number, count: number) {
+  const columns = Math.min(3, count);
+  const rows = Math.ceil(count / columns);
+  return { x: ((index % columns) - (columns - 1) / 2) * 62, y: (Math.floor(index / columns) - (rows - 1) / 2) * 48 };
+}
+
+function reservePinLabel(x: number, y: number, occupied: { x: number; y: number }[]) {
+  if (occupied.some(p => Math.abs(p.x - x) < 58 && Math.abs(p.y - y) < 44)) return false;
+  occupied.push({ x, y });
+  return true;
+}
+
+function groupByLocation(
   points: { job: JobRecord; lng: number; lat: number }[],
-  map: any,
-  radiusPx: number
 ) {
-  const projected = points.map((p) => ({ ...p, screen: map.latLngToContainerPoint([p.lat, p.lng]) }));
-  const clusters: { lng: number; lat: number; jobs: JobRecord[] }[] = [];
-  const used = new Array(projected.length).fill(false);
-
-  for (let i = 0; i < projected.length; i += 1) {
-    if (used[i]) continue;
-    const group = [projected[i]];
-    used[i] = true;
-    for (let j = i + 1; j < projected.length; j += 1) {
-      if (used[j]) continue;
-      const dx = projected[i].screen.x - projected[j].screen.x;
-      const dy = projected[i].screen.y - projected[j].screen.y;
-      if (Math.sqrt(dx * dx + dy * dy) <= radiusPx) {
-        group.push(projected[j]);
-        used[j] = true;
-      }
-    }
-    const lng = group.reduce((sum, p) => sum + p.lng, 0) / group.length;
-    const lat = group.reduce((sum, p) => sum + p.lat, 0) / group.length;
-    clusters.push({ lng, lat, jobs: group.map((p) => p.job) });
+  const locations = new Map<string, { lng: number; lat: number; jobs: JobRecord[] }>();
+  for (const point of points) {
+    const key = `${point.lat}|${point.lng}`;
+    const existing = locations.get(key);
+    if (existing) existing.jobs.push(point.job);
+    else locations.set(key, { lat: point.lat, lng: point.lng, jobs: [point.job] });
   }
-
-  return clusters;
+  return [...locations.values()];
 }
 
 const HARDHAT_ICON_PATH =
@@ -491,70 +455,177 @@ function boroughLabelHtml(label: string, dark: boolean) {
   return `<span style="display:inline-block;${style}font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;pointer-events:none;">${label}</span>`;
 }
 
-function clusterMarkerHtml(count: number, oldestDays: number | null) {
-  const size = Math.min(56, Math.max(34, 26 + Math.sqrt(count) * 7));
-  const glow = Math.round(size * 0.35);
-  const fontSize = Math.min(16, 11 + count / 40);
-  const overdue = oldestDays !== null && oldestDays > 30;
-  const badge = overdue
-    ? `<div style="position:absolute;top:-8px;left:-8px;min-width:26px;padding:2px 6px;border-radius:999px;background:#b42332;color:#fff;font-size:10px;font-weight:900;text-align:center;box-shadow:0 3px 8px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.4);">${oldestDays}d</div>`
-    : "";
-  return `<div style="position:relative;width:${size}px;height:${size}px;">` +
-    `<div style="position:absolute;inset:-${glow}px;border-radius:50%;background:radial-gradient(circle, ${CLUSTER_COLOR}59, transparent 68%);"></div>` +
-    `<div style="position:relative;width:${size}px;height:${size}px;border-radius:50%;background:${CLUSTER_COLOR};border:3px solid rgba(255,255,255,.92);box-shadow:0 0 14px ${CLUSTER_COLOR},0 0 32px ${CLUSTER_COLOR}77,0 4px 10px rgba(0,0,0,.5);display:grid;place-items:center;color:#fff;font-weight:900;font-size:${fontSize}px;text-shadow:0 1px 2px rgba(0,0,0,.5);">` +
-    `<svg width="14" height="14" viewBox="0 0 24 24" style="position:absolute;top:${Math.round(size * 0.14)}px;">${HARDHAT_ICON_PATH}</svg>` +
-    `<span style="margin-top:9px;">${count}</span>` +
-    `</div>${badge}` +
-    `</div>`;
-}
-
 export default function FieldCommandClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
+  const jobSheetRef = useRef<HTMLDivElement | null>(null);
+  const sheetTouchStart = useRef<number | null>(null);
+  const outcomePanelRef = useRef<HTMLElement | null>(null);
+  const [outcomeDrafts, setOutcomeDrafts] = useState<Record<string, { outcome: string; note: string }>>({});
+  const [outcomeMessage, setOutcomeMessage] = useState("");
+  const [appointmentOpen, setAppointmentOpen] = useState(false);
+  const [agendaOpen, setAgendaOpen] = useState(false);
+  const appointmentRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
+  const mapFramingRef = useRef("");
   const tileLayerRef = useRef<any>(null);
+  const vectorLayerRef = useRef<any>(null);
+  const darkTilesRef = useRef(false);
   const layerGroupRef = useRef<any>(null);
   const boroughLabelLayerRef = useRef<any>(null);
   const routeLayerRef = useRef<any>(null);
+  const dayRouteLayerRef = useRef<any>(null);
+  const dayRouteRequest = useRef(0);
+  const [routeMapReady, setRouteMapReady] = useState(false);
   const userMarkerRef = useRef<any>(null);
+  const watchIdRef = useRef<number | null>(null);
+  const lastPositionRef = useRef<{ lat: number; lng: number } | null>(null);
   const pointsRef = useRef<{ job: JobRecord; lng: number; lat: number }[]>([]);
   const renderMarkersRef = useRef<() => void>(() => {});
   const [jobs, setJobs] = useState<JobRecord[]>([]);
+  const [calendarDate, setCalendarDate] = useState(nyToday);
+
+  useEffect(() => {
+    const refreshDate = () => setCalendarDate(nyToday());
+    const timer = window.setInterval(refreshDate, 30000);
+    window.addEventListener("focus", refreshDate);
+    document.addEventListener("visibilitychange", refreshDate);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshDate);
+      document.removeEventListener("visibilitychange", refreshDate);
+    };
+  }, []);
   const [borough, setBorough] = useState<BoroughKey | "ALL">("ALL");
-  const [status, setStatus] = useState("all");
-  const [daysBack, setDaysBack] = useState<number | null>(60);
+  const [status, setStatus] = useState("pending");
+  const requestedJobLoaded = useRef(false);
+  const [daysBack, setDaysBack] = useState<number | null>(null);
+  const [dateRange, setDateRange] = useState<{ field: JobDateField; from: string; to: string; preset?: boolean }>(currentYearRange);
+  useEffect(() => { setDateRange(previous => previous.preset ? currentYearRange() : previous); }, [calendarDate]);
+  const [customDateRange, setCustomDateRange] = useState(false);
+  const [dateFilterLoaded, setDateFilterLoaded] = useState(false);
+  useEffect(() => {
+    try {
+      const range = JSON.parse(localStorage.getItem("hpd-map-date-range-v2") || "null");
+      if (range && Object.hasOwn(JOB_DATE_FIELDS, range.field) && typeof range.from === "string" && typeof range.to === "string"
+        && (!range.from || calendarDay(range.from) !== null) && (!range.to || calendarDay(range.to) !== null)) setDateRange(range.preset ? currentYearRange() : range);
+      const saved = range ? localStorage.getItem("hpd-map-award-days") : null;
+      if (saved !== null && /^\d+$/.test(saved) && Number(saved) <= 3650) {
+        setDaysBack(Number(saved));
+        setCustomDateRange(![30,90,180,365].includes(Number(saved)));
+      }
+    } catch { /* Map filtering remains available without device storage. */ }
+    setDateFilterLoaded(true);
+  }, []);
+  useEffect(() => {
+    if (!dateFilterLoaded) return;
+    try {
+      if (daysBack === null) localStorage.removeItem("hpd-map-award-days");
+      else localStorage.setItem("hpd-map-award-days", String(daysBack));
+    } catch { /* Keep the current filter when storage is unavailable. */ }
+  }, [daysBack, dateFilterLoaded]);
+  useEffect(() => {
+    if (!dateFilterLoaded) return;
+    try { localStorage.setItem("hpd-map-date-range-v2", JSON.stringify(dateRange)); } catch { /* Filtering still works without storage. */ }
+  }, [dateRange, dateFilterLoaded]);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
-  const [darkTiles, setDarkTiles] = useState(true);
+  const [currentJob,setCurrentJob] = useState<CurrentJob|null>(null);
+  const currentJobRef=useRef<CurrentJob|null>(null);
+  const resumeInitialized=useRef(false);
+  const navigationDeparted=useRef(false);
+  const [darkTiles, setDarkTiles] = useState(false);
+  const [sheetExpanded, setSheetExpanded] = useState(false);
+  const [chromeOpen, setChromeOpen] = useState(false);
+  const [plannerRequest,setPlannerRequest] = useState(0);
   const [locateStatus, setLocateStatus] = useState<"idle" | "loading" | "error">("idle");
   const [scopeOpen, setScopeOpen] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
-  const [mapFullscreen, setMapFullscreen] = useState(false);
   const [routeSummary, setRouteSummary] = useState<{ stops: number; miles: number; firstStop: string; href: string } | null>(null);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
+  const [workflowLoaded, setWorkflowLoaded] = useState(false);
   const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number }>>({});
   const [mediaBusy, setMediaBusy] = useState("");
   const [mediaMessage, setMediaMessage] = useState("");
   const [clearJobId, setClearJobId] = useState("");
   const [clearText, setClearText] = useState("");
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const videoCameraInputRef = useRef<HTMLInputElement | null>(null);
+  const videoLibraryInputRef = useRef<HTMLInputElement | null>(null);
+  const mediaChoiceRef = useRef<HTMLDivElement | null>(null);
+  const [mediaChoice, setMediaChoice] = useState<FieldMediaKind | null>(null);
   const pendingMediaKindRef = useRef<FieldMediaKind>("before");
-  const [headerHidden, setHeaderHidden] = useState(false);
-  const headerIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function rememberNavigation(id:string) {
+    const entry={id,startedAt:Date.now(),pendingReturn:true};
+    currentJobRef.current=entry;setCurrentJob(entry);navigationDeparted.current=false;
+    try {localStorage.setItem(CURRENT_JOB_KEY,JSON.stringify(entry));}
+    catch {setMediaMessage('Current job could not be saved on this device.');}
+  }
+  function resumeCurrentJob(entry:CurrentJob) {
+    const match=jobs.find(job=>jobId(job)===entry.id);
+    if(!match)return;
+    const updated={...entry,pendingReturn:false};
+    currentJobRef.current=updated;setCurrentJob(updated);
+    try {localStorage.setItem(CURRENT_JOB_KEY,JSON.stringify(updated));} catch {}
+    setChromeOpen(false);setControlsOpen(false);setAgendaOpen(false);
+    setSelectedJob(match);setSheetExpanded(false);
+  }
+  useEffect(()=>{
+    if(!jobs.length||!workflowLoaded)return;
+    if(!resumeInitialized.current){
+      resumeInitialized.current=true;
+      let entry:CurrentJob|null=null;
+      try {entry=parseCurrentJob(localStorage.getItem(CURRENT_JOB_KEY));}catch {}
+      currentJobRef.current=entry;setCurrentJob(entry);
+      if(entry?.pendingReturn&&!new URLSearchParams(window.location.search).has('omo'))resumeCurrentJob(entry);
+    }
+    const returnToJob=()=>{
+      if(document.hidden||!navigationDeparted.current)return;
+      navigationDeparted.current=false;
+      const entry=currentJobRef.current;
+      if(entry?.pendingReturn&&parseCurrentJob(JSON.stringify(entry)))resumeCurrentJob(entry);
+    };
+    const hidden=()=>{if(document.hidden)navigationDeparted.current=true;else returnToJob();};
+    const blur=()=>{navigationDeparted.current=true;};
+    window.addEventListener('blur',blur);window.addEventListener('focus',returnToJob);
+    window.addEventListener('pageshow',returnToJob);document.addEventListener('visibilitychange',hidden);
+    return()=>{window.removeEventListener('blur',blur);window.removeEventListener('focus',returnToJob);window.removeEventListener('pageshow',returnToJob);document.removeEventListener('visibilitychange',hidden);};
+  },[jobs,workflowLoaded]);
+
+  useEffect(() => { setMediaChoice(null); }, [selectedJob ? jobId(selectedJob) : ""]);
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" })
-      .then((r) => r.json())
+    let loading = false;
+    function refreshJobs() {
+      if (loading) return;
+      loading = true;
+      fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" })
+      .then((r) => { if (!r.ok) throw new Error("Job refresh failed"); return r.json(); })
       .then((data) => {
         if (cancelled) return;
-        const rows = Array.isArray(data) ? data : data.jobs || data.data || data.records || [];
-        setJobs(rows);
+        const rows = Array.isArray(data) ? data : data.jobs || data.data || data.records;
+        if (!Array.isArray(rows)) throw new Error("Invalid job response");
+        const overrides = readSharedWorkflowOverrides();
+        const next = rows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}) }));
+        setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
       })
-      .catch(() => {
-        if (!cancelled) setJobs([]);
-      });
+      .catch(() => { /* Keep the last loaded jobs if refresh is unavailable. */ })
+      .finally(() => { loading = false; });
+    }
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === SHARED_WORKFLOW_STORAGE_KEY) refreshJobs();
+    };
+    refreshJobs();
+    window.addEventListener("focus", refreshJobs);
+    window.addEventListener("storage", onStorage);
+    const timer = window.setInterval(refreshJobs, 60000);
     return () => {
       cancelled = true;
+      window.removeEventListener("focus", refreshJobs);
+      window.removeEventListener("storage", onStorage);
+      window.clearInterval(timer);
     };
   }, []);
 
@@ -562,56 +633,63 @@ export default function FieldCommandClient() {
     try {
       const saved = window.localStorage.getItem(FIELD_WORKFLOW_STORAGE_KEY);
       if (saved) setWorkflowStamps(JSON.parse(saved));
+      const drafts = window.localStorage.getItem("hpd-field-visit-drafts");
+      if (drafts) setOutcomeDrafts(JSON.parse(drafts));
     } catch {}
+    setWorkflowLoaded(true);
   }, []);
 
   useEffect(() => {
+    if (!workflowLoaded) return;
     try {
       window.localStorage.setItem(FIELD_WORKFLOW_STORAGE_KEY, JSON.stringify(workflowStamps));
     } catch {}
-  }, [workflowStamps]);
+  }, [workflowStamps, workflowLoaded]);
+
+  useEffect(() => {
+    if (!workflowLoaded) return;
+    try { window.localStorage.setItem("hpd-field-visit-drafts", JSON.stringify(outcomeDrafts)); }
+    catch { setOutcomeMessage("Draft could not be saved on this device. Keep this screen open."); }
+  }, [outcomeDrafts, workflowLoaded]);
 
   const activeJobs = useMemo(
-    () => jobs.filter((job) => statusGroup(job) !== "closed"),
+    () => jobs.filter((job) => matchesJobQueue(job, "pending")),
     [jobs]
   );
 
   const overdueCount = useMemo(
     () => activeJobs.filter((job) => {
-      const days = jobAgeDays(job);
+      const days = jobPriority(job).days;
       return days !== null && days > 30;
     }).length,
-    [activeJobs]
+    [activeJobs, calendarDate]
   );
 
   const filteredJobs = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const exactOmoQuery = q.toUpperCase().match(/^[A-Z]{1,3}\d{4,8}$/) ? q.toUpperCase() : "";
     return jobs.filter((job) => {
-      if (exactOmoQuery && jobId(job).toUpperCase() === exactOmoQuery) return true;
-      if (daysBack !== null) {
-        const age = jobAgeDays(job);
-        if (age === null || age > daysBack) return false;
-      }
+      if (!matchesJobQueue(job, status)) return false;
+      if (!matchesAwardLookback(job, daysBack)) return false;
+      if (!matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
       if (borough !== "ALL" && jobBorough(job) !== borough) return false;
-      if (status !== "all" && statusGroup(job) !== status) return false;
       if (q) {
         const haystack = [jobId(job), jobAddress(job), jobBorough(job), jobStatus(job)].join(" ").toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
     });
-  }, [jobs, borough, status, search, daysBack]);
+  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate]);
 
   useEffect(() => {
-    if (!jobs.length) return;
+    if (!jobs.length || requestedJobLoaded.current) return;
+    requestedJobLoaded.current = true;
     const params = new URLSearchParams(window.location.search);
     const requested = (params.get("omo") || params.get("job") || params.get("q") || "").trim().toUpperCase();
     if (!requested || selectedJob) return;
     const match = jobs.find((job) => jobId(job).toUpperCase() === requested);
     if (match) {
       setSelectedJob(match);
-      setSearch(requested);
+      if (isPendingJob(match)) setSearch(requested);
       const boro = jobBorough(match);
       if (boro !== "NYC") setBorough(boro);
     }
@@ -627,9 +705,9 @@ export default function FieldCommandClient() {
   }, [jobs]);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { open: 0, awarded: 0, pending: 0 };
+    const counts: Record<string, number> = { pending: 0, followup: 0, completed: 0, archived: 0 };
     jobs.forEach((job) => {
-      const g = statusGroup(job);
+      const g = jobQueue(job);
       if (g in counts) counts[g] += 1;
     });
     return counts;
@@ -668,7 +746,61 @@ export default function FieldCommandClient() {
           attributionControl: true,
         }).setView([40.72, -73.95], 10);
         mapRef.current = map;
-        tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20, maxNativeZoom: 16 }).addTo(map);
+        setRouteMapReady(true);
+        tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20, maxNativeZoom: darkTiles ? 16 : 19, attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, contributors' }).addTo(map);
+        // Keep raster streets underneath until the vector map is ready, including on unsupported devices.
+        import("@maplibre/maplibre-gl-leaflet").then(async ({ maplibreGL }) => {
+          const { setWorkerUrl } = await import("maplibre-gl");
+          setWorkerUrl("/map-worker/maplibre-gl-worker.mjs");
+          if (mapRef.current !== map) return;
+          let vector: any;
+          try {
+            vector = maplibreGL({
+              style: "https://tiles.openfreemap.org/styles/liberty",
+              attributionControl: false,
+              interactive: false,
+              pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+            }).addTo(map);
+            vectorLayerRef.current = vector;
+            vector.getContainer().style.opacity = darkTilesRef.current ? "0" : "1";
+            const gl = vector.getMaplibreMap();
+            gl.once("style.load", () => {
+              for (const layer of gl.getStyle().layers) {
+                if (layer.type === "symbol" && layer["source-layer"] === "poi") gl.setLayoutProperty(layer.id, "visibility", "none");
+                if (layer.type === "background") gl.setPaintProperty(layer.id, "background-color", "#eef0ed");
+                if (layer.type === "fill") {
+                  const colors: Record<string, string> = {
+                    water: "#a5d7e5", landuse_residential: "#e9ede8", building: "#d3d9d5",
+                    park: "#b8d8ab", landcover_wood: "#a9ce9e", landcover_grass: "#c5dfb8",
+                  };
+                  if (colors[layer.id]) gl.setPaintProperty(layer.id, "fill-color", colors[layer.id]);
+                }
+                if (layer.type === "line" && /^(road|bridge|tunnel)_/.test(layer.id) && !/rail|path/.test(layer.id)) {
+                  gl.setPaintProperty(layer.id, "line-color", layer.id.endsWith("_casing") ? "#cbd2d0" : "#ffffff");
+                }
+              }
+            });
+            gl.once("load", () => {
+              if (mapRef.current !== map || vectorLayerRef.current !== vector) return;
+              vector.getContainer().dataset.ready = "true";
+              vector.getContainer().style.opacity = darkTilesRef.current ? "0" : "1";
+              if (!darkTilesRef.current) tileLayerRef.current?.remove();
+              map.attributionControl.addAttribution('<a href="https://openfreemap.org/">OpenFreeMap</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>');
+            });
+            gl.on("error", (event: { error?: Error }) => {
+              console.warn("Clean Streets map unavailable; using street-map fallback.", event.error?.message);
+              // A failed style or tile must not leave an empty map above the fallback.
+              if (mapRef.current === map && vectorLayerRef.current === vector) {
+                vector.getContainer().style.opacity = "0";
+                vector.getContainer().dataset.ready = "false";
+                tileLayerRef.current?.addTo(map);
+              }
+            });
+          } catch {
+            vector?.remove();
+            vectorLayerRef.current = null;
+          }
+        }).catch(() => { /* Raster streets remain available if the vector bundle cannot load. */ });
         L.control.scale({ position: "bottomright", metric: false, imperial: true }).addTo(map);
 
         map.createPane("boroughLabels");
@@ -699,56 +831,57 @@ export default function FieldCommandClient() {
         renderMarkersRef.current = () => {
           if (!layerGroupRef.current) return;
           layerGroupRef.current.clearLayers();
-          const clusters = clusterByPixelDistance(pointsRef.current, map, 44);
-
-          clusters.forEach((cluster) => {
-            let html: string;
-            let onClick: () => void;
-            let title: string;
-
-            if (cluster.jobs.length === 1) {
-              const job = cluster.jobs[0];
-              const meta = jobStatusMeta(job);
-              const days = jobAgeDays(job);
-              html = ageMarkerHtml(meta.color, days);
-              title = `${jobId(job)} - ${meta.label} - ${days === null ? "age unknown" : `${days}d old`}`;
-              onClick = () => setSelectedJob(job);
-            } else {
-              const ages = cluster.jobs.map((job) => jobAgeDays(job)).filter((d): d is number => d !== null);
-              const oldestDays = ages.length ? Math.max(...ages) : null;
-              html = clusterMarkerHtml(cluster.jobs.length, oldestDays);
-              title = `${cluster.jobs.length} jobs${oldestDays !== null && oldestDays > 30 ? ` - oldest ${oldestDays}d` : ""}`;
-              onClick = () => {
-                map.flyTo([cluster.lat, cluster.lng], Math.min(20, map.getZoom() + 2.5));
-              };
-            }
-
-            const icon = L.divIcon({ className: "", html, iconSize: [30, 30], iconAnchor: [15, 15] });
-            const marker = L.marker([cluster.lat, cluster.lng], { icon, title });
-            marker.on("click", onClick);
-            marker.addTo(layerGroupRef.current);
+          const occupied: { x: number; y: number }[] = [];
+          groupByLocation(pointsRef.current).forEach((location) => {
+            location.jobs.forEach((job, index) => {
+              const meta = { ...jobStatusMeta(job) };
+              const visit = visitState(job);
+              meta.color = visit.color;
+              const priority = jobPriority(job);
+              const title = `${jobId(job)} - ${meta.label} - ${priority.label} - ${visit.label} - ${visit.count} visits`;
+              const offset = map.getZoom() >= 17 ? individualPinOffset(index, location.jobs.length) : { x: 0, y: 0 };
+              const origin = map.latLngToLayerPoint([location.lat, location.lng]);
+              const position = map.layerPointToLatLng(L.point(origin.x + offset.x, origin.y + offset.y));
+              if (!map.getBounds().pad(0.1).contains(position)) return;
+              const screen = map.latLngToContainerPoint(position);
+              const showLabel = reservePinLabel(screen.x, screen.y, occupied);
+              const html = showLabel
+                ? ageMarkerHtml(priority.days, priority.pending, map.getZoom(), false, meta.color, meta.key) + (visit.count ? `<span class="fc-visit-pin-count">${visit.count}v</span>` : "")
+                : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`;
+              if (map.getZoom() >= 17 && location.jobs.length > 1) {
+                L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
+              }
+              const icon = L.divIcon({ className: showLabel ? "fc-label-marker" : "fc-dot-marker", html, iconSize: showLabel ? [44, 32] : [14, 14], iconAnchor: showLabel ? [22, 16] : [7, 7] });
+              const marker = L.marker(position, { icon, title, zIndexOffset: showLabel ? 1000 : 0 });
+              marker.on("click", () => {
+                if (!showLabel || location.jobs.length > 1) map.setView([location.lat, location.lng], Math.max(17, map.getZoom()));
+                setSelectedJob(job);
+              });
+              marker.addTo(layerGroupRef.current);
+              marker.getElement()?.setAttribute("aria-label", title);
+            });
           });
         };
 
+        // Recompute visible labels after movement; retain individual dots for crowded jobs.
         map.on("moveend", () => renderMarkersRef.current());
 
-        map.on("movestart zoomstart dragstart", () => {
-          if (headerIdleTimerRef.current) clearTimeout(headerIdleTimerRef.current);
-          setHeaderHidden(true);
-        });
-        map.on("moveend zoomend dragend", () => {
-          if (headerIdleTimerRef.current) clearTimeout(headerIdleTimerRef.current);
-          headerIdleTimerRef.current = setTimeout(() => setHeaderHidden(false), 1000);
-        });
       }
 
       const map = mapRef.current;
 
-      if (points.length === 1) {
-        map.setView([points[0].lat, points[0].lng], 15);
-      } else if (points.length > 1) {
-        const bounds = points.map((p) => [p.lat, p.lng]) as [number, number][];
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+      const framing = `${borough}|${search}|${status}|${daysBack}|${JSON.stringify(dateRange)}`;
+      if (mapFramingRef.current !== framing && points.length) {
+        mapFramingRef.current = framing;
+        if (points.length === 1) {
+          map.setView([points[0].lat, points[0].lng], 15);
+        } else if (points.length > 1 && borough === "ALL" && !search.trim()) {
+          // Keep the initial city view useful even when a record lies far outside NYC.
+          map.setView([40.72, -73.95], 14);
+        } else if (points.length > 1) {
+          const bounds = points.map((p) => [p.lat, p.lng]) as [number, number][];
+          map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+        }
       }
       renderMarkersRef.current();
     }
@@ -757,12 +890,25 @@ export default function FieldCommandClient() {
     return () => {
       cancelled = true;
     };
-  }, [filteredJobs, borough, search]);
+  }, [filteredJobs, borough, search, status, daysBack, dateRange]);
 
   useEffect(() => {
+    darkTilesRef.current = darkTiles;
     if (!mapRef.current || !tileLayerRef.current) return;
+    tileLayerRef.current.options.maxNativeZoom = darkTiles ? 16 : 19;
     tileLayerRef.current.setUrl(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL);
+    const container = vectorLayerRef.current?.getContainer();
+    const useVector = !darkTiles && container?.dataset.ready === "true";
+    if (container) container.style.opacity = useVector ? "1" : "0";
+    if (useVector) tileLayerRef.current.remove();
+    else tileLayerRef.current.addTo(mapRef.current);
   }, [darkTiles]);
+
+  useEffect(() => () => {
+    mapRef.current?.remove();
+    mapRef.current = null;
+    vectorLayerRef.current = null;
+  }, []);
 
   useEffect(() => {
     setRouteSummary(null);
@@ -770,18 +916,36 @@ export default function FieldCommandClient() {
       routeLayerRef.current.remove();
       routeLayerRef.current = null;
     }
-  }, [borough, status, search, daysBack]);
+  }, [borough, status, search, daysBack, dateRange, jobs]);
 
   useEffect(() => {
-    if (selectedJob && !filteredJobs.includes(selectedJob)) {
-      setSelectedJob(null);
+    if (selectedJob) {
+      const match = jobs.find((job) => jobId(job) === jobId(selectedJob));
+      if (!match) setSelectedJob(null);
+      else if (match !== selectedJob) setSelectedJob(match);
     }
-  }, [filteredJobs, selectedJob]);
+  }, [jobs, selectedJob]);
 
   useEffect(() => {
     setScopeOpen(false);
+    setSheetExpanded(false);
+    if (selectedJob) setControlsOpen(false);
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [selectedJob]);
+
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const map = mapRef.current;
+      if (!map) return;
+      map.invalidateSize({ pan: false });
+      const point = selectedJob && jobLatLng(selectedJob);
+      if (point && !sheetExpanded) {
+        map.panInside([point.lat, point.lng], { paddingTopLeft: [24, 24], paddingBottomRight: [60, (jobSheetRef.current?.offsetHeight || 280) + 20] });
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [selectedJob, sheetExpanded]);
 
   useEffect(() => {
     if (!selectedJob) return;
@@ -803,33 +967,100 @@ export default function FieldCommandClient() {
     setDarkTiles((prev) => !prev);
   }
 
+  async function placeUserMarker(latitude: number, longitude: number) {
+    lastPositionRef.current = { lat: latitude, lng: longitude };
+    if (!mapRef.current) return;
+    const leafletModule = await import("leaflet");
+    const L = (leafletModule as any).default || leafletModule;
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setLatLng([latitude, longitude]);
+      return;
+    }
+    const icon = L.divIcon({
+      className: "",
+      html: '<div class="fc-you-are-here"><span class="fc-you-are-here-pulse"></span></div>',
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+    });
+    userMarkerRef.current = L.marker([latitude, longitude], { icon, interactive: false, zIndexOffset: 1000 }).addTo(mapRef.current);
+  }
+
+  useEffect(() => {
+    if (!routeMapReady || !navigator.geolocation) return;
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        setLocateStatus("idle");
+        placeUserMarker(position.coords.latitude, position.coords.longitude);
+      },
+      () => setLocateStatus("error"),
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+    return () => {
+      if (watchIdRef.current !== null) navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    };
+  }, [routeMapReady]);
+
   function locateMe() {
     if (!navigator.geolocation) {
       setLocateStatus("error");
       return;
     }
+    if (lastPositionRef.current && mapRef.current) {
+      mapRef.current.flyTo([lastPositionRef.current.lat, lastPositionRef.current.lng], 15);
+      return;
+    }
     setLocateStatus("loading");
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      (position) => {
         setLocateStatus("idle");
         const { latitude, longitude } = position.coords;
-        if (!mapRef.current) return;
-        const leafletModule = await import("leaflet");
-        const L = (leafletModule as any).default || leafletModule;
-        if (userMarkerRef.current) userMarkerRef.current.remove();
-        const icon = L.divIcon({
-          className: "",
-          html: '<div class="fc-you-are-here"><span class="fc-you-are-here-pulse"></span></div>',
-          iconSize: [20, 20],
-          iconAnchor: [10, 10],
-        });
-        userMarkerRef.current = L.marker([latitude, longitude], { icon, interactive: false }).addTo(mapRef.current);
-        mapRef.current.flyTo([latitude, longitude], 15);
+        placeUserMarker(latitude, longitude);
+        mapRef.current?.flyTo([latitude, longitude], 15);
       },
       () => setLocateStatus("error"),
-      { enableHighAccuracy: true, timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
     );
   }
+
+  async function drawDayRoute(stops: RouteJob[], origin: RoutePoint) {
+    const request = ++dayRouteRequest.current;
+    const leafletModule = await import("leaflet");
+    if (request !== dayRouteRequest.current || !mapRef.current) return;
+    const L = (leafletModule as any).default || leafletModule;
+    dayRouteLayerRef.current?.remove();
+    if (!stops.length) return;
+    for (const [name, z] of [["fc-route-path", "610"], ["fc-route-stops", "620"]]) {
+      const pane = mapRef.current.getPane(name) || mapRef.current.createPane(name);
+      pane.style.zIndex = z;
+    }
+    const line = [origin, ...stops].map(p => [p.lat, p.lng]);
+    dayRouteLayerRef.current = L.featureGroup([
+      L.polyline(line, { pane:"fc-route-path", color: "#ffffff", weight: 11, opacity: 0.95, interactive: false }),
+      L.polyline(line, { pane:"fc-route-path", color: "#1267df", weight: 7, opacity: 1, interactive: false }),
+      L.polyline(line, { pane:"fc-route-path", color: "#d8f8ff", weight: 3, dashArray: "3 19", opacity: 1, interactive: false, className: "fc-route-flow" }),
+      ...stops.flatMap((job, index) => {
+        const previous = index ? stops[index-1] : origin;
+        const from = mapRef.current.project([previous.lat, previous.lng], 14);
+        const to = mapRef.current.project([job.lat, job.lng], 14);
+        if (from.distanceTo(to) < 24) return [];
+        const angle = Math.atan2(to.y-from.y, to.x-from.x)*180/Math.PI;
+        const midpoint = mapRef.current.unproject([(from.x+to.x)/2, (from.y+to.y)/2],14);
+        return [L.marker(midpoint, {pane:"fc-route-stops", interactive:false, icon:L.divIcon({className:"fc-route-direction",html:`<span style="transform:rotate(${angle}deg)"></span>`,iconSize:[18,18],iconAnchor:[9,9]})})];
+      }),
+      ...stops.map((job, index) => L.marker([job.lat, job.lng], {
+        icon: L.divIcon({className:`fc-route-number${index===0?' is-next':''}`,html:String(index+1),iconSize:[32,32],iconAnchor:[16,16]}),
+        pane:"fc-route-stops", title: `Route stop ${index+1}: ${job.id}`, zIndexOffset: 2000,
+      }).on('click',()=>setSelectedJob(jobs.find(row=>jobId(row)===job.id)||null)))
+    ]).addTo(mapRef.current);
+    mapRef.current.fitBounds(dayRouteLayerRef.current.getBounds(), {padding:[36,60],maxZoom:15});
+  }
+
+  const routeJobs = useMemo<RouteJob[]>(() => jobs.flatMap(job => {
+    const point = jobLatLng(job); if (!point) return [];
+    const queue = jobQueue(job);
+    return [{id:jobId(job),address:jobAddress(job),borough:jobBorough(job),...point,days:jobPriority(job).days,pending:queue==='pending',closed:queue==='completed'||queue==='archived',blocked:visitState(job).blocked,appointment:job.Appointment as Appointment|undefined}];
+  }), [jobs, calendarDate]);
 
   async function previewLocalRoute() {
     if (!mapRef.current || !pointsRef.current.length) return;
@@ -838,12 +1069,9 @@ export default function FieldCommandClient() {
     const center = userMarkerRef.current?.getLatLng?.() || mapRef.current.getCenter();
     const origin = { lat: Number(center.lat), lng: Number(center.lng) };
     const stops = pointsRef.current
-      .filter(({ job }) => {
-        const age = jobAgeDays(job);
-        return age === null || age <= 90;
-      })
+      .filter(({ job }) => matchesJobQueue(job, "pending") && !visitState(job).blocked)
       .map((point) => ({ ...point, miles: distanceMiles(origin, { lat: point.lat, lng: point.lng }) }))
-      .sort((a, b) => a.miles - b.miles)
+      .sort((a, b) => Math.max(0, jobPriority(b.job).days || 0) - Math.max(0, jobPriority(a.job).days || 0) || a.miles - b.miles)
       .slice(0, 6);
 
     if (!stops.length) return;
@@ -851,13 +1079,14 @@ export default function FieldCommandClient() {
     const routePoints = [origin, ...stops.map((point) => ({ lat: point.lat, lng: point.lng }))];
     const latLngs = routePoints.map((point) => [point.lat, point.lng]);
     routeLayerRef.current = L.featureGroup([
-      L.polyline(latLngs, { color: "#020617", weight: 10, opacity: 0.72, lineCap: "round", lineJoin: "round" }),
-      L.polyline(latLngs, { color: "#1d8cff", weight: 5, opacity: 0.94, dashArray: "12 10", lineCap: "round", lineJoin: "round" }),
+      L.polyline(latLngs, { color: "#ffffff", weight: 11, opacity: 0.95, interactive:false }),
+      L.polyline(latLngs, { color: "#1267df", weight: 7, opacity: 1, interactive:false }),
+      L.polyline(latLngs, { color: "#d8f8ff", weight: 3, opacity: 1, dashArray: "3 19", interactive:false, className:"fc-route-flow" }),
     ]).addTo(mapRef.current);
     mapRef.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [42, 42], maxZoom: 14 });
     setRouteSummary({
       stops: stops.length,
-      miles: stops.reduce((sum, stop) => sum + stop.miles, 0),
+      miles: routePoints.slice(1).reduce((sum, point, index) => sum + distanceMiles(routePoints[index], point), 0),
       firstStop: jobId(stops[0].job),
       href: googleRouteHref(routePoints),
     });
@@ -874,14 +1103,7 @@ export default function FieldCommandClient() {
     statusLabel?: string
   ) {
     if (key === "arrived") {
-      return {
-        FieldArrivedAt: iso,
-        fieldArrivedAt: iso,
-        LastFieldVisitAt: iso,
-        lastFieldVisitAt: iso,
-        StatusOverride: "Arrived",
-        status: "Arrived",
-      };
+      return arrivalVisitPatch(iso);
     }
     if (key === "visit") {
       return {
@@ -929,7 +1151,7 @@ export default function FieldCommandClient() {
         jobFinishedAt: iso,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
-        ArchivedFromMap: true,
+        PackageReviewStatus: "Pending",
       };
     }
     if (String(statusLabel || "").toLowerCase().includes("refused")) {
@@ -944,7 +1166,7 @@ export default function FieldCommandClient() {
         refusalDate: iso,
         OutcomeLockedAt: iso,
         outcomeLockedAt: iso,
-        ArchivedFromMap: true,
+        PackageReviewStatus: "Pending",
       };
     }
     return {
@@ -967,16 +1189,64 @@ export default function FieldCommandClient() {
     const id = jobId(job);
     const now = new Date().toISOString();
     const patch = workflowPatchForAction(key, now, statusLabel);
+    try { writeSharedWorkflowPatch(id, patch); }
+    catch {
+      setOutcomeMessage("Could not save this step on this device. Please retry.");
+      return;
+    }
     setWorkflowStamps((prev) => ({
       ...prev,
       [id]: {
         ...(prev[id] || {}),
         [key]: now,
+        ...(key === "arrived" ? { visit: now } : {}),
         ...(statusLabel ? { status: statusLabel } : {}),
       },
     }));
+    mergeWorkflowPatchIntoScreen(id, patch);
+  }
+
+  function openOutcomePanel() {
+    setSheetExpanded(true);
+    requestAnimationFrame(() => outcomePanelRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  }
+
+  function openAppointment() {
+    setAppointmentOpen(true);
+    setSheetExpanded(true);
+    requestAnimationFrame(() => appointmentRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
+  }
+
+  function saveAppointment(job: JobRecord, appointment: Appointment) {
+    const id = jobId(job);
+    const latest = { ...job, ...readSharedWorkflowOverrides()[id] };
+    const patch = appointmentPatch(latest, appointment);
     writeSharedWorkflowPatch(id, patch);
     mergeWorkflowPatchIntoScreen(id, patch);
+    setWorkflowStamps(prev => ({ ...prev, [id]: { ...prev[id], status: patch.status } }));
+  }
+
+  function chooseOutcome(outcome: string) {
+    if (!selectedJob) return;
+    const id = jobId(selectedJob);
+    setOutcomeDrafts((prev) => ({ ...prev, [id]: { note: prev[id]?.note || "", outcome } }));
+    openOutcomePanel();
+  }
+
+  function saveVisitOutcome(job: JobRecord, review = false) {
+    const id = jobId(job);
+    const draft = outcomeDrafts[id] || { outcome: "", note: "" };
+    try {
+      const patch = fieldOutcomePatch(job, draft.outcome, draft.note, new Date().toISOString());
+      writeSharedWorkflowPatch(id, patch);
+      mergeWorkflowPatchIntoScreen(id, patch);
+      if (draft.outcome) setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[draft.outcome] } }));
+      setOutcomeDrafts((prev) => ({ ...prev, [id]: { outcome: "", note: "" } }));
+      setOutcomeMessage("Saved on this device. Not archived or emailed.");
+      if (review) window.location.assign(paperworkGenerateHref(id, draft.outcome));
+    } catch (error) {
+      setOutcomeMessage(error instanceof Error ? error.message : "Save failed. Your draft is still here.");
+    }
   }
 
   async function refreshMediaCounts(job: JobRecord) {
@@ -993,8 +1263,19 @@ export default function FieldCommandClient() {
   }
 
   function requestMediaUpload(kind: FieldMediaKind) {
+    setMediaChoice(kind);
+    requestAnimationFrame(() => mediaChoiceRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
+  }
+
+  function chooseMediaSource(source: "camera" | "library" | "video-camera" | "video-library") {
+    if (!mediaChoice || mediaBusy) return;
+    const kind = mediaChoice;
     pendingMediaKindRef.current = kind;
-    mediaInputRef.current?.click();
+    if (source === "video-camera") videoCameraInputRef.current?.click();
+    else if (source === "video-library") videoLibraryInputRef.current?.click();
+    else if (source === "camera") cameraInputRef.current?.click();
+    else mediaInputRef.current?.click();
+    setMediaChoice(null);
   }
 
   async function handleMediaFiles(files: FileList | null) {
@@ -1013,12 +1294,17 @@ export default function FieldCommandClient() {
         label: kind === "before" ? "Before Work Evidence" : "After Work Evidence",
       });
       await refreshMediaCounts(selectedJob);
-      setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}` : "No image or video was saved.");
+      const unstamped = saved.filter(item => item.mediaType === "video" && item.stamped === false).length;
+      setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}.${unstamped ? ` ${unstamped} video(s) saved as originals without burned-in labels; review before submitting.` : ""}` : "No image or video was saved.");
+      if (kind === "after" && saved.length) openOutcomePanel();
     } catch (error) {
       setMediaMessage(error instanceof Error ? error.message : "Media save failed.");
     } finally {
       setMediaBusy("");
       if (mediaInputRef.current) mediaInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
+      if (videoCameraInputRef.current) videoCameraInputRef.current.value = "";
+      if (videoLibraryInputRef.current) videoLibraryInputRef.current.value = "";
     }
   }
 
@@ -1060,52 +1346,25 @@ export default function FieldCommandClient() {
     setMediaMessage("Workflow cleared. Saved media stays unless you remove it from the media/package screen.");
   }
 
-  function completeWorkForPackage(job: JobRecord) {
-    const id = jobId(job);
-    const now = new Date().toISOString();
-    const patch = workflowPatchForAction("complete", now);
-    setWorkflowStamps((prev) => ({
-      ...prev,
-      [id]: {
-        ...(prev[id] || {}),
-        work: prev[id]?.work || now,
-        status: "Work Completed",
-      },
-    }));
-    writeSharedWorkflowPatch(id, patch);
-    mergeWorkflowPatchIntoScreen(id, patch);
-  }
-
-  function paperworkOutcome(stamps: { arrived?: string; visit?: string; work?: string; status?: string }) {
-    const status = String(stamps.status || "").toLowerCase();
-    if (status.includes("refused")) return "refused_access";
-    if (status.includes("no access")) return "no_access";
-    if (stamps.work) return "work_completed";
-    return "work_completed";
-  }
-
-  function paperworkHref(job: JobRecord, media = true) {
-    const id = jobId(job);
-    const stamps = workflowStamps[id] || {};
-    const outcome = paperworkOutcome(stamps);
-    const params = new URLSearchParams({
-      job: id,
-      outcome,
-      auto: "package",
-      media: media ? "all" : "none",
-      fieldStatus: outcome === "work_completed" ? "WORK_COMPLETED" : outcome === "refused_access" ? "REFUSED_ACCESS" : "NO_ACCESS_1_WAITING_72H",
-    });
-    if (stamps.arrived) params.set("arrivedAt", stamps.arrived);
-    if (stamps.visit) params.set("visitStartedAt", stamps.visit);
-    if (stamps.work) params.set("workStartedAt", stamps.work);
-    if (outcome === "work_completed") params.set("workCompletedAt", new Date().toISOString());
-    if (outcome === "refused_access") params.set("refusedAt", new Date().toISOString());
-    if (outcome === "no_access") params.set("noAccessAt", new Date().toISOString());
-    return `/paperwork?${params.toString()}`;
-  }
-
   return (
-    <main className={`fc-app ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${headerHidden && !selectedJob ? "fc-header-hidden" : ""} ${mapFullscreen ? "fc-map-fullscreen" : ""}`}>
+    <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
+      <button type="button" className="fc-reveal-controls" aria-label={chromeOpen ? "Hide all map controls" : "Show map controls"} title={chromeOpen ? "Hide controls" : "Map menu"} aria-expanded={chromeOpen} onClick={() => { setChromeOpen((open) => !open); setControlsOpen(false); setSelectedJob(null); }}><MenuIcon /></button>
+      <div className="fc-search-row">
+        <div className="fc-search-field">
+          <SearchIcon />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search address or job" aria-label="Search jobs" />
+        </div>
+      </div>
+      {chromeOpen && !controlsOpen && <nav className="fc-organized-menu" aria-label="Map menu">
+        <strong>Map menu</strong>
+        <button type="button" onClick={()=>{setChromeOpen(false);setControlsOpen(false);setPlannerRequest(value=>value+1);}}><ListIcon />Plan my day</button>
+        <button type="button" aria-controls="field-map-filters" onClick={() => setControlsOpen(true)}><ListIcon />Filters</button>
+        <Link href="/jobs/"><ListIcon />Jobs</Link>
+        <Link href="/alerts/"><BellIcon />Alerts</Link>
+        <Link href="/storage/"><MenuIcon />Backup &amp; recovery</Link>
+        <Link href="/more/"><MenuIcon />More</Link>
+      </nav>}
+      <section id="field-map-filters" className="fc-control-drawer" aria-label="Map filters">
       <header className="fc-topbar">
         <div className="fc-topbar-row">
           <div className="fc-brand-text">
@@ -1117,7 +1376,7 @@ export default function FieldCommandClient() {
             </span>
             <div className="fc-brand-copy">
               <p className="fc-eyebrow">HPD Bid Dashboard 2026</p>
-              <h1 className="fc-title">HPD Field Command</h1>
+              <h1 className="fc-title">FIELD COMMAND</h1>
             </div>
           </div>
           <div className="fc-topbar-actions">
@@ -1132,31 +1391,9 @@ export default function FieldCommandClient() {
         </div>
         <div className="fc-live-row">
           <div className="fc-live-copy">
-            <span className="fc-live-dot">Live</span>
+            <span className="fc-live-dot">Loaded</span>
             <span className="fc-active-count">{activeJobs.length} Active Jobs</span>
           </div>
-          <label className="fc-days-control">
-            <span>Days</span>
-            <select
-              value={daysBack ?? ""}
-              aria-label="Show jobs from last number of days"
-              onChange={(event) => {
-                const raw = event.target.value;
-                setDaysBack(raw ? Number(raw) : null);
-              }}
-            >
-              <option value="">Any</option>
-              <option value="1">1</option>
-              <option value="3">3</option>
-              <option value="7">7</option>
-              <option value="14">14</option>
-              <option value="30">30</option>
-              <option value="60">60</option>
-              <option value="90">90</option>
-              <option value="180">180</option>
-              <option value="365">365</option>
-            </select>
-          </label>
         </div>
       </header>
 
@@ -1178,34 +1415,47 @@ export default function FieldCommandClient() {
         ))}
       </div>
 
-      <div className="fc-search-row">
-        <div className="fc-search-field">
-          <SearchIcon />
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search jobs, address, OMO, tenant..."
-            aria-label="Search jobs"
-          />
+        <div className="fc-award-filter">
+          <div className="fc-date-custom">
+          <label htmlFor="award-range">Awarded</label>
+          <select id="award-range" aria-label="Award date range" value={dateRange.preset ? "year" : customDateRange || (daysBack !== null && ![30,90,180,365].includes(daysBack)) ? "custom" : daysBack ?? "all"} onChange={(event) => {
+            const selected = event.target.value;
+            setDateRange(selected === "year" ? currentYearRange() : { field: "award", from: "", to: "" });
+            setCustomDateRange(selected === "custom");
+            if (selected !== "custom") setDaysBack(selected === "all" || selected === "year" ? null : Number(selected));
+          }}>
+            <option value="year">Current year</option>
+            <option value="all">All dates</option>
+            {[30,90,180,365].map((days) => <option key={days} value={days}>Last {days} days</option>)}
+            <option value="custom">Custom</option>
+          </select>
+          {customDateRange || (daysBack !== null && ![30,90,180,365].includes(daysBack)) ? <input id="award-lookback" aria-label="Custom days back" title="Days back" type="number" inputMode="numeric" min="0" max="3650" step="1" placeholder="Days" value={daysBack ?? ""} onChange={(event) => {
+            const raw = event.target.value;
+            if (!raw) setDaysBack(null);
+            else if (event.target.validity.valid) setDaysBack(Number(raw));
+          }} /> : null}
+          <output aria-live="polite">{filteredJobs.length ? `${filteredJobs.length} jobs` : "No matches"}</output>
+          </div>
+          <div className="fc-date-picker">
+            <label>Date type<select aria-label="Date type" value={dateRange.field} onChange={(e) => setDateRange({ ...dateRange, preset: false, field: e.target.value as JobDateField })}>
+              {Object.entries(JOB_DATE_FIELDS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select></label>
+            <div className="fc-date-bounds">
+              <label>From<input type="date" aria-label="Date from" value={dateRange.from} onChange={(e) => { setDaysBack(null); setDateRange({ ...dateRange, preset: false, from: e.target.value }); }} /></label>
+              <label>Through<input type="date" aria-label="Date through" value={dateRange.to} onChange={(e) => { setDaysBack(null); setDateRange({ ...dateRange, preset: false, to: e.target.value }); }} /></label>
+            </div>
+            {dateRange.from && dateRange.to && dateRange.from > dateRange.to ? <span role="alert">From must be on or before Through.</span> : null}
+            <button type="button" onClick={() => { setDateRange(currentYearRange()); setDaysBack(null); setCustomDateRange(false); }}>Current year</button>
+            <button type="button" onClick={() => { setDateRange({ field: "award", from: "", to: "" }); setDaysBack(null); setCustomDateRange(false); }}>All dates</button>
+          </div>
         </div>
-        <button
-          type="button"
-          className={`fc-search-list-btn fc-tools-toggle ${controlsOpen ? "is-open" : ""}`}
-          aria-label={controlsOpen ? "Hide map filters" : "Show map filters"}
-          onClick={() => setControlsOpen((open) => !open)}
-        >
-          <ListIcon />
-          <span>Tools</span>
-        </button>
-      </div>
-
-      <section className="fc-control-drawer" aria-label="Map filters">
         <div className="fc-pill-row fc-status-pill-row" role="group" aria-label="Status filter">
           {STATUS_FILTERS.map(({ key, label }) => (
             <button
               key={key}
               type="button"
               className={`fc-pill ${status === key ? "is-active" : ""}`}
+              aria-pressed={status === key}
               onClick={() => setStatus(key)}
             >
               <strong>{label}</strong>
@@ -1226,6 +1476,7 @@ export default function FieldCommandClient() {
           >
             <RouteIcon />
           </button>
+          <button type="button" className="fc-map-fab" aria-label="Today's appointments" title="Today's appointments" onClick={() => { setAgendaOpen(true); setSelectedJob(null); }}><ListIcon /></button>
           <button
             type="button"
             className={`fc-map-fab ${darkTiles ? "is-active" : ""}`}
@@ -1246,19 +1497,12 @@ export default function FieldCommandClient() {
             <strong>{filteredJobs.length}</strong>
             <span>Visible Jobs</span>
           </div>
-          <button
-            type="button"
-            className={`fc-map-fab ${mapFullscreen ? "is-active" : ""}`}
-            aria-label={mapFullscreen ? "Exit full map view" : "Full map view"}
-            onClick={() => setMapFullscreen((open) => !open)}
-          >
-            {mapFullscreen ? <CollapseIcon /> : <ExpandIcon />}
-          </button>
         </div>
         {routeSummary ? (
           <a className="fc-route-summary" href={routeSummary.href} target="_blank" rel="noreferrer">
             <strong>{routeSummary.stops} stops</strong>
-            <span>{routeSummary.miles.toFixed(1)} mi nearby</span>
+            <span>{routeSummary.miles.toFixed(1)} mi estimated straight-line distance</span>
+            <small>Stop preview, not driving directions</small>
             <small>First: {routeSummary.firstStop}</small>
           </a>
         ) : null}
@@ -1290,41 +1534,111 @@ export default function FieldCommandClient() {
           </div>
         ) : null}
 
+        <div hidden={!!selectedJob || agendaOpen || chromeOpen}>
+          {currentJob&&jobs.some(job=>jobId(job)===currentJob.id)&&<div className="fc-current-job"><button type="button" onClick={()=>resumeCurrentJob(currentJob)}>Resume current job · {currentJob.id}</button><button type="button" aria-label="Dismiss current job" onClick={()=>{currentJobRef.current=null;setCurrentJob(null);try{localStorage.removeItem(CURRENT_JOB_KEY);}catch{}}}>&times;</button></div>}
+          <TodayRoute jobs={routeJobs} mapReady={routeMapReady} getOrigin={() => {
+            const location = userMarkerRef.current?.getLatLng?.();
+            const center = location || mapRef.current?.getCenter() || {lat:40.72,lng:-73.95};
+            return {point:{lat:center.lat,lng:center.lng},label:location?'Your location':'Map center (location not set)'};
+          }} onNavigate={rememberNavigation} onPreview={drawDayRoute} onSelect={id => {setSelectedJob(jobs.find(job=>jobId(job)===id)||null);setSheetExpanded(false);}} />
+        </div>
+        {agendaOpen ? <aside className="fc-appointment-agenda" aria-label="Today's appointments">
+          <header><strong>Today&apos;s appointments</strong><button type="button" aria-label="Close appointments" onClick={() => setAgendaOpen(false)}>&times;</button></header>
+          <p>{nyToday()} · New York · This device</p>
+          {(() => {
+            const today = jobs.filter(row => { const a = row.Appointment as Appointment | undefined; return a && a.date === nyToday() && ['requested', 'confirmed'].includes(a.state); }).sort((a, b) => (a.Appointment as Appointment).start.localeCompare((b.Appointment as Appointment).start));
+            return today.length ? today.map(row => { const a = row.Appointment as Appointment; return <button type="button" key={jobId(row)} onClick={() => { setAgendaOpen(false); setStatus('all'); setDaysBack(null); setSearch(jobId(row)); setSelectedJob(row); setSheetExpanded(false); }}><strong>{a.start}-{a.end} · {a.state}</strong><span>{jobId(row)} · {jobAddress(row)}</span></button>; }) : <p>No appointments saved for today.</p>;
+          })()}
+        </aside> : null}
         {selectedJob ? (() => {
           const id = jobId(selectedJob);
           const scope = jobScope(selectedJob);
           const tenant = tenantInfo(selectedJob);
           const stamps = workflowStamps[id] || {};
           const counts = mediaCounts[id] || { before: 0, after: 0, total: 0 };
+          const next = nextFieldAction(stamps, counts, jobStatus(selectedJob));
+          const draft = outcomeDrafts[id] || { outcome: "", note: "" };
           return (
-            <div className="fc-job-sheet fc-job-sheet-flow">
-              <button type="button" className="fc-job-sheet-close" aria-label="Close" onClick={() => setSelectedJob(null)}>
-                Map
+            <div ref={jobSheetRef} className="fc-job-sheet fc-job-sheet-flow" aria-label="Selected job">
+              <button type="button" className="fc-sheet-handle" aria-label={sheetExpanded ? "Collapse job details" : "Expand job details"} aria-expanded={sheetExpanded} onTouchStart={(event) => { sheetTouchStart.current = event.touches[0].clientY; }} onTouchEnd={(event) => {
+                const start = sheetTouchStart.current;
+                sheetTouchStart.current = null;
+                if (start !== null && Math.abs(event.changedTouches[0].clientY - start) > 30) {
+                  event.preventDefault();
+                  setSheetExpanded(event.changedTouches[0].clientY < start);
+                }
+              }} onTouchCancel={() => { sheetTouchStart.current = null; }} onClick={() => setSheetExpanded((expanded) => !expanded)}><span /></button>
+              <button type="button" className="fc-job-sheet-close" aria-label="Close" title="Close job details" onClick={() => setSelectedJob(null)}>
+                <span aria-hidden="true">&times;</span>
               </button>
               <div className="fc-job-sheet-hero">
-                <div>
-                  <span className="fc-job-sheet-kicker">OMO</span>
-                  <strong className="fc-job-sheet-id">{id}</strong>
-                  <div className={`fc-arrival-pill ${stamps.arrived ? "is-saved" : ""}`}>
-                    <span>{stamps.arrived ? "Arrived saved" : "Not here yet"}</span>
-                    <b>{stamps.arrived ? formatSavedTime(stamps.arrived) : "Tap Arrive"}</b>
-                  </div>
-                </div>
-                <span className="fc-building-icon" aria-hidden="true">HPD</span>
+                <strong className="fc-job-sheet-id">{id}</strong>
+                <span className="fc-card-borough">{BOROUGHS.find((item) => item.key === jobBorough(selectedJob))?.label || "NYC"}</span>
+                <span className="fc-card-status"><i aria-hidden="true" style={{ background: jobStatusMeta(selectedJob).color }} />{stamps.status || jobStatusMeta(selectedJob).label}</span>
               </div>
+              <div className="fc-ticket-preview">
               <div className="fc-address-row">
                 <p>{jobAddress(selectedJob)}</p>
-                <a className="fc-route-btn fc-route-waze" href={wazeHref(selectedJob)} target="_blank" rel="noreferrer">Waze</a>
-                <a className="fc-route-btn fc-route-google" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">Google</a>
+                <a className="fc-route-btn fc-route-waze" href={wazeHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Waze</a>
+                <a className="fc-route-btn fc-route-google" href={directionsHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Google</a>
               </div>
+              </div>
+              <BuildingPhoto key={id} id={id} address={jobAddress(selectedJob)} borough={String(jobBorough(selectedJob))} point={jobLatLng(selectedJob)} />
               <div className="fc-job-sheet-tags">
-                <span className="fc-job-sheet-tag" style={{ background: boroughColor(jobBorough(selectedJob)) }}>
-                  {jobBorough(selectedJob)}
-                </span>
-                <span className="fc-job-sheet-tag" style={{ background: jobStatusMeta(selectedJob).color }}>
-                  {stamps.status || jobStatusMeta(selectedJob).label}
-                </span>
-                {jobAgeDays(selectedJob) !== null ? <span className="fc-job-sheet-tag fc-age-tag">{jobAgeDays(selectedJob)}d old</span> : null}
+                <span className="fc-card-maturity"><span>Maturity</span><strong>{maturityDate(selectedJob) || "Not available"}</strong></span>
+                <span className="fc-job-sheet-tag fc-age-tag" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>
+              </div>
+              {jobDateWarning(selectedJob) && <p role="status">{jobDateWarning(selectedJob)}</p>}
+              <div className="fc-visit-summary" style={{borderLeftColor:visitState(selectedJob).color}}>
+                <strong>{visitState(selectedJob).label} · {visitState(selectedJob).count} recorded visits</strong>
+                {visitState(selectedJob).lastAt && <span>Last visit: {/^\d{4}-\d{2}-\d{2}$/.test(visitState(selectedJob).lastAt) ? visitState(selectedJob).lastAt : formatSavedTime(visitState(selectedJob).lastAt)}</span>}
+                {visitState(selectedJob).count > 0 && <span>{FIELD_OUTCOMES[visitState(selectedJob).lastOutcome] || visitState(selectedJob).lastOutcome}</span>}
+                {visitState(selectedJob).note && <span>{visitState(selectedJob).note}</span>}
+                {selectedJob.Appointment ? (() => { const a = selectedJob.Appointment as Appointment; return <span>Appointment: {a.date} {a.start}-{a.end} ({a.state})</span>; })() : null}
+                {visitState(selectedJob).kind === "blocked" && <span>Excluded from routes. Review required before returning.</span>}
+                {["blocked","return"].includes(visitState(selectedJob).kind) && <button type="button" onClick={() => {
+                  if (!window.confirm("Approve a return visit to this job? Existing visit records will be kept.")) return;
+                  const patch = {RevisitApprovedAt:new Date().toISOString()};
+                  try { writeSharedWorkflowPatch(jobId(selectedJob),patch); mergeWorkflowPatchIntoScreen(jobId(selectedJob),patch); }
+                  catch { setOutcomeMessage("Return approval could not be saved. Try again."); }
+                }}>Approve return visit</button>}
+              </div>
+              <div className="fc-reference-job-summary">
+                <dl>
+                  <div><dt>Award date</dt><dd>{value(selectedJob, ["AwardDate", "awardDate"]) || "Not available"}</dd></div>
+                  <div><dt>Maturity date{!["MaturityDate", "maturityDate", "DueDate", "dueDate"].some(key => selectedJob[key] !== undefined && selectedJob[key] !== null) ? " (contract finish)" : ""}</dt><dd>{maturityDate(selectedJob) || "Not available"}</dd></div>
+                  <div><dt>Contract start</dt><dd>{jobDate(selectedJob, "start") || "Not available"}</dd></div>
+                  <div><dt>Contract finish</dt><dd>{jobDate(selectedJob, "finish") || "Not available"}</dd></div>
+                  <div><dt>Actual work start</dt><dd>{value(selectedJob, ["ActualWorkStartDate", "actualWorkStartDate"]) || "Not recorded"}</dd></div>
+                  <div><dt>Actual work finish</dt><dd>{value(selectedJob, ["ActualWorkCompletionDate", "actualWorkCompletionDate"]) || "Not recorded"}</dd></div>
+                  <div><dt>COA amount</dt><dd>{jobAwardAmount(selectedJob) ? jobAwardAmount(selectedJob).toLocaleString("en-US", { style: "currency", currency: "USD" }) : "Not available"}</dd></div>
+                </dl>
+              </div>
+              <div className="fc-next-step">
+                {mediaMessage ? <p className="fc-save-message" role="status">{mediaMessage}</p> : null}
+                <div className="fc-evidence-stages" role="group" aria-label="Job photos and videos">
+                  <button type="button" aria-expanded={mediaChoice === "before"} onClick={() => requestMediaUpload("before")} disabled={Boolean(mediaBusy)}><PhotosIcon /><span>Before<small>{counts.before} saved</small></span></button>
+                  <button type="button" aria-expanded={mediaChoice === "after"} onClick={() => requestMediaUpload("after")} disabled={Boolean(mediaBusy)}><PhotosIcon /><span>After<small>{counts.after} saved</small></span></button>
+                </div>
+                {mediaChoice ? <div ref={mediaChoiceRef} className="fc-photo-choice" role="group" aria-label={`${mediaChoice} photo source`}>
+                  <div className="fc-photo-choice-heading"><strong>{mediaChoice === "before" ? "Before work" : "After work"}</strong><button type="button" aria-label="Cancel photo selection" onClick={() => setMediaChoice(null)}>&times;</button></div>
+                  <div className="fc-photo-source-actions">
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("camera")}><PhotosIcon />Take {mediaChoice} photo</button>
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("library")}><DocumentsIcon />Add {mediaChoice} photos</button>
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-camera")}>Record {mediaChoice} video</button>
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-library")}>Add {mediaChoice} videos</button>
+                  </div>
+                </div> : null}
+                {next.key === "before" || next.key === "after" ? null : next.key === "review" ? (
+                  <a href={paperworkReviewHref(id)} className="fc-next-action">{next.label}<span aria-hidden="true">&rarr;</span></a>
+                ) : next.key === "record" ? (
+                  <button type="button" className="fc-next-action" onClick={openOutcomePanel}>{next.label}<span aria-hidden="true">&rarr;</span></button>
+                ) : (
+                  <button type="button" className="fc-next-action" disabled={!workflowLoaded || Boolean(mediaBusy)} onClick={() => {
+                    saveWorkflowStamp(selectedJob, next.key, next.key === "work" ? "Work Started" : undefined);
+                  }}>{mediaBusy ? "Saving media..." : next.label}<span aria-hidden="true">&rarr;</span></button>
+                )}
+                {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
               </div>
               <div className="fc-info-row">
                 <div className="fc-info-item">
@@ -1350,30 +1664,38 @@ export default function FieldCommandClient() {
                 </div>
               </div>
               <div className="fc-quick-actions">
-                <a className="fc-quick-action is-navigate" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">
-                  <NavigateIcon />
-                  <span>Navigate</span>
+                <a className="fc-quick-action is-navigate" title="Navigate to job" href={directionsHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">
+                  <NavigateIcon /><span>Navigate</span>
                 </a>
                 {tenant.phone ? (
-                  <a className="fc-quick-action is-call" href={`tel:${tenant.phone}`}>
-                    <CallIcon />
-                    <span>Call Tenant</span>
+                  <a className="fc-quick-action is-call" title="Call tenant" href={`tel:${tenant.phone}`}>
+                    <CallIcon /><span>Call</span>
                   </a>
                 ) : (
-                  <span className="fc-quick-action is-call is-disabled">
-                    <CallIcon />
-                    <span>Call Tenant</span>
+                  <span className="fc-quick-action is-call is-disabled" aria-label="Tenant phone unavailable" title="No tenant phone on file">
+                    <CallIcon /><span>No phone</span>
                   </span>
                 )}
-                <button type="button" className="fc-quick-action is-photos" onClick={() => requestMediaUpload("before")}>
-                  <PhotosIcon />
-                  <span>Photos</span>
-                </button>
                 <Link className="fc-quick-action is-documents" href={`/jobs/${id}`}>
-                  <DocumentsIcon />
-                  <span>Documents</span>
+                  <DocumentsIcon /><span>Documents</span>
                 </Link>
               </div>
+              <div className="fc-card-footer">
+              <button type="button" className="fc-outcome-link" onClick={openOutcomePanel}>Outcome / note</button>
+              <button type="button" className="fc-outcome-link" onClick={openAppointment}>Appointment</button>
+              <button type="button" className="fc-job-details-toggle" aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}>{sheetExpanded ? "Less detail" : "Job details"}<span aria-hidden="true">{sheetExpanded ? "\u2304" : "\u2303"}</span></button>
+              </div>
+              {selectedJob.Appointment ? <button type="button" className="fc-appointment-summary" onClick={openAppointment}>{(selectedJob.Appointment as Appointment).date} · {(selectedJob.Appointment as Appointment).start}-{(selectedJob.Appointment as Appointment).end} · {(selectedJob.Appointment as Appointment).state}</button> : null}
+              <div ref={appointmentRef} hidden={!appointmentOpen || !sheetExpanded}>
+                {appointmentOpen && <AppointmentEditor key={id} job={selectedJob} jobs={jobs.map(row => ({ ...row, id: jobId(row) }))} id={id} address={jobAddress(selectedJob)} contact={tenant.name} phone={tenant.phone} note={draft.note} save={a => saveAppointment(selectedJob, a)} />}
+              </div>
+              <section ref={outcomePanelRef} className="fc-outcome-panel" aria-label="Visit outcome">
+                <label>Outcome<select value={draft.outcome} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, outcome: event.target.value } }))}><option value="">Select outcome</option>{Object.entries(FIELD_OUTCOMES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+                <label>Visit note<textarea value={draft.note} rows={3} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
+                {draft.outcome === "APPOINTMENT_REQUESTED" ? <button type="button" className="fc-next-action" onClick={openAppointment}>Set appointment details</button> : <button type="button" className="fc-next-action" onClick={() => saveVisitOutcome(selectedJob, Boolean(draft.outcome))} disabled={Boolean(mediaBusy) || (!draft.outcome && !draft.note.trim())}>{draft.outcome ? "Save outcome & generate package" : "Save note"}</button>}
+                <p role="status">{outcomeMessage || "Device storage only. Appointment requests are not confirmed bookings."}</p>
+                {Array.isArray(selectedJob.FieldVisitHistory) && selectedJob.FieldVisitHistory.length > 0 ? <details className="fc-visit-history"><summary>Visit history ({selectedJob.FieldVisitHistory.length})</summary><ol>{selectedJob.FieldVisitHistory.map((entry: { recordedAt?: string; outcome?: string; note?: string }, index: number) => <li key={index}><time>{entry.recordedAt ? formatSavedTime(entry.recordedAt) : "Date not recorded"}</time><strong>{FIELD_OUTCOMES[entry.outcome || ""] || "Visit note"}</strong><p>{entry.note}</p></li>)}</ol></details> : null}
+              </section>
               <section className={`fc-flow-card fc-scope-card ${scopeOpen ? "is-open" : ""}`}>
                 <button type="button" className="fc-flow-card-main" onClick={() => setScopeOpen((open) => !open)}>
                   <span className="fc-flow-icon">S</span>
@@ -1411,15 +1733,15 @@ export default function FieldCommandClient() {
                   <b>{stamps.work ? "Work Started" : "Start Work"}</b>
                   <small>{stamps.work ? formatSavedTime(stamps.work) : "Before media next"}</small>
                 </button>
-                <button type="button" className="fc-workflow-btn no-access" aria-label="Save no access status" onClick={() => saveWorkflowStamp(selectedJob, "status", "No Access")} disabled={!stamps.visit}>
+                <button type="button" className="fc-workflow-btn no-access" aria-label="Record no access" onClick={() => chooseOutcome("NO_ACCESS_1_WAITING_72H")}>
                   <span>4</span>
                   <b>No Access</b>
                   <small>Save attempt</small>
                 </button>
-                <button type="button" className="fc-workflow-btn refused" aria-label="Save refused status" onClick={() => saveWorkflowStamp(selectedJob, "status", "Refused")} disabled={!stamps.visit}>
+                <button type="button" className="fc-workflow-btn refused" aria-label="Record refused access" onClick={() => chooseOutcome("REFUSED_ACCESS")}>
                   <span>5</span>
                   <b>Refused</b>
-                  <small>Close job</small>
+                  <small>Record refusal</small>
                 </button>
                 <button type="button" className="fc-workflow-btn clear" aria-label="Clear field workflow" onClick={() => beginClearWorkflow(selectedJob)}>
                   <span>0</span>
@@ -1447,32 +1769,22 @@ export default function FieldCommandClient() {
                 <input
                   ref={mediaInputRef}
                   type="file"
-                  accept="image/*,video/*"
+                  accept="image/*"
                   multiple
-                  capture="environment"
                   className="fc-hidden-file"
                   onChange={(event) => void handleMediaFiles(event.target.files)}
                 />
+                <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
+                <input ref={videoCameraInputRef} type="file" accept="video/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
+                <input ref={videoLibraryInputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
                 <div className="fc-media-head">
-                  <strong>Media + Package</strong>
+                  <strong>Package</strong>
                   <span>{counts.total} saved</span>
                 </div>
                 <div className="fc-media-grid">
-                  <button type="button" onClick={() => requestMediaUpload("before")} disabled={!stamps.work || Boolean(mediaBusy)}>
-                    <b>Before</b>
-                    <small>{mediaBusy === "before" ? "Saving..." : `${counts.before} saved`}</small>
-                  </button>
-                  <button type="button" onClick={() => requestMediaUpload("after")} disabled={!stamps.work || Boolean(mediaBusy)}>
-                    <b>After</b>
-                    <small>{mediaBusy === "after" ? "Saving..." : `${counts.after} saved`}</small>
-                  </button>
-                  <a href={paperworkHref(selectedJob, true)} onClick={() => completeWorkForPackage(selectedJob)}>
-                    <b>Package</b>
-                    <small>PDF + media</small>
-                  </a>
-                  <a href={paperworkHref(selectedJob, false)} onClick={() => completeWorkForPackage(selectedJob)}>
-                    <b>No Media</b>
-                    <small>PDF only</small>
+                  <a href={paperworkReviewHref(id, true)}>
+                    <b>Review package</b>
+                    <small>Affidavit + invoice</small>
                   </a>
                 </div>
                 <p>{mediaMessage || "Media is saved on this device and read by the paperwork package screen."}</p>
@@ -1482,8 +1794,7 @@ export default function FieldCommandClient() {
         })() : null}
       </div>
 
-      <PlanMyDayDrawer />
-      <FieldTabBar />
+      <PlanMyDayDrawer records={jobs} openRequest={plannerRequest} />
     </main>
   );
 }

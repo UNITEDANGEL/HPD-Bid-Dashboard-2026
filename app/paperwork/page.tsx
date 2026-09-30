@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PDFDocument } from "pdf-lib";
+import { calendarDay } from "../../lib/job-priority";
+import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
 import { type FieldMedia, dataUrlToBytes, listFieldEvidence } from "../../lib/field-photo-store";
 import {
@@ -431,7 +433,7 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     deniedRelationship,
     deniedDescription,
     deniedPhone,
-    workStart: displayDate(actualStartAt || getJobDate(job, "start")),
+    workStart: displayDate(actualStartAt),
     workComplete: displayDate(outcome === "work_completed" || outcome === "partial_work_completed" ? workCompleteAt : noWorkCompleteAt),
     sourceStatus,
     notes: getJobDescription(job).slice(0, 650),
@@ -626,7 +628,7 @@ function statusEventDateForJob(job: JobRecord | null | undefined, outcome: Paper
 }
 
 function fieldEventDateForPackage(job: JobRecord | null | undefined, outcome: PaperworkOutcome, rows: FieldMedia[]) {
-  return latestEvidenceCapturedAt(rows) || statusEventDateForJob(job, outcome);
+  return statusEventDateForJob(job, outcome) || latestEvidenceCapturedAt(rows);
 }
 
 function formWithFieldEventDate(form: PackageForm, outcome: PaperworkOutcome, eventDate: string, job: JobRecord | null) {
@@ -638,23 +640,23 @@ function formWithFieldEventDate(form: PackageForm, outcome: PaperworkOutcome, ev
   const next: PackageForm = {
     ...form,
     invoiceDate: fieldDate,
-    fieldDate,
+    fieldDate: form.fieldDate || fieldDate,
   };
 
   if (outcome === "work_completed" || outcome === "partial_work_completed") {
     return {
       ...next,
-      workStart: displayDate(actualStartAt) || fieldDate,
-      workComplete: fieldDate,
+      workStart: form.workStart || displayDate(actualStartAt),
+      workComplete: form.workComplete || fieldDate,
     };
   }
 
   if (isNoWorkOutcome(outcome)) {
     return {
       ...next,
-      firstAttempt: displayDate(noAccessFirstAt) || form.firstAttempt || fieldDate,
-      secondAttempt: fieldDate,
-      workComplete: fieldDate,
+      firstAttempt: form.firstAttempt || displayDate(noAccessFirstAt) || fieldDate,
+      secondAttempt: form.secondAttempt || fieldDate,
+      workComplete: form.workComplete || fieldDate,
     };
   }
 
@@ -881,7 +883,7 @@ function packageStatusLabel(outcome: PaperworkOutcome) {
 
 function fullPackageMediaPath(jobId: string, media: FieldMedia, index: number, statusSlug = "field-status") {
   const mediaFolder = media.mediaType === "video" ? "videos" : "images";
-  const folder = fieldEvidenceKindClass(media.kind || "general");
+  const folder = media.kind === "general" && media.evidenceLabel === "Building exterior" ? "building" : fieldEvidenceKindClass(media.kind || "general");
   const label = zipSafePart(media.evidenceLabel || "Field Evidence", "evidence");
   const fallbackName = `${safeFilename(jobId)}-${statusSlug}-${String(index + 1).padStart(2, "0")}-${folder}${mediaExtension(media)}`;
   const fileName = safeAttachmentName(media.name, fallbackName);
@@ -1107,6 +1109,10 @@ export default function PaperworkPage() {
   const [queryWorkflowPatch, setQueryWorkflowPatch] = useState<Record<string, unknown>>({});
   const [loadedQuery, setLoadedQuery] = useState(false);
   const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
+  const packageBusyRef = useRef(false);
+  const [packageBusy, setPackageBusy] = useState(false);
+  const [packageReviewed, setPackageReviewed] = useState(false);
+  const [packageApproved, setPackageApproved] = useState(false);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
   const [pdfStatus, setPdfStatus] = useState("");
@@ -1179,7 +1185,6 @@ export default function PaperworkPage() {
     if (nextOutcome === "pending") {
       if (packageParam.includes("no")) nextOutcome = "no_access";
       else if (packageParam.includes("work")) nextOutcome = "work_completed";
-      else if (shouldAutoGeneratePackage) nextOutcome = "work_completed";
     }
 
     setSelectedId(job);
@@ -1220,7 +1225,7 @@ export default function PaperworkPage() {
   }, [jobs, selectedId, queryWorkflowPatch]);
   const selectedJobId = selectedJob ? getJobId(selectedJob) : "";
   const packageJobLoading = Boolean(selectedId && (!selectedJob || form.jobId !== selectedJobId));
-  const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading);
+  const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading && !packageBusy);
   const mapBackHref = selectedId ? `/map/?omo=${encodeURIComponent(selectedId)}&view=all&map=1` : "/map/?view=all&map=1";
 
   useEffect(() => {
@@ -1254,6 +1259,8 @@ export default function PaperworkPage() {
   }, [autoGeneratePackage, selectedId, jobs.length, selectedJob, form.jobId, includePackageMedia, includePackageSignature, outcome]);
 
   function clearPackagePreview() {
+    setPackageReviewed(false);
+    setPackageApproved(false);
     setPackagePreview(null);
     setPackagePreviewOpen(false);
     setFullScreenPdfOpen(false);
@@ -1299,17 +1306,17 @@ export default function PaperworkPage() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  async function markPackageGenerated(jobId: string) {
+  async function markPackageGenerated(jobId: string, approved = false) {
     if (!jobId) return "Package generated.";
 
     const generatedAt = new Date().toISOString();
     const patch = {
-      ArchivedFromMap: true,
-      archivedFromMap: true,
+      ...(approved ? { ArchivedFromMap: true, archivedFromMap: true } : {}),
+      PackageReviewStatus: approved ? "Approved" : "Pending review",
       PackageGeneratedAt: generatedAt,
       packageGeneratedAt: generatedAt,
-      PackageReadyMessage: "Invoice package generated. Send to RER.",
-      packageReadyMessage: "Invoice package generated. Send to RER.",
+      PackageReadyMessage: approved ? "Reviewed and archived. Not emailed." : "Draft saved. Review affidavit, invoice and media before approval.",
+      packageReadyMessage: approved ? "Reviewed and archived. Not emailed." : "Draft saved. Review affidavit, invoice and media before approval.",
     };
 
     saveLocalPackageOverride(jobId, patch);
@@ -1322,10 +1329,10 @@ export default function PaperworkPage() {
       });
 
       if (!response.ok) throw new Error(await response.text());
-      return "Archived on map. Send to RER.";
+      return approved ? "Approved and archived. Not emailed." : "Draft saved for review. Not archived or emailed.";
     } catch (error) {
       console.error(error);
-      return "Downloaded. Archived on this device; server sync needs retry.";
+      return approved ? "Approved on this device; server sync needs retry. Not emailed." : "Draft saved on this device; server sync needs retry. Not archived or emailed.";
     }
   }
 
@@ -1336,6 +1343,13 @@ export default function PaperworkPage() {
     const activeOutcome = options.outcomeOverride || outcome;
     const includeSignature = options.includeSignature !== false;
     const useWorkTemplate = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
+    const awardDay = calendarDay(getJobDate(selectedJob, "award"));
+    if (awardDay === null || awardDay < calendarDay("2026-08-28")!) {
+      setPdfStatus(awardDay === null
+        ? "Verify the job award date before generating an affidavit. Work dates cannot select the affidavit version."
+        : "This award needs the pre-August 28, 2026 affidavit. Legacy field mapping is not yet verified; generation stopped to avoid using the wrong form.");
+      return null;
+    }
     const templateUrl = useWorkTemplate ? WORK_AFFIDAVIT_TEMPLATE : NO_WORK_AFFIDAVIT_TEMPLATE;
     const jobId = activeForm.jobId || selectedId || "HPD";
     const archiveJobId = activeForm.jobId || selectedId;
@@ -1436,8 +1450,8 @@ export default function PaperworkPage() {
       setAffidavitText("OMO", jobId);
       setAffidavitText("OMO Header2", jobId);
       setAffidavitText("Building Address", upper(activeForm.address), activeForm.address.length > 42 ? 7 : 8);
-      setAffidavitText("State", "NY");
-      setAffidavitText("County Of", AFFIDAVIT_NOTARY_COUNTY, 9);
+      setAffidavitText("State", "");
+      setAffidavitText("County Of", "", 9);
       setAffidavitText("Type or Print Name", signer.toUpperCase());
 
       if (useWorkTemplate) {
@@ -1451,13 +1465,14 @@ export default function PaperworkPage() {
           8
         );
         setAffidavitText("Partial Amount", activeOutcome === "partial_work_completed" ? chargeAmount : "");
-        setAffidavitText("Notary Day Month", `${dayOfMonth(workDate)} DAY OF ${monthName(workDate)}`, 8);
-        setAffidavitText("Notary Year", String(new Date(workDate || Date.now()).getFullYear()).slice(-2), 8);
+        setAffidavitText("Notary Day Month", "", 8);
+        setAffidavitText("Notary Year", "", 8);
 
         if (activeOutcome === "partial_work_completed") {
           setAffidavitText("Denied Name", upper(activeForm.deniedName), 8);
           setAffidavitText("Denied Relationship", upper(activeForm.deniedRelationship), 8);
           setAffidavitText("Denied Description", upper(activeForm.deniedDescription), 8);
+          setAffidavitText("Denied Actions", activeForm.notes || "", 8);
         }
 
         setInvoiceText("START DATE", activeOutcome === "work_completed" ? activeForm.workStart || activeForm.fieldDate : "");
@@ -1473,16 +1488,16 @@ export default function PaperworkPage() {
 
         setAffidavitText("Deponent Name", signer.toUpperCase(), 8);
         setAffidavitText("Service Charge Amount", chargeAmount);
-        setAffidavitText("Notary Day", dayOfMonth(secondAttempt));
-        setAffidavitText("Notary Month", monthName(secondAttempt));
-        setAffidavitText("Notary Year", String(new Date(secondAttempt || Date.now()).getFullYear()).slice(-2));
+        setAffidavitText("Notary Day", "");
+        setAffidavitText("Notary Month", "");
+        setAffidavitText("Notary Year", "");
 
         if (activeOutcome === "no_access") {
           setAffidavitText("Inaccessible Reason", noWorkReason || "NO ACCESS TO MAKE REPAIRS", 8);
           setAffidavitText("Attempt1 Date", firstAttempt, 8);
           setAffidavitText("Attempt2 Date", secondAttempt, 8);
-          setAffidavitText("Phone1 Date", firstAttempt, 8);
-          setAffidavitText("Phone2 Date", secondAttempt, 8);
+          setAffidavitText("Phone1 Date", "", 8);
+          setAffidavitText("Phone2 Date", "", 8);
         }
 
         if (activeOutcome === "completed_by_others") {
@@ -1506,6 +1521,17 @@ export default function PaperworkPage() {
       affidavitForm.flatten();
       invoiceForm.updateFieldAppearances();
       invoiceForm.flatten();
+
+      // Flattened template widgets can leave dangling annotation references.
+      for (const document of [affidavitDoc, invoiceDoc]) {
+        for (const page of document.getPages()) {
+          const annotations = page.node.Annots();
+          if (!annotations) continue;
+          for (let index = annotations.size() - 1; index >= 0; index -= 1) {
+            if (!document.context.lookup(annotations.get(index))) annotations.remove(index);
+          }
+        }
+      }
 
       const invoicePage = invoiceDoc.getPages()[0];
       if (useWorkTemplate && activeOutcome === "partial_work_completed" && invoicePage) {
@@ -1580,6 +1606,7 @@ export default function PaperworkPage() {
   }
 
   async function generateCompletePackage(includeMediaOverride = includePackageMedia, includeSignatureOverride = includePackageSignature) {
+    if (packageBusyRef.current) return;
     const activeOutcome = outcome;
     const activeJob = selectedJob;
     if (selectedId && !activeJob) {
@@ -1624,14 +1651,20 @@ export default function PaperworkPage() {
     );
 
     try {
+      packageBusyRef.current = true;
+      setPackageBusy(true);
       const evidenceRows = includeMedia ? await listFieldEvidence(jobId) : [];
       if (!evidenceRows.length && !allowPdfOnlyPackage) {
         setPdfStatus("No saved images or videos were found for this OMO on this device. Capture evidence first, then Generate Package.");
         return;
       }
 
-      const includedMedia = evidenceRows.filter(mediaHasPackageBytes);
+      let includedMedia = await emailMediaCopies(evidenceRows.filter(mediaHasPackageBytes));
       const skippedMedia = evidenceRows.filter((media) => !mediaHasPackageBytes(media));
+      if (skippedMedia.length) {
+        setPdfStatus(`${skippedMedia.length} saved media file(s) are missing their original bytes. Package stopped. Restore or re-upload these files before generating the complete package.`);
+        return;
+      }
       const skippedVideos = skippedMedia.filter((media) => media.mediaType === "video");
       if (skippedVideos.length && !allowPdfOnlyPackage) {
         setPdfStatus(
@@ -1656,6 +1689,8 @@ export default function PaperworkPage() {
         includeSignature,
       });
       if (!pdf) return;
+
+      includedMedia = await fitEmailVideos(includedMedia, pdf.bytes.byteLength + 64_000 + includedMedia.length * 2048, setPdfStatus);
 
       const imageMedia = includedMedia.filter((media) => media.mediaType === "image");
       const videoMedia = includedMedia.filter((media) => media.mediaType === "video");
@@ -1721,6 +1756,19 @@ export default function PaperworkPage() {
         path: `${folderName}/${entry.path}`,
         bytes: entry.bytes,
       })));
+      assertEmailPackageSize(zipBytes.byteLength);
+      await saveFieldPacket({
+        jobId: pdf.jobId,
+        fileName: zipFileName,
+        mimeType: "application/zip",
+        dataUrl: bytesToDataUrl(zipBytes, "application/zip"),
+        size: zipBytes.byteLength,
+        evidenceCount: includedMedia.length,
+        imageCount: imageMedia.length,
+        videoCount: videoMedia.length,
+        packetType: "full_evidence_zip",
+        note: "Email copy under 18 MB ZIP budget; media compressed when needed, originals retained separately. Review labels, video/audio and paperwork before forwarding to HPD.",
+      });
       const zipUrl = bytesToObjectUrl(zipBytes, "application/zip");
       const pdfUrl = bytesToObjectUrl(pdf.bytes, "application/pdf");
       const pdfPreview = await renderPdfFirstPageImage(pdf.bytes);
@@ -1798,6 +1846,9 @@ export default function PaperworkPage() {
     } catch (error) {
       console.error(error);
       setPdfStatus(error instanceof Error ? error.message : "Could not generate complete package.");
+    } finally {
+      packageBusyRef.current = false;
+      setPackageBusy(false);
     }
   }
 
@@ -3994,19 +4045,19 @@ export default function PaperworkPage() {
           {!packagePreview ? (
             <div className="paperwork-generate-choice" data-hpd-smoke="paperwork-generate-choice" aria-label="Package media choice">
               <button className="paperwork-print" data-hpd-smoke="paperwork-generate-full-package" type="button" onClick={() => generateCompletePackage(true)} disabled={!canGeneratePackage}>
-                {packageJobLoading ? "Loading Job Data..." : "Generate Full Package"}
+                {packageJobLoading ? "Loading Job Data..." : "Generate Email Package"}
               </button>
               <button className="paperwork-secondary paperwork-pdf-only" data-hpd-smoke="paperwork-generate-pdf-only" type="button" onClick={() => generateCompletePackage(false)} disabled={!canGeneratePackage}>
                 Affidavit + Invoice Only
               </button>
-              <small>{packageJobLoading ? "Loading COA address and ITB page 3 description before package creation." : "Use the second button when you want no images or videos attached."}</small>
+              <small>{packageJobLoading ? "Loading COA address and ITB page 3 description before package creation." : "Email ZIP limit: 18 MB. Saved media stays unchanged."}</small>
             </div>
           ) : null}
           {packagePreview ? (
             <div className="paperwork-package-review" data-hpd-smoke="paperwork-package-review">
               <div className="package-created-head">
                 <div>
-                  <span className="package-kicker">Package ready</span>
+                  <span className="package-kicker">{packageApproved ? "Package approved" : "Draft package saved"}</span>
                   <h3>{packagePreview.jobId}</h3>
                   <p>{packagePreview.note}</p>
                 </div>
@@ -4026,6 +4077,13 @@ export default function PaperworkPage() {
                   <strong>Share / Save</strong>
                 </span>
               </div>
+              <label><input type="checkbox" checked={packageReviewed} disabled={packageBusy || packageApproved} onChange={event => setPackageReviewed(event.target.checked)} /> I reviewed all affidavit/invoice pages and media, including required signatures.</label>
+              <button type="button" className="paperwork-secondary" disabled={!packageReviewed || packageBusy || packageApproved} onClick={async () => {
+                setPackageBusy(true);
+                try { setPdfStatus(await markPackageGenerated(packagePreview.jobId, true)); setPackageApproved(true); }
+                catch (error) { setPdfStatus(error instanceof Error ? error.message : "Approval could not be saved."); }
+                finally { setPackageBusy(false); }
+              }}>{packageApproved ? "Approved and archived" : "Approve package & archive job"}</button>
               {packagePreviewOpen ? (
                 <div className="package-preview-panel" data-hpd-smoke="paperwork-package-preview-panel" ref={packagePreviewPanelRef}>
                   <div className="package-pdf-preview-card">

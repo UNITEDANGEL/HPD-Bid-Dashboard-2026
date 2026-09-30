@@ -1,0 +1,16 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const ts = require('typescript');
+const source = fs.readFileSync('app/map/PlanMyDayDrawer.tsx','utf8');
+const start = source.indexOf('function unique(');
+const end = source.indexOf('function describePlan(');
+const code = ts.transpileModule(source.slice(start,end),{compilerOptions:{target:ts.ScriptTarget.ES2020}}).outputText;
+const parse = new Function('BOROUGHS',code+'; return parseMessage;')(['Brooklyn','Queens','Bronx','Manhattan','Staten Island']);
+const base={areaMode:'all',boroughs:[],avoidBoroughs:[],priorities:[],includeOmo:[],excludeOmo:[],stopCount:5,daysBack:null};
+const plan=parse('nearest jobs in Brooklyn',base);
+assert.deepEqual(plan.boroughs,['Brooklyn']);assert.equal(plan.areaMode,'borough');
+assert.deepEqual(parse('nearest jobs first',plan).boroughs,['Brooklyn']);
+assert.equal(parse('all boroughs nearest jobs',plan).areaMode,'all');
+assert.equal(parse('last 7 days',plan).daysBack,7);
+assert.ok(!source.includes('widenedPlan'),'Empty searches must not silently widen dates');
+console.log('PASS: nearby preserves borough, explicit all boroughs, date constraint remains strict');

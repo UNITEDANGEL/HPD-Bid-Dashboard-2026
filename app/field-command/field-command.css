@@ -35,25 +35,6 @@
   color: inherit;
 }
 
-.fc-app.fc-map-fullscreen {
-  padding-bottom: 0;
-}
-
-.fc-app.fc-map-fullscreen .fc-topbar,
-.fc-app.fc-map-fullscreen .fc-borough-row,
-.fc-app.fc-map-fullscreen .fc-search-row,
-.fc-app.fc-map-fullscreen .fc-control-drawer,
-.fc-app.fc-map-fullscreen .plan-my-day,
-.fc-app.fc-map-fullscreen .fc-tabbar {
-  display: none;
-}
-
-.fc-app.fc-map-fullscreen .fc-map-wrap {
-  margin: 0;
-  border-radius: 0;
-  border: none;
-}
-
 /* Top bar */
 .fc-topbar {
   flex: 0 0 auto;
@@ -351,8 +332,11 @@
 }
 
 .fc-pill-row.fc-status-pill-row {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(72px, 1fr));
+  overflow-x: auto;
 }
+
+.fc-status-pill-row > .fc-pill { flex: 0 0 auto; min-width: 72px; }
 
 .fc-pill {
   min-width: 0;
@@ -1155,7 +1139,7 @@
 }
 
 .fc-age-tag {
-  background: rgba(37, 99, 235, 0.42) !important;
+  background: rgba(37, 99, 235, 0.42);
   border: 1px solid rgba(96, 165, 250, 0.44);
 }
 
@@ -1748,3 +1732,384 @@
     max-width: 760px;
   }
 }
+
+/* Reference-inspired field command: phone-sized, map-led, compact controls. */
+.fc-app.fc-reference { padding: 0 0 62px; background: #020912; color: #f2f6fc; }
+.fc-app.fc-reference * { letter-spacing: 0; }
+.fc-app.fc-reference .fc-control-drawer { display: contents; }
+.fc-app.fc-reference .fc-topbar { order: 0; display: block; padding: 14px 14px 8px; max-height: none; background: #030c17; border: 0; }
+.fc-app.fc-reference .fc-topbar-row { gap: 8px; }
+.fc-app.fc-reference .fc-brand-icon { width: 38px; height: 44px; border: 2px solid #36a9ef; border-radius: 5px 5px 18px 18px; background: #063267; box-shadow: 0 0 12px #008dff44; font-size: 12px; }
+.fc-app.fc-reference .fc-eyebrow { font-size: 9px; color: #20a6ff; }
+.fc-app.fc-reference .fc-title { font-size: 19px; font-weight: 650; line-height: 1.25; }
+.fc-app.fc-reference .fc-icon-btn { width: 36px; height: 38px; border: 1px solid #1677b2; border-radius: 8px; background: #05101f; }
+.fc-app.fc-reference .fc-topbar-actions { gap: 6px; }
+.fc-app.fc-reference .fc-icon-badge { max-width: 30px; font-size: 8px; }
+.fc-app.fc-reference .fc-live-row { margin-top: 5px; padding-left: 47px; }
+.fc-app.fc-reference .fc-live-dot, .fc-app.fc-reference .fc-active-count { font-size: 10px; }
+.fc-app.fc-reference .fc-days-control { display: none; }
+.fc-app.fc-reference.fc-controls-open .fc-days-control { display: flex; }
+.fc-app.fc-reference .fc-borough-row { order: 1; display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 5px; padding: 7px 12px; margin: 0; overflow: visible; }
+.fc-app.fc-reference .fc-borough-chip { display: flex; flex-direction: column; justify-content: center; gap: 3px; min-width: 0; min-height: 43px; padding: 6px 2px; border-radius: 8px; background: #050f1a; border: 1px solid #26485b; }
+.fc-app.fc-reference .fc-borough-chip strong { font-size: 8px; text-transform: uppercase; }
+.fc-app.fc-reference .fc-borough-chip span { color: #e6edf7; font-size: 10px; }
+.fc-app.fc-reference .fc-borough-chip.is-active { background: #083c99; border-color: #00a8ff; box-shadow: inset 0 0 12px #006bff77; }
+.fc-app.fc-reference .fc-mn strong { color: #69eee1; }
+.fc-app.fc-reference .fc-bk strong { color: #ffbd4f; }
+.fc-app.fc-reference .fc-qn strong { color: #ba92ff; }
+.fc-app.fc-reference .fc-bx strong { color: #ff655d; }
+.fc-app.fc-reference .fc-si strong { color: #6cec67; }
+.fc-app.fc-reference > .fc-search-row, .fc-app.fc-reference.fc-has-job > .fc-search-row { order: 2; display: flex; padding: 7px 12px 9px; max-height: none; opacity: 1; gap: 0; }
+.fc-app.fc-reference .fc-search-field { border: 1px solid #254963; border-right: 0; border-radius: 8px 0 0 8px; background: #071320; }
+.fc-app.fc-reference .fc-search-field input { height: 42px; font-size: 14px; background: transparent; }
+.fc-app.fc-reference .fc-tools-toggle { height: 44px; width: 44px; grid-template-columns: 1fr; padding: 0; border: 1px solid #254963; border-left: 0; border-radius: 0 8px 8px 0; color: #22a1ff; background: #091a30; }
+.fc-app.fc-reference .fc-status-pill-row { display: none; order: 3; margin: 0; }
+.fc-app.fc-reference.fc-controls-open .fc-status-pill-row { display: flex; }
+.fc-app.fc-reference .fc-map-wrap, .fc-app.fc-reference.fc-has-job .fc-map-wrap { order: 4; position: relative; flex: 1; margin: 0; min-height: 0; border-radius: 0; border: 0; box-shadow: none; }
+.fc-app.fc-reference .fc-map-node { background: #071725; }
+.fc-app.fc-reference .fc-map-node.is-dark .leaflet-tile { filter: none; }
+.fc-app.fc-reference .fc-map-node.is-dark::after { display: none; }
+.fc-app.fc-reference .fc-map-controls { right: 10px; top: 12px; gap: 8px; }
+.fc-app.fc-reference .fc-map-fab { width: 44px; height: 44px; background: rgba(255,255,255,.96); color: #007aff; border: 1px solid #dde3ea; box-shadow: 0 2px 9px #18334b26; }
+.fc-app.fc-reference .fc-map-fab.is-active { background: #007aff; color: #fff; border-color: #007aff; }
+.fc-app.fc-reference .fc-age-tag[data-priority="150+"], .fc-app.fc-reference .fc-age-tag[data-priority="91-150"] { background: #932640; color: white; }
+.fc-app.fc-reference .fc-age-tag[data-priority="31-60"], .fc-app.fc-reference .fc-age-tag[data-priority="61-90"] { background: #915700; color: white; }
+.fc-app.fc-reference .fc-age-tag[data-priority="unknown"] { background: #454b55; color: white; }
+.fc-app.fc-reference .fc-map-fab svg { width: 22px; height: 22px; }
+.fc-app.fc-reference .fc-visible-fab, .fc-app.fc-reference .fc-legend { display: none; }
+.fc-app.fc-reference .fc-map-hint { top: 10px; bottom: auto; left: 12px; right: 62px; transform: none; width: auto; white-space: normal; font-size: 12px; border-radius: 6px; }
+.fc-app.fc-reference .leaflet-boroughLabels-pane { display: none; }
+.fc-app.fc-reference .leaflet-control-attribution { font-size: 8px; }
+.fc-app.fc-reference .fc-tabbar, .fc-app.fc-reference.fc-has-job .fc-tabbar { display: grid; position: absolute; left: 0; transform: none; width: 100%; max-width: none; height: 62px; padding: 7px 6px max(7px,env(safe-area-inset-bottom)); background: #030b14; border-top: 1px solid #142c41; }
+.fc-app.fc-reference .fc-tab-fab-circle { width: 42px; height: 42px; margin-top: -8px; background: #032052; border: 1px solid #00a8ff; box-shadow: 0 0 14px #008dff66; }
+.fc-app.fc-reference .fc-tab.is-active { color: #00b5ff; }
+.fc-app.fc-reference .plan-my-day { left: 12px; right: auto; width: 155px; bottom: 87px; margin: 0; }
+.fc-app.fc-reference .plan-my-day .plan-my-day__toggle { min-height: 42px; padding: 6px 8px; border-radius: 8px; border: 1px solid #265a80; background: #04172b; gap: 7px; box-shadow: 0 3px 12px #0005; }
+.fc-app.fc-reference .plan-my-day__toggle strong { font-size: 12px; }
+.fc-app.fc-reference .plan-my-day__toggle span { width: 26px; height: 26px; border-radius: 6px; background: #006cef; }
+.fc-app.fc-reference .plan-my-day:not(.is-open) .plan-my-day__toggle b { display: none; }
+.fc-app.fc-reference .plan-my-day.is-open { left: 12px; right: 12px; width: auto; z-index: 1600; }
+.fc-app.fc-reference.fc-has-job .fc-job-sheet.fc-job-sheet-flow { top: auto; left: 8px; right: 8px; bottom: 8px; height: min(230px,55%); max-height: 55%; min-height: 180px; padding: 0 10px 12px; border-radius: 8px; background: #06111f; border: 1px solid #2b506a; box-shadow: 0 -4px 18px #0006; transition: height .2s ease; }
+.fc-app.fc-reference.fc-has-job.fc-sheet-expanded .fc-job-sheet.fc-job-sheet-flow { height: calc(100% - 16px); max-height: calc(100% - 16px); z-index: 2000; }
+
+.fc-app.fc-clean-streets { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+.fc-app.fc-clean-streets .fc-reveal-controls { background: #193d2beb; color: #d5efdf !important; border-color: #ffffff30; backdrop-filter: blur(18px); box-shadow: 0 3px 12px #15232733; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-close { top: 22px; right: 8px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: #ffffff0d; color: #d6dfe2; box-shadow: none; font-size: 28px; font-weight: 400; }
+.fc-app.fc-clean-streets .fc-job-sheet-hero { padding-right: 48px; }
+.fc-app.fc-clean-streets .fc-address-row p { border: 0; border-radius: 0; font-size: 13px; line-height: 1.4; }
+.fc-app.fc-clean-streets .fc-reference-job-summary { padding: 9px 0; border-top: 1px solid #ffffff18; border-bottom: 1px solid #ffffff18; }
+.fc-app.fc-clean-streets .fc-reference-job-summary dt { font-size: 10px; }
+.fc-app.fc-clean-streets .fc-reference-job-summary dd { font-size: 12px; font-variant-numeric: tabular-nums; }
+.fc-app.fc-clean-streets .fc-quick-action { box-shadow: none; min-height: 64px; }
+.fc-app.fc-clean-streets .fc-quick-action span { font-size: 11px; font-weight: 500; }
+.fc-app.fc-clean-streets .fc-quick-action:active { transform: scale(.97); }
+.fc-app.fc-clean-streets .fc-job-sheet { overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #6d777a transparent; }
+.fc-app.fc-reference .fc-address-row { display: block; }
+.fc-app.fc-reference.fc-has-job .leaflet-control-scale { display: none; }
+.fc-app.fc-reference .fc-sheet-handle { position: sticky; top: 0; z-index: 2; display: grid; place-items: center; width: 100%; height: 24px; border: 0; background: #06111f; }
+.fc-app.fc-reference .fc-sheet-handle span { width: 32px; height: 4px; border-radius: 4px; background: #91afcb; }
+.fc-app.fc-reference .fc-job-sheet-flow .fc-job-sheet-close { top: 28px; right: 10px; width: 42px; height: 30px; border-radius: 6px; }
+.fc-app.fc-reference .fc-job-sheet-flow .fc-job-sheet-id { font-size: 20px; }
+.fc-app.fc-reference .fc-arrival-pill, .fc-app.fc-reference .fc-building-icon, .fc-app.fc-reference .fc-route-btn, .fc-app.fc-reference .fc-job-sheet-kicker { display: none; }
+.fc-app.fc-reference .fc-address-row { margin: 7px 0; padding: 0; border: 0; background: transparent; }
+.fc-app.fc-reference .fc-address-row p { font-size: 12px; }
+.fc-app.fc-reference .fc-job-sheet-tags { margin: 6px 0; }
+.fc-app.fc-reference .fc-job-sheet-tag { font-size: 9px; padding: 3px 6px; }
+.fc-app.fc-reference .fc-quick-actions { gap: 6px; margin: 10px 0; }
+.fc-app.fc-reference .fc-quick-action { min-height: 62px; border-radius: 8px; padding: 7px 3px; gap: 5px; }
+.fc-app.fc-reference .fc-quick-action svg { width: 23px; height: 23px; }
+.fc-app.fc-reference .fc-quick-action span { font-size: 10px; white-space: normal; text-align: center; }
+.fc-app.fc-reference .fc-quick-action.is-navigate { color: #20bbff; background: #032555; border: 1px solid #009dff; }
+.fc-app.fc-reference .fc-quick-action.is-call { color: #55ec5d; background: #042513; border: 1px solid #37bd46; }
+.fc-app.fc-reference .fc-quick-action.is-photos { color: #ae79fa; background: #1c1033; border: 1px solid #9251df; }
+.fc-app.fc-reference .fc-quick-action.is-documents { color: #09d3e8; background: #022630; border: 1px solid #00afc1; }
+.fc-app.fc-reference :is(button,a,input):focus-visible { outline: 2px solid #41b9ff; outline-offset: 2px; }
+@media (min-width:700px) {
+  body:has(.fc-app.fc-reference) { background: #070a10; }
+  .fc-app.fc-reference { border: 6px solid #1f2b34; border-radius: 30px; }
+  .fc-app.fc-reference::before, .fc-app.fc-reference::after { display: none; }
+}
+@media (max-width:350px) {
+  .fc-app.fc-reference .fc-borough-chip strong { font-size: 7px; }
+  .fc-app.fc-reference .fc-title { font-size: 16px; }
+  .fc-app.fc-reference .fc-eyebrow { font-size: 8px; }
+  .fc-app.fc-reference .fc-brand-icon { width: 30px; height: 36px; }
+  .fc-app.fc-reference .fc-icon-btn { width: 30px; height: 34px; }
+  .fc-app.fc-reference .fc-live-row { padding-left: 39px; }
+}
+@media (prefers-reduced-motion:reduce) { .fc-app.fc-reference * { transition: none !important; } }
+.fc-app.fc-reference.fc-has-job .fc-topbar { display: block; }
+.fc-app.fc-reference.fc-has-job .fc-live-row { display: flex; }
+.fc-app.fc-reference .fc-job-sheet { scrollbar-width: thin; scrollbar-color: #365772 #06111f; }
+.fc-app.fc-reference .fc-address-row p { font-weight: 500; }
+.fc-app.fc-reference .fc-job-sheet-id { font-weight: 650; }
+.fc-app.fc-reference .fc-search-field input { font-weight: 400; }
+.fc-app.fc-reference .fc-reference-job-summary { display: flex; gap: 10px; align-items: stretch; margin: 6px 0; }
+.fc-app.fc-reference .fc-reference-job-summary dl { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); flex: 1; gap: 8px; margin: 0; }
+.fc-app.fc-reference .fc-reference-job-summary dt { font-size: 9px; font-weight: 500; color: #91a7bb; }
+.fc-app.fc-reference .fc-reference-job-summary dd { margin: 3px 0 0; font-size: 11px; font-weight: 500; overflow-wrap: anywhere; }
+.fc-app.fc-reference .fc-reference-job-summary img { width: 64px; height: 64px; border-radius: 8px; object-fit: cover; }
+.fc-app.fc-reference.fc-full-map { padding: 0; }
+.fc-app.fc-reference.fc-full-map .fc-map-wrap { position: absolute; inset: 0; margin: 0; }
+.fc-app.fc-reference.fc-full-map:not(.fc-chrome-open) :is(.fc-topbar,.fc-borough-row,.fc-tabbar,.plan-my-day,.fc-status-pill-row) { display: none; }
+.fc-app.fc-reference.fc-full-map:not(.fc-chrome-open) .fc-map-controls { top: calc(72px + env(safe-area-inset-top)); }
+.fc-app.fc-reference.fc-full-map:not(.fc-chrome-open) .fc-map-controls > :not(:first-child) { display: none; }
+.fc-reveal-controls { position: absolute; z-index: 1600; top: max(12px,env(safe-area-inset-top)); right: 12px; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #dce1e8; border-radius: 50%; background: #fffffff0; color: #007aff !important; box-shadow: 0 2px 8px #20304022; }
+.fc-reveal-controls svg { width: 21px; height: 21px; }
+.fc-clean-streets .fc-map-node { background: #e7eef0; }
+.fc-clean-streets .leaflet-gl-layer { z-index: 2; }
+.fc-work-pin { position: relative; width: 32px; height: 32px; display: grid; place-items: center; border: 2px solid white; border-radius: 50%; background: var(--pin-color); box-shadow: 0 2px 5px #243b5340; color: white; }
+.fc-work-pin svg { width: 24px; height: 24px; }
+.fc-pin-jobs { position: absolute; z-index: 1600; left: 8px; right: 8px; bottom: 12px; background: #172b25f7; color: #eff7f1; border: 1px solid #749887; border-radius: 8px; padding: 8px 12px; }
+.fc-chrome-open .fc-pin-jobs { bottom: 72px; }
+.fc-pin-jobs header { display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+.fc-pin-jobs button { color: inherit; background: none; border: 0; min-height: 44px; text-align: left; }
+.fc-pin-jobs header button { width: 44px; text-align: center; font-size: 24px; }
+.fc-pin-jobs > div { max-height: 28vh; overflow: auto; }
+.fc-pin-jobs > div button { display: grid; gap: 4px; width: 100%; padding: 10px 0; border-top: 1px solid #ffffff25; font-size: 13px; overflow-wrap: anywhere; }
+.fc-pin-jobs span { color: #b1dbbc; font-size: 12px; }
+.fc-day-pin { box-sizing: border-box; position: relative; display: flex; align-items: center; justify-content: center; gap: 2px; width: 44px; height: 30px; padding: 0 2px; background: var(--pin-color); color: white; border: 2px solid white; border-radius: 7px; box-shadow: 0 2px 5px #172b2533; }
+.fc-day-pin svg { width: 11px; height: 11px; flex-shrink: 0; }
+.fc-job-dot { display: block; box-sizing: border-box; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; background: var(--pin-color); box-shadow: 0 1px 3px #172b2540; }
+.fc-today-route { position:absolute; z-index:1550; bottom:max(24px,env(safe-area-inset-bottom)); left:8px; right:8px; color:#eff7f1; background:#202426f5; border:1px solid #74867c; border-radius:8px; overflow:hidden; }
+.fc-route-toggle { display:flex; justify-content:space-between; align-items:center; width:100%; min-height:44px; border:0; padding:10px 14px; background:transparent; color:#c4ead4; font:600 14px system-ui; }
+.fc-route-body { max-height:55dvh; overflow-y:auto; overscroll-behavior:contain; padding:0 12px 12px; }
+.fc-route-settings { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.fc-route-body summary { min-height:44px; padding:12px 0; box-sizing:border-box; cursor:pointer; font-size:13px; }
+.fc-route-body label { display:grid; gap:4px; min-width:0; font-size:12px; }
+.fc-route-body :is(input,select) { width:100%; min-width:0; box-sizing:border-box; min-height:44px; padding:6px; border:1px solid #74867c; border-radius:6px; background:#202426; color:#eff7f1; color-scheme:dark; font:inherit; }
+.fc-route-body p { font-size:12px; line-height:1.45; color:#c3cdca; }
+.fc-route-body .fc-next-action { margin-top:12px; }
+.fc-route-body ol { list-style:none; padding:0; margin:0; }
+.fc-route-body li { padding:10px 0; border-top:1px solid #ffffff26; }
+.fc-route-stop { display:grid; gap:5px; width:100%; background:none; border:0; text-align:left; padding:0; color:inherit; font:13px system-ui; min-height:44px; overflow-wrap:anywhere; }
+.fc-route-stop span { color:#c3cdca; }
+.fc-route-stop-actions { display:flex; gap:6px; margin-top:8px; }
+.fc-route-stop-actions :is(button,a) { min-width:44px; min-height:44px; display:grid; place-items:center; background:#293d34; color:#c4ead4; border:1px solid #74867c; border-radius:6px; padding:6px; text-decoration:none; font:13px system-ui; }
+.fc-route-stop-actions button:disabled { opacity:.35; }
+.fc-route-drive { display:flex; flex-direction:column; gap:4px; padding:12px; margin:8px 0; min-height:44px; background:#1267df; color:white; border:1px solid #8cbcff; border-radius:8px; text-decoration:none; font:700 14px system-ui; overflow-wrap:anywhere; }
+.fc-route-drive small { font:12px system-ui; }
+.fc-current-job { position:absolute; bottom:84px; left:8px; right:8px; z-index:1500; display:flex; background:#173326; border:1px solid #9cb5aa; border-radius:8px; color:white; }
+.fc-current-job button { background:none; color:inherit; border:0; min-height:44px; min-width:44px; font:600 13px system-ui; padding:8px; }
+.fc-current-job button:first-child { flex:1; text-align:left; overflow-wrap:anywhere; }
+.fc-current-job:has(+ .fc-today-route.is-open) { display:none; }
+.fc-route-body [role=alert] { color:#ffbeaa; font-size:12px; }
+.fc-route-number { display:grid; place-items:center; border:3px solid white; border-radius:50%; background:#1267df; color:white; font:750 14px system-ui; box-shadow:0 2px 6px #10233380; }
+.fc-route-number.is-next { background:#09503b; animation:fc-next-stop 2s ease-out infinite; }
+.fc-route-flow { animation:fc-route-flow 1.5s linear infinite; }
+.fc-route-direction { pointer-events:none; }
+.fc-route-direction span { display:block; width:18px; height:18px; background:white; clip-path:polygon(0 0,100% 50%,0 100%,28% 50%); filter:drop-shadow(0 1px 1px #1267df); }
+@keyframes fc-route-flow { to { stroke-dashoffset:-22; } }
+@keyframes fc-next-stop { 0% { box-shadow:0 0 0 0 #1267df99; } 100% { box-shadow:0 0 0 14px #1267df00; } }
+@media (prefers-reduced-motion:reduce) { .fc-route-flow,.fc-route-number.is-next { animation:none; } }
+.fc-dot-marker:focus-visible { outline: 3px solid #173326; outline-offset: 3px; border-radius: 50%; }
+.fc-day-pin strong { font: 750 11px/1 system-ui,sans-serif; white-space: nowrap; }
+.fc-day-pin small { font-size: 9px; margin-left: 1px; }
+.fc-day-pin.is-distant:has(strong) svg { display: none; }
+.fc-day-pin.has-more::after { content: ''; position: absolute; right: -4px; top: -4px; width: 6px; height: 6px; border: 1px solid var(--pin-color); background: white; border-radius: 50%; }
+.fc-work-pin > span { position: absolute; top: 28px; left: 50%; transform: translateX(-50%); padding: 1px 4px; border: 1px solid #ffffff; border-radius: 4px; background: var(--pin-color); font: 700 9px/12px system-ui,sans-serif; white-space: nowrap; }
+.fc-app.fc-clean-streets.fc-has-job .fc-job-sheet.fc-job-sheet-flow { background: #173326f5; border-color: #4b715d; color: #f3f5f5; box-shadow: 0 -3px 20px #17201f40; backdrop-filter: blur(16px); }
+.fc-app.fc-clean-streets .fc-sheet-handle { background: #173326; }
+.fc-app.fc-clean-streets .fc-sheet-handle span { background: #90b09c; }
+.fc-app.fc-clean-streets :is(.fc-job-sheet-id,.fc-address-row p,.fc-reference-job-summary dd) { color: #f3f5f5; }
+.fc-app.fc-clean-streets .fc-address-row p { background: transparent; padding: 0; box-shadow: none; }
+.fc-app.fc-clean-streets .fc-reference-job-summary dt { color: #b7c2c5; }
+.fc-app.fc-clean-streets .fc-quick-action.is-navigate { background: #263f54; color: #91caff; border-color: #476c89; }
+.fc-app.fc-clean-streets .fc-quick-action.is-call { background: #2c4337; color: #9bdbaf; border-color: #4e735a; }
+.fc-app.fc-clean-streets .fc-quick-action.is-photos { background: #40384d; color: #d1b7ee; border-color: #6a587e; }
+.fc-app.fc-clean-streets .fc-quick-action.is-documents { background: #294449; color: #91d8dc; border-color: #49737a; }
+.fc-app.fc-clean-streets .fc-search-field { background: #173326eb; border-color: #4b715d; box-shadow: 0 2px 12px #263e4d30; backdrop-filter: blur(16px); }
+.fc-app.fc-clean-streets .fc-search-field input { color: #f3f5f5; }
+.fc-app.fc-clean-streets .fc-search-field input::placeholder { color: #b7c2c5; }
+.fc-full-map .fc-search-row { position: absolute; top: max(12px,env(safe-area-inset-top)); left: 12px; right: 66px; z-index: 1500; padding: 0; }
+.fc-full-map.fc-chrome-open .fc-topbar { display: none; }
+.fc-full-map.fc-chrome-open .fc-borough-row { position: absolute; top: calc(68px + env(safe-area-inset-top)); left: 0; right: 0; z-index: 1400; }
+.fc-full-map.fc-chrome-open .fc-status-pill-row { position: absolute; top: calc(125px + env(safe-area-inset-top)); left: 0; right: 0; z-index: 1400; background: #051120; }
+.fc-full-map.fc-chrome-open .fc-map-controls { top: calc(186px + env(safe-area-inset-top)); }
+.fc-full-map.fc-chrome-open.fc-controls-open .fc-map-controls { top: calc(256px + env(safe-area-inset-top)); }
+.fc-award-filter { display: none; }
+.fc-full-map.fc-chrome-open.fc-controls-open .fc-map-controls { display: none; }
+.fc-full-map.fc-chrome-open.fc-controls-open .fc-award-filter { max-height: calc(100% - 205px); overflow-y: auto; }
+.fc-date-picker { display: grid; gap: 8px; padding-top: 8px; border-top: 1px solid #ffffff26; }
+.fc-date-picker label { display: grid; gap: 4px; min-width: 0; }
+.fc-date-bounds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.fc-award-filter .fc-date-picker :is(input,select) { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; min-height: 44px; padding: 6px; color-scheme: dark; background: #202426; color: #eff7f1; border: 1px solid #668675; border-radius: 6px; font: inherit; }
+.fc-date-picker button { min-height: 44px; border: 0; background: transparent; color: #b1dbbc; text-align: left; font: inherit; }
+.fc-date-picker [role=alert] { color: #ffb8ae; }
+.fc-reference-job-summary dd { overflow-wrap: anywhere; }
+.fc-full-map.fc-chrome-open.fc-controls-open .fc-award-filter { display: grid; gap: 4px; position: absolute; top: calc(181px + env(safe-area-inset-top)); left: 8px; right: 8px; z-index: 1400; padding: 6px 8px; border: 1px solid #668675; border-radius: 8px; background: #173326f5; color: #eff7f1; font-size: 12px; }
+.fc-award-filter input { width: 64px; min-width: 0; min-height: 44px; padding: 6px; border: 1px solid #799b88; border-radius: 6px; background: #10291d; color: white; font: inherit; }
+.fc-date-custom select { min-width: 0; flex: 1; min-height: 44px; max-width: 150px; padding: 4px 6px; border: 1px solid #668675; border-radius: 6px; background: #10291d; color: #eff7f1; font: inherit; }
+.fc-date-custom input { width: 54px; flex-shrink: 0; }
+.fc-date-custom { display: flex; align-items: center; gap: 6px; }
+.fc-date-custom output { margin-left: auto; text-align: right; font-size: 11px; }
+.fc-full-map.fc-chrome-open.fc-has-job .fc-topbar { display: none; }
+@media (max-height:650px) {
+  .fc-app.fc-reference.fc-has-job .fc-topbar, .fc-app.fc-reference.fc-has-job .fc-borough-row { display: none; }
+}
+.fc-app.fc-reference.fc-has-job .fc-job-sheet.fc-job-sheet-flow { height: min(280px,60%); max-height: 60%; }
+.fc-app.fc-reference.fc-clean-streets.fc-has-job:not(.fc-sheet-expanded) .fc-job-sheet.fc-job-sheet-flow { height: auto; max-height: 58%; padding-bottom: 8px; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-id { font-size: 14px; color: #b7c2c5; }
+.fc-app.fc-reference.fc-clean-streets .fc-address-row p { font-size: 17px; font-weight: 600; line-height: 1.3; }
+.fc-app.fc-clean-streets:not(.fc-sheet-expanded) .fc-job-sheet > section { display: none; }
+.fc-job-details-toggle { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; background: transparent; border: 0; color: #a2d3ff; font-size: 13px; font-weight: 600; }
+.fc-job-details-toggle span { font-size: 20px; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action { background: transparent; border: 0; color: #e4f2e9; gap: 6px; padding: 4px 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action svg { box-sizing: border-box; width: 44px; height: 44px; padding: 11px; border: 1px solid #638672; border-radius: 50%; background: #244936; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action.is-navigate svg { background: #397c56; border-color: #74b68d; color: white; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-details-toggle { color: #a5e1ba; }
+.fc-app.fc-reference.fc-clean-streets .fc-age-tag:is([data-priority="31-60"],[data-priority="61-90"],[data-priority="91-150"],[data-priority="150+"]) { background: #efbe58; color: #302409; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-status { background: #ffffff0e; border: 1px solid #8bb79c50; color: #c5e1cf; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-tags { gap: 8px; margin: 10px 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-tag { font-size: 11px; padding: 4px 8px; border-radius: 4px; }
+.fc-app.fc-reference.fc-clean-streets .fc-reference-job-summary dt { font-size: 11px; color: #aec9b9; }
+.fc-app.fc-reference.fc-clean-streets .fc-reference-job-summary dd { font-size: 13px; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action.is-navigate svg { background: #b1dbbc; color: #173326; border-color: #c8ebd1; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet.fc-job-sheet-flow { border-top: 3px solid #8cbd9e; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-details-toggle { border-top: 1px solid #ffffff18; margin-top: 4px; }
+.fc-next-step { display: grid; gap: 2px; margin-top: 8px; }
+.fc-next-action { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 44px; padding: 10px 14px; border: 1px solid #87b899; border-radius: 8px; background: #b1dbbc; color: #173326; text-decoration: none; font: 600 14px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+.fc-next-action:disabled { opacity: .6; }
+.fc-outcome-link { min-height: 36px; display: flex; align-items: center; justify-content: center; color: #c4ddcf; font-size: 12px; text-decoration: underline; text-underline-offset: 3px; }
+.fc-outcome-link { background: none; border: 0; width: 100%; }
+.fc-outcome-panel { padding: 14px 0; border-top: 1px solid #ffffff20; }
+.fc-outcome-panel label { display: grid; gap: 6px; margin-bottom: 12px; font-size: 13px; }
+.fc-outcome-panel :is(select,textarea) { width: 100%; min-height: 44px; background: #10291d; color: #eff7f1; border: 1px solid #64816d; border-radius: 6px; padding: 10px; font: inherit; }
+.fc-outcome-panel p { color: #b7cebf; font-size: 12px; line-height: 1.4; }
+.fc-app.fc-reference.fc-clean-streets .fc-next-action { color: #173326 !important; font-weight: 650; }
+.fc-save-message { color: #d2e5d8; font-size: 12px; margin: 4px 0; }
+.fc-visit-history summary { min-height: 44px; padding: 12px 0; cursor: pointer; }
+.fc-visit-history ol { margin: 0; padding-left: 18px; }
+.fc-visit-history li { margin: 10px 0; }
+.fc-visit-history :is(time,strong) { display: block; font-size: 12px; }
+.fc-visit-history p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.fc-app.fc-reference.fc-has-job.fc-sheet-expanded .fc-job-sheet.fc-job-sheet-flow { height: calc(100% - 16px); max-height: calc(100% - 16px); }
+
+/* Compact field card: one primary step and a shared secondary-action row. */
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet.fc-job-sheet-flow { padding: 0 14px 0; background: #202426fa; border: 1px solid #ffffff26; box-shadow: 0 -4px 24px #00000030; }
+.fc-app.fc-reference.fc-clean-streets:not(.fc-sheet-expanded) .fc-job-sheet.fc-job-sheet-flow { max-height: calc(100% - 132px); padding-bottom: 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-sheet-handle { height: 20px; background: #202426; touch-action: none; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-hero { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-start; gap: 4px 8px; min-height: 24px; padding-right: 32px; margin: 0; }
+.fc-card-status { font-size: 11px; font-weight: 500; line-height: 16px; overflow-wrap: anywhere; color: #d2d9dc; }
+.fc-card-status i { display: inline-block; width: 5px; height: 5px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-id { font-size: 12px; font-weight: 600; color: #bad0c6; line-height: 20px; }
+.fc-card-borough { color: #a4adb2; font-size: 11px; line-height: 20px; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-close { top: 14px; right: 4px; width: 44px; height: 44px; background: transparent; }
+.fc-app.fc-reference.fc-clean-streets .fc-address-row { margin: 6px 0; padding-right: 24px; }
+.fc-app.fc-reference.fc-clean-streets .fc-address-row p { font-size: 17px; font-weight: 650; line-height: 1.25; overflow-wrap: anywhere; margin: 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-tags { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-tag { font-size: 10px; line-height: 16px; padding: 2px 6px; }
+.fc-app.fc-reference.fc-clean-streets .fc-reference-job-summary { padding: 8px 0; margin: 6px 0; border-color: #ffffff16; }
+.fc-app.fc-reference.fc-clean-streets .fc-reference-job-summary dl { gap: 8px; align-items: center; }
+.fc-app.fc-reference.fc-clean-streets .fc-reference-job-summary dt { font-size: 10px; line-height: 16px; color: #a8bcb2; }
+.fc-app.fc-reference.fc-clean-streets .fc-reference-job-summary dd { margin: 0; font-size: 13px; line-height: 18px; font-weight: 600; }
+.fc-app.fc-reference.fc-clean-streets:not(.fc-sheet-expanded) .fc-reference-job-summary { display: none; }
+.fc-card-maturity { display: flex; gap: 8px; align-items: baseline; font-size: 12px; line-height: 20px; color: #bbc3c8; }
+.fc-card-maturity strong { color: #f3f5f5; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fc-sheet-expanded .fc-card-maturity { display: none; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-actions { margin: 6px 0; gap: 8px; grid-template-columns: repeat(3,minmax(0,1fr)); }
+.fc-evidence-stages { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 6px 0; }
+.fc-evidence-stages button { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 12px; border: 1px solid #6e9485; border-radius: 6px; background: #223b32; color: #e7f5ee; text-align: left; font: inherit; }
+.fc-evidence-stages button[aria-expanded="true"] { border-color: #a9e8c5; background: #315746; }
+.fc-evidence-stages svg { width: 20px; height: 20px; flex-shrink: 0; }
+.fc-evidence-stages small { display: block; color: #b5cbbf; font-size: 11px; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action { min-height: 48px; padding: 0; gap: 3px; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action svg { width: 36px; height: 36px; padding: 8px; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action.is-call svg { background: #203e36; color: #a9dfbf; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action.is-photos svg { background: #303848; color: #c7c9f4; border-color: #66758b; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action.is-documents svg { background: #244048; color: #b6e3ec; border-color: #567e87; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action span { font-size: 10px; line-height: 16px; }
+.fc-app.fc-reference.fc-clean-streets:not(.fc-sheet-expanded) .fc-quick-actions { grid-template-columns: repeat(2,minmax(0,1fr)); }
+.fc-app.fc-reference.fc-clean-streets:not(.fc-sheet-expanded) .fc-quick-action:is(.is-photos,.is-documents) { display: none; }
+.fc-app.fc-reference.fc-clean-streets:not(.fc-sheet-expanded) .fc-quick-action:is(.is-navigate,.is-call) { display: flex; flex-direction: row; justify-content: center; border: 1px solid #ffffff20; border-radius: 6px; background: #ffffff07; gap: 6px; }
+.fc-app.fc-reference.fc-clean-streets:not(.fc-sheet-expanded) .fc-quick-action:is(.is-navigate,.is-call) svg { width: 22px; height: 22px; padding: 0; border: 0; background: transparent; color: #b4dfc1; }
+.fc-app.fc-reference.fc-clean-streets:not(.fc-sheet-expanded) .fc-quick-action span { font-size: 12px; }
+.fc-app.fc-reference.fc-clean-streets .fc-next-step { margin-top: 4px; }
+.fc-app.fc-reference.fc-clean-streets .fc-next-action { min-height: 48px; border-radius: 7px; background: #a9e8c5; border-color: #a9e8c5; }
+.fc-card-footer { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); margin-top: 6px; border-top: 1px solid #ffffff18; }
+.fc-app.fc-reference.fc-clean-streets .fc-card-footer :is(.fc-job-details-toggle,.fc-outcome-link) { min-height: 44px; margin: 0; padding: 6px; border: 0; text-decoration: none; font-size: 12px; font-weight: 500; color: #c4dacf; }
+.fc-app.fc-reference.fc-clean-streets .fc-card-footer .fc-job-details-toggle { border-left: 1px solid #ffffff18; }
+.fc-save-review { width: 100%; min-height: 44px; margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border: 1px solid #759587; border-radius: 6px; background: transparent; color: #d0e7da; font: inherit; font-size: 13px; }
+.fc-photo-choice { padding: 8px 0; border-top: 1px solid #ffffff28; border-bottom: 1px solid #ffffff28; }
+.fc-photo-choice-heading { display: flex; align-items: center; justify-content: space-between; font-size: 13px; }
+.fc-photo-choice-heading button { width: 44px; height: 44px; border: 0; background: transparent; color: #deece3; font-size: 24px; }
+.fc-photo-source-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.fc-photo-source-actions button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px; padding: 8px; background: #274638; border: 1px solid #719985; border-radius: 6px; color: #eff7f1; font: inherit; font-size: 12px; overflow-wrap: anywhere; }
+.fc-photo-source-actions svg { width: 20px; height: 20px; flex-shrink: 0; }
+
+/* A single translucent search surface keeps the map visually continuous. */
+.fc-app.fc-reference.fc-clean-streets .fc-search-row { gap: 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-search-field { background: #fffffff0; border-color: #d2dad9; box-shadow: 0 3px 14px #233b4220; border-radius: 8px 0 0 8px; }
+.fc-app.fc-reference.fc-clean-streets .fc-tools-toggle { background: #fffffff0; border-color: #d2dad9; color: #426659; backdrop-filter: blur(16px); }
+.fc-app.fc-reference.fc-clean-streets .fc-reveal-controls { background: #fffffff0; color: #354940 !important; border-color: #d2dad9; }
+.fc-app.fc-reference.fc-clean-streets .fc-search-field input { font-size: 13px; color: #25332f; }
+.fc-app.fc-reference.fc-clean-streets .fc-search-field input::placeholder { color: #65756f; }
+.fc-app.fc-reference.fc-clean-streets .fc-search-field svg { color: #65756f; }
+.fc-app.fc-reference.fc-clean-streets .fc-map-fab { color: #426659; background: #fffffff0; border-color: #d2dad9; backdrop-filter: blur(16px); }
+.fc-app.fc-reference.fc-clean-streets .fc-map-fab.is-active { color: #fff; background: #287558; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-id { color: #e5eeea; font-size: 14px; }
+.fc-app.fc-reference.fc-clean-streets .fc-sheet-handle span { background: #909b98; }
+.fc-app.fc-reference.fc-clean-streets .fc-next-action { background: #84e7bf; border-color: #84e7bf; }
+.fc-app.fc-reference.fc-clean-streets:not(.fc-sheet-expanded) .fc-quick-action.is-navigate { color: #b9f1d9; border-color: #8edbb64d; background: #84e7bf12; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-close { font-size: 24px; color: #bac3c8; }
+.fc-app.fc-reference.fc-clean-streets .fc-card-footer :is(.fc-job-details-toggle,.fc-outcome-link) { color: #bac3c8; }
+
+/* Field ticket keeps the next action and real job evidence within thumb reach. */
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet.fc-job-sheet-flow { border-left: 3px solid #84e7bf; padding-left: 12px; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-flow .fc-job-sheet-id { font-size: 18px; line-height: 24px; color: #f3f5f5; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-hero { gap: 3px 7px; }
+.fc-app.fc-clean-streets .fc-job-sheet > .fc-building, .fc-app.fc-clean-streets:not(.fc-sheet-expanded) .fc-job-sheet > .fc-building { display: grid; grid-template-columns: 72px minmax(0,1fr); gap: 10px; padding: 10px 0; border-bottom: 1px solid #8baca533; }
+.fc-building-image, .fc-building-empty { width: 72px; height: 80px; border: 1px solid #8baca555; border-radius: 6px; overflow: hidden; padding: 0; background: #16332c; color: #dceae5; }
+.fc-building-empty { display: grid; place-items: center; text-align: center; font-size: 11px; }
+.fc-building-image img { width: 100%; height: 100%; object-fit: cover; }
+.fc-building-actions { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 12px; }
+.fc-building-actions div { display: flex; gap: 8px; flex-wrap: wrap; }
+.fc-building-actions button { min-height: 36px; padding: 5px 9px; border-radius: 6px; border: 1px solid #8baca566; background: #16332c; color: #f0faf5; font-size: 12px; }
+.fc-building-actions a { color: #8be2bc; overflow-wrap: anywhere; }
+.fc-building-expanded { grid-column: 1/-1; width: 100%; max-height: 320px; object-fit: contain; }
+.fc-building > [role] { grid-column: 1/-1; font-size: 12px; }
+.fc-building-package { display: flex; flex-direction: column; gap: 5px; }
+.fc-building-package a { color: #8be2bc; }
+.fc-ticket-preview { display: grid; grid-template-columns: minmax(0,1fr); gap: 12px; align-items: center; margin: 6px 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-ticket-preview .fc-address-row { padding: 0; margin: 0; min-width: 0; }
+.fc-app.fc-reference.fc-clean-streets .fc-ticket-preview .fc-address-row p { font-size: 14px; font-weight: 500; line-height: 1.4; }
+.fc-ticket-photo { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; width: 64px; height: 64px; overflow: hidden; border: 1px solid #ffffff25; border-radius: 6px; background: #ffffff08; color: #c9ded5; text-decoration: none; padding: 0; }
+.fc-ticket-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.fc-ticket-photo svg { width: 23px; height: 23px; }
+.fc-ticket-photo span { font: 500 10px/16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+.fc-ticket-photo:not(.is-empty) span { position: absolute; bottom: 0; left: 0; right: 0; text-align: center; background: #151b18db; color: white; }
+.fc-app.fc-reference.fc-clean-streets .fc-job-sheet-tags { margin: 6px 0 8px; }
+.fc-app.fc-reference.fc-clean-streets .fc-age-tag:is([data-priority="31-60"],[data-priority="61-90"],[data-priority="91-150"],[data-priority="150+"]) { color: #ffd28a; background: #d9952220; border: 1px solid #e7ae5140; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-action { min-height: 44px; }
+.fc-app.fc-reference.fc-clean-streets .fc-next-action { min-height: 46px; }
+.fc-day-pin::before { content: ''; position: absolute; left: calc(50% - 4px); bottom: -5px; width: 6px; height: 6px; transform: rotate(45deg); background: var(--pin-color); border-right: 2px solid white; border-bottom: 2px solid white; }
+.fc-appointment-editor { padding: 14px 0; border-top: 1px solid #ffffff25; }
+.fc-appointment-editor h3 { font-size: 17px; margin: 0 0 8px; }
+.fc-appointment-editor label { display: grid; gap: 6px; font-size: 13px; margin: 12px 0; min-width: 0; }
+.fc-appointment-editor :is(input,select,textarea) { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; background: #2c3330; color: #f2f5f3; border: 1px solid #718179; border-radius: 6px; padding: 8px; font: inherit; color-scheme: dark; }
+.fc-appointment-editor p { font-size: 12px; line-height: 1.5; color: #c6d3ce; overflow-wrap: anywhere; }
+.fc-appointment-editor [role=alert] { color: #ffd28a; }
+.fc-appointment-times { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fc-appointment-summary { width: 100%; min-height: 44px; border: 0; border-top: 1px solid #ffffff20; color: #bce9d8; background: transparent; font-size: 12px; }
+.fc-day-pin.is-appointment.is-distant:has(strong) svg { display: block; }
+.fc-appointment-agenda { position: absolute; z-index: 2100; left: 8px; right: 8px; bottom: 8px; max-height: 60%; overflow: auto; padding: 12px; background: #202426fa; border: 1px solid #ffffff30; border-radius: 8px; color: #f3f5f5; }
+.fc-appointment-agenda header { display: flex; align-items: center; justify-content: space-between; }
+.fc-appointment-agenda header button { width: 44px; height: 44px; border: 0; background: transparent; color: inherit; font-size: 24px; }
+.fc-appointment-agenda p { font-size: 12px; color: #c4d4cc; }
+.fc-appointment-agenda > button { display: grid; gap: 5px; width: 100%; min-height: 60px; padding: 10px 0; border: 0; border-top: 1px solid #ffffff25; text-align: left; background: transparent; color: inherit; font-size: 13px; }
+.fc-appointment-agenda span { overflow-wrap: anywhere; }
+.fc-visit-summary { display:grid; gap:4px; border-left:4px solid; padding:8px 10px; margin:8px 0; font-size:12px; overflow-wrap:anywhere; }
+.fc-visit-summary button { min-height:44px; background:#273c34; color:#fff; border:1px solid #839d91; border-radius:4px; padding:8px; font-weight:600; }
+.fc-visit-pin-count { position:absolute; right:-4px; top:-8px; background:#fff; color:#202522; border:1px solid #65746b; border-radius:4px; font-size:10px; line-height:14px; padding:0 2px; pointer-events:none; }
+.fc-app.fc-reference.fc-clean-streets .fc-search-field { border-radius:8px; border-right:1px solid #d2dad9; min-width:0; }
+.fc-organized-menu { position:absolute; top:calc(72px + env(safe-area-inset-top)); right:12px; width:min(260px,calc(100% - 24px)); max-height:calc(100% - 96px); overflow:auto; box-sizing:border-box; z-index:1550; display:grid; padding:8px; background:#202a26f5; color:#f5f8f6; border:1px solid #839b90; border-radius:8px; box-shadow:0 6px 24px #0003; }
+.fc-organized-menu > strong { font-size:13px; padding:8px 10px; }
+.fc-organized-menu :is(button,a) { display:flex; align-items:center; gap:12px; min-height:44px; width:100%; box-sizing:border-box; padding:10px; text-align:left; background:transparent; color:inherit; border:0; border-top:1px solid #ffffff18; text-decoration:none; font:14px system-ui; }
+.fc-organized-menu svg { width:20px; height:20px; flex:none; }
+.fc-app.fc-reference.fc-chrome-open:not(.fc-controls-open) .fc-control-drawer { display:none; }
+.fc-app.fc-reference.fc-chrome-open:not(.fc-controls-open) .fc-map-controls { display:none; }
+.fc-app.fc-reference.fc-full-map .plan-my-day:not(.is-open):not(.is-media-paused) { display:none; }
+.fc-app.fc-reference.fc-full-map .plan-my-day.is-open { display:block; z-index:1700; bottom:24px; }
+.fc-app.fc-reference.fc-full-map .plan-my-day.is-open .plan-my-day__toggle { display:none; }
+.fc-app.fc-reference.fc-full-map .plan-my-day.is-open .plan-my-day__panel { max-height:calc(100dvh - 130px) !important; border-radius:8px; }
+.fc-app:has(.plan-my-day.is-open) :is(.fc-today-route,.fc-current-job) { visibility:hidden; }

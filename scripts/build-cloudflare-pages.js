@@ -178,6 +178,8 @@ try {
 copyRouteIfMissing("map", "field-command");
 
 const requiredFiles = [
+  path.join(outDir, "about.html"),
+  path.join(outDir, "privacy.html"),
   path.join(outDir, "index.html"),
   path.join(outDir, "map", "index.html"),
   path.join(outDir, "field-command", "index.html"),

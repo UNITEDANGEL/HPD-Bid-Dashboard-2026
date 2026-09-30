@@ -61,7 +61,7 @@ export default function FieldTabBar() {
 
   return (
     <nav className="fc-tabbar" aria-label="Field command navigation">
-      <Link href="/field-command" className={`fc-tab ${pathname === "/field-command" ? "is-active" : ""}`}>
+      <Link href="/field-command" className={`fc-tab ${["/field-command", "/field-map", "/map"].includes(pathname) ? "is-active" : ""}`}>
         <MapIcon />
         <span>Map</span>
       </Link>
