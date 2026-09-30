@@ -1809,6 +1809,24 @@
 .fc-day-pin { box-sizing: border-box; position: relative; display: flex; align-items: center; justify-content: center; gap: 2px; width: 44px; height: 30px; padding: 0 2px; background: var(--pin-color); color: white; border: 2px solid white; border-radius: 7px; box-shadow: 0 2px 5px #172b2533; }
 .fc-day-pin svg { width: 11px; height: 11px; flex-shrink: 0; }
 .fc-job-dot { display: block; box-sizing: border-box; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; background: var(--pin-color); box-shadow: 0 1px 3px #172b2540; }
+.fc-today-route { position:absolute; z-index:1550; bottom:max(24px,env(safe-area-inset-bottom)); left:8px; right:8px; color:#eff7f1; background:#202426f5; border:1px solid #74867c; border-radius:8px; overflow:hidden; }
+.fc-route-toggle { display:flex; justify-content:space-between; align-items:center; width:100%; min-height:44px; border:0; padding:10px 14px; background:transparent; color:#c4ead4; font:600 14px system-ui; }
+.fc-route-body { max-height:55dvh; overflow-y:auto; overscroll-behavior:contain; padding:0 12px 12px; }
+.fc-route-settings { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.fc-route-body summary { min-height:44px; padding:12px 0; box-sizing:border-box; cursor:pointer; font-size:13px; }
+.fc-route-body label { display:grid; gap:4px; min-width:0; font-size:12px; }
+.fc-route-body :is(input,select) { width:100%; min-width:0; box-sizing:border-box; min-height:44px; padding:6px; border:1px solid #74867c; border-radius:6px; background:#202426; color:#eff7f1; color-scheme:dark; font:inherit; }
+.fc-route-body p { font-size:12px; line-height:1.45; color:#c3cdca; }
+.fc-route-body .fc-next-action { margin-top:12px; }
+.fc-route-body ol { list-style:none; padding:0; margin:0; }
+.fc-route-body li { padding:10px 0; border-top:1px solid #ffffff26; }
+.fc-route-stop { display:grid; gap:5px; width:100%; background:none; border:0; text-align:left; padding:0; color:inherit; font:13px system-ui; min-height:44px; overflow-wrap:anywhere; }
+.fc-route-stop span { color:#c3cdca; }
+.fc-route-stop-actions { display:flex; gap:6px; margin-top:8px; }
+.fc-route-stop-actions :is(button,a) { min-width:44px; min-height:44px; display:grid; place-items:center; background:#293d34; color:#c4ead4; border:1px solid #74867c; border-radius:6px; padding:6px; text-decoration:none; font:13px system-ui; }
+.fc-route-stop-actions button:disabled { opacity:.35; }
+.fc-route-body [role=alert] { color:#ffbeaa; font-size:12px; }
+.fc-route-number { display:grid; place-items:center; border:2px solid white; border-radius:50%; background:#176b51; color:white; font:700 13px system-ui; }
 .fc-dot-marker:focus-visible { outline: 3px solid #173326; outline-offset: 3px; border-radius: 50%; }
 .fc-day-pin strong { font: 750 11px/1 system-ui,sans-serif; white-space: nowrap; }
 .fc-day-pin small { font-size: 9px; margin-left: 1px; }

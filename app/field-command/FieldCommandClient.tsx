@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import FieldTabBar from "../../components/FieldTabBar";
 import AppointmentEditor from "./AppointmentEditor";
+import TodayRoute from "./TodayRoute";
+import type { RouteJob, RoutePoint } from "../../lib/day-route";
 import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointments";
 import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
@@ -442,6 +444,9 @@ export default function FieldCommandClient() {
   const layerGroupRef = useRef<any>(null);
   const boroughLabelLayerRef = useRef<any>(null);
   const routeLayerRef = useRef<any>(null);
+  const dayRouteLayerRef = useRef<any>(null);
+  const dayRouteRequest = useRef(0);
+  const [routeMapReady, setRouteMapReady] = useState(false);
   const userMarkerRef = useRef<any>(null);
   const pointsRef = useRef<{ job: JobRecord; lng: number; lat: number }[]>([]);
   const renderMarkersRef = useRef<() => void>(() => {});
@@ -653,6 +658,7 @@ export default function FieldCommandClient() {
           attributionControl: true,
         }).setView([40.72, -73.95], 10);
         mapRef.current = map;
+        setRouteMapReady(true);
         tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20, maxNativeZoom: darkTiles ? 16 : 19, attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, contributors' }).addTo(map);
         // Keep raster streets underneath until the vector map is ready, including on unsupported devices.
         import("@maplibre/maplibre-gl-leaflet").then(async ({ maplibreGL }) => {
@@ -909,6 +915,30 @@ export default function FieldCommandClient() {
       { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
     );
   }
+
+  async function drawDayRoute(stops: RouteJob[], origin: RoutePoint) {
+    const request = ++dayRouteRequest.current;
+    const leafletModule = await import("leaflet");
+    if (request !== dayRouteRequest.current || !mapRef.current) return;
+    const L = (leafletModule as any).default || leafletModule;
+    dayRouteLayerRef.current?.remove();
+    if (!stops.length) return;
+    const line = [origin, ...stops].map(p => [p.lat, p.lng]);
+    dayRouteLayerRef.current = L.featureGroup([
+      L.polyline(line, { color: "#176b51", weight: 3, dashArray: "7 9", opacity: 0.8, interactive: false }),
+      ...stops.map((job, index) => L.marker([job.lat, job.lng], {
+        icon: L.divIcon({className:"fc-route-number",html:String(index+1),iconSize:[28,28],iconAnchor:[14,14]}),
+        title: `Route stop ${index+1}: ${job.id}`, zIndexOffset: 2000,
+      }).on('click',()=>setSelectedJob(jobs.find(row=>jobId(row)===job.id)||null)))
+    ]).addTo(mapRef.current);
+    mapRef.current.fitBounds(dayRouteLayerRef.current.getBounds(), {padding:[36,60],maxZoom:15});
+  }
+
+  const routeJobs = useMemo<RouteJob[]>(() => jobs.flatMap(job => {
+    const point = jobLatLng(job); if (!point) return [];
+    const queue = jobQueue(job);
+    return [{id:jobId(job),address:jobAddress(job),borough:jobBorough(job),...point,days:jobPriority(job).days,pending:queue==='pending',closed:queue==='completed'||queue==='archived',appointment:job.Appointment as Appointment|undefined}];
+  }), [jobs]);
 
   async function previewLocalRoute() {
     if (!mapRef.current || !pointsRef.current.length) return;
@@ -1362,6 +1392,13 @@ export default function FieldCommandClient() {
           </div>
         ) : null}
 
+        <div hidden={!!selectedJob || agendaOpen || chromeOpen}>
+          <TodayRoute jobs={routeJobs} mapReady={routeMapReady} getOrigin={() => {
+            const location = userMarkerRef.current?.getLatLng?.();
+            const center = location || mapRef.current?.getCenter() || {lat:40.72,lng:-73.95};
+            return {point:{lat:center.lat,lng:center.lng},label:location?'Your location':'Map center (location not set)'};
+          }} onPreview={drawDayRoute} onSelect={id => {setSelectedJob(jobs.find(job=>jobId(job)===id)||null);setSheetExpanded(false);}} />
+        </div>
         {agendaOpen ? <aside className="fc-appointment-agenda" aria-label="Today's appointments">
           <header><strong>Today&apos;s appointments</strong><button type="button" aria-label="Close appointments" onClick={() => setAgendaOpen(false)}>&times;</button></header>
           <p>{nyToday()} · New York · This device</p>

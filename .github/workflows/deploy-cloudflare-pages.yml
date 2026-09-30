@@ -60,6 +60,7 @@ jobs:
           node scripts/test-map-pins.cjs
           node scripts/test-field-ticket.cjs
           node scripts/test-appointments.cjs
+          node scripts/test-day-route.cjs
           node scripts/test-drive-auth.mjs
           node scripts/test-drive-backups.mjs
           node scripts/test-drive-full-backup.mjs
