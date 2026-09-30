@@ -2009,3 +2009,10 @@
 .fc-visit-summary { display:grid; gap:4px; border-left:4px solid; padding:8px 10px; margin:8px 0; font-size:12px; overflow-wrap:anywhere; }
 .fc-visit-summary button { min-height:44px; background:#273c34; color:#fff; border:1px solid #839d91; border-radius:4px; padding:8px; font-weight:600; }
 .fc-visit-pin-count { position:absolute; right:-4px; top:-8px; background:#fff; color:#202522; border:1px solid #65746b; border-radius:4px; font-size:10px; line-height:14px; padding:0 2px; pointer-events:none; }
+.fc-app.fc-reference.fc-clean-streets .fc-search-field { border-radius:8px; border-right:1px solid #d2dad9; min-width:0; }
+.fc-organized-menu { position:absolute; top:calc(72px + env(safe-area-inset-top)); right:12px; width:min(260px,calc(100% - 24px)); max-height:calc(100% - 96px); overflow:auto; box-sizing:border-box; z-index:1550; display:grid; padding:8px; background:#202a26f5; color:#f5f8f6; border:1px solid #839b90; border-radius:8px; box-shadow:0 6px 24px #0003; }
+.fc-organized-menu > strong { font-size:13px; padding:8px 10px; }
+.fc-organized-menu :is(button,a) { display:flex; align-items:center; gap:12px; min-height:44px; width:100%; box-sizing:border-box; padding:10px; text-align:left; background:transparent; color:inherit; border:0; border-top:1px solid #ffffff18; text-decoration:none; font:14px system-ui; }
+.fc-organized-menu svg { width:20px; height:20px; flex:none; }
+.fc-app.fc-reference.fc-chrome-open:not(.fc-controls-open) .fc-control-drawer { display:none; }
+.fc-app.fc-reference.fc-chrome-open:not(.fc-controls-open) .fc-map-controls { display:none; }

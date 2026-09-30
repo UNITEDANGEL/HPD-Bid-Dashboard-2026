@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import FieldTabBar from "../../components/FieldTabBar";
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
 import type { RouteJob, RoutePoint } from "../../lib/day-route";
@@ -1241,10 +1240,15 @@ export default function FieldCommandClient() {
           <SearchIcon />
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search address or job" aria-label="Search jobs" />
         </div>
-        <button type="button" className={`fc-search-list-btn fc-tools-toggle ${controlsOpen ? "is-open" : ""}`} aria-label={controlsOpen ? "Hide map filters" : "Show map filters"} title="Map filters and navigation" aria-expanded={controlsOpen} aria-controls="field-map-filters" onClick={() => { setChromeOpen(true); setControlsOpen((open) => !open); }}>
-          <ListIcon />
-        </button>
       </div>
+      {chromeOpen && !controlsOpen && <nav className="fc-organized-menu" aria-label="Map menu">
+        <strong>Map menu</strong>
+        <button type="button" aria-controls="field-map-filters" onClick={() => setControlsOpen(true)}><ListIcon />Filters</button>
+        <Link href="/jobs/"><ListIcon />Jobs</Link>
+        <Link href="/alerts/"><BellIcon />Alerts</Link>
+        <Link href="/storage/"><MenuIcon />Backup &amp; recovery</Link>
+        <Link href="/more/"><MenuIcon />More</Link>
+      </nav>}
       <section id="field-map-filters" className="fc-control-drawer" aria-label="Map filters">
       <header className="fc-topbar">
         <div className="fc-topbar-row">
@@ -1664,7 +1668,6 @@ export default function FieldCommandClient() {
       </div>
 
       <PlanMyDayDrawer records={jobs} />
-      <FieldTabBar />
     </main>
   );
 }
