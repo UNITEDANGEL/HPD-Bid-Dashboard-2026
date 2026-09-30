@@ -61,6 +61,8 @@ jobs:
           node scripts/test-field-ticket.cjs
           node scripts/test-appointments.cjs
           node scripts/test-day-route.cjs
+          node scripts/test-current-job.cjs
+          node scripts/test-driving-link.cjs
           node scripts/test-drive-auth.mjs
           node scripts/test-drive-backups.mjs
           node scripts/test-drive-full-backup.mjs

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
 import type { RouteJob, RoutePoint } from "../../lib/day-route";
+import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/current-job";
 import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointments";
 import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
@@ -212,7 +213,7 @@ function boroughColor(key: BoroughKey | "NYC") {
 function directionsHref(job: JobRecord) {
   const ll = jobLatLng(job);
   const query = ll ? `${ll.lat},${ll.lng}` : jobAddress(job);
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}&travelmode=driving&dir_action=navigate`;
 }
 
 function wazeHref(job: JobRecord) {
@@ -497,6 +498,10 @@ export default function FieldCommandClient() {
   }, [dateRange, dateFilterLoaded]);
   const [search, setSearch] = useState("");
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
+  const [currentJob,setCurrentJob] = useState<CurrentJob|null>(null);
+  const currentJobRef=useRef<CurrentJob|null>(null);
+  const resumeInitialized=useRef(false);
+  const navigationDeparted=useRef(false);
   const [darkTiles, setDarkTiles] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [chromeOpen, setChromeOpen] = useState(false);
@@ -517,6 +522,43 @@ export default function FieldCommandClient() {
   const mediaChoiceRef = useRef<HTMLDivElement | null>(null);
   const [mediaChoice, setMediaChoice] = useState<FieldMediaKind | null>(null);
   const pendingMediaKindRef = useRef<FieldMediaKind>("before");
+
+  function rememberNavigation(id:string) {
+    const entry={id,startedAt:Date.now(),pendingReturn:true};
+    currentJobRef.current=entry;setCurrentJob(entry);navigationDeparted.current=false;
+    try {localStorage.setItem(CURRENT_JOB_KEY,JSON.stringify(entry));}
+    catch {setMediaMessage('Current job could not be saved on this device.');}
+  }
+  function resumeCurrentJob(entry:CurrentJob) {
+    const match=jobs.find(job=>jobId(job)===entry.id);
+    if(!match)return;
+    const updated={...entry,pendingReturn:false};
+    currentJobRef.current=updated;setCurrentJob(updated);
+    try {localStorage.setItem(CURRENT_JOB_KEY,JSON.stringify(updated));} catch {}
+    setChromeOpen(false);setControlsOpen(false);setAgendaOpen(false);
+    setSelectedJob(match);setSheetExpanded(false);
+  }
+  useEffect(()=>{
+    if(!jobs.length||!workflowLoaded)return;
+    if(!resumeInitialized.current){
+      resumeInitialized.current=true;
+      let entry:CurrentJob|null=null;
+      try {entry=parseCurrentJob(localStorage.getItem(CURRENT_JOB_KEY));}catch {}
+      currentJobRef.current=entry;setCurrentJob(entry);
+      if(entry?.pendingReturn&&!new URLSearchParams(window.location.search).has('omo'))resumeCurrentJob(entry);
+    }
+    const returnToJob=()=>{
+      if(document.hidden||!navigationDeparted.current)return;
+      navigationDeparted.current=false;
+      const entry=currentJobRef.current;
+      if(entry?.pendingReturn&&parseCurrentJob(JSON.stringify(entry)))resumeCurrentJob(entry);
+    };
+    const hidden=()=>{if(document.hidden)navigationDeparted.current=true;else returnToJob();};
+    const blur=()=>{navigationDeparted.current=true;};
+    window.addEventListener('blur',blur);window.addEventListener('focus',returnToJob);
+    window.addEventListener('pageshow',returnToJob);document.addEventListener('visibilitychange',hidden);
+    return()=>{window.removeEventListener('blur',blur);window.removeEventListener('focus',returnToJob);window.removeEventListener('pageshow',returnToJob);document.removeEventListener('visibilitychange',hidden);};
+  },[jobs,workflowLoaded]);
 
   useEffect(() => { setMediaChoice(null); }, [selectedJob ? jobId(selectedJob) : ""]);
 
@@ -1431,11 +1473,12 @@ export default function FieldCommandClient() {
         ) : null}
 
         <div hidden={!!selectedJob || agendaOpen || chromeOpen}>
+          {currentJob&&jobs.some(job=>jobId(job)===currentJob.id)&&<div className="fc-current-job"><button type="button" onClick={()=>resumeCurrentJob(currentJob)}>Resume current job · {currentJob.id}</button><button type="button" aria-label="Dismiss current job" onClick={()=>{currentJobRef.current=null;setCurrentJob(null);try{localStorage.removeItem(CURRENT_JOB_KEY);}catch{}}}>&times;</button></div>}
           <TodayRoute jobs={routeJobs} mapReady={routeMapReady} getOrigin={() => {
             const location = userMarkerRef.current?.getLatLng?.();
             const center = location || mapRef.current?.getCenter() || {lat:40.72,lng:-73.95};
             return {point:{lat:center.lat,lng:center.lng},label:location?'Your location':'Map center (location not set)'};
-          }} onPreview={drawDayRoute} onSelect={id => {setSelectedJob(jobs.find(job=>jobId(job)===id)||null);setSheetExpanded(false);}} />
+          }} onNavigate={rememberNavigation} onPreview={drawDayRoute} onSelect={id => {setSelectedJob(jobs.find(job=>jobId(job)===id)||null);setSheetExpanded(false);}} />
         </div>
         {agendaOpen ? <aside className="fc-appointment-agenda" aria-label="Today's appointments">
           <header><strong>Today&apos;s appointments</strong><button type="button" aria-label="Close appointments" onClick={() => setAgendaOpen(false)}>&times;</button></header>
@@ -1474,8 +1517,8 @@ export default function FieldCommandClient() {
               <div className="fc-ticket-preview">
               <div className="fc-address-row">
                 <p>{jobAddress(selectedJob)}</p>
-                <a className="fc-route-btn fc-route-waze" href={wazeHref(selectedJob)} target="_blank" rel="noreferrer">Waze</a>
-                <a className="fc-route-btn fc-route-google" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">Google</a>
+                <a className="fc-route-btn fc-route-waze" href={wazeHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Waze</a>
+                <a className="fc-route-btn fc-route-google" href={directionsHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Google</a>
               </div>
               {selectedPhoto ? (
                 <a className="fc-ticket-photo" href={`/jobs/${id}`} title="Open saved job photos">
@@ -1539,7 +1582,7 @@ export default function FieldCommandClient() {
                 {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
               </div>
               <div className="fc-quick-actions">
-                <a className="fc-quick-action is-navigate" title="Navigate to job" href={directionsHref(selectedJob)} target="_blank" rel="noreferrer">
+                <a className="fc-quick-action is-navigate" title="Navigate to job" href={directionsHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">
                   <NavigateIcon /><span>Navigate</span>
                 </a>
                 {tenant.phone ? (

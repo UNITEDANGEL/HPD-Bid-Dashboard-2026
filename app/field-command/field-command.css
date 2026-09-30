@@ -1827,6 +1827,10 @@
 .fc-route-stop-actions button:disabled { opacity:.35; }
 .fc-route-drive { display:flex; flex-direction:column; gap:4px; padding:12px; margin:8px 0; min-height:44px; background:#1267df; color:white; border:1px solid #8cbcff; border-radius:8px; text-decoration:none; font:700 14px system-ui; overflow-wrap:anywhere; }
 .fc-route-drive small { font:12px system-ui; }
+.fc-current-job { position:absolute; bottom:84px; left:8px; right:8px; z-index:1500; display:flex; background:#173326; border:1px solid #9cb5aa; border-radius:8px; color:white; }
+.fc-current-job button { background:none; color:inherit; border:0; min-height:44px; min-width:44px; font:600 13px system-ui; padding:8px; }
+.fc-current-job button:first-child { flex:1; text-align:left; overflow-wrap:anywhere; }
+.fc-current-job:has(+ .fc-today-route.is-open) { display:none; }
 .fc-route-body [role=alert] { color:#ffbeaa; font-size:12px; }
 .fc-route-number { display:grid; place-items:center; border:3px solid white; border-radius:50%; background:#1267df; color:white; font:750 14px system-ui; box-shadow:0 2px 6px #10233380; }
 .fc-route-number.is-next { background:#09503b; animation:fc-next-stop 2s ease-out infinite; }

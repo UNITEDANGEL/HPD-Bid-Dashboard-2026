@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),ts=require('typescript');
+const mod={exports:{}};
+new Function('exports',ts.transpileModule(fs.readFileSync('lib/current-job.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(mod.exports);
+const {parseCurrentJob}=mod.exports;
+const now=100000000,entry={id:'EQ14216',startedAt:now-1000,pendingReturn:true};
+assert.deepEqual(parseCurrentJob(JSON.stringify(entry),now),entry);
+assert.equal(parseCurrentJob('{',now),null);
+assert.equal(parseCurrentJob(JSON.stringify({...entry,startedAt:now-86400001}),now),null);
+assert.equal(parseCurrentJob(JSON.stringify({...entry,startedAt:now+1}),now),null);
+assert.equal(parseCurrentJob(JSON.stringify({...entry,id:'<script>'}),now),null);
+assert.equal(parseCurrentJob(JSON.stringify({...entry,pendingReturn:'yes'}),now),null);
+assert.equal(parseCurrentJob(JSON.stringify({...entry,pendingReturn:false}),now).pendingReturn,false);
+console.log('PASS: saved current job validation, expiry, malformed data and consumed return');
