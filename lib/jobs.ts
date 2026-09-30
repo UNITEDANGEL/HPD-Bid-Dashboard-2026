@@ -97,6 +97,17 @@ function pickWithOverlay(row: Record<string, string>, overlay: Record<string, un
   return pick(row, keys) || publicFieldValue(overlay, keys);
 }
 
+function pickLongestWithOverlay(row: Record<string, string>, overlay: Record<string, unknown>, keys: string[]) {
+  let best = "";
+  for (const key of keys) {
+    const rowValue = String(row[key] ?? "").trim();
+    if (rowValue.length > best.length) best = rowValue;
+    const overlayValue = stringValue(overlay[key]);
+    if (overlayValue.length > best.length) best = overlayValue;
+  }
+  return best;
+}
+
 function pickRawOverlay(overlay: Record<string, unknown>) {
   try {
     return Object.fromEntries(Object.entries(overlay).map(([key, value]) => [key, stringValue(value)]));
@@ -157,7 +168,7 @@ function normalizeJob(row: Record<string, string>, index: number): JobRecord {
   const trade = pickWithOverlay(row, overlay, ["Trade", "Trade_Summary", "trade", "trade_summary"]);
   const awardDate = pickWithOverlay(row, overlay, ["AwardDate", "Award_Date", "AwardDate_dt"]);
   const bidAmount = pickWithOverlay(row, overlay, ["BidAmount", "AwardAmount", "Award_Amount", "bid_amount"]);
-  const description = pickWithOverlay(row, overlay, [
+  const description = pickLongestWithOverlay(row, overlay, [
     "ItbPage3Description",
     "itbPage3Description",
     "DescriptionOfWork",

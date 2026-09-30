@@ -40,6 +40,19 @@ function pick(job: PaperworkJob | null | undefined, keys: string[]) {
   return "";
 }
 
+function pickLongest(job: PaperworkJob | null | undefined, keys: string[]) {
+  if (!job) return "";
+
+  let best = "";
+  for (const key of keys) {
+    const value = job[key];
+    const text = value === undefined || value === null ? "" : String(value).trim();
+    if (text.length > best.length) best = text;
+  }
+
+  return best;
+}
+
 function boroughFromZip(zip: string) {
   const value = Number(String(zip || "").trim());
   if (!Number.isFinite(value)) return "";
@@ -200,7 +213,7 @@ export function getJobBorough(job: PaperworkJob | null | undefined) {
 }
 
 export function getJobDescription(job: PaperworkJob | null | undefined) {
-  return pick(job, [
+  return pickLongest(job, [
     "ItbPage3Description",
     "itbPage3Description",
     "description",
@@ -210,9 +223,7 @@ export function getJobDescription(job: PaperworkJob | null | undefined) {
     "Description",
     "WorkDescription",
     "ScopeOfWork",
-    "Trade",
-    "trade",
-  ]);
+  ]) || pick(job, ["Trade", "trade"]);
 }
 
 export function getJobAmount(job: PaperworkJob | null | undefined) {

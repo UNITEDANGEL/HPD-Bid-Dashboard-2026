@@ -42,6 +42,16 @@ function value(job: JobRecord, keys: string[]) {
   return "";
 }
 
+function longestValue(job: JobRecord, keys: string[]) {
+  let best = "";
+  for (const key of keys) {
+    const v = job[key];
+    const text = v === null || v === undefined ? "" : String(v).trim();
+    if (text.length > best.length) best = text;
+  }
+  return best;
+}
+
 function numberValue(job: JobRecord, keys: string[]) {
   for (const key of keys) {
     const n = Number(job[key]);
@@ -60,7 +70,7 @@ function jobAddress(job: JobRecord) {
 
 function jobScope(job: JobRecord) {
   return (
-    value(job, [
+    longestValue(job, [
       "ItbPage3Description",
       "JobDescription",
       "Job_Description",
@@ -82,15 +92,16 @@ function tenantInfo(job: JobRecord) {
   const accessType = value(job, ["ItbTenantAccessType", "TenantAccessType"]);
   const status = value(job, ["ItbTenantContactStatus", "TenantContactStatus"]);
   const commonArea = accessType.toLowerCase().includes("common") || status.toLowerCase().includes("common");
+  const cleanName = !commonArea && name && name.toUpperCase() !== "T" ? name : "";
   return {
     apt,
-    name: name && name.toUpperCase() !== "T" ? name : "",
+    name: cleanName,
     phone,
     commonArea,
     label: commonArea ? "Public area" : "Tenant contact",
     summary: commonArea
       ? "No tenant appointment needed"
-      : [apt ? `Apt ${apt}` : "", name && name.toUpperCase() !== "T" ? name : "", phone || "Request contact from HPD"]
+      : [apt ? `Apt ${apt}` : "", cleanName, phone || "Request contact from HPD"]
           .filter(Boolean)
           .join(" · "),
   };
