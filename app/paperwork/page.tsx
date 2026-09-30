@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PDFDocument } from "pdf-lib";
 import { calendarDay } from "../../lib/job-priority";
+import { emailMediaCopies, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
 import { type FieldMedia, dataUrlToBytes, listFieldEvidence } from "../../lib/field-photo-store";
 import {
@@ -1650,7 +1651,7 @@ export default function PaperworkPage() {
         return;
       }
 
-      const includedMedia = evidenceRows.filter(mediaHasPackageBytes);
+      const includedMedia = await emailMediaCopies(evidenceRows.filter(mediaHasPackageBytes));
       const skippedMedia = evidenceRows.filter((media) => !mediaHasPackageBytes(media));
       if (skippedMedia.length) {
         setPdfStatus(`${skippedMedia.length} saved media file(s) are missing their original bytes. Package stopped. Restore or re-upload these files before generating the complete package.`);
@@ -1745,6 +1746,7 @@ export default function PaperworkPage() {
         path: `${folderName}/${entry.path}`,
         bytes: entry.bytes,
       })));
+      assertEmailPackageSize(zipBytes.byteLength);
       await saveFieldPacket({
         jobId: pdf.jobId,
         fileName: zipFileName,
@@ -1755,7 +1757,7 @@ export default function PaperworkPage() {
         imageCount: imageMedia.length,
         videoCount: videoMedia.length,
         packetType: "full_evidence_zip",
-        note: "Affidavit/invoice and attached media. Review before forwarding to HPD.",
+        note: "Email copy under 18 MB ZIP budget; photo copies reduced, videos retained. Review labels and paperwork before forwarding to HPD.",
       });
       const zipUrl = bytesToObjectUrl(zipBytes, "application/zip");
       const pdfUrl = bytesToObjectUrl(pdf.bytes, "application/pdf");
@@ -4030,12 +4032,12 @@ export default function PaperworkPage() {
           {!packagePreview ? (
             <div className="paperwork-generate-choice" data-hpd-smoke="paperwork-generate-choice" aria-label="Package media choice">
               <button className="paperwork-print" data-hpd-smoke="paperwork-generate-full-package" type="button" onClick={() => generateCompletePackage(true)} disabled={!canGeneratePackage}>
-                {packageJobLoading ? "Loading Job Data..." : "Generate Full Package"}
+                {packageJobLoading ? "Loading Job Data..." : "Generate Email Package"}
               </button>
               <button className="paperwork-secondary paperwork-pdf-only" data-hpd-smoke="paperwork-generate-pdf-only" type="button" onClick={() => generateCompletePackage(false)} disabled={!canGeneratePackage}>
                 Affidavit + Invoice Only
               </button>
-              <small>{packageJobLoading ? "Loading COA address and ITB page 3 description before package creation." : "Use the second button when you want no images or videos attached."}</small>
+              <small>{packageJobLoading ? "Loading COA address and ITB page 3 description before package creation." : "Email ZIP limit: 18 MB. Saved media stays unchanged."}</small>
             </div>
           ) : null}
           {packagePreview ? (

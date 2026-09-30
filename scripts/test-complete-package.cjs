@@ -27,6 +27,8 @@ async function run(outcome, awardDate, broken = false) {
   const saved = [], statuses = [], requested = [], forms = [];
   const media = ['before', 'after', 'general'].map((kind, i) => ({ id: `TEST-${i}`, jobId: 'TEST-PACKAGE', kind, mediaType: 'image', evidenceLabel: kind === 'general' ? 'Building exterior' : `${kind} TEST ONLY`, name: `TEST-ONLY-${kind}.png`, type: 'image/png', size: imageBytes.length, capturedAt: '2026-09-15T12:00:00Z', dataUrl: broken && i === 0 ? '' : `data:image/png;base64,${imageBytes.toString('base64')}`, stamped: false }));
   const context = { ...pdf, ...paperwork, calendarDay, console, Uint8Array, ArrayBuffer, TextEncoder, Date, Buffer, Blob, File, URL,
+    emailMediaCopies: async rows => rows,
+    assertEmailPackageSize: size => assert.ok(size > 0 && size <= 18000000),
     outcome, selectedId: 'TEST-PACKAGE', selectedJob: { OMO: 'TEST-PACKAGE', AwardDate: awardDate },
     form: { jobId: 'TEST-PACKAGE', address: '100 SAMPLE STREET', borough: 'Queens', location: 'APT 2A', amount: '100', bidAmount: '630', invoiceNo: 'TEST-INVOICE', signer: '', fieldDate: '2026-09-15', workStart: '2026-09-10', workComplete: '2026-09-15', firstAttempt: '2026-09-10', secondAttempt: '2026-09-15', description: 'TEST ONLY - SAMPLE REPAIR', notes: 'TEST ONLY', deniedName: 'SAMPLE PERSON', deniedRelationship: 'TENANT', deniedDescription: 'TEST ONLY', deniedPhone: '', affidavitReason: 'TEST ONLY' },
     fetch: async url => { requested.push(url); return { ok: true, arrayBuffer: async () => fs.readFileSync(path.join(root, 'public', url)) }; },
