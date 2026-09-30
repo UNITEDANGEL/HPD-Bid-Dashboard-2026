@@ -46,6 +46,15 @@ export function isPendingJob(job: Job): boolean {
   return !/\b(completed|complete|closed|archived|cancelled|canceled)\b/.test(normalized);
 }
 
+export function jobDateWarning(job: Job): string {
+  const award = calendarDay(jobDate(job, "award"));
+  const start = calendarDay(jobDate(job, "start"));
+  const finish = calendarDay(jobDate(job, "finish"));
+  if (finish !== null && start !== null && finish < start) return "Date review needed: contract finish precedes contract start. Verify the COA before relying on the overdue count.";
+  if (finish !== null && award !== null && finish < award) return "Date review needed: contract finish precedes award. This may be a reissued COA; verify the source before relying on the overdue count.";
+  return "";
+}
+
 export function matchesMapStatus(job: Job, scope: string) {
   return scope === "all" || (scope === "pending" ? isPendingJob(job) : !isPendingJob(job));
 }

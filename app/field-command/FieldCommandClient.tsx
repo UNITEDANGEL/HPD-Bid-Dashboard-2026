@@ -7,7 +7,7 @@ import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
 import type { RouteJob, RoutePoint } from "../../lib/day-route";
 import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointments";
-import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay } from "../../lib/job-priority";
+import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue } from "../../lib/job-queue";
 import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, suggestedPhotoKind } from "../../lib/field-next-action";
@@ -451,6 +451,19 @@ export default function FieldCommandClient() {
   const pointsRef = useRef<{ job: JobRecord; lng: number; lat: number }[]>([]);
   const renderMarkersRef = useRef<() => void>(() => {});
   const [jobs, setJobs] = useState<JobRecord[]>([]);
+  const [calendarDate, setCalendarDate] = useState(nyToday);
+
+  useEffect(() => {
+    const refreshDate = () => setCalendarDate(nyToday());
+    const timer = window.setInterval(refreshDate, 30000);
+    window.addEventListener("focus", refreshDate);
+    document.addEventListener("visibilitychange", refreshDate);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshDate);
+      document.removeEventListener("visibilitychange", refreshDate);
+    };
+  }, []);
   const [borough, setBorough] = useState<BoroughKey | "ALL">("ALL");
   const [status, setStatus] = useState("pending");
   const requestedJobLoaded = useRef(false);
@@ -574,7 +587,7 @@ export default function FieldCommandClient() {
       const days = jobPriority(job).days;
       return days !== null && days > 30;
     }).length,
-    [activeJobs]
+    [activeJobs, calendarDate]
   );
 
   const filteredJobs = useMemo(() => {
@@ -590,7 +603,7 @@ export default function FieldCommandClient() {
       }
       return true;
     });
-  }, [jobs, borough, status, search, daysBack, dateRange]);
+  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate]);
 
   useEffect(() => {
     if (!jobs.length || requestedJobLoaded.current) return;
@@ -938,7 +951,7 @@ export default function FieldCommandClient() {
     const point = jobLatLng(job); if (!point) return [];
     const queue = jobQueue(job);
     return [{id:jobId(job),address:jobAddress(job),borough:jobBorough(job),...point,days:jobPriority(job).days,pending:queue==='pending',closed:queue==='completed'||queue==='archived',appointment:job.Appointment as Appointment|undefined}];
-  }), [jobs]);
+  }), [jobs, calendarDate]);
 
   async function previewLocalRoute() {
     if (!mapRef.current || !pointsRef.current.length) return;
@@ -1454,6 +1467,7 @@ export default function FieldCommandClient() {
                 <span className="fc-card-maturity"><span>Maturity</span><strong>{maturityDate(selectedJob) || "Not available"}</strong></span>
                 <span className="fc-job-sheet-tag fc-age-tag" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>
               </div>
+              {jobDateWarning(selectedJob) && <p role="status">{jobDateWarning(selectedJob)}</p>}
               <div className="fc-reference-job-summary">
                 <dl>
                   <div><dt>Award date</dt><dd>{value(selectedJob, ["AwardDate", "awardDate"]) || "Not available"}</dd></div>
