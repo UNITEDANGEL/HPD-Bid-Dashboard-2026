@@ -15,6 +15,7 @@ export function nextFieldAction(stamps: FieldStamps, media: { before: number; af
   if (/refused|no access|completed|partial|appointment|scheduled|archived|cancelled/.test(outcome) && !/not completed/.test(outcome)) {
     return { key: "review", label: "Review outcome & paperwork" } as const;
   }
+  if (media.after > 0) return { key: "record", label: "Record outcome & prepare package" } as const;
   if (!stamps.arrived) return { key: "arrived", label: "I have arrived" } as const;
   if (!stamps.visit) return { key: "visit", label: "Start visit" } as const;
   if (!media.before && !stamps.work) return { key: "before", label: "Add before photos" } as const;
@@ -26,6 +27,13 @@ export function nextFieldAction(stamps: FieldStamps, media: { before: number; af
 // Opening the editor is navigation only: no guessed outcome, timestamps, or auto-generation.
 export function paperworkReviewHref(id: string, media = true) {
   return `/paperwork?${new URLSearchParams({ job: id, media: media ? "all" : "none" })}`;
+}
+
+export function paperworkGenerateHref(id: string, outcome: string) {
+  const outcomes: Record<string, string> = { WORK_COMPLETED: "work_completed", PARTIAL_WORK: "partial_work_completed",
+    NO_ACCESS_1_WAITING_72H: "no_access", REFUSED_ACCESS: "refused_access", WORK_COMPLETED_BY_OTHERS: "completed_by_others" };
+  if (!outcomes[outcome]) throw new Error("Save a paperwork outcome first.");
+  return `/paperwork?${new URLSearchParams({ job: id, media: "all", auto: "package", signature: "none", outcome: outcomes[outcome] })}`;
 }
 
 export const FIELD_OUTCOMES: Record<string, string> = {

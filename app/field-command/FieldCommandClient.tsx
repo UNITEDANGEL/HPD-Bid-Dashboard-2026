@@ -11,7 +11,7 @@ import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointme
 import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
-import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
+import { nextFieldAction, paperworkReviewHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
@@ -1185,7 +1185,7 @@ export default function FieldCommandClient() {
       if (draft.outcome) setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[draft.outcome] } }));
       setOutcomeDrafts((prev) => ({ ...prev, [id]: { outcome: "", note: "" } }));
       setOutcomeMessage("Saved on this device. Not archived or emailed.");
-      if (review) window.location.assign(paperworkReviewHref(id));
+      if (review) window.location.assign(paperworkGenerateHref(id, draft.outcome));
     } catch (error) {
       setOutcomeMessage(error instanceof Error ? error.message : "Save failed. Your draft is still here.");
     }
@@ -1238,6 +1238,7 @@ export default function FieldCommandClient() {
       await refreshMediaCounts(selectedJob);
       const unstamped = saved.filter(item => item.mediaType === "video" && item.stamped === false).length;
       setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}.${unstamped ? ` ${unstamped} video(s) saved as originals without burned-in labels; review before submitting.` : ""}` : "No image or video was saved.");
+      if (kind === "after" && saved.length) openOutcomePanel();
     } catch (error) {
       setMediaMessage(error instanceof Error ? error.message : "Media save failed.");
     } finally {
@@ -1551,6 +1552,7 @@ export default function FieldCommandClient() {
                 </dl>
               </div>
               <div className="fc-next-step">
+                {mediaMessage ? <p className="fc-save-message" role="status">{mediaMessage}</p> : null}
                 <div className="fc-evidence-stages" role="group" aria-label="Job photos and videos">
                   <button type="button" aria-expanded={mediaChoice === "before"} onClick={() => requestMediaUpload("before")} disabled={Boolean(mediaBusy)}><PhotosIcon /><span>Before<small>{counts.before} saved</small></span></button>
                   <button type="button" aria-expanded={mediaChoice === "after"} onClick={() => requestMediaUpload("after")} disabled={Boolean(mediaBusy)}><PhotosIcon /><span>After<small>{counts.after} saved</small></span></button>
@@ -1604,8 +1606,7 @@ export default function FieldCommandClient() {
               <section ref={outcomePanelRef} className="fc-outcome-panel" aria-label="Visit outcome">
                 <label>Outcome<select value={draft.outcome} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, outcome: event.target.value } }))}><option value="">Select outcome</option>{Object.entries(FIELD_OUTCOMES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
                 <label>Visit note<textarea value={draft.note} rows={3} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
-                {draft.outcome === "APPOINTMENT_REQUESTED" ? <button type="button" className="fc-next-action" onClick={openAppointment}>Set appointment details</button> : <button type="button" className="fc-next-action" onClick={() => saveVisitOutcome(selectedJob)} disabled={!draft.outcome && !draft.note.trim()}>Save visit record</button>}
-                {draft.outcome && draft.outcome !== "APPOINTMENT_REQUESTED" ? <button type="button" className="fc-save-review" onClick={() => saveVisitOutcome(selectedJob, true)}>Save &amp; review paperwork <span aria-hidden="true">&rarr;</span></button> : null}
+                {draft.outcome === "APPOINTMENT_REQUESTED" ? <button type="button" className="fc-next-action" onClick={openAppointment}>Set appointment details</button> : <button type="button" className="fc-next-action" onClick={() => saveVisitOutcome(selectedJob, Boolean(draft.outcome))} disabled={Boolean(mediaBusy) || (!draft.outcome && !draft.note.trim())}>{draft.outcome ? "Save outcome & generate package" : "Save note"}</button>}
                 <p role="status">{outcomeMessage || "Device storage only. Appointment requests are not confirmed bookings."}</p>
                 {Array.isArray(selectedJob.FieldVisitHistory) && selectedJob.FieldVisitHistory.length > 0 ? <details className="fc-visit-history"><summary>Visit history ({selectedJob.FieldVisitHistory.length})</summary><ol>{selectedJob.FieldVisitHistory.map((entry: { recordedAt?: string; outcome?: string; note?: string }, index: number) => <li key={index}><time>{entry.recordedAt ? formatSavedTime(entry.recordedAt) : "Date not recorded"}</time><strong>{FIELD_OUTCOMES[entry.outcome || ""] || "Visit note"}</strong><p>{entry.note}</p></li>)}</ol></details> : null}
               </section>

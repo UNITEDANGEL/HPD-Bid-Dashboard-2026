@@ -43,3 +43,28 @@ assert.throws(() => fieldOutcomePatch(job, '', '', '2026-09-23T16:00:00Z'));
 assert.throws(() => fieldOutcomePatch(job, 'INVALID', '', '2026-09-23T16:00:00Z'));
 assert.equal(fieldOutcomePatch({ NoAccessFirstAttemptAt: 'previous' }, 'NO_ACCESS_1_WAITING_72H', '', '2026-09-23T16:00:00Z').NoAccessFirstAttemptAt, undefined);
 console.log('PASS: guided steps, six outcomes, append-only visit history, no inferred completion/archival, review-only links');
+assert.equal(next({}, { before: 1, after: 1 }).key, 'record');
+for (const outcome of Object.keys(FIELD_OUTCOMES).filter(value => value !== 'APPOINTMENT_REQUESTED')) {
+  const link = new URL(mod.exports.paperworkGenerateHref('TEST 1', outcome), 'https://example.test');
+  assert.equal(link.searchParams.get('auto'), 'package');
+  assert.equal(link.searchParams.get('signature'), 'none');
+  assert.notEqual(link.searchParams.get('outcome'), 'pending');
+}
+assert.throws(() => mod.exports.paperworkGenerateHref('TEST', 'APPOINTMENT_REQUESTED'));
+const page = fs.readFileSync('app/paperwork/page.tsx', 'utf8');
+const start = page.indexOf('  async function markPackageGenerated(');
+const end = page.indexOf('  async function generateAffidavitPdf(', start);
+const marker = ts.transpileModule(page.slice(start, end) + '\nthis.mark = markPackageGenerated;', { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+const patches = [];
+const context = { saveLocalPackageOverride: (id, patch) => patches.push(patch), HPD_STATUS_WORKER_URL: 'https://test.invalid', fetch: async () => ({ok:true}) };
+new Function(`with(this) { ${marker} }`).call(context);
+(async () => {
+  await context.mark('TEST');
+  assert.equal(patches[0].ArchivedFromMap, undefined);
+  assert.equal(patches[0].PackageReviewStatus, 'Pending review');
+  await context.mark('TEST', true);
+  assert.equal(patches[1].ArchivedFromMap, true);
+  assert.equal(patches[1].PackageReviewStatus, 'Approved');
+  assert.ok(!page.includes('else if (shouldAutoGeneratePackage) nextOutcome = "work_completed"'));
+  console.log('PASS: explicit unsigned outcome generation and archive only after approval');
+})().catch(error => { console.error(error); process.exitCode=1; });

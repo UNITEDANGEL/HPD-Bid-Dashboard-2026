@@ -1111,6 +1111,8 @@ export default function PaperworkPage() {
   const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
   const packageBusyRef = useRef(false);
   const [packageBusy, setPackageBusy] = useState(false);
+  const [packageReviewed, setPackageReviewed] = useState(false);
+  const [packageApproved, setPackageApproved] = useState(false);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
   const [pdfStatus, setPdfStatus] = useState("");
@@ -1183,7 +1185,6 @@ export default function PaperworkPage() {
     if (nextOutcome === "pending") {
       if (packageParam.includes("no")) nextOutcome = "no_access";
       else if (packageParam.includes("work")) nextOutcome = "work_completed";
-      else if (shouldAutoGeneratePackage) nextOutcome = "work_completed";
     }
 
     setSelectedId(job);
@@ -1258,6 +1259,8 @@ export default function PaperworkPage() {
   }, [autoGeneratePackage, selectedId, jobs.length, selectedJob, form.jobId, includePackageMedia, includePackageSignature, outcome]);
 
   function clearPackagePreview() {
+    setPackageReviewed(false);
+    setPackageApproved(false);
     setPackagePreview(null);
     setPackagePreviewOpen(false);
     setFullScreenPdfOpen(false);
@@ -1303,17 +1306,17 @@ export default function PaperworkPage() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  async function markPackageGenerated(jobId: string) {
+  async function markPackageGenerated(jobId: string, approved = false) {
     if (!jobId) return "Package generated.";
 
     const generatedAt = new Date().toISOString();
     const patch = {
-      ArchivedFromMap: true,
-      archivedFromMap: true,
+      ...(approved ? { ArchivedFromMap: true, archivedFromMap: true } : {}),
+      PackageReviewStatus: approved ? "Approved" : "Pending review",
       PackageGeneratedAt: generatedAt,
       packageGeneratedAt: generatedAt,
-      PackageReadyMessage: "Invoice package generated. Send to RER.",
-      packageReadyMessage: "Invoice package generated. Send to RER.",
+      PackageReadyMessage: approved ? "Reviewed and archived. Not emailed." : "Draft saved. Review affidavit, invoice and media before approval.",
+      packageReadyMessage: approved ? "Reviewed and archived. Not emailed." : "Draft saved. Review affidavit, invoice and media before approval.",
     };
 
     saveLocalPackageOverride(jobId, patch);
@@ -1326,10 +1329,10 @@ export default function PaperworkPage() {
       });
 
       if (!response.ok) throw new Error(await response.text());
-      return "Archived on map. Send to RER.";
+      return approved ? "Approved and archived. Not emailed." : "Draft saved for review. Not archived or emailed.";
     } catch (error) {
       console.error(error);
-      return "Downloaded. Archived on this device; server sync needs retry.";
+      return approved ? "Approved on this device; server sync needs retry. Not emailed." : "Draft saved on this device; server sync needs retry. Not archived or emailed.";
     }
   }
 
@@ -4054,7 +4057,7 @@ export default function PaperworkPage() {
             <div className="paperwork-package-review" data-hpd-smoke="paperwork-package-review">
               <div className="package-created-head">
                 <div>
-                  <span className="package-kicker">Package ready</span>
+                  <span className="package-kicker">{packageApproved ? "Package approved" : "Draft package saved"}</span>
                   <h3>{packagePreview.jobId}</h3>
                   <p>{packagePreview.note}</p>
                 </div>
@@ -4074,6 +4077,13 @@ export default function PaperworkPage() {
                   <strong>Share / Save</strong>
                 </span>
               </div>
+              <label><input type="checkbox" checked={packageReviewed} disabled={packageBusy || packageApproved} onChange={event => setPackageReviewed(event.target.checked)} /> I reviewed all affidavit/invoice pages and media, including required signatures.</label>
+              <button type="button" className="paperwork-secondary" disabled={!packageReviewed || packageBusy || packageApproved} onClick={async () => {
+                setPackageBusy(true);
+                try { setPdfStatus(await markPackageGenerated(packagePreview.jobId, true)); setPackageApproved(true); }
+                catch (error) { setPdfStatus(error instanceof Error ? error.message : "Approval could not be saved."); }
+                finally { setPackageBusy(false); }
+              }}>{packageApproved ? "Approved and archived" : "Approve package & archive job"}</button>
               {packagePreviewOpen ? (
                 <div className="package-preview-panel" data-hpd-smoke="paperwork-package-preview-panel" ref={packagePreviewPanelRef}>
                   <div className="package-pdf-preview-card">
