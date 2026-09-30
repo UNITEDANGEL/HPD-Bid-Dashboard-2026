@@ -1945,7 +1945,12 @@
 .fc-card-maturity { display: flex; gap: 8px; align-items: baseline; font-size: 12px; line-height: 20px; color: #bbc3c8; }
 .fc-card-maturity strong { color: #f3f5f5; font-weight: 600; font-variant-numeric: tabular-nums; }
 .fc-sheet-expanded .fc-card-maturity { display: none; }
-.fc-app.fc-reference.fc-clean-streets .fc-quick-actions { margin: 6px 0; gap: 8px; }
+.fc-app.fc-reference.fc-clean-streets .fc-quick-actions { margin: 6px 0; gap: 8px; grid-template-columns: repeat(3,minmax(0,1fr)); }
+.fc-evidence-stages { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin: 6px 0; }
+.fc-evidence-stages button { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px 12px; border: 1px solid #6e9485; border-radius: 6px; background: #223b32; color: #e7f5ee; text-align: left; font: inherit; }
+.fc-evidence-stages button[aria-expanded="true"] { border-color: #a9e8c5; background: #315746; }
+.fc-evidence-stages svg { width: 20px; height: 20px; flex-shrink: 0; }
+.fc-evidence-stages small { display: block; color: #b5cbbf; font-size: 11px; }
 .fc-app.fc-reference.fc-clean-streets .fc-quick-action { min-height: 48px; padding: 0; gap: 3px; }
 .fc-app.fc-reference.fc-clean-streets .fc-quick-action svg { width: 36px; height: 36px; padding: 8px; }
 .fc-app.fc-reference.fc-clean-streets .fc-quick-action.is-call svg { background: #203e36; color: #a9dfbf; }

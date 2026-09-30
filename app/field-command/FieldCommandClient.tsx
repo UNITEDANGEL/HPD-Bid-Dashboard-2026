@@ -11,7 +11,7 @@ import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointme
 import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
-import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, suggestedPhotoKind } from "../../lib/field-next-action";
+import { nextFieldAction, paperworkReviewHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
@@ -1551,6 +1551,10 @@ export default function FieldCommandClient() {
                 </dl>
               </div>
               <div className="fc-next-step">
+                <div className="fc-evidence-stages" role="group" aria-label="Job photos and videos">
+                  <button type="button" aria-expanded={mediaChoice === "before"} onClick={() => requestMediaUpload("before")} disabled={Boolean(mediaBusy)}><PhotosIcon /><span>Before<small>{counts.before} saved</small></span></button>
+                  <button type="button" aria-expanded={mediaChoice === "after"} onClick={() => requestMediaUpload("after")} disabled={Boolean(mediaBusy)}><PhotosIcon /><span>After<small>{counts.after} saved</small></span></button>
+                </div>
                 {mediaChoice ? <div ref={mediaChoiceRef} className="fc-photo-choice" role="group" aria-label={`${mediaChoice} photo source`}>
                   <div className="fc-photo-choice-heading"><strong>{mediaChoice === "before" ? "Before work" : "After work"}</strong><button type="button" aria-label="Cancel photo selection" onClick={() => setMediaChoice(null)}>&times;</button></div>
                   <div className="fc-photo-source-actions">
@@ -1560,14 +1564,13 @@ export default function FieldCommandClient() {
                     <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-library")}>Add {mediaChoice} videos</button>
                   </div>
                 </div> : null}
-                {next.key === "review" ? (
+                {next.key === "before" || next.key === "after" ? null : next.key === "review" ? (
                   <a href={paperworkReviewHref(id)} className="fc-next-action">{next.label}<span aria-hidden="true">&rarr;</span></a>
                 ) : next.key === "record" ? (
                   <button type="button" className="fc-next-action" onClick={openOutcomePanel}>{next.label}<span aria-hidden="true">&rarr;</span></button>
                 ) : (
                   <button type="button" className="fc-next-action" disabled={!workflowLoaded || Boolean(mediaBusy)} onClick={() => {
-                    if (next.key === "before" || next.key === "after") requestMediaUpload(next.key);
-                    else saveWorkflowStamp(selectedJob, next.key, next.key === "work" ? "Work Started" : undefined);
+                    saveWorkflowStamp(selectedJob, next.key, next.key === "work" ? "Work Started" : undefined);
                   }}>{mediaBusy ? "Saving media..." : next.label}<span aria-hidden="true">&rarr;</span></button>
                 )}
                 {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
@@ -1585,9 +1588,6 @@ export default function FieldCommandClient() {
                     <CallIcon /><span>No phone</span>
                   </span>
                 )}
-                <button type="button" className="fc-quick-action is-photos" aria-label={`Add ${suggestedPhotoKind(stamps)} photos`} onClick={() => requestMediaUpload(suggestedPhotoKind(stamps))}>
-                  <PhotosIcon /><span>{suggestedPhotoKind(stamps) === "after" ? "After photos" : "Before photos"}</span>
-                </button>
                 <Link className="fc-quick-action is-documents" href={`/jobs/${id}`}>
                   <DocumentsIcon /><span>Documents</span>
                 </Link>
@@ -1691,25 +1691,13 @@ export default function FieldCommandClient() {
                 <input ref={videoCameraInputRef} type="file" accept="video/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
                 <input ref={videoLibraryInputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
                 <div className="fc-media-head">
-                  <strong>Media + Package</strong>
+                  <strong>Package</strong>
                   <span>{counts.total} saved</span>
                 </div>
                 <div className="fc-media-grid">
-                  <button type="button" onClick={() => requestMediaUpload("before")} disabled={Boolean(mediaBusy)}>
-                    <b>Before photos / videos</b>
-                    <small>{mediaBusy === "before" ? "Saving..." : `${counts.before} saved`}</small>
-                  </button>
-                  <button type="button" onClick={() => requestMediaUpload("after")} disabled={Boolean(mediaBusy)}>
-                    <b>After photos / videos</b>
-                    <small>{mediaBusy === "after" ? "Saving..." : `${counts.after} saved`}</small>
-                  </button>
                   <a href={paperworkReviewHref(id, true)}>
                     <b>Review package</b>
                     <small>Affidavit + invoice</small>
-                  </a>
-                  <a href={paperworkReviewHref(id, false)}>
-                    <b>Review documents</b>
-                    <small>Without media</small>
                   </a>
                 </div>
                 <p>{mediaMessage || "Media is saved on this device and read by the paperwork package screen."}</p>

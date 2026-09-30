@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PDFDocument } from "pdf-lib";
 import { calendarDay } from "../../lib/job-priority";
-import { emailMediaCopies, assertEmailPackageSize } from "../../lib/email-package";
+import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
 import { type FieldMedia, dataUrlToBytes, listFieldEvidence } from "../../lib/field-photo-store";
 import {
@@ -1109,6 +1109,8 @@ export default function PaperworkPage() {
   const [queryWorkflowPatch, setQueryWorkflowPatch] = useState<Record<string, unknown>>({});
   const [loadedQuery, setLoadedQuery] = useState(false);
   const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
+  const packageBusyRef = useRef(false);
+  const [packageBusy, setPackageBusy] = useState(false);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
   const [pdfStatus, setPdfStatus] = useState("");
@@ -1222,7 +1224,7 @@ export default function PaperworkPage() {
   }, [jobs, selectedId, queryWorkflowPatch]);
   const selectedJobId = selectedJob ? getJobId(selectedJob) : "";
   const packageJobLoading = Boolean(selectedId && (!selectedJob || form.jobId !== selectedJobId));
-  const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading);
+  const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading && !packageBusy);
   const mapBackHref = selectedId ? `/map/?omo=${encodeURIComponent(selectedId)}&view=all&map=1` : "/map/?view=all&map=1";
 
   useEffect(() => {
@@ -1601,6 +1603,7 @@ export default function PaperworkPage() {
   }
 
   async function generateCompletePackage(includeMediaOverride = includePackageMedia, includeSignatureOverride = includePackageSignature) {
+    if (packageBusyRef.current) return;
     const activeOutcome = outcome;
     const activeJob = selectedJob;
     if (selectedId && !activeJob) {
@@ -1645,13 +1648,15 @@ export default function PaperworkPage() {
     );
 
     try {
+      packageBusyRef.current = true;
+      setPackageBusy(true);
       const evidenceRows = includeMedia ? await listFieldEvidence(jobId) : [];
       if (!evidenceRows.length && !allowPdfOnlyPackage) {
         setPdfStatus("No saved images or videos were found for this OMO on this device. Capture evidence first, then Generate Package.");
         return;
       }
 
-      const includedMedia = await emailMediaCopies(evidenceRows.filter(mediaHasPackageBytes));
+      let includedMedia = await emailMediaCopies(evidenceRows.filter(mediaHasPackageBytes));
       const skippedMedia = evidenceRows.filter((media) => !mediaHasPackageBytes(media));
       if (skippedMedia.length) {
         setPdfStatus(`${skippedMedia.length} saved media file(s) are missing their original bytes. Package stopped. Restore or re-upload these files before generating the complete package.`);
@@ -1681,6 +1686,8 @@ export default function PaperworkPage() {
         includeSignature,
       });
       if (!pdf) return;
+
+      includedMedia = await fitEmailVideos(includedMedia, pdf.bytes.byteLength + 64_000 + includedMedia.length * 2048, setPdfStatus);
 
       const imageMedia = includedMedia.filter((media) => media.mediaType === "image");
       const videoMedia = includedMedia.filter((media) => media.mediaType === "video");
@@ -1757,7 +1764,7 @@ export default function PaperworkPage() {
         imageCount: imageMedia.length,
         videoCount: videoMedia.length,
         packetType: "full_evidence_zip",
-        note: "Email copy under 18 MB ZIP budget; photo copies reduced, videos retained. Review labels and paperwork before forwarding to HPD.",
+        note: "Email copy under 18 MB ZIP budget; media compressed when needed, originals retained separately. Review labels, video/audio and paperwork before forwarding to HPD.",
       });
       const zipUrl = bytesToObjectUrl(zipBytes, "application/zip");
       const pdfUrl = bytesToObjectUrl(pdf.bytes, "application/pdf");
@@ -1836,6 +1843,9 @@ export default function PaperworkPage() {
     } catch (error) {
       console.error(error);
       setPdfStatus(error instanceof Error ? error.message : "Could not generate complete package.");
+    } finally {
+      packageBusyRef.current = false;
+      setPackageBusy(false);
     }
   }
 
