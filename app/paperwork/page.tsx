@@ -1496,6 +1496,10 @@ export default function PaperworkPage() {
         .filter(Boolean)
         .join(", ");
       setAffidavitText("Building Address", upper(fullBuildingAddress), fullBuildingAddress.length > 55 ? 10 : 12);
+      clearFieldBackground(affidavitForm, "Building Address");
+      try {
+        affidavitForm.getTextField("Building Address").disableMultiline();
+      } catch {}
       setAffidavitText("State", "NEW YORK");
       setAffidavitText("County Of", "QUEENS", 10);
       setAffidavitText("Type or Print Name", signer.toUpperCase());
