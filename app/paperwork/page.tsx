@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PDFDocument, StandardFonts, PDFName } from "pdf-lib";
+import { dateInputValue, noAccessAttemptProblem, noTelephoneNote } from "../../lib/no-access";
+import { tenantContactInfo } from "../../lib/tenantContact";
 import { calendarDay } from "../../lib/job-priority";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
@@ -52,6 +54,11 @@ type PackageForm = {
   deniedRelationship: string;
   deniedDescription: string;
   deniedPhone: string;
+  tenantPhone: string;
+  phone1Date: string;
+  phone2Date: string;
+  phoneNote: string;
+  partialReason: string;
   workStart: string;
   workComplete: string;
   signer: string;
@@ -300,6 +307,11 @@ function initialForm(): PackageForm {
     deniedRelationship: "",
     deniedDescription: "",
     deniedPhone: "",
+    tenantPhone: "",
+    phone1Date: "",
+    phone2Date: "",
+    phoneNote: "",
+    partialReason: "",
     workStart: "",
     workComplete: "",
     signer: DEFAULT_PACKAGE_SIGNER,
@@ -338,6 +350,13 @@ function refusedAccessRelationship(job: JobRecord, outcome: PaperworkOutcome) {
 
 function refusedAccessDescription(value: string) {
   return String(value || "").trim();
+}
+
+function noAccessDetailsProblem(form: PackageForm) {
+  const attemptProblem = noAccessAttemptProblem(form.firstAttempt, form.secondAttempt);
+  if (attemptProblem) return attemptProblem;
+  if (form.tenantPhone && !form.phone1Date) return `Enter the date you called the tenant at ${form.tenantPhone} (item 4b).`;
+  return "";
 }
 
 function refusedAccessNeedsDescription(outcome: PaperworkOutcome, form: PackageForm) {
@@ -414,6 +433,8 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   const bidAmount = formatCurrency(getJobAmount(job));
   const chargeAmount = isNoWorkOutcome(outcome) ? formatCurrency(noWorkServiceChargeForJob(job)) : bidAmount;
 
+  const tenant = tenantContactInfo(job);
+
   return {
     ...initialForm(),
     invoiceNo: defaultPaperworkInvoiceNo(jobId),
@@ -433,6 +454,8 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     deniedRelationship,
     deniedDescription,
     deniedPhone,
+    tenantPhone: tenant.phone,
+    phoneNote: tenant.phone ? "" : noTelephoneNote(tenant.accessType === "common_area", tenant.apartment),
     workStart: displayDate(actualStartAt),
     workComplete: displayDate(outcome === "work_completed" || outcome === "partial_work_completed" ? workCompleteAt : noWorkCompleteAt),
     sourceStatus,
@@ -464,6 +487,8 @@ function formWithLoadedJobData(current: PackageForm, job: JobRecord, outcome: Pa
     workStart: current.workStart || pulled.workStart,
     workComplete: current.workComplete || pulled.workComplete,
     sourceStatus: current.sourceStatus || pulled.sourceStatus,
+    tenantPhone: current.tenantPhone || pulled.tenantPhone,
+    phoneNote: current.phoneNote || pulled.phoneNote,
     description: isFallbackPackageDescription(current.description) ? pulled.description : current.description,
     notes: current.notes || pulled.notes,
   };
@@ -1379,6 +1404,17 @@ export default function PaperworkPage() {
       return null;
     }
 
+    if (activeOutcome === "partial_work_completed" && !activeForm.partialReason.trim()) {
+      setPdfStatus("Enter why the work was only partially completed (item 6) before generating the package.");
+      return null;
+    }
+
+    const noAccessProblem = activeOutcome === "no_access" ? noAccessDetailsProblem(activeForm) : "";
+    if (noAccessProblem) {
+      setPdfStatus(noAccessProblem);
+      return null;
+    }
+
     setPdfStatus(downloadPdf ? "Preparing affidavit PDF..." : "Preparing invoice/affidavit for package...");
 
     try {
@@ -1543,7 +1579,7 @@ export default function PaperworkPage() {
         showUnderline(affidavitForm, "Complete Date");
         setAffidavitText(
           "Partial Reason",
-          activeOutcome === "partial_work_completed" ? activeForm.notes || "" : "",
+          activeOutcome === "partial_work_completed" ? upper(activeForm.partialReason) : "",
           9
         );
         setAffidavitText("Partial Amount", activeOutcome === "partial_work_completed" ? chargeAmount : "");
@@ -1557,7 +1593,7 @@ export default function PaperworkPage() {
           setAffidavitText("Denied Name", upper(activeForm.deniedName), 9);
           setAffidavitText("Denied Relationship", upper(activeForm.deniedRelationship), 9);
           setAffidavitText("Denied Description", upper(activeForm.deniedDescription), 9);
-          setAffidavitText("Denied Actions", activeForm.notes || "", 9);
+          setAffidavitText("Denied Actions", activeForm.deniedName ? upper(activeForm.partialReason) : "", 9);
         }
 
         setInvoiceText("START DATE", activeOutcome === "work_completed" ? workStart : "");
@@ -1583,8 +1619,17 @@ export default function PaperworkPage() {
           setAffidavitText("Inaccessible Reason", noWorkReason || "NO ACCESS TO MAKE REPAIRS", 9);
           setAffidavitText("Attempt1 Date", firstAttempt, 9);
           setAffidavitText("Attempt2 Date", secondAttempt, 9);
-          setAffidavitText("Phone1 Date", "", 9);
-          setAffidavitText("Phone2 Date", "", 9);
+          if (activeForm.tenantPhone) {
+            setAffidavitText("Phone1 Date", displayDate(activeForm.phone1Date), 9);
+            setAffidavitText("Phone2 Date", displayDate(activeForm.phone2Date), 9);
+          } else {
+            // No number to call: the note spans the whole "___ and ___" line.
+            const phoneNote = upper(activeForm.phoneNote || noTelephoneNote(false));
+            widenField(affidavitForm, "Phone1 Date", 150);
+            setAffidavitText("Phone1 Date", phoneNote, fitFontSize(affidavitForm, "Phone1 Date", phoneNote, affidavitBoldFont, 9));
+            showUnderline(affidavitForm, "Phone1 Date");
+            setAffidavitText("Phone2 Date", "", 9);
+          }
         }
 
         if (activeOutcome === "completed_by_others") {
@@ -4017,6 +4062,108 @@ export default function PaperworkPage() {
               </label>
             </div>
           ) : null}
+
+          {outcome === "work_completed" || outcome === "partial_work_completed" ? (
+            <div
+              className={`refused-access-required package-charge-card ${outcome === "partial_work_completed" && !form.partialReason.trim() ? "needs-description" : "ready"}`}
+              data-hpd-smoke="paperwork-charge-card"
+            >
+              <div>
+                <span>{outcome === "partial_work_completed" ? "Partial Work Charge" : "Work Completed Charge"}</span>
+                <strong>Charge for this package</strong>
+                <small>Bid amount {form.bidAmount || "not listed"}. Change the charge if it differs from the bid.</small>
+              </div>
+              <label className="paperwork-field">
+                Charge Amount
+                <input
+                  data-hpd-smoke="paperwork-charge-amount"
+                  inputMode="decimal"
+                  value={form.amount}
+                  onChange={(event) => update("amount", event.target.value)}
+                  placeholder={form.bidAmount || "$0.00"}
+                />
+              </label>
+              {outcome === "partial_work_completed" ? (
+                <label className="paperwork-field">
+                  Why was the work only partially completed? (item 6)
+                  <textarea
+                    data-hpd-smoke="paperwork-partial-reason"
+                    value={form.partialReason}
+                    onChange={(event) => update("partialReason", event.target.value)}
+                    placeholder="Example: ADDITIONAL WORK WAS NEEDED"
+                  />
+                </label>
+              ) : null}
+            </div>
+          ) : null}
+
+          {outcome === "no_access" ? (() => {
+            const problem = noAccessDetailsProblem(form);
+            return (
+              <div className={`refused-access-required no-access-card ${problem ? "needs-description" : "ready"}`} data-hpd-smoke="paperwork-no-access-card">
+                <div>
+                  <span>No Access - Items 4a and 4b</span>
+                  <strong>{problem ? "Attempt details needed" : "Attempt details ready"}</strong>
+                  <small data-hpd-smoke="paperwork-no-access-status">{problem || "Attempts are at least 72 hours apart."}</small>
+                </div>
+                <div className="paperwork-grid">
+                  <label className="paperwork-field">
+                    1st Attempt
+                    <input
+                      type="date"
+                      data-hpd-smoke="paperwork-attempt-1"
+                      value={dateInputValue(form.firstAttempt)}
+                      onChange={(event) => update("firstAttempt", displayDate(event.target.value))}
+                    />
+                  </label>
+                  <label className="paperwork-field">
+                    2nd Attempt (72+ hrs later)
+                    <input
+                      type="date"
+                      data-hpd-smoke="paperwork-attempt-2"
+                      value={dateInputValue(form.secondAttempt)}
+                      onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
+                    />
+                  </label>
+                </div>
+                {form.tenantPhone ? (
+                  <>
+                    <small>Tenant phone {form.tenantPhone}. Enter the dates you called.</small>
+                    <div className="paperwork-grid">
+                      <label className="paperwork-field">
+                        1st Call
+                        <input
+                          type="date"
+                          data-hpd-smoke="paperwork-call-1"
+                          value={dateInputValue(form.phone1Date)}
+                          onChange={(event) => update("phone1Date", displayDate(event.target.value))}
+                        />
+                      </label>
+                      <label className="paperwork-field">
+                        2nd Call
+                        <input
+                          type="date"
+                          data-hpd-smoke="paperwork-call-2"
+                          value={dateInputValue(form.phone2Date)}
+                          onChange={(event) => update("phone2Date", displayDate(event.target.value))}
+                        />
+                      </label>
+                    </div>
+                  </>
+                ) : (
+                  <label className="paperwork-field">
+                    No phone number - prints on item 4b
+                    <input
+                      data-hpd-smoke="paperwork-phone-note"
+                      value={form.phoneNote}
+                      onChange={(event) => update("phoneNote", event.target.value)}
+                      placeholder={noTelephoneNote(true)}
+                    />
+                  </label>
+                )}
+              </div>
+            );
+          })() : null}
 
           <details className="paperwork-advanced">
             <summary>Review pulled JSON fields</summary>

@@ -25,6 +25,17 @@ try {
     page.on("pageerror", (error) => errors.push(String(error)));
 
     await page.goto(`${baseUrl}/paperwork?job=${job}&outcome=${outcome}`, { waitUntil: "networkidle" });
+    if (outcome === "no_access") {
+      // Attempts closer than 72 hours, or a missing call date, must block generation.
+      await page.fill('[data-hpd-smoke="paperwork-attempt-1"]', "2026-10-01");
+      await page.fill('[data-hpd-smoke="paperwork-attempt-2"]', "2026-10-02");
+      await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
+      await page.getByText("at least 72 hours apart").first().waitFor({ timeout: 10000 });
+      await page.fill('[data-hpd-smoke="paperwork-attempt-2"]', "2026-10-04");
+      if (await page.locator('[data-hpd-smoke="paperwork-call-1"]').count()) {
+        await page.fill('[data-hpd-smoke="paperwork-call-1"]', "2026-09-30");
+      }
+    }
     await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
     await page.screenshot({ path: path.join(outDir, `${job}-${outcome}.png`) });
