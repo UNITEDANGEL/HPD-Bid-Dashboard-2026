@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PDFDocument, StandardFonts, PDFName, TextAlignment } from "pdf-lib";
+import { PDFDocument, StandardFonts, PDFName } from "pdf-lib";
 import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate } from "../../lib/no-access";
 import { tenantContactInfo } from "../../lib/tenantContact";
 import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
+import { drawInvoicePage } from "../../lib/invoice-pdf";
 import { calendarDay } from "../../lib/job-priority";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
@@ -72,18 +73,10 @@ type PackageForm = {
 
 const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-performed-affidavit.pdf";
 const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-performed-affidavit.pdf";
-const INVOICE_TEMPLATE = "/templates/invoice-page.pdf";
 const CONTRACTOR_NAME = "UNITED ANGEL CONSTRUCTION CORP";
 const DEFAULT_PACKAGE_SIGNER = "JOTJAGRAJ SINGH";
 const AFFIDAVIT_NOTARY_COUNTY = "QUEENS";
 const REFUSED_ACCESS_DESCRIPTION_EXAMPLE = "MALE, TALL, DARK HAIR";
-const INVOICE_APT_LOCATION_WIDGET = { x: 131.695, y: 550.582, shiftY: 5 } as const;
-const NO_ACCESS_AFFIDAVIT_DATE_WIDGETS = [
-  { field: "START DATE", x: 466.421, y: 299.317, shiftY: 4 },
-  { field: "START DATE", x: 483.644, y: 284.65, shiftY: 4 },
-  { field: "COMPLETE DATE", x: 144.282, y: 285.36, shiftY: 4 },
-  { field: "COMPLETE DATE", x: 143.989, y: 271.614, shiftY: 4 },
-] as const;
 
 type ZipEntry = {
   path: string;
@@ -171,56 +164,6 @@ type GeneratePdfOptions = {
   outcomeOverride?: PaperworkOutcome;
   includeSignature?: boolean;
 };
-
-function shiftInvoiceAptLocationWidget(pdfForm: any) {
-  try {
-    const field = pdfForm.getTextField("Apt #");
-    const widgets = field?.acroField?.getWidgets?.() || [];
-
-    widgets.forEach((widget: any) => {
-      const rect = widget?.getRectangle?.();
-      if (!rect) return;
-
-      const isInvoiceAptLocation =
-        Math.abs(rect.x - INVOICE_APT_LOCATION_WIDGET.x) < 2 &&
-        Math.abs(rect.y - INVOICE_APT_LOCATION_WIDGET.y) < 3;
-      if (!isInvoiceAptLocation) return;
-
-      widget.setRectangle({
-        x: rect.x,
-        y: rect.y + INVOICE_APT_LOCATION_WIDGET.shiftY,
-        width: rect.width,
-        height: rect.height,
-      });
-    });
-  } catch {}
-}
-
-function shiftNoAccessAffidavitDateWidgets(pdfForm: any) {
-  NO_ACCESS_AFFIDAVIT_DATE_WIDGETS.forEach((target) => {
-    try {
-      const field = pdfForm.getTextField(target.field);
-      const widgets = field?.acroField?.getWidgets?.() || [];
-
-      widgets.forEach((widget: any) => {
-        const rect = widget?.getRectangle?.();
-        if (!rect) return;
-
-        const isTargetWidget =
-          Math.abs(rect.x - target.x) < 2 &&
-          Math.abs(rect.y - target.y) < 3;
-        if (!isTargetWidget) return;
-
-        widget.setRectangle({
-          x: rect.x,
-          y: rect.y + target.shiftY,
-          width: rect.width,
-          height: rect.height,
-        });
-      });
-    } catch {}
-  });
-}
 
 function asArray(value: unknown): JobRecord[] {
   if (Array.isArray(value)) return value as JobRecord[];
@@ -735,7 +678,7 @@ function pdfLocationFontSize(value: string) {
   return 10;
 }
 
-const NO_WORK_MATERIALS: InvoiceMaterial[] = [{ name: "TRASH BAG", qty: "" }];
+const NO_WORK_MATERIALS: InvoiceMaterial[] = [{ name: "TRASH BAG", qty: "1" }];
 
 // Partial work lists materials for the part that was done; full work reads the whole scope.
 function packageMaterials(form: PackageForm, outcome: PaperworkOutcome): InvoiceMaterial[] {
@@ -1450,46 +1393,39 @@ export default function PaperworkPage() {
     setPdfStatus(downloadPdf ? "Preparing affidavit PDF..." : "Preparing invoice/affidavit for package...");
 
     try {
-      const [affidavitResponse, invoiceResponse] = await Promise.all([
-        fetch(templateUrl, { cache: "no-store" }),
-        fetch(INVOICE_TEMPLATE, { cache: "no-store" }),
-      ]);
+      const affidavitResponse = await fetch(templateUrl, { cache: "no-store" });
       if (!affidavitResponse.ok) throw new Error(`Template returned HTTP ${affidavitResponse.status}`);
-      if (!invoiceResponse.ok) throw new Error(`Invoice template returned HTTP ${invoiceResponse.status}`);
 
       const affidavitDoc = await PDFDocument.load(await affidavitResponse.arrayBuffer());
-      const invoiceDoc = await PDFDocument.load(await invoiceResponse.arrayBuffer());
       const affidavitForm = affidavitDoc.getForm();
-      const invoiceForm = invoiceDoc.getForm();
       const affidavitBoldFont = await affidavitDoc.embedFont(StandardFonts.HelveticaBold);
-      const invoiceBoldFont = await invoiceDoc.embedFont(StandardFonts.HelveticaBold);
-      shiftInvoiceAptLocationWidget(invoiceForm);
-      if (!useWorkTemplate && activeOutcome === "no_access") {
-        shiftNoAccessAffidavitDateWidgets(invoiceForm);
-      }
 
-      const setInvoiceText = (name: string, value: string, fontSize = name === "Work Description" ? 9 : 11) => {
-        try {
-          const field = invoiceForm.getTextField(name);
-          field.enableMultiline();
-          field.setFontSize(fontSize);
-          field.setText(value || "");
-        } catch {}
+      // The invoice is drawn fresh (lib/invoice-pdf.ts); these collect its values by the old template field names.
+      const invoiceValues: Record<string, string> = {};
+      const invoiceChecks = new Set<string>();
+      const setInvoiceText = (name: string, value: string, _fontSize?: number) => {
+        invoiceValues[name] = value || "";
       };
 
-      const setAffidavitText = (name: string, value: string, fontSize = 10) => {
+      // One-line blanks print at one size and shrink only if the value would run past the line.
+      const setAffidavitText = (name: string, value: string, fontSize = 10.5) => {
         try {
           const field = affidavitForm.getTextField(name);
-          field.enableMultiline();
-          field.setFontSize(fontSize);
-          field.setText(value || "");
+          const text = value || "";
+          const singleLine = field.acroField.getWidgets()[0].getRectangle().height < 20;
+          if (singleLine) {
+            field.disableMultiline();
+            field.setFontSize(fitFontSize(affidavitForm, name, text, affidavitBoldFont, fontSize));
+          } else {
+            field.enableMultiline();
+            field.setFontSize(fontSize);
+          }
+          field.setText(text);
         } catch {}
       };
 
       const check = (name: string) => {
-        try {
-          invoiceForm.getCheckBox(name).check();
-        } catch {}
+        invoiceChecks.add(name);
       };
 
       const clearFieldBackground = (form: typeof affidavitForm, name: string) => {
@@ -1562,9 +1498,6 @@ export default function PaperworkPage() {
       packageMaterials(activeForm, activeOutcome).forEach((material, index) => {
         setInvoiceText(`M${index + 1}`, material.name);
         setInvoiceText(`Q${index + 1}`, material.qty);
-        try {
-          invoiceForm.getTextField(`Q${index + 1}`).setAlignment(TextAlignment.Center);
-        } catch {}
       });
       setInvoiceText("OMO", jobId);
       setInvoiceText("TAX ID", "203444624");
@@ -1574,10 +1507,7 @@ export default function PaperworkPage() {
       setInvoiceText("Borough", upper(borough), 10);
       setInvoiceText("Apt #", locationText, locationFontSize);
       const invoiceAddress = upper(activeForm.address);
-      setInvoiceText("Building Address", invoiceAddress, fitFontSize(invoiceForm, "Building Address", invoiceAddress, invoiceBoldFont, 11));
-      try {
-        invoiceForm.getTextField("Building Address").disableMultiline();
-      } catch {}
+      setInvoiceText("Building Address", invoiceAddress);
       setInvoiceText("BID AMOUNT", bidAmount);
       setInvoiceText("INCREASE DECREASE AMOUNT", changeAmount);
       setInvoiceText("TOTAL CHARGE", chargeAmount);
@@ -1590,29 +1520,29 @@ export default function PaperworkPage() {
       const deponentLine = `I, ${signer.toUpperCase()}`;
 
       widenField(affidavitForm, "Name of Contractor", 50);
-      setAffidavitText("Name of Contractor", CONTRACTOR_NAME, 8.5);
+      setAffidavitText("Name of Contractor", CONTRACTOR_NAME, 9);
       showUnderline(affidavitForm, "Name of Contractor");
       adjustFieldRect(affidavitForm, "OMO", { dy: 2 });
-      setAffidavitText("OMO", jobId, 11);
+      setAffidavitText("OMO", jobId);
       setAffidavitText("OMO Header2", jobId);
       const fullBuildingAddress = [activeForm.address, activeForm.location, activeForm.borough ? `${activeForm.borough}, NY` : "NY"]
         .filter(Boolean)
         .join(", ");
       const affidavitAddress = upper(fullBuildingAddress);
-      setAffidavitText("Building Address", affidavitAddress, fitFontSize(affidavitForm, "Building Address", affidavitAddress, affidavitBoldFont, 12));
+      setAffidavitText("Building Address", affidavitAddress, fitFontSize(affidavitForm, "Building Address", affidavitAddress, affidavitBoldFont, 11));
       showUnderline(affidavitForm, "Building Address");
       setAffidavitText("State", "NEW YORK");
-      setAffidavitText("County Of", "QUEENS", 10);
+      setAffidavitText("County Of", "QUEENS");
       setAffidavitText("Type or Print Name", signer.toUpperCase());
 
       if (useWorkTemplate) {
         const workDate = activeForm.workComplete || fieldDate;
-        setAffidavitText("Deponent Name", deponentLine, 11);
+        setAffidavitText("Deponent Name", deponentLine);
         showUnderline(affidavitForm, "Deponent Name");
-        setAffidavitText("Start Date", activeOutcome === "work_completed" ? workStart : "", 11);
+        setAffidavitText("Start Date", activeOutcome === "work_completed" ? workStart : "");
         showUnderline(affidavitForm, "Start Date");
         adjustFieldRect(affidavitForm, "Complete Date", { dx: -20, dy: 2.5 });
-        setAffidavitText("Complete Date", activeOutcome === "work_completed" ? workComplete : "", 11);
+        setAffidavitText("Complete Date", activeOutcome === "work_completed" ? workComplete : "");
         showUnderline(affidavitForm, "Complete Date");
         setAffidavitText(
           "Partial Reason",
@@ -1623,13 +1553,13 @@ export default function PaperworkPage() {
         adjustFieldRect(affidavitForm, "Partial Reason", { dy: 4 });
         adjustFieldRect(affidavitForm, "Partial Amount", { dx: 3 });
         showUnderline(affidavitForm, "Partial Amount");
-        setAffidavitText("Notary Day Month", "", 9);
-        setAffidavitText("Notary Year", "", 9);
+        setAffidavitText("Notary Day Month", "");
+        setAffidavitText("Notary Year", "");
 
         if (activeOutcome === "partial_work_completed") {
-          setAffidavitText("Denied Name", upper(activeForm.deniedName), 9);
-          setAffidavitText("Denied Relationship", upper(activeForm.deniedRelationship), 9);
-          setAffidavitText("Denied Description", upper(activeForm.deniedDescription), 9);
+          setAffidavitText("Denied Name", upper(activeForm.deniedName));
+          setAffidavitText("Denied Relationship", upper(activeForm.deniedRelationship));
+          setAffidavitText("Denied Description", upper(activeForm.deniedDescription));
           setAffidavitText("Denied Actions", activeForm.deniedName ? upper(activeForm.partialReason) : "", 9);
         }
 
@@ -1650,7 +1580,7 @@ export default function PaperworkPage() {
         const deniedDescription = isRefusedAccess ? activeForm.deniedDescription : "";
         const deniedPhone = isRefusedAccess ? activeForm.deniedPhone || "DID NOT PROVIDE" : "";
 
-        setAffidavitText("Deponent Name", deponentLine, 11);
+        setAffidavitText("Deponent Name", deponentLine);
         showUnderline(affidavitForm, "Deponent Name");
         setAffidavitText("Service Charge Amount", chargeAmount);
         showUnderline(affidavitForm, "Service Charge Amount");
@@ -1660,32 +1590,32 @@ export default function PaperworkPage() {
 
         if (activeOutcome === "no_access") {
           setAffidavitText("Inaccessible Reason", noWorkReason || "NO ACCESS TO MAKE REPAIRS", 9);
-          setAffidavitText("Attempt1 Date", firstAttempt, 9);
-          setAffidavitText("Attempt2 Date", secondAttempt, 9);
+          setAffidavitText("Attempt1 Date", firstAttempt);
+          setAffidavitText("Attempt2 Date", secondAttempt);
           if (activeForm.tenantPhone) {
-            setAffidavitText("Phone1 Date", displayDate(activeForm.phone1Date), 9);
-            setAffidavitText("Phone2 Date", displayDate(activeForm.phone2Date), 9);
+            setAffidavitText("Phone1 Date", displayDate(activeForm.phone1Date));
+            setAffidavitText("Phone2 Date", displayDate(activeForm.phone2Date));
           } else {
             // No number to call: the note spans the whole "___ and ___" line.
             const phoneNote = upper(activeForm.phoneNote || noTelephoneNote(false));
             widenField(affidavitForm, "Phone1 Date", 150);
-            setAffidavitText("Phone1 Date", phoneNote, fitFontSize(affidavitForm, "Phone1 Date", phoneNote, affidavitBoldFont, 9));
+            setAffidavitText("Phone1 Date", phoneNote, fitFontSize(affidavitForm, "Phone1 Date", phoneNote, affidavitBoldFont, 10.5));
             showUnderline(affidavitForm, "Phone1 Date");
-            setAffidavitText("Phone2 Date", "", 9);
+            setAffidavitText("Phone2 Date", "");
           }
         }
 
         if (activeOutcome === "completed_by_others") {
           adjustFieldRect(affidavitForm, "WorkSite Date5", { dx: 14, dw: -14 });
-          setAffidavitText("WorkSite Date5", secondAttempt, 9);
+          setAffidavitText("WorkSite Date5", secondAttempt);
         }
 
         if (isRefusedAccess) {
-          setAffidavitText("Denied Date", secondAttempt, 9);
+          setAffidavitText("Denied Date", secondAttempt);
           setAffidavitText("Denied Phone", deniedPhone);
-          setAffidavitText("Denied Name", upper(deniedName), 9);
+          setAffidavitText("Denied Name", upper(deniedName));
           setAffidavitText("Denied Description", upper(deniedDescription));
-          setAffidavitText("Denied Relationship", upper(deniedRelationship), 9);
+          setAffidavitText("Denied Relationship", upper(deniedRelationship));
         }
 
         setInvoiceText("START DATE", activeOutcome === "no_access" ? firstAttempt : "");
@@ -1698,11 +1628,10 @@ export default function PaperworkPage() {
 
       affidavitForm.updateFieldAppearances(affidavitBoldFont);
       affidavitForm.flatten();
-      invoiceForm.updateFieldAppearances(invoiceBoldFont);
-      invoiceForm.flatten();
+
 
       // Flattened template widgets can leave dangling annotation references.
-      for (const document of [affidavitDoc, invoiceDoc]) {
+      for (const document of [affidavitDoc]) {
         for (const page of document.getPages()) {
           const annotations = page.node.Annots();
           if (!annotations) continue;
@@ -1712,23 +1641,35 @@ export default function PaperworkPage() {
         }
       }
 
-      const invoicePage = invoiceDoc.getPages()[0];
-      if (useWorkTemplate && activeOutcome === "partial_work_completed" && invoicePage) {
-        invoicePage.drawText(invoiceDate, { x: 411, y: 635, size: 10 });
-        invoicePage.drawText(workStart, { x: 411, y: 618, size: 10 });
-        invoicePage.drawText(workComplete, { x: 423, y: 595, size: 10 });
-      }
-      if (!useWorkTemplate && activeOutcome !== "no_access" && invoicePage) {
-        invoicePage.drawText(secondAttempt, { x: 411, y: 635, size: 10 });
-        invoicePage.drawText(secondAttempt, { x: 411, y: 618, size: 10 });
-        invoicePage.drawText(secondAttempt, { x: 423, y: 595, size: 10 });
-      }
+      // Invoice dates: work packages use the work dates; no-work packages use the attempt dates.
+      const invoiceStart = useWorkTemplate ? workStart : activeOutcome === "no_access" ? firstAttempt : secondAttempt;
+      const invoiceComplete = useWorkTemplate ? workComplete : secondAttempt;
 
       const pdfDoc = await PDFDocument.create();
       const affidavitPages = await pdfDoc.copyPages(affidavitDoc, affidavitDoc.getPageIndices());
       affidavitPages.forEach((page) => pdfDoc.addPage(page));
-      const [invoicePageCopy] = await pdfDoc.copyPages(invoiceDoc, [0]);
-      pdfDoc.addPage(invoicePageCopy);
+      await drawInvoicePage(pdfDoc, {
+        omo: invoiceValues["OMO"],
+        invoiceNo: invoiceValues["INVOICE #"],
+        invoiceDate: invoiceDate,
+        taxId: invoiceValues["TAX ID"],
+        trade: invoiceValues["TRADE"],
+        borough: invoiceValues["Borough"],
+        address: invoiceValues["Building Address"],
+        location: invoiceValues["Apt #"],
+        dateStarted: invoiceStart,
+        dateCompleted: invoiceComplete,
+        permitRequired: !invoiceChecks.has("PERMIT REQUIRED NO"),
+        approvedChange: !invoiceChecks.has("APPROVED INCREASE DECREASE NO"),
+        rcMini: !invoiceChecks.has("RC MINI NO"),
+        description: invoiceValues["Work Description"],
+        materials: Array.from({ length: 12 }, (_, index) => ({ name: invoiceValues[`M${index + 1}`] || "", qty: invoiceValues[`Q${index + 1}`] || "" })).filter((row) => row.name),
+        bidAmount: invoiceValues["BID AMOUNT"],
+        changeAmount: invoiceValues["INCREASE DECREASE AMOUNT"],
+        totalCharge: invoiceValues["TOTAL CHARGE"],
+        signerName: invoiceValues["NAME Please Print"],
+        title: invoiceValues["TITLE"],
+      });
 
       const bytes = await pdfDoc.save();
       const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
