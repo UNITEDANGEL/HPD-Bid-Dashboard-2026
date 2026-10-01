@@ -38,6 +38,9 @@ try {
     }
     await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
+    // Every PDF page must render as a preview image (pdfjs failed on browsers without new JS APIs).
+    await page.locator(".pkg-page img").nth(pages - 1).waitFor({ timeout: 30000 });
+    assert.equal(await page.locator(".pkg-page img").count(), pages, `${job}: review must preview every page`);
     await page.screenshot({ path: path.join(outDir, `${job}-${outcome}.png`) });
 
     const href = await page.locator(`a[download$="-affidavit-invoice.pdf"]`).first().getAttribute("href");

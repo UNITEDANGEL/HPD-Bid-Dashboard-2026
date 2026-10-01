@@ -131,6 +131,7 @@ type CompletePackagePreview = {
   pdfSize: number;
   pdfUrl: string;
   pdfPreviewImageUrl: string;
+  pdfPreviewImageUrls: string[];
   pdfPreviewPageCount: number;
   pdfPreviewError: string;
   videoPackageFileName: string;
@@ -975,7 +976,7 @@ async function saveEntriesAsRegularFolder(folderName: string, entries: PackageFi
   }
 }
 
-async function renderPdfFirstPageImage(bytes: Uint8Array): Promise<{ imageUrl: string; pageCount: number; error: string }> {
+async function renderPdfFirstPageImage(bytes: Uint8Array): Promise<{ imageUrl: string; imageUrls?: string[]; pageCount: number; error: string }> {
   const renderer = await import("./pdf-preview-renderer");
   return renderer.renderPdfFirstPageImage(bytes);
 }
@@ -1120,6 +1121,7 @@ export default function PaperworkPage() {
     return () => {
       if (packagePreview?.pdfUrl) URL.revokeObjectURL(packagePreview.pdfUrl);
       if (packagePreview?.pdfPreviewImageUrl) URL.revokeObjectURL(packagePreview.pdfPreviewImageUrl);
+      packagePreview?.pdfPreviewImageUrls.slice(1).forEach((url) => URL.revokeObjectURL(url));
       if (packagePreview?.zipUrl) URL.revokeObjectURL(packagePreview.zipUrl);
       packagePreview?.folderLinks.forEach((link) => URL.revokeObjectURL(link.url));
       packagePreview?.videoLinks.forEach((link) => URL.revokeObjectURL(link.url));
@@ -1840,7 +1842,7 @@ export default function PaperworkPage() {
         path: fullPackageMediaPath(pdf.jobId, media, index, packageStatusSlug(activeOutcome)),
         bytes: dataUrlToBytes(media.dataUrl),
         mimeType: media.type || (media.mediaType === "video" ? "video/mp4" : "image/jpeg"),
-        label: media.mediaType === "video" ? "Video evidence" : "Image evidence",
+        label: media.evidenceLabel || (media.mediaType === "video" ? "Video evidence" : "Image evidence"),
         section: media.mediaType === "video" ? "video" : "image",
       }));
 
@@ -1939,6 +1941,7 @@ export default function PaperworkPage() {
         pdfSize: pdf.size,
         pdfUrl,
         pdfPreviewImageUrl: pdfPreview.imageUrl,
+        pdfPreviewImageUrls: pdfPreview.imageUrls?.length ? pdfPreview.imageUrls : pdfPreview.imageUrl ? [pdfPreview.imageUrl] : [],
         pdfPreviewPageCount: pdfPreview.pageCount,
         pdfPreviewError: pdfPreview.error,
         videoPackageFileName,
@@ -2072,6 +2075,25 @@ export default function PaperworkPage() {
       console.error(error);
       setPackagePreviewOpen(true);
       setPdfStatus(error instanceof Error ? error.message : "Could not save the regular folder. Use Download Files.");
+    }
+  }
+
+  // Approve & Save: save the hard copy first (share sheets need the tap), then record the approval.
+  async function approveAndSavePackage() {
+    const pending = pendingCompletePackageRef.current;
+    if (!pending || packageBusyRef.current) return;
+    if (canSaveRegularFolder()) await saveCompletePackageFolder();
+    else await sendCompletePackage();
+    if (packageApproved) return;
+    setPackageBusy(true);
+    try {
+      const message = await markPackageGenerated(pending.jobId, true);
+      setPackageApproved(true);
+      setPdfStatus(`Approved. ${message}`);
+    } catch (error) {
+      setPdfStatus(error instanceof Error ? error.message : "Approval could not be saved.");
+    } finally {
+      setPackageBusy(false);
     }
   }
 
@@ -3155,6 +3177,172 @@ export default function PaperworkPage() {
           color: #ffffff;
           font-size: 16px;
           line-height: 1.15;
+        }
+
+        .pkg-review {
+          display: grid;
+          gap: 14px;
+        }
+
+        .pkg-review-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .pkg-review-head h3 {
+          margin: 4px 0 2px;
+          color: #ffffff;
+          font-size: 24px;
+          line-height: 1.05;
+        }
+
+        .pkg-review-head p {
+          margin: 0;
+          color: #c9d4e3;
+          font-size: 14px;
+        }
+
+        .pkg-review-status {
+          display: inline-block;
+          border-radius: 999px;
+          padding: 4px 10px;
+          background: rgba(255, 209, 102, 0.16);
+          color: #ffe8a3;
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
+
+        .pkg-review-status.approved {
+          background: rgba(83, 230, 156, 0.18);
+          color: #caffdf;
+        }
+
+        .pkg-edit {
+          min-height: 40px;
+          border: 1px solid rgba(255, 255, 255, 0.24);
+          border-radius: 10px;
+          background: transparent;
+          color: #ffffff;
+          padding: 0 14px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .pkg-pages {
+          display: grid;
+          grid-auto-flow: column;
+          grid-auto-columns: 86%;
+          gap: 10px;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          padding-bottom: 4px;
+        }
+
+        .pkg-page {
+          scroll-snap-align: start;
+          display: grid;
+          gap: 6px;
+          border: 0;
+          padding: 0;
+          background: transparent;
+          cursor: zoom-in;
+          text-align: left;
+        }
+
+        .pkg-page img {
+          width: 100%;
+          height: auto;
+          border-radius: 6px;
+          background: #ffffff;
+          box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        .pkg-page span {
+          color: #c9d4e3;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .pkg-page-missing {
+          display: grid;
+          gap: 8px;
+          border: 1px dashed rgba(255, 255, 255, 0.3);
+          border-radius: 10px;
+          padding: 14px;
+          color: #ffffff;
+        }
+
+        .pkg-page-missing a {
+          color: #8fd3ff;
+          font-weight: 800;
+        }
+
+        .pkg-photos {
+          display: grid;
+          gap: 8px;
+          color: #ffffff;
+        }
+
+        .pkg-photos small {
+          color: #c9d4e3;
+        }
+
+        .pkg-photo-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .pkg-photo-grid figure {
+          margin: 0;
+          display: grid;
+          gap: 4px;
+        }
+
+        .pkg-photo-grid img {
+          width: 100%;
+          aspect-ratio: 1;
+          object-fit: cover;
+          border-radius: 8px;
+        }
+
+        .pkg-photo-grid figcaption {
+          color: #c9d4e3;
+          font-size: 11px;
+          line-height: 1.2;
+          overflow-wrap: anywhere;
+        }
+
+        .pkg-confirm {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: #ffffff;
+          font-weight: 800;
+        }
+
+        .pkg-confirm input {
+          width: 22px;
+          height: 22px;
+        }
+
+        .pkg-approve:disabled {
+          opacity: 0.45;
+        }
+
+        .pkg-more summary {
+          color: #c9d4e3;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .pkg-more-body {
+          display: grid;
+          gap: 10px;
+          margin-top: 10px;
         }
 
         .refused-description-default {
@@ -4337,132 +4525,78 @@ export default function PaperworkPage() {
             </div>
           ) : null}
           {packagePreview ? (
-            <div className="paperwork-package-review" data-hpd-smoke="paperwork-package-review">
-              <div className="package-created-head">
+            <div className="paperwork-package-review pkg-review" data-hpd-smoke="paperwork-package-review">
+              <div className="pkg-review-head">
                 <div>
-                  <span className="package-kicker">{packageApproved ? "Package approved" : "Draft package saved"}</span>
+                  <span className={`pkg-review-status ${packageApproved ? "approved" : ""}`}>{packageApproved ? "Approved & saved" : "Review before approving"}</span>
                   <h3>{packagePreview.jobId}</h3>
-                  <p>{packagePreview.note}</p>
+                  <p>{packageStatusLabel(outcome)} · Total {form.amount || "$0.00"}</p>
                 </div>
-                <span>{packagePreview.imageCount} image(s) / {packagePreview.videoCount} video(s)</span>
+                <button type="button" className="pkg-edit" data-hpd-smoke="paperwork-package-edit" onClick={clearPackagePreview}>
+                  Edit
+                </button>
               </div>
-              <div className="package-review-strip" data-hpd-smoke="paperwork-package-review-flow" aria-label="Package review flow">
-                <span>
-                  <b>Review</b>
-                  <strong>PDF visible</strong>
-                </span>
-                <span>
-                  <b>Folder</b>
-                  <strong>{packagePreview.folderFileCount} files</strong>
-                </span>
-                <span>
-                  <b>Next</b>
-                  <strong>Share / Save</strong>
-                </span>
+
+              <div className="pkg-pages" data-hpd-smoke="paperwork-package-pages" aria-label="PDF pages">
+                {packagePreview.pdfPreviewImageUrls.length ? (
+                  packagePreview.pdfPreviewImageUrls.map((url, index) => (
+                    <button type="button" className="pkg-page" key={url} onClick={() => setFullScreenPdfOpen(true)}>
+                      <img src={url} alt={`${packagePreview.jobId} page ${index + 1}`} />
+                      <span>
+                        {index === packagePreview.pdfPreviewImageUrls.length - 1 ? "Invoice" : `Affidavit page ${index + 1}`}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="pkg-page-missing">
+                    <strong>Preview not available on this device</strong>
+                    <a href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>Open the PDF to review it</a>
+                  </div>
+                )}
               </div>
-              <label><input type="checkbox" checked={packageReviewed} disabled={packageBusy || packageApproved} onChange={event => setPackageReviewed(event.target.checked)} /> I reviewed all affidavit/invoice pages and media, including required signatures.</label>
-              <button type="button" className="paperwork-secondary" disabled={!packageReviewed || packageBusy || packageApproved} onClick={async () => {
-                setPackageBusy(true);
-                try { setPdfStatus(await markPackageGenerated(packagePreview.jobId, true)); setPackageApproved(true); }
-                catch (error) { setPdfStatus(error instanceof Error ? error.message : "Approval could not be saved."); }
-                finally { setPackageBusy(false); }
-              }}>{packageApproved ? "Approved and archived" : "Approve package & archive job"}</button>
-              {packagePreviewOpen ? (
-                <div className="package-preview-panel" data-hpd-smoke="paperwork-package-preview-panel" ref={packagePreviewPanelRef}>
-                  <div className="package-pdf-preview-card">
-                    <div className="package-pdf-preview-head">
-                      <div>
-                        <span>Actual PDF Created</span>
-                        <strong>{packagePreview.pdfFileName}</strong>
-                        <small>
-                          {packetSizeLabel(packagePreview.pdfSize)} affidavit/invoice PDF generated from this job
-                          {packagePreview.pdfPreviewPageCount ? ` · Page 1 of ${packagePreview.pdfPreviewPageCount}` : ""}
-                        </small>
-                      </div>
-                      <button type="button" data-hpd-smoke="paperwork-open-pdf" onClick={() => setFullScreenPdfOpen(true)}>
-                        Open PDF
-                      </button>
-                    </div>
-                    {packagePreview.pdfPreviewImageUrl ? (
-                      <img
-                        className="package-pdf-image"
-                        src={packagePreview.pdfPreviewImageUrl}
-                        alt={`${packagePreview.jobId} generated affidavit invoice PDF page 1`}
-                      />
-                    ) : (
-                      <div className="package-pdf-fallback-card">
-                        <strong>PDF created</strong>
-                        <span>Preview image could not render cleanly on this device, so the app is hiding the browser PDF object instead of showing an annotation error.</span>
-                        <a data-hpd-smoke="paperwork-save-pdf-fallback" href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
-                          Save PDF
-                        </a>
-                      </div>
-                    )}
-                    {packagePreview.pdfPreviewError ? (
-                      <small className="package-pdf-fallback-note">
-                        PDF image preview is not available on this device. Use Full Screen PDF or Save PDF below.
-                      </small>
-                    ) : null}
-                    <div className="package-pdf-actions">
-                      <button type="button" data-hpd-smoke="paperwork-full-screen-pdf" onClick={() => setFullScreenPdfOpen(true)}>
-                        Full Screen PDF
-                      </button>
-                      <a data-hpd-smoke="paperwork-save-pdf" href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
-                        Save PDF
-                      </a>
-                    </div>
+
+              <div className="pkg-photos" data-hpd-smoke="paperwork-package-photos">
+                <strong>
+                  Photos in package · {packagePreview.imageCount}
+                  {packagePreview.videoCount ? ` · ${packagePreview.videoCount} video(s)` : ""}
+                </strong>
+                {packagePreview.folderLinks.some((link) => link.section === "image") ? (
+                  <div className="pkg-photo-grid">
+                    {packagePreview.folderLinks
+                      .filter((link) => link.section === "image")
+                      .map((link) => (
+                        <figure key={link.path}>
+                          <img src={link.url} alt={link.label || link.name} />
+                          <figcaption>{link.label || link.name}</figcaption>
+                        </figure>
+                      ))}
                   </div>
-                  <div className="package-content-list">
-                    <div className="package-content-row primary-package-row">
-                      <div>
-                        <span>Regular Folder</span>
-                        <strong>{packagePreview.folderName}</strong>
-                        <small>Affidavit/invoice PDF, all labeled images, all labeled videos, and manifest</small>
-                      </div>
-                      <b>{packetSizeLabel(packagePreview.folderSize)}</b>
-                    </div>
-                    <div className="package-content-row">
-                      <div>
-                        <span>Optional ZIP</span>
-                        <strong>{packagePreview.zipFileName}</strong>
-                        <small>Same folder contents compressed; filename includes the status</small>
-                      </div>
-                      <b>{packetSizeLabel(packagePreview.zipSize)}</b>
-                    </div>
-                    {(packagePreview.imageCount || packagePreview.videoCount) ? (
-                      <div className="package-content-row">
-                        <div>
-                          <span>Evidence Included</span>
-                          <strong>{packagePreview.imageCount} image(s) / {packagePreview.videoCount} video(s)</strong>
-                          <small>Before, after, and video evidence saved from this device</small>
-                        </div>
-                        <b>{packagePreview.beforeCount} before / {packagePreview.afterCount} after</b>
-                      </div>
-                    ) : null}
-                    {packagePreview.videoPackageFileName ? (
-                      <div className="package-content-row">
-                        <div>
-                          <span>Video Files</span>
-                          <strong>{packagePreview.videoPackageFileName}</strong>
-                          <small>Before/after labeled video evidence</small>
-                        </div>
-                        <b>{packetSizeLabel(packagePreview.videoPackageSize)}</b>
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="package-folder-list" data-hpd-smoke="paperwork-folder-contents" aria-label="Folder contents">
-                    <div className="package-folder-list-head">
-                      <strong>Folder Contents</strong>
-                      <span>{packagePreview.folderFileCount} file(s)</span>
-                    </div>
-                    {packagePreview.folderLinks.map((link) => (
-                      <a href={link.url} download={link.name} key={link.path} className={`package-folder-file folder-file-${link.section}`}>
-                        <span>{link.path}</span>
-                        <b>{packetSizeLabel(link.size)}</b>
-                      </a>
-                    ))}
-                  </div>
-                  <div className="package-delivery-actions package-primary-delivery">
+                ) : (
+                  <small>No photos saved for this OMO on this device.</small>
+                )}
+              </div>
+
+              <label className="pkg-confirm">
+                <input type="checkbox" checked={packageReviewed} disabled={packageBusy || packageApproved} onChange={(event) => setPackageReviewed(event.target.checked)} />
+                I checked every page and photo.
+              </label>
+              <button
+                type="button"
+                className="paperwork-print pkg-approve"
+                data-hpd-smoke="paperwork-approve-save"
+                disabled={(!packageReviewed && !packageApproved) || packageBusy}
+                onClick={approveAndSavePackage}
+              >
+                {packageApproved ? "Save Copy Again" : "Approve & Save"}
+              </button>
+
+              <details className="pkg-more" data-hpd-smoke="paperwork-package-more">
+                <summary>More options</summary>
+                <div className="pkg-more-body">
+                  <div className="package-delivery-actions">
+                    <a data-hpd-smoke="paperwork-save-pdf" href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
+                      Save PDF only
+                    </a>
                     <button type="button" data-hpd-smoke="paperwork-share-files" onClick={sendCompletePackage}>
                       Share Files
                     </button>
@@ -4472,71 +4606,34 @@ export default function PaperworkPage() {
                     <button type="button" data-hpd-smoke="paperwork-download-files" onClick={downloadCompletePackageFiles}>
                       Download Files
                     </button>
-                  </div>
-                  <details className="package-backup-details">
-                    <summary>Backup / separate files</summary>
-                    <div className="package-delivery-actions package-secondary-delivery">
-                      <button type="button" data-hpd-smoke="paperwork-share-zip" onClick={sendZipPackage}>
-                        Share ZIP
+                    <a data-hpd-smoke="paperwork-save-zip" href={packagePreview.zipUrl} download={packagePreview.zipFileName}>
+                      Save ZIP
+                    </a>
+                    {packagePreview.videoPackageFileName ? (
+                      <button type="button" data-hpd-smoke="paperwork-share-video" onClick={sendVideoPackage}>
+                        Share Video Files
                       </button>
-                      <a data-hpd-smoke="paperwork-save-zip" href={packagePreview.zipUrl} download={packagePreview.zipFileName}>
-                        Save ZIP
-                      </a>
-                      <button type="button" data-hpd-smoke="paperwork-share-application" onClick={sendApplicationPackage}>
-                        Share Application Files
-                      </button>
-                      {packagePreview.videoPackageFileName ? (
-                        <button type="button" data-hpd-smoke="paperwork-share-video" onClick={sendVideoPackage}>
-                          Share Video Files
-                        </button>
-                      ) : null}
-                      <button type="button" className="package-backup-send" data-hpd-smoke="paperwork-backup-send-files" onClick={sendEvidenceFilesBackup}>
-                        Backup: Send Files
-                      </button>
-                    </div>
-                  </details>
-                  <div className="package-review-grid">
-                    <span>PDF <strong>1</strong></span>
-                    <span>Images <strong>{packagePreview.imageCount}</strong></span>
-                    <span>Before <strong>{packagePreview.beforeCount}</strong></span>
-                    <span>After <strong>{packagePreview.afterCount}</strong></span>
-                    <span>Videos <strong>{packagePreview.videoCount}</strong></span>
-                  </div>
-                  <div className="package-video-preview">
-                    <div className="package-video-head">
-                      <div>
-                        <h4>Video Preview</h4>
-                        <p>{packagePreview.videoPackageFileName || "No video files generated for this OMO."}</p>
-                      </div>
-                      <span>{packetSizeLabel(packagePreview.videoPackageSize)}</span>
-                    </div>
-                    <div className="package-video-list">
-                      {packagePreview.videoLinks.length ? (
-                        packagePreview.videoLinks.map((video, index) => (
-                          <div className="package-video-item" key={`${video.name}-${index}`}>
-                            <video src={video.url} controls preload="metadata" playsInline />
-                            <div className="package-video-meta">
-                              <strong>Video {index + 1}</strong>
-                              <span>{video.name}</span>
-                              <small>{packetSizeLabel(video.size)}</small>
-                              <a href={video.url} download={video.name} target="_blank" rel="noopener noreferrer">
-                                Open / Save Video
-                              </a>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <span className="package-video-empty">
-                          No videos found for this OMO on this phone. Retake or upload the video from the job card, then Generate Package again.
-                        </span>
-                      )}
-                    </div>
-                    {packagePreview.skippedMediaCount ? (
-                      <p>{packagePreview.skippedMediaCount} media item(s) were listed in the manifest as not included.</p>
                     ) : null}
                   </div>
+                  {packagePreview.videoLinks.map((video, index) => (
+                    <div className="package-video-item" key={`${video.name}-${index}`}>
+                      <video src={video.url} controls preload="metadata" playsInline />
+                      <small>{video.name}</small>
+                    </div>
+                  ))}
+                  <div className="package-folder-list" data-hpd-smoke="paperwork-folder-contents" aria-label="Folder contents">
+                    {packagePreview.folderLinks.map((link) => (
+                      <a href={link.url} download={link.name} key={link.path} className={`package-folder-file folder-file-${link.section}`}>
+                        <span>{link.path}</span>
+                        <b>{packetSizeLabel(link.size)}</b>
+                      </a>
+                    ))}
+                  </div>
+                  {packagePreview.skippedMediaCount ? (
+                    <small>{packagePreview.skippedMediaCount} media item(s) were listed in the manifest as not included.</small>
+                  ) : null}
                 </div>
-              ) : null}
+              </details>
             </div>
           ) : null}
         </section>
@@ -4554,11 +4651,10 @@ export default function PaperworkPage() {
                 </button>
               </div>
               <div className="fullscreen-pdf-body">
-                {packagePreview.pdfPreviewImageUrl ? (
-                  <img
-                    src={packagePreview.pdfPreviewImageUrl}
-                    alt={`${packagePreview.jobId} generated affidavit invoice PDF full screen page 1`}
-                  />
+                {packagePreview.pdfPreviewImageUrls.length ? (
+                  packagePreview.pdfPreviewImageUrls.map((url, index) => (
+                    <img key={url} src={url} alt={`${packagePreview.jobId} generated PDF page ${index + 1}`} />
+                  ))
                 ) : (
                   <div className="fullscreen-pdf-fallback">
                     <strong>PDF created</strong>
@@ -4573,7 +4669,7 @@ export default function PaperworkPage() {
           </div>
         ) : null}
 
-        <section className="paperwork-preview">
+        <section className="paperwork-preview" hidden={Boolean(packagePreview)}>
           <div className="paperwork-sheet">
             <div className="preview-head">
               <div>
