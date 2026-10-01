@@ -1,0 +1,52 @@
+// Browser smoke test: drives the paperwork page like a field user and checks the generated PDF.
+// Needs the app running (npm run dev). BASE_URL defaults to http://localhost:3000.
+// Generates packages in the browser only; nothing is uploaded, emailed or synced.
+import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { chromium } from "playwright";
+import { PDFDocument } from "pdf-lib";
+
+const baseUrl = process.env.BASE_URL || "http://localhost:3000";
+const outDir = path.resolve("output/browser-smoke");
+fs.mkdirSync(outDir, { recursive: true });
+
+// Jobs awarded after 2026-08-28 (current affidavit form), with long addresses.
+const cases = [
+  { job: "ER05729", outcome: "work_completed", pages: 3 },
+  { job: "ER05395", outcome: "no_access", pages: 3 },
+];
+
+const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
+try {
+  for (const { job, outcome, pages } of cases) {
+    const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(String(error)));
+
+    await page.goto(`${baseUrl}/paperwork?job=${job}&outcome=${outcome}`, { waitUntil: "networkidle" });
+    await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
+    await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
+    await page.screenshot({ path: path.join(outDir, `${job}-${outcome}.png`) });
+
+    const href = await page.locator(`a[download$="-affidavit-invoice.pdf"]`).first().getAttribute("href");
+    assert.ok(href, `${job}: no PDF link in package review`);
+    const base64 = await page.evaluate(async (url) => {
+      const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+      let text = "";
+      for (const byte of bytes) text += String.fromCharCode(byte);
+      return btoa(text);
+    }, href);
+    const bytes = Buffer.from(base64, "base64");
+    fs.writeFileSync(path.join(outDir, `${job}-${outcome}.pdf`), bytes);
+
+    const pdf = await PDFDocument.load(bytes);
+    assert.equal(pdf.getPageCount(), pages, `${job}: expected affidavit (2) + invoice (1) pages`);
+    assert.equal(pdf.getForm().getFields().length, 0, `${job}: form fields must be flattened`);
+    assert.deepEqual(errors, [], `${job}: page errors`);
+    console.log(`PASS ${job} ${outcome}: package generated in browser, ${pages} flattened pages`);
+    await page.close();
+  }
+} finally {
+  await browser.close();
+}

@@ -22,6 +22,7 @@
     "test:job-priority": "node scripts/test-job-priority.cjs",
     "test:field-flow": "node scripts/test-field-next-action.cjs",
     "test:description-quality": "node scripts/test-description-quality.cjs",
+    "test:browser": "node scripts/test-browser-paperwork.mjs",
     "export": "next build",
     "static": "next build",
     "fetcher-api": "node server/fetcher-api.js"
@@ -48,6 +49,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "fake-indexeddb": "^6.2.5",
+    "playwright": "^1.56.1",
     "typescript": "^5.6.2"
   }
 }
