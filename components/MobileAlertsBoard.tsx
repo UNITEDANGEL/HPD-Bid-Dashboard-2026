@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import FieldTabBar from "./FieldTabBar";
 import "../app/field-command/field-command.css";
 import type { JobRecord } from "../lib/types";
+import { jobQueue, savedJobStatus } from "../lib/job-queue";
+import { readLocalWorkflowOverrides, fetchServerWorkflowOverrides } from "../lib/paperwork";
 
 type BoroughKey = "MN" | "BK" | "QN" | "BX" | "SI";
 
@@ -44,6 +46,7 @@ function jobAgeDays(job: JobRecord) {
 
 function isOpenStatus(job: JobRecord) {
   const s = (job.status || "").toLowerCase();
+  if (jobQueue(job.raw || {}) === "archived") return false;
   return !s.includes("complete") && !s.includes("refused") && !s.includes("no access");
 }
 
@@ -56,8 +59,32 @@ export function overdueJobs(jobs: JobRecord[]) {
     .sort((a, b) => b.days - a.days);
 }
 
-export function MobileAlertsBoard({ jobs }: { jobs: JobRecord[] }) {
+export function MobileAlertsBoard({ jobs: sourceJobs }: { jobs: JobRecord[] }) {
+  const [jobs, setJobs] = useState(sourceJobs);
   const [selectedJob, setSelectedJob] = useState<JobRecord | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    function applyOverrides(overrides: Record<string, Record<string, unknown>>) {
+      if (cancelled) return;
+      setJobs(sourceJobs.map(job => {
+        const raw = { ...job.raw, ...overrides[job.id] };
+        return { ...job, status: savedJobStatus(raw), raw } as JobRecord;
+      }));
+    }
+    function refresh() {
+      applyOverrides(readLocalWorkflowOverrides());
+      fetchServerWorkflowOverrides().then(server => {
+        if (cancelled) return;
+        applyOverrides({ ...readLocalWorkflowOverrides(), ...server });
+      }).catch(() => {});
+    }
+    refresh();
+    window.addEventListener("focus", refresh);
+    window.addEventListener("storage", refresh);
+    return () => { cancelled = true; window.removeEventListener("focus", refresh); window.removeEventListener("storage", refresh); };
+  }, [sourceJobs]);
+
   const overdue = useMemo(() => overdueJobs(jobs), [jobs]);
 
   return (
