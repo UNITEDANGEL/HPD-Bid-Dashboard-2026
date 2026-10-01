@@ -58,6 +58,7 @@ const JUNK_DESCRIPTION_PATTERNS = [
   /APT\(S\)\/LOCATION\(S\)/i,
   /PROCEDURES\s+MATERIAL/i,
   /General\s+Decision\s+Number/i,
+  /Confirma\s*t?\s*ion\s+of\s+Award/i,
 ];
 
 function isJunkDescription(value) {

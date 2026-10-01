@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PDFDocument, StandardFonts, PDFName } from "pdf-lib";
+import { PDFDocument, StandardFonts, PDFName, TextAlignment } from "pdf-lib";
 import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate } from "../../lib/no-access";
 import { tenantContactInfo } from "../../lib/tenantContact";
+import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
 import { calendarDay } from "../../lib/job-priority";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
@@ -60,6 +61,8 @@ type PackageForm = {
   phone2Date: string;
   phoneNote: string;
   partialReason: string;
+  partialWorkDone: string;
+  materialsText: string;
   workStart: string;
   workComplete: string;
   signer: string;
@@ -313,6 +316,8 @@ function initialForm(): PackageForm {
     phone2Date: "",
     phoneNote: "",
     partialReason: "",
+    partialWorkDone: "",
+    materialsText: "",
     workStart: "",
     workComplete: "",
     signer: DEFAULT_PACKAGE_SIGNER,
@@ -730,8 +735,18 @@ function pdfLocationFontSize(value: string) {
   return 10;
 }
 
-const WORK_MATERIALS = ["TRASH BAG", "WD 40", "SELF SCREWS", "PLEASE SEE ATTACHED DESCRIPTION", "", "ADJUSTMENTS/ ALIGNMENT"];
-const PARTIAL_MATERIALS = ["TRASH BAG", "WD 40", "SELF SCREWS", "PLEASE SEE ATTACHED DESCRIPTION", "STRIKE PLATE", "ADJUST AND ALIGN"];
+const NO_WORK_MATERIALS: InvoiceMaterial[] = [{ name: "TRASH BAG", qty: "" }];
+
+// Partial work lists materials for the part that was done; full work reads the whole scope.
+function packageMaterials(form: PackageForm, outcome: PaperworkOutcome): InvoiceMaterial[] {
+  if (outcome !== "work_completed" && outcome !== "partial_work_completed") return NO_WORK_MATERIALS;
+  if (form.materialsText.trim()) return materialsFromText(form.materialsText);
+  return invoiceMaterials(outcome === "partial_work_completed" ? form.partialWorkDone : form.description);
+}
+
+function partialInvoiceDescription(form: PackageForm) {
+  return `PARTIAL WORK COMPLETED:\n${upper(form.partialWorkDone.trim())}`;
+}
 
 function safeFilename(value: string) {
   return String(value || "HPD")
@@ -1416,6 +1431,11 @@ export default function PaperworkPage() {
       return null;
     }
 
+    if (activeOutcome === "partial_work_completed" && !activeForm.partialWorkDone.trim()) {
+      setPdfStatus("Enter what partial work was completed. It prints as the invoice description.");
+      return null;
+    }
+
     if (activeOutcome === "partial_work_completed" && !activeForm.partialReason.trim()) {
       setPdfStatus("Enter why the work was only partially completed (item 6) before generating the package.");
       return null;
@@ -1539,8 +1559,13 @@ export default function PaperworkPage() {
       };
 
       clearMaterialRows();
-      const materials = activeOutcome === "partial_work_completed" ? PARTIAL_MATERIALS : useWorkTemplate ? WORK_MATERIALS : ["TRASH BAG"];
-      materials.forEach((material, index) => setInvoiceText(`M${index + 1}`, material));
+      packageMaterials(activeForm, activeOutcome).forEach((material, index) => {
+        setInvoiceText(`M${index + 1}`, material.name);
+        setInvoiceText(`Q${index + 1}`, material.qty);
+        try {
+          invoiceForm.getTextField(`Q${index + 1}`).setAlignment(TextAlignment.Center);
+        } catch {}
+      });
       setInvoiceText("OMO", jobId);
       setInvoiceText("TAX ID", "203444624");
       setInvoiceText("INVOICE #", activeForm.invoiceNo);
@@ -1610,7 +1635,12 @@ export default function PaperworkPage() {
 
         setInvoiceText("START DATE", activeOutcome === "work_completed" ? workStart : "");
         setInvoiceText("COMPLETE DATE", activeOutcome === "work_completed" ? workComplete : "");
-        setInvoiceText("Work Description", activeForm.description || activeForm.notes || "Work completed per HPD bid / work order.");
+        setInvoiceText(
+          "Work Description",
+          activeOutcome === "partial_work_completed"
+            ? partialInvoiceDescription(activeForm)
+            : activeForm.description || activeForm.notes || "Work completed per HPD bid / work order."
+        );
       } else {
         const noWorkReason = activeForm.affidavitReason || affidavitReasonForOutcome(activeOutcome);
         const isRefusedAccess = activeOutcome === "refused_access";
@@ -4093,7 +4123,7 @@ export default function PaperworkPage() {
 
           {outcome === "work_completed" || outcome === "partial_work_completed" ? (
             <div
-              className={`refused-access-required package-charge-card ${workDatesProblem(form) || (outcome === "partial_work_completed" && !form.partialReason.trim()) ? "needs-description" : "ready"}`}
+              className={`refused-access-required package-charge-card ${workDatesProblem(form) || (outcome === "partial_work_completed" && (!form.partialReason.trim() || !form.partialWorkDone.trim())) ? "needs-description" : "ready"}`}
               data-hpd-smoke="paperwork-charge-card"
             >
               <div>
@@ -4132,6 +4162,32 @@ export default function PaperworkPage() {
                 </label>
               </div>
               {workDatesProblem(form) ? <small data-hpd-smoke="paperwork-work-dates-status">{workDatesProblem(form)}</small> : null}
+              {outcome === "partial_work_completed" ? (
+                <label className="paperwork-field">
+                  What work was completed? (invoice description)
+                  <textarea
+                    data-hpd-smoke="paperwork-partial-done"
+                    value={form.partialWorkDone}
+                    onChange={(event) => update("partialWorkDone", event.target.value)}
+                    placeholder="Example: INSTALLED 3 SELF CLOSING HINGES AT APT 1B ENTRANCE DOOR"
+                  />
+                </label>
+              ) : null}
+              <label className="paperwork-field">
+                Invoice materials - one per line, quantity first
+                <textarea
+                  data-hpd-smoke="paperwork-materials"
+                  rows={8}
+                  value={form.materialsText || materialsToText(packageMaterials(form, outcome))}
+                  onChange={(event) => update("materialsText", event.target.value)}
+                />
+                <small>Filled from the {outcome === "partial_work_completed" ? "work completed" : "job scope"}. Edit, add or remove lines; max 12.</small>
+                {form.materialsText ? (
+                  <button type="button" className="refused-description-default" onClick={() => update("materialsText", "")}>
+                    Rebuild From Scope
+                  </button>
+                ) : null}
+              </label>
               {outcome === "partial_work_completed" ? (
                 <label className="paperwork-field">
                   Why was the work only partially completed? (item 6)

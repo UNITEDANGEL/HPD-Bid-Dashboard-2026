@@ -8,6 +8,8 @@ const JUNK_DESCRIPTION_PATTERNS = [
   /PROCEDURES\s+MATERIAL/i,
   // Federal wage determination page captured in place of the scope.
   /General\s+Decision\s+Number/i,
+  // HPD Confirmation of Award letter captured in place of the scope.
+  /Confirma\s*t?\s*ion\s+of\s+Award/i,
 ];
 
 export function isJunkDescription(value: unknown) {
