@@ -308,8 +308,8 @@ export function isNoWorkOutcome(outcome: PaperworkOutcome) {
 }
 
 export function defaultPaperworkInvoiceNo(jobId = "") {
-  const digits = String(jobId || "").match(/\d+/)?.[0] || "";
-  if (digits) return `Q${digits}`;
+  const trimmed = String(jobId || "").trim();
+  if (trimmed) return trimmed;
   return `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`;
 }
 
