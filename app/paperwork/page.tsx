@@ -1393,6 +1393,8 @@ export default function PaperworkPage() {
       const invoiceDoc = await PDFDocument.load(await invoiceResponse.arrayBuffer());
       const affidavitForm = affidavitDoc.getForm();
       const invoiceForm = invoiceDoc.getForm();
+      const affidavitBoldFont = await affidavitDoc.embedFont(StandardFonts.HelveticaBold);
+      const invoiceBoldFont = await invoiceDoc.embedFont(StandardFonts.HelveticaBold);
       shiftInvoiceAptLocationWidget(invoiceForm);
       if (!useWorkTemplate && activeOutcome === "no_access") {
         shiftNoAccessAffidavitDateWidgets(invoiceForm);
@@ -1468,6 +1470,19 @@ export default function PaperworkPage() {
         } catch {}
       };
 
+      // Largest font size (down to minSize) at which a single-line value fits its field.
+      const fitFontSize = (form: typeof affidavitForm, name: string, value: string, font: typeof affidavitBoldFont, maxSize: number, minSize = 6) => {
+        let width = 0;
+        try {
+          width = form.getField(name).acroField.getWidgets()[0].getRectangle().width - 4;
+        } catch {
+          return maxSize;
+        }
+        let size = maxSize;
+        while (size > minSize && font.widthOfTextAtSize(value, size) > width) size -= 0.5;
+        return size;
+      };
+
       const clearMaterialRows = () => {
         for (let index = 1; index <= 12; index += 1) {
           setInvoiceText(`M${index}`, "");
@@ -1485,7 +1500,11 @@ export default function PaperworkPage() {
       setInvoiceText("Boro", upper(borough), 10);
       setInvoiceText("Borough", upper(borough), 10);
       setInvoiceText("Apt #", locationText, locationFontSize);
-      setInvoiceText("Building Address", upper(activeForm.address), activeForm.address.length > 42 ? 9 : 11);
+      const invoiceAddress = upper(activeForm.address);
+      setInvoiceText("Building Address", invoiceAddress, fitFontSize(invoiceForm, "Building Address", invoiceAddress, invoiceBoldFont, 11));
+      try {
+        invoiceForm.getTextField("Building Address").disableMultiline();
+      } catch {}
       setInvoiceText("BID AMOUNT", bidAmount);
       setInvoiceText("INCREASE DECREASE AMOUNT", changeAmount);
       setInvoiceText("TOTAL CHARGE", chargeAmount);
@@ -1506,7 +1525,8 @@ export default function PaperworkPage() {
       const fullBuildingAddress = [activeForm.address, activeForm.location, activeForm.borough ? `${activeForm.borough}, NY` : "NY"]
         .filter(Boolean)
         .join(", ");
-      setAffidavitText("Building Address", upper(fullBuildingAddress), fullBuildingAddress.length > 55 ? 10 : 12);
+      const affidavitAddress = upper(fullBuildingAddress);
+      setAffidavitText("Building Address", affidavitAddress, fitFontSize(affidavitForm, "Building Address", affidavitAddress, affidavitBoldFont, 12));
       showUnderline(affidavitForm, "Building Address");
       setAffidavitText("State", "NEW YORK");
       setAffidavitText("County Of", "QUEENS", 10);
@@ -1587,8 +1607,6 @@ export default function PaperworkPage() {
       // The template's opaque white field backgrounds hide printed form text and lines next to the fields.
       affidavitForm.getFields().forEach((field) => clearFieldBackground(affidavitForm, field.getName()));
 
-      const affidavitBoldFont = await affidavitDoc.embedFont(StandardFonts.HelveticaBold);
-      const invoiceBoldFont = await invoiceDoc.embedFont(StandardFonts.HelveticaBold);
       affidavitForm.updateFieldAppearances(affidavitBoldFont);
       affidavitForm.flatten();
       invoiceForm.updateFieldAppearances(invoiceBoldFont);

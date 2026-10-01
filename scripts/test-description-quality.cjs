@@ -33,4 +33,7 @@ assert.equal(getJobDescription({ ItbPage3Description: formJunk, description: rea
 assert.equal(getJobDescription({ description: wageJunk, Trade: 'CARPENTRY' }), 'CARPENTRY');
 assert.equal(getJobDescription({ description: wageJunk }), '');
 
+// Leftover ": " from the ITB label is stripped.
+assert.equal(getJobDescription({ ItbPage3Description: ': AT SECTION B REPAIR DOOR' }), 'AT SECTION B REPAIR DOOR');
+
 console.log('Description quality: junk ITB text skipped in favour of clean fields.');

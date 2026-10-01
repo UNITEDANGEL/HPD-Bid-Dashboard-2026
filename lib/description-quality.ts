@@ -19,7 +19,8 @@ function cleanCandidates(job: Record<string, unknown> | null | undefined, keys: 
   if (!job) return [];
   return keys
     .map((key) => job[key])
-    .map((value) => (value === undefined || value === null ? "" : String(value).trim()))
+    // Recovered ITB text often starts with the ": " left over from its "JOB DESCRIPTION:" label.
+    .map((value) => (value === undefined || value === null ? "" : String(value).trim().replace(/^:\s*/, "")))
     .filter((text) => text && !isJunkDescription(text));
 }
 
