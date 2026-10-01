@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PDFDocument, StandardFonts, PDFName } from "pdf-lib";
-import { dateInputValue, noAccessAttemptProblem, noTelephoneNote } from "../../lib/no-access";
+import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate } from "../../lib/no-access";
 import { tenantContactInfo } from "../../lib/tenantContact";
 import { calendarDay } from "../../lib/job-priority";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
@@ -350,6 +350,15 @@ function refusedAccessRelationship(job: JobRecord, outcome: PaperworkOutcome) {
 
 function refusedAccessDescription(value: string) {
   return String(value || "").trim();
+}
+
+function workDatesProblem(form: PackageForm) {
+  const start = parseFormDate(form.workStart || form.workComplete || form.fieldDate);
+  const complete = parseFormDate(form.workComplete || form.fieldDate);
+  if (start && complete && start.getTime() > complete.getTime()) {
+    return `Work start (${displayDate(form.workStart)}) is after work completion (${displayDate(form.workComplete || form.fieldDate)}). Fix the work dates before generating.`;
+  }
+  return "";
 }
 
 function noAccessDetailsProblem(form: PackageForm) {
@@ -1392,7 +1401,7 @@ export default function PaperworkPage() {
     // Dates print as MM/DD/YY on HPD paperwork; the form state keeps ISO dates.
     const firstAttempt = displayDate(activeForm.firstAttempt || fieldDate);
     const secondAttempt = displayDate(activeForm.secondAttempt || fieldDate);
-    const workStart = displayDate(activeForm.workStart || activeForm.fieldDate);
+    const workStart = displayDate(activeForm.workStart || activeForm.workComplete || activeForm.fieldDate);
     const workComplete = displayDate(activeForm.workComplete || activeForm.fieldDate);
     const invoiceDate = useWorkTemplate ? workComplete || displayDate(fieldDate) : secondAttempt;
     const signer = includeSignature ? activeForm.signer || DEFAULT_PACKAGE_SIGNER : "";
@@ -1401,6 +1410,12 @@ export default function PaperworkPage() {
 
     if (refusedAccessNeedsDescription(activeOutcome, activeForm)) {
       setPdfStatus(`Refused access needs section 7b description of the person. Enter what you observed, for example: ${REFUSED_ACCESS_DESCRIPTION_EXAMPLE}.`);
+      return null;
+    }
+
+    const datesProblem = useWorkTemplate ? workDatesProblem(activeForm) : "";
+    if (datesProblem) {
+      setPdfStatus(datesProblem);
       return null;
     }
 
@@ -1602,10 +1617,11 @@ export default function PaperworkPage() {
       } else {
         const noWorkReason = activeForm.affidavitReason || affidavitReasonForOutcome(activeOutcome);
         const isRefusedAccess = activeOutcome === "refused_access";
-        const deniedName = isRefusedAccess ? cleanRefusedName(activeForm.deniedName) : "";
+        // The form says to write "did not provide" for anything the person would not give.
+        const deniedName = isRefusedAccess ? cleanRefusedName(activeForm.deniedName) || "DID NOT PROVIDE" : "";
         const deniedRelationship = isRefusedAccess ? activeForm.deniedRelationship || "SUPER" : "";
         const deniedDescription = isRefusedAccess ? activeForm.deniedDescription : "";
-        const deniedPhone = isRefusedAccess ? activeForm.deniedPhone : "";
+        const deniedPhone = isRefusedAccess ? activeForm.deniedPhone || "DID NOT PROVIDE" : "";
 
         setAffidavitText("Deponent Name", deponentLine, 11);
         showUnderline(affidavitForm, "Deponent Name");
@@ -1633,6 +1649,7 @@ export default function PaperworkPage() {
         }
 
         if (activeOutcome === "completed_by_others") {
+          adjustFieldRect(affidavitForm, "WorkSite Date5", { dx: 14, dw: -14 });
           setAffidavitText("WorkSite Date5", secondAttempt, 9);
         }
 
@@ -4060,17 +4077,31 @@ export default function PaperworkPage() {
                   Use Male Tall Dark Hair
                 </button>
               </label>
+              <div className="paperwork-grid">
+                <label className="paperwork-field">
+                  Name Given (7a)
+                  <input value={form.deniedName} onChange={(event) => update("deniedName", event.target.value)} placeholder="DID NOT PROVIDE" />
+                </label>
+                <label className="paperwork-field">
+                  Relationship (7a)
+                  <input value={form.deniedRelationship} onChange={(event) => update("deniedRelationship", event.target.value)} placeholder="SUPER" />
+                </label>
+              </div>
+              <label className="paperwork-field">
+                Their Telephone (7b)
+                <input value={form.deniedPhone} onChange={(event) => update("deniedPhone", event.target.value)} placeholder="DID NOT PROVIDE" />
+              </label>
             </div>
           ) : null}
 
           {outcome === "work_completed" || outcome === "partial_work_completed" ? (
             <div
-              className={`refused-access-required package-charge-card ${outcome === "partial_work_completed" && !form.partialReason.trim() ? "needs-description" : "ready"}`}
+              className={`refused-access-required package-charge-card ${workDatesProblem(form) || (outcome === "partial_work_completed" && !form.partialReason.trim()) ? "needs-description" : "ready"}`}
               data-hpd-smoke="paperwork-charge-card"
             >
               <div>
                 <span>{outcome === "partial_work_completed" ? "Partial Work Charge" : "Work Completed Charge"}</span>
-                <strong>Charge for this package</strong>
+                <strong>Charge and work dates</strong>
                 <small>Bid amount {form.bidAmount || "not listed"}. Change the charge if it differs from the bid.</small>
               </div>
               <label className="paperwork-field">
@@ -4083,6 +4114,27 @@ export default function PaperworkPage() {
                   placeholder={form.bidAmount || "$0.00"}
                 />
               </label>
+              <div className="paperwork-grid">
+                <label className="paperwork-field">
+                  Work Started
+                  <input
+                    type="date"
+                    data-hpd-smoke="paperwork-work-start"
+                    value={dateInputValue(form.workStart || form.workComplete)}
+                    onChange={(event) => update("workStart", displayDate(event.target.value))}
+                  />
+                </label>
+                <label className="paperwork-field">
+                  Work Completed
+                  <input
+                    type="date"
+                    data-hpd-smoke="paperwork-work-complete"
+                    value={dateInputValue(form.workComplete || form.fieldDate)}
+                    onChange={(event) => update("workComplete", displayDate(event.target.value))}
+                  />
+                </label>
+              </div>
+              {workDatesProblem(form) ? <small data-hpd-smoke="paperwork-work-dates-status">{workDatesProblem(form)}</small> : null}
               {outcome === "partial_work_completed" ? (
                 <label className="paperwork-field">
                   Why was the work only partially completed? (item 6)

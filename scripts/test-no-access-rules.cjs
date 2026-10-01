@@ -34,5 +34,8 @@ assert.equal(noTelephoneNote(false), 'NO TELEPHONE NUMBER AVAILABLE');
 const page = fs.readFileSync(path.join(root, 'app/paperwork/page.tsx'), 'utf8');
 assert.ok(page.includes('noAccessDetailsProblem(activeForm)'), 'No Access generation must check attempt gap and call dates');
 assert.ok(page.includes('upper(activeForm.partialReason)'), 'Partial reason must come from its own field, not the job scope');
+assert.ok(page.includes('workDatesProblem(activeForm)'), 'Work packages must block a start date after completion');
+assert.ok(page.includes('cleanRefusedName(activeForm.deniedName) || "DID NOT PROVIDE"'), 'Refused access 7a must say DID NOT PROVIDE when no name was given');
+assert.ok(page.includes('activeForm.deniedPhone || "DID NOT PROVIDE"'), 'Refused access 7b must say DID NOT PROVIDE when no phone was given');
 
 console.log('No Access rules: 72-hour attempt gap, call dates and no-phone note checked.');
