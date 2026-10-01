@@ -1853,7 +1853,6 @@
 .fc-app.fc-reference.fc-full-map .fc-map-wrap { position: absolute; inset: 0; margin: 0; }
 .fc-app.fc-reference.fc-full-map:not(.fc-chrome-open) :is(.fc-topbar,.fc-borough-row,.fc-tabbar,.plan-my-day,.fc-status-pill-row) { display: none; }
 .fc-app.fc-reference.fc-full-map:not(.fc-chrome-open) .fc-map-controls { top: calc(72px + env(safe-area-inset-top)); }
-.fc-app.fc-reference.fc-full-map:not(.fc-chrome-open) .fc-map-controls > :not(:first-child) { display: none; }
 .fc-reveal-controls { position: absolute; z-index: 1600; top: max(12px,env(safe-area-inset-top)); right: 12px; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #dce1e8; border-radius: 50%; background: #fffffff0; color: #007aff !important; box-shadow: 0 2px 8px #20304022; }
 .fc-reveal-controls svg { width: 21px; height: 21px; }
 .fc-clean-streets .fc-map-node { background: #e7eef0; }
