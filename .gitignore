@@ -41,3 +41,7 @@ data/job_status_overrides.before_*.json
 
 # Generated from the installed MapLibre version by postinstall.
 public/map-worker/
+
+# Generated test output and Python cache
+output/
+__pycache__/
