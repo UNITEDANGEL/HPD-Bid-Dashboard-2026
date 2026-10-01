@@ -1439,6 +1439,21 @@ export default function PaperworkPage() {
         } catch {}
       };
 
+      const adjustFieldRect = (form: typeof affidavitForm, name: string, delta: { dx?: number; dy?: number; dw?: number }) => {
+        try {
+          const widgets = form.getField(name).acroField.getWidgets();
+          widgets.forEach((widget) => {
+            const rect = widget.getRectangle();
+            widget.setRectangle({
+              x: rect.x + (delta.dx || 0),
+              y: rect.y + (delta.dy || 0),
+              width: rect.width + (delta.dw || 0),
+              height: rect.height,
+            });
+          });
+        } catch {}
+      };
+
       const clearMaterialRows = () => {
         for (let index = 1; index <= 12; index += 1) {
           setInvoiceText(`M${index}`, "");
@@ -1474,9 +1489,13 @@ export default function PaperworkPage() {
       try {
         affidavitForm.getTextField("Name of Contractor").disableMultiline();
       } catch {}
-      setAffidavitText("OMO", jobId);
+      adjustFieldRect(affidavitForm, "OMO", { dy: 2 });
+      setAffidavitText("OMO", jobId, 11);
       setAffidavitText("OMO Header2", jobId);
-      setAffidavitText("Building Address", upper(activeForm.address), activeForm.address.length > 42 ? 8 : 9);
+      const fullBuildingAddress = [activeForm.address, activeForm.location, activeForm.borough ? `${activeForm.borough}, NY` : "NY"]
+        .filter(Boolean)
+        .join(", ");
+      setAffidavitText("Building Address", upper(fullBuildingAddress), fullBuildingAddress.length > 55 ? 10 : 12);
       setAffidavitText("State", "NEW YORK");
       setAffidavitText("County Of", "QUEENS", 10);
       setAffidavitText("Type or Print Name", signer.toUpperCase());
@@ -1484,8 +1503,9 @@ export default function PaperworkPage() {
       if (useWorkTemplate) {
         const workDate = activeForm.workComplete || fieldDate;
         setAffidavitText("Deponent Name", deponentLine, 11);
-        setAffidavitText("Start Date", activeOutcome === "work_completed" ? activeForm.workStart || activeForm.fieldDate : "");
-        setAffidavitText("Complete Date", activeOutcome === "work_completed" ? activeForm.workComplete || activeForm.fieldDate : "");
+        setAffidavitText("Start Date", activeOutcome === "work_completed" ? activeForm.workStart || activeForm.fieldDate : "", 11);
+        adjustFieldRect(affidavitForm, "Complete Date", { dx: -20, dy: 2.5 });
+        setAffidavitText("Complete Date", activeOutcome === "work_completed" ? activeForm.workComplete || activeForm.fieldDate : "", 11);
         setAffidavitText(
           "Partial Reason",
           activeOutcome === "partial_work_completed" ? activeForm.notes || "" : "",
