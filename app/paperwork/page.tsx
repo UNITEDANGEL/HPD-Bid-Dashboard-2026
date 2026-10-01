@@ -1364,9 +1364,12 @@ export default function PaperworkPage() {
         ? pdfMoney(chargeValue - bidValue, true)
         : "0.00";
     const fieldDate = activeForm.fieldDate || activeForm.workComplete || todayIsoDate();
-    const firstAttempt = activeForm.firstAttempt || fieldDate;
-    const secondAttempt = activeForm.secondAttempt || fieldDate;
-    const invoiceDate = useWorkTemplate ? activeForm.workComplete || fieldDate : secondAttempt;
+    // Dates print as MM/DD/YY on HPD paperwork; the form state keeps ISO dates.
+    const firstAttempt = displayDate(activeForm.firstAttempt || fieldDate);
+    const secondAttempt = displayDate(activeForm.secondAttempt || fieldDate);
+    const workStart = displayDate(activeForm.workStart || activeForm.fieldDate);
+    const workComplete = displayDate(activeForm.workComplete || activeForm.fieldDate);
+    const invoiceDate = useWorkTemplate ? workComplete || displayDate(fieldDate) : secondAttempt;
     const signer = includeSignature ? activeForm.signer || DEFAULT_PACKAGE_SIGNER : "";
     const locationText = upper(activeForm.location);
     const locationFontSize = pdfLocationFontSize(locationText);
@@ -1424,7 +1427,11 @@ export default function PaperworkPage() {
           const widgets = form.getField(name).acroField.getWidgets();
           widgets.forEach((widget) => {
             const mk = widget.dict.lookup(PDFName.of("MK"));
-            if (mk && "delete" in mk) (mk as { delete: (key: ReturnType<typeof PDFName.of>) => void }).delete(PDFName.of("BG"));
+            if (!mk || !("delete" in mk)) return;
+            // Drop the border colour too: without a background, pdf-lib draws the template's black BC as a box.
+            const appearance = mk as { delete: (key: ReturnType<typeof PDFName.of>) => void };
+            appearance.delete(PDFName.of("BG"));
+            appearance.delete(PDFName.of("BC"));
           });
         } catch {}
       };
@@ -1509,10 +1516,10 @@ export default function PaperworkPage() {
         const workDate = activeForm.workComplete || fieldDate;
         setAffidavitText("Deponent Name", deponentLine, 11);
         showUnderline(affidavitForm, "Deponent Name");
-        setAffidavitText("Start Date", activeOutcome === "work_completed" ? activeForm.workStart || activeForm.fieldDate : "", 11);
+        setAffidavitText("Start Date", activeOutcome === "work_completed" ? workStart : "", 11);
         showUnderline(affidavitForm, "Start Date");
         adjustFieldRect(affidavitForm, "Complete Date", { dx: -20, dy: 2.5 });
-        setAffidavitText("Complete Date", activeOutcome === "work_completed" ? activeForm.workComplete || activeForm.fieldDate : "", 11);
+        setAffidavitText("Complete Date", activeOutcome === "work_completed" ? workComplete : "", 11);
         showUnderline(affidavitForm, "Complete Date");
         setAffidavitText(
           "Partial Reason",
@@ -1520,6 +1527,9 @@ export default function PaperworkPage() {
           9
         );
         setAffidavitText("Partial Amount", activeOutcome === "partial_work_completed" ? chargeAmount : "");
+        adjustFieldRect(affidavitForm, "Partial Reason", { dy: 4 });
+        adjustFieldRect(affidavitForm, "Partial Amount", { dx: 3 });
+        showUnderline(affidavitForm, "Partial Amount");
         setAffidavitText("Notary Day Month", "", 9);
         setAffidavitText("Notary Year", "", 9);
 
@@ -1530,8 +1540,8 @@ export default function PaperworkPage() {
           setAffidavitText("Denied Actions", activeForm.notes || "", 9);
         }
 
-        setInvoiceText("START DATE", activeOutcome === "work_completed" ? activeForm.workStart || activeForm.fieldDate : "");
-        setInvoiceText("COMPLETE DATE", activeOutcome === "work_completed" ? activeForm.workComplete || activeForm.fieldDate : "");
+        setInvoiceText("START DATE", activeOutcome === "work_completed" ? workStart : "");
+        setInvoiceText("COMPLETE DATE", activeOutcome === "work_completed" ? workComplete : "");
         setInvoiceText("Work Description", activeForm.description || activeForm.notes || "Work completed per HPD bid / work order.");
       } else {
         const noWorkReason = activeForm.affidavitReason || affidavitReasonForOutcome(activeOutcome);
@@ -1544,6 +1554,7 @@ export default function PaperworkPage() {
         setAffidavitText("Deponent Name", deponentLine, 11);
         showUnderline(affidavitForm, "Deponent Name");
         setAffidavitText("Service Charge Amount", chargeAmount);
+        showUnderline(affidavitForm, "Service Charge Amount");
         setAffidavitText("Notary Day", "");
         setAffidavitText("Notary Month", "");
         setAffidavitText("Notary Year", "");
@@ -1573,6 +1584,9 @@ export default function PaperworkPage() {
         setInvoiceText("Work Description", activeForm.description || noWorkReason, 12);
       }
 
+      // The template's opaque white field backgrounds hide printed form text and lines next to the fields.
+      affidavitForm.getFields().forEach((field) => clearFieldBackground(affidavitForm, field.getName()));
+
       const affidavitBoldFont = await affidavitDoc.embedFont(StandardFonts.HelveticaBold);
       const invoiceBoldFont = await invoiceDoc.embedFont(StandardFonts.HelveticaBold);
       affidavitForm.updateFieldAppearances(affidavitBoldFont);
@@ -1594,8 +1608,8 @@ export default function PaperworkPage() {
       const invoicePage = invoiceDoc.getPages()[0];
       if (useWorkTemplate && activeOutcome === "partial_work_completed" && invoicePage) {
         invoicePage.drawText(invoiceDate, { x: 411, y: 635, size: 10 });
-        invoicePage.drawText(activeForm.workStart || activeForm.fieldDate, { x: 411, y: 618, size: 10 });
-        invoicePage.drawText(activeForm.workComplete || activeForm.fieldDate, { x: 423, y: 595, size: 10 });
+        invoicePage.drawText(workStart, { x: 411, y: 618, size: 10 });
+        invoicePage.drawText(workComplete, { x: 423, y: 595, size: 10 });
       }
       if (!useWorkTemplate && activeOutcome !== "no_access" && invoicePage) {
         invoicePage.drawText(secondAttempt, { x: 411, y: 635, size: 10 });
