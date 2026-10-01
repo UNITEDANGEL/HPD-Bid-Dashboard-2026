@@ -34,5 +34,7 @@ const base = {
   await doc.save();
 
   assert.equal(INVOICE_COMPANY.name, 'UNITED ANGEL CONSTRUCTION CORP.');
+  assert.equal(INVOICE_COMPANY.fax, '(718) 989-1381');
+  assert.equal(INVOICE_COMPANY.email, 'uac525@gmail.com');
   console.log('Invoice PDF: drawn as one Letter page; unusual characters and overflow handled.');
 })().catch(error => { console.error(error); process.exit(1); });

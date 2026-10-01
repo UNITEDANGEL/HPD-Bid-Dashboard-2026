@@ -8,6 +8,9 @@ export const INVOICE_COMPANY = {
   street: "120-17 91st Avenue",
   city: "Richmond Hill, NY 11418",
   phone: "Tel (917) 416-0359",
+  // Printed in the header when filled in.
+  fax: "(718) 989-1381",
+  email: "uac525@gmail.com",
 };
 
 export type InvoiceData = {
@@ -36,12 +39,11 @@ export type InvoiceData = {
 const PAGE = { width: 612, height: 792 };
 const MARGIN = 40;
 const CONTENT_WIDTH = PAGE.width - MARGIN * 2;
-const NAVY = rgb(0.11, 0.22, 0.37);
-const INK = rgb(0.1, 0.1, 0.12);
-const MUTED = rgb(0.36, 0.39, 0.44);
-const GRID = rgb(0.74, 0.77, 0.81);
-const SHADE = rgb(0.93, 0.945, 0.965);
-const ZEBRA = rgb(0.975, 0.98, 0.987);
+// Black and white, thin lines, no filled bars: prints and faxes cleanly with little ink.
+const INK = rgb(0, 0, 0);
+const MUTED = rgb(0.3, 0.3, 0.3);
+const GRID = rgb(0.55, 0.55, 0.55);
+const RULE = 0.6;
 const MATERIAL_ROWS = 12;
 
 type Fonts = { regular: PDFFont; bold: PDFFont; italic: PDFFont };
@@ -131,11 +133,11 @@ class Canvas {
       height,
       color: options.fill,
       borderColor: options.border,
-      borderWidth: options.border ? options.borderWidth ?? 0.75 : 0,
+      borderWidth: options.border ? options.borderWidth ?? RULE : 0,
     });
   }
 
-  line(x1: number, top1: number, x2: number, top2: number, color = GRID, thickness = 0.75) {
+  line(x1: number, top1: number, x2: number, top2: number, color = GRID, thickness = RULE) {
     this.page.drawLine({ start: { x: x1, y: PAGE.height - top1 }, end: { x: x2, y: PAGE.height - top2 }, color, thickness });
   }
 
@@ -168,13 +170,16 @@ export async function drawInvoicePage(doc: PDFDocument, data: InvoiceData) {
   const right = PAGE.width - MARGIN;
 
   // Header: company block and invoice block.
-  c.rect(0, 0, PAGE.width, 6, { fill: NAVY });
-  c.text(INVOICE_COMPANY.name, left, 30, 19, fonts.bold, NAVY);
-  c.text(INVOICE_COMPANY.street, left, 56, 9.5, fonts.regular, MUTED);
-  c.text(INVOICE_COMPANY.city, left, 68, 9.5, fonts.regular, MUTED);
-  c.text(INVOICE_COMPANY.phone, left, 80, 9.5, fonts.regular, MUTED);
+  c.text(INVOICE_COMPANY.name, left, 34, 17, fonts.bold);
+  const contact = [
+    INVOICE_COMPANY.street,
+    INVOICE_COMPANY.city,
+    [INVOICE_COMPANY.phone, INVOICE_COMPANY.fax && `Fax ${INVOICE_COMPANY.fax}`].filter(Boolean).join("   |   "),
+    INVOICE_COMPANY.email,
+  ].filter(Boolean);
+  contact.forEach((line, index) => c.text(line, left, 57 + index * 11.5, 9, fonts.regular, MUTED));
 
-  c.textRight("INVOICE", right, 26, 26, fonts.bold, NAVY);
+  c.textRight("INVOICE", right, 30, 22, fonts.regular);
   const metaRows: [string, string][] = [
     ["Invoice #", data.invoiceNo],
     ["Invoice Date", data.invoiceDate],
@@ -183,12 +188,12 @@ export async function drawInvoicePage(doc: PDFDocument, data: InvoiceData) {
   metaRows.forEach(([label, value], index) => {
     const top = 58 + index * 13;
     c.textRight(label, right - 92, top, 8.5, fonts.regular, MUTED);
-    c.fitted(value, right - 86, top - 0.5, 86, 9.5);
+    c.fitted(value, right - 86, top - 0.5, 86, 9.5, fonts.regular);
   });
-  c.line(left, 104, right, 104, NAVY, 1.5);
+  c.line(left, 110, right, 110, INK, RULE);
 
   // Job details grid.
-  const gridTop = 116;
+  const gridTop = 122;
   const rowHeight = 19;
   const colWidth = CONTENT_WIDTH / 2;
   const labelWidth = 92;
@@ -212,16 +217,14 @@ export async function drawInvoicePage(doc: PDFDocument, data: InvoiceData) {
   for (let index = 0; index < leftRows.length; index += 1) {
     const top = gridTop + index * rowHeight;
     if (index) c.line(left, top, right, top);
-    c.rect(left + 0.4, top + 0.4, labelWidth, rowHeight - 0.8, { fill: SHADE });
-    c.rect(left + colWidth + 0.4, top + 0.4, labelWidth + 34, rowHeight - 0.8, { fill: SHADE });
     const [leftLabel, leftValue] = leftRows[index];
-    c.text(leftLabel, left + 6, top + 5.5, 8, fonts.bold, MUTED);
-    c.fitted(leftValue, left + labelWidth + 7, top + 4.5, colWidth - labelWidth - 12, 10);
+    c.text(leftLabel, left + 6, top + 5.5, 8, fonts.regular, MUTED);
+    c.fitted(leftValue, left + labelWidth + 7, top + 4.5, colWidth - labelWidth - 12, 10, fonts.regular);
     const [rightLabel, rightValue] = rightRows[index];
-    c.text(rightLabel, left + colWidth + 6, top + 5.5, 8, fonts.bold, MUTED);
+    c.text(rightLabel, left + colWidth + 6, top + 5.5, 8, fonts.regular, MUTED);
     const valueX = left + colWidth + labelWidth + 41;
     if (typeof rightValue === "boolean") c.yesNo(valueX, top + 5.5, rightValue);
-    else c.fitted(rightValue, valueX, top + 4.5, colWidth - labelWidth - 46, 10);
+    else c.fitted(rightValue, valueX, top + 4.5, colWidth - labelWidth - 46, 10, fonts.regular);
   }
   const rcNoteTop = gridTop + gridHeight + 4;
   c.textRight("If Yes, provide RC or Mini RC #: ______________", right, rcNoteTop, 7.5, fonts.italic, MUTED);
@@ -229,18 +232,18 @@ export async function drawInvoicePage(doc: PDFDocument, data: InvoiceData) {
   // Description of work done.
   const descTop = rcNoteTop + 16;
   const descHeight = 168;
-  c.rect(left, descTop, CONTENT_WIDTH, 17, { fill: NAVY });
-  c.text("DESCRIPTION OF WORK DONE", left + 7, descTop + 4.5, 9, fonts.bold, rgb(1, 1, 1));
+  c.text("DESCRIPTION OF WORK DONE", left + 7, descTop + 4.5, 9, fonts.bold);
+  c.line(left, descTop + 17, right, descTop + 17, GRID, RULE);
   c.rect(left, descTop, CONTENT_WIDTH, descHeight, { border: GRID });
   const textWidth = CONTENT_WIDTH - 16;
   const textArea = descHeight - 17 - 18;
   let descSize = 9.5;
-  let lines = wrapLines(fonts.bold, data.description, descSize, textWidth);
+  let lines = wrapLines(fonts.regular, data.description, descSize, textWidth);
   while (descSize > 6 && lines.length * descSize * 1.22 > textArea) {
     descSize -= 0.25;
-    lines = wrapLines(fonts.bold, data.description, descSize, textWidth);
+    lines = wrapLines(fonts.regular, data.description, descSize, textWidth);
   }
-  lines.forEach((line, index) => c.text(line, left + 8, descTop + 23 + index * descSize * 1.22, descSize, fonts.bold));
+  lines.forEach((line, index) => c.text(line, left + 8, descTop + 23 + index * descSize * 1.22, descSize, fonts.regular));
   c.text(
     "Your request for service charge and the dollar amount should be added to the work description.",
     left + 8,
@@ -255,24 +258,22 @@ export async function drawInvoicePage(doc: PDFDocument, data: InvoiceData) {
   const numberWidth = 30;
   const qtyWidth = 82;
   const materialRow = 16;
-  c.rect(left, tableTop, CONTENT_WIDTH, 17, { fill: NAVY });
-  c.textCenter("No.", left + numberWidth / 2, tableTop + 4.5, 8.5, fonts.bold, rgb(1, 1, 1));
-  c.text("MATERIAL - LIST SEPARATELY", left + numberWidth + 7, tableTop + 4.5, 8.5, fonts.bold, rgb(1, 1, 1));
-  c.textCenter("QUANTITY", right - qtyWidth / 2, tableTop + 4.5, 8.5, fonts.bold, rgb(1, 1, 1));
+  c.textCenter("No.", left + numberWidth / 2, tableTop + 4.5, 8.5, fonts.bold);
+  c.text("MATERIAL - LIST SEPARATELY", left + numberWidth + 7, tableTop + 4.5, 8.5, fonts.bold);
+  c.textCenter("QUANTITY", right - qtyWidth / 2, tableTop + 4.5, 8.5, fonts.bold);
   const noteTop = tableTop + 17;
-  c.rect(left, noteTop, CONTENT_WIDTH, 13, { fill: SHADE });
+  c.line(left, noteTop, right, noteTop, GRID, RULE);
   c.textCenter("The material and quantity areas must be completed just as you would for full payment.", left + CONTENT_WIDTH / 2, noteTop + 3.2, 7.5, fonts.italic, MUTED);
   const rowsTop = noteTop + 13;
   const rowsHeight = materialRow * MATERIAL_ROWS;
   for (let index = 0; index < MATERIAL_ROWS; index += 1) {
     const top = rowsTop + index * materialRow;
-    if (index % 2) c.rect(left, top, CONTENT_WIDTH, materialRow, { fill: ZEBRA });
     c.line(left, top, right, top);
     c.textCenter(String(index + 1), left + numberWidth / 2, top + 3.6, 8, fonts.regular, MUTED);
     const material = data.materials[index];
     if (material) {
-      c.fitted(material.name, left + numberWidth + 7, top + 3, CONTENT_WIDTH - numberWidth - qtyWidth - 14, 9);
-      c.textCenter(safeText(fonts.bold, material.qty), right - qtyWidth / 2, top + 3, 9, fonts.bold);
+      c.fitted(material.name, left + numberWidth + 7, top + 3, CONTENT_WIDTH - numberWidth - qtyWidth - 14, 9, fonts.regular);
+      c.textCenter(safeText(fonts.regular, material.qty), right - qtyWidth / 2, top + 3, 9, fonts.regular);
     }
   }
   c.rect(left, tableTop, CONTENT_WIDTH, 17 + 13 + rowsHeight, { border: GRID });
@@ -285,7 +286,7 @@ export async function drawInvoicePage(doc: PDFDocument, data: InvoiceData) {
   const lowerTop = tableBottom + 20;
   const totalsWidth = 220;
   const totalsLeft = right - totalsWidth;
-  c.text("PENALTY FOR FALSIFICATION", left, lowerTop, 8, fonts.bold, NAVY);
+  c.text("PENALTY FOR FALSIFICATION", left, lowerTop, 8, fonts.bold);
   wrapLines(
     fonts.regular,
     "Falsification of any statement made herein is an offense punishable by a fine or imprisonment or both, pursuant to the NYC Administrative Code. I hereby certify the above to be correct as specified.",
@@ -301,25 +302,22 @@ export async function drawInvoicePage(doc: PDFDocument, data: InvoiceData) {
   const totalRow = 18;
   totals.forEach(([label, value, strong], index) => {
     const top = lowerTop - 4 + index * totalRow;
-    if (strong) c.rect(totalsLeft, top, totalsWidth, totalRow, { fill: NAVY });
-    else if (index) c.line(totalsLeft, top, right, top);
-    const color = strong ? rgb(1, 1, 1) : INK;
-    c.text(label, totalsLeft + 7, top + 5, strong ? 9 : 8.5, strong ? fonts.bold : fonts.regular, strong ? color : MUTED);
-    c.textRight(`$ ${value}`, right - 7, top + (strong ? 4 : 4.5), strong ? 11 : 10, fonts.bold, color);
+    if (index) c.line(totalsLeft, top, right, top, strong ? INK : GRID, RULE);
+    c.text(label, totalsLeft + 7, top + 5, strong ? 9 : 8.5, strong ? fonts.bold : fonts.regular, strong ? INK : MUTED);
+    c.textRight(`$ ${value}`, right - 7, top + (strong ? 4 : 4.5), strong ? 11 : 10, strong ? fonts.bold : fonts.regular);
   });
   c.rect(totalsLeft, lowerTop - 4, totalsWidth, totalRow * totals.length, { border: GRID });
 
   // Signature block.
   const signTop = lowerTop + 78;
-  c.line(left, signTop + 14, left + 250, signTop + 14, INK, 0.8);
+  c.line(left, signTop + 14, left + 250, signTop + 14, INK, RULE);
   c.text("Signature of Principal (blue ink only)", left, signTop + 18, 7.5, fonts.regular, MUTED);
-  c.text(data.signerName, left + 280, signTop + 2, 10.5, fonts.bold);
-  c.line(left + 280, signTop + 14, right - 90, signTop + 14, INK, 0.8);
+  c.text(data.signerName, left + 280, signTop + 2, 10.5, fonts.regular);
+  c.line(left + 280, signTop + 14, right - 90, signTop + 14, INK, RULE);
   c.text("Name (please print)", left + 280, signTop + 18, 7.5, fonts.regular, MUTED);
-  c.text(data.title, right - 78, signTop + 2, 10.5, fonts.bold);
-  c.line(right - 78, signTop + 14, right, signTop + 14, INK, 0.8);
+  c.text(data.title, right - 78, signTop + 2, 10.5, fonts.regular);
+  c.line(right - 78, signTop + 14, right, signTop + 14, INK, RULE);
   c.text("Title", right - 78, signTop + 18, 7.5, fonts.regular, MUTED);
 
-  c.rect(0, PAGE.height - 6, PAGE.width, 6, { fill: NAVY });
   return page;
 }
