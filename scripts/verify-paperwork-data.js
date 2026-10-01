@@ -53,6 +53,24 @@ function isWorkOrderId(value) {
   return /^[A-Z]{2}\d+/i.test(String(value || "").trim());
 }
 
+// Keep in sync with JUNK_DESCRIPTION_PATTERNS in lib/description-quality.ts.
+const JUNK_DESCRIPTION_PATTERNS = [
+  /APT\(S\)\/LOCATION\(S\)/i,
+  /PROCEDURES\s+MATERIAL/i,
+  /General\s+Decision\s+Number/i,
+];
+
+function isJunkDescription(value) {
+  return JUNK_DESCRIPTION_PATTERNS.some((pattern) => pattern.test(String(value || "")));
+}
+
+// Mirrors getJobDescription: junk fields are skipped, so a job is only bad
+// when every filled description field is junk.
+function onlyJunkDescriptions(job) {
+  const filled = DESCRIPTION_KEYS.map((key) => String(job[key] ?? "").trim()).filter(Boolean);
+  return filled.length > 0 && filled.every(isJunkDescription);
+}
+
 function isBadDescription(value) {
   const text = String(value || "").toLowerCase();
   return (
@@ -94,6 +112,7 @@ function auditRows(rows, manifest) {
   const missingDescriptions = [];
   const missingItbPage3Descriptions = [];
   const badDescriptions = [];
+  const junkOnlyDescriptions = [];
   const sourceReviewJobs = [];
   const missingItbFiles = [];
   const missingPage3Images = [];
@@ -112,6 +131,7 @@ function auditRows(rows, manifest) {
       missingItbPage3Descriptions.push(summarizeJob(job));
     }
     if (description && isBadDescription(description)) badDescriptions.push(summarizeJob(job));
+    else if (onlyJunkDescriptions(job)) junkOnlyDescriptions.push(summarizeJob(job));
     if (needsSourceReview) sourceReviewJobs.push(summarizeJob(job));
     if (!itbFile && status !== "NO_ITB") missingItbFiles.push(summarizeJob(job));
 
@@ -128,6 +148,7 @@ function auditRows(rows, manifest) {
     missingDescriptions,
     missingItbPage3Descriptions,
     badDescriptions,
+    junkOnlyDescriptions,
     sourceReviewJobs,
     missingItbFiles,
     missingPage3Images,
@@ -169,6 +190,7 @@ const output = {
   missingDescriptions: report.missingDescriptions.length,
   missingItbPage3Descriptions: report.missingItbPage3Descriptions.length,
   badDescriptions: report.badDescriptions.length,
+  junkOnlyDescriptions: report.junkOnlyDescriptions.length,
   sourceReviewJobs: report.sourceReviewJobs.length,
   missingItbFiles: report.missingItbFiles.length,
   missingPage3Images: report.missingPage3Images.length,
@@ -178,6 +200,7 @@ const output = {
     missingDescriptions: report.missingDescriptions.slice(0, 25),
     missingItbPage3Descriptions: report.missingItbPage3Descriptions.slice(0, 25),
     badDescriptions: report.badDescriptions.slice(0, 25),
+    junkOnlyDescriptions: report.junkOnlyDescriptions.slice(0, 25),
     sourceReviewJobs: report.sourceReviewJobs.slice(0, 25),
     missingItbFiles: report.missingItbFiles.slice(0, 25),
     missingPage3Images: report.missingPage3Images.slice(0, 25),
@@ -190,6 +213,7 @@ console.log(`Missing addresses: ${output.missingAddresses}`);
 console.log(`Missing descriptions: ${output.missingDescriptions}`);
 console.log(`Missing ITB page 3 descriptions: ${output.missingItbPage3Descriptions}`);
 console.log(`Bad/boilerplate descriptions: ${output.badDescriptions}`);
+console.log(`Junk-only descriptions (need ITB re-extraction): ${output.junkOnlyDescriptions}`);
 console.log(`Source review jobs: ${output.sourceReviewJobs}`);
 console.log(`Missing ITB files: ${output.missingItbFiles}`);
 console.log(`Missing page 3 images: ${output.missingPage3Images}`);
@@ -200,6 +224,7 @@ printTable("Missing address sample", report.missingAddresses);
 printTable("Missing description sample", report.missingDescriptions);
 printTable("Missing ITB page 3 description sample", report.missingItbPage3Descriptions);
 printTable("Bad description sample", report.badDescriptions);
+printTable("Junk-only description sample", report.junkOnlyDescriptions);
 
 if (writeReport) {
   const files = [
@@ -227,6 +252,9 @@ if (strict && criticalIssues.length) {
 
 if (report.sourceReviewJobs.length) {
   console.warn(`PAPERWORK DATA QUALITY WARNING: sourceReviewJobs=${report.sourceReviewJobs.length}.`);
+}
+if (report.junkOnlyDescriptions.length) {
+  console.warn(`PAPERWORK DATA QUALITY WARNING: junkOnlyDescriptions=${report.junkOnlyDescriptions.length} (app hides the junk text; re-extract scope from the ITB).`);
 }
 if (report.missingItbPage3Descriptions.length) {
   console.warn(`PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=${report.missingItbPage3Descriptions.length}.`);

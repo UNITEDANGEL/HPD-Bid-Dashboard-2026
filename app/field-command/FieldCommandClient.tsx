@@ -13,6 +13,7 @@ import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkReviewHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
 import { fetchServerWorkflowOverrides } from "../../lib/paperwork";
+import { longestCleanDescription } from "../../lib/description-quality";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
@@ -43,16 +44,6 @@ function value(job: JobRecord, keys: string[]) {
   return "";
 }
 
-function longestValue(job: JobRecord, keys: string[]) {
-  let best = "";
-  for (const key of keys) {
-    const v = job[key];
-    const text = v === null || v === undefined ? "" : String(v).trim();
-    if (text.length > best.length) best = text;
-  }
-  return best;
-}
-
 function numberValue(job: JobRecord, keys: string[]) {
   for (const key of keys) {
     const n = Number(job[key]);
@@ -69,10 +60,8 @@ function jobAddress(job: JobRecord) {
   return value(job, ["BuildingAddress", "Address", "address", "Location", "location"]) || "Address not captured";
 }
 
-const DESCRIPTION_FORM_BOILERPLATE_MARKERS = ["APT(S)/LOCATION(S)", "PROCEDURES MATERIAL"];
-
 function jobScope(job: JobRecord) {
-  const picked = longestValue(job, [
+  const picked = longestCleanDescription(job, [
     "ItbPage3Description",
     "JobDescription",
     "Job_Description",
@@ -84,8 +73,6 @@ function jobScope(job: JobRecord) {
     .replace(/^job description:\s*/i, "")
     .replace(/^:\s*/, "")
     .trim();
-  const upper = picked.toUpperCase();
-  if (DESCRIPTION_FORM_BOILERPLATE_MARKERS.some((marker) => upper.includes(marker))) return "Scope not captured yet.";
   return picked || "Scope not captured yet.";
 }
 

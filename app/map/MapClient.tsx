@@ -85,6 +85,7 @@ import {
 } from "../../lib/field-packet-store";
 import { cleanJobLocation, cleanJobLocationText, isCommonAreaLocation } from "../../lib/jobLocation";
 import { type PaperworkOutcome, paperworkOutcomeFromValue, paperworkQuery } from "../../lib/paperwork";
+import { firstCleanDescription } from "../../lib/description-quality";
 import { copyLegacyFieldStorage, shadowUpsert } from "../../lib/unified-field-store";
 import {
   type ChangeEvent,
@@ -792,18 +793,17 @@ function displayLocation(job: JobRecord | null | undefined) {
 }
 function displayDescription(job: JobRecord | null | undefined) {
   if (!job) return "";
-  const raw =
-    (job as any).ItbPage3Description ||
-    (job as any).itbPage3Description ||
-    (job as any).description ||
-    (job as any).JobDescription ||
-    (job as any).Job_Description ||
-    (job as any).Description ||
-    (job as any).WorkDescription ||
-    (job as any).ScopeOfWork ||
-    (job as any)["Job Description"] ||
-    (job as any)["Description"] ||
-    "";
+  const raw = firstCleanDescription(job as Record<string, unknown>, [
+    "ItbPage3Description",
+    "itbPage3Description",
+    "description",
+    "JobDescription",
+    "Job_Description",
+    "Description",
+    "WorkDescription",
+    "ScopeOfWork",
+    "Job Description",
+  ]);
   return String(raw || "")
     .replace(/\r/g, "\n")
     .replace(/\n{3,}/g, "\n\n")

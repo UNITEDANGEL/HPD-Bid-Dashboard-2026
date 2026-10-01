@@ -1,4 +1,5 @@
 import { cleanJobLocation, cleanJobLocationText } from "./jobLocation";
+import { longestCleanDescription } from "./description-quality";
 
 export type PaperworkOutcome =
   | "pending"
@@ -38,19 +39,6 @@ function pick(job: PaperworkJob | null | undefined, keys: string[]) {
   }
 
   return "";
-}
-
-function pickLongest(job: PaperworkJob | null | undefined, keys: string[]) {
-  if (!job) return "";
-
-  let best = "";
-  for (const key of keys) {
-    const value = job[key];
-    const text = value === undefined || value === null ? "" : String(value).trim();
-    if (text.length > best.length) best = text;
-  }
-
-  return best;
 }
 
 function boroughFromZip(zip: string) {
@@ -212,18 +200,8 @@ export function getJobBorough(job: PaperworkJob | null | undefined) {
   );
 }
 
-const DESCRIPTION_FORM_BOILERPLATE_MARKERS = [
-  "APT(S)/LOCATION(S)",
-  "PROCEDURES MATERIAL",
-];
-
-function isFormBoilerplateDescription(value: string) {
-  const upper = value.toUpperCase();
-  return DESCRIPTION_FORM_BOILERPLATE_MARKERS.some((marker) => upper.includes(marker));
-}
-
 export function getJobDescription(job: PaperworkJob | null | undefined) {
-  const picked = pickLongest(job, [
+  const picked = longestCleanDescription(job, [
     "ItbPage3Description",
     "itbPage3Description",
     "description",
@@ -234,7 +212,6 @@ export function getJobDescription(job: PaperworkJob | null | undefined) {
     "WorkDescription",
     "ScopeOfWork",
   ]);
-  if (picked && isFormBoilerplateDescription(picked)) return "";
   return picked || pick(job, ["Trade", "trade"]);
 }
 

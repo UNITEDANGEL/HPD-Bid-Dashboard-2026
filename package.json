@@ -21,6 +21,7 @@
     "lint": "next typegen && tsc --noEmit",
     "test:job-priority": "node scripts/test-job-priority.cjs",
     "test:field-flow": "node scripts/test-field-next-action.cjs",
+    "test:description-quality": "node scripts/test-description-quality.cjs",
     "export": "next build",
     "static": "next build",
     "fetcher-api": "node server/fetcher-api.js"
