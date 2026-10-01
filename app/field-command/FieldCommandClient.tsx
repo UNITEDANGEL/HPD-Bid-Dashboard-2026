@@ -69,21 +69,24 @@ function jobAddress(job: JobRecord) {
   return value(job, ["BuildingAddress", "Address", "address", "Location", "location"]) || "Address not captured";
 }
 
+const DESCRIPTION_FORM_BOILERPLATE_MARKERS = ["APT(S)/LOCATION(S)", "PROCEDURES MATERIAL"];
+
 function jobScope(job: JobRecord) {
-  return (
-    longestValue(job, [
-      "ItbPage3Description",
-      "JobDescription",
-      "Job_Description",
-      "Description",
-      "description",
-      "Scope",
-      "scope",
-    ])
-      .replace(/^job description:\s*/i, "")
-      .replace(/^:\s*/, "")
-      .trim() || "Scope not captured yet."
-  );
+  const picked = longestValue(job, [
+    "ItbPage3Description",
+    "JobDescription",
+    "Job_Description",
+    "Description",
+    "description",
+    "Scope",
+    "scope",
+  ])
+    .replace(/^job description:\s*/i, "")
+    .replace(/^:\s*/, "")
+    .trim();
+  const upper = picked.toUpperCase();
+  if (DESCRIPTION_FORM_BOILERPLATE_MARKERS.some((marker) => upper.includes(marker))) return "Scope not captured yet.";
+  return picked || "Scope not captured yet.";
 }
 
 function tenantInfo(job: JobRecord) {

@@ -212,8 +212,18 @@ export function getJobBorough(job: PaperworkJob | null | undefined) {
   );
 }
 
+const DESCRIPTION_FORM_BOILERPLATE_MARKERS = [
+  "APT(S)/LOCATION(S)",
+  "PROCEDURES MATERIAL",
+];
+
+function isFormBoilerplateDescription(value: string) {
+  const upper = value.toUpperCase();
+  return DESCRIPTION_FORM_BOILERPLATE_MARKERS.some((marker) => upper.includes(marker));
+}
+
 export function getJobDescription(job: PaperworkJob | null | undefined) {
-  return pickLongest(job, [
+  const picked = pickLongest(job, [
     "ItbPage3Description",
     "itbPage3Description",
     "description",
@@ -223,7 +233,9 @@ export function getJobDescription(job: PaperworkJob | null | undefined) {
     "Description",
     "WorkDescription",
     "ScopeOfWork",
-  ]) || pick(job, ["Trade", "trade"]);
+  ]);
+  if (picked && isFormBoilerplateDescription(picked)) return "";
+  return picked || pick(job, ["Trade", "trade"]);
 }
 
 export function getJobAmount(job: PaperworkJob | null | undefined) {
