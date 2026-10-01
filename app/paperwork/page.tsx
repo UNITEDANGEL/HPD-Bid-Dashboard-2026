@@ -25,6 +25,7 @@ import {
   getJobLocation,
   getJobWorkflowStatus,
   invoiceDescriptionForOutcome,
+  invoiceChangeAmount,
   isNoWorkOutcome,
   noWorkServiceChargeForJob,
   paperworkOutcomeFromJob,
@@ -1392,11 +1393,7 @@ export default function PaperworkPage() {
     const chargeValue = amountNumber(activeForm.amount || activeForm.bidAmount);
     const bidAmount = pdfMoney(bidValue);
     const chargeAmount = pdfMoney(chargeValue);
-    const changeAmount = activeOutcome === "partial_work_completed"
-      ? pdfMoney(Math.max(0, bidValue - chargeValue))
-      : isNoWorkOutcome(activeOutcome)
-        ? pdfMoney(chargeValue - bidValue, true)
-        : "0.00";
+    const changeAmount = pdfMoney(invoiceChangeAmount(bidValue, chargeValue), true);
     const fieldDate = activeForm.fieldDate || activeForm.workComplete || todayIsoDate();
     // Dates print as MM/DD/YY on HPD paperwork; the form state keeps ISO dates.
     const firstAttempt = displayDate(activeForm.firstAttempt || fieldDate);

@@ -24,6 +24,7 @@
     "test:description-quality": "node scripts/test-description-quality.cjs",
     "test:browser": "node scripts/test-browser-paperwork.mjs",
     "test:no-access": "node scripts/test-no-access-rules.cjs",
+    "test:invoice-amounts": "node scripts/test-invoice-amounts.cjs",
     "export": "next build",
     "static": "next build",
     "fetcher-api": "node server/fetcher-api.js"

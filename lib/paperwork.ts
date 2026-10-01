@@ -239,6 +239,12 @@ export function noWorkServiceChargeForAmount(value: string | number | undefined 
     : NO_WORK_SERVICE_CHARGE;
 }
 
+// Invoice "Approved Increase/Decrease" line: always charge minus bid. Completed work at the bid is 0,
+// partial work and no-work service charges are negative.
+export function invoiceChangeAmount(bidAmount: string | number | undefined | null, chargeAmount: string | number | undefined | null) {
+  return Math.round((amountToNumber(chargeAmount) - amountToNumber(bidAmount)) * 100) / 100;
+}
+
 export function noWorkServiceChargeForJob(job: PaperworkJob | null | undefined) {
   return noWorkServiceChargeForAmount(getJobAmount(job));
 }
