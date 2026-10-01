@@ -1439,6 +1439,13 @@ export default function PaperworkPage() {
         } catch {}
       };
 
+      const showUnderline = (form: typeof affidavitForm, name: string) => {
+        clearFieldBackground(form, name);
+        try {
+          form.getTextField(name).disableMultiline();
+        } catch {}
+      };
+
       const adjustFieldRect = (form: typeof affidavitForm, name: string, delta: { dx?: number; dy?: number; dw?: number }) => {
         try {
           const widgets = form.getField(name).acroField.getWidgets();
@@ -1485,10 +1492,7 @@ export default function PaperworkPage() {
 
       widenField(affidavitForm, "Name of Contractor", 50);
       setAffidavitText("Name of Contractor", CONTRACTOR_NAME, 8.5);
-      clearFieldBackground(affidavitForm, "Name of Contractor");
-      try {
-        affidavitForm.getTextField("Name of Contractor").disableMultiline();
-      } catch {}
+      showUnderline(affidavitForm, "Name of Contractor");
       adjustFieldRect(affidavitForm, "OMO", { dy: 2 });
       setAffidavitText("OMO", jobId, 11);
       setAffidavitText("OMO Header2", jobId);
@@ -1496,10 +1500,7 @@ export default function PaperworkPage() {
         .filter(Boolean)
         .join(", ");
       setAffidavitText("Building Address", upper(fullBuildingAddress), fullBuildingAddress.length > 55 ? 10 : 12);
-      clearFieldBackground(affidavitForm, "Building Address");
-      try {
-        affidavitForm.getTextField("Building Address").disableMultiline();
-      } catch {}
+      showUnderline(affidavitForm, "Building Address");
       setAffidavitText("State", "NEW YORK");
       setAffidavitText("County Of", "QUEENS", 10);
       setAffidavitText("Type or Print Name", signer.toUpperCase());
@@ -1507,9 +1508,12 @@ export default function PaperworkPage() {
       if (useWorkTemplate) {
         const workDate = activeForm.workComplete || fieldDate;
         setAffidavitText("Deponent Name", deponentLine, 11);
+        showUnderline(affidavitForm, "Deponent Name");
         setAffidavitText("Start Date", activeOutcome === "work_completed" ? activeForm.workStart || activeForm.fieldDate : "", 11);
+        showUnderline(affidavitForm, "Start Date");
         adjustFieldRect(affidavitForm, "Complete Date", { dx: -20, dy: 2.5 });
         setAffidavitText("Complete Date", activeOutcome === "work_completed" ? activeForm.workComplete || activeForm.fieldDate : "", 11);
+        showUnderline(affidavitForm, "Complete Date");
         setAffidavitText(
           "Partial Reason",
           activeOutcome === "partial_work_completed" ? activeForm.notes || "" : "",
@@ -1538,6 +1542,7 @@ export default function PaperworkPage() {
         const deniedPhone = isRefusedAccess ? activeForm.deniedPhone : "";
 
         setAffidavitText("Deponent Name", deponentLine, 11);
+        showUnderline(affidavitForm, "Deponent Name");
         setAffidavitText("Service Charge Amount", chargeAmount);
         setAffidavitText("Notary Day", "");
         setAffidavitText("Notary Month", "");
