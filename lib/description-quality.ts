@@ -16,6 +16,8 @@ const JUNK_DESCRIPTION_PATTERNS = [
   /Confirma\s*t?\s*ion\s+of\s+Award/i,
   // Purchase-order header (budget code, "submit invoice in quadruplicate") with no scope (ER04964).
   /Submit\s+Invoice\*?\s+In\s+Quadruplicate/i,
+  // ITB site-visit instructions captured in place of the scope (ER04964).
+  /evidence\s+of\s+the\s+required\s+Site\s+visit/i,
 ];
 
 // The real scope sometimes sits after a "Job Description:" label, behind a junk header (the wage

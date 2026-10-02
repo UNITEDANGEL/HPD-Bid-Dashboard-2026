@@ -64,6 +64,7 @@ const JUNK_DESCRIPTION_PATTERNS = [
   /General\s+Decision\s+Number/i,
   /Confirma\s*t?\s*ion\s+of\s+Award/i,
   /Submit\s+Invoice\*?\s+In\s+Quadruplicate/i,
+  /evidence\s+of\s+the\s+required\s+Site\s+visit/i,
 ];
 
 // Mirrors salvageScope in lib/description-quality.ts.
