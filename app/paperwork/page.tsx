@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PDFDocument, PDFFont, PDFPage, StandardFonts, PDFName, degrees, rgb } from "pdf-lib";
+import { PDFDocument, PDFFont, PDFPage, StandardFonts, PDFName, PDFTextField, degrees, rgb } from "pdf-lib";
 import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate } from "../../lib/no-access";
 import { tenantContactInfo } from "../../lib/tenantContact";
 import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
@@ -1583,11 +1583,15 @@ export default function PaperworkPage() {
         } catch {}
       };
 
-      // Largest font size (down to minSize) at which a single-line value fits its field.
-      const fitFontSize = (form: typeof affidavitForm, name: string, value: string, font: typeof affidavitBoldFont, maxSize: number, minSize = 6) => {
+      // Largest font size (down to minSize) at which a single-line value fits its field. The floor
+      // is low on purpose: an unusually long value shrinks rather than running into the form's text.
+      const fitFontSize = (form: typeof affidavitForm, name: string, value: string, font: typeof affidavitBoldFont, maxSize: number, minSize = 4.5) => {
         let width = 0;
         try {
-          width = form.getField(name).acroField.getWidgets()[0].getRectangle().width - 4;
+          // pdf-lib insets text by the border and padding on both sides; leave room so it's never
+          // clipped. Short boxes (a 2-digit year) keep the smaller inset so they don't shrink needlessly.
+          const fieldWidth = form.getField(name).acroField.getWidgets()[0].getRectangle().width;
+          width = fieldWidth - (fieldWidth < 40 ? 4 : 8);
         } catch {
           return maxSize;
         }
@@ -1661,7 +1665,7 @@ export default function PaperworkPage() {
         showUnderline(affidavitForm, "Partial Reason");
         setAffidavitText("Partial Amount", activeOutcome === "partial_work_completed" ? chargeAmount : "");
         adjustFieldRect(affidavitForm, "Partial Reason", { dy: 4 });
-        adjustFieldRect(affidavitForm, "Partial Amount", { dx: 3 });
+        adjustFieldRect(affidavitForm, "Partial Amount", { dx: 5 });
         showUnderline(affidavitForm, "Partial Amount");
         const notaryDate = notary ? notaryDateParts(notary.date) : { day: "", month: "", year: "" };
         setAffidavitText("Notary Day Month", notary ? `${notaryDate.day} ${notaryDate.month}` : "");
@@ -1723,6 +1727,11 @@ export default function PaperworkPage() {
         }
 
         if (isRefusedAccess) {
+          // 7a: the template's boxes start partway along their blanks, and the relationship box starts
+          // inside the line above. Start each at its blank and keep the relationship on its own line,
+          // so answers never run into "their name(s) as:", "and stated" or "(e.g.".
+          adjustFieldRect(affidavitForm, "Denied Name", { dx: -7, dw: 5 });
+          adjustFieldRect(affidavitForm, "Denied Relationship", { dx: -14, dy: -2.5, dw: 13 });
           setAffidavitText("Denied Date", secondAttempt);
           setAffidavitText("Denied Phone", deniedPhone);
           setAffidavitText("Denied Name", upper(deniedName));
@@ -1737,6 +1746,11 @@ export default function PaperworkPage() {
 
       // The template's opaque white field backgrounds hide printed form text and lines next to the fields.
       affidavitForm.getFields().forEach((field) => clearFieldBackground(affidavitForm, field.getName()));
+      // A field left blank keeps the template's own white-box appearance, which flatten would paint
+      // over the form's words ("date]", "name as:") and blank lines. Drop blank fields instead.
+      affidavitForm.getFields().forEach((field) => {
+        if (field instanceof PDFTextField && !(field.getText() || "").trim()) affidavitForm.removeField(field);
+      });
 
       affidavitForm.updateFieldAppearances(affidavitBoldFont);
       affidavitForm.flatten();
