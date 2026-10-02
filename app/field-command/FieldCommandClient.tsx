@@ -212,7 +212,7 @@ function writeSharedWorkflowPatch(id: string, patch: Record<string, unknown>) {
   );
 }
 
-type StatusKey = "complete" | "noaccess" | "refused" | "pending" | "awarded" | "open" | "appointment" | "done";
+type StatusKey = "complete" | "noaccess" | "refused" | "pending" | "awarded" | "open" | "appointment" | "done" | "others" | "partial";
 
 const STATUS_ICON_PATHS: Record<StatusKey, string> = {
   complete:
@@ -228,9 +228,35 @@ const STATUS_ICON_PATHS: Record<StatusKey, string> = {
   appointment: '<rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="white" stroke-width="2"/><path d="M8 3v5M16 3v5M4 10h16" fill="none" stroke="white" stroke-width="2"/>',
   // Completed job: a check mark, so it's clear at a glance there's nothing left to do there.
   done: '<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
+  others: '<circle cx="8.5" cy="8" r="3" fill="#fff"/><circle cx="16" cy="9" r="2.6" fill="#fff"/><path d="M3 19c.6-3.4 2.8-5.2 5.5-5.2s4.9 1.8 5.5 5.2zM13.5 19c.3-2.5 1.5-4.2 3.2-4.6 2 .2 3.6 1.9 4.1 4.6z" fill="#fff"/>',
+  partial: '<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="2.2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="#fff"/>',
 };
 
 const DONE_COLOR = "#16a34a";
+
+// Pin colors and icons you can read from far away (owner's scheme):
+// blue = new, green = completed, red = refused, grey = no access, purple = completed by others.
+const PIN_STYLES: { key: StatusKey; label: string; color: string }[] = [
+  { key: "awarded", label: "New", color: "#2563eb" },
+  { key: "done", label: "Completed", color: DONE_COLOR },
+  { key: "refused", label: "Refused", color: "#dc2626" },
+  { key: "noaccess", label: "No access", color: "#6b7280" },
+  { key: "others", label: "Done by others", color: "#8b5cf6" },
+  { key: "appointment", label: "Appointment", color: "#d97706" },
+  { key: "partial", label: "Partial", color: "#ea580c" },
+];
+
+function pinStyle(job: JobRecord): { key: StatusKey; label: string; color: string } {
+  const status = `${jobStatus(job)} ${value(job, ["FieldOutcome", "fieldOutcome", "WorkflowStatus"])}`.toLowerCase().replace(/[_-]+/g, " ");
+  const pick = (key: StatusKey) => PIN_STYLES.find((style) => style.key === key)!;
+  if (/by others/.test(status)) return pick("others");
+  if (/refused/.test(status)) return pick("refused");
+  if (/no access/.test(status)) return pick("noaccess");
+  if (/partial/.test(status)) return pick("partial");
+  if (/appointment|scheduled/.test(status)) return pick("appointment");
+  if (jobQueue(job) === "completed") return pick("done");
+  return pick("awarded");
+}
 
 const STATUS_META: { key: StatusKey; label: string; color: string; match: (s: string, job: JobRecord) => boolean }[] = [
   { key: "complete", label: "Completed", color: "#30d158", match: (s) => s.includes("complete") },
@@ -552,6 +578,9 @@ export default function FieldCommandClient() {
   const userMarkerRef = useRef<any>(null);
   const watchIdRef = useRef<number | null>(null);
   const lastPositionRef = useRef<{ lat: number; lng: number } | null>(null);
+  // The map follows you from the moment it opens; dragging the map pauses it, Me resumes it.
+  const followMeRef = useRef(true);
+  const centeredOnMeRef = useRef(false);
   const pointsRef = useRef<{ job: JobRecord; lng: number; lat: number }[]>([]);
   const renderMarkersRef = useRef<() => void>(() => {});
   const [jobs, setJobs] = useState<JobRecord[]>([]);
@@ -652,6 +681,18 @@ export default function FieldCommandClient() {
   const mediaChoiceRef = useRef<HTMLDivElement | null>(null);
   const [mediaChoice, setMediaChoice] = useState<FieldMediaKind | null>(null);
   const pendingMediaKindRef = useRef<FieldMediaKind>("before");
+
+  // Tapping Waze / Google is recorded on the job itself: "On the way", with the date and time.
+  function recordTravel(job: JobRecord, via: "Waze" | "Google") {
+    const id = jobId(job);
+    const now = new Date().toISOString();
+    const latest = { ...job, ...(readSharedWorkflowOverrides()[id] || {}) };
+    const history = Array.isArray(latest.FieldVisitHistory) ? latest.FieldVisitHistory : [];
+    const patch = { TravelStartedAt: now, TravelVia: via, FieldVisitHistory: [...history, { recordedAt: now, outcome: null, note: `On the way (${via})` }] };
+    try { writeSharedWorkflowPatch(id, patch); } catch {}
+    mergeWorkflowPatchIntoScreen(id, patch);
+    rememberNavigation(id);
+  }
 
   function rememberNavigation(id:string) {
     const entry={id,startedAt:Date.now(),pendingReturn:true};
@@ -896,6 +937,7 @@ export default function FieldCommandClient() {
         }).setView(lastView ? [lastView.lat, lastView.lng] : [40.72, -73.95], lastView ? lastView.zoom : 10);
         // Reopening starts where the map was left, not zoomed out to the whole city.
         if (lastView) restoredMapViewRef.current = true;
+        map.on("dragstart", () => { followMeRef.current = false; });
         map.on("moveend", () => {
           const center = map.getCenter();
           try { localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() })); } catch {}
@@ -987,15 +1029,12 @@ export default function FieldCommandClient() {
           if (!layerGroupRef.current) return;
           layerGroupRef.current.clearLayers();
           const occupied: { x: number; y: number }[] = [];
+          let focusDistance = Math.min(map.getSize().x, map.getSize().y) * 0.35;
+          let focusElement: HTMLElement | null = null;
           groupByLocation(pointsRef.current).forEach((location) => {
             location.jobs.forEach((job, index) => {
-              const meta = { ...jobStatusMeta(job) };
+              const meta = { ...jobStatusMeta(job), ...pinStyle(job) };
               const visit = visitState(job);
-              meta.color = visit.color;
-              if (jobQueue(job) === "completed") {
-                meta.key = "done";
-                meta.color = DONE_COLOR;
-              }
               const priority = jobPriority(job);
               const title = `${jobId(job)} - ${meta.label} - ${priority.label} - ${visit.label} - ${visit.count} visits`;
               const offset = map.getZoom() >= 17 ? individualPinOffset(index, location.jobs.length) : { x: 0, y: 0 };
@@ -1010,7 +1049,9 @@ export default function FieldCommandClient() {
               if (map.getZoom() >= 17 && location.jobs.length > 1) {
                 L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
               }
-              const icon = L.divIcon({ className: showLabel ? "fc-label-marker" : "fc-dot-marker", html, iconSize: showLabel ? [44, 32] : [14, 14], iconAnchor: showLabel ? [22, 16] : [7, 7] });
+              // Pins grow as you zoom in; the one nearest the middle of the screen is the focus.
+              const zoomClass = map.getZoom() >= 18 ? " is-z18" : map.getZoom() >= 16 ? " is-z16" : "";
+              const icon = L.divIcon({ className: (showLabel ? "fc-label-marker" : "fc-dot-marker") + zoomClass, html, iconSize: showLabel ? [44, 32] : [14, 14], iconAnchor: showLabel ? [22, 16] : [7, 7] });
               const marker = L.marker(position, { icon, title, zIndexOffset: showLabel ? 1000 : 0 });
               marker.on("click", () => {
                 if (!showLabel || location.jobs.length > 1) map.setView([location.lat, location.lng], Math.max(17, map.getZoom()));
@@ -1018,8 +1059,14 @@ export default function FieldCommandClient() {
               });
               marker.addTo(layerGroupRef.current);
               marker.getElement()?.setAttribute("aria-label", title);
+              if (showLabel && map.getZoom() >= 15) {
+                const size = map.getSize();
+                const distance = Math.hypot(screen.x - size.x / 2, screen.y - size.y / 2);
+                if (distance < focusDistance) { focusDistance = distance; focusElement = marker.getElement() || null; }
+              }
             });
           });
+          focusElement?.classList.add("is-focus");
         };
 
         // Recompute visible labels after movement; retain individual dots for crowded jobs.
@@ -1029,7 +1076,9 @@ export default function FieldCommandClient() {
 
       const map = mapRef.current;
 
-      const framing = `${borough}|${search}|${status}|${daysBack}|${JSON.stringify(dateRange)}`;
+      // Only a borough tap or a search moves the map. Date windows (30/60/90) and status
+      // filters just change which pins show; the map stays on you.
+      const framing = `${borough}|${search}`;
       if (mapFramingRef.current !== framing && points.length && restoredMapViewRef.current && !mapFramingRef.current) {
         // First load after reopening: keep the saved view; later filter/search changes still frame.
         mapFramingRef.current = framing;
@@ -1038,8 +1087,9 @@ export default function FieldCommandClient() {
         if (points.length === 1) {
           map.setView([points[0].lat, points[0].lng], 15);
         } else if (points.length > 1 && borough === "ALL" && !search.trim()) {
-          // Keep the initial city view useful even when a record lies far outside NYC.
-          map.setView([40.72, -73.95], 14);
+          // Back to All: return to you, never to a fixed point in the city.
+          const me = lastPositionRef.current;
+          if (me) { followMeRef.current = true; map.setView([me.lat, me.lng], Math.max(map.getZoom(), 15)); }
         } else if (points.length > 1) {
           const bounds = points.map((p) => [p.lat, p.lng]) as [number, number][];
           map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
@@ -1139,10 +1189,10 @@ export default function FieldCommandClient() {
       return;
     }
     const icon = L.divIcon({
-      className: "",
-      html: '<div class="fc-you-are-here"><span class="fc-you-are-here-pulse"></span></div>',
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
+      className: "fc-you-marker",
+      html: '<div class="fc-you-are-here"><span class="fc-you-are-here-pulse"></span><span class="fc-you-are-here-dot"></span><span class="fc-you-are-here-label">You</span></div>',
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
     });
     userMarkerRef.current = L.marker([latitude, longitude], { icon, interactive: false, zIndexOffset: 1000 }).addTo(mapRef.current);
   }
@@ -1152,7 +1202,18 @@ export default function FieldCommandClient() {
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         setLocateStatus("idle");
-        placeUserMarker(position.coords.latitude, position.coords.longitude);
+        const { latitude, longitude } = position.coords;
+        placeUserMarker(latitude, longitude);
+        lastPositionRef.current = { lat: latitude, lng: longitude };
+        if (!mapRef.current) return;
+        if (!centeredOnMeRef.current) {
+          // Opening the app: go straight to where you are.
+          centeredOnMeRef.current = true;
+          if (followMeRef.current) mapRef.current.setView([latitude, longitude], Math.max(mapRef.current.getZoom(), 15));
+        } else if (followMeRef.current) {
+          // Follow mode: keep the map on you as you move.
+          mapRef.current.panTo([latitude, longitude], { animate: true });
+        }
       },
       () => setLocateStatus("error"),
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
@@ -1188,6 +1249,7 @@ export default function FieldCommandClient() {
   }
 
   function locateMe() {
+    followMeRef.current = true;
     if (!navigator.geolocation) {
       setLocateStatus("error");
       return;
@@ -1829,7 +1891,7 @@ export default function FieldCommandClient() {
 
         {!selectedJob ? (
           <div className="fc-legend">
-            {STATUS_META.map((meta) => (
+            {PIN_STYLES.map((meta) => (
               <span key={meta.key} className="fc-legend-chip">
                 <span
                   className="fc-legend-dot"
@@ -1891,8 +1953,8 @@ export default function FieldCommandClient() {
                 <span className="jc-borough">{BOROUGHS.find((item) => item.key === jobBorough(selectedJob))?.label || "NYC"}</span>
                 <p className="jc-address">{jobAddress(selectedJob)}</p>
                 <div className="jc-nav">
-                  <a className="jc-btn jc-btn-waze" href={wazeHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Waze</a>
-                  <a className="jc-btn jc-btn-google" href={directionsHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Google</a>
+                  <a className="jc-btn jc-btn-waze" href={wazeHref(selectedJob)} onClick={()=>recordTravel(selectedJob, "Waze")} target="_blank" rel="noreferrer">Waze</a>
+                  <a className="jc-btn jc-btn-google" href={directionsHref(selectedJob)} onClick={()=>recordTravel(selectedJob, "Google")} target="_blank" rel="noreferrer">Google</a>
                   {tenant.phone ? <a className="jc-btn jc-btn-call" href={`tel:${tenant.phone}`}><CallIcon />Call</a> : null}
                 </div>
               </header>
@@ -1941,6 +2003,12 @@ export default function FieldCommandClient() {
                 ) : null;
                 return (
                   <ol className="jc-steps" data-hpd-smoke="jc-steps" aria-label="Job steps">
+                    {value(selectedJob, ["TravelStartedAt"]) ? (
+                      <li className="jc-step is-done jc-step-travel" data-hpd-smoke="jc-step-travel">
+                        <span className="jc-step-num" aria-hidden="true">🚗</span>
+                        <div><b>On the way</b><small>{value(selectedJob, ["TravelVia"]) || "Navigation"} · {formatSavedTime(value(selectedJob, ["TravelStartedAt"]))}</small></div>
+                      </li>
+                    ) : null}
                     <li className={stepClass(0)}>
                       {num(0)}
                       <div>

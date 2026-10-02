@@ -34,6 +34,12 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 - [x] Filter button next to the search (status, borough, date type, date windows)
 - [x] Borough icon bar (All, MN, BK, QN, BX, SI) + 30 / 60 / 90 days / Custom under the search
 - [x] Completed jobs show a green check-mark pin
+- [x] Pin colors readable from far away: **blue = new**, **green = completed**, **red = refused**, **grey = no access**, **purple = completed by others**, amber = appointment, orange = partial; a different icon for each
+- [x] Pins grow as you zoom in; the pin nearest the middle of the screen glows
+- [x] Opens on **my location** every time and follows me; dragging pauses it, the locate button resumes it
+- [x] 30 / 60 / 90 days and status filters never move the map (no more jumping to the middle of Queens); only a borough tap or a search moves it
+- [x] Big, clear blue "You" marker, always on top of every pin
+- [x] Waze / Google taps are recorded on the job card: "On the way · Waze · date"
 
 ## In progress / to do (in order)
 
@@ -46,15 +52,20 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
    4. Finish work: AFTER photo/video
    5. Photos/videos look good, then finish the job (Work completed / Partial)
    6. Generate the package
-2. [ ] **My location**: a clear, nice "you are here" marker; the map stays focused on where I am
+2. [x] **My location**: a clear, nice "you are here" marker; the map stays focused on where I am
 3. [ ] **Photos and videos**: Before photo, Before video, After photo, After video; multiple shots; videos included in the package (Drive, plus email when they fit); photo dates editable (default today)
-4. [ ] **Map pins**: colors you can read from far away: **blue = new**, **green = completed**, **red = refused**, **grey = no access**, **purple = completed by others**; a different icon per status; the pin you're zooming toward grows and glows
+4. [x] **Map pins**: colors you can read from far away: **blue = new**, **green = completed**, **red = refused**, **grey = no access**, **purple = completed by others**; a different icon per status; the pin you're zooming toward grows and glows
 5. [ ] **Paperwork page polish**: aligned, neat, follows the procedure
 6. [ ] **Automatic data checks** after every download: scan every job (description, ITB, address, dates, amounts) and show alerts in the app
 7. [ ] **ER04964 and the other 4 jobs**: confirm the OCR run filled their real scopes
 8. [ ] **iPhone speed**: make the app faster on mobile
 9. [ ] **Better app link** (custom domain): needs a domain name from the owner
-10. [ ] Notary stamp prints Chetanpreet Malhi's details: fine while she is the only notary
+10. [ ] **Test job (master sample)**: one test job that runs the whole flow with sample photos (Sample before 1 and 2, Sample after 1 and 2), sends a sample package, and is the reference for every job card. All real job cards use the same card, so every fix made on the test job shows on all of them
+11. [ ] **Affidavit/package inside the job card**: review, sign, approve without leaving the card
+12. [ ] **One neat job card**: appointments, outcome, details, one after the other in one place
+13. [ ] **One master file**: the old map file's useful extras moved into the live job card, then the old file removed
+14. [ ] **Real app on the iPhone**: Add to Home Screen (full screen, own icon, works offline), App Store later
+15. [ ] Notary stamp prints Chetanpreet Malhi's details: fine while she is the only notary
 
 ## How we work
 - One item at a time: fix → test (including the real job that had the problem) → push live → screenshot to the owner
