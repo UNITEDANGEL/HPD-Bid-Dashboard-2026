@@ -9,7 +9,7 @@ import { drawInvoicePage } from "../../lib/invoice-pdf";
 import { signatureBytes } from "../../lib/signature";
 import SignatureCard from "./SignatureCard";
 import NotaryCard, { type NotaryApproval } from "./NotaryCard";
-import { deliverPackage, googleStatus, sendPackageEmail, type GoogleStatus } from "../../lib/package-delivery";
+import { deliverPackage, googleStatus, sendPackageEmail, type DeliveryFile, type GoogleStatus } from "../../lib/package-delivery";
 import { calendarDay } from "../../lib/job-priority";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
@@ -967,6 +967,30 @@ function fullPackageMediaPath(jobId: string, media: FieldMedia, index: number, s
   return `${mediaFolder}/${folder}/${String(index + 1).padStart(2, "0")}-${statusSlug}-${label}-${fileName}`;
 }
 
+function titleCase(value: string) {
+  return value.toLowerCase().replace(/\b\p{L}/gu, (letter) => letter.toUpperCase());
+}
+
+// The day the package is about: work finished, or the last access attempt; today if not set.
+function packageDay(form: PackageForm, outcome: PaperworkOutcome) {
+  const raw = outcome === "work_completed" || outcome === "partial_work_completed"
+    ? form.workComplete || form.fieldDate
+    : form.secondAttempt || form.firstAttempt || form.fieldDate;
+  return dateInputValue(raw) || todayIsoDate();
+}
+
+// Google Drive filing: HPD Packages / 2026 / 10 - October / Manhattan / 2026-10-02 - ER05729 - address - outcome
+function driveFiling(form: PackageForm, jobId: string, outcome: PaperworkOutcome) {
+  const day = packageDay(form, outcome);
+  const [year, month] = day.split("-");
+  const borough = titleCase(String(form.borough || "").trim()) || "Borough not listed";
+  const address = String(form.address || "").replace(/\s+/g, " ").trim().slice(0, 60);
+  return {
+    path: [year, `${month} - ${titleCase(MONTH_NAMES[Number(month) - 1] || month)}`, borough],
+    folderName: [day, jobId, address, packageStatusLabel(outcome)].filter(Boolean).join(" - "),
+  };
+}
+
 function packageFolderName(form: PackageForm, jobId: string, outcome: PaperworkOutcome) {
   const location = safeFilename(form.location || form.address || form.borough || "LOCATION");
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -1201,8 +1225,7 @@ export default function PaperworkPage() {
   const [notaryApproved, setNotaryApproved] = useState(false);
   const rememberNotary = useCallback((notary: NotaryApproval | null) => { notaryRef.current = notary; setNotaryApproved(Boolean(notary)); }, []);
   const autoWaitScrolledRef = useRef(false);
-  // emailed = the SIGNED email; unsignedEmailed = the separate NOT SIGNED print-copy email.
-  const [delivery, setDelivery] = useState<{ working: boolean; message: string; folderLink: string; emailed: boolean; error: string; unsignedEmailed?: boolean } | null>(null);
+  const [delivery, setDelivery] = useState<{ working: boolean; message: string; folderLink: string; emailed: boolean; error: string } | null>(null);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
   const [pdfStatus, setPdfStatus] = useState("");
@@ -2331,9 +2354,28 @@ export default function PaperworkPage() {
   function packageEmailParts(pending: PendingCompletePackage) {
     const statusLabel = packageStatusLabel(outcome);
     const address = [form.address, form.location, form.borough].filter(Boolean).join(", ");
+    const filing = driveFiling(form, pending.jobId, outcome);
+    // Drive gets every file, neatly named; photos go into Before / After / Other photos folders.
+    const counters: Record<string, number> = {};
+    const files: DeliveryFile[] = pending.folderEntries.map((entry) => {
+      const original = entry.path.split("/").pop() || entry.path;
+      if (entry.section === "pdf") return { name: `SIGNED - ${pending.jobId} - ${statusLabel}.pdf`, mimeType: entry.mimeType, bytes: entry.bytes };
+      if (entry.section === "manifest") return { name: "Package contents.txt", mimeType: entry.mimeType, bytes: entry.bytes };
+      const kind = entry.section === "video" ? "video" : entry.path.startsWith("images/before/") ? "before" : entry.path.startsWith("images/after/") ? "after" : "other";
+      counters[kind] = (counters[kind] || 0) + 1;
+      const extension = original.includes(".") ? original.slice(original.lastIndexOf(".")) : "";
+      const label = { before: "BEFORE", after: "AFTER", other: "PHOTO", video: "VIDEO" }[kind];
+      const subfolder = { before: "Before photos", after: "After photos", other: "Other photos", video: "Videos" }[kind];
+      return { name: `${label}-${String(counters[kind]).padStart(2, "0")} - ${pending.jobId}${extension}`, mimeType: entry.mimeType, bytes: entry.bytes, subfolder };
+    });
+    const emailFiles = files.filter((file) => file.mimeType === "application/pdf" || file.subfolder === "Before photos" || file.subfolder === "After photos");
+    const beforeAfterCount = emailFiles.length - 1;
     return {
-      folderName: pending.folderName,
-      files: pending.folderEntries.map((entry) => ({ name: entry.path.split("/").pop() || entry.path, mimeType: entry.mimeType, bytes: entry.bytes })),
+      folderName: filing.folderName,
+      folderPath: filing.path,
+      files,
+      // The SIGNED email: the signed PDF and the before/after photos only.
+      emailFiles,
       emailSubject: `SIGNED - ${pending.jobId} - ${statusLabel} - ${form.address || "HPD package"}`,
       // This is the email that gets forwarded, so it carries no Google Drive link or Drive mentions.
       emailText: (_folderLink: string, attachedPhotos: boolean) => [
@@ -2345,42 +2387,16 @@ export default function PaperworkPage() {
         `Total charge: ${form.amount || "$0.00"}`,
         "",
         attachedPhotos
-          ? `Attached: affidavit/invoice PDF and ${pending.imageCount} photo(s).`
-          : pending.imageCount
-            ? "Attached: affidavit/invoice PDF. The photos were too large for one email and will be sent separately."
-            : "Attached: affidavit/invoice PDF.",
-        pending.videoCount ? `${pending.videoCount} video(s) will be sent separately.` : "",
-        pending.unsigned ? "The unsigned print copy comes in a separate email marked NOT SIGNED." : "",
+          ? `Attached: signed affidavit/invoice PDF and ${beforeAfterCount} before/after photo(s).`
+          : beforeAfterCount
+            ? "Attached: signed affidavit/invoice PDF. The before/after photos were too large for one email and will be sent separately."
+            : "Attached: signed affidavit/invoice PDF.",
       ].filter((line, index, lines) => line || lines[index - 1]).join("\n"),
-    };
-  }
-
-  // The separate NOT SIGNED email: just the unsigned print copy, clearly marked.
-  function unsignedEmailParts(pending: PendingCompletePackage, file: { fileName: string; bytes: Uint8Array }) {
-    const statusLabel = packageStatusLabel(outcome);
-    return {
-      files: [{ name: file.fileName, mimeType: "application/pdf", bytes: file.bytes }],
-      emailSubject: `NOT SIGNED - print copy - ${pending.jobId} - ${statusLabel} - ${form.address || "HPD package"}`,
-      emailText: (folderLink: string) => [
-        "NOT SIGNED - unsigned print copy. Print it, then sign and notarize in ink.",
-        "Do not forward this one as the signed copy; the signed copy came in the email marked SIGNED.",
-        "",
-        `HPD package: ${pending.jobId}`,
-        `Outcome: ${statusLabel}`,
-        `Google Drive folder: ${folderLink}`,
-      ].join("\n"),
     };
   }
 
   function unsignedFile(pending: PendingCompletePackage) {
     return pending.unsigned && pending.unsignedBytes ? { fileName: pending.unsigned.fileName, bytes: pending.unsignedBytes } : null;
-  }
-
-  function deliveryMessage(signedTo: string[], signed: boolean, unsigned: boolean | undefined) {
-    return [
-      signed ? `Signed copy emailed to ${signedTo.join(", ")}` : "",
-      unsigned ? "Unsigned print copy emailed separately (NOT SIGNED)" : "",
-    ].filter(Boolean).join(" · ");
   }
 
   // Resend only the email(s) that didn't go (Drive already has the package), e.g. after reconnecting Google.
@@ -2393,22 +2409,9 @@ export default function PaperworkPage() {
     setDelivery((current) => current && { ...current, working: true, message: "Sending email...", error: "" });
     try {
       setGoogle(await googleStatus());
-      const signed = delivery?.emailed
-        ? { emailed: true, emailTo: [] as string[], emailError: "" }
-        : await sendPackageEmail({ ...packageEmailParts(pending), folderLink });
-      const file = unsignedFile(pending);
-      const unsigned = !file || delivery?.unsignedEmailed
-        ? { emailed: Boolean(delivery?.unsignedEmailed), emailError: "" }
-        : await sendPackageEmail({ ...unsignedEmailParts(pending, file), folderLink });
-      if (signed.emailed && !delivery?.emailed) await markPackageGenerated(pending.jobId, true, { driveLink: folderLink, emailed: true });
-      setDelivery({
-        working: false,
-        folderLink,
-        emailed: signed.emailed,
-        unsignedEmailed: unsigned.emailed,
-        message: deliveryMessage(signed.emailTo, signed.emailed, unsigned.emailed),
-        error: signed.emailError || unsigned.emailError,
-      });
+      const result = await sendPackageEmail({ ...packageEmailParts(pending), folderLink });
+      if (result.emailed) await markPackageGenerated(pending.jobId, true, { driveLink: folderLink, emailed: true });
+      setDelivery({ working: false, folderLink, emailed: result.emailed, message: result.emailed ? `Signed copy emailed to ${result.emailTo.join(", ")}` : "", error: result.emailError });
     } catch (error) {
       setDelivery({ working: false, folderLink, emailed: false, message: "", error: error instanceof Error ? error.message : "The email could not be sent." });
     } finally {
@@ -2443,9 +2446,8 @@ export default function PaperworkPage() {
     setPackageBusy(true);
     setDelivery({ working: true, message: "Making the unsigned print copy...", folderLink: "", emailed: false, error: "" });
     try {
-      // The unsigned print copy goes in the same Drive folder and in its own NOT SIGNED email, never
-      // in the SIGNED email. It was made with the package and shown on the review screen; rebuild
-      // only if it's missing.
+      // The unsigned print copy is saved to the same Drive folder only -- never emailed. It was made
+      // with the package and shown on the review screen; rebuild only if it's missing.
       const printCopy = unsignedFile(pending)
         || await generateAffidavitPdf({
             downloadPdf: false,
@@ -2458,25 +2460,20 @@ export default function PaperworkPage() {
           });
       const result = await deliverPackage({
         ...packageEmailParts(pending),
-        driveOnlyFiles: printCopy ? [{ name: printCopy.fileName, mimeType: "application/pdf", bytes: printCopy.bytes }] : [],
+        driveOnlyFiles: printCopy ? [{ name: `NOT SIGNED - print copy - ${pending.jobId} - ${packageStatusLabel(outcome)}.pdf`, mimeType: "application/pdf", bytes: printCopy.bytes }] : [],
         sendEmail: true,
         onProgress: (message) => setDelivery((current) => ({ ...(current || { folderLink: "", emailed: false, error: "" }), working: true, message })),
       });
-      setDelivery((current) => ({ ...(current || { folderLink: "", emailed: false, error: "" }), working: true, message: "Sending the NOT SIGNED email..." }));
-      const unsigned = printCopy
-        ? await sendPackageEmail({ ...unsignedEmailParts(pending, printCopy), folderLink: result.folderLink })
-        : { emailed: false, emailError: "" };
       const archive = await markPackageGenerated(pending.jobId, true, { driveLink: result.folderLink, emailed: result.emailed });
       setPackageApproved(true);
       setDelivery({
         working: false,
-        message: deliveryMessage(result.emailTo, result.emailed, unsigned.emailed),
+        message: result.emailed ? `Signed copy emailed to ${result.emailTo.join(", ")}` : "",
         folderLink: result.folderLink,
         emailed: result.emailed,
-        unsignedEmailed: unsigned.emailed,
-        error: result.emailError || unsigned.emailError,
+        error: result.emailError,
       });
-      setPdfStatus(`Approved. Saved ${result.uploaded} file(s) to Google Drive${result.emailed ? ", emailed the SIGNED copy" : ""}${unsigned.emailed ? " and the NOT SIGNED print copy in a separate email" : ""}. ${archive}`);
+      setPdfStatus(`Approved. Saved ${result.uploaded} file(s) to Google Drive (signed, unsigned print copy and photos)${result.emailed ? " and emailed the SIGNED copy" : ""}. ${archive}`);
     } catch (error) {
       setDelivery({ working: false, message: "", folderLink: "", emailed: false, error: error instanceof Error ? error.message : "Google Drive save failed." });
       setPdfStatus("Not approved yet: the package could not be saved to Google Drive. It is still on this device; try again.");
@@ -5117,7 +5114,7 @@ export default function PaperworkPage() {
               {packagePreview.unsigned ? (
                 <div className="pkg-copy-head" data-hpd-smoke="paperwork-signed-head">
                   <strong>Signed copy</strong>
-                  <small>Signed by the principal and the notary. Emailed to you (subject starts SIGNED) and saved to Google Drive when you approve. Forward this one.</small>
+                  <small>Signed by the principal and the notary. Emailed to you with the before/after photos and saved to Google Drive when you approve. Forward this one.</small>
                 </div>
               ) : null}
               <div className="pkg-pages" data-hpd-smoke="paperwork-package-pages" aria-label="PDF pages">
@@ -5142,7 +5139,7 @@ export default function PaperworkPage() {
                 <div className="pkg-unsigned" data-hpd-smoke="paperwork-unsigned-copy">
                   <div className="pkg-copy-head">
                     <strong>Unsigned print copy</strong>
-                    <small>Print, sign and notarize in ink. Emailed to you separately (subject starts NOT SIGNED) and saved to the same Google Drive folder when you approve.</small>
+                    <small>Print, sign and notarize in ink. Saved to the same Google Drive folder when you approve -- not emailed.</small>
                   </div>
                   <div className="pkg-pages" aria-label="Unsigned print copy pages">
                     {packagePreview.unsigned.imageUrls.length ? (
@@ -5213,7 +5210,7 @@ export default function PaperworkPage() {
                       ? delivery.message
                       : packageApproved
                         ? google?.connected ? "Saved" : "Save Copy Again"
-                        : google?.connected ? (packagePreview.unsigned ? "Approve: Email Both & Save to Drive" : "Approve, Email & Save to Drive") : "Approve & Save"}
+                        : google?.connected ? "Approve, Email & Save to Drive" : "Approve & Save"}
                   </button>
                 </>
               )}
@@ -5224,9 +5221,9 @@ export default function PaperworkPage() {
                       Open package in Google Drive
                     </a>
                   ) : null}
-                  {delivery.emailed || delivery.unsignedEmailed ? <span>✓ {delivery.message}</span> : null}
+                  {delivery.emailed ? <span>✓ {delivery.message}</span> : null}
                   {delivery.error ? <span>{delivery.error}</span> : null}
-                  {delivery.folderLink && (!delivery.emailed || (packagePreview.unsigned && !delivery.unsignedEmailed)) ? (
+                  {delivery.folderLink && !delivery.emailed ? (
                     <button type="button" className="pkg-retry-email" data-hpd-smoke="paperwork-retry-email" disabled={packageBusy} onClick={retryPackageEmail}>
                       Send email again
                     </button>
