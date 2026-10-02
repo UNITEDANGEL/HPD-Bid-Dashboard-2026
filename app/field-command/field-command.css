@@ -2294,3 +2294,8 @@
 .fc-close-out-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; }
 .fc-close-out-row small { color: #6ee7b7 !important; }
 .fc-close-out-go { padding: 9px 12px; border-radius: 10px; background: #10b981; color: #052e1f; font: 800 14px system-ui, sans-serif; text-decoration: none; white-space: nowrap; }
+
+/* Keep the map clear: the close-out and data-check alerts are small pills until opened. */
+.fc-app.fc-reference .fc-data-check { justify-items: start; }
+.fc-app.fc-reference .fc-data-check > button { width: auto; padding: 6px 12px; font-size: 13px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); }
+.fc-app.fc-reference .fc-data-check-list { width: 100%; box-sizing: border-box; }

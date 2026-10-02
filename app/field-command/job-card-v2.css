@@ -842,3 +842,16 @@
 #fc-job-card .jc-step-media-grid button.jc-glow { animation: jc-media-pulse 1.6s ease-in-out infinite; }
 @keyframes jc-media-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55); } 50% { box-shadow: 0 0 0 7px rgba(52, 211, 153, 0); } }
 @media (prefers-reduced-motion: reduce) { #fc-job-card .jc-step-media-grid button.jc-glow { animation: none; } }
+
+/* Status + before/after, right under the steps */
+.jc-status-media { display: grid; gap: 10px; margin: 0 0 12px; }
+.jc-status-line { display: grid; gap: 4px; margin: 0; padding: 12px 14px; border-radius: 14px; background: rgba(148, 163, 184, 0.12); border: 1px solid rgba(148, 163, 184, 0.3); color: #e2e8f0; font-weight: 700; }
+.jc-status-line strong { font-size: 18px; color: #f8fafc; }
+.jc-status-line span { font-size: 14px; color: #cbd5e1; }
+.jc-status-line.is-closeout { background: rgba(16, 185, 129, 0.14); border-color: #10b981; }
+.jc-status-line.is-approved { background: rgba(37, 99, 235, 0.16); border-color: #3b82f6; }
+.jc-status-go { justify-self: start; margin-top: 4px; padding: 10px 14px; border-radius: 12px; background: #10b981; color: #052e1f; font-weight: 800; text-decoration: none; }
+.jc-auto-package { display: grid; gap: 8px; padding: 12px 14px; border-radius: 14px; border: 2px solid #34d399; background: rgba(16, 185, 129, 0.16); color: #ecfdf5; }
+.jc-auto-package div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#fc-job-card .jc-auto-package button { min-height: 46px; margin: 0; border-radius: 12px; border: 1px solid #34d399; background: transparent; color: #ecfdf5; font: 800 15px system-ui, sans-serif; }
+#fc-job-card .jc-auto-package button.jc-glow { background: #10b981; color: #052e1f; }

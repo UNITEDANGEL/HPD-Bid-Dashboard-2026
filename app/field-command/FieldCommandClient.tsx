@@ -705,6 +705,18 @@ export default function FieldCommandClient() {
   const videoLibraryInputRef = useRef<HTMLInputElement | null>(null);
   const mediaChoiceRef = useRef<HTMLDivElement | null>(null);
   const [mediaChoiceInStep, setMediaChoiceInStep] = useState(false);
+  // After a job finishes, its package opens for review by itself after a short countdown.
+  const [autoPackage, setAutoPackage] = useState<{ id: string; outcome: string; seconds: number } | null>(null);
+  useEffect(() => {
+    if (!autoPackage) return;
+    if (autoPackage.seconds <= 0) { openAutoPackage(autoPackage); return; }
+    const timer = window.setTimeout(() => setAutoPackage((current) => current && { ...current, seconds: current.seconds - 1 }), 1000);
+    return () => window.clearTimeout(timer);
+  }, [autoPackage]);
+  function openAutoPackage(entry: { id: string; outcome: string }) {
+    setAutoPackage(null);
+    window.location.assign(paperworkGenerateHref(entry.id, entry.outcome));
+  }
   const [mediaChoice, setMediaChoice] = useState<FieldMediaKind | null>(null);
   const pendingMediaKindRef = useRef<FieldMediaKind>("before");
 
@@ -874,6 +886,38 @@ export default function FieldCommandClient() {
       return true;
     });
   }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey]);
+
+  // The open job card has priority over "follow me": stop following and show the job's pin in
+  // the open strip of map between the search bar and the top of the card. The locate button
+  // turns following back on.
+  const openJobKeyRef = useRef("");
+  openJobKeyRef.current = openJobKey;
+  function showJobAboveCard(lat: number, lng: number) {
+    const map = mapRef.current;
+    if (!map) return;
+    followMeRef.current = false;
+    centeredOnMeRef.current = true;
+    map.setView([lat, lng], Math.max(map.getZoom(), 16), { animate: false });
+    // Measure once the card is laid out, and again after its slide-up animation settles.
+    const place = () => {
+      if (!mapRef.current) return;
+      const container = map.getContainer().getBoundingClientRect();
+      const cardTop = document.querySelector("#fc-job-card")?.getBoundingClientRect().top ?? container.bottom;
+      const searchBottom = document.querySelector(".fc-search-row")?.getBoundingClientRect().bottom ?? container.top;
+      const target = (Math.max(searchBottom, container.top) + Math.min(cardTop, container.bottom)) / 2 - container.top;
+      const pin = map.latLngToContainerPoint([lat, lng]);
+      if (Math.abs(pin.y - target) > 4) map.panBy([0, Math.round(pin.y - target)], { animate: false });
+    };
+    window.setTimeout(place, 200);
+    window.setTimeout(place, 800);
+  }
+  useEffect(() => {
+    if (!openJobKey) return;
+    const job = jobs.find((row) => jobId(row) === openJobKey);
+    const at = job ? jobLatLng(job) : null;
+    if (at) showJobAboveCard(at.lat, at.lng);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openJobKey, routeMapReady]);
 
   // Open jobs in the current view (finished and test jobs are skipped) that need a data check.
   const dataIssues = useMemo(() => filteredJobs
@@ -1138,7 +1182,11 @@ export default function FieldCommandClient() {
         mapFramingRef.current = framing;
       } else if (mapFramingRef.current !== framing && points.length) {
         mapFramingRef.current = framing;
-        if (points.length === 1) {
+        const openJob = openJobKeyRef.current ? points.find((point) => jobId(point.job) === openJobKeyRef.current) : null;
+        if (openJob) {
+          // A job card is open: it has priority, keep its pin in view above the card.
+          showJobAboveCard(openJob.lat, openJob.lng);
+        } else if (points.length === 1) {
           map.setView([points[0].lat, points[0].lng], 15);
         } else if (points.length > 1 && borough === "ALL" && !search.trim()) {
           // Back to All: return to you, never to a fixed point in the city.
@@ -1558,7 +1606,8 @@ export default function FieldCommandClient() {
       writeSharedWorkflowPatch(id, patch);
       mergeWorkflowPatchIntoScreen(id, patch);
       setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[outcome] } }));
-      setOutcomeMessage(`✅ ${id}: ${FIELD_OUTCOMES[outcome]}. This job is finished. Close it out: tap Make the package now, or later from 📋 Ready to close out on the map.`);
+      setOutcomeMessage(`✅ ${id}: ${FIELD_OUTCOMES[outcome]}. This job is finished.`);
+      if (outcome !== "APPOINTMENT_REQUESTED") setAutoPackage({ id, outcome, seconds: 6 });
     } catch (error) {
       setOutcomeMessage(error instanceof Error ? error.message : "Could not save the outcome. Try again.");
     }
@@ -1574,8 +1623,9 @@ export default function FieldCommandClient() {
       if (draft.outcome) setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[draft.outcome] } }));
       setOutcomeDrafts((prev) => ({ ...prev, [id]: { outcome: "", note: "" } }));
       setOutcomeMessage(draft.outcome
-        ? `✅ ${id} is ${FIELD_OUTCOMES[draft.outcome]}. Close it out: tap Make the package now, or later from 📋 Ready to close out on the map.`
+        ? `✅ ${id} is ${FIELD_OUTCOMES[draft.outcome]}. This job is finished.`
         : "Note saved on this device.");
+      if (draft.outcome && draft.outcome !== "APPOINTMENT_REQUESTED" && !review) setAutoPackage({ id, outcome: draft.outcome, seconds: 6 });
       if (review) window.location.assign(paperworkGenerateHref(id, draft.outcome));
     } catch (error) {
       setOutcomeMessage(error instanceof Error ? error.message : "Save failed. Your draft is still here.");
@@ -1605,6 +1655,7 @@ export default function FieldCommandClient() {
 
   // From a guided step the photo/video buttons open right inside that step, glowing.
   function requestMediaUpload(kind: FieldMediaKind, fromStep = false) {
+    setAutoPackage(null);
     setMediaChoice(kind);
     setMediaChoiceInStep(fromStep);
     requestAnimationFrame(() => (fromStep ? document.querySelector(".jc-step-media") : mediaChoiceRef.current)?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
@@ -2247,6 +2298,56 @@ export default function FieldCommandClient() {
                 );
               })()}
 
+              {/* Right under the steps: where the job stands, and its before/after photos and videos. */}
+              <div className="jc-status-media" data-hpd-smoke="jc-status-media" role="group" aria-label="Job status and media">
+                {(() => {
+                  const outcome = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
+                  const label = FIELD_OUTCOMES[outcome];
+                  const approved = Boolean(value(selectedJob, ["PackageApprovedAt"])) || /approved/i.test(value(selectedJob, ["PackageReviewStatus"]));
+                  if (!label) return <p className="jc-status-line" data-hpd-smoke="jc-status-line">{counts.before ? "🔨 Work in progress" : "Not started yet"}</p>;
+                  const icon = outcome === "WORK_COMPLETED" ? "✅" : outcome === "PARTIAL_WORK" ? "◐" : outcome === "REFUSED_ACCESS" ? "⛔" : outcome === "NO_ACCESS_1_WAITING_72H" ? "🔒" : outcome === "WORK_COMPLETED_BY_OTHERS" ? "👥" : "📅";
+                  return (
+                    <div className={`jc-status-line ${approved ? "is-approved" : "is-closeout"}`} data-hpd-smoke="jc-status-line">
+                      <strong>{icon} {label}</strong>
+                      <span>{approved ? "Package approved and sent" : outcome === "APPOINTMENT_REQUESTED" ? "Waiting on the appointment" : "Outcome saved · ready to close out"}</span>
+                      {!approved && outcome !== "APPOINTMENT_REQUESTED" && !(autoPackage && autoPackage.id === id) ? <a className="jc-status-go" data-hpd-smoke="jc-status-package" href={paperworkGenerateHref(id, outcome)}>Review package →</a> : null}
+                    </div>
+                  );
+                })()}
+                {autoPackage && autoPackage.id === id ? (
+                  <div className="jc-auto-package" role="status" data-hpd-smoke="jc-auto-package">
+                    <strong>📦 Opening the package for review in {autoPackage.seconds}s…</strong>
+                    <div>
+                      <button type="button" className="jc-glow" data-hpd-smoke="jc-auto-package-now" onClick={() => openAutoPackage(autoPackage)}>Open now</button>
+                      <button type="button" data-hpd-smoke="jc-auto-package-wait" onClick={() => setAutoPackage(null)}>Wait, add more</button>
+                    </div>
+                  </div>
+                ) : null}
+                <div className="jc-stages" role="group" aria-label="Job photos and videos">
+                  {(["before", "after"] as const).map((kind) => {
+                    const thumbs = mediaThumbs[id]?.[kind] || [];
+                    return (
+                      <button type="button" key={kind} className={`jc-stage ${mediaChoice === kind ? "is-open" : ""} ${next.key === kind ? "is-next" : ""}`} aria-expanded={mediaChoice === kind} onClick={() => requestMediaUpload(kind)} disabled={Boolean(mediaBusy)}>
+                        <span className="jc-thumbs">
+                          {thumbs.length ? thumbs.map((src, index) => <img key={index} src={src} alt="" />) : <PhotosIcon />}
+                        </span>
+                        <b>{kind === "before" ? "Before" : "After"}</b>
+                        <small>{counts[kind] ? `${counts[kind]} saved · add more` : "Tap to add"}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+                {mediaChoice && !mediaChoiceInStep ? <div ref={mediaChoiceRef} className="fc-photo-choice jc-choice" role="group" aria-label={`${mediaChoice} photo source`}>
+                  <div className="fc-photo-choice-heading"><strong>{mediaChoice === "before" ? "Before work" : "After work"}</strong><button type="button" aria-label="Cancel photo selection" onClick={() => setMediaChoice(null)}>&times;</button></div>
+                  <div className="fc-photo-source-actions">
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("camera")}><PhotosIcon />Take photo</button>
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("library")}><DocumentsIcon />Add photos</button>
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-camera")}>Record video</button>
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-library")}>Add videos</button>
+                  </div>
+                </div> : null}
+              </div>
+
               <div className="jc-facts">
                 <div className="jc-fact">
                   <small>Maturity</small>
@@ -2301,30 +2402,6 @@ export default function FieldCommandClient() {
                   <strong>Media &amp; Documents</strong>
                   <span>{counts.total} saved</span>
                 </div>
-                {mediaMessage ? <p className="fc-save-message" role="status">{mediaMessage}</p> : null}
-                <div className="jc-stages" role="group" aria-label="Job photos and videos">
-                  {(["before", "after"] as const).map((kind) => {
-                    const thumbs = mediaThumbs[id]?.[kind] || [];
-                    return (
-                      <button type="button" key={kind} className={`jc-stage ${mediaChoice === kind ? "is-open" : ""} ${next.key === kind ? "is-next" : ""}`} aria-expanded={mediaChoice === kind} onClick={() => requestMediaUpload(kind)} disabled={Boolean(mediaBusy)}>
-                        <span className="jc-thumbs">
-                          {thumbs.length ? thumbs.map((src, index) => <img key={index} src={src} alt="" />) : <PhotosIcon />}
-                        </span>
-                        <b>{kind === "before" ? "Before" : "After"}</b>
-                        <small>{counts[kind] ? `${counts[kind]} saved · add more` : "Tap to add"}</small>
-                      </button>
-                    );
-                  })}
-                </div>
-                {mediaChoice && !mediaChoiceInStep ? <div ref={mediaChoiceRef} className="fc-photo-choice jc-choice" role="group" aria-label={`${mediaChoice} photo source`}>
-                  <div className="fc-photo-choice-heading"><strong>{mediaChoice === "before" ? "Before work" : "After work"}</strong><button type="button" aria-label="Cancel photo selection" onClick={() => setMediaChoice(null)}>&times;</button></div>
-                  <div className="fc-photo-source-actions">
-                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("camera")}><PhotosIcon />Take photo</button>
-                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("library")}><DocumentsIcon />Add photos</button>
-                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-camera")}>Record video</button>
-                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-library")}>Add videos</button>
-                  </div>
-                </div> : null}
                 <BuildingPhoto key={id} id={id} address={jobAddress(selectedJob)} borough={String(jobBorough(selectedJob))} point={jobLatLng(selectedJob)} />
                 <div className="jc-docs">
                   <a className="jc-doc jc-doc-primary" href={paperworkHref}>
