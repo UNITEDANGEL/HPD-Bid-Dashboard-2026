@@ -71,7 +71,7 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 11. [ ] **Affidavit/package inside the job card**: review, sign, approve without leaving the card
 12. [ ] **One neat job card**: appointments, outcome, details, one after the other in one place
 13. [ ] **One master file**: the old map file's useful extras moved into the live job card, then the old file removed
-14. [ ] **Real app on the iPhone**: Add to Home Screen (full screen, own icon, works offline), App Store later
+14. [x] **Real app on the iPhone**: Add to Home Screen gives "HPD Field" with its own icon, full screen, opens even offline (live). App Store later
 15. [ ] Notary stamp prints Chetanpreet Malhi's details: fine while she is the only notary
 
 ## How we work
