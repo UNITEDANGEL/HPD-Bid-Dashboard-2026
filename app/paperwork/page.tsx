@@ -1767,7 +1767,7 @@ export default function PaperworkPage() {
         const stampSize = 7;
         const stampWidths = NOTARY_STAMP_LINES.map((line) => affidavitBoldFont.widthOfTextAtSize(line, stampSize));
         const stampCenterX = box.x + Math.max(...stampWidths) / 2;
-        const stampTop = useWorkTemplate ? 104 : 153;
+        const stampTop = useWorkTemplate ? 104 : 142;
         NOTARY_STAMP_LINES.forEach((line, index) => {
           page2?.drawText(line, { x: stampCenterX - stampWidths[index] / 2, y: stampTop - index * 9, size: stampSize, font: affidavitBoldFont });
         });
