@@ -79,8 +79,8 @@ const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-performed-affidavit.pdf";
 const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-performed-affidavit.pdf";
 const CONTRACTOR_NAME = "UNITED ANGEL CONSTRUCTION CORP";
 const DEFAULT_PACKAGE_SIGNER = "JOTJAGRAJ SINGH";
-// Convenience default only -- the notary still types/confirms their own name, signs and
-// checks the witness box fresh each time. Never used to prefill a signature or a stamp.
+// Default notary name for the notary card. The notary's signature may be saved on the phone,
+// but the notary still confirms the date, checks the witness box and approves every affidavit.
 const DEFAULT_NOTARY_NAME = "CHETANPREET MALHI";
 // Printed stamp text for the emailed/Drive copy of the package (not a wet-ink impression).
 // Drawn under "Notary Public" only when a notary has actually approved this package.
@@ -3431,11 +3431,19 @@ export default function PaperworkPage() {
 
         .sig-pad {
           width: 100%;
-          height: 160px;
+          height: 190px;
           border-radius: 12px;
-          background: #ffffff;
+          /* A signature line to sign on; it is page styling, not part of the saved image. */
+          background:
+            linear-gradient(#9aa7bd, #9aa7bd) 24px calc(100% - 48px) / calc(100% - 48px) 1.5px no-repeat,
+            #ffffff;
           touch-action: none;
           cursor: crosshair;
+        }
+
+        .sig-hint {
+          color: #c9d4e3;
+          font-weight: 600;
         }
 
         .sig-type {

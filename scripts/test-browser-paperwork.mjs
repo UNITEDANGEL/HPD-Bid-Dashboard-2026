@@ -70,13 +70,34 @@ try {
     // Email/PDF packages are always signed: blocked until a signature is saved (a test squiggle here).
     await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
     await page.getByText("Add your signature first").first().waitFor({ timeout: 10000 });
-    await page.locator('[data-hpd-smoke="paperwork-signature-draw"]').click();
-    const pad = await page.locator('[data-hpd-smoke="paperwork-signature-pad"]').boundingBox();
-    await page.mouse.move(pad.x + 30, pad.y + 100);
-    await page.mouse.down();
-    for (let i = 0; i <= 20; i += 1) await page.mouse.move(pad.x + 30 + i * 12, pad.y + 80 + Math.sin(i / 2) * 30);
-    await page.mouse.up();
-    await page.locator('[data-hpd-smoke="paperwork-signature-save"]').click();
+    if (outcome === "work_completed") {
+      // One tap makes and saves both signatures; they must still be there after a reload.
+      await page.locator('[data-hpd-smoke="paperwork-signature-quick"]').click();
+      await page.locator('[data-hpd-smoke="paperwork-signature-preview"]').waitFor({ timeout: 10000 });
+      await page.locator('[data-hpd-smoke="paperwork-notary-quick"]').click();
+      await page.locator('[data-hpd-smoke="paperwork-notary-preview"]').waitFor({ timeout: 10000 });
+      await page.reload({ waitUntil: "networkidle" });
+      await page.locator('[data-hpd-smoke="paperwork-signature-preview"]').waitFor({ timeout: 10000 });
+      await page.locator('[data-hpd-smoke="paperwork-notary-preview"]').waitFor({ timeout: 10000 });
+      assert.equal(await page.locator('[data-hpd-smoke="paperwork-signature-quick"]').count(), 0, `${job}: saved signer signature must load`);
+      await page.locator('[data-hpd-smoke="paperwork-signature-card"]').screenshot({ path: path.join(outDir, "signer-card.png") });
+      await page.locator('[data-hpd-smoke="paperwork-notary-card"]').screenshot({ path: path.join(outDir, "notary-card.png") });
+      // A saved notary signature is never placed without the witness confirmation.
+      await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
+      await page.getByText("confirm they witnessed").first().waitFor({ timeout: 10000 });
+      await page.locator('[data-hpd-smoke="paperwork-notary-witnessed"]').check();
+      await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
+      await page.getByText("Notarized by Chetanpreet Malhi").first().waitFor({ timeout: 10000 });
+    } else {
+      // Finger signature on the pad.
+      await page.locator('[data-hpd-smoke="paperwork-signature-draw"]').click();
+      const pad = await page.locator('[data-hpd-smoke="paperwork-signature-pad"]').boundingBox();
+      await page.mouse.move(pad.x + 30, pad.y + 100);
+      await page.mouse.down();
+      for (let i = 0; i <= 20; i += 1) await page.mouse.move(pad.x + 30 + i * 12, pad.y + 80 + Math.sin(i / 2) * 30);
+      await page.mouse.up();
+      await page.locator('[data-hpd-smoke="paperwork-signature-save"]').click();
+    }
     if (outcome === "no_access") {
       // Attempts closer than 72 hours, or a missing call date, must block generation.
       await page.fill('[data-hpd-smoke="paperwork-attempt-1"]', "2026-10-01");
@@ -109,7 +130,11 @@ try {
     const pdf = await PDFDocument.load(bytes);
     assert.equal(pdf.getPageCount(), pages, `${job}: expected affidavit (2) + invoice (1) pages`);
     assert.equal(pdf.getForm().getFields().length, 0, `${job}: form fields must be flattened`);
-    assert.ok(Buffer.from(bytes).toString("latin1").includes("/Subtype /Image"), `${job}: signature image must be in the PDF`);
+    // Each signature PNG is two image objects (picture + transparency mask). The signer's is on the
+    // affidavit and the invoice (4); the notary's adds 2 more.
+    const imageCount = (Buffer.from(bytes).toString("latin1").match(/\/Subtype \/Image/g) || []).length;
+    assert.ok(imageCount >= (outcome === "work_completed" ? 6 : 4), `${job}: signer${outcome === "work_completed" ? " and notary" : ""} signature images must be in the PDF (found ${imageCount})`);
+    console.log(`  ${job}: ${imageCount} signature image(s) in the PDF`);
     assert.ok(/\bCOPY\b/.test(extractPdfText(bytes)), `${job}: emailed/Drive copy must carry the COPY watermark`);
     assert.deepEqual(errors, [], `${job}: page errors`);
     console.log(`PASS ${job} ${outcome}: package generated in browser, ${pages} flattened pages, COPY watermark present`);

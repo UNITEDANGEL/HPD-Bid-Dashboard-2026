@@ -1,106 +1,93 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { signatureFromTypedName, trimCanvas } from "../../lib/signature";
+import { useEffect, useState } from "react";
+import { clearSignature, loadSignature, NOTARY_SIGNATURE_KEY, saveSignature, signatureFromTypedName } from "../../lib/signature";
+import { displayName, useSignaturePad } from "./useSignaturePad";
 
-// The notary's own in-person (or online) approval: never saved, never reused. Fresh for every
-// affidavit. Hand the signer's phone to the notary after they sign; the notary signs or types
-// their name, picks the date, confirms they witnessed the signing, then approves. The printed
-// stamp text is added automatically for this emailed/Drive copy -- a printed copy still needs
-// the notary's real ink stamp.
+// The notary's approval for each affidavit. The notary's signature can be saved on this phone
+// so they don't redraw it every time, but it is only ever placed on an affidavit after the
+// notary confirms they witnessed the signing and taps approve -- every affidavit, fresh. The
+// printed stamp text is added automatically; a printed copy still needs the real ink stamp.
 
 export type NotaryApproval = { signature: string; name: string; date: string };
 
+// Whose saved notary signature this is, so a different notary never gets someone else's.
+const NOTARY_NAME_KEY = "hpd-notary-signature-name-v1";
+
+function loadSavedNotary(): { signature: string; name: string } {
+  const signature = loadSignature(NOTARY_SIGNATURE_KEY);
+  try {
+    return signature ? { signature, name: localStorage.getItem(NOTARY_NAME_KEY) || "" } : { signature: "", name: "" };
+  } catch {
+    return { signature: "", name: "" };
+  }
+}
+
 export default function NotaryCard({ minDate, defaultName, onApprove }: { minDate: string; defaultName?: string; onApprove: (notary: NotaryApproval | null) => void }) {
+  const [saved, setSaved] = useState({ signature: "", name: "" });
   const [signature, setSignature] = useState("");
   const [name, setName] = useState(defaultName || "");
   const [date, setDate] = useState(minDate);
   const [witnessed, setWitnessed] = useState(false);
   const [approved, setApproved] = useState(false);
+  const [drawing, setDrawing] = useState(false);
   const [typing, setTyping] = useState(false);
   const [typedName, setTypedName] = useState("");
   const [error, setError] = useState("");
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const last = useRef<{ x: number; y: number } | null>(null);
-  const inked = useRef(false);
+  const pad = useSignaturePad();
+  const shownName = displayName(name);
 
-  function resetCanvasSurface() {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ratio = Math.max(2, window.devicePixelRatio || 1);
-    canvas.width = canvas.clientWidth * ratio;
-    canvas.height = canvas.clientHeight * ratio;
-    const context = canvas.getContext("2d")!;
-    context.scale(ratio, ratio);
-    context.lineCap = "round";
-    context.lineJoin = "round";
-    context.lineWidth = 2.6;
-    context.strokeStyle = "#0b1f4d";
-    inked.current = false;
-  }
-
-  function point(event: React.PointerEvent<HTMLCanvasElement>) {
-    const rect = event.currentTarget.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
-  }
-
-  function start(event: React.PointerEvent<HTMLCanvasElement>) {
-    if (!canvasRef.current?.width) resetCanvasSurface();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    last.current = point(event);
-  }
-
-  function move(event: React.PointerEvent<HTMLCanvasElement>) {
-    if (!last.current) return;
-    const context = event.currentTarget.getContext("2d")!;
-    const next = point(event);
-    context.beginPath();
-    context.moveTo(last.current.x, last.current.y);
-    context.lineTo(next.x, next.y);
-    context.stroke();
-    last.current = next;
-    inked.current = true;
-  }
-
-  function keepSignature() {
-    const canvas = canvasRef.current;
-    if (!canvas || !inked.current) {
-      setError("The notary needs to sign in the box first.");
-      return;
+  useEffect(() => {
+    const value = loadSavedNotary();
+    setSaved(value);
+    if (value.signature) {
+      setSignature(value.signature);
+      if (value.name) setName(value.name);
     }
-    const pixels = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data;
-    let minX = canvas.width, minY = canvas.height, maxX = -1, maxY = -1;
-    for (let y = 0; y < canvas.height; y += 2) {
-      for (let x = 0; x < canvas.width; x += 2) {
-        if (pixels[(y * canvas.width + x) * 4 + 3] > 0) {
-          minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
-        }
-      }
-    }
-    if (maxX < 0) {
-      setError("The notary needs to sign in the box first.");
-      return;
-    }
-    setSignature(trimCanvas(canvas, minX, minY, maxX + 2, maxY + 2));
+  }, []);
+
+  // The saved signature only belongs to the notary it was made for.
+  function changeName(value: string) {
+    setName(value);
+    if (saved.signature && signature === saved.signature && value.trim().toUpperCase() !== saved.name.trim().toUpperCase()) setSignature("");
+  }
+
+  function keep(dataUrl: string) {
+    setSignature(dataUrl);
+    setDrawing(false);
+    setTyping(false);
     setError("");
-  }
-
-  function clearSignature() {
-    setSignature("");
-    resetCanvasSurface();
-    const canvas = canvasRef.current;
-    if (canvas) canvas.getContext("2d")!.clearRect(0, 0, canvas.width, canvas.height);
-  }
-
-  async function fromTypedName() {
     try {
-      const value = await signatureFromTypedName(typedName.trim() || name);
-      setSignature(value);
-      setError("");
-      setTyping(false);
+      saveSignature(dataUrl, NOTARY_SIGNATURE_KEY);
+      localStorage.setItem(NOTARY_NAME_KEY, name.trim());
+      setSaved({ signature: dataUrl, name: name.trim() });
+    } catch {
+      // Still usable for this affidavit even if the phone won't store it.
+    }
+  }
+
+  function keepDrawing() {
+    const dataUrl = pad.capture();
+    if (!dataUrl) {
+      setError("The notary needs to sign in the box first.");
+      return;
+    }
+    keep(dataUrl);
+  }
+
+  async function fromTypedName(value: string) {
+    try {
+      keep(await signatureFromTypedName(value));
     } catch (e) {
       setError(e instanceof Error ? e.message : "That name could not be drawn. Try signing with a finger instead.");
     }
+  }
+
+  function forgetSaved() {
+    clearSignature(NOTARY_SIGNATURE_KEY);
+    try { localStorage.removeItem(NOTARY_NAME_KEY); } catch {}
+    setSaved({ signature: "", name: "" });
+    setSignature("");
   }
 
   function approve() {
@@ -116,6 +103,7 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
 
   function undoApproval() {
     setApproved(false);
+    setWitnessed(false);
     onApprove(null);
   }
 
@@ -124,7 +112,7 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
       <div className="refused-access-required sig-card ready" data-hpd-smoke="paperwork-notary-card">
         <div>
           <span>Notary</span>
-          <strong>Notarized by {name}</strong>
+          <strong>Notarized by {shownName}</strong>
           <small>The printed stamp text is added to this emailed/Drive copy automatically. A printed copy still needs the notary&apos;s real ink stamp.</small>
         </div>
         <img className="sig-preview" src={signature} alt="Notary signature" />
@@ -135,13 +123,19 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
     );
   }
 
+  const usingSaved = Boolean(signature && signature === saved.signature);
   return (
     <div className="refused-access-required sig-card needs-description" data-hpd-smoke="paperwork-notary-card">
       <div>
         <span>Notary</span>
-        <strong>Hand the phone to your notary</strong>
-        <small>Your notary signs (or types to sign, e.g. for an online notary) below, types their own name, picks today&apos;s (or a later) date, and confirms they witnessed you sign. Nothing here is saved -- it&apos;s done fresh for every affidavit.</small>
+        <strong>{usingSaved ? `${shownName}: confirm and approve` : "Hand the phone to your notary"}</strong>
+        <small>
+          {usingSaved
+            ? "The notary's saved signature is ready. The notary confirms the date, ticks that they witnessed the signing, and approves. Required for every affidavit."
+            : "Your notary signs once (finger or typed name) -- it stays saved on this phone. Then they confirm the date, that they witnessed you sign, and approve."}
+        </small>
       </div>
+      {signature && !drawing && !typing ? <img className="sig-preview" src={signature} alt="Notary signature" data-hpd-smoke="paperwork-notary-preview" /> : null}
       {typing ? (
         <label className="sig-type">
           Type the notary&apos;s full name
@@ -149,43 +143,47 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
             data-hpd-smoke="paperwork-notary-type-name"
             value={typedName}
             onChange={(event) => setTypedName(event.target.value)}
-            placeholder={name || "Notary's name"}
+            placeholder={shownName || "Notary's name"}
             autoCapitalize="words"
           />
-          <small>Only the notary&apos;s own name. This becomes their signature above.</small>
+          <small>Only the notary&apos;s own name. This becomes their signature.</small>
         </label>
-      ) : (
-        <canvas
-          ref={canvasRef}
-          className="sig-pad"
-          data-hpd-smoke="paperwork-notary-pad"
-          onPointerDown={start}
-          onPointerMove={move}
-          onPointerUp={() => { last.current = null; }}
-          onPointerCancel={() => { last.current = null; }}
-        />
-      )}
+      ) : null}
+      {drawing ? (
+        <>
+          <canvas className="sig-pad" data-hpd-smoke="paperwork-notary-pad" {...pad.padProps} />
+          <small className="sig-hint">Notary: sign on the line with your finger.</small>
+        </>
+      ) : null}
       <div className="sig-actions">
-        {typing ? (
+        {drawing ? (
           <>
-            <button type="button" className="sig-primary" data-hpd-smoke="paperwork-notary-type-save" onClick={() => void fromTypedName()}>Use typed signature</button>
+            <button type="button" className="sig-primary" onClick={keepDrawing} data-hpd-smoke="paperwork-notary-sign">Save this signature</button>
+            <button type="button" onClick={() => { pad.clear(); setError(""); }}>Clear</button>
+            <button type="button" onClick={() => setDrawing(false)}>Cancel</button>
+          </>
+        ) : typing ? (
+          <>
+            <button type="button" className="sig-primary" data-hpd-smoke="paperwork-notary-type-save" onClick={() => void fromTypedName(typedName.trim() || name)}>Save typed signature</button>
             <button type="button" onClick={() => setTyping(false)}>Cancel</button>
           </>
         ) : (
           <>
-            <button type="button" onClick={keepSignature} data-hpd-smoke="paperwork-notary-sign">Use this signature</button>
-            <button type="button" data-hpd-smoke="paperwork-notary-type" onClick={() => { setError(""); setTypedName(typedName || name); setTyping(true); }}>Type to sign</button>
-            {signature ? <button type="button" onClick={clearSignature}>Clear</button> : null}
+            {!signature && shownName ? (
+              <button type="button" className="sig-primary" data-hpd-smoke="paperwork-notary-quick" onClick={() => void fromTypedName(name)}>Sign as {shownName}</button>
+            ) : null}
+            <button type="button" data-hpd-smoke="paperwork-notary-draw" onClick={() => { setError(""); setDrawing(true); }}>{signature ? "Sign again" : "Sign with finger"}</button>
+            <button type="button" data-hpd-smoke="paperwork-notary-type" onClick={() => { setError(""); setTypedName(typedName || shownName); setTyping(true); }}>Type to sign</button>
+            {saved.signature ? <button type="button" onClick={forgetSaved}>Remove saved signature</button> : null}
           </>
         )}
       </div>
-      {signature && !typing ? <img className="sig-preview" src={signature} alt="Notary signature preview" /> : null}
       <label className="paperwork-field">
         Notary&apos;s printed name
         <input
           data-hpd-smoke="paperwork-notary-name"
           value={name}
-          onChange={(event) => setName(event.target.value)}
+          onChange={(event) => changeName(event.target.value)}
           placeholder="Notary's full name"
           autoCapitalize="words"
         />
