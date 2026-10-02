@@ -15,7 +15,7 @@ import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOM
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
 import { fetchServerWorkflowOverrides, HPD_STATUS_WORKER_URL, startOverPatch } from "../../lib/paperwork";
 import { longestCleanDescription } from "../../lib/description-quality";
-import { clearFieldEvidence, listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
+import { clearFieldEvidence, listFieldEvidence, redateFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -123,6 +123,13 @@ function jobScope(job: JobRecord) {
     .replace(/^:\s*/, "")
     .trim();
   return picked || SCOPE_MISSING;
+}
+
+// "YYYY-MM-DD" in local time, for date inputs.
+function localDay(iso?: string) {
+  const at = iso ? new Date(iso) : null;
+  if (!at || Number.isNaN(at.getTime())) return "";
+  return `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, "0")}-${String(at.getDate()).padStart(2, "0")}`;
 }
 
 // Any field step recorded today (trip, arrival, visit, work, package).
@@ -692,7 +699,7 @@ export default function FieldCommandClient() {
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
   const [workflowLoaded, setWorkflowLoaded] = useState(false);
   const [jobsLoadFailed, setJobsLoadFailed] = useState(false);
-  const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number; beforeVideos?: number; afterVideos?: number }>>({});
+  const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number; beforeVideos?: number; afterVideos?: number; beforeDay?: string; afterDay?: string }>>({});
   // Up to 3 thumbnails per stage for the Media & Documents card.
   const [mediaThumbs, setMediaThumbs] = useState<Record<string, { before: string[]; after: string[] }>>({});
   const [mediaBusy, setMediaBusy] = useState("");
@@ -1664,6 +1671,8 @@ export default function FieldCommandClient() {
         after: rows.filter((media) => media.kind === "after").length,
         total: rows.length,
         beforeVideos: rows.filter((media) => media.kind === "before" && media.mediaType === "video").length,
+        beforeDay: localDay(rows.find((media) => media.kind === "before")?.capturedAt),
+        afterDay: localDay(rows.find((media) => media.kind === "after")?.capturedAt),
         afterVideos: rows.filter((media) => media.kind === "after" && media.mediaType === "video").length,
       },
     }));
@@ -1676,6 +1685,29 @@ export default function FieldCommandClient() {
   }
 
   // From a guided step the photo/video buttons open right inside that step, glowing.
+  async function changeMediaDate(job: JobRecord, kind: "before" | "after", day: string) {
+    if (!day) return;
+    setMediaBusy(kind);
+    try {
+      const count = await redateFieldEvidence(jobId(job), kind, day);
+      await refreshMediaCounts(job);
+      if (kind === "before") {
+        // The before photos are when the work started: the affidavit's work start follows them.
+        const [y, m, d] = day.split("-").map(Number);
+        const startedAt = new Date(y, m - 1, d, 12).toISOString();
+        const patch = { ActualWorkStartDate: startedAt, actualWorkStartDate: startedAt, JobStartedAt: startedAt, jobStartedAt: startedAt };
+        try { writeSharedWorkflowPatch(jobId(job), patch); } catch {}
+        mergeWorkflowPatchIntoScreen(jobId(job), patch);
+      }
+      const [y, m, d] = day.split("-");
+      setMediaMessage(`📅 ${count} ${kind} photo/video date(s) changed to ${m}/${d}/${y}. Photos show the new date; the affidavit uses it too.`);
+    } catch (error) {
+      setMediaMessage(error instanceof Error ? error.message : "The date could not be changed.");
+    } finally {
+      setMediaBusy(null);
+    }
+  }
+
   function requestMediaUpload(kind: FieldMediaKind, fromStep = false) {
     setAutoPackage(null);
     setMediaChoice(kind);
@@ -2368,6 +2400,17 @@ export default function FieldCommandClient() {
                     <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-library")}>Add videos</button>
                   </div>
                 </div> : null}
+                {(["before", "after"] as const).some((kind) => counts[kind] > 0) ? (
+                  <div className="jc-media-dates" data-hpd-smoke="jc-media-dates">
+                    {(["before", "after"] as const).filter((kind) => counts[kind] > 0).map((kind) => (
+                      <label key={kind}>
+                        📅 {kind === "before" ? "Before" : "After"} date
+                        <input type="date" data-hpd-smoke={`jc-media-date-${kind}`} value={counts[`${kind}Day`] || ""} disabled={Boolean(mediaBusy)}
+                          onChange={(event) => void changeMediaDate(selectedJob, kind, event.target.value)} />
+                      </label>
+                    ))}
+                  </div>
+                ) : null}
               </div>
 
               <div className="jc-facts">

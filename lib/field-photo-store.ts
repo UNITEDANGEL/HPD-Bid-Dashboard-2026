@@ -34,6 +34,8 @@ export type FieldMedia = {
   dataUrl: string;
   posterDataUrl?: string;
   capturedAt: string;
+  // Set the first time the date is changed by hand: the real moment it was taken.
+  originalCapturedAt?: string;
   stamped?: boolean;
   stampError?: string;
 };
@@ -366,7 +368,9 @@ function stampStageTitle(kind: FieldMediaKind, label: string) {
   return titles[kind] || stampDisplayText(label.toUpperCase(), 28) || "FIELD EVIDENCE";
 }
 
-function stampEvidenceImage(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, meta: EvidenceStampMeta) {
+// opaque: solid label bands, used when re-printing the labels over an already-labelled photo so
+// the old text can't show through.
+function stampEvidenceImage(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, meta: EvidenceStampMeta, opaque = false) {
   const width = canvas.width;
   const height = canvas.height;
   const location = [meta.location, meta.borough].filter(Boolean).join(" - ") || meta.address || "Location not listed";
@@ -391,7 +395,7 @@ function stampEvidenceImage(canvas: HTMLCanvasElement, context: CanvasRenderingC
   const lineGap = lineSize * 1.08;
 
   context.save();
-  context.fillStyle = "rgba(5, 10, 17, 0.84)";
+  context.fillStyle = opaque ? "rgb(5, 10, 17)" : "rgba(5, 10, 17, 0.84)";
   context.fillRect(0, 0, width, topHeight);
   context.fillRect(0, height - bottomHeight, width, bottomHeight);
   context.fillStyle = "#ffffff";
@@ -768,6 +772,61 @@ async function makeVideoPoster(dataUrl: string, stampMeta: EvidenceStampMeta) {
   } catch {
     return "";
   }
+}
+
+async function restampDataUrl(dataUrl: string, meta: EvidenceStampMeta, quality: number) {
+  const image = await loadImage(dataUrl);
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth || image.width;
+  canvas.height = image.naturalHeight || image.height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Could not re-label the photo.");
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  stampEvidenceImage(canvas, context, meta, true);
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+// Change the date of every before (or after) photo/video of a job. Photos get their printed
+// DATE line re-printed; videos keep the label burned into the recording, and their saved date
+// and thumbnail change. The affidavit's work dates follow these dates. day: "YYYY-MM-DD".
+export async function redateFieldEvidence(jobId: string, kind: FieldMediaKind, day: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  if (!match) throw new Error("Pick a date.");
+  // Noon local time, so the day never shifts across time zones.
+  const capturedAt = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12).toISOString();
+  const rows = (await listFieldPhotos(jobId)).filter((media) => media.kind === kind);
+  const updated: FieldMedia[] = [];
+  for (const media of rows) {
+    const meta: EvidenceStampMeta = {
+      jobId: media.jobId, kind: media.kind, label: media.evidenceLabel, address: media.address,
+      location: media.location, borough: media.borough, capturedAt,
+    };
+    const next: FieldMedia = { ...media, capturedAt, originalCapturedAt: media.originalCapturedAt || media.capturedAt };
+    if (media.mediaType === "image" && media.stamped !== false) {
+      next.dataUrl = await restampDataUrl(media.dataUrl, meta, JPEG_QUALITY);
+      next.size = Math.round((next.dataUrl.length * 3) / 4);
+    }
+    if (media.mediaType === "video" && media.posterDataUrl) {
+      next.posterDataUrl = await restampDataUrl(media.posterDataUrl, meta, 0.7).catch(() => media.posterDataUrl);
+    }
+    updated.push(next);
+  }
+  if (!updated.length) return 0;
+  const db = await openDb();
+  try {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    updated.forEach((media) => store.put(media));
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error || new Error("Could not save the new date."));
+      transaction.onabort = () => reject(transaction.error || new Error("Saving the new date was aborted."));
+    });
+  } finally {
+    db.close();
+  }
+  await Promise.all(updated.map((media) => shadowUpsert("media", media as unknown as Record<string, unknown>)));
+  return updated.length;
 }
 
 export function canStoreFieldPhotos() {
