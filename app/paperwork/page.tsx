@@ -1189,11 +1189,14 @@ export default function PaperworkPage() {
   const [google, setGoogle] = useState<GoogleStatus | null>(null);
   // Signer's saved signature (this device only); read by PDF generation.
   const signatureRef = useRef("");
-  const rememberSignature = useCallback((dataUrl: string) => { signatureRef.current = dataUrl; }, []);
-  // Notary's in-person approval: never saved, never reused across packages.
+  const [signerReady, setSignerReady] = useState(false);
+  const rememberSignature = useCallback((dataUrl: string) => { signatureRef.current = dataUrl; setSignerReady(Boolean(dataUrl)); }, []);
+  // Notary's approval for this affidavit only (the signature image may be saved; the approval never is).
   const notaryRef = useRef<NotaryApproval | null>(null);
   const [notaryKey, setNotaryKey] = useState(0);
-  const rememberNotary = useCallback((notary: NotaryApproval | null) => { notaryRef.current = notary; }, []);
+  const [notaryApproved, setNotaryApproved] = useState(false);
+  const rememberNotary = useCallback((notary: NotaryApproval | null) => { notaryRef.current = notary; setNotaryApproved(Boolean(notary)); }, []);
+  const autoWaitScrolledRef = useRef(false);
   const [delivery, setDelivery] = useState<{ working: boolean; message: string; folderLink: string; emailed: boolean; error: string } | null>(null);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
@@ -1334,6 +1337,23 @@ export default function PaperworkPage() {
       return;
     }
 
+    // The emailed copy needs the signer's signature and the notary's approval. Wait on this
+    // screen for both, then build the package by itself -- no extra Generate tap.
+    if (includePackageSignature && (!signerReady || !notaryApproved)) {
+      setPdfStatus(
+        !signerReady
+          ? "Next: add your signature below (one tap). The package builds by itself after the notary approves."
+          : "Next: hand the phone to the notary to confirm and approve below. The package builds by itself right after."
+      );
+      if (!autoWaitScrolledRef.current && typeof document !== "undefined") {
+        autoWaitScrolledRef.current = true;
+        window.setTimeout(() => {
+          document.querySelector(signerReady ? '[data-hpd-smoke="paperwork-notary-card"]' : '[data-hpd-smoke="paperwork-signature-card"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 400);
+      }
+      return;
+    }
+
     autoGenerateStartedRef.current = true;
     setPdfStatus(
       includePackageSignature
@@ -1343,7 +1363,7 @@ export default function PaperworkPage() {
     window.setTimeout(() => {
       void generateCompletePackage(includePackageMedia, includePackageSignature);
     }, 250);
-  }, [autoGeneratePackage, selectedId, jobs.length, selectedJob, form.jobId, includePackageMedia, includePackageSignature, outcome]);
+  }, [autoGeneratePackage, selectedId, jobs.length, selectedJob, form.jobId, includePackageMedia, includePackageSignature, outcome, signerReady, notaryApproved]);
 
   function clearPackagePreview() {
     setPackageReviewed(false);
@@ -1839,9 +1859,12 @@ export default function PaperworkPage() {
       const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
       const pdfBytes = new Uint8Array(buffer);
       const dataUrl = bytesToDataUrl(pdfBytes, "application/pdf");
-      const fileName = `${safeFilename(jobId)}-${packageStatusSlug(activeOutcome)}-affidavit-invoice.pdf`;
+      const fileName = printCopy
+        ? `${safeFilename(jobId)}-${packageStatusSlug(activeOutcome)}-PRINT-COPY-unsigned-affidavit-invoice.pdf`
+        : `${safeFilename(jobId)}-${packageStatusSlug(activeOutcome)}-affidavit-invoice.pdf`;
 
-      try {
+      // The print copy never replaces the signed package PDF saved on this device.
+      if (!printCopy) try {
         await saveFieldPacket({
           jobId,
           fileName,
@@ -2273,6 +2296,7 @@ export default function PaperworkPage() {
             ? "Attached: affidavit/invoice PDF. The photos were too large for one email and are in the Google Drive folder."
             : "Attached: affidavit/invoice PDF.",
         pending.videoCount ? `${pending.videoCount} video(s) are in the Google Drive folder.` : "",
+        "The unsigned print copy (to print, sign and notarize in ink) is only in the Google Drive folder.",
       ].filter((line, index, lines) => line || lines[index - 1]).join("\n"),
     };
   }
@@ -2322,10 +2346,21 @@ export default function PaperworkPage() {
 
     packageBusyRef.current = true;
     setPackageBusy(true);
-    setDelivery({ working: true, message: "Starting...", folderLink: "", emailed: false, error: "" });
+    setDelivery({ working: true, message: "Making the unsigned print copy...", folderLink: "", emailed: false, error: "" });
     try {
+      // The unsigned print copy (sign and stamp in ink) goes in the same Drive folder, never in the email.
+      const printCopy = await generateAffidavitPdf({
+        downloadPdf: false,
+        markGenerated: false,
+        formOverride: form,
+        outcomeOverride: outcome,
+        includeSignature: true,
+        signatureImage: false,
+        printCopy: true,
+      });
       const result = await deliverPackage({
         ...packageEmailParts(pending),
+        driveOnlyFiles: printCopy ? [{ name: printCopy.fileName, mimeType: "application/pdf", bytes: printCopy.bytes }] : [],
         sendEmail: true,
         onProgress: (message) => setDelivery((current) => ({ ...(current || { folderLink: "", emailed: false, error: "" }), working: true, message })),
       });
@@ -2338,7 +2373,7 @@ export default function PaperworkPage() {
         emailed: result.emailed,
         error: result.emailError,
       });
-      setPdfStatus(`Approved. Saved ${result.uploaded} file(s) to Google Drive${result.emailed ? " and emailed" : ""}. ${archive}`);
+      setPdfStatus(`Approved. Saved ${result.uploaded} file(s) to Google Drive${result.emailed ? " and emailed the signed package" : ""}.${printCopy ? " The unsigned print copy is in the same Drive folder (not emailed)." : ""} ${archive}`);
     } catch (error) {
       setDelivery({ working: false, message: "", folderLink: "", emailed: false, error: error instanceof Error ? error.message : "Google Drive save failed." });
       setPdfStatus("Not approved yet: the package could not be saved to Google Drive. It is still on this device; try again.");

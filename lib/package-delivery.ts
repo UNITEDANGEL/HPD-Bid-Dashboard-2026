@@ -80,6 +80,8 @@ export async function deliverPackage(
     emailSubject: string;
     emailText: (folderLink: string, attachedPhotos: boolean) => string;
     sendEmail: boolean;
+    // Saved to the same Drive folder but never attached to the email (the unsigned print copy).
+    driveOnlyFiles?: DeliveryFile[];
     onProgress?: (message: string) => void;
   },
   fetcher: Fetcher = fetch
@@ -95,8 +97,9 @@ export async function deliverPackage(
   const { folderId, link } = await folderResponse.json();
 
   let uploaded = 0;
-  for (const file of options.files) {
-    progress(`Saving to Google Drive: ${uploaded + 1} of ${options.files.length} files...`);
+  const driveFiles = [...options.files, ...(options.driveOnlyFiles || [])];
+  for (const file of driveFiles) {
+    progress(`Saving to Google Drive: ${uploaded + 1} of ${driveFiles.length} files...`);
     const response = await fetcher("/api/drive/package-file", {
       method: "POST",
       headers: { "Content-Type": file.mimeType || "application/octet-stream", "X-HPD-Folder": folderId, "X-HPD-Name": encodeURIComponent(file.name) },

@@ -141,6 +141,54 @@ try {
     await page.close();
   }
 
+  // Job card flow: "Review & Approve Package" opens the page with auto=package. It must wait for the
+  // signer and the notary, build by itself, and on approve email ONLY the signed copy while the
+  // unsigned print copy goes to the same Drive folder. Google is faked here; nothing is sent.
+  {
+    const job = "ER05729";
+    const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(String(error)));
+    const uploads = [];
+    let emailBody = "";
+    await page.route("**/api/drive/**", async (route) => {
+      const url = route.request().url();
+      if (url.includes("/session")) return route.fulfill({ json: { configured: true, connected: true, canEmail: true, email: "test@example.com" } });
+      if (url.includes("/package-folder")) return route.fulfill({ json: { folderId: "TEST-FOLDER", link: "https://drive.example/TEST-FOLDER" } });
+      if (url.includes("/package-file")) {
+        uploads.push(decodeURIComponent(route.request().headers()["x-hpd-name"] || ""));
+        return route.fulfill({ json: { ok: true } });
+      }
+      if (url.includes("/email-package")) {
+        emailBody = route.request().postData() || "";
+        return route.fulfill({ json: { to: ["test@example.com"] } });
+      }
+      return route.fulfill({ json: {} });
+    });
+
+    await page.goto(`${baseUrl}/paperwork?job=${job}&outcome=work_completed&doc=package&auto=package&media=none`, { waitUntil: "networkidle" });
+    await page.locator('[data-hpd-smoke="paperwork-signature-quick"]').click();
+    await page.locator('[data-hpd-smoke="paperwork-notary-quick"]').click();
+    await page.waitForTimeout(1500);
+    assert.equal(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count(), 0, `${job}: auto package must wait for the notary's approval`);
+    await page.locator('[data-hpd-smoke="paperwork-notary-witnessed"]').check();
+    await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
+    // No Generate tap: the package builds by itself after the notary approves.
+    await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
+    await page.locator(".pkg-confirm input").check();
+    await page.locator('[data-hpd-smoke="paperwork-approve-save"]').click();
+    await page.locator('[data-hpd-smoke="paperwork-drive-link"]').waitFor({ timeout: 60000 });
+
+    const printUpload = uploads.find((name) => name.includes("PRINT-COPY-unsigned"));
+    assert.ok(printUpload, `${job}: unsigned print copy must be saved to the Drive folder (got ${uploads.join(", ")})`);
+    assert.ok(uploads.some((name) => name.endsWith("-affidavit-invoice.pdf") && !name.includes("PRINT-COPY")), `${job}: signed PDF must be saved to Drive`);
+    assert.ok(emailBody.includes("-affidavit-invoice.pdf"), `${job}: signed PDF must be attached to the email`);
+    assert.ok(!emailBody.includes("PRINT-COPY"), `${job}: the unsigned print copy must NOT be emailed`);
+    assert.deepEqual(errors, [], `${job}: page errors`);
+    console.log(`PASS ${job} job-card flow: waits for notary, builds by itself, emails signed copy only, print copy saved to Drive (${uploads.length} Drive files)`);
+    await page.close();
+  }
+
   // Print Copy, with NO digital notary step at all: the notary signs on paper, so the stamp
   // and today's jurat date must appear automatically -- never blank, never dependent on
   // someone remembering to run the on-screen notary approval first. No COPY watermark either,
