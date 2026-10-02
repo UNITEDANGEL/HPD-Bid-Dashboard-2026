@@ -25,6 +25,7 @@ const materials = loadTs(path.join(root, 'lib/invoice-materials.ts'));
 // pdf-lib rejects objects created inside a vm context, so the invoice drawer loads in this realm.
 require.extensions['.ts'] = (m, file) => m._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, file);
 const { drawInvoicePage } = require(path.join(root, 'lib/invoice-pdf.ts'));
+const { signatureBytes } = require(path.join(root, 'lib/signature.ts'));
 const output = path.join(root, 'output/pdf/complete-package-test');
 fs.mkdirSync(output, { recursive: true });
 // Synthetic packaging fixture only, never uploaded to a real job or Drive.
@@ -32,7 +33,7 @@ const imageBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAA
 async function run(outcome, awardDate, broken = false) {
   const saved = [], statuses = [], requested = [], forms = [];
   const media = ['before', 'after', 'general'].map((kind, i) => ({ id: `TEST-${i}`, jobId: 'TEST-PACKAGE', kind, mediaType: 'image', evidenceLabel: kind === 'general' ? 'Building exterior' : `${kind} TEST ONLY`, name: `TEST-ONLY-${kind}.png`, type: 'image/png', size: imageBytes.length, capturedAt: '2026-09-15T12:00:00Z', dataUrl: broken && i === 0 ? '' : `data:image/png;base64,${imageBytes.toString('base64')}`, stamped: false }));
-  const context = { ...pdf, ...paperwork, ...noAccess, ...tenantContact, ...materials, drawInvoicePage, calendarDay, console, Uint8Array, ArrayBuffer, TextEncoder, Date, Buffer, Blob, File, URL,
+  const context = { ...pdf, ...paperwork, ...noAccess, ...tenantContact, ...materials, drawInvoicePage, signatureBytes, signatureRef: { current: `data:image/png;base64,${imageBytes.toString('base64')}` }, calendarDay, console, Uint8Array, ArrayBuffer, TextEncoder, Date, Buffer, Blob, File, URL,
     emailMediaCopies: async rows => rows,
     fitEmailVideos: async rows => rows,
     packageBusyRef: { current: false }, setPackageBusy() {},
