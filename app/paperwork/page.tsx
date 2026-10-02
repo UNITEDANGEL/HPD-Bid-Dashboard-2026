@@ -11,6 +11,7 @@ import SignatureCard from "./SignatureCard";
 import NotaryCard, { type NotaryApproval } from "./NotaryCard";
 import { deliverPackage, googleStatus, sendPackageEmail, type DeliveryFile, type GoogleStatus } from "../../lib/package-delivery";
 import { calendarDay } from "../../lib/job-priority";
+import { isJunkDescription } from "../../lib/description-quality";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
 import { type FieldMedia, dataUrlToBytes, listFieldEvidence } from "../../lib/field-photo-store";
@@ -708,6 +709,12 @@ function formWithFieldEventDate(form: PackageForm, outcome: PaperworkOutcome, ev
   }
 
   return next;
+}
+
+// A real scope, not empty and not the stand-in used when the ITB text couldn't be read.
+function hasWorkDescription(form: PackageForm) {
+  const text = form.description.trim();
+  return Boolean(text) && text !== "Work completed per HPD bid / work order." && !isJunkDescription(text);
 }
 
 function cleanAmount(value: string) {
@@ -1561,6 +1568,12 @@ export default function PaperworkPage() {
     const datesProblem = useWorkTemplate ? workDatesProblem(activeForm) : "";
     if (datesProblem) {
       setPdfStatus(datesProblem);
+      return null;
+    }
+
+    // Never print the blank-form labels or a stand-in as the scope of work.
+    if (activeOutcome === "work_completed" && !hasWorkDescription(activeForm)) {
+      setPdfStatus("The work description is missing: the scope couldn't be read from this job's ITB. Type it in Work description, then generate.");
       return null;
     }
 
@@ -4824,7 +4837,7 @@ export default function PaperworkPage() {
 
           {outcome === "work_completed" || outcome === "partial_work_completed" ? (
             <div
-              className={`refused-access-required package-charge-card ${workDatesProblem(form) || (outcome === "partial_work_completed" && (!form.partialReason.trim() || !form.partialWorkDone.trim())) ? "needs-description" : "ready"}`}
+              className={`refused-access-required package-charge-card ${workDatesProblem(form) || (outcome === "work_completed" && !hasWorkDescription(form)) || (outcome === "partial_work_completed" && (!form.partialReason.trim() || !form.partialWorkDone.trim())) ? "needs-description" : "ready"}`}
               data-hpd-smoke="paperwork-charge-card"
             >
               <div>
@@ -4842,6 +4855,21 @@ export default function PaperworkPage() {
                   placeholder={form.bidAmount || "$0.00"}
                 />
               </label>
+              {outcome === "work_completed" ? (
+                <label className="paperwork-field">
+                  Work description (prints on the invoice; from the ITB, edit if needed)
+                  <textarea
+                    data-hpd-smoke="paperwork-work-description"
+                    rows={5}
+                    value={isFallbackPackageDescription(form.description) ? "" : form.description}
+                    onChange={(event) => update("description", event.target.value)}
+                    placeholder="Type the scope of work from the ITB"
+                  />
+                  {hasWorkDescription(form) ? null : (
+                    <small role="alert" data-hpd-smoke="paperwork-description-missing">The scope couldn&apos;t be read from this job&apos;s ITB. Open the ITB and type the scope here before generating.</small>
+                  )}
+                </label>
+              ) : null}
               <div className="paperwork-grid">
                 <label className="paperwork-field">
                   Work Started

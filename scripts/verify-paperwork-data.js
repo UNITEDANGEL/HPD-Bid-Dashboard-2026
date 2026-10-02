@@ -57,6 +57,10 @@ function isWorkOrderId(value) {
 const JUNK_DESCRIPTION_PATTERNS = [
   /APT\(S\)\/LOCATION\(S\)/i,
   /PROCEDURES\s+MATERIAL/i,
+  // Other labels of the blank work-description form (a scanned ITB's text layer has only these).
+  /Provide\/Install[\s\S]{0,80}Abate/i,
+  /Replace\/Repair\s+Gas\/Electric/i,
+  /GC:\s*ELEV\s*ATOR/i,
   /General\s+Decision\s+Number/i,
   /Confirma\s*t?\s*ion\s+of\s+Award/i,
 ];

@@ -687,3 +687,8 @@
   font-size: 16px;
   font-weight: 700;
 }
+
+#fc-job-card .jc-description-text.is-missing {
+  color: #fdba74;
+  font-size: 16px;
+}

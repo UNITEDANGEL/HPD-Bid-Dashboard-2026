@@ -37,6 +37,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # OCR for scanned (faxed) ITBs: without these, a scan's real scope can't be read and only the
+      # blank form's labels come through.
+      - name: Install OCR tools
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr poppler-utils
+
       - name: Restore Google credentials if secrets exist
         shell: bash
         run: |

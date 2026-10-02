@@ -6,6 +6,10 @@ const JUNK_DESCRIPTION_PATTERNS = [
   // ITB page 3 table headers with no scope filled in.
   /APT\(S\)\/LOCATION\(S\)/i,
   /PROCEDURES\s+MATERIAL/i,
+  // Other labels of the blank work-description form (a scanned ITB's text layer has only these).
+  /Provide\/Install[\s\S]{0,80}Abate/i,
+  /Replace\/Repair\s+Gas\/Electric/i,
+  /GC:\s*ELEV\s*ATOR/i,
   // Federal wage determination page captured in place of the scope.
   /General\s+Decision\s+Number/i,
   // HPD Confirmation of Award letter captured in place of the scope.
