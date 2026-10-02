@@ -40,6 +40,8 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 - [x] 30 / 60 / 90 days and status filters never move the map (no more jumping to the middle of Queens); only a borough tap or a search moves it
 - [x] Big, clear blue "You" marker, always on top of every pin
 - [x] Waze / Google taps are recorded on the job card: "On the way · Waze · date"
+- [x] Job card flow starts with **Go there** (Waze / Google) right under the description
+- [x] Email photos use the full ~25 MB email: few photos go near full quality, many photos step down; with videos, photos leave room for them
 
 ## In progress / to do (in order)
 
@@ -60,7 +62,8 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 7. [ ] **ER04964 and the other 4 jobs**: confirm the OCR run filled their real scopes
 8. [ ] **iPhone speed**: make the app faster on mobile
 9. [ ] **Better app link** (custom domain): needs a domain name from the owner
-10. [ ] **Test job (master sample)**: one test job that runs the whole flow with sample photos (Sample before 1 and 2, Sample after 1 and 2), sends a sample package, and is the reference for every job card. All real job cards use the same card, so every fix made on the test job shows on all of them
+10. [x] **Test job (master sample)**: TEST-0001, search "TEST" on the map (live)
+    - Original request:: one test job that runs the whole flow with sample photos (Sample before 1 and 2, Sample after 1 and 2), sends a sample package, and is the reference for every job card. All real job cards use the same card, so every fix made on the test job shows on all of them
 11. [ ] **Affidavit/package inside the job card**: review, sign, approve without leaving the card
 12. [ ] **One neat job card**: appointments, outcome, details, one after the other in one place
 13. [ ] **One master file**: the old map file's useful extras moved into the live job card, then the old file removed

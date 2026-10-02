@@ -11,6 +11,7 @@ import SignatureCard from "./SignatureCard";
 import NotaryCard, { type NotaryApproval } from "./NotaryCard";
 import { deliverPackage, googleStatus, sendPackageEmail, type DeliveryFile, type GoogleStatus } from "../../lib/package-delivery";
 import { calendarDay } from "../../lib/job-priority";
+import { isTestJob, withTestJob } from "../../lib/test-job";
 import { isJunkDescription } from "../../lib/description-quality";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
@@ -980,6 +981,8 @@ function driveFiling(form: PackageForm, jobId: string, outcome: PaperworkOutcome
   const [year, month] = day.split("-");
   const borough = titleCase(String(form.borough || "").trim()) || "Borough not listed";
   const address = String(form.address || "").replace(/\s+/g, " ").trim().slice(0, 60);
+  // Test packages are filed apart from real work: HPD Packages / TEST jobs / ...
+  if (isTestJob(jobId)) return { path: ["TEST jobs"], folderName: [day, jobId, packageStatusLabel(outcome)].join(" - ") };
   return {
     path: [year, `${month} - ${titleCase(MONTH_NAMES[Number(month) - 1] || month)}`, borough],
     folderName: [day, jobId, address, packageStatusLabel(outcome)].filter(Boolean).join(" - "),
@@ -1269,7 +1272,7 @@ export default function PaperworkPage() {
         if (!res.ok) return;
 
         const data = await res.json();
-        const rows = await applySavedWorkflowStatuses(asArray(data));
+        const rows = await applySavedWorkflowStatuses(withTestJob(asArray(data)));
         if (!cancelled) setJobs(rows);
       } catch (error) {
         console.error(error);
@@ -2402,7 +2405,7 @@ export default function PaperworkPage() {
       files,
       // The SIGNED email: the signed PDF and the before/after photos only.
       emailFiles,
-      emailSubject: `SIGNED - ${pending.jobId} - ${statusLabel} - ${form.address || "HPD package"}`,
+      emailSubject: `${isTestJob(pending.jobId) ? "TEST - " : ""}SIGNED - ${pending.jobId} - ${statusLabel} - ${form.address || "HPD package"}`,
       // This is the email that gets forwarded, so it carries no Google Drive link or Drive mentions.
       emailText: (_folderLink: string, attachedPhotos: boolean) => [
         "SIGNED COPY - signed by the principal and the notary. This is the copy to forward.",

@@ -823,3 +823,7 @@
   padding: 10px;
 }
 #fc-job-card .jc-step .fc-next-action { font-size: 17px; min-height: 54px; padding: 10px 16px; }
+
+.jc-test-banner { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: rgba(139, 92, 246, 0.18); border: 1px solid #8b5cf6; color: #ede9fe; font-weight: 700; font-size: 14px; line-height: 1.35; }
+.jc-step-nav { display: flex; gap: 8px; margin-top: 8px; }
+.jc-step-nav .jc-btn { flex: 1; justify-content: center; }

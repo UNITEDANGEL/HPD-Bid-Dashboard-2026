@@ -20,6 +20,7 @@ import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./job-card-v2.css";
+import { isTestJob, withTestJob } from "../../lib/test-job";
 
 type JobRecord = Record<string, unknown>;
 
@@ -742,7 +743,7 @@ export default function FieldCommandClient() {
       const body = data as { jobs?: unknown; data?: unknown; records?: unknown } | unknown[];
       const rows = Array.isArray(body) ? body : body?.jobs || body?.data || body?.records;
       if (!Array.isArray(rows)) throw new Error("Invalid job response");
-      latestRows = rows as JobRecord[];
+      latestRows = withTestJob(rows as JobRecord[]);
       setJobsLoadFailed(false);
       applyOverrides();
     }
@@ -1959,6 +1960,9 @@ export default function FieldCommandClient() {
                 </div>
               </header>
 
+              {isTestJob(jobId(selectedJob)) ? (
+                <p className="jc-test-banner" data-hpd-smoke="jc-test-banner">🧪 TEST JOB: sample only. Run the whole flow here; packages are marked TEST and filed in Drive under "TEST jobs". Use Clear job to start over.</p>
+              ) : null}
               <section className="jc-description" aria-label="Job description" data-hpd-smoke="jc-description">
                 <div className="jc-section-head">
                   <strong>Job Description</strong>
@@ -2003,10 +2007,20 @@ export default function FieldCommandClient() {
                 ) : null;
                 return (
                   <ol className="jc-steps" data-hpd-smoke="jc-steps" aria-label="Job steps">
-                    {value(selectedJob, ["TravelStartedAt"]) ? (
-                      <li className="jc-step is-done jc-step-travel" data-hpd-smoke="jc-step-travel">
+                    {/* Step 0: go there. The tap on Waze / Google is recorded with the date. */}
+                    {value(selectedJob, ["TravelStartedAt"]) || !stamps.arrived ? (
+                      <li className={`jc-step jc-step-travel ${value(selectedJob, ["TravelStartedAt"]) ? "is-done" : "is-current"}`} data-hpd-smoke="jc-step-travel">
                         <span className="jc-step-num" aria-hidden="true">🚗</span>
-                        <div><b>On the way</b><small>{value(selectedJob, ["TravelVia"]) || "Navigation"} · {formatSavedTime(value(selectedJob, ["TravelStartedAt"]))}</small></div>
+                        <div>
+                          <b>{value(selectedJob, ["TravelStartedAt"]) ? "On the way" : "Go there"}</b>
+                          <small>{value(selectedJob, ["TravelStartedAt"]) ? `${value(selectedJob, ["TravelVia"]) || "Navigation"} · ${formatSavedTime(value(selectedJob, ["TravelStartedAt"]))}` : "Open directions; the trip is saved on this job"}</small>
+                          {!stamps.arrived ? (
+                            <div className="jc-step-nav">
+                              <a className="jc-btn jc-btn-waze" data-hpd-smoke="jc-step-waze" href={wazeHref(selectedJob)} onClick={()=>recordTravel(selectedJob, "Waze")} target="_blank" rel="noreferrer">Waze</a>
+                              <a className="jc-btn jc-btn-google" href={directionsHref(selectedJob)} onClick={()=>recordTravel(selectedJob, "Google")} target="_blank" rel="noreferrer">Google</a>
+                            </div>
+                          ) : null}
+                        </div>
                       </li>
                     ) : null}
                     <li className={stepClass(0)}>
