@@ -1163,6 +1163,30 @@ export default function FieldCommandClient() {
     };
   }, [routeMapReady]);
 
+  // Step 1: arrival records the time and where you are, shows you on the map and how far the job is.
+  function markArrived(job: JobRecord) {
+    const id = jobId(job);
+    saveWorkflowStamp(job, "arrived");
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        void placeUserMarker(latitude, longitude);
+        lastPositionRef.current = { lat: latitude, lng: longitude };
+        const patch = { ArrivedLatitude: latitude, ArrivedLongitude: longitude, ArrivedAccuracyMeters: Math.round(accuracy) };
+        try { writeSharedWorkflowPatch(id, patch); } catch {}
+        mergeWorkflowPatchIntoScreen(id, patch);
+        const at = jobLatLng(job);
+        if (at) {
+          const feet = Math.round(distanceMiles({ lat: latitude, lng: longitude }, at) * 5280);
+          setOutcomeMessage(feet < 1000 ? `Arrived. You're about ${feet} ft from the job.` : `Arrived. Location saved, but you're ${(feet / 5280).toFixed(1)} mi from the job address.`);
+        }
+      },
+      () => setOutcomeMessage("Arrived. Time saved; location wasn't available."),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+    );
+  }
+
   function locateMe() {
     if (!navigator.geolocation) {
       setLocateStatus("error");
@@ -1377,7 +1401,6 @@ export default function FieldCommandClient() {
       [id]: {
         ...(prev[id] || {}),
         [key]: now,
-        ...(key === "arrived" ? { visit: now } : {}),
         ...(statusLabel ? { status: statusLabel } : {}),
       },
     }));
@@ -1890,6 +1913,110 @@ export default function FieldCommandClient() {
                 ) : null}
               </section>
 
+              {(() => {
+                // Guided steps: arrive -> start visit -> what happened (start work = before media, or a
+                // no-work outcome) -> finish work (after media) -> check media & finish -> package.
+                const savedOutcome = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
+                const noWorkOutcomes = ["NO_ACCESS_1_WAITING_72H", "REFUSED_ACCESS", "WORK_COMPLETED_BY_OTHERS", "APPOINTMENT_REQUESTED"];
+                const workOutcomes = ["WORK_COMPLETED", "PARTIAL_WORK"];
+                const workStarted = Boolean(stamps.work) || counts.before > 0;
+                const steps = [
+                  { done: Boolean(stamps.arrived) },
+                  { done: Boolean(stamps.visit) },
+                  { done: workStarted || noWorkOutcomes.includes(savedOutcome) || workOutcomes.includes(savedOutcome) },
+                  { done: counts.after > 0 || noWorkOutcomes.includes(savedOutcome) || workOutcomes.includes(savedOutcome) },
+                  { done: Boolean(savedOutcome) },
+                  { done: Boolean(value(selectedJob, ["PackageApprovedAt"])) || /approved/i.test(value(selectedJob, ["PackageReviewStatus"])) },
+                ];
+                const current = steps.findIndex((step) => !step.done);
+                const stepClass = (index: number) => `jc-step ${steps[index].done ? "is-done" : index === current ? "is-current" : "is-later"}`;
+                const num = (index: number) => <span className="jc-step-num" aria-hidden="true">{steps[index].done ? "✓" : index + 1}</span>;
+                const outcomeForm = (keys: string[]) => keys.includes(draft.outcome) ? (
+                  <div className="jc-step-form">
+                    <label>Note (optional)<textarea value={draft.note} rows={2} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
+                    {draft.outcome === "APPOINTMENT_REQUESTED"
+                      ? <button type="button" className="fc-next-action jc-glow" onClick={openAppointment}>Set appointment details</button>
+                      : <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-save-outcome" disabled={Boolean(mediaBusy)} onClick={() => saveVisitOutcome(selectedJob, true)}>Save {FIELD_OUTCOMES[draft.outcome]} &amp; make the package<span aria-hidden="true">&rarr;</span></button>}
+                  </div>
+                ) : null;
+                return (
+                  <ol className="jc-steps" data-hpd-smoke="jc-steps" aria-label="Job steps">
+                    <li className={stepClass(0)}>
+                      {num(0)}
+                      <div>
+                        <b>I have arrived</b>
+                        <small>{stamps.arrived ? `Arrived ${formatSavedTime(stamps.arrived)}${value(selectedJob, ["ArrivedLatitude"]) ? " · location saved" : ""}` : "Saves the time and your location"}</small>
+                        {current === 0 ? <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-arrived" disabled={!workflowLoaded} onClick={() => markArrived(selectedJob)}>I have arrived<span aria-hidden="true">&rarr;</span></button> : null}
+                      </div>
+                    </li>
+                    <li className={stepClass(1)}>
+                      {num(1)}
+                      <div>
+                        <b>Start visit</b>
+                        <small>{stamps.visit ? `Started ${formatSavedTime(stamps.visit)}` : "Head to the job site; read the description above"}</small>
+                        {current === 1 ? <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-visit" onClick={() => saveWorkflowStamp(selectedJob, "visit")}>Start visit<span aria-hidden="true">&rarr;</span></button> : null}
+                      </div>
+                    </li>
+                    <li className={stepClass(2)}>
+                      {num(2)}
+                      <div>
+                        <b>What happened?</b>
+                        <small>{noWorkOutcomes.includes(savedOutcome) ? FIELD_OUTCOMES[savedOutcome] : workStarted ? `Work started${stamps.work ? ` ${formatSavedTime(stamps.work)}` : ""} · ${counts.before} before` : "Start the work with before photos/video, or record why not"}</small>
+                        {current === 2 ? (
+                          <>
+                            <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-start-work" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("before")}>Start work: before photo / video<span aria-hidden="true">&rarr;</span></button>
+                            <div className="jc-step-choices">
+                              {noWorkOutcomes.map((key) => (
+                                <button key={key} type="button" className={draft.outcome === key ? "is-picked" : ""} onClick={() => setOutcomeDrafts((prev) => ({ ...prev, [id]: { note: prev[id]?.note || "", outcome: key } }))}>{FIELD_OUTCOMES[key]}</button>
+                              ))}
+                            </div>
+                            {outcomeForm(noWorkOutcomes)}
+                          </>
+                        ) : null}
+                      </div>
+                    </li>
+                    {!noWorkOutcomes.includes(savedOutcome) ? (
+                      <>
+                        <li className={stepClass(3)}>
+                          {num(3)}
+                          <div>
+                            <b>Finish work</b>
+                            <small>{counts.after ? `${counts.after} after photo/video saved` : "Take the after photos and video"}</small>
+                            {current === 3 ? <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-after" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("after")}>Finish work: after photo / video<span aria-hidden="true">&rarr;</span></button> : null}
+                          </div>
+                        </li>
+                        <li className={stepClass(4)}>
+                          {num(4)}
+                          <div>
+                            <b>Photos look good? Finish the job</b>
+                            <small>{savedOutcome ? FIELD_OUTCOMES[savedOutcome] : `${counts.before} before · ${counts.after} after. Check them in Media & Documents.`}</small>
+                            {current === 4 ? (
+                              <>
+                                <div className="jc-step-choices">
+                                  {workOutcomes.map((key) => (
+                                    <button key={key} type="button" className={draft.outcome === key ? "is-picked" : ""} data-hpd-smoke={`jc-step-${key.toLowerCase()}`} onClick={() => setOutcomeDrafts((prev) => ({ ...prev, [id]: { note: prev[id]?.note || "", outcome: key } }))}>{FIELD_OUTCOMES[key]}</button>
+                                  ))}
+                                </div>
+                                {outcomeForm(workOutcomes)}
+                              </>
+                            ) : null}
+                          </div>
+                        </li>
+                      </>
+                    ) : null}
+                    <li className={stepClass(5)}>
+                      {num(5)}
+                      <div>
+                        <b>Package</b>
+                        <small>{steps[5].done ? "Paperwork approved" : "Affidavit + invoice, signed and emailed"}</small>
+                        {current === 5 ? <a href={paperworkHref} className="fc-next-action jc-glow" data-hpd-smoke="jc-step-package">Make the package<span aria-hidden="true">&rarr;</span></a> : null}
+                      </div>
+                    </li>
+                    {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
+                  </ol>
+                );
+              })()}
+
               <div className="jc-facts">
                 <div className="jc-fact">
                   <small>Maturity</small>
@@ -1937,24 +2064,7 @@ export default function FieldCommandClient() {
                 }}>Approve return visit</button>}
               </div>
 
-              <div className="jc-next">
-                {next.key === "before" || next.key === "after" ? (
-                  <>
-                    <p className="jc-next-hint">Next: {next.label} in Media &amp; Documents below</p>
-                    {/* No access / refused don't need photos: go straight to the outcome. */}
-                    <button type="button" className="jc-skip-photos" data-hpd-smoke="jc-skip-photos" onClick={openOutcomePanel}>No access or refused? Record outcome</button>
-                  </>
-                ) : next.key === "review" ? (
-                  <a href={paperworkHref} className="fc-next-action jc-glow">{next.label}<span aria-hidden="true">&rarr;</span></a>
-                ) : next.key === "record" ? (
-                  <button type="button" className="fc-next-action jc-glow" onClick={openOutcomePanel}>{next.label}<span aria-hidden="true">&rarr;</span></button>
-                ) : (
-                  <button type="button" className="fc-next-action jc-glow" disabled={!workflowLoaded || Boolean(mediaBusy)} onClick={() => {
-                    saveWorkflowStamp(selectedJob, next.key);
-                  }}>{mediaBusy ? "Saving media..." : next.label}<span aria-hidden="true">&rarr;</span></button>
-                )}
-                {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
-              </div>
+
 
               <section className="jc-media-docs" aria-label="Media and documents">
                 <div className="jc-section-head">
@@ -2021,6 +2131,7 @@ export default function FieldCommandClient() {
               <div className="fc-card-footer jc-footer">
               <button type="button" className="fc-outcome-link" onClick={openOutcomePanel}>Outcome</button>
               <button type="button" className="fc-outcome-link" onClick={openAppointment}>Appointment</button>
+              <button type="button" className="fc-outcome-link" onClick={() => beginClearWorkflow(selectedJob)}>Clear job</button>
               <button type="button" className="fc-job-details-toggle" aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}>{sheetExpanded ? "Less" : "Details"}<span aria-hidden="true">{sheetExpanded ? "⌄" : "⌃"}</span></button>
               </div>
               <details className="jc-dates">
@@ -2059,38 +2170,6 @@ export default function FieldCommandClient() {
                   </span>
                   {tenant.phone ? <a className="fc-call-btn" href={`tel:${tenant.phone}`}>Call</a> : null}
                 </div>
-              </section>
-              <section className="fc-workflow-panel" aria-label="Field workflow">
-                <button type="button" className={`fc-workflow-btn ${stamps.arrived ? "is-saved" : ""}`} aria-label="Save arrival time" onClick={() => saveWorkflowStamp(selectedJob, "arrived")}>
-                  <span>1</span>
-                  <b>{stamps.arrived ? "Arrived Saved" : "Arrive"}</b>
-                  <small>{stamps.arrived ? formatSavedTime(stamps.arrived) : "I am here"}</small>
-                </button>
-                <button type="button" className={`fc-workflow-btn ${stamps.visit ? "is-saved" : ""}`} aria-label="Start visit" onClick={() => saveWorkflowStamp(selectedJob, "visit")} disabled={!stamps.arrived}>
-                  <span>2</span>
-                  <b>{stamps.visit ? "Visit Started" : "Start Visit"}</b>
-                  <small>{stamps.visit ? formatSavedTime(stamps.visit) : stamps.arrived ? "Begin visit" : "Arrive first"}</small>
-                </button>
-                <button type="button" className={`fc-workflow-btn ${stamps.work ? "is-saved" : ""}`} aria-label="Start work" onClick={() => saveWorkflowStamp(selectedJob, "work", "Work Started")} disabled={!stamps.visit}>
-                  <span>3</span>
-                  <b>{stamps.work ? "Work Started" : "Start Work"}</b>
-                  <small>{stamps.work ? formatSavedTime(stamps.work) : "Before media next"}</small>
-                </button>
-                <button type="button" className="fc-workflow-btn no-access" aria-label="Record no access" onClick={() => chooseOutcome("NO_ACCESS_1_WAITING_72H")}>
-                  <span>4</span>
-                  <b>No Access</b>
-                  <small>Save attempt</small>
-                </button>
-                <button type="button" className="fc-workflow-btn refused" aria-label="Record refused access" onClick={() => chooseOutcome("REFUSED_ACCESS")}>
-                  <span>5</span>
-                  <b>Refused</b>
-                  <small>Record refusal</small>
-                </button>
-                <button type="button" className="fc-workflow-btn clear" aria-label="Clear field workflow" onClick={() => beginClearWorkflow(selectedJob)}>
-                  <span>0</span>
-                  <b>Clear</b>
-                  <small>Type CLEAR</small>
-                </button>
               </section>
               {clearJobId === id ? (
                 <section className="fc-clear-confirm" aria-label="Confirm clear workflow">

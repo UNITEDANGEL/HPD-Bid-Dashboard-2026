@@ -737,3 +737,89 @@
   font-size: 15px;
   font-weight: 700;
 }
+
+/* Guided job steps: done = green check, current = glowing, later = dimmed. */
+#fc-job-card .jc-steps {
+  list-style: none;
+  margin: 0;
+  padding: 14px;
+  display: grid;
+  gap: 4px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.035));
+  border: 1px solid var(--jc-card-line);
+}
+
+#fc-job-card .jc-step {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 12px;
+  padding: 8px 4px;
+  position: relative;
+}
+
+#fc-job-card .jc-step:not(:last-of-type)::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: 44px;
+  bottom: -6px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#fc-job-card .jc-step.is-done:not(:last-of-type)::before { background: rgba(52, 211, 153, 0.55); }
+
+#fc-job-card .jc-step-num {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--jc-muted);
+}
+
+#fc-job-card .jc-step.is-done .jc-step-num { background: var(--jc-green-deep); border-color: var(--jc-green); color: #ffffff; }
+#fc-job-card .jc-step.is-current .jc-step-num {
+  background: rgba(52, 211, 153, 0.2);
+  border-color: var(--jc-green);
+  color: #ecfdf5;
+  box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.18), 0 0 18px rgba(52, 211, 153, 0.55);
+}
+
+#fc-job-card .jc-step > div { display: grid; gap: 4px; min-width: 0; }
+#fc-job-card .jc-step b { font-size: 17px; font-weight: 750; color: var(--jc-text); }
+#fc-job-card .jc-step small { font-size: 14px; color: var(--jc-muted); line-height: 1.35; }
+#fc-job-card .jc-step.is-later b { color: rgba(245, 247, 250, 0.5); }
+#fc-job-card .jc-step.is-current b { color: #ffffff; font-size: 18px; }
+#fc-job-card .jc-step .fc-next-action { margin-top: 6px; }
+
+#fc-job-card .jc-step-choices { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+#fc-job-card .jc-step-choices button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  background: rgba(251, 191, 36, 0.1);
+  color: #fde68a;
+  font-size: 15px;
+  font-weight: 700;
+}
+#fc-job-card .jc-step-choices button.is-picked { background: #fbbf24; border-color: #fbbf24; color: #1f1300; }
+
+#fc-job-card .jc-step-form { display: grid; gap: 8px; margin-top: 8px; }
+#fc-job-card .jc-step-form label { display: grid; gap: 4px; color: var(--jc-muted); font-size: 13px; font-weight: 700; }
+#fc-job-card .jc-step-form textarea {
+  border-radius: 12px;
+  border: 1px solid var(--jc-card-line);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--jc-text);
+  font: inherit;
+  font-size: 15px;
+  padding: 10px;
+}
+#fc-job-card .jc-step .fc-next-action { font-size: 17px; min-height: 54px; padding: 10px 16px; }
