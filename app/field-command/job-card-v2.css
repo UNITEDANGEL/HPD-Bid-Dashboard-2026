@@ -855,3 +855,8 @@
 .jc-auto-package div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 #fc-job-card .jc-auto-package button { min-height: 46px; margin: 0; border-radius: 12px; border: 1px solid #34d399; background: transparent; color: #ecfdf5; font: 800 15px system-ui, sans-serif; }
 #fc-job-card .jc-auto-package button.jc-glow { background: #10b981; color: #052e1f; }
+
+/* Before/after photo dates */
+.jc-media-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.jc-media-dates label { display: grid; gap: 4px; font: 700 13px system-ui, sans-serif; color: #cbd5e1; }
+.jc-media-dates input { min-height: 42px; padding: 6px 8px; border-radius: 10px; border: 1px solid rgba(148, 163, 184, 0.4); background: rgba(15, 23, 42, 0.7); color: #f8fafc; font: 700 15px system-ui, sans-serif; color-scheme: dark; }
