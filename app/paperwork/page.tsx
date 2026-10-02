@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PDFDocument, StandardFonts, PDFName } from "pdf-lib";
+import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate } from "../../lib/no-access";
+import { tenantContactInfo } from "../../lib/tenantContact";
+import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
+import { drawInvoicePage } from "../../lib/invoice-pdf";
+import { deliverPackage, googleStatus, type GoogleStatus } from "../../lib/package-delivery";
 import { calendarDay } from "../../lib/job-priority";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
@@ -23,6 +28,7 @@ import {
   getJobLocation,
   getJobWorkflowStatus,
   invoiceDescriptionForOutcome,
+  invoiceChangeAmount,
   isNoWorkOutcome,
   noWorkServiceChargeForJob,
   paperworkOutcomeFromJob,
@@ -52,6 +58,13 @@ type PackageForm = {
   deniedRelationship: string;
   deniedDescription: string;
   deniedPhone: string;
+  tenantPhone: string;
+  phone1Date: string;
+  phone2Date: string;
+  phoneNote: string;
+  partialReason: string;
+  partialWorkDone: string;
+  materialsText: string;
   workStart: string;
   workComplete: string;
   signer: string;
@@ -61,18 +74,10 @@ type PackageForm = {
 
 const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-performed-affidavit.pdf";
 const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-performed-affidavit.pdf";
-const INVOICE_TEMPLATE = "/templates/invoice-page.pdf";
 const CONTRACTOR_NAME = "UNITED ANGEL CONSTRUCTION CORP";
 const DEFAULT_PACKAGE_SIGNER = "JOTJAGRAJ SINGH";
 const AFFIDAVIT_NOTARY_COUNTY = "QUEENS";
 const REFUSED_ACCESS_DESCRIPTION_EXAMPLE = "MALE, TALL, DARK HAIR";
-const INVOICE_APT_LOCATION_WIDGET = { x: 131.695, y: 550.582, shiftY: 5 } as const;
-const NO_ACCESS_AFFIDAVIT_DATE_WIDGETS = [
-  { field: "START DATE", x: 466.421, y: 299.317, shiftY: 4 },
-  { field: "START DATE", x: 483.644, y: 284.65, shiftY: 4 },
-  { field: "COMPLETE DATE", x: 144.282, y: 285.36, shiftY: 4 },
-  { field: "COMPLETE DATE", x: 143.989, y: 271.614, shiftY: 4 },
-] as const;
 
 type ZipEntry = {
   path: string;
@@ -127,6 +132,7 @@ type CompletePackagePreview = {
   pdfSize: number;
   pdfUrl: string;
   pdfPreviewImageUrl: string;
+  pdfPreviewImageUrls: string[];
   pdfPreviewPageCount: number;
   pdfPreviewError: string;
   videoPackageFileName: string;
@@ -160,56 +166,6 @@ type GeneratePdfOptions = {
   outcomeOverride?: PaperworkOutcome;
   includeSignature?: boolean;
 };
-
-function shiftInvoiceAptLocationWidget(pdfForm: any) {
-  try {
-    const field = pdfForm.getTextField("Apt #");
-    const widgets = field?.acroField?.getWidgets?.() || [];
-
-    widgets.forEach((widget: any) => {
-      const rect = widget?.getRectangle?.();
-      if (!rect) return;
-
-      const isInvoiceAptLocation =
-        Math.abs(rect.x - INVOICE_APT_LOCATION_WIDGET.x) < 2 &&
-        Math.abs(rect.y - INVOICE_APT_LOCATION_WIDGET.y) < 3;
-      if (!isInvoiceAptLocation) return;
-
-      widget.setRectangle({
-        x: rect.x,
-        y: rect.y + INVOICE_APT_LOCATION_WIDGET.shiftY,
-        width: rect.width,
-        height: rect.height,
-      });
-    });
-  } catch {}
-}
-
-function shiftNoAccessAffidavitDateWidgets(pdfForm: any) {
-  NO_ACCESS_AFFIDAVIT_DATE_WIDGETS.forEach((target) => {
-    try {
-      const field = pdfForm.getTextField(target.field);
-      const widgets = field?.acroField?.getWidgets?.() || [];
-
-      widgets.forEach((widget: any) => {
-        const rect = widget?.getRectangle?.();
-        if (!rect) return;
-
-        const isTargetWidget =
-          Math.abs(rect.x - target.x) < 2 &&
-          Math.abs(rect.y - target.y) < 3;
-        if (!isTargetWidget) return;
-
-        widget.setRectangle({
-          x: rect.x,
-          y: rect.y + target.shiftY,
-          width: rect.width,
-          height: rect.height,
-        });
-      });
-    } catch {}
-  });
-}
 
 function asArray(value: unknown): JobRecord[] {
   if (Array.isArray(value)) return value as JobRecord[];
@@ -300,6 +256,13 @@ function initialForm(): PackageForm {
     deniedRelationship: "",
     deniedDescription: "",
     deniedPhone: "",
+    tenantPhone: "",
+    phone1Date: "",
+    phone2Date: "",
+    phoneNote: "",
+    partialReason: "",
+    partialWorkDone: "",
+    materialsText: "",
     workStart: "",
     workComplete: "",
     signer: DEFAULT_PACKAGE_SIGNER,
@@ -338,6 +301,22 @@ function refusedAccessRelationship(job: JobRecord, outcome: PaperworkOutcome) {
 
 function refusedAccessDescription(value: string) {
   return String(value || "").trim();
+}
+
+function workDatesProblem(form: PackageForm) {
+  const start = parseFormDate(form.workStart || form.workComplete || form.fieldDate);
+  const complete = parseFormDate(form.workComplete || form.fieldDate);
+  if (start && complete && start.getTime() > complete.getTime()) {
+    return `Work start (${displayDate(form.workStart)}) is after work completion (${displayDate(form.workComplete || form.fieldDate)}). Fix the work dates before generating.`;
+  }
+  return "";
+}
+
+function noAccessDetailsProblem(form: PackageForm) {
+  const attemptProblem = noAccessAttemptProblem(form.firstAttempt, form.secondAttempt);
+  if (attemptProblem) return attemptProblem;
+  if (form.tenantPhone && !form.phone1Date) return `Enter the date you called the tenant at ${form.tenantPhone} (item 4b).`;
+  return "";
 }
 
 function refusedAccessNeedsDescription(outcome: PaperworkOutcome, form: PackageForm) {
@@ -414,6 +393,8 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   const bidAmount = formatCurrency(getJobAmount(job));
   const chargeAmount = isNoWorkOutcome(outcome) ? formatCurrency(noWorkServiceChargeForJob(job)) : bidAmount;
 
+  const tenant = tenantContactInfo(job);
+
   return {
     ...initialForm(),
     invoiceNo: defaultPaperworkInvoiceNo(jobId),
@@ -433,6 +414,8 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     deniedRelationship,
     deniedDescription,
     deniedPhone,
+    tenantPhone: tenant.phone,
+    phoneNote: tenant.phone ? "" : noTelephoneNote(tenant.accessType === "common_area", tenant.apartment),
     workStart: displayDate(actualStartAt),
     workComplete: displayDate(outcome === "work_completed" || outcome === "partial_work_completed" ? workCompleteAt : noWorkCompleteAt),
     sourceStatus,
@@ -464,6 +447,8 @@ function formWithLoadedJobData(current: PackageForm, job: JobRecord, outcome: Pa
     workStart: current.workStart || pulled.workStart,
     workComplete: current.workComplete || pulled.workComplete,
     sourceStatus: current.sourceStatus || pulled.sourceStatus,
+    tenantPhone: current.tenantPhone || pulled.tenantPhone,
+    phoneNote: current.phoneNote || pulled.phoneNote,
     description: isFallbackPackageDescription(current.description) ? pulled.description : current.description,
     notes: current.notes || pulled.notes,
   };
@@ -695,8 +680,18 @@ function pdfLocationFontSize(value: string) {
   return 10;
 }
 
-const WORK_MATERIALS = ["TRASH BAG", "WD 40", "SELF SCREWS", "PLEASE SEE ATTACHED DESCRIPTION", "", "ADJUSTMENTS/ ALIGNMENT"];
-const PARTIAL_MATERIALS = ["TRASH BAG", "WD 40", "SELF SCREWS", "PLEASE SEE ATTACHED DESCRIPTION", "STRIKE PLATE", "ADJUST AND ALIGN"];
+const NO_WORK_MATERIALS: InvoiceMaterial[] = [{ name: "TRASH BAG", qty: "1" }];
+
+// Partial work lists materials for the part that was done; full work reads the whole scope.
+function packageMaterials(form: PackageForm, outcome: PaperworkOutcome): InvoiceMaterial[] {
+  if (outcome !== "work_completed" && outcome !== "partial_work_completed") return NO_WORK_MATERIALS;
+  if (form.materialsText.trim()) return materialsFromText(form.materialsText);
+  return invoiceMaterials(outcome === "partial_work_completed" ? form.partialWorkDone : form.description);
+}
+
+function partialInvoiceDescription(form: PackageForm) {
+  return `PARTIAL WORK COMPLETED:\n${upper(form.partialWorkDone.trim())}`;
+}
 
 function safeFilename(value: string) {
   return String(value || "HPD")
@@ -982,7 +977,7 @@ async function saveEntriesAsRegularFolder(folderName: string, entries: PackageFi
   }
 }
 
-async function renderPdfFirstPageImage(bytes: Uint8Array): Promise<{ imageUrl: string; pageCount: number; error: string }> {
+async function renderPdfFirstPageImage(bytes: Uint8Array): Promise<{ imageUrl: string; imageUrls?: string[]; pageCount: number; error: string }> {
   const renderer = await import("./pdf-preview-renderer");
   return renderer.renderPdfFirstPageImage(bytes);
 }
@@ -1113,6 +1108,8 @@ export default function PaperworkPage() {
   const [packageBusy, setPackageBusy] = useState(false);
   const [packageReviewed, setPackageReviewed] = useState(false);
   const [packageApproved, setPackageApproved] = useState(false);
+  const [google, setGoogle] = useState<GoogleStatus | null>(null);
+  const [delivery, setDelivery] = useState<{ working: boolean; message: string; folderLink: string; emailed: boolean; error: string } | null>(null);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
   const [pdfStatus, setPdfStatus] = useState("");
@@ -1127,6 +1124,7 @@ export default function PaperworkPage() {
     return () => {
       if (packagePreview?.pdfUrl) URL.revokeObjectURL(packagePreview.pdfUrl);
       if (packagePreview?.pdfPreviewImageUrl) URL.revokeObjectURL(packagePreview.pdfPreviewImageUrl);
+      packagePreview?.pdfPreviewImageUrls.slice(1).forEach((url) => URL.revokeObjectURL(url));
       if (packagePreview?.zipUrl) URL.revokeObjectURL(packagePreview.zipUrl);
       packagePreview?.folderLinks.forEach((link) => URL.revokeObjectURL(link.url));
       packagePreview?.videoLinks.forEach((link) => URL.revokeObjectURL(link.url));
@@ -1229,6 +1227,10 @@ export default function PaperworkPage() {
   const mapBackHref = selectedId ? `/map/?omo=${encodeURIComponent(selectedId)}&view=all&map=1` : "/map/?view=all&map=1";
 
   useEffect(() => {
+    void googleStatus().then(setGoogle);
+  }, []);
+
+  useEffect(() => {
     if (!autoGeneratePackage || autoGenerateStartedRef.current) return;
     if (!selectedId || !jobs.length || !selectedJob || !form.jobId) return;
     if (outcome === "pending") {
@@ -1262,6 +1264,7 @@ export default function PaperworkPage() {
     setPackageReviewed(false);
     setPackageApproved(false);
     setPackagePreview(null);
+    setDelivery(null);
     setPackagePreviewOpen(false);
     setFullScreenPdfOpen(false);
     pendingCompletePackageRef.current = null;
@@ -1306,17 +1309,20 @@ export default function PaperworkPage() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  async function markPackageGenerated(jobId: string, approved = false) {
+  async function markPackageGenerated(jobId: string, approved = false, delivery?: { driveLink: string; emailed: boolean }) {
     if (!jobId) return "Package generated.";
 
     const generatedAt = new Date().toISOString();
+    const emailNote = delivery?.emailed ? "Emailed" : "Not emailed";
+    const approvedMessage = delivery ? `Reviewed and archived. Saved to Google Drive. ${emailNote}.` : "Reviewed and archived. Not emailed.";
     const patch = {
       ...(approved ? { ArchivedFromMap: true, archivedFromMap: true } : {}),
+      ...(delivery ? { PackageDriveLink: delivery.driveLink, ...(delivery.emailed ? { PackageEmailedAt: generatedAt } : {}) } : {}),
       PackageReviewStatus: approved ? "Approved" : "Pending review",
       PackageGeneratedAt: generatedAt,
       packageGeneratedAt: generatedAt,
-      PackageReadyMessage: approved ? "Reviewed and archived. Not emailed." : "Draft saved. Review affidavit, invoice and media before approval.",
-      packageReadyMessage: approved ? "Reviewed and archived. Not emailed." : "Draft saved. Review affidavit, invoice and media before approval.",
+      PackageReadyMessage: approved ? approvedMessage : "Draft saved. Review affidavit, invoice and media before approval.",
+      packageReadyMessage: approved ? approvedMessage : "Draft saved. Review affidavit, invoice and media before approval.",
     };
 
     saveLocalPackageOverride(jobId, patch);
@@ -1329,10 +1335,10 @@ export default function PaperworkPage() {
       });
 
       if (!response.ok) throw new Error(await response.text());
-      return approved ? "Approved and archived. Not emailed." : "Draft saved for review. Not archived or emailed.";
+      return approved ? (delivery ? "Approved and archived." : "Approved and archived. Not emailed.") : "Draft saved for review. Not archived or emailed.";
     } catch (error) {
       console.error(error);
-      return approved ? "Approved on this device; server sync needs retry. Not emailed." : "Draft saved on this device; server sync needs retry. Not archived or emailed.";
+      return approved ? `Approved on this device; server sync needs retry.${delivery ? "" : " Not emailed."}` : "Draft saved on this device; server sync needs retry. Not archived or emailed.";
     }
   }
 
@@ -1358,15 +1364,14 @@ export default function PaperworkPage() {
     const chargeValue = amountNumber(activeForm.amount || activeForm.bidAmount);
     const bidAmount = pdfMoney(bidValue);
     const chargeAmount = pdfMoney(chargeValue);
-    const changeAmount = activeOutcome === "partial_work_completed"
-      ? pdfMoney(Math.max(0, bidValue - chargeValue))
-      : isNoWorkOutcome(activeOutcome)
-        ? pdfMoney(chargeValue - bidValue, true)
-        : "0.00";
+    const changeAmount = pdfMoney(invoiceChangeAmount(bidValue, chargeValue), true);
     const fieldDate = activeForm.fieldDate || activeForm.workComplete || todayIsoDate();
-    const firstAttempt = activeForm.firstAttempt || fieldDate;
-    const secondAttempt = activeForm.secondAttempt || fieldDate;
-    const invoiceDate = useWorkTemplate ? activeForm.workComplete || fieldDate : secondAttempt;
+    // Dates print as MM/DD/YY on HPD paperwork; the form state keeps ISO dates.
+    const firstAttempt = displayDate(activeForm.firstAttempt || fieldDate);
+    const secondAttempt = displayDate(activeForm.secondAttempt || fieldDate);
+    const workStart = displayDate(activeForm.workStart || activeForm.workComplete || activeForm.fieldDate);
+    const workComplete = displayDate(activeForm.workComplete || activeForm.fieldDate);
+    const invoiceDate = useWorkTemplate ? workComplete || displayDate(fieldDate) : secondAttempt;
     const signer = includeSignature ? activeForm.signer || DEFAULT_PACKAGE_SIGNER : "";
     const locationText = upper(activeForm.location);
     const locationFontSize = pdfLocationFontSize(locationText);
@@ -1376,47 +1381,64 @@ export default function PaperworkPage() {
       return null;
     }
 
+    const datesProblem = useWorkTemplate ? workDatesProblem(activeForm) : "";
+    if (datesProblem) {
+      setPdfStatus(datesProblem);
+      return null;
+    }
+
+    if (activeOutcome === "partial_work_completed" && !activeForm.partialWorkDone.trim()) {
+      setPdfStatus("Enter what partial work was completed. It prints as the invoice description.");
+      return null;
+    }
+
+    if (activeOutcome === "partial_work_completed" && !activeForm.partialReason.trim()) {
+      setPdfStatus("Enter why the work was only partially completed (item 6) before generating the package.");
+      return null;
+    }
+
+    const noAccessProblem = activeOutcome === "no_access" ? noAccessDetailsProblem(activeForm) : "";
+    if (noAccessProblem) {
+      setPdfStatus(noAccessProblem);
+      return null;
+    }
+
     setPdfStatus(downloadPdf ? "Preparing affidavit PDF..." : "Preparing invoice/affidavit for package...");
 
     try {
-      const [affidavitResponse, invoiceResponse] = await Promise.all([
-        fetch(templateUrl, { cache: "no-store" }),
-        fetch(INVOICE_TEMPLATE, { cache: "no-store" }),
-      ]);
+      const affidavitResponse = await fetch(templateUrl, { cache: "no-store" });
       if (!affidavitResponse.ok) throw new Error(`Template returned HTTP ${affidavitResponse.status}`);
-      if (!invoiceResponse.ok) throw new Error(`Invoice template returned HTTP ${invoiceResponse.status}`);
 
       const affidavitDoc = await PDFDocument.load(await affidavitResponse.arrayBuffer());
-      const invoiceDoc = await PDFDocument.load(await invoiceResponse.arrayBuffer());
       const affidavitForm = affidavitDoc.getForm();
-      const invoiceForm = invoiceDoc.getForm();
-      shiftInvoiceAptLocationWidget(invoiceForm);
-      if (!useWorkTemplate && activeOutcome === "no_access") {
-        shiftNoAccessAffidavitDateWidgets(invoiceForm);
-      }
+      const affidavitBoldFont = await affidavitDoc.embedFont(StandardFonts.HelveticaBold);
 
-      const setInvoiceText = (name: string, value: string, fontSize = name === "Work Description" ? 9 : 11) => {
-        try {
-          const field = invoiceForm.getTextField(name);
-          field.enableMultiline();
-          field.setFontSize(fontSize);
-          field.setText(value || "");
-        } catch {}
+      // The invoice is drawn fresh (lib/invoice-pdf.ts); these collect its values by the old template field names.
+      const invoiceValues: Record<string, string> = {};
+      const invoiceChecks = new Set<string>();
+      const setInvoiceText = (name: string, value: string, _fontSize?: number) => {
+        invoiceValues[name] = value || "";
       };
 
-      const setAffidavitText = (name: string, value: string, fontSize = 10) => {
+      // One-line blanks print at one size and shrink only if the value would run past the line.
+      const setAffidavitText = (name: string, value: string, fontSize = 10.5) => {
         try {
           const field = affidavitForm.getTextField(name);
-          field.enableMultiline();
-          field.setFontSize(fontSize);
-          field.setText(value || "");
+          const text = value || "";
+          const singleLine = field.acroField.getWidgets()[0].getRectangle().height < 20;
+          if (singleLine) {
+            field.disableMultiline();
+            field.setFontSize(fitFontSize(affidavitForm, name, text, affidavitBoldFont, fontSize));
+          } else {
+            field.enableMultiline();
+            field.setFontSize(fontSize);
+          }
+          field.setText(text);
         } catch {}
       };
 
       const check = (name: string) => {
-        try {
-          invoiceForm.getCheckBox(name).check();
-        } catch {}
+        invoiceChecks.add(name);
       };
 
       const clearFieldBackground = (form: typeof affidavitForm, name: string) => {
@@ -1424,7 +1446,11 @@ export default function PaperworkPage() {
           const widgets = form.getField(name).acroField.getWidgets();
           widgets.forEach((widget) => {
             const mk = widget.dict.lookup(PDFName.of("MK"));
-            if (mk && "delete" in mk) (mk as { delete: (key: ReturnType<typeof PDFName.of>) => void }).delete(PDFName.of("BG"));
+            if (!mk || !("delete" in mk)) return;
+            // Drop the border colour too: without a background, pdf-lib draws the template's black BC as a box.
+            const appearance = mk as { delete: (key: ReturnType<typeof PDFName.of>) => void };
+            appearance.delete(PDFName.of("BG"));
+            appearance.delete(PDFName.of("BC"));
           });
         } catch {}
       };
@@ -1461,6 +1487,19 @@ export default function PaperworkPage() {
         } catch {}
       };
 
+      // Largest font size (down to minSize) at which a single-line value fits its field.
+      const fitFontSize = (form: typeof affidavitForm, name: string, value: string, font: typeof affidavitBoldFont, maxSize: number, minSize = 6) => {
+        let width = 0;
+        try {
+          width = form.getField(name).acroField.getWidgets()[0].getRectangle().width - 4;
+        } catch {
+          return maxSize;
+        }
+        let size = maxSize;
+        while (size > minSize && font.widthOfTextAtSize(value, size) > width) size -= 0.5;
+        return size;
+      };
+
       const clearMaterialRows = () => {
         for (let index = 1; index <= 12; index += 1) {
           setInvoiceText(`M${index}`, "");
@@ -1469,8 +1508,10 @@ export default function PaperworkPage() {
       };
 
       clearMaterialRows();
-      const materials = activeOutcome === "partial_work_completed" ? PARTIAL_MATERIALS : useWorkTemplate ? WORK_MATERIALS : ["TRASH BAG"];
-      materials.forEach((material, index) => setInvoiceText(`M${index + 1}`, material));
+      packageMaterials(activeForm, activeOutcome).forEach((material, index) => {
+        setInvoiceText(`M${index + 1}`, material.name);
+        setInvoiceText(`Q${index + 1}`, material.qty);
+      });
       setInvoiceText("OMO", jobId);
       setInvoiceText("TAX ID", "203444624");
       setInvoiceText("INVOICE #", activeForm.invoiceNo);
@@ -1478,7 +1519,8 @@ export default function PaperworkPage() {
       setInvoiceText("Boro", upper(borough), 10);
       setInvoiceText("Borough", upper(borough), 10);
       setInvoiceText("Apt #", locationText, locationFontSize);
-      setInvoiceText("Building Address", upper(activeForm.address), activeForm.address.length > 42 ? 9 : 11);
+      const invoiceAddress = upper(activeForm.address);
+      setInvoiceText("Building Address", invoiceAddress);
       setInvoiceText("BID AMOUNT", bidAmount);
       setInvoiceText("INCREASE DECREASE AMOUNT", changeAmount);
       setInvoiceText("TOTAL CHARGE", chargeAmount);
@@ -1491,81 +1533,102 @@ export default function PaperworkPage() {
       const deponentLine = `I, ${signer.toUpperCase()}`;
 
       widenField(affidavitForm, "Name of Contractor", 50);
-      setAffidavitText("Name of Contractor", CONTRACTOR_NAME, 8.5);
+      setAffidavitText("Name of Contractor", CONTRACTOR_NAME, 9);
       showUnderline(affidavitForm, "Name of Contractor");
       adjustFieldRect(affidavitForm, "OMO", { dy: 2 });
-      setAffidavitText("OMO", jobId, 11);
+      setAffidavitText("OMO", jobId);
       setAffidavitText("OMO Header2", jobId);
       const fullBuildingAddress = [activeForm.address, activeForm.location, activeForm.borough ? `${activeForm.borough}, NY` : "NY"]
         .filter(Boolean)
         .join(", ");
-      setAffidavitText("Building Address", upper(fullBuildingAddress), fullBuildingAddress.length > 55 ? 10 : 12);
+      const affidavitAddress = upper(fullBuildingAddress);
+      setAffidavitText("Building Address", affidavitAddress, fitFontSize(affidavitForm, "Building Address", affidavitAddress, affidavitBoldFont, 11));
       showUnderline(affidavitForm, "Building Address");
       setAffidavitText("State", "NEW YORK");
-      setAffidavitText("County Of", "QUEENS", 10);
+      setAffidavitText("County Of", "QUEENS");
       setAffidavitText("Type or Print Name", signer.toUpperCase());
 
       if (useWorkTemplate) {
         const workDate = activeForm.workComplete || fieldDate;
-        setAffidavitText("Deponent Name", deponentLine, 11);
+        setAffidavitText("Deponent Name", deponentLine);
         showUnderline(affidavitForm, "Deponent Name");
-        setAffidavitText("Start Date", activeOutcome === "work_completed" ? activeForm.workStart || activeForm.fieldDate : "", 11);
+        setAffidavitText("Start Date", activeOutcome === "work_completed" ? workStart : "");
         showUnderline(affidavitForm, "Start Date");
         adjustFieldRect(affidavitForm, "Complete Date", { dx: -20, dy: 2.5 });
-        setAffidavitText("Complete Date", activeOutcome === "work_completed" ? activeForm.workComplete || activeForm.fieldDate : "", 11);
+        setAffidavitText("Complete Date", activeOutcome === "work_completed" ? workComplete : "");
         showUnderline(affidavitForm, "Complete Date");
         setAffidavitText(
           "Partial Reason",
-          activeOutcome === "partial_work_completed" ? activeForm.notes || "" : "",
+          activeOutcome === "partial_work_completed" ? upper(activeForm.partialReason) : "",
           9
         );
         setAffidavitText("Partial Amount", activeOutcome === "partial_work_completed" ? chargeAmount : "");
-        setAffidavitText("Notary Day Month", "", 9);
-        setAffidavitText("Notary Year", "", 9);
+        adjustFieldRect(affidavitForm, "Partial Reason", { dy: 4 });
+        adjustFieldRect(affidavitForm, "Partial Amount", { dx: 3 });
+        showUnderline(affidavitForm, "Partial Amount");
+        setAffidavitText("Notary Day Month", "");
+        setAffidavitText("Notary Year", "");
 
         if (activeOutcome === "partial_work_completed") {
-          setAffidavitText("Denied Name", upper(activeForm.deniedName), 9);
-          setAffidavitText("Denied Relationship", upper(activeForm.deniedRelationship), 9);
-          setAffidavitText("Denied Description", upper(activeForm.deniedDescription), 9);
-          setAffidavitText("Denied Actions", activeForm.notes || "", 9);
+          setAffidavitText("Denied Name", upper(activeForm.deniedName));
+          setAffidavitText("Denied Relationship", upper(activeForm.deniedRelationship));
+          setAffidavitText("Denied Description", upper(activeForm.deniedDescription));
+          setAffidavitText("Denied Actions", activeForm.deniedName ? upper(activeForm.partialReason) : "", 9);
         }
 
-        setInvoiceText("START DATE", activeOutcome === "work_completed" ? activeForm.workStart || activeForm.fieldDate : "");
-        setInvoiceText("COMPLETE DATE", activeOutcome === "work_completed" ? activeForm.workComplete || activeForm.fieldDate : "");
-        setInvoiceText("Work Description", activeForm.description || activeForm.notes || "Work completed per HPD bid / work order.");
+        setInvoiceText("START DATE", activeOutcome === "work_completed" ? workStart : "");
+        setInvoiceText("COMPLETE DATE", activeOutcome === "work_completed" ? workComplete : "");
+        setInvoiceText(
+          "Work Description",
+          activeOutcome === "partial_work_completed"
+            ? partialInvoiceDescription(activeForm)
+            : activeForm.description || activeForm.notes || "Work completed per HPD bid / work order."
+        );
       } else {
         const noWorkReason = activeForm.affidavitReason || affidavitReasonForOutcome(activeOutcome);
         const isRefusedAccess = activeOutcome === "refused_access";
-        const deniedName = isRefusedAccess ? cleanRefusedName(activeForm.deniedName) : "";
+        // The form says to write "did not provide" for anything the person would not give.
+        const deniedName = isRefusedAccess ? cleanRefusedName(activeForm.deniedName) || "DID NOT PROVIDE" : "";
         const deniedRelationship = isRefusedAccess ? activeForm.deniedRelationship || "SUPER" : "";
         const deniedDescription = isRefusedAccess ? activeForm.deniedDescription : "";
-        const deniedPhone = isRefusedAccess ? activeForm.deniedPhone : "";
+        const deniedPhone = isRefusedAccess ? activeForm.deniedPhone || "DID NOT PROVIDE" : "";
 
-        setAffidavitText("Deponent Name", deponentLine, 11);
+        setAffidavitText("Deponent Name", deponentLine);
         showUnderline(affidavitForm, "Deponent Name");
         setAffidavitText("Service Charge Amount", chargeAmount);
+        showUnderline(affidavitForm, "Service Charge Amount");
         setAffidavitText("Notary Day", "");
         setAffidavitText("Notary Month", "");
         setAffidavitText("Notary Year", "");
 
         if (activeOutcome === "no_access") {
           setAffidavitText("Inaccessible Reason", noWorkReason || "NO ACCESS TO MAKE REPAIRS", 9);
-          setAffidavitText("Attempt1 Date", firstAttempt, 9);
-          setAffidavitText("Attempt2 Date", secondAttempt, 9);
-          setAffidavitText("Phone1 Date", "", 9);
-          setAffidavitText("Phone2 Date", "", 9);
+          setAffidavitText("Attempt1 Date", firstAttempt);
+          setAffidavitText("Attempt2 Date", secondAttempt);
+          if (activeForm.tenantPhone) {
+            setAffidavitText("Phone1 Date", displayDate(activeForm.phone1Date));
+            setAffidavitText("Phone2 Date", displayDate(activeForm.phone2Date));
+          } else {
+            // No number to call: the note spans the whole "___ and ___" line.
+            const phoneNote = upper(activeForm.phoneNote || noTelephoneNote(false));
+            widenField(affidavitForm, "Phone1 Date", 150);
+            setAffidavitText("Phone1 Date", phoneNote, fitFontSize(affidavitForm, "Phone1 Date", phoneNote, affidavitBoldFont, 10.5));
+            showUnderline(affidavitForm, "Phone1 Date");
+            setAffidavitText("Phone2 Date", "");
+          }
         }
 
         if (activeOutcome === "completed_by_others") {
-          setAffidavitText("WorkSite Date5", secondAttempt, 9);
+          adjustFieldRect(affidavitForm, "WorkSite Date5", { dx: 14, dw: -14 });
+          setAffidavitText("WorkSite Date5", secondAttempt);
         }
 
         if (isRefusedAccess) {
-          setAffidavitText("Denied Date", secondAttempt, 9);
+          setAffidavitText("Denied Date", secondAttempt);
           setAffidavitText("Denied Phone", deniedPhone);
-          setAffidavitText("Denied Name", upper(deniedName), 9);
+          setAffidavitText("Denied Name", upper(deniedName));
           setAffidavitText("Denied Description", upper(deniedDescription));
-          setAffidavitText("Denied Relationship", upper(deniedRelationship), 9);
+          setAffidavitText("Denied Relationship", upper(deniedRelationship));
         }
 
         setInvoiceText("START DATE", activeOutcome === "no_access" ? firstAttempt : "");
@@ -1573,15 +1636,15 @@ export default function PaperworkPage() {
         setInvoiceText("Work Description", activeForm.description || noWorkReason, 12);
       }
 
-      const affidavitBoldFont = await affidavitDoc.embedFont(StandardFonts.HelveticaBold);
-      const invoiceBoldFont = await invoiceDoc.embedFont(StandardFonts.HelveticaBold);
+      // The template's opaque white field backgrounds hide printed form text and lines next to the fields.
+      affidavitForm.getFields().forEach((field) => clearFieldBackground(affidavitForm, field.getName()));
+
       affidavitForm.updateFieldAppearances(affidavitBoldFont);
       affidavitForm.flatten();
-      invoiceForm.updateFieldAppearances(invoiceBoldFont);
-      invoiceForm.flatten();
+
 
       // Flattened template widgets can leave dangling annotation references.
-      for (const document of [affidavitDoc, invoiceDoc]) {
+      for (const document of [affidavitDoc]) {
         for (const page of document.getPages()) {
           const annotations = page.node.Annots();
           if (!annotations) continue;
@@ -1591,23 +1654,35 @@ export default function PaperworkPage() {
         }
       }
 
-      const invoicePage = invoiceDoc.getPages()[0];
-      if (useWorkTemplate && activeOutcome === "partial_work_completed" && invoicePage) {
-        invoicePage.drawText(invoiceDate, { x: 411, y: 635, size: 10 });
-        invoicePage.drawText(activeForm.workStart || activeForm.fieldDate, { x: 411, y: 618, size: 10 });
-        invoicePage.drawText(activeForm.workComplete || activeForm.fieldDate, { x: 423, y: 595, size: 10 });
-      }
-      if (!useWorkTemplate && activeOutcome !== "no_access" && invoicePage) {
-        invoicePage.drawText(secondAttempt, { x: 411, y: 635, size: 10 });
-        invoicePage.drawText(secondAttempt, { x: 411, y: 618, size: 10 });
-        invoicePage.drawText(secondAttempt, { x: 423, y: 595, size: 10 });
-      }
+      // Invoice dates: work packages use the work dates; no-work packages use the attempt dates.
+      const invoiceStart = useWorkTemplate ? workStart : activeOutcome === "no_access" ? firstAttempt : secondAttempt;
+      const invoiceComplete = useWorkTemplate ? workComplete : secondAttempt;
 
       const pdfDoc = await PDFDocument.create();
       const affidavitPages = await pdfDoc.copyPages(affidavitDoc, affidavitDoc.getPageIndices());
       affidavitPages.forEach((page) => pdfDoc.addPage(page));
-      const [invoicePageCopy] = await pdfDoc.copyPages(invoiceDoc, [0]);
-      pdfDoc.addPage(invoicePageCopy);
+      await drawInvoicePage(pdfDoc, {
+        omo: invoiceValues["OMO"],
+        invoiceNo: invoiceValues["INVOICE #"],
+        invoiceDate: invoiceDate,
+        taxId: invoiceValues["TAX ID"],
+        trade: invoiceValues["TRADE"],
+        borough: invoiceValues["Borough"],
+        address: invoiceValues["Building Address"],
+        location: invoiceValues["Apt #"],
+        dateStarted: invoiceStart,
+        dateCompleted: invoiceComplete,
+        permitRequired: !invoiceChecks.has("PERMIT REQUIRED NO"),
+        approvedChange: !invoiceChecks.has("APPROVED INCREASE DECREASE NO"),
+        rcMini: !invoiceChecks.has("RC MINI NO"),
+        description: invoiceValues["Work Description"],
+        materials: Array.from({ length: 12 }, (_, index) => ({ name: invoiceValues[`M${index + 1}`] || "", qty: invoiceValues[`Q${index + 1}`] || "" })).filter((row) => row.name),
+        bidAmount: invoiceValues["BID AMOUNT"],
+        changeAmount: invoiceValues["INCREASE DECREASE AMOUNT"],
+        totalCharge: invoiceValues["TOTAL CHARGE"],
+        signerName: invoiceValues["NAME Please Print"],
+        title: invoiceValues["TITLE"],
+      });
 
       const bytes = await pdfDoc.save();
       const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
@@ -1778,7 +1853,7 @@ export default function PaperworkPage() {
         path: fullPackageMediaPath(pdf.jobId, media, index, packageStatusSlug(activeOutcome)),
         bytes: dataUrlToBytes(media.dataUrl),
         mimeType: media.type || (media.mediaType === "video" ? "video/mp4" : "image/jpeg"),
-        label: media.mediaType === "video" ? "Video evidence" : "Image evidence",
+        label: media.evidenceLabel || (media.mediaType === "video" ? "Video evidence" : "Image evidence"),
         section: media.mediaType === "video" ? "video" : "image",
       }));
 
@@ -1877,6 +1952,7 @@ export default function PaperworkPage() {
         pdfSize: pdf.size,
         pdfUrl,
         pdfPreviewImageUrl: pdfPreview.imageUrl,
+        pdfPreviewImageUrls: pdfPreview.imageUrls?.length ? pdfPreview.imageUrls : pdfPreview.imageUrl ? [pdfPreview.imageUrl] : [],
         pdfPreviewPageCount: pdfPreview.pageCount,
         pdfPreviewError: pdfPreview.error,
         videoPackageFileName,
@@ -2010,6 +2086,75 @@ export default function PaperworkPage() {
       console.error(error);
       setPackagePreviewOpen(true);
       setPdfStatus(error instanceof Error ? error.message : "Could not save the regular folder. Use Download Files.");
+    }
+  }
+
+  // Approve & Save: with Google connected, save the whole package to Drive and email the PDF and
+  // photos, then record the approval. Without it, fall back to saving/sharing the files on the device.
+  async function approveAndSavePackage() {
+    const pending = pendingCompletePackageRef.current;
+    if (!pending || packageBusyRef.current) return;
+    const status = google || (await googleStatus());
+    if (!status.connected) {
+      if (canSaveRegularFolder()) await saveCompletePackageFolder();
+      else await sendCompletePackage();
+      if (packageApproved) return;
+      setPackageBusy(true);
+      try {
+        setPdfStatus(`Approved. ${await markPackageGenerated(pending.jobId, true)}`);
+        setPackageApproved(true);
+      } catch (error) {
+        setPdfStatus(error instanceof Error ? error.message : "Approval could not be saved.");
+      } finally {
+        setPackageBusy(false);
+      }
+      return;
+    }
+
+    packageBusyRef.current = true;
+    setPackageBusy(true);
+    setDelivery({ working: true, message: "Starting...", folderLink: "", emailed: false, error: "" });
+    try {
+      const statusLabel = packageStatusLabel(outcome);
+      const address = [form.address, form.location, form.borough].filter(Boolean).join(", ");
+      const result = await deliverPackage({
+        folderName: pending.folderName,
+        files: pending.folderEntries.map((entry) => ({ name: entry.path.split("/").pop() || entry.path, mimeType: entry.mimeType, bytes: entry.bytes })),
+        emailSubject: `${pending.jobId} - ${statusLabel} - ${form.address || "HPD package"}`,
+        emailText: (folderLink, attachedPhotos) => [
+          `HPD package: ${pending.jobId}`,
+          `Outcome: ${statusLabel}`,
+          `Address: ${address || "not listed"}`,
+          `Total charge: ${form.amount || "$0.00"}`,
+          "",
+          `Google Drive folder: ${folderLink}`,
+          "",
+          attachedPhotos
+            ? `Attached: affidavit/invoice PDF and ${pending.imageCount} photo(s).`
+            : pending.imageCount
+              ? "Attached: affidavit/invoice PDF. The photos were too large for one email and are in the Google Drive folder."
+              : "Attached: affidavit/invoice PDF.",
+          pending.videoCount ? `${pending.videoCount} video(s) are in the Google Drive folder.` : "",
+        ].filter((line, index, lines) => line || lines[index - 1]).join("\n"),
+        sendEmail: true,
+        onProgress: (message) => setDelivery((current) => ({ ...(current || { folderLink: "", emailed: false, error: "" }), working: true, message })),
+      });
+      const archive = await markPackageGenerated(pending.jobId, true, { driveLink: result.folderLink, emailed: result.emailed });
+      setPackageApproved(true);
+      setDelivery({
+        working: false,
+        message: result.emailed ? `Emailed to ${result.emailTo.join(", ")}` : "",
+        folderLink: result.folderLink,
+        emailed: result.emailed,
+        error: result.emailError,
+      });
+      setPdfStatus(`Approved. Saved ${result.uploaded} file(s) to Google Drive${result.emailed ? " and emailed" : ""}. ${archive}`);
+    } catch (error) {
+      setDelivery({ working: false, message: "", folderLink: "", emailed: false, error: error instanceof Error ? error.message : "Google Drive save failed." });
+      setPdfStatus("Not approved yet: the package could not be saved to Google Drive. It is still on this device; try again.");
+    } finally {
+      packageBusyRef.current = false;
+      setPackageBusy(false);
     }
   }
 
@@ -3095,6 +3240,207 @@ export default function PaperworkPage() {
           line-height: 1.15;
         }
 
+        .pkg-review {
+          display: grid;
+          gap: 14px;
+        }
+
+        .pkg-review-head {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 12px;
+        }
+
+        .pkg-review-head h3 {
+          margin: 4px 0 2px;
+          color: #ffffff;
+          font-size: 24px;
+          line-height: 1.05;
+        }
+
+        .pkg-review-head p {
+          margin: 0;
+          color: #c9d4e3;
+          font-size: 14px;
+        }
+
+        .pkg-review-status {
+          display: inline-block;
+          border-radius: 999px;
+          padding: 4px 10px;
+          background: rgba(255, 209, 102, 0.16);
+          color: #ffe8a3;
+          font-size: 11px;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
+
+        .pkg-review-status.approved {
+          background: rgba(83, 230, 156, 0.18);
+          color: #caffdf;
+        }
+
+        .pkg-edit {
+          min-height: 40px;
+          border: 1px solid rgba(255, 255, 255, 0.24);
+          border-radius: 10px;
+          background: transparent;
+          color: #ffffff;
+          padding: 0 14px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .pkg-pages {
+          display: grid;
+          grid-auto-flow: column;
+          grid-auto-columns: 86%;
+          gap: 10px;
+          overflow-x: auto;
+          scroll-snap-type: x mandatory;
+          padding-bottom: 4px;
+        }
+
+        .pkg-page {
+          scroll-snap-align: start;
+          display: grid;
+          gap: 6px;
+          border: 0;
+          padding: 0;
+          background: transparent;
+          cursor: zoom-in;
+          text-align: left;
+        }
+
+        .pkg-page img {
+          width: 100%;
+          height: auto;
+          border-radius: 6px;
+          background: #ffffff;
+          box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        .pkg-page span {
+          color: #c9d4e3;
+          font-size: 12px;
+          font-weight: 800;
+        }
+
+        .pkg-page-missing {
+          display: grid;
+          gap: 8px;
+          border: 1px dashed rgba(255, 255, 255, 0.3);
+          border-radius: 10px;
+          padding: 14px;
+          color: #ffffff;
+        }
+
+        .pkg-page-missing a {
+          color: #8fd3ff;
+          font-weight: 800;
+        }
+
+        .pkg-photos {
+          display: grid;
+          gap: 8px;
+          color: #ffffff;
+        }
+
+        .pkg-photos small {
+          color: #c9d4e3;
+        }
+
+        .pkg-photo-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .pkg-photo-grid figure {
+          margin: 0;
+          display: grid;
+          gap: 4px;
+        }
+
+        .pkg-photo-grid img {
+          width: 100%;
+          aspect-ratio: 1;
+          object-fit: cover;
+          border-radius: 8px;
+        }
+
+        .pkg-photo-grid figcaption {
+          color: #c9d4e3;
+          font-size: 11px;
+          line-height: 1.2;
+          overflow-wrap: anywhere;
+        }
+
+        .pkg-confirm {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: #ffffff;
+          font-weight: 800;
+        }
+
+        .pkg-confirm input {
+          width: 22px;
+          height: 22px;
+        }
+
+        .pkg-approve:disabled {
+          opacity: 0.45;
+        }
+
+        .pkg-delivery {
+          display: grid;
+          gap: 8px;
+          border: 1px solid rgba(83, 230, 156, 0.4);
+          border-radius: 12px;
+          padding: 12px;
+          color: #caffdf;
+          font-weight: 800;
+        }
+
+        .pkg-delivery.has-error {
+          border-color: rgba(255, 209, 102, 0.5);
+          color: #ffe8a3;
+        }
+
+        .pkg-delivery a {
+          display: block;
+          border-radius: 10px;
+          padding: 12px;
+          background: #ffffff;
+          color: #0b1b33;
+          text-align: center;
+          font-weight: 900;
+          text-decoration: none;
+        }
+
+        .pkg-google-note {
+          color: #c9d4e3;
+        }
+
+        .pkg-google-note a {
+          color: #8fd3ff;
+          font-weight: 800;
+        }
+
+        .pkg-more summary {
+          color: #c9d4e3;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .pkg-more-body {
+          display: grid;
+          gap: 10px;
+          margin-top: 10px;
+        }
+
         .refused-description-default {
           min-height: 46px;
           border: 0;
@@ -3983,8 +4329,171 @@ export default function PaperworkPage() {
                   Use Male Tall Dark Hair
                 </button>
               </label>
+              <div className="paperwork-grid">
+                <label className="paperwork-field">
+                  Name Given (7a)
+                  <input value={form.deniedName} onChange={(event) => update("deniedName", event.target.value)} placeholder="DID NOT PROVIDE" />
+                </label>
+                <label className="paperwork-field">
+                  Relationship (7a)
+                  <input value={form.deniedRelationship} onChange={(event) => update("deniedRelationship", event.target.value)} placeholder="SUPER" />
+                </label>
+              </div>
+              <label className="paperwork-field">
+                Their Telephone (7b)
+                <input value={form.deniedPhone} onChange={(event) => update("deniedPhone", event.target.value)} placeholder="DID NOT PROVIDE" />
+              </label>
             </div>
           ) : null}
+
+          {outcome === "work_completed" || outcome === "partial_work_completed" ? (
+            <div
+              className={`refused-access-required package-charge-card ${workDatesProblem(form) || (outcome === "partial_work_completed" && (!form.partialReason.trim() || !form.partialWorkDone.trim())) ? "needs-description" : "ready"}`}
+              data-hpd-smoke="paperwork-charge-card"
+            >
+              <div>
+                <span>{outcome === "partial_work_completed" ? "Partial Work Charge" : "Work Completed Charge"}</span>
+                <strong>Charge and work dates</strong>
+                <small>Bid amount {form.bidAmount || "not listed"}. Change the charge if it differs from the bid.</small>
+              </div>
+              <label className="paperwork-field">
+                Charge Amount
+                <input
+                  data-hpd-smoke="paperwork-charge-amount"
+                  inputMode="decimal"
+                  value={form.amount}
+                  onChange={(event) => update("amount", event.target.value)}
+                  placeholder={form.bidAmount || "$0.00"}
+                />
+              </label>
+              <div className="paperwork-grid">
+                <label className="paperwork-field">
+                  Work Started
+                  <input
+                    type="date"
+                    data-hpd-smoke="paperwork-work-start"
+                    value={dateInputValue(form.workStart || form.workComplete)}
+                    onChange={(event) => update("workStart", displayDate(event.target.value))}
+                  />
+                </label>
+                <label className="paperwork-field">
+                  Work Completed
+                  <input
+                    type="date"
+                    data-hpd-smoke="paperwork-work-complete"
+                    value={dateInputValue(form.workComplete || form.fieldDate)}
+                    onChange={(event) => update("workComplete", displayDate(event.target.value))}
+                  />
+                </label>
+              </div>
+              {workDatesProblem(form) ? <small data-hpd-smoke="paperwork-work-dates-status">{workDatesProblem(form)}</small> : null}
+              {outcome === "partial_work_completed" ? (
+                <label className="paperwork-field">
+                  What work was completed? (invoice description)
+                  <textarea
+                    data-hpd-smoke="paperwork-partial-done"
+                    value={form.partialWorkDone}
+                    onChange={(event) => update("partialWorkDone", event.target.value)}
+                    placeholder="Example: INSTALLED 3 SELF CLOSING HINGES AT APT 1B ENTRANCE DOOR"
+                  />
+                </label>
+              ) : null}
+              <label className="paperwork-field">
+                Invoice materials - one per line, quantity first
+                <textarea
+                  data-hpd-smoke="paperwork-materials"
+                  rows={8}
+                  value={form.materialsText || materialsToText(packageMaterials(form, outcome))}
+                  onChange={(event) => update("materialsText", event.target.value)}
+                />
+                <small>Filled from the {outcome === "partial_work_completed" ? "work completed" : "job scope"}. Edit, add or remove lines; max 12.</small>
+                {form.materialsText ? (
+                  <button type="button" className="refused-description-default" onClick={() => update("materialsText", "")}>
+                    Rebuild From Scope
+                  </button>
+                ) : null}
+              </label>
+              {outcome === "partial_work_completed" ? (
+                <label className="paperwork-field">
+                  Why was the work only partially completed? (item 6)
+                  <textarea
+                    data-hpd-smoke="paperwork-partial-reason"
+                    value={form.partialReason}
+                    onChange={(event) => update("partialReason", event.target.value)}
+                    placeholder="Example: ADDITIONAL WORK WAS NEEDED"
+                  />
+                </label>
+              ) : null}
+            </div>
+          ) : null}
+
+          {outcome === "no_access" ? (() => {
+            const problem = noAccessDetailsProblem(form);
+            return (
+              <div className={`refused-access-required no-access-card ${problem ? "needs-description" : "ready"}`} data-hpd-smoke="paperwork-no-access-card">
+                <div>
+                  <span>No Access - Items 4a and 4b</span>
+                  <strong>{problem ? "Attempt details needed" : "Attempt details ready"}</strong>
+                  <small data-hpd-smoke="paperwork-no-access-status">{problem || "Attempts are at least 72 hours apart."}</small>
+                </div>
+                <div className="paperwork-grid">
+                  <label className="paperwork-field">
+                    1st Attempt
+                    <input
+                      type="date"
+                      data-hpd-smoke="paperwork-attempt-1"
+                      value={dateInputValue(form.firstAttempt)}
+                      onChange={(event) => update("firstAttempt", displayDate(event.target.value))}
+                    />
+                  </label>
+                  <label className="paperwork-field">
+                    2nd Attempt (72+ hrs later)
+                    <input
+                      type="date"
+                      data-hpd-smoke="paperwork-attempt-2"
+                      value={dateInputValue(form.secondAttempt)}
+                      onChange={(event) => update("secondAttempt", displayDate(event.target.value))}
+                    />
+                  </label>
+                </div>
+                {form.tenantPhone ? (
+                  <>
+                    <small>Tenant phone {form.tenantPhone}. Enter the dates you called.</small>
+                    <div className="paperwork-grid">
+                      <label className="paperwork-field">
+                        1st Call
+                        <input
+                          type="date"
+                          data-hpd-smoke="paperwork-call-1"
+                          value={dateInputValue(form.phone1Date)}
+                          onChange={(event) => update("phone1Date", displayDate(event.target.value))}
+                        />
+                      </label>
+                      <label className="paperwork-field">
+                        2nd Call
+                        <input
+                          type="date"
+                          data-hpd-smoke="paperwork-call-2"
+                          value={dateInputValue(form.phone2Date)}
+                          onChange={(event) => update("phone2Date", displayDate(event.target.value))}
+                        />
+                      </label>
+                    </div>
+                  </>
+                ) : (
+                  <label className="paperwork-field">
+                    No phone number - prints on item 4b
+                    <input
+                      data-hpd-smoke="paperwork-phone-note"
+                      value={form.phoneNote}
+                      onChange={(event) => update("phoneNote", event.target.value)}
+                      placeholder={noTelephoneNote(true)}
+                    />
+                  </label>
+                )}
+              </div>
+            );
+          })() : null}
 
           <details className="paperwork-advanced">
             <summary>Review pulled JSON fields</summary>
@@ -4112,132 +4621,102 @@ export default function PaperworkPage() {
             </div>
           ) : null}
           {packagePreview ? (
-            <div className="paperwork-package-review" data-hpd-smoke="paperwork-package-review">
-              <div className="package-created-head">
+            <div className="paperwork-package-review pkg-review" data-hpd-smoke="paperwork-package-review">
+              <div className="pkg-review-head">
                 <div>
-                  <span className="package-kicker">{packageApproved ? "Package approved" : "Draft package saved"}</span>
+                  <span className={`pkg-review-status ${packageApproved ? "approved" : ""}`}>{packageApproved ? "Approved & saved" : "Review before approving"}</span>
                   <h3>{packagePreview.jobId}</h3>
-                  <p>{packagePreview.note}</p>
+                  <p>{packageStatusLabel(outcome)} · Total {form.amount || "$0.00"}</p>
                 </div>
-                <span>{packagePreview.imageCount} image(s) / {packagePreview.videoCount} video(s)</span>
+                <button type="button" className="pkg-edit" data-hpd-smoke="paperwork-package-edit" onClick={clearPackagePreview}>
+                  Edit
+                </button>
               </div>
-              <div className="package-review-strip" data-hpd-smoke="paperwork-package-review-flow" aria-label="Package review flow">
-                <span>
-                  <b>Review</b>
-                  <strong>PDF visible</strong>
-                </span>
-                <span>
-                  <b>Folder</b>
-                  <strong>{packagePreview.folderFileCount} files</strong>
-                </span>
-                <span>
-                  <b>Next</b>
-                  <strong>Share / Save</strong>
-                </span>
+
+              <div className="pkg-pages" data-hpd-smoke="paperwork-package-pages" aria-label="PDF pages">
+                {packagePreview.pdfPreviewImageUrls.length ? (
+                  packagePreview.pdfPreviewImageUrls.map((url, index) => (
+                    <button type="button" className="pkg-page" key={url} onClick={() => setFullScreenPdfOpen(true)}>
+                      <img src={url} alt={`${packagePreview.jobId} page ${index + 1}`} />
+                      <span>
+                        {index === packagePreview.pdfPreviewImageUrls.length - 1 ? "Invoice" : `Affidavit page ${index + 1}`}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="pkg-page-missing">
+                    <strong>Preview not available on this device</strong>
+                    <a href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>Open the PDF to review it</a>
+                  </div>
+                )}
               </div>
-              <label><input type="checkbox" checked={packageReviewed} disabled={packageBusy || packageApproved} onChange={event => setPackageReviewed(event.target.checked)} /> I reviewed all affidavit/invoice pages and media, including required signatures.</label>
-              <button type="button" className="paperwork-secondary" disabled={!packageReviewed || packageBusy || packageApproved} onClick={async () => {
-                setPackageBusy(true);
-                try { setPdfStatus(await markPackageGenerated(packagePreview.jobId, true)); setPackageApproved(true); }
-                catch (error) { setPdfStatus(error instanceof Error ? error.message : "Approval could not be saved."); }
-                finally { setPackageBusy(false); }
-              }}>{packageApproved ? "Approved and archived" : "Approve package & archive job"}</button>
-              {packagePreviewOpen ? (
-                <div className="package-preview-panel" data-hpd-smoke="paperwork-package-preview-panel" ref={packagePreviewPanelRef}>
-                  <div className="package-pdf-preview-card">
-                    <div className="package-pdf-preview-head">
-                      <div>
-                        <span>Actual PDF Created</span>
-                        <strong>{packagePreview.pdfFileName}</strong>
-                        <small>
-                          {packetSizeLabel(packagePreview.pdfSize)} affidavit/invoice PDF generated from this job
-                          {packagePreview.pdfPreviewPageCount ? ` · Page 1 of ${packagePreview.pdfPreviewPageCount}` : ""}
-                        </small>
-                      </div>
-                      <button type="button" data-hpd-smoke="paperwork-open-pdf" onClick={() => setFullScreenPdfOpen(true)}>
-                        Open PDF
-                      </button>
-                    </div>
-                    {packagePreview.pdfPreviewImageUrl ? (
-                      <img
-                        className="package-pdf-image"
-                        src={packagePreview.pdfPreviewImageUrl}
-                        alt={`${packagePreview.jobId} generated affidavit invoice PDF page 1`}
-                      />
-                    ) : (
-                      <div className="package-pdf-fallback-card">
-                        <strong>PDF created</strong>
-                        <span>Preview image could not render cleanly on this device, so the app is hiding the browser PDF object instead of showing an annotation error.</span>
-                        <a data-hpd-smoke="paperwork-save-pdf-fallback" href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
-                          Save PDF
-                        </a>
-                      </div>
-                    )}
-                    {packagePreview.pdfPreviewError ? (
-                      <small className="package-pdf-fallback-note">
-                        PDF image preview is not available on this device. Use Full Screen PDF or Save PDF below.
-                      </small>
-                    ) : null}
-                    <div className="package-pdf-actions">
-                      <button type="button" data-hpd-smoke="paperwork-full-screen-pdf" onClick={() => setFullScreenPdfOpen(true)}>
-                        Full Screen PDF
-                      </button>
-                      <a data-hpd-smoke="paperwork-save-pdf" href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
-                        Save PDF
-                      </a>
-                    </div>
+
+              <div className="pkg-photos" data-hpd-smoke="paperwork-package-photos">
+                <strong>
+                  Photos in package · {packagePreview.imageCount}
+                  {packagePreview.videoCount ? ` · ${packagePreview.videoCount} video(s)` : ""}
+                </strong>
+                {packagePreview.folderLinks.some((link) => link.section === "image") ? (
+                  <div className="pkg-photo-grid">
+                    {packagePreview.folderLinks
+                      .filter((link) => link.section === "image")
+                      .map((link) => (
+                        <figure key={link.path}>
+                          <img src={link.url} alt={link.label || link.name} />
+                          <figcaption>{link.label || link.name}</figcaption>
+                        </figure>
+                      ))}
                   </div>
-                  <div className="package-content-list">
-                    <div className="package-content-row primary-package-row">
-                      <div>
-                        <span>Regular Folder</span>
-                        <strong>{packagePreview.folderName}</strong>
-                        <small>Affidavit/invoice PDF, all labeled images, all labeled videos, and manifest</small>
-                      </div>
-                      <b>{packetSizeLabel(packagePreview.folderSize)}</b>
-                    </div>
-                    <div className="package-content-row">
-                      <div>
-                        <span>Optional ZIP</span>
-                        <strong>{packagePreview.zipFileName}</strong>
-                        <small>Same folder contents compressed; filename includes the status</small>
-                      </div>
-                      <b>{packetSizeLabel(packagePreview.zipSize)}</b>
-                    </div>
-                    {(packagePreview.imageCount || packagePreview.videoCount) ? (
-                      <div className="package-content-row">
-                        <div>
-                          <span>Evidence Included</span>
-                          <strong>{packagePreview.imageCount} image(s) / {packagePreview.videoCount} video(s)</strong>
-                          <small>Before, after, and video evidence saved from this device</small>
-                        </div>
-                        <b>{packagePreview.beforeCount} before / {packagePreview.afterCount} after</b>
-                      </div>
-                    ) : null}
-                    {packagePreview.videoPackageFileName ? (
-                      <div className="package-content-row">
-                        <div>
-                          <span>Video Files</span>
-                          <strong>{packagePreview.videoPackageFileName}</strong>
-                          <small>Before/after labeled video evidence</small>
-                        </div>
-                        <b>{packetSizeLabel(packagePreview.videoPackageSize)}</b>
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="package-folder-list" data-hpd-smoke="paperwork-folder-contents" aria-label="Folder contents">
-                    <div className="package-folder-list-head">
-                      <strong>Folder Contents</strong>
-                      <span>{packagePreview.folderFileCount} file(s)</span>
-                    </div>
-                    {packagePreview.folderLinks.map((link) => (
-                      <a href={link.url} download={link.name} key={link.path} className={`package-folder-file folder-file-${link.section}`}>
-                        <span>{link.path}</span>
-                        <b>{packetSizeLabel(link.size)}</b>
-                      </a>
-                    ))}
-                  </div>
-                  <div className="package-delivery-actions package-primary-delivery">
+                ) : (
+                  <small>No photos saved for this OMO on this device.</small>
+                )}
+              </div>
+
+              <label className="pkg-confirm">
+                <input type="checkbox" checked={packageReviewed} disabled={packageBusy || packageApproved} onChange={(event) => setPackageReviewed(event.target.checked)} />
+                I checked every page and photo.
+              </label>
+              <button
+                type="button"
+                className="paperwork-print pkg-approve"
+                data-hpd-smoke="paperwork-approve-save"
+                disabled={(!packageReviewed && !packageApproved) || packageBusy || Boolean(packageApproved && delivery?.folderLink)}
+                onClick={approveAndSavePackage}
+              >
+                {delivery?.working
+                  ? delivery.message
+                  : packageApproved
+                    ? google?.connected ? "Saved" : "Save Copy Again"
+                    : google?.connected ? "Approve, Email & Save to Drive" : "Approve & Save"}
+              </button>
+              {delivery && !delivery.working ? (
+                <div className={`pkg-delivery ${delivery.error ? "has-error" : ""}`} data-hpd-smoke="paperwork-delivery">
+                  {delivery.folderLink ? (
+                    <a href={delivery.folderLink} target="_blank" rel="noopener noreferrer" data-hpd-smoke="paperwork-drive-link">
+                      Open package in Google Drive
+                    </a>
+                  ) : null}
+                  {delivery.emailed ? <span>✓ {delivery.message}</span> : null}
+                  {delivery.error ? <span>{delivery.error}</span> : null}
+                </div>
+              ) : null}
+              {google && !google.connected ? (
+                <small className="pkg-google-note">
+                  To email the package and save it to Google Drive automatically, <a href="/storage/">connect Google</a> on the main app.
+                </small>
+              ) : google?.connected && !google.canEmail ? (
+                <small className="pkg-google-note">
+                  Drive is connected. To also email packages, <a href="/storage/">reconnect Google</a> and allow sending email.
+                </small>
+              ) : null}
+
+              <details className="pkg-more" data-hpd-smoke="paperwork-package-more">
+                <summary>More options</summary>
+                <div className="pkg-more-body">
+                  <div className="package-delivery-actions">
+                    <a data-hpd-smoke="paperwork-save-pdf" href={packagePreview.pdfUrl} download={packagePreview.pdfFileName}>
+                      Save PDF only
+                    </a>
                     <button type="button" data-hpd-smoke="paperwork-share-files" onClick={sendCompletePackage}>
                       Share Files
                     </button>
@@ -4247,71 +4726,34 @@ export default function PaperworkPage() {
                     <button type="button" data-hpd-smoke="paperwork-download-files" onClick={downloadCompletePackageFiles}>
                       Download Files
                     </button>
-                  </div>
-                  <details className="package-backup-details">
-                    <summary>Backup / separate files</summary>
-                    <div className="package-delivery-actions package-secondary-delivery">
-                      <button type="button" data-hpd-smoke="paperwork-share-zip" onClick={sendZipPackage}>
-                        Share ZIP
+                    <a data-hpd-smoke="paperwork-save-zip" href={packagePreview.zipUrl} download={packagePreview.zipFileName}>
+                      Save ZIP
+                    </a>
+                    {packagePreview.videoPackageFileName ? (
+                      <button type="button" data-hpd-smoke="paperwork-share-video" onClick={sendVideoPackage}>
+                        Share Video Files
                       </button>
-                      <a data-hpd-smoke="paperwork-save-zip" href={packagePreview.zipUrl} download={packagePreview.zipFileName}>
-                        Save ZIP
-                      </a>
-                      <button type="button" data-hpd-smoke="paperwork-share-application" onClick={sendApplicationPackage}>
-                        Share Application Files
-                      </button>
-                      {packagePreview.videoPackageFileName ? (
-                        <button type="button" data-hpd-smoke="paperwork-share-video" onClick={sendVideoPackage}>
-                          Share Video Files
-                        </button>
-                      ) : null}
-                      <button type="button" className="package-backup-send" data-hpd-smoke="paperwork-backup-send-files" onClick={sendEvidenceFilesBackup}>
-                        Backup: Send Files
-                      </button>
-                    </div>
-                  </details>
-                  <div className="package-review-grid">
-                    <span>PDF <strong>1</strong></span>
-                    <span>Images <strong>{packagePreview.imageCount}</strong></span>
-                    <span>Before <strong>{packagePreview.beforeCount}</strong></span>
-                    <span>After <strong>{packagePreview.afterCount}</strong></span>
-                    <span>Videos <strong>{packagePreview.videoCount}</strong></span>
-                  </div>
-                  <div className="package-video-preview">
-                    <div className="package-video-head">
-                      <div>
-                        <h4>Video Preview</h4>
-                        <p>{packagePreview.videoPackageFileName || "No video files generated for this OMO."}</p>
-                      </div>
-                      <span>{packetSizeLabel(packagePreview.videoPackageSize)}</span>
-                    </div>
-                    <div className="package-video-list">
-                      {packagePreview.videoLinks.length ? (
-                        packagePreview.videoLinks.map((video, index) => (
-                          <div className="package-video-item" key={`${video.name}-${index}`}>
-                            <video src={video.url} controls preload="metadata" playsInline />
-                            <div className="package-video-meta">
-                              <strong>Video {index + 1}</strong>
-                              <span>{video.name}</span>
-                              <small>{packetSizeLabel(video.size)}</small>
-                              <a href={video.url} download={video.name} target="_blank" rel="noopener noreferrer">
-                                Open / Save Video
-                              </a>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <span className="package-video-empty">
-                          No videos found for this OMO on this phone. Retake or upload the video from the job card, then Generate Package again.
-                        </span>
-                      )}
-                    </div>
-                    {packagePreview.skippedMediaCount ? (
-                      <p>{packagePreview.skippedMediaCount} media item(s) were listed in the manifest as not included.</p>
                     ) : null}
                   </div>
+                  {packagePreview.videoLinks.map((video, index) => (
+                    <div className="package-video-item" key={`${video.name}-${index}`}>
+                      <video src={video.url} controls preload="metadata" playsInline />
+                      <small>{video.name}</small>
+                    </div>
+                  ))}
+                  <div className="package-folder-list" data-hpd-smoke="paperwork-folder-contents" aria-label="Folder contents">
+                    {packagePreview.folderLinks.map((link) => (
+                      <a href={link.url} download={link.name} key={link.path} className={`package-folder-file folder-file-${link.section}`}>
+                        <span>{link.path}</span>
+                        <b>{packetSizeLabel(link.size)}</b>
+                      </a>
+                    ))}
+                  </div>
+                  {packagePreview.skippedMediaCount ? (
+                    <small>{packagePreview.skippedMediaCount} media item(s) were listed in the manifest as not included.</small>
+                  ) : null}
                 </div>
-              ) : null}
+              </details>
             </div>
           ) : null}
         </section>
@@ -4329,11 +4771,10 @@ export default function PaperworkPage() {
                 </button>
               </div>
               <div className="fullscreen-pdf-body">
-                {packagePreview.pdfPreviewImageUrl ? (
-                  <img
-                    src={packagePreview.pdfPreviewImageUrl}
-                    alt={`${packagePreview.jobId} generated affidavit invoice PDF full screen page 1`}
-                  />
+                {packagePreview.pdfPreviewImageUrls.length ? (
+                  packagePreview.pdfPreviewImageUrls.map((url, index) => (
+                    <img key={url} src={url} alt={`${packagePreview.jobId} generated PDF page ${index + 1}`} />
+                  ))
                 ) : (
                   <div className="fullscreen-pdf-fallback">
                     <strong>PDF created</strong>
@@ -4348,7 +4789,7 @@ export default function PaperworkPage() {
           </div>
         ) : null}
 
-        <section className="paperwork-preview">
+        <section className="paperwork-preview" hidden={Boolean(packagePreview)}>
           <div className="paperwork-sheet">
             <div className="preview-head">
               <div>

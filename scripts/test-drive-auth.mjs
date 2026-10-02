@@ -24,7 +24,7 @@ async function begin() {
   const auth = new URL(response.headers.get("Location"));
   assert.equal(auth.origin, "https://accounts.google.com");
   assert.equal(auth.searchParams.get("code_challenge_method"), "S256");
-  assert.equal(auth.searchParams.get("scope"), "openid email https://www.googleapis.com/auth/drive.file");
+  assert.equal(auth.searchParams.get("scope"), "openid email https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/gmail.send");
   assert.equal(auth.searchParams.get("redirect_uri"), `${origin}/api/drive/callback`);
   const fullCookie = response.headers.getSetCookie()[0];
   assert.match(fullCookie, /HttpOnly; Secure; SameSite=Lax/);
@@ -68,11 +68,11 @@ assert.ok(!sessionCookie.includes("private-refresh"));
 assert.ok(![...records.values()][0].includes("private-refresh"));
 const status = await handleDriveAuth(request("session", "GET", sessionCookie), env, noNetwork);
 assert.equal(status.headers.get("Cache-Control"), "no-store");
-assert.deepEqual(await status.json(), { configured: true, connected: true, email: identity.email, verifiedAt: null, syncEnabled: false });
+assert.deepEqual(await status.json(), { configured: true, connected: true, email: identity.email, verifiedAt: null, canEmail: false, syncEnabled: false });
 assert.equal((await handleDriveAuth(request("check", "POST", ""), env, noNetwork)).status, 401);
 assert.equal((await handleDriveAuth(request("check", "GET", sessionCookie), env, noNetwork)).status, 405);
 assert.equal((await handleDriveAuth(request("check", "POST", sessionCookie, "https://evil.test"), env, noNetwork)).status, 403);
-for (const action of ["backup-id", "save-backup", "test-backup"]) {
+for (const action of ["backup-id", "save-backup", "test-backup", "package-folder", "package-file", "email-package"]) {
   assert.equal((await handleDriveAuth(request(action, "POST"), env, noNetwork)).status, 401);
   assert.equal((await handleDriveAuth(request(action, "GET", sessionCookie), env, noNetwork)).status, 405);
   assert.equal((await handleDriveAuth(request(action, "POST", sessionCookie, "https://evil.test"), env, noNetwork)).status, 403);

@@ -29,8 +29,9 @@ const { assertEmailPackageSize, emailMediaCopies, fitEmailVideos } = context.exp
   await assert.rejects(fitEmailVideos(large, 1000000, () => {}, async row => row), /exceeds/);
   await assert.rejects(fitEmailVideos(large, 1000000, () => {}, async () => { throw new Error('Unsupported codec'); }), /Unsupported/);
   const card = fs.readFileSync('app/field-command/FieldCommandClient.tsx', 'utf8');
-  assert.equal((card.match(/requestMediaUpload\("before"\)/g) || []).length, 1);
-  assert.equal((card.match(/requestMediaUpload\("after"\)/g) || []).length, 1);
+  // One upload entry per stage: the Before/After tiles in Media & Documents.
+  assert.equal((card.match(/requestMediaUpload\(/g) || []).length, 2, 'definition + the tile handler only');
+  assert.ok(card.includes('{(["before", "after"] as const).map((kind) => {') && card.includes('onClick={() => requestMediaUpload(kind)}'));
   assert.ok(!card.includes('fc-quick-action is-photos'));
   const mediaSource = fs.readFileSync('lib/field-photo-store.ts', 'utf8');
   const mediaAst = ts.createSourceFile('media.ts', mediaSource, ts.ScriptTarget.Latest, true);
