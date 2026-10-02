@@ -1982,9 +1982,11 @@ export default function FieldCommandClient() {
               {(() => {
                 // Guided steps: arrive -> start visit -> what happened (start work = before media, or a
                 // no-work outcome) -> finish work (after media) -> check media & finish -> package.
-                const savedOutcome = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
                 const noWorkOutcomes = ["NO_ACCESS_1_WAITING_72H", "REFUSED_ACCESS", "WORK_COMPLETED_BY_OTHERS", "APPOINTMENT_REQUESTED"];
                 const workOutcomes = ["WORK_COMPLETED", "PARTIAL_WORK"];
+                // Only a real outcome counts; "VISIT_STARTED" / "WORK_STARTED" are progress markers.
+                const rawOutcome = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
+                const savedOutcome = [...noWorkOutcomes, ...workOutcomes].includes(rawOutcome) ? rawOutcome : "";
                 const workStarted = Boolean(stamps.work) || counts.before > 0;
                 const steps = [
                   { done: Boolean(stamps.arrived) },
@@ -2055,6 +2057,7 @@ export default function FieldCommandClient() {
                             {outcomeForm(noWorkOutcomes)}
                           </>
                         ) : null}
+                        {workStarted && !savedOutcome && current > 2 ? <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-more-before" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("before")}>+ More before photos / video</button> : null}
                       </div>
                     </li>
                     {!noWorkOutcomes.includes(savedOutcome) ? (
@@ -2065,6 +2068,7 @@ export default function FieldCommandClient() {
                             <b>Finish work</b>
                             <small>{counts.after ? `${counts.after} after photo/video saved` : "Take the after photos and video"}</small>
                             {current === 3 ? <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-after" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("after")}>Finish work: after photo / video<span aria-hidden="true">&rarr;</span></button> : null}
+                            {counts.after > 0 && !savedOutcome ? <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-more-after" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("after")}>+ More after photos / video</button> : null}
                           </div>
                         </li>
                         <li className={stepClass(4)}>
@@ -2235,7 +2239,7 @@ export default function FieldCommandClient() {
                 <label>Outcome<select value={draft.outcome} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, outcome: event.target.value } }))}><option value="">Select outcome</option>{Object.entries(FIELD_OUTCOMES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
                 <label>Visit note<textarea value={draft.note} rows={3} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
                 {draft.outcome === "APPOINTMENT_REQUESTED" ? <button type="button" className="fc-next-action" onClick={openAppointment}>Set appointment details</button> : <button type="button" className="fc-next-action" onClick={() => saveVisitOutcome(selectedJob, Boolean(draft.outcome))} disabled={Boolean(mediaBusy) || (!draft.outcome && !draft.note.trim())}>{draft.outcome ? "Save outcome & generate package" : "Save note"}</button>}
-                {value(selectedJob, ["FieldOutcome", "fieldOutcome"]) ? (
+                {FIELD_OUTCOMES[value(selectedJob, ["FieldOutcome", "fieldOutcome"])] ? (
                   <button type="button" className="fc-clear-outcome" data-hpd-smoke="fc-clear-outcome" onClick={() => clearOutcome(selectedJob)}>
                     Clear outcome ({FIELD_OUTCOMES[value(selectedJob, ["FieldOutcome", "fieldOutcome"])] || value(selectedJob, ["FieldOutcome", "fieldOutcome"])})
                   </button>

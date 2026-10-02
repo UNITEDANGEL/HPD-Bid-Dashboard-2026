@@ -12,7 +12,12 @@ export type DeliveryResult = {
   emailTo: string[];
   emailError: string;
   attachedPhotos: boolean;
+  // Drive link for each uploaded file, by file name (used for videos too big to attach).
+  fileLinks: Record<string, string>;
 };
+
+// What the email carries: counts of attached photos/videos, and links for files left out.
+export type EmailAttachmentSummary = { photos: number; videos: number; linked: { name: string; url: string }[] };
 
 // Gmail allows 25 MB per message; base64 adds about a third.
 export const EMAIL_ATTACHMENT_LIMIT = 17 * 1024 * 1024;
@@ -83,7 +88,7 @@ export async function deliverPackage(
     // What the email carries, if not every file (e.g. only the signed PDF and before/after photos).
     emailFiles?: DeliveryFile[];
     emailSubject: string;
-    emailText: (folderLink: string, attachedPhotos: boolean) => string;
+    emailText: (folderLink: string, attachedPhotos: boolean, summary: EmailAttachmentSummary) => string;
     sendEmail: boolean;
     // Saved to the same Drive folder but never attached to the email (the unsigned print copy).
     driveOnlyFiles?: DeliveryFile[];
@@ -102,6 +107,7 @@ export async function deliverPackage(
   const { folderId, link } = await folderResponse.json();
 
   let uploaded = 0;
+  const fileLinks: Record<string, string> = {};
   const driveFiles = [...options.files, ...(options.driveOnlyFiles || [])];
   for (const file of driveFiles) {
     progress(`Saving to Google Drive: ${uploaded + 1} of ${driveFiles.length} files...`);
@@ -116,12 +122,16 @@ export async function deliverPackage(
       body: new Blob([file.bytes as BlobPart], { type: file.mimeType }),
     });
     if (!response.ok) throw new Error(await readError(response, `Could not save ${file.name} to Google Drive.`));
+    try {
+      const saved = await response.json();
+      if (saved?.id) fileLinks[file.name] = `https://drive.google.com/file/d/${encodeURIComponent(saved.id)}/view`;
+    } catch {}
     uploaded += 1;
   }
 
-  const result: DeliveryResult = { folderLink: link, uploaded, emailed: false, emailTo: [], emailError: "", attachedPhotos: false };
+  const result: DeliveryResult = { folderLink: link, uploaded, emailed: false, emailTo: [], emailError: "", attachedPhotos: false, fileLinks };
   if (!options.sendEmail) return result;
-  return { ...result, ...(await sendPackageEmail({ ...options, folderLink: link }, fetcher)) };
+  return { ...result, ...(await sendPackageEmail({ ...options, folderLink: link, fileLinks }, fetcher)) };
 }
 
 // Email only (also used to retry after Gmail refused, without uploading to Drive again).
@@ -130,21 +140,35 @@ export async function sendPackageEmail(
     folderLink: string;
     files: DeliveryFile[];
     emailFiles?: DeliveryFile[];
+    fileLinks?: Record<string, string>;
     emailSubject: string;
-    emailText: (folderLink: string, attachedPhotos: boolean) => string;
+    emailText: (folderLink: string, attachedPhotos: boolean, summary: EmailAttachmentSummary) => string;
     onProgress?: (message: string) => void;
   },
   fetcher: Fetcher = fetch
 ): Promise<Pick<DeliveryResult, "emailed" | "emailTo" | "emailError" | "attachedPhotos">> {
-  // PDF always; photos too when they fit in one email. Videos stay in Drive.
+  // PDF always; then photos, then videos, as many as fit in one email. Anything that doesn't
+  // fit is listed in the email with its own Drive link, so nothing is silently left out.
   const source = options.emailFiles || options.files;
   const pdfs = source.filter((file) => file.mimeType === "application/pdf");
   const photos = source.filter((file) => file.mimeType.startsWith("image/"));
-  const photoBytes = [...pdfs, ...photos].reduce((sum, file) => sum + file.bytes.byteLength, 0);
-  const attachedPhotos = photos.length > 0 && photoBytes <= EMAIL_ATTACHMENT_LIMIT;
-  const attachments = attachedPhotos ? [...pdfs, ...photos] : pdfs;
+  const videos = source.filter((file) => file.mimeType.startsWith("video/"));
+  let total = pdfs.reduce((sum, file) => sum + file.bytes.byteLength, 0);
+  const attachments = [...pdfs];
+  const summary: EmailAttachmentSummary = { photos: 0, videos: 0, linked: [] };
+  for (const file of [...photos, ...videos]) {
+    const isVideo = file.mimeType.startsWith("video/");
+    if (total + file.bytes.byteLength <= EMAIL_ATTACHMENT_LIMIT) {
+      attachments.push(file);
+      total += file.bytes.byteLength;
+      if (isVideo) summary.videos += 1; else summary.photos += 1;
+    } else {
+      summary.linked.push({ name: file.name, url: options.fileLinks?.[file.name] || "" });
+    }
+  }
+  const attachedPhotos = photos.length > 0 && summary.photos === photos.length;
   options.onProgress?.("Sending email...");
-  const email = buildPackageEmail(options.emailText(options.folderLink, attachedPhotos), attachments);
+  const email = buildPackageEmail(options.emailText(options.folderLink, attachedPhotos, summary), attachments);
   const sent = await fetcher("/api/drive/email-package", {
     method: "POST",
     headers: { "Content-Type": "text/plain", "X-HPD-Boundary": email.boundary, "X-HPD-Subject": encodeURIComponent(options.emailSubject) },
