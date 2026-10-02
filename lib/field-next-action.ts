@@ -33,7 +33,19 @@ export function paperworkGenerateHref(id: string, outcome: string) {
   const outcomes: Record<string, string> = { WORK_COMPLETED: "work_completed", PARTIAL_WORK: "partial_work_completed",
     NO_ACCESS_1_WAITING_72H: "no_access", REFUSED_ACCESS: "refused_access", WORK_COMPLETED_BY_OTHERS: "completed_by_others" };
   if (!outcomes[outcome]) throw new Error("Save a paperwork outcome first.");
-  return `/paperwork?${new URLSearchParams({ job: id, media: "all", auto: "package", signature: "none", outcome: outcomes[outcome] })}`;
+  // Signed package: the paperwork page waits for the signer and the notary, builds it, and on
+  // approve emails the signed copy and saves the unsigned print copy to the Drive folder.
+  return `/paperwork?${new URLSearchParams({ job: id, media: "all", auto: "package", outcome: outcomes[outcome] })}`;
+}
+
+// Where the job card's paperwork buttons go: straight into the package flow once an outcome is
+// saved, otherwise the paperwork page to pick one.
+export function paperworkNextHref(id: string, savedOutcome: string) {
+  try {
+    return paperworkGenerateHref(id, savedOutcome);
+  } catch {
+    return paperworkReviewHref(id);
+  }
 }
 
 export const FIELD_OUTCOMES: Record<string, string> = {

@@ -11,7 +11,8 @@ import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointme
 import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
-import { nextFieldAction, paperworkReviewHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
+import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
+import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
 import { fetchServerWorkflowOverrides } from "../../lib/paperwork";
 import { longestCleanDescription } from "../../lib/description-quality";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
@@ -550,6 +551,12 @@ export default function FieldCommandClient() {
   const [plannerRequest,setPlannerRequest] = useState(0);
   const [locateStatus, setLocateStatus] = useState<"idle" | "loading" | "error">("idle");
   const [scopeOpen, setScopeOpen] = useState(false);
+  const [reading, setReading] = useState(false);
+  const [speechOk, setSpeechOk] = useState(false);
+  useEffect(() => { setSpeechOk(canReadAloud()); }, []);
+  const selectedJobKey = selectedJob ? jobId(selectedJob) : "";
+  // Switching or closing the job card stops reading the old description.
+  useEffect(() => { stopReading(); setReading(false); setScopeOpen(false); }, [selectedJobKey]);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [routeSummary, setRouteSummary] = useState<{ stops: number; miles: number; firstStop: string; href: string } | null>(null);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
@@ -1579,6 +1586,8 @@ export default function FieldCommandClient() {
           const counts = mediaCounts[id] || { before: 0, after: 0, total: 0 };
           const next = nextFieldAction(stamps, counts, jobStatus(selectedJob));
           const draft = outcomeDrafts[id] || { outcome: "", note: "" };
+          const paperworkHref = paperworkNextHref(id, value(selectedJob, ["WorkflowStatus", "workflowStatus", "FieldOutcome", "fieldOutcome"]));
+          const hasScope = scope !== "Scope not captured yet.";
           return (
             <div ref={jobSheetRef} id="fc-job-card" className="fc-job-sheet fc-job-sheet-flow" aria-label="Selected job">
               <button type="button" className="fc-sheet-handle" aria-label={sheetExpanded ? "Collapse job details" : "Expand job details"} aria-expanded={sheetExpanded} onTouchStart={(event) => { sheetTouchStart.current = event.touches[0].clientY; }} onTouchEnd={(event) => {
@@ -1607,6 +1616,22 @@ export default function FieldCommandClient() {
                   {tenant.phone ? <a className="jc-btn jc-btn-call" href={`tel:${tenant.phone}`}><CallIcon />Call</a> : null}
                 </div>
               </header>
+
+              <section className="jc-description" aria-label="Job description" data-hpd-smoke="jc-description">
+                <div className="jc-section-head">
+                  <strong>Job Description</strong>
+                  {hasScope && scope.length > 260 ? <button type="button" className="jc-description-more" onClick={() => setScopeOpen((open) => !open)}>{scopeOpen ? "Less" : "All"}</button> : null}
+                </div>
+                <p className={`jc-description-text ${scopeOpen ? "is-open" : ""}`} data-hpd-smoke="jc-description-text">{scope}</p>
+                {hasScope && speechOk ? (
+                  <div className="jc-description-actions">
+                    <button type="button" className="jc-read" data-hpd-smoke="jc-description-read" onClick={() => setReading(readAloud(`Job ${id}. ${jobAddress(selectedJob)}. ${scope}`, () => setReading(false)))}>
+                      {reading ? "🔊 Reading..." : "🔊 Read aloud"}
+                    </button>
+                    <button type="button" data-hpd-smoke="jc-description-stop" onClick={() => { stopReading(); setReading(false); }} disabled={!reading}>Stop</button>
+                  </div>
+                ) : null}
+              </section>
 
               <div className="jc-facts">
                 <div className="jc-fact">
@@ -1645,7 +1670,7 @@ export default function FieldCommandClient() {
                 {next.key === "before" || next.key === "after" ? (
                   <p className="jc-next-hint">Next: {next.label} in Media &amp; Documents below</p>
                 ) : next.key === "review" ? (
-                  <a href={paperworkReviewHref(id)} className="fc-next-action jc-glow">{next.label}<span aria-hidden="true">&rarr;</span></a>
+                  <a href={paperworkHref} className="fc-next-action jc-glow">{next.label}<span aria-hidden="true">&rarr;</span></a>
                 ) : next.key === "record" ? (
                   <button type="button" className="fc-next-action jc-glow" onClick={openOutcomePanel}>{next.label}<span aria-hidden="true">&rarr;</span></button>
                 ) : (
@@ -1687,7 +1712,7 @@ export default function FieldCommandClient() {
                 </div> : null}
                 <BuildingPhoto key={id} id={id} address={jobAddress(selectedJob)} borough={String(jobBorough(selectedJob))} point={jobLatLng(selectedJob)} />
                 <div className="jc-docs">
-                  <a className="jc-doc jc-doc-primary" href={paperworkReviewHref(id, true)}>
+                  <a className="jc-doc jc-doc-primary" href={paperworkHref}>
                     <DocumentsIcon />
                     <span><b>Affidavit + Invoice</b><small>{packageStatusText(selectedJob)}</small></span>
                     <i aria-hidden="true">&rarr;</i>
@@ -1744,17 +1769,6 @@ export default function FieldCommandClient() {
                 {draft.outcome === "APPOINTMENT_REQUESTED" ? <button type="button" className="fc-next-action" onClick={openAppointment}>Set appointment details</button> : <button type="button" className="fc-next-action" onClick={() => saveVisitOutcome(selectedJob, Boolean(draft.outcome))} disabled={Boolean(mediaBusy) || (!draft.outcome && !draft.note.trim())}>{draft.outcome ? "Save outcome & generate package" : "Save note"}</button>}
                 <p role="status">{outcomeMessage || "Device storage only. Appointment requests are not confirmed bookings."}</p>
                 {Array.isArray(selectedJob.FieldVisitHistory) && selectedJob.FieldVisitHistory.length > 0 ? <details className="fc-visit-history"><summary>Visit history ({selectedJob.FieldVisitHistory.length})</summary><ol>{selectedJob.FieldVisitHistory.map((entry: { recordedAt?: string; outcome?: string; note?: string }, index: number) => <li key={index}><time>{entry.recordedAt ? formatSavedTime(entry.recordedAt) : "Date not recorded"}</time><strong>{FIELD_OUTCOMES[entry.outcome || ""] || "Visit note"}</strong><p>{entry.note}</p></li>)}</ol></details> : null}
-              </section>
-              <section className={`fc-flow-card fc-scope-card ${scopeOpen ? "is-open" : ""}`}>
-                <button type="button" className="fc-flow-card-main" onClick={() => setScopeOpen((open) => !open)}>
-                  <span className="fc-flow-icon">S</span>
-                  <span>
-                    <b>Complete Scope</b>
-                    <small>{scope}</small>
-                  </span>
-                  <strong>{scopeOpen ? "Close" : "Open"}</strong>
-                </button>
-                {scopeOpen ? <p className="fc-scope-full">{scope}</p> : null}
               </section>
               <section className="fc-flow-card fc-tenant-card">
                 <div className="fc-flow-card-main">

@@ -610,3 +610,67 @@
 #fc-job-card .fc-save-message {
   font-size: 15px;
 }
+
+/* Job description: the main thing on the card, right under the address, with read aloud. */
+#fc-job-card .jc-description {
+  display: grid;
+  gap: 10px;
+  border-radius: 20px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(251, 191, 36, 0.1), rgba(255, 255, 255, 0.035));
+  border: 1px solid rgba(251, 191, 36, 0.45);
+}
+
+#fc-job-card .jc-description-more {
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  border-radius: 999px;
+  padding: 4px 12px;
+  background: transparent;
+  color: var(--jc-amber);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#fc-job-card .jc-description-text {
+  margin: 0;
+  color: var(--jc-text);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.42;
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 7;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+#fc-job-card .jc-description-text.is-open {
+  display: block;
+  -webkit-line-clamp: unset;
+}
+
+#fc-job-card .jc-description-actions {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 10px;
+}
+
+#fc-job-card .jc-description-actions button {
+  min-height: 50px;
+  border-radius: 14px;
+  border: 1px solid var(--jc-card-line);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--jc-text);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+#fc-job-card .jc-description-actions .jc-read {
+  border-color: rgba(251, 191, 36, 0.6);
+  background: rgba(251, 191, 36, 0.16);
+  color: #fde68a;
+}
+
+#fc-job-card .jc-description-actions button:disabled {
+  opacity: 0.45;
+}
