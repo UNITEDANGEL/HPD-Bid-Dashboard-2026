@@ -1432,6 +1432,28 @@ export default function PaperworkPage() {
     })();
   }, [notaryApproved, signerReady, canGeneratePackage]);
 
+  // Signed package built after the notary confirmed: email it and file it in Drive right away, no
+  // extra review/approve tap. The package stays on screen to view, edit and resend.
+  const autoSentRef = useRef<CompletePackagePreview | null>(null);
+  useEffect(() => {
+    // packageNotaryRef: the notary approval this package was built with (the live one is used up by the build).
+    if (!packagePreview || packagePreview.printCopy || !packagePreview.unsigned || packageApproved || !packageNotaryRef.current) return;
+    // Wait until the build has fully finished (it's still busy right as the preview appears).
+    if (packageBusy || packageBusyRef.current || autoSentRef.current === packagePreview) return;
+    autoSentRef.current = packagePreview;
+    void (async () => {
+      const status = await googleStatus();
+      setGoogle(status);
+      if (!status.connected) {
+        setPdfStatus("Package ready. Google Drive isn't connected on this phone, so it can't email by itself: tap Approve & Save, or connect Google in Storage.");
+        return;
+      }
+      setPackageReviewed(true);
+      await approveAndSavePackage();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [packagePreview, packageApproved, packageBusy]);
+
   // Review -> Edit: back to the details with the signatures kept, then one tap rebuilds both copies.
   function editPackageDetails() {
     clearPackagePreview();
@@ -5230,7 +5252,7 @@ export default function PaperworkPage() {
             <div className="paperwork-package-review pkg-review" data-hpd-smoke="paperwork-package-review">
               <div className="pkg-review-head">
                 <div>
-                  <span className={`pkg-review-status ${packageApproved ? "approved" : ""}`}>{packageApproved ? "Approved & saved" : "Review before approving"}</span>
+                  <span className={`pkg-review-status ${packageApproved ? "approved" : ""}`}>{packageApproved ? (delivery?.emailed ? "Emailed & saved to Drive" : "Approved & saved") : delivery?.working ? "Sending..." : "Review before approving"}</span>
                   <h3>{packagePreview.jobId}</h3>
                   <p>{packageStatusLabel(outcome)} · Total {form.amount || "$0.00"}</p>
                 </div>

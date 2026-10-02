@@ -188,6 +188,10 @@ try {
     // No Generate tap: the package builds by itself after the notary approves.
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
     await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"]').waitFor({ timeout: 30000 });
+    // No review/approve tap either: once built, the signed package emails itself and files in Drive.
+    await page.locator('[data-hpd-smoke="paperwork-drive-link"]').waitFor({ timeout: 60000 });
+    assert.equal(emails.length, 1, `${job}: the signed package must email itself once, got ${emails.length}`);
+    const firstEmail = emails[0];
     // Edit a date from the review screen and rebuild: no signing again, new date in the signed PDF.
     await page.locator('[data-hpd-smoke="paperwork-package-edit"]').click();
     await page.fill('[data-hpd-smoke="paperwork-work-start"]', "2026-09-29");
@@ -204,9 +208,10 @@ try {
     assert.ok(extractPdfText(editedBytes).includes("09/30/26"), `${job}: edited Work Completed date must be in the rebuilt PDF`);
     const editedImages = (editedBytes.toString("latin1").match(/\/Subtype \/Image/g) || []).length;
     assert.ok(editedImages >= 6, `${job}: rebuilt package keeps the signer and notary signatures (found ${editedImages} images)`);
-    await page.locator(".pkg-confirm input").check();
-    await page.locator('[data-hpd-smoke="paperwork-approve-save"]').click();
+    // The corrected package sends itself again.
     await page.locator('[data-hpd-smoke="paperwork-drive-link"]').waitFor({ timeout: 60000 });
+    for (let i = 0; i < 40 && emails.length < 2; i++) await page.waitForTimeout(250);
+    assert.equal(emails.length, 2, `${job}: the updated package must email itself again`);
 
     // Drive: filed by year / month / borough, one neatly named folder per package.
     assert.equal(filing.path.length, 3, `${job}: Drive filing path is year / month / borough`);
@@ -216,8 +221,8 @@ try {
     assert.ok(uploads.includes(`SIGNED - ${job} - Work Completed.pdf`), `${job}: signed PDF saved to Drive (got ${uploads.join(", ")})`);
     assert.ok(uploads.includes(`NOT SIGNED - print copy - ${job} - Work Completed.pdf`), `${job}: unsigned print copy saved to Drive`);
     // Only the SIGNED email goes out; the unsigned copy is Drive only.
-    assert.equal(emails.length, 1, `${job}: expected only the SIGNED email, got ${emails.map((e) => e.subject).join(" | ")}`);
-    const signedEmail = emails[0];
+    assert.ok(emails.every((e) => e.subject.startsWith("SIGNED - ")), `${job}: only SIGNED emails, got ${emails.map((e) => e.subject).join(" | ")}`);
+    const signedEmail = firstEmail;
     assert.ok(signedEmail.subject.startsWith("SIGNED - "), signedEmail.subject);
     assert.ok(signedEmail.body.includes(`SIGNED - ${job} - Work Completed.pdf`) && !signedEmail.body.includes("NOT SIGNED"), `${job}: SIGNED email carries only the signed PDF`);
     // The SIGNED email gets forwarded: its message text must not carry the Google Drive link.
