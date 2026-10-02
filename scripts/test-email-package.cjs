@@ -4,10 +4,10 @@ const ts = require('typescript');
 const vm = require('node:vm');
 const source = fs.readFileSync('lib/email-package.ts', 'utf8');
 let compact = 'data:image/jpeg;base64,small';
-const context = { exports: {}, require: () => ({ compactImageDataUrl: async () => compact,
-  dataUrlToBytes: value => ({ byteLength: value.startsWith('size:') ? Number(value.slice(5)) : value.includes('small') ? 10 : 100 }) }) };
+const context = { exports: {}, require: () => ({ compactImageDataUrl: async (url, side) => typeof compact === 'function' ? compact(side) : compact,
+  dataUrlToBytes: value => ({ byteLength: /size:(\d+)/.test(value) ? Number(value.match(/size:(\d+)/)[1]) : value.includes('small') ? 10 : 100 }) }) };
 vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, context);
-const { assertEmailPackageSize, emailMediaCopies, fitEmailVideos } = context.exports;
+const { assertEmailPackageSize, emailMediaCopies, fitEmailVideos, emailPhotoBudget } = context.exports;
 (async () => {
   assertEmailPackageSize(18000000);
   for (const size of [18000001, 25000000, NaN, 0, -1]) assert.throws(() => assertEmailPackageSize(size));
@@ -19,6 +19,14 @@ const { assertEmailPackageSize, emailMediaCopies, fitEmailVideos } = context.exp
   assert.equal(rows[0].dataUrl, 'original');
   compact = 'original';
   assert.equal((await emailMediaCopies(rows))[0].dataUrl, 'original');
+  // Photos use the best quality that fits the email: few photos stay sharp, many step down.
+  compact = side => `data:image/jpeg;size:${side * 1000}`;
+  const big = [{ name: 'b1.jpg', mediaType: 'image', dataUrl: 'size:99999999' }];
+  assert.equal((await emailMediaCopies(big, 10000000))[0].dataUrl, 'data:image/jpeg;size:4032000', 'one photo goes at full quality');
+  assert.equal((await emailMediaCopies(big, 2000000))[0].dataUrl, 'data:image/jpeg;size:1800000', 'steps down until it fits');
+  assert.equal(emailPhotoBudget(big), 16000000);
+  assert.equal(emailPhotoBudget([...big, { mediaType: 'video' }]), 8000000, 'photos leave room for videos');
+  compact = 'original';
   let calls = 0;
   await fitEmailVideos(rows, 0, () => {}, async () => { calls++; });
   assert.equal(calls, 0, 'No compression when it already fits');
