@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PDFDocument, StandardFonts, PDFName } from "pdf-lib";
+import { PDFDocument, PDFFont, PDFPage, StandardFonts, PDFName, degrees, rgb } from "pdf-lib";
 import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate } from "../../lib/no-access";
 import { tenantContactInfo } from "../../lib/tenantContact";
 import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
@@ -91,6 +91,9 @@ const NOTARY_STAMP_LINES = [
   "Qualified in Queens County",
   "My Commission Expires June 13, 2029",
 ];
+// Diagonal watermark on every page of the emailed/Drive copy only -- it is a digital
+// reproduction, not the wet-ink original the notary stamps and the signer keeps.
+const COPY_WATERMARK_TEXT = "COPY";
 const AFFIDAVIT_NOTARY_COUNTY = "QUEENS";
 const REFUSED_ACCESS_DESCRIPTION_EXAMPLE = "MALE, TALL, DARK HAIR";
 
@@ -187,6 +190,10 @@ type GeneratePdfOptions = {
   signatureImage?: boolean;
   // In-person notary approval for this package only. Omitted/null leaves the notary area blank.
   notary?: NotaryApproval | null;
+  // The unsigned, ink-ready copy: no "COPY" watermark, and the notary stamp + jurat date
+  // always show (dated to today, the moment it's printed) since the notary signs on paper,
+  // not through the app.
+  printCopy?: boolean;
 };
 
 function asArray(value: unknown): JobRecord[] {
@@ -239,6 +246,27 @@ function ordinal(day: number) {
   if (day % 10 === 2 && day % 100 !== 12) return `${day}ND`;
   if (day % 10 === 3 && day % 100 !== 13) return `${day}RD`;
   return `${day}TH`;
+}
+
+// Large, faint, diagonal text centered on the page. Rotation pivots around the text's own
+// origin, not the page center, so the anchor point is offset backwards by the (rotated) half
+// width/height of the text to land the visual center on the page's center.
+function drawCenteredWatermark(page: PDFPage, text: string, font: PDFFont, size: number, angleDeg: number) {
+  const { width, height } = page.getSize();
+  const textWidth = font.widthOfTextAtSize(text, size);
+  const textHeight = font.heightAtSize(size);
+  const angle = (angleDeg * Math.PI) / 180;
+  const offsetX = (textWidth / 2) * Math.cos(angle) - (textHeight / 2) * Math.sin(angle);
+  const offsetY = (textWidth / 2) * Math.sin(angle) + (textHeight / 2) * Math.cos(angle);
+  page.drawText(text, {
+    x: width / 2 - offsetX,
+    y: height / 2 - offsetY,
+    size,
+    font,
+    color: rgb(0.78, 0.1, 0.1),
+    opacity: 0.16,
+    rotate: degrees(angleDeg),
+  });
 }
 
 // Notary jurat date, ISO ("2026-10-02") in, affidavit-ready pieces out.
@@ -1406,10 +1434,15 @@ export default function PaperworkPage() {
     const activeOutcome = options.outcomeOverride || outcome;
     const includeSignature = options.includeSignature !== false;
     const includeSignatureImage = includeSignature && options.signatureImage !== false;
+    const printCopy = Boolean(options.printCopy);
     // The notary's stamp text and jurat date are filled whenever a notary approved this
-    // package, independent of whether signature IMAGES are drawn -- a print copy has no
-    // signature pictures (signed in ink instead) but still gets the stamp and date typed in.
-    const notary = options.notary || null;
+    // package, independent of whether signature IMAGES are drawn. A print copy never has
+    // signature pictures (signed in ink instead) and never waits on a digital notary approval
+    // either -- the notary signs on paper, so the stamp always shows and the jurat date is
+    // always today, the moment the print copy is generated.
+    const notary = printCopy
+      ? { signature: "", name: options.notary?.name || DEFAULT_NOTARY_NAME, date: todayIsoDate() }
+      : options.notary || null;
     const includeNotaryImage = includeSignatureImage && notary;
     const useWorkTemplate = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
     const awardDay = calendarDay(getJobDate(selectedJob, "award"));
@@ -1782,6 +1815,12 @@ export default function PaperworkPage() {
         signature: includeSignatureImage && signatureRef.current ? signatureBytes(signatureRef.current) : undefined,
       });
 
+      // Mark every page of the emailed/Drive copy as a reproduction, not the wet-ink original.
+      if (!printCopy) {
+        const watermarkFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+        pdfDoc.getPages().forEach((page) => drawCenteredWatermark(page, COPY_WATERMARK_TEXT, watermarkFont, 90, 45));
+      }
+
       const bytes = await pdfDoc.save();
       const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
       const pdfBytes = new Uint8Array(buffer);
@@ -1924,6 +1963,7 @@ export default function PaperworkPage() {
         includeSignature,
         signatureImage: !printCopy,
         notary: notaryRef.current,
+        printCopy,
       });
       if (!pdf) return;
       // Fresh for every affidavit: never carry an approval into the next package.

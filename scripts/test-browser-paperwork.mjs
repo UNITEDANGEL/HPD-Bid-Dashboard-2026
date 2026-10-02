@@ -4,12 +4,54 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import zlib from "node:zlib";
 import { chromium } from "playwright";
 import { PDFDocument } from "pdf-lib";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const outDir = path.resolve("output/browser-smoke");
 fs.mkdirSync(outDir, { recursive: true });
+
+// Drawn text (watermark, notary stamp) lives inside per-page content streams, which pdf-lib
+// Flate-compresses and writes as hex strings ("<434F5059> Tj", not "(COPY) Tj"). Inflate every
+// "stream...endstream" blob, then hex-decode every "<...>" run so plain substring checks can
+// see through both the compression and the hex encoding.
+function extractPdfText(bytes) {
+  const raw = Buffer.from(bytes);
+  const rawText = raw.toString("latin1");
+  let out = rawText;
+  const streamRe = /stream\r?\n/g;
+  let match;
+  while ((match = streamRe.exec(rawText))) {
+    const start = match.index + match[0].length;
+    const end = raw.indexOf("endstream", start);
+    if (end === -1) break;
+    let chunk = raw.subarray(start, end);
+    if (chunk.at(-1) === 0x0a) chunk = chunk.subarray(0, -1);
+    if (chunk.at(-1) === 0x0d) chunk = chunk.subarray(0, -1);
+    try {
+      out += `\n${zlib.inflateSync(chunk).toString("latin1")}`;
+    } catch {
+      // Not Flate-compressed (or not a text stream) -- skip it.
+    }
+  }
+  const hexDecoded = [...out.matchAll(/<([0-9A-Fa-f]+)>/g)]
+    .map((m) => Buffer.from(m[1], "hex").toString("latin1"))
+    .join("\n");
+  return `${out}\n${hexDecoded}`;
+}
+
+const MONTH_NAMES = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+function ordinal(day) {
+  if (day % 10 === 1 && day % 100 !== 11) return `${day}ST`;
+  if (day % 10 === 2 && day % 100 !== 12) return `${day}ND`;
+  if (day % 10 === 3 && day % 100 !== 13) return `${day}RD`;
+  return `${day}TH`;
+}
+function todayJurat() {
+  const now = new Date();
+  return { day: ordinal(now.getDate()), month: MONTH_NAMES[now.getMonth()], year: String(now.getFullYear()).slice(-2) };
+}
 
 // Jobs awarded after 2026-08-28 (current affidavit form), with long addresses.
 const cases = [
@@ -68,14 +110,16 @@ try {
     assert.equal(pdf.getPageCount(), pages, `${job}: expected affidavit (2) + invoice (1) pages`);
     assert.equal(pdf.getForm().getFields().length, 0, `${job}: form fields must be flattened`);
     assert.ok(Buffer.from(bytes).toString("latin1").includes("/Subtype /Image"), `${job}: signature image must be in the PDF`);
+    assert.ok(/\bCOPY\b/.test(extractPdfText(bytes)), `${job}: emailed/Drive copy must carry the COPY watermark`);
     assert.deepEqual(errors, [], `${job}: page errors`);
-    console.log(`PASS ${job} ${outcome}: package generated in browser, ${pages} flattened pages`);
+    console.log(`PASS ${job} ${outcome}: package generated in browser, ${pages} flattened pages, COPY watermark present`);
     await page.close();
   }
 
-  // Notary approval + Print Copy: the notary stamp/date must still fill in, but a print copy
-  // has no signature images and must never show the Drive/email approve button -- it is a
-  // plain download kept off Drive and out of the emailed package.
+  // Print Copy, with NO digital notary step at all: the notary signs on paper, so the stamp
+  // and today's jurat date must appear automatically -- never blank, never dependent on
+  // someone remembering to run the on-screen notary approval first. No COPY watermark either,
+  // since this copy is meant to become the signed original.
   {
     const job = "ER05729";
     const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
@@ -83,18 +127,6 @@ try {
     page.on("pageerror", (error) => errors.push(String(error)));
 
     await page.goto(`${baseUrl}/paperwork?job=${job}&outcome=work_completed`, { waitUntil: "networkidle" });
-
-    await page.locator('[data-hpd-smoke="paperwork-notary-pad"]').waitFor({ timeout: 10000 });
-    const notaryPad = await page.locator('[data-hpd-smoke="paperwork-notary-pad"]').boundingBox();
-    await page.mouse.move(notaryPad.x + 20, notaryPad.y + 40);
-    await page.mouse.down();
-    for (let i = 0; i <= 15; i += 1) await page.mouse.move(notaryPad.x + 20 + i * 8, notaryPad.y + 30 + Math.cos(i / 2) * 15);
-    await page.mouse.up();
-    await page.locator('[data-hpd-smoke="paperwork-notary-sign"]').click();
-    await page.fill('[data-hpd-smoke="paperwork-notary-name"]', "Test Notary");
-    await page.check('[data-hpd-smoke="paperwork-notary-witnessed"]');
-    await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
-
     await page.locator('[data-hpd-smoke="paperwork-generate-print"]').click();
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
 
@@ -115,8 +147,16 @@ try {
     const printPdf = await PDFDocument.load(printBytes);
     assert.equal(printPdf.getPageCount(), 3, `${job}: print copy expected affidavit (2) + invoice (1) pages`);
     assert.ok(!Buffer.from(printBytes).toString("latin1").includes("/Subtype /Image"), `${job}: print copy must have no signature/notary image`);
+
+    const printText = extractPdfText(printBytes);
+    assert.ok(!/\bCOPY\b/.test(printText), `${job}: print copy must NOT carry the COPY watermark`);
+    assert.ok(printText.includes("CHETANPREET MALHI"), `${job}: print copy must show the notary stamp even with no digital notary step`);
+    assert.ok(printText.includes("Qualified in Queens County"), `${job}: print copy notary stamp text incomplete`);
+    const jurat = todayJurat();
+    assert.ok(printText.includes(`${jurat.day} ${jurat.month}`), `${job}: print copy jurat date must be today (${jurat.day} ${jurat.month}), not blank or a picked date`);
+    assert.ok(printText.includes(jurat.year), `${job}: print copy jurat year must be today's year (${jurat.year})`);
     assert.deepEqual(errors, [], `${job}: page errors`);
-    console.log(`PASS ${job} print copy: notary date filled, no Drive/email approve button, no signature image`);
+    console.log(`PASS ${job} print copy: notary stamp + today's date filled with no digital notary step, no watermark, no signature image`);
     await page.close();
   }
 } finally {
