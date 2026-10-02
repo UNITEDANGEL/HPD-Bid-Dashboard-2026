@@ -1,6 +1,10 @@
 import { handleDriveBackups } from "./drive-backups.mjs";
+import { handleDrivePackages } from "./drive-packages.mjs";
 const BACKUP_ACTIONS = ["backups", "backup", "backup-id", "save-backup", "test-backup"];
+const PACKAGE_ACTIONS = ["package-folder", "package-file", "email-package"];
 const SCOPE = "https://www.googleapis.com/auth/drive.file";
+// Sends approved packages from the owner's Gmail. Optional: Drive works if it is not granted.
+const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.send";
 const SESSION = "__Host-hpd-drive-session";
 const FLOW = "__Host-hpd-drive-flow";
 const TTL = 30 * 24 * 60 * 60;
@@ -61,16 +65,16 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
   const cfg = config(env);
   if (!cfg) return json({ configured: false, connected: false, syncEnabled: false, error: "Drive connection setup is pending." }, action === "session" ? 200 : 503);
   if (url.origin !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
-  if (!["session", "start", "callback", "disconnect", "check", ...BACKUP_ACTIONS].includes(action)) return json({ error: "Not found." }, 404);
-  const method = ["start", "disconnect", "check", "backup-id", "save-backup", "test-backup"].includes(action) ? "POST" : "GET";
+  if (!["session", "start", "callback", "disconnect", "check", ...BACKUP_ACTIONS, ...PACKAGE_ACTIONS].includes(action)) return json({ error: "Not found." }, 404);
+  const method = ["start", "disconnect", "check", "backup-id", "save-backup", "test-backup", ...PACKAGE_ACTIONS].includes(action) ? "POST" : "GET";
   if (request.method !== method) return json({ error: "Method not allowed." }, 405);
   if (method === "POST" && request.headers.get("Origin") !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
   try {
     if (action === "session") {
       const saved = await session(request, env, cfg);
-      return json({ configured: true, connected: Boolean(saved), email: saved?.email || null, verifiedAt: saved?.verifiedAt || null, syncEnabled: false });
+      return json({ configured: true, connected: Boolean(saved), email: saved?.email || null, verifiedAt: saved?.verifiedAt || null, canEmail: Boolean(saved?.canEmail), syncEnabled: false });
     }
-    if (action === "check" || BACKUP_ACTIONS.includes(action)) {
+    if (action === "check" || BACKUP_ACTIONS.includes(action) || PACKAGE_ACTIONS.includes(action)) {
       const saved = await session(request, env, cfg);
       if (!saved) return json({ reconnectRequired: true, error: "Sign in to Google Drive again." }, 401);
       const renewed = await fetcher("https://oauth2.googleapis.com/token", {
@@ -102,13 +106,17 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
       if (drive.user?.emailAddress?.toLowerCase() !== cfg.email) return json({ error: "Google Drive account did not match." }, 403);
       const verifiedAt = new Date().toISOString();
       const { id, ...previous } = saved;
-      const value = { ...previous, refreshToken: token.refresh_token || saved.refreshToken, verifiedAt, expires: Date.now() + TTL * 1000 };
-      const renewSession = action === "check" || Boolean(token.refresh_token) || !saved.verifiedAt
+      // Google reports the granted scopes on refresh; keep "can send email" accurate.
+      const canEmail = token.scope ? String(token.scope).split(" ").includes(GMAIL_SCOPE) : Boolean(saved.canEmail);
+      const value = { ...previous, refreshToken: token.refresh_token || saved.refreshToken, canEmail, verifiedAt, expires: Date.now() + TTL * 1000 };
+      const renewSession = action === "check" || Boolean(token.refresh_token) || canEmail !== Boolean(saved.canEmail) || !saved.verifiedAt
         || Date.now() - Date.parse(saved.verifiedAt) >= 6 * 3600000;
       if (renewSession) await env.HPD_DRIVE_SESSIONS.put(`session:${id}`, await seal(env, value, `session:${id}`), { expirationTtl: TTL });
       const response = BACKUP_ACTIONS.includes(action)
         ? await handleDriveBackups(request, action, authHeaders, fetcher)
-        : json({ configured: true, connected: true, email: cfg.email, verifiedAt, syncEnabled: false });
+        : PACKAGE_ACTIONS.includes(action)
+          ? await handleDrivePackages(request, action, authHeaders, fetcher, env, cfg.email)
+          : json({ configured: true, connected: true, email: cfg.email, verifiedAt, canEmail, syncEnabled: false });
       if (renewSession) response.headers.append("Set-Cookie", cookie(SESSION, id, TTL));
       return response;
     }
@@ -124,7 +132,7 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
       const challenge = encode(new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(verifier))));
       const auth = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       auth.search = new URLSearchParams({ client_id: env.HPD_DRIVE_CLIENT_ID, redirect_uri: cfg.callback,
-        response_type: "code", scope: `openid email ${SCOPE}`, state, code_challenge: challenge,
+        response_type: "code", scope: `openid email ${SCOPE} ${GMAIL_SCOPE}`, state, code_challenge: challenge,
         code_challenge_method: "S256", access_type: "offline", prompt: "consent", login_hint: cfg.email }).toString();
       return redirect(auth.href, [cookie(FLOW, flow, 600)]);
     }
@@ -151,7 +159,8 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
     const identity = await identityResponse.json();
     if (!identity.sub || identity.email_verified !== true || identity.email?.toLowerCase() !== cfg.email) return fail("wrong_account");
     const id = random();
-    const value = { email: cfg.email, sub: identity.sub, refreshToken: token.refresh_token, expires: Date.now() + TTL * 1000 };
+    const canEmail = String(token.scope || "").split(" ").includes(GMAIL_SCOPE);
+    const value = { email: cfg.email, sub: identity.sub, refreshToken: token.refresh_token, canEmail, expires: Date.now() + TTL * 1000 };
     await env.HPD_DRIVE_SESSIONS.put(`session:${id}`, await seal(env, value, `session:${id}`), { expirationTtl: TTL });
     return redirect(`${cfg.origin}/storage/`, [cookie(FLOW, "", 0), cookie(SESSION, id, TTL)]);
   } catch {

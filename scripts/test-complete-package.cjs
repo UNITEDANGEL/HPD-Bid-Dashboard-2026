@@ -19,6 +19,13 @@ function loadTs(file) {
 }
 const paperwork = loadTs(path.join(root, 'lib/paperwork.ts'));
 const { calendarDay } = loadTs(path.join(root, 'lib/job-priority.ts'));
+const noAccess = loadTs(path.join(root, 'lib/no-access.ts'));
+const tenantContact = loadTs(path.join(root, 'lib/tenantContact.ts'));
+const materials = loadTs(path.join(root, 'lib/invoice-materials.ts'));
+// pdf-lib rejects objects created inside a vm context, so the invoice drawer loads in this realm.
+require.extensions['.ts'] = (m, file) => m._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, file);
+const { drawInvoicePage } = require(path.join(root, 'lib/invoice-pdf.ts'));
+const { signatureBytes } = require(path.join(root, 'lib/signature.ts'));
 const output = path.join(root, 'output/pdf/complete-package-test');
 fs.mkdirSync(output, { recursive: true });
 // Synthetic packaging fixture only, never uploaded to a real job or Drive.
@@ -26,13 +33,13 @@ const imageBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAA
 async function run(outcome, awardDate, broken = false) {
   const saved = [], statuses = [], requested = [], forms = [];
   const media = ['before', 'after', 'general'].map((kind, i) => ({ id: `TEST-${i}`, jobId: 'TEST-PACKAGE', kind, mediaType: 'image', evidenceLabel: kind === 'general' ? 'Building exterior' : `${kind} TEST ONLY`, name: `TEST-ONLY-${kind}.png`, type: 'image/png', size: imageBytes.length, capturedAt: '2026-09-15T12:00:00Z', dataUrl: broken && i === 0 ? '' : `data:image/png;base64,${imageBytes.toString('base64')}`, stamped: false }));
-  const context = { ...pdf, ...paperwork, calendarDay, console, Uint8Array, ArrayBuffer, TextEncoder, Date, Buffer, Blob, File, URL,
+  const context = { ...pdf, ...paperwork, ...noAccess, ...tenantContact, ...materials, drawInvoicePage, signatureBytes, signatureRef: { current: `data:image/png;base64,${imageBytes.toString('base64')}` }, calendarDay, console, Uint8Array, ArrayBuffer, TextEncoder, Date, Buffer, Blob, File, URL,
     emailMediaCopies: async rows => rows,
     fitEmailVideos: async rows => rows,
     packageBusyRef: { current: false }, setPackageBusy() {},
     assertEmailPackageSize: size => assert.ok(size > 0 && size <= 18000000),
     outcome, selectedId: 'TEST-PACKAGE', selectedJob: { OMO: 'TEST-PACKAGE', AwardDate: awardDate },
-    form: { jobId: 'TEST-PACKAGE', address: '100 SAMPLE STREET', borough: 'Queens', location: 'APT 2A', amount: '100', bidAmount: '630', invoiceNo: 'TEST-INVOICE', signer: '', fieldDate: '2026-09-15', workStart: '2026-09-10', workComplete: '2026-09-15', firstAttempt: '2026-09-10', secondAttempt: '2026-09-15', description: 'TEST ONLY - SAMPLE REPAIR', notes: 'TEST ONLY', deniedName: 'SAMPLE PERSON', deniedRelationship: 'TENANT', deniedDescription: 'TEST ONLY', deniedPhone: '', affidavitReason: 'TEST ONLY' },
+    form: { jobId: 'TEST-PACKAGE', address: '100 SAMPLE STREET', borough: 'Queens', location: 'APT 2A', amount: '100', bidAmount: '630', invoiceNo: 'TEST-INVOICE', signer: '', fieldDate: '2026-09-15', workStart: '2026-09-10', workComplete: '2026-09-15', firstAttempt: '2026-09-10', secondAttempt: '2026-09-15', description: 'TEST ONLY - SAMPLE REPAIR', notes: 'TEST ONLY', deniedName: 'SAMPLE PERSON', deniedRelationship: 'TENANT', deniedDescription: 'TEST ONLY', deniedPhone: '', tenantPhone: '', phone1Date: '', phone2Date: '', phoneNote: '', partialReason: 'TEST ONLY', partialWorkDone: 'TEST ONLY', materialsText: '', affidavitReason: 'TEST ONLY' },
     fetch: async url => { requested.push(url); return { ok: true, arrayBuffer: async () => fs.readFileSync(path.join(root, 'public', url)) }; },
     setPdfStatus: value => statuses.push(value), saveFieldPacket: async value => saved.push(value), listFieldEvidence: async () => media,
     bytesToDataUrl: (bytes, mime) => `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`,

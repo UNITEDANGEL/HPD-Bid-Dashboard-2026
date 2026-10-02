@@ -22,3 +22,4 @@
 .drive-section button { overflow-wrap: anywhere; cursor: pointer; }
 .drive-toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 48px; }
 .drive-toggle input { width: 24px; height: 24px; flex: 0 0 24px; accent-color: #91e5bd; }
+.drive-version { margin: 24px 16px 40px; color: #8a94a6; font-size: 13px; text-align: center; }

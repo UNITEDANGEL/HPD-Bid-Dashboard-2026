@@ -24,7 +24,7 @@ async function begin() {
   const auth = new URL(response.headers.get("Location"));
   assert.equal(auth.origin, "https://accounts.google.com");
   assert.equal(auth.searchParams.get("code_challenge_method"), "S256");
-  assert.equal(auth.searchParams.get("scope"), "openid email https://www.googleapis.com/auth/drive.file");
+  assert.equal(auth.searchParams.get("scope"), "openid email https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/gmail.send");
   assert.equal(auth.searchParams.get("redirect_uri"), `${origin}/api/drive/callback`);
   const fullCookie = response.headers.getSetCookie()[0];
   assert.match(fullCookie, /HttpOnly; Secure; SameSite=Lax/);
@@ -68,11 +68,11 @@ assert.ok(!sessionCookie.includes("private-refresh"));
 assert.ok(![...records.values()][0].includes("private-refresh"));
 const status = await handleDriveAuth(request("session", "GET", sessionCookie), env, noNetwork);
 assert.equal(status.headers.get("Cache-Control"), "no-store");
-assert.deepEqual(await status.json(), { configured: true, connected: true, email: identity.email, verifiedAt: null, syncEnabled: false });
+assert.deepEqual(await status.json(), { configured: true, connected: true, email: identity.email, verifiedAt: null, canEmail: false, syncEnabled: false });
 assert.equal((await handleDriveAuth(request("check", "POST", ""), env, noNetwork)).status, 401);
 assert.equal((await handleDriveAuth(request("check", "GET", sessionCookie), env, noNetwork)).status, 405);
 assert.equal((await handleDriveAuth(request("check", "POST", sessionCookie, "https://evil.test"), env, noNetwork)).status, 403);
-for (const action of ["backup-id", "save-backup", "test-backup"]) {
+for (const action of ["backup-id", "save-backup", "test-backup", "package-folder", "package-file", "email-package"]) {
   assert.equal((await handleDriveAuth(request(action, "POST"), env, noNetwork)).status, 401);
   assert.equal((await handleDriveAuth(request(action, "GET", sessionCookie), env, noNetwork)).status, 405);
   assert.equal((await handleDriveAuth(request(action, "POST", sessionCookie, "https://evil.test"), env, noNetwork)).status, 403);
@@ -111,6 +111,13 @@ const allocated = await handleDriveAuth(request("backup-id", "POST", sessionCook
 assert.equal(allocated.status, 200);
 assert.equal((await allocated.json()).id, "synthetic_file_id_001");
 assert.equal(allocated.headers.get("Set-Cookie"), null, "Recent backup operations avoid redundant KV writes");
+// Google reports granted scopes on refresh: "can send email" follows them.
+const withGmail = async (url, options) => url === "https://oauth2.googleapis.com/token"
+  ? Response.json({ access_token: "renewed-access", scope: "openid email https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/gmail.send" })
+  : refreshMock(url, options);
+const granted = await handleDriveAuth(request("check", "POST", sessionCookie), env, withGmail);
+assert.equal((await granted.json()).canEmail, true);
+assert.equal((await (await handleDriveAuth(request("session", "GET", sessionCookie), env, noNetwork)).json()).canEmail, true);
 const lastGood = [...records.values()][0];
 const driveDenied = await handleDriveAuth(request("check", "POST", sessionCookie), env, async (url, options) =>
   url.includes("/drive/v3/about") ? Response.json({ error: "api_unavailable" }, { status: 403 }) : refreshMock(url, options));

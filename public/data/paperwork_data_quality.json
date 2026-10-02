@@ -1,10 +1,11 @@
 {
-  "generatedAt": "2026-10-01T01:59:34.758Z",
+  "generatedAt": "2026-10-02T02:07:10.881Z",
   "totalJobs": 672,
   "missingAddresses": 0,
   "missingDescriptions": 0,
   "missingItbPage3Descriptions": 56,
   "badDescriptions": 0,
+  "junkOnlyDescriptions": 5,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
   "missingPage3Images": 67,
@@ -215,6 +216,48 @@
       }
     ],
     "badDescriptions": [],
+    "junkOnlyDescriptions": [
+      {
+        "OMO": "ER05941",
+        "Address": "777 ST MARKS AVENUE, 11213",
+        "ITB": "ER05941_091826113559.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS Provide/Install Abate Remove Dele"
+      },
+      {
+        "OMO": "ER05733",
+        "Address": "25 SHERMAN AVENUE, 10040",
+        "ITB": "ER05733_091626015743.pdf",
+        "Source": "",
+        "Status": "MATCHED",
+        "Preview": "General Decision Number: NY200003 04/10/2020Superse ded General Decision Number: NY190003 State: New York Page 3 of 3 OMO No: ER05733 Issuer"
+      },
+      {
+        "OMO": "ER05441",
+        "Address": "8200 BAY PARKWAY, 11214",
+        "ITB": "ER05441_091126101600.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS Provide/Install Abate Remove Dele"
+      },
+      {
+        "OMO": "ER05421",
+        "Address": "6801 BAY PARKWAY, 11204",
+        "ITB": "ER05421_090926052900.pdf",
+        "Source": "",
+        "Status": "MATCHED",
+        "Preview": "General Decision Number: NY200003 04/10/2020Superse ded General Decision Number: NY190003 State: New York Page 3 of 3 OMO No: ER05421 Issuer"
+      },
+      {
+        "OMO": "ER04964",
+        "Address": "4439 FURMAN AVENUE, 10466",
+        "ITB": "ER04964_090826024642.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS Provide/Install Abate Remove Dele"
+      }
+    ],
     "sourceReviewJobs": [],
     "missingItbFiles": [],
     "missingPage3Images": [

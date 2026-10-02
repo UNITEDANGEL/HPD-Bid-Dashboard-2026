@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
 import BuildingPhoto from "./BuildingPhoto";
@@ -13,10 +13,12 @@ import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkReviewHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
 import { fetchServerWorkflowOverrides } from "../../lib/paperwork";
+import { longestCleanDescription } from "../../lib/description-quality";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
+import "./job-card-v2.css";
 
 type JobRecord = Record<string, unknown>;
 
@@ -43,16 +45,6 @@ function value(job: JobRecord, keys: string[]) {
   return "";
 }
 
-function longestValue(job: JobRecord, keys: string[]) {
-  let best = "";
-  for (const key of keys) {
-    const v = job[key];
-    const text = v === null || v === undefined ? "" : String(v).trim();
-    if (text.length > best.length) best = text;
-  }
-  return best;
-}
-
 function numberValue(job: JobRecord, keys: string[]) {
   for (const key of keys) {
     const n = Number(job[key]);
@@ -69,10 +61,8 @@ function jobAddress(job: JobRecord) {
   return value(job, ["BuildingAddress", "Address", "address", "Location", "location"]) || "Address not captured";
 }
 
-const DESCRIPTION_FORM_BOILERPLATE_MARKERS = ["APT(S)/LOCATION(S)", "PROCEDURES MATERIAL"];
-
 function jobScope(job: JobRecord) {
-  const picked = longestValue(job, [
+  const picked = longestCleanDescription(job, [
     "ItbPage3Description",
     "JobDescription",
     "Job_Description",
@@ -84,9 +74,15 @@ function jobScope(job: JobRecord) {
     .replace(/^job description:\s*/i, "")
     .replace(/^:\s*/, "")
     .trim();
-  const upper = picked.toUpperCase();
-  if (DESCRIPTION_FORM_BOILERPLATE_MARKERS.some((marker) => upper.includes(marker))) return "Scope not captured yet.";
   return picked || "Scope not captured yet.";
+}
+
+function packageStatusText(job: JobRecord) {
+  const status = value(job, ["PackageReviewStatus", "packageReviewStatus"]);
+  const message = value(job, ["PackageReadyMessage", "packageReadyMessage"]);
+  if (/approved/i.test(status)) return message || "Approved";
+  if (status) return "Draft ready - review and approve";
+  return "Review and generate the package";
 }
 
 function tenantInfo(job: JobRecord) {
@@ -559,6 +555,8 @@ export default function FieldCommandClient() {
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
   const [workflowLoaded, setWorkflowLoaded] = useState(false);
   const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number }>>({});
+  // Up to 3 thumbnails per stage for the Media & Documents card.
+  const [mediaThumbs, setMediaThumbs] = useState<Record<string, { before: string[]; after: string[] }>>({});
   const [mediaBusy, setMediaBusy] = useState("");
   const [mediaMessage, setMediaMessage] = useState("");
   const [clearJobId, setClearJobId] = useState("");
@@ -1277,6 +1275,12 @@ export default function FieldCommandClient() {
         total: rows.length,
       },
     }));
+    const thumbs = (kind: string) => rows
+      .filter((media) => media.kind === kind)
+      .map((media) => (media.mediaType === "video" ? media.posterDataUrl || "" : media.dataUrl))
+      .filter(Boolean)
+      .slice(-3);
+    setMediaThumbs((prev) => ({ ...prev, [id]: { before: thumbs("before"), after: thumbs("after") } }));
   }
 
   function requestMediaUpload(kind: FieldMediaKind) {
@@ -1576,7 +1580,7 @@ export default function FieldCommandClient() {
           const next = nextFieldAction(stamps, counts, jobStatus(selectedJob));
           const draft = outcomeDrafts[id] || { outcome: "", note: "" };
           return (
-            <div ref={jobSheetRef} className="fc-job-sheet fc-job-sheet-flow" aria-label="Selected job">
+            <div ref={jobSheetRef} id="fc-job-card" className="fc-job-sheet fc-job-sheet-flow" aria-label="Selected job">
               <button type="button" className="fc-sheet-handle" aria-label={sheetExpanded ? "Collapse job details" : "Expand job details"} aria-expanded={sheetExpanded} onTouchStart={(event) => { sheetTouchStart.current = event.touches[0].clientY; }} onTouchEnd={(event) => {
                 const start = sheetTouchStart.current;
                 sheetTouchStart.current = null;
@@ -1588,25 +1592,41 @@ export default function FieldCommandClient() {
               <button type="button" className="fc-job-sheet-close" aria-label="Close" title="Close job details" onClick={() => setSelectedJob(null)}>
                 <span aria-hidden="true">&times;</span>
               </button>
-              <div className="fc-job-sheet-hero">
-                <strong className="fc-job-sheet-id">{id}</strong>
-                <span className="fc-card-borough">{BOROUGHS.find((item) => item.key === jobBorough(selectedJob))?.label || "NYC"}</span>
-                <span className="fc-card-status"><i aria-hidden="true" style={{ background: jobStatusMeta(selectedJob).color }} />{stamps.status || jobStatusMeta(selectedJob).label}</span>
+              <header className="jc-hero">
+                <div className="jc-hero-top">
+                  <strong className="jc-omo">{id}</strong>
+                  <span className="jc-status" style={{ "--jc-status": jobStatusMeta(selectedJob).color } as CSSProperties}>
+                    <i aria-hidden="true" />{stamps.status || jobStatusMeta(selectedJob).label}
+                  </span>
+                </div>
+                <span className="jc-borough">{BOROUGHS.find((item) => item.key === jobBorough(selectedJob))?.label || "NYC"}</span>
+                <p className="jc-address">{jobAddress(selectedJob)}</p>
+                <div className="jc-nav">
+                  <a className="jc-btn jc-btn-waze" href={wazeHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Waze</a>
+                  <a className="jc-btn jc-btn-google" href={directionsHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Google</a>
+                  {tenant.phone ? <a className="jc-btn jc-btn-call" href={`tel:${tenant.phone}`}><CallIcon />Call</a> : null}
+                </div>
+              </header>
+
+              <div className="jc-facts">
+                <div className="jc-fact">
+                  <small>Maturity</small>
+                  <strong>{maturityDate(selectedJob) || "Not available"}</strong>
+                  <span className="jc-priority" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>
+                </div>
+                <div className="jc-fact">
+                  <small>COA Amount</small>
+                  <strong>{jobAwardAmount(selectedJob) > 0 ? `$${jobAwardAmount(selectedJob).toLocaleString()}` : "Not listed"}</strong>
+                </div>
+                <div className="jc-fact jc-fact-wide">
+                  <small>Tenant</small>
+                  <strong>{tenant.name || (tenant.phone ? "Name not listed" : "Not listed")}</strong>
+                  {tenant.phone ? <span>{tenant.phone}</span> : null}
+                </div>
               </div>
-              <div className="fc-ticket-preview">
-              <div className="fc-address-row">
-                <p>{jobAddress(selectedJob)}</p>
-                <a className="fc-route-btn fc-route-waze" href={wazeHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Waze</a>
-                <a className="fc-route-btn fc-route-google" href={directionsHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Google</a>
-              </div>
-              </div>
-              <BuildingPhoto key={id} id={id} address={jobAddress(selectedJob)} borough={String(jobBorough(selectedJob))} point={jobLatLng(selectedJob)} />
-              <div className="fc-job-sheet-tags">
-                <span className="fc-card-maturity"><span>Maturity</span><strong>{maturityDate(selectedJob) || "Not available"}</strong></span>
-                <span className="fc-job-sheet-tag fc-age-tag" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>
-              </div>
-              {jobDateWarning(selectedJob) && <p role="status">{jobDateWarning(selectedJob)}</p>}
-              <div className="fc-visit-summary" style={{borderLeftColor:visitState(selectedJob).color}}>
+              {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}
+
+              <div className="fc-visit-summary jc-visit" style={{borderLeftColor:visitState(selectedJob).color}}>
                 <strong>{visitState(selectedJob).label} · {visitState(selectedJob).count} recorded visits</strong>
                 {visitState(selectedJob).lastAt && <span>Last visit: {/^\d{4}-\d{2}-\d{2}$/.test(visitState(selectedJob).lastAt) ? visitState(selectedJob).lastAt : formatSavedTime(visitState(selectedJob).lastAt)}</span>}
                 {visitState(selectedJob).count > 0 && <span>{FIELD_OUTCOMES[visitState(selectedJob).lastOutcome] || visitState(selectedJob).lastOutcome}</span>}
@@ -1620,7 +1640,91 @@ export default function FieldCommandClient() {
                   catch { setOutcomeMessage("Return approval could not be saved. Try again."); }
                 }}>Approve return visit</button>}
               </div>
-              <div className="fc-reference-job-summary">
+
+              <div className="jc-next">
+                {next.key === "before" || next.key === "after" ? (
+                  <p className="jc-next-hint">Next: {next.label} in Media &amp; Documents below</p>
+                ) : next.key === "review" ? (
+                  <a href={paperworkReviewHref(id)} className="fc-next-action jc-glow">{next.label}<span aria-hidden="true">&rarr;</span></a>
+                ) : next.key === "record" ? (
+                  <button type="button" className="fc-next-action jc-glow" onClick={openOutcomePanel}>{next.label}<span aria-hidden="true">&rarr;</span></button>
+                ) : (
+                  <button type="button" className="fc-next-action jc-glow" disabled={!workflowLoaded || Boolean(mediaBusy)} onClick={() => {
+                    saveWorkflowStamp(selectedJob, next.key, next.key === "work" ? "Work Started" : undefined);
+                  }}>{mediaBusy ? "Saving media..." : next.label}<span aria-hidden="true">&rarr;</span></button>
+                )}
+                {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
+              </div>
+
+              <section className="jc-media-docs" aria-label="Media and documents">
+                <div className="jc-section-head">
+                  <strong>Media &amp; Documents</strong>
+                  <span>{counts.total} saved</span>
+                </div>
+                {mediaMessage ? <p className="fc-save-message" role="status">{mediaMessage}</p> : null}
+                <div className="jc-stages" role="group" aria-label="Job photos and videos">
+                  {(["before", "after"] as const).map((kind) => {
+                    const thumbs = mediaThumbs[id]?.[kind] || [];
+                    return (
+                      <button type="button" key={kind} className={`jc-stage ${mediaChoice === kind ? "is-open" : ""} ${next.key === kind ? "is-next" : ""}`} aria-expanded={mediaChoice === kind} onClick={() => requestMediaUpload(kind)} disabled={Boolean(mediaBusy)}>
+                        <span className="jc-thumbs">
+                          {thumbs.length ? thumbs.map((src, index) => <img key={index} src={src} alt="" />) : <PhotosIcon />}
+                        </span>
+                        <b>{kind === "before" ? "Before" : "After"}</b>
+                        <small>{counts[kind] ? `${counts[kind]} saved · add more` : "Tap to add"}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+                {mediaChoice ? <div ref={mediaChoiceRef} className="fc-photo-choice jc-choice" role="group" aria-label={`${mediaChoice} photo source`}>
+                  <div className="fc-photo-choice-heading"><strong>{mediaChoice === "before" ? "Before work" : "After work"}</strong><button type="button" aria-label="Cancel photo selection" onClick={() => setMediaChoice(null)}>&times;</button></div>
+                  <div className="fc-photo-source-actions">
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("camera")}><PhotosIcon />Take photo</button>
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("library")}><DocumentsIcon />Add photos</button>
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-camera")}>Record video</button>
+                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-library")}>Add videos</button>
+                  </div>
+                </div> : null}
+                <BuildingPhoto key={id} id={id} address={jobAddress(selectedJob)} borough={String(jobBorough(selectedJob))} point={jobLatLng(selectedJob)} />
+                <div className="jc-docs">
+                  <a className="jc-doc jc-doc-primary" href={paperworkReviewHref(id, true)}>
+                    <DocumentsIcon />
+                    <span><b>Affidavit + Invoice</b><small>{packageStatusText(selectedJob)}</small></span>
+                    <i aria-hidden="true">&rarr;</i>
+                  </a>
+                  {value(selectedJob, ["PackageDriveLink"]) ? (
+                    <a className="jc-doc" href={value(selectedJob, ["PackageDriveLink"])} target="_blank" rel="noreferrer">
+                      <DocumentsIcon />
+                      <span><b>Package in Google Drive</b><small>Saved approved package</small></span>
+                      <i aria-hidden="true">&#8599;</i>
+                    </a>
+                  ) : null}
+                  <Link className="jc-doc" href={`/jobs/${id}`}>
+                    <DocumentsIcon />
+                    <span><b>Job documents</b><small>ITB, COA and saved files</small></span>
+                    <i aria-hidden="true">&rarr;</i>
+                  </Link>
+                </div>
+                <input
+                  ref={mediaInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="fc-hidden-file"
+                  onChange={(event) => void handleMediaFiles(event.target.files)}
+                />
+                <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
+                <input ref={videoCameraInputRef} type="file" accept="video/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
+                <input ref={videoLibraryInputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
+              </section>
+
+              <div className="fc-card-footer jc-footer">
+              <button type="button" className="fc-outcome-link" onClick={openOutcomePanel}>Outcome</button>
+              <button type="button" className="fc-outcome-link" onClick={openAppointment}>Appointment</button>
+              <button type="button" className="fc-job-details-toggle" aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}>{sheetExpanded ? "Less" : "Details"}<span aria-hidden="true">{sheetExpanded ? "⌄" : "⌃"}</span></button>
+              </div>
+              <details className="jc-dates">
+                <summary>Job dates</summary>
                 <dl>
                   <div><dt>Award date</dt><dd>{value(selectedJob, ["AwardDate", "awardDate"]) || "Not available"}</dd></div>
                   <div><dt>Maturity date{!["MaturityDate", "maturityDate", "DueDate", "dueDate"].some(key => selectedJob[key] !== undefined && selectedJob[key] !== null) ? " (contract finish)" : ""}</dt><dd>{maturityDate(selectedJob) || "Not available"}</dd></div>
@@ -1628,80 +1732,8 @@ export default function FieldCommandClient() {
                   <div><dt>Contract finish</dt><dd>{jobDate(selectedJob, "finish") || "Not available"}</dd></div>
                   <div><dt>Actual work start</dt><dd>{value(selectedJob, ["ActualWorkStartDate", "actualWorkStartDate"]) || "Not recorded"}</dd></div>
                   <div><dt>Actual work finish</dt><dd>{value(selectedJob, ["ActualWorkCompletionDate", "actualWorkCompletionDate"]) || "Not recorded"}</dd></div>
-                  <div><dt>COA amount</dt><dd>{jobAwardAmount(selectedJob) ? jobAwardAmount(selectedJob).toLocaleString("en-US", { style: "currency", currency: "USD" }) : "Not available"}</dd></div>
                 </dl>
-              </div>
-              <div className="fc-next-step">
-                {mediaMessage ? <p className="fc-save-message" role="status">{mediaMessage}</p> : null}
-                <div className="fc-evidence-stages" role="group" aria-label="Job photos and videos">
-                  <button type="button" aria-expanded={mediaChoice === "before"} onClick={() => requestMediaUpload("before")} disabled={Boolean(mediaBusy)}><PhotosIcon /><span>Before<small>{counts.before} saved</small></span></button>
-                  <button type="button" aria-expanded={mediaChoice === "after"} onClick={() => requestMediaUpload("after")} disabled={Boolean(mediaBusy)}><PhotosIcon /><span>After<small>{counts.after} saved</small></span></button>
-                </div>
-                {mediaChoice ? <div ref={mediaChoiceRef} className="fc-photo-choice" role="group" aria-label={`${mediaChoice} photo source`}>
-                  <div className="fc-photo-choice-heading"><strong>{mediaChoice === "before" ? "Before work" : "After work"}</strong><button type="button" aria-label="Cancel photo selection" onClick={() => setMediaChoice(null)}>&times;</button></div>
-                  <div className="fc-photo-source-actions">
-                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("camera")}><PhotosIcon />Take {mediaChoice} photo</button>
-                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("library")}><DocumentsIcon />Add {mediaChoice} photos</button>
-                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-camera")}>Record {mediaChoice} video</button>
-                    <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-library")}>Add {mediaChoice} videos</button>
-                  </div>
-                </div> : null}
-                {next.key === "before" || next.key === "after" ? null : next.key === "review" ? (
-                  <a href={paperworkReviewHref(id)} className="fc-next-action">{next.label}<span aria-hidden="true">&rarr;</span></a>
-                ) : next.key === "record" ? (
-                  <button type="button" className="fc-next-action" onClick={openOutcomePanel}>{next.label}<span aria-hidden="true">&rarr;</span></button>
-                ) : (
-                  <button type="button" className="fc-next-action" disabled={!workflowLoaded || Boolean(mediaBusy)} onClick={() => {
-                    saveWorkflowStamp(selectedJob, next.key, next.key === "work" ? "Work Started" : undefined);
-                  }}>{mediaBusy ? "Saving media..." : next.label}<span aria-hidden="true">&rarr;</span></button>
-                )}
-                {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
-              </div>
-              <div className="fc-info-row">
-                <div className="fc-info-item">
-                  <CalendarIcon />
-                  <div>
-                    <small>Start Date</small>
-                    <strong>{value(selectedJob, ["AwardDate", "awardDate", "WorkStartDate", "workStartDate"]) || "Not listed"}</strong>
-                  </div>
-                </div>
-                <div className="fc-info-item">
-                  <DollarIcon />
-                  <div>
-                    <small>COA Amount</small>
-                    <strong>{jobAwardAmount(selectedJob) > 0 ? `$${jobAwardAmount(selectedJob).toLocaleString()}` : "Not listed"}</strong>
-                  </div>
-                </div>
-                <div className="fc-info-item">
-                  <PersonIcon />
-                  <div>
-                    <small>Tenant</small>
-                    <strong>{tenant.name || "Not listed"}</strong>
-                  </div>
-                </div>
-              </div>
-              <div className="fc-quick-actions">
-                <a className="fc-quick-action is-navigate" title="Navigate to job" href={directionsHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">
-                  <NavigateIcon /><span>Navigate</span>
-                </a>
-                {tenant.phone ? (
-                  <a className="fc-quick-action is-call" title="Call tenant" href={`tel:${tenant.phone}`}>
-                    <CallIcon /><span>Call</span>
-                  </a>
-                ) : (
-                  <span className="fc-quick-action is-call is-disabled" aria-label="Tenant phone unavailable" title="No tenant phone on file">
-                    <CallIcon /><span>No phone</span>
-                  </span>
-                )}
-                <Link className="fc-quick-action is-documents" href={`/jobs/${id}`}>
-                  <DocumentsIcon /><span>Documents</span>
-                </Link>
-              </div>
-              <div className="fc-card-footer">
-              <button type="button" className="fc-outcome-link" onClick={openOutcomePanel}>Outcome / note</button>
-              <button type="button" className="fc-outcome-link" onClick={openAppointment}>Appointment</button>
-              <button type="button" className="fc-job-details-toggle" aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}>{sheetExpanded ? "Less detail" : "Job details"}<span aria-hidden="true">{sheetExpanded ? "\u2304" : "\u2303"}</span></button>
-              </div>
+              </details>
               {selectedJob.Appointment ? <button type="button" className="fc-appointment-summary" onClick={openAppointment}>{(selectedJob.Appointment as Appointment).date} · {(selectedJob.Appointment as Appointment).start}-{(selectedJob.Appointment as Appointment).end} · {(selectedJob.Appointment as Appointment).state}</button> : null}
               <div ref={appointmentRef} hidden={!appointmentOpen || !sheetExpanded}>
                 {appointmentOpen && <AppointmentEditor key={id} job={selectedJob} jobs={jobs.map(row => ({ ...row, id: jobId(row) }))} id={id} address={jobAddress(selectedJob)} contact={tenant.name} phone={tenant.phone} note={draft.note} save={a => saveAppointment(selectedJob, a)} />}
@@ -1782,30 +1814,6 @@ export default function FieldCommandClient() {
                   </button>
                 </section>
               ) : null}
-              <section className="fc-media-package-panel" aria-label="Media and package">
-                <input
-                  ref={mediaInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="fc-hidden-file"
-                  onChange={(event) => void handleMediaFiles(event.target.files)}
-                />
-                <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
-                <input ref={videoCameraInputRef} type="file" accept="video/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
-                <input ref={videoLibraryInputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
-                <div className="fc-media-head">
-                  <strong>Package</strong>
-                  <span>{counts.total} saved</span>
-                </div>
-                <div className="fc-media-grid">
-                  <a href={paperworkReviewHref(id, true)}>
-                    <b>Review package</b>
-                    <small>Affidavit + invoice</small>
-                  </a>
-                </div>
-                <p>{mediaMessage || "Media is saved on this device and read by the paperwork package screen."}</p>
-              </section>
             </div>
           );
         })() : null}
