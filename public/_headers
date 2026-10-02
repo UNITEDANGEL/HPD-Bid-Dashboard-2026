@@ -33,3 +33,11 @@
 
 /version.json
   Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/sw.js
+  Cache-Control: no-cache
+  Service-Worker-Allowed: /
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache
