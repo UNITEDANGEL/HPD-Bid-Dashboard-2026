@@ -108,26 +108,34 @@ export async function deliverPackage(
 
   const result: DeliveryResult = { folderLink: link, uploaded, emailed: false, emailTo: [], emailError: "", attachedPhotos: false };
   if (!options.sendEmail) return result;
+  return { ...result, ...(await sendPackageEmail({ ...options, folderLink: link }, fetcher)) };
+}
 
+// Email only (also used to retry after Gmail refused, without uploading to Drive again).
+export async function sendPackageEmail(
+  options: {
+    folderLink: string;
+    files: DeliveryFile[];
+    emailSubject: string;
+    emailText: (folderLink: string, attachedPhotos: boolean) => string;
+    onProgress?: (message: string) => void;
+  },
+  fetcher: Fetcher = fetch
+): Promise<Pick<DeliveryResult, "emailed" | "emailTo" | "emailError" | "attachedPhotos">> {
   // PDF always; photos too when they fit in one email. Videos stay in Drive.
   const pdfs = options.files.filter((file) => file.mimeType === "application/pdf");
   const photos = options.files.filter((file) => file.mimeType.startsWith("image/"));
   const photoBytes = [...pdfs, ...photos].reduce((sum, file) => sum + file.bytes.byteLength, 0);
-  result.attachedPhotos = photos.length > 0 && photoBytes <= EMAIL_ATTACHMENT_LIMIT;
-  const attachments = result.attachedPhotos ? [...pdfs, ...photos] : pdfs;
-  progress("Sending email...");
-  const email = buildPackageEmail(options.emailText(link, result.attachedPhotos), attachments);
+  const attachedPhotos = photos.length > 0 && photoBytes <= EMAIL_ATTACHMENT_LIMIT;
+  const attachments = attachedPhotos ? [...pdfs, ...photos] : pdfs;
+  options.onProgress?.("Sending email...");
+  const email = buildPackageEmail(options.emailText(options.folderLink, attachedPhotos), attachments);
   const sent = await fetcher("/api/drive/email-package", {
     method: "POST",
     headers: { "Content-Type": "text/plain", "X-HPD-Boundary": email.boundary, "X-HPD-Subject": encodeURIComponent(options.emailSubject) },
     body: email.body,
   });
-  if (sent.ok) {
-    const body = await sent.json();
-    result.emailed = true;
-    result.emailTo = body.to || [];
-  } else {
-    result.emailError = await readError(sent, "The email could not be sent.");
-  }
-  return result;
+  if (!sent.ok) return { emailed: false, emailTo: [], emailError: await readError(sent, "The email could not be sent."), attachedPhotos };
+  const body = await sent.json();
+  return { emailed: true, emailTo: body.to || [], emailError: "", attachedPhotos };
 }
