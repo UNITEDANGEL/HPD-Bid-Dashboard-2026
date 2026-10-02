@@ -9,3 +9,24 @@
 
 /map-worker/*
   Cache-Control: no-cache
+
+/storage
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/storage/*
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/paperwork
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/paperwork/*
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/field-command
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/field-command/*
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+
+/jobs/*
+  Cache-Control: no-store, no-cache, must-revalidate, max-age=0
