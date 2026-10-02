@@ -3312,6 +3312,28 @@ export default function PaperworkPage() {
           cursor: crosshair;
         }
 
+        .sig-type {
+          display: grid;
+          gap: 6px;
+          color: #ffffff;
+          font-weight: 800;
+        }
+
+        .sig-type input {
+          min-height: 50px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          background: #ffffff;
+          color: #0b1f4d;
+          padding: 0 12px;
+          font-size: 18px;
+        }
+
+        .sig-type small {
+          color: #c9d4e3;
+          font-weight: 600;
+        }
+
         .sig-actions {
           display: flex;
           flex-wrap: wrap;
