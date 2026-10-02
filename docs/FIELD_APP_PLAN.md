@@ -89,7 +89,7 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 1. [x] Package emails itself once the signer and notary confirm (no separate review/approve tap); still viewable after sending; Edit + Update sends the corrected copy
 2. [x] Cut steps that should happen automatically: arrival saves itself within 75 m after Go there; notary approval is one tap (the button is the witness statement); the saved signer signature is applied with no tap
 3. [x] Photo dates editable (default the day taken): 📅 Before / After date on the job card re-prints the DATE line on every photo of that stage; the before date also sets the affidavit work start; videos keep the recorded label (saved date and thumbnail change)
-4. [ ] Paperwork page neater
+4. [x] Paperwork page neater: slim top bar (← Map · job), one job summary card, raw status and JSON fields hidden, build buttons under More options when opened from the job card, summary preview collapsed; page about half as long
 5. [ ] iPhone speed
 
 ## How we work

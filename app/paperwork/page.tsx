@@ -1208,6 +1208,8 @@ export default function PaperworkPage() {
   const [queryWorkflowPatch, setQueryWorkflowPatch] = useState<Record<string, unknown>>({});
   const [loadedQuery, setLoadedQuery] = useState(false);
   const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
+  // Opened for one job (from the job card): a short summary instead of the job list and type tiles.
+  const [showJobPicker, setShowJobPicker] = useState(false);
   const packageBusyRef = useRef(false);
   const [packageBusy, setPackageBusy] = useState(false);
   const [packageReviewed, setPackageReviewed] = useState(false);
@@ -4802,34 +4804,54 @@ export default function PaperworkPage() {
             border-radius: 0 !important;
           }
         }
+        /* Tidy layout */
+        .paperwork-topbar { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; margin: 0 0 12px; padding: 10px 2px; }
+        .paperwork-topbar h1 { margin: 0; font-size: 19px; line-height: 1.2; text-align: center; color: #f8fafc; }
+        .paperwork-back, .paperwork-archive { padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.35); color: #e2e8f0; font-weight: 800; font-size: 14px; text-decoration: none; }
+        .paperwork-archive { font-weight: 700; color: #94a3b8; }
+        .paperwork-job-summary { display: grid; gap: 8px; margin: 0 0 14px; padding: 14px; border-radius: 16px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(148, 163, 184, 0.25); }
+        .paperwork-job-summary strong { display: block; font-size: 22px; color: #f8fafc; }
+        .paperwork-job-summary span { color: #cbd5e1; font-size: 14px; font-weight: 600; }
+        .paperwork-job-summary-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .paperwork-job-summary-row b { font-size: 20px; color: #f8fafc; }
+        .paperwork-outcome-chip { padding: 5px 12px; border-radius: 999px; background: #10b981; color: #052e1f !important; font-weight: 800 !important; }
+        .paperwork-outcome-chip.no-work, .paperwork-outcome-chip.warning { background: #f59e0b; color: #1f1300 !important; }
+        .paperwork-job-summary button { justify-self: start; padding: 6px 0; background: transparent; border: 0; color: #93c5fd; font-weight: 700; font-size: 14px; text-decoration: underline; }
+        .paperwork-more-options, .paperwork-preview-toggle { margin: 12px 0; }
+        .paperwork-more-options > summary, .paperwork-preview-toggle > summary { cursor: pointer; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.3); color: #cbd5e1; font-weight: 800; font-size: 15px; list-style: none; }
+        .paperwork-more-options[open] > summary { margin-bottom: 10px; }
+        .paperwork-preview-toggle { max-width: 960px; margin-left: auto; margin-right: auto; }
       `}</style>
 
       <section className="paperwork-wrap" data-hpd-smoke="paperwork-package-page">
-        <header className="paperwork-top">
-          <div>
-            <p>Field paperwork</p>
-            <h1>Invoice + Affidavit Package</h1>
-            <p>Select the job, choose one package type, then generate the invoice package.</p>
-          </div>
-          <nav className="paperwork-nav" aria-label="Paperwork actions">
-            <a data-hpd-smoke="paperwork-map-link" href={mapBackHref}>Map</a>
-            <a data-hpd-smoke="paperwork-archive-link" href="/outputs">Archive</a>
-          </nav>
+        <header className="paperwork-topbar">
+          <a className="paperwork-back" data-hpd-smoke="paperwork-map-link" href={mapBackHref}>← Map</a>
+          <h1>{form.jobId ? `${form.jobId} package` : "Affidavit + invoice"}</h1>
+          <a className="paperwork-archive" data-hpd-smoke="paperwork-archive-link" href="/outputs">Archive</a>
         </header>
 
         <section className="paperwork-card" data-hpd-smoke="paperwork-package-card">
-          <span className={`paperwork-package-badge ${packageTone}`}>{affidavitTemplateLabel(outcome)}</span>
-          {form.sourceStatus ? (
-            <p className="paperwork-source-status">
-              Saved status: <strong>{form.sourceStatus}</strong>
-            </p>
-          ) : null}
+          {!selectedId || showJobPicker ? <span className={`paperwork-package-badge ${packageTone}`}>{affidavitTemplateLabel(outcome)}</span> : null}
           {pdfStatus ? (
             <p className="paperwork-pdf-status" aria-live="polite">
               {pdfStatus}
             </p>
           ) : null}
 
+          {selectedId && !showJobPicker ? (
+            <div className="paperwork-job-summary" data-hpd-smoke="paperwork-job-summary">
+              <div>
+                <strong>{form.jobId}</strong>
+                <span>{form.address || "Address not listed"}</span>
+              </div>
+              <div className="paperwork-job-summary-row">
+                <span className={`paperwork-outcome-chip ${packageTone}`}>{packageStatusLabel(outcome)}</span>
+                <b>{form.amount || "$0.00"}</b>
+              </div>
+              <button type="button" data-hpd-smoke="paperwork-change-job" onClick={() => setShowJobPicker(true)}>Change job or type</button>
+            </div>
+          ) : null}
+          <div style={selectedId && !showJobPicker ? { display: "none" } : undefined}>
           <label className="paperwork-field">
             Select Job
             <select data-hpd-smoke="paperwork-job-select" value={selectedId} onChange={(event) => chooseJob(event.target.value)}>
@@ -4866,7 +4888,8 @@ export default function PaperworkPage() {
             </button>
           </div>
 
-          <div className="paperwork-summary-grid">
+          </div>
+          <div className="paperwork-summary-grid" style={selectedId && !showJobPicker ? { display: "none" } : undefined}>
             <div className="paperwork-summary-tile">
               <span>Job</span>
               <strong>{form.jobId || "Select job"}</strong>
@@ -5097,7 +5120,7 @@ export default function PaperworkPage() {
           })() : null}
 
           <details className="paperwork-advanced">
-            <summary>Review pulled JSON fields</summary>
+            <summary>More details (invoice number, contractor, addresses)</summary>
             <div className="paperwork-advanced-body">
           <div className="paperwork-grid">
             <label className="paperwork-field">
@@ -5235,6 +5258,8 @@ export default function PaperworkPage() {
           ) : null}
 
           {!packagePreview ? (
+            <details className="paperwork-more-options" open={!autoGeneratePackage} data-hpd-smoke="paperwork-more-options">
+            <summary>{autoGeneratePackage ? "More options: build now, PDF only, print copy" : "Make the package"}</summary>
             <div className="paperwork-generate-choice" data-hpd-smoke="paperwork-generate-choice" aria-label="Package media choice">
               <button className="paperwork-print" data-hpd-smoke="paperwork-generate-full-package" type="button" onClick={() => generateCompletePackage(true)} disabled={!canGeneratePackage}>
                 {packageJobLoading ? "Loading Job Data..." : "Generate Email Package"}
@@ -5247,6 +5272,7 @@ export default function PaperworkPage() {
               </button>
               <small>{packageJobLoading ? "Loading COA address and ITB page 3 description before package creation." : "Email ZIP limit: 18 MB. Saved media stays unchanged."}</small>
             </div>
+            </details>
           ) : null}
           {packagePreview ? (
             <div className="paperwork-package-review pkg-review" data-hpd-smoke="paperwork-package-review">
@@ -5488,7 +5514,9 @@ export default function PaperworkPage() {
           </div>
         ) : null}
 
-        <section className="paperwork-preview" hidden={Boolean(packagePreview)}>
+        <details className="paperwork-preview-toggle" hidden={Boolean(packagePreview)}>
+          <summary>Preview summary</summary>
+        <section className="paperwork-preview">
           <div className="paperwork-sheet">
             <div className="preview-head">
               <div>
@@ -5552,6 +5580,7 @@ export default function PaperworkPage() {
             </section>
           </div>
         </section>
+        </details>
       </section>
     </main>
   );
