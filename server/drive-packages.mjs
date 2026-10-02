@@ -7,6 +7,8 @@ const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
 const GMAIL_SEND = "https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send?uploadType=media";
 const ROOT_KIND = "hpd-packages-root";
 const FOLDER_KIND = "hpd-package-folder";
+// Year / month / borough folders that keep the packages filed neatly.
+const GROUP_KIND = "hpd-package-group";
 const FILE_KIND = "hpd-package-file";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const MAX_FILE_BYTES = 90 * 1024 * 1024;
@@ -76,6 +78,15 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
     if (!response.ok) fail(`Could not create the Drive folder (HTTP ${response.status}).`);
     return response.json();
   };
+  // Reuses an existing folder of this app with the same name under the same parent.
+  const findOrCreateFolder = async (name, kind, parent) => {
+    const quoted = name.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    const query = new URLSearchParams({ q: `trashed = false and 'me' in owners and '${parent}' in parents and name = '${quoted}' and mimeType = '${FOLDER_MIME}' and appProperties has { key='hpdKind' and value='${kind}' }`, fields: "files(id)", pageSize: "1" });
+    const found = await getJson(`${DRIVE}/files?${query}`, "Could not read Google Drive");
+    const id = found.files?.[0]?.id || (await createFolder(name, kind, parent)).id;
+    if (!validId(id)) fail("Drive did not return the folder.");
+    return id;
+  };
 
   try {
     if (action === "package-folder") {
@@ -86,7 +97,11 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       const roots = await getJson(`${DRIVE}/files?${query}`, "Could not read Google Drive");
       const rootId = roots.files?.[0]?.id || (await createFolder("HPD Packages", ROOT_KIND)).id;
       if (!validId(rootId)) fail("Drive did not return the HPD Packages folder.");
-      const folder = await createFolder(cleanName(body.name, "HPD package"), FOLDER_KIND, rootId);
+      // Optional filing path, e.g. ["2026", "10 - October", "Manhattan"]: each level is one folder name.
+      let parentId = rootId;
+      const path = Array.isArray(body.path) ? body.path.slice(0, 4) : [];
+      for (const level of path) parentId = await findOrCreateFolder(cleanName(level, "Other"), GROUP_KIND, parentId);
+      const folder = await createFolder(cleanName(body.name, "HPD package"), FOLDER_KIND, parentId);
       if (!validId(folder.id)) fail("Drive did not return the package folder.");
       return reply({ folderId: folder.id, link: folder.webViewLink || `https://drive.google.com/drive/folders/${folder.id}` });
     }
@@ -96,6 +111,10 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       if (!validId(folderId)) fail("Invalid package folder.", 400);
       const folder = await getJson(`${DRIVE}/files/${folderId}?fields=id,mimeType,ownedByMe,trashed,appProperties`, "Could not read the package folder");
       if (!folder.ownedByMe || folder.trashed || folder.mimeType !== FOLDER_MIME || folder.appProperties?.hpdKind !== FOLDER_KIND) fail("Not an HPD package folder owned by this account.", 403);
+      // Optional subfolder inside the package, e.g. "Before photos".
+      let subfolder = "";
+      try { subfolder = decodeURIComponent(request.headers.get("X-HPD-Subfolder") || "").trim(); } catch { fail("Invalid subfolder name.", 400); }
+      const targetId = subfolder ? await findOrCreateFolder(cleanName(subfolder, "Files"), FOLDER_KIND, folderId) : folderId;
       let name;
       try { name = cleanName(decodeURIComponent(request.headers.get("X-HPD-Name") || ""), "file"); } catch { fail("Invalid file name.", 400); }
       const mimeType = /^[\w.+-]+\/[\w.+-]+$/.test(request.headers.get("Content-Type") || "") ? request.headers.get("Content-Type") : "application/octet-stream";
@@ -104,7 +123,7 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       const start = await call(`${UPLOAD}?uploadType=resumable&fields=id`, {
         method: "POST",
         headers: { "Content-Type": "application/json; charset=UTF-8", "X-Upload-Content-Type": mimeType, "X-Upload-Content-Length": String(bytes.byteLength) },
-        body: JSON.stringify({ name, parents: [folderId], appProperties: { hpdKind: FILE_KIND } }),
+        body: JSON.stringify({ name, parents: [targetId], appProperties: { hpdKind: FILE_KIND } }),
       });
       const session = start.headers.get("Location");
       if (!start.ok || !session?.startsWith("https://www.googleapis.com/")) fail(`Drive upload could not start (HTTP ${start.status}).`);

@@ -18,7 +18,7 @@ assert.equal(suggestedPhotoKind({ work: 'saved' }), 'after');
 assert.equal(next({}, none).key, 'arrived');
 assert.equal(next({ arrived: 'saved' }, none).key, 'visit');
 assert.equal(next({ arrived: 'saved', visit: 'saved' }, none).key, 'before');
-assert.equal(next({ arrived: 'saved', visit: 'saved' }, { before: 1, after: 0 }).key, 'work');
+assert.equal(next({ arrived: 'saved', visit: 'saved' }, { before: 1, after: 0 }).key, 'after', 'before photos lead straight to after photos (no Start work step)');
 assert.equal(next({ arrived: 'saved', visit: 'saved', work: 'saved' }, none).key, 'after');
 assert.equal(next({ arrived: 'saved', visit: 'saved', work: 'saved' }, { before: 1, after: 1 }).key, 'record');
 for (const status of ['Refused Access', 'No Access', 'Work Completed', 'Partial Work', 'Completed by others']) assert.equal(next({ status }, none).key, 'review');

@@ -1,6 +1,7 @@
 // Sends an approved package to Google Drive and email through /api/drive (server/drive-packages.mjs).
 
-export type DeliveryFile = { name: string; mimeType: string; bytes: Uint8Array };
+// subfolder: optional folder inside the package folder on Drive, e.g. "Before photos".
+export type DeliveryFile = { name: string; mimeType: string; bytes: Uint8Array; subfolder?: string };
 
 export type GoogleStatus = { configured: boolean; connected: boolean; canEmail: boolean; email: string | null };
 
@@ -76,7 +77,11 @@ async function readError(response: Response, fallback: string) {
 export async function deliverPackage(
   options: {
     folderName: string;
+    // Filing path under "HPD Packages", e.g. ["2026", "10 - October", "Manhattan"].
+    folderPath?: string[];
     files: DeliveryFile[];
+    // What the email carries, if not every file (e.g. only the signed PDF and before/after photos).
+    emailFiles?: DeliveryFile[];
     emailSubject: string;
     emailText: (folderLink: string, attachedPhotos: boolean) => string;
     sendEmail: boolean;
@@ -91,7 +96,7 @@ export async function deliverPackage(
   const folderResponse = await fetcher("/api/drive/package-folder", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: options.folderName }),
+    body: JSON.stringify({ name: options.folderName, path: options.folderPath || [] }),
   });
   if (!folderResponse.ok) throw new Error(await readError(folderResponse, "Could not create the Google Drive folder."));
   const { folderId, link } = await folderResponse.json();
@@ -102,7 +107,12 @@ export async function deliverPackage(
     progress(`Saving to Google Drive: ${uploaded + 1} of ${driveFiles.length} files...`);
     const response = await fetcher("/api/drive/package-file", {
       method: "POST",
-      headers: { "Content-Type": file.mimeType || "application/octet-stream", "X-HPD-Folder": folderId, "X-HPD-Name": encodeURIComponent(file.name) },
+      headers: {
+        "Content-Type": file.mimeType || "application/octet-stream",
+        "X-HPD-Folder": folderId,
+        "X-HPD-Name": encodeURIComponent(file.name),
+        ...(file.subfolder ? { "X-HPD-Subfolder": encodeURIComponent(file.subfolder) } : {}),
+      },
       body: new Blob([file.bytes as BlobPart], { type: file.mimeType }),
     });
     if (!response.ok) throw new Error(await readError(response, `Could not save ${file.name} to Google Drive.`));
@@ -119,6 +129,7 @@ export async function sendPackageEmail(
   options: {
     folderLink: string;
     files: DeliveryFile[];
+    emailFiles?: DeliveryFile[];
     emailSubject: string;
     emailText: (folderLink: string, attachedPhotos: boolean) => string;
     onProgress?: (message: string) => void;
@@ -126,8 +137,9 @@ export async function sendPackageEmail(
   fetcher: Fetcher = fetch
 ): Promise<Pick<DeliveryResult, "emailed" | "emailTo" | "emailError" | "attachedPhotos">> {
   // PDF always; photos too when they fit in one email. Videos stay in Drive.
-  const pdfs = options.files.filter((file) => file.mimeType === "application/pdf");
-  const photos = options.files.filter((file) => file.mimeType.startsWith("image/"));
+  const source = options.emailFiles || options.files;
+  const pdfs = source.filter((file) => file.mimeType === "application/pdf");
+  const photos = source.filter((file) => file.mimeType.startsWith("image/"));
   const photoBytes = [...pdfs, ...photos].reduce((sum, file) => sum + file.bytes.byteLength, 0);
   const attachedPhotos = photos.length > 0 && photoBytes <= EMAIL_ATTACHMENT_LIMIT;
   const attachments = attachedPhotos ? [...pdfs, ...photos] : pdfs;

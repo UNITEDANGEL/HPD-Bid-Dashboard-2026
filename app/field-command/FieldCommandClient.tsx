@@ -54,6 +54,9 @@ function numberValue(job: JobRecord, keys: string[]) {
   return NaN;
 }
 
+const JOBS_URL = "/data/COA_Fetcher_2026.json";
+const JOBS_CACHE = "hpd-jobs-v1";
+
 function jobId(job: JobRecord) {
   return value(job, ["OMO", "omo", "OMONumber", "id", "Id"]) || "HPD JOB";
 }
@@ -239,12 +242,11 @@ function formatSavedTime(iso?: string) {
   if (!iso) return "";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("en-US", {
+  // Dates only on the job card -- no times.
+  return date.toLocaleDateString("en-US", {
     month: "2-digit",
     day: "2-digit",
     year: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
   });
 }
 
@@ -561,6 +563,7 @@ export default function FieldCommandClient() {
   const [routeSummary, setRouteSummary] = useState<{ stops: number; miles: number; firstStop: string; href: string } | null>(null);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
   const [workflowLoaded, setWorkflowLoaded] = useState(false);
+  const [jobsLoadFailed, setJobsLoadFailed] = useState(false);
   const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number }>>({});
   // Up to 3 thumbnails per stage for the Media & Documents card.
   const [mediaThumbs, setMediaThumbs] = useState<Record<string, { before: string[]; after: string[] }>>({});
@@ -618,23 +621,48 @@ export default function FieldCommandClient() {
   useEffect(() => {
     let cancelled = false;
     let loading = false;
+    let latestRows: JobRecord[] | null = null;
+    let serverOverrides: Record<string, JobRecord> = {};
+    function showRows(data: unknown) {
+      const body = data as { jobs?: unknown; data?: unknown; records?: unknown } | unknown[];
+      const rows = Array.isArray(body) ? body : body?.jobs || body?.data || body?.records;
+      if (!Array.isArray(rows)) throw new Error("Invalid job response");
+      latestRows = rows as JobRecord[];
+      setJobsLoadFailed(false);
+      applyOverrides();
+    }
+    function applyOverrides() {
+      if (cancelled || !latestRows) return;
+      const overrides = { ...readSharedWorkflowOverrides(), ...serverOverrides };
+      const next = latestRows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}) }));
+      setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
+    }
+    // Pins show at once from the copy saved on this phone last time, then refresh from the network.
+    if (typeof caches !== "undefined") {
+      caches.open(JOBS_CACHE).then((cache) => cache.match(JOBS_URL)).then((saved) => saved?.json())
+        .then((data) => { if (data && !latestRows) showRows(data); })
+        .catch(() => {});
+    }
     function refreshJobs() {
       if (loading) return;
       loading = true;
-      Promise.all([
-        fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error("Job refresh failed"); return r.json(); }),
-        fetchServerWorkflowOverrides().catch(() => ({})),
-      ])
-      .then(([data, serverOverrides]) => {
-        if (cancelled) return;
-        const rows = Array.isArray(data) ? data : data.jobs || data.data || data.records;
-        if (!Array.isArray(rows)) throw new Error("Invalid job response");
-        const overrides = { ...readSharedWorkflowOverrides(), ...serverOverrides };
-        const next = rows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}) }));
-        setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
-      })
-      .catch(() => { /* Keep the last loaded jobs if refresh is unavailable. */ })
-      .finally(() => { loading = false; });
+      // no-cache: the phone keeps the file and the server answers "unchanged" quickly when it is.
+      fetch(JOBS_URL, { cache: "no-cache" })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Job refresh failed");
+          // Copy before reading: once the body is read it can't be copied into the phone's cache.
+          if (typeof caches !== "undefined") {
+            const copy = response.clone();
+            caches.open(JOBS_CACHE).then((cache) => cache.put(JOBS_URL, copy)).catch(() => {});
+          }
+          showRows(await response.json());
+        })
+        .catch(() => { if (!latestRows) setJobsLoadFailed(true); /* Otherwise keep the last loaded jobs. */ })
+        .finally(() => { loading = false; });
+      // Saved field statuses merge in when they arrive; they never hold up the pins.
+      fetchServerWorkflowOverrides()
+        .then((overrides) => { serverOverrides = overrides as Record<string, JobRecord>; applyOverrides(); })
+        .catch(() => {});
     }
     const onStorage = (event: StorageEvent) => {
       if (event.key === SHARED_WORKFLOW_STORAGE_KEY) refreshJobs();
@@ -1324,6 +1352,8 @@ export default function FieldCommandClient() {
       await refreshMediaCounts(selectedJob);
       const unstamped = saved.filter(item => item.mediaType === "video" && item.stamped === false).length;
       setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}.${unstamped ? ` ${unstamped} video(s) saved as originals without burned-in labels; review before submitting.` : ""}` : "No image or video was saved.");
+      // Before photos mark the work start (date used on the affidavit); no separate "Start work" tap.
+      if (kind === "before" && saved.length && !workflowStamps[id]?.work) saveWorkflowStamp(selectedJob, "work", "Work Started");
       if (kind === "after" && saved.length) openOutcomePanel();
     } catch (error) {
       setMediaMessage(error instanceof Error ? error.message : "Media save failed.");
@@ -1535,17 +1565,22 @@ export default function FieldCommandClient() {
           </a>
         ) : null}
 
-        {locateStatus === "error" ? (
-          <p className="fc-map-hint fc-map-hint-warn">Couldn&apos;t get your location</p>
-        ) : null}
+        {/* Status messages stack below the search box instead of overlapping each other. */}
+        <div className="fc-map-hints">
+          {locateStatus === "error" ? (
+            <p className="fc-map-hint fc-map-hint-warn">Couldn&apos;t get your location</p>
+          ) : null}
 
-        {!filteredJobs.length ? (
-          <p className="fc-map-hint">No jobs match these filters</p>
-        ) : null}
+          {!jobs.length ? (
+            <p className={`fc-map-hint ${jobsLoadFailed ? "fc-map-hint-warn" : ""}`} role="status">{jobsLoadFailed ? "Couldn't load jobs. Check the connection; retrying." : "Loading jobs..."}</p>
+          ) : !filteredJobs.length ? (
+            <p className="fc-map-hint">No jobs match these filters</p>
+          ) : null}
 
-        {filteredJobs.length > 0 && !mappedFilteredCount ? (
-          <p className="fc-map-hint">No mapped jobs match these filters</p>
-        ) : null}
+          {filteredJobs.length > 0 && !mappedFilteredCount ? (
+            <p className="fc-map-hint">No mapped jobs match these filters</p>
+          ) : null}
+        </div>
 
         {!selectedJob ? (
           <div className="fc-legend">
@@ -1668,14 +1703,18 @@ export default function FieldCommandClient() {
 
               <div className="jc-next">
                 {next.key === "before" || next.key === "after" ? (
-                  <p className="jc-next-hint">Next: {next.label} in Media &amp; Documents below</p>
+                  <>
+                    <p className="jc-next-hint">Next: {next.label} in Media &amp; Documents below</p>
+                    {/* No access / refused don't need photos: go straight to the outcome. */}
+                    <button type="button" className="jc-skip-photos" data-hpd-smoke="jc-skip-photos" onClick={openOutcomePanel}>No access or refused? Record outcome</button>
+                  </>
                 ) : next.key === "review" ? (
                   <a href={paperworkHref} className="fc-next-action jc-glow">{next.label}<span aria-hidden="true">&rarr;</span></a>
                 ) : next.key === "record" ? (
                   <button type="button" className="fc-next-action jc-glow" onClick={openOutcomePanel}>{next.label}<span aria-hidden="true">&rarr;</span></button>
                 ) : (
                   <button type="button" className="fc-next-action jc-glow" disabled={!workflowLoaded || Boolean(mediaBusy)} onClick={() => {
-                    saveWorkflowStamp(selectedJob, next.key, next.key === "work" ? "Work Started" : undefined);
+                    saveWorkflowStamp(selectedJob, next.key);
                   }}>{mediaBusy ? "Saving media..." : next.label}<span aria-hidden="true">&rarr;</span></button>
                 )}
                 {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}

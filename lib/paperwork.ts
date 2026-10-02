@@ -369,13 +369,18 @@ export function readLocalWorkflowOverrides(): WorkflowOverrides {
   }, {});
 }
 
-export async function fetchServerWorkflowOverrides(): Promise<WorkflowOverrides> {
+export async function fetchServerWorkflowOverrides(timeoutMs = 6000): Promise<WorkflowOverrides> {
+  // A slow or unreachable status server must never hold up the map or the paperwork page.
+  const controller = typeof AbortController === "undefined" ? null : new AbortController();
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
   try {
-    const response = await fetch(`${HPD_STATUS_WORKER_URL}/overrides`, { cache: "no-store" });
+    const response = await fetch(`${HPD_STATUS_WORKER_URL}/overrides`, { cache: "no-store", signal: controller?.signal });
     if (!response.ok) return {};
     return parseOverridePayload(await response.json());
   } catch {
     return {};
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 

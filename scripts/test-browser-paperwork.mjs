@@ -159,10 +159,14 @@ try {
     page.on("pageerror", (error) => errors.push(String(error)));
     const uploads = [];
     const emails = [];
+    let filing = null;
     await page.route("**/api/drive/**", async (route) => {
       const url = route.request().url();
       if (url.includes("/session")) return route.fulfill({ json: { configured: true, connected: true, canEmail: true, email: "test@example.com" } });
-      if (url.includes("/package-folder")) return route.fulfill({ json: { folderId: "TEST-FOLDER", link: "https://drive.example/TEST-FOLDER" } });
+      if (url.includes("/package-folder")) {
+        filing = JSON.parse(route.request().postData() || "{}");
+        return route.fulfill({ json: { folderId: "TEST-FOLDER", link: "https://drive.example/TEST-FOLDER" } });
+      }
       if (url.includes("/package-file")) {
         uploads.push(decodeURIComponent(route.request().headers()["x-hpd-name"] || ""));
         return route.fulfill({ json: { ok: true } });
@@ -184,24 +188,43 @@ try {
     // No Generate tap: the package builds by itself after the notary approves.
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
     await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"]').waitFor({ timeout: 30000 });
+    // Edit a date from the review screen and rebuild: no signing again, new date in the signed PDF.
+    await page.locator('[data-hpd-smoke="paperwork-package-edit"]').click();
+    await page.fill('[data-hpd-smoke="paperwork-work-complete"]', "2026-09-30");
+    await page.locator('[data-hpd-smoke="paperwork-update-package"] button').click();
+    await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"]').waitFor({ timeout: 60000 });
+    const editedHref = await page.locator('[data-hpd-smoke="paperwork-save-pdf"]').getAttribute("href");
+    const editedBytes = Buffer.from(await page.evaluate(async (url) => {
+      const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+      let text = "";
+      for (const byte of bytes) text += String.fromCharCode(byte);
+      return btoa(text);
+    }, editedHref), "base64");
+    assert.ok(extractPdfText(editedBytes).includes("09/30/26"), `${job}: edited Work Completed date must be in the rebuilt PDF`);
+    const editedImages = (editedBytes.toString("latin1").match(/\/Subtype \/Image/g) || []).length;
+    assert.ok(editedImages >= 6, `${job}: rebuilt package keeps the signer and notary signatures (found ${editedImages} images)`);
     await page.locator(".pkg-confirm input").check();
     await page.locator('[data-hpd-smoke="paperwork-approve-save"]').click();
     await page.locator('[data-hpd-smoke="paperwork-drive-link"]').waitFor({ timeout: 60000 });
 
-    const printUpload = uploads.find((name) => name.includes("PRINT-COPY-unsigned"));
-    assert.ok(printUpload, `${job}: unsigned print copy must be saved to the Drive folder (got ${uploads.join(", ")})`);
-    assert.ok(uploads.some((name) => name.endsWith("-affidavit-invoice.pdf") && !name.includes("PRINT-COPY")), `${job}: signed PDF must be saved to Drive`);
-    // Two separate emails: SIGNED (forward this one) and NOT SIGNED (print copy).
-    assert.equal(emails.length, 2, `${job}: expected a SIGNED and a NOT SIGNED email, got ${emails.map((e) => e.subject).join(" | ")}`);
-    const signedEmail = emails.find((email) => email.subject.startsWith("SIGNED - "));
-    const unsignedEmail = emails.find((email) => email.subject.startsWith("NOT SIGNED - "));
-    assert.ok(signedEmail && unsignedEmail, `${job}: subjects must start with SIGNED / NOT SIGNED`);
-    assert.ok(signedEmail.body.includes("-affidavit-invoice.pdf") && !signedEmail.body.includes("PRINT-COPY"), `${job}: SIGNED email carries only the signed PDF`);
-    assert.ok(unsignedEmail.body.includes("PRINT-COPY-unsigned"), `${job}: NOT SIGNED email carries the unsigned print copy`);
-    assert.equal((unsignedEmail.body.match(/filename="/g) || []).length, 1, `${job}: NOT SIGNED email carries only the unsigned print copy`);
-    await page.getByText("Unsigned print copy emailed separately").first().waitFor({ timeout: 10000 });
+    // Drive: filed by year / month / borough, one neatly named folder per package.
+    assert.equal(filing.path.length, 3, `${job}: Drive filing path is year / month / borough`);
+    assert.match(filing.path[0], /^20\d\d$/);
+    assert.match(filing.path[1], /^\d\d - [A-Z][a-z]+$/);
+    assert.match(filing.name, new RegExp(`^20\\d\\d-\\d\\d-\\d\\d - ${job} - .+ - Work Completed$`), filing.name);
+    assert.ok(uploads.includes(`SIGNED - ${job} - Work Completed.pdf`), `${job}: signed PDF saved to Drive (got ${uploads.join(", ")})`);
+    assert.ok(uploads.includes(`NOT SIGNED - print copy - ${job} - Work Completed.pdf`), `${job}: unsigned print copy saved to Drive`);
+    // Only the SIGNED email goes out; the unsigned copy is Drive only.
+    assert.equal(emails.length, 1, `${job}: expected only the SIGNED email, got ${emails.map((e) => e.subject).join(" | ")}`);
+    const signedEmail = emails[0];
+    assert.ok(signedEmail.subject.startsWith("SIGNED - "), signedEmail.subject);
+    assert.ok(signedEmail.body.includes(`SIGNED - ${job} - Work Completed.pdf`) && !signedEmail.body.includes("NOT SIGNED"), `${job}: SIGNED email carries only the signed PDF`);
+    // The SIGNED email gets forwarded: its message text must not carry the Google Drive link.
+    const signedText = Buffer.from(signedEmail.body.split("Content-Transfer-Encoding: base64\r\n\r\n")[1].split("\r\n--")[0].replace(/\r\n/g, ""), "base64").toString("utf8");
+    assert.ok(signedText.startsWith("SIGNED COPY"), `${job}: could not read the SIGNED email text`);
+    assert.ok(!/drive\.example|Google Drive/i.test(signedText), `${job}: SIGNED email must not include the Google Drive link`);
     assert.deepEqual(errors, [], `${job}: page errors`);
-    console.log(`PASS ${job} job-card flow: waits for notary, builds by itself, emails SIGNED and NOT SIGNED separately, both saved to Drive (${uploads.length} Drive files)`);
+    console.log(`PASS ${job} job-card flow: waits for notary, builds by itself, emails only the SIGNED copy, files signed + unsigned in Drive ${filing.path.join(" / ")} / ${filing.name}`);
     await page.close();
   }
 
