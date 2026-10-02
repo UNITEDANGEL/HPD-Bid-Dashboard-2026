@@ -14,6 +14,8 @@ export type DeliveryResult = {
   attachedPhotos: boolean;
   // Drive link for each uploaded file, by file name (used for videos too big to attach).
   fileLinks: Record<string, string>;
+  // What the email actually carried (shown on screen after sending).
+  emailSummary?: EmailAttachmentSummary;
 };
 
 // What the email carries: counts of attached photos/videos, and links for files left out.
@@ -146,7 +148,7 @@ export async function sendPackageEmail(
     onProgress?: (message: string) => void;
   },
   fetcher: Fetcher = fetch
-): Promise<Pick<DeliveryResult, "emailed" | "emailTo" | "emailError" | "attachedPhotos">> {
+): Promise<Pick<DeliveryResult, "emailed" | "emailTo" | "emailError" | "attachedPhotos" | "emailSummary">> {
   // PDF always; then photos, then videos, as many as fit in one email. Anything that doesn't
   // fit is listed in the email with its own Drive link, so nothing is silently left out.
   const source = options.emailFiles || options.files;
@@ -174,7 +176,7 @@ export async function sendPackageEmail(
     headers: { "Content-Type": "text/plain", "X-HPD-Boundary": email.boundary, "X-HPD-Subject": encodeURIComponent(options.emailSubject) },
     body: email.body,
   });
-  if (!sent.ok) return { emailed: false, emailTo: [], emailError: await readError(sent, "The email could not be sent."), attachedPhotos };
+  if (!sent.ok) return { emailed: false, emailTo: [], emailError: await readError(sent, "The email could not be sent."), attachedPhotos, emailSummary: summary };
   const body = await sent.json();
-  return { emailed: true, emailTo: body.to || [], emailError: "", attachedPhotos };
+  return { emailed: true, emailTo: body.to || [], emailError: "", attachedPhotos, emailSummary: summary };
 }

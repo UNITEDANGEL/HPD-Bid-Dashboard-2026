@@ -42,6 +42,11 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 - [x] Waze / Google taps are recorded on the job card: "On the way · Waze · date"
 - [x] Videos go in the signed email (before and after); a video too big to attach gets its own Drive link in the email. Drive: Before videos / After videos folders
 - [x] Map alert "⚠ N jobs need a check": open jobs with no readable scope, no map location, no address or no award amount; tap one to open it
+- [x] **Start over** on any job card (type CLEAR): clears outcome, steps, trip, package status and ALL photos/videos of the job, on the phone and the status server
+- [x] **Test mode** for any real job (e.g. ER05150): packages marked TEST, filed in Drive under "TEST jobs / <job>"; turn it off to go back to normal folders
+- [x] Videos with no file type (iPhone .MOV) now go in the email; review screen shows "Email: signed PDF · N photos · N videos" before approving; after sending it says exactly what went
+- [x] Jobs no longer drop off the map when their status changes: the open job and any job worked today stay visible (Pending filter used to hide them)
+- [x] Photo/video save errors show in red right in the steps
 - [x] "+ More before photos / video" and "+ More after photos / video" buttons on the steps
 - [x] Fixed: starting work used to mark "Finish the job" as done, skipping Work completed / Partial
 - [x] Job card flow starts with **Go there** (Waze / Google) right under the description
