@@ -6,7 +6,7 @@ import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate 
 import { tenantContactInfo } from "../../lib/tenantContact";
 import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
 import { drawInvoicePage } from "../../lib/invoice-pdf";
-import { deliverPackage, googleStatus, type GoogleStatus } from "../../lib/package-delivery";
+import { deliverPackage, googleStatus, sendPackageEmail, type GoogleStatus } from "../../lib/package-delivery";
 import { calendarDay } from "../../lib/job-priority";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
@@ -2089,6 +2089,53 @@ export default function PaperworkPage() {
     }
   }
 
+  // Shared by the first send and "Send email again" so both emails match.
+  function packageEmailParts(pending: PendingCompletePackage) {
+    const statusLabel = packageStatusLabel(outcome);
+    const address = [form.address, form.location, form.borough].filter(Boolean).join(", ");
+    return {
+      folderName: pending.folderName,
+      files: pending.folderEntries.map((entry) => ({ name: entry.path.split("/").pop() || entry.path, mimeType: entry.mimeType, bytes: entry.bytes })),
+      emailSubject: `${pending.jobId} - ${statusLabel} - ${form.address || "HPD package"}`,
+      emailText: (folderLink: string, attachedPhotos: boolean) => [
+        `HPD package: ${pending.jobId}`,
+        `Outcome: ${statusLabel}`,
+        `Address: ${address || "not listed"}`,
+        `Total charge: ${form.amount || "$0.00"}`,
+        "",
+        `Google Drive folder: ${folderLink}`,
+        "",
+        attachedPhotos
+          ? `Attached: affidavit/invoice PDF and ${pending.imageCount} photo(s).`
+          : pending.imageCount
+            ? "Attached: affidavit/invoice PDF. The photos were too large for one email and are in the Google Drive folder."
+            : "Attached: affidavit/invoice PDF.",
+        pending.videoCount ? `${pending.videoCount} video(s) are in the Google Drive folder.` : "",
+      ].filter((line, index, lines) => line || lines[index - 1]).join("\n"),
+    };
+  }
+
+  // Resend only the email (Drive already has the package), e.g. after reconnecting Google.
+  async function retryPackageEmail() {
+    const pending = pendingCompletePackageRef.current;
+    const folderLink = delivery?.folderLink;
+    if (!pending || !folderLink || packageBusyRef.current) return;
+    packageBusyRef.current = true;
+    setPackageBusy(true);
+    setDelivery((current) => current && { ...current, working: true, message: "Sending email...", error: "" });
+    try {
+      setGoogle(await googleStatus());
+      const result = await sendPackageEmail({ ...packageEmailParts(pending), folderLink });
+      if (result.emailed) await markPackageGenerated(pending.jobId, true, { driveLink: folderLink, emailed: true });
+      setDelivery({ working: false, folderLink, emailed: result.emailed, message: result.emailed ? `Emailed to ${result.emailTo.join(", ")}` : "", error: result.emailError });
+    } catch (error) {
+      setDelivery({ working: false, folderLink, emailed: false, message: "", error: error instanceof Error ? error.message : "The email could not be sent." });
+    } finally {
+      packageBusyRef.current = false;
+      setPackageBusy(false);
+    }
+  }
+
   // Approve & Save: with Google connected, save the whole package to Drive and email the PDF and
   // photos, then record the approval. Without it, fall back to saving/sharing the files on the device.
   async function approveAndSavePackage() {
@@ -2115,27 +2162,8 @@ export default function PaperworkPage() {
     setPackageBusy(true);
     setDelivery({ working: true, message: "Starting...", folderLink: "", emailed: false, error: "" });
     try {
-      const statusLabel = packageStatusLabel(outcome);
-      const address = [form.address, form.location, form.borough].filter(Boolean).join(", ");
       const result = await deliverPackage({
-        folderName: pending.folderName,
-        files: pending.folderEntries.map((entry) => ({ name: entry.path.split("/").pop() || entry.path, mimeType: entry.mimeType, bytes: entry.bytes })),
-        emailSubject: `${pending.jobId} - ${statusLabel} - ${form.address || "HPD package"}`,
-        emailText: (folderLink, attachedPhotos) => [
-          `HPD package: ${pending.jobId}`,
-          `Outcome: ${statusLabel}`,
-          `Address: ${address || "not listed"}`,
-          `Total charge: ${form.amount || "$0.00"}`,
-          "",
-          `Google Drive folder: ${folderLink}`,
-          "",
-          attachedPhotos
-            ? `Attached: affidavit/invoice PDF and ${pending.imageCount} photo(s).`
-            : pending.imageCount
-              ? "Attached: affidavit/invoice PDF. The photos were too large for one email and are in the Google Drive folder."
-              : "Attached: affidavit/invoice PDF.",
-          pending.videoCount ? `${pending.videoCount} video(s) are in the Google Drive folder.` : "",
-        ].filter((line, index, lines) => line || lines[index - 1]).join("\n"),
+        ...packageEmailParts(pending),
         sendEmail: true,
         onProgress: (message) => setDelivery((current) => ({ ...(current || { folderLink: "", emailed: false, error: "" }), working: true, message })),
       });
@@ -3420,6 +3448,17 @@ export default function PaperworkPage() {
           text-decoration: none;
         }
 
+        .pkg-retry-email {
+          min-height: 52px;
+          border: 1px solid rgba(255, 209, 102, 0.6);
+          border-radius: 12px;
+          background: rgba(255, 209, 102, 0.14);
+          color: #ffe8a3;
+          font-size: 16px;
+          font-weight: 900;
+          cursor: pointer;
+        }
+
         .pkg-google-note {
           color: #c9d4e3;
         }
@@ -4698,6 +4737,11 @@ export default function PaperworkPage() {
                   ) : null}
                   {delivery.emailed ? <span>✓ {delivery.message}</span> : null}
                   {delivery.error ? <span>{delivery.error}</span> : null}
+                  {delivery.folderLink && !delivery.emailed ? (
+                    <button type="button" className="pkg-retry-email" data-hpd-smoke="paperwork-retry-email" disabled={packageBusy} onClick={retryPackageEmail}>
+                      Send email again
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
               {google && !google.connected ? (
