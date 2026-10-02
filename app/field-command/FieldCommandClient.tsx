@@ -13,7 +13,7 @@ import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
-import { fetchServerWorkflowOverrides } from "../../lib/paperwork";
+import { fetchServerWorkflowOverrides, HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
 import { longestCleanDescription } from "../../lib/description-quality";
 import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
@@ -207,7 +207,7 @@ function writeSharedWorkflowPatch(id: string, patch: Record<string, unknown>) {
   );
 }
 
-type StatusKey = "complete" | "noaccess" | "refused" | "pending" | "awarded" | "open" | "appointment";
+type StatusKey = "complete" | "noaccess" | "refused" | "pending" | "awarded" | "open" | "appointment" | "done";
 
 const STATUS_ICON_PATHS: Record<StatusKey, string> = {
   complete:
@@ -221,7 +221,11 @@ const STATUS_ICON_PATHS: Record<StatusKey, string> = {
     '<path d="M12 3.5l2.47 5.18 5.53.63-4.1 3.86 1.08 5.5L12 15.9l-4.98 2.77 1.08-5.5-4.1-3.86 5.53-.63L12 3.5z" fill="#fff"/>',
   open: '<circle cx="12" cy="12" r="4.5" fill="#fff"/>',
   appointment: '<rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="white" stroke-width="2"/><path d="M8 3v5M16 3v5M4 10h16" fill="none" stroke="white" stroke-width="2"/>',
+  // Completed job: a check mark, so it's clear at a glance there's nothing left to do there.
+  done: '<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
 };
+
+const DONE_COLOR = "#16a34a";
 
 const STATUS_META: { key: StatusKey; label: string; color: string; match: (s: string, job: JobRecord) => boolean }[] = [
   { key: "complete", label: "Completed", color: "#30d158", match: (s) => s.includes("complete") },
@@ -983,6 +987,10 @@ export default function FieldCommandClient() {
               const meta = { ...jobStatusMeta(job) };
               const visit = visitState(job);
               meta.color = visit.color;
+              if (jobQueue(job) === "completed") {
+                meta.key = "done";
+                meta.color = DONE_COLOR;
+              }
               const priority = jobPriority(job);
               const title = `${jobId(job)} - ${meta.label} - ${priority.label} - ${visit.label} - ${visit.count} visits`;
               const offset = map.getZoom() >= 17 ? individualPinOffset(index, location.jobs.length) : { x: 0, y: 0 };
@@ -1239,6 +1247,22 @@ export default function FieldCommandClient() {
       firstStop: jobId(stops[0].job),
       href: googleRouteHref(routePoints),
     });
+  }
+
+  // "Everything is correct": takes a finished job off the active map. Only offered once its
+  // paperwork is approved; archived jobs stay under Status > Archive.
+  async function archiveJob(job: JobRecord) {
+    const id = jobId(job);
+    if (!window.confirm(`Archive ${id}? Only do this if the work, paperwork and email are all correct.`)) return;
+    const now = new Date().toISOString();
+    const patch = { ArchivedFromMap: true, archivedFromMap: true, ArchivedAt: now, archivedAt: now };
+    try { writeSharedWorkflowPatch(id, patch); }
+    catch { setOutcomeMessage("Could not archive on this device. Please retry."); return; }
+    mergeWorkflowPatchIntoScreen(id, patch);
+    setSelectedJob(null);
+    try {
+      await fetch(`${HPD_STATUS_WORKER_URL}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: id, patch }) });
+    } catch { /* Saved on this device; the next sync carries it. */ }
   }
 
   function mergeWorkflowPatchIntoScreen(id: string, patch: Record<string, unknown>) {
@@ -1829,6 +1853,20 @@ export default function FieldCommandClient() {
                 </div>
               </div>
               {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}
+
+              {jobQueue(selectedJob) === "completed" ? (
+                <section className="jc-done" data-hpd-smoke="jc-completed" aria-label="Job completed">
+                  <strong>✓ Completed. No need to come back.</strong>
+                  {value(selectedJob, ["PackageApprovedAt"]) || /approved/i.test(value(selectedJob, ["PackageReviewStatus"])) ? (
+                    <>
+                      <span>Paperwork approved{value(selectedJob, ["PackageApprovedAt"]) ? ` ${formatSavedTime(value(selectedJob, ["PackageApprovedAt"]))}` : ""}.</span>
+                      <button type="button" data-hpd-smoke="jc-archive" onClick={() => void archiveJob(selectedJob)}>Everything is correct: Archive</button>
+                    </>
+                  ) : (
+                    <a href={paperworkHref} data-hpd-smoke="jc-done-paperwork">Paperwork not approved yet: finish the package →</a>
+                  )}
+                </section>
+              ) : null}
 
               <div className="fc-visit-summary jc-visit" style={{borderLeftColor:visitState(selectedJob).color}}>
                 <strong>{visitState(selectedJob).label} · {visitState(selectedJob).count} recorded visits</strong>

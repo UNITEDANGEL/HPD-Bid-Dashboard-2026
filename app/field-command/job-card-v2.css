@@ -692,3 +692,38 @@
   color: #fdba74;
   font-size: 16px;
 }
+
+/* Completed job: nothing left to do here. */
+#fc-job-card .jc-done {
+  display: grid;
+  gap: 8px;
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(22, 163, 74, 0.16);
+  border: 1px solid rgba(74, 222, 128, 0.55);
+  color: #dcfce7;
+}
+
+#fc-job-card .jc-done strong {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+#fc-job-card .jc-done span {
+  font-size: 15px;
+  color: #bbf7d0;
+}
+
+#fc-job-card .jc-done a,
+#fc-job-card .jc-done button {
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  border: 1px solid rgba(74, 222, 128, 0.6);
+  background: rgba(22, 101, 52, 0.55);
+  color: #ecfdf5;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+}

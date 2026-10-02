@@ -1487,9 +1487,11 @@ export default function PaperworkPage() {
 
     const generatedAt = new Date().toISOString();
     const emailNote = delivery?.emailed ? "Emailed" : "Not emailed";
-    const approvedMessage = delivery ? `Reviewed and archived. Saved to Google Drive. ${emailNote}.` : "Reviewed and archived. Not emailed.";
+    const approvedMessage = delivery ? `Paperwork approved. Saved to Google Drive. ${emailNote}.` : "Paperwork approved. Not emailed.";
+    // Approval no longer archives: the job stays on the map as completed until you archive it
+    // yourself from the job card after checking everything.
     const patch = {
-      ...(approved ? { ArchivedFromMap: true, archivedFromMap: true } : {}),
+      ...(approved ? { PackageApprovedAt: generatedAt } : {}),
       ...(delivery ? { PackageDriveLink: delivery.driveLink, ...(delivery.emailed ? { PackageEmailedAt: generatedAt } : {}) } : {}),
       PackageReviewStatus: approved ? "Approved" : "Pending review",
       PackageGeneratedAt: generatedAt,
@@ -1508,10 +1510,10 @@ export default function PaperworkPage() {
       });
 
       if (!response.ok) throw new Error(await response.text());
-      return approved ? (delivery ? "Approved and archived." : "Approved and archived. Not emailed.") : "Draft saved for review. Not archived or emailed.";
+      return approved ? (delivery ? "Paperwork approved." : "Paperwork approved. Not emailed.") : "Draft saved for review. Not emailed.";
     } catch (error) {
       console.error(error);
-      return approved ? `Approved on this device; server sync needs retry.${delivery ? "" : " Not emailed."}` : "Draft saved on this device; server sync needs retry. Not archived or emailed.";
+      return approved ? `Approved on this device; server sync needs retry.${delivery ? "" : " Not emailed."}` : "Draft saved on this device; server sync needs retry. Not emailed.";
     }
   }
 
