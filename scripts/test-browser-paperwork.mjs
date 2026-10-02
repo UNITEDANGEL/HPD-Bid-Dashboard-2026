@@ -197,6 +197,10 @@ try {
     const unsignedEmail = emails.find((email) => email.subject.startsWith("NOT SIGNED - "));
     assert.ok(signedEmail && unsignedEmail, `${job}: subjects must start with SIGNED / NOT SIGNED`);
     assert.ok(signedEmail.body.includes("-affidavit-invoice.pdf") && !signedEmail.body.includes("PRINT-COPY"), `${job}: SIGNED email carries only the signed PDF`);
+    // The SIGNED email gets forwarded: its message text must not carry the Google Drive link.
+    const signedText = Buffer.from(signedEmail.body.split("Content-Transfer-Encoding: base64\r\n\r\n")[1].split("\r\n--")[0].replace(/\r\n/g, ""), "base64").toString("utf8");
+    assert.ok(signedText.startsWith("SIGNED COPY"), `${job}: could not read the SIGNED email text`);
+    assert.ok(!/drive\.example|Google Drive/i.test(signedText), `${job}: SIGNED email must not include the Google Drive link`);
     assert.ok(unsignedEmail.body.includes("PRINT-COPY-unsigned"), `${job}: NOT SIGNED email carries the unsigned print copy`);
     assert.equal((unsignedEmail.body.match(/filename="/g) || []).length, 1, `${job}: NOT SIGNED email carries only the unsigned print copy`);
     await page.getByText("Unsigned print copy emailed separately").first().waitFor({ timeout: 10000 });

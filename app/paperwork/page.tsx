@@ -2335,7 +2335,8 @@ export default function PaperworkPage() {
       folderName: pending.folderName,
       files: pending.folderEntries.map((entry) => ({ name: entry.path.split("/").pop() || entry.path, mimeType: entry.mimeType, bytes: entry.bytes })),
       emailSubject: `SIGNED - ${pending.jobId} - ${statusLabel} - ${form.address || "HPD package"}`,
-      emailText: (folderLink: string, attachedPhotos: boolean) => [
+      // This is the email that gets forwarded, so it carries no Google Drive link or Drive mentions.
+      emailText: (_folderLink: string, attachedPhotos: boolean) => [
         "SIGNED COPY - signed by the principal and the notary. This is the copy to forward.",
         "",
         `HPD package: ${pending.jobId}`,
@@ -2343,14 +2344,12 @@ export default function PaperworkPage() {
         `Address: ${address || "not listed"}`,
         `Total charge: ${form.amount || "$0.00"}`,
         "",
-        `Google Drive folder: ${folderLink}`,
-        "",
         attachedPhotos
           ? `Attached: affidavit/invoice PDF and ${pending.imageCount} photo(s).`
           : pending.imageCount
-            ? "Attached: affidavit/invoice PDF. The photos were too large for one email and are in the Google Drive folder."
+            ? "Attached: affidavit/invoice PDF. The photos were too large for one email and will be sent separately."
             : "Attached: affidavit/invoice PDF.",
-        pending.videoCount ? `${pending.videoCount} video(s) are in the Google Drive folder.` : "",
+        pending.videoCount ? `${pending.videoCount} video(s) will be sent separately.` : "",
         pending.unsigned ? "The unsigned print copy comes in a separate email marked NOT SIGNED." : "",
       ].filter((line, index, lines) => line || lines[index - 1]).join("\n"),
     };
