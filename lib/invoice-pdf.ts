@@ -34,6 +34,8 @@ export type InvoiceData = {
   totalCharge: string;
   signerName: string;
   title: string;
+  // Signer's own signature (PNG), drawn on the Signature of Principal line.
+  signature?: Uint8Array;
 };
 
 const PAGE = { width: 612, height: 792 };
@@ -317,6 +319,11 @@ export async function drawInvoicePage(doc: PDFDocument, data: InvoiceData) {
 
   // Signature block.
   const signTop = lowerTop + 78;
+  if (data.signature?.length) {
+    const image = await doc.embedPng(data.signature);
+    const scale = Math.min(230 / image.width, 34 / image.height);
+    page.drawImage(image, { x: left + 8, y: PAGE.height - (signTop + 13), width: image.width * scale, height: image.height * scale });
+  }
   c.line(left, signTop + 14, left + 250, signTop + 14, INK, RULE);
   c.text("Signature of Principal (blue ink only)", left, signTop + 18, 8, fonts.regular, MUTED);
   c.text(data.signerName, left + 280, signTop + 1, 11, fonts.medium);

@@ -25,6 +25,16 @@ try {
     page.on("pageerror", (error) => errors.push(String(error)));
 
     await page.goto(`${baseUrl}/paperwork?job=${job}&outcome=${outcome}`, { waitUntil: "networkidle" });
+    // Email/PDF packages are always signed: blocked until a signature is saved (a test squiggle here).
+    await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
+    await page.getByText("Add your signature first").first().waitFor({ timeout: 10000 });
+    await page.locator('[data-hpd-smoke="paperwork-signature-draw"]').click();
+    const pad = await page.locator('[data-hpd-smoke="paperwork-signature-pad"]').boundingBox();
+    await page.mouse.move(pad.x + 30, pad.y + 100);
+    await page.mouse.down();
+    for (let i = 0; i <= 20; i += 1) await page.mouse.move(pad.x + 30 + i * 12, pad.y + 80 + Math.sin(i / 2) * 30);
+    await page.mouse.up();
+    await page.locator('[data-hpd-smoke="paperwork-signature-save"]').click();
     if (outcome === "no_access") {
       // Attempts closer than 72 hours, or a missing call date, must block generation.
       await page.fill('[data-hpd-smoke="paperwork-attempt-1"]', "2026-10-01");
@@ -57,6 +67,7 @@ try {
     const pdf = await PDFDocument.load(bytes);
     assert.equal(pdf.getPageCount(), pages, `${job}: expected affidavit (2) + invoice (1) pages`);
     assert.equal(pdf.getForm().getFields().length, 0, `${job}: form fields must be flattened`);
+    assert.ok(Buffer.from(bytes).toString("latin1").includes("/Subtype /Image"), `${job}: signature image must be in the PDF`);
     assert.deepEqual(errors, [], `${job}: page errors`);
     console.log(`PASS ${job} ${outcome}: package generated in browser, ${pages} flattened pages`);
     await page.close();

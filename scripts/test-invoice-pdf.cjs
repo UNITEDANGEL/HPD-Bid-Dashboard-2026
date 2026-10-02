@@ -33,6 +33,13 @@ const base = {
   assert.equal(doc.getPageCount(), 1);
   await doc.save();
 
+  // Signer's signature image on the Signature of Principal line.
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=', 'base64');
+  doc = await PDFDocument.create();
+  await drawInvoicePage(doc, { ...base, description: 'TEST', signature: new Uint8Array(png) });
+  const saved = Buffer.from(await doc.save()).toString('latin1');
+  assert.match(saved, /\/Subtype\s*\/Image/, 'signature image embedded');
+
   assert.equal(INVOICE_COMPANY.name, 'UNITED ANGEL CONSTRUCTION CORP.');
   assert.equal(INVOICE_COMPANY.fax, '(718) 989-1381');
   assert.equal(INVOICE_COMPANY.email, 'uac525@gmail.com');

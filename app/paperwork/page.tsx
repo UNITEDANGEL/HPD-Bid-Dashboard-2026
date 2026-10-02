@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PDFDocument, StandardFonts, PDFName } from "pdf-lib";
 import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate } from "../../lib/no-access";
 import { tenantContactInfo } from "../../lib/tenantContact";
 import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
 import { drawInvoicePage } from "../../lib/invoice-pdf";
+import { signatureBytes } from "../../lib/signature";
+import SignatureCard from "./SignatureCard";
 import { deliverPackage, googleStatus, sendPackageEmail, type GoogleStatus } from "../../lib/package-delivery";
 import { calendarDay } from "../../lib/job-priority";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
@@ -165,6 +167,8 @@ type GeneratePdfOptions = {
   formOverride?: PackageForm;
   outcomeOverride?: PaperworkOutcome;
   includeSignature?: boolean;
+  // Print copy: keep the printed name, leave signature lines blank for ink.
+  signatureImage?: boolean;
 };
 
 function asArray(value: unknown): JobRecord[] {
@@ -1109,6 +1113,9 @@ export default function PaperworkPage() {
   const [packageReviewed, setPackageReviewed] = useState(false);
   const [packageApproved, setPackageApproved] = useState(false);
   const [google, setGoogle] = useState<GoogleStatus | null>(null);
+  // Signer's saved signature (this device only); read by PDF generation.
+  const signatureRef = useRef("");
+  const rememberSignature = useCallback((dataUrl: string) => { signatureRef.current = dataUrl; }, []);
   const [delivery, setDelivery] = useState<{ working: boolean; message: string; folderLink: string; emailed: boolean; error: string } | null>(null);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
@@ -1348,6 +1355,7 @@ export default function PaperworkPage() {
     const activeForm = options.formOverride || form;
     const activeOutcome = options.outcomeOverride || outcome;
     const includeSignature = options.includeSignature !== false;
+    const includeSignatureImage = includeSignature && options.signatureImage !== false;
     const useWorkTemplate = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
     const awardDay = calendarDay(getJobDate(selectedJob, "award"));
     if (awardDay === null || awardDay < calendarDay("2026-08-28")!) {
@@ -1643,6 +1651,14 @@ export default function PaperworkPage() {
       affidavitForm.flatten();
 
 
+      // Signer's signature above the page 2 "Signature" line. The notary block is left for the notary.
+      if (includeSignatureImage && signatureRef.current) {
+        const signatureImage = await affidavitDoc.embedPng(signatureBytes(signatureRef.current));
+        const box = useWorkTemplate ? { x: 398, y: 261, width: 150, height: 32 } : { x: 362, y: 347, width: 160, height: 40 };
+        const scale = Math.min(box.width / signatureImage.width, box.height / signatureImage.height);
+        affidavitDoc.getPages()[1]?.drawImage(signatureImage, { x: box.x, y: box.y, width: signatureImage.width * scale, height: signatureImage.height * scale });
+      }
+
       // Flattened template widgets can leave dangling annotation references.
       for (const document of [affidavitDoc]) {
         for (const page of document.getPages()) {
@@ -1682,6 +1698,7 @@ export default function PaperworkPage() {
         totalCharge: invoiceValues["TOTAL CHARGE"],
         signerName: invoiceValues["NAME Please Print"],
         title: invoiceValues["TITLE"],
+        signature: includeSignatureImage && signatureRef.current ? signatureBytes(signatureRef.current) : undefined,
       });
 
       const bytes = await pdfDoc.save();
@@ -1738,7 +1755,7 @@ export default function PaperworkPage() {
     }
   }
 
-  async function generateCompletePackage(includeMediaOverride = includePackageMedia, includeSignatureOverride = includePackageSignature) {
+  async function generateCompletePackage(includeMediaOverride = includePackageMedia, includeSignatureOverride = includePackageSignature, printCopy = false) {
     if (packageBusyRef.current) return;
     const activeOutcome = outcome;
     const activeJob = selectedJob;
@@ -1758,6 +1775,10 @@ export default function PaperworkPage() {
     }
     if (activeOutcome === "pending") {
       setPdfStatus("Pick Work Completed or No Work Completed before generating this package.");
+      return;
+    }
+    if (includeSignature && !printCopy && !signatureRef.current) {
+      setPdfStatus("Add your signature first (Your Signature card above). Email packages are always signed; use Print Copy to sign in ink.");
       return;
     }
 
@@ -1820,6 +1841,7 @@ export default function PaperworkPage() {
         formOverride: packageForm,
         outcomeOverride: activeOutcome,
         includeSignature,
+        signatureImage: !printCopy,
       });
       if (!pdf) return;
 
@@ -3268,6 +3290,52 @@ export default function PaperworkPage() {
           line-height: 1.15;
         }
 
+        .sig-card {
+          gap: 10px;
+        }
+
+        .sig-preview {
+          max-width: 100%;
+          max-height: 90px;
+          border-radius: 10px;
+          background: #ffffff;
+          padding: 8px 12px;
+          justify-self: start;
+        }
+
+        .sig-pad {
+          width: 100%;
+          height: 160px;
+          border-radius: 12px;
+          background: #ffffff;
+          touch-action: none;
+          cursor: crosshair;
+        }
+
+        .sig-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .sig-actions button {
+          flex: 1 1 auto;
+          min-height: 50px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          background: rgba(255, 255, 255, 0.08);
+          color: #ffffff;
+          font-size: 15px;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .sig-actions .sig-primary {
+          border-color: rgba(83, 230, 156, 0.7);
+          background: rgba(83, 230, 156, 0.18);
+          color: #caffdf;
+        }
+
         .pkg-review {
           display: grid;
           gap: 14px;
@@ -4648,6 +4716,8 @@ export default function PaperworkPage() {
             </div>
           </details>
 
+          {!packagePreview ? <SignatureCard signer={form.signer} onChange={rememberSignature} /> : null}
+
           {!packagePreview ? (
             <div className="paperwork-generate-choice" data-hpd-smoke="paperwork-generate-choice" aria-label="Package media choice">
               <button className="paperwork-print" data-hpd-smoke="paperwork-generate-full-package" type="button" onClick={() => generateCompletePackage(true)} disabled={!canGeneratePackage}>
@@ -4655,6 +4725,9 @@ export default function PaperworkPage() {
               </button>
               <button className="paperwork-secondary paperwork-pdf-only" data-hpd-smoke="paperwork-generate-pdf-only" type="button" onClick={() => generateCompletePackage(false)} disabled={!canGeneratePackage}>
                 Affidavit + Invoice Only
+              </button>
+              <button className="paperwork-secondary paperwork-pdf-only" data-hpd-smoke="paperwork-generate-print" type="button" onClick={() => generateCompletePackage(false, true, true)} disabled={!canGeneratePackage}>
+                Print Copy (sign in ink + notary)
               </button>
               <small>{packageJobLoading ? "Loading COA address and ITB page 3 description before package creation." : "Email ZIP limit: 18 MB. Saved media stays unchanged."}</small>
             </div>
