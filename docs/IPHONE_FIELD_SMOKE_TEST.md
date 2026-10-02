@@ -50,7 +50,7 @@ Use the deployed preview or local server with the same query:
 - Notes controls exist: `iphone-v2-note-draft`, `iphone-v2-note-measurements`, `iphone-v2-note-material`, `iphone-v2-note-save`.
 - Package controls are tested only after final status is ready:
   - `iphone-v2-package-panel`
-  - `iphone-v2-package-with-signature` (the one main "Review & Approve Package" button; the rest sit under "More options")
+  - `iphone-v2-package-with-signature`
   - `iphone-v2-package-no-signature`
   - `iphone-v2-package-pdf-only`
   - `iphone-v2-package-review`

@@ -47,10 +47,12 @@ assert.equal(next({}, { before: 1, after: 1 }).key, 'record');
 for (const outcome of Object.keys(FIELD_OUTCOMES).filter(value => value !== 'APPOINTMENT_REQUESTED')) {
   const link = new URL(mod.exports.paperworkGenerateHref('TEST 1', outcome), 'https://example.test');
   assert.equal(link.searchParams.get('auto'), 'package');
-  assert.equal(link.searchParams.get('signature'), 'none');
+  assert.equal(link.searchParams.has('signature'), false, 'job card packages are signed; the unsigned print copy is made on approve');
   assert.notEqual(link.searchParams.get('outcome'), 'pending');
 }
 assert.throws(() => mod.exports.paperworkGenerateHref('TEST', 'APPOINTMENT_REQUESTED'));
+assert.equal(new URL(mod.exports.paperworkNextHref('TEST 1', 'WORK_COMPLETED'), 'https://example.test').searchParams.get('auto'), 'package');
+assert.equal(new URL(mod.exports.paperworkNextHref('TEST 1', ''), 'https://example.test').searchParams.has('auto'), false);
 const page = fs.readFileSync('app/paperwork/page.tsx', 'utf8');
 const start = page.indexOf('  async function markPackageGenerated(');
 const end = page.indexOf('  async function generateAffidavitPdf(', start);
@@ -66,5 +68,5 @@ new Function(`with(this) { ${marker} }`).call(context);
   assert.equal(patches[1].ArchivedFromMap, true);
   assert.equal(patches[1].PackageReviewStatus, 'Approved');
   assert.ok(!page.includes('else if (shouldAutoGeneratePackage) nextOutcome = "work_completed"'));
-  console.log('PASS: explicit unsigned outcome generation and archive only after approval');
+  console.log('PASS: signed outcome package flow and archive only after approval');
 })().catch(error => { console.error(error); process.exitCode=1; });

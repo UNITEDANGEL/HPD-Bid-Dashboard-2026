@@ -46896,39 +46896,6 @@ return (
             gap: 8px;
           }
 
-          .iphone-field-v2-package-go {
-            min-height: 64px;
-            border: 1px solid rgba(74, 222, 128, 0.7);
-            border-radius: 16px;
-            display: grid;
-            gap: 4px;
-            place-items: center;
-            padding: 10px 12px;
-            background: linear-gradient(145deg, rgba(22, 101, 52, 0.85), rgba(15, 35, 61, 0.85));
-            color: #dcfce7;
-            font-size: 17px;
-            font-weight: 950;
-            box-shadow: 0 0 18px rgba(74, 222, 128, 0.22);
-          }
-
-          .iphone-field-v2-package-go small {
-            color: rgba(220, 252, 231, 0.8);
-            font-size: 12px;
-            font-weight: 800;
-          }
-
-          .iphone-field-v2-package-go:disabled {
-            opacity: 0.5;
-          }
-
-          .iphone-field-v2-package-more summary {
-            cursor: pointer;
-            color: #cbd5e1;
-            font-size: 13px;
-            font-weight: 850;
-            padding: 4px 2px 8px;
-          }
-
           .iphone-field-v2-package-actions a,
           .iphone-field-v2-package-actions button {
             min-width: 0;
@@ -49961,14 +49928,14 @@ return (
           : fieldPackageGenerateReady && fieldInvoicePacket
             ? "Paperwork PDF ready"
             : fieldPackageGenerateReady
-              ? "Next: review & approve paperwork"
+              ? "Generate complete package"
               : "Finish media to package";
         const fieldPackageMeta = fieldPackagePreview
           ? `${fieldPackagePreview.imageCount} image(s) / ${fieldPackagePreview.videoCount} video(s)`
           : fieldPackageGenerateReady && fieldInvoicePacket
             ? fieldInvoicePacket.fileName
             : fieldPackageGenerateReady
-              ? "Signatures, then check the affidavit, invoice and photos, then approve. The signed copy is emailed to you; the unsigned print copy goes to the Drive folder only."
+              ? "Affidavit, invoice, images, videos, and manifest."
               : "Save Work Completed, No Access, or Refused before package generation.";
         const fieldSecondAttempt = workflowSecondAttemptInfo(selected);
         const fieldNoAccessLabel = workflowStatus(selected) === "NO_ACCESS_COMPLETE"
@@ -50673,13 +50640,11 @@ return (
                             <strong>{fieldPackageTitle}</strong>
                             <small>{fieldPackageMeta}</small>
                           </div>
-                          <button type="button" className="iphone-field-v2-package-go" data-hpd-smoke="iphone-v2-package-with-signature" onClick={() => void runPackagePrimaryAction(selected, "with", fieldFinalPackageOutcome)} disabled={!fieldPackageGenerateReady}>
-                            <span>Review &amp; Approve Package</span>
-                            <small>{fieldPackageGenerateReady ? "Sign, check the pages, approve & email" : "Save final status first"}</small>
-                          </button>
-                          <details className="iphone-field-v2-package-more">
-                          <summary>More options</summary>
                           <div className="iphone-field-v2-package-actions">
+                            <button type="button" className="package-primary" data-hpd-smoke="iphone-v2-package-with-signature" onClick={() => void runPackagePrimaryAction(selected, "with", fieldFinalPackageOutcome)} disabled={!fieldPackageGenerateReady}>
+                              <span>With Signature</span>
+                              <small>{fieldPackageGenerateReady ? "Full package" : "Save final status"}</small>
+                            </button>
                             <button type="button" className="package-unsigned" data-hpd-smoke="iphone-v2-package-no-signature" onClick={() => void runPackagePrimaryAction(selected, "without", fieldFinalPackageOutcome)} disabled={!fieldPackageGenerateReady}>
                               <span>No Signature</span>
                               <small>{fieldPackageGenerateReady ? "Full package" : "Save final status"}</small>
@@ -50715,7 +50680,6 @@ return (
                               </button>
                             ) : null}
                           </div>
-                          </details>
                         </div>
                       ) : null}
                     </section>
