@@ -1800,7 +1800,7 @@
 .fc-app.fc-reference .fc-map-fab svg { width: 22px; height: 22px; }
 .fc-app.fc-reference .fc-visible-fab, .fc-app.fc-reference .fc-legend { display: none; }
 /* Below the search box, not hidden behind it (its dark edges showed as a black line around the search). */
-.fc-app.fc-reference .fc-map-hints { top: calc(max(10px, env(safe-area-inset-top)) + 70px); bottom: auto; left: 12px; right: 62px; transform: none; justify-items: stretch; }
+.fc-app.fc-reference .fc-map-hints { top: calc(max(10px, env(safe-area-inset-top)) + 160px); bottom: auto; left: 12px; right: 62px; transform: none; justify-items: stretch; }
 .fc-app.fc-reference .fc-map-hint { width: auto; white-space: normal; font-size: 13px; border-radius: 8px; }
 .fc-app.fc-reference .leaflet-boroughLabels-pane { display: none; }
 .fc-app.fc-reference .leaflet-control-attribution { font-size: 8px; }
@@ -2213,3 +2213,38 @@
 .fc-quick-chips button b { margin-left: 4px; color: #65756f; font-weight: 700; }
 .fc-quick-chips button.is-active { background: #1d7a52; border-color: #1d7a52; color: #ffffff; }
 .fc-quick-chips button.is-active b { color: #d1fae5; }
+
+/* Borough bar: one tap per borough, plus quick day windows, right under the search box. */
+.fc-borough-bar {
+  position: absolute;
+  top: calc(max(12px, env(safe-area-inset-top)) + 60px);
+  left: 12px;
+  right: 66px;
+  z-index: 1500;
+  display: grid;
+  gap: 6px;
+}
+.fc-bar-boroughs, .fc-bar-days-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+.fc-bar-days-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.fc-borough-bar button {
+  min-width: 0;
+  border: 1px solid #d2dad9;
+  background: #fffffff0;
+  color: #25332f;
+  box-shadow: 0 3px 12px #233b4224;
+  cursor: pointer;
+}
+.fc-bar-boroughs button {
+  height: 52px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  padding: 0;
+  border-radius: 13px;
+}
+.fc-bar-boroughs button span { font-size: 21px; line-height: 1; }
+.fc-bar-boroughs button small { font-size: 10.5px; font-weight: 800; }
+.fc-bar-boroughs button.is-active { border-color: var(--boro, #1d7a52); box-shadow: 0 0 0 2.5px var(--boro, #1d7a52), 0 3px 12px #233b4230; background: #ffffff; }
+.fc-bar-days-row button { height: 32px; border-radius: 999px; font-size: 12.5px; font-weight: 750; padding: 0 4px; white-space: nowrap; }
+.fc-bar-days-row button.is-active { background: #1d7a52; border-color: #1d7a52; color: #ffffff; }

@@ -38,11 +38,15 @@ const BOROUGHS: { key: BoroughKey; label: string; center: [number, number]; colo
 
 const STATUS_FILTERS = JOB_QUEUES;
 
+// Borough bar icons (one tap each).
+const BOROUGH_ICONS: Record<BoroughKey, string> = { MN: "🏙️", BK: "🌉", QN: "👑", BX: "⚾", SI: "⛴️" };
+
 // One-tap date windows for the quick filters, on whichever date type is picked.
 const QUICK_DATE_RANGES = [
   { key: "year", label: "This year" },
   { key: "next30", label: "Next 30 days" },
   { key: "last30", label: "Last 30 days" },
+  { key: "last60", label: "Last 60 days" },
   { key: "last90", label: "Last 90 days" },
   { key: "all", label: "All dates" },
 ] as const;
@@ -58,6 +62,7 @@ function quickDateBounds(key: QuickDateKey, today: string) {
   if (key === "year") return { from: `${today.slice(0, 4)}-01-01`, to: `${today.slice(0, 4)}-12-31` };
   if (key === "next30") return { from: today, to: shiftDay(today, 30) };
   if (key === "last30") return { from: shiftDay(today, -30), to: today };
+  if (key === "last60") return { from: shiftDay(today, -60), to: today };
   if (key === "last90") return { from: shiftDay(today, -90), to: today };
   return { from: "", to: "" };
 }
@@ -1567,6 +1572,28 @@ export default function FieldCommandClient() {
           {activeFilterCount ? <span className="fc-filter-badge">{activeFilterCount}</span> : null}
         </button>
       </div>
+      {!selectedJob && !filtersOpen ? (
+        <nav className="fc-borough-bar" data-hpd-smoke="fc-borough-bar" aria-label="Borough and date">
+          <div className="fc-bar-boroughs">
+            <button type="button" className={borough === "ALL" ? "is-active" : ""} aria-pressed={borough === "ALL"} onClick={() => setBorough("ALL")}>
+              <span aria-hidden="true">🗽</span><small>All</small>
+            </button>
+            {BOROUGHS.map(({ key, label, color }) => (
+              <button key={key} type="button" className={borough === key ? "is-active" : ""} aria-pressed={borough === key} aria-label={label} style={{ "--boro": color } as CSSProperties} onClick={() => setBorough(borough === key ? "ALL" : key)}>
+                <span aria-hidden="true">{BOROUGH_ICONS[key]}</span><small>{key}</small>
+              </button>
+            ))}
+          </div>
+          <div className="fc-bar-days-row">
+            {(["last30", "last60", "last90"] as const).map((key) => (
+              <button key={key} type="button" className={quickDateKey === key ? "is-active" : ""} aria-pressed={quickDateKey === key} onClick={() => applyQuickDate(quickDateKey === key ? "year" : key)}>
+                {key.slice(4)} days
+              </button>
+            ))}
+            <button type="button" onClick={() => setFiltersOpen(true)}>Custom</button>
+          </div>
+        </nav>
+      ) : null}
       {filtersOpen ? (
         <section id="fc-quick-filters" className="fc-quick-filters" data-hpd-smoke="fc-quick-filters" aria-label="Quick filters">
           <div className="fc-quick-head">
