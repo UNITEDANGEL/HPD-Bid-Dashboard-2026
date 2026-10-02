@@ -20,6 +20,7 @@ export default function StoragePage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [version, setVersion] = useState("");
   async function checkConnection() {
     setChecking(true);
     setError("");
@@ -41,6 +42,8 @@ export default function StoragePage() {
     fetch("/api/drive/session", { cache: "no-store", signal: controller.signal })
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then(setStatus).catch((e) => { if (e.name !== "AbortError") setError("Connection status is unavailable. Local records are unchanged."); });
+    fetch("/version.json", { cache: "no-store" }).then((r) => r.ok ? r.json() : null)
+      .then((v) => { if (v?.commit) setVersion(`${v.commit} · ${new Date(v.builtAt).toLocaleString()}`); }).catch(() => {});
     return () => controller.abort();
   }, []);
   return <main className="ios-app drive-storage">
@@ -63,5 +66,6 @@ export default function StoragePage() {
     </section>
     <DriveBackupSettings connected={Boolean(status?.connected)} />
     <DriveBackups connected={Boolean(status?.connected)} />
+    <p className="drive-version">App version {version || "unknown"}</p>
   </main>;
 }

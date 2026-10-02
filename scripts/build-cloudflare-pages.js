@@ -218,4 +218,10 @@ fs.writeFileSync(
   "utf8"
 );
 
+// Which code is live: open /version.json (also shown at the bottom of /storage/).
+const { execSync } = require("child_process");
+let commit = process.env.GITHUB_SHA || "";
+try { commit = commit || execSync("git rev-parse HEAD", { cwd: root }).toString().trim(); } catch {}
+fs.writeFileSync(path.join(outDir, "version.json"), `${JSON.stringify({ commit: commit.slice(0, 7), builtAt: new Date().toISOString() }, null, 2)}\n`);
+
 console.log("Cloudflare Pages static export ready in out/");
