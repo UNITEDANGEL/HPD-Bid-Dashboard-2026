@@ -28,7 +28,6 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
   const [signature, setSignature] = useState("");
   const [name, setName] = useState(defaultName || "");
   const [date, setDate] = useState(minDate);
-  const [witnessed, setWitnessed] = useState(false);
   const [approved, setApproved] = useState(false);
   const [drawing, setDrawing] = useState(false);
   const [typing, setTyping] = useState(false);
@@ -95,7 +94,6 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
     if (!name.trim()) { setError("The notary needs to type their name."); return; }
     if (!date) { setError("Pick the notary date."); return; }
     if (date < minDate) { setError(`The notary date can't be before ${minDate}.`); return; }
-    if (!witnessed) { setError("The notary needs to confirm they witnessed the signing."); return; }
     setApproved(true);
     setError("");
     onApprove({ signature, name: name.trim(), date });
@@ -103,7 +101,6 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
 
   function undoApproval() {
     setApproved(false);
-    setWitnessed(false);
     onApprove(null);
   }
 
@@ -131,7 +128,7 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
         <strong>{usingSaved ? `${shownName}: confirm and approve` : "Hand the phone to your notary"}</strong>
         <small>
           {usingSaved
-            ? "The notary's saved signature is ready. The notary confirms the date, ticks that they witnessed the signing, and approves. Required for every affidavit."
+            ? "The notary's saved signature is ready. The notary checks the date and taps the approve button, which confirms they witnessed the signing. Required for every affidavit."
             : "Your notary signs once (finger or typed name) -- it stays saved on this phone. Then they confirm the date, that they witnessed you sign, and approve."}
         </small>
       </div>
@@ -198,17 +195,11 @@ export default function NotaryCard({ minDate, defaultName, onApprove }: { minDat
           onChange={(event) => setDate(event.target.value)}
         />
       </label>
-      <label className="paperwork-checkbox">
-        <input
-          type="checkbox"
-          data-hpd-smoke="paperwork-notary-witnessed"
-          checked={witnessed}
-          onChange={(event) => setWitnessed(event.target.checked)}
-        />
-        I am the notary and I personally witnessed the signer sign today.
-      </label>
+      {/* One tap: the button itself is the notary's statement that they witnessed the signing. */}
       <div className="sig-actions">
-        <button type="button" className="sig-primary" data-hpd-smoke="paperwork-notary-approve" onClick={approve}>Notary approve</button>
+        <button type="button" className="sig-primary" data-hpd-smoke="paperwork-notary-approve" onClick={approve}>
+          ✓ I am the notary and I witnessed the signing today: approve
+        </button>
       </div>
       {error ? <small role="alert">{error}</small> : null}
     </div>

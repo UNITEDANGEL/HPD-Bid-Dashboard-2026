@@ -1307,6 +1307,7 @@ export default function FieldCommandClient() {
         const { latitude, longitude } = position.coords;
         placeUserMarker(latitude, longitude);
         lastPositionRef.current = { lat: latitude, lng: longitude };
+        autoArriveRef.current(latitude, longitude, position.coords.accuracy || 0);
         if (!mapRef.current) return;
         if (!centeredOnMeRef.current) {
           // Opening the app: go straight to where you are.
@@ -1327,6 +1328,27 @@ export default function FieldCommandClient() {
   }, [routeMapReady]);
 
   // Step 1: arrival records the time and where you are, shows you on the map and how far the job is.
+  // Automatic arrival: you tapped Waze/Google for the open job and your phone is now within 75 m
+  // of it, so "I have arrived" is saved for you (time + GPS), once.
+  const autoArriveRef = useRef<(lat: number, lng: number, accuracy: number) => void>(() => {});
+  const autoArrivedRef = useRef<Set<string>>(new Set());
+  autoArriveRef.current = (lat, lng, accuracy) => {
+    const job = selectedJob;
+    if (!job) return;
+    const id = jobId(job);
+    if (workflowStamps[id]?.arrived || value(job, ["FieldArrivedAt"]) || !value(job, ["TravelStartedAt"]) || autoArrivedRef.current.has(id)) return;
+    const at = jobLatLng(job);
+    if (!at || accuracy > 100) return;
+    const meters = distanceMiles({ lat, lng }, at) * 1609.34;
+    if (meters > 75) return;
+    autoArrivedRef.current.add(id);
+    saveWorkflowStamp(job, "arrived");
+    const patch = { ArrivedLatitude: lat, ArrivedLongitude: lng, ArrivedAccuracyMeters: Math.round(accuracy), ArrivedAutomatically: true };
+    try { writeSharedWorkflowPatch(id, patch); } catch {}
+    mergeWorkflowPatchIntoScreen(id, patch);
+    setOutcomeMessage(`📍 You're at the job (${Math.round(meters * 3.28)} ft away): arrival saved automatically.`);
+  };
+
   function markArrived(job: JobRecord) {
     const id = jobId(job);
     saveWorkflowStamp(job, "arrived");

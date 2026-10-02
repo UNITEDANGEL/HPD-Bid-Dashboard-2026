@@ -82,10 +82,8 @@ try {
       assert.equal(await page.locator('[data-hpd-smoke="paperwork-signature-quick"]').count(), 0, `${job}: saved signer signature must load`);
       await page.locator('[data-hpd-smoke="paperwork-signature-card"]').screenshot({ path: path.join(outDir, "signer-card.png") });
       await page.locator('[data-hpd-smoke="paperwork-notary-card"]').screenshot({ path: path.join(outDir, "notary-card.png") });
-      // A saved notary signature is never placed without the witness confirmation.
-      await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
-      await page.getByText("confirm they witnessed").first().waitFor({ timeout: 10000 });
-      await page.locator('[data-hpd-smoke="paperwork-notary-witnessed"]').check();
+      // A saved notary signature is only placed by the notary's one-tap statement that they witnessed it.
+      assert.match(await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').innerText(), /witnessed the signing/i);
       await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
       await page.getByText("Notarized by Chetanpreet Malhi").first().waitFor({ timeout: 10000 });
     } else {
@@ -183,7 +181,6 @@ try {
     await page.locator('[data-hpd-smoke="paperwork-notary-quick"]').click();
     await page.waitForTimeout(1500);
     assert.equal(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count(), 0, `${job}: auto package must wait for the notary's approval`);
-    await page.locator('[data-hpd-smoke="paperwork-notary-witnessed"]').check();
     await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
     // No Generate tap: the package builds by itself after the notary approves.
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
