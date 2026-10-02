@@ -1,6 +1,5 @@
 "use client";
 
-import jobsData from "../../data/COA_Fetcher_2026.json";
 import { jobPriority } from "../../lib/job-priority";
 import { startDictation, type RecognitionConstructor } from "../../lib/planner-dictation";
 import { jobQueue, visitState } from "../../lib/job-queue";
@@ -332,7 +331,8 @@ function selectableJob(record: JobRecord, origin?: Point, reason = "Selected by 
   };
 }
 
-export default function PlanMyDayDrawer({ records = jobsData, openRequest = 0 }: { records?: JobRecord[]; openRequest?: number } = {}) {
+// records: the jobs the map already loaded (no bundled copy -- it made the map download 2.8 MB more).
+export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { records?: JobRecord[]; openRequest?: number } = {}) {
   const chatRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState(false);
   useEffect(() => { if (openRequest > 0) { setOpen(true); setMediaPaused(false); } }, [openRequest]);
