@@ -84,6 +84,14 @@ assert.throws(() => packageRecipients({ HPD_PACKAGE_EMAIL_TO: "not an email" }, 
 const denied = async (url, options) => url.includes("gmail") ? new Response("{}", { status: 403 }) : google(url, options);
 response = await handleDrivePackages(req("email-package", parts, { "Content-Type": "text/plain", "X-HPD-Boundary": boundary }), "email-package", auth, denied, {}, owner);
 assert.equal(response.status, 403);
-assert.match((await response.json()).error, /Reconnect Google/);
+assert.match((await response.json()).error, /does not include sending email[\s\S]*Disconnect, then Connect/);
+
+// Each Gmail refusal names the one fix needed.
+const gmailSays = (status, body) => async (url, options) => url.includes("gmail") ? Response.json(body, { status }) : google(url, options);
+const emailWith = async (fetcher) => (await (await handleDrivePackages(req("email-package", parts, { "Content-Type": "text/plain", "X-HPD-Boundary": boundary }), "email-package", auth, fetcher, {}, owner)).json()).error;
+assert.match(await emailWith(gmailSays(403, { error: { status: "PERMISSION_DENIED", message: "Gmail API has not been used in project 123 before or it is disabled.", errors: [{ reason: "accessNotConfigured" }] } })), /Gmail API is turned off/);
+assert.match(await emailWith(gmailSays(403, { error: { status: "PERMISSION_DENIED", message: "Request had insufficient authentication scopes.", details: [{ reason: "ACCESS_TOKEN_SCOPE_INSUFFICIENT" }] } })), /does not include sending email/);
+assert.match(await emailWith(gmailSays(401, { error: { status: "UNAUTHENTICATED" } })), /sign-in expired/);
+assert.match(await emailWith(gmailSays(500, { error: { message: "Backend Error" } })), /HTTP 500: Backend Error/);
 
 console.log("PASS Drive packages: per-package folders, owned-folder uploads, server-set email recipients, header injection and Gmail permission errors.");

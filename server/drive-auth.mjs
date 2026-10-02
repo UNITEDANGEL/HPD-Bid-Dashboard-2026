@@ -106,15 +106,17 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
       if (drive.user?.emailAddress?.toLowerCase() !== cfg.email) return json({ error: "Google Drive account did not match." }, 403);
       const verifiedAt = new Date().toISOString();
       const { id, ...previous } = saved;
-      const value = { ...previous, refreshToken: token.refresh_token || saved.refreshToken, verifiedAt, expires: Date.now() + TTL * 1000 };
-      const renewSession = action === "check" || Boolean(token.refresh_token) || !saved.verifiedAt
+      // Google reports the granted scopes on refresh; keep "can send email" accurate.
+      const canEmail = token.scope ? String(token.scope).split(" ").includes(GMAIL_SCOPE) : Boolean(saved.canEmail);
+      const value = { ...previous, refreshToken: token.refresh_token || saved.refreshToken, canEmail, verifiedAt, expires: Date.now() + TTL * 1000 };
+      const renewSession = action === "check" || Boolean(token.refresh_token) || canEmail !== Boolean(saved.canEmail) || !saved.verifiedAt
         || Date.now() - Date.parse(saved.verifiedAt) >= 6 * 3600000;
       if (renewSession) await env.HPD_DRIVE_SESSIONS.put(`session:${id}`, await seal(env, value, `session:${id}`), { expirationTtl: TTL });
       const response = BACKUP_ACTIONS.includes(action)
         ? await handleDriveBackups(request, action, authHeaders, fetcher)
         : PACKAGE_ACTIONS.includes(action)
           ? await handleDrivePackages(request, action, authHeaders, fetcher, env, cfg.email)
-          : json({ configured: true, connected: true, email: cfg.email, verifiedAt, syncEnabled: false });
+          : json({ configured: true, connected: true, email: cfg.email, verifiedAt, canEmail, syncEnabled: false });
       if (renewSession) response.headers.append("Set-Cookie", cookie(SESSION, id, TTL));
       return response;
     }
