@@ -43,6 +43,9 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 - [x] Videos go in the signed email (before and after); a video too big to attach gets its own Drive link in the email. Drive: Before videos / After videos folders
 - [x] Map alert "⚠ N jobs need a check": open jobs with no readable scope, no map location, no address or no award amount; tap one to open it
 - [x] **Mobile flow up to finish**: Start work opens glowing "Take before photo / Record before video" right in the step (the before media starts the job); Finish work opens the after buttons; the first after photo/video finishes the job by itself (Work completed, one tap to switch to Partial); No access / Refused / By others save on the card without leaving it
+- [x] Job card shows where the job stands (e.g. "✅ Work completed · ready to close out", "🔒 No access") right above the Before/After photos, directly under the steps
+- [x] When a job finishes, its package opens for review by itself after a 6-second countdown ("Wait, add more" cancels)
+- [x] The open job card has priority over "follow me": the map stops following and keeps the job's pin in view above the card
 - [x] **📋 Ready to close out** on the map: every finished job without an approved package, with a Package → button, for closing out later at the desk
 - [x] Review screen choice: email **Before + after** or **After only** (Drive always keeps everything); the phone remembers the choice
 - [x] **Start over** on any job card (type CLEAR): clears outcome, steps, trip, package status and ALL photos/videos of the job, on the phone and the status server
@@ -81,6 +84,13 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 13. [ ] **One master file**: the old map file's useful extras moved into the live job card, then the old file removed
 14. [x] **Real app on the iPhone**: Add to Home Screen gives "HPD Field" with its own icon, full screen, opens even offline (live). App Store later
 15. [ ] Notary stamp prints Chetanpreet Malhi's details: fine while she is the only notary
+
+## Next (requested, in order)
+1. [ ] Package emails itself once the signer and notary confirm (no separate review/approve tap); still viewable after sending
+2. [ ] Cut steps that should happen automatically
+3. [ ] Photo dates editable (default today)
+4. [ ] Paperwork page neater
+5. [ ] iPhone speed
 
 ## How we work
 - One item at a time: fix → test (including the real job that had the problem) → push live → screenshot to the owner
