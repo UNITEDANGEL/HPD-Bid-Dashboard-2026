@@ -1,4 +1,4 @@
-Fetcher run started: 2026-10-01T01:59:22.156Z
+Fetcher run started: 2026-10-02T02:06:58.691Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -15,28 +15,28 @@ $ python FetchrMatcherV5.py --update --days 14
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/09/17 before:2026/10/02
-COA items parsed (latest per OMO): 7
-ITB items parsed (latest per OMO): 7
-Final JobRows: 7
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/09/18 before:2026/10/03
+COA items parsed (latest per OMO): 2
+ITB items parsed (latest per OMO): 2
+Final JobRows: 2
 
 CSV saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.csv
 JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.json
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/7 [00:00<?, ?it/s]Downloading COA messages:  14%|█▍        | 1/7 [00:00<00:01,  5.11it/s]Downloading COA messages:  29%|██▊       | 2/7 [00:00<00:00,  6.17it/s]Downloading COA messages:  43%|████▎     | 3/7 [00:00<00:00,  6.34it/s]Downloading COA messages:  57%|█████▋    | 4/7 [00:00<00:00,  7.15it/s]Downloading COA messages:  71%|███████▏  | 5/7 [00:00<00:00,  7.93it/s]Downloading COA messages: 100%|██████████| 7/7 [00:00<00:00,  8.90it/s]Downloading COA messages: 100%|██████████| 7/7 [00:00<00:00,  7.78it/s]
-Geocoding COA addresses:   0%|          | 0/7 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 7/7 [00:00<00:00, 164023.06it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/7 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  14%|█▍        | 1/7 [00:00<00:03,  1.51it/s]Fetching ITBs for COA OMOs:  29%|██▊       | 2/7 [00:01<00:03,  1.60it/s]Fetching ITBs for COA OMOs:  43%|████▎     | 3/7 [00:01<00:02,  1.63it/s]Fetching ITBs for COA OMOs:  57%|█████▋    | 4/7 [00:02<00:01,  1.70it/s]Fetching ITBs for COA OMOs:  71%|███████▏  | 5/7 [00:02<00:01,  1.75it/s]Fetching ITBs for COA OMOs:  86%|████████▌ | 6/7 [00:03<00:00,  1.78it/s]Fetching ITBs for COA OMOs: 100%|██████████| 7/7 [00:03<00:00,  1.87it/s]Fetching ITBs for COA OMOs: 100%|██████████| 7/7 [00:03<00:00,  1.76it/s]
+Downloading COA messages:   0%|          | 0/2 [00:00<?, ?it/s]Downloading COA messages:  50%|█████     | 1/2 [00:00<00:00,  5.71it/s]Downloading COA messages: 100%|██████████| 2/2 [00:00<00:00,  7.18it/s]Downloading COA messages: 100%|██████████| 2/2 [00:00<00:00,  6.91it/s]
+Geocoding COA addresses:   0%|          | 0/2 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 2/2 [00:00<00:00, 59493.67it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/2 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  50%|█████     | 1/2 [00:00<00:00,  1.32it/s]Fetching ITBs for COA OMOs: 100%|██████████| 2/2 [00:01<00:00,  1.71it/s]Fetching ITBs for COA OMOs: 100%|██████████| 2/2 [00:01<00:00,  1.64it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
 Safe merge complete
 Master before: 672
-Incoming rows: 7
+Incoming rows: 2
 Added new OMOs: 0
-Skipped existing OMOs: 7
+Skipped existing OMOs: 2
 Updated existing OMOs: 0
 Need geocode: 0
 Missing ITB: 0
@@ -184,6 +184,7 @@ Missing addresses: 0
 Missing descriptions: 0
 Missing ITB page 3 descriptions: 56
 Bad/boilerplate descriptions: 0
+Junk-only descriptions (need ITB re-extraction): 5
 Source review jobs: 0
 Missing ITB files: 0
 Missing page 3 images: 67
@@ -231,18 +232,30 @@ Missing ITB page 3 description sample:
 
 Bad description sample:
 (none)
+
+Junk-only description sample:
+┌─────────┬───────────┬──────────────────────────────┬────────────────────────────┬───────────────────────────────┬───────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ (index) │ OMO       │ Address                      │ ITB                        │ Source                        │ Status    │ Preview                                                                                                                                        │
+├─────────┼───────────┼──────────────────────────────┼────────────────────────────┼───────────────────────────────┼───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 0       │ 'ER05941' │ '777 ST MARKS AVENUE, 11213' │ 'ER05941_091826113559.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ 'FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS Provide/Install Abate Remove Dele' │
+│ 1       │ 'ER05733' │ '25 SHERMAN AVENUE, 10040'   │ 'ER05733_091626015743.pdf' │ ''                            │ 'MATCHED' │ 'General Decision Number: NY200003 04/10/2020Superse ded General Decision Number: NY190003 State: New York Page 3 of 3 OMO No: ER05733 Issuer' │
+│ 2       │ 'ER05441' │ '8200 BAY PARKWAY, 11214'    │ 'ER05441_091126101600.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ 'FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS Provide/Install Abate Remove Dele' │
+│ 3       │ 'ER05421' │ '6801 BAY PARKWAY, 11204'    │ 'ER05421_090926052900.pdf' │ ''                            │ 'MATCHED' │ 'General Decision Number: NY200003 04/10/2020Superse ded General Decision Number: NY190003 State: New York Page 3 of 3 OMO No: ER05421 Issuer' │
+│ 4       │ 'ER04964' │ '4439 FURMAN AVENUE, 10466'  │ 'ER04964_090826024642.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ 'FORM GC: ELEV ATOR: ASBESTOS: LEAD: OTHER: APT(S)/LOCATION(S) PROCEDURES MATERIAL(S) SIZE QUANTITY REMARKS Provide/Install Abate Remove Dele' │
+└─────────┴───────────┴──────────────────────────────┴────────────────────────────┴───────────────────────────────┴───────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 PAPERWORK DATA QUALITY CHECKED
 
+PAPERWORK DATA QUALITY WARNING: junkOnlyDescriptions=5 (app hides the junk text; re-extract scope from the ITB).
 PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=56.
 
 
-Fetcher run finished: 2026-10-01T01:59:34.772Z
+Fetcher run finished: 2026-10-02T02:07:10.895Z
 {
-  "fetchedCoaItems": 7,
-  "fetchedItbItems": 7,
-  "fetchedFinalJobRows": 7,
+  "fetchedCoaItems": 2,
+  "fetchedItbItems": 2,
+  "fetchedFinalJobRows": 2,
   "addedNewOmos": 0,
-  "skippedExistingOmos": 7,
+  "skippedExistingOmos": 2,
   "rawRows": 672,
   "rows2026": 621,
   "mapped2026": 621,
