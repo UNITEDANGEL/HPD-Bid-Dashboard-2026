@@ -86,7 +86,7 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 15. [ ] Notary stamp prints Chetanpreet Malhi's details: fine while she is the only notary
 
 ## Next (requested, in order)
-1. [ ] Package emails itself once the signer and notary confirm (no separate review/approve tap); still viewable after sending
+1. [x] Package emails itself once the signer and notary confirm (no separate review/approve tap); still viewable after sending; Edit + Update sends the corrected copy
 2. [ ] Cut steps that should happen automatically
 3. [ ] Photo dates editable (default today)
 4. [ ] Paperwork page neater
