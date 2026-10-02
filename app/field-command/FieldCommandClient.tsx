@@ -1494,6 +1494,33 @@ export default function FieldCommandClient() {
     setClearText("");
   }
 
+  // Undo a saved outcome (e.g. No access, then access was given) without wiping the visit:
+  // arrival, photos and visit history stay; a history line records what was cleared, and the
+  // job is open for work again.
+  function clearOutcome(job: JobRecord) {
+    const id = jobId(job);
+    const previous = FIELD_OUTCOMES[value(job, ["FieldOutcome", "fieldOutcome", "WorkflowStatus"])] || value(job, ["StatusOverride", "status"]) || "outcome";
+    if (!window.confirm(`Clear "${previous}" for ${id}? Photos and visit history are kept.`)) return;
+    const now = new Date();
+    const stamps = workflowStamps[id] || {};
+    const statusLabel = stamps.work ? "Work Started" : stamps.arrived ? "Arrived" : "Pending";
+    const history = Array.isArray(job.FieldVisitHistory) ? job.FieldVisitHistory : [];
+    const patch: Record<string, unknown> = {
+      WorkflowStatus: "", workflowStatus: "", FieldOutcome: "", fieldOutcome: "",
+      StatusOverride: statusLabel, status: statusLabel,
+      OutcomeLockedAt: "", outcomeLockedAt: "", RefusalDate: "", NoAccessFirstAttemptAt: "", SecondAttemptAvailableAt: "",
+      PackageReviewStatus: "",
+      FieldVisitHistory: [...history, { recordedAt: now.toISOString(), outcome: null, note: `Outcome cleared (was ${previous}).` }],
+      // Lets the job be worked again even if an earlier visit was No access / Refused.
+      RevisitApprovedAt: new Date(now.getTime() + 1000).toISOString(),
+    };
+    try { writeSharedWorkflowPatch(id, patch); }
+    catch { setOutcomeMessage("Could not clear the outcome on this device. Please retry."); return; }
+    mergeWorkflowPatchIntoScreen(id, patch);
+    setWorkflowStamps((prev) => ({ ...prev, [id]: { ...(prev[id] || {}), status: statusLabel } }));
+    setOutcomeMessage(`Outcome cleared. ${id} is open again.`);
+  }
+
   function clearWorkflow(job: JobRecord) {
     const id = jobId(job);
     if (clearText.trim().toUpperCase() !== "CLEAR") {
@@ -1988,6 +2015,11 @@ export default function FieldCommandClient() {
                 <label>Outcome<select value={draft.outcome} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, outcome: event.target.value } }))}><option value="">Select outcome</option>{Object.entries(FIELD_OUTCOMES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
                 <label>Visit note<textarea value={draft.note} rows={3} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
                 {draft.outcome === "APPOINTMENT_REQUESTED" ? <button type="button" className="fc-next-action" onClick={openAppointment}>Set appointment details</button> : <button type="button" className="fc-next-action" onClick={() => saveVisitOutcome(selectedJob, Boolean(draft.outcome))} disabled={Boolean(mediaBusy) || (!draft.outcome && !draft.note.trim())}>{draft.outcome ? "Save outcome & generate package" : "Save note"}</button>}
+                {value(selectedJob, ["FieldOutcome", "fieldOutcome"]) ? (
+                  <button type="button" className="fc-clear-outcome" data-hpd-smoke="fc-clear-outcome" onClick={() => clearOutcome(selectedJob)}>
+                    Clear outcome ({FIELD_OUTCOMES[value(selectedJob, ["FieldOutcome", "fieldOutcome"])] || value(selectedJob, ["FieldOutcome", "fieldOutcome"])})
+                  </button>
+                ) : null}
                 <p role="status">{outcomeMessage || "Device storage only. Appointment requests are not confirmed bookings."}</p>
                 {Array.isArray(selectedJob.FieldVisitHistory) && selectedJob.FieldVisitHistory.length > 0 ? <details className="fc-visit-history"><summary>Visit history ({selectedJob.FieldVisitHistory.length})</summary><ol>{selectedJob.FieldVisitHistory.map((entry: { recordedAt?: string; outcome?: string; note?: string }, index: number) => <li key={index}><time>{entry.recordedAt ? formatSavedTime(entry.recordedAt) : "Date not recorded"}</time><strong>{FIELD_OUTCOMES[entry.outcome || ""] || "Visit note"}</strong><p>{entry.note}</p></li>)}</ol></details> : null}
               </section>

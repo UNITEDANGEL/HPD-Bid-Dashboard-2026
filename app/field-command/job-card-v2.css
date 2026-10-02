@@ -727,3 +727,13 @@
   font-weight: 700;
   text-decoration: none;
 }
+
+#fc-job-card .fc-clear-outcome {
+  min-height: 46px;
+  border-radius: 14px;
+  border: 1px solid rgba(251, 146, 60, 0.6);
+  background: rgba(251, 146, 60, 0.12);
+  color: #fed7aa;
+  font-size: 15px;
+  font-weight: 700;
+}
