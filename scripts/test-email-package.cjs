@@ -38,8 +38,8 @@ const { assertEmailPackageSize, emailMediaCopies, fitEmailVideos, emailPhotoBudg
   await assert.rejects(fitEmailVideos(large, 1000000, () => {}, async () => { throw new Error('Unsupported codec'); }), /Unsupported/);
   const card = fs.readFileSync('app/field-command/FieldCommandClient.tsx', 'utf8');
   // Upload entries: the Before/After tiles in Media & Documents, plus the guided steps'
-  // "Start work" (before) and "Finish work" (after) buttons -- all open the same picker.
-  assert.equal((card.match(/requestMediaUpload\(/g) || []).length, 4, 'definition + tile handler + 2 guided steps');
+  // "Start work" (before) and "Finish work" (after) buttons, plus "+ More before/after" -- all open the same picker.
+  assert.equal((card.match(/requestMediaUpload\(/g) || []).length, 6, 'definition + tile handler + 2 guided steps + 2 more-media buttons');
   assert.ok(card.includes('{(["before", "after"] as const).map((kind) => {') && card.includes('onClick={() => requestMediaUpload(kind)}'));
   assert.ok(!card.includes('fc-quick-action is-photos'));
   const mediaSource = fs.readFileSync('lib/field-photo-store.ts', 'utf8');
