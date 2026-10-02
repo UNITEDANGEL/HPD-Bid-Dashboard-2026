@@ -4,6 +4,21 @@ import { useEffect, useRef, useState } from "react";
 import { clearSignature, loadSignature, saveSignature, signatureFromPhoto, trimCanvas } from "../../lib/signature";
 
 // Signer's signature for the affidavit and invoice. The notary section is left for the notary.
+let fontLoad: Promise<boolean> | null = null;
+function loadHandwritingFont() {
+  fontLoad ??= (async () => {
+    try {
+      const face = new FontFace("HPD Signature", "url(/fonts/great-vibes-latin.woff2)");
+      document.fonts.add(await face.load());
+      return true;
+    } catch {
+      fontLoad = null;
+      return false;
+    }
+  })();
+  return fontLoad;
+}
+
 export default function SignatureCard({ signer, onChange }: { signer: string; onChange: (dataUrl: string) => void }) {
   const [saved, setSaved] = useState("");
   const [drawing, setDrawing] = useState(false);
@@ -89,8 +104,8 @@ export default function SignatureCard({ signer, onChange }: { signer: string; on
   }
 
   // Typed name in a handwriting font, adopted as the signer's own e-signature.
-  // Snell Roundhand ships on iPhone/Mac, Segoe Script on Windows.
-  function fromTypedName() {
+  // Great Vibes (OFL) ships with the app so it looks the same on every device.
+  async function fromTypedName() {
     const raw = typedName.trim() || signer.trim();
     // Signatures are written in mixed case: "JOTJAGRAJ SINGH" -> "Jotjagraj Singh".
     const name = raw === raw.toUpperCase() ? raw.toLowerCase().replace(/\b\p{L}/gu, (letter) => letter.toUpperCase()) : raw;
@@ -98,6 +113,7 @@ export default function SignatureCard({ signer, onChange }: { signer: string; on
       setError("Type your name first.");
       return;
     }
+    const handwriting = await loadHandwritingFont();
     const canvas = document.createElement("canvas");
     canvas.width = 1400;
     canvas.height = 300;
@@ -105,13 +121,15 @@ export default function SignatureCard({ signer, onChange }: { signer: string; on
     context.fillStyle = "#0b1f4d";
     context.textBaseline = "middle";
     let size = 150;
-    const font = (px: number) => `italic ${px}px "Snell Roundhand", "Segoe Script", "Brush Script MT", "Lucida Handwriting", cursive`;
+    const font = (px: number) => handwriting
+      ? `${px}px "HPD Signature"`
+      : `italic ${px}px "Snell Roundhand", "Segoe Script", "Brush Script MT", "Lucida Handwriting", cursive`;
     context.font = font(size);
     while (size > 40 && context.measureText(name).width > canvas.width - 40) {
       size -= 6;
       context.font = font(size);
     }
-    context.fillText(name, 20, canvas.height / 2);
+    context.fillText(name, 30, canvas.height / 2);
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
     let minX = canvas.width, minY = canvas.height, maxX = -1, maxY = -1;
     for (let y = 0; y < canvas.height; y += 2) {
@@ -180,7 +198,7 @@ export default function SignatureCard({ signer, onChange }: { signer: string; on
           </>
         ) : typing ? (
           <>
-            <button type="button" className="sig-primary" data-hpd-smoke="paperwork-signature-type-save" onClick={fromTypedName}>Use typed signature</button>
+            <button type="button" className="sig-primary" data-hpd-smoke="paperwork-signature-type-save" onClick={() => void fromTypedName()}>Use typed signature</button>
             <button type="button" onClick={() => setTyping(false)}>Cancel</button>
           </>
         ) : (
