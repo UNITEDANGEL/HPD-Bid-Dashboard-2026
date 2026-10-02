@@ -1234,7 +1234,15 @@ export default function PaperworkPage() {
   const [pdfStatus, setPdfStatus] = useState("");
   const [packagePreview, setPackagePreview] = useState<CompletePackagePreview | null>(null);
   // What the package carries, shown on the review screen before approving.
-  const [packageContents, setPackageContents] = useState<{ photos: number; videos: number; videoBytes: number; savedVideos: number } | null>(null);
+  // Email choice on the review screen: before + after media, or after only (Drive always gets all).
+  const [emailBeforeMedia, setEmailBeforeMedia] = useState(() => {
+    try { return localStorage.getItem("hpd-email-before-media-v1") !== "no"; } catch { return true; }
+  });
+  function chooseEmailBeforeMedia(include: boolean) {
+    setEmailBeforeMedia(include);
+    try { localStorage.setItem("hpd-email-before-media-v1", include ? "yes" : "no"); } catch {}
+  }
+  const [packageContents, setPackageContents] = useState<{ photos: number; videos: number; videoBytes: number; savedVideos: number; beforePhotos: number; beforeVideos: number; beforeVideoBytes: number } | null>(null);
   const [packagePreviewOpen, setPackagePreviewOpen] = useState(false);
   const [fullScreenPdfOpen, setFullScreenPdfOpen] = useState(false);
   const pendingCompletePackageRef = useRef<PendingCompletePackage | null>(null);
@@ -2277,6 +2285,9 @@ export default function PaperworkPage() {
         videos: packageVideos.length,
         videoBytes: packageVideos.reduce((sum, entry) => sum + entry.bytes.byteLength, 0),
         savedVideos,
+        beforePhotos: folderEntries.filter((entry) => entry.section === "image" && entry.path.startsWith("images/before/")).length,
+        beforeVideos: packageVideos.filter((entry) => entry.path.startsWith("videos/before/")).length,
+        beforeVideoBytes: packageVideos.filter((entry) => entry.path.startsWith("videos/before/")).reduce((sum, entry) => sum + entry.bytes.byteLength, 0),
       });
       setPackagePreview(preview);
       setPackagePreviewOpen(true);
@@ -2419,7 +2430,10 @@ export default function PaperworkPage() {
       return { name: `${label}-${String(counters[kind]).padStart(2, "0")} - ${pending.jobId}${extension || (entry.section === "video" ? ".mp4" : "")}`, mimeType, bytes: entry.bytes, subfolder };
     });
     // The email carries the signed PDF, the before/after photos and every video.
-    const emailFiles = files.filter((file) => file.mimeType === "application/pdf" || file.subfolder === "Before photos" || file.subfolder === "After photos" || file.mimeType.startsWith("video/"));
+    // "After only" leaves the before photos/videos out of the email; Drive still gets them.
+    const isBefore = (file: DeliveryFile) => file.subfolder === "Before photos" || file.subfolder === "Before videos";
+    const emailFiles = files.filter((file) => file.mimeType === "application/pdf" || file.subfolder === "Before photos" || file.subfolder === "After photos" || file.mimeType.startsWith("video/"))
+      .filter((file) => emailBeforeMedia || !isBefore(file));
     return {
       folderName: filing.folderName,
       folderPath: filing.path,
@@ -3814,6 +3828,10 @@ export default function PaperworkPage() {
           line-height: 1.4;
         }
         .pkg-contents b { color: #dc2626; }
+        .pkg-contents p { margin: 8px 0 0; }
+        .pkg-email-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .pkg-email-choice button { min-height: 40px; border-radius: 10px; border: 1px solid rgba(37, 99, 235, 0.45); background: transparent; font-weight: 800; font-size: 14px; color: inherit; }
+        .pkg-email-choice button.is-on { background: #2563eb; color: #ffffff; border-color: #2563eb; }
         .pkg-copy-head {
           display: grid;
           gap: 2px;
@@ -5221,13 +5239,25 @@ export default function PaperworkPage() {
                 </button>
               </div>
 
-              {packageContents ? (
-                <p className="pkg-contents" data-hpd-smoke="paperwork-package-contents">
-                  📎 Email: signed PDF · {packageContents.photos} photo{packageContents.photos === 1 ? "" : "s"} · {packageContents.videos} video{packageContents.videos === 1 ? "" : "s"}
-                  {packageContents.videos ? ` (${(packageContents.videoBytes / 1_000_000).toFixed(1)} MB of video)` : ""}
-                  {!packageContents.videos && packageContents.savedVideos ? <b> · {packageContents.savedVideos} saved video(s) are NOT in this package. Use Edit details and include photos/videos.</b> : null}
-                </p>
-              ) : null}
+              {packageContents ? (() => {
+                const photos = packageContents.photos - (emailBeforeMedia ? 0 : packageContents.beforePhotos);
+                const videos = packageContents.videos - (emailBeforeMedia ? 0 : packageContents.beforeVideos);
+                const videoBytes = packageContents.videoBytes - (emailBeforeMedia ? 0 : packageContents.beforeVideoBytes);
+                return (
+                  <div className="pkg-contents" data-hpd-smoke="paperwork-package-contents">
+                    <div className="pkg-email-choice" role="group" aria-label="What the email carries">
+                      <button type="button" className={emailBeforeMedia ? "is-on" : ""} aria-pressed={emailBeforeMedia} data-hpd-smoke="paperwork-email-before-after" disabled={packageApproved} onClick={() => chooseEmailBeforeMedia(true)}>Before + after</button>
+                      <button type="button" className={!emailBeforeMedia ? "is-on" : ""} aria-pressed={!emailBeforeMedia} data-hpd-smoke="paperwork-email-after-only" disabled={packageApproved} onClick={() => chooseEmailBeforeMedia(false)}>After only</button>
+                    </div>
+                    <p>
+                      📎 Email: signed PDF · {photos} photo{photos === 1 ? "" : "s"} · {videos} video{videos === 1 ? "" : "s"}
+                      {videos ? ` (${(videoBytes / 1_000_000).toFixed(1)} MB of video)` : ""}
+                      {!emailBeforeMedia ? " · before photos/videos go to Drive only" : ""}
+                      {!packageContents.videos && packageContents.savedVideos ? <b> · {packageContents.savedVideos} saved video(s) are NOT in this package. Use Edit details and include photos/videos.</b> : null}
+                    </p>
+                  </div>
+                );
+              })() : null}
               {packagePreview.unsigned ? (
                 <div className="pkg-copy-head" data-hpd-smoke="paperwork-signed-head">
                   <strong>Signed copy</strong>
