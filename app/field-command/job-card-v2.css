@@ -44,8 +44,8 @@
 #fc-job-card .fc-job-sheet-close {
   top: 14px !important;
   right: 12px !important;
-  width: 40px !important;
-  height: 40px !important;
+  width: 46px !important;
+  height: 46px !important;
   border-radius: 50% !important;
   background: rgba(255, 255, 255, 0.1) !important;
   color: #ffffff !important;
@@ -121,7 +121,7 @@
 #fc-job-card .jc-btn {
   flex: 1 1 0;
   min-width: 0;
-  min-height: 54px;
+  min-height: 68px;
   padding: 0 8px;
   white-space: nowrap;
   display: inline-flex;
@@ -129,7 +129,7 @@
   justify-content: center;
   gap: 8px;
   border-radius: 16px;
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 700;
   text-decoration: none;
   color: #ffffff;
@@ -255,7 +255,7 @@
 /* Primary next step */
 #fc-job-card .jc-glow {
   width: 100%;
-  min-height: 64px;
+  min-height: 76px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -264,7 +264,7 @@
   padding: 0 22px;
   background: linear-gradient(180deg, #4ff0b4, var(--jc-green-deep));
   color: #03140d;
-  font-size: 21px;
+  font-size: 23px;
   font-weight: 800;
   text-decoration: none;
   box-shadow: 0 0 0 1px rgba(79, 240, 180, 0.6), 0 0 26px rgba(16, 185, 129, 0.55), 0 10px 24px rgba(0, 0, 0, 0.35);
@@ -355,7 +355,7 @@
 
 #fc-job-card .jc-thumbs {
   width: 100%;
-  height: 78px;
+  height: 104px;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
@@ -369,7 +369,7 @@
 
 #fc-job-card .jc-thumbs img {
   width: 100%;
-  height: 78px;
+  height: 104px;
   object-fit: cover;
 }
 
@@ -379,13 +379,13 @@
 }
 
 #fc-job-card .jc-stage b {
-  font-size: 19px;
+  font-size: 21px;
   font-weight: 800;
 }
 
 #fc-job-card .jc-stage small {
   color: var(--jc-muted);
-  font-size: 14px;
+  font-size: 15px;
 }
 
 #fc-job-card .jc-choice {
@@ -407,7 +407,7 @@
 }
 
 #fc-job-card .jc-choice .fc-photo-source-actions button {
-  min-height: 52px;
+  min-height: 62px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -416,7 +416,7 @@
   border: 1px solid rgba(52, 211, 153, 0.5);
   background: rgba(52, 211, 153, 0.12);
   color: #d1fae5;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -433,9 +433,9 @@
 }
 
 #fc-job-card .jc-media-docs .fc-building button {
-  min-height: 44px;
+  min-height: 56px;
   border-radius: 12px;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 700;
 }
 
@@ -449,7 +449,7 @@
   grid-template-columns: 28px 1fr auto;
   align-items: center;
   gap: 12px;
-  min-height: 62px;
+  min-height: 76px;
   border-radius: 16px;
   padding: 10px 14px;
   background: rgba(0, 0, 0, 0.25);
@@ -471,13 +471,13 @@
 }
 
 #fc-job-card .jc-doc b {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
 }
 
 #fc-job-card .jc-doc small {
   color: var(--jc-muted);
-  font-size: 14px;
+  font-size: 15px;
 }
 
 #fc-job-card .jc-doc i {
@@ -507,14 +507,14 @@
 #fc-job-card .jc-footer button {
   flex: 1 1 0;
   min-width: 0;
-  min-height: 48px;
+  min-height: 58px;
   padding: 0 6px;
   white-space: nowrap;
   border-radius: 14px;
   border: 1px solid var(--jc-card-line);
   background: var(--jc-card);
   color: var(--jc-text);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -566,6 +566,27 @@
   font-size: 17px;
 }
 
+#fc-job-card .fc-outcome-panel {
+  display: grid;
+  gap: 10px;
+  padding: 14px !important;
+}
+
+#fc-job-card .fc-outcome-panel label {
+  display: grid;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--jc-muted);
+}
+
+#fc-job-card .fc-outcome-panel .fc-next-action {
+  min-height: 60px;
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
 #fc-job-card .fc-outcome-panel select,
 #fc-job-card .fc-outcome-panel textarea {
   font-size: 17px;
@@ -573,7 +594,7 @@
 }
 
 #fc-job-card .fc-workflow-btn {
-  min-height: 64px;
+  min-height: 72px;
   border-radius: 16px;
   font-size: 15px;
 }
