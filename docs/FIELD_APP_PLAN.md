@@ -90,7 +90,7 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 2. [x] Cut steps that should happen automatically: arrival saves itself within 75 m after Go there; notary approval is one tap (the button is the witness statement); the saved signer signature is applied with no tap
 3. [x] Photo dates editable (default the day taken): 📅 Before / After date on the job card re-prints the DATE line on every photo of that stage; the before date also sets the affidavit work start; videos keep the recorded label (saved date and thumbnail change)
 4. [x] Paperwork page neater: slim top bar (← Map · job), one job summary card, raw status and JSON fields hidden, build buttons under More options when opened from the job card, summary preview collapsed; page about half as long
-5. [ ] iPhone speed
+5. [~] iPhone speed: the map no longer bundles a 2.8 MB copy of every job (Plan my day used it as a fallback); map JavaScript 3.5 MB → 0.83 MB (about 250 KB less to download); first pins about 10% sooner on a slowed CPU. More to do
 
 ## How we work
 - One item at a time: fix → test (including the real job that had the problem) → push live → screenshot to the owner
