@@ -7,7 +7,7 @@ import DriveBackupSettings from "../../components/DriveBackupSettings";
 import "../ios-app.css";
 import "./storage.css";
 
-type Status = { configured: boolean; connected: boolean; email?: string; verifiedAt?: string; syncEnabled: boolean };
+type Status = { configured: boolean; connected: boolean; email?: string; verifiedAt?: string; canEmail?: boolean; syncEnabled: boolean };
 const ERRORS: Record<string, string> = {
   invalid_state: "Sign-in expired. Please try again.", denied: "Google permission was not granted.",
   missing_code: "Google sign-in did not finish.", exchange_failed: "Google sign-in could not be completed.",
@@ -52,7 +52,8 @@ export default function StoragePage() {
       <h2>Google Drive</h2>
       <p role="status">{!status ? error ? "Connection unavailable" : "Checking connection..." : status.connected ? "Account connected" : status.configured ? "Not connected" : "Connection setup pending"}</p>
       {status?.email && <p className="drive-account">{status.email}</p>}
-      <dl><div><dt>Working records</dt><dd>On this device</dd></div><div><dt>Drive backups</dt><dd>{status?.connected ? "Available below" : "Connect first"}</dd></div></dl>
+      <dl><div><dt>Working records</dt><dd>On this device</dd></div><div><dt>Drive backups</dt><dd>{status?.connected ? "Available below" : "Connect first"}</dd></div><div><dt>Email packages</dt><dd>{!status?.connected ? "Connect first" : status.canEmail ? "Allowed" : "Not allowed"}</dd></div></dl>
+      {status?.connected && !status.canEmail && <p role="alert" className="drive-error">Email sending is not allowed for this connection. Make sure the Gmail API and the gmail.send scope are set up in Google Cloud, then tap Disconnect, Connect, and tick &quot;Send email on your behalf&quot;.</p>}
       {status?.verifiedAt && <p role="status">Connection verified: {new Date(status.verifiedAt).toLocaleString()}</p>}
       {error && <p role="alert" className="drive-error">{error}</p>}
       {status?.connected && <button type="button" onClick={checkConnection} disabled={checking || busy}>{checking ? "Checking..." : "Check connection"}</button>}

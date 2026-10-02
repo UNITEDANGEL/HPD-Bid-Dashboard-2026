@@ -28,6 +28,25 @@ function encodeHeader(value) {
   return /^[\x20-\x7e]*$/.test(text) ? text : `=?UTF-8?B?${btoa(String.fromCharCode(...new TextEncoder().encode(text)))}?=`;
 }
 
+// Turn Gmail's refusal into the one fix the owner needs to make.
+export async function gmailRefusal(response) {
+  let reasons = "";
+  try {
+    const body = await response.json();
+    const error = body.error || {};
+    reasons = [error.status, error.message, ...(error.errors || []).map((item) => item.reason), ...(error.details || []).map((item) => item.reason)]
+      .filter(Boolean).join(" ");
+  } catch {}
+  if (/accessNotConfigured|SERVICE_DISABLED|has not been used|is disabled/i.test(reasons)) {
+    return "Gmail API is turned off in your Google Cloud project. Enable Gmail API (APIs & Services > Library), then tap Send email again.";
+  }
+  if (/insufficient|ACCESS_TOKEN_SCOPE_INSUFFICIENT|PERMISSION_DENIED|scope/i.test(reasons) || response.status === 403) {
+    return "Your Google connection does not include sending email. On the Storage page tap Disconnect, then Connect, and tick \"Send email on your behalf\" on Google's screen.";
+  }
+  if (response.status === 401) return "Google sign-in expired. Reconnect Google on the Storage page, then tap Send email again.";
+  return `Gmail could not send the package (HTTP ${response.status}${reasons ? `: ${reasons.slice(0, 160)}` : ""}).`;
+}
+
 export function packageRecipients(env, ownerEmail) {
   const list = String(env.HPD_PACKAGE_EMAIL_TO || ownerEmail).split(",").map((value) => value.trim().toLowerCase()).filter(Boolean);
   if (!list.length || list.length > 5 || !list.every((value) => EMAIL.test(value))) fail("Package email recipient is not set up correctly.", 500);
@@ -118,8 +137,7 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       message.set(head, 0);
       message.set(parts, head.byteLength);
       const sent = await call(GMAIL_SEND, { method: "POST", headers: { "Content-Type": "message/rfc822" }, body: message });
-      if (sent.status === 403 || sent.status === 401) fail("Gmail did not allow sending. Reconnect Google on the Storage page and allow sending email.", 403);
-      if (!sent.ok) fail(`Gmail could not send the package (HTTP ${sent.status}).`);
+      if (!sent.ok) fail(await gmailRefusal(sent), sent.status === 401 || sent.status === 403 ? 403 : 503);
       return reply({ sent: true, to });
     }
 
