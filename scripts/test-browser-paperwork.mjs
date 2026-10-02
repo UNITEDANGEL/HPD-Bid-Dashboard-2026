@@ -190,6 +190,7 @@ try {
     await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"]').waitFor({ timeout: 30000 });
     // Edit a date from the review screen and rebuild: no signing again, new date in the signed PDF.
     await page.locator('[data-hpd-smoke="paperwork-package-edit"]').click();
+    await page.fill('[data-hpd-smoke="paperwork-work-start"]', "2026-09-29");
     await page.fill('[data-hpd-smoke="paperwork-work-complete"]', "2026-09-30");
     await page.locator('[data-hpd-smoke="paperwork-update-package"] button').click();
     await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"]').waitFor({ timeout: 60000 });

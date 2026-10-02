@@ -624,7 +624,8 @@
   pointer-events: none;
 }
 
-.fc-map-hints:empty {
+.fc-map-hints:empty,
+.fc-map-hints[hidden] {
   display: none;
 }
 
@@ -2135,3 +2136,80 @@
 .fc-app.fc-reference.fc-full-map .plan-my-day.is-open .plan-my-day__toggle { display:none; }
 .fc-app.fc-reference.fc-full-map .plan-my-day.is-open .plan-my-day__panel { max-height:calc(100dvh - 130px) !important; border-radius:8px; }
 .fc-app:has(.plan-my-day.is-open) :is(.fc-today-route,.fc-current-job) { visibility:hidden; }
+
+/* Quick filters: a button right next to the search box opens one-tap status / borough / date chips. */
+.fc-app.fc-reference.fc-clean-streets .fc-search-row { gap: 8px; }
+.fc-app .fc-search-row .fc-filter-btn {
+  position: relative;
+  flex: 0 0 auto;
+  width: 50px;
+  min-height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid #d2dad9;
+  background: #fffffff0;
+  color: #25332f;
+  box-shadow: 0 3px 14px #233b4220;
+  cursor: pointer;
+}
+.fc-app .fc-search-row .fc-filter-btn svg { width: 22px; height: 22px; }
+.fc-app .fc-search-row .fc-filter-btn.is-open { background: #1d7a52; border-color: #1d7a52; color: #ffffff; }
+.fc-filter-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #1f1300;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 20px;
+}
+.fc-quick-filters {
+  position: absolute;
+  top: calc(max(12px, env(safe-area-inset-top)) + 60px);
+  left: 12px;
+  right: 12px;
+  z-index: 1600;
+  max-height: min(78vh, 640px);
+  overflow-y: auto;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #d2dad9;
+  background: #fffffff7;
+  color: #1f2d29;
+  box-shadow: 0 10px 30px #0f1f2a40;
+}
+.fc-quick-head { display: flex; align-items: center; gap: 8px; }
+.fc-quick-head strong { flex: 1; font-size: 17px; }
+.fc-quick-head button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid #c9d3d1;
+  background: #ffffff;
+  color: #25332f;
+  font-weight: 700;
+}
+.fc-quick-head button:last-child { background: #1d7a52; border-color: #1d7a52; color: #ffffff; }
+.fc-quick-label { margin-top: 4px; color: #65756f; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+.fc-quick-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.fc-quick-chips button {
+  min-height: 40px;
+  padding: 0 13px;
+  border-radius: 999px;
+  border: 1px solid #c9d3d1;
+  background: #f4f7f6;
+  color: #25332f;
+  font-size: 15px;
+  font-weight: 650;
+}
+.fc-quick-chips button b { margin-left: 4px; color: #65756f; font-weight: 700; }
+.fc-quick-chips button.is-active { background: #1d7a52; border-color: #1d7a52; color: #ffffff; }
+.fc-quick-chips button.is-active b { color: #d1fae5; }
