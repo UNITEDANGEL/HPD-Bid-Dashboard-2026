@@ -7,6 +7,8 @@ import { clearSignature, loadSignature, saveSignature, signatureFromPhoto, trimC
 export default function SignatureCard({ signer, onChange }: { signer: string; onChange: (dataUrl: string) => void }) {
   const [saved, setSaved] = useState("");
   const [drawing, setDrawing] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const [typedName, setTypedName] = useState("");
   const [error, setError] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -86,6 +88,47 @@ export default function SignatureCard({ signer, onChange }: { signer: string; on
     store(trimCanvas(canvas, minX, minY, maxX + 2, maxY + 2));
   }
 
+  // Typed name in a handwriting font, adopted as the signer's own e-signature.
+  // Snell Roundhand ships on iPhone/Mac, Segoe Script on Windows.
+  function fromTypedName() {
+    const raw = typedName.trim() || signer.trim();
+    // Signatures are written in mixed case: "JOTJAGRAJ SINGH" -> "Jotjagraj Singh".
+    const name = raw === raw.toUpperCase() ? raw.toLowerCase().replace(/\b\p{L}/gu, (letter) => letter.toUpperCase()) : raw;
+    if (!name) {
+      setError("Type your name first.");
+      return;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = 1400;
+    canvas.height = 300;
+    const context = canvas.getContext("2d")!;
+    context.fillStyle = "#0b1f4d";
+    context.textBaseline = "middle";
+    let size = 150;
+    const font = (px: number) => `italic ${px}px "Snell Roundhand", "Segoe Script", "Brush Script MT", "Lucida Handwriting", cursive`;
+    context.font = font(size);
+    while (size > 40 && context.measureText(name).width > canvas.width - 40) {
+      size -= 6;
+      context.font = font(size);
+    }
+    context.fillText(name, 20, canvas.height / 2);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    let minX = canvas.width, minY = canvas.height, maxX = -1, maxY = -1;
+    for (let y = 0; y < canvas.height; y += 2) {
+      for (let x = 0; x < canvas.width; x += 2) {
+        if (pixels[(y * canvas.width + x) * 4 + 3] > 0) {
+          minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+        }
+      }
+    }
+    if (maxX < 0) {
+      setError("That name could not be drawn. Try signing with your finger.");
+      return;
+    }
+    store(trimCanvas(canvas, minX, minY, maxX + 2, maxY + 2));
+    setTyping(false);
+  }
+
   async function fromPhoto(file?: File) {
     if (!file) return;
     try {
@@ -105,6 +148,19 @@ export default function SignatureCard({ signer, onChange }: { signer: string; on
         <small>Goes on the affidavit Signature line and the invoice Signature of Principal. The notary section stays blank for your notary.</small>
       </div>
       {saved && !drawing ? <img className="sig-preview" src={saved} alt="Saved signature" /> : null}
+      {typing ? (
+        <label className="sig-type">
+          Type your full name
+          <input
+            data-hpd-smoke="paperwork-signature-name"
+            value={typedName}
+            onChange={(event) => setTypedName(event.target.value)}
+            placeholder={signer || "Your name"}
+            autoCapitalize="words"
+          />
+          <small>Only your own name. This becomes your signature on your Signature lines.</small>
+        </label>
+      ) : null}
       {drawing ? (
         <canvas
           ref={canvasRef}
@@ -122,11 +178,17 @@ export default function SignatureCard({ signer, onChange }: { signer: string; on
             <button type="button" className="sig-primary" data-hpd-smoke="paperwork-signature-save" onClick={keepDrawing}>Use this signature</button>
             <button type="button" onClick={() => setDrawing(false)}>Cancel</button>
           </>
+        ) : typing ? (
+          <>
+            <button type="button" className="sig-primary" data-hpd-smoke="paperwork-signature-type-save" onClick={fromTypedName}>Use typed signature</button>
+            <button type="button" onClick={() => setTyping(false)}>Cancel</button>
+          </>
         ) : (
           <>
             <button type="button" className="sig-primary" data-hpd-smoke="paperwork-signature-draw" onClick={() => { setError(""); setDrawing(true); }}>
               {saved ? "Sign again" : "Sign with finger"}
             </button>
+            <button type="button" data-hpd-smoke="paperwork-signature-type" onClick={() => { setError(""); setTypedName(typedName || signer); setTyping(true); }}>Type to sign</button>
             <button type="button" onClick={() => fileRef.current?.click()}>Upload signature photo</button>
             {saved ? <button type="button" onClick={() => { clearSignature(); setSaved(""); onChange(""); }}>Remove</button> : null}
           </>
