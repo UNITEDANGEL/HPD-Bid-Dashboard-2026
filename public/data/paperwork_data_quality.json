@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-10-02T18:20:11.898Z",
+  "generatedAt": "2026-10-02T19:01:32.811Z",
   "totalJobs": 672,
   "missingAddresses": 0,
   "missingDescriptions": 0,
   "missingItbPage3Descriptions": 56,
   "badDescriptions": 0,
-  "junkOnlyDescriptions": 2,
+  "junkOnlyDescriptions": 0,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
   "missingPage3Images": 27,
@@ -216,24 +216,7 @@
       }
     ],
     "badDescriptions": [],
-    "junkOnlyDescriptions": [
-      {
-        "OMO": "ER05733",
-        "Address": "25 SHERMAN AVENUE, 10040",
-        "ITB": "ER05733_091626015743.pdf",
-        "Source": "",
-        "Status": "MATCHED",
-        "Preview": "General Decision Number: NY200003 04/10/2020Superse ded General Decision Number: NY190003 State: New York Page 3 of 3 OMO No: ER05733 Issuer"
-      },
-      {
-        "OMO": "ER05421",
-        "Address": "6801 BAY PARKWAY, 11204",
-        "ITB": "ER05421_090926052900.pdf",
-        "Source": "",
-        "Status": "MATCHED",
-        "Preview": "General Decision Number: NY200003 04/10/2020Superse ded General Decision Number: NY190003 State: New York Page 3 of 3 OMO No: ER05421 Issuer"
-      }
-    ],
+    "junkOnlyDescriptions": [],
     "sourceReviewJobs": [],
     "missingItbFiles": [],
     "missingPage3Images": [
