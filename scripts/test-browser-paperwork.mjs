@@ -109,14 +109,22 @@ try {
         await page.fill('[data-hpd-smoke="paperwork-call-1"]', "2026-09-30");
       }
     }
-    await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
+    if (outcome === "work_completed") {
+      // The notary's approval is the last step: the package builds by itself, no Generate tap.
+      await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
+      // Signed and unsigned copies are reviewed together on the same screen.
+      await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"] .pkg-page img').nth(pages - 1).waitFor({ timeout: 30000 });
+      assert.ok(await page.locator('[data-hpd-smoke="paperwork-download-unsigned"]').getAttribute("download"), `${job}: unsigned copy must be downloadable from the review screen`);
+    } else {
+      await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
+    }
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
     // Every PDF page must render as a preview image (pdfjs failed on browsers without new JS APIs).
-    await page.locator(".pkg-page img").nth(pages - 1).waitFor({ timeout: 30000 });
-    assert.equal(await page.locator(".pkg-page img").count(), pages, `${job}: review must preview every page`);
+    await page.locator('[data-hpd-smoke="paperwork-package-pages"] .pkg-page img').nth(pages - 1).waitFor({ timeout: 30000 });
+    assert.equal(await page.locator('[data-hpd-smoke="paperwork-package-pages"] .pkg-page img').count(), pages, `${job}: review must preview every page`);
     await page.screenshot({ path: path.join(outDir, `${job}-${outcome}.png`) });
 
-    const href = await page.locator(`a[download$="-affidavit-invoice.pdf"]`).first().getAttribute("href");
+    const href = await page.locator('[data-hpd-smoke="paperwork-save-pdf"]').getAttribute("href");
     assert.ok(href, `${job}: no PDF link in package review`);
     const base64 = await page.evaluate(async (url) => {
       const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
@@ -150,7 +158,7 @@ try {
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
     const uploads = [];
-    let emailBody = "";
+    const emails = [];
     await page.route("**/api/drive/**", async (route) => {
       const url = route.request().url();
       if (url.includes("/session")) return route.fulfill({ json: { configured: true, connected: true, canEmail: true, email: "test@example.com" } });
@@ -160,7 +168,7 @@ try {
         return route.fulfill({ json: { ok: true } });
       }
       if (url.includes("/email-package")) {
-        emailBody = route.request().postData() || "";
+        emails.push({ subject: decodeURIComponent(route.request().headers()["x-hpd-subject"] || ""), body: route.request().postData() || "" });
         return route.fulfill({ json: { to: ["test@example.com"] } });
       }
       return route.fulfill({ json: {} });
@@ -175,6 +183,7 @@ try {
     await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
     // No Generate tap: the package builds by itself after the notary approves.
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
+    await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"]').waitFor({ timeout: 30000 });
     await page.locator(".pkg-confirm input").check();
     await page.locator('[data-hpd-smoke="paperwork-approve-save"]').click();
     await page.locator('[data-hpd-smoke="paperwork-drive-link"]').waitFor({ timeout: 60000 });
@@ -182,10 +191,17 @@ try {
     const printUpload = uploads.find((name) => name.includes("PRINT-COPY-unsigned"));
     assert.ok(printUpload, `${job}: unsigned print copy must be saved to the Drive folder (got ${uploads.join(", ")})`);
     assert.ok(uploads.some((name) => name.endsWith("-affidavit-invoice.pdf") && !name.includes("PRINT-COPY")), `${job}: signed PDF must be saved to Drive`);
-    assert.ok(emailBody.includes("-affidavit-invoice.pdf"), `${job}: signed PDF must be attached to the email`);
-    assert.ok(!emailBody.includes("PRINT-COPY"), `${job}: the unsigned print copy must NOT be emailed`);
+    // Two separate emails: SIGNED (forward this one) and NOT SIGNED (print copy).
+    assert.equal(emails.length, 2, `${job}: expected a SIGNED and a NOT SIGNED email, got ${emails.map((e) => e.subject).join(" | ")}`);
+    const signedEmail = emails.find((email) => email.subject.startsWith("SIGNED - "));
+    const unsignedEmail = emails.find((email) => email.subject.startsWith("NOT SIGNED - "));
+    assert.ok(signedEmail && unsignedEmail, `${job}: subjects must start with SIGNED / NOT SIGNED`);
+    assert.ok(signedEmail.body.includes("-affidavit-invoice.pdf") && !signedEmail.body.includes("PRINT-COPY"), `${job}: SIGNED email carries only the signed PDF`);
+    assert.ok(unsignedEmail.body.includes("PRINT-COPY-unsigned"), `${job}: NOT SIGNED email carries the unsigned print copy`);
+    assert.equal((unsignedEmail.body.match(/filename="/g) || []).length, 1, `${job}: NOT SIGNED email carries only the unsigned print copy`);
+    await page.getByText("Unsigned print copy emailed separately").first().waitFor({ timeout: 10000 });
     assert.deepEqual(errors, [], `${job}: page errors`);
-    console.log(`PASS ${job} job-card flow: waits for notary, builds by itself, emails signed copy only, print copy saved to Drive (${uploads.length} Drive files)`);
+    console.log(`PASS ${job} job-card flow: waits for notary, builds by itself, emails SIGNED and NOT SIGNED separately, both saved to Drive (${uploads.length} Drive files)`);
     await page.close();
   }
 
