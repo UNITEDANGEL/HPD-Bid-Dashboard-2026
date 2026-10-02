@@ -284,20 +284,6 @@ function notaryDateParts(isoDate: string) {
   };
 }
 
-function displayDateTime(value: unknown) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  const parsed = parseDateValue(raw);
-  if (!parsed) return raw;
-  return parsed.toLocaleString("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
 function monthName(value: string) {
   const parsed = parseDateValue(value);
   return parsed ? parsed.toLocaleString("en-US", { month: "long" }).toUpperCase() : "";
@@ -1103,7 +1089,7 @@ function packageManifestText(
   const lines = [
     "HPD COMPLETE PACKAGE",
     `OMO / WORK #: ${jobId}`,
-    `Generated: ${new Date().toLocaleString("en-US")}`,
+    `Generated: ${displayDate(todayIsoDate())}`,
     "",
     "PDF",
     `- ${pdf.fileName} (${packetSizeLabel(pdf.size)})`,
@@ -1135,7 +1121,7 @@ function videoPackageManifestText(jobId: string, videos: FieldMedia[]) {
   return [
     "HPD VIDEO PACKAGE",
     `OMO / WORK #: ${jobId}`,
-    `Generated: ${new Date().toLocaleString("en-US")}`,
+    `Generated: ${displayDate(todayIsoDate())}`,
     "",
     `VIDEOS INCLUDED (${videos.length})`,
     ...videos.map((media, index) => {
@@ -1225,6 +1211,11 @@ export default function PaperworkPage() {
   const [notaryApproved, setNotaryApproved] = useState(false);
   const rememberNotary = useCallback((notary: NotaryApproval | null) => { notaryRef.current = notary; setNotaryApproved(Boolean(notary)); }, []);
   const autoWaitScrolledRef = useRef(false);
+  // Editing after review: the approval and media choice the package was built with, so it can be
+  // rebuilt with corrected details without signing again. Cleared when the job changes.
+  const packageNotaryRef = useRef<NotaryApproval | null>(null);
+  const lastIncludeMediaRef = useRef(true);
+  const [editingPackage, setEditingPackage] = useState(false);
   const [delivery, setDelivery] = useState<{ working: boolean; message: string; folderLink: string; emailed: boolean; error: string } | null>(null);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
@@ -1417,6 +1408,20 @@ export default function PaperworkPage() {
     })();
   }, [notaryApproved, signerReady, canGeneratePackage]);
 
+  // Review -> Edit: back to the details with the signatures kept, then one tap rebuilds both copies.
+  function editPackageDetails() {
+    clearPackagePreview();
+    setEditingPackage(true);
+    setPdfStatus("Edit any details or dates below, then tap Update package. Your signatures and the notary's approval are kept.");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function rebuildPackage() {
+    setEditingPackage(false);
+    notaryRef.current = packageNotaryRef.current;
+    void generateCompletePackage(lastIncludeMediaRef.current, true);
+  }
+
   function clearPackagePreview() {
     setPackageReviewed(false);
     setPackageApproved(false);
@@ -1429,6 +1434,8 @@ export default function PaperworkPage() {
 
   function chooseJob(id: string) {
     clearPackagePreview();
+    packageNotaryRef.current = null;
+    setEditingPackage(false);
     setSelectedId(id);
     const job = findJob(jobs, id);
     if (!job) return;
@@ -2056,6 +2063,8 @@ export default function PaperworkPage() {
       });
       if (!pdf) return;
       // Fresh for every affidavit: never carry an approval into the next package.
+      packageNotaryRef.current = notaryRef.current;
+      lastIncludeMediaRef.current = includeMedia;
       rememberNotary(null);
       setNotaryKey((key) => key + 1);
 
@@ -3728,6 +3737,24 @@ export default function PaperworkPage() {
           font-weight: 800;
         }
 
+        .pkg-update-bar {
+          position: sticky;
+          bottom: 10px;
+          z-index: 30;
+          display: grid;
+          gap: 6px;
+          padding: 12px;
+          border-radius: 16px;
+          border: 1px solid rgba(83, 230, 156, 0.6);
+          background: rgba(8, 20, 30, 0.96);
+          box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+        }
+
+        .pkg-update-bar small {
+          color: #caffdf;
+          font-weight: 800;
+        }
+
         .pkg-copy-head {
           display: grid;
           gap: 2px;
@@ -5069,9 +5096,18 @@ export default function PaperworkPage() {
             </div>
           </details>
 
+          {!packagePreview && editingPackage && packageNotaryRef.current ? (
+            <div className="pkg-update-bar" data-hpd-smoke="paperwork-update-package">
+              <small>Signatures and the notary&apos;s approval are kept.</small>
+              <button type="button" className="paperwork-print" disabled={!canGeneratePackage} onClick={rebuildPackage}>
+                Update package
+              </button>
+            </div>
+          ) : null}
+
           {!packagePreview ? <SignatureCard signer={form.signer} onChange={rememberSignature} /> : null}
 
-          {!packagePreview ? (
+          {!packagePreview && !(editingPackage && packageNotaryRef.current) ? (
             <NotaryCard
               key={notaryKey}
               minDate={
@@ -5106,8 +5142,8 @@ export default function PaperworkPage() {
                   <h3>{packagePreview.jobId}</h3>
                   <p>{packageStatusLabel(outcome)} · Total {form.amount || "$0.00"}</p>
                 </div>
-                <button type="button" className="pkg-edit" data-hpd-smoke="paperwork-package-edit" onClick={clearPackagePreview}>
-                  Edit
+                <button type="button" className="pkg-edit" data-hpd-smoke="paperwork-package-edit" onClick={editPackageDetails}>
+                  Edit details
                 </button>
               </div>
 

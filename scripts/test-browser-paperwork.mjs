@@ -188,6 +188,21 @@ try {
     // No Generate tap: the package builds by itself after the notary approves.
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
     await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"]').waitFor({ timeout: 30000 });
+    // Edit a date from the review screen and rebuild: no signing again, new date in the signed PDF.
+    await page.locator('[data-hpd-smoke="paperwork-package-edit"]').click();
+    await page.fill('[data-hpd-smoke="paperwork-work-complete"]', "2026-09-30");
+    await page.locator('[data-hpd-smoke="paperwork-update-package"] button').click();
+    await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"]').waitFor({ timeout: 60000 });
+    const editedHref = await page.locator('[data-hpd-smoke="paperwork-save-pdf"]').getAttribute("href");
+    const editedBytes = Buffer.from(await page.evaluate(async (url) => {
+      const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+      let text = "";
+      for (const byte of bytes) text += String.fromCharCode(byte);
+      return btoa(text);
+    }, editedHref), "base64");
+    assert.ok(extractPdfText(editedBytes).includes("09/30/26"), `${job}: edited Work Completed date must be in the rebuilt PDF`);
+    const editedImages = (editedBytes.toString("latin1").match(/\/Subtype \/Image/g) || []).length;
+    assert.ok(editedImages >= 6, `${job}: rebuilt package keeps the signer and notary signatures (found ${editedImages} images)`);
     await page.locator(".pkg-confirm input").check();
     await page.locator('[data-hpd-smoke="paperwork-approve-save"]').click();
     await page.locator('[data-hpd-smoke="paperwork-drive-link"]').waitFor({ timeout: 60000 });

@@ -16,10 +16,11 @@ export function nextFieldAction(stamps: FieldStamps, media: { before: number; af
     return { key: "review", label: "Review outcome & paperwork" } as const;
   }
   if (media.after > 0) return { key: "record", label: "Record outcome & prepare package" } as const;
+  // Arrived -> before photos -> after photos -> outcome -> package. Arriving starts the visit, and
+  // saving the before photos records the work start, so neither is a separate step.
   if (!stamps.arrived) return { key: "arrived", label: "I have arrived" } as const;
   if (!stamps.visit) return { key: "visit", label: "Start visit" } as const;
   if (!media.before && !stamps.work) return { key: "before", label: "Add before photos" } as const;
-  if (!stamps.work) return { key: "work", label: "Start work" } as const;
   if (!media.after) return { key: "after", label: "Add after photos" } as const;
   return { key: "record", label: "Record outcome" } as const;
 }

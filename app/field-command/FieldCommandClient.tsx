@@ -242,12 +242,11 @@ function formatSavedTime(iso?: string) {
   if (!iso) return "";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("en-US", {
+  // Dates only on the job card -- no times.
+  return date.toLocaleDateString("en-US", {
     month: "2-digit",
     day: "2-digit",
     year: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
   });
 }
 
@@ -1353,6 +1352,8 @@ export default function FieldCommandClient() {
       await refreshMediaCounts(selectedJob);
       const unstamped = saved.filter(item => item.mediaType === "video" && item.stamped === false).length;
       setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}.${unstamped ? ` ${unstamped} video(s) saved as originals without burned-in labels; review before submitting.` : ""}` : "No image or video was saved.");
+      // Before photos mark the work start (date used on the affidavit); no separate "Start work" tap.
+      if (kind === "before" && saved.length && !workflowStamps[id]?.work) saveWorkflowStamp(selectedJob, "work", "Work Started");
       if (kind === "after" && saved.length) openOutcomePanel();
     } catch (error) {
       setMediaMessage(error instanceof Error ? error.message : "Media save failed.");
@@ -1702,14 +1703,18 @@ export default function FieldCommandClient() {
 
               <div className="jc-next">
                 {next.key === "before" || next.key === "after" ? (
-                  <p className="jc-next-hint">Next: {next.label} in Media &amp; Documents below</p>
+                  <>
+                    <p className="jc-next-hint">Next: {next.label} in Media &amp; Documents below</p>
+                    {/* No access / refused don't need photos: go straight to the outcome. */}
+                    <button type="button" className="jc-skip-photos" data-hpd-smoke="jc-skip-photos" onClick={openOutcomePanel}>No access or refused? Record outcome</button>
+                  </>
                 ) : next.key === "review" ? (
                   <a href={paperworkHref} className="fc-next-action jc-glow">{next.label}<span aria-hidden="true">&rarr;</span></a>
                 ) : next.key === "record" ? (
                   <button type="button" className="fc-next-action jc-glow" onClick={openOutcomePanel}>{next.label}<span aria-hidden="true">&rarr;</span></button>
                 ) : (
                   <button type="button" className="fc-next-action jc-glow" disabled={!workflowLoaded || Boolean(mediaBusy)} onClick={() => {
-                    saveWorkflowStamp(selectedJob, next.key, next.key === "work" ? "Work Started" : undefined);
+                    saveWorkflowStamp(selectedJob, next.key);
                   }}>{mediaBusy ? "Saving media..." : next.label}<span aria-hidden="true">&rarr;</span></button>
                 )}
                 {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
