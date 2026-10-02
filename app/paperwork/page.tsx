@@ -57,6 +57,7 @@ type PackageForm = {
   signer: string;
   sourceStatus: string;
   notes: string;
+  partialReason: string;
 };
 
 const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-performed-affidavit.pdf";
@@ -305,6 +306,7 @@ function initialForm(): PackageForm {
     signer: DEFAULT_PACKAGE_SIGNER,
     sourceStatus: "",
     notes: "",
+    partialReason: "",
   };
 }
 
@@ -437,6 +439,7 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     workComplete: displayDate(outcome === "work_completed" || outcome === "partial_work_completed" ? workCompleteAt : noWorkCompleteAt),
     sourceStatus,
     notes: getJobDescription(job).slice(0, 650),
+    partialReason: "",
   };
 }
 
@@ -697,6 +700,14 @@ function pdfLocationFontSize(value: string) {
 
 const WORK_MATERIALS = ["TRASH BAG", "WD 40", "SELF SCREWS", "PLEASE SEE ATTACHED DESCRIPTION", "", "ADJUSTMENTS/ ALIGNMENT"];
 const PARTIAL_MATERIALS = ["TRASH BAG", "WD 40", "SELF SCREWS", "PLEASE SEE ATTACHED DESCRIPTION", "STRIKE PLATE", "ADJUST AND ALIGN"];
+
+const PARTIAL_REASON_PRESETS = [
+  "ADDITIONAL WORK WAS NEEDED BEYOND THE ORIGINAL SCOPE",
+  "CONTRACTOR WAS PREVENTED FROM COMPLETING THE WORK BY ANOTHER PERSON",
+  "MATERIAL WAS ON BACKORDER / DELAYED",
+  "LIMITED ACCESS PREVENTED COMPLETING ALL WORK",
+  "TENANT REQUESTED WORK BE RESCHEDULED",
+];
 
 function safeFilename(value: string) {
   return String(value || "HPD")
@@ -1516,9 +1527,10 @@ export default function PaperworkPage() {
         showUnderline(affidavitForm, "Complete Date");
         setAffidavitText(
           "Partial Reason",
-          activeOutcome === "partial_work_completed" ? activeForm.notes || "" : "",
+          activeOutcome === "partial_work_completed" ? activeForm.partialReason || "" : "",
           9
         );
+        showUnderline(affidavitForm, "Partial Reason");
         setAffidavitText("Partial Amount", activeOutcome === "partial_work_completed" ? chargeAmount : "");
         setAffidavitText("Notary Day Month", "", 9);
         setAffidavitText("Notary Year", "", 9);
@@ -4096,6 +4108,23 @@ export default function PaperworkPage() {
           <label className="paperwork-field">
             Notes / Scope
             <textarea value={form.notes} onChange={(event) => update("notes", event.target.value)} />
+          </label>
+
+          <label className="paperwork-field">
+            Partial Work Reason (used on affidavit item 6, "due to ___")
+            <select
+              value=""
+              onChange={(event) => {
+                if (event.target.value) update("partialReason", event.target.value);
+                event.target.value = "";
+              }}
+            >
+              <option value="">Pick a common reason...</option>
+              {PARTIAL_REASON_PRESETS.map((reason) => (
+                <option key={reason} value={reason}>{reason}</option>
+              ))}
+            </select>
+            <textarea value={form.partialReason} onChange={(event) => update("partialReason", event.target.value)} placeholder="Reason work was only partially completed" />
           </label>
             </div>
           </details>
