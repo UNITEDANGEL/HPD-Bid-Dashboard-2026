@@ -20,6 +20,8 @@ BAD_MARKERS = [
     # Purchase-order header captured instead of the scope (ER04964).
     "submit invoice* in quadruplicate",
     "submit invoice in quadruplicate",
+    # ITB site-visit instructions captured instead of the scope (ER04964).
+    "evidence of the required site visit",
 ]
 # Printed labels of the blank HPD work-description form. A scanned (faxed) ITB has only these in its
 # text layer -- the real scope is in the image -- and they contain work words ("Provide/Install",

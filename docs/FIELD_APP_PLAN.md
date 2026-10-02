@@ -69,7 +69,7 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 4. [x] **Map pins**: colors you can read from far away: **blue = new**, **green = completed**, **red = refused**, **grey = no access**, **purple = completed by others**; a different icon per status; the pin you're zooming toward grows and glows
 5. [ ] **Paperwork page polish**: aligned, neat, follows the procedure
 6. [x] **Automatic data checks** after every download: scan every job (description, ITB, address, dates, amounts) and show alerts in the app
-7. [~] **ER04964 and the other 4 jobs**: ER05441, ER05941 fixed by the OCR run; ER05421 and ER05733 (plus 4 older jobs) now show their real scope (it sat after "Job Description:" behind a wage-decision page); ER04964 still has only its purchase-order header, now flagged as "no scope" (app blocks the package; type the scope on the paperwork page) and the fetcher re-targets it
+7. [~] **ER04964 and the other 4 jobs**: ER05441, ER05941 fixed by the OCR run; ER05421 and ER05733 (plus 4 older jobs) now show their real scope (it sat after "Job Description:" behind a wage-decision page); ER04964: the fetcher re-run picked up the ITB's site-visit instructions instead (also junk); both are now flagged as "no scope" (app blocks the package; type the scope on the paperwork page) and the fetcher re-targets it
 8. [ ] **iPhone speed**: make the app faster on mobile
 9. [ ] **Better app link** (custom domain): needs a domain name from the owner
 10. [x] **Test job (master sample)**: TEST-0001, search "TEST" on the map (live)
