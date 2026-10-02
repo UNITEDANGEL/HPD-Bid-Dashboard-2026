@@ -63,7 +63,18 @@ const JUNK_DESCRIPTION_PATTERNS = [
   /GC:\s*ELEV\s*ATOR/i,
   /General\s+Decision\s+Number/i,
   /Confirma\s*t?\s*ion\s+of\s+Award/i,
+  /Submit\s+Invoice\*?\s+In\s+Quadruplicate/i,
 ];
+
+// Mirrors salvageScope in lib/description-quality.ts.
+function salvageScope(value) {
+  let text = String(value ?? "").trim();
+  const label = text.match(/Job\s+Description\s*:/i);
+  if (label && label.index > 0) text = text.slice(label.index + label[0].length);
+  const tail = text.search(/CONTRACTOR\s+MUST\s+CONTACT\s+HPD|IF\s+NO\s+WORK\s+IS\s+PERFORMED\s+OR\s+CONTRACTOR/i);
+  if (tail > 40) text = text.slice(0, tail);
+  return text.trim().replace(/^:\s*/, "");
+}
 
 function isJunkDescription(value) {
   return JUNK_DESCRIPTION_PATTERNS.some((pattern) => pattern.test(String(value || "")));
@@ -72,7 +83,7 @@ function isJunkDescription(value) {
 // Mirrors getJobDescription: junk fields are skipped, so a job is only bad
 // when every filled description field is junk.
 function onlyJunkDescriptions(job) {
-  const filled = DESCRIPTION_KEYS.map((key) => String(job[key] ?? "").trim()).filter(Boolean);
+  const filled = DESCRIPTION_KEYS.map((key) => salvageScope(job[key])).filter(Boolean);
   return filled.length > 0 && filled.every(isJunkDescription);
 }
 

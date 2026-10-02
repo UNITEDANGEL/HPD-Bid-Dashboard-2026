@@ -17,6 +17,9 @@ BAD_MARKERS = [
     "bid certification",
     "scope of work is described on the attached copy",
     "you must certify your bid price",
+    # Purchase-order header captured instead of the scope (ER04964).
+    "submit invoice* in quadruplicate",
+    "submit invoice in quadruplicate",
 ]
 # Printed labels of the blank HPD work-description form. A scanned (faxed) ITB has only these in its
 # text layer -- the real scope is in the image -- and they contain work words ("Provide/Install",
