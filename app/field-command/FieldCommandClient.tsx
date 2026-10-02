@@ -38,6 +38,30 @@ const BOROUGHS: { key: BoroughKey; label: string; center: [number, number]; colo
 
 const STATUS_FILTERS = JOB_QUEUES;
 
+// One-tap date windows for the quick filters, on whichever date type is picked.
+const QUICK_DATE_RANGES = [
+  { key: "year", label: "This year" },
+  { key: "next30", label: "Next 30 days" },
+  { key: "last30", label: "Last 30 days" },
+  { key: "last90", label: "Last 90 days" },
+  { key: "all", label: "All dates" },
+] as const;
+type QuickDateKey = (typeof QUICK_DATE_RANGES)[number]["key"];
+
+function shiftDay(iso: string, days: number) {
+  const date = new Date(`${iso}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function quickDateBounds(key: QuickDateKey, today: string) {
+  if (key === "year") return { from: `${today.slice(0, 4)}-01-01`, to: `${today.slice(0, 4)}-12-31` };
+  if (key === "next30") return { from: today, to: shiftDay(today, 30) };
+  if (key === "last30") return { from: shiftDay(today, -30), to: today };
+  if (key === "last90") return { from: shiftDay(today, -90), to: today };
+  return { from: "", to: "" };
+}
+
 function value(job: JobRecord, keys: string[]) {
   for (const key of keys) {
     const v = job[key];
@@ -55,6 +79,17 @@ function numberValue(job: JobRecord, keys: string[]) {
 }
 
 const JOBS_URL = "/data/COA_Fetcher_2026.json";
+// Where the map was last left (center + zoom), so it reopens right there.
+const MAP_VIEW_KEY = "hpd-map-view-v1";
+
+function savedMapView(): { lat: number; lng: number; zoom: number } | null {
+  try {
+    const view = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || "null");
+    return view && [view.lat, view.lng, view.zoom].every((n) => typeof n === "number" && Number.isFinite(n)) ? view : null;
+  } catch {
+    return null;
+  }
+}
 const JOBS_CACHE = "hpd-jobs-v1";
 
 function jobId(job: JobRecord) {
@@ -242,11 +277,14 @@ function formatSavedTime(iso?: string) {
   if (!iso) return "";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  // Dates only on the job card -- no times.
-  return date.toLocaleDateString("en-US", {
+  // The job card is internal, so it keeps the time. Anything that goes out (PDFs, email, Drive
+  // file names) shows the date only.
+  return date.toLocaleString("en-US", {
     month: "2-digit",
     day: "2-digit",
     year: "2-digit",
+    hour: "numeric",
+    minute: "2-digit",
   });
 }
 
@@ -311,6 +349,14 @@ function MenuIcon() {
       <line x1="4" y1="7" x2="20" y2="7" />
       <line x1="4" y1="12" x2="20" y2="12" />
       <line x1="4" y1="17" x2="20" y2="17" />
+    </svg>
+  );
+}
+
+function FilterIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 6h16M7 12h10M10 18h4" />
     </svg>
   );
 }
@@ -481,6 +527,7 @@ export default function FieldCommandClient() {
   const appointmentRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const mapFramingRef = useRef("");
+  const restoredMapViewRef = useRef(false);
   const tileLayerRef = useRef<any>(null);
   const vectorLayerRef = useRef<any>(null);
   const darkTilesRef = useRef(false);
@@ -511,6 +558,21 @@ export default function FieldCommandClient() {
   }, []);
   const [borough, setBorough] = useState<BoroughKey | "ALL">("ALL");
   const [status, setStatus] = useState("pending");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Status and borough filters come back as they were left.
+  const quickFiltersLoaded = useRef(false);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("hpd-map-quick-filters-v1") || "null");
+      if (saved && STATUS_FILTERS.some(({ key }) => key === saved.status)) setStatus(saved.status);
+      if (saved && (saved.borough === "ALL" || BOROUGHS.some(({ key }) => key === saved.borough))) setBorough(saved.borough);
+    } catch {}
+    quickFiltersLoaded.current = true;
+  }, []);
+  useEffect(() => {
+    if (!quickFiltersLoaded.current) return;
+    try { localStorage.setItem("hpd-map-quick-filters-v1", JSON.stringify({ status, borough })); } catch {}
+  }, [status, borough]);
   const requestedJobLoaded = useRef(false);
   const [daysBack, setDaysBack] = useState<number | null>(null);
   const [dateRange, setDateRange] = useState<{ field: JobDateField; from: string; to: string; preset?: boolean }>(currentYearRange);
@@ -765,6 +827,30 @@ export default function FieldCommandClient() {
 
   const mappedCount = useMemo(() => jobs.filter((job) => jobLatLng(job)).length, [jobs]);
 
+  const quickDateKey = daysBack !== null
+    ? null
+    : QUICK_DATE_RANGES.find(({ key }) => {
+        const bounds = quickDateBounds(key, calendarDate);
+        return bounds.from === dateRange.from && bounds.to === dateRange.to;
+      })?.key ?? null;
+  const activeFilterCount = (status !== "pending" ? 1 : 0) + (borough !== "ALL" ? 1 : 0)
+    + (dateRange.field !== "award" || quickDateKey !== "year" ? 1 : 0);
+
+  function applyQuickDate(key: QuickDateKey) {
+    setDaysBack(null);
+    setCustomDateRange(false);
+    const bounds = quickDateBounds(key, calendarDate);
+    setDateRange(key === "year" && dateRange.field === "award" ? currentYearRange() : { field: dateRange.field, preset: false, ...bounds });
+  }
+
+  function resetQuickFilters() {
+    setStatus("pending");
+    setBorough("ALL");
+    setDaysBack(null);
+    setCustomDateRange(false);
+    setDateRange(currentYearRange());
+  }
+
   useEffect(() => {
     const previousBg = document.body.style.background;
     document.body.style.background = "#05070c";
@@ -791,10 +877,17 @@ export default function FieldCommandClient() {
       pointsRef.current = points;
 
       if (!mapRef.current) {
+        const lastView = savedMapView();
         const map = L.map(mapNode.current, {
           zoomControl: false,
           attributionControl: true,
-        }).setView([40.72, -73.95], 10);
+        }).setView(lastView ? [lastView.lat, lastView.lng] : [40.72, -73.95], lastView ? lastView.zoom : 10);
+        // Reopening starts where the map was left, not zoomed out to the whole city.
+        if (lastView) restoredMapViewRef.current = true;
+        map.on("moveend", () => {
+          const center = map.getCenter();
+          try { localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() })); } catch {}
+        });
         mapRef.current = map;
         setRouteMapReady(true);
         tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20, maxNativeZoom: darkTiles ? 16 : 19, attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, contributors' }).addTo(map);
@@ -921,7 +1014,10 @@ export default function FieldCommandClient() {
       const map = mapRef.current;
 
       const framing = `${borough}|${search}|${status}|${daysBack}|${JSON.stringify(dateRange)}`;
-      if (mapFramingRef.current !== framing && points.length) {
+      if (mapFramingRef.current !== framing && points.length && restoredMapViewRef.current && !mapFramingRef.current) {
+        // First load after reopening: keep the saved view; later filter/search changes still frame.
+        mapFramingRef.current = framing;
+      } else if (mapFramingRef.current !== framing && points.length) {
         mapFramingRef.current = framing;
         if (points.length === 1) {
           map.setView([points[0].lat, points[0].lng], 15);
@@ -1412,7 +1508,52 @@ export default function FieldCommandClient() {
           <SearchIcon />
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search address or job" aria-label="Search jobs" />
         </div>
+        <button type="button" className={`fc-filter-btn ${filtersOpen ? "is-open" : ""}`} data-hpd-smoke="fc-filter-button" aria-label="Filters" aria-expanded={filtersOpen} aria-controls="fc-quick-filters" onClick={() => { setFiltersOpen((open) => !open); setChromeOpen(false); }}>
+          <FilterIcon />
+          {activeFilterCount ? <span className="fc-filter-badge">{activeFilterCount}</span> : null}
+        </button>
       </div>
+      {filtersOpen ? (
+        <section id="fc-quick-filters" className="fc-quick-filters" data-hpd-smoke="fc-quick-filters" aria-label="Quick filters">
+          <div className="fc-quick-head">
+            <strong>{filteredJobs.length} job{filteredJobs.length === 1 ? "" : "s"}</strong>
+            <button type="button" onClick={resetQuickFilters}>Reset</button>
+            <button type="button" onClick={() => setFiltersOpen(false)}>Done</button>
+          </div>
+          <span className="fc-quick-label">Status</span>
+          <div className="fc-quick-chips">
+            {STATUS_FILTERS.map(({ key, label }) => (
+              <button key={key} type="button" className={status === key ? "is-active" : ""} aria-pressed={status === key} onClick={() => setStatus(key)}>
+                {label} <b>{key === "all" ? jobs.length : statusCounts[key] || 0}</b>
+              </button>
+            ))}
+          </div>
+          <span className="fc-quick-label">Borough</span>
+          <div className="fc-quick-chips">
+            <button type="button" className={borough === "ALL" ? "is-active" : ""} aria-pressed={borough === "ALL"} onClick={() => setBorough("ALL")}>All</button>
+            {BOROUGHS.map(({ key, label }) => (
+              <button key={key} type="button" className={borough === key ? "is-active" : ""} aria-pressed={borough === key} onClick={() => setBorough(key)}>
+                {label} <b>{boroughCounts[key]}</b>
+              </button>
+            ))}
+          </div>
+          <span className="fc-quick-label">Date</span>
+          <div className="fc-quick-chips">
+            {(Object.keys(JOB_DATE_FIELDS) as JobDateField[]).map((field) => (
+              <button key={field} type="button" className={dateRange.field === field ? "is-active" : ""} aria-pressed={dateRange.field === field} onClick={() => setDateRange({ ...dateRange, preset: false, field })}>
+                {JOB_DATE_FIELDS[field]}
+              </button>
+            ))}
+          </div>
+          <div className="fc-quick-chips">
+            {QUICK_DATE_RANGES.map((range) => (
+              <button key={range.key} type="button" className={quickDateKey === range.key ? "is-active" : ""} aria-pressed={quickDateKey === range.key} onClick={() => applyQuickDate(range.key)}>
+                {range.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {chromeOpen && !controlsOpen && <nav className="fc-organized-menu" aria-label="Map menu">
         <strong>Map menu</strong>
         <button type="button" onClick={()=>{setChromeOpen(false);setControlsOpen(false);setPlannerRequest(value=>value+1);}}><ListIcon />Plan my day</button>
@@ -1566,7 +1707,7 @@ export default function FieldCommandClient() {
         ) : null}
 
         {/* Status messages stack below the search box instead of overlapping each other. */}
-        <div className="fc-map-hints">
+        <div className="fc-map-hints" hidden={filtersOpen}>
           {locateStatus === "error" ? (
             <p className="fc-map-hint fc-map-hint-warn">Couldn&apos;t get your location</p>
           ) : null}

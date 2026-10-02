@@ -449,7 +449,6 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   const sourceStatus = getJobWorkflowStatus(job);
   const fieldDate = lastEvidenceAt || lockedAt || secondAttemptAt || refusedAt || verifiedByOthersAt || actualCompleteAt || firstAttemptAt;
   const noWorkCompleteAt = lastEvidenceAt || secondAttemptAt || refusedAt || verifiedByOthersAt || lockedAt;
-  const workCompleteAt = lastEvidenceAt || actualCompleteAt || lockedAt || getJobDate(job, "complete");
   const bidAmount = formatCurrency(getJobAmount(job));
   const chargeAmount = isNoWorkOutcome(outcome) ? formatCurrency(noWorkServiceChargeForJob(job)) : bidAmount;
 
@@ -476,8 +475,10 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     deniedPhone,
     tenantPhone: tenant.phone,
     phoneNote: tenant.phone ? "" : noTelephoneNote(tenant.accessType === "common_area", tenant.apartment),
-    workStart: displayDate(actualStartAt),
-    workComplete: displayDate(outcome === "work_completed" || outcome === "partial_work_completed" ? workCompleteAt : noWorkCompleteAt),
+    // Work packages: completed = the day the package is generated; started = the recorded start
+    // (the day of the before photos, which can be earlier), else the same day. Both stay editable.
+    workStart: displayDate(actualStartAt) || (outcome === "work_completed" || outcome === "partial_work_completed" ? displayDate(todayIsoDate()) : ""),
+    workComplete: outcome === "work_completed" || outcome === "partial_work_completed" ? displayDate(todayIsoDate()) : displayDate(noWorkCompleteAt),
     sourceStatus,
     notes: getJobDescription(job).slice(0, 650),
   };
@@ -684,7 +685,8 @@ function formWithFieldEventDate(form: PackageForm, outcome: PaperworkOutcome, ev
   const noAccessFirstAt = jobText(job, ["NoAccessFirstAttemptAt", "noAccessFirstAttemptAt"]);
   const next: PackageForm = {
     ...form,
-    invoiceDate: fieldDate,
+    // The invoice is dated the day the package is generated.
+    invoiceDate: displayDate(todayIsoDate()),
     fieldDate: form.fieldDate || fieldDate,
   };
 
