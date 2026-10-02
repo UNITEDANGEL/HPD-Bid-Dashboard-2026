@@ -100,6 +100,9 @@ function jobAddress(job: JobRecord) {
   return value(job, ["BuildingAddress", "Address", "address", "Location", "location"]) || "Address not captured";
 }
 
+// Shown when the ITB's scope couldn't be read (e.g. a scanned ITB with only the blank form's text).
+const SCOPE_MISSING = "Couldn't read the scope from this job's ITB. Open the ITB under Job documents; type the scope on the paperwork page.";
+
 function jobScope(job: JobRecord) {
   const picked = longestCleanDescription(job, [
     "ItbPage3Description",
@@ -113,7 +116,7 @@ function jobScope(job: JobRecord) {
     .replace(/^job description:\s*/i, "")
     .replace(/^:\s*/, "")
     .trim();
-  return picked || "Scope not captured yet.";
+  return picked || SCOPE_MISSING;
 }
 
 function packageStatusText(job: JobRecord) {
@@ -1763,7 +1766,7 @@ export default function FieldCommandClient() {
           const next = nextFieldAction(stamps, counts, jobStatus(selectedJob));
           const draft = outcomeDrafts[id] || { outcome: "", note: "" };
           const paperworkHref = paperworkNextHref(id, value(selectedJob, ["WorkflowStatus", "workflowStatus", "FieldOutcome", "fieldOutcome"]));
-          const hasScope = scope !== "Scope not captured yet.";
+          const hasScope = scope !== SCOPE_MISSING;
           return (
             <div ref={jobSheetRef} id="fc-job-card" className="fc-job-sheet fc-job-sheet-flow" aria-label="Selected job">
               <button type="button" className="fc-sheet-handle" aria-label={sheetExpanded ? "Collapse job details" : "Expand job details"} aria-expanded={sheetExpanded} onTouchStart={(event) => { sheetTouchStart.current = event.touches[0].clientY; }} onTouchEnd={(event) => {
@@ -1798,7 +1801,7 @@ export default function FieldCommandClient() {
                   <strong>Job Description</strong>
                   {hasScope && scope.length > 260 ? <button type="button" className="jc-description-more" onClick={() => setScopeOpen((open) => !open)}>{scopeOpen ? "Less" : "All"}</button> : null}
                 </div>
-                <p className={`jc-description-text ${scopeOpen ? "is-open" : ""}`} data-hpd-smoke="jc-description-text">{scope}</p>
+                <p className={`jc-description-text ${scopeOpen ? "is-open" : ""} ${hasScope ? "" : "is-missing"}`} data-hpd-smoke="jc-description-text">{scope}</p>
                 {hasScope && speechOk ? (
                   <div className="jc-description-actions">
                     <button type="button" className="jc-read" data-hpd-smoke="jc-description-read" onClick={() => setReading(readAloud(`Job ${id}. ${jobAddress(selectedJob)}. ${scope}`, () => setReading(false)))}>
