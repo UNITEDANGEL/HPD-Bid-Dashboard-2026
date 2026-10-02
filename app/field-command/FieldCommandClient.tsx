@@ -13,14 +13,14 @@ import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
-import { fetchServerWorkflowOverrides, HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
+import { fetchServerWorkflowOverrides, HPD_STATUS_WORKER_URL, startOverPatch } from "../../lib/paperwork";
 import { longestCleanDescription } from "../../lib/description-quality";
-import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
+import { clearFieldEvidence, listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./job-card-v2.css";
-import { isTestJob, withTestJob } from "../../lib/test-job";
+import { isTestJob, isTestModeJob, setTestModeJob, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
 
 type JobRecord = Record<string, unknown>;
 
@@ -123,6 +123,16 @@ function jobScope(job: JobRecord) {
     .replace(/^:\s*/, "")
     .trim();
   return picked || SCOPE_MISSING;
+}
+
+// Any field step recorded today (trip, arrival, visit, work, package).
+function workedToday(job: JobRecord) {
+  const today = new Date().toDateString();
+  return ["TravelStartedAt", "FieldArrivedAt", "VisitStartedAt", "JobStartedAt", "LastFieldVisitAt", "ActualWorkCompletionDate", "PackageGeneratedAt", "PackageApprovedAt"]
+    .some((key) => {
+      const at = Date.parse(value(job, [key]));
+      return Number.isFinite(at) && new Date(at).toDateString() === today;
+    });
 }
 
 // Automatic data check, run on every job download: anything that would stop the field work or
@@ -613,6 +623,8 @@ export default function FieldCommandClient() {
   const [status, setStatus] = useState("pending");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [dataCheckOpen, setDataCheckOpen] = useState(false);
+  // Bumped when Test mode is switched, so the card re-reads it from the phone.
+  const [testModeVersion, setTestModeVersion] = useState(0);
   // Status and borough filters come back as they were left.
   const quickFiltersLoaded = useRef(false);
   useEffect(() => {
@@ -680,7 +692,7 @@ export default function FieldCommandClient() {
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
   const [workflowLoaded, setWorkflowLoaded] = useState(false);
   const [jobsLoadFailed, setJobsLoadFailed] = useState(false);
-  const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number }>>({});
+  const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number; beforeVideos?: number; afterVideos?: number }>>({});
   // Up to 3 thumbnails per stage for the Media & Documents card.
   const [mediaThumbs, setMediaThumbs] = useState<Record<string, { before: string[]; after: string[] }>>({});
   const [mediaBusy, setMediaBusy] = useState("");
@@ -843,9 +855,13 @@ export default function FieldCommandClient() {
     [activeJobs, calendarDate]
   );
 
+  const openJobKey = selectedJob ? jobId(selectedJob) : "";
   const filteredJobs = useMemo(() => {
     const q = search.trim().toLowerCase();
     return jobs.filter((job) => {
+      // A job never drops off the map while you work it: the open job, and any job worked
+      // today, stay visible whatever its new status (until you archive it).
+      if (jobId(job) === openJobKey || (workedToday(job) && jobQueue(job) !== "archived")) return true;
       if (!matchesJobQueue(job, status)) return false;
       if (!matchesAwardLookback(job, daysBack)) return false;
       if (!matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
@@ -856,7 +872,7 @@ export default function FieldCommandClient() {
       }
       return true;
     });
-  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate]);
+  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey]);
 
   // Open jobs in the current view (finished and test jobs are skipped) that need a data check.
   const dataIssues = useMemo(() => filteredJobs
@@ -1548,6 +1564,8 @@ export default function FieldCommandClient() {
         before: rows.filter((media) => media.kind === "before").length,
         after: rows.filter((media) => media.kind === "after").length,
         total: rows.length,
+        beforeVideos: rows.filter((media) => media.kind === "before" && media.mediaType === "video").length,
+        afterVideos: rows.filter((media) => media.kind === "after" && media.mediaType === "video").length,
       },
     }));
     const thumbs = (kind: string) => rows
@@ -1609,6 +1627,9 @@ export default function FieldCommandClient() {
   function beginClearWorkflow(job: JobRecord) {
     setClearJobId(jobId(job));
     setClearText("");
+    // The confirm box lives in the full card: open it and bring the box into view.
+    setSheetExpanded(true);
+    window.setTimeout(() => document.querySelector(".fc-clear-confirm")?.scrollIntoView({ block: "center", behavior: "smooth" }), 150);
   }
 
   // Undo a saved outcome (e.g. No access, then access was given) without wiping the visit:
@@ -1638,38 +1659,34 @@ export default function FieldCommandClient() {
     setOutcomeMessage(`Outcome cleared. ${id} is open again.`);
   }
 
-  function clearWorkflow(job: JobRecord) {
+  // Start over: clears the outcome, arrival, trip, package status AND every photo/video saved for
+  // this job on the phone, here and on the status server, so the job is Pending again.
+  async function clearWorkflow(job: JobRecord) {
     const id = jobId(job);
     if (clearText.trim().toUpperCase() !== "CLEAR") {
-      setMediaMessage("Type CLEAR to reset this workflow.");
+      setMediaMessage("Type CLEAR to start this job over.");
       return;
     }
+    const patch = startOverPatch();
     setWorkflowStamps((prev) => ({ ...prev, [id]: {} }));
-    writeSharedWorkflowPatch(id, { __clearWorkflow: true });
-    mergeWorkflowPatchIntoScreen(id, {
-      WorkflowStatus: "",
-      workflowStatus: "",
-      FieldOutcome: "",
-      fieldOutcome: "",
-      StatusOverride: "",
-      status: "Pending",
-      FieldArrivedAt: "",
-      fieldArrivedAt: "",
-      LastFieldVisitAt: "",
-      lastFieldVisitAt: "",
-      VisitStartedAt: "",
-      visitStartedAt: "",
-      JobStartedAt: "",
-      jobStartedAt: "",
-      ActualWorkStartDate: "",
-      actualWorkStartDate: "",
-      OutcomeLockedAt: "",
-      outcomeLockedAt: "",
-    });
+    setOutcomeDrafts((prev) => ({ ...prev, [id]: { outcome: "", note: "" } }));
+    // No __clearWorkflow flag: it would keep wiping the new steps recorded after starting over.
+    try { writeSharedWorkflowPatch(id, { ...patch, __clearWorkflow: false }); } catch {}
+    mergeWorkflowPatchIntoScreen(id, patch);
     setClearJobId("");
     setClearText("");
-    setMediaMessage("Workflow cleared. Saved media stays unless you remove it from the media/package screen.");
+    let removed = 0;
+    try { removed = await clearFieldEvidence(id); } catch { /* reported below */ }
+    await refreshMediaCounts(job);
+    let serverCleared = true;
+    try {
+      const response = await fetch(`${HPD_STATUS_WORKER_URL}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: id, patch }) });
+      serverCleared = response.ok;
+    } catch { serverCleared = false; }
+    setMediaMessage(`${id} started over: outcome, steps and package cleared; ${removed} photo/video file(s) removed from this phone.${serverCleared ? "" : " The status server didn't answer; it will be cleared next time you're online."}`);
+    setOutcomeMessage("");
   }
+
 
   return (
     <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
@@ -2006,8 +2023,8 @@ export default function FieldCommandClient() {
                 </div>
               </header>
 
-              {isTestJob(jobId(selectedJob)) ? (
-                <p className="jc-test-banner" data-hpd-smoke="jc-test-banner">🧪 TEST JOB: sample only. Run the whole flow here; packages are marked TEST and filed in Drive under "TEST jobs". Use Clear job to start over.</p>
+              {testModeVersion >= 0 && isTestJob(jobId(selectedJob)) ? (
+                <p className="jc-test-banner" data-hpd-smoke="jc-test-banner">🧪 {jobId(selectedJob) === TEST_JOB_ID ? "TEST JOB: sample only." : "TEST MODE is on for this job."} Packages are marked TEST and filed in Drive under &quot;TEST jobs / {jobId(selectedJob)}&quot;. Use Start over to clear everything and run it again.</p>
               ) : null}
               <section className="jc-description" aria-label="Job description" data-hpd-smoke="jc-description">
                 <div className="jc-section-head">
@@ -2091,7 +2108,7 @@ export default function FieldCommandClient() {
                       {num(2)}
                       <div>
                         <b>What happened?</b>
-                        <small>{noWorkOutcomes.includes(savedOutcome) ? FIELD_OUTCOMES[savedOutcome] : workStarted ? `Work started${stamps.work ? ` ${formatSavedTime(stamps.work)}` : ""} · ${counts.before} before` : "Start the work with before photos/video, or record why not"}</small>
+                        <small>{noWorkOutcomes.includes(savedOutcome) ? FIELD_OUTCOMES[savedOutcome] : workStarted ? `Work started${stamps.work ? ` ${formatSavedTime(stamps.work)}` : ""} · before: ${counts.before - (counts.beforeVideos || 0)} photo(s), ${counts.beforeVideos || 0} video(s)` : "Start the work with before photos/video, or record why not"}</small>
                         {current === 2 ? (
                           <>
                             <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-start-work" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("before")}>Start work: before photo / video<span aria-hidden="true">&rarr;</span></button>
@@ -2112,7 +2129,7 @@ export default function FieldCommandClient() {
                           {num(3)}
                           <div>
                             <b>Finish work</b>
-                            <small>{counts.after ? `${counts.after} after photo/video saved` : "Take the after photos and video"}</small>
+                            <small>{counts.after ? `After: ${counts.after - (counts.afterVideos || 0)} photo(s), ${counts.afterVideos || 0} video(s)` : "Take the after photos and video"}</small>
                             {current === 3 ? <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-after" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("after")}>Finish work: after photo / video<span aria-hidden="true">&rarr;</span></button> : null}
                             {counts.after > 0 && !savedOutcome ? <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-more-after" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("after")}>+ More after photos / video</button> : null}
                           </div>
@@ -2145,6 +2162,7 @@ export default function FieldCommandClient() {
                       </div>
                     </li>
                     {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
+                    {mediaMessage ? <p className={`fc-save-message ${/fail|too |could not|couldn|error|not saved|no image/i.test(mediaMessage) ? "is-error" : ""}`} role="status" data-hpd-smoke="jc-media-message">{mediaBusy ? "Saving... keep this screen open. " : ""}{mediaMessage}</p> : mediaBusy ? <p className="fc-save-message" role="status">Saving {mediaBusy} photos/videos... keep this screen open.</p> : null}
                   </ol>
                 );
               })()}
@@ -2263,7 +2281,13 @@ export default function FieldCommandClient() {
               <div className="fc-card-footer jc-footer">
               <button type="button" className="fc-outcome-link" onClick={openOutcomePanel}>Outcome</button>
               <button type="button" className="fc-outcome-link" onClick={openAppointment}>Appointment</button>
-              <button type="button" className="fc-outcome-link" onClick={() => beginClearWorkflow(selectedJob)}>Clear job</button>
+              <button type="button" className="fc-outcome-link" data-hpd-smoke="jc-start-over" onClick={() => beginClearWorkflow(selectedJob)}>Start over</button>
+              {jobId(selectedJob) !== TEST_JOB_ID ? (
+                <button type="button" className={`fc-outcome-link ${isTestModeJob(jobId(selectedJob)) ? "is-on" : ""}`} data-hpd-smoke="jc-test-mode" aria-pressed={isTestModeJob(jobId(selectedJob))}
+                  onClick={() => { const on = !isTestModeJob(id); setTestModeJob(id, on); setTestModeVersion((v) => v + 1); setMediaMessage(on ? `Test mode ON for ${id}: packages go to Drive "TEST jobs / ${id}" and are marked TEST.` : `Test mode OFF for ${id}: packages go to the normal Drive folders.`); }}>
+                  🧪 Test {isTestModeJob(jobId(selectedJob)) ? "ON" : "off"}
+                </button>
+              ) : null}
               <button type="button" className="fc-job-details-toggle" aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}>{sheetExpanded ? "Less" : "Details"}<span aria-hidden="true">{sheetExpanded ? "⌄" : "⌃"}</span></button>
               </div>
               <details className="jc-dates">
@@ -2304,15 +2328,16 @@ export default function FieldCommandClient() {
                 </div>
               </section>
               {clearJobId === id ? (
-                <section className="fc-clear-confirm" aria-label="Confirm clear workflow">
+                <section className="fc-clear-confirm" aria-label="Confirm start over">
+                  <p className="fc-clear-warn">Start over clears the outcome, every step, the package status and ALL photos/videos of this job on this phone. Drive and sent emails are not touched. Type CLEAR to confirm.</p>
                   <input
                     value={clearText}
                     onChange={(event) => setClearText(event.target.value)}
                     placeholder="Type CLEAR"
                     autoCapitalize="characters"
                   />
-                  <button type="button" onClick={() => clearWorkflow(selectedJob)} disabled={clearText.trim().toUpperCase() !== "CLEAR"}>
-                    Reset
+                  <button type="button" data-hpd-smoke="jc-start-over-confirm" onClick={() => void clearWorkflow(selectedJob)} disabled={clearText.trim().toUpperCase() !== "CLEAR"}>
+                    Start over
                   </button>
                   <button type="button" onClick={() => setClearJobId("")}>
                     Keep

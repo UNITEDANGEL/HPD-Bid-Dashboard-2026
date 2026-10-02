@@ -2283,3 +2283,7 @@
 .fc-data-check-list b { color: #fbbf24; }
 .fc-data-check-list span { color: #e2e8f0; }
 .fc-data-check-list small { color: #fca5a5; font-size: 12.5px; }
+
+.fc-clear-warn { grid-column: 1 / -1; margin: 0 0 4px; color: #fca5a5; font-size: 13.5px; font-weight: 700; line-height: 1.35; }
+.fc-outcome-link.is-on { background: rgba(139, 92, 246, 0.25); border-color: #8b5cf6; color: #ede9fe; }
+.fc-save-message.is-error { color: #fecaca; background: rgba(220, 38, 38, 0.2); border: 1px solid #dc2626; border-radius: 10px; padding: 8px 10px; font-weight: 700; }

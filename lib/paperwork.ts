@@ -163,6 +163,23 @@ function clearedWorkflowPatch() {
   };
 }
 
+// "Start over" on a job card: back to Pending with nothing recorded -- no outcome, no arrival,
+// no trip, no package -- so a test (or a mistake) can be run again from the first step.
+export function startOverPatch() {
+  return {
+    ...clearedWorkflowPatch(),
+    FieldArrivedAt: "", fieldArrivedAt: "", LastFieldVisitAt: "", lastFieldVisitAt: "",
+    VisitStartedAt: "", visitStartedAt: "",
+    ArrivedLatitude: "", ArrivedLongitude: "", ArrivedAccuracyMeters: "",
+    TravelStartedAt: "", TravelVia: "",
+    PackageReviewStatus: "", PackageApprovedAt: "", PackageGeneratedAt: "", PackageDriveLink: "",
+    PackageEmailedAt: "", PackageFileName: "", PackageReadyMessage: "", PackageSize: "",
+    RevisitApprovedAt: "", AppointmentRequestedAt: "",
+    FieldVisitHistory: [],
+    ArchivedFromMap: false, archivedFromMap: false, ArchivedAt: "", archivedAt: "",
+  };
+}
+
 export function getJobId(job: PaperworkJob | null | undefined, fallback = "") {
   return pick(job, ["OMO", "omo", "id", "jobId", "Job_ID", "Job ID"]) || fallback;
 }

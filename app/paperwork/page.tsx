@@ -982,7 +982,7 @@ function driveFiling(form: PackageForm, jobId: string, outcome: PaperworkOutcome
   const borough = titleCase(String(form.borough || "").trim()) || "Borough not listed";
   const address = String(form.address || "").replace(/\s+/g, " ").trim().slice(0, 60);
   // Test packages are filed apart from real work: HPD Packages / TEST jobs / ...
-  if (isTestJob(jobId)) return { path: ["TEST jobs"], folderName: [day, jobId, packageStatusLabel(outcome)].join(" - ") };
+  if (isTestJob(jobId)) return { path: ["TEST jobs", jobId], folderName: [day, jobId, packageStatusLabel(outcome)].join(" - ") };
   return {
     path: [year, `${month} - ${titleCase(MONTH_NAMES[Number(month) - 1] || month)}`, borough],
     folderName: [day, jobId, address, packageStatusLabel(outcome)].filter(Boolean).join(" - "),
@@ -1233,6 +1233,8 @@ export default function PaperworkPage() {
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
   const [pdfStatus, setPdfStatus] = useState("");
   const [packagePreview, setPackagePreview] = useState<CompletePackagePreview | null>(null);
+  // What the package carries, shown on the review screen before approving.
+  const [packageContents, setPackageContents] = useState<{ photos: number; videos: number; videoBytes: number; savedVideos: number } | null>(null);
   const [packagePreviewOpen, setPackagePreviewOpen] = useState(false);
   const [fullScreenPdfOpen, setFullScreenPdfOpen] = useState(false);
   const pendingCompletePackageRef = useRef<PendingCompletePackage | null>(null);
@@ -1440,6 +1442,7 @@ export default function PaperworkPage() {
     setPackageReviewed(false);
     setPackageApproved(false);
     setPackagePreview(null);
+    setPackageContents(null);
     setDelivery(null);
     setPackagePreviewOpen(false);
     setFullScreenPdfOpen(false);
@@ -2265,6 +2268,16 @@ export default function PaperworkPage() {
         videoShareFiles: videoFiles,
         unsignedBytes: unsignedPdf?.bytes,
       };
+      const packageVideos = folderEntries.filter((entry) => entry.section === "video");
+      const savedVideos = includeMedia
+        ? evidenceRows.filter((media) => media.mediaType === "video").length
+        : (await listFieldEvidence(jobId).catch(() => [])).filter((media) => media.mediaType === "video").length;
+      setPackageContents({
+        photos: folderEntries.filter((entry) => entry.section === "image" && /^images\/(before|after)\//.test(entry.path)).length,
+        videos: packageVideos.length,
+        videoBytes: packageVideos.reduce((sum, entry) => sum + entry.bytes.byteLength, 0),
+        savedVideos,
+      });
       setPackagePreview(preview);
       setPackagePreviewOpen(true);
       const archiveMessage = await markPackageGenerated(pdf.jobId);
@@ -2398,7 +2411,12 @@ export default function PaperworkPage() {
       const extension = original.includes(".") ? original.slice(original.lastIndexOf(".")) : "";
       const label = { before: "BEFORE", after: "AFTER", other: "PHOTO", "before-video": "BEFORE VIDEO", "after-video": "AFTER VIDEO", "other-video": "VIDEO" }[kind];
       const subfolder = { before: "Before photos", after: "After photos", other: "Other photos", "before-video": "Before videos", "after-video": "After videos", "other-video": "Videos" }[kind];
-      return { name: `${label}-${String(counters[kind]).padStart(2, "0")} - ${pending.jobId}${extension}`, mimeType: entry.mimeType, bytes: entry.bytes, subfolder };
+      // A video must travel as video/*, even when the phone gave no file type, or the email skips it.
+      const lowerExt = extension.toLowerCase();
+      const mimeType = entry.section === "video" && !entry.mimeType.startsWith("video/")
+        ? lowerExt === ".mov" ? "video/quicktime" : lowerExt === ".webm" ? "video/webm" : "video/mp4"
+        : entry.mimeType;
+      return { name: `${label}-${String(counters[kind]).padStart(2, "0")} - ${pending.jobId}${extension || (entry.section === "video" ? ".mp4" : "")}`, mimeType, bytes: entry.bytes, subfolder };
     });
     // The email carries the signed PDF, the before/after photos and every video.
     const emailFiles = files.filter((file) => file.mimeType === "application/pdf" || file.subfolder === "Before photos" || file.subfolder === "After photos" || file.mimeType.startsWith("video/"));
@@ -2425,6 +2443,14 @@ export default function PaperworkPage() {
     };
   }
 
+  // "Signed copy emailed to x: PDF, 4 photos, 2 videos" -- says exactly what went, and what didn't.
+  function emailedMessage(to: string[], summary?: EmailAttachmentSummary) {
+    if (!summary) return `Signed copy emailed to ${to.join(", ")}`;
+    const parts = ["signed PDF", summary.photos ? `${summary.photos} photo(s)` : "", summary.videos ? `${summary.videos} video(s)` : ""].filter(Boolean);
+    const linked = summary.linked.length ? ` ${summary.linked.length} file(s) too big to attach were sent as links: ${summary.linked.map((file) => file.name).join(", ")}.` : "";
+    return `Signed copy emailed to ${to.join(", ")}: ${parts.join(", ")}.${linked}`;
+  }
+
   function unsignedFile(pending: PendingCompletePackage) {
     return pending.unsigned && pending.unsignedBytes ? { fileName: pending.unsigned.fileName, bytes: pending.unsignedBytes } : null;
   }
@@ -2441,7 +2467,7 @@ export default function PaperworkPage() {
       setGoogle(await googleStatus());
       const result = await sendPackageEmail({ ...packageEmailParts(pending), folderLink, fileLinks: deliveredFileLinksRef.current });
       if (result.emailed) await markPackageGenerated(pending.jobId, true, { driveLink: folderLink, emailed: true });
-      setDelivery({ working: false, folderLink, emailed: result.emailed, message: result.emailed ? `Signed copy emailed to ${result.emailTo.join(", ")}` : "", error: result.emailError });
+      setDelivery({ working: false, folderLink, emailed: result.emailed, message: result.emailed ? emailedMessage(result.emailTo, result.emailSummary) : "", error: result.emailError });
     } catch (error) {
       setDelivery({ working: false, folderLink, emailed: false, message: "", error: error instanceof Error ? error.message : "The email could not be sent." });
     } finally {
@@ -2499,7 +2525,7 @@ export default function PaperworkPage() {
       setPackageApproved(true);
       setDelivery({
         working: false,
-        message: result.emailed ? `Signed copy emailed to ${result.emailTo.join(", ")}` : "",
+        message: result.emailed ? emailedMessage(result.emailTo, result.emailSummary) : "",
         folderLink: result.folderLink,
         emailed: result.emailed,
         error: result.emailError,
@@ -3777,6 +3803,17 @@ export default function PaperworkPage() {
           font-weight: 800;
         }
 
+        .pkg-contents {
+          margin: 0 0 10px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          background: rgba(37, 99, 235, 0.12);
+          border: 1px solid rgba(37, 99, 235, 0.45);
+          font-weight: 700;
+          font-size: 14px;
+          line-height: 1.4;
+        }
+        .pkg-contents b { color: #dc2626; }
         .pkg-copy-head {
           display: grid;
           gap: 2px;
@@ -5184,6 +5221,13 @@ export default function PaperworkPage() {
                 </button>
               </div>
 
+              {packageContents ? (
+                <p className="pkg-contents" data-hpd-smoke="paperwork-package-contents">
+                  📎 Email: signed PDF · {packageContents.photos} photo{packageContents.photos === 1 ? "" : "s"} · {packageContents.videos} video{packageContents.videos === 1 ? "" : "s"}
+                  {packageContents.videos ? ` (${(packageContents.videoBytes / 1_000_000).toFixed(1)} MB of video)` : ""}
+                  {!packageContents.videos && packageContents.savedVideos ? <b> · {packageContents.savedVideos} saved video(s) are NOT in this package. Use Edit details and include photos/videos.</b> : null}
+                </p>
+              ) : null}
               {packagePreview.unsigned ? (
                 <div className="pkg-copy-head" data-hpd-smoke="paperwork-signed-head">
                   <strong>Signed copy</strong>
