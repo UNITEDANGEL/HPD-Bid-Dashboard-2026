@@ -41,6 +41,7 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 - [x] Big, clear blue "You" marker, always on top of every pin
 - [x] Waze / Google taps are recorded on the job card: "On the way · Waze · date"
 - [x] Videos go in the signed email (before and after); a video too big to attach gets its own Drive link in the email. Drive: Before videos / After videos folders
+- [x] Map alert "⚠ N jobs need a check": open jobs with no readable scope, no map location, no address or no award amount; tap one to open it
 - [x] "+ More before photos / video" and "+ More after photos / video" buttons on the steps
 - [x] Fixed: starting work used to mark "Finish the job" as done, skipping Work completed / Partial
 - [x] Job card flow starts with **Go there** (Waze / Google) right under the description
@@ -61,8 +62,8 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 3. [ ] **Photos and videos**: Before photo, Before video, After photo, After video; multiple shots; videos included in the package (Drive, plus email when they fit); photo dates editable (default today)
 4. [x] **Map pins**: colors you can read from far away: **blue = new**, **green = completed**, **red = refused**, **grey = no access**, **purple = completed by others**; a different icon per status; the pin you're zooming toward grows and glows
 5. [ ] **Paperwork page polish**: aligned, neat, follows the procedure
-6. [ ] **Automatic data checks** after every download: scan every job (description, ITB, address, dates, amounts) and show alerts in the app
-7. [ ] **ER04964 and the other 4 jobs**: confirm the OCR run filled their real scopes
+6. [x] **Automatic data checks** after every download: scan every job (description, ITB, address, dates, amounts) and show alerts in the app
+7. [~] **ER04964 and the other 4 jobs**: ER05441, ER05941 fixed by the OCR run; ER05421 and ER05733 (plus 4 older jobs) now show their real scope (it sat after "Job Description:" behind a wage-decision page); ER04964 still has only its purchase-order header, now flagged as "no scope" (app blocks the package; type the scope on the paperwork page) and the fetcher re-targets it
 8. [ ] **iPhone speed**: make the app faster on mobile
 9. [ ] **Better app link** (custom domain): needs a domain name from the owner
 10. [x] **Test job (master sample)**: TEST-0001, search "TEST" on the map (live)

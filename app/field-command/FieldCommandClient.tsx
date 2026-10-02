@@ -125,6 +125,17 @@ function jobScope(job: JobRecord) {
   return picked || SCOPE_MISSING;
 }
 
+// Automatic data check, run on every job download: anything that would stop the field work or
+// the paperwork is listed in the "jobs need a check" alert on the map.
+function jobDataIssues(job: JobRecord) {
+  const issues: string[] = [];
+  if (jobScope(job) === SCOPE_MISSING) issues.push("No readable scope (description)");
+  if (!jobLatLng(job)) issues.push("Not on the map (address not located)");
+  if (jobAddress(job) === "Address not captured") issues.push("No address");
+  if (!(jobAwardAmount(job) > 0)) issues.push("No award amount");
+  return issues;
+}
+
 function packageStatusText(job: JobRecord) {
   const status = value(job, ["PackageReviewStatus", "packageReviewStatus"]);
   const message = value(job, ["PackageReadyMessage", "packageReadyMessage"]);
@@ -601,6 +612,7 @@ export default function FieldCommandClient() {
   const [borough, setBorough] = useState<BoroughKey | "ALL">("ALL");
   const [status, setStatus] = useState("pending");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [dataCheckOpen, setDataCheckOpen] = useState(false);
   // Status and borough filters come back as they were left.
   const quickFiltersLoaded = useRef(false);
   useEffect(() => {
@@ -845,6 +857,20 @@ export default function FieldCommandClient() {
       return true;
     });
   }, [jobs, borough, status, search, daysBack, dateRange, calendarDate]);
+
+  // Open jobs in the current view (finished and test jobs are skipped) that need a data check.
+  const dataIssues = useMemo(() => filteredJobs
+    .filter((job) => !isTestJob(jobId(job)) && !["done", "others"].includes(pinStyle(job).key))
+    .map((job) => ({ job, issues: jobDataIssues(job) }))
+    .filter((row) => row.issues.length), [filteredJobs]);
+
+  function openIssueJob(job: JobRecord) {
+    setDataCheckOpen(false);
+    setSelectedJob(job);
+    setSheetExpanded(false);
+    const at = jobLatLng(job);
+    if (at && mapRef.current) { followMeRef.current = false; mapRef.current.setView([at.lat, at.lng], Math.max(mapRef.current.getZoom(), 16)); }
+  }
 
   useEffect(() => {
     if (!jobs.length || requestedJobLoaded.current) return;
@@ -1887,6 +1913,26 @@ export default function FieldCommandClient() {
 
           {filteredJobs.length > 0 && !mappedFilteredCount ? (
             <p className="fc-map-hint">No mapped jobs match these filters</p>
+          ) : null}
+
+          {dataIssues.length && !selectedJob ? (
+            <div className="fc-data-check" data-hpd-smoke="fc-data-check">
+              <button type="button" className="fc-map-hint fc-map-hint-warn" aria-expanded={dataCheckOpen} onClick={() => setDataCheckOpen((open) => !open)}>
+                ⚠ {dataIssues.length} job{dataIssues.length === 1 ? "" : "s"} need{dataIssues.length === 1 ? "s" : ""} a check {dataCheckOpen ? "▴" : "▾"}
+              </button>
+              {dataCheckOpen ? (
+                <ul className="fc-data-check-list">
+                  {dataIssues.slice(0, 40).map(({ job, issues }) => (
+                    <li key={jobId(job)}>
+                      <button type="button" onClick={() => openIssueJob(job)}>
+                        <b>{jobId(job)}</b> <span>{jobAddress(job)}</span>
+                        <small>{issues.join(" · ")}</small>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
           ) : null}
         </div>
 
