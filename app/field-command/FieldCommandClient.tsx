@@ -704,6 +704,7 @@ export default function FieldCommandClient() {
   const videoCameraInputRef = useRef<HTMLInputElement | null>(null);
   const videoLibraryInputRef = useRef<HTMLInputElement | null>(null);
   const mediaChoiceRef = useRef<HTMLDivElement | null>(null);
+  const [mediaChoiceInStep, setMediaChoiceInStep] = useState(false);
   const [mediaChoice, setMediaChoice] = useState<FieldMediaKind | null>(null);
   const pendingMediaKindRef = useRef<FieldMediaKind>("before");
 
@@ -880,7 +881,17 @@ export default function FieldCommandClient() {
     .map((job) => ({ job, issues: jobDataIssues(job) }))
     .filter((row) => row.issues.length), [filteredJobs]);
 
+  // Finished in the field (an outcome is saved) but the package isn't approved yet: these get
+  // closed out later, e.g. at the desk. Every job counts here, whatever the map filters.
+  const closeOutJobs = useMemo(() => jobs.filter((job) => {
+    const outcome = value(job, ["FieldOutcome", "fieldOutcome"]);
+    return Boolean(FIELD_OUTCOMES[outcome]) && outcome !== "APPOINTMENT_REQUESTED"
+      && !value(job, ["PackageApprovedAt"]) && !/approved/i.test(value(job, ["PackageReviewStatus"])) && jobQueue(job) !== "archived";
+  }), [jobs]);
+  const [closeOutOpen, setCloseOutOpen] = useState(false);
+
   function openIssueJob(job: JobRecord) {
+    setCloseOutOpen(false);
     setDataCheckOpen(false);
     setSelectedJob(job);
     setSheetExpanded(false);
@@ -1539,6 +1550,20 @@ export default function FieldCommandClient() {
     openOutcomePanel();
   }
 
+  // Records an outcome right away (no draft, no page change).
+  function setJobOutcome(job: JobRecord, outcome: string, note: string) {
+    const id = jobId(job);
+    try {
+      const patch = fieldOutcomePatch(job, outcome, note, new Date().toISOString());
+      writeSharedWorkflowPatch(id, patch);
+      mergeWorkflowPatchIntoScreen(id, patch);
+      setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[outcome] } }));
+      setOutcomeMessage(`✅ ${id}: ${FIELD_OUTCOMES[outcome]}. This job is finished. Close it out: tap Make the package now, or later from 📋 Ready to close out on the map.`);
+    } catch (error) {
+      setOutcomeMessage(error instanceof Error ? error.message : "Could not save the outcome. Try again.");
+    }
+  }
+
   function saveVisitOutcome(job: JobRecord, review = false) {
     const id = jobId(job);
     const draft = outcomeDrafts[id] || { outcome: "", note: "" };
@@ -1548,7 +1573,9 @@ export default function FieldCommandClient() {
       mergeWorkflowPatchIntoScreen(id, patch);
       if (draft.outcome) setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[draft.outcome] } }));
       setOutcomeDrafts((prev) => ({ ...prev, [id]: { outcome: "", note: "" } }));
-      setOutcomeMessage("Saved on this device. Not archived or emailed.");
+      setOutcomeMessage(draft.outcome
+        ? `✅ ${id} is ${FIELD_OUTCOMES[draft.outcome]}. Close it out: tap Make the package now, or later from 📋 Ready to close out on the map.`
+        : "Note saved on this device.");
       if (review) window.location.assign(paperworkGenerateHref(id, draft.outcome));
     } catch (error) {
       setOutcomeMessage(error instanceof Error ? error.message : "Save failed. Your draft is still here.");
@@ -1576,9 +1603,11 @@ export default function FieldCommandClient() {
     setMediaThumbs((prev) => ({ ...prev, [id]: { before: thumbs("before"), after: thumbs("after") } }));
   }
 
-  function requestMediaUpload(kind: FieldMediaKind) {
+  // From a guided step the photo/video buttons open right inside that step, glowing.
+  function requestMediaUpload(kind: FieldMediaKind, fromStep = false) {
     setMediaChoice(kind);
-    requestAnimationFrame(() => mediaChoiceRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
+    setMediaChoiceInStep(fromStep);
+    requestAnimationFrame(() => (fromStep ? document.querySelector(".jc-step-media") : mediaChoiceRef.current)?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
   }
 
   function chooseMediaSource(source: "camera" | "library" | "video-camera" | "video-library") {
@@ -1612,7 +1641,13 @@ export default function FieldCommandClient() {
       setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}.${unstamped ? ` ${unstamped} video(s) saved as originals without burned-in labels; review before submitting.` : ""}` : "No image or video was saved.");
       // Before photos mark the work start (date used on the affidavit); no separate "Start work" tap.
       if (kind === "before" && saved.length && !workflowStamps[id]?.work) saveWorkflowStamp(selectedJob, "work", "Work Started");
-      if (kind === "after" && saved.length) openOutcomePanel();
+      // After photos/videos = the work is done: the job finishes by itself (Work completed; switch
+      // to Partial on the card if needed) and waits on the map to be closed out with the package.
+      if (kind === "after" && saved.length) {
+        const current = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
+        if (!["WORK_COMPLETED", "PARTIAL_WORK"].includes(current)) setJobOutcome(selectedJob, "WORK_COMPLETED", "Finished: after photos/videos taken");
+        setMediaChoice(null);
+      }
     } catch (error) {
       setMediaMessage(error instanceof Error ? error.message : "Media save failed.");
     } finally {
@@ -1932,9 +1967,33 @@ export default function FieldCommandClient() {
             <p className="fc-map-hint">No mapped jobs match these filters</p>
           ) : null}
 
+          {closeOutJobs.length && !selectedJob ? (
+            <div className="fc-data-check fc-close-out" data-hpd-smoke="fc-close-out">
+              <button type="button" className="fc-map-hint" aria-expanded={closeOutOpen} onClick={() => { setCloseOutOpen((open) => !open); setDataCheckOpen(false); }}>
+                📋 {closeOutJobs.length} job{closeOutJobs.length === 1 ? "" : "s"} ready to close out {closeOutOpen ? "▴" : "▾"}
+              </button>
+              {closeOutOpen ? (
+                <ul className="fc-data-check-list">
+                  {closeOutJobs.map((job) => {
+                    const outcome = value(job, ["FieldOutcome", "fieldOutcome"]);
+                    return (
+                      <li key={jobId(job)} className="fc-close-out-row">
+                        <button type="button" onClick={() => openIssueJob(job)}>
+                          <b>{jobId(job)}</b> <span>{jobAddress(job)}</span>
+                          <small>{FIELD_OUTCOMES[outcome]}{isTestJob(jobId(job)) ? " · TEST" : ""}</small>
+                        </button>
+                        <a className="fc-close-out-go" data-hpd-smoke="fc-close-out-package" href={paperworkGenerateHref(jobId(job), outcome)}>Package →</a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+
           {dataIssues.length && !selectedJob ? (
             <div className="fc-data-check" data-hpd-smoke="fc-data-check">
-              <button type="button" className="fc-map-hint fc-map-hint-warn" aria-expanded={dataCheckOpen} onClick={() => setDataCheckOpen((open) => !open)}>
+              <button type="button" className="fc-map-hint fc-map-hint-warn" aria-expanded={dataCheckOpen} onClick={() => { setDataCheckOpen((open) => !open); setCloseOutOpen(false); }}>
                 ⚠ {dataIssues.length} job{dataIssues.length === 1 ? "" : "s"} need{dataIssues.length === 1 ? "s" : ""} a check {dataCheckOpen ? "▴" : "▾"}
               </button>
               {dataCheckOpen ? (
@@ -2067,7 +2126,20 @@ export default function FieldCommandClient() {
                     <label>Note (optional)<textarea value={draft.note} rows={2} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
                     {draft.outcome === "APPOINTMENT_REQUESTED"
                       ? <button type="button" className="fc-next-action jc-glow" onClick={openAppointment}>Set appointment details</button>
-                      : <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-save-outcome" disabled={Boolean(mediaBusy)} onClick={() => saveVisitOutcome(selectedJob, true)}>Save {FIELD_OUTCOMES[draft.outcome]} &amp; make the package<span aria-hidden="true">&rarr;</span></button>}
+                      : <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-save-outcome" disabled={Boolean(mediaBusy)} onClick={() => saveVisitOutcome(selectedJob, false)}>Save: {FIELD_OUTCOMES[draft.outcome]}<span aria-hidden="true">&rarr;</span></button>}
+                  </div>
+                ) : null;
+                // The before/after photo and video buttons, glowing inside the step that asked for them.
+                const stepMedia = (kind: "before" | "after") => mediaChoice === kind && mediaChoiceInStep ? (
+                  <div className="jc-step-media" data-hpd-smoke={`jc-step-media-${kind}`}>
+                    <strong>{kind === "before" ? "📸 BEFORE: take a photo or video of the condition now. This starts the job." : "📸 AFTER: take a photo or video of the finished work. This finishes the job."}</strong>
+                    <div className="jc-step-media-grid">
+                      <button type="button" className="jc-glow" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("camera")}><PhotosIcon />Take {kind} photo</button>
+                      <button type="button" className="jc-glow" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-camera")}>🎥 Record {kind} video</button>
+                      <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("library")}><DocumentsIcon />Add photos</button>
+                      <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-library")}>Add videos</button>
+                    </div>
+                    <button type="button" className="jc-step-media-cancel" onClick={() => setMediaChoice(null)}>Cancel</button>
                   </div>
                 ) : null;
                 return (
@@ -2111,7 +2183,8 @@ export default function FieldCommandClient() {
                         <small>{noWorkOutcomes.includes(savedOutcome) ? FIELD_OUTCOMES[savedOutcome] : workStarted ? `Work started${stamps.work ? ` ${formatSavedTime(stamps.work)}` : ""} · before: ${counts.before - (counts.beforeVideos || 0)} photo(s), ${counts.beforeVideos || 0} video(s)` : "Start the work with before photos/video, or record why not"}</small>
                         {current === 2 ? (
                           <>
-                            <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-start-work" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("before")}>Start work: before photo / video<span aria-hidden="true">&rarr;</span></button>
+                            <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-start-work" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("before", true)}>Start work: before photo / video<span aria-hidden="true">&rarr;</span></button>
+                            {stepMedia("before")}
                             <div className="jc-step-choices">
                               {noWorkOutcomes.map((key) => (
                                 <button key={key} type="button" className={draft.outcome === key ? "is-picked" : ""} onClick={() => setOutcomeDrafts((prev) => ({ ...prev, [id]: { note: prev[id]?.note || "", outcome: key } }))}>{FIELD_OUTCOMES[key]}</button>
@@ -2120,7 +2193,8 @@ export default function FieldCommandClient() {
                             {outcomeForm(noWorkOutcomes)}
                           </>
                         ) : null}
-                        {workStarted && !savedOutcome && current > 2 ? <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-more-before" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("before")}>+ More before photos / video</button> : null}
+                        {workStarted && !savedOutcome && current > 2 ? <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-more-before" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("before", true)}>+ More before photos / video</button> : null}
+                        {current > 2 ? stepMedia("before") : null}
                       </div>
                     </li>
                     {!noWorkOutcomes.includes(savedOutcome) ? (
@@ -2130,15 +2204,21 @@ export default function FieldCommandClient() {
                           <div>
                             <b>Finish work</b>
                             <small>{counts.after ? `After: ${counts.after - (counts.afterVideos || 0)} photo(s), ${counts.afterVideos || 0} video(s)` : "Take the after photos and video"}</small>
-                            {current === 3 ? <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-after" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("after")}>Finish work: after photo / video<span aria-hidden="true">&rarr;</span></button> : null}
-                            {counts.after > 0 && !savedOutcome ? <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-more-after" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("after")}>+ More after photos / video</button> : null}
+                            {current === 3 ? <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-after" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("after", true)}>Finish work: after photo / video<span aria-hidden="true">&rarr;</span></button> : null}
+                            {counts.after > 0 && !value(selectedJob, ["PackageApprovedAt"]) ? <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-more-after" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("after", true)}>+ More after photos / video</button> : null}
+                            {stepMedia("after")}
                           </div>
                         </li>
                         <li className={stepClass(4)}>
                           {num(4)}
                           <div>
-                            <b>Photos look good? Finish the job</b>
-                            <small>{savedOutcome ? FIELD_OUTCOMES[savedOutcome] : `${counts.before} before · ${counts.after} after. Check them in Media & Documents.`}</small>
+                            <b>{workOutcomes.includes(savedOutcome) ? "✅ Job finished" : "Finish the job"}</b>
+                            <small>{savedOutcome ? `${FIELD_OUTCOMES[savedOutcome]} · close it out with the package` : `${counts.before} before · ${counts.after} after`}</small>
+                            {workOutcomes.includes(savedOutcome) && !steps[5].done ? (
+                              <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-switch-outcome" onClick={() => setJobOutcome(selectedJob, savedOutcome === "WORK_COMPLETED" ? "PARTIAL_WORK" : "WORK_COMPLETED", "Changed on the job card")}>
+                                {savedOutcome === "WORK_COMPLETED" ? "It was partial work" : "It was fully completed"}
+                              </button>
+                            ) : null}
                             {current === 4 ? (
                               <>
                                 <div className="jc-step-choices">
@@ -2236,7 +2316,7 @@ export default function FieldCommandClient() {
                     );
                   })}
                 </div>
-                {mediaChoice ? <div ref={mediaChoiceRef} className="fc-photo-choice jc-choice" role="group" aria-label={`${mediaChoice} photo source`}>
+                {mediaChoice && !mediaChoiceInStep ? <div ref={mediaChoiceRef} className="fc-photo-choice jc-choice" role="group" aria-label={`${mediaChoice} photo source`}>
                   <div className="fc-photo-choice-heading"><strong>{mediaChoice === "before" ? "Before work" : "After work"}</strong><button type="button" aria-label="Cancel photo selection" onClick={() => setMediaChoice(null)}>&times;</button></div>
                   <div className="fc-photo-source-actions">
                     <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("camera")}><PhotosIcon />Take photo</button>

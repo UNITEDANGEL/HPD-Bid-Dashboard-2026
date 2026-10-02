@@ -2287,3 +2287,10 @@
 .fc-clear-warn { grid-column: 1 / -1; margin: 0 0 4px; color: #fca5a5; font-size: 13.5px; font-weight: 700; line-height: 1.35; }
 .fc-outcome-link.is-on { background: rgba(139, 92, 246, 0.25); border-color: #8b5cf6; color: #ede9fe; }
 .fc-save-message.is-error { color: #fecaca; background: rgba(220, 38, 38, 0.2); border: 1px solid #dc2626; border-radius: 10px; padding: 8px 10px; font-weight: 700; }
+
+/* Ready to close out */
+.fc-close-out > button { background: #065f46; color: #ecfdf5; }
+.fc-close-out .fc-data-check-list { border-color: rgba(16, 185, 129, 0.7); }
+.fc-close-out-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; }
+.fc-close-out-row small { color: #6ee7b7 !important; }
+.fc-close-out-go { padding: 9px 12px; border-radius: 10px; background: #10b981; color: #052e1f; font: 800 14px system-ui, sans-serif; text-decoration: none; white-space: nowrap; }

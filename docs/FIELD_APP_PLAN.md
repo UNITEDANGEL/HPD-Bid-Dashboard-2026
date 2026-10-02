@@ -42,6 +42,8 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 - [x] Waze / Google taps are recorded on the job card: "On the way · Waze · date"
 - [x] Videos go in the signed email (before and after); a video too big to attach gets its own Drive link in the email. Drive: Before videos / After videos folders
 - [x] Map alert "⚠ N jobs need a check": open jobs with no readable scope, no map location, no address or no award amount; tap one to open it
+- [x] **Mobile flow up to finish**: Start work opens glowing "Take before photo / Record before video" right in the step (the before media starts the job); Finish work opens the after buttons; the first after photo/video finishes the job by itself (Work completed, one tap to switch to Partial); No access / Refused / By others save on the card without leaving it
+- [x] **📋 Ready to close out** on the map: every finished job without an approved package, with a Package → button, for closing out later at the desk
 - [x] Review screen choice: email **Before + after** or **After only** (Drive always keeps everything); the phone remembers the choice
 - [x] **Start over** on any job card (type CLEAR): clears outcome, steps, trip, package status and ALL photos/videos of the job, on the phone and the status server
 - [x] **Test mode** for any real job (e.g. ER05150): packages marked TEST, filed in Drive under "TEST jobs / <job>"; turn it off to go back to normal folders

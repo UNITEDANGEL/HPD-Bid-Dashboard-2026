@@ -828,3 +828,17 @@
 .jc-step-nav { display: flex; gap: 8px; margin-top: 8px; }
 .jc-step-nav .jc-btn { flex: 1; justify-content: center; }
 .jc-step-more { display: block; margin-top: 8px; padding: 9px 14px; border-radius: 12px; border: 1px dashed rgba(52, 211, 153, 0.7); background: transparent; color: #6ee7b7; font-weight: 700; font-size: 14px; }
+
+/* Before/after buttons inside the guided step */
+.jc-step-media { margin-top: 10px; padding: 12px; border-radius: 14px; border: 2px solid #34d399; background: rgba(16, 185, 129, 0.12); box-shadow: 0 0 18px rgba(52, 211, 153, 0.35); display: grid; gap: 10px; }
+.jc-step-media strong { color: #ecfdf5; font-size: 15px; line-height: 1.35; }
+.jc-step-media-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.jc-step-media-grid button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 52px; padding: 8px; border-radius: 12px; border: 1px solid rgba(52, 211, 153, 0.6); background: rgba(15, 23, 42, 0.6); color: #ecfdf5; font: 800 14px/1.2 system-ui, sans-serif; }
+.jc-step-media-grid button.jc-glow { background: linear-gradient(180deg, #34d399, #10b981); color: #052e1f; border-color: #6ee7b7; }
+.jc-step-media-grid svg { width: 18px; height: 18px; }
+.jc-step-media-cancel { justify-self: end; background: transparent; border: 0; color: #94a3b8; font-weight: 700; }
+#fc-job-card .jc-step-media-grid button,
+#fc-job-card .jc-step-media-grid button.jc-glow { width: 100%; min-height: 56px; margin: 0; padding: 8px 10px; font-size: 15px; line-height: 1.2; border-radius: 12px; justify-content: center; text-align: center; }
+#fc-job-card .jc-step-media-grid button.jc-glow { animation: jc-media-pulse 1.6s ease-in-out infinite; }
+@keyframes jc-media-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55); } 50% { box-shadow: 0 0 0 7px rgba(52, 211, 153, 0); } }
+@media (prefers-reduced-motion: reduce) { #fc-job-card .jc-step-media-grid button.jc-glow { animation: none; } }
