@@ -1,0 +1,591 @@
+/* Job card, iPhone style: large type, one Media & Documents card, glowing primary actions.
+   Scoped to #fc-job-card so it wins over the older layered map themes without touching
+   the sheet's position, height and drag behaviour. */
+
+#fc-job-card {
+  --jc-bg: #0b111c;
+  --jc-card: rgba(255, 255, 255, 0.055);
+  --jc-card-line: rgba(255, 255, 255, 0.1);
+  --jc-text: #f5f7fa;
+  --jc-muted: #a7b2c2;
+  --jc-green: #34d399;
+  --jc-green-deep: #10b981;
+  --jc-blue: #3b9bff;
+  --jc-amber: #fbbf24;
+  background: linear-gradient(180deg, #111a29 0%, var(--jc-bg) 240px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-top: 1px solid rgba(120, 220, 180, 0.35) !important;
+  border-radius: 24px 24px 18px 18px !important;
+  color: var(--jc-text) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  padding: 6px 16px 20px !important;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.55) !important;
+}
+
+#fc-job-card > * + * {
+  margin-top: 14px;
+}
+
+#fc-job-card .fc-sheet-handle {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+#fc-job-card .fc-sheet-handle span {
+  width: 44px;
+  height: 5px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+#fc-job-card .fc-job-sheet-close {
+  top: 14px !important;
+  right: 12px !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  font-size: 24px !important;
+}
+
+/* Header */
+#fc-job-card .jc-hero-top,
+#fc-job-card .jc-borough,
+#fc-job-card .jc-address {
+  padding-right: 48px;
+}
+
+#fc-job-card .jc-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+#fc-job-card .jc-omo {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+#fc-job-card .jc-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 99px;
+  padding: 6px 12px;
+  background: color-mix(in srgb, var(--jc-status, #34d399) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--jc-status, #34d399) 55%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--jc-status, #34d399) 40%, transparent);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+#fc-job-card .jc-status i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--jc-status, #34d399);
+  box-shadow: 0 0 8px var(--jc-status, #34d399);
+}
+
+#fc-job-card .jc-borough {
+  display: block;
+  margin-top: 8px;
+  color: var(--jc-muted);
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+#fc-job-card .jc-address {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+#fc-job-card .jc-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+#fc-job-card .jc-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 54px;
+  padding: 0 8px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 700;
+  text-decoration: none;
+  color: #ffffff;
+  transition: transform 0.12s ease, box-shadow 0.2s ease;
+}
+
+#fc-job-card .jc-btn:active,
+#fc-job-card .jc-glow:active,
+#fc-job-card .jc-stage:active,
+#fc-job-card .jc-doc:active {
+  transform: scale(0.97);
+}
+
+#fc-job-card .jc-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+#fc-job-card .jc-btn-waze {
+  background: linear-gradient(180deg, #33ccff, #0aa5e0);
+  color: #03202d;
+  box-shadow: 0 0 0 1px rgba(51, 204, 255, 0.5), 0 6px 20px rgba(10, 165, 224, 0.45);
+}
+
+#fc-job-card .jc-btn-google {
+  background: linear-gradient(180deg, #4e9bff, #2563eb);
+  box-shadow: 0 0 0 1px rgba(78, 155, 255, 0.5), 0 6px 20px rgba(37, 99, 235, 0.45);
+}
+
+#fc-job-card .jc-btn-call {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.6);
+  color: var(--jc-green);
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.25);
+}
+
+/* Key facts */
+#fc-job-card .jc-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+#fc-job-card .jc-fact {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: var(--jc-card);
+  border: 1px solid var(--jc-card-line);
+}
+
+#fc-job-card .jc-fact-wide {
+  grid-column: 1 / -1;
+}
+
+#fc-job-card .jc-fact small {
+  color: var(--jc-muted);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+#fc-job-card .jc-fact strong {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+#fc-job-card .jc-fact span {
+  color: var(--jc-muted);
+  font-size: 16px;
+}
+
+#fc-job-card .jc-priority {
+  justify-self: start;
+  margin-top: 2px;
+  border-radius: 99px;
+  padding: 3px 10px;
+  background: rgba(59, 155, 255, 0.18);
+  color: #bcdcff !important;
+  font-size: 13px !important;
+  font-weight: 700;
+}
+
+#fc-job-card .jc-priority[data-priority="1-30"],
+#fc-job-card .jc-priority[data-priority="31-60"],
+#fc-job-card .jc-priority[data-priority="61-90"],
+#fc-job-card .jc-priority[data-priority="91-150"],
+#fc-job-card .jc-priority[data-priority="150+"] {
+  background: rgba(255, 99, 99, 0.2);
+  color: #ffb4b4 !important;
+  box-shadow: 0 0 12px rgba(255, 99, 99, 0.3);
+}
+
+#fc-job-card .jc-warning {
+  margin: 0;
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(251, 191, 36, 0.14);
+  color: #fde68a;
+  font-size: 15px;
+}
+
+#fc-job-card .jc-visit {
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: var(--jc-card);
+  font-size: 16px;
+}
+
+#fc-job-card .jc-visit strong {
+  font-size: 17px;
+}
+
+#fc-job-card .jc-priority[data-priority="today"] {
+  background: rgba(251, 191, 36, 0.2);
+  color: #fde68a !important;
+}
+
+/* Primary next step */
+#fc-job-card .jc-glow {
+  width: 100%;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  border-radius: 18px;
+  padding: 0 22px;
+  background: linear-gradient(180deg, #4ff0b4, var(--jc-green-deep));
+  color: #03140d;
+  font-size: 21px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 0 0 1px rgba(79, 240, 180, 0.6), 0 0 26px rgba(16, 185, 129, 0.55), 0 10px 24px rgba(0, 0, 0, 0.35);
+  animation: jc-pulse 2.6s ease-in-out infinite;
+  transition: transform 0.12s ease;
+}
+
+#fc-job-card .jc-glow:disabled {
+  opacity: 0.55;
+  animation: none;
+}
+
+@keyframes jc-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(79, 240, 180, 0.6), 0 0 18px rgba(16, 185, 129, 0.45), 0 10px 24px rgba(0, 0, 0, 0.35); }
+  50% { box-shadow: 0 0 0 1px rgba(79, 240, 180, 0.8), 0 0 32px rgba(16, 185, 129, 0.7), 0 10px 24px rgba(0, 0, 0, 0.35); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #fc-job-card .jc-glow { animation: none; }
+}
+
+/* Media & Documents */
+#fc-job-card .jc-media-docs {
+  display: grid;
+  gap: 12px;
+  border-radius: 20px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.035));
+  border: 1px solid var(--jc-card-line);
+}
+
+#fc-job-card .jc-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+#fc-job-card .jc-section-head strong {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+#fc-job-card .jc-section-head span {
+  color: var(--jc-muted);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+#fc-job-card .jc-stages {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+#fc-job-card .jc-stage {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  border-radius: 16px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: var(--jc-text);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.2s ease;
+}
+
+#fc-job-card .jc-stage.is-open {
+  border-color: var(--jc-green);
+  box-shadow: 0 0 18px rgba(52, 211, 153, 0.35);
+}
+
+#fc-job-card .jc-stage.is-next {
+  border-color: var(--jc-green);
+  animation: jc-pulse 2.6s ease-in-out infinite;
+}
+
+#fc-job-card .jc-next-hint {
+  margin: 0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: rgba(52, 211, 153, 0.12);
+  color: #a7f3d0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+#fc-job-card .jc-thumbs {
+  width: 100%;
+  height: 78px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 4px;
+  place-items: center;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--jc-muted);
+}
+
+#fc-job-card .jc-thumbs img {
+  width: 100%;
+  height: 78px;
+  object-fit: cover;
+}
+
+#fc-job-card .jc-thumbs svg {
+  width: 30px;
+  height: 30px;
+}
+
+#fc-job-card .jc-stage b {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+#fc-job-card .jc-stage small {
+  color: var(--jc-muted);
+  font-size: 14px;
+}
+
+#fc-job-card .jc-choice {
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+}
+
+#fc-job-card .jc-choice .fc-photo-choice-heading strong {
+  font-size: 18px;
+}
+
+#fc-job-card .jc-choice .fc-photo-source-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+#fc-job-card .jc-choice .fc-photo-source-actions button {
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  background: rgba(52, 211, 153, 0.12);
+  color: #d1fae5;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+#fc-job-card .jc-media-docs .fc-building {
+  border-radius: 16px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--jc-card-line);
+  font-size: 15px;
+}
+
+#fc-job-card .jc-media-docs .fc-building strong {
+  font-size: 17px;
+}
+
+#fc-job-card .jc-media-docs .fc-building button {
+  min-height: 44px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+#fc-job-card .jc-docs {
+  display: grid;
+  gap: 8px;
+}
+
+#fc-job-card .jc-doc {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 62px;
+  border-radius: 16px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--jc-card-line);
+  color: var(--jc-text);
+  text-decoration: none;
+  transition: transform 0.12s ease;
+}
+
+#fc-job-card .jc-doc svg {
+  width: 26px;
+  height: 26px;
+  color: var(--jc-blue);
+}
+
+#fc-job-card .jc-doc span {
+  display: grid;
+  gap: 2px;
+}
+
+#fc-job-card .jc-doc b {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+#fc-job-card .jc-doc small {
+  color: var(--jc-muted);
+  font-size: 14px;
+}
+
+#fc-job-card .jc-doc i {
+  color: var(--jc-muted);
+  font-size: 22px;
+  font-style: normal;
+}
+
+#fc-job-card .jc-doc-primary {
+  background: linear-gradient(180deg, rgba(59, 155, 255, 0.28), rgba(37, 99, 235, 0.18));
+  border-color: rgba(78, 155, 255, 0.65);
+  box-shadow: 0 0 22px rgba(59, 155, 255, 0.35);
+}
+
+#fc-job-card .jc-doc-primary svg,
+#fc-job-card .jc-doc-primary i {
+  color: #ffffff;
+}
+
+/* Footer, dates and the existing sections below */
+#fc-job-card .jc-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#fc-job-card .jc-footer button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 6px;
+  white-space: nowrap;
+  border-radius: 14px;
+  border: 1px solid var(--jc-card-line);
+  background: var(--jc-card);
+  color: var(--jc-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+#fc-job-card .jc-dates {
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: var(--jc-card);
+  border: 1px solid var(--jc-card-line);
+}
+
+#fc-job-card .jc-dates summary {
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#fc-job-card .jc-dates dl {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+#fc-job-card .jc-dates dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 15px;
+}
+
+#fc-job-card .jc-dates dt {
+  color: var(--jc-muted);
+}
+
+#fc-job-card .jc-dates dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+#fc-job-card .fc-flow-card,
+#fc-job-card .fc-outcome-panel {
+  border-radius: 16px;
+  background: var(--jc-card);
+  border: 1px solid var(--jc-card-line);
+  font-size: 16px;
+}
+
+#fc-job-card .fc-flow-card b {
+  font-size: 17px;
+}
+
+#fc-job-card .fc-outcome-panel select,
+#fc-job-card .fc-outcome-panel textarea {
+  font-size: 17px;
+  border-radius: 12px;
+}
+
+#fc-job-card .fc-workflow-btn {
+  min-height: 64px;
+  border-radius: 16px;
+  font-size: 15px;
+}
+
+#fc-job-card .fc-workflow-btn b {
+  font-size: 17px;
+}
+
+#fc-job-card .fc-workflow-btn.is-saved {
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.35);
+}
+
+#fc-job-card .fc-save-message {
+  font-size: 15px;
+}
