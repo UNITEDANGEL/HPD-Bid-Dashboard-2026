@@ -6,6 +6,7 @@ import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate 
 import { tenantContactInfo } from "../../lib/tenantContact";
 import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
 import { drawInvoicePage } from "../../lib/invoice-pdf";
+import { deliverPackage, googleStatus, type GoogleStatus } from "../../lib/package-delivery";
 import { calendarDay } from "../../lib/job-priority";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
@@ -1107,6 +1108,8 @@ export default function PaperworkPage() {
   const [packageBusy, setPackageBusy] = useState(false);
   const [packageReviewed, setPackageReviewed] = useState(false);
   const [packageApproved, setPackageApproved] = useState(false);
+  const [google, setGoogle] = useState<GoogleStatus | null>(null);
+  const [delivery, setDelivery] = useState<{ working: boolean; message: string; folderLink: string; emailed: boolean; error: string } | null>(null);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
   const [pdfStatus, setPdfStatus] = useState("");
@@ -1224,6 +1227,10 @@ export default function PaperworkPage() {
   const mapBackHref = selectedId ? `/map/?omo=${encodeURIComponent(selectedId)}&view=all&map=1` : "/map/?view=all&map=1";
 
   useEffect(() => {
+    void googleStatus().then(setGoogle);
+  }, []);
+
+  useEffect(() => {
     if (!autoGeneratePackage || autoGenerateStartedRef.current) return;
     if (!selectedId || !jobs.length || !selectedJob || !form.jobId) return;
     if (outcome === "pending") {
@@ -1257,6 +1264,7 @@ export default function PaperworkPage() {
     setPackageReviewed(false);
     setPackageApproved(false);
     setPackagePreview(null);
+    setDelivery(null);
     setPackagePreviewOpen(false);
     setFullScreenPdfOpen(false);
     pendingCompletePackageRef.current = null;
@@ -1301,17 +1309,20 @@ export default function PaperworkPage() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  async function markPackageGenerated(jobId: string, approved = false) {
+  async function markPackageGenerated(jobId: string, approved = false, delivery?: { driveLink: string; emailed: boolean }) {
     if (!jobId) return "Package generated.";
 
     const generatedAt = new Date().toISOString();
+    const emailNote = delivery?.emailed ? "Emailed" : "Not emailed";
+    const approvedMessage = delivery ? `Reviewed and archived. Saved to Google Drive. ${emailNote}.` : "Reviewed and archived. Not emailed.";
     const patch = {
       ...(approved ? { ArchivedFromMap: true, archivedFromMap: true } : {}),
+      ...(delivery ? { PackageDriveLink: delivery.driveLink, ...(delivery.emailed ? { PackageEmailedAt: generatedAt } : {}) } : {}),
       PackageReviewStatus: approved ? "Approved" : "Pending review",
       PackageGeneratedAt: generatedAt,
       packageGeneratedAt: generatedAt,
-      PackageReadyMessage: approved ? "Reviewed and archived. Not emailed." : "Draft saved. Review affidavit, invoice and media before approval.",
-      packageReadyMessage: approved ? "Reviewed and archived. Not emailed." : "Draft saved. Review affidavit, invoice and media before approval.",
+      PackageReadyMessage: approved ? approvedMessage : "Draft saved. Review affidavit, invoice and media before approval.",
+      packageReadyMessage: approved ? approvedMessage : "Draft saved. Review affidavit, invoice and media before approval.",
     };
 
     saveLocalPackageOverride(jobId, patch);
@@ -1324,10 +1335,10 @@ export default function PaperworkPage() {
       });
 
       if (!response.ok) throw new Error(await response.text());
-      return approved ? "Approved and archived. Not emailed." : "Draft saved for review. Not archived or emailed.";
+      return approved ? (delivery ? "Approved and archived." : "Approved and archived. Not emailed.") : "Draft saved for review. Not archived or emailed.";
     } catch (error) {
       console.error(error);
-      return approved ? "Approved on this device; server sync needs retry. Not emailed." : "Draft saved on this device; server sync needs retry. Not archived or emailed.";
+      return approved ? `Approved on this device; server sync needs retry.${delivery ? "" : " Not emailed."}` : "Draft saved on this device; server sync needs retry. Not archived or emailed.";
     }
   }
 
@@ -2078,21 +2089,71 @@ export default function PaperworkPage() {
     }
   }
 
-  // Approve & Save: save the hard copy first (share sheets need the tap), then record the approval.
+  // Approve & Save: with Google connected, save the whole package to Drive and email the PDF and
+  // photos, then record the approval. Without it, fall back to saving/sharing the files on the device.
   async function approveAndSavePackage() {
     const pending = pendingCompletePackageRef.current;
     if (!pending || packageBusyRef.current) return;
-    if (canSaveRegularFolder()) await saveCompletePackageFolder();
-    else await sendCompletePackage();
-    if (packageApproved) return;
+    const status = google || (await googleStatus());
+    if (!status.connected) {
+      if (canSaveRegularFolder()) await saveCompletePackageFolder();
+      else await sendCompletePackage();
+      if (packageApproved) return;
+      setPackageBusy(true);
+      try {
+        setPdfStatus(`Approved. ${await markPackageGenerated(pending.jobId, true)}`);
+        setPackageApproved(true);
+      } catch (error) {
+        setPdfStatus(error instanceof Error ? error.message : "Approval could not be saved.");
+      } finally {
+        setPackageBusy(false);
+      }
+      return;
+    }
+
+    packageBusyRef.current = true;
     setPackageBusy(true);
+    setDelivery({ working: true, message: "Starting...", folderLink: "", emailed: false, error: "" });
     try {
-      const message = await markPackageGenerated(pending.jobId, true);
+      const statusLabel = packageStatusLabel(outcome);
+      const address = [form.address, form.location, form.borough].filter(Boolean).join(", ");
+      const result = await deliverPackage({
+        folderName: pending.folderName,
+        files: pending.folderEntries.map((entry) => ({ name: entry.path.split("/").pop() || entry.path, mimeType: entry.mimeType, bytes: entry.bytes })),
+        emailSubject: `${pending.jobId} - ${statusLabel} - ${form.address || "HPD package"}`,
+        emailText: (folderLink, attachedPhotos) => [
+          `HPD package: ${pending.jobId}`,
+          `Outcome: ${statusLabel}`,
+          `Address: ${address || "not listed"}`,
+          `Total charge: ${form.amount || "$0.00"}`,
+          "",
+          `Google Drive folder: ${folderLink}`,
+          "",
+          attachedPhotos
+            ? `Attached: affidavit/invoice PDF and ${pending.imageCount} photo(s).`
+            : pending.imageCount
+              ? "Attached: affidavit/invoice PDF. The photos were too large for one email and are in the Google Drive folder."
+              : "Attached: affidavit/invoice PDF.",
+          pending.videoCount ? `${pending.videoCount} video(s) are in the Google Drive folder.` : "",
+        ].filter((line, index, lines) => line || lines[index - 1]).join("\n"),
+        sendEmail: true,
+        onProgress: (message) => setDelivery((current) => ({ ...(current || { folderLink: "", emailed: false, error: "" }), working: true, message })),
+      });
+      const archive = await markPackageGenerated(pending.jobId, true, { driveLink: result.folderLink, emailed: result.emailed });
       setPackageApproved(true);
-      setPdfStatus(`Approved. ${message}`);
+      setDelivery({
+        working: false,
+        message: result.emailed ? `Emailed to ${result.emailTo.join(", ")}` : "",
+        folderLink: result.folderLink,
+        emailed: result.emailed,
+        error: result.emailError,
+      });
+      setPdfStatus(`Approved. Saved ${result.uploaded} file(s) to Google Drive${result.emailed ? " and emailed" : ""}. ${archive}`);
     } catch (error) {
-      setPdfStatus(error instanceof Error ? error.message : "Approval could not be saved.");
+      setDelivery({ working: false, message: "", folderLink: "", emailed: false, error: error instanceof Error ? error.message : "Google Drive save failed." });
+      setPdfStatus("Not approved yet: the package could not be saved to Google Drive. It is still on this device; try again.");
     } finally {
+      packageBusyRef.current = false;
       setPackageBusy(false);
     }
   }
@@ -3331,6 +3392,41 @@ export default function PaperworkPage() {
 
         .pkg-approve:disabled {
           opacity: 0.45;
+        }
+
+        .pkg-delivery {
+          display: grid;
+          gap: 8px;
+          border: 1px solid rgba(83, 230, 156, 0.4);
+          border-radius: 12px;
+          padding: 12px;
+          color: #caffdf;
+          font-weight: 800;
+        }
+
+        .pkg-delivery.has-error {
+          border-color: rgba(255, 209, 102, 0.5);
+          color: #ffe8a3;
+        }
+
+        .pkg-delivery a {
+          display: block;
+          border-radius: 10px;
+          padding: 12px;
+          background: #ffffff;
+          color: #0b1b33;
+          text-align: center;
+          font-weight: 900;
+          text-decoration: none;
+        }
+
+        .pkg-google-note {
+          color: #c9d4e3;
+        }
+
+        .pkg-google-note a {
+          color: #8fd3ff;
+          font-weight: 800;
         }
 
         .pkg-more summary {
@@ -4584,11 +4680,35 @@ export default function PaperworkPage() {
                 type="button"
                 className="paperwork-print pkg-approve"
                 data-hpd-smoke="paperwork-approve-save"
-                disabled={(!packageReviewed && !packageApproved) || packageBusy}
+                disabled={(!packageReviewed && !packageApproved) || packageBusy || Boolean(packageApproved && delivery?.folderLink)}
                 onClick={approveAndSavePackage}
               >
-                {packageApproved ? "Save Copy Again" : "Approve & Save"}
+                {delivery?.working
+                  ? delivery.message
+                  : packageApproved
+                    ? google?.connected ? "Saved" : "Save Copy Again"
+                    : google?.connected ? "Approve, Email & Save to Drive" : "Approve & Save"}
               </button>
+              {delivery && !delivery.working ? (
+                <div className={`pkg-delivery ${delivery.error ? "has-error" : ""}`} data-hpd-smoke="paperwork-delivery">
+                  {delivery.folderLink ? (
+                    <a href={delivery.folderLink} target="_blank" rel="noopener noreferrer" data-hpd-smoke="paperwork-drive-link">
+                      Open package in Google Drive
+                    </a>
+                  ) : null}
+                  {delivery.emailed ? <span>✓ {delivery.message}</span> : null}
+                  {delivery.error ? <span>{delivery.error}</span> : null}
+                </div>
+              ) : null}
+              {google && !google.connected ? (
+                <small className="pkg-google-note">
+                  To email the package and save it to Google Drive automatically, <a href="/storage/">connect Google</a> on the main app.
+                </small>
+              ) : google?.connected && !google.canEmail ? (
+                <small className="pkg-google-note">
+                  Drive is connected. To also email packages, <a href="/storage/">reconnect Google</a> and allow sending email.
+                </small>
+              ) : null}
 
               <details className="pkg-more" data-hpd-smoke="paperwork-package-more">
                 <summary>More options</summary>

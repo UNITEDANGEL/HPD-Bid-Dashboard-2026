@@ -93,7 +93,7 @@ Production configuration required before the Connect button is enabled:
 
 Setting up the client/secrets/binding requires explicit security-access approval.
 No credentials should be pasted in chat, committed, or included in static output.
-The Google flow requests openid/email/drive.file, state and S256 PKCE. It checks
+The Google flow requests openid/email/drive.file/gmail.send, state and S256 PKCE. It checks
 identity directly with Google's userinfo endpoint and rejects unverified or
 unapproved email. Browser cookies hold opaque session IDs, not Google tokens.
 Encrypted sessions expire after 30 days; this does not guarantee Google consent
@@ -203,3 +203,27 @@ media uploads, backup automation and cross-device verification are NOT enabled.
 - Verify signed-in phone/computer continuity before calling the rollout complete.
 
 Reference: https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/authorization-cookie/validating-json/
+
+
+## Approved package delivery (Drive folder + email)
+
+On the paperwork page, **Approve, Email & Save to Drive** (shown when Google is
+connected) uploads the whole package (PDF, photos, videos, manifest) to a new
+folder under `HPD Packages` in the owner's Drive and emails the PDF and photos
+from the owner's Gmail. Photos are left out of the email (PDF only, with the
+Drive link) when they exceed ~17 MB. Handlers: `server/drive-packages.mjs`
+(`/api/drive/{package-folder,package-file,email-package}`), client
+`lib/package-delivery.ts`. Synthetic tests: `node scripts/test-drive-packages.mjs`,
+`node scripts/test-package-delivery.cjs`.
+
+One-time setup in the Google Cloud project that owns the Drive OAuth client:
+
+- Enable the **Gmail API**.
+- OAuth consent screen: add the `https://www.googleapis.com/auth/gmail.send` scope.
+- Reconnect on `/storage/` (Disconnect, then Connect) and allow "Send email on
+  your behalf". Drive keeps working if this is declined; email is then skipped.
+- Optional `HPD_PACKAGE_EMAIL_TO`: comma-separated recipients (max 5). Defaults
+  to `HPD_DRIVE_ALLOWED_EMAIL`. The browser cannot choose recipients.
+
+Drive and email only work on the production origin; the map-preview site falls
+back to saving/sharing files on the device.
