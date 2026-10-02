@@ -827,3 +827,4 @@
 .jc-test-banner { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: rgba(139, 92, 246, 0.18); border: 1px solid #8b5cf6; color: #ede9fe; font-weight: 700; font-size: 14px; line-height: 1.35; }
 .jc-step-nav { display: flex; gap: 8px; margin-top: 8px; }
 .jc-step-nav .jc-btn { flex: 1; justify-content: center; }
+.jc-step-more { display: block; margin-top: 8px; padding: 9px 14px; border-radius: 12px; border: 1px dashed rgba(52, 211, 153, 0.7); background: transparent; color: #6ee7b7; font-weight: 700; font-size: 14px; }

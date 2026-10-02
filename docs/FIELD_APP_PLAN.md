@@ -40,6 +40,9 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 - [x] 30 / 60 / 90 days and status filters never move the map (no more jumping to the middle of Queens); only a borough tap or a search moves it
 - [x] Big, clear blue "You" marker, always on top of every pin
 - [x] Waze / Google taps are recorded on the job card: "On the way · Waze · date"
+- [x] Videos go in the signed email (before and after); a video too big to attach gets its own Drive link in the email. Drive: Before videos / After videos folders
+- [x] "+ More before photos / video" and "+ More after photos / video" buttons on the steps
+- [x] Fixed: starting work used to mark "Finish the job" as done, skipping Work completed / Partial
 - [x] Job card flow starts with **Go there** (Waze / Google) right under the description
 - [x] Email photos use the full ~25 MB email: few photos go near full quality, many photos step down; with videos, photos leave room for them
 

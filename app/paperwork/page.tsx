@@ -9,7 +9,7 @@ import { drawInvoicePage } from "../../lib/invoice-pdf";
 import { signatureBytes } from "../../lib/signature";
 import SignatureCard from "./SignatureCard";
 import NotaryCard, { type NotaryApproval } from "./NotaryCard";
-import { deliverPackage, googleStatus, sendPackageEmail, type DeliveryFile, type GoogleStatus } from "../../lib/package-delivery";
+import { deliverPackage, googleStatus, sendPackageEmail, type DeliveryFile, type EmailAttachmentSummary, type GoogleStatus } from "../../lib/package-delivery";
 import { calendarDay } from "../../lib/job-priority";
 import { isTestJob, withTestJob } from "../../lib/test-job";
 import { isJunkDescription } from "../../lib/description-quality";
@@ -1236,6 +1236,8 @@ export default function PaperworkPage() {
   const [packagePreviewOpen, setPackagePreviewOpen] = useState(false);
   const [fullScreenPdfOpen, setFullScreenPdfOpen] = useState(false);
   const pendingCompletePackageRef = useRef<PendingCompletePackage | null>(null);
+  // Drive links of the files saved on approve, so a resent email can still link a big video.
+  const deliveredFileLinksRef = useRef<Record<string, string>>({});
   const autoGenerateStartedRef = useRef(false);
   const packagePreviewPanelRef = useRef<HTMLDivElement | null>(null);
 
@@ -2390,15 +2392,16 @@ export default function PaperworkPage() {
       const original = entry.path.split("/").pop() || entry.path;
       if (entry.section === "pdf") return { name: `SIGNED - ${pending.jobId} - ${statusLabel}.pdf`, mimeType: entry.mimeType, bytes: entry.bytes };
       if (entry.section === "manifest") return { name: "Package contents.txt", mimeType: entry.mimeType, bytes: entry.bytes };
-      const kind = entry.section === "video" ? "video" : entry.path.startsWith("images/before/") ? "before" : entry.path.startsWith("images/after/") ? "after" : "other";
+      const stage = /^(images|videos)\/before\//.test(entry.path) ? "before" : /^(images|videos)\/after\//.test(entry.path) ? "after" : "other";
+      const kind = `${stage}${entry.section === "video" ? "-video" : ""}` as "before" | "after" | "other" | "before-video" | "after-video" | "other-video";
       counters[kind] = (counters[kind] || 0) + 1;
       const extension = original.includes(".") ? original.slice(original.lastIndexOf(".")) : "";
-      const label = { before: "BEFORE", after: "AFTER", other: "PHOTO", video: "VIDEO" }[kind];
-      const subfolder = { before: "Before photos", after: "After photos", other: "Other photos", video: "Videos" }[kind];
+      const label = { before: "BEFORE", after: "AFTER", other: "PHOTO", "before-video": "BEFORE VIDEO", "after-video": "AFTER VIDEO", "other-video": "VIDEO" }[kind];
+      const subfolder = { before: "Before photos", after: "After photos", other: "Other photos", "before-video": "Before videos", "after-video": "After videos", "other-video": "Videos" }[kind];
       return { name: `${label}-${String(counters[kind]).padStart(2, "0")} - ${pending.jobId}${extension}`, mimeType: entry.mimeType, bytes: entry.bytes, subfolder };
     });
-    const emailFiles = files.filter((file) => file.mimeType === "application/pdf" || file.subfolder === "Before photos" || file.subfolder === "After photos");
-    const beforeAfterCount = emailFiles.length - 1;
+    // The email carries the signed PDF, the before/after photos and every video.
+    const emailFiles = files.filter((file) => file.mimeType === "application/pdf" || file.subfolder === "Before photos" || file.subfolder === "After photos" || file.mimeType.startsWith("video/"));
     return {
       folderName: filing.folderName,
       folderPath: filing.path,
@@ -2406,8 +2409,9 @@ export default function PaperworkPage() {
       // The SIGNED email: the signed PDF and the before/after photos only.
       emailFiles,
       emailSubject: `${isTestJob(pending.jobId) ? "TEST - " : ""}SIGNED - ${pending.jobId} - ${statusLabel} - ${form.address || "HPD package"}`,
-      // This is the email that gets forwarded, so it carries no Google Drive link or Drive mentions.
-      emailText: (_folderLink: string, attachedPhotos: boolean) => [
+      // This is the email that gets forwarded, so it carries no Drive folder link; only a video or
+      // photo too big to attach gets its own link.
+      emailText: (_folderLink: string, _attachedPhotos: boolean, summary: EmailAttachmentSummary) => [
         "SIGNED COPY - signed by the principal and the notary. This is the copy to forward.",
         "",
         `HPD package: ${pending.jobId}`,
@@ -2415,11 +2419,8 @@ export default function PaperworkPage() {
         `Address: ${address || "not listed"}`,
         `Total charge: ${form.amount || "$0.00"}`,
         "",
-        attachedPhotos
-          ? `Attached: signed affidavit/invoice PDF and ${beforeAfterCount} before/after photo(s).`
-          : beforeAfterCount
-            ? "Attached: signed affidavit/invoice PDF. The before/after photos were too large for one email and will be sent separately."
-            : "Attached: signed affidavit/invoice PDF.",
+        `Attached: signed affidavit/invoice PDF${summary.photos ? `, ${summary.photos} before/after photo(s)` : ""}${summary.videos ? `, ${summary.videos} video(s)` : ""}.`,
+        ...(summary.linked.length ? ["", "Too large to attach (open with the link):", ...summary.linked.map((file) => `- ${file.name}: ${file.url || "saved in the package folder"}`)] : []),
       ].filter((line, index, lines) => line || lines[index - 1]).join("\n"),
     };
   }
@@ -2438,7 +2439,7 @@ export default function PaperworkPage() {
     setDelivery((current) => current && { ...current, working: true, message: "Sending email...", error: "" });
     try {
       setGoogle(await googleStatus());
-      const result = await sendPackageEmail({ ...packageEmailParts(pending), folderLink });
+      const result = await sendPackageEmail({ ...packageEmailParts(pending), folderLink, fileLinks: deliveredFileLinksRef.current });
       if (result.emailed) await markPackageGenerated(pending.jobId, true, { driveLink: folderLink, emailed: true });
       setDelivery({ working: false, folderLink, emailed: result.emailed, message: result.emailed ? `Signed copy emailed to ${result.emailTo.join(", ")}` : "", error: result.emailError });
     } catch (error) {
@@ -2493,6 +2494,7 @@ export default function PaperworkPage() {
         sendEmail: true,
         onProgress: (message) => setDelivery((current) => ({ ...(current || { folderLink: "", emailed: false, error: "" }), working: true, message })),
       });
+      deliveredFileLinksRef.current = result.fileLinks || {};
       const archive = await markPackageGenerated(pending.jobId, true, { driveLink: result.folderLink, emailed: result.emailed });
       setPackageApproved(true);
       setDelivery({
