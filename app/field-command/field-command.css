@@ -612,6 +612,27 @@
   color: #ffcf99;
 }
 
+.fc-map-hints {
+  position: absolute;
+  left: 50%;
+  bottom: 66px;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  pointer-events: none;
+}
+
+.fc-map-hints:empty {
+  display: none;
+}
+
+.fc-map-hints .fc-map-hint {
+  position: static;
+  transform: none;
+}
+
 .fc-map-fab.is-active {
   background: var(--fc-accent);
   color: white;
@@ -1777,7 +1798,9 @@
 .fc-app.fc-reference .fc-age-tag[data-priority="unknown"] { background: #454b55; color: white; }
 .fc-app.fc-reference .fc-map-fab svg { width: 22px; height: 22px; }
 .fc-app.fc-reference .fc-visible-fab, .fc-app.fc-reference .fc-legend { display: none; }
-.fc-app.fc-reference .fc-map-hint { top: 10px; bottom: auto; left: 12px; right: 62px; transform: none; width: auto; white-space: normal; font-size: 12px; border-radius: 6px; }
+/* Below the search box, not hidden behind it (its dark edges showed as a black line around the search). */
+.fc-app.fc-reference .fc-map-hints { top: calc(max(10px, env(safe-area-inset-top)) + 70px); bottom: auto; left: 12px; right: 62px; transform: none; justify-items: stretch; }
+.fc-app.fc-reference .fc-map-hint { width: auto; white-space: normal; font-size: 13px; border-radius: 8px; }
 .fc-app.fc-reference .leaflet-boroughLabels-pane { display: none; }
 .fc-app.fc-reference .leaflet-control-attribution { font-size: 8px; }
 .fc-app.fc-reference .fc-tabbar, .fc-app.fc-reference.fc-has-job .fc-tabbar { display: grid; position: absolute; left: 0; transform: none; width: 100%; max-width: none; height: 62px; padding: 7px 6px max(7px,env(safe-area-inset-bottom)); background: #030b14; border-top: 1px solid #142c41; }

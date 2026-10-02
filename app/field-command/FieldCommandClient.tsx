@@ -54,6 +54,9 @@ function numberValue(job: JobRecord, keys: string[]) {
   return NaN;
 }
 
+const JOBS_URL = "/data/COA_Fetcher_2026.json";
+const JOBS_CACHE = "hpd-jobs-v1";
+
 function jobId(job: JobRecord) {
   return value(job, ["OMO", "omo", "OMONumber", "id", "Id"]) || "HPD JOB";
 }
@@ -561,6 +564,7 @@ export default function FieldCommandClient() {
   const [routeSummary, setRouteSummary] = useState<{ stops: number; miles: number; firstStop: string; href: string } | null>(null);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
   const [workflowLoaded, setWorkflowLoaded] = useState(false);
+  const [jobsLoadFailed, setJobsLoadFailed] = useState(false);
   const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number }>>({});
   // Up to 3 thumbnails per stage for the Media & Documents card.
   const [mediaThumbs, setMediaThumbs] = useState<Record<string, { before: string[]; after: string[] }>>({});
@@ -618,23 +622,48 @@ export default function FieldCommandClient() {
   useEffect(() => {
     let cancelled = false;
     let loading = false;
+    let latestRows: JobRecord[] | null = null;
+    let serverOverrides: Record<string, JobRecord> = {};
+    function showRows(data: unknown) {
+      const body = data as { jobs?: unknown; data?: unknown; records?: unknown } | unknown[];
+      const rows = Array.isArray(body) ? body : body?.jobs || body?.data || body?.records;
+      if (!Array.isArray(rows)) throw new Error("Invalid job response");
+      latestRows = rows as JobRecord[];
+      setJobsLoadFailed(false);
+      applyOverrides();
+    }
+    function applyOverrides() {
+      if (cancelled || !latestRows) return;
+      const overrides = { ...readSharedWorkflowOverrides(), ...serverOverrides };
+      const next = latestRows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}) }));
+      setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
+    }
+    // Pins show at once from the copy saved on this phone last time, then refresh from the network.
+    if (typeof caches !== "undefined") {
+      caches.open(JOBS_CACHE).then((cache) => cache.match(JOBS_URL)).then((saved) => saved?.json())
+        .then((data) => { if (data && !latestRows) showRows(data); })
+        .catch(() => {});
+    }
     function refreshJobs() {
       if (loading) return;
       loading = true;
-      Promise.all([
-        fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error("Job refresh failed"); return r.json(); }),
-        fetchServerWorkflowOverrides().catch(() => ({})),
-      ])
-      .then(([data, serverOverrides]) => {
-        if (cancelled) return;
-        const rows = Array.isArray(data) ? data : data.jobs || data.data || data.records;
-        if (!Array.isArray(rows)) throw new Error("Invalid job response");
-        const overrides = { ...readSharedWorkflowOverrides(), ...serverOverrides };
-        const next = rows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}) }));
-        setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
-      })
-      .catch(() => { /* Keep the last loaded jobs if refresh is unavailable. */ })
-      .finally(() => { loading = false; });
+      // no-cache: the phone keeps the file and the server answers "unchanged" quickly when it is.
+      fetch(JOBS_URL, { cache: "no-cache" })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Job refresh failed");
+          // Copy before reading: once the body is read it can't be copied into the phone's cache.
+          if (typeof caches !== "undefined") {
+            const copy = response.clone();
+            caches.open(JOBS_CACHE).then((cache) => cache.put(JOBS_URL, copy)).catch(() => {});
+          }
+          showRows(await response.json());
+        })
+        .catch(() => { if (!latestRows) setJobsLoadFailed(true); /* Otherwise keep the last loaded jobs. */ })
+        .finally(() => { loading = false; });
+      // Saved field statuses merge in when they arrive; they never hold up the pins.
+      fetchServerWorkflowOverrides()
+        .then((overrides) => { serverOverrides = overrides as Record<string, JobRecord>; applyOverrides(); })
+        .catch(() => {});
     }
     const onStorage = (event: StorageEvent) => {
       if (event.key === SHARED_WORKFLOW_STORAGE_KEY) refreshJobs();
@@ -1535,17 +1564,22 @@ export default function FieldCommandClient() {
           </a>
         ) : null}
 
-        {locateStatus === "error" ? (
-          <p className="fc-map-hint fc-map-hint-warn">Couldn&apos;t get your location</p>
-        ) : null}
+        {/* Status messages stack below the search box instead of overlapping each other. */}
+        <div className="fc-map-hints">
+          {locateStatus === "error" ? (
+            <p className="fc-map-hint fc-map-hint-warn">Couldn&apos;t get your location</p>
+          ) : null}
 
-        {!filteredJobs.length ? (
-          <p className="fc-map-hint">No jobs match these filters</p>
-        ) : null}
+          {!jobs.length ? (
+            <p className={`fc-map-hint ${jobsLoadFailed ? "fc-map-hint-warn" : ""}`} role="status">{jobsLoadFailed ? "Couldn't load jobs. Check the connection; retrying." : "Loading jobs..."}</p>
+          ) : !filteredJobs.length ? (
+            <p className="fc-map-hint">No jobs match these filters</p>
+          ) : null}
 
-        {filteredJobs.length > 0 && !mappedFilteredCount ? (
-          <p className="fc-map-hint">No mapped jobs match these filters</p>
-        ) : null}
+          {filteredJobs.length > 0 && !mappedFilteredCount ? (
+            <p className="fc-map-hint">No mapped jobs match these filters</p>
+          ) : null}
+        </div>
 
         {!selectedJob ? (
           <div className="fc-legend">
