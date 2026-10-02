@@ -8,6 +8,7 @@ import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMater
 import { drawInvoicePage } from "../../lib/invoice-pdf";
 import { signatureBytes } from "../../lib/signature";
 import SignatureCard from "./SignatureCard";
+import NotaryCard, { type NotaryApproval } from "./NotaryCard";
 import { deliverPackage, googleStatus, sendPackageEmail, type GoogleStatus } from "../../lib/package-delivery";
 import { calendarDay } from "../../lib/job-priority";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
@@ -78,6 +79,18 @@ const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-performed-affidavit.pdf";
 const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-performed-affidavit.pdf";
 const CONTRACTOR_NAME = "UNITED ANGEL CONSTRUCTION CORP";
 const DEFAULT_PACKAGE_SIGNER = "JOTJAGRAJ SINGH";
+// Convenience default only -- the notary still types/confirms their own name, signs and
+// checks the witness box fresh each time. Never used to prefill a signature or a stamp.
+const DEFAULT_NOTARY_NAME = "CHETANPREET MALHI";
+// Printed stamp text for the emailed/Drive copy of the package (not a wet-ink impression).
+// Drawn under "Notary Public" only when a notary has actually approved this package.
+const NOTARY_STAMP_LINES = [
+  "CHETANPREET MALHI",
+  "Notary Public - State of New York",
+  "NO. 01MA0022379",
+  "Qualified in Queens County",
+  "My Commission Expires June 13, 2029",
+];
 const AFFIDAVIT_NOTARY_COUNTY = "QUEENS";
 const REFUSED_ACCESS_DESCRIPTION_EXAMPLE = "MALE, TALL, DARK HAIR";
 
@@ -149,6 +162,9 @@ type CompletePackagePreview = {
   applicationPacketId?: string;
   videoPacketId?: string;
   note: string;
+  // Print Copy: no digital signature images, notary stamp/date still filled. Downloaded
+  // straight to this device for ink signing -- never routed through Drive/email approval.
+  printCopy: boolean;
 };
 
 type PendingCompletePackage = CompletePackagePreview & {
@@ -169,6 +185,8 @@ type GeneratePdfOptions = {
   includeSignature?: boolean;
   // Print copy: keep the printed name, leave signature lines blank for ink.
   signatureImage?: boolean;
+  // In-person notary approval for this package only. Omitted/null leaves the notary area blank.
+  notary?: NotaryApproval | null;
 };
 
 function asArray(value: unknown): JobRecord[] {
@@ -212,6 +230,26 @@ function displayDate(value: unknown) {
   const day = String(parsed.getDate()).padStart(2, "0");
   const year = String(parsed.getFullYear()).slice(-2);
   return `${month}/${day}/${year}`;
+}
+
+const MONTH_NAMES = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+
+function ordinal(day: number) {
+  if (day % 10 === 1 && day % 100 !== 11) return `${day}ST`;
+  if (day % 10 === 2 && day % 100 !== 12) return `${day}ND`;
+  if (day % 10 === 3 && day % 100 !== 13) return `${day}RD`;
+  return `${day}TH`;
+}
+
+// Notary jurat date, ISO ("2026-10-02") in, affidavit-ready pieces out.
+function notaryDateParts(isoDate: string) {
+  const parsed = parseDateValue(isoDate);
+  if (!parsed) return { day: "", month: "", year: "" };
+  return {
+    day: ordinal(parsed.getDate()),
+    month: MONTH_NAMES[parsed.getMonth()],
+    year: String(parsed.getFullYear()).slice(-2),
+  };
 }
 
 function displayDateTime(value: unknown) {
@@ -1124,6 +1162,10 @@ export default function PaperworkPage() {
   // Signer's saved signature (this device only); read by PDF generation.
   const signatureRef = useRef("");
   const rememberSignature = useCallback((dataUrl: string) => { signatureRef.current = dataUrl; }, []);
+  // Notary's in-person approval: never saved, never reused across packages.
+  const notaryRef = useRef<NotaryApproval | null>(null);
+  const [notaryKey, setNotaryKey] = useState(0);
+  const rememberNotary = useCallback((notary: NotaryApproval | null) => { notaryRef.current = notary; }, []);
   const [delivery, setDelivery] = useState<{ working: boolean; message: string; folderLink: string; emailed: boolean; error: string } | null>(null);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
@@ -1364,6 +1406,11 @@ export default function PaperworkPage() {
     const activeOutcome = options.outcomeOverride || outcome;
     const includeSignature = options.includeSignature !== false;
     const includeSignatureImage = includeSignature && options.signatureImage !== false;
+    // The notary's stamp text and jurat date are filled whenever a notary approved this
+    // package, independent of whether signature IMAGES are drawn -- a print copy has no
+    // signature pictures (signed in ink instead) but still gets the stamp and date typed in.
+    const notary = options.notary || null;
+    const includeNotaryImage = includeSignatureImage && notary;
     const useWorkTemplate = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
     const awardDay = calendarDay(getJobDate(selectedJob, "award"));
     if (awardDay === null || awardDay < calendarDay("2026-08-28")!) {
@@ -1583,8 +1630,9 @@ export default function PaperworkPage() {
         adjustFieldRect(affidavitForm, "Partial Reason", { dy: 4 });
         adjustFieldRect(affidavitForm, "Partial Amount", { dx: 3 });
         showUnderline(affidavitForm, "Partial Amount");
-        setAffidavitText("Notary Day Month", "");
-        setAffidavitText("Notary Year", "");
+        const notaryDate = notary ? notaryDateParts(notary.date) : { day: "", month: "", year: "" };
+        setAffidavitText("Notary Day Month", notary ? `${notaryDate.day} ${notaryDate.month}` : "");
+        setAffidavitText("Notary Year", notary ? notaryDate.year : "");
 
         if (activeOutcome === "partial_work_completed") {
           setAffidavitText("Denied Name", upper(activeForm.deniedName));
@@ -1614,9 +1662,10 @@ export default function PaperworkPage() {
         showUnderline(affidavitForm, "Deponent Name");
         setAffidavitText("Service Charge Amount", chargeAmount);
         showUnderline(affidavitForm, "Service Charge Amount");
-        setAffidavitText("Notary Day", "");
-        setAffidavitText("Notary Month", "");
-        setAffidavitText("Notary Year", "");
+        const notaryDateNoWork = notary ? notaryDateParts(notary.date) : { day: "", month: "", year: "" };
+        setAffidavitText("Notary Day", notary ? notaryDateNoWork.day : "");
+        setAffidavitText("Notary Month", notary ? notaryDateNoWork.month : "");
+        setAffidavitText("Notary Year", notary ? notaryDateNoWork.year : "");
 
         if (activeOutcome === "no_access") {
           setAffidavitText("Inaccessible Reason", noWorkReason || "NO ACCESS TO MAKE REPAIRS", 9);
@@ -1666,6 +1715,29 @@ export default function PaperworkPage() {
         const box = useWorkTemplate ? { x: 398, y: 261, width: 150, height: 32 } : { x: 362, y: 347, width: 160, height: 40 };
         const scale = Math.min(box.width / signatureImage.width, box.height / signatureImage.height);
         affidavitDoc.getPages()[1]?.drawImage(signatureImage, { x: box.x, y: box.y, width: signatureImage.width * scale, height: signatureImage.height * scale });
+      }
+
+      // Notary's own in-person signature above the "Notary Public" line (email/Drive copy
+      // only -- a print copy leaves this blank for wet ink), and the printed stamp text
+      // centered below it, which is filled on BOTH copies since it's just typed info, not a
+      // signature. The notary's name is not drawn next to "Notary Public" since it's already
+      // the first line of the stamp.
+      if (notary) {
+        const box = useWorkTemplate ? { x: 36, y: 148, width: 146, height: 28 } : { x: 36, y: 197, width: 153, height: 28 };
+        const page2 = affidavitDoc.getPages()[1];
+        if (includeNotaryImage) {
+          const notaryImage = await affidavitDoc.embedPng(signatureBytes(notary.signature));
+          const scale = Math.min(box.width / notaryImage.width, box.height / notaryImage.height);
+          page2?.drawImage(notaryImage, { x: box.x, y: box.y, width: notaryImage.width * scale, height: notaryImage.height * scale });
+        }
+
+        const stampSize = 7;
+        const stampWidths = NOTARY_STAMP_LINES.map((line) => affidavitBoldFont.widthOfTextAtSize(line, stampSize));
+        const stampCenterX = box.x + Math.max(...stampWidths) / 2;
+        const stampTop = useWorkTemplate ? 104 : 153;
+        NOTARY_STAMP_LINES.forEach((line, index) => {
+          page2?.drawText(line, { x: stampCenterX - stampWidths[index] / 2, y: stampTop - index * 9, size: stampSize, font: affidavitBoldFont });
+        });
       }
 
       // Flattened template widgets can leave dangling annotation references.
@@ -1851,8 +1923,12 @@ export default function PaperworkPage() {
         outcomeOverride: activeOutcome,
         includeSignature,
         signatureImage: !printCopy,
+        notary: notaryRef.current,
       });
       if (!pdf) return;
+      // Fresh for every affidavit: never carry an approval into the next package.
+      notaryRef.current = null;
+      setNotaryKey((key) => key + 1);
 
       includedMedia = await fitEmailVideos(includedMedia, pdf.bytes.byteLength + 64_000 + includedMedia.length * 2048, setPdfStatus);
 
@@ -1992,6 +2068,7 @@ export default function PaperworkPage() {
         videoLinks,
         skippedMediaCount: skippedMedia.length,
         note,
+        printCopy,
       };
 
       pendingCompletePackageRef.current = {
@@ -4763,6 +4840,19 @@ export default function PaperworkPage() {
           {!packagePreview ? <SignatureCard signer={form.signer} onChange={rememberSignature} /> : null}
 
           {!packagePreview ? (
+            <NotaryCard
+              key={notaryKey}
+              minDate={
+                (outcome === "work_completed" || outcome === "partial_work_completed"
+                  ? dateInputValue(form.workComplete || form.fieldDate)
+                  : dateInputValue(form.secondAttempt || form.fieldDate)) || todayIsoDate()
+              }
+              defaultName={DEFAULT_NOTARY_NAME}
+              onApprove={rememberNotary}
+            />
+          ) : null}
+
+          {!packagePreview ? (
             <div className="paperwork-generate-choice" data-hpd-smoke="paperwork-generate-choice" aria-label="Package media choice">
               <button className="paperwork-print" data-hpd-smoke="paperwork-generate-full-package" type="button" onClick={() => generateCompletePackage(true)} disabled={!canGeneratePackage}>
                 {packageJobLoading ? "Loading Job Data..." : "Generate Email Package"}
@@ -4828,24 +4918,43 @@ export default function PaperworkPage() {
                 )}
               </div>
 
-              <label className="pkg-confirm">
-                <input type="checkbox" checked={packageReviewed} disabled={packageBusy || packageApproved} onChange={(event) => setPackageReviewed(event.target.checked)} />
-                I checked every page and photo.
-              </label>
-              <button
-                type="button"
-                className="paperwork-print pkg-approve"
-                data-hpd-smoke="paperwork-approve-save"
-                disabled={(!packageReviewed && !packageApproved) || packageBusy || Boolean(packageApproved && delivery?.folderLink)}
-                onClick={approveAndSavePackage}
-              >
-                {delivery?.working
-                  ? delivery.message
-                  : packageApproved
-                    ? google?.connected ? "Saved" : "Save Copy Again"
-                    : google?.connected ? "Approve, Email & Save to Drive" : "Approve & Save"}
-              </button>
-              {delivery && !delivery.working ? (
+              {packagePreview.printCopy ? (
+                <div className="pkg-print-only" data-hpd-smoke="paperwork-package-print-only">
+                  <small>
+                    Print copy: no digital signature, kept off Google Drive and out of the email package. Download it,
+                    print it, and sign/stamp in ink with your notary.
+                  </small>
+                  <a
+                    className="paperwork-print pkg-approve"
+                    data-hpd-smoke="paperwork-download-print-copy"
+                    href={packagePreview.pdfUrl}
+                    download={packagePreview.pdfFileName}
+                  >
+                    Download PDF for printing
+                  </a>
+                </div>
+              ) : (
+                <>
+                  <label className="pkg-confirm">
+                    <input type="checkbox" checked={packageReviewed} disabled={packageBusy || packageApproved} onChange={(event) => setPackageReviewed(event.target.checked)} />
+                    I checked every page and photo.
+                  </label>
+                  <button
+                    type="button"
+                    className="paperwork-print pkg-approve"
+                    data-hpd-smoke="paperwork-approve-save"
+                    disabled={(!packageReviewed && !packageApproved) || packageBusy || Boolean(packageApproved && delivery?.folderLink)}
+                    onClick={approveAndSavePackage}
+                  >
+                    {delivery?.working
+                      ? delivery.message
+                      : packageApproved
+                        ? google?.connected ? "Saved" : "Save Copy Again"
+                        : google?.connected ? "Approve, Email & Save to Drive" : "Approve & Save"}
+                  </button>
+                </>
+              )}
+              {!packagePreview.printCopy && delivery && !delivery.working ? (
                 <div className={`pkg-delivery ${delivery.error ? "has-error" : ""}`} data-hpd-smoke="paperwork-delivery">
                   {delivery.folderLink ? (
                     <a href={delivery.folderLink} target="_blank" rel="noopener noreferrer" data-hpd-smoke="paperwork-drive-link">

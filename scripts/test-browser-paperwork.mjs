@@ -72,6 +72,53 @@ try {
     console.log(`PASS ${job} ${outcome}: package generated in browser, ${pages} flattened pages`);
     await page.close();
   }
+
+  // Notary approval + Print Copy: the notary stamp/date must still fill in, but a print copy
+  // has no signature images and must never show the Drive/email approve button -- it is a
+  // plain download kept off Drive and out of the emailed package.
+  {
+    const job = "ER05729";
+    const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(String(error)));
+
+    await page.goto(`${baseUrl}/paperwork?job=${job}&outcome=work_completed`, { waitUntil: "networkidle" });
+
+    await page.locator('[data-hpd-smoke="paperwork-notary-pad"]').waitFor({ timeout: 10000 });
+    const notaryPad = await page.locator('[data-hpd-smoke="paperwork-notary-pad"]').boundingBox();
+    await page.mouse.move(notaryPad.x + 20, notaryPad.y + 40);
+    await page.mouse.down();
+    for (let i = 0; i <= 15; i += 1) await page.mouse.move(notaryPad.x + 20 + i * 8, notaryPad.y + 30 + Math.cos(i / 2) * 15);
+    await page.mouse.up();
+    await page.locator('[data-hpd-smoke="paperwork-notary-sign"]').click();
+    await page.fill('[data-hpd-smoke="paperwork-notary-name"]', "Test Notary");
+    await page.check('[data-hpd-smoke="paperwork-notary-witnessed"]');
+    await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
+
+    await page.locator('[data-hpd-smoke="paperwork-generate-print"]').click();
+    await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
+
+    assert.equal(await page.locator('[data-hpd-smoke="paperwork-download-print-copy"]').count(), 1, `${job}: print copy must show a plain download link`);
+    assert.equal(await page.locator('[data-hpd-smoke="paperwork-approve-save"]').count(), 0, `${job}: print copy must not show the Drive/email approve button`);
+
+    const printHref = await page.locator('[data-hpd-smoke="paperwork-download-print-copy"]').getAttribute("href");
+    assert.ok(printHref, `${job}: no PDF link for the print copy`);
+    const printBase64 = await page.evaluate(async (url) => {
+      const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+      let text = "";
+      for (const byte of bytes) text += String.fromCharCode(byte);
+      return btoa(text);
+    }, printHref);
+    const printBytes = Buffer.from(printBase64, "base64");
+    fs.writeFileSync(path.join(outDir, `${job}-print-copy.pdf`), printBytes);
+
+    const printPdf = await PDFDocument.load(printBytes);
+    assert.equal(printPdf.getPageCount(), 3, `${job}: print copy expected affidavit (2) + invoice (1) pages`);
+    assert.ok(!Buffer.from(printBytes).toString("latin1").includes("/Subtype /Image"), `${job}: print copy must have no signature/notary image`);
+    assert.deepEqual(errors, [], `${job}: page errors`);
+    console.log(`PASS ${job} print copy: notary date filled, no Drive/email approve button, no signature image`);
+    await page.close();
+  }
 } finally {
   await browser.close();
 }

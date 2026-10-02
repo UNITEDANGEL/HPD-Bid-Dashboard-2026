@@ -1,23 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { clearSignature, loadSignature, saveSignature, signatureFromPhoto, trimCanvas } from "../../lib/signature";
+import { clearSignature, loadSignature, saveSignature, signatureFromPhoto, signatureFromTypedName, trimCanvas } from "../../lib/signature";
 
 // Signer's signature for the affidavit and invoice. The notary section is left for the notary.
-let fontLoad: Promise<boolean> | null = null;
-function loadHandwritingFont() {
-  fontLoad ??= (async () => {
-    try {
-      const face = new FontFace("HPD Signature", "url(/fonts/great-vibes-latin.woff2)");
-      document.fonts.add(await face.load());
-      return true;
-    } catch {
-      fontLoad = null;
-      return false;
-    }
-  })();
-  return fontLoad;
-}
 
 export default function SignatureCard({ signer, onChange }: { signer: string; onChange: (dataUrl: string) => void }) {
   const [saved, setSaved] = useState("");
@@ -104,47 +90,13 @@ export default function SignatureCard({ signer, onChange }: { signer: string; on
   }
 
   // Typed name in a handwriting font, adopted as the signer's own e-signature.
-  // Great Vibes (OFL) ships with the app so it looks the same on every device.
   async function fromTypedName() {
-    const raw = typedName.trim() || signer.trim();
-    // Signatures are written in mixed case: "JOTJAGRAJ SINGH" -> "Jotjagraj Singh".
-    const name = raw === raw.toUpperCase() ? raw.toLowerCase().replace(/\b\p{L}/gu, (letter) => letter.toUpperCase()) : raw;
-    if (!name) {
-      setError("Type your name first.");
-      return;
+    try {
+      store(await signatureFromTypedName(typedName.trim() || signer));
+      setTyping(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "That name could not be drawn. Try signing with your finger.");
     }
-    const handwriting = await loadHandwritingFont();
-    const canvas = document.createElement("canvas");
-    canvas.width = 1400;
-    canvas.height = 300;
-    const context = canvas.getContext("2d")!;
-    context.fillStyle = "#0b1f4d";
-    context.textBaseline = "middle";
-    let size = 150;
-    const font = (px: number) => handwriting
-      ? `${px}px "HPD Signature"`
-      : `italic ${px}px "Snell Roundhand", "Segoe Script", "Brush Script MT", "Lucida Handwriting", cursive`;
-    context.font = font(size);
-    while (size > 40 && context.measureText(name).width > canvas.width - 40) {
-      size -= 6;
-      context.font = font(size);
-    }
-    context.fillText(name, 30, canvas.height / 2);
-    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
-    let minX = canvas.width, minY = canvas.height, maxX = -1, maxY = -1;
-    for (let y = 0; y < canvas.height; y += 2) {
-      for (let x = 0; x < canvas.width; x += 2) {
-        if (pixels[(y * canvas.width + x) * 4 + 3] > 0) {
-          minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
-        }
-      }
-    }
-    if (maxX < 0) {
-      setError("That name could not be drawn. Try signing with your finger.");
-      return;
-    }
-    store(trimCanvas(canvas, minX, minY, maxX + 2, maxY + 2));
-    setTyping(false);
   }
 
   async function fromPhoto(file?: File) {
