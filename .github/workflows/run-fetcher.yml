@@ -97,6 +97,10 @@ jobs:
             git add data/missing_itb_jobs_2026.csv public/data/missing_itb_jobs_2026.csv
           fi
 
+          # New jobs' ITB PDFs and page-3 pictures (job card "Job documents"), and the manifest that
+          # points the app at them. Without these, recent jobs linked to files that didn't exist.
+          git add public/documents/itb public/documents/itb-pages public/data/itb_source_manifest.json
+
           if git diff --cached --quiet; then
             echo "No fetcher data changes to commit."
           else
