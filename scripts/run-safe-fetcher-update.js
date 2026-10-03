@@ -120,7 +120,7 @@ function pythonFetcherDepsReady() {
     "python",
     [
       "-c",
-      "import requests, tqdm, PyPDF2, googleapiclient, google_auth_oauthlib, google.auth; print('ok')",
+      "import requests, tqdm, PyPDF2, pdfplumber, googleapiclient, google_auth_oauthlib, google.auth; print('ok')",
     ],
     {
       cwd: ROOT,
@@ -286,7 +286,7 @@ async function main() {
     if (pythonFetcherDepsReady()) {
       appendLog("Python fetcher dependencies already available.");
     } else {
-      runStep("Install Python fetcher dependencies", "python", ["-m", "pip", "install", "--quiet", "--no-cache-dir", "--disable-pip-version-check", "requests", "tqdm", "PyPDF2", "google-api-python-client", "google-auth-oauthlib", "google-auth-httplib2"]);
+      runStep("Install Python fetcher dependencies", "python", ["-m", "pip", "install", "--quiet", "--no-cache-dir", "--disable-pip-version-check", "requests", "tqdm", "PyPDF2", "pdfplumber", "google-api-python-client", "google-auth-oauthlib", "google-auth-httplib2"]);
     }
 
     runStep(`Run Gmail fetcher for last ${lookbackDays} days`, "python", ["FetchrMatcherV5.py", "--update", "--days", String(lookbackDays)]);
