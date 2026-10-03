@@ -20,13 +20,17 @@ const JUNK_DESCRIPTION_PATTERNS = [
   /evidence\s+of\s+the\s+required\s+Site\s+visit/i,
 ];
 
+// Where HPD's standard notes start after the scope (contact list, photo rules, general notes):
+// they are not part of the work description that prints on the invoice.
+const SCOPE_TAIL = /CONTRACTOR\s+MUST\s+CONTACT\s+HPD|IF\s+NO\s+WORK\s+IS\s+PERFORMED\s+OR\s+CONTRACTOR|[•*]?\s*CONTRACTORS?\s+ARE\s+REQUIRED\s+TO\s+DOCUMENT\s+THEIR\s+WORK|[•*]?\s*F\s?IELD\s+DIMENSIONS?\s+AND\s+QUANTITIES|ALTERNATIVE\s+ENFORCEMENT\s+PROGRAM\s*\n\s*IF\s+LANDLORD/i;
+
 // The real scope sometimes sits after a "Job Description:" label, behind a junk header (the wage
 // decision page, ER05421), and ends with HPD's contact boilerplate. Keep only the scope itself.
 export function salvageScope(value: unknown) {
   let text = value === undefined || value === null ? "" : String(value).trim();
   const label = text.match(/Job\s+Description\s*:/i);
   if (label && label.index !== undefined && label.index > 0) text = text.slice(label.index + label[0].length);
-  const tail = text.search(/CONTRACTOR\s+MUST\s+CONTACT\s+HPD|IF\s+NO\s+WORK\s+IS\s+PERFORMED\s+OR\s+CONTRACTOR/i);
+  const tail = text.search(SCOPE_TAIL);
   if (tail > 40) text = text.slice(0, tail);
   return text.trim().replace(/^:\s*/, "");
 }
