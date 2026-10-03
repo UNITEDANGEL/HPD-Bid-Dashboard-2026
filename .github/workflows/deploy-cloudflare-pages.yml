@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+  # The fetcher's data commits are pushed by GitHub Actions, which doesn't start this workflow
+  # on its own: deploy when a fetcher run finishes so new jobs and documents go live right away.
+  workflow_run:
+    workflows: ["Run Built-In Fetcher"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -33,6 +38,9 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Latest main, including the data the fetcher just committed.
+          ref: main
 
       - name: Setup Node
         uses: actions/setup-node@v4
