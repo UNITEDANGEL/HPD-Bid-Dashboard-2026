@@ -48,6 +48,10 @@ REAL_WORK_WORDS = [
 SKIP_LINE_MARKERS = [
     # Blank form labels are never part of a scope.
     *FORM_LABEL_MARKERS,
+    # The ITB's site-visit instructions page (ER04964) is never the scope either.
+    "site visit",
+    "you are required to provide the information",
+    "for hpd information only",
     "abate",
     "remove",
     "repair",
@@ -268,6 +272,8 @@ def extract_desc_from_pages(pages):
             if index >= 2:
                 score += 100
             candidates.append((score, fallback[:7000]))
+    # Junk is dropped before choosing, so a junk top pick can't hide a real scope found lower down.
+    candidates = [c for c in candidates if not is_bad(c[1]) and not looks_like_blank_form(c[1])]
     if not candidates:
         return ""
     candidates.sort(key=lambda x: x[0], reverse=True)
@@ -275,7 +281,8 @@ def extract_desc_from_pages(pages):
 def recover_description_from_pdf(pdf):
     pages = pypdf_pages(pdf)
     desc = extract_desc_from_pages(pages)
-    if not desc:
+    # A scanned (faxed) ITB's text layer can hold only form labels or instructions: read the scan.
+    if not desc or is_bad(desc):
         try:
             pages = ocr_pages(pdf, 1, 12)
             desc = extract_desc_from_pages(pages)
