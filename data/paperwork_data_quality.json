@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-03T01:52:05.598Z",
+  "generatedAt": "2026-10-03T13:07:35.848Z",
   "totalJobs": 672,
   "missingAddresses": 0,
   "missingDescriptions": 0,
@@ -8,7 +8,7 @@
   "junkOnlyDescriptions": 1,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 67,
+  "missingPage3Images": 27,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],

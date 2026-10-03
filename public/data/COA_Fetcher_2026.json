@@ -35062,8 +35062,8 @@
     "geocode": "NYC_PLANNING_OK",
     "latitude": "40.89923",
     "longitude": "-73.852835",
-    "DescriptionNeedsReview": false,
-    "descriptionNeedsReview": false,
+    "DescriptionNeedsReview": true,
+    "descriptionNeedsReview": true,
     "FetchMergeSource": "SAFE_7DAY_FETCH",
     "fetchMergeSource": "SAFE_7DAY_FETCH",
     "GeocodeNote": "4439 FURMAN AVENUE, Bronx, NY, USA",
@@ -35072,8 +35072,8 @@
     "descriptionSource": "DEEP_FAX_ITB_SCOPE_RECOVERY",
     "DescriptionRecoveredFromFile": "ER04964_090826024642.pdf",
     "descriptionRecoveredFromFile": "ER04964_090826024642.pdf",
-    "DescriptionRecoveryReason": "No ITB PDF candidate found for OMO",
-    "descriptionRecoveryReason": "No ITB PDF candidate found for OMO"
+    "DescriptionRecoveryReason": "No readable real scope found in matched ITB PDFs",
+    "descriptionRecoveryReason": "No readable real scope found in matched ITB PDFs"
   },
   {
     "OMO": "ER03623",
