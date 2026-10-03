@@ -35072,8 +35072,8 @@
     "descriptionSource": "DEEP_FAX_ITB_SCOPE_RECOVERY",
     "DescriptionRecoveredFromFile": "ER04964_090826024642.pdf",
     "descriptionRecoveredFromFile": "ER04964_090826024642.pdf",
-    "DescriptionRecoveryReason": "",
-    "descriptionRecoveryReason": ""
+    "DescriptionRecoveryReason": "No ITB PDF candidate found for OMO",
+    "descriptionRecoveryReason": "No ITB PDF candidate found for OMO"
   },
   {
     "OMO": "ER03623",

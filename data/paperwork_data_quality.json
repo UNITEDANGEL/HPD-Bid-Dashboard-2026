@@ -1,14 +1,14 @@
 {
-  "generatedAt": "2026-10-02T19:01:32.811Z",
+  "generatedAt": "2026-10-03T01:52:05.598Z",
   "totalJobs": 672,
   "missingAddresses": 0,
   "missingDescriptions": 0,
   "missingItbPage3Descriptions": 56,
   "badDescriptions": 0,
-  "junkOnlyDescriptions": 0,
+  "junkOnlyDescriptions": 1,
   "sourceReviewJobs": 0,
   "missingItbFiles": 0,
-  "missingPage3Images": 27,
+  "missingPage3Images": 67,
   "publicDataInSync": true,
   "samples": {
     "missingAddresses": [],
@@ -216,7 +216,16 @@
       }
     ],
     "badDescriptions": [],
-    "junkOnlyDescriptions": [],
+    "junkOnlyDescriptions": [
+      {
+        "OMO": "ER04964",
+        "Address": "4439 FURMAN AVENUE, 10466",
+        "ITB": "ER04964_090826024642.pdf",
+        "Source": "DEEP_FAX_ITB_SCOPE_RECOVERY",
+        "Status": "MATCHED",
+        "Preview": "You are required to provide the information requested below as evidence of the required Site visit and for HPD information only. Your respon"
+      }
+    ],
     "sourceReviewJobs": [],
     "missingItbFiles": [],
     "missingPage3Images": [
