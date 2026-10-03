@@ -1136,16 +1136,20 @@ export default function FieldCommandClient() {
           const occupied: { x: number; y: number }[] = [];
           let focusDistance = Math.min(map.getSize().x, map.getSize().y) * 0.35;
           let focusElement: HTMLElement | null = null;
+          // Once per redraw, not per job: the visible area (plus a margin).
+          const visibleArea = map.getBounds().pad(0.1);
           groupByLocation(pointsRef.current).forEach((location) => {
+            // Off-screen places are skipped before any per-job work (status, visits, priority).
+            if (!visibleArea.contains([location.lat, location.lng]) && map.getZoom() < 17) return;
             location.jobs.forEach((job, index) => {
+              const offset = map.getZoom() >= 17 ? individualPinOffset(index, location.jobs.length) : { x: 0, y: 0 };
+              const origin = map.latLngToLayerPoint([location.lat, location.lng]);
+              const position = map.layerPointToLatLng(L.point(origin.x + offset.x, origin.y + offset.y));
+              if (!visibleArea.contains(position)) return;
               const meta = { ...jobStatusMeta(job), ...pinStyle(job) };
               const visit = visitState(job);
               const priority = jobPriority(job);
               const title = `${jobId(job)} - ${meta.label} - ${priority.label} - ${visit.label} - ${visit.count} visits`;
-              const offset = map.getZoom() >= 17 ? individualPinOffset(index, location.jobs.length) : { x: 0, y: 0 };
-              const origin = map.latLngToLayerPoint([location.lat, location.lng]);
-              const position = map.layerPointToLatLng(L.point(origin.x + offset.x, origin.y + offset.y));
-              if (!map.getBounds().pad(0.1).contains(position)) return;
               const screen = map.latLngToContainerPoint(position);
               const showLabel = reservePinLabel(screen.x, screen.y, occupied);
               const html = showLabel
