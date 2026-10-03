@@ -1,15 +1,15 @@
 {
   "state": "complete",
-  "startedAt": "2026-10-03T13:10:50.152Z",
-  "finishedAt": "2026-10-03T13:11:53.729Z",
+  "startedAt": "2026-10-03T13:26:06.225Z",
+  "finishedAt": "2026-10-03T13:27:58.895Z",
   "ok": true,
   "error": "",
   "summary": {
-    "fetchedCoaItems": 40,
-    "fetchedItbItems": 40,
-    "fetchedFinalJobRows": 40,
+    "fetchedCoaItems": 94,
+    "fetchedItbItems": 94,
+    "fetchedFinalJobRows": 94,
     "addedNewOmos": 0,
-    "skippedExistingOmos": 40,
+    "skippedExistingOmos": 94,
     "rawRows": 672,
     "rows2026": 621,
     "mapped2026": 621,
@@ -17,9 +17,9 @@
     "missingAddresses": 0,
     "badDescriptions": 0,
     "missingDescriptions": 0,
-    "missingItbPage3Descriptions": 16,
+    "missingItbPage3Descriptions": 0,
     "sourceReviewJobs": 0,
-    "missingPage3Images": 27,
+    "missingPage3Images": 0,
     "missingItbJobs": 0
   },
   "logPath": "data/fetcher_latest_run.log"

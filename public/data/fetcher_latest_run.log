@@ -1,42 +1,42 @@
-Fetcher run started: 2026-10-03T13:10:50.152Z
+Fetcher run started: 2026-10-03T13:26:06.225Z
 credentials.json validated as JSON.
 token.json validated as JSON.
-Credentials file exists. Starting 40-day fetcher pipeline.
+Credentials file exists. Starting 80-day fetcher pipeline.
 
 ========== Install Python fetcher dependencies ==========
 $ python -m pip install --quiet --no-cache-dir --disable-pip-version-check requests tqdm PyPDF2 pdfplumber google-api-python-client google-auth-oauthlib google-auth-httplib2
 
-========== Run Gmail fetcher for last 40 days ==========
-$ python FetchrMatcherV5.py --update --days 40
+========== Run Gmail fetcher for last 80 days ==========
+$ python FetchrMatcherV5.py --update --days 80
 
-=== FETCHR MATCHER V5 START (Last 40 Days) ===
+=== FETCHR MATCHER V5 START (Last 80 Days) ===
 
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/08/24 before:2026/10/04
-COA items parsed (latest per OMO): 40
-ITB items parsed (latest per OMO): 40
-Final JobRows: 40
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/07/15 before:2026/10/04
+COA items parsed (latest per OMO): 94
+ITB items parsed (latest per OMO): 94
+Final JobRows: 94
 
 CSV saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.csv
 JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.json
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/42 [00:00<?, ?it/s]Downloading COA messages:   2%|▏         | 1/42 [00:00<00:04,  8.58it/s]Downloading COA messages:   7%|▋         | 3/42 [00:00<00:04,  9.25it/s]Downloading COA messages:  12%|█▏        | 5/42 [00:00<00:03,  9.87it/s]Downloading COA messages:  17%|█▋        | 7/42 [00:00<00:03, 10.14it/s]Downloading COA messages:  21%|██▏       | 9/42 [00:00<00:03, 10.29it/s]Downloading COA messages:  26%|██▌       | 11/42 [00:01<00:02, 10.34it/s]Downloading COA messages:  31%|███       | 13/42 [00:01<00:02, 10.56it/s]Downloading COA messages:  36%|███▌      | 15/42 [00:01<00:02, 10.73it/s]Downloading COA messages:  40%|████      | 17/42 [00:01<00:02,  9.37it/s]Downloading COA messages:  43%|████▎     | 18/42 [00:01<00:02,  9.13it/s]Downloading COA messages:  48%|████▊     | 20/42 [00:02<00:02,  9.73it/s]Downloading COA messages:  52%|█████▏    | 22/42 [00:02<00:01, 10.29it/s]Downloading COA messages:  57%|█████▋    | 24/42 [00:02<00:01,  9.84it/s]Downloading COA messages:  62%|██████▏   | 26/42 [00:02<00:01,  9.75it/s]Downloading COA messages:  64%|██████▍   | 27/42 [00:02<00:01,  9.59it/s]Downloading COA messages:  69%|██████▉   | 29/42 [00:02<00:01,  9.41it/s]Downloading COA messages:  71%|███████▏  | 30/42 [00:03<00:01,  9.04it/s]Downloading COA messages:  76%|███████▌  | 32/42 [00:03<00:01,  9.65it/s]Downloading COA messages:  81%|████████  | 34/42 [00:03<00:00,  9.67it/s]Downloading COA messages:  86%|████████▌ | 36/42 [00:03<00:00,  9.52it/s]Downloading COA messages:  90%|█████████ | 38/42 [00:03<00:00, 10.02it/s]Downloading COA messages:  95%|█████████▌| 40/42 [00:04<00:00,  9.30it/s]Downloading COA messages:  98%|█████████▊| 41/42 [00:04<00:00,  8.95it/s]Downloading COA messages: 100%|██████████| 42/42 [00:04<00:00,  9.02it/s]Downloading COA messages: 100%|██████████| 42/42 [00:04<00:00,  9.64it/s]
-Geocoding COA addresses:   0%|          | 0/40 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 40/40 [00:00<00:00, 610080.58it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/40 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   2%|▎         | 1/40 [00:00<00:17,  2.29it/s]Fetching ITBs for COA OMOs:   5%|▌         | 2/40 [00:00<00:16,  2.37it/s]Fetching ITBs for COA OMOs:   8%|▊         | 3/40 [00:01<00:15,  2.45it/s]Fetching ITBs for COA OMOs:  10%|█         | 4/40 [00:01<00:14,  2.47it/s]Fetching ITBs for COA OMOs:  12%|█▎        | 5/40 [00:02<00:14,  2.50it/s]Fetching ITBs for COA OMOs:  15%|█▌        | 6/40 [00:02<00:13,  2.58it/s]Fetching ITBs for COA OMOs:  18%|█▊        | 7/40 [00:02<00:12,  2.67it/s]Fetching ITBs for COA OMOs:  20%|██        | 8/40 [00:03<00:11,  2.74it/s]Fetching ITBs for COA OMOs:  22%|██▎       | 9/40 [00:03<00:11,  2.73it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 10/40 [00:03<00:10,  2.77it/s]Fetching ITBs for COA OMOs:  28%|██▊       | 11/40 [00:04<00:10,  2.72it/s]Fetching ITBs for COA OMOs:  30%|███       | 12/40 [00:04<00:09,  2.80it/s]Fetching ITBs for COA OMOs:  32%|███▎      | 13/40 [00:04<00:09,  2.86it/s]Fetching ITBs for COA OMOs:  35%|███▌      | 14/40 [00:05<00:09,  2.89it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 15/40 [00:05<00:08,  2.86it/s]Fetching ITBs for COA OMOs:  40%|████      | 16/40 [00:05<00:08,  2.80it/s]Fetching ITBs for COA OMOs:  42%|████▎     | 17/40 [00:06<00:08,  2.74it/s]Fetching ITBs for COA OMOs:  45%|████▌     | 18/40 [00:06<00:07,  2.83it/s]Fetching ITBs for COA OMOs:  48%|████▊     | 19/40 [00:07<00:07,  2.70it/s]Fetching ITBs for COA OMOs:  50%|█████     | 20/40 [00:07<00:07,  2.68it/s]Fetching ITBs for COA OMOs:  52%|█████▎    | 21/40 [00:07<00:06,  2.75it/s]Fetching ITBs for COA OMOs:  55%|█████▌    | 22/40 [00:08<00:06,  2.69it/s]Fetching ITBs for COA OMOs:  57%|█████▊    | 23/40 [00:08<00:06,  2.60it/s]Fetching ITBs for COA OMOs:  60%|██████    | 24/40 [00:08<00:06,  2.66it/s]Fetching ITBs for COA OMOs:  62%|██████▎   | 25/40 [00:09<00:05,  2.66it/s]Fetching ITBs for COA OMOs:  65%|██████▌   | 26/40 [00:09<00:05,  2.71it/s]Fetching ITBs for COA OMOs:  68%|██████▊   | 27/40 [00:09<00:04,  2.83it/s]Fetching ITBs for COA OMOs:  70%|███████   | 28/40 [00:10<00:04,  2.89it/s]Fetching ITBs for COA OMOs:  72%|███████▎  | 29/40 [00:10<00:03,  2.91it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 30/40 [00:10<00:03,  2.99it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 31/40 [00:11<00:03,  2.85it/s]Fetching ITBs for COA OMOs:  80%|████████  | 32/40 [00:11<00:02,  2.78it/s]Fetching ITBs for COA OMOs:  82%|████████▎ | 33/40 [00:12<00:02,  2.89it/s]Fetching ITBs for COA OMOs:  85%|████████▌ | 34/40 [00:12<00:02,  2.99it/s]Fetching ITBs for COA OMOs:  88%|████████▊ | 35/40 [00:12<00:01,  2.97it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 36/40 [00:13<00:01,  2.86it/s]Fetching ITBs for COA OMOs:  92%|█████████▎| 37/40 [00:13<00:01,  2.90it/s]Fetching ITBs for COA OMOs:  95%|█████████▌| 38/40 [00:13<00:00,  2.89it/s]Fetching ITBs for COA OMOs:  98%|█████████▊| 39/40 [00:14<00:00,  2.67it/s]Fetching ITBs for COA OMOs: 100%|██████████| 40/40 [00:14<00:00,  2.80it/s]Fetching ITBs for COA OMOs: 100%|██████████| 40/40 [00:14<00:00,  2.76it/s]
+Downloading COA messages:   0%|          | 0/96 [00:00<?, ?it/s]Downloading COA messages:   2%|▏         | 2/96 [00:00<00:06, 14.24it/s]Downloading COA messages:   4%|▍         | 4/96 [00:00<00:06, 14.44it/s]Downloading COA messages:   6%|▋         | 6/96 [00:00<00:06, 14.93it/s]Downloading COA messages:   8%|▊         | 8/96 [00:00<00:06, 14.31it/s]Downloading COA messages:  10%|█         | 10/96 [00:00<00:06, 14.16it/s]Downloading COA messages:  12%|█▎        | 12/96 [00:00<00:05, 15.09it/s]Downloading COA messages:  15%|█▍        | 14/96 [00:00<00:05, 14.82it/s]Downloading COA messages:  17%|█▋        | 16/96 [00:01<00:05, 15.03it/s]Downloading COA messages:  19%|█▉        | 18/96 [00:01<00:05, 14.87it/s]Downloading COA messages:  21%|██        | 20/96 [00:01<00:05, 13.78it/s]Downloading COA messages:  23%|██▎       | 22/96 [00:01<00:05, 13.41it/s]Downloading COA messages:  25%|██▌       | 24/96 [00:01<00:05, 13.43it/s]Downloading COA messages:  27%|██▋       | 26/96 [00:01<00:04, 14.16it/s]Downloading COA messages:  29%|██▉       | 28/96 [00:01<00:04, 14.25it/s]Downloading COA messages:  31%|███▏      | 30/96 [00:02<00:04, 13.37it/s]Downloading COA messages:  33%|███▎      | 32/96 [00:02<00:04, 13.98it/s]Downloading COA messages:  35%|███▌      | 34/96 [00:02<00:04, 13.70it/s]Downloading COA messages:  38%|███▊      | 36/96 [00:02<00:04, 14.08it/s]Downloading COA messages:  40%|███▉      | 38/96 [00:02<00:04, 14.47it/s]Downloading COA messages:  42%|████▏     | 40/96 [00:02<00:03, 14.92it/s]Downloading COA messages:  44%|████▍     | 42/96 [00:02<00:03, 15.01it/s]Downloading COA messages:  46%|████▌     | 44/96 [00:03<00:03, 14.62it/s]Downloading COA messages:  48%|████▊     | 46/96 [00:03<00:03, 15.02it/s]Downloading COA messages:  50%|█████     | 48/96 [00:03<00:03, 14.41it/s]Downloading COA messages:  52%|█████▏    | 50/96 [00:03<00:03, 13.13it/s]Downloading COA messages:  54%|█████▍    | 52/96 [00:03<00:03, 13.69it/s]Downloading COA messages:  56%|█████▋    | 54/96 [00:03<00:03, 12.04it/s]Downloading COA messages:  58%|█████▊    | 56/96 [00:04<00:03, 12.35it/s]Downloading COA messages:  60%|██████    | 58/96 [00:04<00:03, 12.62it/s]Downloading COA messages:  62%|██████▎   | 60/96 [00:04<00:02, 13.44it/s]Downloading COA messages:  65%|██████▍   | 62/96 [00:04<00:02, 13.07it/s]Downloading COA messages:  67%|██████▋   | 64/96 [00:04<00:02, 13.34it/s]Downloading COA messages:  69%|██████▉   | 66/96 [00:04<00:02, 13.78it/s]Downloading COA messages:  71%|███████   | 68/96 [00:04<00:02, 13.41it/s]Downloading COA messages:  73%|███████▎  | 70/96 [00:05<00:01, 13.64it/s]Downloading COA messages:  75%|███████▌  | 72/96 [00:05<00:02, 11.94it/s]Downloading COA messages:  77%|███████▋  | 74/96 [00:05<00:01, 11.39it/s]Downloading COA messages:  79%|███████▉  | 76/96 [00:05<00:01, 12.16it/s]Downloading COA messages:  81%|████████▏ | 78/96 [00:05<00:01, 12.98it/s]Downloading COA messages:  83%|████████▎ | 80/96 [00:05<00:01, 12.69it/s]Downloading COA messages:  85%|████████▌ | 82/96 [00:06<00:01, 13.53it/s]Downloading COA messages:  88%|████████▊ | 84/96 [00:06<00:00, 13.57it/s]Downloading COA messages:  90%|████████▉ | 86/96 [00:06<00:00, 14.16it/s]Downloading COA messages:  92%|█████████▏| 88/96 [00:06<00:00, 11.98it/s]Downloading COA messages:  94%|█████████▍| 90/96 [00:06<00:00, 12.91it/s]Downloading COA messages:  96%|█████████▌| 92/96 [00:06<00:00, 13.71it/s]Downloading COA messages:  98%|█████████▊| 94/96 [00:06<00:00, 14.16it/s]Downloading COA messages: 100%|██████████| 96/96 [00:07<00:00, 13.32it/s]Downloading COA messages: 100%|██████████| 96/96 [00:07<00:00, 13.58it/s]
+Geocoding COA addresses:   0%|          | 0/94 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 94/94 [00:00<00:00, 739708.40it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/94 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   1%|          | 1/94 [00:00<00:33,  2.75it/s]Fetching ITBs for COA OMOs:   2%|▏         | 2/94 [00:00<00:28,  3.23it/s]Fetching ITBs for COA OMOs:   3%|▎         | 3/94 [00:00<00:26,  3.40it/s]Fetching ITBs for COA OMOs:   4%|▍         | 4/94 [00:01<00:26,  3.44it/s]Fetching ITBs for COA OMOs:   5%|▌         | 5/94 [00:01<00:28,  3.10it/s]Fetching ITBs for COA OMOs:   6%|▋         | 6/94 [00:02<00:31,  2.75it/s]Fetching ITBs for COA OMOs:   7%|▋         | 7/94 [00:02<00:32,  2.70it/s]Fetching ITBs for COA OMOs:   9%|▊         | 8/94 [00:02<00:32,  2.61it/s]Fetching ITBs for COA OMOs:  10%|▉         | 9/94 [00:03<00:31,  2.73it/s]Fetching ITBs for COA OMOs:  11%|█         | 10/94 [00:03<00:33,  2.49it/s]Fetching ITBs for COA OMOs:  12%|█▏        | 11/94 [00:04<00:34,  2.38it/s]Fetching ITBs for COA OMOs:  13%|█▎        | 12/94 [00:04<00:35,  2.32it/s]Fetching ITBs for COA OMOs:  14%|█▍        | 13/94 [00:05<00:38,  2.11it/s]Fetching ITBs for COA OMOs:  15%|█▍        | 14/94 [00:05<00:36,  2.19it/s]Fetching ITBs for COA OMOs:  16%|█▌        | 15/94 [00:05<00:35,  2.21it/s]Fetching ITBs for COA OMOs:  17%|█▋        | 16/94 [00:06<00:36,  2.13it/s]Fetching ITBs for COA OMOs:  18%|█▊        | 17/94 [00:06<00:34,  2.26it/s]Fetching ITBs for COA OMOs:  19%|█▉        | 18/94 [00:07<00:33,  2.24it/s]Fetching ITBs for COA OMOs:  20%|██        | 19/94 [00:07<00:30,  2.45it/s]Fetching ITBs for COA OMOs:  21%|██▏       | 20/94 [00:08<00:30,  2.39it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 21/94 [00:08<00:29,  2.45it/s]Fetching ITBs for COA OMOs:  23%|██▎       | 22/94 [00:08<00:27,  2.58it/s]Fetching ITBs for COA OMOs:  24%|██▍       | 23/94 [00:09<00:27,  2.63it/s]Fetching ITBs for COA OMOs:  26%|██▌       | 24/94 [00:09<00:25,  2.70it/s]Fetching ITBs for COA OMOs:  27%|██▋       | 25/94 [00:09<00:24,  2.80it/s]Fetching ITBs for COA OMOs:  28%|██▊       | 26/94 [00:10<00:26,  2.60it/s]Fetching ITBs for COA OMOs:  29%|██▊       | 27/94 [00:10<00:27,  2.44it/s]Fetching ITBs for COA OMOs:  30%|██▉       | 28/94 [00:11<00:26,  2.46it/s]Fetching ITBs for COA OMOs:  31%|███       | 29/94 [00:11<00:28,  2.32it/s]Fetching ITBs for COA OMOs:  32%|███▏      | 30/94 [00:12<00:27,  2.31it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 31/94 [00:12<00:25,  2.51it/s]Fetching ITBs for COA OMOs:  34%|███▍      | 32/94 [00:12<00:24,  2.57it/s]Fetching ITBs for COA OMOs:  35%|███▌      | 33/94 [00:13<00:22,  2.68it/s]Fetching ITBs for COA OMOs:  36%|███▌      | 34/94 [00:13<00:20,  2.90it/s]Fetching ITBs for COA OMOs:  37%|███▋      | 35/94 [00:13<00:21,  2.77it/s]Fetching ITBs for COA OMOs:  38%|███▊      | 36/94 [00:14<00:21,  2.71it/s]Fetching ITBs for COA OMOs:  39%|███▉      | 37/94 [00:14<00:20,  2.81it/s]Fetching ITBs for COA OMOs:  40%|████      | 38/94 [00:14<00:22,  2.50it/s]Fetching ITBs for COA OMOs:  41%|████▏     | 39/94 [00:15<00:20,  2.63it/s]Fetching ITBs for COA OMOs:  43%|████▎     | 40/94 [00:15<00:19,  2.71it/s]Fetching ITBs for COA OMOs:  44%|████▎     | 41/94 [00:16<00:24,  2.14it/s]Fetching ITBs for COA OMOs:  45%|████▍     | 42/94 [00:16<00:23,  2.24it/s]Fetching ITBs for COA OMOs:  46%|████▌     | 43/94 [00:17<00:21,  2.41it/s]Fetching ITBs for COA OMOs:  47%|████▋     | 44/94 [00:17<00:19,  2.55it/s]Fetching ITBs for COA OMOs:  48%|████▊     | 45/94 [00:17<00:19,  2.48it/s]Fetching ITBs for COA OMOs:  49%|████▉     | 46/94 [00:18<00:19,  2.41it/s]Fetching ITBs for COA OMOs:  50%|█████     | 47/94 [00:18<00:18,  2.52it/s]Fetching ITBs for COA OMOs:  51%|█████     | 48/94 [00:19<00:18,  2.48it/s]Fetching ITBs for COA OMOs:  52%|█████▏    | 49/94 [00:19<00:17,  2.59it/s]Fetching ITBs for COA OMOs:  53%|█████▎    | 50/94 [00:20<00:19,  2.22it/s]Fetching ITBs for COA OMOs:  54%|█████▍    | 51/94 [00:20<00:22,  1.93it/s]Fetching ITBs for COA OMOs:  55%|█████▌    | 52/94 [00:21<00:19,  2.18it/s]Fetching ITBs for COA OMOs:  56%|█████▋    | 53/94 [00:21<00:17,  2.33it/s]Fetching ITBs for COA OMOs:  57%|█████▋    | 54/94 [00:21<00:15,  2.61it/s]Fetching ITBs for COA OMOs:  59%|█████▊    | 55/94 [00:22<00:15,  2.51it/s]Fetching ITBs for COA OMOs:  60%|█████▉    | 56/94 [00:22<00:14,  2.63it/s]Fetching ITBs for COA OMOs:  61%|██████    | 57/94 [00:22<00:14,  2.51it/s]Fetching ITBs for COA OMOs:  62%|██████▏   | 58/94 [00:23<00:13,  2.74it/s]Fetching ITBs for COA OMOs:  63%|██████▎   | 59/94 [00:23<00:11,  3.03it/s]Fetching ITBs for COA OMOs:  64%|██████▍   | 60/94 [00:23<00:11,  2.97it/s]Fetching ITBs for COA OMOs:  65%|██████▍   | 61/94 [00:24<00:11,  2.99it/s]Fetching ITBs for COA OMOs:  66%|██████▌   | 62/94 [00:24<00:10,  3.16it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 63/94 [00:24<00:11,  2.75it/s]Fetching ITBs for COA OMOs:  68%|██████▊   | 64/94 [00:25<00:10,  2.85it/s]Fetching ITBs for COA OMOs:  69%|██████▉   | 65/94 [00:25<00:09,  3.07it/s]Fetching ITBs for COA OMOs:  70%|███████   | 66/94 [00:25<00:08,  3.20it/s]Fetching ITBs for COA OMOs:  71%|███████▏  | 67/94 [00:25<00:08,  3.30it/s]Fetching ITBs for COA OMOs:  72%|███████▏  | 68/94 [00:26<00:07,  3.39it/s]Fetching ITBs for COA OMOs:  73%|███████▎  | 69/94 [00:26<00:08,  3.02it/s]Fetching ITBs for COA OMOs:  74%|███████▍  | 70/94 [00:26<00:07,  3.14it/s]Fetching ITBs for COA OMOs:  76%|███████▌  | 71/94 [00:27<00:07,  3.28it/s]Fetching ITBs for COA OMOs:  77%|███████▋  | 72/94 [00:27<00:06,  3.43it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 73/94 [00:27<00:06,  3.50it/s]Fetching ITBs for COA OMOs:  79%|███████▊  | 74/94 [00:28<00:05,  3.42it/s]Fetching ITBs for COA OMOs:  80%|███████▉  | 75/94 [00:28<00:05,  3.49it/s]Fetching ITBs for COA OMOs:  81%|████████  | 76/94 [00:28<00:05,  3.15it/s]Fetching ITBs for COA OMOs:  82%|████████▏ | 77/94 [00:29<00:05,  3.27it/s]Fetching ITBs for COA OMOs:  83%|████████▎ | 78/94 [00:29<00:04,  3.20it/s]Fetching ITBs for COA OMOs:  84%|████████▍ | 79/94 [00:29<00:04,  3.26it/s]Fetching ITBs for COA OMOs:  85%|████████▌ | 80/94 [00:29<00:04,  3.24it/s]Fetching ITBs for COA OMOs:  86%|████████▌ | 81/94 [00:30<00:04,  3.25it/s]Fetching ITBs for COA OMOs:  87%|████████▋ | 82/94 [00:30<00:04,  2.95it/s]Fetching ITBs for COA OMOs:  88%|████████▊ | 83/94 [00:30<00:03,  3.18it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 84/94 [00:31<00:03,  3.28it/s]Fetching ITBs for COA OMOs:  90%|█████████ | 85/94 [00:31<00:03,  2.98it/s]Fetching ITBs for COA OMOs:  91%|█████████▏| 86/94 [00:31<00:02,  3.13it/s]Fetching ITBs for COA OMOs:  93%|█████████▎| 87/94 [00:32<00:02,  3.30it/s]Fetching ITBs for COA OMOs:  94%|█████████▎| 88/94 [00:32<00:01,  3.39it/s]Fetching ITBs for COA OMOs:  95%|█████████▍| 89/94 [00:32<00:01,  3.55it/s]Fetching ITBs for COA OMOs:  96%|█████████▌| 90/94 [00:32<00:01,  3.54it/s]Fetching ITBs for COA OMOs:  97%|█████████▋| 91/94 [00:33<00:00,  3.64it/s]Fetching ITBs for COA OMOs:  98%|█████████▊| 92/94 [00:33<00:00,  3.44it/s]Fetching ITBs for COA OMOs:  99%|█████████▉| 93/94 [00:33<00:00,  3.51it/s]Fetching ITBs for COA OMOs: 100%|██████████| 94/94 [00:34<00:00,  3.66it/s]Fetching ITBs for COA OMOs: 100%|██████████| 94/94 [00:34<00:00,  2.76it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
 Safe merge complete
 Master before: 672
-Incoming rows: 40
+Incoming rows: 94
 Added new OMOs: 0
-Skipped existing OMOs: 40
+Skipped existing OMOs: 94
 Updated existing OMOs: 0
 Need geocode: 0
 Missing ITB: 0
@@ -87,24 +87,23 @@ Synced 3 data file(s) to public/data.
 ========== Render ITB page 3 assets ==========
 $ node scripts/render-itb-page3-assets.js --copy-pdfs
 {
-  "rendered": 40,
-  "reused": 605,
-  "copiedPdfs": 40,
-  "missingSource": 27,
+  "rendered": 54,
+  "reused": 618,
+  "copiedPdfs": 54,
+  "missingSource": 0,
   "failed": 0
 }
 ITB page manifest written to /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/public/data/itb_source_manifest.json
-27 ITB refs have no source PDF yet.
 
 
 ========== Sync ITB page 3 descriptions ==========
 $ python scripts/sync-itb-page3-descriptions.py
 {
   "jobs": 672,
-  "manifestEntries": 645,
-  "descriptionsAdded": 40,
-  "legacyDescriptionReplaced": 0,
-  "missingManifestEntry": 632,
+  "manifestEntries": 672,
+  "descriptionsAdded": 92,
+  "legacyDescriptionReplaced": 6,
+  "missingManifestEntry": 580,
   "extractFailed": 0
 }
 
@@ -167,12 +166,12 @@ PAPERWORK DATA QUALITY
 Total jobs: 672
 Missing addresses: 0
 Missing descriptions: 0
-Missing ITB page 3 descriptions: 16
+Missing ITB page 3 descriptions: 0
 Bad/boilerplate descriptions: 0
 Junk-only descriptions (need ITB re-extraction): 0
 Source review jobs: 0
 Missing ITB files: 0
-Missing page 3 images: 27
+Missing page 3 images: 0
 Public data in sync: yes
 
 Source review sample:
@@ -185,26 +184,7 @@ Missing description sample:
 (none)
 
 Missing ITB page 3 description sample:
-┌─────────┬───────────┬───────────────────────────────────┬────────────────────────────┬───────────────────────────────┬───────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ (index) │ OMO       │ Address                           │ ITB                        │ Source                        │ Status    │ Preview                                                                                                                                        │
-├─────────┼───────────┼───────────────────────────────────┼────────────────────────────┼───────────────────────────────┼───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ 0       │ 'ER01474' │ '260 PARKHILL AVENUE, 10304'      │ 'ER01474_072426113922.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BUILDING ENTRANCE DOOR. AT PUBLIC HALL 1ST STORY REPAIR ENTRANCE DOO' │
-│ 1       │ 'ER02022' │ '162-18 108 AVENUE, 11433'        │ 'ER02022_073026021712.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 2       │ 'ER01987' │ '978 EAST 174 STREET, 10460'      │ 'ER01987_073026020329.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 3       │ 'EQ32057' │ '63 EAST 236 STREET, 10470'       │ 'EQ32057_072926055505.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 4       │ 'ER01923' │ '47 EAST 34 STREET, 10016'        │ 'ER01923_072926025331.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 5       │ 'ER01941' │ '89-10 WHITNEY AVENUE, 11373'     │ 'ER01941_072926021943.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 6       │ 'ER01944' │ '102-43 CORONA AVENUE, 11368'     │ 'ER01944_072926021204.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ '100 Gold Street, 8th floor You have been deemed the lowest responsive a nd responsible bidder for the referenced OMO. As such, you agree to ' │
-│ 7       │ 'ER01720' │ '84-01 MAIN STREET, 11435'        │ 'ER01720_072726094239.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': AT APT: 408 LOCATION: BATHROOM REPAIR LEAK AND RESTORE BROKEN PLASTER. TRACE, LOCATE AND PROPERLY REPAIR THE SOURCES OF CO NCEALED WATER L' │
-│ 8       │ 'ER01737' │ '765 RIVERSIDE DRIVE, 10032'      │ 'ER01737_072726123759.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': MAKE DOORS SELF CLOSING AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th STORY. AT IST FIRE DOORS FROM EAST AT PUBLIC HALL, 6th ST ORY. MAK' │
-│ 9       │ 'ER01282' │ '1629 EAST 12 STREET, 11229'      │ 'ER01282_072726043234.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT DOOR LEADING TO NORTH YARD AT PUBLIC HALL, 1ST S TORY. REPAIR DOOR TO' │
-│ 10      │ 'ER02390' │ '902 DE KALB AVENUE, 11221'       │ 'ER02390_080426103740.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': INSTALL LOCK SET AT BLDG ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT BLDG ENTRANCE DOOR INSTALL NEW' │
-│ 11      │ 'ER02482' │ '24-16 QUEENS PLAZA SOUTH, 11101' │ 'ER02482_080426103502.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': REPLACE 1ST STY HOPPER CHUTE NYC HPD EMERGENCY OPERATIONS DIVISION - (ESSENTIAL SERVICE WORK) AT HOPPER DOOR LOCATED AT :PUBLIC HALL, ( 1S' │
-│ 12      │ 'ER03099' │ '213 EAST 26 STREET, 10010'       │ 'ER03099_081326043154.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': AT BLDG ENTRANCE DOOR, MAKE DOOR SELF CLOSING TOTAL DOORS= (1) NYC HPD EMERGENCY OPERATIONS DIVISION – “ ESSENTIAL SERVICE WORK “ AT BLDG ' │
-│ 13      │ 'ER03009' │ '351 TOMPKINS AVENUE, 11216'      │ 'ER03009_081326114532.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': DEFECTIVE COUNTER BALANCE AT LOWER WINDOW SASH (GUI LLOTINE EFFECT) IN THE KITCHEN LOCATED AT APT 4, 4th STORY. NYC HPD EMERGENCY OPERATIO' │
-│ 14      │ 'ER03360' │ '1520 BRUCKNER BOULEVARD, 10473'  │ 'ER03360_081326043931.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': LOCATION : AT BUILDING ENTRANCE DOOR -NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK- LOCATION: AT BUILDING ENTRANCE DOOR' │
-│ 15      │ 'ER02263' │ '2264 MORRIS AVENUE, 10453'       │ 'ER02263_081326013321.pdf' │ 'DEEP_FAX_ITB_SCOPE_RECOVERY' │ 'MATCHED' │ ': REPAIR DOOR AT APT#7A ENTRANCE DOOR 7TH NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT APT#7A ENTRANCE DOOR 7TH STOR' │
-└─────────┴───────────┴───────────────────────────────────┴────────────────────────────┴───────────────────────────────┴───────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+(none)
 
 Bad description sample:
 (none)
@@ -213,16 +193,14 @@ Junk-only description sample:
 (none)
 PAPERWORK DATA QUALITY CHECKED
 
-PAPERWORK DATA QUALITY WARNING: missingItbPage3Descriptions=16.
 
-
-Fetcher run finished: 2026-10-03T13:11:53.729Z
+Fetcher run finished: 2026-10-03T13:27:58.895Z
 {
-  "fetchedCoaItems": 40,
-  "fetchedItbItems": 40,
-  "fetchedFinalJobRows": 40,
+  "fetchedCoaItems": 94,
+  "fetchedItbItems": 94,
+  "fetchedFinalJobRows": 94,
   "addedNewOmos": 0,
-  "skippedExistingOmos": 40,
+  "skippedExistingOmos": 94,
   "rawRows": 672,
   "rows2026": 621,
   "mapped2026": 621,
@@ -230,8 +208,8 @@ Fetcher run finished: 2026-10-03T13:11:53.729Z
   "missingAddresses": 0,
   "badDescriptions": 0,
   "missingDescriptions": 0,
-  "missingItbPage3Descriptions": 16,
+  "missingItbPage3Descriptions": 0,
   "sourceReviewJobs": 0,
-  "missingPage3Images": 27,
+  "missingPage3Images": 0,
   "missingItbJobs": 0
 }
