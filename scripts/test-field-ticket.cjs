@@ -15,7 +15,7 @@ const compiled = ts.transpileModule(`function preview() { return (${expression.g
   compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
 }).outputText;
 let cleared, error, enlarged;
-const context = { require, exports: {}, photo: {dataUrl:'data:image/png;base64,test'}, address:'Test address', expanded:false,
+const context = { require, exports: {}, photo: {dataUrl:'data:image/png;base64,test'}, googlePicture: null, setGooglePicture: () => {}, address:'Test address', expanded:false,
   setPhoto: value => { cleared = value; }, setError: value => { error = value; }, setExpanded: value => { enlarged = value; } };
 vm.createContext(context);
 vm.runInContext(compiled, context);
@@ -30,4 +30,10 @@ assert.equal(cleared, null);
 assert.ok(error.includes('saved file is retained'));
 context.photo = null;
 assert.equal(context.preview().props.children, 'No building photo');
-console.log('PASS: actual building photo rendering, enlargement, empty state and broken-image fallback');
+// No photo of your own, but Google has Street View there: its picture shows automatically.
+context.googlePicture = { url: 'https://maps.googleapis.com/maps/api/streetview?pano=P', date: '2025-06' };
+const google = context.preview();
+assert.equal(google.props['data-hpd-smoke'], 'building-street-view');
+assert.equal(google.props.children[0].props.src, context.googlePicture.url);
+assert.equal(google.props.children[0].props.alt, 'Google Street View of Test address');
+console.log('PASS: actual building photo rendering, enlargement, empty state, broken-image fallback and automatic Street View picture');

@@ -47,6 +47,7 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 - [x] When a job finishes, its package opens for review by itself after a 6-second countdown ("Wait, add more" cancels)
 - [x] The open job card has priority over "follow me": the map stops following and keeps the job's pin in view above the card
 - [x] Tapping a pin keeps your zoom; closing the card puts the map back where it was, so every other job is still there to tap (they seemed to "not open" because the map stayed zoomed on the last job)
+- [~] **Automatic building picture**: job cards show Google Street View of the building (camera aimed at it) when there is no photo of your own. Built and tested; switches on when the owner adds a Google Maps key (Street View Static API) as the GitHub secret NEXT_PUBLIC_GOOGLE_MAPS_KEY
 - [x] App updates itself to the newest version when you come back to it (only when no job card is open); the map menu shows the version
 - [x] Adding more after shots to a finished job offers the package again
 - [x] Fixed "stuck on an old job": coming back from paperwork opened the job AND forced the search box to it (only 1 pin showed) and its borough; the address kept the job, so the iPhone app reopened it every time. Now the card opens once, the address is cleared, no forced search/borough; old stuck filters reset once

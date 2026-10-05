@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { listFieldEvidence, saveFieldPhotos, type FieldMedia } from "../../lib/field-photo-store";
-import { buildingPhoto, BUILDING_PHOTO_LABEL, streetViewLink } from "../../lib/building-photo";
+import { buildingPhoto, BUILDING_PHOTO_LABEL, streetViewLink, streetViewPicture, type StreetViewPicture } from "../../lib/building-photo";
 import { listFieldPackets, type FieldPacket } from "../../lib/field-packet-store";
 
 export default function BuildingPhoto({ id, address, borough, point }: {
@@ -17,6 +17,16 @@ export default function BuildingPhoto({ id, address, borough, point }: {
   const camera = useRef<HTMLInputElement>(null);
   const active = useRef(true);
   const streetView = streetViewLink(point);
+  // No photo of your own yet: show Google's Street View picture of the building automatically.
+  const [googlePicture, setGooglePicture] = useState<StreetViewPicture | null>(null);
+  const lat = point?.lat, lng = point?.lng;
+  useEffect(() => {
+    let cancelled = false;
+    setGooglePicture(null);
+    if (lat === undefined || lng === undefined) return;
+    streetViewPicture({ lat, lng }).then((picture) => { if (!cancelled) setGooglePicture(picture); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [lat, lng]);
   useEffect(() => {
     active.current = true;
     listFieldPackets(id).then(rows => { if (active.current) setPacket(rows.find(row => row.packetType === "full_evidence_zip") || null); })
@@ -45,14 +55,19 @@ export default function BuildingPhoto({ id, address, borough, point }: {
   return <section className="fc-building" aria-label="Building photo">
     {photo ? <button className="fc-building-image" type="button" aria-label={expanded ? "Collapse building photo" : "Enlarge building photo"} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
       <img src={photo.dataUrl} alt={`Building exterior at ${address}`} onError={() => { setPhoto(null); setError("Saved photo could not be displayed. Add a readable image; the saved file is retained."); }} />
+    </button> : googlePicture ? <button className="fc-building-image fc-building-google" type="button" data-hpd-smoke="building-street-view" aria-label={expanded ? "Collapse Street View picture" : "Enlarge Street View picture"} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
+      <img src={googlePicture.url} alt={`Google Street View of ${address}`} loading="lazy" onError={() => setGooglePicture(null)} />
+      <small>Google</small>
     </button> : <span className="fc-building-empty">No building photo</span>}
     <div className="fc-building-actions">
       <strong>Building</strong>
+      {!photo && googlePicture ? <span className="fc-building-source" data-hpd-smoke="building-street-view-note">Google Street View{googlePicture.date ? ` · ${googlePicture.date}` : ""} · take your own to replace it</span> : null}
       <div><button type="button" disabled={busy} onClick={() => camera.current?.click()}>Take photo</button><button type="button" disabled={busy} onClick={() => library.current?.click()}>Add photo</button></div>
       {streetView ? <a href={streetView} target="_blank" rel="noreferrer">View Street View ↗</a> : <span>Street View unavailable: no coordinates</span>}
       <a href="/storage/">{photo ? "Saved on device · Check Drive backup" : "Drive backup status"}</a>
     </div>
     {expanded && photo && <img className="fc-building-expanded" src={photo.dataUrl} alt={`Full building exterior at ${address}`} />}
+    {expanded && !photo && googlePicture && <img className="fc-building-expanded" src={googlePicture.url} alt={`Google Street View of ${address}`} />}
     {packet && <div className="fc-building-package" role="group" aria-label="Saved complete package">
       <a href={packet.dataUrl} download={packet.fileName}>Download saved package</a>
       <span>{new Date(packet.generatedAt).toLocaleDateString()} · {packet.imageCount} photos · {packet.videoCount} videos</span>
