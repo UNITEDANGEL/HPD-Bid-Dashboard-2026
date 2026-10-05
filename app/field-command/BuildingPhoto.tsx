@@ -79,3 +79,29 @@ export default function BuildingPhoto({ id, address, borough, point }: {
     {error && <span role="alert">{error}</span>}
   </section>;
 }
+
+// Banner at the top of the job card: your own building photo if you took one, otherwise Google's
+// Street View picture of the building. Nothing is shown when neither exists.
+export function BuildingHero({ id, address, point }: { id: string; address: string; point: { lat: number; lng: number } | null }) {
+  const [src, setSrc] = useState("");
+  const [source, setSource] = useState("");
+  const lat = point?.lat, lng = point?.lng;
+  useEffect(() => {
+    let cancelled = false;
+    setSrc(""); setSource("");
+    (async () => {
+      const own = buildingPhoto(await listFieldEvidence(id).catch(() => [] as FieldMedia[]));
+      if (cancelled) return;
+      if (own) { setSrc(own.dataUrl); setSource("Your photo"); return; }
+      if (lat === undefined || lng === undefined) return;
+      const google = await streetViewPicture({ lat, lng }).catch(() => null);
+      if (!cancelled && google) { setSrc(google.url); setSource(`Google Street View${google.date ? ` · ${google.date}` : ""}`); }
+    })();
+    return () => { cancelled = true; };
+  }, [id, lat, lng]);
+  if (!src) return null;
+  return <figure className="jc-hero-photo" data-hpd-smoke="jc-hero-photo">
+    <img src={src} alt={`Building at ${address}`} onError={() => setSrc("")} />
+    <figcaption>{source}</figcaption>
+  </figure>;
+}

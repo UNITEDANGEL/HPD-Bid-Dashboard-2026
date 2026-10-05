@@ -31,8 +31,17 @@ export type StreetViewPicture = { url: string; date: string };
 
 // Asks Google for the nearest outdoor panorama (the metadata call is free), then builds the
 // picture address aimed at the building. Null when there is no key or no Street View there.
-export async function streetViewPicture(point: Point | null, key = GOOGLE_MAPS_KEY): Promise<StreetViewPicture | null> {
-  if (!key || !point || !streetViewLink(point)) return null;
+// One lookup per building while the app is open (the banner and Documents both ask).
+const pictureCache = new Map<string, Promise<StreetViewPicture | null>>();
+
+export function streetViewPicture(point: Point | null, key = GOOGLE_MAPS_KEY): Promise<StreetViewPicture | null> {
+  if (!key || !point || !streetViewLink(point)) return Promise.resolve(null);
+  const cacheKey = `${point.lat},${point.lng}`;
+  if (!pictureCache.has(cacheKey)) pictureCache.set(cacheKey, lookupStreetView(point, key));
+  return pictureCache.get(cacheKey)!;
+}
+
+async function lookupStreetView(point: Point, key: string): Promise<StreetViewPicture | null> {
   const location = `${point.lat},${point.lng}`;
   const metaUrl = `https://maps.googleapis.com/maps/api/streetview/metadata?${new URLSearchParams({ location, source: "outdoor", radius: "60", key })}`;
   const meta = await fetch(metaUrl).then((response) => (response.ok ? response.json() : null)).catch(() => null) as

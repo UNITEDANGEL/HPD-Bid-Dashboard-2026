@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
-import BuildingPhoto from "./BuildingPhoto";
+import BuildingPhoto, { BuildingHero } from "./BuildingPhoto";
 import type { RouteJob, RoutePoint } from "../../lib/day-route";
 import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/current-job";
 import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointments";
@@ -2240,6 +2240,7 @@ export default function FieldCommandClient() {
                 </div>
                 <span className="jc-borough">{BOROUGHS.find((item) => item.key === jobBorough(selectedJob))?.label || "NYC"}</span>
                 <p className="jc-address">{jobAddress(selectedJob)}</p>
+                <BuildingHero key={id} id={id} address={jobAddress(selectedJob)} point={jobLatLng(selectedJob)} />
                 <div className="jc-nav">
                   <a className="jc-btn jc-btn-waze" href={wazeHref(selectedJob)} onClick={()=>recordTravel(selectedJob, "Waze")} target="_blank" rel="noreferrer">Waze</a>
                   <a className="jc-btn jc-btn-google" href={directionsHref(selectedJob)} onClick={()=>recordTravel(selectedJob, "Google")} target="_blank" rel="noreferrer">Google</a>
