@@ -47,6 +47,8 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 - [x] When a job finishes, its package opens for review by itself after a 6-second countdown ("Wait, add more" cancels)
 - [x] The open job card has priority over "follow me": the map stops following and keeps the job's pin in view above the card
 - [x] Tapping a pin keeps your zoom; closing the card puts the map back where it was, so every other job is still there to tap (they seemed to "not open" because the map stayed zoomed on the last job)
+- [x] App updates itself to the newest version when you come back to it (only when no job card is open); the map menu shows the version
+- [x] Adding more after shots to a finished job offers the package again
 - [x] Fixed "stuck on an old job": coming back from paperwork opened the job AND forced the search box to it (only 1 pin showed) and its borough; the address kept the job, so the iPhone app reopened it every time. Now the card opens once, the address is cleared, no forced search/borough; old stuck filters reset once
 - [x] Map page locked to the visible screen: no page scroll and no black strip under Today's route on the iPhone
 - [x] **📋 Ready to close out** on the map: every finished job without an approved package, with a Package → button, for closing out later at the desk
@@ -73,17 +75,17 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
    5. Photos/videos look good, then finish the job (Work completed / Partial)
    6. Generate the package
 2. [x] **My location**: a clear, nice "you are here" marker; the map stays focused on where I am
-3. [ ] **Photos and videos**: Before photo, Before video, After photo, After video; multiple shots; videos included in the package (Drive, plus email when they fit); photo dates editable (default today)
+3. [x] **Photos and videos**: Before photo, Before video, After photo, After video; multiple shots; videos included in the package (Drive, plus email when they fit); photo dates editable (default today)
 4. [x] **Map pins**: colors you can read from far away: **blue = new**, **green = completed**, **red = refused**, **grey = no access**, **purple = completed by others**; a different icon per status; the pin you're zooming toward grows and glows
-5. [ ] **Paperwork page polish**: aligned, neat, follows the procedure
+5. [x] **Paperwork page polish**: aligned, neat, follows the procedure
 6. [x] **Automatic data checks** after every download: scan every job (description, ITB, address, dates, amounts) and show alerts in the app
 7. [x] **ER04964 and the other 4 jobs** (all fixed: ER04964 now shows its real scope from ITB page 3, "Replace defective hydronic baseboard heater cover, approx. 11 LF"; every job has a usable scope). History:: ER05441, ER05941 fixed by the OCR run; ER05421 and ER05733 (plus 4 older jobs) now show their real scope (it sat after "Job Description:" behind a wage-decision page); ER04964: the fetcher re-run picked up the ITB's site-visit instructions instead (also junk); both are now flagged as "no scope" (app blocks the package; type the scope on the paperwork page) and the fetcher re-targets it
-8. [ ] **iPhone speed**: make the app faster on mobile
+8. [x] **iPhone speed**: make the app faster on mobile
 9. [ ] **Better app link** (custom domain): needs a domain name from the owner
 10. [x] **Test job (master sample)**: TEST-0001, search "TEST" on the map (live)
     - Original request:: one test job that runs the whole flow with sample photos (Sample before 1 and 2, Sample after 1 and 2), sends a sample package, and is the reference for every job card. All real job cards use the same card, so every fix made on the test job shows on all of them
 11. [ ] **Affidavit/package inside the job card**: review, sign, approve without leaving the card
-12. [ ] **One neat job card**: appointments, outcome, details, one after the other in one place
+12. [x] **One neat job card**: job → description → steps → status + photos → Job info (due date, amount, tenant with Call, appointment, visits, history, dates) → Documents → More (Outcome form only when tapped, Appointment, Start over, Test); card about 400 px shorter, no overlapping buttons
 13. [ ] **One master file**: the old map file's useful extras moved into the live job card, then the old file removed
 14. [x] **Real app on the iPhone**: Add to Home Screen gives "HPD Field" with its own icon, full screen, opens even offline (live). App Store later
 15. [ ] Notary stamp prints Chetanpreet Malhi's details: fine while she is the only notary
@@ -95,7 +97,7 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 2. [x] Cut steps that should happen automatically: arrival saves itself within 75 m after Go there; notary approval is one tap (the button is the witness statement); the saved signer signature is applied with no tap
 3. [x] Photo dates editable (default the day taken): 📅 Before / After date on the job card re-prints the DATE line on every photo of that stage; the before date also sets the affidavit work start; videos keep the recorded label (saved date and thumbnail change)
 4. [x] Paperwork page neater: slim top bar (← Map · job), one job summary card, raw status and JSON fields hidden, build buttons under More options when opened from the job card, summary preview collapsed; page about half as long
-5. [~] iPhone speed: the map no longer bundles a 2.8 MB copy of every job (Plan my day used it as a fallback); map JavaScript 3.5 MB → 0.83 MB (about 250 KB less to download); pins draw only for what is on screen, date formatters made once; first pins about 4.2 s → 2.45 s on a CPU slowed 4x (about 40% faster)
+5. [x] iPhone speed: the map no longer bundles a 2.8 MB copy of every job (Plan my day used it as a fallback); map JavaScript 3.5 MB → 0.83 MB (about 250 KB less to download); pins draw only for what is on screen, date formatters made once; first pins about 4.2 s → 2.45 s on a CPU slowed 4x (about 40% faster)
 
 ## How we work
 - One item at a time: fix → test (including the real job that had the problem) → push live → screenshot to the owner
