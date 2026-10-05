@@ -47,6 +47,7 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 - [x] When a job finishes, its package opens for review by itself after a 6-second countdown ("Wait, add more" cancels)
 - [x] The open job card has priority over "follow me": the map stops following and keeps the job's pin in view above the card
 - [x] Tapping a pin keeps your zoom; closing the card puts the map back where it was, so every other job is still there to tap (they seemed to "not open" because the map stayed zoomed on the last job)
+- [x] Fixed "stuck on an old job": coming back from paperwork opened the job AND forced the search box to it (only 1 pin showed) and its borough; the address kept the job, so the iPhone app reopened it every time. Now the card opens once, the address is cleared, no forced search/borough; old stuck filters reset once
 - [x] Map page locked to the visible screen: no page scroll and no black strip under Today's route on the iPhone
 - [x] **📋 Ready to close out** on the map: every finished job without an approved package, with a Package → button, for closing out later at the desk
 - [x] Review screen choice: email **Before + after** or **After only** (Drive always keeps everything); the phone remembers the choice
