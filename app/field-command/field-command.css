@@ -2311,3 +2311,5 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-second-try > button.fc-map-hint-warn { background: #b45309; color: #fffbeb; }
 .fc-second-try .fc-data-check-list { border-color: rgba(129, 140, 248, 0.7); }
 .fc-second-try .fc-data-check-list small { color: #c7d2fe; }
+/* Photos only on this phone: one tap turns on the Drive backup */
+.fc-backup-pill > button { background: #92400e; color: #fffbeb; }

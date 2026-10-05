@@ -899,3 +899,9 @@
 .fc-itb-pdf { display: block; text-align: center; padding: 14px; border-radius: 12px; background: #1d4ed8; color: #fff; font: 800 15px system-ui, sans-serif; text-decoration: none; }
 /* Status line while a no-access job waits for its 2nd try */
 #fc-job-card .jc-status-line.is-waiting { border-color: rgba(129, 140, 248, 0.6); background: rgba(55, 48, 163, 0.25); }
+
+/* Are this job's photos/videos backed up? (Drive backup from Storage settings) */
+#fc-job-card .jc-backup { margin: 8px 0 0; padding: 8px 10px; border-radius: 10px; font: 600 13px/1.35 system-ui, sans-serif; }
+#fc-job-card .jc-backup.is-off { background: rgba(180, 83, 9, 0.22); border: 1px solid rgba(245, 158, 11, 0.55); color: #fde68a; }
+#fc-job-card .jc-backup.is-on { background: rgba(14, 116, 144, 0.18); border: 1px solid rgba(34, 211, 238, 0.35); color: #cffafe; }
+#fc-job-card .jc-backup button { margin-left: 4px; min-height: 34px; padding: 0 10px; border-radius: 9px; border: 0; background: #f59e0b; color: #1c1917; font-weight: 800; }
