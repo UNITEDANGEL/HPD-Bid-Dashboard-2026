@@ -8,7 +8,7 @@ import BuildingPhoto from "./BuildingPhoto";
 import type { RouteJob, RoutePoint } from "../../lib/day-route";
 import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/current-job";
 import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointments";
-import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
+import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
@@ -636,7 +636,9 @@ export default function FieldCommandClient() {
   const quickFiltersLoaded = useRef(false);
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem("hpd-map-quick-filters-v1") || "null");
+      // v2: v1 could hold a borough forced by an old job link, hiding every other job; start fresh once.
+      localStorage.removeItem("hpd-map-quick-filters-v1");
+      const saved = JSON.parse(localStorage.getItem("hpd-map-quick-filters-v2") || "null");
       if (saved && STATUS_FILTERS.some(({ key }) => key === saved.status)) setStatus(saved.status);
       if (saved && (saved.borough === "ALL" || BOROUGHS.some(({ key }) => key === saved.borough))) setBorough(saved.borough);
     } catch {}
@@ -644,7 +646,7 @@ export default function FieldCommandClient() {
   }, []);
   useEffect(() => {
     if (!quickFiltersLoaded.current) return;
-    try { localStorage.setItem("hpd-map-quick-filters-v1", JSON.stringify({ status, borough })); } catch {}
+    try { localStorage.setItem("hpd-map-quick-filters-v2", JSON.stringify({ status, borough })); } catch {}
   }, [status, borough]);
   const requestedJobLoaded = useRef(false);
   const [daysBack, setDaysBack] = useState<number | null>(null);
@@ -973,14 +975,15 @@ export default function FieldCommandClient() {
     requestedJobLoaded.current = true;
     const params = new URLSearchParams(window.location.search);
     const requested = (params.get("omo") || params.get("job") || params.get("q") || "").trim().toUpperCase();
+    // Open the linked job once, then take it out of the address: the iPhone app reopens the last
+    // address, and a job left in it kept coming back. No forced search or borough either -- they
+    // hid every other job.
+    if (requested) {
+      try { window.history.replaceState(null, "", window.location.pathname); } catch {}
+    }
     if (!requested || selectedJob) return;
     const match = jobs.find((job) => jobId(job).toUpperCase() === requested);
-    if (match) {
-      setSelectedJob(match);
-      if (isPendingJob(match)) setSearch(requested);
-      const boro = jobBorough(match);
-      if (boro !== "NYC") setBorough(boro);
-    }
+    if (match) setSelectedJob(match);
   }, [jobs, selectedJob]);
 
   const boroughCounts = useMemo(() => {
