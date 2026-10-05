@@ -4,7 +4,8 @@ name: Fix Cloudflare deploys
 # builds fail (they run "npm run build" instead of the static export), and the working upload from
 # "Deploy Cloudflare Pages" gets filed under them as a preview, so the live address never changes.
 # This turns Cloudflare's automatic Git builds off (the GitHub connection stays), so the upload from
-# Actions is the only deploy and goes live on the production branch. Prints no secrets.
+# Actions is the only deploy, and makes main the production branch, since Cloudflare files every
+# upload under main. Prints no secrets.
 on:
   workflow_dispatch:
 
@@ -26,8 +27,10 @@ jobs:
           node -e '
             const p = JSON.parse(require("fs").readFileSync("project.json", "utf8")).result;
             console.log("before:", JSON.stringify(p.source));
-            const source = { type: p.source.type, config: { ...p.source.config, deployments_enabled: false, production_deployments_enabled: false, preview_deployment_setting: "none" } };
-            require("fs").writeFileSync("patch.json", JSON.stringify({ source }));'
+            // Cloudflare files every upload under the GitHub branch it was built from (main), so main
+            // must be the live (production) branch.
+            const source = { type: p.source.type, config: { ...p.source.config, production_branch: "main", deployments_enabled: false, production_deployments_enabled: false, preview_deployment_setting: "none" } };
+            require("fs").writeFileSync("patch.json", JSON.stringify({ production_branch: "main", source }));'
           curl -fsS -X PATCH -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" --data @patch.json "$api" | node -e '
             const r = JSON.parse(require("fs").readFileSync(0, "utf8"));
             if (!r.success) { console.log("Cloudflare refused:", JSON.stringify(r.errors)); process.exit(1); }
