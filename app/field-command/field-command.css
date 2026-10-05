@@ -2347,3 +2347,5 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 /* A newer version is live while a job card is open: one tap updates. */
 .fc-update-ready { position: fixed; z-index: 3000; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 8px); transform: translateX(-50%); min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: #2563eb; color: #fff; font: 700 15px system-ui, sans-serif; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); white-space: nowrap; }
 .fc-update-ready b { text-decoration: underline; }
+/* Running version, small, bottom-left of the map. */
+.fc-version-tag { position: fixed; z-index: 1200; left: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 4px); padding: 1px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.75); color: #94a3b8; font: 600 10px/14px system-ui, sans-serif; pointer-events: none; }

@@ -1,7 +1,9 @@
 // HPD Field offline helper. Pages always come from the network when there is a signal (so the
 // newest version shows right away); the last copy is used only when the phone is offline.
 // Built app files (/_next/static, named by content) are kept on the phone for a fast start.
-const CACHE = "hpd-field-v1";
+// Bump this whenever an update must reach phones that are still running an old copy of the app:
+// the new helper replaces the old one and reloads every open copy of the app once.
+const CACHE = "hpd-field-v2";
 const SHELL = ["/map/", "/paperwork/"];
 
 self.addEventListener("install", (event) => {
@@ -12,8 +14,17 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key.startsWith("hpd-field-") && key !== CACHE).map((key) => caches.delete(key))))
-      .then(() => self.clients.claim())
+      .then((keys) => {
+        const replaced = keys.some((key) => key.startsWith("hpd-field-") && key !== CACHE);
+        return Promise.all(keys.filter((key) => key.startsWith("hpd-field-") && key !== CACHE).map((key) => caches.delete(key)))
+          .then(() => self.clients.claim())
+          .then(() => {
+            // An older helper was here: the open app is old code. Reload it into the new version
+            // (job steps and photos are already saved on the phone). Not awaited: the reload's
+            // page request needs this helper to finish starting first, or both would wait forever.
+            if (replaced) self.clients.matchAll({ type: "window" }).then((windows) => windows.forEach((client) => client.navigate(client.url).catch(() => {})));
+          });
+      })
   );
 });
 

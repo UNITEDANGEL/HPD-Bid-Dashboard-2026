@@ -1140,8 +1140,10 @@ export default function FieldCommandClient() {
     const onVisible = () => { if (!document.hidden) void check(); };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", onVisible);
-    const timer = window.setInterval(check, 10 * 60 * 1000);
-    return () => { stopped = true; document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("focus", onVisible); window.clearInterval(timer); };
+    // An iPhone app resumed from the background fires pageshow: check right away.
+    window.addEventListener("pageshow", onVisible);
+    const timer = window.setInterval(check, 5 * 60 * 1000);
+    return () => { stopped = true; document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("focus", onVisible); window.removeEventListener("pageshow", onVisible); window.clearInterval(timer); };
   }, []);
 
   // Open jobs in the current view (finished and test jobs are skipped) that need a data check.
@@ -2936,6 +2938,8 @@ export default function FieldCommandClient() {
         })() : null}
       </div>
 
+      {/* Which version is running, always visible on the map: you can tell at a glance it's the newest. */}
+      {appVersion && !selectedJob ? <small className="fc-version-tag" data-hpd-smoke="fc-version-tag">v{appVersion}</small> : null}
       {updateReady && !mediaBusy ? (
         <button type="button" className="fc-update-ready" data-hpd-smoke="fc-update-ready" onClick={() => window.location.replace(`${window.location.pathname}?v=${encodeURIComponent(latestCommitRef.current)}`)}>
           🔄 New version ready · <b>Update</b>
