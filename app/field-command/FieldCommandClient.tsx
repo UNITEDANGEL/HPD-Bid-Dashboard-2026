@@ -107,6 +107,11 @@ function jobAddress(job: JobRecord) {
 }
 
 // Shown when the ITB's scope couldn't be read (e.g. a scanned ITB with only the blank form's text).
+function itbFileName(job: JobRecord | null | undefined) {
+  const raw = String((job as Record<string, unknown> | null)?.ITBFile || (job as Record<string, unknown> | null)?.itbFile || "").trim();
+  const name = raw.split(/[\\/]/).pop()?.trim() || "";
+  return /\.pdf$/i.test(name) ? name : "";
+}
 const SCOPE_MISSING = "Couldn't read the scope from this job's ITB. Open the ITB under Job documents; type the scope on the paperwork page.";
 
 function jobScope(job: JobRecord) {
@@ -746,6 +751,24 @@ export default function FieldCommandClient() {
       openPackageSheet(id, href);
     };
   }
+  // The original ITB scope page (page 3 image, published by the fetcher), one tap from the description.
+  const [itbPage, setItbPage] = useState<{ id: string; fileName: string; image: string; pdf: string; page: number; failed: boolean } | null>(null);
+  const itbManifestRef = useRef<Record<string, { page?: number; pageImage?: string; pdf?: string }> | null>(null);
+  async function openItbPage(job: JobRecord) {
+    const fileName = itbFileName(job);
+    if (!fileName) return;
+    if (!itbManifestRef.current) {
+      try {
+        const response = await fetch("/data/itb_source_manifest.json");
+        itbManifestRef.current = (await response.json()).entries || {};
+      } catch {
+        itbManifestRef.current = null;
+      }
+    }
+    const entry = itbManifestRef.current?.[fileName] || {};
+    const page = Number(entry.page || 3) || 3;
+    setItbPage({ id: jobId(job), fileName, image: entry.pageImage || "", pdf: entry.pdf || `/documents/itb/${encodeURIComponent(fileName)}`, page, failed: false });
+  }
   function closePackageSheet() {
     const sheet = packageSheet;
     setPackageSheet(null);
@@ -990,7 +1013,7 @@ export default function FieldCommandClient() {
   // Automatic update: an iPhone app left in the background keeps running the old version, so
   // whenever you come back to it (and every 10 minutes) check /version.json; if a newer version
   // was deployed, reload -- only when no job card is open and nothing is saving.
-  safeToReloadRef.current = !selectedJob && !mediaBusy && !autoPackage && !packageSheet;
+  safeToReloadRef.current = !selectedJob && !mediaBusy && !autoPackage && !packageSheet && !itbPage;
   useEffect(() => {
     let stopped = false;
     async function check() {
@@ -2293,12 +2316,15 @@ export default function FieldCommandClient() {
                   {hasScope && scope.length > 260 ? <button type="button" className="jc-description-more" onClick={() => setScopeOpen((open) => !open)}>{scopeOpen ? "Less" : "All"}</button> : null}
                 </div>
                 <p className={`jc-description-text ${scopeOpen ? "is-open" : ""} ${hasScope ? "" : "is-missing"}`} data-hpd-smoke="jc-description-text">{scope}</p>
-                {hasScope && speechOk ? (
+                {(hasScope && speechOk) || itbFileName(selectedJob) ? (
                   <div className="jc-description-actions">
-                    <button type="button" className="jc-read" data-hpd-smoke="jc-description-read" onClick={() => setReading(readAloud(`Job ${id}. ${jobAddress(selectedJob)}. ${scope}`, () => setReading(false)))}>
-                      {reading ? "🔊 Reading..." : "🔊 Read aloud"}
-                    </button>
-                    <button type="button" data-hpd-smoke="jc-description-stop" onClick={() => { stopReading(); setReading(false); }} disabled={!reading}>Stop</button>
+                    {hasScope && speechOk ? <>
+                      <button type="button" className="jc-read" data-hpd-smoke="jc-description-read" onClick={() => setReading(readAloud(`Job ${id}. ${jobAddress(selectedJob)}. ${scope}`, () => setReading(false)))}>
+                        {reading ? "🔊 Reading..." : "🔊 Read aloud"}
+                      </button>
+                      <button type="button" data-hpd-smoke="jc-description-stop" onClick={() => { stopReading(); setReading(false); }} disabled={!reading}>Stop</button>
+                    </> : null}
+                    {itbFileName(selectedJob) ? <button type="button" data-hpd-smoke="jc-itb-page" onClick={() => void openItbPage(selectedJob)}>📄 ITB page</button> : null}
                   </div>
                 ) : null}
               </section>
@@ -2667,6 +2693,22 @@ export default function FieldCommandClient() {
             <strong>{packageSheet.id} package</strong>
           </header>
           <iframe src={packageSheet.href} title={`${packageSheet.id} package`} allow="web-share; clipboard-write; camera" />
+        </div>
+      ) : null}
+      {itbPage ? (
+        <div className="fc-package-sheet fc-itb-sheet" role="dialog" aria-label={`${itbPage.id} original ITB page`} data-hpd-smoke="fc-itb-sheet">
+          <header>
+            <button type="button" data-hpd-smoke="fc-itb-sheet-back" onClick={() => setItbPage(null)}>← Back to job</button>
+            <strong>{itbPage.id} ITB page {itbPage.page}</strong>
+          </header>
+          <div className="fc-itb-body">
+            {itbPage.image && !itbPage.failed ? (
+              <img src={itbPage.image} alt={`Original ITB page ${itbPage.page} for ${itbPage.id}`} onError={() => setItbPage((current) => current && { ...current, failed: true })} />
+            ) : (
+              <p className="fc-itb-missing">The page picture for this ITB isn&apos;t published yet. Open the PDF instead.</p>
+            )}
+            <a className="fc-itb-pdf" href={`${itbPage.pdf}#page=${itbPage.page}`} target="_blank" rel="noreferrer">Open the full ITB PDF ↗</a>
+          </div>
         </div>
       ) : null}
       <PlanMyDayDrawer records={jobs} openRequest={plannerRequest} />
