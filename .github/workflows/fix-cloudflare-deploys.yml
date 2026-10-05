@@ -1,0 +1,35 @@
+name: Fix Cloudflare deploys
+
+# The Pages project is connected to GitHub, so Cloudflare starts its own build on every push. Those
+# builds fail (they run "npm run build" instead of the static export), and the working upload from
+# "Deploy Cloudflare Pages" gets filed under them as a preview, so the live address never changes.
+# This turns Cloudflare's automatic Git builds off (the GitHub connection stays), so the upload from
+# Actions is the only deploy and goes live on the production branch. Prints no secrets.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Turn off Cloudflare's automatic Git builds
+        shell: bash
+        run: |
+          api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/hpd-bid-dashboard-2026"
+          curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api" > project.json
+          node -e '
+            const p = JSON.parse(require("fs").readFileSync("project.json", "utf8")).result;
+            console.log("before:", JSON.stringify(p.source));
+            const source = { type: p.source.type, config: { ...p.source.config, deployments_enabled: false, production_deployments_enabled: false, preview_deployment_setting: "none" } };
+            require("fs").writeFileSync("patch.json", JSON.stringify({ source }));'
+          curl -fsS -X PATCH -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" --data @patch.json "$api" | node -e '
+            const r = JSON.parse(require("fs").readFileSync(0, "utf8"));
+            if (!r.success) { console.log("Cloudflare refused:", JSON.stringify(r.errors)); process.exit(1); }
+            console.log("after:", JSON.stringify(r.result.source));
+            console.log("production_branch:", r.result.production_branch);'
