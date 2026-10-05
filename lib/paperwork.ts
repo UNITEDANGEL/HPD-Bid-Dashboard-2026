@@ -1,3 +1,4 @@
+import { mergeOverrideMaps } from "./override-sync";
 import { cleanJobLocation, cleanJobLocationText } from "./jobLocation";
 import { longestCleanDescription } from "./description-quality";
 
@@ -416,7 +417,8 @@ export function applyWorkflowOverridesToRows<T extends PaperworkJob>(rows: T[], 
 export async function applySavedWorkflowStatuses<T extends PaperworkJob>(rows: T[]): Promise<T[]> {
   const local = readLocalWorkflowOverrides();
   const server = await fetchServerWorkflowOverrides();
-  const overrides = { ...local, ...server };
+  // Field by field, newer wins: the server's entry never wipes out steps saved on this phone.
+  const overrides = mergeOverrideMaps(local, server) as WorkflowOverrides;
 
   return applyWorkflowOverridesToRows(rows, overrides);
 }

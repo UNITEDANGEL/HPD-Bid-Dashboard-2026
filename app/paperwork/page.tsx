@@ -17,6 +17,7 @@ import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
 import { type FieldMedia, dataUrlToBytes, listFieldEvidence } from "../../lib/field-photo-store";
 import { visitRecordText } from "../../lib/visit-record";
+import { flushOverrideOutbox, queueOverrideSync } from "../../lib/override-sync";
 import {
   type PaperworkOutcome,
   HPD_STATUS_WORKER_URL,
@@ -1198,6 +1199,7 @@ function saveLocalPackageOverride(jobId: string, patch: Record<string, unknown>)
       updatedAt: new Date().toISOString(),
     };
     window.localStorage.setItem(key, JSON.stringify(rows));
+    queueOverrideSync(jobId);
   } catch {}
 }
 
@@ -1556,13 +1558,9 @@ export default function PaperworkPage() {
     saveLocalPackageOverride(jobId, patch);
 
     try {
-      const response = await fetch(`${HPD_STATUS_WORKER_URL}/override`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: jobId, patch }),
-      });
-
-      if (!response.ok) throw new Error(await response.text());
+      // The job's full saved entry goes to the status server (queued if there's no signal).
+      const { waiting } = await flushOverrideOutbox(HPD_STATUS_WORKER_URL);
+      if (waiting) throw new Error("Status server didn't answer; queued for when the phone is back online.");
       return approved ? (delivery ? "Paperwork approved." : "Paperwork approved. Not emailed.") : "Draft saved for review. Not emailed.";
     } catch (error) {
       console.error(error);
