@@ -1,4 +1,4 @@
-Fetcher run started: 2026-10-04T02:31:26.138Z
+Fetcher run started: 2026-10-05T01:48:27.957Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -15,7 +15,7 @@ $ python FetchrMatcherV5.py --update --days 14
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/09/20 before:2026/10/05
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/09/21 before:2026/10/06
 COA items parsed (latest per OMO): 1
 ITB items parsed (latest per OMO): 1
 Final JobRows: 1
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/1 [00:00<?, ?it/s]Downloading COA messages: 100%|██████████| 1/1 [00:00<00:00,  7.25it/s]Downloading COA messages: 100%|██████████| 1/1 [00:00<00:00,  7.24it/s]
-Geocoding COA addresses:   0%|          | 0/1 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 1/1 [00:00<00:00, 29330.80it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/1 [00:00<?, ?it/s]Fetching ITBs for COA OMOs: 100%|██████████| 1/1 [00:00<00:00,  1.17it/s]Fetching ITBs for COA OMOs: 100%|██████████| 1/1 [00:00<00:00,  1.17it/s]
+Downloading COA messages:   0%|          | 0/1 [00:00<?, ?it/s]Downloading COA messages: 100%|██████████| 1/1 [00:00<00:00,  8.43it/s]Downloading COA messages: 100%|██████████| 1/1 [00:00<00:00,  8.42it/s]
+Geocoding COA addresses:   0%|          | 0/1 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 1/1 [00:00<00:00, 31068.92it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/1 [00:00<?, ?it/s]Fetching ITBs for COA OMOs: 100%|██████████| 1/1 [00:00<00:00,  1.24it/s]Fetching ITBs for COA OMOs: 100%|██████████| 1/1 [00:00<00:00,  1.24it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -194,7 +194,7 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-10-04T02:31:35.372Z
+Fetcher run finished: 2026-10-05T01:48:39.661Z
 {
   "fetchedCoaItems": 1,
   "fetchedItbItems": 1,
