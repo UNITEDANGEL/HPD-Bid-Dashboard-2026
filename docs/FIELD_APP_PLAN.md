@@ -85,7 +85,7 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 9. [ ] **Better app link** (custom domain): needs a domain name from the owner
 10. [x] **Test job (master sample)**: TEST-0001, search "TEST" on the map (live)
     - Original request:: one test job that runs the whole flow with sample photos (Sample before 1 and 2, Sample after 1 and 2), sends a sample package, and is the reference for every job card. All real job cards use the same card, so every fix made on the test job shows on all of them
-11. [ ] **Affidavit/package inside the job card**: review, sign, approve without leaving the card
+11. [x] **Affidavit/package inside the job card**: review, sign, approve without leaving the card (done: the package opens in a full-screen sheet over the map with "← Back to job"; when it is approved/emailed the sheet closes by itself, the card shows the job as done and a "package approved and emailed ✓" message)
 12. [x] **One neat job card**: job → description → steps → status + photos → Job info (due date, amount, tenant with Call, appointment, visits, history, dates) → Documents → More (Outcome form only when tapped, Appointment, Start over, Test); card about 400 px shorter, no overlapping buttons
 13. [ ] **One master file**: the old map file's useful extras moved into the live job card, then the old file removed
 14. [x] **Real app on the iPhone**: Add to Home Screen gives "HPD Field" with its own icon, full screen, opens even offline (live). App Store later

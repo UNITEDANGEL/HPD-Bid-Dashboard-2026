@@ -1214,6 +1214,12 @@ export default function PaperworkPage() {
   const [packageBusy, setPackageBusy] = useState(false);
   const [packageReviewed, setPackageReviewed] = useState(false);
   const [packageApproved, setPackageApproved] = useState(false);
+  // Opened inside the map's job card (a sheet over the map): no top bar, and the map is told when
+  // the package is approved so it can close the sheet and show the job as done.
+  const [embedded, setEmbedded] = useState(false);
+  useEffect(() => {
+    try { setEmbedded(window.parent !== window && new URLSearchParams(window.location.search).get("embed") === "1"); } catch {}
+  }, []);
   const [google, setGoogle] = useState<GoogleStatus | null>(null);
   // Signer's saved signature (this device only); read by PDF generation.
   const signatureRef = useRef("");
@@ -1231,6 +1237,12 @@ export default function PaperworkPage() {
   const lastIncludeMediaRef = useRef(true);
   const [editingPackage, setEditingPackage] = useState(false);
   const [delivery, setDelivery] = useState<{ working: boolean; message: string; folderLink: string; emailed: boolean; error: string } | null>(null);
+  useEffect(() => {
+    if (!embedded || !packageApproved || delivery?.working) return;
+    try {
+      window.parent.postMessage({ type: "hpd-package-approved", job: form.jobId, emailed: Boolean(delivery?.emailed), message: delivery?.message || "" }, window.location.origin);
+    } catch {}
+  }, [embedded, packageApproved, delivery, form.jobId]);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
   const [pdfStatus, setPdfStatus] = useState("");
@@ -4824,11 +4836,11 @@ export default function PaperworkPage() {
       `}</style>
 
       <section className="paperwork-wrap" data-hpd-smoke="paperwork-package-page">
-        <header className="paperwork-topbar">
+        {embedded ? null : <header className="paperwork-topbar">
           <a className="paperwork-back" data-hpd-smoke="paperwork-map-link" href={mapBackHref}>← Map</a>
           <h1>{form.jobId ? `${form.jobId} package` : "Affidavit + invoice"}</h1>
           <a className="paperwork-archive" data-hpd-smoke="paperwork-archive-link" href="/outputs">Archive</a>
-        </header>
+        </header>}
 
         <section className="paperwork-card" data-hpd-smoke="paperwork-package-card">
           {!selectedId || showJobPicker ? <span className={`paperwork-package-badge ${packageTone}`}>{affidavitTemplateLabel(outcome)}</span> : null}
