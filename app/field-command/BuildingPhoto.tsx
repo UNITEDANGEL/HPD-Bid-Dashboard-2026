@@ -5,37 +5,23 @@ import { listFieldEvidence, saveFieldPhotos, type FieldMedia } from "../../lib/f
 import { buildingPhoto, BUILDING_PHOTO_LABEL, streetViewLink, streetViewPicture, type StreetViewPicture } from "../../lib/building-photo";
 import { listFieldPackets, type FieldPacket } from "../../lib/field-packet-store";
 
-export default function BuildingPhoto({ id, address, borough, point }: {
-  id: string; address: string; borough: string; point: { lat: number; lng: number } | null;
-}) {
-  const [photo, setPhoto] = useState<FieldMedia | null>(null);
+// Banner at the top of the job card: your own building photo if you took one, otherwise Google's
+// Street View picture of the building. On it: the 360° Street View (Google Maps), and a button to
+// take your own building photo (it replaces Google's).
+export function BuildingHero({ id, address, borough, point }: { id: string; address: string; borough: string; point: { lat: number; lng: number } | null }) {
+  const [own, setOwn] = useState<FieldMedia | null>(null);
+  const [google, setGoogle] = useState<StreetViewPicture | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [expanded, setExpanded] = useState(false);
-  const [packet, setPacket] = useState<FieldPacket | null>(null);
-  const library = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
-  const active = useRef(true);
-  const streetView = streetViewLink(point);
-  // No photo of your own yet: show Google's Street View picture of the building automatically.
-  const [googlePicture, setGooglePicture] = useState<StreetViewPicture | null>(null);
   const lat = point?.lat, lng = point?.lng;
   useEffect(() => {
     let cancelled = false;
-    setGooglePicture(null);
-    if (lat === undefined || lng === undefined) return;
-    streetViewPicture({ lat, lng }).then((picture) => { if (!cancelled) setGooglePicture(picture); }).catch(() => {});
+    setOwn(null); setGoogle(null); setError("");
+    listFieldEvidence(id).then((rows) => { if (!cancelled) setOwn(buildingPhoto(rows)); }).catch(() => {});
+    if (lat !== undefined && lng !== undefined) streetViewPicture({ lat, lng }).then((picture) => { if (!cancelled) setGoogle(picture); }).catch(() => {});
     return () => { cancelled = true; };
-  }, [lat, lng]);
-  useEffect(() => {
-    active.current = true;
-    listFieldPackets(id).then(rows => { if (active.current) setPacket(rows.find(row => row.packetType === "full_evidence_zip") || null); })
-      .catch(() => { if (active.current) setError("Could not read saved package."); });
-    listFieldEvidence(id).then(rows => { if (active.current) setPhoto(buildingPhoto(rows)); })
-      .catch(() => { if (active.current) setError("Could not read saved building photo."); });
-    return () => { active.current = false; };
-  }, [id]);
-
+  }, [id, lat, lng]);
   async function save(file?: File) {
     if (!file || busy) return;
     setBusy(true); setError("");
@@ -43,65 +29,37 @@ export default function BuildingPhoto({ id, address, borough, point }: {
       if (!file.type.startsWith("image/") && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) throw new Error("Choose a building photo, not a video.");
       const saved = await saveFieldPhotos(id, "general", [file], { jobId: id, address, borough, label: BUILDING_PHOTO_LABEL });
       if (!saved.length) throw new Error("Photo could not be saved. Try another image.");
-      if (active.current) setPhoto(buildingPhoto(saved));
-    } catch (e) { if (active.current) setError(e instanceof Error ? e.message : "Photo save failed."); }
-    finally {
-      if (active.current) setBusy(false);
-      if (library.current) library.current.value = "";
-      if (camera.current) camera.current.value = "";
-    }
+      setOwn(buildingPhoto(saved));
+    } catch (e) { setError(e instanceof Error ? e.message : "Photo save failed."); }
+    finally { setBusy(false); if (camera.current) camera.current.value = ""; }
   }
-
-  return <section className="fc-building" aria-label="Building photo">
-    {photo ? <button className="fc-building-image" type="button" aria-label={expanded ? "Collapse building photo" : "Enlarge building photo"} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
-      <img src={photo.dataUrl} alt={`Building exterior at ${address}`} onError={() => { setPhoto(null); setError("Saved photo could not be displayed. Add a readable image; the saved file is retained."); }} />
-    </button> : googlePicture ? <button className="fc-building-image fc-building-google" type="button" data-hpd-smoke="building-street-view" aria-label={expanded ? "Collapse Street View picture" : "Enlarge Street View picture"} aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
-      <img src={googlePicture.url} alt={`Google Street View of ${address}`} loading="lazy" onError={() => setGooglePicture(null)} />
-      <small>Google</small>
-    </button> : <span className="fc-building-empty">No building photo</span>}
-    <div className="fc-building-actions">
-      <strong>Building</strong>
-      {!photo && googlePicture ? <span className="fc-building-source" data-hpd-smoke="building-street-view-note">Google Street View{googlePicture.date ? ` · ${googlePicture.date}` : ""} · take your own to replace it</span> : null}
-      <div><button type="button" disabled={busy} onClick={() => camera.current?.click()}>Take photo</button><button type="button" disabled={busy} onClick={() => library.current?.click()}>Add photo</button></div>
-      {streetView ? <a href={streetView} target="_blank" rel="noreferrer">View Street View ↗</a> : <span>Street View unavailable: no coordinates</span>}
-      <a href="/storage/">{photo ? "Saved on device · Check Drive backup" : "Drive backup status"}</a>
+  const src = own?.dataUrl || google?.url || "";
+  const link360 = point ? streetViewLink(point, google?.pano || "", google?.heading) : null;
+  if (!src && !link360) return null;
+  return <figure className={`jc-hero-photo ${src ? "" : "is-empty"}`} data-hpd-smoke="jc-hero-photo">
+    {src ? <img src={src} alt={`Building at ${address}`} onError={() => { if (own) setOwn(null); else setGoogle(null); }} /> : <span className="jc-hero-empty">No building picture yet</span>}
+    {src ? <figcaption>{own ? "Your photo" : `Google Street View${google?.date ? ` · ${google.date}` : ""}`}</figcaption> : null}
+    <div className="jc-hero-actions">
+      {link360 ? <a className="jc-hero-360" data-hpd-smoke="jc-hero-360" href={link360} target="_blank" rel="noreferrer">🔄 360° view</a> : null}
+      <button type="button" data-hpd-smoke="jc-hero-photo-take" disabled={busy} onClick={() => camera.current?.click()} aria-label="Take your own building photo">📷{own ? "" : " Your photo"}</button>
     </div>
-    {expanded && photo && <img className="fc-building-expanded" src={photo.dataUrl} alt={`Full building exterior at ${address}`} />}
-    {expanded && !photo && googlePicture && <img className="fc-building-expanded" src={googlePicture.url} alt={`Google Street View of ${address}`} />}
-    {packet && <div className="fc-building-package" role="group" aria-label="Saved complete package">
-      <a href={packet.dataUrl} download={packet.fileName}>Download saved package</a>
-      <span>{new Date(packet.generatedAt).toLocaleDateString()} · {packet.imageCount} photos · {packet.videoCount} videos</span>
-      <small>Review before forwarding to HPD. Later edits need a new package.</small>
-    </div>}
-    <input hidden ref={library} type="file" accept="image/*,.heic,.heif" aria-label="Choose building photo" onChange={e => void save(e.target.files?.[0])} />
-    <input hidden ref={camera} type="file" accept="image/*" capture="environment" aria-label="Take building photo" onChange={e => void save(e.target.files?.[0])} />
-    {busy && <span role="status">Saving building photo...</span>}
-    {error && <span role="alert">{error}</span>}
-  </section>;
+    <input hidden ref={camera} type="file" accept="image/*" capture="environment" aria-label="Take building photo" onChange={(e) => void save(e.target.files?.[0])} />
+    {busy ? <span className="jc-hero-note" role="status">Saving building photo…</span> : null}
+    {error ? <span className="jc-hero-note" role="alert">{error}</span> : null}
+  </figure>;
 }
 
-// Banner at the top of the job card: your own building photo if you took one, otherwise Google's
-// Street View picture of the building. Nothing is shown when neither exists.
-export function BuildingHero({ id, address, point }: { id: string; address: string; point: { lat: number; lng: number } | null }) {
-  const [src, setSrc] = useState("");
-  const [source, setSource] = useState("");
-  const lat = point?.lat, lng = point?.lng;
+// A complete package saved on this phone (made without Google connected): download it again.
+export function SavedPackageLink({ id }: { id: string }) {
+  const [packet, setPacket] = useState<FieldPacket | null>(null);
   useEffect(() => {
     let cancelled = false;
-    setSrc(""); setSource("");
-    (async () => {
-      const own = buildingPhoto(await listFieldEvidence(id).catch(() => [] as FieldMedia[]));
-      if (cancelled) return;
-      if (own) { setSrc(own.dataUrl); setSource("Your photo"); return; }
-      if (lat === undefined || lng === undefined) return;
-      const google = await streetViewPicture({ lat, lng }).catch(() => null);
-      if (!cancelled && google) { setSrc(google.url); setSource(`Google Street View${google.date ? ` · ${google.date}` : ""}`); }
-    })();
+    listFieldPackets(id).then((rows) => { if (!cancelled) setPacket(rows.find((row) => row.packetType === "full_evidence_zip") || null); }).catch(() => {});
     return () => { cancelled = true; };
-  }, [id, lat, lng]);
-  if (!src) return null;
-  return <figure className="jc-hero-photo" data-hpd-smoke="jc-hero-photo">
-    <img src={src} alt={`Building at ${address}`} onError={() => setSrc("")} />
-    <figcaption>{source}</figcaption>
-  </figure>;
+  }, [id]);
+  if (!packet) return null;
+  return <div className="fc-building-package" role="group" aria-label="Saved complete package">
+    <a href={packet.dataUrl} download={packet.fileName}>Download saved package</a>
+    <span>{new Date(packet.generatedAt).toLocaleDateString()} · {packet.imageCount} photos · {packet.videoCount} videos</span>
+  </div>;
 }

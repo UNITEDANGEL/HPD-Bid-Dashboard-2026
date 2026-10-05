@@ -56,3 +56,39 @@ export function appointmentCalendar(id: string, address: string, a: Appointment)
     ...(a.reminder ? ['BEGIN:VALARM', `TRIGGER:-PT${a.reminder}M`, 'ACTION:DISPLAY', 'DESCRIPTION:HPD appointment', 'END:VALARM'] : []),
     'END:VEVENT', 'END:VCALENDAR', ''].join('\r\n');
 }
+
+const NY_PARTS = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+
+function clock(time: string) {
+  const [h, m] = time.split(':').map(Number);
+  const hour = ((h + 11) % 12) + 1;
+  return `${hour}${m ? `:${String(m).padStart(2, '0')}` : ''} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
+// "Tue 10/07 · 2–3 PM" (New York time).
+export function appointmentLabel(a: Appointment) {
+  const [y, mo, d] = a.date.split('-').map(Number);
+  const weekday = new Date(Date.UTC(y, mo - 1, d)).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+  const start = clock(a.start), end = clock(a.end);
+  const range = start.slice(-2) === end.slice(-2) ? `${start.slice(0, -3)}–${end}` : `${start}–${end}`;
+  return `${weekday} ${String(mo).padStart(2, '0')}/${String(d).padStart(2, '0')} · ${range}`;
+}
+
+export function activeAppointment(job: Record<string, unknown>) {
+  const a = job.Appointment as Appointment | undefined;
+  return a && typeof a === 'object' && ['requested', 'confirmed'].includes(a.state) && /^\d{4}-\d{2}-\d{2}$/.test(a.date) && /^\d\d:\d\d$/.test(a.start) ? a : null;
+}
+
+// Where an appointment stands right now, in New York time: minutes until it starts and ends.
+// soon: starts within 2 hours (or is under way); today: on today's date; past: already over.
+export function appointmentTiming(a: Appointment, now = new Date()) {
+  const parts = Object.fromEntries(NY_PARTS.formatToParts(now).map((p) => [p.type, p.value]));
+  const today = `${parts.year}-${parts.month}-${parts.day}`;
+  const nowMinutes = Number(parts.hour) * 60 + Number(parts.minute);
+  const dayMs = (day: string) => { const [y, m, d] = day.split('-').map(Number); return Date.UTC(y, m - 1, d); };
+  const dayDiff = Math.round((dayMs(a.date) - dayMs(today)) / 86_400_000);
+  const toMinutes = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const startsIn = dayDiff * 1440 + toMinutes(a.start) - nowMinutes;
+  const endsIn = dayDiff * 1440 + toMinutes(a.end || a.start) - nowMinutes;
+  return { startsIn, endsIn, today: dayDiff === 0, past: endsIn < 0, soon: endsIn >= 0 && startsIn <= 120, days: dayDiff };
+}

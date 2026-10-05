@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
-import BuildingPhoto, { BuildingHero } from "./BuildingPhoto";
+import { BuildingHero, SavedPackageLink } from "./BuildingPhoto";
 import type { RouteJob, RoutePoint } from "../../lib/day-route";
 import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/current-job";
-import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointments";
+import { activeAppointment, appointmentLabel, appointmentPatch, appointmentTiming, nyToday, type Appointment } from "../../lib/appointments";
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
@@ -111,6 +111,8 @@ function jobAddress(job: JobRecord) {
 }
 
 // Shown when the ITB's scope couldn't be read (e.g. a scanned ITB with only the blank form's text).
+const OUTCOME_ICONS: Record<string, string> = { NO_ACCESS_1_WAITING_72H: "🔒", REFUSED_ACCESS: "⛔", WORK_COMPLETED_BY_OTHERS: "👥" };
+
 function itbFileName(job: JobRecord | null | undefined) {
   const raw = String((job as Record<string, unknown> | null)?.ITBFile || (job as Record<string, unknown> | null)?.itbFile || "").trim();
   const name = raw.split(/[\\/]/).pop()?.trim() || "";
@@ -301,7 +303,7 @@ function pinStyle(job: JobRecord): { key: StatusKey; label: string; color: strin
   if (/refused/.test(status)) return pick("refused");
   if (/no access/.test(status)) return pick("noaccess");
   if (/partial/.test(status)) return pick("partial");
-  if (/appointment|scheduled/.test(status)) return pick("appointment");
+  if (/appointment|scheduled/.test(status) && !/cancel|missed/.test(status)) return pick("appointment");
   if (jobQueue(job) === "completed") return pick("done");
   return pick("awarded");
 }
@@ -327,14 +329,43 @@ function jobStatusMeta(job: JobRecord) {
   return STATUS_META.find((meta) => meta.match(s, job)) || STATUS_META[STATUS_META.length - 1];
 }
 
-function statusMarkerHtml(color: string, iconKey: StatusKey) {
-  return `<div style="width:28px;height:28px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.45);display:grid;place-items:center;"><svg width="15" height="15" viewBox="0 0 24 24">${STATUS_ICON_PATHS[iconKey]}</svg></div>`;
+function dueOnMap(job: JobRecord) {
+  if (jobQueue(job) === "archived") return false;
+  if (secondTryState(job)?.due) return true;
+  const appointment = pinStyle(job).key === "appointment" ? activeAppointment(job) : null;
+  if (!appointment) return false;
+  const timing = appointmentTiming(appointment);
+  return !timing.past && timing.days <= 1;
 }
 
-function ageMarkerHtml(days: number | null, pending: boolean, zoom = 16, multiple = false, color = "#0a84ff", icon: StatusKey = "pending") {
-  const label = !pending ? "" : days === null ? "?" : days === 0 ? "0" : days < 0 ? `+${-days}` : String(days);
-  const symbol = pending && icon === "awarded" ? HARDHAT_ICON_PATH : STATUS_ICON_PATHS[icon];
-  return `<div class="fc-day-pin ${icon === "appointment" ? "is-appointment" : ""} ${multiple ? "has-more" : ""} ${zoom < 14 || label.length > 3 ? "is-distant" : ""}" style="--pin-color:${color}"><svg viewBox="0 0 24 24" aria-hidden="true">${symbol}</svg>${pending ? `<strong>${label}<small>d</small></strong>` : ""}</div>`;
+function shortClock(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  return `${((h + 11) % 12) + 1}${m ? `:${String(m).padStart(2, "0")}` : ""}${h < 12 ? "a" : "p"}`;
+}
+
+// Map pin: a teardrop in the status color with a white symbol you can read from far away, and a
+// small chip: how late open work is, the time of an appointment (glowing as it gets close), or
+// "2nd try" when a no-access job is due back.
+function jobPinHtml(job: JobRecord, meta: { key: StatusKey; color: string }, priority: { days: number | null; pending: boolean }, visits: number) {
+  const classes = ["fc-pin", `is-${meta.key}`];
+  let chip = "";
+  let symbol = meta.key === "awarded" ? HARDHAT_ICON_PATH : STATUS_ICON_PATHS[meta.key];
+  const appointment = meta.key === "appointment" ? activeAppointment(job) : null;
+  const timing = appointment ? appointmentTiming(appointment) : null;
+  const second = meta.key === "noaccess" ? secondTryState(job) : null;
+  if (appointment && timing && !timing.past) {
+    chip = timing.soon ? (timing.startsIn > 0 ? `${timing.startsIn}m` : "now") : timing.today ? shortClock(appointment.start) : timing.days === 1 ? "tmrw" : appointmentLabel(appointment).slice(0, 3);
+    if (timing.soon) classes.push("is-soon");
+    else if (timing.today) classes.push("is-today");
+  } else if (second?.due) {
+    chip = "2nd try";
+    classes.push("is-due");
+  } else if (priority.pending && priority.days !== null) {
+    chip = priority.days > 0 ? `${priority.days}d` : priority.days === 0 ? "today" : `in ${-priority.days}d`;
+    classes.push(priority.days > 30 ? "is-late" : priority.days > 0 ? "is-overdue" : "is-upcoming");
+  }
+  if (meta.key === "done") symbol = STATUS_ICON_PATHS.done;
+  return `<div class="${classes.join(" ")}" style="--pin:${meta.color}"><span class="fc-pin-head"><svg viewBox="0 0 24 24" aria-hidden="true">${symbol}</svg></span>${chip ? `<span class="fc-pin-chip">${chip}</span>` : ""}${visits ? `<span class="fc-pin-visits">${visits}</span>` : ""}</div>`;
 }
 
 function jobAwardAmount(job: JobRecord) {
@@ -605,7 +636,6 @@ export default function FieldCommandClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
   const jobSheetRef = useRef<HTMLDivElement | null>(null);
   const sheetTouchStart = useRef<number | null>(null);
-  const outcomePanelRef = useRef<HTMLElement | null>(null);
   const [outcomeDrafts, setOutcomeDrafts] = useState<Record<string, { outcome: string; note: string }>>({});
   const [outcomeMessage, setOutcomeMessage] = useState("");
   const [appointmentOpen, setAppointmentOpen] = useState(false);
@@ -776,8 +806,6 @@ export default function FieldCommandClient() {
   const videoLibraryInputRef = useRef<HTMLInputElement | null>(null);
   const mediaChoiceRef = useRef<HTMLDivElement | null>(null);
   const [mediaChoiceInStep, setMediaChoiceInStep] = useState(false);
-  // The hand-entry outcome form only opens from More > Outcome (the steps record outcomes).
-  const [outcomePanelOpen, setOutcomePanelOpen] = useState(false);
   // After a job finishes, its package opens for review by itself after a short countdown.
   const [autoPackage, setAutoPackage] = useState<{ id: string; outcome: string; seconds: number } | null>(null);
   useEffect(() => {
@@ -1009,9 +1037,13 @@ export default function FieldCommandClient() {
       // A job never drops off the map while you work it: the open job, and any job worked
       // today, stay visible whatever its new status (until you archive it).
       if (jobId(job) === openJobKey || (workedToday(job) && jobQueue(job) !== "archived")) return true;
-      if (!matchesJobQueue(job, status)) return false;
-      if (!matchesAwardLookback(job, daysBack)) return false;
-      if (!matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
+      // Due now (an appointment today or tomorrow, a no-access 2nd try that's due) shows whatever
+      // the status and date filters; the borough and the search still apply.
+      if (!dueOnMap(job)) {
+        if (!matchesJobQueue(job, status)) return false;
+        if (!matchesAwardLookback(job, daysBack)) return false;
+        if (!matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
+      }
       if (borough !== "ALL" && jobBorough(job) !== borough) return false;
       if (q) {
         const haystack = [jobId(job), jobAddress(job), jobBorough(job), jobStatus(job)].join(" ").toLowerCase();
@@ -1115,6 +1147,23 @@ export default function FieldCommandClient() {
     .filter((row): row is { job: JobRecord; second: NonNullable<ReturnType<typeof secondTryState>> } => Boolean(row.second) && jobQueue(row.job) !== "archived")
     .sort((a, b) => a.second.dueDay.localeCompare(b.second.dueDay)), [jobs]);
   const [secondTryOpen, setSecondTryOpen] = useState(false);
+  // Appointments today (and anything within the next 2 hours), soonest first. A minute clock keeps
+  // the countdowns on the pins and in the map alert current.
+  const [minuteTick, setMinuteTick] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setMinuteTick((tick) => tick + 1), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  useEffect(() => { if (minuteTick) renderMarkersRef.current(); }, [minuteTick]);
+  const upcomingAppointments = useMemo(() => jobs
+    .map((job) => {
+      const appointment = pinStyle(job).key === "appointment" ? activeAppointment(job) : null;
+      return appointment ? { job, appointment, timing: appointmentTiming(appointment) } : null;
+    })
+    .filter((row): row is { job: JobRecord; appointment: Appointment; timing: ReturnType<typeof appointmentTiming> } => Boolean(row) && !row!.timing.past && (row!.timing.today || row!.timing.soon))
+    .sort((a, b) => a.timing.startsIn - b.timing.startsIn),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [jobs, minuteTick]);
 
   function openIssueJob(job: JobRecord) {
     setCloseOutOpen(false);
@@ -1329,14 +1378,15 @@ export default function FieldCommandClient() {
               const screen = map.latLngToContainerPoint(position);
               const showLabel = reservePinLabel(screen.x, screen.y, occupied);
               const html = showLabel
-                ? ageMarkerHtml(priority.days, priority.pending, map.getZoom(), false, meta.color, meta.key) + (visit.count ? `<span class="fc-visit-pin-count">${visit.count}v</span>` : "")
+                ? jobPinHtml(job, meta, priority, visit.count)
                 : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`;
               if (map.getZoom() >= 17 && location.jobs.length > 1) {
                 L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
               }
               // Pins grow as you zoom in; the one nearest the middle of the screen is the focus.
               const zoomClass = map.getZoom() >= 18 ? " is-z18" : map.getZoom() >= 16 ? " is-z16" : "";
-              const icon = L.divIcon({ className: (showLabel ? "fc-label-marker" : "fc-dot-marker") + zoomClass, html, iconSize: showLabel ? [44, 32] : [14, 14], iconAnchor: showLabel ? [22, 16] : [7, 7] });
+              // The pin's tip sits on the building.
+              const icon = L.divIcon({ className: (showLabel ? "fc-label-marker" : "fc-dot-marker") + zoomClass, html, iconSize: showLabel ? [36, 42] : [14, 14], iconAnchor: showLabel ? [18, 40] : [7, 7] });
               const marker = L.marker(position, { icon, title, zIndexOffset: showLabel ? 1000 : 0 });
               marker.on("click", () => {
                 if (!showLabel || location.jobs.length > 1) map.setView([location.lat, location.lng], Math.max(17, map.getZoom()));
@@ -1808,12 +1858,6 @@ export default function FieldCommandClient() {
     mergeWorkflowPatchIntoScreen(id, patch);
   }
 
-  function openOutcomePanel() {
-    setOutcomePanelOpen(true);
-    setSheetExpanded(true);
-    requestAnimationFrame(() => outcomePanelRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
-  }
-
   function openAppointment() {
     setAppointmentOpen(true);
     setSheetExpanded(true);
@@ -1827,13 +1871,10 @@ export default function FieldCommandClient() {
     writeSharedWorkflowPatch(id, patch);
     mergeWorkflowPatchIntoScreen(id, patch);
     setWorkflowStamps(prev => ({ ...prev, [id]: { ...prev[id], status: patch.status } }));
-  }
-
-  function chooseOutcome(outcome: string) {
-    if (!selectedJob) return;
-    const id = jobId(selectedJob);
-    setOutcomeDrafts((prev) => ({ ...prev, [id]: { note: prev[id]?.note || "", outcome } }));
-    openOutcomePanel();
+    if (["requested", "confirmed"].includes(appointment.state)) {
+      setAppointmentOpen(false);
+      setOutcomeMessage(`📅 ${id}: appointment saved for ${appointmentLabel(appointment)}. The job waits for it, and its pin lights up on the map as the time gets close.`);
+    }
   }
 
   // Records an outcome right away (no draft, no page change).
@@ -2309,6 +2350,17 @@ export default function FieldCommandClient() {
               </button>
             </div>
           ) : null}
+          {upcomingAppointments.length && !selectedJob ? (() => {
+            const next = upcomingAppointments[0];
+            const when = next.timing.soon ? (next.timing.startsIn > 0 ? `in ${next.timing.startsIn} min` : "now") : appointmentLabel(next.appointment).split(" · ")[1];
+            return (
+              <div className={`fc-data-check fc-appointment-pill ${next.timing.soon ? "is-soon" : ""}`} data-hpd-smoke="fc-appointment-pill">
+                <button type="button" className="fc-map-hint" onClick={() => openIssueJob(next.job)}>
+                  📅 {next.timing.soon ? "Appointment" : "Next appointment"} {when} · {jobId(next.job)}{upcomingAppointments.length > 1 ? ` · ${upcomingAppointments.length} today` : ""}
+                </button>
+              </div>
+            );
+          })() : null}
           {secondTryJobs.length && !selectedJob ? (
             <div className="fc-data-check fc-second-try" data-hpd-smoke="fc-second-try">
               <button type="button" className={`fc-map-hint ${secondTryJobs.some((row) => row.second.due) ? "fc-map-hint-warn" : ""}`} aria-expanded={secondTryOpen} onClick={() => { setSecondTryOpen((open) => !open); setCloseOutOpen(false); setDataCheckOpen(false); }}>
@@ -2429,7 +2481,7 @@ export default function FieldCommandClient() {
               </button>
               <header className="jc-hero">
                 {/* First thing on the card: what the building looks like, then where it is and how to get there. */}
-                <BuildingHero key={id} id={id} address={jobAddress(selectedJob)} point={jobLatLng(selectedJob)} />
+                <BuildingHero key={id} id={id} address={jobAddress(selectedJob)} borough={String(jobBorough(selectedJob))} point={jobLatLng(selectedJob)} />
                 <div className="jc-hero-top">
                   <strong className="jc-omo">{id}</strong>
                   <span className="jc-status" style={{ "--jc-status": jobStatusMeta(selectedJob).color } as CSSProperties}>
@@ -2438,11 +2490,6 @@ export default function FieldCommandClient() {
                 </div>
                 <span className="jc-borough">{BOROUGHS.find((item) => item.key === jobBorough(selectedJob))?.label || "NYC"}</span>
                 <p className="jc-address">{jobAddress(selectedJob)}</p>
-                <div className="jc-nav">
-                  <a className="jc-btn jc-btn-waze" href={wazeHref(selectedJob)} onClick={()=>recordTravel(selectedJob, "Waze")} target="_blank" rel="noreferrer">Waze</a>
-                  <a className="jc-btn jc-btn-google" href={directionsHref(selectedJob)} onClick={()=>recordTravel(selectedJob, "Google")} target="_blank" rel="noreferrer">Google</a>
-                  {tenant.phone ? <a className="jc-btn jc-btn-call" href={`tel:${tenant.phone}`}><CallIcon />Call</a> : null}
-                </div>
               </header>
 
               {testModeVersion >= 0 && isTestJob(jobId(selectedJob)) ? (
@@ -2470,7 +2517,10 @@ export default function FieldCommandClient() {
               {(() => {
                 // Guided steps: arrive -> start visit -> what happened (start work = before media, or a
                 // no-work outcome) -> finish work (after media) -> check media & finish -> package.
-                const noWorkOutcomes = ["NO_ACCESS_1_WAITING_72H", "REFUSED_ACCESS", "WORK_COMPLETED_BY_OTHERS", "APPOINTMENT_REQUESTED"];
+                // Final outcomes with no work. An appointment is not final: the job waits for the visit.
+                const noWorkOutcomes = ["NO_ACCESS_1_WAITING_72H", "REFUSED_ACCESS", "WORK_COMPLETED_BY_OTHERS"];
+                const appointment = activeAppointment(selectedJob);
+                const appointmentWhen = appointment ? appointmentTiming(appointment) : null;
                 const workOutcomes = ["WORK_COMPLETED", "PARTIAL_WORK"];
                 // Only a real outcome counts; "VISIT_STARTED" / "WORK_STARTED" are progress markers.
                 const rawOutcome = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
@@ -2492,9 +2542,7 @@ export default function FieldCommandClient() {
                 const outcomeForm = (keys: string[]) => keys.includes(draft.outcome) ? (
                   <div className="jc-step-form">
                     <label>Note (optional)<textarea value={draft.note} rows={2} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
-                    {draft.outcome === "APPOINTMENT_REQUESTED"
-                      ? <button type="button" className="fc-next-action jc-glow" onClick={openAppointment}>Set appointment details</button>
-                      : <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-save-outcome" disabled={Boolean(mediaBusy)} onClick={() => saveVisitOutcome(selectedJob, false)}>Save: {FIELD_OUTCOMES[draft.outcome]}<span aria-hidden="true">&rarr;</span></button>}
+                    <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-save-outcome" disabled={Boolean(mediaBusy)} onClick={() => saveVisitOutcome(selectedJob, false)}>Save: {FIELD_OUTCOMES[draft.outcome]}<span aria-hidden="true">&rarr;</span></button>
                   </div>
                 ) : null;
                 // The before/after photo and video buttons, glowing inside the step that asked for them.
@@ -2547,20 +2595,32 @@ export default function FieldCommandClient() {
                     <li className={stepClass(2)}>
                       {num(2)}
                       <div>
-                        <b>What happened?</b>
-                        <small>{noWorkOutcomes.includes(savedOutcome) ? FIELD_OUTCOMES[savedOutcome] : workStarted ? `Work started${stamps.work ? ` ${formatSavedTime(stamps.work)}` : ""} · before: ${counts.before - (counts.beforeVideos || 0)} photo(s), ${counts.beforeVideos || 0} video(s)` : "Start the work with before photos/video, or record why not"}</small>
+                        <b>Outcome</b>
+                        <small>{noWorkOutcomes.includes(savedOutcome) ? FIELD_OUTCOMES[savedOutcome] : workStarted ? `Work started${stamps.work ? ` ${formatSavedTime(stamps.work)}` : ""} · before: ${counts.before - (counts.beforeVideos || 0)} photo(s), ${counts.beforeVideos || 0} video(s)` : "Do the work (before photos/video), or record why not"}</small>
+                        {appointment && !savedOutcome && !workStarted ? (
+                          <p className={`jc-step-appointment ${appointmentWhen?.soon ? "is-soon" : ""}`} data-hpd-smoke="jc-step-appointment">
+                            📅 Appointment {appointmentLabel(appointment)}
+                            {appointmentWhen?.soon ? (appointmentWhen.startsIn > 0 ? ` · starts in ${appointmentWhen.startsIn} min` : " · now") : appointmentWhen?.past ? " · time passed" : ""}
+                          </p>
+                        ) : null}
                         {current === 2 ? (
                           <>
-                            <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-start-work" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("before", true)}>Start work: before photo / video<span aria-hidden="true">&rarr;</span></button>
+                            <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-start-work" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("before", true)}>🔨 Do the work: before photo / video<span aria-hidden="true">&rarr;</span></button>
                             {stepMedia("before")}
                             <div className="jc-step-choices">
                               {noWorkOutcomes.map((key) => (
-                                <button key={key} type="button" className={draft.outcome === key ? "is-picked" : ""} onClick={() => setOutcomeDrafts((prev) => ({ ...prev, [id]: { note: prev[id]?.note || "", outcome: key } }))}>{FIELD_OUTCOMES[key]}</button>
+                                <button key={key} type="button" className={draft.outcome === key ? "is-picked" : ""} onClick={() => setOutcomeDrafts((prev) => ({ ...prev, [id]: { note: prev[id]?.note || "", outcome: key } }))}>{OUTCOME_ICONS[key]} {FIELD_OUTCOMES[key]}</button>
                               ))}
+                              <button type="button" className={appointmentOpen ? "is-picked" : ""} data-hpd-smoke="jc-step-appointment-open" onClick={() => (appointmentOpen ? setAppointmentOpen(false) : openAppointment())}>📅 {appointment ? "Change appointment" : "Need appointment"}</button>
                             </div>
                             {outcomeForm(noWorkOutcomes)}
                           </>
+                        ) : !savedOutcome && !workStarted && current < 2 ? (
+                          <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-appointment-open" onClick={() => (appointmentOpen ? setAppointmentOpen(false) : openAppointment())}>📅 {appointment ? "Change appointment" : "Set an appointment"}</button>
                         ) : null}
+                        <div ref={appointmentRef}>
+                          {appointmentOpen && !savedOutcome ? <AppointmentEditor key={id} job={selectedJob} jobs={jobs.map(row => ({ ...row, id: jobId(row) }))} id={id} address={jobAddress(selectedJob)} contact={tenant.name} phone={tenant.phone} note={draft.note} save={a => saveAppointment(selectedJob, a)} /> : null}
+                        </div>
                         {workStarted && !savedOutcome && current > 2 ? <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-more-before" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("before", true)}>+ More before photos / video</button> : null}
                         {current > 2 ? stepMedia("before") : null}
                       </div>
@@ -2639,6 +2699,16 @@ export default function FieldCommandClient() {
                   const outcome = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
                   const label = FIELD_OUTCOMES[outcome];
                   const approved = Boolean(value(selectedJob, ["PackageApprovedAt"])) || /approved/i.test(value(selectedJob, ["PackageReviewStatus"]));
+                  const booked = activeAppointment(selectedJob);
+                  if (booked && !FIELD_OUTCOMES[outcome.replace(/^APPOINTMENT_.*/, "")] && !counts.before) {
+                    const when = appointmentTiming(booked);
+                    return (
+                      <div className={`jc-status-line is-appointment ${when.soon ? "is-soon" : ""}`} data-hpd-smoke="jc-status-line">
+                        <strong>📅 Appointment · {appointmentLabel(booked)}</strong>
+                        <span>{when.past ? "The time has passed: record what happened, or change the appointment" : when.soon ? (when.startsIn > 0 ? `Starts in ${when.startsIn} min` : "Happening now") : booked.state === "confirmed" ? "Confirmed · the job waits for it" : "Requested · the job waits for it"}</span>
+                      </div>
+                    );
+                  }
                   if (!label) return <p className="jc-status-line" data-hpd-smoke="jc-status-line">{counts.before ? "🔨 Work in progress" : "Not started yet"}</p>;
                   const waiting = secondTryState(selectedJob);
                   if (waiting) return (
@@ -2653,6 +2723,7 @@ export default function FieldCommandClient() {
                       <strong>{icon} {label}</strong>
                       <span>{approved ? "Package approved and sent" : outcome === "APPOINTMENT_REQUESTED" ? "Waiting on the appointment" : "Outcome saved · ready to close out"}</span>
                       {!approved && outcome !== "APPOINTMENT_REQUESTED" && !(autoPackage && autoPackage.id === id) ? <a className="jc-status-go" data-hpd-smoke="jc-status-package" href={paperworkGenerateHref(id, outcome)} onClick={packageLinkClick(id, paperworkGenerateHref(id, outcome))}>Review package →</a> : null}
+                      {!approved ? <button type="button" className="jc-status-change" data-hpd-smoke="fc-clear-outcome" onClick={() => clearOutcome(selectedJob)}>Change outcome</button> : null}
                     </div>
                   );
                 })()}
@@ -2746,17 +2817,15 @@ export default function FieldCommandClient() {
                   <div className="jc-fact jc-fact-wide">
                     <small>Tenant</small>
                     <strong>{tenant.name || (tenant.phone ? "Name not listed" : "Not listed")}</strong>
-                    {tenant.phone ? <span>{tenant.phone} <a className="fc-call-btn" href={`tel:${tenant.phone}`}>Call</a></span> : <span>{tenant.summary}</span>}
+                    {tenant.phone ? <span>{tenant.phone} <a className="fc-call-btn" href={`tel:${tenant.phone}`}>Call</a></span> : tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim() ? <span>{tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim()}</span> : null}
                   </div>
                 </div>
                 {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}
-              {selectedJob.Appointment ? <button type="button" className="fc-appointment-summary" onClick={openAppointment}>{(selectedJob.Appointment as Appointment).date} · {(selectedJob.Appointment as Appointment).start}-{(selectedJob.Appointment as Appointment).end} · {(selectedJob.Appointment as Appointment).state}</button> : null}
               <div className="fc-visit-summary jc-visit" style={{borderLeftColor:visitState(selectedJob).color}}>
                 <strong>{visitState(selectedJob).label} · {visitState(selectedJob).count} recorded visits</strong>
                 {visitState(selectedJob).lastAt && <span>Last visit: {/^\d{4}-\d{2}-\d{2}$/.test(visitState(selectedJob).lastAt) ? visitState(selectedJob).lastAt : formatSavedTime(visitState(selectedJob).lastAt)}</span>}
                 {visitState(selectedJob).count > 0 && <span>{FIELD_OUTCOMES[visitState(selectedJob).lastOutcome] || visitState(selectedJob).lastOutcome}</span>}
                 {visitState(selectedJob).note && <span>{visitState(selectedJob).note}</span>}
-                {selectedJob.Appointment ? (() => { const a = selectedJob.Appointment as Appointment; return <span>Appointment: {a.date} {a.start}-{a.end} ({a.state})</span>; })() : null}
                 {visitState(selectedJob).kind === "blocked" && <span>Excluded from routes. Review required before returning.</span>}
                 {["blocked","return"].includes(visitState(selectedJob).kind) && <button type="button" onClick={() => {
                   if (!window.confirm("Approve a return visit to this job? Existing visit records will be kept.")) return;
@@ -2784,7 +2853,7 @@ export default function FieldCommandClient() {
                   <strong>Documents</strong>
                   <span>{counts.total} photo/video saved</span>
                 </div>
-                <BuildingPhoto key={id} id={id} address={jobAddress(selectedJob)} borough={String(jobBorough(selectedJob))} point={jobLatLng(selectedJob)} />
+                <SavedPackageLink key={id} id={id} />
                 <div className="jc-docs">
                   <a className="jc-doc jc-doc-primary" href={paperworkHref} onClick={packageLinkClick(id, paperworkHref)}>
                     <DocumentsIcon />
@@ -2819,8 +2888,6 @@ export default function FieldCommandClient() {
 
               {/* More: the less common actions, at the very bottom. */}
               <div className="fc-card-footer jc-footer" data-hpd-smoke="jc-more">
-              <button type="button" className={`fc-outcome-link ${outcomePanelOpen ? "is-on" : ""}`} aria-expanded={outcomePanelOpen} onClick={() => (outcomePanelOpen ? setOutcomePanelOpen(false) : openOutcomePanel())}>Outcome</button>
-              <button type="button" className="fc-outcome-link" onClick={openAppointment}>Appointment</button>
               <button type="button" className="fc-outcome-link" data-hpd-smoke="jc-start-over" onClick={() => beginClearWorkflow(selectedJob)}>Start over</button>
               {jobId(selectedJob) !== TEST_JOB_ID ? (
                 <button type="button" className={`fc-outcome-link ${isTestModeJob(jobId(selectedJob)) ? "is-on" : ""}`} data-hpd-smoke="jc-test-mode" aria-pressed={isTestModeJob(jobId(selectedJob))}
@@ -2830,20 +2897,6 @@ export default function FieldCommandClient() {
               ) : null}
               <button type="button" className="fc-job-details-toggle" aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}>{sheetExpanded ? "Less" : "Details"}<span aria-hidden="true">{sheetExpanded ? "⌄" : "⌃"}</span></button>
               </div>
-              <div ref={appointmentRef} hidden={!appointmentOpen || !sheetExpanded}>
-                {appointmentOpen && <AppointmentEditor key={id} job={selectedJob} jobs={jobs.map(row => ({ ...row, id: jobId(row) }))} id={id} address={jobAddress(selectedJob)} contact={tenant.name} phone={tenant.phone} note={draft.note} save={a => saveAppointment(selectedJob, a)} />}
-              </div>
-              {outcomePanelOpen ? <section ref={outcomePanelRef} className="fc-outcome-panel" aria-label="Visit outcome">
-                <label>Outcome<select value={draft.outcome} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, outcome: event.target.value } }))}><option value="">Select outcome</option>{Object.entries(FIELD_OUTCOMES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
-                <label>Visit note<textarea value={draft.note} rows={3} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
-                {draft.outcome === "APPOINTMENT_REQUESTED" ? <button type="button" className="fc-next-action" onClick={openAppointment}>Set appointment details</button> : <button type="button" className="fc-next-action" onClick={() => saveVisitOutcome(selectedJob, Boolean(draft.outcome))} disabled={Boolean(mediaBusy) || (!draft.outcome && !draft.note.trim())}>{draft.outcome ? "Save outcome & generate package" : "Save note"}</button>}
-                {FIELD_OUTCOMES[value(selectedJob, ["FieldOutcome", "fieldOutcome"])] ? (
-                  <button type="button" className="fc-clear-outcome" data-hpd-smoke="fc-clear-outcome" onClick={() => clearOutcome(selectedJob)}>
-                    Clear outcome ({FIELD_OUTCOMES[value(selectedJob, ["FieldOutcome", "fieldOutcome"])] || value(selectedJob, ["FieldOutcome", "fieldOutcome"])})
-                  </button>
-                ) : null}
-                <p role="status">{outcomeMessage || "Device storage only. Appointment requests are not confirmed bookings."}</p>
-              </section> : null}
               {clearJobId === id ? (
                 <section className="fc-clear-confirm" aria-label="Confirm start over">
                   <p className="fc-clear-warn">Start over clears the outcome, every step, the package status and ALL photos/videos of this job on this phone. Drive and sent emails are not touched. Type CLEAR to confirm.</p>

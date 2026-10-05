@@ -905,3 +905,20 @@
 #fc-job-card .jc-backup.is-off { background: rgba(180, 83, 9, 0.22); border: 1px solid rgba(245, 158, 11, 0.55); color: #fde68a; }
 #fc-job-card .jc-backup.is-on { background: rgba(14, 116, 144, 0.18); border: 1px solid rgba(34, 211, 238, 0.35); color: #cffafe; }
 #fc-job-card .jc-backup button { margin-left: 4px; min-height: 34px; padding: 0 10px; border-radius: 9px; border: 0; background: #f59e0b; color: #1c1917; font-weight: 800; }
+
+/* Building picture: 360° Street View and "take your own photo" on it */
+.jc-hero-photo.is-empty { min-height: 64px; display: grid; place-items: center; }
+.jc-hero-empty { color: #94a3b8; font: 600 13px system-ui, sans-serif; }
+.jc-hero-actions { position: absolute; right: 8px; bottom: 8px; display: flex; gap: 6px; }
+.jc-hero-actions a, .jc-hero-actions button { min-height: 36px; padding: 0 12px; display: inline-flex; align-items: center; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.35); background: rgba(0, 0, 0, 0.62); color: #fff; font: 800 13px system-ui, sans-serif; text-decoration: none; backdrop-filter: blur(6px); }
+.jc-hero-actions .jc-hero-360 { background: rgba(37, 99, 235, 0.85); }
+.jc-hero-note { position: absolute; left: 8px; top: 8px; padding: 2px 8px; border-radius: 8px; background: rgba(0, 0, 0, 0.7); color: #fff; font: 600 12px system-ui, sans-serif; }
+#fc-job-card .jc-hero-photo figcaption { bottom: auto; top: 8px; }
+
+/* Outcome step: an appointment the job is waiting for */
+#fc-job-card .jc-step-appointment { margin: 6px 0; padding: 8px 10px; border-radius: 10px; background: rgba(217, 119, 6, 0.16); border: 1px solid rgba(245, 158, 11, 0.45); color: #fde68a; font: 700 14px/1.35 system-ui, sans-serif; }
+#fc-job-card .jc-step-appointment.is-soon { background: rgba(245, 158, 11, 0.3); border-color: #f59e0b; animation: fc-appt-pulse 1.6s ease-in-out infinite; }
+#fc-job-card .jc-status-line.is-appointment { border-color: rgba(245, 158, 11, 0.55); background: rgba(217, 119, 6, 0.16); }
+#fc-job-card .jc-status-line.is-appointment.is-soon { border-color: #f59e0b; background: rgba(245, 158, 11, 0.28); }
+#fc-job-card .jc-status-change { margin-top: 6px; min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid rgba(148, 163, 184, 0.35); background: transparent; color: #cbd5e1; font-weight: 700; }
+@keyframes fc-appt-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.55); } 50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); } }
