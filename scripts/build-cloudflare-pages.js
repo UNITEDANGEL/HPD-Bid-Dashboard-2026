@@ -67,6 +67,13 @@ function readJsonIfExists(target) {
   }
 }
 
+// The short commit /version.json reports (written after the build, below).
+function appCommit() {
+  let commit = process.env.GITHUB_SHA || "";
+  try { commit = commit || require("child_process").execSync("git rev-parse HEAD", { cwd: root }).toString().trim(); } catch {}
+  return commit.slice(0, 7);
+}
+
 function currentCommit() {
   if (process.env.GITHUB_SHA) return process.env.GITHUB_SHA;
 
@@ -160,6 +167,8 @@ try {
     env: {
       ...process.env,
       CLOUDFLARE_STATIC_EXPORT: "1",
+      // Built into the app, so it knows which version it is running (same value as /version.json).
+      NEXT_PUBLIC_APP_COMMIT: appCommit(),
     },
   });
 

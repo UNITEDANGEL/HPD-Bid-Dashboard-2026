@@ -4,7 +4,8 @@ import { APPOINTMENT_STATES, Appointment, appointmentConflicts, appointmentCalen
 
 export default function AppointmentEditor({ job, jobs, id, address, contact, phone, note, save }: { job: Record<string, unknown>; jobs: Record<string, unknown>[]; id: string; address: string; contact: string; phone: string; note: string; save: (a: Appointment) => void }) {
   const saved = job.Appointment as Appointment | undefined;
-  const [draft, setDraft] = useState<Appointment>(saved || { date: '', start: '08:00', end: '09:00', state: 'requested', contact, phone, note, reminder: 30 });
+  const [draft, setDraft] = useState<Appointment>(saved || { date: '', start: '08:00', end: '09:00', state: 'requested', contact: contact.trim() || 'Tenant', phone, note, reminder: 30 });
+  // (No tenant name on file: "Tenant" until you type the real name, so the form never blocks.)
   const [message, setMessage] = useState('');
   const set = (patch: Partial<Appointment>) => { setDraft(prev => ({ ...prev, ...patch })); setMessage(''); };
   const conflicts = appointmentConflicts(draft, jobs, id);

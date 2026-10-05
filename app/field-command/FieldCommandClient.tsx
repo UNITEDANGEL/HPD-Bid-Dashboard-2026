@@ -113,6 +113,9 @@ function jobAddress(job: JobRecord) {
 // Shown when the ITB's scope couldn't be read (e.g. a scanned ITB with only the blank form's text).
 const OUTCOME_ICONS: Record<string, string> = { NO_ACCESS_1_WAITING_72H: "🔒", REFUSED_ACCESS: "⛔", WORK_COMPLETED_BY_OTHERS: "👥" };
 
+// The version this app was built as (set by the Cloudflare build; empty in development).
+const BUILT_COMMIT = process.env.NEXT_PUBLIC_APP_COMMIT || "";
+
 function itbFileName(job: JobRecord | null | undefined) {
   const raw = String((job as Record<string, unknown> | null)?.ITBFile || (job as Record<string, unknown> | null)?.itbFile || "").trim();
   const name = raw.split(/[\\/]/).pop()?.trim() || "";
@@ -739,8 +742,11 @@ export default function FieldCommandClient() {
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [chromeOpen, setChromeOpen] = useState(false);
   // Which version is running (from /version.json, written by every deploy).
-  const [appVersion, setAppVersion] = useState("");
+  const [appVersion, setAppVersion] = useState(BUILT_COMMIT);
+  // A newer version is live but a job card is open: offer it instead of waiting.
+  const [updateReady, setUpdateReady] = useState(false);
   const appVersionRef = useRef("");
+  const latestCommitRef = useRef("");
   const safeToReloadRef = useRef(true);
   const [plannerRequest,setPlannerRequest] = useState(0);
   const [locateStatus, setLocateStatus] = useState<"idle" | "loading" | "error">("idle");
@@ -1115,8 +1121,19 @@ export default function FieldCommandClient() {
         if (!response.ok) return;
         const { commit } = await response.json() as { commit?: string };
         if (!commit || stopped) return;
-        if (!appVersionRef.current) { appVersionRef.current = commit; setAppVersion(commit); return; }
-        if (commit !== appVersionRef.current && safeToReloadRef.current && !document.hidden) window.location.reload();
+        // The version this app was built as; older builds didn't carry it, so they learn it here.
+        if (!appVersionRef.current) appVersionRef.current = BUILT_COMMIT || commit;
+        setAppVersion(appVersionRef.current);
+        if (commit === appVersionRef.current) return;
+        latestCommitRef.current = commit;
+        // Reload by itself once per new version; if the old version is still what loads (no
+        // signal, old copy), stop and offer the Update button instead of reloading over and over.
+        let tried = "";
+        try { tried = sessionStorage.getItem("hpd-reloaded-for") || ""; } catch {}
+        if (safeToReloadRef.current && !document.hidden && tried !== commit) {
+          try { sessionStorage.setItem("hpd-reloaded-for", commit); } catch {}
+          window.location.reload();
+        } else setUpdateReady(true);
       } catch { /* offline: try again later */ }
     }
     void check();
@@ -2919,6 +2936,11 @@ export default function FieldCommandClient() {
         })() : null}
       </div>
 
+      {updateReady && !mediaBusy ? (
+        <button type="button" className="fc-update-ready" data-hpd-smoke="fc-update-ready" onClick={() => window.location.replace(`${window.location.pathname}?v=${encodeURIComponent(latestCommitRef.current)}`)}>
+          🔄 New version ready · <b>Update</b>
+        </button>
+      ) : null}
       {packageSheet ? (
         <div className="fc-package-sheet" role="dialog" aria-label={`${packageSheet.id} package`} data-hpd-smoke="fc-package-sheet">
           <header>
