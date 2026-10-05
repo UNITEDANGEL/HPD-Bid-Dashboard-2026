@@ -71,3 +71,24 @@ new Function(`with(this) { ${marker} }`).call(context);
   assert.ok(!page.includes('else if (shouldAutoGeneratePackage) nextOutcome = "work_completed"'));
   console.log('PASS: signed outcome package flow; approval does not archive');
 })().catch(error => { console.error(error); process.exitCode=1; });
+
+// No access: the 2nd try waits 3 calendar days (72 hours) after the 1st, then readies the affidavit.
+{
+  const { secondTryState } = mod.exports;
+  const first = fieldOutcomePatch({}, 'NO_ACCESS_1_WAITING_72H', '', '2026-10-05T14:00:00Z');
+  assert.equal(first.status, 'No Access 1st - Waiting 72h');
+  const job = { ...first };
+  const waiting = secondTryState(job, new Date('2026-10-07T20:00:00Z'));
+  assert.equal(waiting.dueDay, '2026-10-08');
+  assert.equal(waiting.due, false);
+  assert.equal(waiting.dueLabel, 'Thu 10/08');
+  assert.throws(() => fieldOutcomePatch(job, 'NO_ACCESS_1_WAITING_72H', '', '2026-10-07T20:00:00Z'), /2nd no-access try counts from Thu 10\/08/);
+  assert.equal(secondTryState(job, new Date('2026-10-08T13:00:00Z')).due, true);
+  const second = fieldOutcomePatch(job, 'NO_ACCESS_1_WAITING_72H', '', '2026-10-08T13:00:00Z');
+  assert.equal(second.NoAccessSecondAttemptAt, '2026-10-08T13:00:00Z');
+  assert.equal(second.NoAccessFirstAttemptAt, undefined, 'the 1st try is kept');
+  assert.equal(second.status, 'No Access 2nd - Ready for affidavit');
+  assert.equal(secondTryState({ ...job, ...second }), null, 'no longer waiting');
+  assert.equal(secondTryState({ FieldOutcome: 'WORK_COMPLETED', NoAccessFirstAttemptAt: '2026-10-05T14:00:00Z' }), null);
+}
+console.log('no-access 2nd try rules ok');
