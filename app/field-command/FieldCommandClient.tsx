@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
 import BuildingPhoto, { BuildingHero } from "./BuildingPhoto";
@@ -730,8 +730,43 @@ export default function FieldCommandClient() {
   }, [autoPackage]);
   function openAutoPackage(entry: { id: string; outcome: string }) {
     setAutoPackage(null);
-    window.location.assign(paperworkGenerateHref(entry.id, entry.outcome));
+    openPackageSheet(entry.id, paperworkGenerateHref(entry.id, entry.outcome));
   }
+  // The package (review, sign, notary, email) opens in a sheet over the map, so the job card and the
+  // map stay where they are; "Back to job" or an approved package closes it.
+  const [packageSheet, setPackageSheet] = useState<{ id: string; href: string } | null>(null);
+  function openPackageSheet(id: string, href: string) {
+    const url = `${href}${href.includes("?") ? "&" : "?"}embed=1`;
+    setPackageSheet({ id, href: url });
+  }
+  function packageLinkClick(id: string, href: string) {
+    return (event: ReactMouseEvent<HTMLAnchorElement>) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+      event.preventDefault();
+      openPackageSheet(id, href);
+    };
+  }
+  function closePackageSheet() {
+    const sheet = packageSheet;
+    setPackageSheet(null);
+    if (!sheet) return;
+    // The package page saves its changes (approved, emailed) on this phone: show them on the card.
+    try {
+      const saved = readSharedWorkflowOverrides()[sheet.id];
+      if (saved) mergeWorkflowPatchIntoScreen(sheet.id, saved);
+    } catch {}
+  }
+  const closePackageSheetRef = useRef(closePackageSheet);
+  closePackageSheetRef.current = closePackageSheet;
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin || !event.data || event.data.type !== "hpd-package-approved") return;
+      closePackageSheetRef.current();
+      setMediaMessage(event.data.emailed ? `${event.data.job || "Job"} package approved and emailed ✓` : `${event.data.job || "Job"} package approved ✓`);
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
   const [mediaChoice, setMediaChoice] = useState<FieldMediaKind | null>(null);
   const pendingMediaKindRef = useRef<FieldMediaKind>("before");
 
@@ -955,7 +990,7 @@ export default function FieldCommandClient() {
   // Automatic update: an iPhone app left in the background keeps running the old version, so
   // whenever you come back to it (and every 10 minutes) check /version.json; if a newer version
   // was deployed, reload -- only when no job card is open and nothing is saving.
-  safeToReloadRef.current = !selectedJob && !mediaBusy && !autoPackage;
+  safeToReloadRef.current = !selectedJob && !mediaBusy && !autoPackage && !packageSheet;
   useEffect(() => {
     let stopped = false;
     async function check() {
@@ -2147,7 +2182,7 @@ export default function FieldCommandClient() {
                           <b>{jobId(job)}</b> <span>{jobAddress(job)}</span>
                           <small>{FIELD_OUTCOMES[outcome]}{isTestJob(jobId(job)) ? " · TEST" : ""}</small>
                         </button>
-                        <a className="fc-close-out-go" data-hpd-smoke="fc-close-out-package" href={paperworkGenerateHref(jobId(job), outcome)}>Package →</a>
+                        <a className="fc-close-out-go" data-hpd-smoke="fc-close-out-package" href={paperworkGenerateHref(jobId(job), outcome)} onClick={packageLinkClick(jobId(job), paperworkGenerateHref(jobId(job), outcome))}>Package →</a>
                       </li>
                     );
                   })}
@@ -2404,7 +2439,7 @@ export default function FieldCommandClient() {
                       <div>
                         <b>Package</b>
                         <small>{steps[5].done ? "Paperwork approved" : "Affidavit + invoice, signed and emailed"}</small>
-                        {current === 5 ? <a href={paperworkHref} className="fc-next-action jc-glow" data-hpd-smoke="jc-step-package">Make the package<span aria-hidden="true">&rarr;</span></a> : null}
+                        {current === 5 ? <a href={paperworkHref} onClick={packageLinkClick(id, paperworkHref)} className="fc-next-action jc-glow" data-hpd-smoke="jc-step-package">Make the package<span aria-hidden="true">&rarr;</span></a> : null}
                       </div>
                     </li>
                     {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
@@ -2425,7 +2460,7 @@ export default function FieldCommandClient() {
                     <div className={`jc-status-line ${approved ? "is-approved" : "is-closeout"}`} data-hpd-smoke="jc-status-line">
                       <strong>{icon} {label}</strong>
                       <span>{approved ? "Package approved and sent" : outcome === "APPOINTMENT_REQUESTED" ? "Waiting on the appointment" : "Outcome saved · ready to close out"}</span>
-                      {!approved && outcome !== "APPOINTMENT_REQUESTED" && !(autoPackage && autoPackage.id === id) ? <a className="jc-status-go" data-hpd-smoke="jc-status-package" href={paperworkGenerateHref(id, outcome)}>Review package →</a> : null}
+                      {!approved && outcome !== "APPOINTMENT_REQUESTED" && !(autoPackage && autoPackage.id === id) ? <a className="jc-status-go" data-hpd-smoke="jc-status-package" href={paperworkGenerateHref(id, outcome)} onClick={packageLinkClick(id, paperworkGenerateHref(id, outcome))}>Review package →</a> : null}
                     </div>
                   );
                 })()}
@@ -2483,7 +2518,7 @@ export default function FieldCommandClient() {
                       <button type="button" data-hpd-smoke="jc-archive" onClick={() => void archiveJob(selectedJob)}>Everything is correct: Archive</button>
                     </>
                   ) : (
-                    <a href={paperworkHref} data-hpd-smoke="jc-done-paperwork">Paperwork not approved yet: finish the package →</a>
+                    <a href={paperworkHref} onClick={packageLinkClick(id, paperworkHref)} data-hpd-smoke="jc-done-paperwork">Paperwork not approved yet: finish the package →</a>
                   )}
                 </section>
               ) : null}
@@ -2544,7 +2579,7 @@ export default function FieldCommandClient() {
                 </div>
                 <BuildingPhoto key={id} id={id} address={jobAddress(selectedJob)} borough={String(jobBorough(selectedJob))} point={jobLatLng(selectedJob)} />
                 <div className="jc-docs">
-                  <a className="jc-doc jc-doc-primary" href={paperworkHref}>
+                  <a className="jc-doc jc-doc-primary" href={paperworkHref} onClick={packageLinkClick(id, paperworkHref)}>
                     <DocumentsIcon />
                     <span><b>Affidavit + Invoice</b><small>{packageStatusText(selectedJob)}</small></span>
                     <i aria-hidden="true">&rarr;</i>
@@ -2624,6 +2659,15 @@ export default function FieldCommandClient() {
         })() : null}
       </div>
 
+      {packageSheet ? (
+        <div className="fc-package-sheet" role="dialog" aria-label={`${packageSheet.id} package`} data-hpd-smoke="fc-package-sheet">
+          <header>
+            <button type="button" data-hpd-smoke="fc-package-sheet-back" onClick={closePackageSheet}>← Back to job</button>
+            <strong>{packageSheet.id} package</strong>
+          </header>
+          <iframe src={packageSheet.href} title={`${packageSheet.id} package`} allow="web-share; clipboard-write; camera" />
+        </div>
+      ) : null}
       <PlanMyDayDrawer records={jobs} openRequest={plannerRequest} />
     </main>
   );
