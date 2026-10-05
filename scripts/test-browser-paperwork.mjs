@@ -158,6 +158,7 @@ try {
     const uploads = [];
     const emails = [];
     let filing = null;
+    let visitRecord = "";
     await page.route("**/api/drive/**", async (route) => {
       const url = route.request().url();
       if (url.includes("/session")) return route.fulfill({ json: { configured: true, connected: true, canEmail: true, email: "test@example.com" } });
@@ -166,7 +167,9 @@ try {
         return route.fulfill({ json: { folderId: "TEST-FOLDER", link: "https://drive.example/TEST-FOLDER" } });
       }
       if (url.includes("/package-file")) {
-        uploads.push(decodeURIComponent(route.request().headers()["x-hpd-name"] || ""));
+        const name = decodeURIComponent(route.request().headers()["x-hpd-name"] || "");
+        uploads.push(name);
+        if (name.startsWith("Visit record")) visitRecord = (route.request().postDataBuffer() || Buffer.alloc(0)).toString("utf8");
         return route.fulfill({ json: { ok: true } });
       }
       if (url.includes("/email-package")) {
@@ -217,6 +220,10 @@ try {
     assert.match(filing.name, new RegExp(`^20\\d\\d-\\d\\d-\\d\\d - ${job} - .+ - Work Completed$`), filing.name);
     assert.ok(uploads.includes(`SIGNED - ${job} - Work Completed.pdf`), `${job}: signed PDF saved to Drive (got ${uploads.join(", ")})`);
     assert.ok(uploads.includes(`NOT SIGNED - print copy - ${job} - Work Completed.pdf`), `${job}: unsigned print copy saved to Drive`);
+    // The internal visit record (times + GPS) is filed in Drive and never emailed.
+    assert.ok(uploads.includes(`Visit record - ${job}.txt`), `${job}: visit record saved to Drive (got ${uploads.join(", ")})`);
+    assert.ok(visitRecord.includes("VISIT RECORD (internal proof") && visitRecord.includes(`Job: ${job}`), `${job}: visit record content: ${visitRecord.slice(0, 200)}`);
+    assert.ok(emails.every((e) => !e.body.includes("Visit record")), `${job}: the visit record must not be emailed`);
     // Only the SIGNED email goes out; the unsigned copy is Drive only.
     assert.ok(emails.every((e) => e.subject.startsWith("SIGNED - ")), `${job}: only SIGNED emails, got ${emails.map((e) => e.subject).join(" | ")}`);
     const signedEmail = firstEmail;
