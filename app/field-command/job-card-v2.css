@@ -860,3 +860,14 @@
 .jc-media-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .jc-media-dates label { display: grid; gap: 4px; font: 700 13px system-ui, sans-serif; color: #cbd5e1; }
 .jc-media-dates input { min-height: 42px; padding: 6px 8px; border-radius: 10px; border: 1px solid rgba(148, 163, 184, 0.4); background: rgba(15, 23, 42, 0.7); color: #f8fafc; font: 700 15px system-ui, sans-serif; color-scheme: dark; }
+
+/* Job info: facts, appointment, visits, history and dates together */
+.jc-info { display: grid; gap: 10px; margin: 0 0 12px; padding: 12px; border-radius: 16px; background: rgba(15, 23, 42, 0.55); border: 1px solid rgba(148, 163, 184, 0.2); }
+.jc-info .jc-facts, .jc-info .jc-visit, .jc-info .jc-dates, .jc-info .fc-visit-history { margin: 0; }
+.jc-info .fc-call-btn { margin-left: 8px; padding: 4px 12px; border-radius: 999px; background: #10b981; color: #052e1f; font-weight: 800; text-decoration: none; }
+.jc-media-docs { margin: 0 0 12px; }
+
+/* More: less common actions in a tidy grid, never overlapping */
+#fc-job-card .jc-footer { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; align-items: stretch; padding-top: 28px; position: relative; }
+#fc-job-card .jc-footer::before { content: "More"; position: absolute; top: 4px; left: 2px; color: #94a3b8; font: 800 13px system-ui, sans-serif; letter-spacing: 0.04em; text-transform: uppercase; }
+#fc-job-card .jc-footer > button { min-width: 0; min-height: 46px; margin: 0; padding: 8px 6px; white-space: normal; line-height: 1.15; font-size: 14px; text-align: center; justify-content: center; overflow-wrap: anywhere; }

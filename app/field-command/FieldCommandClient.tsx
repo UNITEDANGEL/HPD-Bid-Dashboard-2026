@@ -718,6 +718,8 @@ export default function FieldCommandClient() {
   const videoLibraryInputRef = useRef<HTMLInputElement | null>(null);
   const mediaChoiceRef = useRef<HTMLDivElement | null>(null);
   const [mediaChoiceInStep, setMediaChoiceInStep] = useState(false);
+  // The hand-entry outcome form only opens from More > Outcome (the steps record outcomes).
+  const [outcomePanelOpen, setOutcomePanelOpen] = useState(false);
   // After a job finishes, its package opens for review by itself after a short countdown.
   const [autoPackage, setAutoPackage] = useState<{ id: string; outcome: string; seconds: number } | null>(null);
   useEffect(() => {
@@ -1655,6 +1657,7 @@ export default function FieldCommandClient() {
   }
 
   function openOutcomePanel() {
+    setOutcomePanelOpen(true);
     setSheetExpanded(true);
     requestAnimationFrame(() => outcomePanelRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
   }
@@ -1805,6 +1808,8 @@ export default function FieldCommandClient() {
       if (kind === "after" && saved.length) {
         const current = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
         if (!["WORK_COMPLETED", "PARTIAL_WORK"].includes(current)) setJobOutcome(selectedJob, "WORK_COMPLETED", "Finished: after photos/videos taken");
+        // Already finished and you added more after shots: offer the package again.
+        else if (!value(selectedJob, ["PackageApprovedAt"])) setAutoPackage({ id, outcome: current, seconds: 6 });
         setMediaChoice(null);
       }
     } catch (error) {
@@ -2468,24 +2473,6 @@ export default function FieldCommandClient() {
                 ) : null}
               </div>
 
-              <div className="jc-facts">
-                <div className="jc-fact">
-                  <small>Maturity</small>
-                  <strong>{maturityDate(selectedJob) || "Not available"}</strong>
-                  <span className="jc-priority" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>
-                </div>
-                <div className="jc-fact">
-                  <small>COA Amount</small>
-                  <strong>{jobAwardAmount(selectedJob) > 0 ? `$${jobAwardAmount(selectedJob).toLocaleString()}` : "Not listed"}</strong>
-                </div>
-                <div className="jc-fact jc-fact-wide">
-                  <small>Tenant</small>
-                  <strong>{tenant.name || (tenant.phone ? "Name not listed" : "Not listed")}</strong>
-                  {tenant.phone ? <span>{tenant.phone}</span> : null}
-                </div>
-              </div>
-              {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}
-
               {jobQueue(selectedJob) === "completed" ? (
                 <section className="jc-done" data-hpd-smoke="jc-completed" aria-label="Job completed">
                   <strong>✓ Completed. No need to come back.</strong>
@@ -2500,6 +2487,27 @@ export default function FieldCommandClient() {
                 </section>
               ) : null}
 
+              {/* Job info: everything about the job in one place, one after the other. */}
+              <div className="jc-info" data-hpd-smoke="jc-info" role="group" aria-label="Job info">
+                <div className="jc-section-head"><strong>Job info</strong></div>
+                <div className="jc-facts">
+                  <div className="jc-fact">
+                    <small>Maturity</small>
+                    <strong>{maturityDate(selectedJob) || "Not available"}</strong>
+                    <span className="jc-priority" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>
+                  </div>
+                  <div className="jc-fact">
+                    <small>COA Amount</small>
+                    <strong>{jobAwardAmount(selectedJob) > 0 ? `${"$"}${jobAwardAmount(selectedJob).toLocaleString()}` : "Not listed"}</strong>
+                  </div>
+                  <div className="jc-fact jc-fact-wide">
+                    <small>Tenant</small>
+                    <strong>{tenant.name || (tenant.phone ? "Name not listed" : "Not listed")}</strong>
+                    {tenant.phone ? <span>{tenant.phone} <a className="fc-call-btn" href={`tel:${tenant.phone}`}>Call</a></span> : <span>{tenant.summary}</span>}
+                  </div>
+                </div>
+                {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}
+              {selectedJob.Appointment ? <button type="button" className="fc-appointment-summary" onClick={openAppointment}>{(selectedJob.Appointment as Appointment).date} · {(selectedJob.Appointment as Appointment).start}-{(selectedJob.Appointment as Appointment).end} · {(selectedJob.Appointment as Appointment).state}</button> : null}
               <div className="fc-visit-summary jc-visit" style={{borderLeftColor:visitState(selectedJob).color}}>
                 <strong>{visitState(selectedJob).label} · {visitState(selectedJob).count} recorded visits</strong>
                 {visitState(selectedJob).lastAt && <span>Last visit: {/^\d{4}-\d{2}-\d{2}$/.test(visitState(selectedJob).lastAt) ? visitState(selectedJob).lastAt : formatSavedTime(visitState(selectedJob).lastAt)}</span>}
@@ -2514,13 +2522,24 @@ export default function FieldCommandClient() {
                   catch { setOutcomeMessage("Return approval could not be saved. Try again."); }
                 }}>Approve return visit</button>}
               </div>
+                {Array.isArray(selectedJob.FieldVisitHistory) && selectedJob.FieldVisitHistory.length > 0 ? <details className="fc-visit-history"><summary>Visit history ({selectedJob.FieldVisitHistory.length})</summary><ol>{selectedJob.FieldVisitHistory.map((entry: { recordedAt?: string; outcome?: string; note?: string }, index: number) => <li key={index}><time>{entry.recordedAt ? formatSavedTime(entry.recordedAt) : "Date not recorded"}</time><strong>{FIELD_OUTCOMES[entry.outcome || ""] || "Visit note"}</strong><p>{entry.note}</p></li>)}</ol></details> : null}
+              <details className="jc-dates">
+                <summary>Job dates</summary>
+                <dl>
+                  <div><dt>Award date</dt><dd>{value(selectedJob, ["AwardDate", "awardDate"]) || "Not available"}</dd></div>
+                  <div><dt>Maturity date{!["MaturityDate", "maturityDate", "DueDate", "dueDate"].some(key => selectedJob[key] !== undefined && selectedJob[key] !== null) ? " (contract finish)" : ""}</dt><dd>{maturityDate(selectedJob) || "Not available"}</dd></div>
+                  <div><dt>Contract start</dt><dd>{jobDate(selectedJob, "start") || "Not available"}</dd></div>
+                  <div><dt>Contract finish</dt><dd>{jobDate(selectedJob, "finish") || "Not available"}</dd></div>
+                  <div><dt>Actual work start</dt><dd>{value(selectedJob, ["ActualWorkStartDate", "actualWorkStartDate"]) || "Not recorded"}</dd></div>
+                  <div><dt>Actual work finish</dt><dd>{value(selectedJob, ["ActualWorkCompletionDate", "actualWorkCompletionDate"]) || "Not recorded"}</dd></div>
+                </dl>
+              </details>
+              </div>
 
-
-
-              <section className="jc-media-docs" aria-label="Media and documents">
+              <div className="jc-media-docs" role="group" aria-label="Documents">
                 <div className="jc-section-head">
-                  <strong>Media &amp; Documents</strong>
-                  <span>{counts.total} saved</span>
+                  <strong>Documents</strong>
+                  <span>{counts.total} photo/video saved</span>
                 </div>
                 <BuildingPhoto key={id} id={id} address={jobAddress(selectedJob)} borough={String(jobBorough(selectedJob))} point={jobLatLng(selectedJob)} />
                 <div className="jc-docs">
@@ -2553,10 +2572,11 @@ export default function FieldCommandClient() {
                 <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
                 <input ref={videoCameraInputRef} type="file" accept="video/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
                 <input ref={videoLibraryInputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
-              </section>
+              </div>
 
-              <div className="fc-card-footer jc-footer">
-              <button type="button" className="fc-outcome-link" onClick={openOutcomePanel}>Outcome</button>
+              {/* More: the less common actions, at the very bottom. */}
+              <div className="fc-card-footer jc-footer" data-hpd-smoke="jc-more">
+              <button type="button" className={`fc-outcome-link ${outcomePanelOpen ? "is-on" : ""}`} aria-expanded={outcomePanelOpen} onClick={() => (outcomePanelOpen ? setOutcomePanelOpen(false) : openOutcomePanel())}>Outcome</button>
               <button type="button" className="fc-outcome-link" onClick={openAppointment}>Appointment</button>
               <button type="button" className="fc-outcome-link" data-hpd-smoke="jc-start-over" onClick={() => beginClearWorkflow(selectedJob)}>Start over</button>
               {jobId(selectedJob) !== TEST_JOB_ID ? (
@@ -2567,22 +2587,10 @@ export default function FieldCommandClient() {
               ) : null}
               <button type="button" className="fc-job-details-toggle" aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}>{sheetExpanded ? "Less" : "Details"}<span aria-hidden="true">{sheetExpanded ? "⌄" : "⌃"}</span></button>
               </div>
-              <details className="jc-dates">
-                <summary>Job dates</summary>
-                <dl>
-                  <div><dt>Award date</dt><dd>{value(selectedJob, ["AwardDate", "awardDate"]) || "Not available"}</dd></div>
-                  <div><dt>Maturity date{!["MaturityDate", "maturityDate", "DueDate", "dueDate"].some(key => selectedJob[key] !== undefined && selectedJob[key] !== null) ? " (contract finish)" : ""}</dt><dd>{maturityDate(selectedJob) || "Not available"}</dd></div>
-                  <div><dt>Contract start</dt><dd>{jobDate(selectedJob, "start") || "Not available"}</dd></div>
-                  <div><dt>Contract finish</dt><dd>{jobDate(selectedJob, "finish") || "Not available"}</dd></div>
-                  <div><dt>Actual work start</dt><dd>{value(selectedJob, ["ActualWorkStartDate", "actualWorkStartDate"]) || "Not recorded"}</dd></div>
-                  <div><dt>Actual work finish</dt><dd>{value(selectedJob, ["ActualWorkCompletionDate", "actualWorkCompletionDate"]) || "Not recorded"}</dd></div>
-                </dl>
-              </details>
-              {selectedJob.Appointment ? <button type="button" className="fc-appointment-summary" onClick={openAppointment}>{(selectedJob.Appointment as Appointment).date} · {(selectedJob.Appointment as Appointment).start}-{(selectedJob.Appointment as Appointment).end} · {(selectedJob.Appointment as Appointment).state}</button> : null}
               <div ref={appointmentRef} hidden={!appointmentOpen || !sheetExpanded}>
                 {appointmentOpen && <AppointmentEditor key={id} job={selectedJob} jobs={jobs.map(row => ({ ...row, id: jobId(row) }))} id={id} address={jobAddress(selectedJob)} contact={tenant.name} phone={tenant.phone} note={draft.note} save={a => saveAppointment(selectedJob, a)} />}
               </div>
-              <section ref={outcomePanelRef} className="fc-outcome-panel" aria-label="Visit outcome">
+              {outcomePanelOpen ? <section ref={outcomePanelRef} className="fc-outcome-panel" aria-label="Visit outcome">
                 <label>Outcome<select value={draft.outcome} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, outcome: event.target.value } }))}><option value="">Select outcome</option>{Object.entries(FIELD_OUTCOMES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
                 <label>Visit note<textarea value={draft.note} rows={3} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
                 {draft.outcome === "APPOINTMENT_REQUESTED" ? <button type="button" className="fc-next-action" onClick={openAppointment}>Set appointment details</button> : <button type="button" className="fc-next-action" onClick={() => saveVisitOutcome(selectedJob, Boolean(draft.outcome))} disabled={Boolean(mediaBusy) || (!draft.outcome && !draft.note.trim())}>{draft.outcome ? "Save outcome & generate package" : "Save note"}</button>}
@@ -2592,18 +2600,7 @@ export default function FieldCommandClient() {
                   </button>
                 ) : null}
                 <p role="status">{outcomeMessage || "Device storage only. Appointment requests are not confirmed bookings."}</p>
-                {Array.isArray(selectedJob.FieldVisitHistory) && selectedJob.FieldVisitHistory.length > 0 ? <details className="fc-visit-history"><summary>Visit history ({selectedJob.FieldVisitHistory.length})</summary><ol>{selectedJob.FieldVisitHistory.map((entry: { recordedAt?: string; outcome?: string; note?: string }, index: number) => <li key={index}><time>{entry.recordedAt ? formatSavedTime(entry.recordedAt) : "Date not recorded"}</time><strong>{FIELD_OUTCOMES[entry.outcome || ""] || "Visit note"}</strong><p>{entry.note}</p></li>)}</ol></details> : null}
-              </section>
-              <section className="fc-flow-card fc-tenant-card">
-                <div className="fc-flow-card-main">
-                  <span className="fc-flow-icon tenant">T</span>
-                  <span>
-                    <b>{tenant.label}</b>
-                    <small>{tenant.summary}</small>
-                  </span>
-                  {tenant.phone ? <a className="fc-call-btn" href={`tel:${tenant.phone}`}>Call</a> : null}
-                </div>
-              </section>
+              </section> : null}
               {clearJobId === id ? (
                 <section className="fc-clear-confirm" aria-label="Confirm start over">
                   <p className="fc-clear-warn">Start over clears the outcome, every step, the package status and ALL photos/videos of this job on this phone. Drive and sent emails are not touched. Type CLEAR to confirm.</p>
