@@ -103,3 +103,4 @@ Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 ## How we work
 - One item at a time: fix → test (including the real job that had the problem) → push live → screenshot to the owner
 - Nothing goes out with a time on it, a blank-form description, or overlapping text
+- [x] **Building picture first on the job card** (owner: "so we know where we're going, what the location looks like"): the card opens with the building picture at the very top, then job number and address, then Waze/Google, then the description and steps; the close × sits on top of the picture.
