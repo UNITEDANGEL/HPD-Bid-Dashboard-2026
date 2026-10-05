@@ -2267,6 +2267,8 @@ export default function FieldCommandClient() {
                 <span aria-hidden="true">&times;</span>
               </button>
               <header className="jc-hero">
+                {/* First thing on the card: what the building looks like, then where it is and how to get there. */}
+                <BuildingHero key={id} id={id} address={jobAddress(selectedJob)} point={jobLatLng(selectedJob)} />
                 <div className="jc-hero-top">
                   <strong className="jc-omo">{id}</strong>
                   <span className="jc-status" style={{ "--jc-status": jobStatusMeta(selectedJob).color } as CSSProperties}>
@@ -2275,7 +2277,6 @@ export default function FieldCommandClient() {
                 </div>
                 <span className="jc-borough">{BOROUGHS.find((item) => item.key === jobBorough(selectedJob))?.label || "NYC"}</span>
                 <p className="jc-address">{jobAddress(selectedJob)}</p>
-                <BuildingHero key={id} id={id} address={jobAddress(selectedJob)} point={jobLatLng(selectedJob)} />
                 <div className="jc-nav">
                   <a className="jc-btn jc-btn-waze" href={wazeHref(selectedJob)} onClick={()=>recordTravel(selectedJob, "Waze")} target="_blank" rel="noreferrer">Waze</a>
                   <a className="jc-btn jc-btn-google" href={directionsHref(selectedJob)} onClick={()=>recordTravel(selectedJob, "Google")} target="_blank" rel="noreferrer">Google</a>
