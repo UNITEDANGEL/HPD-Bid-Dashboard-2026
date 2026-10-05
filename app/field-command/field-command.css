@@ -2313,3 +2313,34 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-second-try .fc-data-check-list small { color: #c7d2fe; }
 /* Photos only on this phone: one tap turns on the Drive backup */
 .fc-backup-pill > button { background: #92400e; color: #fffbeb; }
+
+/* Map pins: a teardrop in the status color with a white symbol, its tip on the building.
+   The chip says how late open work is, an appointment's time, or "2nd try". */
+.fc-pin { position: relative; width: 36px; height: 42px; transform-origin: 50% 95%; transition: transform 0.18s ease; }
+.fc-pin-head { position: absolute; left: 3px; top: 3px; box-sizing: border-box; width: 30px; height: 30px; display: grid; place-items: center; background: var(--pin); border: 2.5px solid #fff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5); }
+.fc-pin-head svg { width: 16px; height: 16px; transform: rotate(45deg); }
+.fc-pin-chip { position: absolute; left: 22px; top: -9px; padding: 1px 6px; border-radius: 999px; background: #fff; color: #1f2937; border: 1.5px solid var(--pin); font: 800 11px/15px system-ui, sans-serif; white-space: nowrap; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35); pointer-events: none; }
+.fc-pin.is-overdue .fc-pin-chip { color: #92400e; border-color: #f59e0b; }
+.fc-pin.is-late .fc-pin-chip { color: #fff; background: #dc2626; border-color: #fff; }
+.fc-pin.is-upcoming .fc-pin-chip { color: #334155; border-color: #94a3b8; }
+.fc-pin-visits { position: absolute; left: -5px; top: -5px; min-width: 16px; height: 16px; padding: 0 3px; box-sizing: border-box; border-radius: 999px; background: #111827; color: #fff; border: 1.5px solid #fff; font: 800 10px/13px system-ui, sans-serif; text-align: center; pointer-events: none; }
+.fc-pin.is-done .fc-pin-head { opacity: 0.88; }
+/* Appointments: today = amber ring; within 2 hours (or under way) = pulsing, time-to-go chip. */
+.fc-pin.is-appointment .fc-pin-chip { background: #f59e0b; color: #1c1917; border-color: #fff; }
+.fc-pin.is-today .fc-pin-head { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.55), 0 3px 8px rgba(0, 0, 0, 0.5); }
+.fc-pin.is-soon { transform: scale(1.25); z-index: 5; }
+.fc-pin.is-soon .fc-pin-head { animation: fc-pin-soon 1.2s ease-in-out infinite; }
+.fc-pin.is-due .fc-pin-head { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.6), 0 3px 8px rgba(0, 0, 0, 0.5); }
+.fc-pin.is-due .fc-pin-chip { background: #f59e0b; color: #1c1917; border-color: #fff; }
+@keyframes fc-pin-soon { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.85), 0 3px 8px rgba(0, 0, 0, 0.5); } 50% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0), 0 3px 8px rgba(0, 0, 0, 0.5); } }
+.fc-label-marker:has(.fc-pin.is-soon) { z-index: 1900 !important; }
+/* Bigger as you zoom in; the one nearest the middle of the screen glows. */
+.fc-label-marker.is-z16 .fc-pin { transform: scale(1.15); }
+.fc-label-marker.is-z18 .fc-pin { transform: scale(1.3); }
+.fc-label-marker.is-focus .fc-pin { transform: scale(1.45); }
+.fc-label-marker.is-focus .fc-pin-head { box-shadow: 0 0 0 3px #fff, 0 0 0 8px color-mix(in srgb, var(--pin) 40%, transparent), 0 0 22px var(--pin); }
+@media (prefers-reduced-motion: reduce) { .fc-pin.is-soon .fc-pin-head { animation: none; } }
+/* Next appointment on the map: amber, pulsing when it's within 2 hours. */
+.fc-appointment-pill > button { background: #b45309; color: #fffbeb; }
+.fc-appointment-pill.is-soon > button { background: #f59e0b; color: #1c1917; animation: fc-appt-pill 1.4s ease-in-out infinite; }
+@keyframes fc-appt-pill { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); } 50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); } }

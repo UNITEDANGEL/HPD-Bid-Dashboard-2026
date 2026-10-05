@@ -26,4 +26,23 @@ assert.match(ics, /TRIGGER:-PT30M/);
 assert.match(ics, /line1\\nline2\\, semicolon\\;/);
 assert.doesNotMatch(appointmentCalendar('TEST', 'Address', { ...a, state: 'confirmed', reminder: 0 }), /VALARM/);
 assert.equal(appointmentPatch(job, { ...a, state: 'cancelled' }).WorkflowStatus, 'APPOINTMENT_CANCELLED');
+{
+  const { appointmentLabel, appointmentTiming, activeAppointment } = mod.exports;
+  const visit = { ...a, date: '2026-10-06', start: '14:00', end: '15:00' };
+  assert.equal(appointmentLabel(visit), 'Tue 10/06 · 2–3 PM');
+  assert.equal(appointmentLabel({ ...visit, start: '11:30', end: '12:30' }), 'Tue 10/06 · 11:30 AM–12:30 PM');
+  // 1:00 PM New York (EDT = UTC-4) on the day: starts in 60 minutes -> soon.
+  let t = appointmentTiming(visit, new Date('2026-10-06T17:00:00Z'));
+  assert.deepEqual([t.startsIn, t.today, t.soon, t.past], [60, true, true, false]);
+  t = appointmentTiming(visit, new Date('2026-10-06T13:00:00Z')); // 9 AM: today, not soon yet
+  assert.deepEqual([t.startsIn, t.today, t.soon], [300, true, false]);
+  t = appointmentTiming(visit, new Date('2026-10-06T18:30:00Z')); // 2:30 PM: under way -> soon
+  assert.equal(t.soon, true);
+  t = appointmentTiming(visit, new Date('2026-10-06T19:30:00Z')); // 3:30 PM: over
+  assert.deepEqual([t.past, t.soon], [true, false]);
+  t = appointmentTiming(visit, new Date('2026-10-05T18:00:00Z')); // the day before
+  assert.deepEqual([t.days, t.today, t.soon], [1, false, false]);
+  assert.equal(activeAppointment({ Appointment: visit }), visit);
+  assert.equal(activeAppointment({ Appointment: { ...visit, state: 'cancelled' } }), null);
+}
 console.log('PASS: appointment validation, NY dates, overlap boundaries, history preservation, status separation and calendar reminders');

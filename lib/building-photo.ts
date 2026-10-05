@@ -7,9 +7,13 @@ export function buildingPhoto(rows: FieldMedia[]) {
     .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt))[0] || null;
 }
 
-export function streetViewLink(point: { lat: number; lng: number } | null) {
+// 360° Street View in Google Maps (the app on an iPhone). With the panorama and heading from the
+// picture lookup it opens on that panorama, facing the building.
+export function streetViewLink(point: { lat: number; lng: number } | null, pano = "", heading?: number) {
   if (!point || !Number.isFinite(point.lat) || !Number.isFinite(point.lng) || Math.abs(point.lat) > 90 || Math.abs(point.lng) > 180 || (point.lat === 0 && point.lng === 0)) return null;
   const params = new URLSearchParams({ api: "1", map_action: "pano", viewpoint: `${point.lat},${point.lng}` });
+  if (pano) params.set("pano", pano);
+  if (heading !== undefined && Number.isFinite(heading)) params.set("heading", String(Math.round(heading)));
   return `https://www.google.com/maps/@?${params}`;
 }
 
@@ -27,7 +31,7 @@ export function headingTo(from: Point, to: Point) {
   return Math.round(((Math.atan2(y, x) / rad) + 360) % 360);
 }
 
-export type StreetViewPicture = { url: string; date: string };
+export type StreetViewPicture = { url: string; date: string; pano: string; heading: number };
 
 // Asks Google for the nearest outdoor panorama (the metadata call is free), then builds the
 // picture address aimed at the building. Null when there is no key or no Street View there.
@@ -49,5 +53,5 @@ async function lookupStreetView(point: Point, key: string): Promise<StreetViewPi
   if (!meta || meta.status !== "OK" || !meta.pano_id) return null;
   const heading = meta.location ? headingTo(meta.location, point) : 0;
   const url = `https://maps.googleapis.com/maps/api/streetview?${new URLSearchParams({ size: "640x400", pano: meta.pano_id, heading: String(heading), fov: "75", pitch: "8", key })}`;
-  return { url, date: meta.date || "" };
+  return { url, date: meta.date || "", pano: meta.pano_id, heading };
 }

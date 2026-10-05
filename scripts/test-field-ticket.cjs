@@ -2,38 +2,36 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const ts = require('typescript');
+// The building picture at the top of the job card (BuildingHero): your own photo wins over
+// Google's Street View picture; a broken image falls back; the 360° link opens Street View.
 const file = 'app/field-command/BuildingPhoto.tsx';
 const source = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 let expression;
 function visit(node) {
-  if (ts.isJsxExpression(node) && node.expression && node.expression.getText(source).startsWith('photo ?') && node.getText(source).includes('fc-building-image')) expression = node.expression;
+  if (ts.isJsxExpression(node) && node.expression && node.expression.getText(source).startsWith('src ? <img')) expression = node.expression;
   ts.forEachChild(node, visit);
 }
 visit(source);
-assert.ok(expression, 'The real building photo branch must be tested');
+assert.ok(expression, 'The real building picture branch must be tested');
 const compiled = ts.transpileModule(`function preview() { return (${expression.getText(source)}); }`, {
   compilerOptions: { jsx: ts.JsxEmit.ReactJSX, module: ts.ModuleKind.CommonJS },
 }).outputText;
-let cleared, error, enlarged;
-const context = { require, exports: {}, photo: {dataUrl:'data:image/png;base64,test'}, googlePicture: null, setGooglePicture: () => {}, address:'Test address', expanded:false,
-  setPhoto: value => { cleared = value; }, setError: value => { error = value; }, setExpanded: value => { enlarged = value; } };
+let ownCleared, googleCleared;
+const context = { require, exports: {}, address: 'Test address', src: 'data:image/png;base64,test', own: { dataUrl: 'data:image/png;base64,test' },
+  setOwn: (v) => { ownCleared = v; }, setGoogle: (v) => { googleCleared = v; } };
 vm.createContext(context);
 vm.runInContext(compiled, context);
-const photo = context.preview();
-assert.equal(photo.type, 'button');
-assert.equal(photo.props.children.props.src, context.photo.dataUrl);
-assert.equal(photo.props.children.props.alt, 'Building exterior at Test address');
-photo.props.onClick();
-assert.equal(enlarged, true);
-photo.props.children.props.onError();
-assert.equal(cleared, null);
-assert.ok(error.includes('saved file is retained'));
-context.photo = null;
-assert.equal(context.preview().props.children, 'No building photo');
-// No photo of your own, but Google has Street View there: its picture shows automatically.
-context.googlePicture = { url: 'https://maps.googleapis.com/maps/api/streetview?pano=P', date: '2025-06' };
-const google = context.preview();
-assert.equal(google.props['data-hpd-smoke'], 'building-street-view');
-assert.equal(google.props.children[0].props.src, context.googlePicture.url);
-assert.equal(google.props.children[0].props.alt, 'Google Street View of Test address');
-console.log('PASS: actual building photo rendering, enlargement, empty state, broken-image fallback and automatic Street View picture');
+const own = context.preview();
+assert.equal(own.type, 'img');
+assert.equal(own.props.src, context.src);
+assert.equal(own.props.alt, 'Building at Test address');
+own.props.onError();
+assert.equal(ownCleared, null, 'a broken own photo falls back to Google');
+context.own = null; context.src = 'https://maps.googleapis.com/maps/api/streetview?pano=P';
+context.preview().props.onError();
+assert.equal(googleCleared, null, 'a broken Google picture is hidden');
+context.src = '';
+assert.equal(context.preview().props.children, 'No building picture yet');
+const hero = fs.readFileSync(file, 'utf8');
+assert.ok(hero.includes('data-hpd-smoke="jc-hero-360"') && hero.includes('streetViewLink(point, google?.pano'), '360° view uses the panorama facing the building');
+console.log('PASS: building picture: own photo first, Google fallback, broken-image fallback, empty state, 360° view link');
