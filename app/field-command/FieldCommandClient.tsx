@@ -11,7 +11,7 @@ import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointme
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
-import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
+import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
 import { fetchServerWorkflowOverrides, HPD_STATUS_WORKER_URL, startOverPatch } from "../../lib/paperwork";
 import { longestCleanDescription } from "../../lib/description-quality";
@@ -1044,10 +1044,16 @@ export default function FieldCommandClient() {
   // closed out later, e.g. at the desk. Every job counts here, whatever the map filters.
   const closeOutJobs = useMemo(() => jobs.filter((job) => {
     const outcome = value(job, ["FieldOutcome", "fieldOutcome"]);
-    return Boolean(FIELD_OUTCOMES[outcome]) && outcome !== "APPOINTMENT_REQUESTED"
+    return Boolean(FIELD_OUTCOMES[outcome]) && outcome !== "APPOINTMENT_REQUESTED" && !secondTryState(job)
       && !value(job, ["PackageApprovedAt"]) && !/approved/i.test(value(job, ["PackageReviewStatus"])) && jobQueue(job) !== "archived";
   }), [jobs]);
   const [closeOutOpen, setCloseOutOpen] = useState(false);
+  // No access once: the job comes back for a 2nd try 72 hours later (due ones first).
+  const secondTryJobs = useMemo(() => jobs
+    .map((job) => ({ job, second: secondTryState(job) }))
+    .filter((row): row is { job: JobRecord; second: NonNullable<ReturnType<typeof secondTryState>> } => Boolean(row.second) && jobQueue(row.job) !== "archived")
+    .sort((a, b) => a.second.dueDay.localeCompare(b.second.dueDay)), [jobs]);
+  const [secondTryOpen, setSecondTryOpen] = useState(false);
 
   function openIssueJob(job: JobRecord) {
     setCloseOutOpen(false);
@@ -1750,11 +1756,31 @@ export default function FieldCommandClient() {
       writeSharedWorkflowPatch(id, patch);
       mergeWorkflowPatchIntoScreen(id, patch);
       setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[outcome] } }));
-      setOutcomeMessage(`✅ ${id}: ${FIELD_OUTCOMES[outcome]}. This job is finished.`);
-      if (outcome !== "APPOINTMENT_REQUESTED") setAutoPackage({ id, outcome, seconds: 6 });
+      const waiting = secondTryState({ ...job, ...patch });
+      setOutcomeMessage(waiting ? secondTryMessage(id, waiting.dueLabel) : `✅ ${id}: ${FIELD_OUTCOMES[outcome]}. This job is finished.`);
+      if (outcome !== "APPOINTMENT_REQUESTED" && !waiting) setAutoPackage({ id, outcome, seconds: 6 });
     } catch (error) {
       setOutcomeMessage(error instanceof Error ? error.message : "Could not save the outcome. Try again.");
     }
+  }
+
+  function secondTryMessage(id: string, dueLabel: string) {
+    return `🔒 ${id}: no access saved as the 1st try. Come back from ${dueLabel} for the 2nd try; the affidavit needs both.`;
+  }
+  // 2nd visit after a no-access try: the door opened, so the job goes back to the normal work steps.
+  function gotInOnSecondTry(job: JobRecord) {
+    const id = jobId(job);
+    const now = new Date().toISOString();
+    const latest = { ...job, ...(readSharedWorkflowOverrides()[id] || {}) };
+    const history = Array.isArray(latest.FieldVisitHistory) ? latest.FieldVisitHistory : [];
+    const patch = { ...arrivalVisitPatch(now), FieldOutcome: "", fieldOutcome: "", WorkflowStatus: "", workflowStatus: "", StatusOverride: "Got access on the 2nd try", status: "Got access on the 2nd try",
+      PackageReviewStatus: "", OutcomeLockedAt: "", outcomeLockedAt: "", FieldVisitHistory: [...history, { recordedAt: now, outcome: null, note: "Got access on the 2nd try" }] };
+    try { writeSharedWorkflowPatch(id, patch); } catch {}
+    mergeWorkflowPatchIntoScreen(id, patch);
+    // Getting in counts as today's arrival and visit start, so the card goes straight to the before photos.
+    setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], arrived: now, visit: now, status: "" } }));
+    setOutcomeMessage(`🚪 ${id}: got in. Take the before photos to start the work.`);
+    requestMediaUpload("before", true);
   }
 
   function saveVisitOutcome(job: JobRecord, review = false) {
@@ -1766,11 +1792,12 @@ export default function FieldCommandClient() {
       mergeWorkflowPatchIntoScreen(id, patch);
       if (draft.outcome) setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[draft.outcome] } }));
       setOutcomeDrafts((prev) => ({ ...prev, [id]: { outcome: "", note: "" } }));
-      setOutcomeMessage(draft.outcome
+      const waiting = draft.outcome ? secondTryState({ ...job, ...patch }) : null;
+      setOutcomeMessage(waiting ? secondTryMessage(id, waiting.dueLabel) : draft.outcome
         ? `✅ ${id} is ${FIELD_OUTCOMES[draft.outcome]}. This job is finished.`
         : "Note saved on this device.");
-      if (draft.outcome && draft.outcome !== "APPOINTMENT_REQUESTED" && !review) setAutoPackage({ id, outcome: draft.outcome, seconds: 6 });
-      if (review) window.location.assign(paperworkGenerateHref(id, draft.outcome));
+      if (draft.outcome && draft.outcome !== "APPOINTMENT_REQUESTED" && !review && !waiting) setAutoPackage({ id, outcome: draft.outcome, seconds: 6 });
+      if (review && !waiting) openPackageSheet(id, paperworkGenerateHref(id, draft.outcome));
     } catch (error) {
       setOutcomeMessage(error instanceof Error ? error.message : "Save failed. Your draft is still here.");
     }
@@ -2190,6 +2217,25 @@ export default function FieldCommandClient() {
             <p className="fc-map-hint">No mapped jobs match these filters</p>
           ) : null}
 
+          {secondTryJobs.length && !selectedJob ? (
+            <div className="fc-data-check fc-second-try" data-hpd-smoke="fc-second-try">
+              <button type="button" className={`fc-map-hint ${secondTryJobs.some((row) => row.second.due) ? "fc-map-hint-warn" : ""}`} aria-expanded={secondTryOpen} onClick={() => { setSecondTryOpen((open) => !open); setCloseOutOpen(false); setDataCheckOpen(false); }}>
+                🔒 {secondTryJobs.length} 2nd tr{secondTryJobs.length === 1 ? "y" : "ies"}{secondTryJobs.some((row) => row.second.due) ? ` · ${secondTryJobs.filter((row) => row.second.due).length} due` : ""} {secondTryOpen ? "▴" : "▾"}
+              </button>
+              {secondTryOpen ? (
+                <ul className="fc-data-check-list">
+                  {secondTryJobs.map(({ job, second }) => (
+                    <li key={jobId(job)}>
+                      <button type="button" onClick={() => { setSecondTryOpen(false); openIssueJob(job); }}>
+                        <b>{jobId(job)}</b> <span>{jobAddress(job)}</span>
+                        <small>{second.due ? "Due now" : `From ${second.dueLabel}`} · 1st try {second.firstLabel}</small>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
           {closeOutJobs.length && !selectedJob ? (
             <div className="fc-data-check fc-close-out" data-hpd-smoke="fc-close-out">
               <button type="button" className="fc-map-hint" aria-expanded={closeOutOpen} onClick={() => { setCloseOutOpen((open) => !open); setDataCheckOpen(false); }}>
@@ -2347,6 +2393,8 @@ export default function FieldCommandClient() {
                   { done: Boolean(value(selectedJob, ["PackageApprovedAt"])) || /approved/i.test(value(selectedJob, ["PackageReviewStatus"])) },
                 ];
                 const current = steps.findIndex((step) => !step.done);
+                const secondTry = secondTryState(selectedJob);
+                const secondTrySaved = value(selectedJob, ["NoAccessSecondAttemptAt"]);
                 const stepClass = (index: number) => `jc-step ${steps[index].done ? "is-done" : index === current ? "is-current" : "is-later"}`;
                 const num = (index: number) => <span className="jc-step-num" aria-hidden="true">{steps[index].done ? "✓" : index + 1}</span>;
                 const outcomeForm = (keys: string[]) => keys.includes(draft.outcome) ? (
@@ -2425,6 +2473,24 @@ export default function FieldCommandClient() {
                         {current > 2 ? stepMedia("before") : null}
                       </div>
                     </li>
+                    {/* No access: the affidavit needs a 2nd try at least 72 hours after the 1st. */}
+                    {secondTry || (savedOutcome === "NO_ACCESS_1_WAITING_72H" && secondTrySaved) ? (
+                      <li className={`jc-step ${secondTry ? "is-current" : "is-done"}`} data-hpd-smoke="jc-step-second-try">
+                        <span className="jc-step-num" aria-hidden="true">{secondTry ? "🔒" : "✓"}</span>
+                        <div>
+                          <b>{secondTry ? (secondTry.due ? "2nd try is due" : `2nd try from ${secondTry.dueLabel}`) : "2nd try saved"}</b>
+                          <small>{secondTry
+                            ? `1st try ${secondTry.firstLabel}: no access. ${secondTry.due ? "Knock again; if there's still no access, save the 2nd try." : "The affidavit needs a 2nd try at least 72 hours later."}`
+                            : `No access on both tries (2nd ${formatSavedTime(secondTrySaved)}) · ready for the affidavit`}</small>
+                          {secondTry && secondTry.due ? (
+                            <div className="jc-step-choices">
+                              <button type="button" className="jc-glow" data-hpd-smoke="jc-step-second-no-access" onClick={() => setJobOutcome(selectedJob, "NO_ACCESS_1_WAITING_72H", "2nd try: no access")}>🔒 Still no access: save 2nd try</button>
+                              <button type="button" data-hpd-smoke="jc-step-second-got-in" disabled={Boolean(mediaBusy)} onClick={() => gotInOnSecondTry(selectedJob)}>🚪 Got in: start work</button>
+                            </div>
+                          ) : null}
+                        </div>
+                      </li>
+                    ) : null}
                     {!noWorkOutcomes.includes(savedOutcome) ? (
                       <>
                         <li className={stepClass(3)}>
@@ -2465,8 +2531,8 @@ export default function FieldCommandClient() {
                       {num(5)}
                       <div>
                         <b>Package</b>
-                        <small>{steps[5].done ? "Paperwork approved" : "Affidavit + invoice, signed and emailed"}</small>
-                        {current === 5 ? <a href={paperworkHref} onClick={packageLinkClick(id, paperworkHref)} className="fc-next-action jc-glow" data-hpd-smoke="jc-step-package">Make the package<span aria-hidden="true">&rarr;</span></a> : null}
+                        <small>{steps[5].done ? "Paperwork approved" : secondTry ? "After the 2nd try" : "Affidavit + invoice, signed and emailed"}</small>
+                        {current === 5 && !secondTry ? <a href={paperworkHref} onClick={packageLinkClick(id, paperworkHref)} className="fc-next-action jc-glow" data-hpd-smoke="jc-step-package">Make the package<span aria-hidden="true">&rarr;</span></a> : null}
                       </div>
                     </li>
                     {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
@@ -2482,6 +2548,13 @@ export default function FieldCommandClient() {
                   const label = FIELD_OUTCOMES[outcome];
                   const approved = Boolean(value(selectedJob, ["PackageApprovedAt"])) || /approved/i.test(value(selectedJob, ["PackageReviewStatus"]));
                   if (!label) return <p className="jc-status-line" data-hpd-smoke="jc-status-line">{counts.before ? "🔨 Work in progress" : "Not started yet"}</p>;
+                  const waiting = secondTryState(selectedJob);
+                  if (waiting) return (
+                    <div className="jc-status-line is-waiting" data-hpd-smoke="jc-status-line">
+                      <strong>🔒 No access · 1st try {waiting.firstLabel}</strong>
+                      <span>{waiting.due ? "2nd try is due now" : `2nd try from ${waiting.dueLabel}`}</span>
+                    </div>
+                  );
                   const icon = outcome === "WORK_COMPLETED" ? "✅" : outcome === "PARTIAL_WORK" ? "◐" : outcome === "REFUSED_ACCESS" ? "⛔" : outcome === "NO_ACCESS_1_WAITING_72H" ? "🔒" : outcome === "WORK_COMPLETED_BY_OTHERS" ? "👥" : "📅";
                   return (
                     <div className={`jc-status-line ${approved ? "is-approved" : "is-closeout"}`} data-hpd-smoke="jc-status-line">
