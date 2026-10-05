@@ -891,3 +891,9 @@
 @keyframes fc-package-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 /* The close button stays on top of the building picture. */
 #fc-job-card .fc-job-sheet-close { z-index: 6; top: 30px; right: 16px; background: rgba(0, 0, 0, 0.6); color: #fff; }
+
+/* Original ITB page viewer (same sheet as the package) */
+.fc-itb-body { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 12px; display: grid; gap: 12px; align-content: start; }
+.fc-itb-body img { display: block; width: 100%; height: auto; border-radius: 10px; background: #fff; }
+.fc-itb-missing { margin: 0; padding: 14px; border-radius: 12px; background: #1f2937; color: #e2e8f0; font: 600 15px/1.4 system-ui, sans-serif; }
+.fc-itb-pdf { display: block; text-align: center; padding: 14px; border-radius: 12px; background: #1d4ed8; color: #fff; font: 800 15px system-ui, sans-serif; text-decoration: none; }
