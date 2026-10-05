@@ -16,6 +16,7 @@ import { isJunkDescription } from "../../lib/description-quality";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
 import { type FieldMedia, dataUrlToBytes, listFieldEvidence } from "../../lib/field-photo-store";
+import { visitRecordText } from "../../lib/visit-record";
 import {
   type PaperworkOutcome,
   HPD_STATUS_WORKER_URL,
@@ -109,7 +110,7 @@ type PackageFileEntry = {
   bytes: Uint8Array;
   mimeType: string;
   label: string;
-  section: "pdf" | "manifest" | "image" | "video";
+  section: "pdf" | "manifest" | "record" | "image" | "video";
 };
 
 type PackageDownloadLink = {
@@ -2203,7 +2204,24 @@ export default function PaperworkPage() {
           }
         : null;
 
-      const folderEntries: PackageFileEntry[] = [pdfEntry, manifestEntry, ...mediaEntries];
+      // Internal proof of every trip, arrival and try (times and GPS): Drive folder only, never emailed.
+      const buildingLat = Number(activeJob?.Latitude ?? activeJob?.latitude);
+      const buildingLng = Number(activeJob?.Longitude ?? activeJob?.longitude);
+      const visitRecordEntry: PackageFileEntry | null = activeJob
+        ? {
+            path: "VISIT-RECORD.txt",
+            bytes: zipTextBytes(visitRecordText(
+              { jobId: pdf.jobId, address: [packageForm.address, packageForm.location].filter(Boolean).join(", ") },
+              activeJob,
+              evidenceRows,
+              Number.isFinite(buildingLat) && Number.isFinite(buildingLng) && buildingLat && buildingLng ? { lat: buildingLat, lng: buildingLng } : null,
+            )),
+            mimeType: "text/plain",
+            label: "Visit record (internal)",
+            section: "record",
+          }
+        : null;
+      const folderEntries: PackageFileEntry[] = [pdfEntry, manifestEntry, ...(visitRecordEntry ? [visitRecordEntry] : []), ...mediaEntries];
       const applicationEntries: PackageFileEntry[] = [
         pdfEntry,
         applicationManifestEntry,
@@ -2239,7 +2257,8 @@ export default function PaperworkPage() {
       const beforeCount = includedMedia.filter((media) => media.kind === "before").length;
       const afterCount = includedMedia.filter((media) => media.kind === "after").length;
       const folderLinks = folderEntries.map((entry) => packageEntryToDownloadLink(entry, folderName));
-      const completeShareFiles = folderEntries.map((entry) => packageEntryToFile(entry, folderName));
+      // The share sheet can go to email, so the internal visit record stays out of it.
+      const completeShareFiles = folderEntries.filter((entry) => entry.section !== "record").map((entry) => packageEntryToFile(entry, folderName));
       const applicationShareFiles = applicationEntries.map((entry) => packageEntryToFile(entry, folderName));
       const videoFiles = videoEntries.map((entry) => packageEntryToFile(entry, folderName));
       const videoNames = videoFiles.map((file) => file.name);
@@ -2452,6 +2471,7 @@ export default function PaperworkPage() {
       const original = entry.path.split("/").pop() || entry.path;
       if (entry.section === "pdf") return { name: `SIGNED - ${pending.jobId} - ${statusLabel}.pdf`, mimeType: entry.mimeType, bytes: entry.bytes };
       if (entry.section === "manifest") return { name: "Package contents.txt", mimeType: entry.mimeType, bytes: entry.bytes };
+      if (entry.section === "record") return { name: `Visit record - ${pending.jobId}.txt`, mimeType: entry.mimeType, bytes: entry.bytes };
       const stage = /^(images|videos)\/before\//.test(entry.path) ? "before" : /^(images|videos)\/after\//.test(entry.path) ? "after" : "other";
       const kind = `${stage}${entry.section === "video" ? "-video" : ""}` as "before" | "after" | "other" | "before-video" | "after-video" | "other-video";
       counters[kind] = (counters[kind] || 0) + 1;

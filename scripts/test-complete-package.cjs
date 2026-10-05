@@ -27,6 +27,7 @@ const descriptionQuality = loadTs(path.join(root, 'lib/description-quality.ts'))
 require.extensions['.ts'] = (m, file) => m._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, file);
 const { drawInvoicePage } = require(path.join(root, 'lib/invoice-pdf.ts'));
 const { signatureBytes } = require(path.join(root, 'lib/signature.ts'));
+const { visitRecordText } = require(path.join(root, 'lib/visit-record.ts'));
 const output = path.join(root, 'output/pdf/complete-package-test');
 fs.mkdirSync(output, { recursive: true });
 // Synthetic packaging fixture only, never uploaded to a real job or Drive.
@@ -34,7 +35,7 @@ const imageBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAA
 async function run(outcome, awardDate, broken = false) {
   const saved = [], statuses = [], requested = [], forms = [];
   const media = ['before', 'after', 'general'].map((kind, i) => ({ id: `TEST-${i}`, jobId: 'TEST-PACKAGE', kind, mediaType: 'image', evidenceLabel: kind === 'general' ? 'Building exterior' : `${kind} TEST ONLY`, name: `TEST-ONLY-${kind}.png`, type: 'image/png', size: imageBytes.length, capturedAt: '2026-09-15T12:00:00Z', dataUrl: broken && i === 0 ? '' : `data:image/png;base64,${imageBytes.toString('base64')}`, stamped: false }));
-  const context = { ...pdf, ...paperwork, ...noAccess, ...tenantContact, ...materials, ...descriptionQuality, drawInvoicePage, signatureBytes, signatureRef: { current: `data:image/png;base64,${imageBytes.toString('base64')}` }, calendarDay, console, Uint8Array, ArrayBuffer, TextEncoder, Date, Buffer, Blob, File, URL,
+  const context = { ...pdf, ...paperwork, ...noAccess, ...tenantContact, ...materials, ...descriptionQuality, drawInvoicePage, signatureBytes, visitRecordText, signatureRef: { current: `data:image/png;base64,${imageBytes.toString('base64')}` }, calendarDay, console, Uint8Array, ArrayBuffer, TextEncoder, Date, Buffer, Blob, File, URL,
     emailMediaCopies: async rows => rows,
     fitEmailVideos: async rows => rows,
     packageBusyRef: { current: false }, setPackageBusy() {},
@@ -52,6 +53,13 @@ async function run(outcome, awardDate, broken = false) {
   };
   new Function(`with (this) { ${source} }`).call(context);
   await context.generate(true, false);
+  const pendingPackage = context.pendingCompletePackageRef.current;
+  if (pendingPackage) {
+    const record = pendingPackage.folderEntries.find(entry => entry.section === 'record');
+    assert.ok(record && record.path === 'VISIT-RECORD.txt', 'the Drive folder gets the internal visit record');
+    assert.match(Buffer.from(record.bytes).toString('utf8'), /^VISIT RECORD \(internal proof/);
+    assert.ok(!pendingPackage.completeShareFiles.some(file => /VISIT-RECORD/.test(file.name)), 'the visit record stays out of the share sheet');
+  }
   const packet = saved.find(row => row.packetType === 'full_evidence_zip');
   if (!broken && (calendarDay(awardDate) === null || calendarDay(awardDate) < calendarDay('2026-08-28'))) {
     assert.equal(packet, undefined);

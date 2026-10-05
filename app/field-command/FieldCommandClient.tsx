@@ -13,6 +13,7 @@ import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
+import { visitLocationFields, type GpsFix } from "../../lib/visit-record";
 import { fetchServerWorkflowOverrides, HPD_STATUS_WORKER_URL, startOverPatch } from "../../lib/paperwork";
 import { longestCleanDescription } from "../../lib/description-quality";
 import { clearFieldEvidence, listFieldEvidence, redateFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
@@ -612,6 +613,8 @@ export default function FieldCommandClient() {
   const userMarkerRef = useRef<any>(null);
   const watchIdRef = useRef<number | null>(null);
   const lastPositionRef = useRef<{ lat: number; lng: number } | null>(null);
+  // Latest GPS fix with its accuracy and time: saved with each visit as proof of where the phone was.
+  const lastFixRef = useRef<GpsFix | null>(null);
   // The map follows you from the moment it opens; dragging the map pauses it, Me resumes it.
   const followMeRef = useRef(true);
   const centeredOnMeRef = useRef(false);
@@ -1434,6 +1437,7 @@ export default function FieldCommandClient() {
         const { latitude, longitude } = position.coords;
         placeUserMarker(latitude, longitude);
         lastPositionRef.current = { lat: latitude, lng: longitude };
+        lastFixRef.current = { lat: latitude, lng: longitude, accuracy: position.coords.accuracy || 0, at: Date.now() };
         autoArriveRef.current(latitude, longitude, position.coords.accuracy || 0);
         if (!mapRef.current) return;
         if (!centeredOnMeRef.current) {
@@ -1470,32 +1474,59 @@ export default function FieldCommandClient() {
     if (meters > 75) return;
     autoArrivedRef.current.add(id);
     saveWorkflowStamp(job, "arrived");
-    const patch = { ArrivedLatitude: lat, ArrivedLongitude: lng, ArrivedAccuracyMeters: Math.round(accuracy), ArrivedAutomatically: true };
+    const patch = { ArrivedLatitude: lat, ArrivedLongitude: lng, ArrivedAccuracyMeters: Math.round(accuracy), ArrivedAutomatically: true,
+      FieldVisitHistory: visitHistoryWith(job, "Arrived (automatic, by GPS)", { lat, lng, accuracy, at: Date.now() }) };
     try { writeSharedWorkflowPatch(id, patch); } catch {}
     mergeWorkflowPatchIntoScreen(id, patch);
     setOutcomeMessage(`📍 You're at the job (${Math.round(meters * 3.28)} ft away): arrival saved automatically.`);
   };
 
+  // The job's visit history plus one entry (no outcome), carrying where the phone was.
+  function visitHistoryWith(job: JobRecord, note: string, fix: GpsFix | null) {
+    const id = jobId(job);
+    const latest = { ...job, ...(readSharedWorkflowOverrides()[id] || {}) };
+    const history = Array.isArray(latest.FieldVisitHistory) ? latest.FieldVisitHistory : [];
+    return [...history, { recordedAt: new Date().toISOString(), outcome: null, note, ...visitLocationFields(fix, jobLatLng(job)) }];
+  }
+  // Adds the phone's location to the newest visit-history entry of an outcome patch.
+  function withVisitLocation(job: JobRecord, patch: Record<string, unknown>) {
+    const history = Array.isArray(patch.FieldVisitHistory) ? [...patch.FieldVisitHistory] : null;
+    if (!history?.length) return patch;
+    history[history.length - 1] = { ...history[history.length - 1], ...visitLocationFields(lastFixRef.current, jobLatLng(job)) };
+    return { ...patch, FieldVisitHistory: history };
+  }
+
   function markArrived(job: JobRecord) {
     const id = jobId(job);
     saveWorkflowStamp(job, "arrived");
+    const saveArrivalAt = (latitude: number, longitude: number, accuracy: number) => {
+      lastPositionRef.current = { lat: latitude, lng: longitude };
+      lastFixRef.current = { lat: latitude, lng: longitude, accuracy, at: Date.now() };
+      const patch = { ArrivedLatitude: latitude, ArrivedLongitude: longitude, ArrivedAccuracyMeters: Math.round(accuracy),
+        FieldVisitHistory: visitHistoryWith(job, "Arrived", lastFixRef.current) };
+      try { writeSharedWorkflowPatch(id, patch); } catch {}
+      mergeWorkflowPatchIntoScreen(id, patch);
+      const at = jobLatLng(job);
+      if (at) {
+        const feet = Math.round(distanceMiles({ lat: latitude, lng: longitude }, at) * 5280);
+        setOutcomeMessage(feet < 1000 ? `Arrived. You're about ${feet} ft from the job.` : `Arrived. Location saved, but you're ${(feet / 5280).toFixed(1)} mi from the job address.`);
+      }
+    };
+    // The map is already following the phone: a fix from the last 30 seconds is used right away.
+    const fix = lastFixRef.current;
+    if (fix && fix.at && Date.now() - fix.at < 30_000) {
+      saveArrivalAt(fix.lat, fix.lng, fix.accuracy || 0);
+      return;
+    }
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude, accuracy } = position.coords;
         void placeUserMarker(latitude, longitude);
-        lastPositionRef.current = { lat: latitude, lng: longitude };
-        const patch = { ArrivedLatitude: latitude, ArrivedLongitude: longitude, ArrivedAccuracyMeters: Math.round(accuracy) };
-        try { writeSharedWorkflowPatch(id, patch); } catch {}
-        mergeWorkflowPatchIntoScreen(id, patch);
-        const at = jobLatLng(job);
-        if (at) {
-          const feet = Math.round(distanceMiles({ lat: latitude, lng: longitude }, at) * 5280);
-          setOutcomeMessage(feet < 1000 ? `Arrived. You're about ${feet} ft from the job.` : `Arrived. Location saved, but you're ${(feet / 5280).toFixed(1)} mi from the job address.`);
-        }
+        saveArrivalAt(latitude, longitude, accuracy);
       },
       () => setOutcomeMessage("Arrived. Time saved; location wasn't available."),
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 15_000 }
     );
   }
 
@@ -1752,7 +1783,7 @@ export default function FieldCommandClient() {
   function setJobOutcome(job: JobRecord, outcome: string, note: string) {
     const id = jobId(job);
     try {
-      const patch = fieldOutcomePatch(job, outcome, note, new Date().toISOString());
+      const patch = withVisitLocation(job, fieldOutcomePatch(job, outcome, note, new Date().toISOString()));
       writeSharedWorkflowPatch(id, patch);
       mergeWorkflowPatchIntoScreen(id, patch);
       setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[outcome] } }));
@@ -1774,7 +1805,7 @@ export default function FieldCommandClient() {
     const latest = { ...job, ...(readSharedWorkflowOverrides()[id] || {}) };
     const history = Array.isArray(latest.FieldVisitHistory) ? latest.FieldVisitHistory : [];
     const patch = { ...arrivalVisitPatch(now), FieldOutcome: "", fieldOutcome: "", WorkflowStatus: "", workflowStatus: "", StatusOverride: "Got access on the 2nd try", status: "Got access on the 2nd try",
-      PackageReviewStatus: "", OutcomeLockedAt: "", outcomeLockedAt: "", FieldVisitHistory: [...history, { recordedAt: now, outcome: null, note: "Got access on the 2nd try" }] };
+      PackageReviewStatus: "", OutcomeLockedAt: "", outcomeLockedAt: "", FieldVisitHistory: [...history, { recordedAt: now, outcome: null, note: "Got access on the 2nd try", ...visitLocationFields(lastFixRef.current, jobLatLng(job)) }] };
     try { writeSharedWorkflowPatch(id, patch); } catch {}
     mergeWorkflowPatchIntoScreen(id, patch);
     // Getting in counts as today's arrival and visit start, so the card goes straight to the before photos.
@@ -1787,7 +1818,7 @@ export default function FieldCommandClient() {
     const id = jobId(job);
     const draft = outcomeDrafts[id] || { outcome: "", note: "" };
     try {
-      const patch = fieldOutcomePatch(job, draft.outcome, draft.note, new Date().toISOString());
+      const patch = withVisitLocation(job, fieldOutcomePatch(job, draft.outcome, draft.note, new Date().toISOString()));
       writeSharedWorkflowPatch(id, patch);
       mergeWorkflowPatchIntoScreen(id, patch);
       if (draft.outcome) setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[draft.outcome] } }));
