@@ -1,0 +1,32 @@
+name: Check Google Maps key
+
+# Asks Google's Street View service about one job address with the NEXT_PUBLIC_GOOGLE_MAPS_KEY
+# secret, the same way the app does from its website, and prints Google's answer (never the key).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_KEY }}
+    steps:
+      - name: Ask Google
+        shell: bash
+        run: |
+          if [ -z "$KEY" ]; then echo "The secret NEXT_PUBLIC_GOOGLE_MAPS_KEY is empty or missing."; exit 1; fi
+          echo "Key length: ${#KEY} characters (starts with ${KEY:0:4}...)"
+          REF="https://hpd-bid-dashboard-2026.pages.dev/map/"
+          LOC="40.85166,-73.937602"
+          echo "== Street View metadata, sent from the app's website (like the phone) =="
+          curl -s -H "Referer: $REF" "https://maps.googleapis.com/maps/api/streetview/metadata?location=$LOC&source=outdoor&radius=60&key=$KEY"
+          echo
+          echo "== Street View picture, sent from the app's website =="
+          curl -s -o /tmp/pic -w "HTTP %{http_code}, %{content_type}, %{size_download} bytes\n" -H "Referer: $REF" "https://maps.googleapis.com/maps/api/streetview?size=64x64&location=$LOC&key=$KEY"
+          if ! grep -q "image" <<< "$(file -b --mime-type /tmp/pic)"; then echo "Google said:"; head -c 400 /tmp/pic; echo; fi
+          echo "== Street View metadata, no website (shows whether website restrictions are the issue) =="
+          curl -s "https://maps.googleapis.com/maps/api/streetview/metadata?location=$LOC&source=outdoor&key=$KEY"
+          echo
