@@ -39,5 +39,18 @@ jobs:
             const rows = JSON.parse(require("fs").readFileSync(0, "utf8")).result || [];
             for (const d of rows) {
               const m = (d.deployment_trigger && d.deployment_trigger.metadata) || {};
-              console.log([d.created_on, d.environment, "branch=" + m.branch, "commit=" + String(m.commit_hash || "").slice(0, 7), "aliases=" + (d.aliases || []).join(" "), d.url].join(" | "));
-            }'
+              const stage = d.latest_stage || {};
+              console.log([d.created_on, d.environment, "branch=" + m.branch, "commit=" + String(m.commit_hash || "").slice(0, 7), "trigger=" + ((d.deployment_trigger || {}).type), "stage=" + stage.name + ":" + stage.status, "aliases=" + (d.aliases || []).join(" "), d.url].join(" | "));
+            }
+            console.log("== what each recent deployment serves (version.json, /map/ status)");
+            for (const d of rows.slice(0, 6)) console.log("VERSIONCHECK " + d.url);'
+          echo "== build settings Cloudflare uses for its own builds"
+          curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api" | node -e '
+            const b = JSON.parse(require("fs").readFileSync(0, "utf8")).result || {};
+            console.log(JSON.stringify(b.build_config || null));
+            const env = (b.deployment_configs || {}).production || {};
+            console.log("production env var names:", Object.keys(env.env_vars || {}).join(", "));'
+          curl -fsS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "$api/deployments?per_page=6" | node -e '
+            for (const d of JSON.parse(require("fs").readFileSync(0, "utf8")).result || []) console.log(d.url);' | while read url; do
+            echo "-- $url: $(curl -s -m 20 "$url/version.json" | tr -d "\n" | head -c 120) | /map/ $(curl -s -o /dev/null -w "%{http_code}" -m 20 "$url/map/")"
+          done
