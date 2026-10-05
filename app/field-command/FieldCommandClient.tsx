@@ -687,6 +687,10 @@ export default function FieldCommandClient() {
   const [darkTiles, setDarkTiles] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [chromeOpen, setChromeOpen] = useState(false);
+  // Which version is running (from /version.json, written by every deploy).
+  const [appVersion, setAppVersion] = useState("");
+  const appVersionRef = useRef("");
+  const safeToReloadRef = useRef(true);
   const [plannerRequest,setPlannerRequest] = useState(0);
   const [locateStatus, setLocateStatus] = useState<"idle" | "loading" | "error">("idle");
   const [scopeOpen, setScopeOpen] = useState(false);
@@ -945,6 +949,30 @@ export default function FieldCommandClient() {
     pinTapRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openJobKey, routeMapReady]);
+
+  // Automatic update: an iPhone app left in the background keeps running the old version, so
+  // whenever you come back to it (and every 10 minutes) check /version.json; if a newer version
+  // was deployed, reload -- only when no job card is open and nothing is saving.
+  safeToReloadRef.current = !selectedJob && !mediaBusy && !autoPackage;
+  useEffect(() => {
+    let stopped = false;
+    async function check() {
+      try {
+        const response = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const { commit } = await response.json() as { commit?: string };
+        if (!commit || stopped) return;
+        if (!appVersionRef.current) { appVersionRef.current = commit; setAppVersion(commit); return; }
+        if (commit !== appVersionRef.current && safeToReloadRef.current && !document.hidden) window.location.reload();
+      } catch { /* offline: try again later */ }
+    }
+    void check();
+    const onVisible = () => { if (!document.hidden) void check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    const timer = window.setInterval(check, 10 * 60 * 1000);
+    return () => { stopped = true; document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("focus", onVisible); window.clearInterval(timer); };
+  }, []);
 
   // Open jobs in the current view (finished and test jobs are skipped) that need a data check.
   const dataIssues = useMemo(() => filteredJobs
@@ -1938,6 +1966,7 @@ export default function FieldCommandClient() {
         <Link href="/alerts/"><BellIcon />Alerts</Link>
         <Link href="/storage/"><MenuIcon />Backup &amp; recovery</Link>
         <Link href="/more/"><MenuIcon />More</Link>
+        {appVersion ? <small className="fc-app-version" data-hpd-smoke="fc-app-version">Version {appVersion}</small> : null}
       </nav>}
       <section id="field-map-filters" className="fc-control-drawer" aria-label="Map filters">
       <header className="fc-topbar">

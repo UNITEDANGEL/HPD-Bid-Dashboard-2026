@@ -2304,3 +2304,4 @@
    in Safari, 100vh is taller than what you see, so the page could scroll and show a dark strip
    under Today's route. */
 html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: hidden; overscroll-behavior: none; }
+.fc-organized-menu .fc-app-version { display: block; margin-top: 6px; color: #94a3b8; font-size: 12px; font-weight: 600; text-align: center; }
