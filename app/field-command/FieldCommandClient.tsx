@@ -899,12 +899,12 @@ export default function FieldCommandClient() {
   // turns following back on.
   const openJobKeyRef = useRef("");
   openJobKeyRef.current = openJobKey;
-  function showJobAboveCard(lat: number, lng: number) {
+  function showJobAboveCard(lat: number, lng: number, minZoom = 16) {
     const map = mapRef.current;
     if (!map) return;
     followMeRef.current = false;
     centeredOnMeRef.current = true;
-    map.setView([lat, lng], Math.max(map.getZoom(), 16), { animate: false });
+    map.setView([lat, lng], Math.max(map.getZoom(), minZoom), { animate: false });
     // Measure once the card is laid out, and again after its slide-up animation settles.
     const place = () => {
       if (!mapRef.current) return;
@@ -918,11 +918,29 @@ export default function FieldCommandClient() {
     window.setTimeout(place, 200);
     window.setTimeout(place, 800);
   }
+  // The view before a card opened: closing the card puts the map back there, so the other
+  // jobs are right where they were. A tapped pin keeps your zoom (only search/links zoom in).
+  const viewBeforeCardRef = useRef<{ center: [number, number]; zoom: number; follow: boolean } | null>(null);
+  const pinTapRef = useRef(false);
   useEffect(() => {
-    if (!openJobKey) return;
+    const map = mapRef.current;
+    if (!openJobKey) {
+      const before = viewBeforeCardRef.current;
+      viewBeforeCardRef.current = null;
+      if (before && map) {
+        map.setView(before.center, before.zoom, { animate: false });
+        followMeRef.current = before.follow;
+      }
+      return;
+    }
+    if (map && !viewBeforeCardRef.current) {
+      const center = map.getCenter();
+      viewBeforeCardRef.current = { center: [center.lat, center.lng], zoom: map.getZoom(), follow: followMeRef.current };
+    }
     const job = jobs.find((row) => jobId(row) === openJobKey);
     const at = job ? jobLatLng(job) : null;
-    if (at) showJobAboveCard(at.lat, at.lng);
+    if (at) showJobAboveCard(at.lat, at.lng, pinTapRef.current ? 0 : 16);
+    pinTapRef.current = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openJobKey, routeMapReady]);
 
@@ -1164,6 +1182,7 @@ export default function FieldCommandClient() {
               const marker = L.marker(position, { icon, title, zIndexOffset: showLabel ? 1000 : 0 });
               marker.on("click", () => {
                 if (!showLabel || location.jobs.length > 1) map.setView([location.lat, location.lng], Math.max(17, map.getZoom()));
+                else pinTapRef.current = true;
                 setSelectedJob(job);
               });
               marker.addTo(layerGroupRef.current);

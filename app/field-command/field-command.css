@@ -2299,3 +2299,8 @@
 .fc-app.fc-reference .fc-data-check { justify-items: start; }
 .fc-app.fc-reference .fc-data-check > button { width: auto; padding: 6px 12px; font-size: 13px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); }
 .fc-app.fc-reference .fc-data-check-list { width: 100%; box-sizing: border-box; }
+
+/* The map page is exactly the visible screen: no page scroll, no rubber-band. On an iPhone
+   in Safari, 100vh is taller than what you see, so the page could scroll and show a dark strip
+   under Today's route. */
+html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: hidden; overscroll-behavior: none; }
