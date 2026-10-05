@@ -3,6 +3,8 @@
 import { jobPriority } from "../../lib/job-priority";
 import { startDictation, type RecognitionConstructor } from "../../lib/planner-dictation";
 import { jobQueue, visitState } from "../../lib/job-queue";
+import { secondTryState } from "../../lib/field-next-action";
+import { nyToday, type Appointment } from "../../lib/appointments";
 import { countFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import {
   shadowUpsert,
@@ -103,6 +105,20 @@ function normalizeBorough(value: string) {
   return value;
 }
 
+// About a third of jobs have no borough field: fall back to the address ZIP code, as the map does.
+function jobBoroughName(record: JobRecord) {
+  const named = normalizeBorough(textValue(record, ["Borough", "borough", "Boro", "boro"]));
+  if (BOROUGHS.includes(named)) return named;
+  const address = textValue(record, ["BuildingAddress", "Building Address", "Address", "address", "FullAddress", "Zip", "zip", "ZipCode"]);
+  const zip = Number(address.match(/\b(1[01]\d{3})\b/)?.[1] || 0);
+  if (zip >= 10001 && zip <= 10282) return "Manhattan";
+  if (zip >= 10451 && zip <= 10475) return "Bronx";
+  if (zip >= 11201 && zip <= 11256) return "Brooklyn";
+  if ((zip >= 11004 && zip <= 11109) || (zip >= 11351 && zip <= 11697)) return "Queens";
+  if (zip >= 10301 && zip <= 10314) return "Staten Island";
+  return named;
+}
+
 function distanceMiles(a: Point, b: Point) {
   const radius = 3958.7613;
   const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
@@ -122,8 +138,28 @@ function jobStatus(record: JobRecord) {
   return textValue(record, ["WorkflowStatus", "FieldOutcome", "StatusOverride", "status", "Status"]) || "Active";
 }
 
+// Follow-up jobs are out of the plan, except the ones due today: a no-access 2nd try that is due,
+// or an appointment today.
 function isClosed(record: JobRecord) {
+  if (jobQueue(record) === "archived") return true;
+  if (dueToday(record)) return false;
   return jobQueue(record) !== "pending" || visitState(record).blocked;
+}
+
+function dueToday(record: JobRecord) {
+  if (secondTryState(record)?.due) return { kind: "second-try" as const, label: "2nd try due (no access)", order: 0 };
+  const appointment = todaysAppointment(record);
+  if (appointment) return { kind: "appointment" as const, label: `Appointment today ${appointment.start}-${appointment.end}`, order: appointment.minutes };
+  return null;
+}
+
+// Appointments are saved on the job card as Appointment { date, start, end, state } (New York time).
+function todaysAppointment(record: JobRecord) {
+  const appointment = record.Appointment as Appointment | undefined;
+  if (!appointment || typeof appointment !== "object" || !["requested", "confirmed"].includes(appointment.state)) return null;
+  if (appointment.date !== nyToday()) return null;
+  const [hours, minutes] = String(appointment.start || "00:00").split(":").map(Number);
+  return { start: appointment.start, end: appointment.end, minutes: (hours || 0) * 60 + (minutes || 0) };
 }
 
 function isUrgent(record: JobRecord) {
@@ -133,6 +169,7 @@ function isUrgent(record: JobRecord) {
 }
 
 function hasAppointmentToday(record: JobRecord) {
+  if (todaysAppointment(record)) return true;
   const raw = textValue(record, ["AppointmentAt", "appointmentAt", "AppointmentUpdatedAt"]);
   if (!raw) return false;
   const date = new Date(raw);
@@ -267,9 +304,11 @@ function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
   const candidates = records.filter((job) => {
     const id = jobId(job);
     if (!id || includeSet.has(id) || excludeSet.has(id)) return false;
-    const borough = normalizeBorough(textValue(job, ["Borough", "borough", "Boro", "boro"]));
+    const borough = jobBoroughName(job);
     if (plan.boroughs.length && !plan.boroughs.includes(borough)) return false;
     if (plan.avoidBoroughs.includes(borough)) return false;
+    // Due today (2nd try or appointment) is planned whatever its job date; areas still apply.
+    if (dueToday(job)) return !plan.priorities.includes("appointments") || hasAppointmentToday(job);
     if (plan.daysBack !== null) {
       const age = jobDateAgeDays(job);
       if (age === null || age < 0 || age > plan.daysBack) return false;
@@ -285,24 +324,28 @@ function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
     const distance = lat !== null && lng !== null ? distanceMiles(origin, { lat, lng }) : null;
     const urgent = isUrgent(job);
     const appointment = hasAppointmentToday(job);
+    const due = dueToday(job);
     let score = 0;
     if (appointment) score += plan.routePreference === "appointments_first" ? 1200 : 500;
+    // Due today comes first: earlier appointments before later ones; a due 2nd try right after.
+    if (due?.kind === "appointment") score += 1000 - due.order / 2;
+    if (due?.kind === "second-try") score += 900;
     if (urgent) score += plan.routePreference === "highest_priority" ? 1000 : 450;
     if (distance !== null) score += plan.routePreference === "shortest_drive" ? Math.max(0, 900 - distance * 35) : Math.max(0, 250 - distance * 10);
-    return { job, lat, lng, distance, score, urgent, appointment };
+    return { job, lat, lng, distance, score, urgent, appointment, due };
   };
 
-  const ordered = [...required.map(scoreJob), ...candidates.map(scoreJob).sort((a, b) => b.score - a.score || (a.distance ?? 999) - (b.distance ?? 999))]
+  const ordered = [...required.map(scoreJob).sort((a, b) => b.score - a.score), ...candidates.map(scoreJob).sort((a, b) => b.score - a.score || (a.distance ?? 999) - (b.distance ?? 999))]
     .slice(0, plan.stopCount)
-    .map(({ job, lat, lng, distance, urgent, appointment }): PlannedJob => ({
+    .map(({ job, lat, lng, distance, urgent, appointment, due }): PlannedJob => ({
       id: jobId(job),
       address: textValue(job, ["BuildingAddress", "Building Address", "Address", "address", "Location", "location"]),
-      borough: normalizeBorough(textValue(job, ["Borough", "borough", "Boro", "boro"])),
+      borough: jobBoroughName(job),
       status: jobStatus(job),
       lat,
       lng,
       distance,
-      reason: appointment ? "Appointment today" : urgent ? "Urgent or overdue" : distance !== null ? "Good travel fit" : "Active job",
+      reason: due ? due.label : appointment ? "Appointment today" : urgent ? "Urgent or overdue" : distance !== null ? "Good travel fit" : "Active job",
       description: textValue(job, ["ItbPage3Description", "ITBDescription", "JobDescription", "Job_Description", "description"]),
       contactName: textValue(job, ["ItbTenantName", "TenantName", "tenantName", "ContactName", "contactName"]),
       contactPhone: textValue(job, ["ItbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"]),
@@ -318,7 +361,7 @@ function selectableJob(record: JobRecord, origin?: Point, reason = "Selected by 
   return {
     id: jobId(record),
     address: textValue(record, ["BuildingAddress", "Building Address", "Address", "address", "Location", "location"]),
-    borough: normalizeBorough(textValue(record, ["Borough", "borough", "Boro", "boro"])),
+    borough: jobBoroughName(record),
     status: jobStatus(record),
     lat,
     lng,
@@ -350,6 +393,11 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
   ]);
   const [plan, setPlan] = useState<LocalPlan>(DEFAULT_PLAN);
   const [results, setResults] = useState<PlannedJob[]>([]);
+  // Due today: no-access 2nd tries that are due and today's appointments, in visiting order.
+  const dueTodayJobs = useMemo(() => records
+    .map((job) => ({ job, due: dueToday(job) }))
+    .filter((row): row is { job: JobRecord; due: NonNullable<ReturnType<typeof dueToday>> } => Boolean(row.due) && jobQueue(row.job) !== "archived" && Boolean(jobId(row.job)))
+    .sort((a, b) => (a.due.kind === b.due.kind ? a.due.order - b.due.order : a.due.kind === "second-try" ? -1 : 1)), [records]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [jobSearch, setJobSearch] = useState("");
   const [originPoint, setOriginPoint] = useState<Point | null>(null);
@@ -723,6 +771,21 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
             ))}
             {busy ? <article className="plan-my-day__bubble is-assistant"><b>Planner</b><p>Planning…</p></article> : null}
           </div>
+
+          {dueTodayJobs.length && !viewingJob ? (
+            <section className="plan-my-day__due" aria-label="Due today" data-hpd-smoke="plan-due-today">
+              <strong>📅 Due today ({dueTodayJobs.length})</strong>
+              <ul>
+                {dueTodayJobs.slice(0, 8).map(({ job, due }) => (
+                  <li key={jobId(job)}><b>{jobId(job)}</b> <span>{due.label}</span><small>{textValue(job, ["BuildingAddress", "Building Address", "Address", "address"])}</small></li>
+                ))}
+              </ul>
+              <button type="button" className="primary" data-hpd-smoke="plan-due-first" disabled={busy}
+                onClick={() => void handleMessage(`Plan ${Math.min(12, Math.max(5, dueTodayJobs.length))} jobs near me, include ${dueTodayJobs.slice(0, 12).map(({ job }) => jobId(job)).join(", ")}`)}>
+                Plan today: due jobs first
+              </button>
+            </section>
+          ) : null}
 
           <div className="plan-my-day__suggestions">
             {["Plan 5 jobs near me", "5 urgent Queens jobs", "Appointments first", "Nearest jobs first"].map((suggestion) => (
