@@ -14,6 +14,7 @@ import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
 import { visitLocationFields, type GpsFix } from "../../lib/visit-record";
+import { adoptServerOverrides, flushOverrideOutbox, mergeOverrideMaps, queueOverrideSync } from "../../lib/override-sync";
 import { fetchServerWorkflowOverrides, HPD_STATUS_WORKER_URL, startOverPatch } from "../../lib/paperwork";
 import { longestCleanDescription } from "../../lib/description-quality";
 import { clearFieldEvidence, listFieldEvidence, redateFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
@@ -245,6 +246,16 @@ function writeSharedWorkflowPatch(id: string, patch: Record<string, unknown>) {
       },
     })
   );
+  // Send it to the status server (now, or once the phone is back online).
+  queueOverrideSync(id);
+  scheduleOverrideSync();
+}
+
+let overrideSyncTimer = 0;
+function scheduleOverrideSync(delay = 800) {
+  if (typeof window === "undefined") return;
+  window.clearTimeout(overrideSyncTimer);
+  overrideSyncTimer = window.setTimeout(() => { void flushOverrideOutbox(HPD_STATUS_WORKER_URL); }, delay);
 }
 
 type StatusKey = "complete" | "noaccess" | "refused" | "pending" | "awarded" | "open" | "appointment" | "done" | "others" | "partial";
@@ -862,7 +873,8 @@ export default function FieldCommandClient() {
     }
     function applyOverrides() {
       if (cancelled || !latestRows) return;
-      const overrides = { ...readSharedWorkflowOverrides(), ...serverOverrides };
+      // Field by field, newer wins: the server's entry never wipes out steps saved on this phone.
+      const overrides = mergeOverrideMaps(readSharedWorkflowOverrides(), serverOverrides);
       const next = latestRows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}) }));
       setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
     }
@@ -890,19 +902,26 @@ export default function FieldCommandClient() {
         .finally(() => { loading = false; });
       // Saved field statuses merge in when they arrive; they never hold up the pins.
       fetchServerWorkflowOverrides()
-        .then((overrides) => { serverOverrides = overrides as Record<string, JobRecord>; applyOverrides(); })
+        .then((overrides) => { serverOverrides = overrides as Record<string, JobRecord>; adoptServerOverrides(serverOverrides); applyOverrides(); })
         .catch(() => {});
     }
     const onStorage = (event: StorageEvent) => {
       if (event.key === SHARED_WORKFLOW_STORAGE_KEY) refreshJobs();
     };
+    // Steps saved with no signal go to the status server when the phone is back online.
+    const syncSaved = () => scheduleOverrideSync(0);
     refreshJobs();
+    syncSaved();
     window.addEventListener("focus", refreshJobs);
+    window.addEventListener("focus", syncSaved);
+    window.addEventListener("online", syncSaved);
     window.addEventListener("storage", onStorage);
-    const timer = window.setInterval(refreshJobs, 60000);
+    const timer = window.setInterval(() => { refreshJobs(); syncSaved(); }, 60000);
     return () => {
       cancelled = true;
       window.removeEventListener("focus", refreshJobs);
+      window.removeEventListener("focus", syncSaved);
+      window.removeEventListener("online", syncSaved);
       window.removeEventListener("storage", onStorage);
       window.clearInterval(timer);
     };
@@ -1633,9 +1652,8 @@ export default function FieldCommandClient() {
     catch { setOutcomeMessage("Could not archive on this device. Please retry."); return; }
     mergeWorkflowPatchIntoScreen(id, patch);
     setSelectedJob(null);
-    try {
-      await fetch(`${HPD_STATUS_WORKER_URL}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: id, patch }) });
-    } catch { /* Saved on this device; the next sync carries it. */ }
+    // Saved on this device and queued: sent to the status server now or once back online.
+    void flushOverrideOutbox(HPD_STATUS_WORKER_URL);
   }
 
   function mergeWorkflowPatchIntoScreen(id: string, patch: Record<string, unknown>) {
@@ -1993,11 +2011,8 @@ export default function FieldCommandClient() {
     let removed = 0;
     try { removed = await clearFieldEvidence(id); } catch { /* reported below */ }
     await refreshMediaCounts(job);
-    let serverCleared = true;
-    try {
-      const response = await fetch(`${HPD_STATUS_WORKER_URL}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: id, patch }) });
-      serverCleared = response.ok;
-    } catch { serverCleared = false; }
+    // The start-over entry was queued by writeSharedWorkflowPatch; send it now.
+    const serverCleared = (await flushOverrideOutbox(HPD_STATUS_WORKER_URL)).waiting === 0;
     setMediaMessage(`${id} started over: outcome, steps and package cleared; ${removed} photo/video file(s) removed from this phone.${serverCleared ? "" : " The status server didn't answer; it will be cleared next time you're online."}`);
     setOutcomeMessage("");
   }
