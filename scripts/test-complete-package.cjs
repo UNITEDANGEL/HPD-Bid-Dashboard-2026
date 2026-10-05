@@ -46,7 +46,7 @@ async function run(outcome, awardDate, broken = false) {
     bytesToDataUrl: (bytes, mime) => `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`,
     dataUrlToBytes: value => new Uint8Array(Buffer.from(value.split(',')[1], 'base64')),
     renderPdfFirstPageImage: async bytes => ({ imageUrl: '', pageCount: (await pdf.PDFDocument.load(bytes)).getPageCount(), error: 'Headless test: preview rendered separately' }),
-    clearPackagePreview() {}, setFullScreenPdfOpen() {}, setIncludePackageMedia() {}, setIncludePackageSignature() {}, setForm(value) { forms.push(value); }, setPackagePreview() {}, setPackagePreviewOpen() {},
+    clearPackagePreview() {}, setFullScreenPdfOpen() {}, setIncludePackageMedia() {}, setIncludePackageSignature() {}, setForm(value) { forms.push(value); }, setPackagePreview() {}, setPackagePreviewOpen() {}, setPackageContents() {},
     notaryRef: { current: null }, setNotaryKey() {}, rememberNotary() {}, packageNotaryRef: { current: null }, lastIncludeMediaRef: { current: true },
     pendingCompletePackageRef: { current: null }, markPackageGenerated: async () => 'TEST ONLY - no job mutation',
   };
