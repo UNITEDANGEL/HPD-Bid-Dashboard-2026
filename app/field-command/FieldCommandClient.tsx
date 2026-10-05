@@ -17,7 +17,9 @@ import { visitLocationFields, type GpsFix } from "../../lib/visit-record";
 import { adoptServerOverrides, flushOverrideOutbox, mergeOverrideMaps, queueOverrideSync } from "../../lib/override-sync";
 import { fetchServerWorkflowOverrides, HPD_STATUS_WORKER_URL, startOverPatch } from "../../lib/paperwork";
 import { longestCleanDescription } from "../../lib/description-quality";
-import { clearFieldEvidence, listFieldEvidence, redateFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
+import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidence, redateFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
+import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
+import { googleStatus } from "../../lib/package-delivery";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -728,7 +730,44 @@ export default function FieldCommandClient() {
   // Up to 3 thumbnails per stage for the Media & Documents card.
   const [mediaThumbs, setMediaThumbs] = useState<Record<string, { before: string[]; after: string[] }>>({});
   const [mediaBusy, setMediaBusy] = useState("");
+  useEffect(() => { if (!mediaBusy) refreshBackupRef.current(); }, [mediaBusy]);
   const [mediaMessage, setMediaMessage] = useState("");
+  // Photos and videos live on this phone until the package is sent: show whether the Drive
+  // backup (Storage settings) is copying them, and turn it on with one tap.
+  const [backup, setBackup] = useState<{ auto: boolean; total: number; verifiedAt: string; error: string; queued: number } | null>(null);
+  const refreshBackupRef = useRef<() => void>(() => {});
+  refreshBackupRef.current = () => {
+    void (async () => {
+      let auto = false;
+      try { auto = window.localStorage.getItem(DRIVE_AUTO_BACKUP_KEY) === "on"; } catch {}
+      const [total, state] = await Promise.all([
+        countAllFieldEvidence().catch(() => 0),
+        backupState().catch(() => null) as Promise<{ verifiedAt?: string; error?: string; queued?: number } | null>,
+      ]);
+      setBackup({ auto, total, verifiedAt: state?.verifiedAt || "", error: state?.error || "", queued: state?.queued || 0 });
+    })();
+  };
+  useEffect(() => {
+    const refresh = () => refreshBackupRef.current();
+    refresh();
+    for (const event of ["hpd-drive-backup-status", "hpd-drive-backup-settings", "focus"]) window.addEventListener(event, refresh);
+    return () => { for (const event of ["hpd-drive-backup-status", "hpd-drive-backup-settings", "focus"]) window.removeEventListener(event, refresh); };
+  }, []);
+  async function turnOnDriveBackup() {
+    const google = await googleStatus();
+    if (!google.connected) {
+      setMediaMessage("Connect Google Drive first, then turn on the backup.");
+      window.location.assign("/storage/");
+      return;
+    }
+    try { window.localStorage.setItem(DRIVE_AUTO_BACKUP_KEY, "on"); } catch {
+      setMediaMessage("Couldn't turn on the backup on this phone.");
+      return;
+    }
+    window.dispatchEvent(new Event("hpd-drive-backup-settings"));
+    setMediaMessage("☁️ Drive backup is on: photos, videos and job steps are copied to your Google Drive automatically.");
+    refreshBackupRef.current();
+  }
   const [clearJobId, setClearJobId] = useState("");
   const [clearText, setClearText] = useState("");
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
@@ -2263,6 +2302,13 @@ export default function FieldCommandClient() {
             <p className="fc-map-hint">No mapped jobs match these filters</p>
           ) : null}
 
+          {backup && !backup.auto && backup.total > 0 && !selectedJob ? (
+            <div className="fc-data-check fc-backup-pill" data-hpd-smoke="fc-backup-pill">
+              <button type="button" className="fc-map-hint fc-map-hint-warn" onClick={() => void turnOnDriveBackup()}>
+                ☁️ {backup.total} photo{backup.total === 1 ? "" : "s"}/video{backup.total === 1 ? "" : "s"} only on this phone · Back up to Drive
+              </button>
+            </div>
+          ) : null}
           {secondTryJobs.length && !selectedJob ? (
             <div className="fc-data-check fc-second-try" data-hpd-smoke="fc-second-try">
               <button type="button" className={`fc-map-hint ${secondTryJobs.some((row) => row.second.due) ? "fc-map-hint-warn" : ""}`} aria-expanded={secondTryOpen} onClick={() => { setSecondTryOpen((open) => !open); setCloseOutOpen(false); setDataCheckOpen(false); }}>
@@ -2633,6 +2679,21 @@ export default function FieldCommandClient() {
                     );
                   })}
                 </div>
+                {backup && counts.total > 0 ? (
+                  <p className={`jc-backup ${backup.auto && !backup.error ? "is-on" : "is-off"}`} data-hpd-smoke="jc-backup">
+                    {!backup.auto ? (
+                      <>⚠ These photos/videos are only on this phone. <button type="button" data-hpd-smoke="jc-backup-on" onClick={() => void turnOnDriveBackup()}>Back up to Drive</button></>
+                    ) : backup.error ? (
+                      <>⚠ Drive backup: {backup.error}</>
+                    ) : backup.queued ? (
+                      <>☁️ Backing up to Drive… {backup.queued} part{backup.queued === 1 ? "" : "s"} left</>
+                    ) : backup.verifiedAt ? (
+                      <>☁️ Drive backup on · last full backup {formatSavedTime(backup.verifiedAt)}</>
+                    ) : (
+                      <>☁️ Drive backup on · first backup starting</>
+                    )}
+                  </p>
+                ) : null}
                 {mediaChoice && !mediaChoiceInStep ? <div ref={mediaChoiceRef} className="fc-photo-choice jc-choice" role="group" aria-label={`${mediaChoice} photo source`}>
                   <div className="fc-photo-choice-heading"><strong>{mediaChoice === "before" ? "Before work" : "After work"}</strong><button type="button" aria-label="Cancel photo selection" onClick={() => setMediaChoice(null)}>&times;</button></div>
                   <div className="fc-photo-source-actions">

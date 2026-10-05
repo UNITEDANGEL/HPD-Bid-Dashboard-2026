@@ -950,6 +950,17 @@ export async function listFieldPhotos(jobId: string) {
     .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt));
 }
 
+// How many photos/videos are saved on this phone, all jobs together (a fast count, no file reads).
+export async function countAllFieldEvidence() {
+  if (!hasIndexedDb()) return 0;
+  const db = await openDb();
+  try {
+    return Number(await requestToPromise(db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).count())) || 0;
+  } finally {
+    db.close();
+  }
+}
+
 export async function listFieldEvidence(jobId: string) {
   return listFieldPhotos(jobId);
 }
