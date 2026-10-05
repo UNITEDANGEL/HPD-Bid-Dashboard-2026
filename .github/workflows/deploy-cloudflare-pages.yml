@@ -106,5 +106,20 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy out --project-name=hpd-bid-dashboard-2026 --branch=${{ steps.pages-project.outputs.production_branch }}
+          command: pages deploy out --project-name=hpd-bid-dashboard-2026 --branch=${{ steps.pages-project.outputs.production_branch }} --commit-dirty=true
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      # "Deployment complete" isn't proof: check the live address really serves this build, and fail
+      # loudly if it doesn't (a preview-only deploy once reported success for a day).
+      - name: Verify the live address serves this build
+        shell: bash
+        run: |
+          want="$(node -e 'console.log(JSON.parse(require("fs").readFileSync("out/version.json","utf8")).commit)')"
+          for i in $(seq 1 18); do
+            got="$(curl -fsS -m 20 "https://hpd-bid-dashboard-2026.pages.dev/version.json?t=$(date +%s)" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).commit)}catch{console.log("?")}})' || echo "?")"
+            echo "live: $got  want: $want"
+            [ "$got" = "$want" ] && { echo "Live address is serving $want."; exit 0; }
+            sleep 10
+          done
+          echo "::error::The live address still serves $got, not $want. The deploy did not go live (check the Cloudflare Pages project: production branch and automatic Git builds)."
+          exit 1
