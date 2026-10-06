@@ -22,6 +22,7 @@ import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidenceLite, redat
 import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
 import { daySummary, type SummaryRow } from "../../lib/day-summary";
+import { formatBytes, phoneStorage, type PhoneStorage } from "../../lib/phone-storage";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -791,6 +792,15 @@ export default function FieldCommandClient() {
     for (const event of ["hpd-drive-backup-status", "hpd-drive-backup-settings", "focus"]) window.addEventListener(event, refresh);
     return () => { for (const event of ["hpd-drive-backup-status", "hpd-drive-backup-settings", "focus"]) window.removeEventListener(event, refresh); };
   }, []);
+  // Space the app uses on this phone: warn before it runs out (new photos and videos would not save).
+  const [phoneSpace, setPhoneSpace] = useState<PhoneStorage | null>(null);
+  useEffect(() => {
+    const refresh = () => { void phoneStorage().then(setPhoneSpace); };
+    refresh();
+    for (const event of ["focus", "hpd-video-saved", "hpd-video-backup-status"]) window.addEventListener(event, refresh);
+    return () => { for (const event of ["focus", "hpd-video-saved", "hpd-video-backup-status"]) window.removeEventListener(event, refresh); };
+  }, []);
+  useEffect(() => { if (!mediaBusy) void phoneStorage().then(setPhoneSpace); }, [mediaBusy]);
   async function turnOnDriveBackup() {
     const google = await googleStatus();
     if (!google.connected) {
@@ -2393,6 +2403,13 @@ export default function FieldCommandClient() {
               </button>
             </div>
           ) : null}
+          {phoneSpace && phoneSpace.level !== "ok" && !selectedJob ? (
+            <div className="fc-data-check fc-space-pill" data-hpd-smoke="fc-space-pill">
+              <Link href="/storage/" className="fc-map-hint fc-map-hint-warn">
+                ⚠ Phone space {phoneSpace.level === "full" ? "almost full" : "running low"} · {formatBytes(phoneSpace.free)} left for the app
+              </Link>
+            </div>
+          ) : null}
           {upcomingAppointments.length && !selectedJob ? (() => {
             const next = upcomingAppointments[0];
             const when = next.timing.soon ? (next.timing.startsIn > 0 ? `in ${next.timing.startsIn} min` : "now") : appointmentLabel(next.appointment).split(" · ")[1];
@@ -2813,6 +2830,9 @@ export default function FieldCommandClient() {
                     )}
                     {backup.auto ? <VideoBackupLine jobId={id} /> : null}
                   </p>
+                ) : null}
+                {phoneSpace?.level === "full" ? (
+                  <p className="jc-backup is-off" data-hpd-smoke="jc-space">⚠ This phone is almost out of space for the app ({formatBytes(phoneSpace.free)} left): new photos and videos may not save. <Link href="/storage/">See storage</Link></p>
                 ) : null}
                 {mediaChoice && !mediaChoiceInStep ? <div ref={mediaChoiceRef} className="fc-photo-choice jc-choice" role="group" aria-label={`${mediaChoice} photo source`}>
                   <div className="fc-photo-choice-heading"><strong>{mediaChoice === "before" ? "Before work" : "After work"}</strong><button type="button" aria-label="Cancel photo selection" onClick={() => setMediaChoice(null)}>&times;</button></div>
