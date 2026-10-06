@@ -7,6 +7,8 @@ const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
 const ROOT_KIND = "hpd-video-root";
 const JOB_KIND = "hpd-video-job";
 const FILE_KIND = "hpd-video-file";
+// The package folders made by drive-packages.mjs (one per job package).
+const PACKAGE_FOLDER_KIND = "hpd-package-folder";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const MAX_VIDEO_BYTES = 200 * 1024 * 1024;
 // Google needs every piece but the last to be a multiple of 256 KB.
@@ -92,6 +94,33 @@ export async function handleDriveVideos(request, action, authHeaders, fetcher) {
       if (response.status === 308) return reply({ saved: savedBytes(response) });
       if (response.status === 404 || response.status === 410) return reply({ expired: true }, 410);
       fail(`Drive upload failed (HTTP ${response.status}).`);
+    }
+
+    if (action === "video-to-package") {
+      // Moves an original video from the backup folder into its job's package folder
+      // ("Original videos"), so the job's folder holds everything. Only this app's own files.
+      if (!request.headers.get("Content-Type")?.startsWith("application/json")) fail("JSON request required.", 415);
+      let body;
+      try { body = JSON.parse(await request.text()); } catch { fail("Invalid request.", 400); }
+      const fileId = String(body.fileId || "");
+      const folderId = String(body.folderId || "");
+      if (!validId(fileId) || !validId(folderId)) fail("Invalid video or folder.", 400);
+      const read = async (id, fields) => {
+        const response = await call(`${DRIVE}/files/${id}?fields=${fields}`);
+        if (!response.ok) fail(`Could not read Google Drive (HTTP ${response.status}).`, response.status === 404 ? 404 : 503);
+        return response.json();
+      };
+      const file = await read(fileId, "id,parents,ownedByMe,trashed,appProperties");
+      if (!file.ownedByMe || file.trashed || file.appProperties?.hpdKind !== FILE_KIND) fail("Not a video backup of this app.", 403);
+      const target = await read(folderId, "id,mimeType,ownedByMe,trashed,appProperties");
+      if (!target.ownedByMe || target.trashed || target.mimeType !== FOLDER_MIME || target.appProperties?.hpdKind !== PACKAGE_FOLDER_KIND) fail("Not an HPD package folder owned by this account.", 403);
+      const originals = await folder("Original videos", PACKAGE_FOLDER_KIND, folderId);
+      const parents = Array.isArray(file.parents) ? file.parents : [];
+      if (parents.includes(originals)) return reply({ moved: true, folderId: originals });
+      const query = new URLSearchParams({ addParents: originals, fields: "id,parents", ...(parents.length ? { removeParents: parents.join(",") } : {}) });
+      const moved = await call(`${DRIVE}/files/${fileId}?${query}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: "{}" });
+      if (!moved.ok) fail(`Could not move the video into the job folder (HTTP ${moved.status}).`);
+      return reply({ moved: true, folderId: originals });
     }
 
     fail("Not found.", 404);

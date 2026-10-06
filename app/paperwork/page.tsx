@@ -178,6 +178,8 @@ type CompletePackagePreview = {
 };
 
 type PendingCompletePackage = CompletePackagePreview & {
+  // Videos already removed from the phone: linked from the email (originals in Drive).
+  driveVideoLinks?: { name: string; url: string }[];
   folderEntries: PackageFileEntry[];
   applicationEntries: PackageFileEntry[];
   videoEntries: PackageFileEntry[];
@@ -1098,7 +1100,8 @@ function packageManifestText(
   jobId: string,
   pdf: GeneratedPdfResult,
   includedMedia: FieldMedia[],
-  skippedMedia: FieldMedia[]
+  skippedMedia: FieldMedia[],
+  driveVideoLinks: { name: string; url: string }[] = []
 ) {
   const lines = [
     "HPD COMPLETE PACKAGE",
@@ -1116,6 +1119,10 @@ function packageManifestText(
       return `- ${String(index + 1).padStart(2, "0")} ${label}: ${media.name || "unnamed"} | ${media.evidenceLabel || media.kind} | ${captured} | ${stamp} | ${packetSizeLabel(media.size)}`;
     }),
   ];
+
+  if (driveVideoLinks.length) {
+    lines.push("", `VIDEOS IN GOOGLE DRIVE (${driveVideoLinks.length})`, ...driveVideoLinks.map((video) => `- ${video.name}: ${video.url}`));
+  }
 
   if (skippedMedia.length) {
     lines.push(
@@ -1537,7 +1544,7 @@ export default function PaperworkPage() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  async function markPackageGenerated(jobId: string, approved = false, delivery?: { driveLink: string; emailed: boolean }) {
+  async function markPackageGenerated(jobId: string, approved = false, delivery?: { driveLink: string; emailed: boolean; emailTo?: string[]; receipt?: { messageId: string; inInbox: boolean } }) {
     if (!jobId) return "Package generated.";
 
     const generatedAt = new Date().toISOString();
@@ -1547,7 +1554,13 @@ export default function PaperworkPage() {
     // yourself from the job card after checking everything.
     const patch = {
       ...(approved ? { PackageApprovedAt: generatedAt } : {}),
-      ...(delivery ? { PackageDriveLink: delivery.driveLink, ...(delivery.emailed ? { PackageEmailedAt: generatedAt } : {}) } : {}),
+      ...(delivery ? { PackageDriveLink: delivery.driveLink, ...(delivery.emailed ? {
+        PackageEmailedAt: generatedAt,
+        // Gmail's receipt: shown on the job card as "Emailed to you ✓", and needed before the
+        // phone's copies of this job's videos are removed (they are in the job's Drive folder).
+        ...(delivery.emailTo?.length ? { PackageEmailedTo: delivery.emailTo.join(", ") } : {}),
+        ...(delivery.receipt?.messageId ? { PackageEmailId: delivery.receipt.messageId, PackageEmailInInbox: delivery.receipt.inInbox } : {}),
+      } : {}) } : {}),
       PackageReviewStatus: approved ? "Approved" : "Pending review",
       PackageGeneratedAt: generatedAt,
       packageGeneratedAt: generatedAt,
@@ -2097,8 +2110,13 @@ export default function PaperworkPage() {
         return;
       }
 
-      let includedMedia = await emailMediaCopies(evidenceRows.filter(mediaHasPackageBytes));
-      const skippedMedia = evidenceRows.filter((media) => !mediaHasPackageBytes(media));
+      // Videos already removed from this phone (the job was sent before): their originals are in
+      // the job's Drive folder, so the email links to them instead of attaching them.
+      const driveVideos = evidenceRows.filter((media) => media.mediaType === "video" && media.freedAt && media.driveFileId);
+      const phoneRows = evidenceRows.filter((media) => !driveVideos.includes(media));
+      const driveVideoLinks = driveVideos.map((media) => ({ name: media.name || "video", url: `https://drive.google.com/file/d/${encodeURIComponent(String(media.driveFileId))}/view` }));
+      let includedMedia = await emailMediaCopies(phoneRows.filter(mediaHasPackageBytes));
+      const skippedMedia = phoneRows.filter((media) => !mediaHasPackageBytes(media));
       if (skippedMedia.length) {
         setPdfStatus(`${skippedMedia.length} saved media file(s) are missing their original bytes. Package stopped. Restore or re-upload these files before generating the complete package.`);
         return;
@@ -2110,7 +2128,7 @@ export default function PaperworkPage() {
         );
         return;
       }
-      if (!includedMedia.length && !allowPdfOnlyPackage) {
+      if (!includedMedia.length && !driveVideos.length && !allowPdfOnlyPackage) {
         setPdfStatus("No package-ready image or video bytes were found for this OMO. Retake or upload evidence from the job card.");
         return;
       }
@@ -2170,7 +2188,7 @@ export default function PaperworkPage() {
 
       const manifestEntry: PackageFileEntry = {
         path: "PACKAGE-MANIFEST.txt",
-        bytes: zipTextBytes(packageManifestText(pdf.jobId, pdf, includedMedia, skippedMedia)),
+        bytes: zipTextBytes(packageManifestText(pdf.jobId, pdf, includedMedia, skippedMedia, driveVideoLinks)),
         mimeType: "text/plain",
         label: "Package manifest",
         section: "manifest",
@@ -2320,6 +2338,7 @@ export default function PaperworkPage() {
 
       pendingCompletePackageRef.current = {
         ...preview,
+        driveVideoLinks,
         folderEntries,
         applicationEntries,
         videoEntries,
@@ -2507,6 +2526,7 @@ export default function PaperworkPage() {
         "",
         `Attached: signed affidavit/invoice PDF${summary.photos ? `, ${summary.photos} before/after photo(s)` : ""}${summary.videos ? `, ${summary.videos} video(s)` : ""}.`,
         ...(summary.linked.length ? ["", "Too large to attach (open with the link):", ...summary.linked.map((file) => `- ${file.name}: ${file.url || "saved in the package folder"}`)] : []),
+        ...(pending.driveVideoLinks?.length ? ["", "Videos (in Google Drive, open with the link):", ...pending.driveVideoLinks.map((file) => `- ${file.name}: ${file.url}`)] : []),
       ].filter((line, index, lines) => line || lines[index - 1]).join("\n"),
     };
   }
@@ -2534,7 +2554,7 @@ export default function PaperworkPage() {
     try {
       setGoogle(await googleStatus());
       const result = await sendPackageEmail({ ...packageEmailParts(pending), folderLink, fileLinks: deliveredFileLinksRef.current });
-      if (result.emailed) await markPackageGenerated(pending.jobId, true, { driveLink: folderLink, emailed: true });
+      if (result.emailed) await markPackageGenerated(pending.jobId, true, { driveLink: folderLink, emailed: true, emailTo: result.emailTo, receipt: result.emailReceipt });
       setDelivery({ working: false, folderLink, emailed: result.emailed, message: result.emailed ? emailedMessage(result.emailTo, result.emailSummary) : "", error: result.emailError });
     } catch (error) {
       setDelivery({ working: false, folderLink, emailed: false, message: "", error: error instanceof Error ? error.message : "The email could not be sent." });
@@ -2589,7 +2609,9 @@ export default function PaperworkPage() {
         onProgress: (message) => setDelivery((current) => ({ ...(current || { folderLink: "", emailed: false, error: "" }), working: true, message })),
       });
       deliveredFileLinksRef.current = result.fileLinks || {};
-      const archive = await markPackageGenerated(pending.jobId, true, { driveLink: result.folderLink, emailed: result.emailed });
+      const archive = await markPackageGenerated(pending.jobId, true, { driveLink: result.folderLink, emailed: result.emailed, emailTo: result.emailTo, receipt: result.emailReceipt });
+      // The job is safe in Drive and emailed: free the phone's copies of its videos now.
+      if (result.emailed) window.dispatchEvent(new Event("hpd-package-sent"));
       setPackageApproved(true);
       setDelivery({
         working: false,

@@ -48,7 +48,7 @@ const google = async (url, options = {}) => {
     return new Response(null, { status: 200, headers: { Location: "https://www.googleapis.com/upload/drive/v3/files?upload_id=test" } });
   }
   if (url === "https://www.googleapis.com/upload/drive/v3/files?upload_id=test") return Response.json({ id: "uploaded_file_01" });
-  if (url.startsWith("https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send")) return Response.json({ id: "sent-message" });
+  if (url.startsWith("https://gmail.googleapis.com/upload/gmail/v1/users/me/messages/send")) return Response.json({ id: "sent-message", labelIds: ["SENT", "INBOX"] });
   throw new Error(`Unexpected request ${url}`);
 };
 
@@ -113,7 +113,7 @@ const boundary = "hpd_test_boundary_0001";
 const parts = `--${boundary}\r\nContent-Type: text/plain\r\n\r\nPackage ER05395\r\n--${boundary}--\r\n`;
 response = await handleDrivePackages(req("email-package", parts, { "Content-Type": "text/plain", "X-HPD-Boundary": boundary, "X-HPD-Subject": encodeURIComponent("ER05395 – Work Completed"), To: "attacker@example.test" }), "email-package", auth, google, {}, owner);
 assert.equal(response.status, 200);
-assert.deepEqual(await response.json(), { sent: true, to: [owner] });
+assert.deepEqual(await response.json(), { sent: true, to: [owner], messageId: "sent-message", labels: ["SENT", "INBOX"] });
 const message = new TextDecoder().decode(calls.at(-1).body);
 assert.match(message, /^From: owner@example\.test\r\nTo: owner@example\.test\r\nSubject: =\?UTF-8\?B\?/);
 assert.ok(!message.includes("attacker"));

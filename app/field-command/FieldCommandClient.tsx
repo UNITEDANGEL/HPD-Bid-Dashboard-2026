@@ -6,6 +6,7 @@ import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
 import { BuildingHero, SavedPackageLink } from "./BuildingPhoto";
 import VideoBackupLine from "./VideoBackupLine";
+import JobSafeLine from "./JobSafeLine";
 import type { RouteJob, RoutePoint } from "../../lib/day-route";
 import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/current-job";
 import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointmentPatch, appointmentTiming, nyToday, type Appointment } from "../../lib/appointments";
@@ -23,6 +24,8 @@ import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
 import { daySummary, type SummaryRow } from "../../lib/day-summary";
 import { formatBytes, phoneStorage, type PhoneStorage } from "../../lib/phone-storage";
+import { clearFieldPackets } from "../../lib/field-packet-store";
+import { FREED_KEY } from "../../lib/free-space";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -2142,10 +2145,13 @@ export default function FieldCommandClient() {
     setClearText("");
     let removed = 0;
     try { removed = await clearFieldEvidence(id); } catch { /* reported below */ }
+    // The package zip saved on this phone goes too; everything already in Google Drive stays there.
+    try { await clearFieldPackets(id); } catch {}
+    try { const freed = JSON.parse(window.localStorage.getItem(FREED_KEY) || "{}"); delete freed[id]; window.localStorage.setItem(FREED_KEY, JSON.stringify(freed)); } catch {}
     await refreshMediaCounts(job);
     // The start-over entry was queued by writeSharedWorkflowPatch; send it now.
     const serverCleared = (await flushOverrideOutbox(HPD_STATUS_WORKER_URL)).waiting === 0;
-    setMediaMessage(`${id} started over: outcome, steps and package cleared; ${removed} photo/video file(s) removed from this phone.${serverCleared ? "" : " The status server didn't answer; it will be cleared next time you're online."}`);
+    setMediaMessage(`${id} started over: outcome, steps and package cleared; ${removed} photo/video file(s) removed from this phone (copies already in Google Drive are kept).${serverCleared ? "" : " The status server didn't answer; it will be cleared next time you're online."}`);
     setOutcomeMessage("");
   }
 
@@ -2936,6 +2942,7 @@ export default function FieldCommandClient() {
                       <i aria-hidden="true">&#8599;</i>
                     </a>
                   ) : null}
+                  <JobSafeLine jobId={id} emailedAt={value(selectedJob, ["PackageEmailedAt"])} emailedTo={value(selectedJob, ["PackageEmailedTo"])} inInbox={String(selectedJob.PackageEmailInInbox) === "true"} />
                   <Link className="jc-doc" href={`/jobs/${id}`}>
                     <DocumentsIcon />
                     <span><b>Job documents</b><small>ITB, COA and saved files</small></span>
