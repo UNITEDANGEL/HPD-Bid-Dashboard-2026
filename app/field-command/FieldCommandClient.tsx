@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEve
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
 import { BuildingHero, SavedPackageLink } from "./BuildingPhoto";
+import VideoBackupLine from "./VideoBackupLine";
 import type { RouteJob, RoutePoint } from "../../lib/day-route";
 import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/current-job";
 import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointmentPatch, appointmentTiming, nyToday, type Appointment } from "../../lib/appointments";
@@ -2806,10 +2807,11 @@ export default function FieldCommandClient() {
                     ) : backup.queued ? (
                       <>☁️ Backing up to Drive… {backup.queued} part{backup.queued === 1 ? "" : "s"} left</>
                     ) : backup.verifiedAt ? (
-                      <>☁️ Drive backup on · last backup {formatSavedTime(backup.verifiedAt)} (photos and job steps; videos go to Drive with the package)</>
+                      <>☁️ Drive backup on · last backup {formatSavedTime(backup.verifiedAt)} (photos and job steps)</>
                     ) : (
                       <>☁️ Drive backup on · first backup starting</>
                     )}
+                    {backup.auto ? <VideoBackupLine jobId={id} /> : null}
                   </p>
                 ) : null}
                 {mediaChoice && !mediaChoiceInStep ? <div ref={mediaChoiceRef} className="fc-photo-choice jc-choice" role="group" aria-label={`${mediaChoice} photo source`}>

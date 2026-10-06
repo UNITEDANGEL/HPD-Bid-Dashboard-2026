@@ -1,7 +1,9 @@
 import { handleDriveBackups } from "./drive-backups.mjs";
 import { handleDrivePackages } from "./drive-packages.mjs";
+import { handleDriveVideos } from "./drive-videos.mjs";
 const BACKUP_ACTIONS = ["backups", "backup", "backup-id", "save-backup", "test-backup"];
 const PACKAGE_ACTIONS = ["package-folder", "package-file", "email-package"];
+const VIDEO_ACTIONS = ["video-start", "video-piece"];
 const SCOPE = "https://www.googleapis.com/auth/drive.file";
 // Sends approved packages from the owner's Gmail. Optional: Drive works if it is not granted.
 const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.send";
@@ -65,8 +67,8 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
   const cfg = config(env);
   if (!cfg) return json({ configured: false, connected: false, syncEnabled: false, error: "Drive connection setup is pending." }, action === "session" ? 200 : 503);
   if (url.origin !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
-  if (!["session", "start", "callback", "disconnect", "check", ...BACKUP_ACTIONS, ...PACKAGE_ACTIONS].includes(action)) return json({ error: "Not found." }, 404);
-  const method = ["start", "disconnect", "check", "backup-id", "save-backup", "test-backup", ...PACKAGE_ACTIONS].includes(action) ? "POST" : "GET";
+  if (!["session", "start", "callback", "disconnect", "check", ...BACKUP_ACTIONS, ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS].includes(action)) return json({ error: "Not found." }, 404);
+  const method = ["start", "disconnect", "check", "backup-id", "save-backup", "test-backup", ...PACKAGE_ACTIONS, ...VIDEO_ACTIONS].includes(action) ? "POST" : "GET";
   if (request.method !== method) return json({ error: "Method not allowed." }, 405);
   if (method === "POST" && request.headers.get("Origin") !== cfg.origin) return json({ error: "Origin not allowed." }, 403);
   try {
@@ -74,7 +76,7 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
       const saved = await session(request, env, cfg);
       return json({ configured: true, connected: Boolean(saved), email: saved?.email || null, verifiedAt: saved?.verifiedAt || null, canEmail: Boolean(saved?.canEmail), syncEnabled: false });
     }
-    if (action === "check" || BACKUP_ACTIONS.includes(action) || PACKAGE_ACTIONS.includes(action)) {
+    if (action === "check" || BACKUP_ACTIONS.includes(action) || PACKAGE_ACTIONS.includes(action) || VIDEO_ACTIONS.includes(action)) {
       const saved = await session(request, env, cfg);
       if (!saved) return json({ reconnectRequired: true, error: "Sign in to Google Drive again." }, 401);
       const renewed = await fetcher("https://oauth2.googleapis.com/token", {
@@ -116,7 +118,9 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
         ? await handleDriveBackups(request, action, authHeaders, fetcher)
         : PACKAGE_ACTIONS.includes(action)
           ? await handleDrivePackages(request, action, authHeaders, fetcher, env, cfg.email)
-          : json({ configured: true, connected: true, email: cfg.email, verifiedAt, canEmail, syncEnabled: false });
+          : VIDEO_ACTIONS.includes(action)
+            ? await handleDriveVideos(request, action, authHeaders, fetcher)
+            : json({ configured: true, connected: true, email: cfg.email, verifiedAt, canEmail, syncEnabled: false });
       if (renewSession) response.headers.append("Set-Cookie", cookie(SESSION, id, TTL));
       return response;
     }

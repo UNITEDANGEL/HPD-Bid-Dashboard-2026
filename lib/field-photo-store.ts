@@ -43,6 +43,7 @@ export type FieldMedia = {
 export type FieldPhoto = FieldMedia;
 
 import { shadowUpsert } from "./unified-field-store";
+import { keepVideoForBackup } from "./video-backup";
 
 export type FieldMediaCounts = Record<FieldMediaKind, number> & {
   images: number;
@@ -536,6 +537,8 @@ type DecodedImageEvidence = {
 
 type ProcessedEvidenceSource = {
   dataUrl: string;
+  // Videos: the file itself, kept aside so the Drive video backup can send it in pieces.
+  blob?: Blob;
   type: string;
   size: number;
   stamped?: boolean;
@@ -689,6 +692,7 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
     const dataUrl = await blobToDataUrl(blob);
     return {
       dataUrl,
+      blob,
       type: blob.type || "video/webm",
       size: blob.size,
     };
@@ -718,6 +722,7 @@ async function processVideoEvidenceWithFallback(file: File, stampMeta: EvidenceS
     console.warn("Video stamp failed; saving original video for package.", error);
     return {
       dataUrl: await readFileAsDataUrl(file, mimeType || file.type || "video/mp4"),
+      blob: file,
       type: mimeType || file.type || "video/mp4",
       size: file.size,
       stamped: false,
@@ -847,6 +852,7 @@ export async function saveFieldPhotos(
   if (!cleanJobId) return [] as FieldMedia[];
 
   const saved: FieldMedia[] = [];
+  const videoFiles = new Map<string, Blob>();
 
   for (const file of Array.from(files)) {
     const detected = await detectMediaFile(file);
@@ -895,6 +901,7 @@ export async function saveFieldPhotos(
       stampError: source.stampError || "",
     };
     saved.push(evidence);
+    if (mediaType === "video" && source.blob) videoFiles.set(evidence.id, source.blob);
   }
 
   if (!saved.length) return saved;
@@ -918,8 +925,61 @@ export async function saveFieldPhotos(
   }
 
   await Promise.all(saved.map((evidence) => shadowUpsert("media", evidence as unknown as Record<string, unknown>)));
+  for (const evidence of saved) {
+    const blob = videoFiles.get(evidence.id);
+    if (blob) await keepVideoForBackup(evidence, blob).catch(() => undefined);
+  }
+  // Starts the Drive video backup now instead of at the next minute.
+  if (videoFiles.size) window.dispatchEvent(new Event("hpd-video-saved"));
 
   return saved;
+}
+
+// For the Drive video backup: video ids (one job or all) from the storage index, without reading
+// any video, and one record at a time when an older video has no kept file.
+export async function listFieldVideoIds(jobId?: string): Promise<string[]> {
+  if (!hasIndexedDb()) return [];
+  const db = await openDb();
+  try {
+    const store = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME);
+    const keys = (index: string, value: string) => new Promise<string[]>((resolve, reject) => {
+      const request = store.index(index).getAllKeys(value);
+      request.onsuccess = () => resolve((request.result || []).map(String));
+      request.onerror = () => reject(request.error);
+    });
+    const videos = await keys("mediaType", "video");
+    if (!jobId) return videos;
+    const mine = new Set(await keys("jobId", jobId));
+    return videos.filter((id) => mine.has(id));
+  } finally {
+    db.close();
+  }
+}
+
+export async function readFieldMedia(id: string): Promise<FieldMedia | null> {
+  const db = await openDb();
+  try {
+    const request = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).get(id);
+    return await new Promise<FieldMedia | null>((resolve, reject) => {
+      request.onsuccess = () => resolve((request.result as FieldMedia) || null);
+      request.onerror = () => reject(request.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
+export async function fieldMediaExists(id: string) {
+  const db = await openDb();
+  try {
+    const request = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).getKey(id);
+    return await new Promise<boolean>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result !== undefined);
+      request.onerror = () => reject(request.error);
+    });
+  } finally {
+    db.close();
+  }
 }
 
 export async function listFieldPhotos(jobId: string) {
