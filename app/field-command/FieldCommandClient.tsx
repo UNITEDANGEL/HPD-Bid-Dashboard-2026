@@ -7,7 +7,7 @@ import TodayRoute from "./TodayRoute";
 import { BuildingHero, SavedPackageLink } from "./BuildingPhoto";
 import type { RouteJob, RoutePoint } from "../../lib/day-route";
 import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/current-job";
-import { activeAppointment, appointmentLabel, appointmentPatch, appointmentTiming, nyToday, type Appointment } from "../../lib/appointments";
+import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointmentPatch, appointmentTiming, nyToday, type Appointment } from "../../lib/appointments";
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
@@ -1892,7 +1892,7 @@ export default function FieldCommandClient() {
     setWorkflowStamps(prev => ({ ...prev, [id]: { ...prev[id], status: patch.status } }));
     if (["requested", "confirmed"].includes(appointment.state)) {
       setAppointmentOpen(false);
-      setOutcomeMessage(`📅 ${id}: appointment saved for ${appointmentLabel(appointment)}. The job waits for it, and its pin lights up on the map as the time gets close.`);
+      setOutcomeMessage(`📅 ${id}: appointment saved for ${appointmentLabel(appointment)}. Tap "🔔 Add to Calendar" so your iPhone reminds you even with the app closed; the pin also lights up on the map as the time gets close.`);
     }
   }
 
@@ -2620,6 +2620,11 @@ export default function FieldCommandClient() {
                           <p className={`jc-step-appointment ${appointmentWhen?.soon ? "is-soon" : ""}`} data-hpd-smoke="jc-step-appointment">
                             📅 Appointment {appointmentLabel(appointment)}
                             {appointmentWhen?.soon ? (appointmentWhen.startsIn > 0 ? ` · starts in ${appointmentWhen.startsIn} min` : " · now") : appointmentWhen?.past ? " · time passed" : ""}
+                            {!appointmentWhen?.past ? (
+                              <a className="jc-calendar-add" data-hpd-smoke="jc-calendar-add" href={appointmentCalendarHref(id, jobAddress(selectedJob), appointment, typeof window === "undefined" ? "" : window.location.origin)} target="_blank" rel="noreferrer">
+                                🔔 Add to Calendar <small>(alerts 1 h and 15 min before, even with the app closed)</small>
+                              </a>
+                            ) : null}
                           </p>
                         ) : null}
                         {current === 2 ? (
