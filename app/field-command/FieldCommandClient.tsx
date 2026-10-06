@@ -17,7 +17,7 @@ import { visitLocationFields, type GpsFix } from "../../lib/visit-record";
 import { adoptServerOverrides, flushOverrideOutbox, mergeOverrideMaps, queueOverrideSync } from "../../lib/override-sync";
 import { fetchServerWorkflowOverrides, HPD_STATUS_WORKER_URL, startOverPatch } from "../../lib/paperwork";
 import { longestCleanDescription } from "../../lib/description-quality";
-import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidence, redateFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
+import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidenceLite, redateFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
 import { daySummary, type SummaryRow } from "../../lib/day-summary";
@@ -1974,7 +1974,8 @@ export default function FieldCommandClient() {
 
   async function refreshMediaCounts(job: JobRecord) {
     const id = jobId(job);
-    const rows = await listFieldEvidence(id);
+    // Lite: videos are counted, never read (reading them crashed the app on big videos).
+    const rows = await listFieldEvidenceLite(id);
     setMediaCounts((prev) => ({
       ...prev,
       [id]: {
@@ -1982,14 +1983,14 @@ export default function FieldCommandClient() {
         after: rows.filter((media) => media.kind === "after").length,
         total: rows.length,
         beforeVideos: rows.filter((media) => media.kind === "before" && media.mediaType === "video").length,
-        beforeDay: localDay(rows.find((media) => media.kind === "before")?.capturedAt),
-        afterDay: localDay(rows.find((media) => media.kind === "after")?.capturedAt),
+        beforeDay: localDay(rows.find((media) => media.kind === "before" && media.capturedAt)?.capturedAt),
+        afterDay: localDay(rows.find((media) => media.kind === "after" && media.capturedAt)?.capturedAt),
         afterVideos: rows.filter((media) => media.kind === "after" && media.mediaType === "video").length,
       },
     }));
     const thumbs = (kind: string) => rows
       .filter((media) => media.kind === kind)
-      .map((media) => (media.mediaType === "video" ? media.posterDataUrl || "" : media.dataUrl))
+      .map((media) => media.dataUrl)
       .filter(Boolean)
       .slice(-3);
     setMediaThumbs((prev) => ({ ...prev, [id]: { before: thumbs("before"), after: thumbs("after") } }));
@@ -2799,13 +2800,13 @@ export default function FieldCommandClient() {
                 {backup && counts.total > 0 ? (
                   <p className={`jc-backup ${backup.auto && !backup.error ? "is-on" : "is-off"}`} data-hpd-smoke="jc-backup">
                     {!backup.auto ? (
-                      <>⚠ These photos/videos are only on this phone. <button type="button" data-hpd-smoke="jc-backup-on" onClick={() => void turnOnDriveBackup()}>Back up to Drive</button></>
+                      <>⚠ These photos are only on this phone. <button type="button" data-hpd-smoke="jc-backup-on" onClick={() => void turnOnDriveBackup()}>Back up to Drive</button></>
                     ) : backup.error ? (
                       <>⚠ Drive backup: {backup.error}</>
                     ) : backup.queued ? (
                       <>☁️ Backing up to Drive… {backup.queued} part{backup.queued === 1 ? "" : "s"} left</>
                     ) : backup.verifiedAt ? (
-                      <>☁️ Drive backup on · last full backup {formatSavedTime(backup.verifiedAt)}</>
+                      <>☁️ Drive backup on · last backup {formatSavedTime(backup.verifiedAt)} (photos and job steps; videos go to Drive with the package)</>
                     ) : (
                       <>☁️ Drive backup on · first backup starting</>
                     )}

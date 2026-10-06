@@ -41,15 +41,26 @@
   background: rgba(255, 255, 255, 0.35);
 }
 
+/* Close (×): stays pinned to the card's top-right corner while the card scrolls (sticky), a solid
+   dark circle with a white ring so it reads on top of any building picture. The negative bottom
+   margin keeps it from pushing the picture down. */
 #fc-job-card .fc-job-sheet-close {
-  top: 14px !important;
-  right: 12px !important;
-  width: 46px !important;
-  height: 46px !important;
+  position: sticky !important;
+  top: 8px !important;
+  right: auto !important;
+  z-index: 30 !important;
+  display: grid !important;
+  place-items: center;
+  width: 44px !important;
+  height: 44px !important;
+  margin: 4px 4px -48px auto !important;
   border-radius: 50% !important;
-  background: rgba(255, 255, 255, 0.1) !important;
+  border: 2px solid rgba(255, 255, 255, 0.85) !important;
+  background: rgba(15, 23, 42, 0.85) !important;
   color: #ffffff !important;
-  font-size: 24px !important;
+  font-size: 26px !important;
+  line-height: 1 !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* Header */
@@ -890,7 +901,6 @@
 .fc-package-sheet > iframe { flex: 1; width: 100%; border: 0; background: #0b1220; }
 @keyframes fc-package-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 /* The close button stays on top of the building picture. */
-#fc-job-card .fc-job-sheet-close { z-index: 6; top: 30px; right: 16px; background: rgba(0, 0, 0, 0.6); color: #fff; }
 
 /* Original ITB page viewer (same sheet as the package) */
 .fc-itb-body { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 12px; display: grid; gap: 12px; align-content: start; }
