@@ -5,6 +5,8 @@
 const DRIVE = "https://www.googleapis.com/drive/v3";
 const UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
 const ROOT_KIND = "hpd-video-root";
+// Photos go up one at a time the same way, into their own backup folder.
+const PHOTO_ROOT_KIND = "hpd-photo-root";
 const JOB_KIND = "hpd-video-job";
 const FILE_KIND = "hpd-video-file";
 // The package folders made by drive-packages.mjs (one per job package).
@@ -56,8 +58,9 @@ export async function handleDriveVideos(request, action, authHeaders, fetcher) {
       const size = Number(body.size);
       if (!/^[\w:.+-]{1,100}$/.test(mediaId)) fail("Invalid video id.", 400);
       if (!Number.isInteger(size) || size <= 0 || size > MAX_VIDEO_BYTES) fail("Invalid video size.", 400);
-      const mimeType = /^video\/[\w.+-]+$/.test(body.mimeType || "") ? body.mimeType : "video/mp4";
-      const root = await folder("HPD Video Backup", ROOT_KIND);
+      const photo = /^image\/[\w.+-]+$/.test(body.mimeType || "");
+      const mimeType = photo || /^video\/[\w.+-]+$/.test(body.mimeType || "") ? body.mimeType : "video/mp4";
+      const root = photo ? await folder("HPD Photo Backup", PHOTO_ROOT_KIND) : await folder("HPD Video Backup", ROOT_KIND);
       const job = await folder(cleanName(body.jobId, "Other"), JOB_KIND, root);
       // Already saved (the phone lost track, or a second phone): never upload it twice.
       const existing = await findOne(`'${job}' in parents and appProperties has { key='hpdMediaId' and value='${quote(mediaId)}' }`);

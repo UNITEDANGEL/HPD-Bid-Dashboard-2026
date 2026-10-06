@@ -128,4 +128,26 @@ assert.equal(response.status, 403);
 response = await move({ fileId: "../x", folderId: "package_folder_01" });
 assert.equal(response.status, 400);
 
+// Photos: same one-file upload, filed under "HPD Photo Backup / <job>".
+const photoCalls = [];
+const photoDrive = async (url, options = {}) => {
+  photoCalls.push(url);
+  if (url.startsWith("https://www.googleapis.com/drive/v3/files?q=")) {
+    const q = new URL(url).searchParams.get("q");
+    if (/hpd-photo-root/.test(q)) return Response.json({ files: [{ id: "photo_root_0001" }] });
+    if (/hpdMediaId/.test(q)) return Response.json({ files: [] });
+    assert.match(q, /'photo_root_0001' in parents and name = 'ER04964'/);
+    return Response.json({ files: [{ id: "photo_job_00001" }] });
+  }
+  if (url.startsWith("https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id")) {
+    assert.equal(options.headers["X-Upload-Content-Type"], "image/jpeg");
+    assert.deepEqual(JSON.parse(options.body).parents, ["photo_job_00001"]);
+    return new Response(null, { status: 200, headers: { Location: SESSION } });
+  }
+  throw new Error(`Unexpected request ${url}`);
+};
+response = await handleDriveVideos(req("video-start", JSON.stringify({ ...video, mediaId: "ER04964-before-photo-1", name: "before.jpg", mimeType: "image/jpeg", size: 300000 }), { "Content-Type": "application/json" }), "video-start", auth, photoDrive);
+assert.deepEqual(await response.json(), { session: SESSION });
+assert.ok(!photoCalls.some((u) => /hpd-video-root/.test(decodeURIComponent(u))), "photos never go in the video folder");
+
 console.log("drive video backup: PASS");

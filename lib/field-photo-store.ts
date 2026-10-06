@@ -942,6 +942,14 @@ export async function saveFieldPhotos(
 // For the Drive video backup: video ids (one job or all) from the storage index, without reading
 // any video, and one record at a time when an older video has no kept file.
 export async function listFieldVideoIds(jobId?: string): Promise<string[]> {
+  return listFieldMediaIds("video", jobId);
+}
+
+export async function listFieldPhotoIds(jobId?: string): Promise<string[]> {
+  return listFieldMediaIds("image", jobId);
+}
+
+async function listFieldMediaIds(mediaType: FieldMediaType, jobId?: string): Promise<string[]> {
   if (!hasIndexedDb()) return [];
   const db = await openDb();
   try {
@@ -951,10 +959,10 @@ export async function listFieldVideoIds(jobId?: string): Promise<string[]> {
       request.onsuccess = () => resolve((request.result || []).map(String));
       request.onerror = () => reject(request.error);
     });
-    const videos = await keys("mediaType", "video");
-    if (!jobId) return videos;
+    const ids = await keys("mediaType", mediaType);
+    if (!jobId) return ids;
     const mine = new Set(await keys("jobId", jobId));
-    return videos.filter((id) => mine.has(id));
+    return ids.filter((id) => mine.has(id));
   } finally {
     db.close();
   }
@@ -1141,11 +1149,20 @@ export async function clearFieldEvidence(jobId: string) {
 
 // After the job is safe in Drive and emailed (you confirm on the job card): drop one video's data from this phone, keeping its
 // details and thumbnail, and where the original is in Drive. Returns the bytes freed.
-export async function freeFieldVideo(id: string, driveFileId: string) {
-  const media = await readFieldMedia(id);
-  if (!media || media.mediaType !== "video" || !media.dataUrl) return 0;
-  const freed = Math.round((media.dataUrl.length * 3) / 4);
-  const stub: FieldMedia = { ...media, dataUrl: "", freedAt: new Date().toISOString(), driveFileId };
+export async function freeFieldVideo(id: string, driveFileId: string, meta?: Omit<FieldMedia, "dataUrl">, size = 0) {
+  // With the details kept by the video backup, the video is never read; otherwise (a video saved
+  // before that) it is read once here, after you tapped the button.
+  let stub: FieldMedia;
+  let freed = size;
+  if (meta && meta.id === id) {
+    if (!(await fieldMediaExists(id))) return 0;
+    stub = { ...meta, dataUrl: "", freedAt: new Date().toISOString(), driveFileId };
+  } else {
+    const media = await readFieldMedia(id);
+    if (!media || media.mediaType !== "video" || !media.dataUrl) return 0;
+    freed = Math.round((media.dataUrl.length * 3) / 4);
+    stub = { ...media, dataUrl: "", freedAt: new Date().toISOString(), driveFileId };
+  }
   const db = await openDb();
   try {
     const transaction = db.transaction(STORE_NAME, "readwrite");
