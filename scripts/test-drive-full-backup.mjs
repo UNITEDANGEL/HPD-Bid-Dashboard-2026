@@ -41,7 +41,9 @@ const sample = { ...empty, assets: [
   { db: "hpd-field-packets-v1", store: "packets", record: { id: "test-pdf", jobId: "TEST1", mimeType: "application/pdf", fileName: "synthetic.pdf", dataUrl: "data:application/pdf;base64,JVBERi0xLjQ=", generatedAt: "2026-09-28T10:00:00Z" } },
 ] };
 assert.equal((await restoreMissing(sample)).added, 2);
-assert.deepEqual((await captureFullBackup()).assets, sample.assets);
+assert.deepEqual((await captureFullBackup(localStorage, { includeMedia: true })).assets, sample.assets);
+// The automatic backup leaves photos and saved packages out (each photo goes to Drive on its own).
+assert.deepEqual((await captureFullBackup()).assets, []);
 // Videos and oversize items (a saved package zip) stay out of the automatic backup: holding them in
 // memory crashed the app. Photos and PDFs still go in.
 {
@@ -57,7 +59,7 @@ assert.deepEqual((await captureFullBackup()).assets, sample.assets);
   await putRaw("hpd-field-photos-v1", "photos", { id: "test-video", jobId: "TEST1", kind: "before", mediaType: "video", type: "video/quicktime", dataUrl: "data:video/quicktime;base64,AAAA", capturedAt: "2026-09-28T10:01:00Z" });
   await putRaw("hpd-field-photos-v1", "photos", { id: "test-old-video", jobId: "TEST1", kind: "after", type: "video/mp4", dataUrl: "data:video/mp4;base64,AAAA", capturedAt: "2026-09-28T10:02:00Z" });
   await putRaw("hpd-field-packets-v1", "packets", { id: "test-big-zip", jobId: "TEST1", generatedAt: "2026-09-28T10:03:00Z", dataUrl: "data:application/zip;base64," + "A".repeat(9 * 1024 * 1024) });
-  const ids = (await captureFullBackup()).assets.map((a) => a.record.id).sort();
+  const ids = (await captureFullBackup(localStorage, { includeMedia: true })).assets.map((a) => a.record.id).sort();
   assert.deepEqual(ids, ["test-pdf", "test-photo"], "videos and oversize items are skipped; photos and PDFs stay");
   await deleteRaw("hpd-field-photos-v1", "photos", "test-video");
   await deleteRaw("hpd-field-photos-v1", "photos", "test-old-video");
@@ -66,12 +68,12 @@ assert.deepEqual((await captureFullBackup()).assets, sample.assets);
 assert.equal((await restoreMissing(sample)).added, 0, "Repeat restore adds nothing");
 const conflicting = { ...sample, stores: { [key]: { TEST1: { notes: "Different" }, TEST2: { notes: "Missing" } } },
   assets: sample.assets.map((a) => ({ ...a, record: { ...a.record, jobId: "DIFFERENT" } })) };
-const plan = planRestore(await captureFullBackup(), conflicting);
+const plan = planRestore(await captureFullBackup(localStorage, { includeMedia: true }), conflicting);
 assert.equal(plan.conflicts.length, 3); assert.equal(plan.additions.length, 1);
 const merged = await restoreMissing(conflicting);
 assert.equal(merged.added, 1); assert.equal(merged.conflicts, 3);
 assert.equal(JSON.parse(localStorage.getItem(key)).TEST1.notes, "Test only");
-assert.equal((await captureFullBackup()).assets[0].record.jobId, "TEST1");
+assert.equal((await captureFullBackup(localStorage, { includeMedia: true })).assets[0].record.jobId, "TEST1");
 const wrapped = { ...empty, stores: { [key]: { overrides: { TEST1: { notes: "Different" } } } } };
 assert.equal(planRestore(sample, wrapped).conflicts.length, 1);
 assert.throws(() => validateBackup({ ...sample, assets: [{ ...sample.assets[0], db: "credentials" }] }), /Invalid/);
@@ -94,7 +96,8 @@ const api = async (action, body) => {
   return { file: { id }, snapshot: saved.get(id) };
 };
 // Seed an interrupted older 1 MB queue. Migration must preserve every byte before resizing.
-const legacySnapshot = await captureFullBackup();
+// (An older queue still holds photos and PDFs: built with them, so it is over the old 1 MB parts.)
+const legacySnapshot = await captureFullBackup(localStorage, { includeMedia: true });
 const legacyBytes = Buffer.from(JSON.stringify(legacySnapshot)); const legacyParts = [];
 for (let i = 0; i < legacyBytes.length; i += 1048576) legacyParts.push({ id: `legacy_part_${String(i).padStart(8, "0")}`,
   snapshot: { format: "hpd-field-backup-part", version: 1, capturedAt: legacySnapshot.capturedAt, data: legacyBytes.subarray(i, i + 1048576).toString("base64") } });
@@ -113,14 +116,16 @@ assert.match((await backupState()).error, /offline/);
 const allocated = sequence;
 failAt = -1;
 const success = await runFullBackup({ api });
-assert.equal(sequence, allocated, "Resume retains allocated IDs");
+// The old queue is finished, then the new backup (job steps only, no photos) is made.
+assert.ok(sequence >= allocated, "Resume keeps the IDs already allocated");
 assert.ok([...saved.keys()].every((id) => !id.startsWith("legacy_")), "Large pending queue migrated to smaller parts");
 assert.ok([...saved.values()].filter((v) => v.format === "hpd-field-backup-part").every((v) => Buffer.from(v.data, "base64").length <= 262144));
-assert.equal(success.summary.media, 1); assert.equal(success.summary.documents, 1);
+// Photos and saved packages are not in the automatic backup any more (each photo goes to Drive on its own).
+assert.equal(success.summary.media, 0); assert.equal(success.summary.documents, 0);
 const count = uploaded;
 await runFullBackup({ api }); assert.equal(uploaded, count, "Unchanged files are not uploaded again");
 const recovery = await loadRecovery(success.root, api);
-assert.deepEqual(recovery.snapshot.assets, sample.assets, "Original photo/PDF bytes retained");
+assert.deepEqual(recovery.snapshot.assets, [], "The automatic backup holds job steps, not photos or PDFs");
 const first = saved.get(success.root).parts[0]; const original = saved.get(first.id);
 saved.set(first.id, { ...original, data: "AAAA" });
 await assert.rejects(() => loadRecovery(success.root, api), /integrity/);
@@ -128,7 +133,7 @@ saved.set(first.id, original);
 const deviceOne = globalThis.indexedDB;
 globalThis.indexedDB = new IDBFactory(); globalThis.localStorage = new MemoryStorage();
 const restored = await restoreMissing(recovery.snapshot);
-assert.equal(restored.added, 4, "Two job entries plus photo and PDF on isolated second device");
+assert.equal(restored.added, 2, "Two job entries on an isolated second device");
 assert.equal(await contentFingerprint(await captureFullBackup()), await contentFingerprint(recovery.snapshot));
 assert.equal((await restoreMissing(recovery.snapshot)).added, 0);
 localStorage.setItem(key, JSON.stringify({ TEST1: { notes: "New local edit" } }));

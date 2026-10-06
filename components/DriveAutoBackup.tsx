@@ -2,11 +2,13 @@
 
 import { useEffect } from "react";
 import { AUTO_KEY, SYNC_KEY, driveApi, runFullBackup, syncMissingRecords, withBackupLock } from "../lib/drive-backup-client.mjs";
-import { backupVideos } from "../lib/video-backup";
+import { backupPhotos, backupVideos, checkVideoBackupCrash } from "../lib/video-backup";
 import { prepareSentJobs } from "../lib/free-space";
 
 export default function DriveAutoBackup() {
   useEffect(() => {
+    // The app closed during a video upload last time: pause the video backup (the card offers Resume).
+    checkVideoBackupCrash();
     let working = false; let stopped = false;
     const enabled = () => !stopped && localStorage.getItem(AUTO_KEY) === "on" && navigator.onLine && document.visibilityState === "visible";
     async function tick() {
@@ -28,6 +30,8 @@ export default function DriveAutoBackup() {
           // Videos last, one at a time in small pieces (the backup above leaves them out), even
           // when that backup failed this time.
           try {
+            // Photos, then videos: each file once, one at a time.
+            if (enabled()) await backupPhotos({ shouldContinue: enabled });
             if (enabled()) await backupVideos({ shouldContinue: enabled });
           } finally {
             // Jobs saved to Drive and emailed: file their original videos into the job's Drive

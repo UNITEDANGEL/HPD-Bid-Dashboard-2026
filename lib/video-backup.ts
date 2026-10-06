@@ -1,8 +1,10 @@
 // Drive video backup. The regular backup leaves videos out (they are too big to hold in memory),
 // so each video goes to Drive on its own, one at a time, in pieces of a few MB, and an interrupted
 // upload carries on from where Google says it stopped. New videos keep their file aside here
-// (stored on disk, read piece by piece); older videos are read once from the saved copy.
-import { fieldMediaExists, listFieldVideoIds, readFieldMedia, type FieldMedia } from "./field-photo-store";
+// (stored on disk, read piece by piece). Older videos (saved before this backup existed) are never
+// read in the background, since a whole video in memory closes the app on an iPhone; they go to
+// Drive with the package.
+import { dataUrlToBytes, fieldMediaExists, listFieldPhotoIds, listFieldVideoIds, readFieldMedia, type FieldMedia } from "./field-photo-store";
 
 type VideoEntry = {
   id: string;
@@ -19,10 +21,15 @@ type VideoEntry = {
   packageFolderId?: string;
   // Removed from this phone (you tapped the button on the job card).
   freedAt?: string;
+  // The video's details (everything but the video itself), so it can be removed from the phone
+  // later without reading the video into memory.
+  meta?: Omit<FieldMedia, "dataUrl">;
   error?: string;
 };
 export type { VideoEntry };
-export type VideoBackupStatus = { total: number; saved: number; uploading: { id: string; percent: number } | null; error: string };
+// older: videos saved before the automatic video backup (no kept file); they go to Drive with the
+// package, never read in the background. paused: the crash guard stopped the video backup.
+export type VideoBackupStatus = { total: number; saved: number; older: number; paused: boolean; uploading: { id: string; percent: number } | null; error: string };
 type Api = (action: string, init: RequestInit) => Promise<Response>;
 
 const DB_NAME = "hpd-video-backup-v1";
@@ -73,30 +80,39 @@ export async function forgetJobVideos(jobId: string) {
   await run<void>("readwrite", (store) => { for (const entry of entries.values()) if (entry.jobId === jobId) store.delete(entry.id); });
 }
 
-export async function keepVideoForBackup(media: Pick<FieldMedia, "id" | "jobId" | "name" | "type">, blob: Blob) {
-  await putEntry({ id: media.id, jobId: media.jobId, name: media.name, type: media.type, blob, total: blob.size });
+export async function keepVideoForBackup(media: FieldMedia, blob: Blob) {
+  const { dataUrl: _video, ...meta } = media;
+  await putEntry({ id: media.id, jobId: media.jobId, name: media.name, type: media.type, blob, total: blob.size, meta });
+}
+
+// Crash guard: if the app closes while a video is going up, the next start pauses the video backup
+// (the card offers Resume) instead of trying the same thing again.
+export const VIDEO_RUNNING_KEY = "hpd-video-backup-running";
+export const VIDEO_PAUSED_KEY = "hpd-video-backup-paused";
+export function videoBackupPaused() {
+  try { return Boolean(localStorage.getItem(VIDEO_PAUSED_KEY)); } catch { return false; }
+}
+export function resumeVideoBackup() {
+  try { localStorage.removeItem(VIDEO_PAUSED_KEY); localStorage.removeItem(VIDEO_RUNNING_KEY); } catch {}
+  window.dispatchEvent(new Event("hpd-drive-backup-settings"));
+  announce();
+}
+// At app start: a "running" mark left over means the app closed during a video upload.
+export function checkVideoBackupCrash() {
+  try {
+    if (localStorage.getItem(VIDEO_RUNNING_KEY)) {
+      localStorage.setItem(VIDEO_PAUSED_KEY, new Date().toISOString());
+      localStorage.removeItem(VIDEO_RUNNING_KEY);
+    }
+  } catch {}
 }
 
 export async function videoBackupStatus(jobId?: string): Promise<VideoBackupStatus> {
   const [ids, entries] = await Promise.all([listFieldVideoIds(jobId), allEntries()]);
   const saved = ids.filter((id) => entries.get(id)?.uploadedAt).length;
+  const older = ids.filter((id) => !entries.get(id)?.uploadedAt && !entries.get(id)?.blob).length;
   const error = ids.map((id) => entries.get(id)?.error || "").find(Boolean) || "";
-  return { total: ids.length, saved, uploading: uploading && ids.includes(uploading.id) ? uploading : null, error };
-}
-
-// The bytes start..end of a base64 data URL, decoding only that stretch.
-export function base64Bytes(dataUrl: string, start: number, end: number) {
-  const offset = dataUrl.indexOf(",") + 1;
-  const from = Math.floor(start / 3) * 3;
-  const to = Math.ceil(end / 3) * 3;
-  const text = atob(dataUrl.slice(offset + (from / 3) * 4, offset + (to / 3) * 4));
-  const bytes = new Uint8Array(end - start);
-  for (let i = 0; i < bytes.length; i++) bytes[i] = text.charCodeAt(start - from + i);
-  return bytes;
-}
-export function base64Size(dataUrl: string) {
-  const data = dataUrl.slice(dataUrl.indexOf(",") + 1);
-  return Math.floor((data.length * 3) / 4) - (data.endsWith("==") ? 2 : data.endsWith("=") ? 1 : 0);
+  return { total: ids.length, saved, older, paused: videoBackupPaused(), uploading: uploading && ids.includes(uploading.id) ? uploading : null, error };
 }
 
 const defaultApi: Api = (action, init) => fetch(`/api/drive/${action}`, { ...init, method: "POST", signal: AbortSignal.timeout(120000) });
@@ -111,25 +127,19 @@ async function backupOne(id: string, api: Api, shouldContinue: () => boolean) {
   if (!(await fieldMediaExists(id))) { await dropEntry(id).catch(() => undefined); return; }
   let entry: VideoEntry = (await getEntry(id)) || { id, jobId: "" };
   if (entry.uploadedAt) return;
-  // Older video with no kept file: read its saved copy once (the only time it is held in memory).
-  let legacy = "";
-  if (!entry.blob) {
-    const media = await readFieldMedia(id);
-    if (!media?.dataUrl) return;
-    legacy = media.dataUrl;
-    entry = { ...entry, jobId: media.jobId, name: media.name, type: media.type, total: base64Size(legacy) };
-  }
-  const total = entry.blob ? entry.blob.size : entry.total || 0;
-  const piece = async (start: number, end: number) => entry.blob
-    ? new Uint8Array(await entry.blob.slice(start, end).arrayBuffer())
-    : base64Bytes(legacy, start, end);
+  // Older video with no kept file: never read in the background (reading a big video into memory
+  // closes the app on an iPhone). It goes to Drive with the package.
+  if (!entry.blob) return;
+  const blob = entry.blob;
+  const total = blob.size;
+  const piece = async (start: number, end: number) => new Uint8Array(await blob.slice(start, end).arrayBuffer());
   const send = (session: string, start: number, bytes: Uint8Array) => api("video-piece", {
     headers: { "Content-Type": "application/octet-stream", "X-HPD-Session": encodeURIComponent(session), "X-HPD-Start": String(start), "X-HPD-Total": String(total) },
     body: new Blob([bytes as BlobPart]),
   }).then(answer);
   const finish = async (driveFileId: string) => {
     // Saved: let go of the kept file; the video itself stays in the job until it is cleared.
-    entry = { id, jobId: entry.jobId, name: entry.name, type: entry.type, total, uploadedAt: new Date().toISOString(), driveFileId };
+    entry = { id, jobId: entry.jobId, name: entry.name, type: entry.type, total, uploadedAt: new Date().toISOString(), driveFileId, meta: entry.meta };
     await putEntry(entry);
   };
 
@@ -184,14 +194,68 @@ async function backupOne(id: string, api: Api, shouldContinue: () => boolean) {
 export async function backupVideos({ api = defaultApi, shouldContinue = () => true }: { api?: Api; shouldContinue?: () => boolean } = {}) {
   const connection = (navigator as Navigator & { connection?: { saveData?: boolean; type?: string } }).connection;
   if (connection?.saveData || connection?.type === "cellular") return;
+  if (videoBackupPaused()) return;
   const work = async () => {
     const [ids, entries] = await Promise.all([listFieldVideoIds(), allEntries()]);
     for (const id of ids) {
       if (!shouldContinue()) return;
-      if (entries.get(id)?.uploadedAt) continue;
-      await backupOne(id, api, shouldContinue);
+      const entry = entries.get(id);
+      if (entry?.uploadedAt || !entry?.blob) continue;
+      try { localStorage.setItem(VIDEO_RUNNING_KEY, id); } catch {}
+      try { await backupOne(id, api, shouldContinue); }
+      finally { try { localStorage.removeItem(VIDEO_RUNNING_KEY); } catch {} }
     }
   };
   if (!navigator.locks) return work();
   await navigator.locks.request("hpd-video-backup", { mode: "exclusive", ifAvailable: true }, async (lock) => { if (lock) await work(); });
+}
+
+// Photos: each one goes to Drive (HPD Photo Backup / <job>) once, read one at a time (a photo is
+// small), so the every-minute backup never has to hold all photos at once.
+async function backupPhoto(id: string, api: Api) {
+  const media = await readFieldMedia(id);
+  if (!media?.dataUrl || media.mediaType !== "image") return;
+  const bytes = dataUrlToBytes(media.dataUrl);
+  const total = bytes.byteLength;
+  if (!total) return;
+  try {
+    const started = await api("video-start", {
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mediaId: id, jobId: media.jobId, name: media.name, mimeType: media.type || "image/jpeg", size: total }),
+    }).then(answer);
+    let driveFileId = started.done ? String(started.id) : "";
+    if (!driveFileId) {
+      if (typeof started.session !== "string" || !started.session.startsWith("https://")) throw new Error("Drive did not start the photo upload.");
+      let saved = 0;
+      while (saved < total) {
+        const end = Math.min(total, saved + PIECE_BYTES);
+        const result = await api("video-piece", {
+          headers: { "Content-Type": "application/octet-stream", "X-HPD-Session": encodeURIComponent(started.session), "X-HPD-Start": String(saved), "X-HPD-Total": String(total) },
+          body: new Blob([bytes.subarray(saved, end) as BlobPart]),
+        }).then(answer);
+        if (result.done) { driveFileId = String(result.id); break; }
+        const now = Number(result.saved) || 0;
+        if (result.expired || now <= saved) throw new Error("Drive did not take the photo.");
+        saved = now;
+      }
+    }
+    await putEntry({ id, jobId: media.jobId, name: media.name, type: media.type, total, uploadedAt: new Date().toISOString(), driveFileId });
+  } catch (error) {
+    await putEntry({ id, jobId: media.jobId, error: error instanceof Error ? error.message : "Photo backup failed." }).catch(() => undefined);
+    throw error;
+  }
+}
+
+export async function backupPhotos({ api = defaultApi, shouldContinue = () => true }: { api?: Api; shouldContinue?: () => boolean } = {}) {
+  if (videoBackupPaused()) return;
+  const [ids, entries] = await Promise.all([listFieldPhotoIds(), allEntries()]);
+  for (const id of ids) {
+    if (!shouldContinue()) return;
+    if (entries.get(id)?.uploadedAt) continue;
+    try { localStorage.setItem(VIDEO_RUNNING_KEY, id); } catch {}
+    try { await backupPhoto(id, api); }
+    // A photo Drive refused: try again next time, and let the videos go now.
+    catch { return; }
+    finally { try { localStorage.removeItem(VIDEO_RUNNING_KEY); } catch {} }
+  }
 }

@@ -46,8 +46,9 @@ export default function JobSafeLine({ jobId, emailedAt, emailedTo, inInbox }: { 
           </button>
         )
       ) : freed?.at ? (
-        <span className="is-ok">📱 {formatBytes(freed.bytes)} freed on this phone{freed.videos ? ` (${freed.videos} video${freed.videos === 1 ? "" : "s"})` : ""} · originals in the job&apos;s Drive folder</span>
+        <span className="is-ok">📱 {freed.bytes ? `${formatBytes(freed.bytes)} freed on this phone` : "Freed on this phone"}{freed.videos ? ` (${freed.videos} video${freed.videos === 1 ? "" : "s"} and the saved package)` : " (the saved package)"} · originals in the job&apos;s Drive folder</span>
       ) : null}
+      {freed?.older ? <span>🎥 {freed.older} older video{freed.older === 1 ? "" : "s"} (saved before the video backup) stay on this phone; a copy went to Drive with the package</span> : null}
       {error ? <span className="is-error">⚠ {error}</span> : null}
     </div>
   );

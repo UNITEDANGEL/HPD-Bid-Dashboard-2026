@@ -4,15 +4,18 @@
 // saved package zip from this phone. Nothing is removed until you tap it, and the button only
 // appears when every piece is confirmed in Drive. Photos stay (small, shown on the job card).
 import { freeFieldVideo, listFieldVideoIds } from "./field-photo-store";
-import { clearFieldPackets, listFieldPackets } from "./field-packet-store";
+import { countFieldPacketKeys, removeFieldPacketsByKey } from "./field-packet-store";
 import { getVideoEntry, saveVideoEntry } from "./video-backup";
 
 const OVERRIDES_KEY = "hpd-job-workflow-overrides-v2";
 export const FREED_KEY = "hpd-phone-freed-v1";
 export const FREED_EVENT = "hpd-phone-freed";
+// Nothing here reads a video or a saved package into memory (that closes the app on an iPhone),
+// except freeing a video saved before the video backup kept its details, after you tap the button.
 // ready: every video is in the job's Drive folder, so the phone's copies can be removed.
 // at/videos/bytes: what was removed, once you tapped the button.
-export type FreedJob = { at: string; videos: number; bytes: number; waiting: number; ready: boolean; onPhone: number };
+// older: videos saved before the video backup; they stay on the phone (a copy went with the package).
+export type FreedJob = { at: string; videos: number; bytes: number; waiting: number; ready: boolean; onPhone: number; older?: number };
 type Api = (action: string, init: RequestInit) => Promise<Response>;
 
 export function driveFolderId(link: string) {
@@ -46,9 +49,11 @@ export async function prepareSentJobs({ api = defaultApi, shouldContinue = () =>
     const before = readFreed()[jobId] || { at: "", videos: 0, bytes: 0, waiting: 0, ready: false, onPhone: 0 };
     let waiting = 0;
     let onPhone = 0;
+    let older = 0;
     for (const id of await listFieldVideoIds(jobId)) {
       if (!shouldContinue()) return;
       const entry = await getVideoEntry(id);
+      if (!entry?.uploadedAt && !entry?.blob) { older += 1; continue; }
       // Not in Drive yet (the video backup sends it first).
       if (!entry?.uploadedAt || !entry.driveFileId) { waiting += 1; onPhone += 1; continue; }
       if (entry.packageFolderId !== folderId) {
@@ -58,8 +63,9 @@ export async function prepareSentJobs({ api = defaultApi, shouldContinue = () =>
       }
       if (!entry.freedAt) onPhone += 1;
     }
-    const zips = (await listFieldPackets(jobId)).filter((packet) => packet.packetType === "full_evidence_zip").length;
-    const next = { ...before, waiting, onPhone: onPhone + zips, ready: !waiting && onPhone + zips > 0 };
+    // Counted by key: the saved packages themselves (up to 18 MB each) are never read.
+    const zips = await countFieldPacketKeys(jobId);
+    const next = { ...before, waiting, older, onPhone: onPhone + zips, ready: !waiting && onPhone + zips > 0 };
     if (JSON.stringify(next) !== JSON.stringify(before)) { writeFreed(jobId, next); changed = true; }
   }
   if (changed) window.dispatchEvent(new Event(FREED_EVENT));
@@ -70,8 +76,11 @@ export async function prepareSentJobs({ api = defaultApi, shouldContinue = () =>
 export async function freeJobFromPhone(jobId: string) {
   const job = sentJobs(localStorage.getItem(OVERRIDES_KEY)).find((row) => row.jobId === jobId);
   if (!job) throw new Error("This job's package has not been saved to Drive and emailed yet.");
-  const ids = await listFieldVideoIds(jobId);
-  const entries = await Promise.all(ids.map((id) => getVideoEntry(id)));
+  // Older videos (no kept file, never backed up on their own) stay on the phone.
+  const all = await listFieldVideoIds(jobId);
+  const found = await Promise.all(all.map((id) => getVideoEntry(id)));
+  const ids = all.filter((_, i) => found[i]?.uploadedAt || found[i]?.blob);
+  const entries = found.filter((entry) => entry?.uploadedAt || entry?.blob);
   if (entries.some((entry) => !entry?.uploadedAt || !entry.driveFileId || entry.packageFolderId !== job.folderId)) {
     throw new Error("Not every video is in the job's Drive folder yet. Keep the app open with Drive backup on, then try again.");
   }
@@ -79,14 +88,13 @@ export async function freeJobFromPhone(jobId: string) {
   let { videos, bytes } = before;
   for (let i = 0; i < ids.length; i++) {
     const entry = entries[i]!;
-    const freed = await freeFieldVideo(ids[i], entry.driveFileId!);
+    const freed = await freeFieldVideo(ids[i], entry.driveFileId!, entry.meta, entry.total || 0);
     if (freed) { videos += 1; bytes += freed; }
     await saveVideoEntry({ ...entry, freedAt: new Date().toISOString() });
   }
-  const zips = (await listFieldPackets(jobId)).filter((packet) => packet.packetType === "full_evidence_zip");
-  bytes += zips.reduce((sum, packet) => sum + Math.round((String(packet.dataUrl || "").length * 3) / 4), 0);
-  if (zips.length) await clearFieldPackets(jobId, ["full_evidence_zip"]);
-  const result = { at: new Date().toISOString(), videos, bytes, waiting: 0, ready: false, onPhone: 0 };
+  // The saved package files on the phone (copies of what is in the job's Drive folder), by key.
+  await removeFieldPacketsByKey(jobId);
+  const result = { at: new Date().toISOString(), videos, bytes, waiting: 0, ready: false, onPhone: 0, older: all.length - ids.length };
   writeFreed(jobId, result);
   window.dispatchEvent(new Event(FREED_EVENT));
   return result;

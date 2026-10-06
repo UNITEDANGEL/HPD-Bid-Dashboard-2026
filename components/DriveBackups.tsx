@@ -98,7 +98,7 @@ export default function DriveBackups({ connected }: { connected: boolean }) {
       <p>Captured {new Date(preview.snapshot.capturedAt).toLocaleString()}. Backup read and integrity verified.</p>
       <div className="drive-actions"><button onClick={download}>Download recovery file</button>
       <button className="drive-secondary" disabled={busy} onClick={() => run(async () => {
-        setRestorePlan(planRestore(await captureFullBackup(), preview.snapshot));
+        setRestorePlan(planRestore(await captureFullBackup(localStorage, { includeMedia: true }), preview.snapshot));
       })}>Preview restore</button></div>
       {restorePlan && <div className="drive-review">
         <h3>Restore review</h3>
