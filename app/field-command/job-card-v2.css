@@ -962,3 +962,6 @@
 #fc-job-card .jc-safe .jc-safe-confirm { display: grid; gap: 8px; }
 #fc-job-card .jc-safe .jc-safe-confirm > span { display: flex; gap: 8px; }
 #fc-job-card .jc-safe .is-error { color: #fecaca; }
+.jc-test-banner p { margin: 0; }
+.jc-test-banner .jc-test-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.jc-test-banner .jc-test-actions button { min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #a78bfa; background: #5b21b6; color: #fff; font: 800 13px/1.2 system-ui, sans-serif; }

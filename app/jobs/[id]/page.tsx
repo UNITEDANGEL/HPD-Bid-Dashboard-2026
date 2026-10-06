@@ -4,9 +4,11 @@ export async function generateStaticParams() {
   return rows
     .map((job: any) => String(job.OMO || job.id || "").trim())
     .filter(Boolean)
+    .concat(TEST_JOB_ID)
     .map((id: string) => ({ id }));
 }
 import Link from "next/link";
+import { TEST_JOB_ID } from "../../../lib/test-job";
 import { MobileJobDetail } from "../../../components/MobileJobDetail";
 import { getJobById } from "../../../lib/jobs";
 
