@@ -84,6 +84,7 @@ jobs:
           node scripts/test-drive-full-backup.mjs
           node scripts/test-drive-sync.mjs
           node scripts/test-email-package.cjs
+          node scripts/test-appointment-calendar.mjs
 
       - name: Build Cloudflare Pages output
         run: npm run build:cloudflare
@@ -118,7 +119,13 @@ jobs:
           for i in $(seq 1 18); do
             got="$(curl -fsS -m 20 "https://hpd-bid-dashboard-2026.pages.dev/version.json?t=$(date +%s)" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).commit)}catch{console.log("?")}})' || echo "?")"
             echo "live: $got  want: $want"
-            [ "$got" = "$want" ] && { echo "Live address is serving $want."; exit 0; }
+            if [ "$got" = "$want" ]; then
+              echo "Live address is serving $want."
+              # The "Add to Calendar" server function must answer with a calendar entry.
+              cal="$(curl -sS -m 20 -o /dev/null -w '%{http_code} %{content_type}' "https://hpd-bid-dashboard-2026.pages.dev/api/appointment-calendar?id=TEST-0001&address=Test&date=2099-01-05&start=10:00&end=11:00&state=confirmed&contact=Tenant&reminder=60")"
+              echo "calendar function: $cal"
+              case "$cal" in "200 text/calendar"*) exit 0 ;; *) echo "::error::The Add to Calendar function did not answer with a calendar entry ($cal)."; exit 1 ;; esac
+            fi
             sleep 10
           done
           echo "::error::The live address still serves $got, not $want. The deploy did not go live (check the Cloudflare Pages project: production branch and automatic Git builds)."
