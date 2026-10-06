@@ -42,6 +42,27 @@ const sample = { ...empty, assets: [
 ] };
 assert.equal((await restoreMissing(sample)).added, 2);
 assert.deepEqual((await captureFullBackup()).assets, sample.assets);
+// Videos and oversize items (a saved package zip) stay out of the automatic backup: holding them in
+// memory crashed the app. Photos and PDFs still go in.
+{
+  const putRaw = (dbName, storeName, record) => new Promise((resolve, reject) => {
+    const req = indexedDB.open(dbName);
+    req.onsuccess = () => { const tx = req.result.transaction(storeName, "readwrite"); tx.objectStore(storeName).put(record); tx.oncomplete = () => { req.result.close(); resolve(); }; tx.onerror = () => reject(tx.error); };
+    req.onerror = () => reject(req.error);
+  });
+  const deleteRaw = (dbName, storeName, id) => new Promise((resolve) => {
+    const req = indexedDB.open(dbName);
+    req.onsuccess = () => { const tx = req.result.transaction(storeName, "readwrite"); tx.objectStore(storeName).delete(id); tx.oncomplete = () => { req.result.close(); resolve(); }; };
+  });
+  await putRaw("hpd-field-photos-v1", "photos", { id: "test-video", jobId: "TEST1", kind: "before", mediaType: "video", type: "video/quicktime", dataUrl: "data:video/quicktime;base64,AAAA", capturedAt: "2026-09-28T10:01:00Z" });
+  await putRaw("hpd-field-photos-v1", "photos", { id: "test-old-video", jobId: "TEST1", kind: "after", type: "video/mp4", dataUrl: "data:video/mp4;base64,AAAA", capturedAt: "2026-09-28T10:02:00Z" });
+  await putRaw("hpd-field-packets-v1", "packets", { id: "test-big-zip", jobId: "TEST1", generatedAt: "2026-09-28T10:03:00Z", dataUrl: "data:application/zip;base64," + "A".repeat(9 * 1024 * 1024) });
+  const ids = (await captureFullBackup()).assets.map((a) => a.record.id).sort();
+  assert.deepEqual(ids, ["test-pdf", "test-photo"], "videos and oversize items are skipped; photos and PDFs stay");
+  await deleteRaw("hpd-field-photos-v1", "photos", "test-video");
+  await deleteRaw("hpd-field-photos-v1", "photos", "test-old-video");
+  await deleteRaw("hpd-field-packets-v1", "packets", "test-big-zip");
+}
 assert.equal((await restoreMissing(sample)).added, 0, "Repeat restore adds nothing");
 const conflicting = { ...sample, stores: { [key]: { TEST1: { notes: "Different" }, TEST2: { notes: "Missing" } } },
   assets: sample.assets.map((a) => ({ ...a, record: { ...a.record, jobId: "DIFFERENT" } })) };

@@ -950,6 +950,49 @@ export async function listFieldPhotos(jobId: string) {
     .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt));
 }
 
+// For the job card: every photo/video of a job WITHOUT reading the videos. A video can be hundreds
+// of MB; reading them each time a card opens ran the phone out of memory and crashed the app.
+// Videos are counted from the storage indexes alone (kind + type), so only photos are read.
+export type FieldMediaLite = { id: string; kind: FieldMediaKind; mediaType: FieldMediaType; capturedAt: string; evidenceLabel: string; dataUrl: string };
+
+export async function listFieldEvidenceLite(jobId: string): Promise<FieldMediaLite[]> {
+  const cleanJobId = String(jobId || "").trim();
+  if (!cleanJobId || !hasIndexedDb()) return [];
+  const db = await openDb();
+  try {
+    const store = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME);
+    if (!store.indexNames.contains("jobId") || !store.indexNames.contains("kind") || !store.indexNames.contains("mediaType")) {
+      // Very old storage without indexes: fall back to the full list, keeping photos only.
+      const rows = (await requestToPromise(store.getAll())) as FieldMedia[];
+      return rows.filter((m) => m.jobId === cleanJobId).map((m) => {
+        const video = m.mediaType === "video" || String(m.type || "").startsWith("video/");
+        return { id: m.id, kind: m.kind || "general", mediaType: video ? "video" : "image", capturedAt: m.capturedAt || "", evidenceLabel: m.evidenceLabel || "", dataUrl: video ? "" : m.dataUrl };
+      });
+    }
+    const ids = (await requestToPromise(store.index("jobId").getAllKeys(cleanJobId))).map(String);
+    const videoIds = new Set((await requestToPromise(store.index("mediaType").getAllKeys("video"))).map(String));
+    const kindOf = new Map<string, FieldMediaKind>();
+    for (const kind of ["before", "after", "no_access", "refused_access", "completed_by_others", "general"] as FieldMediaKind[]) {
+      for (const key of await requestToPromise(store.index("kind").getAllKeys(kind))) kindOf.set(String(key), kind);
+    }
+    const rows: FieldMediaLite[] = [];
+    for (const id of ids) {
+      if (videoIds.has(id)) {
+        rows.push({ id, kind: kindOf.get(id) || "general", mediaType: "video", capturedAt: "", evidenceLabel: "", dataUrl: "" });
+        continue;
+      }
+      const media = (await requestToPromise(store.get(id))) as FieldMedia | undefined;
+      if (!media) continue;
+      // An old video saved without its type in the index: keep it, but never its data.
+      const video = String(media.type || "").startsWith("video/");
+      rows.push({ id, kind: media.kind || kindOf.get(id) || "general", mediaType: video ? "video" : "image", capturedAt: media.capturedAt || "", evidenceLabel: media.evidenceLabel || "", dataUrl: video ? "" : media.dataUrl });
+    }
+    return rows.sort((a, b) => a.capturedAt.localeCompare(b.capturedAt));
+  } finally {
+    db.close();
+  }
+}
+
 // How many photos/videos are saved on this phone, all jobs together (a fast count, no file reads).
 export async function countAllFieldEvidence() {
   if (!hasIndexedDb()) return 0;

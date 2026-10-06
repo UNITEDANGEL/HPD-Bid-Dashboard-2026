@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { listFieldEvidence, saveFieldPhotos, type FieldMedia } from "../../lib/field-photo-store";
+import { listFieldEvidenceLite, saveFieldPhotos, type FieldMedia } from "../../lib/field-photo-store";
 import { buildingPhoto, BUILDING_PHOTO_LABEL, streetViewLink, streetViewPicture, type StreetViewPicture } from "../../lib/building-photo";
 import { listFieldPackets, type FieldPacket } from "../../lib/field-packet-store";
 
@@ -18,7 +18,8 @@ export function BuildingHero({ id, address, borough, point }: { id: string; addr
   useEffect(() => {
     let cancelled = false;
     setOwn(null); setGoogle(null); setError("");
-    listFieldEvidence(id).then((rows) => { if (!cancelled) setOwn(buildingPhoto(rows)); }).catch(() => {});
+    // Lite: the job's videos are never read just to find the building photo.
+    listFieldEvidenceLite(id).then((rows) => { if (!cancelled) setOwn(buildingPhoto(rows as FieldMedia[])); }).catch(() => {});
     if (lat !== undefined && lng !== undefined) streetViewPicture({ lat, lng }).then((picture) => { if (!cancelled) setGoogle(picture); }).catch(() => {});
     return () => { cancelled = true; };
   }, [id, lat, lng]);
