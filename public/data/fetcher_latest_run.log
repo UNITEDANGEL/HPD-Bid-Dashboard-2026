@@ -1,4 +1,4 @@
-Fetcher run started: 2026-10-05T01:48:27.957Z
+Fetcher run started: 2026-10-06T02:52:33.440Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -15,28 +15,27 @@ $ python FetchrMatcherV5.py --update --days 14
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/09/21 before:2026/10/06
-COA items parsed (latest per OMO): 1
-ITB items parsed (latest per OMO): 1
-Final JobRows: 1
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/09/22 before:2026/10/07
+COA items parsed (latest per OMO): 0
+No OMOs from COA Ã¢â‚¬â€ skipping ITB lookup.
+Final JobRows: 0
 
 CSV saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.csv
 JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.json
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/1 [00:00<?, ?it/s]Downloading COA messages: 100%|██████████| 1/1 [00:00<00:00,  8.43it/s]Downloading COA messages: 100%|██████████| 1/1 [00:00<00:00,  8.42it/s]
-Geocoding COA addresses:   0%|          | 0/1 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 1/1 [00:00<00:00, 31068.92it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/1 [00:00<?, ?it/s]Fetching ITBs for COA OMOs: 100%|██████████| 1/1 [00:00<00:00,  1.24it/s]Fetching ITBs for COA OMOs: 100%|██████████| 1/1 [00:00<00:00,  1.24it/s]
+Downloading COA messages: 0it [00:00, ?it/s]Downloading COA messages: 0it [00:00, ?it/s]
+Geocoding COA addresses: 0it [00:00, ?it/s]Geocoding COA addresses: 0it [00:00, ?it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
 Safe merge complete
 Master before: 672
-Incoming rows: 1
+Incoming rows: 0
 Added new OMOs: 0
-Skipped existing OMOs: 1
+Skipped existing OMOs: 0
 Updated existing OMOs: 0
 Need geocode: 0
 Missing ITB: 0
@@ -194,13 +193,13 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-10-05T01:48:39.661Z
+Fetcher run finished: 2026-10-06T02:52:42.078Z
 {
-  "fetchedCoaItems": 1,
-  "fetchedItbItems": 1,
-  "fetchedFinalJobRows": 1,
+  "fetchedCoaItems": 0,
+  "fetchedItbItems": null,
+  "fetchedFinalJobRows": 0,
   "addedNewOmos": 0,
-  "skippedExistingOmos": 1,
+  "skippedExistingOmos": 0,
   "rawRows": 672,
   "rows2026": 621,
   "mapped2026": 621,
