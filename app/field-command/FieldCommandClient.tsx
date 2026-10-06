@@ -19,7 +19,8 @@ import { fetchServerWorkflowOverrides, HPD_STATUS_WORKER_URL, startOverPatch } f
 import { longestCleanDescription } from "../../lib/description-quality";
 import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidence, redateFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
 import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
-import { googleStatus } from "../../lib/package-delivery";
+import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
+import { daySummary, type SummaryRow } from "../../lib/day-summary";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -1166,6 +1167,26 @@ export default function FieldCommandClient() {
     .filter((row): row is { job: JobRecord; second: NonNullable<ReturnType<typeof secondTryState>> } => Boolean(row.second) && jobQueue(row.job) !== "archived")
     .sort((a, b) => a.second.dueDay.localeCompare(b.second.dueDay)), [jobs]);
   const [secondTryOpen, setSecondTryOpen] = useState(false);
+  // End-of-day summary sheet (map menu): today's work, close-outs and what's due tomorrow.
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryStatus, setSummaryStatus] = useState("");
+  const summary = useMemo(() => (summaryOpen ? daySummary(jobs, { id: jobId, address: jobAddress }) : null), [summaryOpen, jobs]);
+  async function emailSummary() {
+    if (!summary) return;
+    setSummaryStatus("Sending…");
+    const google = await googleStatus();
+    if (!google.connected || !google.canEmail) { setSummaryStatus("Google isn't connected for email on this phone: use Share, or connect Google in Backup & recovery."); return; }
+    const result = await sendTextEmail(`HPD field summary · ${summary.dayLabel}`, summary.text);
+    setSummaryStatus(result.emailed ? `✉️ Emailed to ${result.emailTo.join(", ") || "you"}.` : result.error);
+  }
+  async function shareSummary() {
+    if (!summary) return;
+    try {
+      if (navigator.share) { await navigator.share({ title: `HPD field summary · ${summary.dayLabel}`, text: summary.text }); return; }
+      await navigator.clipboard.writeText(summary.text);
+      setSummaryStatus("Copied: paste it into a message or email.");
+    } catch { /* closed the share sheet */ }
+  }
   // Appointments today (and anything within the next 2 hours), soonest first. A minute clock keeps
   // the countdowns on the pins and in the map alert current.
   const [minuteTick, setMinuteTick] = useState(0);
@@ -2196,6 +2217,7 @@ export default function FieldCommandClient() {
       {chromeOpen && !controlsOpen && <nav className="fc-organized-menu" aria-label="Map menu">
         <strong>Map menu</strong>
         <button type="button" onClick={()=>{setChromeOpen(false);setControlsOpen(false);setPlannerRequest(value=>value+1);}}><ListIcon />Plan my day</button>
+        <button type="button" data-hpd-smoke="fc-summary-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setSummaryStatus(""); setSummaryOpen(true); }}><ListIcon />Today&apos;s summary</button>
         <button type="button" aria-controls="field-map-filters" onClick={() => setControlsOpen(true)}><ListIcon />Filters</button>
         <Link href="/jobs/"><ListIcon />Jobs</Link>
         <Link href="/alerts/"><BellIcon />Alerts</Link>
@@ -2945,6 +2967,36 @@ export default function FieldCommandClient() {
 
       {/* Which version is running, always visible on the map: you can tell at a glance it's the newest. */}
       {appVersion && !selectedJob ? <small className="fc-version-tag" data-hpd-smoke="fc-version-tag">v{appVersion}</small> : null}
+      {summary ? (
+        <div className="fc-package-sheet fc-summary-sheet" role="dialog" aria-label="Today's summary" data-hpd-smoke="fc-summary-sheet">
+          <header>
+            <button type="button" onClick={() => setSummaryOpen(false)}>← Map</button>
+            <strong>Today · {summary.dayLabel}</strong>
+          </header>
+          <div className="fc-summary-body">
+            <div className="fc-summary-counts">
+              {([["Visited", summary.counts.visited], ["Finished", summary.counts.finished], ["No access", summary.counts.noAccess], ["Refused", summary.counts.refused], ["Appointments", summary.counts.booked], ["Emailed", summary.counts.emailed]] as const).map(([label, n]) => (
+                <span key={label} className={n ? "has" : ""}><b>{n}</b>{label}</span>
+              ))}
+            </div>
+            {([["Today", summary.visited, "Nothing recorded today."], ["Ready to close out", summary.closeOut, "None."], ["Tomorrow", summary.tomorrow, "Nothing due."]] as [string, SummaryRow[], string][]).map(([title, rows, none]) => (
+              <section key={title}>
+                <h3>{title} <small>({rows.length})</small></h3>
+                {rows.length ? rows.map((row, index) => (
+                  <button type="button" key={`${row.id}-${index}`} onClick={() => { const job = jobs.find((j) => jobId(j) === row.id); setSummaryOpen(false); if (job) openIssueJob(job); }}>
+                    <b>{row.id}</b> <span>{row.address}</span><small>{row.text}</small>
+                  </button>
+                )) : <p>{none}</p>}
+              </section>
+            ))}
+          </div>
+          <footer>
+            <button type="button" className="is-primary" data-hpd-smoke="fc-summary-email" onClick={() => void emailSummary()}>✉️ Email it to me</button>
+            <button type="button" data-hpd-smoke="fc-summary-share" onClick={() => void shareSummary()}>Share</button>
+            {summaryStatus ? <p role="status">{summaryStatus}</p> : null}
+          </footer>
+        </div>
+      ) : null}
       {updateReady && !mediaBusy ? (
         <button type="button" className="fc-update-ready" data-hpd-smoke="fc-update-ready" onClick={() => window.location.replace(`${window.location.pathname}?v=${encodeURIComponent(latestCommitRef.current)}`)}>
           🔄 New version ready · <b>Update</b>
