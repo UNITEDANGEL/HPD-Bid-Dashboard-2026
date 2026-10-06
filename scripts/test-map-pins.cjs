@@ -17,8 +17,8 @@ console.log('PASS: collision-free label reservation, exact duplicates and adjace
 // Stand-ins for the appointment / 2nd-try helpers the pin reads (tested in their own files).
 let timing = null, second = null;
 const appt = { date: '2026-10-06', start: '14:30', end: '15:30', state: 'confirmed' };
-const {groupByLocation, jobPinHtml, individualPinOffset} = new Function('HARDHAT_ICON_PATH','STATUS_ICON_PATHS','activeAppointment','appointmentTiming','appointmentLabel','secondTryState',
-  code + '\nreturn {groupByLocation, jobPinHtml, individualPinOffset};')('hat', {done:'check',refused:'cross',noaccess:'lock',appointment:'cal'},
+const {groupByLocation, jobPinHtml, individualPinOffset} = new Function('HARDHAT_ICON_PATH','FLASK_ICON_PATH','STATUS_ICON_PATHS','activeAppointment','appointmentTiming','appointmentLabel','secondTryState',
+  code + '\nreturn {groupByLocation, jobPinHtml, individualPinOffset};')('hat', 'flask', {done:'check',refused:'cross',noaccess:'lock',appointment:'cal'},
   (job) => job.Appointment || null, () => timing, () => 'Wed 10/07 · 2:30–3:30 PM', () => second);
 assert.deepEqual(individualPinOffset(0,1), {x:0,y:0});
 for (const count of [2,3,4,10,30]) {
@@ -59,6 +59,9 @@ timing = { today: false, soon: false, past: true, startsIn: -200, days: 0 };
 assert.doesNotMatch(jobPinHtml(booked, { key: 'appointment', color: '#d97706' }, { days: null, pending: false }, 0), /is-soon|is-today/);
 // No access: "2nd try" once the 2nd try is due.
 second = { due: true };
+// The test job: purple flask pin tagged TEST, whatever its status.
+assert.match(jobPinHtml({ IsTestJob: true }, { key: 'done', color: '#16a34a' }, { days: 3, pending: true }, 1), /is-test" style="--pin:#7c3aed"><span class="fc-pin-head"><svg[^>]*>flask<[^]*fc-pin-chip">TEST</);
+assert.doesNotMatch(jobPinHtml({}, { key: 'awarded', color: '#2563eb' }, { days: 3, pending: true }, 0), /is-test|TEST/);
 assert.match(jobPinHtml({}, { key: 'noaccess', color: '#6b7280' }, { days: 20, pending: true }, 1), /is-due[^]*fc-pin-chip">2nd try</);
 second = { due: false };
 assert.doesNotMatch(jobPinHtml({}, { key: 'noaccess', color: '#6b7280' }, { days: null, pending: false }, 1), /2nd try/);

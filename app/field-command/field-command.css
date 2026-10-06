@@ -2351,3 +2351,6 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-update-ready b { text-decoration: underline; }
 /* Running version, small, bottom-left of the map. */
 .fc-version-tag { position: fixed; z-index: 1200; left: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 4px); padding: 1px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.75); color: #94a3b8; font: 600 10px/14px system-ui, sans-serif; pointer-events: none; }
+/* The test job: purple flask pin with a TEST tag */
+.fc-pin.is-test .fc-pin-head { box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.55), 0 3px 8px rgba(0, 0, 0, 0.5); }
+.fc-pin.is-test .fc-pin-chip { background: #7c3aed; color: #fff; border-color: #ede9fe; }

@@ -11,16 +11,24 @@ export const TEST_JOB = {
   Location: "Public Area (Exterior)",
   ApartmentUnit: "",
   TenantName: "Sample Tenant",
-  TenantPhone: "",
+  // A 555 number: never a real person.
+  TenantPhone: "212-555-0100",
   WorkStartDate: "",
   WorkCompletionDate: "",
   AwardDate: "",
   AwardAmount: "100.00",
   AwardedBy: "TEST",
+  TotalSqFt: "21",
+  // Sample ITB (public/documents/itb): "📄 ITB page" and Job documents work like a real job.
+  ITBFile: "TEST-0001_SAMPLE-ITB.pdf",
+  itbFile: "TEST-0001_SAMPLE-ITB.pdf",
+  COAFile: "TEST-0001_SAMPLE-COA.pdf",
+  coaFile: "TEST-0001_SAMPLE-COA.pdf",
   JobDescription: "TEST JOB (SAMPLE ONLY - NOT A REAL WORK ORDER)\nREPAIR BUILDING ENTRANCE DOOR\nMAKE ALL NECESSARY REPAIR TO THE DOOR TO RE-ALIGN WITH FRAME. ENSURE THE DOOR IS SELF CLOSING AND LATCHING PROPERLY.\nTOTAL DOORS = 1 (ONE)\nREMOVE ALL WORK-RELATED DEBRIS.",
   Latitude: "40.710544",
   Longitude: "-74.004276",
   Geocode: "TEST",
+  Borough: "Manhattan",
   ITBMatchStatus: "MATCHED",
   COAParseStatus: "OK",
   IsTestJob: true,
@@ -57,10 +65,42 @@ export function isTestJob(id: unknown) {
   return key === TEST_JOB_ID || isTestModeJob(key);
 }
 
+// The test location: by default 100 Gold Street; "Move test job here" puts it where you stand, so
+// "I have arrived", the distance check and directions work wherever you test. Saved on this phone.
+const TEST_LOCATION_KEY = "hpd-test-job-location-v1";
+export type TestLocation = { lat: number; lng: number; at: string };
+
+export function testJobLocation(): TestLocation | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(TEST_LOCATION_KEY) || "null");
+    return saved && Number.isFinite(saved.lat) && Number.isFinite(saved.lng) ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setTestJobLocation(location: { lat: number; lng: number } | null) {
+  try {
+    if (location) localStorage.setItem(TEST_LOCATION_KEY, JSON.stringify({ lat: location.lat, lng: location.lng, at: new Date().toISOString() }));
+    else localStorage.removeItem(TEST_LOCATION_KEY);
+  } catch {}
+}
+
+// Where the test job is now: your saved spot, or the default (100 Gold Street).
+export function testJobPlace() {
+  const moved = typeof window === "undefined" ? null : testJobLocation();
+  const lat = moved ? moved.lat.toFixed(6) : TEST_JOB.Latitude;
+  const lng = moved ? moved.lng.toFixed(6) : TEST_JOB.Longitude;
+  return {
+    Latitude: lat, Longitude: lng, latitude: lat, longitude: lng,
+    Location: moved ? "Public Area (Exterior) - TEST LOCATION (moved to your spot)" : TEST_JOB.Location,
+  };
+}
+
 // Award date = today, so the test job always shows under 30 / 60 / 90 days.
 export function withTestJob<T>(rows: T[]): T[] {
   if (rows.some((row) => String((row as { OMO?: string })?.OMO || "").toUpperCase() === TEST_JOB_ID)) return rows;
   const now = new Date();
   const today = `${String(now.getMonth() + 1).padStart(2, "0")}/${String(now.getDate()).padStart(2, "0")}/${String(now.getFullYear()).slice(-2)}`;
-  return [...rows, { ...TEST_JOB, AwardDate: today, WorkStartDate: today, WorkCompletionDate: today } as unknown as T];
+  return [...rows, { ...TEST_JOB, ...testJobPlace(), AwardDate: today, WorkStartDate: today, WorkCompletionDate: today } as unknown as T];
 }

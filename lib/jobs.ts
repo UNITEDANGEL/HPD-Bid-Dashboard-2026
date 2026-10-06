@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import Papa from "papaparse";
 import type { JobRecord } from "./types";
+import { TEST_JOB, TEST_JOB_ID } from "./test-job";
 
 let publicJobRows: Array<Record<string, unknown>> | null = null;
 let publicJobOverlay: Map<string, Record<string, unknown>> | null = null;
@@ -81,6 +82,9 @@ function normalizeAllJobs(csvData: Record<string, string>[]) {
     normalized.push(normalizeJob(stringifyRecord(row), normalized.length));
     seen.add(id.toLowerCase());
   });
+
+  // The permanent test job, so its Job documents page exists like any real job's.
+  if (!seen.has(TEST_JOB_ID.toLowerCase())) normalized.push(normalizeJob(stringifyRecord(TEST_JOB as unknown as Record<string, unknown>), normalized.length));
 
   return normalized;
 }

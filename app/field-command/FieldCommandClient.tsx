@@ -30,7 +30,8 @@ import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./job-card-v2.css";
-import { isTestJob, isTestModeJob, setTestModeJob, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
+import { testFirstUpgrades } from "../../lib/rollout";
+import { isTestJob, isTestModeJob, setTestJobLocation, setTestModeJob, testJobLocation, testJobPlace, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
 
 type JobRecord = Record<string, unknown>;
 
@@ -374,7 +375,15 @@ function jobPinHtml(job: JobRecord, meta: { key: StatusKey; color: string }, pri
     classes.push(priority.days > 30 ? "is-late" : priority.days > 0 ? "is-overdue" : "is-upcoming");
   }
   if (meta.key === "done") symbol = STATUS_ICON_PATHS.done;
-  return `<div class="${classes.join(" ")}" style="--pin:${meta.color}"><span class="fc-pin-head"><svg viewBox="0 0 24 24" aria-hidden="true">${symbol}</svg></span>${chip ? `<span class="fc-pin-chip">${chip}</span>` : ""}${visits ? `<span class="fc-pin-visits">${visits}</span>` : ""}</div>`;
+  // The test job: its own purple flask pin with a TEST tag, whatever step it is at.
+  let color = meta.color;
+  if (job.IsTestJob === true || String(job.IsTestJob) === "true") {
+    classes.push("is-test");
+    symbol = FLASK_ICON_PATH;
+    color = "#7c3aed";
+    chip = "TEST";
+  }
+  return `<div class="${classes.join(" ")}" style="--pin:${color}"><span class="fc-pin-head"><svg viewBox="0 0 24 24" aria-hidden="true">${symbol}</svg></span>${chip ? `<span class="fc-pin-chip">${chip}</span>` : ""}${visits ? `<span class="fc-pin-visits">${visits}</span>` : ""}</div>`;
 }
 
 function jobAwardAmount(job: JobRecord) {
@@ -628,6 +637,10 @@ function groupByLocation(
   }
   return [...locations.values()];
 }
+
+const FLASK_ICON_PATH =
+  '<path d="M9.5 3.5h5M10.5 3.5v5.2L5.6 17.3A1.9 1.9 0 0 0 7.3 20.2h9.4a1.9 1.9 0 0 0 1.7-2.9L13.5 8.7V3.5" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+  '<path d="M7.6 15h8.8l1.4 2.6a.8.8 0 0 1-.7 1.2H6.9a.8.8 0 0 1-.7-1.2z" fill="#fff"/>';
 
 const HARDHAT_ICON_PATH =
   '<path d="M4 12.5A8 8 0 0 1 20 12.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>' +
@@ -963,7 +976,7 @@ export default function FieldCommandClient() {
       if (cancelled || !latestRows) return;
       // Field by field, newer wins: the server's entry never wipes out steps saved on this phone.
       const overrides = mergeOverrideMaps(readSharedWorkflowOverrides(), serverOverrides);
-      const next = latestRows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}) }));
+      const next = latestRows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}), ...(jobId(row) === TEST_JOB_ID ? testJobPlace() : {}) }));
       setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
     }
     // Pins show at once from the copy saved on this phone last time, then refresh from the network.
@@ -1060,12 +1073,14 @@ export default function FieldCommandClient() {
       if (jobId(job) === openJobKey || (workedToday(job) && jobQueue(job) !== "archived")) return true;
       // Due now (an appointment today or tomorrow, a no-access 2nd try that's due) shows whatever
       // the status and date filters; the borough and the search still apply.
-      if (!dueOnMap(job)) {
+      // The test job is always on the map (any status, date or borough filter); search still applies.
+      const isTheTestJob = jobId(job) === TEST_JOB_ID;
+      if (!dueOnMap(job) && !isTheTestJob) {
         if (!matchesJobQueue(job, status)) return false;
         if (!matchesAwardLookback(job, daysBack)) return false;
         if (!matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
       }
-      if (borough !== "ALL" && jobBorough(job) !== borough) return false;
+      if (borough !== "ALL" && jobBorough(job) !== borough && !isTheTestJob) return false;
       if (q) {
         const haystack = [jobId(job), jobAddress(job), jobBorough(job), jobStatus(job)].join(" ").toLowerCase();
         if (!haystack.includes(q)) return false;
@@ -2092,6 +2107,40 @@ export default function FieldCommandClient() {
     }
   }
 
+  // The test job's location: "Move here" puts it where you stand (arrive / distance / directions
+  // then work wherever you test); "Back to 100 Gold St" restores the default.
+  const [testPlaceVersion, setTestPlaceVersion] = useState(0);
+  function moveTestJob(here: boolean) {
+    const apply = (location: { lat: number; lng: number } | null) => {
+      setTestJobLocation(location);
+      const place = testJobPlace();
+      setJobs((rows) => rows.map((row) => jobId(row) === TEST_JOB_ID ? { ...row, ...place } : row));
+      setSelectedJob((row) => row && jobId(row) === TEST_JOB_ID ? { ...row, ...place } : row);
+      setTestPlaceVersion((v) => v + 1);
+      const lat = Number(place.Latitude), lng = Number(place.Longitude);
+      if (mapRef.current && Number.isFinite(lat) && Number.isFinite(lng)) showJobAboveCard(lat, lng);
+      setMediaMessage(location ? "Test job moved to where you are: you can arrive and run every step here." : "Test job is back at 100 Gold Street.");
+    };
+    if (!here) { apply(null); return; }
+    // The map already follows your location: use that fix when it is fresh (instant).
+    const fix = lastFixRef.current;
+    if (fix && Date.now() - fix.at < 120000) { apply({ lat: fix.lat, lng: fix.lng }); return; }
+    if (!navigator.geolocation) { setMediaMessage("This phone can't share its location."); return; }
+    setMediaMessage("Getting your location…");
+    navigator.geolocation.getCurrentPosition(
+      (position) => apply({ lat: position.coords.latitude, lng: position.coords.longitude }),
+      () => setMediaMessage("Couldn't get your location. Allow location for this app, then try again."),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+    );
+  }
+
+  // Test job only: start it over in one tap (no typing CLEAR), to run the whole flow again.
+  async function resetTestJob(job: JobRecord) {
+    if (!window.confirm("Reset the test job? Its steps, outcome, package and photos/videos on this phone are cleared. Drive copies and sent emails stay.")) return;
+    setClearText("CLEAR");
+    await clearWorkflow(job, true);
+  }
+
   function beginClearWorkflow(job: JobRecord) {
     setClearJobId(jobId(job));
     setClearText("");
@@ -2129,9 +2178,9 @@ export default function FieldCommandClient() {
 
   // Start over: clears the outcome, arrival, trip, package status AND every photo/video saved for
   // this job on the phone, here and on the status server, so the job is Pending again.
-  async function clearWorkflow(job: JobRecord) {
+  async function clearWorkflow(job: JobRecord, confirmed = false) {
     const id = jobId(job);
-    if (clearText.trim().toUpperCase() !== "CLEAR") {
+    if (!confirmed && clearText.trim().toUpperCase() !== "CLEAR") {
       setMediaMessage("Type CLEAR to start this job over.");
       return;
     }
@@ -2235,6 +2284,7 @@ export default function FieldCommandClient() {
       {chromeOpen && !controlsOpen && <nav className="fc-organized-menu" aria-label="Map menu">
         <strong>Map menu</strong>
         <button type="button" onClick={()=>{setChromeOpen(false);setControlsOpen(false);setPlannerRequest(value=>value+1);}}><ListIcon />Plan my day</button>
+        <button type="button" data-hpd-smoke="fc-test-job-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); const test = jobs.find((row) => jobId(row) === TEST_JOB_ID); if (test) openIssueJob(test); }}>🧪 Test job ({TEST_JOB_ID})</button>
         <button type="button" data-hpd-smoke="fc-summary-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setSummaryStatus(""); setSummaryOpen(true); }}><ListIcon />Today&apos;s summary</button>
         <button type="button" aria-controls="field-map-filters" onClick={() => setControlsOpen(true)}><ListIcon />Filters</button>
         <Link href="/jobs/"><ListIcon />Jobs</Link>
@@ -2559,7 +2609,19 @@ export default function FieldCommandClient() {
               </header>
 
               {testModeVersion >= 0 && isTestJob(jobId(selectedJob)) ? (
-                <p className="jc-test-banner" data-hpd-smoke="jc-test-banner">🧪 {jobId(selectedJob) === TEST_JOB_ID ? "TEST JOB: sample only." : "TEST MODE is on for this job."} Packages are marked TEST and filed in Drive under &quot;TEST jobs / {jobId(selectedJob)}&quot;. Use Start over to clear everything and run it again.</p>
+                <div className="jc-test-banner" data-hpd-smoke="jc-test-banner">
+                  <p>🧪 {jobId(selectedJob) === TEST_JOB_ID ? "TEST JOB: sample only, never a real work order." : "TEST MODE is on for this job."} Packages are marked TEST and filed in Drive under &quot;TEST jobs / {jobId(selectedJob)}&quot;; emails say TEST.</p>
+                  {jobId(selectedJob) === TEST_JOB_ID && testFirstUpgrades().length ? (
+                    <p data-hpd-smoke="jc-test-first">✨ Trying here first: {testFirstUpgrades().map((upgrade) => upgrade.about).join(" · ")}</p>
+                  ) : null}
+                  {jobId(selectedJob) === TEST_JOB_ID && testPlaceVersion >= 0 ? (
+                    <p className="jc-test-actions">
+                      <button type="button" data-hpd-smoke="jc-test-move-here" onClick={() => moveTestJob(true)}>📍 Move test job here</button>
+                      {testJobLocation() ? <button type="button" data-hpd-smoke="jc-test-move-back" onClick={() => moveTestJob(false)}>↩ Back to 100 Gold St</button> : null}
+                      <button type="button" data-hpd-smoke="jc-test-reset" onClick={() => void resetTestJob(selectedJob)}>🔄 Reset test job</button>
+                    </p>
+                  ) : <p>Use Start over to clear everything and run it again.</p>}
+                </div>
               ) : null}
               <section className="jc-description" aria-label="Job description" data-hpd-smoke="jc-description">
                 <div className="jc-section-head">
