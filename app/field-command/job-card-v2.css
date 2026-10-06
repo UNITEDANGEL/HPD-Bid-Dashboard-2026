@@ -953,3 +953,5 @@
 .fc-summary-sheet > footer button { min-height: 48px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.35); background: #1f2937; color: #f8fafc; font: 800 15px system-ui, sans-serif; }
 .fc-summary-sheet > footer button.is-primary { border: 0; background: #2563eb; }
 .fc-summary-sheet > footer p { grid-column: 1 / -1; margin: 0; color: #cbd5e1; font: 600 13px system-ui, sans-serif; }
+#fc-job-card .jc-video-backup { display: block; margin-top: 4px; font-weight: 600; opacity: 0.95; }
+#fc-job-card .jc-video-backup.is-saved { color: #bbf7d0; }
