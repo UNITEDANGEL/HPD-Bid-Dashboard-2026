@@ -2313,6 +2313,8 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-second-try .fc-data-check-list small { color: #c7d2fe; }
 /* Photos only on this phone: one tap turns on the Drive backup */
 .fc-backup-pill > button { background: #92400e; color: #fffbeb; }
+/* Phone space running low: tap opens Storage */
+.fc-space-pill > a { display: inline-block; background: #991b1b; color: #fef2f2; text-decoration: none; }
 
 /* Map pins: a teardrop in the status color with a white symbol, its tip on the building.
    The chip says how late open work is, an appointment's time, or "2nd try". */
