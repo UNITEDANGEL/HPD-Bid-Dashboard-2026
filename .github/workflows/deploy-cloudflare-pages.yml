@@ -85,6 +85,7 @@ jobs:
           node scripts/test-drive-sync.mjs
           node scripts/test-email-package.cjs
           node scripts/test-appointment-calendar.mjs
+          node scripts/test-day-summary.mjs
 
       - name: Build Cloudflare Pages output
         run: npm run build:cloudflare

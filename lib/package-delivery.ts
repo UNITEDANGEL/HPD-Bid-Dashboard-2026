@@ -180,3 +180,21 @@ export async function sendPackageEmail(
   const body = await sent.json();
   return { emailed: true, emailTo: body.to || [], emailError: "", attachedPhotos, emailSummary: summary };
 }
+
+// A text-only email to the owner (e.g. the end-of-day summary), through the same route as packages,
+// which only sends to the owner's configured recipients.
+export async function sendTextEmail(subject: string, text: string, fetcher: Fetcher = fetch): Promise<{ emailed: boolean; emailTo: string[]; error: string }> {
+  try {
+    const email = buildPackageEmail(text, []);
+    const sent = await fetcher("/api/drive/email-package", {
+      method: "POST",
+      headers: { "Content-Type": "text/plain", "X-HPD-Boundary": email.boundary, "X-HPD-Subject": encodeURIComponent(subject) },
+      body: email.body,
+    });
+    if (!sent.ok) return { emailed: false, emailTo: [], error: await readError(sent, "The email could not be sent.") };
+    const body = await sent.json();
+    return { emailed: true, emailTo: body.to || [], error: "" };
+  } catch {
+    return { emailed: false, emailTo: [], error: "No connection: the email wasn't sent." };
+  }
+}
