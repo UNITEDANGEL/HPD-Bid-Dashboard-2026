@@ -955,3 +955,10 @@
 .fc-summary-sheet > footer p { grid-column: 1 / -1; margin: 0; color: #cbd5e1; font: 600 13px system-ui, sans-serif; }
 #fc-job-card .jc-video-backup { display: block; margin-top: 4px; font-weight: 600; opacity: 0.95; }
 #fc-job-card .jc-video-backup.is-saved { color: #bbf7d0; }
+#fc-job-card .jc-safe { display: grid; gap: 4px; margin: 2px 0; padding: 8px 10px; border-radius: 10px; background: rgba(21, 128, 61, 0.16); border: 1px solid rgba(74, 222, 128, 0.35); font: 600 13px/1.35 system-ui, sans-serif; color: #e2e8f0; }
+#fc-job-card .jc-safe .is-ok { color: #bbf7d0; }
+#fc-job-card .jc-safe button { min-height: 40px; padding: 0 12px; border-radius: 10px; border: 0; background: #16a34a; color: #fff; font: 800 14px/1.2 system-ui, sans-serif; }
+#fc-job-card .jc-safe button.is-plain { background: transparent; border: 1px solid rgba(226, 232, 240, 0.5); color: #e2e8f0; }
+#fc-job-card .jc-safe .jc-safe-confirm { display: grid; gap: 8px; }
+#fc-job-card .jc-safe .jc-safe-confirm > span { display: flex; gap: 8px; }
+#fc-job-card .jc-safe .is-error { color: #fecaca; }

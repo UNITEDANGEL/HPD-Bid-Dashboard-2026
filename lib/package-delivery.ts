@@ -16,6 +16,8 @@ export type DeliveryResult = {
   fileLinks: Record<string, string>;
   // What the email actually carried (shown on screen after sending).
   emailSummary?: EmailAttachmentSummary;
+  // Gmail's receipt for the sent email: its message id, and whether it landed in this inbox.
+  emailReceipt?: { messageId: string; inInbox: boolean };
 };
 
 // What the email carries: counts of attached photos/videos, and links for files left out.
@@ -148,7 +150,7 @@ export async function sendPackageEmail(
     onProgress?: (message: string) => void;
   },
   fetcher: Fetcher = fetch
-): Promise<Pick<DeliveryResult, "emailed" | "emailTo" | "emailError" | "attachedPhotos" | "emailSummary">> {
+): Promise<Pick<DeliveryResult, "emailed" | "emailTo" | "emailError" | "attachedPhotos" | "emailSummary" | "emailReceipt">> {
   // PDF always; then photos, then videos, as many as fit in one email. Anything that doesn't
   // fit is listed in the email with its own Drive link, so nothing is silently left out.
   const source = options.emailFiles || options.files;
@@ -178,7 +180,8 @@ export async function sendPackageEmail(
   });
   if (!sent.ok) return { emailed: false, emailTo: [], emailError: await readError(sent, "The email could not be sent."), attachedPhotos, emailSummary: summary };
   const body = await sent.json();
-  return { emailed: true, emailTo: body.to || [], emailError: "", attachedPhotos, emailSummary: summary };
+  const emailReceipt = { messageId: String(body.messageId || ""), inInbox: Array.isArray(body.labels) && body.labels.includes("INBOX") };
+  return { emailed: true, emailTo: body.to || [], emailError: "", attachedPhotos, emailSummary: summary, emailReceipt };
 }
 
 // A text-only email to the owner (e.g. the end-of-day summary), through the same route as packages,

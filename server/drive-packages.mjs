@@ -157,7 +157,11 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       message.set(parts, head.byteLength);
       const sent = await call(GMAIL_SEND, { method: "POST", headers: { "Content-Type": "message/rfc822" }, body: message });
       if (!sent.ok) fail(await gmailRefusal(sent), sent.status === 401 || sent.status === 403 ? 403 : 503);
-      return reply({ sent: true, to });
+      // Gmail's receipt: the message id, and its labels (INBOX when it was delivered to this mailbox).
+      let receipt = {};
+      try { receipt = await sent.json(); } catch {}
+      const labels = Array.isArray(receipt.labelIds) ? receipt.labelIds.map(String) : [];
+      return reply({ sent: true, to, messageId: typeof receipt.id === "string" ? receipt.id : "", labels });
     }
 
     fail("Not found.", 404);

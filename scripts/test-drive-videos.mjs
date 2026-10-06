@@ -92,4 +92,40 @@ response = await handleDriveVideos(req("video-piece", new Uint8Array(0), { "X-HP
 assert.equal(response.status, 410);
 assert.deepEqual(await response.json(), { expired: true });
 
+// Into the job's folder: the original moves from the backup folder into the package folder's
+// "Original videos"; only this app's video files and package folders.
+const moves = [];
+const drive = async (url, options = {}) => {
+  moves.push({ url, method: options.method || "GET" });
+  if (url.startsWith("https://www.googleapis.com/drive/v3/files/video_file_01?fields=")) return Response.json({ id: "video_file_01", parents: ["job_folder_0001"], ownedByMe: true, trashed: false, appProperties: { hpdKind: "hpd-video-file" } });
+  if (url.startsWith("https://www.googleapis.com/drive/v3/files/other_file_001?fields=")) return Response.json({ id: "other_file_001", parents: ["x"], ownedByMe: true, trashed: false, appProperties: { hpdKind: "hpd-package-file" } });
+  if (url.startsWith("https://www.googleapis.com/drive/v3/files/package_folder_01?fields=")) return Response.json({ id: "package_folder_01", mimeType: "application/vnd.google-apps.folder", ownedByMe: true, trashed: false, appProperties: { hpdKind: "hpd-package-folder" } });
+  if (url.startsWith("https://www.googleapis.com/drive/v3/files/someone_folder?fields=")) return Response.json({ id: "someone_folder", mimeType: "application/vnd.google-apps.folder", ownedByMe: false, trashed: false, appProperties: { hpdKind: "hpd-package-folder" } });
+  if (url.startsWith("https://www.googleapis.com/drive/v3/files?q=")) {
+    const q = new URL(url).searchParams.get("q");
+    assert.match(q, /'package_folder_01' in parents and name = 'Original videos'/);
+    return Response.json({ files: [] });
+  }
+  if (url.startsWith("https://www.googleapis.com/drive/v3/files?fields=id")) return Response.json({ id: "originals_folder1" });
+  if (url.startsWith("https://www.googleapis.com/drive/v3/files/video_file_01?")) {
+    assert.equal(options.method, "PATCH");
+    const params = new URL(url).searchParams;
+    assert.equal(params.get("addParents"), "originals_folder1");
+    assert.equal(params.get("removeParents"), "job_folder_0001");
+    return Response.json({ id: "video_file_01", parents: ["originals_folder1"] });
+  }
+  throw new Error(`Unexpected request ${url}`);
+};
+const move = (body) => handleDriveVideos(req("video-to-package", JSON.stringify(body), { "Content-Type": "application/json" }), "video-to-package", auth, drive);
+response = await move({ fileId: "video_file_01", folderId: "package_folder_01" });
+assert.equal(response.status, 200);
+assert.deepEqual(await response.json(), { moved: true, folderId: "originals_folder1" });
+assert.ok(moves.some((m) => m.method === "PATCH"));
+response = await move({ fileId: "other_file_001", folderId: "package_folder_01" });
+assert.equal(response.status, 403);
+response = await move({ fileId: "video_file_01", folderId: "someone_folder" });
+assert.equal(response.status, 403);
+response = await move({ fileId: "../x", folderId: "package_folder_01" });
+assert.equal(response.status, 400);
+
 console.log("drive video backup: PASS");

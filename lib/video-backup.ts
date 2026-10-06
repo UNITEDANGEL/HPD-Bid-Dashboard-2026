@@ -15,8 +15,13 @@ type VideoEntry = {
   total?: number;
   uploadedAt?: string;
   driveFileId?: string;
+  // The job's package folder the original was moved into (so the job's Drive folder has it).
+  packageFolderId?: string;
+  // Removed from this phone (you tapped the button on the job card).
+  freedAt?: string;
   error?: string;
 };
+export type { VideoEntry };
 export type VideoBackupStatus = { total: number; saved: number; uploading: { id: string; percent: number } | null; error: string };
 type Api = (action: string, init: RequestInit) => Promise<Response>;
 
@@ -58,6 +63,15 @@ const allEntries = async () => {
   return new Map((rows || []).map((row) => [row.id, row]));
 };
 const announce = () => { if (typeof window !== "undefined") window.dispatchEvent(new Event(STATUS_EVENT)); };
+
+export const getVideoEntry = getEntry;
+export const saveVideoEntry = putEntry;
+
+// Start over: forget the job's videos here too (and any file kept aside for upload).
+export async function forgetJobVideos(jobId: string) {
+  const entries = await allEntries();
+  await run<void>("readwrite", (store) => { for (const entry of entries.values()) if (entry.jobId === jobId) store.delete(entry.id); });
+}
 
 export async function keepVideoForBackup(media: Pick<FieldMedia, "id" | "jobId" | "name" | "type">, blob: Blob) {
   await putEntry({ id: media.id, jobId: media.jobId, name: media.name, type: media.type, blob, total: blob.size });

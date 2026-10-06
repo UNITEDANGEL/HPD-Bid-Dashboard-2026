@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { AUTO_KEY, SYNC_KEY, driveApi, runFullBackup, syncMissingRecords, withBackupLock } from "../lib/drive-backup-client.mjs";
 import { backupVideos } from "../lib/video-backup";
+import { prepareSentJobs } from "../lib/free-space";
 
 export default function DriveAutoBackup() {
   useEffect(() => {
@@ -26,18 +27,25 @@ export default function DriveAutoBackup() {
         } finally {
           // Videos last, one at a time in small pieces (the backup above leaves them out), even
           // when that backup failed this time.
-          if (enabled()) await backupVideos({ shouldContinue: enabled });
+          try {
+            if (enabled()) await backupVideos({ shouldContinue: enabled });
+          } finally {
+            // Jobs saved to Drive and emailed: file their original videos into the job's Drive
+            // folder (the job card then offers to remove them from the phone), or show they're
+            // still on their way.
+            if (enabled()) await prepareSentJobs({ shouldContinue: enabled });
+          }
         }
       } catch { /* Queue and previous files remain intact; storage screen displays failures. */ }
       finally { working = false; window.dispatchEvent(new Event("hpd-drive-backup-status")); }
     }
     void tick();
     const timer = window.setInterval(tick, 60000);
-    for (const event of ["focus", "online", "hpd-drive-backup-settings", "hpd-video-saved"]) window.addEventListener(event, tick);
+    for (const event of ["focus", "online", "hpd-drive-backup-settings", "hpd-video-saved", "hpd-package-sent"]) window.addEventListener(event, tick);
     document.addEventListener("visibilitychange", tick);
     return () => {
       stopped = true; clearInterval(timer);
-      for (const event of ["focus", "online", "hpd-drive-backup-settings", "hpd-video-saved"]) window.removeEventListener(event, tick);
+      for (const event of ["focus", "online", "hpd-drive-backup-settings", "hpd-video-saved", "hpd-package-sent"]) window.removeEventListener(event, tick);
       document.removeEventListener("visibilitychange", tick);
     };
   }, []);

@@ -38,12 +38,16 @@ export type FieldMedia = {
   originalCapturedAt?: string;
   stamped?: boolean;
   stampError?: string;
+  // Videos only: removed from this phone after the job was saved to Drive and emailed. The
+  // original is in the job's Drive folder (driveFileId); dataUrl is then empty.
+  freedAt?: string;
+  driveFileId?: string;
 };
 
 export type FieldPhoto = FieldMedia;
 
 import { shadowUpsert } from "./unified-field-store";
-import { keepVideoForBackup } from "./video-backup";
+import { forgetJobVideos, keepVideoForBackup } from "./video-backup";
 
 export type FieldMediaCounts = Record<FieldMediaKind, number> & {
   images: number;
@@ -1106,29 +1110,56 @@ export async function updateFieldEvidence(
   return updated;
 }
 
+// Start over: removes the job's photos and videos from this phone by their keys (never reading the
+// videos into memory), with the files kept aside for the Drive video backup. Drive copies stay.
 export async function clearFieldEvidence(jobId: string) {
   const cleanJobId = String(jobId || "").trim();
   if (!cleanJobId || !hasIndexedDb()) return 0;
 
-  const rows = await listFieldPhotos(cleanJobId);
-  if (!rows.length) return 0;
-
   const db = await openDb();
-  const transaction = db.transaction(STORE_NAME, "readwrite");
-  const store = transaction.objectStore(STORE_NAME);
+  let removed = 0;
+  try {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.index("jobId").getAllKeys(cleanJobId);
+    request.onsuccess = () => {
+      const keys = request.result || [];
+      removed = keys.length;
+      keys.forEach((key) => store.delete(key));
+    };
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error || new Error("Could not clear evidence."));
+      transaction.onabort = () => reject(transaction.error || new Error("Evidence clear was aborted."));
+    });
+  } finally {
+    db.close();
+  }
+  await forgetJobVideos(cleanJobId).catch(() => undefined);
+  return removed;
+}
 
-  rows.forEach((media) => {
-    store.delete(media.id);
-  });
-
-  await new Promise<void>((resolve, reject) => {
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error || new Error("Could not clear evidence."));
-    transaction.onabort = () => reject(transaction.error || new Error("Evidence clear was aborted."));
-  });
-
-  db.close();
-  return rows.length;
+// After the job is safe in Drive and emailed (you confirm on the job card): drop one video's data from this phone, keeping its
+// details and thumbnail, and where the original is in Drive. Returns the bytes freed.
+export async function freeFieldVideo(id: string, driveFileId: string) {
+  const media = await readFieldMedia(id);
+  if (!media || media.mediaType !== "video" || !media.dataUrl) return 0;
+  const freed = Math.round((media.dataUrl.length * 3) / 4);
+  const stub: FieldMedia = { ...media, dataUrl: "", freedAt: new Date().toISOString(), driveFileId };
+  const db = await openDb();
+  try {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    transaction.objectStore(STORE_NAME).put(stub);
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error || new Error("Could not free the video."));
+      transaction.onabort = () => reject(transaction.error || new Error("Freeing the video was aborted."));
+    });
+  } finally {
+    db.close();
+  }
+  await shadowUpsert("media", stub as unknown as Record<string, unknown>);
+  return freed;
 }
 
 export async function countFieldPhotos(jobId: string) {
