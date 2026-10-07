@@ -78,6 +78,7 @@ jobs:
           node scripts/test-complete-package.cjs
           node scripts/test-video-choice.cjs
           node scripts/test-planner-constraints.cjs
+          node scripts/test-field-assistant.cjs
           node scripts/test-driving-link.cjs
           node scripts/test-drive-auth.mjs
           node scripts/test-drive-backups.mjs

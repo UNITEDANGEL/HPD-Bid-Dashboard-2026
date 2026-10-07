@@ -1,6 +1,7 @@
 "use client";
 
 import { jobPriority } from "../../lib/job-priority";
+import { answerFieldQuestion } from "../../lib/field-assistant";
 import { startDictation, type RecognitionConstructor } from "../../lib/planner-dictation";
 import { jobQueue, visitState } from "../../lib/job-queue";
 import { secondTryState } from "../../lib/field-next-action";
@@ -16,7 +17,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type JobRecord = Record<string, unknown>;
 type Point = { lat: number; lng: number };
-type ChatMessage = { role: "assistant" | "user"; text: string };
+type ChatMessage = { role: "assistant" | "user"; text: string; jobId?: string };
 type FieldStep = "ready" | "arrived" | "before_media" | "work_started" | "after_media" | "no_access_media" | "refused_access_media" | "completed_by_others_media" | "no_access" | "refused_access" | "work_completed" | "partial_work" | "completed_by_others";
 type RoutePreference = "shortest_drive" | "highest_priority" | "balanced" | "appointments_first";
 type AreaMode = "nearby" | "all" | "borough";
@@ -380,6 +381,7 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
   const [open, setOpen] = useState(false);
   useEffect(() => { if (openRequest > 0) { setOpen(true); setMediaPaused(false); } }, [openRequest]);
   const [input, setInput] = useState("");
+  const [conversationJobId, setConversationJobId] = useState("");
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const voiceAllowed = useRef(false);
   const panelOpen = useRef(false);
@@ -535,6 +537,13 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
     setMessages((current) => [...current, { role: "user", text: message }]);
 
     try {
+    const answer = answerFieldQuestion(message, records, conversationJobId);
+    if (answer) {
+      if (answer.jobId) setConversationJobId(answer.jobId);
+      setMessages((current) => [...current, { role: "assistant", text: answer.text, jobId: answer.jobId }]);
+      speakReply(answer.text);
+      return;
+    }
     const nextPlan = parseMessage(message, plan);
     const { point, label } = await getOrigin(nextPlan.startMode);
     const workingPlan = nextPlan;
@@ -606,6 +615,7 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
   }
 
   function newChat() {
+    setConversationJobId("");
     stopVoice();
     if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
     setPlan(DEFAULT_PLAN);
@@ -766,7 +776,8 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
           <div ref={chatRef} className="plan-my-day__chat" aria-live="polite">
             {messages.map((message, index) => (
               <article key={`${message.role}-${index}`} className={`plan-my-day__bubble is-${message.role}`}>
-                <b>{message.role === "assistant" ? "Planner" : "You"}</b><p>{message.text}</p>
+                <b>{message.role === "assistant" ? "Planner" : "You"}</b><p style={{ whiteSpace: "pre-line" }}>{message.text}</p>
+                {message.jobId ? <a href={`/map/?omo=${encodeURIComponent(message.jobId)}`}>Open {message.jobId}</a> : null}
               </article>
             ))}
             {busy ? <article className="plan-my-day__bubble is-assistant"><b>Planner</b><p>Planning…</p></article> : null}
@@ -788,7 +799,7 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
           ) : null}
 
           <div className="plan-my-day__suggestions">
-            {["Plan 5 jobs near me", "5 urgent Queens jobs", "Appointments first", "Nearest jobs first"].map((suggestion) => (
+            {["Plan 5 jobs near me", "Which jobs are oldest overdue?", "What is the next step?", "Nearest jobs first"].map((suggestion) => (
               <button type="button" key={suggestion} onClick={() => void handleMessage(suggestion)}>{suggestion}</button>
             ))}
           </div>
@@ -829,7 +840,7 @@ export default function PlanMyDayDrawer({ records = [], openRequest = 0 }: { rec
                 rows={3}
                 disabled={busy || listening}
               />
-              <button type="submit" disabled={busy || listening || !input.trim()}>{busy ? "Planning…" : "Plan route"}</button>
+              <button type="submit" disabled={busy || listening || !input.trim()}>{busy ? "Working…" : "Send"}</button>
             </div>
           </form>
 
