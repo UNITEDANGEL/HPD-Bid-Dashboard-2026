@@ -972,3 +972,14 @@
 #fc-job-card .jc-next-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 #fc-job-card .jc-next-actions a, #fc-job-card .jc-next-actions button { min-height: 40px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 10px; border: 0; background: #2563eb; color: #fff; font: 800 14px/1 system-ui, sans-serif; text-decoration: none; }
 #fc-job-card .jc-next-actions button { background: #1e293b; border: 1px solid #60a5fa; }
+.jc-assistant { margin: 12px 0; border-top: 1px solid #53645e; padding: 12px 0; color: inherit; }
+.jc-assistant summary { cursor: pointer; font-weight: 600; min-height: 44px; }
+.jc-assistant summary span { display: block; font-size: 12px; font-weight: 400; }
+.jc-assistant-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.jc-assistant button { min-height: 44px; border: 1px solid #708980; border-radius: 6px; background: #163b31; color: #f4fff9; padding: 6px; font-size: 13px; white-space: normal; }
+.jc-assistant button:disabled { opacity: .5; }
+.jc-assistant label { display: block; margin: 12px 0 6px; font-size: 13px; }
+.jc-assistant-input { display: grid; grid-template-columns: minmax(0, 1fr) 52px; gap: 6px; }
+.jc-assistant input { min-width: 0; width: 100%; min-height: 44px; box-sizing: border-box; font-size: 16px; border: 1px solid #708980; border-radius: 6px; background: #fff; color: #15241e; }
+.jc-assistant p, .jc-assistant li { white-space: pre-line; overflow-wrap: anywhere; font-size: 14px; line-height: 1.5; }
+.jc-assistant [role="status"] { margin-top: 12px; }

@@ -3,6 +3,11 @@
 Every request from the owner, in one place. Each item is fixed, tested, pushed live, and checked off here.
 Live app: https://hpd-bid-dashboard-2026.pages.dev/map/
 
+## October 6 job-card assistant (release pending)
+
+- Collapsed per-job assistant with next step, visit check, typed questions and limited package pre-check. Checks award cutoff, scope, address/amount, confirmed outcome, device media counts and work-date conflicts. Unknown counts remain unknown. No-access/refused/by-others do not require before/after evidence in this advisory check. Legacy generator remains blocked; not fixed here.
+- Regression tests and TypeScript passed; local TEST-0001 browser verified new-template selection, missing-outcome warning and contextual next step without an OMO prompt. Phone-sized screenshot shows separated controls. No media, outcome, GPS, signatures, email or archive actions submitted. Pre-check does not verify PDF pages, signatures, final attachment size or actual delivery.
+
 ## October 6 assistant increment (release pending)
 
 - Free local advisory replies for job status, scope, award/maturity dates, visit safeguards and oldest eligible pending jobs. Remembers a discussed job within the open conversation, links to its card and avoids GPS for questions. Does not perform chat-driven mutations or call paid AI. Existing dictation/spoken replies unchanged.

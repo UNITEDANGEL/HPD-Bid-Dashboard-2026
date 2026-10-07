@@ -27,6 +27,7 @@ import { formatBytes, phoneStorage, type PhoneStorage } from "../../lib/phone-st
 import { clearFieldPackets } from "../../lib/field-packet-store";
 import { FREED_KEY } from "../../lib/free-space";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
+import JobAssistant from "./JobAssistant";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./job-card-v2.css";
@@ -3007,6 +3008,7 @@ export default function FieldCommandClient() {
               </details>
               </div>
 
+              <JobAssistant key={`assistant-${id}`} job={selectedJob} id={id} media={mediaCounts[id] || null} />
               <div className="jc-media-docs" role="group" aria-label="Documents">
                 <div className="jc-section-head">
                   <strong>Documents</strong>
