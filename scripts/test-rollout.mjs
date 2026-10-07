@@ -19,5 +19,7 @@ assert.equal(rollout.upgradeOn("unknown", "TEST-0001"), false);
 delete rollout.TEST_FIRST["new-thing"];
 rollout.LIVE.add("new-thing");
 assert.equal(rollout.upgradeOn("new-thing", "ER05729"), true);
-assert.deepEqual(rollout.testFirstUpgrades(), []);
+assert.ok(!rollout.testFirstUpgrades().some((u) => u.name === "new-thing"), "a live upgrade is no longer listed as test-first");
+// Every test-first upgrade is described for the test job's card.
+assert.ok(rollout.testFirstUpgrades().every((u) => u.name && u.about));
 console.log("PASS rollout: test-first upgrades only on TEST-0001; live upgrades on every job");
