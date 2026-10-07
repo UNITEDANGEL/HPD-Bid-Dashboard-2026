@@ -30,7 +30,8 @@ import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./job-card-v2.css";
-import { testFirstUpgrades } from "../../lib/rollout";
+import { testFirstUpgrades, upgradeOn } from "../../lib/rollout";
+import { milesLabel, nextJob } from "../../lib/next-job";
 import { isTestJob, isTestModeJob, setTestJobLocation, setTestModeJob, testJobLocation, testJobPlace, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
 
 type JobRecord = Record<string, unknown>;
@@ -2860,6 +2861,27 @@ export default function FieldCommandClient() {
                     </div>
                   );
                 })()}
+                {upgradeOn("next-job", id) && FIELD_OUTCOMES[value(selectedJob, ["FieldOutcome", "fieldOutcome"])] ? (() => {
+                  // Next stop: the closest open job to where you are (or to this job without a fix).
+                  const fix = lastFixRef.current;
+                  const from = fix && Date.now() - fix.at < 600000 ? { lat: fix.lat, lng: fix.lng } : jobLatLng(selectedJob);
+                  if (!from) return null;
+                  const spots = jobs.map((row) => { const at = jobLatLng(row); return { id: jobId(row), lat: at ? at.lat : NaN, lng: at ? at.lng : NaN, open: jobQueue(row) === "pending" && !isTestJob(jobId(row)) }; });
+                  const best = nextJob(spots, id, from);
+                  const target = best ? jobs.find((row) => jobId(row) === best.id) : null;
+                  if (!best || !target) return <p className="jc-next-job is-none" data-hpd-smoke="jc-next-job">➡ No other open job with a location nearby.</p>;
+                  return (
+                    <div className="jc-next-job" data-hpd-smoke="jc-next-job">
+                      <strong>➡ Next closest job · {best.id}</strong>
+                      <span>{jobAddress(target)} · {milesLabel(best.miles)}</span>
+                      <span className="jc-next-actions">
+                        <a href={wazeHref(target)} target="_blank" rel="noreferrer" onClick={() => rememberNavigation(best.id)}>Waze</a>
+                        <a href={directionsHref(target)} target="_blank" rel="noreferrer" onClick={() => rememberNavigation(best.id)}>Google</a>
+                        <button type="button" data-hpd-smoke="jc-next-open" onClick={() => openIssueJob(target)}>Open job</button>
+                      </span>
+                    </div>
+                  );
+                })() : null}
                 {autoPackage && autoPackage.id === id ? (
                   <div className="jc-auto-package" role="status" data-hpd-smoke="jc-auto-package">
                     <strong>📦 Opening the package for review in {autoPackage.seconds}s…</strong>
