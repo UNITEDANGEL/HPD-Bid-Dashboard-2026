@@ -4,7 +4,9 @@
 import { TEST_JOB_ID } from "./test-job";
 
 // Upgrades being tried on the test job only: name -> what it does (shown on the test job's card).
-export const TEST_FIRST: Record<string, string> = {};
+export const TEST_FIRST: Record<string, string> = {
+  "next-job": "after the outcome, the next closest open job with directions",
+};
 
 // Upgrades already given to every job (kept so code can ask about them by name).
 export const LIVE = new Set<string>([]);

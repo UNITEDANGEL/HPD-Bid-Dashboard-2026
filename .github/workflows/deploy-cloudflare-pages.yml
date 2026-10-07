@@ -86,6 +86,7 @@ jobs:
           node scripts/test-phone-storage.mjs
           node scripts/test-free-space.mjs
           node scripts/test-rollout.mjs
+          node scripts/test-next-job.mjs
           node scripts/test-drive-sync.mjs
           node scripts/test-email-package.cjs
           node scripts/test-appointment-calendar.mjs
