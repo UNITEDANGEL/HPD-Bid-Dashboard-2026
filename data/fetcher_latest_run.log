@@ -1,4 +1,4 @@
-Fetcher run started: 2026-10-07T02:14:03.647Z
+Fetcher run started: 2026-10-08T02:39:37.809Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -15,40 +15,44 @@ $ python FetchrMatcherV5.py --update --days 14
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/09/23 before:2026/10/08
-COA items parsed (latest per OMO): 0
-No OMOs from COA Ã¢â‚¬â€ skipping ITB lookup.
-Final JobRows: 0
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/09/24 before:2026/10/09
+COA items parsed (latest per OMO): 3
+ITB items parsed (latest per OMO): 3
+Final JobRows: 3
 
 CSV saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.csv
 JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.json
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages: 0it [00:00, ?it/s]Downloading COA messages: 0it [00:00, ?it/s]
-Geocoding COA addresses: 0it [00:00, ?it/s]Geocoding COA addresses: 0it [00:00, ?it/s]
+Downloading COA messages:   0%|          | 0/3 [00:00<?, ?it/s]Downloading COA messages:  33%|███▎      | 1/3 [00:00<00:00,  4.69it/s]Downloading COA messages:  67%|██████▋   | 2/3 [00:00<00:00,  5.92it/s]Downloading COA messages: 100%|██████████| 3/3 [00:00<00:00,  6.00it/s]Downloading COA messages: 100%|██████████| 3/3 [00:00<00:00,  5.82it/s]
+Geocoding COA addresses:   0%|          | 0/3 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 3/3 [00:00<00:00, 77672.30it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/3 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 1/3 [00:00<00:01,  1.55it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 2/3 [00:01<00:00,  1.62it/s]Fetching ITBs for COA OMOs: 100%|██████████| 3/3 [00:01<00:00,  1.67it/s]Fetching ITBs for COA OMOs: 100%|██████████| 3/3 [00:01<00:00,  1.65it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
 Safe merge complete
 Master before: 672
-Incoming rows: 0
-Added new OMOs: 0
+Incoming rows: 3
+Added new OMOs: 3
 Skipped existing OMOs: 0
 Updated existing OMOs: 0
-Need geocode: 0
+Need geocode: 3
 Missing ITB: 0
-Missing description: 0
-Master after: 672
+Missing description: 3
+Master after: 675
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
 
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 0
-Geocoded: 0
+Need geocode: 3
+OK ER07193 216 EAST 122 STREET, 10035 40.801224 -73.936477 NYC_PLANNING_OK
+OK ER07281 2385 2 AVENUE, 10035 40.801193 -73.935204 NYC_PLANNING_OK
+OK ER07032 41-15 50 STREET, 11377 40.745556 -73.914174 NYC_PLANNING_OK
+Geocoded: 3
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -73,22 +77,28 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 12
-Descriptions patched: 0
+Matched ITBs needing description: 15
+DESCRIPTION OK ER07193 ER07193_100626035429.pdf
+DESCRIPTION OK ER07281 ER07281_100626053747.pdf
+DESCRIPTION OK ER07032 ER07032_100626024506.pdf
+Descriptions patched: 3
 Missing PDF: 12
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
+{'OMO': 'ER07193', 'Address': '216 EAST 122 STREET, 10035', 'RecoveredFrom': 'ER07193_100626035429.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK“ AT PUBLIC AREA : AT BUILDING ENTRANCE DOOR : AT PUBLIC AREA : AT BUILDING ENTRANCE DOOR : INSTALL NEW HEAVY DUTY DOOR CLOSER , REHANG AND ADJUST THE DOOR'}
+{'OMO': 'ER07281', 'Address': '2385 2 AVENUE, 10035', 'RecoveredFrom': 'ER07281_100626053747.pdf', 'Preview': ': AT APT: 2701 LOCATION: BATHROOM REPAIR LEAK AND RESTORE BROKEN PLASTER. TRACE, LOCATE AND PROPERLY REPAIR THE SOURCES OF CO NCEALED WATER LEAK(S) AT CEILING AND WALLS. THE PROBABLE SOURCE IS AT UPS TAIR’S APT. ENSURE T'}
+{'OMO': 'ER07032', 'Address': '41-15 50 STREET, 11377', 'RecoveredFrom': 'ER07032_100626024506.pdf', 'Preview': ': REPLACE 3RD STY HOPPER LATCH SET AT 3RD STY PUBLIC HALL HOPPER CHUTE DOOR..REPLACE D EFECTIVE LATCH SET WITH NEW HOPPER DOOR LATCH SET SAME AS EXISTING..RESTORE HOPPER TO PROPER WORKING CONDITION TOTAL DOOR = 1'}
 
 Synced 3 data file(s) to public/data.
 
 ========== Render ITB page 3 assets ==========
 $ node scripts/render-itb-page3-assets.js --copy-pdfs
 {
-  "rendered": 0,
+  "rendered": 3,
   "reused": 672,
-  "copiedPdfs": 0,
+  "copiedPdfs": 3,
   "missingSource": 0,
   "failed": 0
 }
@@ -98,9 +108,9 @@ ITB page manifest written to /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Da
 ========== Sync ITB page 3 descriptions ==========
 $ python scripts/sync-itb-page3-descriptions.py
 {
-  "jobs": 672,
-  "manifestEntries": 672,
-  "descriptionsAdded": 0,
+  "jobs": 675,
+  "manifestEntries": 675,
+  "descriptionsAdded": 3,
   "legacyDescriptionReplaced": 0,
   "missingManifestEntry": 672,
   "extractFailed": 0
@@ -110,10 +120,10 @@ Synced 2 public data file(s) back to data.
 
 ========== Verify mapping ==========
 $ node check-local-mapping.js
-Raw JSON rows: 672
-2026 rows: 621
-2026 rows with any Latitude/Longitude: 621
-2026 rows with valid NYC coordinates: 621
+Raw JSON rows: 675
+2026 rows: 624
+2026 rows with any Latitude/Longitude: 624
+2026 rows with valid NYC coordinates: 624
 2026 rows NOT valid mapped: 0
 
 Not mapped sample:
@@ -150,7 +160,7 @@ Missing sample:
 
 ========== Verify missing ITB ==========
 $ node export-missing-itb.js
-Total jobs: 672
+Total jobs: 675
 Missing ITB jobs: 0
 Exported: ./data/missing_itb_jobs_2026.csv
 ┌─────────┐
@@ -162,7 +172,7 @@ Exported: ./data/missing_itb_jobs_2026.csv
 ========== Verify paperwork required data ==========
 $ node scripts/verify-paperwork-data.js --write-report
 PAPERWORK DATA QUALITY
-Total jobs: 672
+Total jobs: 675
 Missing addresses: 0
 Missing descriptions: 0
 Missing ITB page 3 descriptions: 0
@@ -193,16 +203,16 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-10-07T02:14:13.780Z
+Fetcher run finished: 2026-10-08T02:40:01.849Z
 {
-  "fetchedCoaItems": 0,
-  "fetchedItbItems": null,
-  "fetchedFinalJobRows": 0,
-  "addedNewOmos": 0,
+  "fetchedCoaItems": 3,
+  "fetchedItbItems": 3,
+  "fetchedFinalJobRows": 3,
+  "addedNewOmos": 3,
   "skippedExistingOmos": 0,
-  "rawRows": 672,
-  "rows2026": 621,
-  "mapped2026": 621,
+  "rawRows": 675,
+  "rows2026": 624,
+  "mapped2026": 624,
   "notMapped2026": 0,
   "missingAddresses": 0,
   "badDescriptions": 0,

@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-10-07T02:14:13.301Z",
+  "generatedAt": "2026-10-08T02:39:59.920Z",
   "page": 3,
   "dpi": 150,
-  "totalJobs": 672,
-  "uniqueItbRefs": 672,
+  "totalJobs": 675,
+  "uniqueItbRefs": 675,
   "sourceDirectories": [
     "/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/ITB_Downloads_V5"
   ],
@@ -4711,12 +4711,33 @@
       "sourceFile": "/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/ITB_Downloads_V5/ER02882_083126040834.pdf",
       "sourceMatch": "exact",
       "pdf": "/documents/itb/ER02882_083126040834.pdf"
+    },
+    "ER07193_100626035429.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER07193_100626035429-p3.png",
+      "sourceFile": "/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/ITB_Downloads_V5/ER07193_100626035429.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER07193_100626035429.pdf"
+    },
+    "ER07281_100626053747.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER07281_100626053747-p3.png",
+      "sourceFile": "/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/ITB_Downloads_V5/ER07281_100626053747.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER07281_100626053747.pdf"
+    },
+    "ER07032_100626024506.pdf": {
+      "page": 3,
+      "pageImage": "/documents/itb-pages/ER07032_100626024506-p3.png",
+      "sourceFile": "/home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/ITB_Downloads_V5/ER07032_100626024506.pdf",
+      "sourceMatch": "exact",
+      "pdf": "/documents/itb/ER07032_100626024506.pdf"
     }
   },
   "summary": {
-    "rendered": 0,
+    "rendered": 3,
     "reused": 672,
-    "copiedPdfs": 0,
+    "copiedPdfs": 3,
     "missingSource": 0,
     "failed": 0
   }
