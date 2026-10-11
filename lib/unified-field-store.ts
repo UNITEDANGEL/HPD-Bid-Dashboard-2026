@@ -146,8 +146,20 @@ function cloudSafeEntity(entityType: UnifiedEntityType, value: Record<string, un
   };
 }
 
+// A video or a big file (e.g. a package zip) keeps only its details here, not its data: the real
+// file is in its own store, and a second full copy doubled the phone's storage and memory.
+const HEAVY_DATA_CHARS = 2 * 1024 * 1024;
+function withoutHeavyData(value: Record<string, unknown>) {
+  const video = value.mediaType === "video" || String(value.type || value.mimeType || "").startsWith("video/");
+  const heavy = typeof value.dataUrl === "string" && value.dataUrl.length > HEAVY_DATA_CHARS;
+  if (!video && !heavy) return value;
+  const { dataUrl: _dataUrl, posterDataUrl: _poster, ...rest } = value;
+  return { ...rest, dataOmitted: true };
+}
+
 export async function shadowUpsert(entityType: UnifiedEntityType, value: Record<string, unknown>) {
   if (!unifiedFieldStoreEnabled()) return false;
+  if (entityType === "media" || entityType === "document") value = withoutHeavyData(value);
   const id = String(value.id || "").trim();
   if (!id) throw new Error("Unified storage record needs an id.");
   const storeName = ENTITY_STORE_NAMES[entityType];
@@ -163,18 +175,66 @@ export async function shadowUpsert(entityType: UnifiedEntityType, value: Record<
   return true;
 }
 
+// Ids of the videos in the photo store, from its index alone (no video is read).
+async function photoVideoIds(): Promise<Set<string>> {
+  return new Promise((resolve) => {
+    const request = window.indexedDB.open("hpd-field-photos-v1");
+    request.onerror = () => resolve(new Set());
+    request.onsuccess = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains("photos")) { db.close(); resolve(new Set()); return; }
+      const store = db.transaction("photos", "readonly").objectStore("photos");
+      if (!store.indexNames.contains("mediaType")) { db.close(); resolve(new Set()); return; }
+      const keys = store.index("mediaType").getAllKeys("video");
+      keys.onsuccess = () => { db.close(); resolve(new Set((keys.result || []).map(String))); };
+      keys.onerror = () => { db.close(); resolve(new Set()); };
+    };
+  });
+}
+
+// Reads a store one record at a time (never all at once), leaving out videos and the data of big
+// files: a video can be hundreds of MB, and reading them all crashed the app.
 async function legacyRows(dbName: string, storeName: string) {
+  const videos = storeName === "photos" ? await photoVideoIds() : new Set<string>();
   return new Promise<Record<string, unknown>[]>((resolve) => {
     const request = window.indexedDB.open(dbName);
     request.onerror = () => resolve([]);
-    request.onsuccess = () => {
+    request.onsuccess = async () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(storeName)) { db.close(); resolve([]); return; }
-      const rows = db.transaction(storeName, "readonly").objectStore(storeName).getAll();
-      rows.onerror = () => { db.close(); resolve([]); };
-      rows.onsuccess = () => { db.close(); resolve((rows.result || []) as Record<string, unknown>[]); };
+      const keys = await new Promise<IDBValidKey[]>((done) => {
+        const all = db.transaction(storeName, "readonly").objectStore(storeName).getAllKeys();
+        all.onsuccess = () => done(all.result || []); all.onerror = () => done([]);
+      });
+      const out: Record<string, unknown>[] = [];
+      for (const key of keys) {
+        if (videos.has(String(key))) continue;
+        const row = await new Promise<Record<string, unknown> | undefined>((done) => {
+          const one = db.transaction(storeName, "readonly").objectStore(storeName).get(key);
+          one.onsuccess = () => done(one.result as Record<string, unknown> | undefined); one.onerror = () => done(undefined);
+        });
+        if (row) out.push(withoutHeavyData(row));
+      }
+      db.close();
+      resolve(out);
     };
   });
+}
+
+// Earlier versions copied every video in full into this store too (doubling storage). Remove those
+// copies by id; the real videos in the photo store are untouched.
+async function pruneVideoCopies() {
+  const videos = await photoVideoIds();
+  if (!videos.size) return 0;
+  const db = await openDb();
+  const tx = db.transaction("media", "readwrite");
+  const store = tx.objectStore("media");
+  const keys = await new Promise<IDBValidKey[]>((done) => { const all = store.getAllKeys(); all.onsuccess = () => done(all.result || []); all.onerror = () => done([]); });
+  let removed = 0;
+  for (const key of keys) if (videos.has(String(key))) { store.delete(key); removed += 1; }
+  await transactionDone(tx);
+  db.close();
+  return removed;
 }
 
 export async function copyLegacyFieldStorage() {
@@ -212,6 +272,7 @@ export async function unifiedStorageStatus(): Promise<UnifiedStorageStatus> {
   const enabled = unifiedFieldStoreEnabled();
   if (!enabled) return { enabled: false, available: browserReady(), queued: 0, errors: 0, migrated: {} };
   await copyLegacyFieldStorage();
+  await pruneVideoCopies().catch(() => 0);
   const db = await openDb();
   const tx = db.transaction(["mutations", "settings", "sync_state"], "readonly");
   const queuedRequest = tx.objectStore("mutations").index("status").count("queued");

@@ -1,4 +1,4 @@
-﻿import json
+import json
 import re
 import subprocess
 import tempfile
@@ -17,6 +17,26 @@ BAD_MARKERS = [
     "bid certification",
     "scope of work is described on the attached copy",
     "you must certify your bid price",
+    # Purchase-order header captured instead of the scope (ER04964).
+    "submit invoice* in quadruplicate",
+    "submit invoice in quadruplicate",
+    # ITB site-visit instructions captured instead of the scope (ER04964).
+    "evidence of the required site visit",
+]
+# Printed labels of the blank HPD work-description form. A scanned (faxed) ITB has only these in its
+# text layer -- the real scope is in the image -- and they contain work words ("Provide/Install",
+# "Abate", "Repair"), so without this check the empty form passed as a scope (ER04964 and others).
+FORM_LABEL_MARKERS = [
+    "apt(s)/location(s)",
+    "procedures material",
+    "provide/install",
+    "painting/spp",
+    "delead",
+    "replace/repair gas/electric",
+    "appliances: stove",
+    "elev ator",
+    "elevator: asbestos",
+    "size cubic feet",
 ]
 REAL_WORK_WORDS = [
     "install", "replace", "repair", "remove", "provide", "furnish", "correct",
@@ -26,6 +46,16 @@ REAL_WORK_WORDS = [
     "public hall", "vestibule", "apartment", "kitchen", "bathroom", "room",
 ]
 SKIP_LINE_MARKERS = [
+    # Blank form labels are never part of a scope.
+    *FORM_LABEL_MARKERS,
+    # The ITB's site-visit instructions page (ER04964) is never the scope either.
+    "site visit",
+    "you are required to provide the information",
+    "for hpd information only",
+    "abate",
+    "remove",
+    "repair",
+    "replace",
     "invitation to bid",
     "quotation sheet",
     "bid certification",
@@ -69,11 +99,15 @@ def clean(text):
     text = re.sub(r"\n{3,}", "\n\n", text)
     text = re.sub(r" +\n", "\n", text)
     return text.strip()
+def looks_like_blank_form(text):
+    lower = re.sub(r"\s+", " ", str(text or "").lower())
+    return "apt(s)/location(s)" in lower or sum(1 for marker in FORM_LABEL_MARKERS if marker in lower) >= 2
 def is_bad(desc):
     text = str(desc or "").lower()
     return (
         not text.strip()
         or any(marker in text for marker in BAD_MARKERS)
+        or looks_like_blank_form(text)
         or re.match(r"^page\s+\d+\s+of\s+\d+", str(desc or ""), re.I)
     )
 def looks_like_scope(text):
@@ -238,6 +272,8 @@ def extract_desc_from_pages(pages):
             if index >= 2:
                 score += 100
             candidates.append((score, fallback[:7000]))
+    # Junk is dropped before choosing, so a junk top pick can't hide a real scope found lower down.
+    candidates = [c for c in candidates if not is_bad(c[1]) and not looks_like_blank_form(c[1])]
     if not candidates:
         return ""
     candidates.sort(key=lambda x: x[0], reverse=True)
@@ -245,7 +281,8 @@ def extract_desc_from_pages(pages):
 def recover_description_from_pdf(pdf):
     pages = pypdf_pages(pdf)
     desc = extract_desc_from_pages(pages)
-    if not desc:
+    # A scanned (faxed) ITB's text layer can hold only form labels or instructions: read the scan.
+    if not desc or is_bad(desc):
         try:
             pages = ocr_pages(pdf, 1, 12)
             desc = extract_desc_from_pages(pages)
@@ -257,7 +294,8 @@ for job in jobs:
     desc = get(job, "JobDescription", "description", "Job_Description")
     itb = get(job, "ITBFile", "itbFile")
     status = get(job, "ITBMatchStatus", "itbMatchStatus", "status").upper()
-    if itb and status != "NO_ITB" and not desc:
+    # Also re-read jobs whose saved description is junk (e.g. only the blank form's labels).
+    if itb and status != "NO_ITB" and (not desc or is_bad(desc)):
         targets.append(job)
 print("Matched ITBs needing description:", len(targets))
 patched = 0

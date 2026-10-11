@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, savedJobStatus } from "../lib/job-queue";
 import { readLocalWorkflowOverrides, fetchServerWorkflowOverrides } from "../lib/paperwork";
+import { mergeOverrideMaps } from "../lib/override-sync";
 import { fieldStatusLabel } from "../lib/field-status";
 import FieldTabBar from "./FieldTabBar";
 import "../app/field-command/field-command.css";
@@ -98,7 +99,7 @@ export function MobileJobsBoard({ jobs: sourceJobs }: { jobs: JobRecord[]; title
       applyOverrides(readLocalWorkflowOverrides());
       fetchServerWorkflowOverrides().then(server => {
         if (cancelled) return;
-        applyOverrides({ ...readLocalWorkflowOverrides(), ...server });
+        applyOverrides(mergeOverrideMaps(readLocalWorkflowOverrides(), server));
       }).catch(() => {});
     }
     refresh();

@@ -30,16 +30,31 @@ export function assertEmailPackageSize(size: number) {
   }
 }
 
-export async function emailMediaCopies(media: FieldMedia[]) {
-  const copies: FieldMedia[] = [];
-  for (const row of media) {
-    if (row.mediaType !== "image") { copies.push({ ...row }); continue; }
-    const dataUrl = await compactImageDataUrl(row.dataUrl, 1100, 0.52);
-    const size = dataUrlToBytes(dataUrl).byteLength;
-    const originalSize = dataUrlToBytes(row.dataUrl).byteLength;
-    copies.push(size < originalSize && dataUrl.startsWith("data:image/jpeg;")
-      ? { ...row, dataUrl, size, type: "image/jpeg", name: row.name.replace(/\.[^.]+$/, "") + ".jpg" }
-      : { ...row });
+// Photo quality steps, best first. The email is ~25 MB (EMAIL_ZIP_MAX_BYTES after encoding), so
+// photos use the best step whose total still fits: few photos go out near full quality, many
+// photos step down. With videos, photos leave room for them (videos are fitted afterwards).
+const PHOTO_STEPS: [number, number][] = [[4032, 0.9], [3000, 0.85], [2400, 0.8], [1800, 0.75], [1400, 0.68], [1100, 0.52]];
+export function emailPhotoBudget(media: FieldMedia[]) {
+  return media.some((row) => row.mediaType === "video") ? 8_000_000 : 16_000_000;
+}
+
+export async function emailMediaCopies(media: FieldMedia[], budget = emailPhotoBudget(media)) {
+  let copies: FieldMedia[] = [];
+  for (const [maxSide, quality] of PHOTO_STEPS) {
+    copies = [];
+    let photoBytes = 0;
+    for (const row of media) {
+      if (row.mediaType !== "image") { copies.push({ ...row }); continue; }
+      const dataUrl = await compactImageDataUrl(row.dataUrl, maxSide, quality);
+      const size = dataUrlToBytes(dataUrl).byteLength;
+      const originalSize = dataUrlToBytes(row.dataUrl).byteLength;
+      const copy = size < originalSize && dataUrl.startsWith("data:image/jpeg;")
+        ? { ...row, dataUrl, size, type: "image/jpeg", name: row.name.replace(/\.[^.]+$/, "") + ".jpg" }
+        : { ...row };
+      photoBytes += dataUrlToBytes(copy.dataUrl).byteLength;
+      copies.push(copy);
+    }
+    if (photoBytes <= budget) break;
   }
   return copies;
 }

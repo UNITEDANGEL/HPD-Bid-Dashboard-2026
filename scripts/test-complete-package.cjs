@@ -22,10 +22,12 @@ const { calendarDay } = loadTs(path.join(root, 'lib/job-priority.ts'));
 const noAccess = loadTs(path.join(root, 'lib/no-access.ts'));
 const tenantContact = loadTs(path.join(root, 'lib/tenantContact.ts'));
 const materials = loadTs(path.join(root, 'lib/invoice-materials.ts'));
+const descriptionQuality = loadTs(path.join(root, 'lib/description-quality.ts'));
 // pdf-lib rejects objects created inside a vm context, so the invoice drawer loads in this realm.
 require.extensions['.ts'] = (m, file) => m._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, file);
 const { drawInvoicePage } = require(path.join(root, 'lib/invoice-pdf.ts'));
 const { signatureBytes } = require(path.join(root, 'lib/signature.ts'));
+const { visitRecordText } = require(path.join(root, 'lib/visit-record.ts'));
 const output = path.join(root, 'output/pdf/complete-package-test');
 fs.mkdirSync(output, { recursive: true });
 // Synthetic packaging fixture only, never uploaded to a real job or Drive.
@@ -33,7 +35,7 @@ const imageBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAA
 async function run(outcome, awardDate, broken = false) {
   const saved = [], statuses = [], requested = [], forms = [];
   const media = ['before', 'after', 'general'].map((kind, i) => ({ id: `TEST-${i}`, jobId: 'TEST-PACKAGE', kind, mediaType: 'image', evidenceLabel: kind === 'general' ? 'Building exterior' : `${kind} TEST ONLY`, name: `TEST-ONLY-${kind}.png`, type: 'image/png', size: imageBytes.length, capturedAt: '2026-09-15T12:00:00Z', dataUrl: broken && i === 0 ? '' : `data:image/png;base64,${imageBytes.toString('base64')}`, stamped: false }));
-  const context = { ...pdf, ...paperwork, ...noAccess, ...tenantContact, ...materials, drawInvoicePage, signatureBytes, signatureRef: { current: `data:image/png;base64,${imageBytes.toString('base64')}` }, calendarDay, console, Uint8Array, ArrayBuffer, TextEncoder, Date, Buffer, Blob, File, URL,
+  const context = { ...pdf, ...paperwork, ...noAccess, ...tenantContact, ...materials, ...descriptionQuality, drawInvoicePage, signatureBytes, visitRecordText, signatureRef: { current: `data:image/png;base64,${imageBytes.toString('base64')}` }, calendarDay, console, Uint8Array, ArrayBuffer, TextEncoder, Date, Buffer, Blob, File, URL,
     emailMediaCopies: async rows => rows,
     fitEmailVideos: async rows => rows,
     packageBusyRef: { current: false }, setPackageBusy() {},
@@ -45,11 +47,19 @@ async function run(outcome, awardDate, broken = false) {
     bytesToDataUrl: (bytes, mime) => `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`,
     dataUrlToBytes: value => new Uint8Array(Buffer.from(value.split(',')[1], 'base64')),
     renderPdfFirstPageImage: async bytes => ({ imageUrl: '', pageCount: (await pdf.PDFDocument.load(bytes)).getPageCount(), error: 'Headless test: preview rendered separately' }),
-    clearPackagePreview() {}, setFullScreenPdfOpen() {}, setIncludePackageMedia() {}, setIncludePackageSignature() {}, setForm(value) { forms.push(value); }, setPackagePreview() {}, setPackagePreviewOpen() {},
+    clearPackagePreview() {}, setFullScreenPdfOpen() {}, setIncludePackageMedia() {}, setIncludePackageSignature() {}, setForm(value) { forms.push(value); }, setPackagePreview() {}, setPackagePreviewOpen() {}, setPackageContents() {},
+    notaryRef: { current: null }, setNotaryKey() {}, rememberNotary() {}, packageNotaryRef: { current: null }, lastIncludeMediaRef: { current: true },
     pendingCompletePackageRef: { current: null }, markPackageGenerated: async () => 'TEST ONLY - no job mutation',
   };
   new Function(`with (this) { ${source} }`).call(context);
   await context.generate(true, false);
+  const pendingPackage = context.pendingCompletePackageRef.current;
+  if (pendingPackage) {
+    const record = pendingPackage.folderEntries.find(entry => entry.section === 'record');
+    assert.ok(record && record.path === 'VISIT-RECORD.txt', 'the Drive folder gets the internal visit record');
+    assert.match(Buffer.from(record.bytes).toString('utf8'), /^VISIT RECORD \(internal proof/);
+    assert.ok(!pendingPackage.completeShareFiles.some(file => /VISIT-RECORD/.test(file.name)), 'the visit record stays out of the share sheet');
+  }
   const packet = saved.find(row => row.packetType === 'full_evidence_zip');
   if (!broken && (calendarDay(awardDate) === null || calendarDay(awardDate) < calendarDay('2026-08-28'))) {
     assert.equal(packet, undefined);

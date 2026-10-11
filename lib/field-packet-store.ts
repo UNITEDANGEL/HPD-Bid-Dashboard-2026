@@ -159,3 +159,39 @@ export async function clearFieldPackets(jobId: string, packetTypes?: FieldPacket
   db.close();
   return rowsToDelete.length;
 }
+
+// By key only (never reading the saved packages, which can be large): how many are saved for a
+// job, and removing them all (their copies are in the job's Drive folder).
+export async function countFieldPacketKeys(jobId: string) {
+  const cleanJobId = String(jobId || "").trim();
+  if (!cleanJobId || !hasIndexedDb()) return 0;
+  const db = await openDb();
+  try {
+    const store = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME);
+    if (!store.indexNames.contains("jobId")) return 0;
+    return await requestToPromise(store.index("jobId").count(cleanJobId));
+  } finally {
+    db.close();
+  }
+}
+
+export async function removeFieldPacketsByKey(jobId: string) {
+  const cleanJobId = String(jobId || "").trim();
+  if (!cleanJobId || !hasIndexedDb()) return 0;
+  const db = await openDb();
+  try {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    if (!store.indexNames.contains("jobId")) return 0;
+    const keys = await requestToPromise(store.index("jobId").getAllKeys(cleanJobId));
+    keys.forEach((key) => store.delete(key));
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error || new Error("Could not remove saved packages."));
+      transaction.onabort = () => reject(transaction.error || new Error("Removing saved packages was aborted."));
+    });
+    return keys.length;
+  } finally {
+    db.close();
+  }
+}

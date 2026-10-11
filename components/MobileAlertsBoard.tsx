@@ -7,6 +7,7 @@ import "../app/field-command/field-command.css";
 import type { JobRecord } from "../lib/types";
 import { jobQueue, savedJobStatus } from "../lib/job-queue";
 import { readLocalWorkflowOverrides, fetchServerWorkflowOverrides } from "../lib/paperwork";
+import { mergeOverrideMaps } from "../lib/override-sync";
 
 type BoroughKey = "MN" | "BK" | "QN" | "BX" | "SI";
 
@@ -76,7 +77,7 @@ export function MobileAlertsBoard({ jobs: sourceJobs }: { jobs: JobRecord[] }) {
       applyOverrides(readLocalWorkflowOverrides());
       fetchServerWorkflowOverrides().then(server => {
         if (cancelled) return;
-        applyOverrides({ ...readLocalWorkflowOverrides(), ...server });
+        applyOverrides(mergeOverrideMaps(readLocalWorkflowOverrides(), server));
       }).catch(() => {});
     }
     refresh();

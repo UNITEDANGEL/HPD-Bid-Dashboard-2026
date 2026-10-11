@@ -18,7 +18,7 @@ assert.equal(suggestedPhotoKind({ work: 'saved' }), 'after');
 assert.equal(next({}, none).key, 'arrived');
 assert.equal(next({ arrived: 'saved' }, none).key, 'visit');
 assert.equal(next({ arrived: 'saved', visit: 'saved' }, none).key, 'before');
-assert.equal(next({ arrived: 'saved', visit: 'saved' }, { before: 1, after: 0 }).key, 'work');
+assert.equal(next({ arrived: 'saved', visit: 'saved' }, { before: 1, after: 0 }).key, 'after', 'before photos lead straight to after photos (no Start work step)');
 assert.equal(next({ arrived: 'saved', visit: 'saved', work: 'saved' }, none).key, 'after');
 assert.equal(next({ arrived: 'saved', visit: 'saved', work: 'saved' }, { before: 1, after: 1 }).key, 'record');
 for (const status of ['Refused Access', 'No Access', 'Work Completed', 'Partial Work', 'Completed by others']) assert.equal(next({ status }, none).key, 'review');
@@ -47,10 +47,12 @@ assert.equal(next({}, { before: 1, after: 1 }).key, 'record');
 for (const outcome of Object.keys(FIELD_OUTCOMES).filter(value => value !== 'APPOINTMENT_REQUESTED')) {
   const link = new URL(mod.exports.paperworkGenerateHref('TEST 1', outcome), 'https://example.test');
   assert.equal(link.searchParams.get('auto'), 'package');
-  assert.equal(link.searchParams.get('signature'), 'none');
+  assert.equal(link.searchParams.has('signature'), false, 'job card packages are signed; the unsigned print copy is made on approve');
   assert.notEqual(link.searchParams.get('outcome'), 'pending');
 }
 assert.throws(() => mod.exports.paperworkGenerateHref('TEST', 'APPOINTMENT_REQUESTED'));
+assert.equal(new URL(mod.exports.paperworkNextHref('TEST 1', 'WORK_COMPLETED'), 'https://example.test').searchParams.get('auto'), 'package');
+assert.equal(new URL(mod.exports.paperworkNextHref('TEST 1', ''), 'https://example.test').searchParams.has('auto'), false);
 const page = fs.readFileSync('app/paperwork/page.tsx', 'utf8');
 const start = page.indexOf('  async function markPackageGenerated(');
 const end = page.indexOf('  async function generateAffidavitPdf(', start);
@@ -63,8 +65,30 @@ new Function(`with(this) { ${marker} }`).call(context);
   assert.equal(patches[0].ArchivedFromMap, undefined);
   assert.equal(patches[0].PackageReviewStatus, 'Pending review');
   await context.mark('TEST', true);
-  assert.equal(patches[1].ArchivedFromMap, true);
+  assert.equal(patches[1].ArchivedFromMap, undefined, 'approval keeps the job on the map; archiving is a separate step');
+  assert.ok(patches[1].PackageApprovedAt);
   assert.equal(patches[1].PackageReviewStatus, 'Approved');
   assert.ok(!page.includes('else if (shouldAutoGeneratePackage) nextOutcome = "work_completed"'));
-  console.log('PASS: explicit unsigned outcome generation and archive only after approval');
+  console.log('PASS: signed outcome package flow; approval does not archive');
 })().catch(error => { console.error(error); process.exitCode=1; });
+
+// No access: the 2nd try waits 3 calendar days (72 hours) after the 1st, then readies the affidavit.
+{
+  const { secondTryState } = mod.exports;
+  const first = fieldOutcomePatch({}, 'NO_ACCESS_1_WAITING_72H', '', '2026-10-05T14:00:00Z');
+  assert.equal(first.status, 'No Access 1st - Waiting 72h');
+  const job = { ...first };
+  const waiting = secondTryState(job, new Date('2026-10-07T20:00:00Z'));
+  assert.equal(waiting.dueDay, '2026-10-08');
+  assert.equal(waiting.due, false);
+  assert.equal(waiting.dueLabel, 'Thu 10/08');
+  assert.throws(() => fieldOutcomePatch(job, 'NO_ACCESS_1_WAITING_72H', '', '2026-10-07T20:00:00Z'), /2nd no-access try counts from Thu 10\/08/);
+  assert.equal(secondTryState(job, new Date('2026-10-08T13:00:00Z')).due, true);
+  const second = fieldOutcomePatch(job, 'NO_ACCESS_1_WAITING_72H', '', '2026-10-08T13:00:00Z');
+  assert.equal(second.NoAccessSecondAttemptAt, '2026-10-08T13:00:00Z');
+  assert.equal(second.NoAccessFirstAttemptAt, undefined, 'the 1st try is kept');
+  assert.equal(second.status, 'No Access 2nd - Ready for affidavit');
+  assert.equal(secondTryState({ ...job, ...second }), null, 'no longer waiting');
+  assert.equal(secondTryState({ FieldOutcome: 'WORK_COMPLETED', NoAccessFirstAttemptAt: '2026-10-05T14:00:00Z' }), null);
+}
+console.log('no-access 2nd try rules ok');

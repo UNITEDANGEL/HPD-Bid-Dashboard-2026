@@ -42,7 +42,7 @@ function mockApi({ emailStatus = 200 } = {}) {
   assert.deepEqual(await googleStatus(mockApi().fetcher), { configured: true, connected: true, canEmail: true, email: 'owner@example.test' });
   assert.equal((await googleStatus(async () => { throw new Error('offline'); })).connected, false);
 
-  // Every file goes to Drive; the email carries the PDF and photos, not videos or the manifest.
+  // Every file goes to Drive; the email carries the PDF, photos and videos, never the manifest.
   let api = mockApi();
   const progress = [];
   let result = await deliverPackage({ folderName: 'ER05395_pkg', files: [pdf, photo, video, manifest], emailSubject: 'ER05395 - Work Completed',
@@ -56,7 +56,9 @@ function mockApi({ emailStatus = 200 } = {}) {
   assert.equal(decodeURIComponent(sent.options.headers['X-HPD-Subject']), 'ER05395 - Work Completed');
   assert.match(sent.options.body, /TEST-OMO-work-completed-affidavit-invoice\.pdf/);
   assert.match(sent.options.body, /TEST-before\.jpg/);
-  assert.ok(!/TEST-video\.mp4|PACKAGE-MANIFEST/.test(sent.options.body));
+  assert.match(sent.options.body, /TEST-video\.mp4/, 'videos are attached to the email');
+  assert.ok(!/PACKAGE-MANIFEST/.test(sent.options.body));
+  assert.equal(result.fileLinks['TEST-video.mp4'], 'https://drive.google.com/file/d/f/view');
   assert.ok(progress.some(m => /2 of 4/.test(m)) && progress.includes('Sending email...'));
 
   // Photos too big for one email: PDF only, text says photos are in Drive.
@@ -68,6 +70,16 @@ function mockApi({ emailStatus = 200 } = {}) {
   assert.ok(!bigBody.includes('TEST-before.jpg'));
   assert.equal(Buffer.from(bigBody.split('\r\n\r\n')[1].split('\r\n--')[0].replace(/\r\n/g, ''), 'base64').toString(), 'photos=false');
 
+  // A video too big to attach: not attached, but listed with its own Drive link.
+  api = mockApi();
+  const bigVideo = { ...video, bytes: bytes(EMAIL_ATTACHMENT_LIMIT, 5) };
+  let summary;
+  result = await deliverPackage({ folderName: 'x', files: [pdf, photo, bigVideo], emailSubject: 's', emailText: (link, photos, s) => { summary = s; return 'v'; }, sendEmail: true }, api.fetcher);
+  assert.equal(summary.photos, 1);
+  assert.equal(summary.videos, 0);
+  assert.deepEqual(summary.linked, [{ name: 'TEST-video.mp4', url: 'https://drive.google.com/file/d/f/view' }]);
+  assert.ok(!api.calls.find(c => c.url === '/api/drive/email-package').options.body.includes('filename="TEST-video.mp4"'));
+
   // Email failure keeps the Drive result and reports why.
   result = await deliverPackage({ folderName: 'x', files: [pdf], emailSubject: 's', emailText: () => 't', sendEmail: true }, mockApi({ emailStatus: 403 }).fetcher);
   assert.equal(result.emailed, false);
@@ -78,5 +90,5 @@ function mockApi({ emailStatus = 200 } = {}) {
   const failing = async (url) => url === '/api/drive/package-folder' ? Response.json({ error: 'Sign in to Google Drive again.' }, { status: 401 }) : assert.fail(url);
   await assert.rejects(deliverPackage({ folderName: 'x', files: [pdf], emailSubject: 's', emailText: () => 't', sendEmail: true }, failing), /Sign in to Google Drive again/);
 
-  console.log('Package delivery: all files to Drive, PDF + photos emailed (PDF only when too large), email and Drive errors reported.');
+  console.log('Package delivery: all files to Drive, PDF + photos + videos emailed (too-big files linked), email and Drive errors reported.');
 })().catch(error => { console.error(error); process.exit(1); });

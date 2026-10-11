@@ -34,13 +34,20 @@ export type FieldMedia = {
   dataUrl: string;
   posterDataUrl?: string;
   capturedAt: string;
+  // Set the first time the date is changed by hand: the real moment it was taken.
+  originalCapturedAt?: string;
   stamped?: boolean;
   stampError?: string;
+  // Videos only: removed from this phone after the job was saved to Drive and emailed. The
+  // original is in the job's Drive folder (driveFileId); dataUrl is then empty.
+  freedAt?: string;
+  driveFileId?: string;
 };
 
 export type FieldPhoto = FieldMedia;
 
 import { shadowUpsert } from "./unified-field-store";
+import { forgetJobVideos, keepVideoForBackup } from "./video-backup";
 
 export type FieldMediaCounts = Record<FieldMediaKind, number> & {
   images: number;
@@ -366,7 +373,9 @@ function stampStageTitle(kind: FieldMediaKind, label: string) {
   return titles[kind] || stampDisplayText(label.toUpperCase(), 28) || "FIELD EVIDENCE";
 }
 
-function stampEvidenceImage(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, meta: EvidenceStampMeta) {
+// opaque: solid label bands, used when re-printing the labels over an already-labelled photo so
+// the old text can't show through.
+function stampEvidenceImage(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D, meta: EvidenceStampMeta, opaque = false) {
   const width = canvas.width;
   const height = canvas.height;
   const location = [meta.location, meta.borough].filter(Boolean).join(" - ") || meta.address || "Location not listed";
@@ -391,7 +400,7 @@ function stampEvidenceImage(canvas: HTMLCanvasElement, context: CanvasRenderingC
   const lineGap = lineSize * 1.08;
 
   context.save();
-  context.fillStyle = "rgba(5, 10, 17, 0.84)";
+  context.fillStyle = opaque ? "rgb(5, 10, 17)" : "rgba(5, 10, 17, 0.84)";
   context.fillRect(0, 0, width, topHeight);
   context.fillRect(0, height - bottomHeight, width, bottomHeight);
   context.fillStyle = "#ffffff";
@@ -532,6 +541,8 @@ type DecodedImageEvidence = {
 
 type ProcessedEvidenceSource = {
   dataUrl: string;
+  // Videos: the file itself, kept aside so the Drive video backup can send it in pieces.
+  blob?: Blob;
   type: string;
   size: number;
   stamped?: boolean;
@@ -685,6 +696,7 @@ async function processVideoEvidence(file: File, stampMeta: EvidenceStampMeta, mi
     const dataUrl = await blobToDataUrl(blob);
     return {
       dataUrl,
+      blob,
       type: blob.type || "video/webm",
       size: blob.size,
     };
@@ -714,6 +726,7 @@ async function processVideoEvidenceWithFallback(file: File, stampMeta: EvidenceS
     console.warn("Video stamp failed; saving original video for package.", error);
     return {
       dataUrl: await readFileAsDataUrl(file, mimeType || file.type || "video/mp4"),
+      blob: file,
       type: mimeType || file.type || "video/mp4",
       size: file.size,
       stamped: false,
@@ -770,6 +783,61 @@ async function makeVideoPoster(dataUrl: string, stampMeta: EvidenceStampMeta) {
   }
 }
 
+async function restampDataUrl(dataUrl: string, meta: EvidenceStampMeta, quality: number) {
+  const image = await loadImage(dataUrl);
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth || image.width;
+  canvas.height = image.naturalHeight || image.height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Could not re-label the photo.");
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  stampEvidenceImage(canvas, context, meta, true);
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
+// Change the date of every before (or after) photo/video of a job. Photos get their printed
+// DATE line re-printed; videos keep the label burned into the recording, and their saved date
+// and thumbnail change. The affidavit's work dates follow these dates. day: "YYYY-MM-DD".
+export async function redateFieldEvidence(jobId: string, kind: FieldMediaKind, day: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  if (!match) throw new Error("Pick a date.");
+  // Noon local time, so the day never shifts across time zones.
+  const capturedAt = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]), 12).toISOString();
+  const rows = (await listFieldPhotos(jobId)).filter((media) => media.kind === kind);
+  const updated: FieldMedia[] = [];
+  for (const media of rows) {
+    const meta: EvidenceStampMeta = {
+      jobId: media.jobId, kind: media.kind, label: media.evidenceLabel, address: media.address,
+      location: media.location, borough: media.borough, capturedAt,
+    };
+    const next: FieldMedia = { ...media, capturedAt, originalCapturedAt: media.originalCapturedAt || media.capturedAt };
+    if (media.mediaType === "image" && media.stamped !== false) {
+      next.dataUrl = await restampDataUrl(media.dataUrl, meta, JPEG_QUALITY);
+      next.size = Math.round((next.dataUrl.length * 3) / 4);
+    }
+    if (media.mediaType === "video" && media.posterDataUrl) {
+      next.posterDataUrl = await restampDataUrl(media.posterDataUrl, meta, 0.7).catch(() => media.posterDataUrl);
+    }
+    updated.push(next);
+  }
+  if (!updated.length) return 0;
+  const db = await openDb();
+  try {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    updated.forEach((media) => store.put(media));
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error || new Error("Could not save the new date."));
+      transaction.onabort = () => reject(transaction.error || new Error("Saving the new date was aborted."));
+    });
+  } finally {
+    db.close();
+  }
+  await Promise.all(updated.map((media) => shadowUpsert("media", media as unknown as Record<string, unknown>)));
+  return updated.length;
+}
+
 export function canStoreFieldPhotos() {
   return hasIndexedDb();
 }
@@ -788,6 +856,7 @@ export async function saveFieldPhotos(
   if (!cleanJobId) return [] as FieldMedia[];
 
   const saved: FieldMedia[] = [];
+  const videoFiles = new Map<string, Blob>();
 
   for (const file of Array.from(files)) {
     const detected = await detectMediaFile(file);
@@ -836,6 +905,7 @@ export async function saveFieldPhotos(
       stampError: source.stampError || "",
     };
     saved.push(evidence);
+    if (mediaType === "video" && source.blob) videoFiles.set(evidence.id, source.blob);
   }
 
   if (!saved.length) return saved;
@@ -859,8 +929,69 @@ export async function saveFieldPhotos(
   }
 
   await Promise.all(saved.map((evidence) => shadowUpsert("media", evidence as unknown as Record<string, unknown>)));
+  for (const evidence of saved) {
+    const blob = videoFiles.get(evidence.id);
+    if (blob) await keepVideoForBackup(evidence, blob).catch(() => undefined);
+  }
+  // Starts the Drive video backup now instead of at the next minute.
+  if (videoFiles.size) window.dispatchEvent(new Event("hpd-video-saved"));
 
   return saved;
+}
+
+// For the Drive video backup: video ids (one job or all) from the storage index, without reading
+// any video, and one record at a time when an older video has no kept file.
+export async function listFieldVideoIds(jobId?: string): Promise<string[]> {
+  return listFieldMediaIds("video", jobId);
+}
+
+export async function listFieldPhotoIds(jobId?: string): Promise<string[]> {
+  return listFieldMediaIds("image", jobId);
+}
+
+async function listFieldMediaIds(mediaType: FieldMediaType, jobId?: string): Promise<string[]> {
+  if (!hasIndexedDb()) return [];
+  const db = await openDb();
+  try {
+    const store = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME);
+    const keys = (index: string, value: string) => new Promise<string[]>((resolve, reject) => {
+      const request = store.index(index).getAllKeys(value);
+      request.onsuccess = () => resolve((request.result || []).map(String));
+      request.onerror = () => reject(request.error);
+    });
+    const ids = await keys("mediaType", mediaType);
+    if (!jobId) return ids;
+    const mine = new Set(await keys("jobId", jobId));
+    return ids.filter((id) => mine.has(id));
+  } finally {
+    db.close();
+  }
+}
+
+export async function readFieldMedia(id: string): Promise<FieldMedia | null> {
+  const db = await openDb();
+  try {
+    const request = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).get(id);
+    return await new Promise<FieldMedia | null>((resolve, reject) => {
+      request.onsuccess = () => resolve((request.result as FieldMedia) || null);
+      request.onerror = () => reject(request.error);
+    });
+  } finally {
+    db.close();
+  }
+}
+
+export async function fieldMediaExists(id: string) {
+  const db = await openDb();
+  try {
+    const request = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).getKey(id);
+    return await new Promise<boolean>((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result !== undefined);
+      request.onerror = () => reject(request.error);
+    });
+  } finally {
+    db.close();
+  }
 }
 
 export async function listFieldPhotos(jobId: string) {
@@ -889,6 +1020,60 @@ export async function listFieldPhotos(jobId: string) {
       outcome: media.outcome || "",
     }))
     .sort((a, b) => a.capturedAt.localeCompare(b.capturedAt));
+}
+
+// For the job card: every photo/video of a job WITHOUT reading the videos. A video can be hundreds
+// of MB; reading them each time a card opens ran the phone out of memory and crashed the app.
+// Videos are counted from the storage indexes alone (kind + type), so only photos are read.
+export type FieldMediaLite = { id: string; kind: FieldMediaKind; mediaType: FieldMediaType; capturedAt: string; evidenceLabel: string; dataUrl: string };
+
+export async function listFieldEvidenceLite(jobId: string): Promise<FieldMediaLite[]> {
+  const cleanJobId = String(jobId || "").trim();
+  if (!cleanJobId || !hasIndexedDb()) return [];
+  const db = await openDb();
+  try {
+    const store = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME);
+    if (!store.indexNames.contains("jobId") || !store.indexNames.contains("kind") || !store.indexNames.contains("mediaType")) {
+      // Very old storage without indexes: fall back to the full list, keeping photos only.
+      const rows = (await requestToPromise(store.getAll())) as FieldMedia[];
+      return rows.filter((m) => m.jobId === cleanJobId).map((m) => {
+        const video = m.mediaType === "video" || String(m.type || "").startsWith("video/");
+        return { id: m.id, kind: m.kind || "general", mediaType: video ? "video" : "image", capturedAt: m.capturedAt || "", evidenceLabel: m.evidenceLabel || "", dataUrl: video ? "" : m.dataUrl };
+      });
+    }
+    const ids = (await requestToPromise(store.index("jobId").getAllKeys(cleanJobId))).map(String);
+    const videoIds = new Set((await requestToPromise(store.index("mediaType").getAllKeys("video"))).map(String));
+    const kindOf = new Map<string, FieldMediaKind>();
+    for (const kind of ["before", "after", "no_access", "refused_access", "completed_by_others", "general"] as FieldMediaKind[]) {
+      for (const key of await requestToPromise(store.index("kind").getAllKeys(kind))) kindOf.set(String(key), kind);
+    }
+    const rows: FieldMediaLite[] = [];
+    for (const id of ids) {
+      if (videoIds.has(id)) {
+        rows.push({ id, kind: kindOf.get(id) || "general", mediaType: "video", capturedAt: "", evidenceLabel: "", dataUrl: "" });
+        continue;
+      }
+      const media = (await requestToPromise(store.get(id))) as FieldMedia | undefined;
+      if (!media) continue;
+      // An old video saved without its type in the index: keep it, but never its data.
+      const video = String(media.type || "").startsWith("video/");
+      rows.push({ id, kind: media.kind || kindOf.get(id) || "general", mediaType: video ? "video" : "image", capturedAt: media.capturedAt || "", evidenceLabel: media.evidenceLabel || "", dataUrl: video ? "" : media.dataUrl });
+    }
+    return rows.sort((a, b) => a.capturedAt.localeCompare(b.capturedAt));
+  } finally {
+    db.close();
+  }
+}
+
+// How many photos/videos are saved on this phone, all jobs together (a fast count, no file reads).
+export async function countAllFieldEvidence() {
+  if (!hasIndexedDb()) return 0;
+  const db = await openDb();
+  try {
+    return Number(await requestToPromise(db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).count())) || 0;
+  } finally {
+    db.close();
+  }
 }
 
 export async function listFieldEvidence(jobId: string) {
@@ -933,29 +1118,65 @@ export async function updateFieldEvidence(
   return updated;
 }
 
+// Start over: removes the job's photos and videos from this phone by their keys (never reading the
+// videos into memory), with the files kept aside for the Drive video backup. Drive copies stay.
 export async function clearFieldEvidence(jobId: string) {
   const cleanJobId = String(jobId || "").trim();
   if (!cleanJobId || !hasIndexedDb()) return 0;
 
-  const rows = await listFieldPhotos(cleanJobId);
-  if (!rows.length) return 0;
-
   const db = await openDb();
-  const transaction = db.transaction(STORE_NAME, "readwrite");
-  const store = transaction.objectStore(STORE_NAME);
+  let removed = 0;
+  try {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.index("jobId").getAllKeys(cleanJobId);
+    request.onsuccess = () => {
+      const keys = request.result || [];
+      removed = keys.length;
+      keys.forEach((key) => store.delete(key));
+    };
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error || new Error("Could not clear evidence."));
+      transaction.onabort = () => reject(transaction.error || new Error("Evidence clear was aborted."));
+    });
+  } finally {
+    db.close();
+  }
+  await forgetJobVideos(cleanJobId).catch(() => undefined);
+  return removed;
+}
 
-  rows.forEach((media) => {
-    store.delete(media.id);
-  });
-
-  await new Promise<void>((resolve, reject) => {
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error || new Error("Could not clear evidence."));
-    transaction.onabort = () => reject(transaction.error || new Error("Evidence clear was aborted."));
-  });
-
-  db.close();
-  return rows.length;
+// After the job is safe in Drive and emailed (you confirm on the job card): drop one video's data from this phone, keeping its
+// details and thumbnail, and where the original is in Drive. Returns the bytes freed.
+export async function freeFieldVideo(id: string, driveFileId: string, meta?: Omit<FieldMedia, "dataUrl">, size = 0) {
+  // With the details kept by the video backup, the video is never read; otherwise (a video saved
+  // before that) it is read once here, after you tapped the button.
+  let stub: FieldMedia;
+  let freed = size;
+  if (meta && meta.id === id) {
+    if (!(await fieldMediaExists(id))) return 0;
+    stub = { ...meta, dataUrl: "", freedAt: new Date().toISOString(), driveFileId };
+  } else {
+    const media = await readFieldMedia(id);
+    if (!media || media.mediaType !== "video" || !media.dataUrl) return 0;
+    freed = Math.round((media.dataUrl.length * 3) / 4);
+    stub = { ...media, dataUrl: "", freedAt: new Date().toISOString(), driveFileId };
+  }
+  const db = await openDb();
+  try {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    transaction.objectStore(STORE_NAME).put(stub);
+    await new Promise<void>((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error || new Error("Could not free the video."));
+      transaction.onabort = () => reject(transaction.error || new Error("Freeing the video was aborted."));
+    });
+  } finally {
+    db.close();
+  }
+  await shadowUpsert("media", stub as unknown as Record<string, unknown>);
+  return freed;
 }
 
 export async function countFieldPhotos(jobId: string) {

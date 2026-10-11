@@ -1,24 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
-import BuildingPhoto from "./BuildingPhoto";
+import { BuildingHero, SavedPackageLink } from "./BuildingPhoto";
+import VideoBackupLine from "./VideoBackupLine";
+import JobSafeLine from "./JobSafeLine";
 import type { RouteJob, RoutePoint } from "../../lib/day-route";
 import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/current-job";
-import { appointmentPatch, nyToday, type Appointment } from "../../lib/appointments";
-import { jobPriority, maturityDate, isPendingJob, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
+import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointmentPatch, appointmentTiming, nyToday, type Appointment } from "../../lib/appointments";
+import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
-import { nextFieldAction, paperworkReviewHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch } from "../../lib/field-next-action";
-import { fetchServerWorkflowOverrides } from "../../lib/paperwork";
+import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState } from "../../lib/field-next-action";
+import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
+import { visitLocationFields, type GpsFix } from "../../lib/visit-record";
+import { adoptServerOverrides, flushOverrideOutbox, mergeOverrideMaps, queueOverrideSync } from "../../lib/override-sync";
+import { fetchServerWorkflowOverrides, HPD_STATUS_WORKER_URL, startOverPatch } from "../../lib/paperwork";
 import { longestCleanDescription } from "../../lib/description-quality";
-import { listFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
+import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidenceLite, redateFieldEvidence, saveFieldPhotos, type FieldMediaKind } from "../../lib/field-photo-store";
+import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
+import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
+import { daySummary, type SummaryRow } from "../../lib/day-summary";
+import { formatBytes, phoneStorage, type PhoneStorage } from "../../lib/phone-storage";
+import { clearFieldPackets } from "../../lib/field-packet-store";
+import { FREED_KEY } from "../../lib/free-space";
 import PlanMyDayDrawer from "../map/PlanMyDayDrawer";
+import JobAssistant from "./JobAssistant";
 import "../map/plan-my-day.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./job-card-v2.css";
+import { testFirstUpgrades, upgradeOn } from "../../lib/rollout";
+import { milesLabel, nextJob } from "../../lib/next-job";
+import { isTestJob, isTestModeJob, setTestJobLocation, setTestModeJob, testJobLocation, testJobPlace, TEST_JOB_ID, withTestJob } from "../../lib/test-job";
 
 type JobRecord = Record<string, unknown>;
 
@@ -37,6 +52,35 @@ const BOROUGHS: { key: BoroughKey; label: string; center: [number, number]; colo
 
 const STATUS_FILTERS = JOB_QUEUES;
 
+// Borough bar icons (one tap each).
+const BOROUGH_ICONS: Record<BoroughKey, string> = { MN: "🏙️", BK: "🌉", QN: "👑", BX: "⚾", SI: "⛴️" };
+
+// One-tap date windows for the quick filters, on whichever date type is picked.
+const QUICK_DATE_RANGES = [
+  { key: "year", label: "This year" },
+  { key: "next30", label: "Next 30 days" },
+  { key: "last30", label: "Last 30 days" },
+  { key: "last60", label: "Last 60 days" },
+  { key: "last90", label: "Last 90 days" },
+  { key: "all", label: "All dates" },
+] as const;
+type QuickDateKey = (typeof QUICK_DATE_RANGES)[number]["key"];
+
+function shiftDay(iso: string, days: number) {
+  const date = new Date(`${iso}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function quickDateBounds(key: QuickDateKey, today: string) {
+  if (key === "year") return { from: `${today.slice(0, 4)}-01-01`, to: `${today.slice(0, 4)}-12-31` };
+  if (key === "next30") return { from: today, to: shiftDay(today, 30) };
+  if (key === "last30") return { from: shiftDay(today, -30), to: today };
+  if (key === "last60") return { from: shiftDay(today, -60), to: today };
+  if (key === "last90") return { from: shiftDay(today, -90), to: today };
+  return { from: "", to: "" };
+}
+
 function value(job: JobRecord, keys: string[]) {
   for (const key of keys) {
     const v = job[key];
@@ -53,6 +97,20 @@ function numberValue(job: JobRecord, keys: string[]) {
   return NaN;
 }
 
+const JOBS_URL = "/data/COA_Fetcher_2026.json";
+// Where the map was last left (center + zoom), so it reopens right there.
+const MAP_VIEW_KEY = "hpd-map-view-v1";
+
+function savedMapView(): { lat: number; lng: number; zoom: number } | null {
+  try {
+    const view = JSON.parse(localStorage.getItem(MAP_VIEW_KEY) || "null");
+    return view && [view.lat, view.lng, view.zoom].every((n) => typeof n === "number" && Number.isFinite(n)) ? view : null;
+  } catch {
+    return null;
+  }
+}
+const JOBS_CACHE = "hpd-jobs-v1";
+
 function jobId(job: JobRecord) {
   return value(job, ["OMO", "omo", "OMONumber", "id", "Id"]) || "HPD JOB";
 }
@@ -60,6 +118,19 @@ function jobId(job: JobRecord) {
 function jobAddress(job: JobRecord) {
   return value(job, ["BuildingAddress", "Address", "address", "Location", "location"]) || "Address not captured";
 }
+
+// Shown when the ITB's scope couldn't be read (e.g. a scanned ITB with only the blank form's text).
+const OUTCOME_ICONS: Record<string, string> = { NO_ACCESS_1_WAITING_72H: "🔒", REFUSED_ACCESS: "⛔", WORK_COMPLETED_BY_OTHERS: "👥" };
+
+// The version this app was built as (set by the Cloudflare build; empty in development).
+const BUILT_COMMIT = process.env.NEXT_PUBLIC_APP_COMMIT || "";
+
+function itbFileName(job: JobRecord | null | undefined) {
+  const raw = String((job as Record<string, unknown> | null)?.ITBFile || (job as Record<string, unknown> | null)?.itbFile || "").trim();
+  const name = raw.split(/[\\/]/).pop()?.trim() || "";
+  return /\.pdf$/i.test(name) ? name : "";
+}
+const SCOPE_MISSING = "Couldn't read the scope from this job's ITB. Open the ITB under Job documents; type the scope on the paperwork page.";
 
 function jobScope(job: JobRecord) {
   const picked = longestCleanDescription(job, [
@@ -74,7 +145,35 @@ function jobScope(job: JobRecord) {
     .replace(/^job description:\s*/i, "")
     .replace(/^:\s*/, "")
     .trim();
-  return picked || "Scope not captured yet.";
+  return picked || SCOPE_MISSING;
+}
+
+// "YYYY-MM-DD" in local time, for date inputs.
+function localDay(iso?: string) {
+  const at = iso ? new Date(iso) : null;
+  if (!at || Number.isNaN(at.getTime())) return "";
+  return `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, "0")}-${String(at.getDate()).padStart(2, "0")}`;
+}
+
+// Any field step recorded today (trip, arrival, visit, work, package).
+function workedToday(job: JobRecord) {
+  const today = new Date().toDateString();
+  return ["TravelStartedAt", "FieldArrivedAt", "VisitStartedAt", "JobStartedAt", "LastFieldVisitAt", "ActualWorkCompletionDate", "PackageGeneratedAt", "PackageApprovedAt"]
+    .some((key) => {
+      const at = Date.parse(value(job, [key]));
+      return Number.isFinite(at) && new Date(at).toDateString() === today;
+    });
+}
+
+// Automatic data check, run on every job download: anything that would stop the field work or
+// the paperwork is listed in the "jobs need a check" alert on the map.
+function jobDataIssues(job: JobRecord) {
+  const issues: string[] = [];
+  if (jobScope(job) === SCOPE_MISSING) issues.push("No readable scope (description)");
+  if (!jobLatLng(job)) issues.push("Not on the map (address not located)");
+  if (jobAddress(job) === "Address not captured") issues.push("No address");
+  if (!(jobAwardAmount(job) > 0)) issues.push("No award amount");
+  return issues;
 }
 
 function packageStatusText(job: JobRecord) {
@@ -163,9 +262,19 @@ function writeSharedWorkflowPatch(id: string, patch: Record<string, unknown>) {
       },
     })
   );
+  // Send it to the status server (now, or once the phone is back online).
+  queueOverrideSync(id);
+  scheduleOverrideSync();
 }
 
-type StatusKey = "complete" | "noaccess" | "refused" | "pending" | "awarded" | "open" | "appointment";
+let overrideSyncTimer = 0;
+function scheduleOverrideSync(delay = 800) {
+  if (typeof window === "undefined") return;
+  window.clearTimeout(overrideSyncTimer);
+  overrideSyncTimer = window.setTimeout(() => { void flushOverrideOutbox(HPD_STATUS_WORKER_URL); }, delay);
+}
+
+type StatusKey = "complete" | "noaccess" | "refused" | "pending" | "awarded" | "open" | "appointment" | "done" | "others" | "partial";
 
 const STATUS_ICON_PATHS: Record<StatusKey, string> = {
   complete:
@@ -179,7 +288,37 @@ const STATUS_ICON_PATHS: Record<StatusKey, string> = {
     '<path d="M12 3.5l2.47 5.18 5.53.63-4.1 3.86 1.08 5.5L12 15.9l-4.98 2.77 1.08-5.5-4.1-3.86 5.53-.63L12 3.5z" fill="#fff"/>',
   open: '<circle cx="12" cy="12" r="4.5" fill="#fff"/>',
   appointment: '<rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="white" stroke-width="2"/><path d="M8 3v5M16 3v5M4 10h16" fill="none" stroke="white" stroke-width="2"/>',
+  // Completed job: a check mark, so it's clear at a glance there's nothing left to do there.
+  done: '<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
+  others: '<circle cx="8.5" cy="8" r="3" fill="#fff"/><circle cx="16" cy="9" r="2.6" fill="#fff"/><path d="M3 19c.6-3.4 2.8-5.2 5.5-5.2s4.9 1.8 5.5 5.2zM13.5 19c.3-2.5 1.5-4.2 3.2-4.6 2 .2 3.6 1.9 4.1 4.6z" fill="#fff"/>',
+  partial: '<circle cx="12" cy="12" r="8" fill="none" stroke="#fff" stroke-width="2.2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="#fff"/>',
 };
+
+const DONE_COLOR = "#16a34a";
+
+// Pin colors and icons you can read from far away (owner's scheme):
+// blue = new, green = completed, red = refused, grey = no access, purple = completed by others.
+const PIN_STYLES: { key: StatusKey; label: string; color: string }[] = [
+  { key: "awarded", label: "New", color: "#2563eb" },
+  { key: "done", label: "Completed", color: DONE_COLOR },
+  { key: "refused", label: "Refused", color: "#dc2626" },
+  { key: "noaccess", label: "No access", color: "#6b7280" },
+  { key: "others", label: "Done by others", color: "#8b5cf6" },
+  { key: "appointment", label: "Appointment", color: "#d97706" },
+  { key: "partial", label: "Partial", color: "#ea580c" },
+];
+
+function pinStyle(job: JobRecord): { key: StatusKey; label: string; color: string } {
+  const status = `${jobStatus(job)} ${value(job, ["FieldOutcome", "fieldOutcome", "WorkflowStatus"])}`.toLowerCase().replace(/[_-]+/g, " ");
+  const pick = (key: StatusKey) => PIN_STYLES.find((style) => style.key === key)!;
+  if (/by others/.test(status)) return pick("others");
+  if (/refused/.test(status)) return pick("refused");
+  if (/no access/.test(status)) return pick("noaccess");
+  if (/partial/.test(status)) return pick("partial");
+  if (/appointment|scheduled/.test(status) && !/cancel|missed/.test(status)) return pick("appointment");
+  if (jobQueue(job) === "completed") return pick("done");
+  return pick("awarded");
+}
 
 const STATUS_META: { key: StatusKey; label: string; color: string; match: (s: string, job: JobRecord) => boolean }[] = [
   { key: "complete", label: "Completed", color: "#30d158", match: (s) => s.includes("complete") },
@@ -202,14 +341,51 @@ function jobStatusMeta(job: JobRecord) {
   return STATUS_META.find((meta) => meta.match(s, job)) || STATUS_META[STATUS_META.length - 1];
 }
 
-function statusMarkerHtml(color: string, iconKey: StatusKey) {
-  return `<div style="width:28px;height:28px;border-radius:50%;background:${color};border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.45);display:grid;place-items:center;"><svg width="15" height="15" viewBox="0 0 24 24">${STATUS_ICON_PATHS[iconKey]}</svg></div>`;
+function dueOnMap(job: JobRecord) {
+  if (jobQueue(job) === "archived") return false;
+  if (secondTryState(job)?.due) return true;
+  const appointment = pinStyle(job).key === "appointment" ? activeAppointment(job) : null;
+  if (!appointment) return false;
+  const timing = appointmentTiming(appointment);
+  return !timing.past && timing.days <= 1;
 }
 
-function ageMarkerHtml(days: number | null, pending: boolean, zoom = 16, multiple = false, color = "#0a84ff", icon: StatusKey = "pending") {
-  const label = !pending ? "" : days === null ? "?" : days === 0 ? "0" : days < 0 ? `+${-days}` : String(days);
-  const symbol = pending && icon === "awarded" ? HARDHAT_ICON_PATH : STATUS_ICON_PATHS[icon];
-  return `<div class="fc-day-pin ${icon === "appointment" ? "is-appointment" : ""} ${multiple ? "has-more" : ""} ${zoom < 14 || label.length > 3 ? "is-distant" : ""}" style="--pin-color:${color}"><svg viewBox="0 0 24 24" aria-hidden="true">${symbol}</svg>${pending ? `<strong>${label}<small>d</small></strong>` : ""}</div>`;
+function shortClock(time: string) {
+  const [h, m] = time.split(":").map(Number);
+  return `${((h + 11) % 12) + 1}${m ? `:${String(m).padStart(2, "0")}` : ""}${h < 12 ? "a" : "p"}`;
+}
+
+// Map pin: a teardrop in the status color with a white symbol you can read from far away, and a
+// small chip: how late open work is, the time of an appointment (glowing as it gets close), or
+// "2nd try" when a no-access job is due back.
+function jobPinHtml(job: JobRecord, meta: { key: StatusKey; color: string }, priority: { days: number | null; pending: boolean }, visits: number) {
+  const classes = ["fc-pin", `is-${meta.key}`];
+  let chip = "";
+  let symbol = meta.key === "awarded" ? HARDHAT_ICON_PATH : STATUS_ICON_PATHS[meta.key];
+  const appointment = meta.key === "appointment" ? activeAppointment(job) : null;
+  const timing = appointment ? appointmentTiming(appointment) : null;
+  const second = meta.key === "noaccess" ? secondTryState(job) : null;
+  if (appointment && timing && !timing.past) {
+    chip = timing.soon ? (timing.startsIn > 0 ? `${timing.startsIn}m` : "now") : timing.today ? shortClock(appointment.start) : timing.days === 1 ? "tmrw" : appointmentLabel(appointment).slice(0, 3);
+    if (timing.soon) classes.push("is-soon");
+    else if (timing.today) classes.push("is-today");
+  } else if (second?.due) {
+    chip = "2nd try";
+    classes.push("is-due");
+  } else if (priority.pending && priority.days !== null) {
+    chip = priority.days > 0 ? `${priority.days}d` : priority.days === 0 ? "today" : `in ${-priority.days}d`;
+    classes.push(priority.days > 30 ? "is-late" : priority.days > 0 ? "is-overdue" : "is-upcoming");
+  }
+  if (meta.key === "done") symbol = STATUS_ICON_PATHS.done;
+  // The test job: its own purple flask pin with a TEST tag, whatever step it is at.
+  let color = meta.color;
+  if (job.IsTestJob === true || String(job.IsTestJob) === "true") {
+    classes.push("is-test");
+    symbol = FLASK_ICON_PATH;
+    color = "#7c3aed";
+    chip = "TEST";
+  }
+  return `<div class="${classes.join(" ")}" style="--pin:${color}"><span class="fc-pin-head"><svg viewBox="0 0 24 24" aria-hidden="true">${symbol}</svg></span>${chip ? `<span class="fc-pin-chip">${chip}</span>` : ""}${visits ? `<span class="fc-pin-visits">${visits}</span>` : ""}</div>`;
 }
 
 function jobAwardAmount(job: JobRecord) {
@@ -238,6 +414,8 @@ function formatSavedTime(iso?: string) {
   if (!iso) return "";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
+  // The job card is internal, so it keeps the time. Anything that goes out (PDFs, email, Drive
+  // file names) shows the date only.
   return date.toLocaleString("en-US", {
     month: "2-digit",
     day: "2-digit",
@@ -308,6 +486,14 @@ function MenuIcon() {
       <line x1="4" y1="7" x2="20" y2="7" />
       <line x1="4" y1="12" x2="20" y2="12" />
       <line x1="4" y1="17" x2="20" y2="17" />
+    </svg>
+  );
+}
+
+function FilterIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 6h16M7 12h10M10 18h4" />
     </svg>
   );
 }
@@ -454,6 +640,10 @@ function groupByLocation(
   return [...locations.values()];
 }
 
+const FLASK_ICON_PATH =
+  '<path d="M9.5 3.5h5M10.5 3.5v5.2L5.6 17.3A1.9 1.9 0 0 0 7.3 20.2h9.4a1.9 1.9 0 0 0 1.7-2.9L13.5 8.7V3.5" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+  '<path d="M7.6 15h8.8l1.4 2.6a.8.8 0 0 1-.7 1.2H6.9a.8.8 0 0 1-.7-1.2z" fill="#fff"/>';
+
 const HARDHAT_ICON_PATH =
   '<path d="M4 12.5A8 8 0 0 1 20 12.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>' +
   '<rect x="2.5" y="12" width="19" height="2.6" rx="1.3" fill="#fff"/>' +
@@ -470,7 +660,6 @@ export default function FieldCommandClient() {
   const mapNode = useRef<HTMLDivElement | null>(null);
   const jobSheetRef = useRef<HTMLDivElement | null>(null);
   const sheetTouchStart = useRef<number | null>(null);
-  const outcomePanelRef = useRef<HTMLElement | null>(null);
   const [outcomeDrafts, setOutcomeDrafts] = useState<Record<string, { outcome: string; note: string }>>({});
   const [outcomeMessage, setOutcomeMessage] = useState("");
   const [appointmentOpen, setAppointmentOpen] = useState(false);
@@ -478,6 +667,7 @@ export default function FieldCommandClient() {
   const appointmentRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const mapFramingRef = useRef("");
+  const restoredMapViewRef = useRef(false);
   const tileLayerRef = useRef<any>(null);
   const vectorLayerRef = useRef<any>(null);
   const darkTilesRef = useRef(false);
@@ -490,6 +680,11 @@ export default function FieldCommandClient() {
   const userMarkerRef = useRef<any>(null);
   const watchIdRef = useRef<number | null>(null);
   const lastPositionRef = useRef<{ lat: number; lng: number } | null>(null);
+  // Latest GPS fix with its accuracy and time: saved with each visit as proof of where the phone was.
+  const lastFixRef = useRef<GpsFix | null>(null);
+  // The map follows you from the moment it opens; dragging the map pauses it, Me resumes it.
+  const followMeRef = useRef(true);
+  const centeredOnMeRef = useRef(false);
   const pointsRef = useRef<{ job: JobRecord; lng: number; lat: number }[]>([]);
   const renderMarkersRef = useRef<() => void>(() => {});
   const [jobs, setJobs] = useState<JobRecord[]>([]);
@@ -508,6 +703,26 @@ export default function FieldCommandClient() {
   }, []);
   const [borough, setBorough] = useState<BoroughKey | "ALL">("ALL");
   const [status, setStatus] = useState("pending");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [dataCheckOpen, setDataCheckOpen] = useState(false);
+  // Bumped when Test mode is switched, so the card re-reads it from the phone.
+  const [testModeVersion, setTestModeVersion] = useState(0);
+  // Status and borough filters come back as they were left.
+  const quickFiltersLoaded = useRef(false);
+  useEffect(() => {
+    try {
+      // v2: v1 could hold a borough forced by an old job link, hiding every other job; start fresh once.
+      localStorage.removeItem("hpd-map-quick-filters-v1");
+      const saved = JSON.parse(localStorage.getItem("hpd-map-quick-filters-v2") || "null");
+      if (saved && STATUS_FILTERS.some(({ key }) => key === saved.status)) setStatus(saved.status);
+      if (saved && (saved.borough === "ALL" || BOROUGHS.some(({ key }) => key === saved.borough))) setBorough(saved.borough);
+    } catch {}
+    quickFiltersLoaded.current = true;
+  }, []);
+  useEffect(() => {
+    if (!quickFiltersLoaded.current) return;
+    try { localStorage.setItem("hpd-map-quick-filters-v2", JSON.stringify({ status, borough })); } catch {}
+  }, [status, borough]);
   const requestedJobLoaded = useRef(false);
   const [daysBack, setDaysBack] = useState<number | null>(null);
   const [dateRange, setDateRange] = useState<{ field: JobDateField; from: string; to: string; preset?: boolean }>(currentYearRange);
@@ -547,18 +762,78 @@ export default function FieldCommandClient() {
   const [darkTiles, setDarkTiles] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [chromeOpen, setChromeOpen] = useState(false);
+  // Which version is running (from /version.json, written by every deploy).
+  const [appVersion, setAppVersion] = useState(BUILT_COMMIT);
+  // A newer version is live but a job card is open: offer it instead of waiting.
+  const [updateReady, setUpdateReady] = useState(false);
+  const appVersionRef = useRef("");
+  const latestCommitRef = useRef("");
+  const safeToReloadRef = useRef(true);
   const [plannerRequest,setPlannerRequest] = useState(0);
   const [locateStatus, setLocateStatus] = useState<"idle" | "loading" | "error">("idle");
   const [scopeOpen, setScopeOpen] = useState(false);
+  const [reading, setReading] = useState(false);
+  const [speechOk, setSpeechOk] = useState(false);
+  useEffect(() => { setSpeechOk(canReadAloud()); }, []);
+  const selectedJobKey = selectedJob ? jobId(selectedJob) : "";
+  // Switching or closing the job card stops reading the old description.
+  useEffect(() => { stopReading(); setReading(false); setScopeOpen(false); }, [selectedJobKey]);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [routeSummary, setRouteSummary] = useState<{ stops: number; miles: number; firstStop: string; href: string } | null>(null);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
   const [workflowLoaded, setWorkflowLoaded] = useState(false);
-  const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number }>>({});
+  const [jobsLoadFailed, setJobsLoadFailed] = useState(false);
+  const [mediaCounts, setMediaCounts] = useState<Record<string, { before: number; after: number; total: number; beforeVideos?: number; afterVideos?: number; beforeDay?: string; afterDay?: string }>>({});
   // Up to 3 thumbnails per stage for the Media & Documents card.
   const [mediaThumbs, setMediaThumbs] = useState<Record<string, { before: string[]; after: string[] }>>({});
   const [mediaBusy, setMediaBusy] = useState("");
+  useEffect(() => { if (!mediaBusy) refreshBackupRef.current(); }, [mediaBusy]);
   const [mediaMessage, setMediaMessage] = useState("");
+  // Photos and videos live on this phone until the package is sent: show whether the Drive
+  // backup (Storage settings) is copying them, and turn it on with one tap.
+  const [backup, setBackup] = useState<{ auto: boolean; total: number; verifiedAt: string; error: string; queued: number } | null>(null);
+  const refreshBackupRef = useRef<() => void>(() => {});
+  refreshBackupRef.current = () => {
+    void (async () => {
+      let auto = false;
+      try { auto = window.localStorage.getItem(DRIVE_AUTO_BACKUP_KEY) === "on"; } catch {}
+      const [total, state] = await Promise.all([
+        countAllFieldEvidence().catch(() => 0),
+        backupState().catch(() => null) as Promise<{ verifiedAt?: string; error?: string; queued?: number } | null>,
+      ]);
+      setBackup({ auto, total, verifiedAt: state?.verifiedAt || "", error: state?.error || "", queued: state?.queued || 0 });
+    })();
+  };
+  useEffect(() => {
+    const refresh = () => refreshBackupRef.current();
+    refresh();
+    for (const event of ["hpd-drive-backup-status", "hpd-drive-backup-settings", "focus"]) window.addEventListener(event, refresh);
+    return () => { for (const event of ["hpd-drive-backup-status", "hpd-drive-backup-settings", "focus"]) window.removeEventListener(event, refresh); };
+  }, []);
+  // Space the app uses on this phone: warn before it runs out (new photos and videos would not save).
+  const [phoneSpace, setPhoneSpace] = useState<PhoneStorage | null>(null);
+  useEffect(() => {
+    const refresh = () => { void phoneStorage().then(setPhoneSpace); };
+    refresh();
+    for (const event of ["focus", "hpd-video-saved", "hpd-video-backup-status"]) window.addEventListener(event, refresh);
+    return () => { for (const event of ["focus", "hpd-video-saved", "hpd-video-backup-status"]) window.removeEventListener(event, refresh); };
+  }, []);
+  useEffect(() => { if (!mediaBusy) void phoneStorage().then(setPhoneSpace); }, [mediaBusy]);
+  async function turnOnDriveBackup() {
+    const google = await googleStatus();
+    if (!google.connected) {
+      setMediaMessage("Connect Google Drive first, then turn on the backup.");
+      window.location.assign("/storage/");
+      return;
+    }
+    try { window.localStorage.setItem(DRIVE_AUTO_BACKUP_KEY, "on"); } catch {
+      setMediaMessage("Couldn't turn on the backup on this phone.");
+      return;
+    }
+    window.dispatchEvent(new Event("hpd-drive-backup-settings"));
+    setMediaMessage("☁️ Drive backup is on: photos, videos and job steps are copied to your Google Drive automatically.");
+    refreshBackupRef.current();
+  }
   const [clearJobId, setClearJobId] = useState("");
   const [clearText, setClearText] = useState("");
   const mediaInputRef = useRef<HTMLInputElement | null>(null);
@@ -566,8 +841,86 @@ export default function FieldCommandClient() {
   const videoCameraInputRef = useRef<HTMLInputElement | null>(null);
   const videoLibraryInputRef = useRef<HTMLInputElement | null>(null);
   const mediaChoiceRef = useRef<HTMLDivElement | null>(null);
+  const [mediaChoiceInStep, setMediaChoiceInStep] = useState(false);
+  // After a job finishes, its package opens for review by itself after a short countdown.
+  const [autoPackage, setAutoPackage] = useState<{ id: string; outcome: string; seconds: number } | null>(null);
+  useEffect(() => {
+    if (!autoPackage) return;
+    if (autoPackage.seconds <= 0) { openAutoPackage(autoPackage); return; }
+    const timer = window.setTimeout(() => setAutoPackage((current) => current && { ...current, seconds: current.seconds - 1 }), 1000);
+    return () => window.clearTimeout(timer);
+  }, [autoPackage]);
+  function openAutoPackage(entry: { id: string; outcome: string }) {
+    setAutoPackage(null);
+    openPackageSheet(entry.id, paperworkGenerateHref(entry.id, entry.outcome));
+  }
+  // The package (review, sign, notary, email) opens in a sheet over the map, so the job card and the
+  // map stay where they are; "Back to job" or an approved package closes it.
+  const [packageSheet, setPackageSheet] = useState<{ id: string; href: string } | null>(null);
+  function openPackageSheet(id: string, href: string) {
+    const url = `${href}${href.includes("?") ? "&" : "?"}embed=1`;
+    setPackageSheet({ id, href: url });
+  }
+  function packageLinkClick(id: string, href: string) {
+    return (event: ReactMouseEvent<HTMLAnchorElement>) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey) return;
+      event.preventDefault();
+      openPackageSheet(id, href);
+    };
+  }
+  // The original ITB scope page (page 3 image, published by the fetcher), one tap from the description.
+  const [itbPage, setItbPage] = useState<{ id: string; fileName: string; image: string; pdf: string; page: number; failed: boolean } | null>(null);
+  const itbManifestRef = useRef<Record<string, { page?: number; pageImage?: string; pdf?: string }> | null>(null);
+  async function openItbPage(job: JobRecord) {
+    const fileName = itbFileName(job);
+    if (!fileName) return;
+    if (!itbManifestRef.current) {
+      try {
+        const response = await fetch("/data/itb_source_manifest.json");
+        itbManifestRef.current = (await response.json()).entries || {};
+      } catch {
+        itbManifestRef.current = null;
+      }
+    }
+    const entry = itbManifestRef.current?.[fileName] || {};
+    const page = Number(entry.page || 3) || 3;
+    setItbPage({ id: jobId(job), fileName, image: entry.pageImage || "", pdf: entry.pdf || `/documents/itb/${encodeURIComponent(fileName)}`, page, failed: false });
+  }
+  function closePackageSheet() {
+    const sheet = packageSheet;
+    setPackageSheet(null);
+    if (!sheet) return;
+    // The package page saves its changes (approved, emailed) on this phone: show them on the card.
+    try {
+      const saved = readSharedWorkflowOverrides()[sheet.id];
+      if (saved) mergeWorkflowPatchIntoScreen(sheet.id, saved);
+    } catch {}
+  }
+  const closePackageSheetRef = useRef(closePackageSheet);
+  closePackageSheetRef.current = closePackageSheet;
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin || !event.data || event.data.type !== "hpd-package-approved") return;
+      closePackageSheetRef.current();
+      setMediaMessage(event.data.emailed ? `${event.data.job || "Job"} package approved and emailed ✓` : `${event.data.job || "Job"} package approved ✓`);
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
   const [mediaChoice, setMediaChoice] = useState<FieldMediaKind | null>(null);
   const pendingMediaKindRef = useRef<FieldMediaKind>("before");
+
+  // Tapping Waze / Google is recorded on the job itself: "On the way", with the date and time.
+  function recordTravel(job: JobRecord, via: "Waze" | "Google") {
+    const id = jobId(job);
+    const now = new Date().toISOString();
+    const latest = { ...job, ...(readSharedWorkflowOverrides()[id] || {}) };
+    const history = Array.isArray(latest.FieldVisitHistory) ? latest.FieldVisitHistory : [];
+    const patch = { TravelStartedAt: now, TravelVia: via, FieldVisitHistory: [...history, { recordedAt: now, outcome: null, note: `On the way (${via})` }] };
+    try { writeSharedWorkflowPatch(id, patch); } catch {}
+    mergeWorkflowPatchIntoScreen(id, patch);
+    rememberNavigation(id);
+  }
 
   function rememberNavigation(id:string) {
     const entry={id,startedAt:Date.now(),pendingReturn:true};
@@ -611,34 +964,67 @@ export default function FieldCommandClient() {
   useEffect(() => {
     let cancelled = false;
     let loading = false;
+    let latestRows: JobRecord[] | null = null;
+    let serverOverrides: Record<string, JobRecord> = {};
+    function showRows(data: unknown) {
+      const body = data as { jobs?: unknown; data?: unknown; records?: unknown } | unknown[];
+      const rows = Array.isArray(body) ? body : body?.jobs || body?.data || body?.records;
+      if (!Array.isArray(rows)) throw new Error("Invalid job response");
+      latestRows = withTestJob(rows as JobRecord[]);
+      setJobsLoadFailed(false);
+      applyOverrides();
+    }
+    function applyOverrides() {
+      if (cancelled || !latestRows) return;
+      // Field by field, newer wins: the server's entry never wipes out steps saved on this phone.
+      const overrides = mergeOverrideMaps(readSharedWorkflowOverrides(), serverOverrides);
+      const next = latestRows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}), ...(jobId(row) === TEST_JOB_ID ? testJobPlace() : {}) }));
+      setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
+    }
+    // Pins show at once from the copy saved on this phone last time, then refresh from the network.
+    if (typeof caches !== "undefined") {
+      caches.open(JOBS_CACHE).then((cache) => cache.match(JOBS_URL)).then((saved) => saved?.json())
+        .then((data) => { if (data && !latestRows) showRows(data); })
+        .catch(() => {});
+    }
     function refreshJobs() {
       if (loading) return;
       loading = true;
-      Promise.all([
-        fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error("Job refresh failed"); return r.json(); }),
-        fetchServerWorkflowOverrides().catch(() => ({})),
-      ])
-      .then(([data, serverOverrides]) => {
-        if (cancelled) return;
-        const rows = Array.isArray(data) ? data : data.jobs || data.data || data.records;
-        if (!Array.isArray(rows)) throw new Error("Invalid job response");
-        const overrides = { ...readSharedWorkflowOverrides(), ...serverOverrides };
-        const next = rows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}) }));
-        setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
-      })
-      .catch(() => { /* Keep the last loaded jobs if refresh is unavailable. */ })
-      .finally(() => { loading = false; });
+      // no-cache: the phone keeps the file and the server answers "unchanged" quickly when it is.
+      fetch(JOBS_URL, { cache: "no-cache" })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("Job refresh failed");
+          // Copy before reading: once the body is read it can't be copied into the phone's cache.
+          if (typeof caches !== "undefined") {
+            const copy = response.clone();
+            caches.open(JOBS_CACHE).then((cache) => cache.put(JOBS_URL, copy)).catch(() => {});
+          }
+          showRows(await response.json());
+        })
+        .catch(() => { if (!latestRows) setJobsLoadFailed(true); /* Otherwise keep the last loaded jobs. */ })
+        .finally(() => { loading = false; });
+      // Saved field statuses merge in when they arrive; they never hold up the pins.
+      fetchServerWorkflowOverrides()
+        .then((overrides) => { serverOverrides = overrides as Record<string, JobRecord>; adoptServerOverrides(serverOverrides); applyOverrides(); })
+        .catch(() => {});
     }
     const onStorage = (event: StorageEvent) => {
       if (event.key === SHARED_WORKFLOW_STORAGE_KEY) refreshJobs();
     };
+    // Steps saved with no signal go to the status server when the phone is back online.
+    const syncSaved = () => scheduleOverrideSync(0);
     refreshJobs();
+    syncSaved();
     window.addEventListener("focus", refreshJobs);
+    window.addEventListener("focus", syncSaved);
+    window.addEventListener("online", syncSaved);
     window.addEventListener("storage", onStorage);
-    const timer = window.setInterval(refreshJobs, 60000);
+    const timer = window.setInterval(() => { refreshJobs(); syncSaved(); }, 60000);
     return () => {
       cancelled = true;
       window.removeEventListener("focus", refreshJobs);
+      window.removeEventListener("focus", syncSaved);
+      window.removeEventListener("online", syncSaved);
       window.removeEventListener("storage", onStorage);
       window.clearInterval(timer);
     };
@@ -680,34 +1066,199 @@ export default function FieldCommandClient() {
     [activeJobs, calendarDate]
   );
 
+  const openJobKey = selectedJob ? jobId(selectedJob) : "";
   const filteredJobs = useMemo(() => {
     const q = search.trim().toLowerCase();
     return jobs.filter((job) => {
-      if (!matchesJobQueue(job, status)) return false;
-      if (!matchesAwardLookback(job, daysBack)) return false;
-      if (!matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
-      if (borough !== "ALL" && jobBorough(job) !== borough) return false;
+      // A job never drops off the map while you work it: the open job, and any job worked
+      // today, stay visible whatever its new status (until you archive it).
+      if (jobId(job) === openJobKey || (workedToday(job) && jobQueue(job) !== "archived")) return true;
+      // Due now (an appointment today or tomorrow, a no-access 2nd try that's due) shows whatever
+      // the status and date filters; the borough and the search still apply.
+      // The test job is always on the map (any status, date or borough filter); search still applies.
+      const isTheTestJob = jobId(job) === TEST_JOB_ID;
+      if (!dueOnMap(job) && !isTheTestJob) {
+        if (!matchesJobQueue(job, status)) return false;
+        if (!matchesAwardLookback(job, daysBack)) return false;
+        if (!matchesJobDateRange(job, dateRange.field, dateRange.from, dateRange.to)) return false;
+      }
+      if (borough !== "ALL" && jobBorough(job) !== borough && !isTheTestJob) return false;
       if (q) {
         const haystack = [jobId(job), jobAddress(job), jobBorough(job), jobStatus(job)].join(" ").toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
     });
-  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate]);
+  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey]);
+
+  // The open job card has priority over "follow me": stop following and show the job's pin in
+  // the open strip of map between the search bar and the top of the card. The locate button
+  // turns following back on.
+  const openJobKeyRef = useRef("");
+  openJobKeyRef.current = openJobKey;
+  function showJobAboveCard(lat: number, lng: number, minZoom = 16) {
+    const map = mapRef.current;
+    if (!map) return;
+    followMeRef.current = false;
+    centeredOnMeRef.current = true;
+    map.setView([lat, lng], Math.max(map.getZoom(), minZoom), { animate: false });
+    // Measure once the card is laid out, and again after its slide-up animation settles.
+    const place = () => {
+      if (!mapRef.current) return;
+      const container = map.getContainer().getBoundingClientRect();
+      const cardTop = document.querySelector("#fc-job-card")?.getBoundingClientRect().top ?? container.bottom;
+      const searchBottom = document.querySelector(".fc-search-row")?.getBoundingClientRect().bottom ?? container.top;
+      const target = (Math.max(searchBottom, container.top) + Math.min(cardTop, container.bottom)) / 2 - container.top;
+      const pin = map.latLngToContainerPoint([lat, lng]);
+      if (Math.abs(pin.y - target) > 4) map.panBy([0, Math.round(pin.y - target)], { animate: false });
+    };
+    window.setTimeout(place, 200);
+    window.setTimeout(place, 800);
+  }
+  // The view before a card opened: closing the card puts the map back there, so the other
+  // jobs are right where they were. A tapped pin keeps your zoom (only search/links zoom in).
+  const viewBeforeCardRef = useRef<{ center: [number, number]; zoom: number; follow: boolean } | null>(null);
+  const pinTapRef = useRef(false);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!openJobKey) {
+      const before = viewBeforeCardRef.current;
+      viewBeforeCardRef.current = null;
+      if (before && map) {
+        map.setView(before.center, before.zoom, { animate: false });
+        followMeRef.current = before.follow;
+      }
+      return;
+    }
+    if (map && !viewBeforeCardRef.current) {
+      const center = map.getCenter();
+      viewBeforeCardRef.current = { center: [center.lat, center.lng], zoom: map.getZoom(), follow: followMeRef.current };
+    }
+    const job = jobs.find((row) => jobId(row) === openJobKey);
+    const at = job ? jobLatLng(job) : null;
+    if (at) showJobAboveCard(at.lat, at.lng, pinTapRef.current ? 0 : 16);
+    pinTapRef.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openJobKey, routeMapReady]);
+
+  // Automatic update: an iPhone app left in the background keeps running the old version, so
+  // whenever you come back to it (and every 10 minutes) check /version.json; if a newer version
+  // was deployed, reload -- only when no job card is open and nothing is saving.
+  safeToReloadRef.current = !selectedJob && !mediaBusy && !autoPackage && !packageSheet && !itbPage;
+  useEffect(() => {
+    let stopped = false;
+    async function check() {
+      try {
+        const response = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const { commit } = await response.json() as { commit?: string };
+        if (!commit || stopped) return;
+        // The version this app was built as; older builds didn't carry it, so they learn it here.
+        if (!appVersionRef.current) appVersionRef.current = BUILT_COMMIT || commit;
+        setAppVersion(appVersionRef.current);
+        if (commit === appVersionRef.current) return;
+        latestCommitRef.current = commit;
+        // Reload by itself once per new version; if the old version is still what loads (no
+        // signal, old copy), stop and offer the Update button instead of reloading over and over.
+        let tried = "";
+        try { tried = sessionStorage.getItem("hpd-reloaded-for") || ""; } catch {}
+        if (safeToReloadRef.current && !document.hidden && tried !== commit) {
+          try { sessionStorage.setItem("hpd-reloaded-for", commit); } catch {}
+          window.location.reload();
+        } else setUpdateReady(true);
+      } catch { /* offline: try again later */ }
+    }
+    void check();
+    const onVisible = () => { if (!document.hidden) void check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    // An iPhone app resumed from the background fires pageshow: check right away.
+    window.addEventListener("pageshow", onVisible);
+    const timer = window.setInterval(check, 5 * 60 * 1000);
+    return () => { stopped = true; document.removeEventListener("visibilitychange", onVisible); window.removeEventListener("focus", onVisible); window.removeEventListener("pageshow", onVisible); window.clearInterval(timer); };
+  }, []);
+
+  // Open jobs in the current view (finished and test jobs are skipped) that need a data check.
+  const dataIssues = useMemo(() => filteredJobs
+    .filter((job) => !isTestJob(jobId(job)) && !["done", "others"].includes(pinStyle(job).key))
+    .map((job) => ({ job, issues: jobDataIssues(job) }))
+    .filter((row) => row.issues.length), [filteredJobs]);
+
+  // Finished in the field (an outcome is saved) but the package isn't approved yet: these get
+  // closed out later, e.g. at the desk. Every job counts here, whatever the map filters.
+  const closeOutJobs = useMemo(() => jobs.filter((job) => {
+    const outcome = value(job, ["FieldOutcome", "fieldOutcome"]);
+    return Boolean(FIELD_OUTCOMES[outcome]) && outcome !== "APPOINTMENT_REQUESTED" && !secondTryState(job)
+      && !value(job, ["PackageApprovedAt"]) && !/approved/i.test(value(job, ["PackageReviewStatus"])) && jobQueue(job) !== "archived";
+  }), [jobs]);
+  const [closeOutOpen, setCloseOutOpen] = useState(false);
+  // No access once: the job comes back for a 2nd try 72 hours later (due ones first).
+  const secondTryJobs = useMemo(() => jobs
+    .map((job) => ({ job, second: secondTryState(job) }))
+    .filter((row): row is { job: JobRecord; second: NonNullable<ReturnType<typeof secondTryState>> } => Boolean(row.second) && jobQueue(row.job) !== "archived")
+    .sort((a, b) => a.second.dueDay.localeCompare(b.second.dueDay)), [jobs]);
+  const [secondTryOpen, setSecondTryOpen] = useState(false);
+  // End-of-day summary sheet (map menu): today's work, close-outs and what's due tomorrow.
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [summaryStatus, setSummaryStatus] = useState("");
+  const summary = useMemo(() => (summaryOpen ? daySummary(jobs, { id: jobId, address: jobAddress }) : null), [summaryOpen, jobs]);
+  async function emailSummary() {
+    if (!summary) return;
+    setSummaryStatus("Sending…");
+    const google = await googleStatus();
+    if (!google.connected || !google.canEmail) { setSummaryStatus("Google isn't connected for email on this phone: use Share, or connect Google in Backup & recovery."); return; }
+    const result = await sendTextEmail(`HPD field summary · ${summary.dayLabel}`, summary.text);
+    setSummaryStatus(result.emailed ? `✉️ Emailed to ${result.emailTo.join(", ") || "you"}.` : result.error);
+  }
+  async function shareSummary() {
+    if (!summary) return;
+    try {
+      if (navigator.share) { await navigator.share({ title: `HPD field summary · ${summary.dayLabel}`, text: summary.text }); return; }
+      await navigator.clipboard.writeText(summary.text);
+      setSummaryStatus("Copied: paste it into a message or email.");
+    } catch { /* closed the share sheet */ }
+  }
+  // Appointments today (and anything within the next 2 hours), soonest first. A minute clock keeps
+  // the countdowns on the pins and in the map alert current.
+  const [minuteTick, setMinuteTick] = useState(0);
+  useEffect(() => {
+    const timer = window.setInterval(() => setMinuteTick((tick) => tick + 1), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  useEffect(() => { if (minuteTick) renderMarkersRef.current(); }, [minuteTick]);
+  const upcomingAppointments = useMemo(() => jobs
+    .map((job) => {
+      const appointment = pinStyle(job).key === "appointment" ? activeAppointment(job) : null;
+      return appointment ? { job, appointment, timing: appointmentTiming(appointment) } : null;
+    })
+    .filter((row): row is { job: JobRecord; appointment: Appointment; timing: ReturnType<typeof appointmentTiming> } => Boolean(row) && !row!.timing.past && (row!.timing.today || row!.timing.soon))
+    .sort((a, b) => a.timing.startsIn - b.timing.startsIn),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [jobs, minuteTick]);
+
+  function openIssueJob(job: JobRecord) {
+    setCloseOutOpen(false);
+    setDataCheckOpen(false);
+    setSelectedJob(job);
+    setSheetExpanded(false);
+    const at = jobLatLng(job);
+    if (at && mapRef.current) { followMeRef.current = false; mapRef.current.setView([at.lat, at.lng], Math.max(mapRef.current.getZoom(), 16)); }
+  }
 
   useEffect(() => {
     if (!jobs.length || requestedJobLoaded.current) return;
     requestedJobLoaded.current = true;
     const params = new URLSearchParams(window.location.search);
     const requested = (params.get("omo") || params.get("job") || params.get("q") || "").trim().toUpperCase();
+    // Open the linked job once, then take it out of the address: the iPhone app reopens the last
+    // address, and a job left in it kept coming back. No forced search or borough either -- they
+    // hid every other job.
+    if (requested) {
+      try { window.history.replaceState(null, "", window.location.pathname); } catch {}
+    }
     if (!requested || selectedJob) return;
     const match = jobs.find((job) => jobId(job).toUpperCase() === requested);
-    if (match) {
-      setSelectedJob(match);
-      if (isPendingJob(match)) setSearch(requested);
-      const boro = jobBorough(match);
-      if (boro !== "NYC") setBorough(boro);
-    }
+    if (match) setSelectedJob(match);
   }, [jobs, selectedJob]);
 
   const boroughCounts = useMemo(() => {
@@ -729,6 +1280,30 @@ export default function FieldCommandClient() {
   }, [jobs]);
 
   const mappedCount = useMemo(() => jobs.filter((job) => jobLatLng(job)).length, [jobs]);
+
+  const quickDateKey = daysBack !== null
+    ? null
+    : QUICK_DATE_RANGES.find(({ key }) => {
+        const bounds = quickDateBounds(key, calendarDate);
+        return bounds.from === dateRange.from && bounds.to === dateRange.to;
+      })?.key ?? null;
+  const activeFilterCount = (status !== "pending" ? 1 : 0) + (borough !== "ALL" ? 1 : 0)
+    + (dateRange.field !== "award" || quickDateKey !== "year" ? 1 : 0);
+
+  function applyQuickDate(key: QuickDateKey) {
+    setDaysBack(null);
+    setCustomDateRange(false);
+    const bounds = quickDateBounds(key, calendarDate);
+    setDateRange(key === "year" && dateRange.field === "award" ? currentYearRange() : { field: dateRange.field, preset: false, ...bounds });
+  }
+
+  function resetQuickFilters() {
+    setStatus("pending");
+    setBorough("ALL");
+    setDaysBack(null);
+    setCustomDateRange(false);
+    setDateRange(currentYearRange());
+  }
 
   useEffect(() => {
     const previousBg = document.body.style.background;
@@ -756,10 +1331,18 @@ export default function FieldCommandClient() {
       pointsRef.current = points;
 
       if (!mapRef.current) {
+        const lastView = savedMapView();
         const map = L.map(mapNode.current, {
           zoomControl: false,
           attributionControl: true,
-        }).setView([40.72, -73.95], 10);
+        }).setView(lastView ? [lastView.lat, lastView.lng] : [40.72, -73.95], lastView ? lastView.zoom : 10);
+        // Reopening starts where the map was left, not zoomed out to the whole city.
+        if (lastView) restoredMapViewRef.current = true;
+        map.on("dragstart", () => { followMeRef.current = false; });
+        map.on("moveend", () => {
+          const center = map.getCenter();
+          try { localStorage.setItem(MAP_VIEW_KEY, JSON.stringify({ lat: center.lat, lng: center.lng, zoom: map.getZoom() })); } catch {}
+        });
         mapRef.current = map;
         setRouteMapReady(true);
         tileLayerRef.current = L.tileLayer(darkTiles ? DARK_TILE_URL : LIGHT_TILE_URL, { maxZoom: 20, maxNativeZoom: darkTiles ? 16 : 19, attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, USGS, contributors' }).addTo(map);
@@ -847,35 +1430,50 @@ export default function FieldCommandClient() {
           if (!layerGroupRef.current) return;
           layerGroupRef.current.clearLayers();
           const occupied: { x: number; y: number }[] = [];
+          let focusDistance = Math.min(map.getSize().x, map.getSize().y) * 0.35;
+          let focusElement: HTMLElement | null = null;
+          // Once per redraw, not per job: the visible area (plus a margin).
+          const visibleArea = map.getBounds().pad(0.1);
           groupByLocation(pointsRef.current).forEach((location) => {
+            // Off-screen places are skipped before any per-job work (status, visits, priority).
+            if (!visibleArea.contains([location.lat, location.lng]) && map.getZoom() < 17) return;
             location.jobs.forEach((job, index) => {
-              const meta = { ...jobStatusMeta(job) };
-              const visit = visitState(job);
-              meta.color = visit.color;
-              const priority = jobPriority(job);
-              const title = `${jobId(job)} - ${meta.label} - ${priority.label} - ${visit.label} - ${visit.count} visits`;
               const offset = map.getZoom() >= 17 ? individualPinOffset(index, location.jobs.length) : { x: 0, y: 0 };
               const origin = map.latLngToLayerPoint([location.lat, location.lng]);
               const position = map.layerPointToLatLng(L.point(origin.x + offset.x, origin.y + offset.y));
-              if (!map.getBounds().pad(0.1).contains(position)) return;
+              if (!visibleArea.contains(position)) return;
+              const meta = { ...jobStatusMeta(job), ...pinStyle(job) };
+              const visit = visitState(job);
+              const priority = jobPriority(job);
+              const title = `${jobId(job)} - ${meta.label} - ${priority.label} - ${visit.label} - ${visit.count} visits`;
               const screen = map.latLngToContainerPoint(position);
               const showLabel = reservePinLabel(screen.x, screen.y, occupied);
               const html = showLabel
-                ? ageMarkerHtml(priority.days, priority.pending, map.getZoom(), false, meta.color, meta.key) + (visit.count ? `<span class="fc-visit-pin-count">${visit.count}v</span>` : "")
+                ? jobPinHtml(job, meta, priority, visit.count)
                 : `<span class="fc-job-dot" style="--pin-color:${meta.color}"></span>`;
               if (map.getZoom() >= 17 && location.jobs.length > 1) {
                 L.polyline([[location.lat, location.lng], position], { color: meta.color, weight: 1, opacity: 0.7, interactive: false }).addTo(layerGroupRef.current);
               }
-              const icon = L.divIcon({ className: showLabel ? "fc-label-marker" : "fc-dot-marker", html, iconSize: showLabel ? [44, 32] : [14, 14], iconAnchor: showLabel ? [22, 16] : [7, 7] });
+              // Pins grow as you zoom in; the one nearest the middle of the screen is the focus.
+              const zoomClass = map.getZoom() >= 18 ? " is-z18" : map.getZoom() >= 16 ? " is-z16" : "";
+              // The pin's tip sits on the building.
+              const icon = L.divIcon({ className: (showLabel ? "fc-label-marker" : "fc-dot-marker") + zoomClass, html, iconSize: showLabel ? [36, 42] : [14, 14], iconAnchor: showLabel ? [18, 40] : [7, 7] });
               const marker = L.marker(position, { icon, title, zIndexOffset: showLabel ? 1000 : 0 });
               marker.on("click", () => {
                 if (!showLabel || location.jobs.length > 1) map.setView([location.lat, location.lng], Math.max(17, map.getZoom()));
+                else pinTapRef.current = true;
                 setSelectedJob(job);
               });
               marker.addTo(layerGroupRef.current);
               marker.getElement()?.setAttribute("aria-label", title);
+              if (showLabel && map.getZoom() >= 15) {
+                const size = map.getSize();
+                const distance = Math.hypot(screen.x - size.x / 2, screen.y - size.y / 2);
+                if (distance < focusDistance) { focusDistance = distance; focusElement = marker.getElement() || null; }
+              }
             });
           });
+          focusElement?.classList.add("is-focus");
         };
 
         // Recompute visible labels after movement; retain individual dots for crowded jobs.
@@ -885,14 +1483,24 @@ export default function FieldCommandClient() {
 
       const map = mapRef.current;
 
-      const framing = `${borough}|${search}|${status}|${daysBack}|${JSON.stringify(dateRange)}`;
-      if (mapFramingRef.current !== framing && points.length) {
+      // Only a borough tap or a search moves the map. Date windows (30/60/90) and status
+      // filters just change which pins show; the map stays on you.
+      const framing = `${borough}|${search}`;
+      if (mapFramingRef.current !== framing && points.length && restoredMapViewRef.current && !mapFramingRef.current) {
+        // First load after reopening: keep the saved view; later filter/search changes still frame.
         mapFramingRef.current = framing;
-        if (points.length === 1) {
+      } else if (mapFramingRef.current !== framing && points.length) {
+        mapFramingRef.current = framing;
+        const openJob = openJobKeyRef.current ? points.find((point) => jobId(point.job) === openJobKeyRef.current) : null;
+        if (openJob) {
+          // A job card is open: it has priority, keep its pin in view above the card.
+          showJobAboveCard(openJob.lat, openJob.lng);
+        } else if (points.length === 1) {
           map.setView([points[0].lat, points[0].lng], 15);
         } else if (points.length > 1 && borough === "ALL" && !search.trim()) {
-          // Keep the initial city view useful even when a record lies far outside NYC.
-          map.setView([40.72, -73.95], 14);
+          // Back to All: return to you, never to a fixed point in the city.
+          const me = lastPositionRef.current;
+          if (me) { followMeRef.current = true; map.setView([me.lat, me.lng], Math.max(map.getZoom(), 15)); }
         } else if (points.length > 1) {
           const bounds = points.map((p) => [p.lat, p.lng]) as [number, number][];
           map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
@@ -992,10 +1600,10 @@ export default function FieldCommandClient() {
       return;
     }
     const icon = L.divIcon({
-      className: "",
-      html: '<div class="fc-you-are-here"><span class="fc-you-are-here-pulse"></span></div>',
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
+      className: "fc-you-marker",
+      html: '<div class="fc-you-are-here"><span class="fc-you-are-here-pulse"></span><span class="fc-you-are-here-dot"></span><span class="fc-you-are-here-label">You</span></div>',
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
     });
     userMarkerRef.current = L.marker([latitude, longitude], { icon, interactive: false, zIndexOffset: 1000 }).addTo(mapRef.current);
   }
@@ -1005,7 +1613,20 @@ export default function FieldCommandClient() {
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         setLocateStatus("idle");
-        placeUserMarker(position.coords.latitude, position.coords.longitude);
+        const { latitude, longitude } = position.coords;
+        placeUserMarker(latitude, longitude);
+        lastPositionRef.current = { lat: latitude, lng: longitude };
+        lastFixRef.current = { lat: latitude, lng: longitude, accuracy: position.coords.accuracy || 0, at: Date.now() };
+        autoArriveRef.current(latitude, longitude, position.coords.accuracy || 0);
+        if (!mapRef.current) return;
+        if (!centeredOnMeRef.current) {
+          // Opening the app: go straight to where you are.
+          centeredOnMeRef.current = true;
+          if (followMeRef.current) mapRef.current.setView([latitude, longitude], Math.max(mapRef.current.getZoom(), 15));
+        } else if (followMeRef.current) {
+          // Follow mode: keep the map on you as you move.
+          mapRef.current.panTo([latitude, longitude], { animate: true });
+        }
       },
       () => setLocateStatus("error"),
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
@@ -1016,7 +1637,80 @@ export default function FieldCommandClient() {
     };
   }, [routeMapReady]);
 
+  // Step 1: arrival records the time and where you are, shows you on the map and how far the job is.
+  // Automatic arrival: you tapped Waze/Google for the open job and your phone is now within 75 m
+  // of it, so "I have arrived" is saved for you (time + GPS), once.
+  const autoArriveRef = useRef<(lat: number, lng: number, accuracy: number) => void>(() => {});
+  const autoArrivedRef = useRef<Set<string>>(new Set());
+  autoArriveRef.current = (lat, lng, accuracy) => {
+    const job = selectedJob;
+    if (!job) return;
+    const id = jobId(job);
+    if (workflowStamps[id]?.arrived || value(job, ["FieldArrivedAt"]) || !value(job, ["TravelStartedAt"]) || autoArrivedRef.current.has(id)) return;
+    const at = jobLatLng(job);
+    if (!at || accuracy > 100) return;
+    const meters = distanceMiles({ lat, lng }, at) * 1609.34;
+    if (meters > 75) return;
+    autoArrivedRef.current.add(id);
+    saveWorkflowStamp(job, "arrived");
+    const patch = { ArrivedLatitude: lat, ArrivedLongitude: lng, ArrivedAccuracyMeters: Math.round(accuracy), ArrivedAutomatically: true,
+      FieldVisitHistory: visitHistoryWith(job, "Arrived (automatic, by GPS)", { lat, lng, accuracy, at: Date.now() }) };
+    try { writeSharedWorkflowPatch(id, patch); } catch {}
+    mergeWorkflowPatchIntoScreen(id, patch);
+    setOutcomeMessage(`📍 You're at the job (${Math.round(meters * 3.28)} ft away): arrival saved automatically.`);
+  };
+
+  // The job's visit history plus one entry (no outcome), carrying where the phone was.
+  function visitHistoryWith(job: JobRecord, note: string, fix: GpsFix | null) {
+    const id = jobId(job);
+    const latest = { ...job, ...(readSharedWorkflowOverrides()[id] || {}) };
+    const history = Array.isArray(latest.FieldVisitHistory) ? latest.FieldVisitHistory : [];
+    return [...history, { recordedAt: new Date().toISOString(), outcome: null, note, ...visitLocationFields(fix, jobLatLng(job)) }];
+  }
+  // Adds the phone's location to the newest visit-history entry of an outcome patch.
+  function withVisitLocation(job: JobRecord, patch: Record<string, unknown>) {
+    const history = Array.isArray(patch.FieldVisitHistory) ? [...patch.FieldVisitHistory] : null;
+    if (!history?.length) return patch;
+    history[history.length - 1] = { ...history[history.length - 1], ...visitLocationFields(lastFixRef.current, jobLatLng(job)) };
+    return { ...patch, FieldVisitHistory: history };
+  }
+
+  function markArrived(job: JobRecord) {
+    const id = jobId(job);
+    saveWorkflowStamp(job, "arrived");
+    const saveArrivalAt = (latitude: number, longitude: number, accuracy: number) => {
+      lastPositionRef.current = { lat: latitude, lng: longitude };
+      lastFixRef.current = { lat: latitude, lng: longitude, accuracy, at: Date.now() };
+      const patch = { ArrivedLatitude: latitude, ArrivedLongitude: longitude, ArrivedAccuracyMeters: Math.round(accuracy),
+        FieldVisitHistory: visitHistoryWith(job, "Arrived", lastFixRef.current) };
+      try { writeSharedWorkflowPatch(id, patch); } catch {}
+      mergeWorkflowPatchIntoScreen(id, patch);
+      const at = jobLatLng(job);
+      if (at) {
+        const feet = Math.round(distanceMiles({ lat: latitude, lng: longitude }, at) * 5280);
+        setOutcomeMessage(feet < 1000 ? `Arrived. You're about ${feet} ft from the job.` : `Arrived. Location saved, but you're ${(feet / 5280).toFixed(1)} mi from the job address.`);
+      }
+    };
+    // The map is already following the phone: a fix from the last 30 seconds is used right away.
+    const fix = lastFixRef.current;
+    if (fix && fix.at && Date.now() - fix.at < 30_000) {
+      saveArrivalAt(fix.lat, fix.lng, fix.accuracy || 0);
+      return;
+    }
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        void placeUserMarker(latitude, longitude);
+        saveArrivalAt(latitude, longitude, accuracy);
+      },
+      () => setOutcomeMessage("Arrived. Time saved; location wasn't available."),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 15_000 }
+    );
+  }
+
   function locateMe() {
+    followMeRef.current = true;
     if (!navigator.geolocation) {
       setLocateStatus("error");
       return;
@@ -1105,6 +1799,21 @@ export default function FieldCommandClient() {
       firstStop: jobId(stops[0].job),
       href: googleRouteHref(routePoints),
     });
+  }
+
+  // "Everything is correct": takes a finished job off the active map. Only offered once its
+  // paperwork is approved; archived jobs stay under Status > Archive.
+  async function archiveJob(job: JobRecord) {
+    const id = jobId(job);
+    if (!window.confirm(`Archive ${id}? Only do this if the work, paperwork and email are all correct.`)) return;
+    const now = new Date().toISOString();
+    const patch = { ArchivedFromMap: true, archivedFromMap: true, ArchivedAt: now, archivedAt: now };
+    try { writeSharedWorkflowPatch(id, patch); }
+    catch { setOutcomeMessage("Could not archive on this device. Please retry."); return; }
+    mergeWorkflowPatchIntoScreen(id, patch);
+    setSelectedJob(null);
+    // Saved on this device and queued: sent to the status server now or once back online.
+    void flushOverrideOutbox(HPD_STATUS_WORKER_URL);
   }
 
   function mergeWorkflowPatchIntoScreen(id: string, patch: Record<string, unknown>) {
@@ -1214,16 +1923,10 @@ export default function FieldCommandClient() {
       [id]: {
         ...(prev[id] || {}),
         [key]: now,
-        ...(key === "arrived" ? { visit: now } : {}),
         ...(statusLabel ? { status: statusLabel } : {}),
       },
     }));
     mergeWorkflowPatchIntoScreen(id, patch);
-  }
-
-  function openOutcomePanel() {
-    setSheetExpanded(true);
-    requestAnimationFrame(() => outcomePanelRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }));
   }
 
   function openAppointment() {
@@ -1239,26 +1942,62 @@ export default function FieldCommandClient() {
     writeSharedWorkflowPatch(id, patch);
     mergeWorkflowPatchIntoScreen(id, patch);
     setWorkflowStamps(prev => ({ ...prev, [id]: { ...prev[id], status: patch.status } }));
+    if (["requested", "confirmed"].includes(appointment.state)) {
+      setAppointmentOpen(false);
+      setOutcomeMessage(`📅 ${id}: appointment saved for ${appointmentLabel(appointment)}. Tap "🔔 Add to Calendar" so your iPhone reminds you even with the app closed; the pin also lights up on the map as the time gets close.`);
+    }
   }
 
-  function chooseOutcome(outcome: string) {
-    if (!selectedJob) return;
-    const id = jobId(selectedJob);
-    setOutcomeDrafts((prev) => ({ ...prev, [id]: { note: prev[id]?.note || "", outcome } }));
-    openOutcomePanel();
+  // Records an outcome right away (no draft, no page change).
+  function setJobOutcome(job: JobRecord, outcome: string, note: string) {
+    const id = jobId(job);
+    try {
+      const patch = withVisitLocation(job, fieldOutcomePatch(job, outcome, note, new Date().toISOString()));
+      writeSharedWorkflowPatch(id, patch);
+      mergeWorkflowPatchIntoScreen(id, patch);
+      setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[outcome] } }));
+      const waiting = secondTryState({ ...job, ...patch });
+      setOutcomeMessage(waiting ? secondTryMessage(id, waiting.dueLabel) : `✅ ${id}: ${FIELD_OUTCOMES[outcome]}. This job is finished.`);
+      if (outcome !== "APPOINTMENT_REQUESTED" && !waiting) setAutoPackage({ id, outcome, seconds: 6 });
+    } catch (error) {
+      setOutcomeMessage(error instanceof Error ? error.message : "Could not save the outcome. Try again.");
+    }
+  }
+
+  function secondTryMessage(id: string, dueLabel: string) {
+    return `🔒 ${id}: no access saved as the 1st try. Come back from ${dueLabel} for the 2nd try; the affidavit needs both.`;
+  }
+  // 2nd visit after a no-access try: the door opened, so the job goes back to the normal work steps.
+  function gotInOnSecondTry(job: JobRecord) {
+    const id = jobId(job);
+    const now = new Date().toISOString();
+    const latest = { ...job, ...(readSharedWorkflowOverrides()[id] || {}) };
+    const history = Array.isArray(latest.FieldVisitHistory) ? latest.FieldVisitHistory : [];
+    const patch = { ...arrivalVisitPatch(now), FieldOutcome: "", fieldOutcome: "", WorkflowStatus: "", workflowStatus: "", StatusOverride: "Got access on the 2nd try", status: "Got access on the 2nd try",
+      PackageReviewStatus: "", OutcomeLockedAt: "", outcomeLockedAt: "", FieldVisitHistory: [...history, { recordedAt: now, outcome: null, note: "Got access on the 2nd try", ...visitLocationFields(lastFixRef.current, jobLatLng(job)) }] };
+    try { writeSharedWorkflowPatch(id, patch); } catch {}
+    mergeWorkflowPatchIntoScreen(id, patch);
+    // Getting in counts as today's arrival and visit start, so the card goes straight to the before photos.
+    setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], arrived: now, visit: now, status: "" } }));
+    setOutcomeMessage(`🚪 ${id}: got in. Take the before photos to start the work.`);
+    requestMediaUpload("before", true);
   }
 
   function saveVisitOutcome(job: JobRecord, review = false) {
     const id = jobId(job);
     const draft = outcomeDrafts[id] || { outcome: "", note: "" };
     try {
-      const patch = fieldOutcomePatch(job, draft.outcome, draft.note, new Date().toISOString());
+      const patch = withVisitLocation(job, fieldOutcomePatch(job, draft.outcome, draft.note, new Date().toISOString()));
       writeSharedWorkflowPatch(id, patch);
       mergeWorkflowPatchIntoScreen(id, patch);
       if (draft.outcome) setWorkflowStamps((prev) => ({ ...prev, [id]: { ...prev[id], status: FIELD_OUTCOMES[draft.outcome] } }));
       setOutcomeDrafts((prev) => ({ ...prev, [id]: { outcome: "", note: "" } }));
-      setOutcomeMessage("Saved on this device. Not archived or emailed.");
-      if (review) window.location.assign(paperworkGenerateHref(id, draft.outcome));
+      const waiting = draft.outcome ? secondTryState({ ...job, ...patch }) : null;
+      setOutcomeMessage(waiting ? secondTryMessage(id, waiting.dueLabel) : draft.outcome
+        ? `✅ ${id} is ${FIELD_OUTCOMES[draft.outcome]}. This job is finished.`
+        : "Note saved on this device.");
+      if (draft.outcome && draft.outcome !== "APPOINTMENT_REQUESTED" && !review && !waiting) setAutoPackage({ id, outcome: draft.outcome, seconds: 6 });
+      if (review && !waiting) openPackageSheet(id, paperworkGenerateHref(id, draft.outcome));
     } catch (error) {
       setOutcomeMessage(error instanceof Error ? error.message : "Save failed. Your draft is still here.");
     }
@@ -1266,26 +2005,57 @@ export default function FieldCommandClient() {
 
   async function refreshMediaCounts(job: JobRecord) {
     const id = jobId(job);
-    const rows = await listFieldEvidence(id);
+    // Lite: videos are counted, never read (reading them crashed the app on big videos).
+    const rows = await listFieldEvidenceLite(id);
     setMediaCounts((prev) => ({
       ...prev,
       [id]: {
         before: rows.filter((media) => media.kind === "before").length,
         after: rows.filter((media) => media.kind === "after").length,
         total: rows.length,
+        beforeVideos: rows.filter((media) => media.kind === "before" && media.mediaType === "video").length,
+        beforeDay: localDay(rows.find((media) => media.kind === "before" && media.capturedAt)?.capturedAt),
+        afterDay: localDay(rows.find((media) => media.kind === "after" && media.capturedAt)?.capturedAt),
+        afterVideos: rows.filter((media) => media.kind === "after" && media.mediaType === "video").length,
       },
     }));
     const thumbs = (kind: string) => rows
       .filter((media) => media.kind === kind)
-      .map((media) => (media.mediaType === "video" ? media.posterDataUrl || "" : media.dataUrl))
+      .map((media) => media.dataUrl)
       .filter(Boolean)
       .slice(-3);
     setMediaThumbs((prev) => ({ ...prev, [id]: { before: thumbs("before"), after: thumbs("after") } }));
   }
 
-  function requestMediaUpload(kind: FieldMediaKind) {
+  // From a guided step the photo/video buttons open right inside that step, glowing.
+  async function changeMediaDate(job: JobRecord, kind: "before" | "after", day: string) {
+    if (!day) return;
+    setMediaBusy(kind);
+    try {
+      const count = await redateFieldEvidence(jobId(job), kind, day);
+      await refreshMediaCounts(job);
+      if (kind === "before") {
+        // The before photos are when the work started: the affidavit's work start follows them.
+        const [y, m, d] = day.split("-").map(Number);
+        const startedAt = new Date(y, m - 1, d, 12).toISOString();
+        const patch = { ActualWorkStartDate: startedAt, actualWorkStartDate: startedAt, JobStartedAt: startedAt, jobStartedAt: startedAt };
+        try { writeSharedWorkflowPatch(jobId(job), patch); } catch {}
+        mergeWorkflowPatchIntoScreen(jobId(job), patch);
+      }
+      const [y, m, d] = day.split("-");
+      setMediaMessage(`📅 ${count} ${kind} photo/video date(s) changed to ${m}/${d}/${y}. Photos show the new date; the affidavit uses it too.`);
+    } catch (error) {
+      setMediaMessage(error instanceof Error ? error.message : "The date could not be changed.");
+    } finally {
+      setMediaBusy(null);
+    }
+  }
+
+  function requestMediaUpload(kind: FieldMediaKind, fromStep = false) {
+    setAutoPackage(null);
     setMediaChoice(kind);
-    requestAnimationFrame(() => mediaChoiceRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
+    setMediaChoiceInStep(fromStep);
+    requestAnimationFrame(() => (fromStep ? document.querySelector(".jc-step-media") : mediaChoiceRef.current)?.scrollIntoView({ block: "nearest", behavior: "smooth" }));
   }
 
   function chooseMediaSource(source: "camera" | "library" | "video-camera" | "video-library") {
@@ -1317,7 +2087,17 @@ export default function FieldCommandClient() {
       await refreshMediaCounts(selectedJob);
       const unstamped = saved.filter(item => item.mediaType === "video" && item.stamped === false).length;
       setMediaMessage(saved.length ? `${kind === "before" ? "Before" : "After"} media saved: ${saved.length}.${unstamped ? ` ${unstamped} video(s) saved as originals without burned-in labels; review before submitting.` : ""}` : "No image or video was saved.");
-      if (kind === "after" && saved.length) openOutcomePanel();
+      // Before photos mark the work start (date used on the affidavit); no separate "Start work" tap.
+      if (kind === "before" && saved.length && !workflowStamps[id]?.work) saveWorkflowStamp(selectedJob, "work", "Work Started");
+      // After photos/videos = the work is done: the job finishes by itself (Work completed; switch
+      // to Partial on the card if needed) and waits on the map to be closed out with the package.
+      if (kind === "after" && saved.length) {
+        const current = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
+        if (!["WORK_COMPLETED", "PARTIAL_WORK"].includes(current)) setJobOutcome(selectedJob, "WORK_COMPLETED", "Finished: after photos/videos taken");
+        // Already finished and you added more after shots: offer the package again.
+        else if (!value(selectedJob, ["PackageApprovedAt"])) setAutoPackage({ id, outcome: current, seconds: 6 });
+        setMediaChoice(null);
+      }
     } catch (error) {
       setMediaMessage(error instanceof Error ? error.message : "Media save failed.");
     } finally {
@@ -1329,43 +2109,103 @@ export default function FieldCommandClient() {
     }
   }
 
+  // The test job's location: "Move here" puts it where you stand (arrive / distance / directions
+  // then work wherever you test); "Back to 100 Gold St" restores the default.
+  const [testPlaceVersion, setTestPlaceVersion] = useState(0);
+  function moveTestJob(here: boolean) {
+    const apply = (location: { lat: number; lng: number } | null) => {
+      setTestJobLocation(location);
+      const place = testJobPlace();
+      setJobs((rows) => rows.map((row) => jobId(row) === TEST_JOB_ID ? { ...row, ...place } : row));
+      setSelectedJob((row) => row && jobId(row) === TEST_JOB_ID ? { ...row, ...place } : row);
+      setTestPlaceVersion((v) => v + 1);
+      const lat = Number(place.Latitude), lng = Number(place.Longitude);
+      if (mapRef.current && Number.isFinite(lat) && Number.isFinite(lng)) showJobAboveCard(lat, lng);
+      setMediaMessage(location ? "Test job moved to where you are: you can arrive and run every step here." : "Test job is back at 100 Gold Street.");
+    };
+    if (!here) { apply(null); return; }
+    // The map already follows your location: use that fix when it is fresh (instant).
+    const fix = lastFixRef.current;
+    if (fix && Date.now() - fix.at < 120000) { apply({ lat: fix.lat, lng: fix.lng }); return; }
+    if (!navigator.geolocation) { setMediaMessage("This phone can't share its location."); return; }
+    setMediaMessage("Getting your location…");
+    navigator.geolocation.getCurrentPosition(
+      (position) => apply({ lat: position.coords.latitude, lng: position.coords.longitude }),
+      () => setMediaMessage("Couldn't get your location. Allow location for this app, then try again."),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 },
+    );
+  }
+
+  // Test job only: start it over in one tap (no typing CLEAR), to run the whole flow again.
+  async function resetTestJob(job: JobRecord) {
+    if (!window.confirm("Reset the test job? Its steps, outcome, package and photos/videos on this phone are cleared. Drive copies and sent emails stay.")) return;
+    setClearText("CLEAR");
+    await clearWorkflow(job, true);
+  }
+
   function beginClearWorkflow(job: JobRecord) {
     setClearJobId(jobId(job));
     setClearText("");
+    // The confirm box lives in the full card: open it and bring the box into view.
+    setSheetExpanded(true);
+    window.setTimeout(() => document.querySelector(".fc-clear-confirm")?.scrollIntoView({ block: "center", behavior: "smooth" }), 150);
   }
 
-  function clearWorkflow(job: JobRecord) {
+  // Undo a saved outcome (e.g. No access, then access was given) without wiping the visit:
+  // arrival, photos and visit history stay; a history line records what was cleared, and the
+  // job is open for work again.
+  function clearOutcome(job: JobRecord) {
     const id = jobId(job);
-    if (clearText.trim().toUpperCase() !== "CLEAR") {
-      setMediaMessage("Type CLEAR to reset this workflow.");
+    const previous = FIELD_OUTCOMES[value(job, ["FieldOutcome", "fieldOutcome", "WorkflowStatus"])] || value(job, ["StatusOverride", "status"]) || "outcome";
+    if (!window.confirm(`Clear "${previous}" for ${id}? Photos and visit history are kept.`)) return;
+    const now = new Date();
+    const stamps = workflowStamps[id] || {};
+    const statusLabel = stamps.work ? "Work Started" : stamps.arrived ? "Arrived" : "Pending";
+    const history = Array.isArray(job.FieldVisitHistory) ? job.FieldVisitHistory : [];
+    const patch: Record<string, unknown> = {
+      WorkflowStatus: "", workflowStatus: "", FieldOutcome: "", fieldOutcome: "",
+      StatusOverride: statusLabel, status: statusLabel,
+      OutcomeLockedAt: "", outcomeLockedAt: "", RefusalDate: "", NoAccessFirstAttemptAt: "", SecondAttemptAvailableAt: "",
+      PackageReviewStatus: "",
+      FieldVisitHistory: [...history, { recordedAt: now.toISOString(), outcome: null, note: `Outcome cleared (was ${previous}).` }],
+      // Lets the job be worked again even if an earlier visit was No access / Refused.
+      RevisitApprovedAt: new Date(now.getTime() + 1000).toISOString(),
+    };
+    try { writeSharedWorkflowPatch(id, patch); }
+    catch { setOutcomeMessage("Could not clear the outcome on this device. Please retry."); return; }
+    mergeWorkflowPatchIntoScreen(id, patch);
+    setWorkflowStamps((prev) => ({ ...prev, [id]: { ...(prev[id] || {}), status: statusLabel } }));
+    setOutcomeMessage(`Outcome cleared. ${id} is open again.`);
+  }
+
+  // Start over: clears the outcome, arrival, trip, package status AND every photo/video saved for
+  // this job on the phone, here and on the status server, so the job is Pending again.
+  async function clearWorkflow(job: JobRecord, confirmed = false) {
+    const id = jobId(job);
+    if (!confirmed && clearText.trim().toUpperCase() !== "CLEAR") {
+      setMediaMessage("Type CLEAR to start this job over.");
       return;
     }
+    const patch = startOverPatch();
     setWorkflowStamps((prev) => ({ ...prev, [id]: {} }));
-    writeSharedWorkflowPatch(id, { __clearWorkflow: true });
-    mergeWorkflowPatchIntoScreen(id, {
-      WorkflowStatus: "",
-      workflowStatus: "",
-      FieldOutcome: "",
-      fieldOutcome: "",
-      StatusOverride: "",
-      status: "Pending",
-      FieldArrivedAt: "",
-      fieldArrivedAt: "",
-      LastFieldVisitAt: "",
-      lastFieldVisitAt: "",
-      VisitStartedAt: "",
-      visitStartedAt: "",
-      JobStartedAt: "",
-      jobStartedAt: "",
-      ActualWorkStartDate: "",
-      actualWorkStartDate: "",
-      OutcomeLockedAt: "",
-      outcomeLockedAt: "",
-    });
+    setOutcomeDrafts((prev) => ({ ...prev, [id]: { outcome: "", note: "" } }));
+    // No __clearWorkflow flag: it would keep wiping the new steps recorded after starting over.
+    try { writeSharedWorkflowPatch(id, { ...patch, __clearWorkflow: false }); } catch {}
+    mergeWorkflowPatchIntoScreen(id, patch);
     setClearJobId("");
     setClearText("");
-    setMediaMessage("Workflow cleared. Saved media stays unless you remove it from the media/package screen.");
+    let removed = 0;
+    try { removed = await clearFieldEvidence(id); } catch { /* reported below */ }
+    // The package zip saved on this phone goes too; everything already in Google Drive stays there.
+    try { await clearFieldPackets(id); } catch {}
+    try { const freed = JSON.parse(window.localStorage.getItem(FREED_KEY) || "{}"); delete freed[id]; window.localStorage.setItem(FREED_KEY, JSON.stringify(freed)); } catch {}
+    await refreshMediaCounts(job);
+    // The start-over entry was queued by writeSharedWorkflowPatch; send it now.
+    const serverCleared = (await flushOverrideOutbox(HPD_STATUS_WORKER_URL)).waiting === 0;
+    setMediaMessage(`${id} started over: outcome, steps and package cleared; ${removed} photo/video file(s) removed from this phone (copies already in Google Drive are kept).${serverCleared ? "" : " The status server didn't answer; it will be cleared next time you're online."}`);
+    setOutcomeMessage("");
   }
+
 
   return (
     <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
@@ -1375,15 +2215,85 @@ export default function FieldCommandClient() {
           <SearchIcon />
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search address or job" aria-label="Search jobs" />
         </div>
+        <button type="button" className={`fc-filter-btn ${filtersOpen ? "is-open" : ""}`} data-hpd-smoke="fc-filter-button" aria-label="Filters" aria-expanded={filtersOpen} aria-controls="fc-quick-filters" onClick={() => { setFiltersOpen((open) => !open); setChromeOpen(false); }}>
+          <FilterIcon />
+          {activeFilterCount ? <span className="fc-filter-badge">{activeFilterCount}</span> : null}
+        </button>
       </div>
+      {!selectedJob && !filtersOpen ? (
+        <nav className="fc-borough-bar" data-hpd-smoke="fc-borough-bar" aria-label="Borough and date">
+          <div className="fc-bar-boroughs">
+            <button type="button" className={borough === "ALL" ? "is-active" : ""} aria-pressed={borough === "ALL"} onClick={() => setBorough("ALL")}>
+              <span aria-hidden="true">🗽</span><small>All</small>
+            </button>
+            {BOROUGHS.map(({ key, label, color }) => (
+              <button key={key} type="button" className={borough === key ? "is-active" : ""} aria-pressed={borough === key} aria-label={label} style={{ "--boro": color } as CSSProperties} onClick={() => setBorough(borough === key ? "ALL" : key)}>
+                <span aria-hidden="true">{BOROUGH_ICONS[key]}</span><small>{key}</small>
+              </button>
+            ))}
+          </div>
+          <div className="fc-bar-days-row">
+            {(["last30", "last60", "last90"] as const).map((key) => (
+              <button key={key} type="button" className={quickDateKey === key ? "is-active" : ""} aria-pressed={quickDateKey === key} onClick={() => applyQuickDate(quickDateKey === key ? "year" : key)}>
+                {key.slice(4)} days
+              </button>
+            ))}
+            <button type="button" onClick={() => setFiltersOpen(true)}>Custom</button>
+          </div>
+        </nav>
+      ) : null}
+      {filtersOpen ? (
+        <section id="fc-quick-filters" className="fc-quick-filters" data-hpd-smoke="fc-quick-filters" aria-label="Quick filters">
+          <div className="fc-quick-head">
+            <strong>{filteredJobs.length} job{filteredJobs.length === 1 ? "" : "s"}</strong>
+            <button type="button" onClick={resetQuickFilters}>Reset</button>
+            <button type="button" onClick={() => setFiltersOpen(false)}>Done</button>
+          </div>
+          <span className="fc-quick-label">Status</span>
+          <div className="fc-quick-chips">
+            {STATUS_FILTERS.map(({ key, label }) => (
+              <button key={key} type="button" className={status === key ? "is-active" : ""} aria-pressed={status === key} onClick={() => setStatus(key)}>
+                {label} <b>{key === "all" ? jobs.length : statusCounts[key] || 0}</b>
+              </button>
+            ))}
+          </div>
+          <span className="fc-quick-label">Borough</span>
+          <div className="fc-quick-chips">
+            <button type="button" className={borough === "ALL" ? "is-active" : ""} aria-pressed={borough === "ALL"} onClick={() => setBorough("ALL")}>All</button>
+            {BOROUGHS.map(({ key, label }) => (
+              <button key={key} type="button" className={borough === key ? "is-active" : ""} aria-pressed={borough === key} onClick={() => setBorough(key)}>
+                {label} <b>{boroughCounts[key]}</b>
+              </button>
+            ))}
+          </div>
+          <span className="fc-quick-label">Date</span>
+          <div className="fc-quick-chips">
+            {(Object.keys(JOB_DATE_FIELDS) as JobDateField[]).map((field) => (
+              <button key={field} type="button" className={dateRange.field === field ? "is-active" : ""} aria-pressed={dateRange.field === field} onClick={() => setDateRange({ ...dateRange, preset: false, field })}>
+                {JOB_DATE_FIELDS[field]}
+              </button>
+            ))}
+          </div>
+          <div className="fc-quick-chips">
+            {QUICK_DATE_RANGES.map((range) => (
+              <button key={range.key} type="button" className={quickDateKey === range.key ? "is-active" : ""} aria-pressed={quickDateKey === range.key} onClick={() => applyQuickDate(range.key)}>
+                {range.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
       {chromeOpen && !controlsOpen && <nav className="fc-organized-menu" aria-label="Map menu">
         <strong>Map menu</strong>
         <button type="button" onClick={()=>{setChromeOpen(false);setControlsOpen(false);setPlannerRequest(value=>value+1);}}><ListIcon />Plan my day</button>
+        <button type="button" data-hpd-smoke="fc-test-job-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); const test = jobs.find((row) => jobId(row) === TEST_JOB_ID); if (test) openIssueJob(test); }}>🧪 Test job ({TEST_JOB_ID})</button>
+        <button type="button" data-hpd-smoke="fc-summary-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setSummaryStatus(""); setSummaryOpen(true); }}><ListIcon />Today&apos;s summary</button>
         <button type="button" aria-controls="field-map-filters" onClick={() => setControlsOpen(true)}><ListIcon />Filters</button>
         <Link href="/jobs/"><ListIcon />Jobs</Link>
         <Link href="/alerts/"><BellIcon />Alerts</Link>
         <Link href="/storage/"><MenuIcon />Backup &amp; recovery</Link>
         <Link href="/more/"><MenuIcon />More</Link>
+        {appVersion ? <small className="fc-app-version" data-hpd-smoke="fc-app-version">Version {appVersion}</small> : null}
       </nav>}
       <section id="field-map-filters" className="fc-control-drawer" aria-label="Map filters">
       <header className="fc-topbar">
@@ -1528,21 +2438,114 @@ export default function FieldCommandClient() {
           </a>
         ) : null}
 
-        {locateStatus === "error" ? (
-          <p className="fc-map-hint fc-map-hint-warn">Couldn&apos;t get your location</p>
-        ) : null}
+        {/* Status messages stack below the search box instead of overlapping each other. */}
+        <div className="fc-map-hints" hidden={filtersOpen}>
+          {locateStatus === "error" ? (
+            <p className="fc-map-hint fc-map-hint-warn">Couldn&apos;t get your location</p>
+          ) : null}
 
-        {!filteredJobs.length ? (
-          <p className="fc-map-hint">No jobs match these filters</p>
-        ) : null}
+          {!jobs.length ? (
+            <p className={`fc-map-hint ${jobsLoadFailed ? "fc-map-hint-warn" : ""}`} role="status">{jobsLoadFailed ? "Couldn't load jobs. Check the connection; retrying." : "Loading jobs..."}</p>
+          ) : !filteredJobs.length ? (
+            <p className="fc-map-hint">No jobs match these filters</p>
+          ) : null}
 
-        {filteredJobs.length > 0 && !mappedFilteredCount ? (
-          <p className="fc-map-hint">No mapped jobs match these filters</p>
-        ) : null}
+          {filteredJobs.length > 0 && !mappedFilteredCount ? (
+            <p className="fc-map-hint">No mapped jobs match these filters</p>
+          ) : null}
+
+          {backup && !backup.auto && backup.total > 0 && !selectedJob ? (
+            <div className="fc-data-check fc-backup-pill" data-hpd-smoke="fc-backup-pill">
+              <button type="button" className="fc-map-hint fc-map-hint-warn" onClick={() => void turnOnDriveBackup()}>
+                ☁️ {backup.total} photo{backup.total === 1 ? "" : "s"}/video{backup.total === 1 ? "" : "s"} only on this phone · Back up to Drive
+              </button>
+            </div>
+          ) : null}
+          {phoneSpace && phoneSpace.level !== "ok" && !selectedJob ? (
+            <div className="fc-data-check fc-space-pill" data-hpd-smoke="fc-space-pill">
+              <Link href="/storage/" className="fc-map-hint fc-map-hint-warn">
+                ⚠ Phone space {phoneSpace.level === "full" ? "almost full" : "running low"} · {formatBytes(phoneSpace.free)} left for the app
+              </Link>
+            </div>
+          ) : null}
+          {upcomingAppointments.length && !selectedJob ? (() => {
+            const next = upcomingAppointments[0];
+            const when = next.timing.soon ? (next.timing.startsIn > 0 ? `in ${next.timing.startsIn} min` : "now") : appointmentLabel(next.appointment).split(" · ")[1];
+            return (
+              <div className={`fc-data-check fc-appointment-pill ${next.timing.soon ? "is-soon" : ""}`} data-hpd-smoke="fc-appointment-pill">
+                <button type="button" className="fc-map-hint" onClick={() => openIssueJob(next.job)}>
+                  📅 {next.timing.soon ? "Appointment" : "Next appointment"} {when} · {jobId(next.job)}{upcomingAppointments.length > 1 ? ` · ${upcomingAppointments.length} today` : ""}
+                </button>
+              </div>
+            );
+          })() : null}
+          {secondTryJobs.length && !selectedJob ? (
+            <div className="fc-data-check fc-second-try" data-hpd-smoke="fc-second-try">
+              <button type="button" className={`fc-map-hint ${secondTryJobs.some((row) => row.second.due) ? "fc-map-hint-warn" : ""}`} aria-expanded={secondTryOpen} onClick={() => { setSecondTryOpen((open) => !open); setCloseOutOpen(false); setDataCheckOpen(false); }}>
+                🔒 {secondTryJobs.length} 2nd tr{secondTryJobs.length === 1 ? "y" : "ies"}{secondTryJobs.some((row) => row.second.due) ? ` · ${secondTryJobs.filter((row) => row.second.due).length} due` : ""} {secondTryOpen ? "▴" : "▾"}
+              </button>
+              {secondTryOpen ? (
+                <ul className="fc-data-check-list">
+                  {secondTryJobs.map(({ job, second }) => (
+                    <li key={jobId(job)}>
+                      <button type="button" onClick={() => { setSecondTryOpen(false); openIssueJob(job); }}>
+                        <b>{jobId(job)}</b> <span>{jobAddress(job)}</span>
+                        <small>{second.due ? "Due now" : `From ${second.dueLabel}`} · 1st try {second.firstLabel}</small>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+          {closeOutJobs.length && !selectedJob ? (
+            <div className="fc-data-check fc-close-out" data-hpd-smoke="fc-close-out">
+              <button type="button" className="fc-map-hint" aria-expanded={closeOutOpen} onClick={() => { setCloseOutOpen((open) => !open); setDataCheckOpen(false); }}>
+                📋 {closeOutJobs.length} job{closeOutJobs.length === 1 ? "" : "s"} ready to close out {closeOutOpen ? "▴" : "▾"}
+              </button>
+              {closeOutOpen ? (
+                <ul className="fc-data-check-list">
+                  {closeOutJobs.map((job) => {
+                    const outcome = value(job, ["FieldOutcome", "fieldOutcome"]);
+                    return (
+                      <li key={jobId(job)} className="fc-close-out-row">
+                        <button type="button" onClick={() => openIssueJob(job)}>
+                          <b>{jobId(job)}</b> <span>{jobAddress(job)}</span>
+                          <small>{FIELD_OUTCOMES[outcome]}{isTestJob(jobId(job)) ? " · TEST" : ""}</small>
+                        </button>
+                        <a className="fc-close-out-go" data-hpd-smoke="fc-close-out-package" href={paperworkGenerateHref(jobId(job), outcome)} onClick={packageLinkClick(jobId(job), paperworkGenerateHref(jobId(job), outcome))}>Package →</a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+
+          {dataIssues.length && !selectedJob ? (
+            <div className="fc-data-check" data-hpd-smoke="fc-data-check">
+              <button type="button" className="fc-map-hint fc-map-hint-warn" aria-expanded={dataCheckOpen} onClick={() => { setDataCheckOpen((open) => !open); setCloseOutOpen(false); }}>
+                ⚠ {dataIssues.length} job{dataIssues.length === 1 ? "" : "s"} need{dataIssues.length === 1 ? "s" : ""} a check {dataCheckOpen ? "▴" : "▾"}
+              </button>
+              {dataCheckOpen ? (
+                <ul className="fc-data-check-list">
+                  {dataIssues.slice(0, 40).map(({ job, issues }) => (
+                    <li key={jobId(job)}>
+                      <button type="button" onClick={() => openIssueJob(job)}>
+                        <b>{jobId(job)}</b> <span>{jobAddress(job)}</span>
+                        <small>{issues.join(" · ")}</small>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
 
         {!selectedJob ? (
           <div className="fc-legend">
-            {STATUS_META.map((meta) => (
+            {PIN_STYLES.map((meta) => (
               <span key={meta.key} className="fc-legend-chip">
                 <span
                   className="fc-legend-dot"
@@ -1579,6 +2582,8 @@ export default function FieldCommandClient() {
           const counts = mediaCounts[id] || { before: 0, after: 0, total: 0 };
           const next = nextFieldAction(stamps, counts, jobStatus(selectedJob));
           const draft = outcomeDrafts[id] || { outcome: "", note: "" };
+          const paperworkHref = paperworkNextHref(id, value(selectedJob, ["WorkflowStatus", "workflowStatus", "FieldOutcome", "fieldOutcome"]));
+          const hasScope = scope !== SCOPE_MISSING;
           return (
             <div ref={jobSheetRef} id="fc-job-card" className="fc-job-sheet fc-job-sheet-flow" aria-label="Selected job">
               <button type="button" className="fc-sheet-handle" aria-label={sheetExpanded ? "Collapse job details" : "Expand job details"} aria-expanded={sheetExpanded} onTouchStart={(event) => { sheetTouchStart.current = event.touches[0].clientY; }} onTouchEnd={(event) => {
@@ -1593,6 +2598,8 @@ export default function FieldCommandClient() {
                 <span aria-hidden="true">&times;</span>
               </button>
               <header className="jc-hero">
+                {/* First thing on the card: what the building looks like, then where it is and how to get there. */}
+                <BuildingHero key={id} id={id} address={jobAddress(selectedJob)} borough={String(jobBorough(selectedJob))} point={jobLatLng(selectedJob)} />
                 <div className="jc-hero-top">
                   <strong className="jc-omo">{id}</strong>
                   <span className="jc-status" style={{ "--jc-status": jobStatusMeta(selectedJob).color } as CSSProperties}>
@@ -1601,67 +2608,290 @@ export default function FieldCommandClient() {
                 </div>
                 <span className="jc-borough">{BOROUGHS.find((item) => item.key === jobBorough(selectedJob))?.label || "NYC"}</span>
                 <p className="jc-address">{jobAddress(selectedJob)}</p>
-                <div className="jc-nav">
-                  <a className="jc-btn jc-btn-waze" href={wazeHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Waze</a>
-                  <a className="jc-btn jc-btn-google" href={directionsHref(selectedJob)} onClick={()=>rememberNavigation(id)} target="_blank" rel="noreferrer">Google</a>
-                  {tenant.phone ? <a className="jc-btn jc-btn-call" href={`tel:${tenant.phone}`}><CallIcon />Call</a> : null}
-                </div>
               </header>
 
-              <div className="jc-facts">
-                <div className="jc-fact">
-                  <small>Maturity</small>
-                  <strong>{maturityDate(selectedJob) || "Not available"}</strong>
-                  <span className="jc-priority" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>
+              {testModeVersion >= 0 && isTestJob(jobId(selectedJob)) ? (
+                <div className="jc-test-banner" data-hpd-smoke="jc-test-banner">
+                  <p>🧪 {jobId(selectedJob) === TEST_JOB_ID ? "TEST JOB: sample only, never a real work order." : "TEST MODE is on for this job."} Packages are marked TEST and filed in Drive under &quot;TEST jobs / {jobId(selectedJob)}&quot;; emails say TEST.</p>
+                  {jobId(selectedJob) === TEST_JOB_ID && testFirstUpgrades().length ? (
+                    <p data-hpd-smoke="jc-test-first">✨ Trying here first: {testFirstUpgrades().map((upgrade) => upgrade.about).join(" · ")}</p>
+                  ) : null}
+                  {jobId(selectedJob) === TEST_JOB_ID && testPlaceVersion >= 0 ? (
+                    <p className="jc-test-actions">
+                      <button type="button" data-hpd-smoke="jc-test-move-here" onClick={() => moveTestJob(true)}>📍 Move test job here</button>
+                      {testJobLocation() ? <button type="button" data-hpd-smoke="jc-test-move-back" onClick={() => moveTestJob(false)}>↩ Back to 100 Gold St</button> : null}
+                      <button type="button" data-hpd-smoke="jc-test-reset" onClick={() => void resetTestJob(selectedJob)}>🔄 Reset test job</button>
+                    </p>
+                  ) : <p>Use Start over to clear everything and run it again.</p>}
                 </div>
-                <div className="jc-fact">
-                  <small>COA Amount</small>
-                  <strong>{jobAwardAmount(selectedJob) > 0 ? `$${jobAwardAmount(selectedJob).toLocaleString()}` : "Not listed"}</strong>
-                </div>
-                <div className="jc-fact jc-fact-wide">
-                  <small>Tenant</small>
-                  <strong>{tenant.name || (tenant.phone ? "Name not listed" : "Not listed")}</strong>
-                  {tenant.phone ? <span>{tenant.phone}</span> : null}
-                </div>
-              </div>
-              {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}
-
-              <div className="fc-visit-summary jc-visit" style={{borderLeftColor:visitState(selectedJob).color}}>
-                <strong>{visitState(selectedJob).label} · {visitState(selectedJob).count} recorded visits</strong>
-                {visitState(selectedJob).lastAt && <span>Last visit: {/^\d{4}-\d{2}-\d{2}$/.test(visitState(selectedJob).lastAt) ? visitState(selectedJob).lastAt : formatSavedTime(visitState(selectedJob).lastAt)}</span>}
-                {visitState(selectedJob).count > 0 && <span>{FIELD_OUTCOMES[visitState(selectedJob).lastOutcome] || visitState(selectedJob).lastOutcome}</span>}
-                {visitState(selectedJob).note && <span>{visitState(selectedJob).note}</span>}
-                {selectedJob.Appointment ? (() => { const a = selectedJob.Appointment as Appointment; return <span>Appointment: {a.date} {a.start}-{a.end} ({a.state})</span>; })() : null}
-                {visitState(selectedJob).kind === "blocked" && <span>Excluded from routes. Review required before returning.</span>}
-                {["blocked","return"].includes(visitState(selectedJob).kind) && <button type="button" onClick={() => {
-                  if (!window.confirm("Approve a return visit to this job? Existing visit records will be kept.")) return;
-                  const patch = {RevisitApprovedAt:new Date().toISOString()};
-                  try { writeSharedWorkflowPatch(jobId(selectedJob),patch); mergeWorkflowPatchIntoScreen(jobId(selectedJob),patch); }
-                  catch { setOutcomeMessage("Return approval could not be saved. Try again."); }
-                }}>Approve return visit</button>}
-              </div>
-
-              <div className="jc-next">
-                {next.key === "before" || next.key === "after" ? (
-                  <p className="jc-next-hint">Next: {next.label} in Media &amp; Documents below</p>
-                ) : next.key === "review" ? (
-                  <a href={paperworkReviewHref(id)} className="fc-next-action jc-glow">{next.label}<span aria-hidden="true">&rarr;</span></a>
-                ) : next.key === "record" ? (
-                  <button type="button" className="fc-next-action jc-glow" onClick={openOutcomePanel}>{next.label}<span aria-hidden="true">&rarr;</span></button>
-                ) : (
-                  <button type="button" className="fc-next-action jc-glow" disabled={!workflowLoaded || Boolean(mediaBusy)} onClick={() => {
-                    saveWorkflowStamp(selectedJob, next.key, next.key === "work" ? "Work Started" : undefined);
-                  }}>{mediaBusy ? "Saving media..." : next.label}<span aria-hidden="true">&rarr;</span></button>
-                )}
-                {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
-              </div>
-
-              <section className="jc-media-docs" aria-label="Media and documents">
+              ) : null}
+              <section className="jc-description" aria-label="Job description" data-hpd-smoke="jc-description">
                 <div className="jc-section-head">
-                  <strong>Media &amp; Documents</strong>
-                  <span>{counts.total} saved</span>
+                  <strong>Job Description</strong>
+                  {hasScope && scope.length > 260 ? <button type="button" className="jc-description-more" onClick={() => setScopeOpen((open) => !open)}>{scopeOpen ? "Less" : "All"}</button> : null}
                 </div>
-                {mediaMessage ? <p className="fc-save-message" role="status">{mediaMessage}</p> : null}
+                <p className={`jc-description-text ${scopeOpen ? "is-open" : ""} ${hasScope ? "" : "is-missing"}`} data-hpd-smoke="jc-description-text">{scope}</p>
+                {(hasScope && speechOk) || itbFileName(selectedJob) ? (
+                  <div className="jc-description-actions">
+                    {hasScope && speechOk ? <>
+                      <button type="button" className="jc-read" data-hpd-smoke="jc-description-read" onClick={() => setReading(readAloud(`Job ${id}. ${jobAddress(selectedJob)}. ${scope}`, () => setReading(false)))}>
+                        {reading ? "🔊 Reading..." : "🔊 Read aloud"}
+                      </button>
+                      <button type="button" data-hpd-smoke="jc-description-stop" onClick={() => { stopReading(); setReading(false); }} disabled={!reading}>Stop</button>
+                    </> : null}
+                    {itbFileName(selectedJob) ? <button type="button" data-hpd-smoke="jc-itb-page" onClick={() => void openItbPage(selectedJob)}>📄 ITB page</button> : null}
+                  </div>
+                ) : null}
+              </section>
+
+              {(() => {
+                // Guided steps: arrive -> start visit -> what happened (start work = before media, or a
+                // no-work outcome) -> finish work (after media) -> check media & finish -> package.
+                // Final outcomes with no work. An appointment is not final: the job waits for the visit.
+                const noWorkOutcomes = ["NO_ACCESS_1_WAITING_72H", "REFUSED_ACCESS", "WORK_COMPLETED_BY_OTHERS"];
+                const appointment = activeAppointment(selectedJob);
+                const appointmentWhen = appointment ? appointmentTiming(appointment) : null;
+                const workOutcomes = ["WORK_COMPLETED", "PARTIAL_WORK"];
+                // Only a real outcome counts; "VISIT_STARTED" / "WORK_STARTED" are progress markers.
+                const rawOutcome = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
+                const savedOutcome = [...noWorkOutcomes, ...workOutcomes].includes(rawOutcome) ? rawOutcome : "";
+                const workStarted = Boolean(stamps.work) || counts.before > 0;
+                const steps = [
+                  { done: Boolean(stamps.arrived) },
+                  { done: Boolean(stamps.visit) },
+                  { done: workStarted || noWorkOutcomes.includes(savedOutcome) || workOutcomes.includes(savedOutcome) },
+                  { done: counts.after > 0 || noWorkOutcomes.includes(savedOutcome) || workOutcomes.includes(savedOutcome) },
+                  { done: Boolean(savedOutcome) },
+                  { done: Boolean(value(selectedJob, ["PackageApprovedAt"])) || /approved/i.test(value(selectedJob, ["PackageReviewStatus"])) },
+                ];
+                const current = steps.findIndex((step) => !step.done);
+                const secondTry = secondTryState(selectedJob);
+                const secondTrySaved = value(selectedJob, ["NoAccessSecondAttemptAt"]);
+                const stepClass = (index: number) => `jc-step ${steps[index].done ? "is-done" : index === current ? "is-current" : "is-later"}`;
+                const num = (index: number) => <span className="jc-step-num" aria-hidden="true">{steps[index].done ? "✓" : index + 1}</span>;
+                const outcomeForm = (keys: string[]) => keys.includes(draft.outcome) ? (
+                  <div className="jc-step-form">
+                    <label>Note (optional)<textarea value={draft.note} rows={2} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
+                    <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-save-outcome" disabled={Boolean(mediaBusy)} onClick={() => saveVisitOutcome(selectedJob, false)}>Save: {FIELD_OUTCOMES[draft.outcome]}<span aria-hidden="true">&rarr;</span></button>
+                  </div>
+                ) : null;
+                // The before/after photo and video buttons, glowing inside the step that asked for them.
+                const stepMedia = (kind: "before" | "after") => mediaChoice === kind && mediaChoiceInStep ? (
+                  <div className="jc-step-media" data-hpd-smoke={`jc-step-media-${kind}`}>
+                    <strong>{kind === "before" ? "📸 BEFORE: take a photo or video of the condition now. This starts the job." : "📸 AFTER: take a photo or video of the finished work. This finishes the job."}</strong>
+                    <div className="jc-step-media-grid">
+                      <button type="button" className="jc-glow" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("camera")}><PhotosIcon />Take {kind} photo</button>
+                      <button type="button" className="jc-glow" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-camera")}>🎥 Record {kind} video</button>
+                      <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("library")}><DocumentsIcon />Add photos</button>
+                      <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-library")}>Add videos</button>
+                    </div>
+                    <button type="button" className="jc-step-media-cancel" onClick={() => setMediaChoice(null)}>Cancel</button>
+                  </div>
+                ) : null;
+                return (
+                  <ol className="jc-steps" data-hpd-smoke="jc-steps" aria-label="Job steps">
+                    {/* Step 0: go there. The tap on Waze / Google is recorded with the date. */}
+                    {value(selectedJob, ["TravelStartedAt"]) || !stamps.arrived ? (
+                      <li className={`jc-step jc-step-travel ${value(selectedJob, ["TravelStartedAt"]) ? "is-done" : "is-current"}`} data-hpd-smoke="jc-step-travel">
+                        <span className="jc-step-num" aria-hidden="true">🚗</span>
+                        <div>
+                          <b>{value(selectedJob, ["TravelStartedAt"]) ? "On the way" : "Go there"}</b>
+                          <small>{value(selectedJob, ["TravelStartedAt"]) ? `${value(selectedJob, ["TravelVia"]) || "Navigation"} · ${formatSavedTime(value(selectedJob, ["TravelStartedAt"]))}` : "Open directions; the trip is saved on this job"}</small>
+                          {!stamps.arrived ? (
+                            <div className="jc-step-nav">
+                              <a className="jc-btn jc-btn-waze" data-hpd-smoke="jc-step-waze" href={wazeHref(selectedJob)} onClick={()=>recordTravel(selectedJob, "Waze")} target="_blank" rel="noreferrer">Waze</a>
+                              <a className="jc-btn jc-btn-google" href={directionsHref(selectedJob)} onClick={()=>recordTravel(selectedJob, "Google")} target="_blank" rel="noreferrer">Google</a>
+                            </div>
+                          ) : null}
+                        </div>
+                      </li>
+                    ) : null}
+                    <li className={stepClass(0)}>
+                      {num(0)}
+                      <div>
+                        <b>I have arrived</b>
+                        <small>{stamps.arrived ? `Arrived ${formatSavedTime(stamps.arrived)}${value(selectedJob, ["ArrivedLatitude"]) ? " · location saved" : ""}` : "Saves the time and your location"}</small>
+                        {current === 0 ? <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-arrived" disabled={!workflowLoaded} onClick={() => markArrived(selectedJob)}>I have arrived<span aria-hidden="true">&rarr;</span></button> : null}
+                      </div>
+                    </li>
+                    <li className={stepClass(1)}>
+                      {num(1)}
+                      <div>
+                        <b>Start visit</b>
+                        <small>{stamps.visit ? `Started ${formatSavedTime(stamps.visit)}` : "Head to the job site; read the description above"}</small>
+                        {current === 1 ? <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-visit" onClick={() => saveWorkflowStamp(selectedJob, "visit")}>Start visit<span aria-hidden="true">&rarr;</span></button> : null}
+                      </div>
+                    </li>
+                    <li className={stepClass(2)}>
+                      {num(2)}
+                      <div>
+                        <b>Outcome</b>
+                        <small>{noWorkOutcomes.includes(savedOutcome) ? FIELD_OUTCOMES[savedOutcome] : workStarted ? `Work started${stamps.work ? ` ${formatSavedTime(stamps.work)}` : ""} · before: ${counts.before - (counts.beforeVideos || 0)} photo(s), ${counts.beforeVideos || 0} video(s)` : "Do the work (before photos/video), or record why not"}</small>
+                        {appointment && !savedOutcome && !workStarted ? (
+                          <p className={`jc-step-appointment ${appointmentWhen?.soon ? "is-soon" : ""}`} data-hpd-smoke="jc-step-appointment">
+                            📅 Appointment {appointmentLabel(appointment)}
+                            {appointmentWhen?.soon ? (appointmentWhen.startsIn > 0 ? ` · starts in ${appointmentWhen.startsIn} min` : " · now") : appointmentWhen?.past ? " · time passed" : ""}
+                            {!appointmentWhen?.past ? (
+                              <a className="jc-calendar-add" data-hpd-smoke="jc-calendar-add" href={appointmentCalendarHref(id, jobAddress(selectedJob), appointment, typeof window === "undefined" ? "" : window.location.origin)} target="_blank" rel="noreferrer">
+                                🔔 Add to Calendar <small>(alerts 1 h and 15 min before, even with the app closed)</small>
+                              </a>
+                            ) : null}
+                          </p>
+                        ) : null}
+                        {current === 2 ? (
+                          <>
+                            <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-start-work" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("before", true)}>🔨 Do the work: before photo / video<span aria-hidden="true">&rarr;</span></button>
+                            {stepMedia("before")}
+                            <div className="jc-step-choices">
+                              {noWorkOutcomes.map((key) => (
+                                <button key={key} type="button" className={draft.outcome === key ? "is-picked" : ""} onClick={() => setOutcomeDrafts((prev) => ({ ...prev, [id]: { note: prev[id]?.note || "", outcome: key } }))}>{OUTCOME_ICONS[key]} {FIELD_OUTCOMES[key]}</button>
+                              ))}
+                              <button type="button" className={appointmentOpen ? "is-picked" : ""} data-hpd-smoke="jc-step-appointment-open" onClick={() => (appointmentOpen ? setAppointmentOpen(false) : openAppointment())}>📅 {appointment ? "Change appointment" : "Need appointment"}</button>
+                            </div>
+                            {outcomeForm(noWorkOutcomes)}
+                          </>
+                        ) : !savedOutcome && !workStarted && current < 2 ? (
+                          <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-appointment-open" onClick={() => (appointmentOpen ? setAppointmentOpen(false) : openAppointment())}>📅 {appointment ? "Change appointment" : "Set an appointment"}</button>
+                        ) : null}
+                        <div ref={appointmentRef}>
+                          {appointmentOpen && !savedOutcome ? <AppointmentEditor key={id} job={selectedJob} jobs={jobs.map(row => ({ ...row, id: jobId(row) }))} id={id} address={jobAddress(selectedJob)} contact={tenant.name} phone={tenant.phone} note={draft.note} save={a => saveAppointment(selectedJob, a)} /> : null}
+                        </div>
+                        {workStarted && !savedOutcome && current > 2 ? <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-more-before" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("before", true)}>+ More before photos / video</button> : null}
+                        {current > 2 ? stepMedia("before") : null}
+                      </div>
+                    </li>
+                    {/* No access: the affidavit needs a 2nd try at least 72 hours after the 1st. */}
+                    {secondTry || (savedOutcome === "NO_ACCESS_1_WAITING_72H" && secondTrySaved) ? (
+                      <li className={`jc-step ${secondTry ? "is-current" : "is-done"}`} data-hpd-smoke="jc-step-second-try">
+                        <span className="jc-step-num" aria-hidden="true">{secondTry ? "🔒" : "✓"}</span>
+                        <div>
+                          <b>{secondTry ? (secondTry.due ? "2nd try is due" : `2nd try from ${secondTry.dueLabel}`) : "2nd try saved"}</b>
+                          <small>{secondTry
+                            ? `1st try ${secondTry.firstLabel}: no access. ${secondTry.due ? "Knock again; if there's still no access, save the 2nd try." : "The affidavit needs a 2nd try at least 72 hours later."}`
+                            : `No access on both tries (2nd ${formatSavedTime(secondTrySaved)}) · ready for the affidavit`}</small>
+                          {secondTry && secondTry.due ? (
+                            <div className="jc-step-choices">
+                              <button type="button" className="jc-glow" data-hpd-smoke="jc-step-second-no-access" onClick={() => setJobOutcome(selectedJob, "NO_ACCESS_1_WAITING_72H", "2nd try: no access")}>🔒 Still no access: save 2nd try</button>
+                              <button type="button" data-hpd-smoke="jc-step-second-got-in" disabled={Boolean(mediaBusy)} onClick={() => gotInOnSecondTry(selectedJob)}>🚪 Got in: start work</button>
+                            </div>
+                          ) : null}
+                        </div>
+                      </li>
+                    ) : null}
+                    {!noWorkOutcomes.includes(savedOutcome) ? (
+                      <>
+                        <li className={stepClass(3)}>
+                          {num(3)}
+                          <div>
+                            <b>Finish work</b>
+                            <small>{counts.after ? `After: ${counts.after - (counts.afterVideos || 0)} photo(s), ${counts.afterVideos || 0} video(s)` : "Take the after photos and video"}</small>
+                            {current === 3 ? <button type="button" className="fc-next-action jc-glow" data-hpd-smoke="jc-step-after" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("after", true)}>Finish work: after photo / video<span aria-hidden="true">&rarr;</span></button> : null}
+                            {counts.after > 0 && !value(selectedJob, ["PackageApprovedAt"]) ? <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-more-after" disabled={Boolean(mediaBusy)} onClick={() => requestMediaUpload("after", true)}>+ More after photos / video</button> : null}
+                            {stepMedia("after")}
+                          </div>
+                        </li>
+                        <li className={stepClass(4)}>
+                          {num(4)}
+                          <div>
+                            <b>{workOutcomes.includes(savedOutcome) ? "✅ Job finished" : "Finish the job"}</b>
+                            <small>{savedOutcome ? `${FIELD_OUTCOMES[savedOutcome]} · close it out with the package` : `${counts.before} before · ${counts.after} after`}</small>
+                            {workOutcomes.includes(savedOutcome) && !steps[5].done ? (
+                              <button type="button" className="jc-step-more" data-hpd-smoke="jc-step-switch-outcome" onClick={() => setJobOutcome(selectedJob, savedOutcome === "WORK_COMPLETED" ? "PARTIAL_WORK" : "WORK_COMPLETED", "Changed on the job card")}>
+                                {savedOutcome === "WORK_COMPLETED" ? "It was partial work" : "It was fully completed"}
+                              </button>
+                            ) : null}
+                            {current === 4 ? (
+                              <>
+                                <div className="jc-step-choices">
+                                  {workOutcomes.map((key) => (
+                                    <button key={key} type="button" className={draft.outcome === key ? "is-picked" : ""} data-hpd-smoke={`jc-step-${key.toLowerCase()}`} onClick={() => setOutcomeDrafts((prev) => ({ ...prev, [id]: { note: prev[id]?.note || "", outcome: key } }))}>{FIELD_OUTCOMES[key]}</button>
+                                  ))}
+                                </div>
+                                {outcomeForm(workOutcomes)}
+                              </>
+                            ) : null}
+                          </div>
+                        </li>
+                      </>
+                    ) : null}
+                    <li className={stepClass(5)}>
+                      {num(5)}
+                      <div>
+                        <b>Package</b>
+                        <small>{steps[5].done ? "Paperwork approved" : secondTry ? "After the 2nd try" : "Affidavit + invoice, signed and emailed"}</small>
+                        {current === 5 && !secondTry ? <a href={paperworkHref} onClick={packageLinkClick(id, paperworkHref)} className="fc-next-action jc-glow" data-hpd-smoke="jc-step-package">Make the package<span aria-hidden="true">&rarr;</span></a> : null}
+                      </div>
+                    </li>
+                    {outcomeMessage ? <p className="fc-save-message" role="status">{outcomeMessage}</p> : null}
+                    {mediaMessage ? <p className={`fc-save-message ${/fail|too |could not|couldn|error|not saved|no image/i.test(mediaMessage) ? "is-error" : ""}`} role="status" data-hpd-smoke="jc-media-message">{mediaBusy ? "Saving... keep this screen open. " : ""}{mediaMessage}</p> : mediaBusy ? <p className="fc-save-message" role="status">Saving {mediaBusy} photos/videos... keep this screen open.</p> : null}
+                  </ol>
+                );
+              })()}
+
+              {/* Right under the steps: where the job stands, and its before/after photos and videos. */}
+              <div className="jc-status-media" data-hpd-smoke="jc-status-media" role="group" aria-label="Job status and media">
+                {(() => {
+                  const outcome = value(selectedJob, ["FieldOutcome", "fieldOutcome"]);
+                  const label = FIELD_OUTCOMES[outcome];
+                  const approved = Boolean(value(selectedJob, ["PackageApprovedAt"])) || /approved/i.test(value(selectedJob, ["PackageReviewStatus"]));
+                  const booked = activeAppointment(selectedJob);
+                  if (booked && !FIELD_OUTCOMES[outcome.replace(/^APPOINTMENT_.*/, "")] && !counts.before) {
+                    const when = appointmentTiming(booked);
+                    return (
+                      <div className={`jc-status-line is-appointment ${when.soon ? "is-soon" : ""}`} data-hpd-smoke="jc-status-line">
+                        <strong>📅 Appointment · {appointmentLabel(booked)}</strong>
+                        <span>{when.past ? "The time has passed: record what happened, or change the appointment" : when.soon ? (when.startsIn > 0 ? `Starts in ${when.startsIn} min` : "Happening now") : booked.state === "confirmed" ? "Confirmed · the job waits for it" : "Requested · the job waits for it"}</span>
+                      </div>
+                    );
+                  }
+                  if (!label) return <p className="jc-status-line" data-hpd-smoke="jc-status-line">{counts.before ? "🔨 Work in progress" : "Not started yet"}</p>;
+                  const waiting = secondTryState(selectedJob);
+                  if (waiting) return (
+                    <div className="jc-status-line is-waiting" data-hpd-smoke="jc-status-line">
+                      <strong>🔒 No access · 1st try {waiting.firstLabel}</strong>
+                      <span>{waiting.due ? "2nd try is due now" : `2nd try from ${waiting.dueLabel}`}</span>
+                    </div>
+                  );
+                  const icon = outcome === "WORK_COMPLETED" ? "✅" : outcome === "PARTIAL_WORK" ? "◐" : outcome === "REFUSED_ACCESS" ? "⛔" : outcome === "NO_ACCESS_1_WAITING_72H" ? "🔒" : outcome === "WORK_COMPLETED_BY_OTHERS" ? "👥" : "📅";
+                  return (
+                    <div className={`jc-status-line ${approved ? "is-approved" : "is-closeout"}`} data-hpd-smoke="jc-status-line">
+                      <strong>{icon} {label}</strong>
+                      <span>{approved ? "Package approved and sent" : outcome === "APPOINTMENT_REQUESTED" ? "Waiting on the appointment" : "Outcome saved · ready to close out"}</span>
+                      {!approved && outcome !== "APPOINTMENT_REQUESTED" && !(autoPackage && autoPackage.id === id) ? <a className="jc-status-go" data-hpd-smoke="jc-status-package" href={paperworkGenerateHref(id, outcome)} onClick={packageLinkClick(id, paperworkGenerateHref(id, outcome))}>Review package →</a> : null}
+                      {!approved ? <button type="button" className="jc-status-change" data-hpd-smoke="fc-clear-outcome" onClick={() => clearOutcome(selectedJob)}>Change outcome</button> : null}
+                    </div>
+                  );
+                })()}
+                {upgradeOn("next-job", id) && FIELD_OUTCOMES[value(selectedJob, ["FieldOutcome", "fieldOutcome"])] ? (() => {
+                  // Next stop: the closest open job to where you are (or to this job without a fix).
+                  const fix = lastFixRef.current;
+                  const from = fix && Date.now() - fix.at < 600000 ? { lat: fix.lat, lng: fix.lng } : jobLatLng(selectedJob);
+                  if (!from) return null;
+                  const spots = jobs.map((row) => { const at = jobLatLng(row); return { id: jobId(row), lat: at ? at.lat : NaN, lng: at ? at.lng : NaN, open: jobQueue(row) === "pending" && !isTestJob(jobId(row)) }; });
+                  const best = nextJob(spots, id, from);
+                  const target = best ? jobs.find((row) => jobId(row) === best.id) : null;
+                  if (!best || !target) return <p className="jc-next-job is-none" data-hpd-smoke="jc-next-job">➡ No other open job with a location nearby.</p>;
+                  return (
+                    <div className="jc-next-job" data-hpd-smoke="jc-next-job">
+                      <strong>➡ Next closest job · {best.id}</strong>
+                      <span>{jobAddress(target)} · {milesLabel(best.miles)}</span>
+                      <span className="jc-next-actions">
+                        <a href={wazeHref(target)} target="_blank" rel="noreferrer" onClick={() => rememberNavigation(best.id)}>Waze</a>
+                        <a href={directionsHref(target)} target="_blank" rel="noreferrer" onClick={() => rememberNavigation(best.id)}>Google</a>
+                        <button type="button" data-hpd-smoke="jc-next-open" onClick={() => openIssueJob(target)}>Open job</button>
+                      </span>
+                    </div>
+                  );
+                })() : null}
+                {autoPackage && autoPackage.id === id ? (
+                  <div className="jc-auto-package" role="status" data-hpd-smoke="jc-auto-package">
+                    <strong>📦 Opening the package for review in {autoPackage.seconds}s…</strong>
+                    <div>
+                      <button type="button" className="jc-glow" data-hpd-smoke="jc-auto-package-now" onClick={() => openAutoPackage(autoPackage)}>Open now</button>
+                      <button type="button" data-hpd-smoke="jc-auto-package-wait" onClick={() => setAutoPackage(null)}>Wait, add more</button>
+                    </div>
+                  </div>
+                ) : null}
                 <div className="jc-stages" role="group" aria-label="Job photos and videos">
                   {(["before", "after"] as const).map((kind) => {
                     const thumbs = mediaThumbs[id]?.[kind] || [];
@@ -1676,7 +2906,26 @@ export default function FieldCommandClient() {
                     );
                   })}
                 </div>
-                {mediaChoice ? <div ref={mediaChoiceRef} className="fc-photo-choice jc-choice" role="group" aria-label={`${mediaChoice} photo source`}>
+                {backup && counts.total > 0 ? (
+                  <p className={`jc-backup ${backup.auto && !backup.error ? "is-on" : "is-off"}`} data-hpd-smoke="jc-backup">
+                    {!backup.auto ? (
+                      <>⚠ These photos are only on this phone. <button type="button" data-hpd-smoke="jc-backup-on" onClick={() => void turnOnDriveBackup()}>Back up to Drive</button></>
+                    ) : backup.error ? (
+                      <>⚠ Drive backup: {backup.error}</>
+                    ) : backup.queued ? (
+                      <>☁️ Backing up to Drive… {backup.queued} part{backup.queued === 1 ? "" : "s"} left</>
+                    ) : backup.verifiedAt ? (
+                      <>☁️ Drive backup on · last backup {formatSavedTime(backup.verifiedAt)} (photos and job steps)</>
+                    ) : (
+                      <>☁️ Drive backup on · first backup starting</>
+                    )}
+                    {backup.auto ? <VideoBackupLine jobId={id} /> : null}
+                  </p>
+                ) : null}
+                {phoneSpace?.level === "full" ? (
+                  <p className="jc-backup is-off" data-hpd-smoke="jc-space">⚠ This phone is almost out of space for the app ({formatBytes(phoneSpace.free)} left): new photos and videos may not save. <Link href="/storage/">See storage</Link></p>
+                ) : null}
+                {mediaChoice && !mediaChoiceInStep ? <div ref={mediaChoiceRef} className="fc-photo-choice jc-choice" role="group" aria-label={`${mediaChoice} photo source`}>
                   <div className="fc-photo-choice-heading"><strong>{mediaChoice === "before" ? "Before work" : "After work"}</strong><button type="button" aria-label="Cancel photo selection" onClick={() => setMediaChoice(null)}>&times;</button></div>
                   <div className="fc-photo-source-actions">
                     <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("camera")}><PhotosIcon />Take photo</button>
@@ -1685,9 +2934,89 @@ export default function FieldCommandClient() {
                     <button type="button" disabled={Boolean(mediaBusy)} onClick={() => chooseMediaSource("video-library")}>Add videos</button>
                   </div>
                 </div> : null}
-                <BuildingPhoto key={id} id={id} address={jobAddress(selectedJob)} borough={String(jobBorough(selectedJob))} point={jobLatLng(selectedJob)} />
+                {(["before", "after"] as const).some((kind) => counts[kind] > 0) ? (
+                  <div className="jc-media-dates" data-hpd-smoke="jc-media-dates">
+                    {(["before", "after"] as const).filter((kind) => counts[kind] > 0).map((kind) => (
+                      <label key={kind}>
+                        📅 {kind === "before" ? "Before" : "After"} date
+                        <input type="date" data-hpd-smoke={`jc-media-date-${kind}`} value={counts[`${kind}Day`] || ""} disabled={Boolean(mediaBusy)}
+                          onChange={(event) => void changeMediaDate(selectedJob, kind, event.target.value)} />
+                      </label>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+
+              {jobQueue(selectedJob) === "completed" ? (
+                <section className="jc-done" data-hpd-smoke="jc-completed" aria-label="Job completed">
+                  <strong>✓ Completed. No need to come back.</strong>
+                  {value(selectedJob, ["PackageApprovedAt"]) || /approved/i.test(value(selectedJob, ["PackageReviewStatus"])) ? (
+                    <>
+                      <span>Paperwork approved{value(selectedJob, ["PackageApprovedAt"]) ? ` ${formatSavedTime(value(selectedJob, ["PackageApprovedAt"]))}` : ""}.</span>
+                      <button type="button" data-hpd-smoke="jc-archive" onClick={() => void archiveJob(selectedJob)}>Everything is correct: Archive</button>
+                    </>
+                  ) : (
+                    <a href={paperworkHref} onClick={packageLinkClick(id, paperworkHref)} data-hpd-smoke="jc-done-paperwork">Paperwork not approved yet: finish the package →</a>
+                  )}
+                </section>
+              ) : null}
+
+              {/* Job info: everything about the job in one place, one after the other. */}
+              <div className="jc-info" data-hpd-smoke="jc-info" role="group" aria-label="Job info">
+                <div className="jc-section-head"><strong>Job info</strong></div>
+                <div className="jc-facts">
+                  <div className="jc-fact">
+                    <small>Maturity</small>
+                    <strong>{maturityDate(selectedJob) || "Not available"}</strong>
+                    <span className="jc-priority" data-priority={jobPriority(selectedJob).band}>{jobPriority(selectedJob).label}</span>
+                  </div>
+                  <div className="jc-fact">
+                    <small>COA Amount</small>
+                    <strong>{jobAwardAmount(selectedJob) > 0 ? `${"$"}${jobAwardAmount(selectedJob).toLocaleString()}` : "Not listed"}</strong>
+                  </div>
+                  <div className="jc-fact jc-fact-wide">
+                    <small>Tenant</small>
+                    <strong>{tenant.name || (tenant.phone ? "Name not listed" : "Not listed")}</strong>
+                    {tenant.phone ? <span>{tenant.phone} <a className="fc-call-btn" href={`tel:${tenant.phone}`}>Call</a></span> : tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim() ? <span>{tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim()}</span> : null}
+                  </div>
+                </div>
+                {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}
+              <div className="fc-visit-summary jc-visit" style={{borderLeftColor:visitState(selectedJob).color}}>
+                <strong>{visitState(selectedJob).label} · {visitState(selectedJob).count} recorded visits</strong>
+                {visitState(selectedJob).lastAt && <span>Last visit: {/^\d{4}-\d{2}-\d{2}$/.test(visitState(selectedJob).lastAt) ? visitState(selectedJob).lastAt : formatSavedTime(visitState(selectedJob).lastAt)}</span>}
+                {visitState(selectedJob).count > 0 && <span>{FIELD_OUTCOMES[visitState(selectedJob).lastOutcome] || visitState(selectedJob).lastOutcome}</span>}
+                {visitState(selectedJob).note && <span>{visitState(selectedJob).note}</span>}
+                {visitState(selectedJob).kind === "blocked" && <span>Excluded from routes. Review required before returning.</span>}
+                {["blocked","return"].includes(visitState(selectedJob).kind) && <button type="button" onClick={() => {
+                  if (!window.confirm("Approve a return visit to this job? Existing visit records will be kept.")) return;
+                  const patch = {RevisitApprovedAt:new Date().toISOString()};
+                  try { writeSharedWorkflowPatch(jobId(selectedJob),patch); mergeWorkflowPatchIntoScreen(jobId(selectedJob),patch); }
+                  catch { setOutcomeMessage("Return approval could not be saved. Try again."); }
+                }}>Approve return visit</button>}
+              </div>
+                {Array.isArray(selectedJob.FieldVisitHistory) && selectedJob.FieldVisitHistory.length > 0 ? <details className="fc-visit-history"><summary>Visit history ({selectedJob.FieldVisitHistory.length})</summary><ol>{selectedJob.FieldVisitHistory.map((entry: { recordedAt?: string; outcome?: string; note?: string }, index: number) => <li key={index}><time>{entry.recordedAt ? formatSavedTime(entry.recordedAt) : "Date not recorded"}</time><strong>{FIELD_OUTCOMES[entry.outcome || ""] || "Visit note"}</strong><p>{entry.note}</p></li>)}</ol></details> : null}
+              <details className="jc-dates">
+                <summary>Job dates</summary>
+                <dl>
+                  <div><dt>Award date</dt><dd>{value(selectedJob, ["AwardDate", "awardDate"]) || "Not available"}</dd></div>
+                  <div><dt>Maturity date{!["MaturityDate", "maturityDate", "DueDate", "dueDate"].some(key => selectedJob[key] !== undefined && selectedJob[key] !== null) ? " (contract finish)" : ""}</dt><dd>{maturityDate(selectedJob) || "Not available"}</dd></div>
+                  <div><dt>Contract start</dt><dd>{jobDate(selectedJob, "start") || "Not available"}</dd></div>
+                  <div><dt>Contract finish</dt><dd>{jobDate(selectedJob, "finish") || "Not available"}</dd></div>
+                  <div><dt>Actual work start</dt><dd>{value(selectedJob, ["ActualWorkStartDate", "actualWorkStartDate"]) || "Not recorded"}</dd></div>
+                  <div><dt>Actual work finish</dt><dd>{value(selectedJob, ["ActualWorkCompletionDate", "actualWorkCompletionDate"]) || "Not recorded"}</dd></div>
+                </dl>
+              </details>
+              </div>
+
+              <JobAssistant key={`assistant-${id}`} job={selectedJob} id={id} media={mediaCounts[id] || null} />
+              <div className="jc-media-docs" role="group" aria-label="Documents">
+                <div className="jc-section-head">
+                  <strong>Documents</strong>
+                  <span>{counts.total} photo/video saved</span>
+                </div>
+                <SavedPackageLink key={id} id={id} />
                 <div className="jc-docs">
-                  <a className="jc-doc jc-doc-primary" href={paperworkReviewHref(id, true)}>
+                  <a className="jc-doc jc-doc-primary" href={paperworkHref} onClick={packageLinkClick(id, paperworkHref)}>
                     <DocumentsIcon />
                     <span><b>Affidavit + Invoice</b><small>{packageStatusText(selectedJob)}</small></span>
                     <i aria-hidden="true">&rarr;</i>
@@ -1699,6 +3028,7 @@ export default function FieldCommandClient() {
                       <i aria-hidden="true">&#8599;</i>
                     </a>
                   ) : null}
+                  <JobSafeLine jobId={id} emailedAt={value(selectedJob, ["PackageEmailedAt"])} emailedTo={value(selectedJob, ["PackageEmailedTo"])} inInbox={String(selectedJob.PackageEmailInInbox) === "true"} />
                   <Link className="jc-doc" href={`/jobs/${id}`}>
                     <DocumentsIcon />
                     <span><b>Job documents</b><small>ITB, COA and saved files</small></span>
@@ -1716,98 +3046,30 @@ export default function FieldCommandClient() {
                 <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
                 <input ref={videoCameraInputRef} type="file" accept="video/*" capture="environment" className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
                 <input ref={videoLibraryInputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple className="fc-hidden-file" onChange={(event) => void handleMediaFiles(event.target.files)} />
-              </section>
+              </div>
 
-              <div className="fc-card-footer jc-footer">
-              <button type="button" className="fc-outcome-link" onClick={openOutcomePanel}>Outcome</button>
-              <button type="button" className="fc-outcome-link" onClick={openAppointment}>Appointment</button>
+              {/* More: the less common actions, at the very bottom. */}
+              <div className="fc-card-footer jc-footer" data-hpd-smoke="jc-more">
+              <button type="button" className="fc-outcome-link" data-hpd-smoke="jc-start-over" onClick={() => beginClearWorkflow(selectedJob)}>Start over</button>
+              {jobId(selectedJob) !== TEST_JOB_ID ? (
+                <button type="button" className={`fc-outcome-link ${isTestModeJob(jobId(selectedJob)) ? "is-on" : ""}`} data-hpd-smoke="jc-test-mode" aria-pressed={isTestModeJob(jobId(selectedJob))}
+                  onClick={() => { const on = !isTestModeJob(id); setTestModeJob(id, on); setTestModeVersion((v) => v + 1); setMediaMessage(on ? `Test mode ON for ${id}: packages go to Drive "TEST jobs / ${id}" and are marked TEST.` : `Test mode OFF for ${id}: packages go to the normal Drive folders.`); }}>
+                  🧪 Test {isTestModeJob(jobId(selectedJob)) ? "ON" : "off"}
+                </button>
+              ) : null}
               <button type="button" className="fc-job-details-toggle" aria-expanded={sheetExpanded} onClick={() => setSheetExpanded((expanded) => !expanded)}>{sheetExpanded ? "Less" : "Details"}<span aria-hidden="true">{sheetExpanded ? "⌄" : "⌃"}</span></button>
               </div>
-              <details className="jc-dates">
-                <summary>Job dates</summary>
-                <dl>
-                  <div><dt>Award date</dt><dd>{value(selectedJob, ["AwardDate", "awardDate"]) || "Not available"}</dd></div>
-                  <div><dt>Maturity date{!["MaturityDate", "maturityDate", "DueDate", "dueDate"].some(key => selectedJob[key] !== undefined && selectedJob[key] !== null) ? " (contract finish)" : ""}</dt><dd>{maturityDate(selectedJob) || "Not available"}</dd></div>
-                  <div><dt>Contract start</dt><dd>{jobDate(selectedJob, "start") || "Not available"}</dd></div>
-                  <div><dt>Contract finish</dt><dd>{jobDate(selectedJob, "finish") || "Not available"}</dd></div>
-                  <div><dt>Actual work start</dt><dd>{value(selectedJob, ["ActualWorkStartDate", "actualWorkStartDate"]) || "Not recorded"}</dd></div>
-                  <div><dt>Actual work finish</dt><dd>{value(selectedJob, ["ActualWorkCompletionDate", "actualWorkCompletionDate"]) || "Not recorded"}</dd></div>
-                </dl>
-              </details>
-              {selectedJob.Appointment ? <button type="button" className="fc-appointment-summary" onClick={openAppointment}>{(selectedJob.Appointment as Appointment).date} · {(selectedJob.Appointment as Appointment).start}-{(selectedJob.Appointment as Appointment).end} · {(selectedJob.Appointment as Appointment).state}</button> : null}
-              <div ref={appointmentRef} hidden={!appointmentOpen || !sheetExpanded}>
-                {appointmentOpen && <AppointmentEditor key={id} job={selectedJob} jobs={jobs.map(row => ({ ...row, id: jobId(row) }))} id={id} address={jobAddress(selectedJob)} contact={tenant.name} phone={tenant.phone} note={draft.note} save={a => saveAppointment(selectedJob, a)} />}
-              </div>
-              <section ref={outcomePanelRef} className="fc-outcome-panel" aria-label="Visit outcome">
-                <label>Outcome<select value={draft.outcome} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, outcome: event.target.value } }))}><option value="">Select outcome</option>{Object.entries(FIELD_OUTCOMES).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
-                <label>Visit note<textarea value={draft.note} rows={3} onChange={(event) => setOutcomeDrafts((prev) => ({ ...prev, [id]: { ...draft, note: event.target.value } }))} /></label>
-                {draft.outcome === "APPOINTMENT_REQUESTED" ? <button type="button" className="fc-next-action" onClick={openAppointment}>Set appointment details</button> : <button type="button" className="fc-next-action" onClick={() => saveVisitOutcome(selectedJob, Boolean(draft.outcome))} disabled={Boolean(mediaBusy) || (!draft.outcome && !draft.note.trim())}>{draft.outcome ? "Save outcome & generate package" : "Save note"}</button>}
-                <p role="status">{outcomeMessage || "Device storage only. Appointment requests are not confirmed bookings."}</p>
-                {Array.isArray(selectedJob.FieldVisitHistory) && selectedJob.FieldVisitHistory.length > 0 ? <details className="fc-visit-history"><summary>Visit history ({selectedJob.FieldVisitHistory.length})</summary><ol>{selectedJob.FieldVisitHistory.map((entry: { recordedAt?: string; outcome?: string; note?: string }, index: number) => <li key={index}><time>{entry.recordedAt ? formatSavedTime(entry.recordedAt) : "Date not recorded"}</time><strong>{FIELD_OUTCOMES[entry.outcome || ""] || "Visit note"}</strong><p>{entry.note}</p></li>)}</ol></details> : null}
-              </section>
-              <section className={`fc-flow-card fc-scope-card ${scopeOpen ? "is-open" : ""}`}>
-                <button type="button" className="fc-flow-card-main" onClick={() => setScopeOpen((open) => !open)}>
-                  <span className="fc-flow-icon">S</span>
-                  <span>
-                    <b>Complete Scope</b>
-                    <small>{scope}</small>
-                  </span>
-                  <strong>{scopeOpen ? "Close" : "Open"}</strong>
-                </button>
-                {scopeOpen ? <p className="fc-scope-full">{scope}</p> : null}
-              </section>
-              <section className="fc-flow-card fc-tenant-card">
-                <div className="fc-flow-card-main">
-                  <span className="fc-flow-icon tenant">T</span>
-                  <span>
-                    <b>{tenant.label}</b>
-                    <small>{tenant.summary}</small>
-                  </span>
-                  {tenant.phone ? <a className="fc-call-btn" href={`tel:${tenant.phone}`}>Call</a> : null}
-                </div>
-              </section>
-              <section className="fc-workflow-panel" aria-label="Field workflow">
-                <button type="button" className={`fc-workflow-btn ${stamps.arrived ? "is-saved" : ""}`} aria-label="Save arrival time" onClick={() => saveWorkflowStamp(selectedJob, "arrived")}>
-                  <span>1</span>
-                  <b>{stamps.arrived ? "Arrived Saved" : "Arrive"}</b>
-                  <small>{stamps.arrived ? formatSavedTime(stamps.arrived) : "I am here"}</small>
-                </button>
-                <button type="button" className={`fc-workflow-btn ${stamps.visit ? "is-saved" : ""}`} aria-label="Start visit" onClick={() => saveWorkflowStamp(selectedJob, "visit")} disabled={!stamps.arrived}>
-                  <span>2</span>
-                  <b>{stamps.visit ? "Visit Started" : "Start Visit"}</b>
-                  <small>{stamps.visit ? formatSavedTime(stamps.visit) : stamps.arrived ? "Begin visit" : "Arrive first"}</small>
-                </button>
-                <button type="button" className={`fc-workflow-btn ${stamps.work ? "is-saved" : ""}`} aria-label="Start work" onClick={() => saveWorkflowStamp(selectedJob, "work", "Work Started")} disabled={!stamps.visit}>
-                  <span>3</span>
-                  <b>{stamps.work ? "Work Started" : "Start Work"}</b>
-                  <small>{stamps.work ? formatSavedTime(stamps.work) : "Before media next"}</small>
-                </button>
-                <button type="button" className="fc-workflow-btn no-access" aria-label="Record no access" onClick={() => chooseOutcome("NO_ACCESS_1_WAITING_72H")}>
-                  <span>4</span>
-                  <b>No Access</b>
-                  <small>Save attempt</small>
-                </button>
-                <button type="button" className="fc-workflow-btn refused" aria-label="Record refused access" onClick={() => chooseOutcome("REFUSED_ACCESS")}>
-                  <span>5</span>
-                  <b>Refused</b>
-                  <small>Record refusal</small>
-                </button>
-                <button type="button" className="fc-workflow-btn clear" aria-label="Clear field workflow" onClick={() => beginClearWorkflow(selectedJob)}>
-                  <span>0</span>
-                  <b>Clear</b>
-                  <small>Type CLEAR</small>
-                </button>
-              </section>
               {clearJobId === id ? (
-                <section className="fc-clear-confirm" aria-label="Confirm clear workflow">
+                <section className="fc-clear-confirm" aria-label="Confirm start over">
+                  <p className="fc-clear-warn">Start over clears the outcome, every step, the package status and ALL photos/videos of this job on this phone. Drive and sent emails are not touched. Type CLEAR to confirm.</p>
                   <input
                     value={clearText}
                     onChange={(event) => setClearText(event.target.value)}
                     placeholder="Type CLEAR"
                     autoCapitalize="characters"
                   />
-                  <button type="button" onClick={() => clearWorkflow(selectedJob)} disabled={clearText.trim().toUpperCase() !== "CLEAR"}>
-                    Reset
+                  <button type="button" data-hpd-smoke="jc-start-over-confirm" onClick={() => void clearWorkflow(selectedJob)} disabled={clearText.trim().toUpperCase() !== "CLEAR"}>
+                    Start over
                   </button>
                   <button type="button" onClick={() => setClearJobId("")}>
                     Keep
@@ -1819,6 +3081,68 @@ export default function FieldCommandClient() {
         })() : null}
       </div>
 
+      {/* Which version is running, always visible on the map: you can tell at a glance it's the newest. */}
+      {appVersion && !selectedJob ? <small className="fc-version-tag" data-hpd-smoke="fc-version-tag">v{appVersion}</small> : null}
+      {summary ? (
+        <div className="fc-package-sheet fc-summary-sheet" role="dialog" aria-label="Today's summary" data-hpd-smoke="fc-summary-sheet">
+          <header>
+            <button type="button" onClick={() => setSummaryOpen(false)}>← Map</button>
+            <strong>Today · {summary.dayLabel}</strong>
+          </header>
+          <div className="fc-summary-body">
+            <div className="fc-summary-counts">
+              {([["Visited", summary.counts.visited], ["Finished", summary.counts.finished], ["No access", summary.counts.noAccess], ["Refused", summary.counts.refused], ["Appointments", summary.counts.booked], ["Emailed", summary.counts.emailed]] as const).map(([label, n]) => (
+                <span key={label} className={n ? "has" : ""}><b>{n}</b>{label}</span>
+              ))}
+            </div>
+            {([["Today", summary.visited, "Nothing recorded today."], ["Ready to close out", summary.closeOut, "None."], ["Tomorrow", summary.tomorrow, "Nothing due."]] as [string, SummaryRow[], string][]).map(([title, rows, none]) => (
+              <section key={title}>
+                <h3>{title} <small>({rows.length})</small></h3>
+                {rows.length ? rows.map((row, index) => (
+                  <button type="button" key={`${row.id}-${index}`} onClick={() => { const job = jobs.find((j) => jobId(j) === row.id); setSummaryOpen(false); if (job) openIssueJob(job); }}>
+                    <b>{row.id}</b> <span>{row.address}</span><small>{row.text}</small>
+                  </button>
+                )) : <p>{none}</p>}
+              </section>
+            ))}
+          </div>
+          <footer>
+            <button type="button" className="is-primary" data-hpd-smoke="fc-summary-email" onClick={() => void emailSummary()}>✉️ Email it to me</button>
+            <button type="button" data-hpd-smoke="fc-summary-share" onClick={() => void shareSummary()}>Share</button>
+            {summaryStatus ? <p role="status">{summaryStatus}</p> : null}
+          </footer>
+        </div>
+      ) : null}
+      {updateReady && !mediaBusy ? (
+        <button type="button" className="fc-update-ready" data-hpd-smoke="fc-update-ready" onClick={() => window.location.replace(`${window.location.pathname}?v=${encodeURIComponent(latestCommitRef.current)}`)}>
+          🔄 New version ready · <b>Update</b>
+        </button>
+      ) : null}
+      {packageSheet ? (
+        <div className="fc-package-sheet" role="dialog" aria-label={`${packageSheet.id} package`} data-hpd-smoke="fc-package-sheet">
+          <header>
+            <button type="button" data-hpd-smoke="fc-package-sheet-back" onClick={closePackageSheet}>← Back to job</button>
+            <strong>{packageSheet.id} package</strong>
+          </header>
+          <iframe src={packageSheet.href} title={`${packageSheet.id} package`} allow="web-share; clipboard-write; camera" />
+        </div>
+      ) : null}
+      {itbPage ? (
+        <div className="fc-package-sheet fc-itb-sheet" role="dialog" aria-label={`${itbPage.id} original ITB page`} data-hpd-smoke="fc-itb-sheet">
+          <header>
+            <button type="button" data-hpd-smoke="fc-itb-sheet-back" onClick={() => setItbPage(null)}>← Back to job</button>
+            <strong>{itbPage.id} ITB page {itbPage.page}</strong>
+          </header>
+          <div className="fc-itb-body">
+            {itbPage.image && !itbPage.failed ? (
+              <img src={itbPage.image} alt={`Original ITB page ${itbPage.page} for ${itbPage.id}`} onError={() => setItbPage((current) => current && { ...current, failed: true })} />
+            ) : (
+              <p className="fc-itb-missing">The page picture for this ITB isn&apos;t published yet. Open the PDF instead.</p>
+            )}
+            <a className="fc-itb-pdf" href={`${itbPage.pdf}#page=${itbPage.page}`} target="_blank" rel="noreferrer">Open the full ITB PDF ↗</a>
+          </div>
+        </div>
+      ) : null}
       <PlanMyDayDrawer records={jobs} openRequest={plannerRequest} />
     </main>
   );

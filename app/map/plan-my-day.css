@@ -237,3 +237,12 @@
     max-height: 330px !important;
   }
 }
+
+/* Due today: no-access 2nd tries and today's appointments, planned first with one tap */
+.plan-my-day__due { flex: 0 0 auto; margin: 10px 0; padding: 12px; border-radius: 14px; border: 1px solid rgba(245, 158, 11, 0.55); background: rgba(120, 53, 15, 0.28); color: #fef3c7; display: grid; gap: 8px; }
+.plan-my-day__due > strong { font-size: 15px; }
+.plan-my-day__due ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.plan-my-day__due li { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; font-size: 13.5px; line-height: 1.3; }
+.plan-my-day__due li b { color: #fbbf24; }
+.plan-my-day__due li small { grid-column: 1 / -1; color: #fde68a; opacity: 0.85; }
+.plan-my-day__due button { min-height: 44px; border-radius: 12px; border: 0; background: #f59e0b; color: #1c1917; font-weight: 800; font-size: 15px; }

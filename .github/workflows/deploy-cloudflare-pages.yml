@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+  # The fetcher's data commits are pushed by GitHub Actions, which doesn't start this workflow
+  # on its own: deploy when a fetcher run finishes so new jobs and documents go live right away.
+  workflow_run:
+    workflows: ["Run Built-In Fetcher"]
+    types: [completed]
   workflow_dispatch:
 
 permissions:
@@ -21,6 +26,8 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       NEXT_PUBLIC_MAPTILER_KEY: ${{ secrets.NEXT_PUBLIC_MAPTILER_KEY }}
+      # Google Maps key (Street View Static API) for the automatic building picture on job cards.
+      NEXT_PUBLIC_GOOGLE_MAPS_KEY: ${{ secrets.NEXT_PUBLIC_GOOGLE_MAPS_KEY }}
 
     steps:
       - name: Check Cloudflare credentials
@@ -33,6 +40,9 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Latest main, including the data the fetcher just committed.
+          ref: main
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -68,12 +78,21 @@ jobs:
           node scripts/test-complete-package.cjs
           node scripts/test-video-choice.cjs
           node scripts/test-planner-constraints.cjs
+          node scripts/test-field-assistant.cjs
+          node scripts/test-package-readiness.cjs
           node scripts/test-driving-link.cjs
           node scripts/test-drive-auth.mjs
           node scripts/test-drive-backups.mjs
           node scripts/test-drive-full-backup.mjs
+          node scripts/test-drive-videos.mjs
+          node scripts/test-phone-storage.mjs
+          node scripts/test-free-space.mjs
+          node scripts/test-rollout.mjs
+          node scripts/test-next-job.mjs
           node scripts/test-drive-sync.mjs
           node scripts/test-email-package.cjs
+          node scripts/test-appointment-calendar.mjs
+          node scripts/test-day-summary.mjs
 
       - name: Build Cloudflare Pages output
         run: npm run build:cloudflare
@@ -96,5 +115,26 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy out --project-name=hpd-bid-dashboard-2026 --branch=${{ steps.pages-project.outputs.production_branch }}
+          command: pages deploy out --project-name=hpd-bid-dashboard-2026 --branch=${{ steps.pages-project.outputs.production_branch }} --commit-dirty=true
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      # "Deployment complete" isn't proof: check the live address really serves this build, and fail
+      # loudly if it doesn't (a preview-only deploy once reported success for a day).
+      - name: Verify the live address serves this build
+        shell: bash
+        run: |
+          want="$(node -e 'console.log(JSON.parse(require("fs").readFileSync("out/version.json","utf8")).commit)')"
+          for i in $(seq 1 18); do
+            got="$(curl -fsS -m 20 "https://hpd-bid-dashboard-2026.pages.dev/version.json?t=$(date +%s)" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).commit)}catch{console.log("?")}})' || echo "?")"
+            echo "live: $got  want: $want"
+            if [ "$got" = "$want" ]; then
+              echo "Live address is serving $want."
+              # The "Add to Calendar" server function must answer with a calendar entry.
+              cal="$(curl -sS -m 20 -o /dev/null -w '%{http_code} %{content_type}' "https://hpd-bid-dashboard-2026.pages.dev/api/appointment-calendar?id=TEST-0001&address=Test&date=2099-01-05&start=10:00&end=11:00&state=confirmed&contact=Tenant&reminder=60")"
+              echo "calendar function: $cal"
+              case "$cal" in "200 text/calendar"*) exit 0 ;; *) echo "::error::The Add to Calendar function did not answer with a calendar entry ($cal)."; exit 1 ;; esac
+            fi
+            sleep 10
+          done
+          echo "::error::The live address still serves $got, not $want. The deploy did not go live (check the Cloudflare Pages project: production branch and automatic Git builds)."
+          exit 1

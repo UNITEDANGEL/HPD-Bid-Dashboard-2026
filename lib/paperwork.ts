@@ -1,3 +1,4 @@
+import { mergeOverrideMaps } from "./override-sync";
 import { cleanJobLocation, cleanJobLocationText } from "./jobLocation";
 import { longestCleanDescription } from "./description-quality";
 
@@ -160,6 +161,23 @@ function clearedWorkflowPatch() {
     OutcomeLockedAt: "",
     outcomeLockedAt: "",
     ArchivedFromMap: false,
+  };
+}
+
+// "Start over" on a job card: back to Pending with nothing recorded -- no outcome, no arrival,
+// no trip, no package -- so a test (or a mistake) can be run again from the first step.
+export function startOverPatch() {
+  return {
+    ...clearedWorkflowPatch(),
+    FieldArrivedAt: "", fieldArrivedAt: "", LastFieldVisitAt: "", lastFieldVisitAt: "",
+    VisitStartedAt: "", visitStartedAt: "",
+    ArrivedLatitude: "", ArrivedLongitude: "", ArrivedAccuracyMeters: "",
+    TravelStartedAt: "", TravelVia: "",
+    PackageReviewStatus: "", PackageApprovedAt: "", PackageGeneratedAt: "", PackageDriveLink: "",
+    PackageEmailedAt: "", PackageFileName: "", PackageReadyMessage: "", PackageSize: "",
+    RevisitApprovedAt: "", AppointmentRequestedAt: "",
+    FieldVisitHistory: [],
+    ArchivedFromMap: false, archivedFromMap: false, ArchivedAt: "", archivedAt: "",
   };
 }
 
@@ -369,13 +387,18 @@ export function readLocalWorkflowOverrides(): WorkflowOverrides {
   }, {});
 }
 
-export async function fetchServerWorkflowOverrides(): Promise<WorkflowOverrides> {
+export async function fetchServerWorkflowOverrides(timeoutMs = 6000): Promise<WorkflowOverrides> {
+  // A slow or unreachable status server must never hold up the map or the paperwork page.
+  const controller = typeof AbortController === "undefined" ? null : new AbortController();
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
   try {
-    const response = await fetch(`${HPD_STATUS_WORKER_URL}/overrides`, { cache: "no-store" });
+    const response = await fetch(`${HPD_STATUS_WORKER_URL}/overrides`, { cache: "no-store", signal: controller?.signal });
     if (!response.ok) return {};
     return parseOverridePayload(await response.json());
   } catch {
     return {};
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 
@@ -394,7 +417,8 @@ export function applyWorkflowOverridesToRows<T extends PaperworkJob>(rows: T[], 
 export async function applySavedWorkflowStatuses<T extends PaperworkJob>(rows: T[]): Promise<T[]> {
   const local = readLocalWorkflowOverrides();
   const server = await fetchServerWorkflowOverrides();
-  const overrides = { ...local, ...server };
+  // Field by field, newer wins: the server's entry never wipes out steps saved on this phone.
+  const overrides = mergeOverrideMaps(local, server) as WorkflowOverrides;
 
   return applyWorkflowOverridesToRows(rows, overrides);
 }

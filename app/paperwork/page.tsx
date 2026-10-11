@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PDFDocument, PDFFont, PDFPage, StandardFonts, PDFName, degrees, rgb } from "pdf-lib";
+import { PDFDocument, PDFFont, PDFPage, StandardFonts, PDFName, PDFTextField, degrees, rgb } from "pdf-lib";
 import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate } from "../../lib/no-access";
 import { tenantContactInfo } from "../../lib/tenantContact";
 import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
@@ -9,11 +9,15 @@ import { drawInvoicePage } from "../../lib/invoice-pdf";
 import { signatureBytes } from "../../lib/signature";
 import SignatureCard from "./SignatureCard";
 import NotaryCard, { type NotaryApproval } from "./NotaryCard";
-import { deliverPackage, googleStatus, sendPackageEmail, type GoogleStatus } from "../../lib/package-delivery";
+import { deliverPackage, googleStatus, sendPackageEmail, type DeliveryFile, type EmailAttachmentSummary, type GoogleStatus } from "../../lib/package-delivery";
 import { calendarDay } from "../../lib/job-priority";
+import { isTestJob, withTestJob } from "../../lib/test-job";
+import { isJunkDescription } from "../../lib/description-quality";
 import { emailMediaCopies, fitEmailVideos, assertEmailPackageSize } from "../../lib/email-package";
 import { bytesToDataUrl, saveFieldPacket } from "../../lib/field-packet-store";
 import { type FieldMedia, dataUrlToBytes, listFieldEvidence } from "../../lib/field-photo-store";
+import { visitRecordText } from "../../lib/visit-record";
+import { flushOverrideOutbox, queueOverrideSync } from "../../lib/override-sync";
 import {
   type PaperworkOutcome,
   HPD_STATUS_WORKER_URL,
@@ -79,8 +83,8 @@ const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-performed-affidavit.pdf";
 const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-performed-affidavit.pdf";
 const CONTRACTOR_NAME = "UNITED ANGEL CONSTRUCTION CORP";
 const DEFAULT_PACKAGE_SIGNER = "JOTJAGRAJ SINGH";
-// Convenience default only -- the notary still types/confirms their own name, signs and
-// checks the witness box fresh each time. Never used to prefill a signature or a stamp.
+// Default notary name for the notary card. The notary's signature may be saved on the phone,
+// but the notary still confirms the date, checks the witness box and approves every affidavit.
 const DEFAULT_NOTARY_NAME = "CHETANPREET MALHI";
 // Printed stamp text for the emailed/Drive copy of the package (not a wet-ink impression).
 // Drawn under "Notary Public" only when a notary has actually approved this package.
@@ -107,7 +111,7 @@ type PackageFileEntry = {
   bytes: Uint8Array;
   mimeType: string;
   label: string;
-  section: "pdf" | "manifest" | "image" | "video";
+  section: "pdf" | "manifest" | "record" | "image" | "video";
 };
 
 type PackageDownloadLink = {
@@ -168,9 +172,14 @@ type CompletePackagePreview = {
   // Print Copy: no digital signature images, notary stamp/date still filled. Downloaded
   // straight to this device for ink signing -- never routed through Drive/email approval.
   printCopy: boolean;
+  // The unsigned print copy made alongside a signed package, shown on the same review screen.
+  // Saved to the Drive folder on approve; never emailed.
+  unsigned?: { fileName: string; size: number; url: string; imageUrls: string[] };
 };
 
 type PendingCompletePackage = CompletePackagePreview & {
+  // Videos already removed from the phone: linked from the email (originals in Drive).
+  driveVideoLinks?: { name: string; url: string }[];
   folderEntries: PackageFileEntry[];
   applicationEntries: PackageFileEntry[];
   videoEntries: PackageFileEntry[];
@@ -178,6 +187,7 @@ type PendingCompletePackage = CompletePackagePreview & {
   completeShareFiles: File[];
   applicationShareFiles: File[];
   videoShareFiles: File[];
+  unsignedBytes?: Uint8Array;
 };
 
 type GeneratePdfOptions = {
@@ -278,20 +288,6 @@ function notaryDateParts(isoDate: string) {
     month: MONTH_NAMES[parsed.getMonth()],
     year: String(parsed.getFullYear()).slice(-2),
   };
-}
-
-function displayDateTime(value: unknown) {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  const parsed = parseDateValue(raw);
-  if (!parsed) return raw;
-  return parsed.toLocaleString("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "2-digit",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 function monthName(value: string) {
@@ -459,7 +455,6 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
   const sourceStatus = getJobWorkflowStatus(job);
   const fieldDate = lastEvidenceAt || lockedAt || secondAttemptAt || refusedAt || verifiedByOthersAt || actualCompleteAt || firstAttemptAt;
   const noWorkCompleteAt = lastEvidenceAt || secondAttemptAt || refusedAt || verifiedByOthersAt || lockedAt;
-  const workCompleteAt = lastEvidenceAt || actualCompleteAt || lockedAt || getJobDate(job, "complete");
   const bidAmount = formatCurrency(getJobAmount(job));
   const chargeAmount = isNoWorkOutcome(outcome) ? formatCurrency(noWorkServiceChargeForJob(job)) : bidAmount;
 
@@ -486,8 +481,10 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     deniedPhone,
     tenantPhone: tenant.phone,
     phoneNote: tenant.phone ? "" : noTelephoneNote(tenant.accessType === "common_area", tenant.apartment),
-    workStart: displayDate(actualStartAt),
-    workComplete: displayDate(outcome === "work_completed" || outcome === "partial_work_completed" ? workCompleteAt : noWorkCompleteAt),
+    // Work packages: completed = the day the package is generated; started = the recorded start
+    // (the day of the before photos, which can be earlier), else the same day. Both stay editable.
+    workStart: displayDate(actualStartAt) || (outcome === "work_completed" || outcome === "partial_work_completed" ? displayDate(todayIsoDate()) : ""),
+    workComplete: outcome === "work_completed" || outcome === "partial_work_completed" ? displayDate(todayIsoDate()) : displayDate(noWorkCompleteAt),
     sourceStatus,
     notes: getJobDescription(job).slice(0, 650),
   };
@@ -694,7 +691,8 @@ function formWithFieldEventDate(form: PackageForm, outcome: PaperworkOutcome, ev
   const noAccessFirstAt = jobText(job, ["NoAccessFirstAttemptAt", "noAccessFirstAttemptAt"]);
   const next: PackageForm = {
     ...form,
-    invoiceDate: fieldDate,
+    // The invoice is dated the day the package is generated.
+    invoiceDate: displayDate(todayIsoDate()),
     fieldDate: form.fieldDate || fieldDate,
   };
 
@@ -716,6 +714,12 @@ function formWithFieldEventDate(form: PackageForm, outcome: PaperworkOutcome, ev
   }
 
   return next;
+}
+
+// A real scope, not empty and not the stand-in used when the ITB text couldn't be read.
+function hasWorkDescription(form: PackageForm) {
+  const text = form.description.trim();
+  return Boolean(text) && text !== "Work completed per HPD bid / work order." && !isJunkDescription(text);
 }
 
 function cleanAmount(value: string) {
@@ -963,6 +967,32 @@ function fullPackageMediaPath(jobId: string, media: FieldMedia, index: number, s
   return `${mediaFolder}/${folder}/${String(index + 1).padStart(2, "0")}-${statusSlug}-${label}-${fileName}`;
 }
 
+function titleCase(value: string) {
+  return value.toLowerCase().replace(/\b\p{L}/gu, (letter) => letter.toUpperCase());
+}
+
+// The day the package is about: work finished, or the last access attempt; today if not set.
+function packageDay(form: PackageForm, outcome: PaperworkOutcome) {
+  const raw = outcome === "work_completed" || outcome === "partial_work_completed"
+    ? form.workComplete || form.fieldDate
+    : form.secondAttempt || form.firstAttempt || form.fieldDate;
+  return dateInputValue(raw) || todayIsoDate();
+}
+
+// Google Drive filing: HPD Packages / 2026 / 10 - October / Manhattan / 2026-10-02 - ER05729 - address - outcome
+function driveFiling(form: PackageForm, jobId: string, outcome: PaperworkOutcome) {
+  const day = packageDay(form, outcome);
+  const [year, month] = day.split("-");
+  const borough = titleCase(String(form.borough || "").trim()) || "Borough not listed";
+  const address = String(form.address || "").replace(/\s+/g, " ").trim().slice(0, 60);
+  // Test packages are filed apart from real work: HPD Packages / TEST jobs / ...
+  if (isTestJob(jobId)) return { path: ["TEST jobs", jobId], folderName: [day, jobId, packageStatusLabel(outcome)].join(" - ") };
+  return {
+    path: [year, `${month} - ${titleCase(MONTH_NAMES[Number(month) - 1] || month)}`, borough],
+    folderName: [day, jobId, address, packageStatusLabel(outcome)].filter(Boolean).join(" - "),
+  };
+}
+
 function packageFolderName(form: PackageForm, jobId: string, outcome: PaperworkOutcome) {
   const location = safeFilename(form.location || form.address || form.borough || "LOCATION");
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
@@ -1070,12 +1100,13 @@ function packageManifestText(
   jobId: string,
   pdf: GeneratedPdfResult,
   includedMedia: FieldMedia[],
-  skippedMedia: FieldMedia[]
+  skippedMedia: FieldMedia[],
+  driveVideoLinks: { name: string; url: string }[] = []
 ) {
   const lines = [
     "HPD COMPLETE PACKAGE",
     `OMO / WORK #: ${jobId}`,
-    `Generated: ${new Date().toLocaleString("en-US")}`,
+    `Generated: ${displayDate(todayIsoDate())}`,
     "",
     "PDF",
     `- ${pdf.fileName} (${packetSizeLabel(pdf.size)})`,
@@ -1088,6 +1119,10 @@ function packageManifestText(
       return `- ${String(index + 1).padStart(2, "0")} ${label}: ${media.name || "unnamed"} | ${media.evidenceLabel || media.kind} | ${captured} | ${stamp} | ${packetSizeLabel(media.size)}`;
     }),
   ];
+
+  if (driveVideoLinks.length) {
+    lines.push("", `VIDEOS IN GOOGLE DRIVE (${driveVideoLinks.length})`, ...driveVideoLinks.map((video) => `- ${video.name}: ${video.url}`));
+  }
 
   if (skippedMedia.length) {
     lines.push(
@@ -1107,7 +1142,7 @@ function videoPackageManifestText(jobId: string, videos: FieldMedia[]) {
   return [
     "HPD VIDEO PACKAGE",
     `OMO / WORK #: ${jobId}`,
-    `Generated: ${new Date().toLocaleString("en-US")}`,
+    `Generated: ${displayDate(todayIsoDate())}`,
     "",
     `VIDEOS INCLUDED (${videos.length})`,
     ...videos.map((media, index) => {
@@ -1171,6 +1206,7 @@ function saveLocalPackageOverride(jobId: string, patch: Record<string, unknown>)
       updatedAt: new Date().toISOString(),
     };
     window.localStorage.setItem(key, JSON.stringify(rows));
+    queueOverrideSync(jobId);
   } catch {}
 }
 
@@ -1182,26 +1218,60 @@ export default function PaperworkPage() {
   const [queryWorkflowPatch, setQueryWorkflowPatch] = useState<Record<string, unknown>>({});
   const [loadedQuery, setLoadedQuery] = useState(false);
   const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
+  // Opened for one job (from the job card): a short summary instead of the job list and type tiles.
+  const [showJobPicker, setShowJobPicker] = useState(false);
   const packageBusyRef = useRef(false);
   const [packageBusy, setPackageBusy] = useState(false);
   const [packageReviewed, setPackageReviewed] = useState(false);
   const [packageApproved, setPackageApproved] = useState(false);
+  // Opened inside the map's job card (a sheet over the map): no top bar, and the map is told when
+  // the package is approved so it can close the sheet and show the job as done.
+  const [embedded, setEmbedded] = useState(false);
+  useEffect(() => {
+    try { setEmbedded(window.parent !== window && new URLSearchParams(window.location.search).get("embed") === "1"); } catch {}
+  }, []);
   const [google, setGoogle] = useState<GoogleStatus | null>(null);
   // Signer's saved signature (this device only); read by PDF generation.
   const signatureRef = useRef("");
-  const rememberSignature = useCallback((dataUrl: string) => { signatureRef.current = dataUrl; }, []);
-  // Notary's in-person approval: never saved, never reused across packages.
+  const [signerReady, setSignerReady] = useState(false);
+  const rememberSignature = useCallback((dataUrl: string) => { signatureRef.current = dataUrl; setSignerReady(Boolean(dataUrl)); }, []);
+  // Notary's approval for this affidavit only (the signature image may be saved; the approval never is).
   const notaryRef = useRef<NotaryApproval | null>(null);
   const [notaryKey, setNotaryKey] = useState(0);
-  const rememberNotary = useCallback((notary: NotaryApproval | null) => { notaryRef.current = notary; }, []);
+  const [notaryApproved, setNotaryApproved] = useState(false);
+  const rememberNotary = useCallback((notary: NotaryApproval | null) => { notaryRef.current = notary; setNotaryApproved(Boolean(notary)); }, []);
+  const autoWaitScrolledRef = useRef(false);
+  // Editing after review: the approval and media choice the package was built with, so it can be
+  // rebuilt with corrected details without signing again. Cleared when the job changes.
+  const packageNotaryRef = useRef<NotaryApproval | null>(null);
+  const lastIncludeMediaRef = useRef(true);
+  const [editingPackage, setEditingPackage] = useState(false);
   const [delivery, setDelivery] = useState<{ working: boolean; message: string; folderLink: string; emailed: boolean; error: string } | null>(null);
+  useEffect(() => {
+    if (!embedded || !packageApproved || delivery?.working) return;
+    try {
+      window.parent.postMessage({ type: "hpd-package-approved", job: form.jobId, emailed: Boolean(delivery?.emailed), message: delivery?.message || "" }, window.location.origin);
+    } catch {}
+  }, [embedded, packageApproved, delivery, form.jobId]);
   const [includePackageMedia, setIncludePackageMedia] = useState(true);
   const [includePackageSignature, setIncludePackageSignature] = useState(true);
   const [pdfStatus, setPdfStatus] = useState("");
   const [packagePreview, setPackagePreview] = useState<CompletePackagePreview | null>(null);
+  // What the package carries, shown on the review screen before approving.
+  // Email choice on the review screen: before + after media, or after only (Drive always gets all).
+  const [emailBeforeMedia, setEmailBeforeMedia] = useState(() => {
+    try { return localStorage.getItem("hpd-email-before-media-v1") !== "no"; } catch { return true; }
+  });
+  function chooseEmailBeforeMedia(include: boolean) {
+    setEmailBeforeMedia(include);
+    try { localStorage.setItem("hpd-email-before-media-v1", include ? "yes" : "no"); } catch {}
+  }
+  const [packageContents, setPackageContents] = useState<{ photos: number; videos: number; videoBytes: number; savedVideos: number; beforePhotos: number; beforeVideos: number; beforeVideoBytes: number } | null>(null);
   const [packagePreviewOpen, setPackagePreviewOpen] = useState(false);
   const [fullScreenPdfOpen, setFullScreenPdfOpen] = useState(false);
   const pendingCompletePackageRef = useRef<PendingCompletePackage | null>(null);
+  // Drive links of the files saved on approve, so a resent email can still link a big video.
+  const deliveredFileLinksRef = useRef<Record<string, string>>({});
   const autoGenerateStartedRef = useRef(false);
   const packagePreviewPanelRef = useRef<HTMLDivElement | null>(null);
 
@@ -1238,7 +1308,7 @@ export default function PaperworkPage() {
         if (!res.ok) return;
 
         const data = await res.json();
-        const rows = await applySavedWorkflowStatuses(asArray(data));
+        const rows = await applySavedWorkflowStatuses(withTestJob(asArray(data)));
         if (!cancelled) setJobs(rows);
       } catch (error) {
         console.error(error);
@@ -1334,6 +1404,23 @@ export default function PaperworkPage() {
       return;
     }
 
+    // The emailed copy needs the signer's signature and the notary's approval. Wait on this
+    // screen for both, then build the package by itself -- no extra Generate tap.
+    if (includePackageSignature && (!signerReady || !notaryApproved)) {
+      setPdfStatus(
+        !signerReady
+          ? "Next: add your signature below (one tap). The package builds by itself after the notary approves."
+          : "Next: hand the phone to the notary to confirm and approve below. The package builds by itself right after."
+      );
+      if (!autoWaitScrolledRef.current && typeof document !== "undefined") {
+        autoWaitScrolledRef.current = true;
+        window.setTimeout(() => {
+          document.querySelector(signerReady ? '[data-hpd-smoke="paperwork-notary-card"]' : '[data-hpd-smoke="paperwork-signature-card"]')?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 400);
+      }
+      return;
+    }
+
     autoGenerateStartedRef.current = true;
     setPdfStatus(
       includePackageSignature
@@ -1343,12 +1430,73 @@ export default function PaperworkPage() {
     window.setTimeout(() => {
       void generateCompletePackage(includePackageMedia, includePackageSignature);
     }, 250);
-  }, [autoGeneratePackage, selectedId, jobs.length, selectedJob, form.jobId, includePackageMedia, includePackageSignature, outcome]);
+  }, [autoGeneratePackage, selectedId, jobs.length, selectedJob, form.jobId, includePackageMedia, includePackageSignature, outcome, signerReady, notaryApproved]);
+
+  // Opened without auto=package: the notary's approval is the last step, so build the signed
+  // package (and its unsigned print copy) right then instead of waiting for a Generate tap.
+  // The auto=package flow has its own trigger above.
+  // Waits for the job's details to finish loading, and builds once per notary approval.
+  const notaryBuildRef = useRef<NotaryApproval | null>(null);
+  useEffect(() => {
+    if (autoGeneratePackage || !notaryApproved || !signerReady || packagePreview || packageBusyRef.current) return;
+    if (!canGeneratePackage) {
+      if (packageJobLoading) setPdfStatus("Notary approved. Loading the job details, then the package builds...");
+      return;
+    }
+    if (!notaryRef.current || notaryBuildRef.current === notaryRef.current) return;
+    notaryBuildRef.current = notaryRef.current;
+    setPdfStatus("Notary approved. Building the signed and unsigned copies...");
+    void (async () => {
+      // With no photos saved on this phone, still make the affidavit + invoice.
+      let hasMedia = false;
+      try {
+        hasMedia = (await listFieldEvidence(form.jobId || selectedId)).length > 0;
+      } catch {}
+      await generateCompletePackage(includePackageMedia && hasMedia, true);
+    })();
+  }, [notaryApproved, signerReady, canGeneratePackage]);
+
+  // Signed package built after the notary confirmed: email it and file it in Drive right away, no
+  // extra review/approve tap. The package stays on screen to view, edit and resend.
+  const autoSentRef = useRef<CompletePackagePreview | null>(null);
+  useEffect(() => {
+    // packageNotaryRef: the notary approval this package was built with (the live one is used up by the build).
+    if (!packagePreview || packagePreview.printCopy || !packagePreview.unsigned || packageApproved || !packageNotaryRef.current) return;
+    // Wait until the build has fully finished (it's still busy right as the preview appears).
+    if (packageBusy || packageBusyRef.current || autoSentRef.current === packagePreview) return;
+    autoSentRef.current = packagePreview;
+    void (async () => {
+      const status = await googleStatus();
+      setGoogle(status);
+      if (!status.connected) {
+        setPdfStatus("Package ready. Google Drive isn't connected on this phone, so it can't email by itself: tap Approve & Save, or connect Google in Storage.");
+        return;
+      }
+      setPackageReviewed(true);
+      await approveAndSavePackage();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [packagePreview, packageApproved, packageBusy]);
+
+  // Review -> Edit: back to the details with the signatures kept, then one tap rebuilds both copies.
+  function editPackageDetails() {
+    clearPackagePreview();
+    setEditingPackage(true);
+    setPdfStatus("Edit any details or dates below, then tap Update package. Your signatures and the notary's approval are kept.");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function rebuildPackage() {
+    setEditingPackage(false);
+    notaryRef.current = packageNotaryRef.current;
+    void generateCompletePackage(lastIncludeMediaRef.current, true);
+  }
 
   function clearPackagePreview() {
     setPackageReviewed(false);
     setPackageApproved(false);
     setPackagePreview(null);
+    setPackageContents(null);
     setDelivery(null);
     setPackagePreviewOpen(false);
     setFullScreenPdfOpen(false);
@@ -1357,6 +1505,8 @@ export default function PaperworkPage() {
 
   function chooseJob(id: string) {
     clearPackagePreview();
+    packageNotaryRef.current = null;
+    setEditingPackage(false);
     setSelectedId(id);
     const job = findJob(jobs, id);
     if (!job) return;
@@ -1394,15 +1544,23 @@ export default function PaperworkPage() {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  async function markPackageGenerated(jobId: string, approved = false, delivery?: { driveLink: string; emailed: boolean }) {
+  async function markPackageGenerated(jobId: string, approved = false, delivery?: { driveLink: string; emailed: boolean; emailTo?: string[]; receipt?: { messageId: string; inInbox: boolean } }) {
     if (!jobId) return "Package generated.";
 
     const generatedAt = new Date().toISOString();
     const emailNote = delivery?.emailed ? "Emailed" : "Not emailed";
-    const approvedMessage = delivery ? `Reviewed and archived. Saved to Google Drive. ${emailNote}.` : "Reviewed and archived. Not emailed.";
+    const approvedMessage = delivery ? `Paperwork approved. Saved to Google Drive. ${emailNote}.` : "Paperwork approved. Not emailed.";
+    // Approval no longer archives: the job stays on the map as completed until you archive it
+    // yourself from the job card after checking everything.
     const patch = {
-      ...(approved ? { ArchivedFromMap: true, archivedFromMap: true } : {}),
-      ...(delivery ? { PackageDriveLink: delivery.driveLink, ...(delivery.emailed ? { PackageEmailedAt: generatedAt } : {}) } : {}),
+      ...(approved ? { PackageApprovedAt: generatedAt } : {}),
+      ...(delivery ? { PackageDriveLink: delivery.driveLink, ...(delivery.emailed ? {
+        PackageEmailedAt: generatedAt,
+        // Gmail's receipt: shown on the job card as "Emailed to you ✓", and needed before the
+        // phone's copies of this job's videos are removed (they are in the job's Drive folder).
+        ...(delivery.emailTo?.length ? { PackageEmailedTo: delivery.emailTo.join(", ") } : {}),
+        ...(delivery.receipt?.messageId ? { PackageEmailId: delivery.receipt.messageId, PackageEmailInInbox: delivery.receipt.inInbox } : {}),
+      } : {}) } : {}),
       PackageReviewStatus: approved ? "Approved" : "Pending review",
       PackageGeneratedAt: generatedAt,
       packageGeneratedAt: generatedAt,
@@ -1413,17 +1571,13 @@ export default function PaperworkPage() {
     saveLocalPackageOverride(jobId, patch);
 
     try {
-      const response = await fetch(`${HPD_STATUS_WORKER_URL}/override`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: jobId, patch }),
-      });
-
-      if (!response.ok) throw new Error(await response.text());
-      return approved ? (delivery ? "Approved and archived." : "Approved and archived. Not emailed.") : "Draft saved for review. Not archived or emailed.";
+      // The job's full saved entry goes to the status server (queued if there's no signal).
+      const { waiting } = await flushOverrideOutbox(HPD_STATUS_WORKER_URL);
+      if (waiting) throw new Error("Status server didn't answer; queued for when the phone is back online.");
+      return approved ? (delivery ? "Paperwork approved." : "Paperwork approved. Not emailed.") : "Draft saved for review. Not emailed.";
     } catch (error) {
       console.error(error);
-      return approved ? `Approved on this device; server sync needs retry.${delivery ? "" : " Not emailed."}` : "Draft saved on this device; server sync needs retry. Not archived or emailed.";
+      return approved ? `Approved on this device; server sync needs retry.${delivery ? "" : " Not emailed."}` : "Draft saved on this device; server sync needs retry. Not emailed.";
     }
   }
 
@@ -1480,6 +1634,12 @@ export default function PaperworkPage() {
     const datesProblem = useWorkTemplate ? workDatesProblem(activeForm) : "";
     if (datesProblem) {
       setPdfStatus(datesProblem);
+      return null;
+    }
+
+    // Never print the blank-form labels or a stand-in as the scope of work.
+    if (activeOutcome === "work_completed" && !hasWorkDescription(activeForm)) {
+      setPdfStatus("The work description is missing: the scope couldn't be read from this job's ITB. Type it in Work description, then generate.");
       return null;
     }
 
@@ -1583,11 +1743,15 @@ export default function PaperworkPage() {
         } catch {}
       };
 
-      // Largest font size (down to minSize) at which a single-line value fits its field.
-      const fitFontSize = (form: typeof affidavitForm, name: string, value: string, font: typeof affidavitBoldFont, maxSize: number, minSize = 6) => {
+      // Largest font size (down to minSize) at which a single-line value fits its field. The floor
+      // is low on purpose: an unusually long value shrinks rather than running into the form's text.
+      const fitFontSize = (form: typeof affidavitForm, name: string, value: string, font: typeof affidavitBoldFont, maxSize: number, minSize = 4.5) => {
         let width = 0;
         try {
-          width = form.getField(name).acroField.getWidgets()[0].getRectangle().width - 4;
+          // pdf-lib insets text by the border and padding on both sides; leave room so it's never
+          // clipped. Short boxes (a 2-digit year) keep the smaller inset so they don't shrink needlessly.
+          const fieldWidth = form.getField(name).acroField.getWidgets()[0].getRectangle().width;
+          width = fieldWidth - (fieldWidth < 40 ? 4 : 8);
         } catch {
           return maxSize;
         }
@@ -1661,7 +1825,7 @@ export default function PaperworkPage() {
         showUnderline(affidavitForm, "Partial Reason");
         setAffidavitText("Partial Amount", activeOutcome === "partial_work_completed" ? chargeAmount : "");
         adjustFieldRect(affidavitForm, "Partial Reason", { dy: 4 });
-        adjustFieldRect(affidavitForm, "Partial Amount", { dx: 3 });
+        adjustFieldRect(affidavitForm, "Partial Amount", { dx: 5 });
         showUnderline(affidavitForm, "Partial Amount");
         const notaryDate = notary ? notaryDateParts(notary.date) : { day: "", month: "", year: "" };
         setAffidavitText("Notary Day Month", notary ? `${notaryDate.day} ${notaryDate.month}` : "");
@@ -1723,6 +1887,11 @@ export default function PaperworkPage() {
         }
 
         if (isRefusedAccess) {
+          // 7a: the template's boxes start partway along their blanks, and the relationship box starts
+          // inside the line above. Start each at its blank and keep the relationship on its own line,
+          // so answers never run into "their name(s) as:", "and stated" or "(e.g.".
+          adjustFieldRect(affidavitForm, "Denied Name", { dx: -7, dw: 5 });
+          adjustFieldRect(affidavitForm, "Denied Relationship", { dx: -14, dy: -2.5, dw: 13 });
           setAffidavitText("Denied Date", secondAttempt);
           setAffidavitText("Denied Phone", deniedPhone);
           setAffidavitText("Denied Name", upper(deniedName));
@@ -1737,6 +1906,11 @@ export default function PaperworkPage() {
 
       // The template's opaque white field backgrounds hide printed form text and lines next to the fields.
       affidavitForm.getFields().forEach((field) => clearFieldBackground(affidavitForm, field.getName()));
+      // A field left blank keeps the template's own white-box appearance, which flatten would paint
+      // over the form's words ("date]", "name as:") and blank lines. Drop blank fields instead.
+      affidavitForm.getFields().forEach((field) => {
+        if (field instanceof PDFTextField && !(field.getText() || "").trim()) affidavitForm.removeField(field);
+      });
 
       affidavitForm.updateFieldAppearances(affidavitBoldFont);
       affidavitForm.flatten();
@@ -1767,7 +1941,7 @@ export default function PaperworkPage() {
         const stampSize = 7;
         const stampWidths = NOTARY_STAMP_LINES.map((line) => affidavitBoldFont.widthOfTextAtSize(line, stampSize));
         const stampCenterX = box.x + Math.max(...stampWidths) / 2;
-        const stampTop = useWorkTemplate ? 104 : 138;
+        const stampTop = useWorkTemplate ? 104 : 142;
         NOTARY_STAMP_LINES.forEach((line, index) => {
           page2?.drawText(line, { x: stampCenterX - stampWidths[index] / 2, y: stampTop - index * 9, size: stampSize, font: affidavitBoldFont });
         });
@@ -1825,9 +1999,12 @@ export default function PaperworkPage() {
       const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
       const pdfBytes = new Uint8Array(buffer);
       const dataUrl = bytesToDataUrl(pdfBytes, "application/pdf");
-      const fileName = `${safeFilename(jobId)}-${packageStatusSlug(activeOutcome)}-affidavit-invoice.pdf`;
+      const fileName = printCopy
+        ? `${safeFilename(jobId)}-${packageStatusSlug(activeOutcome)}-PRINT-COPY-unsigned-affidavit-invoice.pdf`
+        : `${safeFilename(jobId)}-${packageStatusSlug(activeOutcome)}-affidavit-invoice.pdf`;
 
-      try {
+      // The print copy never replaces the signed package PDF saved on this device.
+      if (!printCopy) try {
         await saveFieldPacket({
           jobId,
           fileName,
@@ -1933,8 +2110,13 @@ export default function PaperworkPage() {
         return;
       }
 
-      let includedMedia = await emailMediaCopies(evidenceRows.filter(mediaHasPackageBytes));
-      const skippedMedia = evidenceRows.filter((media) => !mediaHasPackageBytes(media));
+      // Videos already removed from this phone (the job was sent before): their originals are in
+      // the job's Drive folder, so the email links to them instead of attaching them.
+      const driveVideos = evidenceRows.filter((media) => media.mediaType === "video" && media.freedAt && media.driveFileId);
+      const phoneRows = evidenceRows.filter((media) => !driveVideos.includes(media));
+      const driveVideoLinks = driveVideos.map((media) => ({ name: media.name || "video", url: `https://drive.google.com/file/d/${encodeURIComponent(String(media.driveFileId))}/view` }));
+      let includedMedia = await emailMediaCopies(phoneRows.filter(mediaHasPackageBytes));
+      const skippedMedia = phoneRows.filter((media) => !mediaHasPackageBytes(media));
       if (skippedMedia.length) {
         setPdfStatus(`${skippedMedia.length} saved media file(s) are missing their original bytes. Package stopped. Restore or re-upload these files before generating the complete package.`);
         return;
@@ -1946,7 +2128,7 @@ export default function PaperworkPage() {
         );
         return;
       }
-      if (!includedMedia.length && !allowPdfOnlyPackage) {
+      if (!includedMedia.length && !driveVideos.length && !allowPdfOnlyPackage) {
         setPdfStatus("No package-ready image or video bytes were found for this OMO. Retake or upload evidence from the job card.");
         return;
       }
@@ -1967,8 +2149,24 @@ export default function PaperworkPage() {
       });
       if (!pdf) return;
       // Fresh for every affidavit: never carry an approval into the next package.
-      notaryRef.current = null;
+      packageNotaryRef.current = notaryRef.current;
+      lastIncludeMediaRef.current = includeMedia;
+      rememberNotary(null);
       setNotaryKey((key) => key + 1);
+
+      // Signed packages also get the unsigned print copy (sign and notarize in ink), built from
+      // the same details so both can be checked together on the review screen.
+      const unsignedPdf = includeSignature && !printCopy
+        ? await generateAffidavitPdf({
+            downloadPdf: false,
+            markGenerated: false,
+            formOverride: packageForm,
+            outcomeOverride: activeOutcome,
+            includeSignature: true,
+            signatureImage: false,
+            printCopy: true,
+          })
+        : null;
 
       includedMedia = await fitEmailVideos(includedMedia, pdf.bytes.byteLength + 64_000 + includedMedia.length * 2048, setPdfStatus);
 
@@ -1990,7 +2188,7 @@ export default function PaperworkPage() {
 
       const manifestEntry: PackageFileEntry = {
         path: "PACKAGE-MANIFEST.txt",
-        bytes: zipTextBytes(packageManifestText(pdf.jobId, pdf, includedMedia, skippedMedia)),
+        bytes: zipTextBytes(packageManifestText(pdf.jobId, pdf, includedMedia, skippedMedia, driveVideoLinks)),
         mimeType: "text/plain",
         label: "Package manifest",
         section: "manifest",
@@ -2022,7 +2220,24 @@ export default function PaperworkPage() {
           }
         : null;
 
-      const folderEntries: PackageFileEntry[] = [pdfEntry, manifestEntry, ...mediaEntries];
+      // Internal proof of every trip, arrival and try (times and GPS): Drive folder only, never emailed.
+      const buildingLat = Number(activeJob?.Latitude ?? activeJob?.latitude);
+      const buildingLng = Number(activeJob?.Longitude ?? activeJob?.longitude);
+      const visitRecordEntry: PackageFileEntry | null = activeJob
+        ? {
+            path: "VISIT-RECORD.txt",
+            bytes: zipTextBytes(visitRecordText(
+              { jobId: pdf.jobId, address: [packageForm.address, packageForm.location].filter(Boolean).join(", ") },
+              activeJob,
+              evidenceRows,
+              Number.isFinite(buildingLat) && Number.isFinite(buildingLng) && buildingLat && buildingLng ? { lat: buildingLat, lng: buildingLng } : null,
+            )),
+            mimeType: "text/plain",
+            label: "Visit record (internal)",
+            section: "record",
+          }
+        : null;
+      const folderEntries: PackageFileEntry[] = [pdfEntry, manifestEntry, ...(visitRecordEntry ? [visitRecordEntry] : []), ...mediaEntries];
       const applicationEntries: PackageFileEntry[] = [
         pdfEntry,
         applicationManifestEntry,
@@ -2052,12 +2267,14 @@ export default function PaperworkPage() {
       const zipUrl = bytesToObjectUrl(zipBytes, "application/zip");
       const pdfUrl = bytesToObjectUrl(pdf.bytes, "application/pdf");
       const pdfPreview = await renderPdfFirstPageImage(pdf.bytes);
+      const unsignedPreview = unsignedPdf ? await renderPdfFirstPageImage(unsignedPdf.bytes) : null;
       const imageCount = imageMedia.length;
       const videoCount = videoMedia.length;
       const beforeCount = includedMedia.filter((media) => media.kind === "before").length;
       const afterCount = includedMedia.filter((media) => media.kind === "after").length;
       const folderLinks = folderEntries.map((entry) => packageEntryToDownloadLink(entry, folderName));
-      const completeShareFiles = folderEntries.map((entry) => packageEntryToFile(entry, folderName));
+      // The share sheet can go to email, so the internal visit record stays out of it.
+      const completeShareFiles = folderEntries.filter((entry) => entry.section !== "record").map((entry) => packageEntryToFile(entry, folderName));
       const applicationShareFiles = applicationEntries.map((entry) => packageEntryToFile(entry, folderName));
       const videoFiles = videoEntries.map((entry) => packageEntryToFile(entry, folderName));
       const videoNames = videoFiles.map((file) => file.name);
@@ -2109,10 +2326,19 @@ export default function PaperworkPage() {
         skippedMediaCount: skippedMedia.length,
         note,
         printCopy,
+        unsigned: unsignedPdf
+          ? {
+              fileName: unsignedPdf.fileName,
+              size: unsignedPdf.size,
+              url: bytesToObjectUrl(unsignedPdf.bytes, "application/pdf"),
+              imageUrls: unsignedPreview?.imageUrls?.length ? unsignedPreview.imageUrls : unsignedPreview?.imageUrl ? [unsignedPreview.imageUrl] : [],
+            }
+          : undefined,
       };
 
       pendingCompletePackageRef.current = {
         ...preview,
+        driveVideoLinks,
         folderEntries,
         applicationEntries,
         videoEntries,
@@ -2120,7 +2346,21 @@ export default function PaperworkPage() {
         completeShareFiles,
         applicationShareFiles,
         videoShareFiles: videoFiles,
+        unsignedBytes: unsignedPdf?.bytes,
       };
+      const packageVideos = folderEntries.filter((entry) => entry.section === "video");
+      const savedVideos = includeMedia
+        ? evidenceRows.filter((media) => media.mediaType === "video").length
+        : (await listFieldEvidence(jobId).catch(() => [])).filter((media) => media.mediaType === "video").length;
+      setPackageContents({
+        photos: folderEntries.filter((entry) => entry.section === "image" && /^images\/(before|after)\//.test(entry.path)).length,
+        videos: packageVideos.length,
+        videoBytes: packageVideos.reduce((sum, entry) => sum + entry.bytes.byteLength, 0),
+        savedVideos,
+        beforePhotos: folderEntries.filter((entry) => entry.section === "image" && entry.path.startsWith("images/before/")).length,
+        beforeVideos: packageVideos.filter((entry) => entry.path.startsWith("videos/before/")).length,
+        beforeVideoBytes: packageVideos.filter((entry) => entry.path.startsWith("videos/before/")).reduce((sum, entry) => sum + entry.bytes.byteLength, 0),
+      });
       setPackagePreview(preview);
       setPackagePreviewOpen(true);
       const archiveMessage = await markPackageGenerated(pdf.jobId);
@@ -2241,29 +2481,69 @@ export default function PaperworkPage() {
   function packageEmailParts(pending: PendingCompletePackage) {
     const statusLabel = packageStatusLabel(outcome);
     const address = [form.address, form.location, form.borough].filter(Boolean).join(", ");
+    const filing = driveFiling(form, pending.jobId, outcome);
+    // Drive gets every file, neatly named; photos go into Before / After / Other photos folders.
+    const counters: Record<string, number> = {};
+    const files: DeliveryFile[] = pending.folderEntries.map((entry) => {
+      const original = entry.path.split("/").pop() || entry.path;
+      if (entry.section === "pdf") return { name: `SIGNED - ${pending.jobId} - ${statusLabel}.pdf`, mimeType: entry.mimeType, bytes: entry.bytes };
+      if (entry.section === "manifest") return { name: "Package contents.txt", mimeType: entry.mimeType, bytes: entry.bytes };
+      if (entry.section === "record") return { name: `Visit record - ${pending.jobId}.txt`, mimeType: entry.mimeType, bytes: entry.bytes };
+      const stage = /^(images|videos)\/before\//.test(entry.path) ? "before" : /^(images|videos)\/after\//.test(entry.path) ? "after" : "other";
+      const kind = `${stage}${entry.section === "video" ? "-video" : ""}` as "before" | "after" | "other" | "before-video" | "after-video" | "other-video";
+      counters[kind] = (counters[kind] || 0) + 1;
+      const extension = original.includes(".") ? original.slice(original.lastIndexOf(".")) : "";
+      const label = { before: "BEFORE", after: "AFTER", other: "PHOTO", "before-video": "BEFORE VIDEO", "after-video": "AFTER VIDEO", "other-video": "VIDEO" }[kind];
+      const subfolder = { before: "Before photos", after: "After photos", other: "Other photos", "before-video": "Before videos", "after-video": "After videos", "other-video": "Videos" }[kind];
+      // A video must travel as video/*, even when the phone gave no file type, or the email skips it.
+      const lowerExt = extension.toLowerCase();
+      const mimeType = entry.section === "video" && !entry.mimeType.startsWith("video/")
+        ? lowerExt === ".mov" ? "video/quicktime" : lowerExt === ".webm" ? "video/webm" : "video/mp4"
+        : entry.mimeType;
+      return { name: `${label}-${String(counters[kind]).padStart(2, "0")} - ${pending.jobId}${extension || (entry.section === "video" ? ".mp4" : "")}`, mimeType, bytes: entry.bytes, subfolder };
+    });
+    // The email carries the signed PDF, the before/after photos and every video.
+    // "After only" leaves the before photos/videos out of the email; Drive still gets them.
+    const isBefore = (file: DeliveryFile) => file.subfolder === "Before photos" || file.subfolder === "Before videos";
+    const emailFiles = files.filter((file) => file.mimeType === "application/pdf" || file.subfolder === "Before photos" || file.subfolder === "After photos" || file.mimeType.startsWith("video/"))
+      .filter((file) => emailBeforeMedia || !isBefore(file));
     return {
-      folderName: pending.folderName,
-      files: pending.folderEntries.map((entry) => ({ name: entry.path.split("/").pop() || entry.path, mimeType: entry.mimeType, bytes: entry.bytes })),
-      emailSubject: `${pending.jobId} - ${statusLabel} - ${form.address || "HPD package"}`,
-      emailText: (folderLink: string, attachedPhotos: boolean) => [
+      folderName: filing.folderName,
+      folderPath: filing.path,
+      files,
+      // The SIGNED email: the signed PDF and the before/after photos only.
+      emailFiles,
+      emailSubject: `${isTestJob(pending.jobId) ? "TEST - " : ""}SIGNED - ${pending.jobId} - ${statusLabel} - ${form.address || "HPD package"}`,
+      // This is the email that gets forwarded, so it carries no Drive folder link; only a video or
+      // photo too big to attach gets its own link.
+      emailText: (_folderLink: string, _attachedPhotos: boolean, summary: EmailAttachmentSummary) => [
+        "SIGNED COPY - signed by the principal and the notary. This is the copy to forward.",
+        "",
         `HPD package: ${pending.jobId}`,
         `Outcome: ${statusLabel}`,
         `Address: ${address || "not listed"}`,
         `Total charge: ${form.amount || "$0.00"}`,
         "",
-        `Google Drive folder: ${folderLink}`,
-        "",
-        attachedPhotos
-          ? `Attached: affidavit/invoice PDF and ${pending.imageCount} photo(s).`
-          : pending.imageCount
-            ? "Attached: affidavit/invoice PDF. The photos were too large for one email and are in the Google Drive folder."
-            : "Attached: affidavit/invoice PDF.",
-        pending.videoCount ? `${pending.videoCount} video(s) are in the Google Drive folder.` : "",
+        `Attached: signed affidavit/invoice PDF${summary.photos ? `, ${summary.photos} before/after photo(s)` : ""}${summary.videos ? `, ${summary.videos} video(s)` : ""}.`,
+        ...(summary.linked.length ? ["", "Too large to attach (open with the link):", ...summary.linked.map((file) => `- ${file.name}: ${file.url || "saved in the package folder"}`)] : []),
+        ...(pending.driveVideoLinks?.length ? ["", "Videos (in Google Drive, open with the link):", ...pending.driveVideoLinks.map((file) => `- ${file.name}: ${file.url}`)] : []),
       ].filter((line, index, lines) => line || lines[index - 1]).join("\n"),
     };
   }
 
-  // Resend only the email (Drive already has the package), e.g. after reconnecting Google.
+  // "Signed copy emailed to x: PDF, 4 photos, 2 videos" -- says exactly what went, and what didn't.
+  function emailedMessage(to: string[], summary?: EmailAttachmentSummary) {
+    if (!summary) return `Signed copy emailed to ${to.join(", ")}`;
+    const parts = ["signed PDF", summary.photos ? `${summary.photos} photo(s)` : "", summary.videos ? `${summary.videos} video(s)` : ""].filter(Boolean);
+    const linked = summary.linked.length ? ` ${summary.linked.length} file(s) too big to attach were sent as links: ${summary.linked.map((file) => file.name).join(", ")}.` : "";
+    return `Signed copy emailed to ${to.join(", ")}: ${parts.join(", ")}.${linked}`;
+  }
+
+  function unsignedFile(pending: PendingCompletePackage) {
+    return pending.unsigned && pending.unsignedBytes ? { fileName: pending.unsigned.fileName, bytes: pending.unsignedBytes } : null;
+  }
+
+  // Resend only the email(s) that didn't go (Drive already has the package), e.g. after reconnecting Google.
   async function retryPackageEmail() {
     const pending = pendingCompletePackageRef.current;
     const folderLink = delivery?.folderLink;
@@ -2273,9 +2553,9 @@ export default function PaperworkPage() {
     setDelivery((current) => current && { ...current, working: true, message: "Sending email...", error: "" });
     try {
       setGoogle(await googleStatus());
-      const result = await sendPackageEmail({ ...packageEmailParts(pending), folderLink });
-      if (result.emailed) await markPackageGenerated(pending.jobId, true, { driveLink: folderLink, emailed: true });
-      setDelivery({ working: false, folderLink, emailed: result.emailed, message: result.emailed ? `Emailed to ${result.emailTo.join(", ")}` : "", error: result.emailError });
+      const result = await sendPackageEmail({ ...packageEmailParts(pending), folderLink, fileLinks: deliveredFileLinksRef.current });
+      if (result.emailed) await markPackageGenerated(pending.jobId, true, { driveLink: folderLink, emailed: true, emailTo: result.emailTo, receipt: result.emailReceipt });
+      setDelivery({ working: false, folderLink, emailed: result.emailed, message: result.emailed ? emailedMessage(result.emailTo, result.emailSummary) : "", error: result.emailError });
     } catch (error) {
       setDelivery({ working: false, folderLink, emailed: false, message: "", error: error instanceof Error ? error.message : "The email could not be sent." });
     } finally {
@@ -2308,23 +2588,39 @@ export default function PaperworkPage() {
 
     packageBusyRef.current = true;
     setPackageBusy(true);
-    setDelivery({ working: true, message: "Starting...", folderLink: "", emailed: false, error: "" });
+    setDelivery({ working: true, message: "Making the unsigned print copy...", folderLink: "", emailed: false, error: "" });
     try {
+      // The unsigned print copy is saved to the same Drive folder only -- never emailed. It was made
+      // with the package and shown on the review screen; rebuild only if it's missing.
+      const printCopy = unsignedFile(pending)
+        || await generateAffidavitPdf({
+            downloadPdf: false,
+            markGenerated: false,
+            formOverride: form,
+            outcomeOverride: outcome,
+            includeSignature: true,
+            signatureImage: false,
+            printCopy: true,
+          });
       const result = await deliverPackage({
         ...packageEmailParts(pending),
+        driveOnlyFiles: printCopy ? [{ name: `NOT SIGNED - print copy - ${pending.jobId} - ${packageStatusLabel(outcome)}.pdf`, mimeType: "application/pdf", bytes: printCopy.bytes }] : [],
         sendEmail: true,
         onProgress: (message) => setDelivery((current) => ({ ...(current || { folderLink: "", emailed: false, error: "" }), working: true, message })),
       });
-      const archive = await markPackageGenerated(pending.jobId, true, { driveLink: result.folderLink, emailed: result.emailed });
+      deliveredFileLinksRef.current = result.fileLinks || {};
+      const archive = await markPackageGenerated(pending.jobId, true, { driveLink: result.folderLink, emailed: result.emailed, emailTo: result.emailTo, receipt: result.emailReceipt });
+      // The job is safe in Drive and emailed: free the phone's copies of its videos now.
+      if (result.emailed) window.dispatchEvent(new Event("hpd-package-sent"));
       setPackageApproved(true);
       setDelivery({
         working: false,
-        message: result.emailed ? `Emailed to ${result.emailTo.join(", ")}` : "",
+        message: result.emailed ? emailedMessage(result.emailTo, result.emailSummary) : "",
         folderLink: result.folderLink,
         emailed: result.emailed,
         error: result.emailError,
       });
-      setPdfStatus(`Approved. Saved ${result.uploaded} file(s) to Google Drive${result.emailed ? " and emailed" : ""}. ${archive}`);
+      setPdfStatus(`Approved. Saved ${result.uploaded} file(s) to Google Drive (signed, unsigned print copy and photos)${result.emailed ? " and emailed the SIGNED copy" : ""}. ${archive}`);
     } catch (error) {
       setDelivery({ working: false, message: "", folderLink: "", emailed: false, error: error instanceof Error ? error.message : "Google Drive save failed." });
       setPdfStatus("Not approved yet: the package could not be saved to Google Drive. It is still on this device; try again.");
@@ -3431,11 +3727,19 @@ export default function PaperworkPage() {
 
         .sig-pad {
           width: 100%;
-          height: 160px;
+          height: 190px;
           border-radius: 12px;
-          background: #ffffff;
+          /* A signature line to sign on; it is page styling, not part of the saved image. */
+          background:
+            linear-gradient(#9aa7bd, #9aa7bd) 24px calc(100% - 48px) / calc(100% - 48px) 1.5px no-repeat,
+            #ffffff;
           touch-action: none;
           cursor: crosshair;
+        }
+
+        .sig-hint {
+          color: #c9d4e3;
+          font-weight: 600;
         }
 
         .sig-type {
@@ -3569,6 +3873,74 @@ export default function PaperworkPage() {
           color: #c9d4e3;
           font-size: 12px;
           font-weight: 800;
+        }
+
+        .pkg-update-bar {
+          position: sticky;
+          bottom: 10px;
+          z-index: 30;
+          display: grid;
+          gap: 6px;
+          padding: 12px;
+          border-radius: 16px;
+          border: 1px solid rgba(83, 230, 156, 0.6);
+          background: rgba(8, 20, 30, 0.96);
+          box-shadow: 0 8px 26px rgba(0, 0, 0, 0.45);
+        }
+
+        .pkg-update-bar small {
+          color: #caffdf;
+          font-weight: 800;
+        }
+
+        .pkg-contents {
+          margin: 0 0 10px;
+          padding: 10px 12px;
+          border-radius: 12px;
+          background: rgba(37, 99, 235, 0.12);
+          border: 1px solid rgba(37, 99, 235, 0.45);
+          font-weight: 700;
+          font-size: 14px;
+          line-height: 1.4;
+        }
+        .pkg-contents b { color: #dc2626; }
+        .pkg-contents p { margin: 8px 0 0; }
+        .pkg-email-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .pkg-email-choice button { min-height: 40px; border-radius: 10px; border: 1px solid rgba(37, 99, 235, 0.45); background: transparent; font-weight: 800; font-size: 14px; color: inherit; }
+        .pkg-email-choice button.is-on { background: #2563eb; color: #ffffff; border-color: #2563eb; }
+        .pkg-copy-head {
+          display: grid;
+          gap: 2px;
+          color: #ffffff;
+        }
+
+        .pkg-copy-head strong {
+          font-size: 16px;
+          font-weight: 900;
+        }
+
+        .pkg-copy-head small {
+          color: #c9d4e3;
+          font-weight: 700;
+        }
+
+        .pkg-unsigned {
+          display: grid;
+          gap: 10px;
+          border-top: 1px solid rgba(255, 255, 255, 0.14);
+          padding-top: 12px;
+        }
+
+        .pkg-unsigned-download {
+          min-height: 46px;
+          display: grid;
+          place-items: center;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 209, 102, 0.55);
+          background: rgba(255, 209, 102, 0.12);
+          color: #ffe8a3;
+          font-weight: 900;
+          text-decoration: none;
         }
 
         .pkg-page-missing {
@@ -4484,35 +4856,58 @@ export default function PaperworkPage() {
             border-radius: 0 !important;
           }
         }
+        /* Tidy layout */
+        .paperwork-topbar { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; margin: 0 0 12px; padding: 10px 2px; }
+        .paperwork-topbar h1 { margin: 0; font-size: 19px; line-height: 1.2; text-align: center; color: #f8fafc; }
+        .paperwork-back, .paperwork-archive { padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(148, 163, 184, 0.35); color: #e2e8f0; font-weight: 800; font-size: 14px; text-decoration: none; }
+        .paperwork-archive { font-weight: 700; color: #94a3b8; }
+        .paperwork-topbar-right { display: flex; gap: 6px; }
+        .paperwork-job-summary { display: grid; gap: 8px; margin: 0 0 14px; padding: 14px; border-radius: 16px; background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(148, 163, 184, 0.25); }
+        .paperwork-job-summary strong { display: block; font-size: 22px; color: #f8fafc; }
+        .paperwork-job-summary span { color: #cbd5e1; font-size: 14px; font-weight: 600; }
+        .paperwork-job-summary-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+        .paperwork-job-summary-row b { font-size: 20px; color: #f8fafc; }
+        .paperwork-outcome-chip { padding: 5px 12px; border-radius: 999px; background: #10b981; color: #052e1f !important; font-weight: 800 !important; }
+        .paperwork-outcome-chip.no-work, .paperwork-outcome-chip.warning { background: #f59e0b; color: #1f1300 !important; }
+        .paperwork-job-summary button { justify-self: start; padding: 6px 0; background: transparent; border: 0; color: #93c5fd; font-weight: 700; font-size: 14px; text-decoration: underline; }
+        .paperwork-more-options, .paperwork-preview-toggle { margin: 12px 0; }
+        .paperwork-more-options > summary, .paperwork-preview-toggle > summary { cursor: pointer; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.3); color: #cbd5e1; font-weight: 800; font-size: 15px; list-style: none; }
+        .paperwork-more-options[open] > summary { margin-bottom: 10px; }
+        .paperwork-preview-toggle { max-width: 960px; margin-left: auto; margin-right: auto; }
       `}</style>
 
       <section className="paperwork-wrap" data-hpd-smoke="paperwork-package-page">
-        <header className="paperwork-top">
-          <div>
-            <p>Field paperwork</p>
-            <h1>Invoice + Affidavit Package</h1>
-            <p>Select the job, choose one package type, then generate the invoice package.</p>
+        {embedded ? null : <header className="paperwork-topbar">
+          <a className="paperwork-back" data-hpd-smoke="paperwork-map-link" href={mapBackHref}>← Map</a>
+          <h1>{form.jobId ? `${form.jobId} package` : "Affidavit + invoice"}</h1>
+          <div className="paperwork-topbar-right">
+            <a className="paperwork-archive" data-hpd-smoke="paperwork-dashboard-link" href="/">Dashboard</a>
+            <a className="paperwork-archive" data-hpd-smoke="paperwork-archive-link" href="/outputs">Archive</a>
           </div>
-          <nav className="paperwork-nav" aria-label="Paperwork actions">
-            <a data-hpd-smoke="paperwork-dashboard-link" href="/">Dashboard</a>
-            <a data-hpd-smoke="paperwork-map-link" href={mapBackHref}>Map</a>
-            <a data-hpd-smoke="paperwork-archive-link" href="/outputs">Archive</a>
-          </nav>
-        </header>
+        </header>}
 
         <section className="paperwork-card" data-hpd-smoke="paperwork-package-card">
-          <span className={`paperwork-package-badge ${packageTone}`}>{affidavitTemplateLabel(outcome)}</span>
-          {form.sourceStatus ? (
-            <p className="paperwork-source-status">
-              Saved status: <strong>{form.sourceStatus}</strong>
-            </p>
-          ) : null}
+          {!selectedId || showJobPicker ? <span className={`paperwork-package-badge ${packageTone}`}>{affidavitTemplateLabel(outcome)}</span> : null}
           {pdfStatus ? (
             <p className="paperwork-pdf-status" aria-live="polite">
               {pdfStatus}
             </p>
           ) : null}
 
+          {selectedId && !showJobPicker ? (
+            <div className="paperwork-job-summary" data-hpd-smoke="paperwork-job-summary">
+              <div>
+                <strong>{form.jobId}</strong>
+                <span>{form.address || "Address not listed"}</span>
+              </div>
+              <div className="paperwork-job-summary-row">
+                <span className={`paperwork-outcome-chip ${packageTone}`}>{packageStatusLabel(outcome)}</span>
+                <b>{form.amount || "$0.00"}</b>
+              </div>
+              <button type="button" data-hpd-smoke="paperwork-change-job" onClick={() => setShowJobPicker(true)}>Change job or type</button>
+            </div>
+          ) : null}
+          <div style={selectedId && !showJobPicker ? { display: "none" } : undefined}>
           <label className="paperwork-field">
             Select Job
             <select data-hpd-smoke="paperwork-job-select" value={selectedId} onChange={(event) => chooseJob(event.target.value)}>
@@ -4549,7 +4944,8 @@ export default function PaperworkPage() {
             </button>
           </div>
 
-          <div className="paperwork-summary-grid">
+          </div>
+          <div className="paperwork-summary-grid" style={selectedId && !showJobPicker ? { display: "none" } : undefined}>
             <div className="paperwork-summary-tile">
               <span>Job</span>
               <strong>{form.jobId || "Select job"}</strong>
@@ -4604,7 +5000,7 @@ export default function PaperworkPage() {
 
           {outcome === "work_completed" || outcome === "partial_work_completed" ? (
             <div
-              className={`refused-access-required package-charge-card ${workDatesProblem(form) || (outcome === "partial_work_completed" && (!form.partialReason.trim() || !form.partialWorkDone.trim())) ? "needs-description" : "ready"}`}
+              className={`refused-access-required package-charge-card ${workDatesProblem(form) || (outcome === "work_completed" && !hasWorkDescription(form)) || (outcome === "partial_work_completed" && (!form.partialReason.trim() || !form.partialWorkDone.trim())) ? "needs-description" : "ready"}`}
               data-hpd-smoke="paperwork-charge-card"
             >
               <div>
@@ -4622,6 +5018,21 @@ export default function PaperworkPage() {
                   placeholder={form.bidAmount || "$0.00"}
                 />
               </label>
+              {outcome === "work_completed" ? (
+                <label className="paperwork-field">
+                  Work description (prints on the invoice; from the ITB, edit if needed)
+                  <textarea
+                    data-hpd-smoke="paperwork-work-description"
+                    rows={5}
+                    value={isFallbackPackageDescription(form.description) ? "" : form.description}
+                    onChange={(event) => update("description", event.target.value)}
+                    placeholder="Type the scope of work from the ITB"
+                  />
+                  {hasWorkDescription(form) ? null : (
+                    <small role="alert" data-hpd-smoke="paperwork-description-missing">The scope couldn&apos;t be read from this job&apos;s ITB. Open the ITB and type the scope here before generating.</small>
+                  )}
+                </label>
+              ) : null}
               <div className="paperwork-grid">
                 <label className="paperwork-field">
                   Work Started
@@ -4765,7 +5176,7 @@ export default function PaperworkPage() {
           })() : null}
 
           <details className="paperwork-advanced">
-            <summary>Review pulled JSON fields</summary>
+            <summary>More details (invoice number, contractor, addresses)</summary>
             <div className="paperwork-advanced-body">
           <div className="paperwork-grid">
             <label className="paperwork-field">
@@ -4878,9 +5289,18 @@ export default function PaperworkPage() {
             </div>
           </details>
 
+          {!packagePreview && editingPackage && packageNotaryRef.current ? (
+            <div className="pkg-update-bar" data-hpd-smoke="paperwork-update-package">
+              <small>Signatures and the notary&apos;s approval are kept.</small>
+              <button type="button" className="paperwork-print" disabled={!canGeneratePackage} onClick={rebuildPackage}>
+                Update package
+              </button>
+            </div>
+          ) : null}
+
           {!packagePreview ? <SignatureCard signer={form.signer} onChange={rememberSignature} /> : null}
 
-          {!packagePreview ? (
+          {!packagePreview && !(editingPackage && packageNotaryRef.current) ? (
             <NotaryCard
               key={notaryKey}
               minDate={
@@ -4894,6 +5314,8 @@ export default function PaperworkPage() {
           ) : null}
 
           {!packagePreview ? (
+            <details className="paperwork-more-options" open={!autoGeneratePackage} data-hpd-smoke="paperwork-more-options">
+            <summary>{autoGeneratePackage ? "More options: build now, PDF only, print copy" : "Make the package"}</summary>
             <div className="paperwork-generate-choice" data-hpd-smoke="paperwork-generate-choice" aria-label="Package media choice">
               <button className="paperwork-print" data-hpd-smoke="paperwork-generate-full-package" type="button" onClick={() => generateCompletePackage(true)} disabled={!canGeneratePackage}>
                 {packageJobLoading ? "Loading Job Data..." : "Generate Email Package"}
@@ -4906,20 +5328,46 @@ export default function PaperworkPage() {
               </button>
               <small>{packageJobLoading ? "Loading COA address and ITB page 3 description before package creation." : "Email ZIP limit: 18 MB. Saved media stays unchanged."}</small>
             </div>
+            </details>
           ) : null}
           {packagePreview ? (
             <div className="paperwork-package-review pkg-review" data-hpd-smoke="paperwork-package-review">
               <div className="pkg-review-head">
                 <div>
-                  <span className={`pkg-review-status ${packageApproved ? "approved" : ""}`}>{packageApproved ? "Approved & saved" : "Review before approving"}</span>
+                  <span className={`pkg-review-status ${packageApproved ? "approved" : ""}`}>{packageApproved ? (delivery?.emailed ? "Emailed & saved to Drive" : "Approved & saved") : delivery?.working ? "Sending..." : "Review before approving"}</span>
                   <h3>{packagePreview.jobId}</h3>
                   <p>{packageStatusLabel(outcome)} · Total {form.amount || "$0.00"}</p>
                 </div>
-                <button type="button" className="pkg-edit" data-hpd-smoke="paperwork-package-edit" onClick={clearPackagePreview}>
-                  Edit
+                <button type="button" className="pkg-edit" data-hpd-smoke="paperwork-package-edit" onClick={editPackageDetails}>
+                  Edit details
                 </button>
               </div>
 
+              {packageContents ? (() => {
+                const photos = packageContents.photos - (emailBeforeMedia ? 0 : packageContents.beforePhotos);
+                const videos = packageContents.videos - (emailBeforeMedia ? 0 : packageContents.beforeVideos);
+                const videoBytes = packageContents.videoBytes - (emailBeforeMedia ? 0 : packageContents.beforeVideoBytes);
+                return (
+                  <div className="pkg-contents" data-hpd-smoke="paperwork-package-contents">
+                    <div className="pkg-email-choice" role="group" aria-label="What the email carries">
+                      <button type="button" className={emailBeforeMedia ? "is-on" : ""} aria-pressed={emailBeforeMedia} data-hpd-smoke="paperwork-email-before-after" disabled={packageApproved} onClick={() => chooseEmailBeforeMedia(true)}>Before + after</button>
+                      <button type="button" className={!emailBeforeMedia ? "is-on" : ""} aria-pressed={!emailBeforeMedia} data-hpd-smoke="paperwork-email-after-only" disabled={packageApproved} onClick={() => chooseEmailBeforeMedia(false)}>After only</button>
+                    </div>
+                    <p>
+                      📎 Email: signed PDF · {photos} photo{photos === 1 ? "" : "s"} · {videos} video{videos === 1 ? "" : "s"}
+                      {videos ? ` (${(videoBytes / 1_000_000).toFixed(1)} MB of video)` : ""}
+                      {!emailBeforeMedia ? " · before photos/videos go to Drive only" : ""}
+                      {!packageContents.videos && packageContents.savedVideos ? <b> · {packageContents.savedVideos} saved video(s) are NOT in this package. Use Edit details and include photos/videos.</b> : null}
+                    </p>
+                  </div>
+                );
+              })() : null}
+              {packagePreview.unsigned ? (
+                <div className="pkg-copy-head" data-hpd-smoke="paperwork-signed-head">
+                  <strong>Signed copy</strong>
+                  <small>Signed by the principal and the notary. Emailed to you with the before/after photos and saved to Google Drive when you approve. Forward this one.</small>
+                </div>
+              ) : null}
               <div className="pkg-pages" data-hpd-smoke="paperwork-package-pages" aria-label="PDF pages">
                 {packagePreview.pdfPreviewImageUrls.length ? (
                   packagePreview.pdfPreviewImageUrls.map((url, index) => (
@@ -4937,6 +5385,28 @@ export default function PaperworkPage() {
                   </div>
                 )}
               </div>
+
+              {packagePreview.unsigned ? (
+                <div className="pkg-unsigned" data-hpd-smoke="paperwork-unsigned-copy">
+                  <div className="pkg-copy-head">
+                    <strong>Unsigned print copy</strong>
+                    <small>Print, sign and notarize in ink. Saved to the same Google Drive folder when you approve -- not emailed.</small>
+                  </div>
+                  <div className="pkg-pages" aria-label="Unsigned print copy pages">
+                    {packagePreview.unsigned.imageUrls.length ? (
+                      packagePreview.unsigned.imageUrls.map((url, index) => (
+                        <a className="pkg-page" key={url} href={packagePreview.unsigned!.url} target="_blank" rel="noopener noreferrer">
+                          <img src={url} alt={`${packagePreview.jobId} unsigned page ${index + 1}`} />
+                          <span>{index === packagePreview.unsigned!.imageUrls.length - 1 ? "Invoice (unsigned)" : `Affidavit page ${index + 1} (unsigned)`}</span>
+                        </a>
+                      ))
+                    ) : null}
+                  </div>
+                  <a className="pkg-unsigned-download" data-hpd-smoke="paperwork-download-unsigned" href={packagePreview.unsigned.url} download={packagePreview.unsigned.fileName}>
+                    Download unsigned copy to print
+                  </a>
+                </div>
+              ) : null}
 
               <div className="pkg-photos" data-hpd-smoke="paperwork-package-photos">
                 <strong>
@@ -4978,7 +5448,7 @@ export default function PaperworkPage() {
                 <>
                   <label className="pkg-confirm">
                     <input type="checkbox" checked={packageReviewed} disabled={packageBusy || packageApproved} onChange={(event) => setPackageReviewed(event.target.checked)} />
-                    I checked every page and photo.
+                    {packagePreview.unsigned ? "I checked the signed and unsigned pages and every photo." : "I checked every page and photo."}
                   </label>
                   <button
                     type="button"
@@ -5100,7 +5570,9 @@ export default function PaperworkPage() {
           </div>
         ) : null}
 
-        <section className="paperwork-preview" hidden={Boolean(packagePreview)}>
+        <details className="paperwork-preview-toggle" hidden={Boolean(packagePreview)}>
+          <summary>Preview summary</summary>
+        <section className="paperwork-preview">
           <div className="paperwork-sheet">
             <div className="preview-head">
               <div>
@@ -5164,6 +5636,7 @@ export default function PaperworkPage() {
             </section>
           </div>
         </section>
+        </details>
       </section>
     </main>
   );

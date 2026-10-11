@@ -24,12 +24,15 @@ export function jobQueue(job: Job): string {
   return "pending";
 }
 
+// Created once: building a date formatter is slow, and this runs for every pin on every redraw.
+const NEW_YORK_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
+
 export function visitState(job: Job) {
   const normalized = (value: unknown) => String(value || "").toLowerCase().replace(/[_-]+/g, " ");
   const status = normalized(savedJobStatus(job));
   const history = (Array.isArray(job.FieldVisitHistory) ? job.FieldVisitHistory : []).filter(entry => entry && typeof entry === "object" && entry.outcome);
   const date = (value: unknown) => { const n = Date.parse(String(value || "")); return Number.isFinite(n) ? n : 0; };
-  const day = (value: unknown) => date(value) ? new Intl.DateTimeFormat("en-CA", {timeZone:"America/New_York"}).format(new Date(date(value))) : "undated";
+  const day = (value: unknown) => date(value) ? NEW_YORK_DAY.format(new Date(date(value))) : "undated";
   const visits = new Set(history.map(entry => day(entry.recordedAt)));
   const noAccessDays = new Set(history.filter(entry => /no access/.test(normalized(entry.outcome))).map(entry => day(entry.recordedAt)));
   const explicitAttempts = /no access.*(2nd|second|complete|3rd|third)/.test(status) ? 2 : /no access/.test(status) || job.NoAccessFirstAttemptAt ? 1 : 0;

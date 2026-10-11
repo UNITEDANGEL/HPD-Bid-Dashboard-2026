@@ -70,13 +70,32 @@ try {
     // Email/PDF packages are always signed: blocked until a signature is saved (a test squiggle here).
     await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
     await page.getByText("Add your signature first").first().waitFor({ timeout: 10000 });
-    await page.locator('[data-hpd-smoke="paperwork-signature-draw"]').click();
-    const pad = await page.locator('[data-hpd-smoke="paperwork-signature-pad"]').boundingBox();
-    await page.mouse.move(pad.x + 30, pad.y + 100);
-    await page.mouse.down();
-    for (let i = 0; i <= 20; i += 1) await page.mouse.move(pad.x + 30 + i * 12, pad.y + 80 + Math.sin(i / 2) * 30);
-    await page.mouse.up();
-    await page.locator('[data-hpd-smoke="paperwork-signature-save"]').click();
+    if (outcome === "work_completed") {
+      // One tap makes and saves both signatures; they must still be there after a reload.
+      await page.locator('[data-hpd-smoke="paperwork-signature-quick"]').click();
+      await page.locator('[data-hpd-smoke="paperwork-signature-preview"]').waitFor({ timeout: 10000 });
+      await page.locator('[data-hpd-smoke="paperwork-notary-quick"]').click();
+      await page.locator('[data-hpd-smoke="paperwork-notary-preview"]').waitFor({ timeout: 10000 });
+      await page.reload({ waitUntil: "networkidle" });
+      await page.locator('[data-hpd-smoke="paperwork-signature-preview"]').waitFor({ timeout: 10000 });
+      await page.locator('[data-hpd-smoke="paperwork-notary-preview"]').waitFor({ timeout: 10000 });
+      assert.equal(await page.locator('[data-hpd-smoke="paperwork-signature-quick"]').count(), 0, `${job}: saved signer signature must load`);
+      await page.locator('[data-hpd-smoke="paperwork-signature-card"]').screenshot({ path: path.join(outDir, "signer-card.png") });
+      await page.locator('[data-hpd-smoke="paperwork-notary-card"]').screenshot({ path: path.join(outDir, "notary-card.png") });
+      // A saved notary signature is only placed by the notary's one-tap statement that they witnessed it.
+      assert.match(await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').innerText(), /witnessed the signing/i);
+      await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
+      await page.getByText("Notarized by Chetanpreet Malhi").first().waitFor({ timeout: 10000 });
+    } else {
+      // Finger signature on the pad.
+      await page.locator('[data-hpd-smoke="paperwork-signature-draw"]').click();
+      const pad = await page.locator('[data-hpd-smoke="paperwork-signature-pad"]').boundingBox();
+      await page.mouse.move(pad.x + 30, pad.y + 100);
+      await page.mouse.down();
+      for (let i = 0; i <= 20; i += 1) await page.mouse.move(pad.x + 30 + i * 12, pad.y + 80 + Math.sin(i / 2) * 30);
+      await page.mouse.up();
+      await page.locator('[data-hpd-smoke="paperwork-signature-save"]').click();
+    }
     if (outcome === "no_access") {
       // Attempts closer than 72 hours, or a missing call date, must block generation.
       await page.fill('[data-hpd-smoke="paperwork-attempt-1"]', "2026-10-01");
@@ -88,14 +107,22 @@ try {
         await page.fill('[data-hpd-smoke="paperwork-call-1"]', "2026-09-30");
       }
     }
-    await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
+    if (outcome === "work_completed") {
+      // The notary's approval is the last step: the package builds by itself, no Generate tap.
+      await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
+      // Signed and unsigned copies are reviewed together on the same screen.
+      await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"] .pkg-page img').nth(pages - 1).waitFor({ timeout: 30000 });
+      assert.ok(await page.locator('[data-hpd-smoke="paperwork-download-unsigned"]').getAttribute("download"), `${job}: unsigned copy must be downloadable from the review screen`);
+    } else {
+      await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
+    }
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
     // Every PDF page must render as a preview image (pdfjs failed on browsers without new JS APIs).
-    await page.locator(".pkg-page img").nth(pages - 1).waitFor({ timeout: 30000 });
-    assert.equal(await page.locator(".pkg-page img").count(), pages, `${job}: review must preview every page`);
+    await page.locator('[data-hpd-smoke="paperwork-package-pages"] .pkg-page img').nth(pages - 1).waitFor({ timeout: 30000 });
+    assert.equal(await page.locator('[data-hpd-smoke="paperwork-package-pages"] .pkg-page img').count(), pages, `${job}: review must preview every page`);
     await page.screenshot({ path: path.join(outDir, `${job}-${outcome}.png`) });
 
-    const href = await page.locator(`a[download$="-affidavit-invoice.pdf"]`).first().getAttribute("href");
+    const href = await page.locator('[data-hpd-smoke="paperwork-save-pdf"]').getAttribute("href");
     assert.ok(href, `${job}: no PDF link in package review`);
     const base64 = await page.evaluate(async (url) => {
       const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
@@ -109,10 +136,105 @@ try {
     const pdf = await PDFDocument.load(bytes);
     assert.equal(pdf.getPageCount(), pages, `${job}: expected affidavit (2) + invoice (1) pages`);
     assert.equal(pdf.getForm().getFields().length, 0, `${job}: form fields must be flattened`);
-    assert.ok(Buffer.from(bytes).toString("latin1").includes("/Subtype /Image"), `${job}: signature image must be in the PDF`);
+    // Each signature PNG is two image objects (picture + transparency mask). The signer's is on the
+    // affidavit and the invoice (4); the notary's adds 2 more.
+    const imageCount = (Buffer.from(bytes).toString("latin1").match(/\/Subtype \/Image/g) || []).length;
+    assert.ok(imageCount >= (outcome === "work_completed" ? 6 : 4), `${job}: signer${outcome === "work_completed" ? " and notary" : ""} signature images must be in the PDF (found ${imageCount})`);
+    console.log(`  ${job}: ${imageCount} signature image(s) in the PDF`);
     assert.ok(/\bCOPY\b/.test(extractPdfText(bytes)), `${job}: emailed/Drive copy must carry the COPY watermark`);
     assert.deepEqual(errors, [], `${job}: page errors`);
     console.log(`PASS ${job} ${outcome}: package generated in browser, ${pages} flattened pages, COPY watermark present`);
+    await page.close();
+  }
+
+  // Job card flow: "Review & Approve Package" opens the page with auto=package. It must wait for the
+  // signer and the notary, build by itself, and on approve email ONLY the signed copy while the
+  // unsigned print copy goes to the same Drive folder. Google is faked here; nothing is sent.
+  {
+    const job = "ER05729";
+    const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+    const errors = [];
+    page.on("pageerror", (error) => errors.push(String(error)));
+    const uploads = [];
+    const emails = [];
+    let filing = null;
+    let visitRecord = "";
+    await page.route("**/api/drive/**", async (route) => {
+      const url = route.request().url();
+      if (url.includes("/session")) return route.fulfill({ json: { configured: true, connected: true, canEmail: true, email: "test@example.com" } });
+      if (url.includes("/package-folder")) {
+        filing = JSON.parse(route.request().postData() || "{}");
+        return route.fulfill({ json: { folderId: "TEST-FOLDER", link: "https://drive.example/TEST-FOLDER" } });
+      }
+      if (url.includes("/package-file")) {
+        const name = decodeURIComponent(route.request().headers()["x-hpd-name"] || "");
+        uploads.push(name);
+        if (name.startsWith("Visit record")) visitRecord = (route.request().postDataBuffer() || Buffer.alloc(0)).toString("utf8");
+        return route.fulfill({ json: { ok: true } });
+      }
+      if (url.includes("/email-package")) {
+        emails.push({ subject: decodeURIComponent(route.request().headers()["x-hpd-subject"] || ""), body: route.request().postData() || "" });
+        return route.fulfill({ json: { to: ["test@example.com"] } });
+      }
+      return route.fulfill({ json: {} });
+    });
+
+    await page.goto(`${baseUrl}/paperwork?job=${job}&outcome=work_completed&doc=package&auto=package&media=none`, { waitUntil: "networkidle" });
+    await page.locator('[data-hpd-smoke="paperwork-signature-quick"]').click();
+    await page.locator('[data-hpd-smoke="paperwork-notary-quick"]').click();
+    await page.waitForTimeout(1500);
+    assert.equal(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count(), 0, `${job}: auto package must wait for the notary's approval`);
+    await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
+    // No Generate tap: the package builds by itself after the notary approves.
+    await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
+    await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"]').waitFor({ timeout: 30000 });
+    // No review/approve tap either: once built, the signed package emails itself and files in Drive.
+    await page.locator('[data-hpd-smoke="paperwork-drive-link"]').waitFor({ timeout: 60000 });
+    assert.equal(emails.length, 1, `${job}: the signed package must email itself once, got ${emails.length}`);
+    const firstEmail = emails[0];
+    // Edit a date from the review screen and rebuild: no signing again, new date in the signed PDF.
+    await page.locator('[data-hpd-smoke="paperwork-package-edit"]').click();
+    await page.fill('[data-hpd-smoke="paperwork-work-start"]', "2026-09-29");
+    await page.fill('[data-hpd-smoke="paperwork-work-complete"]', "2026-09-30");
+    await page.locator('[data-hpd-smoke="paperwork-update-package"] button').click();
+    await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"]').waitFor({ timeout: 60000 });
+    const editedHref = await page.locator('[data-hpd-smoke="paperwork-save-pdf"]').getAttribute("href");
+    const editedBytes = Buffer.from(await page.evaluate(async (url) => {
+      const bytes = new Uint8Array(await (await fetch(url)).arrayBuffer());
+      let text = "";
+      for (const byte of bytes) text += String.fromCharCode(byte);
+      return btoa(text);
+    }, editedHref), "base64");
+    assert.ok(extractPdfText(editedBytes).includes("09/30/26"), `${job}: edited Work Completed date must be in the rebuilt PDF`);
+    const editedImages = (editedBytes.toString("latin1").match(/\/Subtype \/Image/g) || []).length;
+    assert.ok(editedImages >= 6, `${job}: rebuilt package keeps the signer and notary signatures (found ${editedImages} images)`);
+    // The corrected package sends itself again.
+    await page.locator('[data-hpd-smoke="paperwork-drive-link"]').waitFor({ timeout: 60000 });
+    for (let i = 0; i < 40 && emails.length < 2; i++) await page.waitForTimeout(250);
+    assert.equal(emails.length, 2, `${job}: the updated package must email itself again`);
+
+    // Drive: filed by year / month / borough, one neatly named folder per package.
+    assert.equal(filing.path.length, 3, `${job}: Drive filing path is year / month / borough`);
+    assert.match(filing.path[0], /^20\d\d$/);
+    assert.match(filing.path[1], /^\d\d - [A-Z][a-z]+$/);
+    assert.match(filing.name, new RegExp(`^20\\d\\d-\\d\\d-\\d\\d - ${job} - .+ - Work Completed$`), filing.name);
+    assert.ok(uploads.includes(`SIGNED - ${job} - Work Completed.pdf`), `${job}: signed PDF saved to Drive (got ${uploads.join(", ")})`);
+    assert.ok(uploads.includes(`NOT SIGNED - print copy - ${job} - Work Completed.pdf`), `${job}: unsigned print copy saved to Drive`);
+    // The internal visit record (times + GPS) is filed in Drive and never emailed.
+    assert.ok(uploads.includes(`Visit record - ${job}.txt`), `${job}: visit record saved to Drive (got ${uploads.join(", ")})`);
+    assert.ok(visitRecord.includes("VISIT RECORD (internal proof") && visitRecord.includes(`Job: ${job}`), `${job}: visit record content: ${visitRecord.slice(0, 200)}`);
+    assert.ok(emails.every((e) => !e.body.includes("Visit record")), `${job}: the visit record must not be emailed`);
+    // Only the SIGNED email goes out; the unsigned copy is Drive only.
+    assert.ok(emails.every((e) => e.subject.startsWith("SIGNED - ")), `${job}: only SIGNED emails, got ${emails.map((e) => e.subject).join(" | ")}`);
+    const signedEmail = firstEmail;
+    assert.ok(signedEmail.subject.startsWith("SIGNED - "), signedEmail.subject);
+    assert.ok(signedEmail.body.includes(`SIGNED - ${job} - Work Completed.pdf`) && !signedEmail.body.includes("NOT SIGNED"), `${job}: SIGNED email carries only the signed PDF`);
+    // The SIGNED email gets forwarded: its message text must not carry the Google Drive link.
+    const signedText = Buffer.from(signedEmail.body.split("Content-Transfer-Encoding: base64\r\n\r\n")[1].split("\r\n--")[0].replace(/\r\n/g, ""), "base64").toString("utf8");
+    assert.ok(signedText.startsWith("SIGNED COPY"), `${job}: could not read the SIGNED email text`);
+    assert.ok(!/drive\.example|Google Drive/i.test(signedText), `${job}: SIGNED email must not include the Google Drive link`);
+    assert.deepEqual(errors, [], `${job}: page errors`);
+    console.log(`PASS ${job} job-card flow: waits for notary, builds by itself, emails only the SIGNED copy, files signed + unsigned in Drive ${filing.path.join(" / ")} / ${filing.name}`);
     await page.close();
   }
 

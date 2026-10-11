@@ -612,6 +612,28 @@
   color: #ffcf99;
 }
 
+.fc-map-hints {
+  position: absolute;
+  left: 50%;
+  bottom: 66px;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  pointer-events: none;
+}
+
+.fc-map-hints:empty,
+.fc-map-hints[hidden] {
+  display: none;
+}
+
+.fc-map-hints .fc-map-hint {
+  position: static;
+  transform: none;
+}
+
 .fc-map-fab.is-active {
   background: var(--fc-accent);
   color: white;
@@ -1777,7 +1799,9 @@
 .fc-app.fc-reference .fc-age-tag[data-priority="unknown"] { background: #454b55; color: white; }
 .fc-app.fc-reference .fc-map-fab svg { width: 22px; height: 22px; }
 .fc-app.fc-reference .fc-visible-fab, .fc-app.fc-reference .fc-legend { display: none; }
-.fc-app.fc-reference .fc-map-hint { top: 10px; bottom: auto; left: 12px; right: 62px; transform: none; width: auto; white-space: normal; font-size: 12px; border-radius: 6px; }
+/* Below the search box, not hidden behind it (its dark edges showed as a black line around the search). */
+.fc-app.fc-reference .fc-map-hints { top: calc(max(10px, env(safe-area-inset-top)) + 160px); bottom: auto; left: 12px; right: 62px; transform: none; justify-items: stretch; }
+.fc-app.fc-reference .fc-map-hint { width: auto; white-space: normal; font-size: 13px; border-radius: 8px; }
 .fc-app.fc-reference .leaflet-boroughLabels-pane { display: none; }
 .fc-app.fc-reference .leaflet-control-attribution { font-size: 8px; }
 .fc-app.fc-reference .fc-tabbar, .fc-app.fc-reference.fc-has-job .fc-tabbar { display: grid; position: absolute; left: 0; transform: none; width: 100%; max-width: none; height: 62px; padding: 7px 6px max(7px,env(safe-area-inset-bottom)); background: #030b14; border-top: 1px solid #142c41; }
@@ -2112,3 +2136,221 @@
 .fc-app.fc-reference.fc-full-map .plan-my-day.is-open .plan-my-day__toggle { display:none; }
 .fc-app.fc-reference.fc-full-map .plan-my-day.is-open .plan-my-day__panel { max-height:calc(100dvh - 130px) !important; border-radius:8px; }
 .fc-app:has(.plan-my-day.is-open) :is(.fc-today-route,.fc-current-job) { visibility:hidden; }
+
+/* Quick filters: a button right next to the search box opens one-tap status / borough / date chips. */
+.fc-app.fc-reference.fc-clean-streets .fc-search-row { gap: 8px; }
+.fc-app .fc-search-row .fc-filter-btn {
+  position: relative;
+  flex: 0 0 auto;
+  width: 50px;
+  min-height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid #d2dad9;
+  background: #fffffff0;
+  color: #25332f;
+  box-shadow: 0 3px 14px #233b4220;
+  cursor: pointer;
+}
+.fc-app .fc-search-row .fc-filter-btn svg { width: 22px; height: 22px; }
+.fc-app .fc-search-row .fc-filter-btn.is-open { background: #1d7a52; border-color: #1d7a52; color: #ffffff; }
+.fc-filter-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #f59e0b;
+  color: #1f1300;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 20px;
+}
+.fc-quick-filters {
+  position: absolute;
+  top: calc(max(12px, env(safe-area-inset-top)) + 60px);
+  left: 12px;
+  right: 12px;
+  z-index: 1600;
+  max-height: min(78vh, 640px);
+  overflow-y: auto;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #d2dad9;
+  background: #fffffff7;
+  color: #1f2d29;
+  box-shadow: 0 10px 30px #0f1f2a40;
+}
+.fc-quick-head { display: flex; align-items: center; gap: 8px; }
+.fc-quick-head strong { flex: 1; font-size: 17px; }
+.fc-quick-head button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid #c9d3d1;
+  background: #ffffff;
+  color: #25332f;
+  font-weight: 700;
+}
+.fc-quick-head button:last-child { background: #1d7a52; border-color: #1d7a52; color: #ffffff; }
+.fc-quick-label { margin-top: 4px; color: #65756f; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+.fc-quick-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.fc-quick-chips button {
+  min-height: 40px;
+  padding: 0 13px;
+  border-radius: 999px;
+  border: 1px solid #c9d3d1;
+  background: #f4f7f6;
+  color: #25332f;
+  font-size: 15px;
+  font-weight: 650;
+}
+.fc-quick-chips button b { margin-left: 4px; color: #65756f; font-weight: 700; }
+.fc-quick-chips button.is-active { background: #1d7a52; border-color: #1d7a52; color: #ffffff; }
+.fc-quick-chips button.is-active b { color: #d1fae5; }
+
+/* Borough bar: one tap per borough, plus quick day windows, right under the search box. */
+.fc-borough-bar {
+  position: absolute;
+  top: calc(max(12px, env(safe-area-inset-top)) + 60px);
+  left: 12px;
+  right: 66px;
+  z-index: 1500;
+  display: grid;
+  gap: 6px;
+}
+.fc-bar-boroughs, .fc-bar-days-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+.fc-bar-days-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.fc-borough-bar button {
+  min-width: 0;
+  border: 1px solid #d2dad9;
+  background: #fffffff0;
+  color: #25332f;
+  box-shadow: 0 3px 12px #233b4224;
+  cursor: pointer;
+}
+.fc-bar-boroughs button {
+  height: 52px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 1px;
+  padding: 0;
+  border-radius: 13px;
+}
+.fc-bar-boroughs button span { font-size: 21px; line-height: 1; }
+.fc-bar-boroughs button small { font-size: 10.5px; font-weight: 800; }
+.fc-bar-boroughs button.is-active { border-color: var(--boro, #1d7a52); box-shadow: 0 0 0 2.5px var(--boro, #1d7a52), 0 3px 12px #233b4230; background: #ffffff; }
+.fc-bar-days-row button { height: 32px; border-radius: 999px; font-size: 12.5px; font-weight: 750; padding: 0 4px; white-space: nowrap; }
+.fc-bar-days-row button.is-active { background: #1d7a52; border-color: #1d7a52; color: #ffffff; }
+
+/* Pins grow as you zoom in; the one nearest the middle of the screen glows. */
+.fc-label-marker .fc-day-pin { transition: transform 0.18s ease, box-shadow 0.18s ease; transform-origin: 50% 100%; }
+.fc-label-marker.is-z16 .fc-day-pin { transform: scale(1.18); }
+.fc-label-marker.is-z18 .fc-day-pin { transform: scale(1.38); }
+.fc-label-marker.is-focus { z-index: 2000 !important; }
+.fc-label-marker.is-focus .fc-day-pin {
+  transform: scale(1.55);
+  box-shadow: 0 0 0 3px #ffffff, 0 0 0 7px color-mix(in srgb, var(--pin-color) 45%, transparent), 0 0 22px var(--pin-color);
+  animation: fc-focus-pulse 1.6s ease-in-out infinite;
+}
+@keyframes fc-focus-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px #ffffff, 0 0 0 6px color-mix(in srgb, var(--pin-color) 40%, transparent), 0 0 16px var(--pin-color); }
+  50% { box-shadow: 0 0 0 3px #ffffff, 0 0 0 10px color-mix(in srgb, var(--pin-color) 25%, transparent), 0 0 28px var(--pin-color); }
+}
+@media (prefers-reduced-motion: reduce) { .fc-label-marker.is-focus .fc-day-pin { animation: none; } }
+
+/* "You are here": a bigger blue dot with a white ring, a soft halo and a "You" tag. */
+.fc-you-are-here { width: 40px; height: 40px; border: 0; background: transparent; box-shadow: none; display: grid; place-items: center; }
+.fc-you-are-here-dot { position: relative; width: 26px; height: 26px; border-radius: 50%; background: #0a84ff; border: 5px solid #ffffff; box-shadow: 0 0 0 2px #0a84ff, 0 4px 14px rgba(0, 0, 0, 0.55); }
+.fc-you-are-here-pulse { inset: -22px; background: rgba(10, 132, 255, 0.32); border: 2px solid rgba(10, 132, 255, 0.55); }
+.fc-you-are-here-label { position: absolute; top: -28px; left: 50%; transform: translateX(-50%); padding: 2px 10px; border-radius: 999px; background: #0a84ff; color: #ffffff; border: 2px solid #ffffff; font: 800 13px/18px system-ui, sans-serif; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4); white-space: nowrap; }
+
+/* You are always on top of every pin, including the glowing focused one. */
+.leaflet-marker-icon.fc-you-marker { z-index: 100000 !important; }
+
+/* Automatic data check alert */
+.fc-data-check { pointer-events: auto; display: grid; gap: 6px; }
+.fc-data-check > button { border: 0; cursor: pointer; font: inherit; font-weight: 800; }
+.fc-data-check-list { list-style: none; margin: 0; padding: 6px; max-height: 46vh; overflow-y: auto; background: #0f172a; border: 1px solid rgba(245, 158, 11, 0.6); border-radius: 14px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); }
+.fc-data-check-list li + li { border-top: 1px solid rgba(148, 163, 184, 0.18); }
+.fc-data-check-list button { display: grid; gap: 2px; width: 100%; padding: 10px; text-align: left; background: transparent; border: 0; color: #f8fafc; font: 600 14px/1.3 system-ui, sans-serif; cursor: pointer; }
+.fc-data-check-list b { color: #fbbf24; }
+.fc-data-check-list span { color: #e2e8f0; }
+.fc-data-check-list small { color: #fca5a5; font-size: 12.5px; }
+
+.fc-clear-warn { grid-column: 1 / -1; margin: 0 0 4px; color: #fca5a5; font-size: 13.5px; font-weight: 700; line-height: 1.35; }
+.fc-outcome-link.is-on { background: rgba(139, 92, 246, 0.25); border-color: #8b5cf6; color: #ede9fe; }
+.fc-save-message.is-error { color: #fecaca; background: rgba(220, 38, 38, 0.2); border: 1px solid #dc2626; border-radius: 10px; padding: 8px 10px; font-weight: 700; }
+
+/* Ready to close out */
+.fc-close-out > button { background: #065f46; color: #ecfdf5; }
+.fc-close-out .fc-data-check-list { border-color: rgba(16, 185, 129, 0.7); }
+.fc-close-out-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 6px; }
+.fc-close-out-row small { color: #6ee7b7 !important; }
+.fc-close-out-go { padding: 9px 12px; border-radius: 10px; background: #10b981; color: #052e1f; font: 800 14px system-ui, sans-serif; text-decoration: none; white-space: nowrap; }
+
+/* Keep the map clear: the close-out and data-check alerts are small pills until opened. */
+.fc-app.fc-reference .fc-data-check { justify-items: start; }
+.fc-app.fc-reference .fc-data-check > button { width: auto; padding: 6px 12px; font-size: 13px; border-radius: 999px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35); }
+.fc-app.fc-reference .fc-data-check-list { width: 100%; box-sizing: border-box; }
+
+/* The map page is exactly the visible screen: no page scroll, no rubber-band. On an iPhone
+   in Safari, 100vh is taller than what you see, so the page could scroll and show a dark strip
+   under Today's route. */
+html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: hidden; overscroll-behavior: none; }
+.fc-organized-menu .fc-app-version { display: block; margin-top: 6px; color: #94a3b8; font-size: 12px; font-weight: 600; text-align: center; }
+.fc-app.fc-clean-streets:not(.fc-sheet-expanded) .fc-job-sheet > .jc-media-docs { display: none; }
+/* No access once: jobs waiting for the 2nd try (amber when one is due) */
+.fc-second-try > button { background: #3730a3; color: #eef2ff; }
+.fc-second-try > button.fc-map-hint-warn { background: #b45309; color: #fffbeb; }
+.fc-second-try .fc-data-check-list { border-color: rgba(129, 140, 248, 0.7); }
+.fc-second-try .fc-data-check-list small { color: #c7d2fe; }
+/* Photos only on this phone: one tap turns on the Drive backup */
+.fc-backup-pill > button { background: #92400e; color: #fffbeb; }
+/* Phone space running low: tap opens Storage */
+.fc-space-pill > a { display: inline-block; background: #991b1b; color: #fef2f2; text-decoration: none; }
+
+/* Map pins: a teardrop in the status color with a white symbol, its tip on the building.
+   The chip says how late open work is, an appointment's time, or "2nd try". */
+.fc-pin { position: relative; width: 36px; height: 42px; transform-origin: 50% 95%; transition: transform 0.18s ease; }
+.fc-pin-head { position: absolute; left: 3px; top: 3px; box-sizing: border-box; width: 30px; height: 30px; display: grid; place-items: center; background: var(--pin); border: 2.5px solid #fff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5); }
+.fc-pin-head svg { width: 16px; height: 16px; transform: rotate(45deg); }
+.fc-pin-chip { position: absolute; left: 22px; top: -9px; padding: 1px 6px; border-radius: 999px; background: #fff; color: #1f2937; border: 1.5px solid var(--pin); font: 800 11px/15px system-ui, sans-serif; white-space: nowrap; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35); pointer-events: none; }
+.fc-pin.is-overdue .fc-pin-chip { color: #92400e; border-color: #f59e0b; }
+.fc-pin.is-late .fc-pin-chip { color: #fff; background: #dc2626; border-color: #fff; }
+.fc-pin.is-upcoming .fc-pin-chip { color: #334155; border-color: #94a3b8; }
+.fc-pin-visits { position: absolute; left: -5px; top: -5px; min-width: 16px; height: 16px; padding: 0 3px; box-sizing: border-box; border-radius: 999px; background: #111827; color: #fff; border: 1.5px solid #fff; font: 800 10px/13px system-ui, sans-serif; text-align: center; pointer-events: none; }
+.fc-pin.is-done .fc-pin-head { opacity: 0.88; }
+/* Appointments: today = amber ring; within 2 hours (or under way) = pulsing, time-to-go chip. */
+.fc-pin.is-appointment .fc-pin-chip { background: #f59e0b; color: #1c1917; border-color: #fff; }
+.fc-pin.is-today .fc-pin-head { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.55), 0 3px 8px rgba(0, 0, 0, 0.5); }
+.fc-pin.is-soon { transform: scale(1.25); z-index: 5; }
+.fc-pin.is-soon .fc-pin-head { animation: fc-pin-soon 1.2s ease-in-out infinite; }
+.fc-pin.is-due .fc-pin-head { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.6), 0 3px 8px rgba(0, 0, 0, 0.5); }
+.fc-pin.is-due .fc-pin-chip { background: #f59e0b; color: #1c1917; border-color: #fff; }
+@keyframes fc-pin-soon { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.85), 0 3px 8px rgba(0, 0, 0, 0.5); } 50% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0), 0 3px 8px rgba(0, 0, 0, 0.5); } }
+.fc-label-marker:has(.fc-pin.is-soon) { z-index: 1900 !important; }
+/* Bigger as you zoom in; the one nearest the middle of the screen glows. */
+.fc-label-marker.is-z16 .fc-pin { transform: scale(1.15); }
+.fc-label-marker.is-z18 .fc-pin { transform: scale(1.3); }
+.fc-label-marker.is-focus .fc-pin { transform: scale(1.45); }
+.fc-label-marker.is-focus .fc-pin-head { box-shadow: 0 0 0 3px #fff, 0 0 0 8px color-mix(in srgb, var(--pin) 40%, transparent), 0 0 22px var(--pin); }
+@media (prefers-reduced-motion: reduce) { .fc-pin.is-soon .fc-pin-head { animation: none; } }
+/* Next appointment on the map: amber, pulsing when it's within 2 hours. */
+.fc-appointment-pill > button { background: #b45309; color: #fffbeb; }
+.fc-appointment-pill.is-soon > button { background: #f59e0b; color: #1c1917; animation: fc-appt-pill 1.4s ease-in-out infinite; }
+@keyframes fc-appt-pill { 0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); } 50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); } }
+/* A newer version is live while a job card is open: one tap updates. */
+.fc-update-ready { position: fixed; z-index: 3000; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 8px); transform: translateX(-50%); min-height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: #2563eb; color: #fff; font: 700 15px system-ui, sans-serif; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); white-space: nowrap; }
+.fc-update-ready b { text-decoration: underline; }
+/* Running version, small, bottom-left of the map. */
+.fc-version-tag { position: fixed; z-index: 1200; left: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 4px); padding: 1px 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.75); color: #94a3b8; font: 600 10px/14px system-ui, sans-serif; pointer-events: none; }
+/* The test job: purple flask pin with a TEST tag */
+.fc-pin.is-test .fc-pin-head { box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.55), 0 3px 8px rgba(0, 0, 0, 0.5); }
+.fc-pin.is-test .fc-pin-chip { background: #7c3aed; color: #fff; border-color: #ede9fe; }

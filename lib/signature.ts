@@ -1,28 +1,30 @@
-// The signer's own signature image, kept on this device only (localStorage) and placed on the
-// affidavit "Signature" line and the invoice "Signature of Principal" line.
-// Never used for the notary section: the notary signs, stamps and dates in person or online.
+// Signature images, kept on this device only (localStorage) -- never uploaded or bundled with
+// the site. The signer's goes on the affidavit "Signature" line and the invoice "Signature of
+// Principal" line. The notary's own saved signature is only ever placed after the notary
+// confirms they witnessed the signing and approves that affidavit.
 
 export const SIGNATURE_KEY = "hpd-signer-signature-v1";
+export const NOTARY_SIGNATURE_KEY = "hpd-notary-signature-v1";
 const MAX_SIGNATURE_CHARS = 600_000;
 
-export function loadSignature(): string {
+export function loadSignature(key = SIGNATURE_KEY): string {
   try {
-    const value = localStorage.getItem(SIGNATURE_KEY) || "";
+    const value = localStorage.getItem(key) || "";
     return value.startsWith("data:image/png;base64,") ? value : "";
   } catch {
     return "";
   }
 }
 
-export function saveSignature(dataUrl: string) {
+export function saveSignature(dataUrl: string, key = SIGNATURE_KEY) {
   if (!dataUrl.startsWith("data:image/png;base64,")) throw new Error("Signature must be a PNG image.");
   if (dataUrl.length > MAX_SIGNATURE_CHARS) throw new Error("Signature image is too large. Draw it again or use a smaller picture.");
-  localStorage.setItem(SIGNATURE_KEY, dataUrl);
+  localStorage.setItem(key, dataUrl);
 }
 
-export function clearSignature() {
+export function clearSignature(key = SIGNATURE_KEY) {
   try {
-    localStorage.removeItem(SIGNATURE_KEY);
+    localStorage.removeItem(key);
   } catch {}
 }
 
