@@ -1767,7 +1767,7 @@ export default function PaperworkPage() {
         const stampSize = 7;
         const stampWidths = NOTARY_STAMP_LINES.map((line) => affidavitBoldFont.widthOfTextAtSize(line, stampSize));
         const stampCenterX = box.x + Math.max(...stampWidths) / 2;
-        const stampTop = useWorkTemplate ? 104 : 153;
+        const stampTop = useWorkTemplate ? 104 : 138;
         NOTARY_STAMP_LINES.forEach((line, index) => {
           page2?.drawText(line, { x: stampCenterX - stampWidths[index] / 2, y: stampTop - index * 9, size: stampSize, font: affidavitBoldFont });
         });
@@ -4494,6 +4494,7 @@ export default function PaperworkPage() {
             <p>Select the job, choose one package type, then generate the invoice package.</p>
           </div>
           <nav className="paperwork-nav" aria-label="Paperwork actions">
+            <a data-hpd-smoke="paperwork-dashboard-link" href="/">Dashboard</a>
             <a data-hpd-smoke="paperwork-map-link" href={mapBackHref}>Map</a>
             <a data-hpd-smoke="paperwork-archive-link" href="/outputs">Archive</a>
           </nav>
