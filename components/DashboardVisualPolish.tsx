@@ -130,12 +130,41 @@ export default function DashboardVisualPolish() {
           height: auto;
           border-right: 0;
           border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+          flex-direction: column;
+          align-items: stretch;
+          gap: 16px;
+          overflow-x: visible;
         }
 
         body .dark-sidebar nav {
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          min-width: 0;
         }
+
+        body .dark-sidebar nav a {
+          text-align: center;
+        }
+      }
+
+      @media (max-width: 640px) {
+        body .dark-sidebar {
+          padding: 16px 14px;
+          gap: 12px;
+        }
+
+        body .dark-sidebar nav {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 6px;
+        }
+
+        body .dark-sidebar nav a {
+          padding: 9px 8px;
+          font-size: 13px;
+        }
+      }
+
+      @media (max-width: 1023px) {
 
         body .dashboard-header,
         body .header-actions {

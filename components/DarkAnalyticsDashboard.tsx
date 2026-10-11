@@ -208,14 +208,36 @@ function isActive(job: JobRecord) {
   return !status.includes("completed") && !status.includes("no access") && !status.includes("refused");
 }
 
-function isItbReady(job: JobRecord) {
-  const text = JSON.stringify(job).toLowerCase();
-  return text.includes("itb") || text.includes("invitation");
+function hasItbFile(job: JobRecord) {
+  return Boolean(firstValue(job, ["ITBFile", "itbFile"]));
 }
 
-function isCoaReady(job: JobRecord) {
-  const text = JSON.stringify(job).toLowerCase();
-  return text.includes("coa") || text.includes("confirmation");
+function isRecoveredItb(job: JobRecord) {
+  return firstValue(job, ["ITBMatchStatus", "itbMatchStatus"]).toUpperCase().startsWith("RECOVERED");
+}
+
+function hasCoaFile(job: JobRecord) {
+  return Boolean(firstValue(job, ["COAFile", "coaFile"]));
+}
+
+// AwardDate comes from the COA as M/D/YY (sometimes M/D/YYYY); bucket it as "YYYY-MM".
+function awardMonthKey(job: JobRecord) {
+  const match = jobAwardDate(job).match(/^(\d{1,2})\/\d{1,2}\/(\d{2}|\d{4})$/);
+  if (!match) return "";
+  return `20${match[2].slice(-2)}-${match[1].padStart(2, "0")}`;
+}
+
+function monthLabel(key: string, withYear = true) {
+  const [year, month] = key.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleString("en-US", withYear ? { month: "short", year: "numeric" } : { month: "short" });
+}
+
+function monthsEndingAt(endKey: string, count: number) {
+  const [year, month] = endKey.split("-").map(Number);
+  return Array.from({ length: count }, (_, index) => {
+    const date = new Date(year, month - 1 - (count - 1 - index), 1);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  });
 }
 
 function money(value: number) {
@@ -234,6 +256,7 @@ function compactMoney(value: number) {
 }
 
 function Sparkline({ points }: { points: number[] }) {
+  if (!points.length) return null;
   const max = Math.max(...points, 1);
   const min = Math.min(...points, 0);
   const width = 160;
@@ -302,14 +325,16 @@ function DonutChart({ counts }: { counts: Record<string, number> }) {
   );
 }
 
-function LineChart({ values }: { values: number[] }) {
+function LineChart({ values, labels }: { values: number[]; labels: string[] }) {
+  if (!values.length) return <div className="line-chart" />;
   const max = Math.max(...values, 1);
   const width = 560;
   const height = 180;
-  const step = width / Math.max(values.length - 1, 1);
+  // Centre each point over its month label column.
+  const step = width / Math.max(values.length, 1);
   const d = values
     .map((value, index) => {
-      const x = index * step;
+      const x = (index + 0.5) * step;
       const y = height - (value / max) * 140 - 18;
       return `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
     })
@@ -321,21 +346,20 @@ function LineChart({ values }: { values: number[] }) {
         {[0, 1, 2, 3].map((line) => (
           <line key={line} x1="0" x2={width} y1={28 + line * 38} y2={28 + line * 38} />
         ))}
-        <path className="line-fill" d={`${d} L${width},${height} L0,${height} Z`} />
+        <path className="line-fill" d={`${d} L${width - step / 2},${height} L${step / 2},${height} Z`} />
         <path className="line-main" d={d} />
         {values.map((value, index) => {
-          const x = index * step;
+          const x = (index + 0.5) * step;
           const y = height - (value / max) * 140 - 18;
           return <circle key={`${value}-${index}`} cx={x} cy={y} r="4" />;
         })}
       </svg>
       <div className="chart-months">
-        <span>Feb</span>
-        <span>Mar</span>
-        <span>Apr</span>
-        <span>May</span>
-        <span>Jun</span>
-        <span>Jul</span>
+        {labels.map((label, index) => (
+          <span key={label}>
+            {label} <b>{values[index]}</b>
+          </span>
+        ))}
       </div>
     </div>
   );
@@ -379,52 +403,78 @@ export default function DarkAnalyticsDashboard() {
     };
   }, []);
 
-  const model = useMemo(() => {
-    const activeJobs = jobs.filter(isActive);
-    const mapped = jobs.filter(hasCoord);
-    const totalValue = jobs.reduce((sum, job) => sum + parseAmount(job), 0);
-    const withAmount = jobs.filter((job) => parseAmount(job) > 0).length;
-    const itbs = jobs.filter(isItbReady).length || Math.round(jobs.length * 0.74);
-    const coas = jobs.filter(isCoaReady).length || jobs.length;
+  const [month, setMonth] = useState("all");
 
-    const boroughCounts = jobs.reduce<Record<string, number>>((acc, job) => {
+  const monthOptions = useMemo(
+    () => [...new Set(jobs.map(awardMonthKey).filter(Boolean))].sort().reverse(),
+    [jobs]
+  );
+
+  const model = useMemo(() => {
+    const scoped = month === "all" ? jobs : jobs.filter((job) => awardMonthKey(job) === month);
+    const activeJobs = scoped.filter(isActive);
+    const mapped = scoped.filter(hasCoord);
+    const totalValue = scoped.reduce((sum, job) => sum + parseAmount(job), 0);
+    const withAmount = scoped.filter((job) => parseAmount(job) > 0).length;
+    const itbJobs = scoped.filter(hasItbFile);
+    const recoveredItbs = itbJobs.filter(isRecoveredItb).length;
+    const coas = scoped.filter(hasCoaFile).length;
+
+    // Trend charts always use every job so the selected month is shown against the months before it.
+    const chartEnd = month !== "all" ? month : monthOptions[0] || "";
+    const byMonth = (keys: string[], pick: (rows: JobRecord[]) => number) =>
+      keys.map((key) => pick(jobs.filter((job) => awardMonthKey(job) === key)));
+    const chartMonths = chartEnd ? monthsEndingAt(chartEnd, 6) : [];
+    const sparkMonths = chartEnd ? monthsEndingAt(chartEnd, 7) : [];
+    const monthlyTrend = byMonth(chartMonths, (rows) => rows.length);
+    const [prior, latest] = monthlyTrend.slice(-2);
+    // A month that is still under way would always look like a drop, so don't score it.
+    const now = new Date();
+    const inProgress = chartEnd === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const trendChange = prior && !inProgress ? Math.round(((latest - prior) / prior) * 100) : null;
+
+    const boroughCounts = scoped.reduce<Record<string, number>>((acc, job) => {
       const borough = jobBorough(job);
       const normalized = boroughs.includes(borough) ? borough : "NYC";
       acc[normalized] = (acc[normalized] || 0) + 1;
       return acc;
     }, {});
 
-    const liveJobs = [...jobs]
+    const liveJobs = [...scoped]
       .sort((a, b) => parseAmount(b) - parseAmount(a))
       .slice(0, 7);
 
-    const recentJobs = [...jobs]
+    const recentJobs = [...scoped]
       .filter((job) => jobId(job))
       .slice(0, 6);
 
-    const monthlyTrend = [
-      Math.max(8, Math.round(jobs.length * 0.11)),
-      Math.max(12, Math.round(jobs.length * 0.18)),
-      Math.max(16, Math.round(jobs.length * 0.14)),
-      Math.max(20, Math.round(jobs.length * 0.22)),
-      Math.max(18, Math.round(jobs.length * 0.19)),
-      Math.max(24, Math.round(jobs.length * 0.27)),
-    ];
-
     return {
-      total: jobs.length,
+      total: scoped.length,
       active: activeJobs.length,
       mapped: mapped.length,
       totalValue,
       withAmount,
-      itbs,
+      itbs: itbJobs.length,
+      recoveredItbs,
       coas,
       boroughCounts,
       liveJobs,
       recentJobs,
       monthlyTrend,
+      chartLabels: chartMonths.map((key) => monthLabel(key, false)),
+      trendChange,
+      trendInProgress: inProgress ? monthLabel(chartEnd, false) : "",
+      trendFrom: chartMonths.length > 1 ? monthLabel(chartMonths[chartMonths.length - 2], false) : "",
+      sparks: {
+        active: byMonth(sparkMonths, (rows) => rows.filter(isActive).length),
+        itbs: byMonth(sparkMonths, (rows) => rows.filter(hasItbFile).length),
+        coas: byMonth(sparkMonths, (rows) => rows.filter(hasCoaFile).length),
+        value: byMonth(sparkMonths, (rows) => rows.reduce((sum, job) => sum + parseAmount(job), 0)),
+      },
     };
-  }, [jobs]);
+  }, [jobs, month, monthOptions]);
+
+  const scopeLabel = month === "all" ? "all months" : monthLabel(month);
 
   return (
     <main className="dark-dashboard-shell">
@@ -464,7 +514,17 @@ export default function DarkAnalyticsDashboard() {
             <span>{loadState}</span>
           </div>
           <div className="header-actions">
-            <button type="button">Jul 2026</button>
+            <select
+              aria-label="Award month"
+              data-hpd-smoke="dashboard-month-select"
+              value={month}
+              onChange={(event) => setMonth(event.target.value)}
+            >
+              <option value="all">All months</option>
+              {monthOptions.map((key) => (
+                <option key={key} value={key}>{monthLabel(key)}</option>
+              ))}
+            </select>
             <button type="button">Filters</button>
             <Link href="/map/?view=all&map=1">Open Map</Link>
             <div className="avatar">UA</div>
@@ -474,27 +534,27 @@ export default function DarkAnalyticsDashboard() {
         <section className="metric-grid">
           <MetricCard
             label="Live Bids"
-            value={String(model.active || model.total)}
-            detail={`${model.total} total records tracked`}
+            value={String(model.active)}
+            detail={`Not yet finished, of ${model.total} records (${scopeLabel})`}
             accent="blue"
             icon="01"
-            points={[14, 22, 18, 29, 31, 42, 36]}
+            points={model.sparks.active}
           />
           <MetricCard
             label="ITB Files"
             value={String(model.itbs)}
-            detail="Scope packages linked to jobs"
+            detail={`${model.itbs - model.recoveredItbs} matched, ${model.recoveredItbs} recovered${model.total > model.itbs ? `, ${model.total - model.itbs} missing` : ""}`}
             accent="green"
             icon="02"
-            points={[10, 18, 25, 21, 33, 39, 44]}
+            points={model.sparks.itbs}
           />
           <MetricCard
             label="COA Awards"
             value={String(model.coas)}
-            detail="Confirmation of award pipeline"
+            detail={`Award PDFs on file (${scopeLabel})`}
             accent="purple"
             icon="03"
-            points={[30, 24, 28, 37, 35, 46, 51]}
+            points={model.sparks.coas}
           />
           <MetricCard
             label="Total COA Awards"
@@ -502,7 +562,7 @@ export default function DarkAnalyticsDashboard() {
             detail={`${model.withAmount} jobs with COA award amounts`}
             accent="amber"
             icon="04"
-            points={[20, 26, 32, 29, 45, 41, 56]}
+            points={model.sparks.value}
           />
         </section>
 
@@ -511,11 +571,16 @@ export default function DarkAnalyticsDashboard() {
             <div className="panel-head">
               <div>
                 <p className="eyebrow">Bid Volume</p>
-                <h2>Bids Over Time</h2>
+                <h2>Awards per Month</h2>
               </div>
-              <span className="trend-pill">+18.4%</span>
+              {model.trendInProgress && <span className="trend-pill trend-pending">{model.trendInProgress} in progress</span>}
+              {model.trendChange !== null && (
+                <span className={`trend-pill${model.trendChange < 0 ? " trend-down" : ""}`} title={`Change vs ${model.trendFrom}`}>
+                  {model.trendChange > 0 ? "+" : ""}{model.trendChange}% vs {model.trendFrom}
+                </span>
+              )}
             </div>
-            <LineChart values={model.monthlyTrend} />
+            <LineChart values={model.monthlyTrend} labels={model.chartLabels} />
           </article>
 
           <article className="panel">
@@ -825,6 +890,19 @@ export default function DarkAnalyticsDashboard() {
           flex-wrap: wrap;
         }
 
+        .header-actions select {
+          appearance: none;
+          cursor: pointer;
+          text-align: center;
+          text-align-last: center;
+        }
+
+        .header-actions select option {
+          background: #0f172a;
+          color: #e2e8f0;
+        }
+
+        .header-actions select,
         .header-actions button,
         .header-actions a {
           min-height: 42px;
@@ -992,6 +1070,19 @@ export default function DarkAnalyticsDashboard() {
           padding: 8px 11px;
           font-size: 12px;
           font-weight: 950;
+          white-space: nowrap;
+        }
+
+        .trend-pill.trend-pending {
+          border-color: rgba(148, 163, 184, 0.24);
+          background: rgba(148, 163, 184, 0.12);
+          color: #cbd5e1;
+        }
+
+        .trend-pill.trend-down {
+          border-color: rgba(251, 113, 133, 0.24);
+          background: rgba(251, 113, 133, 0.12);
+          color: #fecdd3;
         }
 
         .line-chart svg {
@@ -1026,6 +1117,13 @@ export default function DarkAnalyticsDashboard() {
           color: var(--dash-muted);
           font-size: 12px;
           font-weight: 800;
+          text-align: center;
+        }
+
+        .chart-months b {
+          display: block;
+          color: #e0f2fe;
+          font-size: 13px;
         }
 
         .donut-wrap {
