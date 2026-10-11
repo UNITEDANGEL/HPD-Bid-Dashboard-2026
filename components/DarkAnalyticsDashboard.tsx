@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { FIELD_OUTCOMES } from "../lib/field-next-action";
 
 type JobRecord = {
   [key: string]: unknown;
@@ -103,21 +104,71 @@ function jobAddress(job: JobRecord) {
   ]);
 }
 
-function jobStatus(job: JobRecord) {
-  return firstValue(job, [
-    "WorkflowStatus",
-    "Workflow Status",
-    "FieldOutcome",
-    "Field Outcome",
-    "StatusOverride",
-    "Status Override",
-    "status",
-    "Status",
-    "JobStatus",
-    "Job Status",
-    "Outcome",
-    "outcome",
-  ]) || "Pending";
+type StatusTone = "green" | "amber" | "red" | "blue" | "neutral";
+
+// Field-outcome codes as saved by the field app; labels follow FIELD_OUTCOMES so the dashboard reads the same.
+const OUTCOME_STATUS: Record<string, { label: string; tone: StatusTone; done?: boolean }> = {
+  WORK_COMPLETED: { label: FIELD_OUTCOMES.WORK_COMPLETED, tone: "green", done: true },
+  WORK_COMPLETED_BY_OTHERS: { label: FIELD_OUTCOMES.WORK_COMPLETED_BY_OTHERS, tone: "green", done: true },
+  PARTIAL_WORK: { label: FIELD_OUTCOMES.PARTIAL_WORK, tone: "amber" },
+  NO_ACCESS_1_WAITING_72H: { label: "No access – waiting 72h", tone: "amber" },
+  NO_ACCESS_COMPLETE: { label: "No access – 2 tries done", tone: "amber", done: true },
+  REFUSED_ACCESS: { label: FIELD_OUTCOMES.REFUSED_ACCESS, tone: "red", done: true },
+  APPOINTMENT_REQUESTED: { label: FIELD_OUTCOMES.APPOINTMENT_REQUESTED, tone: "blue" },
+  WORK_IN_PROGRESS: { label: "Work in progress", tone: "blue" },
+  PENDING: { label: "Not started", tone: "neutral" },
+};
+
+function jobStatusInfo(job: JobRecord): { label: string; tone: StatusTone; done: boolean } {
+  const code = firstValue(job, ["WorkflowStatus", "Workflow Status", "FieldOutcome", "Field Outcome"]).toUpperCase();
+  const known = OUTCOME_STATUS[code];
+  if (known) return { ...known, done: Boolean(known.done) };
+  // Free-text status (e.g. "Arrived"); MATCHED / RECOVERED_* are ITB match results, not job progress.
+  const text = firstValue(job, ["StatusOverride", "Status Override", "status", "Status", "JobStatus", "Job Status"]);
+  if (text && !/^(MATCHED|RECOVERED)/i.test(text)) {
+    const lowered = text.toLowerCase();
+    const done = lowered.includes("completed") || lowered.includes("refused");
+    const tone: StatusTone = lowered.includes("refused") ? "red" : done ? "green" : lowered.includes("no access") ? "amber" : "blue";
+    return { label: text, tone, done };
+  }
+  return { label: "Not started", tone: "neutral", done: false };
+}
+
+function parseLooseDate(value: string) {
+  const short = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+  if (short) return new Date(Number(`20${short[3].slice(-2)}`), Number(short[1]) - 1, Number(short[2])).getTime();
+  // Date-only ISO strings parse as UTC midnight (the previous evening in New York), so read them as local days.
+  const day = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (day) return new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3])).getTime();
+  const time = Date.parse(value.replace(" ", "T"));
+  return Number.isFinite(time) ? time : 0;
+}
+
+const ACTIVITY_EVENTS: Array<{ keys: string[]; label: string }> = [
+  { keys: ["ActualWorkCompletionDate"], label: "Work completed" },
+  { keys: ["CompletedByOthersDate"], label: "Completed by others" },
+  { keys: ["NoAccessSecondAttemptAt"], label: "2nd no-access try" },
+  { keys: ["NoAccessFirstAttemptAt"], label: "1st no-access try" },
+  { keys: ["RefusalDate"], label: "Access refused" },
+  { keys: ["ActualWorkStartDate"], label: "Work started" },
+  { keys: ["SavedStatusUpdatedAt"], label: "Status updated" },
+  { keys: ["AwardDate", "awardDate"], label: "Awarded" },
+];
+
+// Latest dated thing that happened on a job (award, field visit, status save).
+function lastActivity(job: JobRecord) {
+  let best = { time: 0, label: "" };
+  // Future dates are data-entry typos (e.g. a 2025 visit keyed as 2026); they'd otherwise pin a job to the top.
+  const latestAllowed = Date.now() + 24 * 60 * 60 * 1000;
+  for (const event of ACTIVITY_EVENTS) {
+    const time = parseLooseDate(firstValue(job, event.keys));
+    if (time > best.time && time <= latestAllowed) best = { time, label: event.label };
+  }
+  return best;
+}
+
+function activityWhen(time: number) {
+  return new Date(time).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function jobBorough(job: JobRecord) {
@@ -204,8 +255,7 @@ function hasCoord(job: JobRecord) {
 }
 
 function isActive(job: JobRecord) {
-  const status = jobStatus(job).toLowerCase();
-  return !status.includes("completed") && !status.includes("no access") && !status.includes("refused");
+  return !jobStatusInfo(job).done;
 }
 
 function hasItbFile(job: JobRecord) {
@@ -365,14 +415,9 @@ function LineChart({ values, labels }: { values: number[]; labels: string[] }) {
   );
 }
 
-function StatusPill({ status }: { status: string }) {
-  const lowered = status.toLowerCase();
-  let tone = "neutral";
-  if (lowered.includes("completed")) tone = "green";
-  if (lowered.includes("no access") || lowered.includes("refused")) tone = "amber";
-  if (lowered.includes("pending") || lowered.includes("active")) tone = "blue";
-
-  return <span className={`status-pill ${tone}`}>{status}</span>;
+function StatusPill({ job }: { job: JobRecord }) {
+  const { label, tone } = jobStatusInfo(job);
+  return <span className={`status-pill ${tone}`}>{label}</span>;
 }
 
 export default function DarkAnalyticsDashboard() {
@@ -444,8 +489,11 @@ export default function DarkAnalyticsDashboard() {
       .sort((a, b) => parseAmount(b) - parseAmount(a))
       .slice(0, 7);
 
-    const recentJobs = [...scoped]
+    const recentJobs = scoped
       .filter((job) => jobId(job))
+      .map((job) => ({ job, activity: lastActivity(job) }))
+      .filter(({ activity }) => activity.time > 0)
+      .sort((a, b) => b.activity.time - a.activity.time)
       .slice(0, 6);
 
     return {
@@ -616,14 +664,15 @@ export default function DarkAnalyticsDashboard() {
               </div>
             </div>
             <div className="activity-list">
-              {model.recentJobs.map((job) => (
+              {model.recentJobs.map(({ job, activity }) => (
                 <Link href={`/map?omo=${encodeURIComponent(jobId(job))}&view=all`} key={jobId(job)}>
                   <span>{jobId(job).slice(0, 2) || "HP"}</span>
                   <div>
                     <strong>{jobId(job) || "Pending OMO"}</strong>
                     <small>{jobAddress(job) || jobTrade(job)}</small>
+                    <small className="activity-when">{activity.label} {activityWhen(activity.time)}</small>
                   </div>
-                  <StatusPill status={jobStatus(job)} />
+                  <StatusPill job={job} />
                 </Link>
               ))}
               {!model.recentJobs.length && <p className="empty-note">No recent jobs loaded yet.</p>}
@@ -668,7 +717,7 @@ export default function DarkAnalyticsDashboard() {
           </td>
           <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 650 }}>{jobAddress(job) || "Address pending"}</td>
           <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 650 }}>{jobBorough(job)}</td>
-          <td style={{ padding: "14px 8px", fontSize: "16px" }}><StatusPill status={jobStatus(job)} /></td>
+          <td style={{ padding: "14px 8px", fontSize: "16px" }}><StatusPill job={job} /></td>
           <td style={{ padding: "14px 8px", fontSize: "19px", fontWeight: 950, color: "#fbbf24" }}>{money(parseAmount(job))}</td>
           <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 800 }}>{jobWorkStart(job)}</td>
           <td style={{ padding: "14px 8px", fontSize: "16px", fontWeight: 800, borderTopRightRadius: "14px", borderBottomRightRadius: "14px" }}>{jobWorkCompletion(job)}</td>
@@ -1290,7 +1339,7 @@ export default function DarkAnalyticsDashboard() {
           background: rgba(255, 255, 255, 0.035);
         }
 
-        .activity-list a > span {
+        .activity-list a > span:first-child {
           width: 42px;
           height: 42px;
           display: grid;
@@ -1302,9 +1351,24 @@ export default function DarkAnalyticsDashboard() {
           font-weight: 1000;
         }
 
+        .activity-list a > div {
+          min-width: 0;
+        }
+
         .activity-list strong,
         .activity-list small {
           display: block;
+        }
+
+        @media (max-width: 640px) {
+          .activity-list a {
+            grid-template-columns: 42px minmax(0, 1fr);
+          }
+
+          .activity-list .status-pill {
+            grid-column: 2;
+            justify-self: start;
+          }
         }
 
         .activity-list strong {
@@ -1314,7 +1378,7 @@ export default function DarkAnalyticsDashboard() {
         .activity-list small {
           margin-top: 3px;
           color: var(--dash-muted);
-          max-width: 260px;
+          max-width: 100%;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -1336,6 +1400,13 @@ export default function DarkAnalyticsDashboard() {
         .status-pill.green { background: rgba(52, 211, 153, 0.14); color: #bbf7d0; }
         .status-pill.amber { background: rgba(251, 191, 36, 0.14); color: #fde68a; }
         .status-pill.blue { background: rgba(56, 189, 248, 0.14); color: #bae6fd; }
+        .status-pill.red { background: rgba(251, 113, 133, 0.14); color: #fecdd3; }
+
+        .activity-list small.activity-when {
+          color: #93c5fd;
+          font-size: 12px;
+          font-weight: 800;
+        }
 
         .bid-table {
           display: grid;
