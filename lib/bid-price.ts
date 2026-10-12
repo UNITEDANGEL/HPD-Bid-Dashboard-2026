@@ -46,8 +46,11 @@ const ageDays = (date: string | undefined, now: Date) => (date ? Math.max(0, (no
 
 // Kinds of work, as HPD writes them. Order is the order shown.
 const ITEMS: [key: string, label: string, pattern: RegExp][] = [
-  ["door-new", "new door", /\b(new|replace\w*)\b[^.]{0,40}\b(door and (door )?(jamb|frame)|fire[- ]?rated door|metal door|steel door|door assembly)|install (a )?new ((fire[- ]?rated|metal|steel|wood|entrance|apartment|bulkhead|hollow metal|kalamein) )?door\b(?! closer| knob| lock| hinge| sweep| stop| saddle| handle| viewer| chain)/],
+  ["door-new", "new door", /\b(new|replace\w*)\b[^.]{0,40}\b(door and (door )?(jamb|frame)|fire[- ]?rated (\w+ )?door|metal door|steel door|door assembly)|install (a )?new ((fire[- ]?rated|metal|steel|wood|entrance|apartment|bulkhead|hollow metal|kalamein) )?door\b(?! closer| knob| lock| hinge| sweep| stop| saddle| handle| viewer| chain)|replace (the )?(broken|defective|damaged)?[/ a-z]{0,25}door with (a )?new/],
   ["closer", "door closer", /closer/],
+  // Building-entrance hardware (Adams Rite, Securtec, mortise, electric strike, mag lock) costs more than
+  // a passage lock, so it is its own kind of work.
+  ["entrance-lock", "entrance lock (Adams Rite / mortise / electric strike)", /adams ?rite|securtec|mortise|electric strik|electric stik|mag(netic)? ?lock|maglock|intercom|buzzer/],
   ["lock", "lock / latch", /\block|latch ?set|door latch\b|lockset|cylinder|\bknob|lever handle|deadbolt|strik\w* plate/],
   ["hinges", "hinges", /hinge/],
   ["pushbar", "push bar / panic bar", /push ?bar|panic|re-?entry|exit device/],
@@ -127,7 +130,8 @@ export function readScope(description: string): JobScope {
   const found = ITEMS.filter(([, , re]) => re.test(text));
   let items = found.map(([key]) => key);
   // "Adjust the door to self-close" is part of any closer/hinge/lock/push-bar job, not its own item.
-  if (items.some((k) => ["closer", "hinges", "lock", "pushbar", "door-new"].includes(k))) items = items.filter((k) => k !== "door-adjust");
+  if (items.some((k) => ["closer", "hinges", "lock", "entrance-lock", "pushbar", "door-new"].includes(k))) items = items.filter((k) => k !== "door-adjust");
+  if (items.includes("entrance-lock")) items = items.filter((k) => k !== "lock");
   // A ceiling/wall is a place, not a trade, when sheetrock or painting is already there.
   if (items.includes("sheetrock") || items.includes("paint")) items = items.filter((k) => k !== "ceiling" && k !== "wall");
   const labels = items.map((k) => ITEMS.find(([key]) => key === k)![1]);

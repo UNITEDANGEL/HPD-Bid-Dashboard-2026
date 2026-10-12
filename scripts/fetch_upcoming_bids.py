@@ -271,7 +271,7 @@ def fetch(days):
                 continue
             if omo in found and found[omo]["receivedAt"] >= received:
                 continue  # keep the newest invitation for each OMO
-            found[omo] = {**info, "omo": omo, "itbFile": os.path.basename(name), "description": description[:1500], "receivedAt": received, **bid_fields(path)}
+            found[omo] = {**info, "omo": omo, "itbFile": os.path.basename(name), "description": description[:6000], "receivedAt": received, **bid_fields(path)}
     bids = []
     for omo, bid in sorted(found.items(), key=lambda kv: (kv[1]["bidDue"], kv[1]["bidDueTime"], kv[0])):
         old = known.get(omo, {})

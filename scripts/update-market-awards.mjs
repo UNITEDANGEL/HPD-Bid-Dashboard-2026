@@ -22,7 +22,7 @@ export function addUpcoming(descriptions, upcoming) {
   let added = 0;
   for (const bid of upcoming?.bids || []) {
     if (!bid.omo || !bid.description || descriptions[bid.omo]?.description) continue;
-    descriptions[bid.omo] = { description: String(bid.description).slice(0, 1200), source: bid.itbFile || "upcoming" };
+    descriptions[bid.omo] = { description: String(bid.description).slice(0, 6000), source: bid.itbFile || "upcoming" };
     added++;
   }
   return added;

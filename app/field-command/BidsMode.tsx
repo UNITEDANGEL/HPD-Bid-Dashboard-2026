@@ -7,7 +7,7 @@
 // won, not awarded or pending, and your win rate (lib/bid-records.ts).
 import { useEffect, useMemo, useRef, useState } from "react";
 import { priceHelp, readScope, winChance, type PricedJob } from "../../lib/bid-price";
-import { bidStats, type Group, type MarketJob } from "../../lib/bid-stats";
+import { beats, bidStats, easyWin, type Group, type MarketJob, type WorkPrice } from "../../lib/bid-stats";
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
 import { bidResult, checkBidFax, faxState, mergeServerBids, readBidRecords, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
@@ -167,7 +167,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
 
   const help = useMemo(() => (selected ? priceHelp(selected.description, pricing) : null), [selected, pricing]);
   const scope = useMemo(() => readScope(selected?.description || ""), [selected]);
-  const stats = useMemo(() => (tab === "stats" && marketJobs.length ? bidStats(marketJobs) : null), [tab, marketJobs]);
+  const stats = useMemo(() => (marketJobs.length ? bidStats(marketJobs) : null), [marketJobs]);
+  const easy = useMemo(() => (selected && stats ? easyWin(selected.description, stats.workPrices) : null), [selected, stats]);
   const draftValue = Number(String(draft).replace(/[^0-9.]/g, ""));
 
   async function update(next: BidRecord) {
@@ -303,6 +304,13 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             </section>
             <section className="fc-bid-price">
               <h4>1 · Your bid price</h4>
+              {easy ? (
+                <div className="fc-bid-easy" data-hpd-smoke="fc-bid-easy">
+                  <b>Easy win: bid this one · ~{money(easy.suggested)}</b>
+                  <span>{easy.label}: you usually win it at {money(easy.yours)} ({easy.yoursN} of your wins). Other contractors won it at {money(easy.others)} ({easy.othersN} jobs, last 12 months). At {money(easy.suggested)} you would have beaten {easy.beatsN} of those {easy.of} winners.</span>
+                  <button type="button" onClick={() => setDraft(String(easy.suggested))}>Use {money(easy.suggested)}</button>
+                </div>
+              ) : null}
               <label>
                 <span>$</span>
                 <input inputMode="decimal" aria-label="Bid price" data-hpd-smoke="fc-bid-price" placeholder="0.00" value={draft} onChange={(e) => setDraft(e.target.value)} />
@@ -393,10 +401,11 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               <ol>{list.map((bid) => {
                 const due = dueWhen(bid);
                 const b = badge(records[bid.omo]);
+                const ew = stats && !records[bid.omo] ? easyWin(bid.description, stats.workPrices) : null;
                 return (
                   <li key={bid.omo}>
                     <button type="button" onClick={() => openBid(bid)}>
-                      <span className="fc-bid-row"><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}</span>
+                      <span className="fc-bid-row"><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}{ew ? <span className="fc-bid-chip is-easy" data-hpd-smoke="fc-bid-easy-chip">Easy win · ~{money(ew.suggested)}</span> : null}</span>
                       <span>{bid.address}{bid.borough ? ` · ${bid.borough}` : ""}</span>
                       <small>{due.text}</small>
                     </button>
@@ -486,6 +495,8 @@ function BidStatsView({ stats, loading }: { stats: ReturnType<typeof bidStats> |
           ))}</ul>
         </section>
       ) : null}
+      <ShouldHaveBid stats={stats} />
+      <PriceList rows={stats.priceList} />
       <GroupTable title="By kind of work" rows={stats.byTrade} smoke="fc-stats-trade" />
       <GroupTable title="By borough" rows={stats.byBoro} smoke="fc-stats-boro" />
       <GroupTable title="By neighborhood (8+ invitations)" rows={stats.byArea.slice(0, 25)} smoke="fc-stats-area" />
@@ -504,4 +515,51 @@ function revisedFrom(record?: BidRecord) {
   if (!record) return undefined;
   const sent = record.status !== "saved" ? record.sentPrice : record.priorPrice;
   return sent && sent > 0 && sent !== record.price ? sent : undefined;
+}
+
+// Jobs awarded to someone else in the last 90 days for more than your usual price for that exact work.
+function ShouldHaveBid({ stats }: { stats: ReturnType<typeof bidStats> }) {
+  const [all, setAll] = useState(false);
+  const rows = all ? stats.shouldHaveBid : stats.shouldHaveBid.slice(0, 15);
+  if (!stats.shouldHaveBid.length) return null;
+  return (
+    <section className="fc-stats-block" data-hpd-smoke="fc-stats-should">
+      <h4>Should have bid · last 90 days</h4>
+      <p className="fc-stats-note"><b>{stats.shouldHaveBid.length} jobs</b> went to other contractors for more than you usually charge for that exact work: <b>{money(stats.shouldHaveBidTotal)}</b> at your usual prices. Each is a real award from HPD&apos;s data.</p>
+      <ol className="fc-stats-losses">{rows.map((j) => (
+        <li key={j.omo}>
+          <b>{j.omo} · won at {money(j.amount)} · your usual {money(j.yours)}</b>
+          <span>{j.address}{j.area ? ` · ${j.area}` : ""}</span>
+          <small>{j.work} · awarded {j.awardDate.slice(5, 7)}/{j.awardDate.slice(8, 10)}/{j.awardDate.slice(2, 4)} · your usual is from {j.yoursN} of your wins</small>
+        </li>
+      ))}</ol>
+      {stats.shouldHaveBid.length > 15 ? <button type="button" className="fc-bid-link" onClick={() => setAll((v) => !v)}>{all ? "Show fewer" : `Show all ${stats.shouldHaveBid.length}`}</button> : null}
+    </section>
+  );
+}
+
+// Your usual price next to what other contractors won the same work for, with a suggested price and how
+// many of the recent winners it would have beaten.
+function PriceList({ rows }: { rows: WorkPrice[] }) {
+  if (!rows.length) return null;
+  return (
+    <section className="fc-stats-block" data-hpd-smoke="fc-stats-prices">
+      <h4>Your prices vs the market</h4>
+      <p className="fc-stats-note">Same work, same size. &quot;Winners&quot; = other contractors&apos; typical winning price in the last 12 months. &quot;Suggested&quot; = 10% under that, never below your usual. &quot;Beats&quot; = how many of those winning prices the suggested price is under.</p>
+      <table className="fc-price-list">
+        <thead><tr><th>Work</th><th>You</th><th>Winners</th><th>Suggested</th></tr></thead>
+        <tbody>{rows.map((p) => {
+          const b = beats(p, p.suggested);
+          return (
+            <tr key={p.key} className={p.suggested > p.yours ? "is-raise" : ""}>
+              <th>{p.label}</th>
+              <td>{money(p.yours)}<small>{p.yoursN} wins</small></td>
+              <td>{money(p.others)}<small>{p.othersN} jobs</small></td>
+              <td><b>{money(p.suggested)}</b><small>beats {b.n}/{b.of}</small></td>
+            </tr>
+          );
+        })}</tbody>
+      </table>
+    </section>
+  );
 }

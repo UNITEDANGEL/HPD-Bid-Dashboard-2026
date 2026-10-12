@@ -147,3 +147,11 @@
 .fc-bid-similar em.is-yours { color: #86efac; }
 
 .fc-bid-confirm { justify-self: start; margin-top: 6px; min-height: 40px; padding: 0 12px; border: 0; border-radius: 10px; background: #16a34a; color: #fff; font: 800 13px system-ui; }
+
+/* Easy win, Should have bid, price list */
+.fc-bid-chip.is-easy { background: #15803d; color: #fff; }
+.fc-bid-easy { display: grid; gap: 4px; margin: 6px 0 10px; padding: 10px; border-radius: 10px; background: #14532d; color: #dcfce7; font: 500 12.5px/1.4 system-ui; }
+.fc-bid-easy b { color: #fff; font: 800 14px system-ui; }
+.fc-bid-easy button { justify-self: start; min-height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: #16a34a; color: #fff; font: 800 13px system-ui; }
+.fc-price-list tbody th { width: 40%; }
+.fc-price-list tr.is-raise td b { color: #86efac; }

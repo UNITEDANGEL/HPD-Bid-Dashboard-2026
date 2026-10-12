@@ -16,7 +16,7 @@ from fetch_upcoming_bids import job_description, omo_from_filename  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "market_descriptions.json")
-MAX_CHARS = 1200
+MAX_CHARS = 6000
 
 
 def stamp(name):
@@ -49,7 +49,8 @@ def main(folders):
     for i, (omo, paths) in enumerate(sorted(newest.items())):
         if i % 250 == 0:
             print(f"  {i}/{len(newest)}", flush=True)
-        if known.get(omo, {}).get("description"):
+        # Already read in full (descriptions saved before the limit was raised were cut at 1200: re-read).
+        if len(known.get(omo, {}).get("description", "")) not in (0, 1200):
             continue
         description, path = "", ""
         # Newest file first; a COA or other 2-page paper for the same OMO has no description, so try

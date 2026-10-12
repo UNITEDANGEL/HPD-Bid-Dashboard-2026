@@ -8,7 +8,7 @@ import { readScope } from "./bid-price";
 export type MarketJob = { omo: string; amount: number; awardDate: string; won: boolean; boro?: string; zip?: string; area?: string; address?: string; description: string };
 
 const TRADES: [name: string, items: string[]][] = [
-  ["Doors & locks", ["door-new", "closer", "lock", "hinges", "pushbar", "door-adjust"]],
+  ["Doors & locks", ["door-new", "closer", "lock", "entrance-lock", "hinges", "pushbar", "door-adjust"]],
   ["Windows & glass", ["glass", "window-hardware", "window-new"]],
   ["Leaks, plaster & paint", ["leak", "sheetrock", "paint", "ceiling", "wall", "mold"]],
   ["Floors & tile", ["floor"]],
@@ -34,14 +34,41 @@ function median(values: number[]) {
 const daysBefore = (date: string, now: Date) => (now.getTime() - Date.parse(date)) / 86400000;
 
 // The same work at the same size: "closer+lock | 1 unit", "leak+paint+sheetrock | 50-200 sq ft".
-function workKey(description: string) {
+export function workKey(description: string) {
+  return workOf(description).key;
+}
+
+const SIZE_LABEL: Record<string, string> = { "1 unit": "", "2-3 units": "2-3 doors/windows", "4+ units": "4+ doors/windows", "<50 sqft": "under 50 sq ft", "50-200 sqft": "50-200 sq ft", "200+ sqft": "200+ sq ft" };
+
+function workOf(description: string) {
   const s = readScope(description);
   const units = s.doors + s.windows;
   const size = units >= 4 ? "4+ units" : units >= 2 ? "2-3 units" : s.sqft >= 200 ? "200+ sqft" : s.sqft >= 50 ? "50-200 sqft" : s.sqft > 0 ? "<50 sqft" : "1 unit";
-  return `${[...s.items].sort().join("+") || "other"} | ${size}`;
+  const order = s.items.map((k, i) => [k, s.labels[i]] as const).sort((a, b) => a[0].localeCompare(b[0]));
+  return {
+    key: `${order.map(([k]) => k).join("+") || "other"} | ${size}`,
+    label: [order.map(([, l]) => l).join(" + ") || "general repair", SIZE_LABEL[size]].filter(Boolean).join(" · "),
+  };
 }
 
-type Row = MarketJob & { trade: string; key: string };
+type Row = MarketJob & { trade: string; key: string; label: string };
+
+// One kind of work at one size, from real awards: your wins (all) and other contractors' wins in the
+// last 12 months. A price "beats" a past winner when it is under what that job was won for.
+export type WorkPrice = {
+  key: string; label: string;
+  yours: number; yoursN: number;          // your typical winning price, from this many of your wins
+  others: number; othersN: number;        // other winners' typical price, last 12 months, this many jobs
+  othersAmounts: number[];                // those winning prices, for "beats N of M"
+  suggested: number;                      // 10% under the typical winner, never below your usual
+};
+
+export function beats(price: WorkPrice, bid: number) {
+  const n = price.othersAmounts.filter((a) => a > bid).length;
+  return { n, of: price.othersAmounts.length, share: price.othersAmounts.length ? n / price.othersAmounts.length : 0 };
+}
+
+const round5 = (v: number) => Math.round(v / 5) * 5;
 
 export type Group = {
   name: string; invitations: number; won: number; winRate: number;
@@ -81,7 +108,7 @@ function group(name: string, jobs: Row[], prices: Prices, now: Date): Group {
 }
 
 export function bidStats(jobs: MarketJob[], now = new Date()) {
-  const rows: Row[] = jobs.filter((j) => j.amount > 0 && j.awardDate).map((j) => ({ ...j, trade: tradeOf(j.description), key: workKey(j.description) }));
+  const rows: Row[] = jobs.filter((j) => j.amount > 0 && j.awardDate).map((j) => ({ ...j, trade: tradeOf(j.description), ...workOf(j.description) }));
   // Typical winning price of the same work at the same size: other contractors' (last 12 months) and yours.
   const medianBy = (list: Row[]) => {
     const map = new Map<string, number[]>();
@@ -101,6 +128,32 @@ export function bidStats(jobs: MarketJob[], now = new Date()) {
   const byArea = by((r) => (r.area ? `${r.area} (${r.boro || ""})` : "")).filter((g) => g.invitations >= 8);
   // Where to change price: kind of work in an area, so the advice is specific ("Doors & locks in Bronx").
   const byTradeBoro = by((r) => `${r.trade} · ${r.boro || "?"}`).filter((g) => g.advice === "raise" || g.advice === "lower");
+  // Your price list against the market: every kind of work with 3+ of your wins and 5+ other winners
+  // in the last 12 months.
+  const workPrices = new Map<string, WorkPrice>();
+  const grouped = new Map<string, { label: string; mine: number[]; others: number[] }>();
+  for (const r of rows) {
+    const g = grouped.get(r.key) || { label: r.label, mine: [], others: [] };
+    if (r.won) g.mine.push(r.amount);
+    else if (daysBefore(r.awardDate, now) <= 365) g.others.push(r.amount);
+    grouped.set(r.key, g);
+  }
+  for (const [key, g] of grouped) {
+    if (g.mine.length < 3 || g.others.length < 5) continue;
+    const yours = Math.round(median(g.mine)), others = Math.round(median(g.others));
+    workPrices.set(key, { key, label: g.label, yours, yoursN: g.mine.length, others, othersN: g.others.length, othersAmounts: g.others, suggested: Math.max(yours, round5(others * 0.9)) });
+  }
+  const priceList = [...workPrices.values()].sort((a, b) => b.othersN + b.yoursN - (a.othersN + a.yoursN));
+
+  // Should have bid: jobs awarded to someone else in the last 90 days for MORE than your usual price
+  // for that exact work. Each one is a real award (OMO, address, date, amount).
+  const shouldHaveBid = rows
+    .filter((r) => !r.won && daysBefore(r.awardDate, now) <= 90)
+    .map((r) => ({ r, p: workPrices.get(r.key) || (grouped.get(r.key)?.mine.length || 0) >= 3 ? { yours: Math.round(median(grouped.get(r.key)!.mine)), yoursN: grouped.get(r.key)!.mine.length } : null }))
+    .filter((x): x is { r: Row; p: { yours: number; yoursN: number } } => !!x.p && x.p.yours < x.r.amount * 0.97)
+    .sort((a, b) => b.r.awardDate.localeCompare(a.r.awardDate) || b.r.amount - a.r.amount)
+    .map(({ r, p }) => ({ omo: r.omo, awardDate: r.awardDate, address: r.address || "", area: r.area || r.boro || "", work: r.label, amount: r.amount, yours: p.yours, yoursN: p.yoursN }));
+
   const losses = rows.filter((r) => !r.won).sort((a, b) => b.awardDate.localeCompare(a.awardDate)).slice(0, 30)
     .map((r) => ({ omo: r.omo, address: r.address || "", area: r.area || r.boro || "", trade: r.trade, amount: r.amount, awardDate: r.awardDate }));
   return {
@@ -109,5 +162,17 @@ export function bidStats(jobs: MarketJob[], now = new Date()) {
     byTrade, byBoro, byArea,
     moves: byTradeBoro.sort((a, b) => (b.advice === "raise" ? 1 : 0) - (a.advice === "raise" ? 1 : 0) || b.invitations - a.invitations).slice(0, 8),
     losses,
+    priceList,
+    workPrices,
+    shouldHaveBid,
+    shouldHaveBidTotal: shouldHaveBid.reduce((sum, j) => sum + j.yours, 0),
   };
+}
+
+// An open invitation that is work you win at a price well under what other winners get: bid it.
+export function easyWin(description: string, workPrices: Map<string, WorkPrice>) {
+  const price = workPrices.get(workKey(description));
+  if (!price || price.yoursN < 5 || price.yours > price.others * 0.9) return null;
+  const b = beats(price, price.suggested);
+  return b.share >= 0.6 ? { ...price, beatsN: b.n, of: b.of } : null;
 }

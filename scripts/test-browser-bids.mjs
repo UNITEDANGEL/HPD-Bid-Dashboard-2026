@@ -56,6 +56,22 @@ try {
   assert.ok(!/PAST01|PAST02/.test(await list.innerText()), "past bids are not shown");
   assert.ok(await page.evaluate(() => getComputedStyle(document.querySelector(".leaflet-marker-pane")).visibility === "hidden"), "job pins hidden");
 
+  // Easy win (depends on tonight's invitations): the chip on the list and the explanation in the bid.
+  const easyChips = list.locator('[data-hpd-smoke="fc-bid-easy-chip"]');
+  let easyChecked = "none today";
+  if (await easyChips.count()) {
+    const row = list.locator("ol > li").filter({ has: page.locator('[data-hpd-smoke="fc-bid-easy-chip"]') }).first();
+    const chipPrice = (await easyChips.first().innerText()).match(/\$[\d,]+/)[0];
+    await row.locator("button").click();
+    const easyBox = page.locator('[data-hpd-smoke="fc-bid-easy"]');
+    await easyBox.waitFor({ timeout: 10000 });
+    const easyText = await easyBox.innerText();
+    assert.ok(easyText.includes(`Easy win: bid this one · ~${chipPrice}`), easyText);
+    assert.match(easyText, /of your wins[\s\S]*beaten \d+ of those \d+ winners/);
+    easyChecked = chipPrice;
+    await page.locator('[data-hpd-smoke="fc-bid-sheet"] header button').click();
+  }
+
   // 1. Save a price.
   await list.locator("ol > li button").first().click();
   const sheet = page.locator('[data-hpd-smoke="fc-bid-sheet"]');
@@ -194,12 +210,17 @@ try {
   assert.ok(await page.locator('[data-hpd-smoke="fc-stats-trade"] tbody tr').count() >= 5, "kinds of work listed");
   assert.ok(await page.locator('[data-hpd-smoke="fc-stats-boro"] tbody tr').count() >= 5, "boroughs listed");
   assert.ok(await page.locator('[data-hpd-smoke="fc-stats-losses"] li').count() >= 10, "recent jobs won by others");
+  assert.match(await page.locator('[data-hpd-smoke="fc-stats-should"]').innerText(), /\d+ jobs[\s\S]*went to other contractors for more than you usually charge/);
+  assert.ok(await page.locator('[data-hpd-smoke="fc-stats-should"] li').count() >= 5, "should-have-bid jobs listed");
+  assert.match(await page.locator('[data-hpd-smoke="fc-stats-should"] li').first().innerText(), /E[QR]\d{5} · won at \$[\d,]+ · your usual \$[\d,]+/);
+  assert.ok(await page.locator('[data-hpd-smoke="fc-stats-prices"] tbody tr').count() >= 10, "price list rows");
+  assert.match(await page.locator('[data-hpd-smoke="fc-stats-prices"] tbody tr').first().innerText(), /\d+ wins[\s\S]*\d+ jobs[\s\S]*beats \d+\/\d+/);
 
   await page.locator('[data-hpd-smoke="fc-bids-close"]').click();
   await page.waitForTimeout(500);
   assert.equal(await page.locator(".fc-bid-pin").count(), 0);
   assert.deepEqual(errors, [], "page errors");
-  console.log(`PASS bids: ${open.length} open (past hidden); ${omo} saved $1,250, package checked, faxed, confirmed, green pin, Sent badge, then revised to $1,100 (old price crossed out, cover says disregard); ${omo2} failed then resent and confirmed; My bids lists both; Bid stats shows`);
+  console.log(`PASS bids: ${open.length} open (past hidden); ${omo} saved $1,250, package checked, faxed, confirmed, green pin, Sent badge, then revised to $1,100 (old price crossed out, cover says disregard); ${omo2} failed then resent and confirmed; My bids lists both; Bid stats shows; easy win ${easyChecked}`);
 } finally {
   await browser.close();
 }

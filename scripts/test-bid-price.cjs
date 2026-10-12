@@ -27,7 +27,10 @@ assert.equal(priceHelp('ROOF DRAIN', history), null, 'nothing similar: no made-u
 
 // Reading the whole description: kinds of work, counts and areas, and the traps found in real invitations.
 const closerLock = readScope('AT BUILDING ENTRANCE DOOR: INSTALL NEW DOOR CLOSER AND REPLACE BROKEN MORTISE LOCK. ENSURE DOOR IS SELF CLOSING AND LATCHING. TOTAL DOORS = (1)');
-assert.deepEqual(closerLock.items, ['closer', 'lock']);
+assert.deepEqual(closerLock.items, ['closer', 'entrance-lock'], 'a mortise lock at the entrance is entrance hardware');
+assert.deepEqual(readScope('INSTALL NEW DOOR CLOSER AND NEW PASSAGE LOCK. TOTAL DOORS = (1)').items, ['closer', 'lock']);
+assert.deepEqual(readScope('INSTALL A NEW ADAMS RITE LOCK KEEPING THE EXISTING CYLINDER AND A NEW ELECTRIC STRIKE PLATE. TOTAL DOORS= (1)').items, ['entrance-lock']);
+assert.deepEqual(readScope('REPLACE BROKEN/DEFECTIVE HOPPER DOOR WITH NEW PROPERLY FIRE RATED HOPPER DOOR, COMPLETE WITH SELF-CLOSING HINGES, LATCH. TOTAL DOORS= (1)').items, ['door-new', 'hinges'], 'a new fire-rated hopper door (its latch is part of the door)');
 assert.equal(closerLock.doors, 1);
 assert.equal(readScope('INSTALL NEW PASSAGE LOCKS ON 6 FIRE DOORS. TOTAL DOORS= (6)').doors, 6);
 assert.equal(readScope('ADJUST DOORS. TOTAL NOS OF DOOR = (19) REMOVE ALL WORK RELATED DEBRIS.').doors, 19);
@@ -49,7 +52,7 @@ const doors = [
   { id: 'C1', description: 'INSTALL NEW DOOR CLOSER. TOTAL DOORS = (1)', amount: 450 },
   { id: 'C2', description: 'INSTALL NEW DOOR CLOSER AT ENTRANCE DOOR. TOTAL DOORS = (1)', amount: 470 },
   { id: 'C3', description: 'REPLACE DOOR CLOSER. TOTAL DOORS = (1)', amount: 460 },
-  { id: 'L1', description: 'INSTALL NEW DOOR CLOSER AND NEW MORTISE LOCK. TOTAL DOORS = (1)', amount: 850 },
+  { id: 'L1', description: 'INSTALL NEW DOOR CLOSER AND NEW PASSAGE LOCK. TOTAL DOORS = (1)', amount: 850 },
   { id: 'L2', description: 'REPLACE DOOR CLOSER AND PASSAGE LOCK. TOTAL DOORS = (1)', amount: 890 },
   { id: 'L3', description: 'NEW CLOSER AND NEW LOCK CYLINDER AT DOOR. TOTAL DOORS = (1)', amount: 900 },
 ];
