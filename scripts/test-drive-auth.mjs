@@ -24,7 +24,7 @@ async function begin() {
   const auth = new URL(response.headers.get("Location"));
   assert.equal(auth.origin, "https://accounts.google.com");
   assert.equal(auth.searchParams.get("code_challenge_method"), "S256");
-  assert.equal(auth.searchParams.get("scope"), "openid email https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/gmail.send");
+  assert.equal(auth.searchParams.get("scope"), "openid email https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly");
   assert.equal(auth.searchParams.get("redirect_uri"), `${origin}/api/drive/callback`);
   const fullCookie = response.headers.getSetCookie()[0];
   assert.match(fullCookie, /HttpOnly; Secure; SameSite=Lax/);

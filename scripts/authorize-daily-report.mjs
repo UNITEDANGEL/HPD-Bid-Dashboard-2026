@@ -7,7 +7,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { google } from "googleapis";
-import { loadJobs, loadLib, sendReport } from "./daily-report.mjs";
+import { loadBids, loadJobs, loadLib, sendReport } from "./daily-report.mjs";
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1")), "..");
 const SCOPES = ["https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.com/auth/userinfo.email", "openid"];
@@ -50,5 +50,5 @@ execFileSync("gh", ["secret", "set", "DAILY_REPORT_GOOGLE_TOKEN"], { cwd: root, 
 console.log(`Saved the GitHub secret DAILY_REPORT_GOOGLE_TOKEN for ${email}.`);
 
 const { buildDailyReport } = await loadLib("daily-report");
-const sent = await sendReport(buildDailyReport(await loadJobs()), secret);
+const sent = await sendReport(buildDailyReport(await loadJobs(), new Date(), undefined, loadBids()), secret);
 console.log(`Sent today's report to ${sent.to} as a check. From now on it arrives every evening.`);

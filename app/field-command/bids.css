@@ -62,3 +62,23 @@
 /* While bids show: the job pills, Today's route and the current-job bar step aside. */
 .fc-app.fc-bids-mode :is(.fc-data-check, .fc-today-route, .fc-current-job, .fc-version-tag, .fc-search-row, .fc-borough-bar, .fc-quick-filters) { display: none !important; }
 .fc-map-fab.is-active { background: #f97316 !important; color: #fff !important; }
+
+/* Save price -> review -> send, fax status, tabs, My bids. */
+.fc-bid-saved { margin: 8px 0 0; color: #bbf7d0; font: 600 13px/1.4 system-ui; }
+.fc-bid-fill.is-secondary { background: #334155; }
+.fc-bid-fill.is-send { background: #2563eb; }
+.fc-bid-busy { color: #fde68a; font: 600 13px system-ui; }
+.fc-bid-status { display: grid; gap: 3px; margin: 10px 0 0; padding: 10px; border-radius: 10px; background: #1e3a8a; color: #dbeafe; font: 600 13px/1.4 system-ui; }
+.fc-bid-status b { font-size: 15px; color: #fff; }
+.fc-bid-status.is-confirmed { background: #14532d; color: #dcfce7; }
+.fc-bid-status.is-failed, .fc-bid-status.is-unconfirmed { background: #7f1d1d; color: #fee2e2; }
+.fc-bid-chip.is-sent { background: #16a34a; }
+.fc-bid-chip.is-saved { background: #475569; }
+.fc-bid-chip.is-failed { background: #dc2626; }
+.fc-bid-chip.is-later { background: #f59e0b; color: #1c1917; }
+.fc-bid-pin.is-sent { background: #16a34a; }
+.fc-bid-tabs { position: sticky; top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px; background: #1c1917; border-bottom: 1px solid #ffffff1f; }
+.fc-bid-tabs button { min-height: 40px; border: 0; border-radius: 10px; background: #292524; color: #d6d3d1; font: 800 14px system-ui; }
+.fc-bid-tabs button.is-active { background: #f97316; color: #fff; }
+.fc-bid-rate { margin: 0; padding: 10px 12px; color: #fde68a; font: 700 13px system-ui; }
+.fc-bids-list li button:disabled { opacity: 0.75; }

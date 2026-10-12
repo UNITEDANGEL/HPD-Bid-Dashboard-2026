@@ -6,13 +6,24 @@ import { daySummary, type SummaryRow } from "./day-summary";
 import { secondTryState } from "./field-next-action";
 
 type Job = Record<string, unknown>;
+// An open invitation (data/upcoming_bids.json): only what the report needs.
+export type ReportBid = { omo: string; address: string; borough?: string; bidDue: string; bidDueTime?: string };
 export type DailyReport = { subject: string; text: string; html: string };
 
 const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https://hpd-bid-dashboard-2026.pages.dev/map/"): DailyReport {
+const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
+function addDay(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+}
+
+// Bids you saved / faxed (lib/bid-records.ts, from the status server): only what the report needs.
+export type ReportBidRecord = { omo: string; address: string; status: string; price: number; sentPrice?: number; sentAt?: string };
+
+export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https://hpd-bid-dashboard-2026.pages.dev/map/", bids: ReportBid[] = [], extra: { bidRecords?: ReportBidRecord[]; note?: string } = {}): DailyReport {
   // The test job is never part of the business numbers.
   const real = jobs.filter((job) => String(job.OMO ?? job.id ?? "").trim().toUpperCase() !== "TEST-0001");
   const id = (job: Job) => String(job.OMO ?? job.id ?? "");
@@ -30,10 +41,22 @@ export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https:
     `${c.completed} completed`, `${c.partial} partial`, `${c.noAccess} no access`, `${c.refused} refused`,
     `${c.byOthers} completed by others`, `${plural(c.emailed, "package")} emailed`,
   ].join(" · ");
+  // Invitations due tomorrow (New York day), soonest first: what to price tonight.
+  const tomorrow = addDay(NY_DAY.format(now));
+  const bidsTomorrow: SummaryRow[] = bids
+    .filter((bid) => bid.bidDue === tomorrow)
+    .sort((a, b) => String(a.bidDueTime || "").localeCompare(String(b.bidDueTime || "")) || a.omo.localeCompare(b.omo))
+    .map((bid) => ({ id: bid.omo, address: `${bid.address}${bid.borough ? ` (${bid.borough})` : ""}`, text: `bid due ${bid.bidDueTime || "tomorrow"}` }));
+  const faxWord: Record<string, string> = { sent: "faxed, waiting for confirmation", confirmed: "fax confirmed", failed: "FAX FAILED, resend it" };
+  const sentToday: SummaryRow[] = (extra.bidRecords || [])
+    .filter((r) => r.sentAt && NY_DAY.format(new Date(r.sentAt)) === NY_DAY.format(now))
+    .map((r) => ({ id: r.omo, address: r.address, text: `${money(r.sentPrice || r.price)} · ${faxWord[r.status] || r.status}` }));
   const sections: [string, SummaryRow[], string][] = [
     ["Visits today", summary.visited, "Nothing recorded today."],
     ["Ready to close out", summary.closeOut, "None."],
     ["Tomorrow", summary.tomorrow, "Nothing due."],
+    ["Bids due tomorrow", bidsTomorrow, "No invitations due tomorrow."],
+    ["Bids sent today", sentToday, "No bids sent today."],
   ];
 
   const text = [
@@ -45,6 +68,7 @@ export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https:
     secondDue ? `2nd no-access tries due now: ${secondDue}` : "",
     ...sections.flatMap(([title, rows, none]) => ["", `${title.toUpperCase()} (${rows.length})`, ...(rows.length ? rows.map((r) => `- ${r.id} · ${r.address} · ${r.text}`) : [none])]),
     "",
+    extra.note ? `Note: ${extra.note}` : "",
     `Open the app: ${appUrl}`,
   ].filter((line, i, all) => line !== "" || all[i - 1] !== "").join("\n");
 

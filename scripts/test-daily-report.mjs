@@ -27,6 +27,29 @@ assert.match(report.text, /Open the app: https:\/\/example\.test\/map\//);
 assert.match(report.html, /\$1,400 earned today/);
 assert.ok(report.html.includes("3 &lt;MAIN&gt; ST") && !report.html.includes("<MAIN>"), "addresses are escaped in the HTML");
 
+// Bids due tomorrow (Thu 10/15) are listed, soonest first; others are not.
+const withBids = buildDailyReport(jobs, now, "https://example.test/map/", [
+  { omo: "ER09002", address: "9 ELM ST", borough: "BK", bidDue: "2026-10-15", bidDueTime: "11:00 AM" },
+  { omo: "ER09001", address: "8 OAK ST", borough: "QN", bidDue: "2026-10-15", bidDueTime: "10:00 AM" },
+  { omo: "ER09003", address: "7 PINE ST", borough: "MN", bidDue: "2026-10-16", bidDueTime: "10:00 AM" },
+]);
+assert.match(withBids.text, /BIDS DUE TOMORROW \(2\)\n- ER09001 · 8 OAK ST \(QN\) · bid due 10:00 AM\n- ER09002 · 9 ELM ST \(BK\) · bid due 11:00 AM/);
+assert.ok(!withBids.text.includes("ER09003"), "only tomorrow's bids");
+assert.match(report.text, /BIDS DUE TOMORROW \(0\)\nNo invitations due tomorrow\./);
+
+// Bids faxed today, with the fax status; a note when phone updates weren't available.
+const withSent = buildDailyReport(jobs, now, "https://example.test/map/", [], {
+  bidRecords: [
+    { omo: "ER09001", address: "8 OAK ST", status: "confirmed", price: 1250, sentPrice: 1250, sentAt: "2026-10-14T15:00:00Z" },
+    { omo: "ER09002", address: "9 ELM ST", status: "failed", price: 980, sentPrice: 980, sentAt: "2026-10-14T16:00:00Z" },
+    { omo: "ER09003", address: "7 PINE ST", status: "confirmed", price: 500, sentAt: "2026-10-13T15:00:00Z" },
+    { omo: "ER09004", address: "6 ASH ST", status: "saved", price: 700 },
+  ],
+  note: "Phone updates weren't available (Status server answered 500); this report is from the job data only.",
+});
+assert.match(withSent.text, /BIDS SENT TODAY \(2\)\n- ER09001 · 8 OAK ST · \$1,250 · fax confirmed\n- ER09002 · 9 ELM ST · \$980 · FAX FAILED, resend it/);
+assert.match(withSent.text, /Note: Phone updates weren't available/);
+
 // A quiet day still reads cleanly.
 const quiet = buildDailyReport([{ OMO: "Q1", AwardAmount: "400.00" }], now);
 assert.equal(quiet.subject, "HPD day report · Wed 10/14 · $0 earned · 0 visits");

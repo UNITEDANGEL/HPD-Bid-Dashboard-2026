@@ -28,12 +28,25 @@ export async function loadLib(entry) {
   return import(pathToFileURL(path.join(dir, `${entry}.mjs`)).href);
 }
 
-export async function loadJobs(fetcher = fetch) {
+// Open invitations to bid from the nightly fetcher (empty if there are none yet).
+export function loadBids() {
+  try { return JSON.parse(fs.readFileSync(path.join(root, "data", "upcoming_bids.json"), "utf8")).bids || []; } catch { return []; }
+}
+
+// The job data plus what the phones saved (status server). If the status server can't answer, the
+// report still goes out from the job data, with a note (bidRecords and the visits may be missing).
+export async function loadJobs(fetcher = fetch, extra = {}) {
   const jobs = JSON.parse(fs.readFileSync(path.join(root, "data", "COA_Fetcher_2026.json"), "utf8"));
-  // A named client: Cloudflare turns away Node's default fetch with a 503.
-  const response = await fetcher(STATUS_SERVER, { headers: { "User-Agent": "HPD-daily-report/1.0 (+https://hpd-bid-dashboard-2026.pages.dev)", Accept: "application/json" } });
-  if (!response.ok) throw new Error(`Status server answered ${response.status}`);
-  const overrides = (await response.json()).overrides || {};
+  let overrides = {};
+  try {
+    // A named client: Cloudflare turns away Node's default fetch with a 503.
+    const response = await fetcher(STATUS_SERVER, { headers: { "User-Agent": "HPD-daily-report/1.0 (+https://hpd-bid-dashboard-2026.pages.dev)", Accept: "application/json" } });
+    if (!response.ok) throw new Error(`Status server answered ${response.status}`);
+    overrides = (await response.json()).overrides || {};
+  } catch (error) {
+    extra.note = `Phone updates weren't available (${error.message}); this report is from the job data only.`;
+  }
+  extra.bidRecords = Object.entries(overrides).filter(([key]) => key.startsWith("BID-")).map(([, value]) => value);
   // Same merge as the phone: saved job steps on top of the job data.
   return jobs.map((job) => ({ ...job, ...(overrides[job.OMO] || {}) }));
 }
@@ -67,7 +80,8 @@ export async function sendReport(report, tokenJson) {
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const { buildDailyReport } = await loadLib("daily-report");
-  const report = buildDailyReport(await loadJobs());
+  const extra = {};
+  const report = buildDailyReport(await loadJobs(fetch, extra), new Date(), undefined, loadBids(), extra);
   console.log(`${report.subject}\n\n${report.text}\n`);
   if (process.argv.includes("--send")) {
     const token = process.env.DAILY_REPORT_GOOGLE_TOKEN;

@@ -13,6 +13,10 @@ const FILE_KIND = "hpd-package-file";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const MAX_FILE_BYTES = 90 * 1024 * 1024;
 const MAX_EMAIL_BYTES = 30 * 1024 * 1024;
+const GMAIL_API = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
+// Bids go to HPD's bid fax, (212) 863-8655 (printed on every invitation), through HumbleFax's
+// email-to-fax: the PDF is faxed, the email's subject and body become the cover sheet.
+const DEFAULT_BID_FAX = "2128638655@humblefax.com";
 const EMAIL = /^[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[^\s@<>(),;:"]+$/;
 const validId = (id) => typeof id === "string" && /^[A-Za-z0-9_-]{10,200}$/.test(id);
 const reply = (value, status = 200) => Response.json(value, { status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
@@ -47,6 +51,20 @@ export async function gmailRefusal(response) {
   }
   if (response.status === 401) return "Google sign-in expired. Reconnect Google on the Storage page, then tap Send email again.";
   return `Gmail could not send the package (HTTP ${response.status}${reasons ? `: ${reasons.slice(0, 160)}` : ""}).`;
+}
+
+export function bidFaxRecipient(env) {
+  const to = String(env.HPD_BID_FAX_TO || DEFAULT_BID_FAX).trim().toLowerCase();
+  if (!/^\d{10}@humblefax\.com$/.test(to)) fail("Bid fax number is not set up correctly.", 500);
+  return to;
+}
+
+// HumbleFax's reply about a faxed bid: confirmed, failed, or not here yet.
+export function faxResult(subject, snippet) {
+  const text = `${subject} ${snippet}`;
+  if (/fail|unsuccessful|not (?:be )?(?:sent|delivered)|could not|error|busy|no answer|rejected/i.test(text)) return "failed";
+  if (/success|delivered|was sent|has been sent|complete|confirm/i.test(text)) return "confirmed";
+  return "";
 }
 
 export function packageRecipients(env, ownerEmail) {
@@ -131,6 +149,54 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       if (!upload.ok) fail(`Drive upload failed for ${name} (HTTP ${upload.status}).`);
       const file = await upload.json();
       return reply({ id: file.id, name });
+    }
+
+    if (action === "fax-bid") {
+      // Same shape as email-package, but only ever to HPD's bid fax (set here, never by the browser).
+      const boundary = request.headers.get("X-HPD-Boundary") || "";
+      if (!/^[A-Za-z0-9_-]{16,70}$/.test(boundary)) fail("Invalid fax request.", 400);
+      if (request.headers.get("Content-Type") !== "text/plain") fail("Invalid fax request.", 415);
+      let subject;
+      try { subject = decodeURIComponent(request.headers.get("X-HPD-Subject") || ""); } catch { fail("Invalid fax subject.", 400); }
+      const parts = await bodyBytes(request, MAX_EMAIL_BYTES, "Bid fax");
+      const to = bidFaxRecipient(env);
+      const head = new TextEncoder().encode([
+        `From: ${ownerEmail}`, `To: ${to}`, `Subject: ${encodeHeader(subject || "HPD bid")}`, "MIME-Version: 1.0",
+        `Content-Type: multipart/mixed; boundary="${boundary}"`, "", "",
+      ].join("\r\n"));
+      const message = new Uint8Array(head.byteLength + parts.byteLength);
+      message.set(head, 0);
+      message.set(parts, head.byteLength);
+      const sent = await call(GMAIL_SEND, { method: "POST", headers: { "Content-Type": "message/rfc822" }, body: message });
+      if (!sent.ok) fail(await gmailRefusal(sent), sent.status === 401 || sent.status === 403 ? 403 : 503);
+      let receipt = {};
+      try { receipt = await sent.json(); } catch {}
+      return reply({ sent: true, to, messageId: typeof receipt.id === "string" ? receipt.id : "", sentAt: new Date().toISOString() });
+    }
+
+    if (action === "fax-status") {
+      // HumbleFax emails a confirmation after a fax goes through: look for its reply since the send.
+      const body = await request.json().catch(() => null);
+      const since = Date.parse(body?.sentAt || "");
+      const omo = String(body?.omo || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12);
+      if (!Number.isFinite(since)) fail("Invalid fax status request.", 400);
+      const q = encodeURIComponent(`from:humblefax.com after:${Math.floor(since / 1000) - 120}`);
+      const listed = await call(`${GMAIL_API}?q=${q}&maxResults=10`);
+      if (listed.status === 403) fail("Checking the fax needs read access to email: on the Storage page tap Disconnect, then Connect, and allow reading email.", 403);
+      if (!listed.ok) fail(`Couldn't check the fax (HTTP ${listed.status}).`);
+      const ids = ((await listed.json()).messages || []).map((m) => m.id).filter(Boolean);
+      const replies = [];
+      for (const id of ids) {
+        const got = await call(`${GMAIL_API}/${encodeURIComponent(id)}?format=metadata&metadataHeaders=Subject&metadataHeaders=Date`);
+        if (!got.ok) continue;
+        const m = await got.json();
+        const header = (name) => (m.payload?.headers || []).find((h) => String(h.name).toLowerCase() === name)?.value || "";
+        replies.push({ subject: header("subject"), snippet: String(m.snippet || ""), at: new Date(Number(m.internalDate) || Date.parse(header("date"))).toISOString() });
+      }
+      // Prefer the reply that names this OMO; otherwise the first reply after the send.
+      const pick = replies.find((r) => omo && `${r.subject} ${r.snippet}`.toUpperCase().includes(omo)) || replies.sort((a, b) => a.at.localeCompare(b.at))[0];
+      const status = pick ? faxResult(pick.subject, pick.snippet) || "confirmed" : "waiting";
+      return reply({ status, subject: pick?.subject || "", at: pick?.at || "" });
     }
 
     if (action === "email-package") {

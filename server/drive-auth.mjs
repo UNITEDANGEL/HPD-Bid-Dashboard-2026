@@ -2,11 +2,13 @@ import { handleDriveBackups } from "./drive-backups.mjs";
 import { handleDrivePackages } from "./drive-packages.mjs";
 import { handleDriveVideos } from "./drive-videos.mjs";
 const BACKUP_ACTIONS = ["backups", "backup", "backup-id", "save-backup", "test-backup"];
-const PACKAGE_ACTIONS = ["package-folder", "package-file", "email-package"];
+const PACKAGE_ACTIONS = ["package-folder", "package-file", "email-package", "fax-bid", "fax-status"];
 const VIDEO_ACTIONS = ["video-start", "video-piece", "video-to-package"];
 const SCOPE = "https://www.googleapis.com/auth/drive.file";
 // Sends approved packages from the owner's Gmail. Optional: Drive works if it is not granted.
 const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.send";
+// Read mail: only to find HumbleFax's confirmation for a faxed bid (fax-status).
+const GMAIL_READ_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 const SESSION = "__Host-hpd-drive-session";
 const FLOW = "__Host-hpd-drive-flow";
 const TTL = 30 * 24 * 60 * 60;
@@ -136,7 +138,7 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
       const challenge = encode(new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(verifier))));
       const auth = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       auth.search = new URLSearchParams({ client_id: env.HPD_DRIVE_CLIENT_ID, redirect_uri: cfg.callback,
-        response_type: "code", scope: `openid email ${SCOPE} ${GMAIL_SCOPE}`, state, code_challenge: challenge,
+        response_type: "code", scope: `openid email ${SCOPE} ${GMAIL_SCOPE} ${GMAIL_READ_SCOPE}`, state, code_challenge: challenge,
         code_challenge_method: "S256", access_type: "offline", prompt: "consent", login_hint: cfg.email }).toString();
       return redirect(auth.href, [cookie(FLOW, flow, 600)]);
     }
