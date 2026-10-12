@@ -1,4 +1,4 @@
-Fetcher run started: 2026-10-12T01:14:41.373Z
+Fetcher run started: 2026-10-12T01:18:40.146Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,19 +25,24 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/4 [00:00<?, ?it/s]Downloading COA messages:  25%|██▌       | 1/4 [00:00<00:00,  6.27it/s]Downloading COA messages:  50%|█████     | 2/4 [00:00<00:00,  7.59it/s]Downloading COA messages:  75%|███████▌  | 3/4 [00:00<00:00,  7.77it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00,  7.83it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00,  7.64it/s]
-Geocoding COA addresses:   0%|          | 0/4 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 4/4 [00:00<00:00, 118987.35it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/4 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 1/4 [00:00<00:02,  1.32it/s]Fetching ITBs for COA OMOs:  50%|█████     | 2/4 [00:01<00:01,  1.68it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 3/4 [00:01<00:00,  1.87it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:02<00:00,  2.03it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:02<00:00,  1.88it/s]
+Downloading COA messages:   0%|          | 0/4 [00:00<?, ?it/s]Downloading COA messages:  25%|██▌       | 1/4 [00:00<00:00,  9.18it/s]Downloading COA messages:  50%|█████     | 2/4 [00:00<00:00,  6.75it/s]Downloading COA messages:  75%|███████▌  | 3/4 [00:00<00:00,  7.78it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00,  7.94it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00,  7.81it/s]
+Geocoding COA addresses:   0%|          | 0/4 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 4/4 [00:00<00:00, 99273.47it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/4 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 1/4 [00:00<00:01,  1.60it/s]Fetching ITBs for COA OMOs:  50%|█████     | 2/4 [00:01<00:01,  1.85it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 3/4 [00:01<00:00,  1.92it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:02<00:00,  2.05it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:02<00:00,  1.96it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
+Award amount check ER07567: stored 470.00, COA 470.00
+Award amount check ER07193: stored 890.00, COA 890.00
+Award amount check ER07281: stored 890.00, COA 1890.00
+Award amount check ER07032: stored 440.00, COA 440.00
 Safe merge complete
 Master before: 676
 Incoming rows: 4
 Added new OMOs: 0
-Skipped existing OMOs: 4
-Updated existing OMOs: 0
+Skipped existing OMOs: 3
+Updated existing OMOs: 1
+Award amount REPAIRED ER07281: stored 890.00, COA 1890.00
 Need geocode: 0
 Missing ITB: 0
 Missing description: 0
@@ -194,13 +199,13 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-10-12T01:14:53.447Z
+Fetcher run finished: 2026-10-12T01:18:51.622Z
 {
   "fetchedCoaItems": 4,
   "fetchedItbItems": 4,
   "fetchedFinalJobRows": 4,
   "addedNewOmos": 0,
-  "skippedExistingOmos": 4,
+  "skippedExistingOmos": 3,
   "rawRows": 676,
   "rows2026": 625,
   "mapped2026": 625,

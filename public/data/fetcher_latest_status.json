@@ -1,7 +1,7 @@
 {
   "state": "complete",
-  "startedAt": "2026-10-12T01:14:41.373Z",
-  "finishedAt": "2026-10-12T01:14:53.447Z",
+  "startedAt": "2026-10-12T01:18:40.146Z",
+  "finishedAt": "2026-10-12T01:18:51.622Z",
   "ok": true,
   "error": "",
   "summary": {
@@ -9,7 +9,7 @@
     "fetchedItbItems": 4,
     "fetchedFinalJobRows": 4,
     "addedNewOmos": 0,
-    "skippedExistingOmos": 4,
+    "skippedExistingOmos": 3,
     "rawRows": 676,
     "rows2026": 625,
     "mapped2026": 625,
