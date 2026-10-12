@@ -57,6 +57,9 @@ try {
   assert.ok(await page.evaluate(() => getComputedStyle(document.querySelector(".leaflet-marker-pane")).visibility === "hidden"), "job pins hidden");
 
   // Easy win (depends on tonight's invitations): the chip on the list and the explanation in the bid.
+  // Easy win tags appear once the award history has loaded.
+  await page.waitForFunction(() => performance.getEntriesByType("resource").some((e) => e.name.includes("market_awards.json") && e.responseEnd > 0), null, { timeout: 30000 });
+  await page.waitForTimeout(1500);
   const easyChips = list.locator('[data-hpd-smoke="fc-bid-easy-chip"]');
   let easyChecked = "none today";
   if (await easyChips.count()) {
@@ -187,7 +190,7 @@ try {
   // "I got HumbleFax's confirmation email" and the fax shows confirmed.
   await page.locator('[data-hpd-smoke="fc-bids-close"]').click();
   await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
-  await page.getByRole("tab", { name: /Open bids/ }).click();
+  await page.getByRole("tab", { name: /^Open/ }).click();
   const third = list.locator("ol > li button").nth(2);
   waitOmo = (await third.locator("b").first().innerText()).trim();
   await third.click();
@@ -216,11 +219,28 @@ try {
   assert.ok(await page.locator('[data-hpd-smoke="fc-stats-prices"] tbody tr').count() >= 10, "price list rows");
   assert.match(await page.locator('[data-hpd-smoke="fc-stats-prices"] tbody tr').first().innerText(), /\d+ wins[\s\S]*\d+ jobs[\s\S]*beats \d+\/\d+/);
 
+  // 7. History: every awarded invitation, checked against the raw data file.
+  const market = (await (await fetch(`${baseUrl}/data/market_awards.json`)).json()).jobs;
+  await page.locator('[data-hpd-smoke="fc-bids-history"]').click();
+  const summary = page.locator('[data-hpd-smoke="fc-history-summary"]');
+  await summary.waitFor({ timeout: 20000 });
+  assert.match(await summary.innerText(), new RegExp(`^${market.length.toLocaleString("en-US")} jobs`));
+  await page.locator('[data-hpd-smoke="fc-history-who"]').selectOption("you");
+  assert.match(await summary.innerText(), new RegExp(`^${market.filter((j) => j.won).length} jobs`), "You won = your awards in the data");
+  await page.locator('[data-hpd-smoke="fc-history-who"]').selectOption("all");
+  const pick = market.find((j) => !j.won);
+  await page.locator('[data-hpd-smoke="fc-history-search"]').fill(pick.omo);
+  assert.match(await summary.innerText(), /^1 jobs/);
+  const item = page.locator('[data-hpd-smoke="fc-history"] .fc-history-list li').first();
+  assert.ok((await item.innerText()).includes(`${pick.omo} · $${pick.amount.toLocaleString("en-US")}`) && /other contractor/.test(await item.innerText()));
+  await item.locator("button").click();
+  assert.equal((await page.locator('[data-hpd-smoke="fc-history-desc"]').innerText()).trim(), pick.description.trim());
+
   await page.locator('[data-hpd-smoke="fc-bids-close"]').click();
   await page.waitForTimeout(500);
   assert.equal(await page.locator(".fc-bid-pin").count(), 0);
   assert.deepEqual(errors, [], "page errors");
-  console.log(`PASS bids: ${open.length} open (past hidden); ${omo} saved $1,250, package checked, faxed, confirmed, green pin, Sent badge, then revised to $1,100 (old price crossed out, cover says disregard); ${omo2} failed then resent and confirmed; My bids lists both; Bid stats shows; easy win ${easyChecked}`);
+  console.log(`PASS bids: ${open.length} open (past hidden); ${omo} saved $1,250, package checked, faxed, confirmed, green pin, Sent badge, then revised to $1,100 (old price crossed out, cover says disregard); ${omo2} failed then resent and confirmed; My bids lists both; Bid stats shows; History matches the data; easy win ${easyChecked}`);
 } finally {
   await browser.close();
 }

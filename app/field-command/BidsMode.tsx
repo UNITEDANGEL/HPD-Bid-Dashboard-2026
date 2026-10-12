@@ -7,7 +7,7 @@
 // won, not awarded or pending, and your win rate (lib/bid-records.ts).
 import { useEffect, useMemo, useRef, useState } from "react";
 import { priceHelp, readScope, winChance, type PricedJob } from "../../lib/bid-price";
-import { beats, bidStats, easyWin, type Group, type MarketJob, type WorkPrice } from "../../lib/bid-stats";
+import { beats, bidStats, easyWin, historyRows, filterHistory, type Group, type HistoryFilter, type MarketJob, type WorkPrice } from "../../lib/bid-stats";
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
 import { bidResult, checkBidFax, faxState, mergeServerBids, readBidRecords, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
@@ -71,7 +71,7 @@ function badge(record?: BidRecord) {
 export default function BidsMode({ open, map, history, onClose }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void }) {
   const [bids, setBids] = useState<UpcomingBid[] | null>(null);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState<"open" | "mine" | "stats">("open");
+  const [tab, setTab] = useState<"open" | "mine" | "stats" | "history">("open");
   const [selected, setSelected] = useState<UpcomingBid | null>(null);
   const [records, setRecords] = useState<Record<string, BidRecord>>({});
   const [draft, setDraft] = useState("");
@@ -392,9 +392,10 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
       ) : (
         <aside className="fc-bids-list" aria-label="Invitations to bid" data-hpd-smoke="fc-bids-list">
           <div className="fc-bid-tabs" role="tablist">
-            <button type="button" role="tab" aria-selected={tab === "open"} className={tab === "open" ? "is-active" : ""} onClick={() => setTab("open")}>Open bids ({list.length})</button>
-            <button type="button" role="tab" aria-selected={tab === "mine"} className={tab === "mine" ? "is-active" : ""} data-hpd-smoke="fc-bids-mine" onClick={() => setTab("mine")}>My bids ({sentCount})</button>
-            <button type="button" role="tab" aria-selected={tab === "stats"} className={tab === "stats" ? "is-active" : ""} data-hpd-smoke="fc-bids-stats" onClick={() => setTab("stats")}>Bid stats</button>
+            <button type="button" role="tab" aria-selected={tab === "open"} className={tab === "open" ? "is-active" : ""} onClick={() => setTab("open")}>Open ({list.length})</button>
+            <button type="button" role="tab" aria-selected={tab === "mine"} className={tab === "mine" ? "is-active" : ""} data-hpd-smoke="fc-bids-mine" onClick={() => setTab("mine")}>Mine ({sentCount})</button>
+            <button type="button" role="tab" aria-selected={tab === "stats"} className={tab === "stats" ? "is-active" : ""} data-hpd-smoke="fc-bids-stats" onClick={() => setTab("stats")}>Stats</button>
+            <button type="button" role="tab" aria-selected={tab === "history"} className={tab === "history" ? "is-active" : ""} data-hpd-smoke="fc-bids-history" onClick={() => setTab("history")}>History</button>
           </div>
           {tab === "open" ? (
             bids === null ? <p>Loading invitations…</p> : list.length ? (
@@ -415,6 +416,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             ) : <p>No open invitations right now. New ones are read every night.</p>
           ) : tab === "stats" ? (
             <BidStatsView stats={stats} loading={market === null} />
+          ) : tab === "history" ? (
+            <JobHistory jobs={marketJobs} loading={market === null} />
           ) : (
             <div data-hpd-smoke="fc-my-bids">
               <p className="fc-bid-rate">{rate.decided ? `Won ${rate.won} of ${rate.decided} decided (${rate.percent}%)` : "No results yet"} · {rate.sent} sent{mine.length > sentCount ? ` · ${mine.length - sentCount} saved, not sent` : ""}</p>
@@ -561,5 +564,42 @@ function PriceList({ rows }: { rows: WorkPrice[] }) {
         })}</tbody>
       </table>
     </section>
+  );
+}
+
+// Every awarded invitation: search and filter, with what each was won for and by whom.
+function JobHistory({ jobs, loading }: { jobs: MarketJob[]; loading: boolean }) {
+  const rows = useMemo(() => historyRows(jobs), [jobs]);
+  const [filter, setFilter] = useState<HistoryFilter>({ text: "", trade: "", boro: "", who: "all" });
+  const [limit, setLimit] = useState(40);
+  const [openOmo, setOpenOmo] = useState("");
+  const result = useMemo(() => filterHistory(rows, filter), [rows, filter]);
+  if (!rows.length) return <p>{loading ? "Loading job history…" : "No award history yet."}</p>;
+  const trades = [...new Set(rows.map((r) => r.trade))].sort();
+  const boros = [...new Set(rows.map((r) => r.boro).filter(Boolean))].sort();
+  const set = (patch: Partial<HistoryFilter>) => { setFilter((f) => ({ ...f, ...patch })); setLimit(40); };
+  return (
+    <div className="fc-stats fc-history" data-hpd-smoke="fc-history">
+      <input className="fc-history-search" placeholder="Search OMO, address, neighborhood or work (e.g. glass)" aria-label="Search job history" data-hpd-smoke="fc-history-search" value={filter.text} onChange={(e) => set({ text: e.target.value })} />
+      <div className="fc-history-filters">
+        <select aria-label="Kind of work" data-hpd-smoke="fc-history-trade" value={filter.trade} onChange={(e) => set({ trade: e.target.value })}><option value="">All work</option>{trades.map((t) => <option key={t} value={t}>{t}</option>)}</select>
+        <select aria-label="Borough" data-hpd-smoke="fc-history-boro" value={filter.boro} onChange={(e) => set({ boro: e.target.value })}><option value="">All boroughs</option>{boros.map((b) => <option key={b} value={b}>{b}</option>)}</select>
+        <select aria-label="Who won" data-hpd-smoke="fc-history-who" value={filter.who} onChange={(e) => set({ who: e.target.value as HistoryFilter["who"] })}><option value="all">Everyone</option><option value="you">You won</option><option value="others">Others won</option></select>
+      </div>
+      <p className="fc-history-summary" data-hpd-smoke="fc-history-summary">
+        <b>{result.count.toLocaleString()} jobs</b> · typical {money(result.median)} · {money(result.total)} in all · you won {result.yours} ({result.count ? Math.round((result.yours / result.count) * 100) : 0}%){result.yours && result.count > result.yours ? ` · yours typical ${money(result.yoursMedian)}, others ${money(result.othersMedian)}` : ""}
+      </p>
+      <ol className="fc-history-list">{result.rows.slice(0, limit).map((r) => (
+        <li key={r.omo} className={r.won ? "is-yours" : ""}>
+          <button type="button" onClick={() => setOpenOmo(openOmo === r.omo ? "" : r.omo)}>
+            <span><b>{r.omo} · {money(r.amount)}</b><em>{r.won ? "you won" : "other contractor"}</em></span>
+            <span>{r.address}{r.area ? ` · ${r.area}` : ""}{r.boro ? ` · ${r.boro}` : ""}</span>
+            <small>{r.summary} · awarded {r.awardDate.slice(5, 7)}/{r.awardDate.slice(8, 10)}/{r.awardDate.slice(2, 4)}</small>
+          </button>
+          {openOmo === r.omo ? <p className="fc-history-desc" data-hpd-smoke="fc-history-desc">{r.description}</p> : null}
+        </li>
+      ))}</ol>
+      {result.rows.length > limit ? <button type="button" className="fc-bid-fill is-secondary" onClick={() => setLimit((n) => n + 60)}>Show more ({(result.rows.length - limit).toLocaleString()} left)</button> : null}
+    </div>
   );
 }

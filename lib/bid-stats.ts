@@ -176,3 +176,29 @@ export function easyWin(description: string, workPrices: Map<string, WorkPrice>)
   const b = beats(price, price.suggested);
   return b.share >= 0.6 ? { ...price, beatsN: b.n, of: b.of } : null;
 }
+
+// Job history: every awarded invitation with what it was won for, searchable and filterable.
+export type HistoryRow = MarketJob & { trade: string; summary: string; search: string };
+export type HistoryFilter = { text: string; trade: string; boro: string; who: "all" | "you" | "others" };
+
+export function historyRows(jobs: MarketJob[]): HistoryRow[] {
+  return jobs.filter((j) => j.amount > 0 && j.awardDate).map((j) => {
+    const summary = readScope(j.description).summary;
+    return { ...j, trade: tradeOf(j.description), summary, search: [j.omo, j.address, j.area, j.boro, j.zip, summary, j.description].join(" ").toLowerCase() };
+  }).sort((a, b) => b.awardDate.localeCompare(a.awardDate) || a.omo.localeCompare(b.omo));
+}
+
+export function filterHistory(rows: HistoryRow[], f: HistoryFilter) {
+  const words = f.text.toLowerCase().split(/\s+/).filter(Boolean);
+  const list = rows.filter((r) =>
+    (!f.trade || r.trade === f.trade) && (!f.boro || r.boro === f.boro) &&
+    (f.who === "all" || (f.who === "you") === r.won) && words.every((w) => r.search.includes(w)));
+  const mine = list.filter((r) => r.won), others = list.filter((r) => !r.won);
+  return {
+    rows: list, count: list.length, yours: mine.length,
+    total: Math.round(list.reduce((s, r) => s + r.amount, 0)),
+    median: Math.round(median(list.map((r) => r.amount))),
+    yoursMedian: Math.round(median(mine.map((r) => r.amount))),
+    othersMedian: Math.round(median(others.map((r) => r.amount))),
+  };
+}

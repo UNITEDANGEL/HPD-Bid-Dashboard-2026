@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { loadLib } from "./daily-report.mjs";
 
-const { bidStats, easyWin, beats } = await loadLib("bid-stats");
+const { bidStats, easyWin, beats, historyRows, filterHistory } = await loadLib("bid-stats");
 const now = new Date("2026-10-12T12:00:00Z");
 const day = (n) => new Date(now.getTime() - n * 86400000).toISOString().slice(0, 10);
 const LOCK = "INSTALL NEW PASSAGE LOCK AT COMPACTOR DOOR. TOTAL DOORS = (1)";
@@ -43,4 +43,14 @@ assert.deepEqual([e.suggested, e.yours, e.others, e.beatsN, e.of], [540, 400, 60
 assert.equal(easyWin(LEAK, s.workPrices), null);
 assert.equal(easyWin("REPAIR FIRE ESCAPE DROP LADDER", s.workPrices), null);
 
-console.log("PASS bid stats: price list (your usual vs winners, suggested, beats N of M), should-have-bid from real awards, Easy win only with enough history");
+// History: search and filters.
+const rows = historyRows(jobs);
+assert.equal(rows.length, jobs.length);
+const all = filterHistory(rows, { text: "", trade: "", boro: "", who: "all" });
+assert.deepEqual([all.count, all.yours], [jobs.length, jobs.filter((j) => j.won).length]);
+const lockOthers = filterHistory(rows, { text: "passage lock", trade: "", boro: "", who: "others" });
+assert.equal(lockOthers.count, 7, "6 recent + 1 older lock job won by others");
+assert.equal(lockOthers.median, 600);
+assert.equal(filterHistory(rows, { text: "ER00001", trade: "", boro: "", who: "all" }).count, 1);
+assert.equal(filterHistory(rows, { text: "", trade: "", boro: "Queens", who: "all" }).count, 0);
+console.log("PASS bid stats: price list (your usual vs winners, suggested, beats N of M), should-have-bid from real awards, Easy win only with enough history, history search and filters");

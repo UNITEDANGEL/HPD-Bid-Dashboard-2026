@@ -86,7 +86,7 @@
 .fc-bid-chip.is-failed { background: #dc2626; }
 .fc-bid-chip.is-later { background: #f59e0b; color: #1c1917; }
 .fc-bid-pin.is-sent { background: #16a34a; }
-.fc-bid-tabs { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 8px; background: #1c1917; border-bottom: 1px solid #ffffff1f; }
+.fc-bid-tabs { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 8px; background: #1c1917; border-bottom: 1px solid #ffffff1f; }
 .fc-bid-tabs button { min-height: 40px; border: 0; border-radius: 10px; background: #292524; color: #d6d3d1; font: 800 14px system-ui; }
 .fc-bid-tabs button.is-active { background: #f97316; color: #fff; }
 .fc-bid-rate { margin: 0; padding: 10px 12px; color: #fde68a; font: 700 13px system-ui; }
@@ -155,3 +155,19 @@
 .fc-bid-easy button { justify-self: start; min-height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: #16a34a; color: #fff; font: 800 13px system-ui; }
 .fc-price-list tbody th { width: 40%; }
 .fc-price-list tr.is-raise td b { color: #86efac; }
+
+/* Job history */
+.fc-history-search { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid #57534e; border-radius: 10px; background: #1c1917; color: #fff; font: 600 15px system-ui; box-sizing: border-box; }
+.fc-history-filters { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 6px; }
+.fc-history-filters select { min-height: 40px; min-width: 0; border: 1px solid #57534e; border-radius: 10px; background: #292524; color: #fff; font: 700 12.5px system-ui; }
+.fc-history-summary { margin: 8px 0 4px; color: #d6d3d1; font: 600 12.5px/1.4 system-ui; }
+.fc-history-summary b { color: #fff; }
+.fc-history-list { margin: 0; padding: 0; list-style: none; }
+.fc-history-list li { border-bottom: 1px solid #ffffff14; }
+.fc-history-list button { display: grid; gap: 1px; width: 100%; padding: 8px 0; border: 0; background: none; color: #e7e5e4; text-align: left; }
+.fc-history-list button span:first-child { display: flex; justify-content: space-between; gap: 8px; }
+.fc-history-list b { color: #fff; font: 800 13.5px system-ui; }
+.fc-history-list em { font: 700 11.5px system-ui; font-style: normal; color: #fca5a5; }
+.fc-history-list li.is-yours em { color: #86efac; }
+.fc-history-list span, .fc-history-list small { color: #a8a29e; font: 600 12px/1.35 system-ui; }
+.fc-history-desc { margin: 0 0 8px; padding: 8px; border-radius: 8px; background: #292524; color: #e7e5e4; font: 500 12px/1.45 system-ui; }
