@@ -1929,6 +1929,11 @@
 .fc-route-next > div { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .fc-route-next .fc-route-drive { margin:0; align-items:center; justify-content:center; text-align:center; }
 .fc-route-waze { background:#33ccff; color:#062b3a; border-color:#9be8ff; }
+/* Finished stops: green ✓ on the map, muted rows on top of the list, progress line. */
+.fc-route-done { display:grid; place-items:center; border:2px solid white; border-radius:50%; background:#16a34a; color:white; font:800 14px system-ui; box-shadow:0 2px 5px #10233380; }
+.fc-route-body li.fc-route-done-row { opacity:0.75; }
+.fc-route-body li.fc-route-done-row b { color:#86efac; }
+.fc-route-progress { margin:8px 0 2px; color:#86efac !important; font:700 13px system-ui !important; }
 .fc-route-direction { pointer-events:none; }
 .fc-route-direction span { display:block; width:18px; height:18px; background:white; clip-path:polygon(0 0,100% 50%,0 100%,28% 50%); filter:drop-shadow(0 1px 1px #1267df); }
 @keyframes fc-route-flow { to { stroke-dashoffset:-22; } }

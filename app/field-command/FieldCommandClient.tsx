@@ -14,7 +14,7 @@ import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointme
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
-import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState } from "../../lib/field-next-action";
+import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
 import { visitLocationFields, type GpsFix } from "../../lib/visit-record";
 import { adoptServerOverrides, flushOverrideOutbox, mergeOverrideMaps, queueOverrideSync } from "../../lib/override-sync";
@@ -1761,14 +1761,15 @@ export default function FieldCommandClient() {
     );
   }
 
-  async function drawDayRoute(stops: RouteJob[], origin: RoutePoint): Promise<RoadRoute | null> {
+  // numbers: each open stop's place on the route (finished stops keep theirs); done: finished stops (✓).
+  async function drawDayRoute(stops: RouteJob[], origin: RoutePoint, numbers?: number[], done: RouteJob[] = []): Promise<RoadRoute | null> {
     const request = ++dayRouteRequest.current;
     const leafletModule = await import("leaflet");
     if (request !== dayRouteRequest.current || !mapRef.current) return null;
     const L = (leafletModule as any).default || leafletModule;
     dayRouteLayerRef.current?.remove();
     dayRouteLayerRef.current = null;
-    if (!stops.length) return null;
+    if (!stops.length && !done.length) return null;
     for (const [name, z] of [["fc-route-path", "610"], ["fc-route-stops", "620"]]) {
       const pane = mapRef.current.getPane(name) || mapRef.current.createPane(name);
       pane.style.zIndex = z;
@@ -1776,9 +1777,13 @@ export default function FieldCommandClient() {
     const points = [origin, ...stops];
     const stopMarkers = () => [
       L.marker([origin.lat, origin.lng], { pane: "fc-route-stops", interactive: false, icon: L.divIcon({ className: "fc-route-start", html: "", iconSize: [18, 18], iconAnchor: [9, 9] }) }),
+      ...done.map((job) => L.marker([job.lat, job.lng], {
+        icon: L.divIcon({ className: "fc-route-done", html: "✓", iconSize: [26, 26], iconAnchor: [13, 13] }),
+        pane: "fc-route-stops", title: `Done: ${job.id}`, zIndexOffset: 1500,
+      }).on("click", () => setSelectedJob(jobs.find((row) => jobId(row) === job.id) || null))),
       ...stops.map((job, index) => L.marker([job.lat, job.lng], {
-        icon: L.divIcon({ className: `fc-route-number${index === 0 ? " is-next" : ""}`, html: String(index + 1), iconSize: [32, 32], iconAnchor: [16, 16] }),
-        pane: "fc-route-stops", title: `Route stop ${index + 1}: ${job.id}`, zIndexOffset: 2000,
+        icon: L.divIcon({ className: `fc-route-number${index === 0 ? " is-next" : ""}`, html: String(numbers?.[index] ?? index + 1), iconSize: [32, 32], iconAnchor: [16, 16] }),
+        pane: "fc-route-stops", title: `Route stop ${numbers?.[index] ?? index + 1}: ${job.id}`, zIndexOffset: 2000,
       }).on("click", () => setSelectedJob(jobs.find((row) => jobId(row) === job.id) || null))),
     ];
     const show = (layers: any[]) => {
@@ -1789,6 +1794,7 @@ export default function FieldCommandClient() {
     show(stopMarkers());
     // Fit the route into the part of the map above the route panel and below the pills.
     mapRef.current.fitBounds(dayRouteLayerRef.current.getBounds(), { paddingTopLeft: [28, 150], paddingBottomRight: [56, Math.round(window.innerHeight * 0.38) + 90], maxZoom: 15 });
+    if (!stops.length) return null;
     const road = await fetchRoadRoute(points);
     if (!road || request !== dayRouteRequest.current || !mapRef.current) return request === dayRouteRequest.current ? road : null;
     // The street route: white casing, blue line, a direction arrow halfway along each leg.
@@ -1812,7 +1818,12 @@ export default function FieldCommandClient() {
   const routeJobs = useMemo<RouteJob[]>(() => jobs.flatMap(job => {
     const point = jobLatLng(job); if (!point || isTestJob(jobId(job))) return [];
     const queue = jobQueue(job);
-    return [{id:jobId(job),address:jobAddress(job),borough:jobBorough(job),...point,days:jobPriority(job).days,pending:queue==='pending',closed:queue==='completed'||queue==='archived',blocked:visitState(job).blocked,appointment:job.Appointment as Appointment|undefined}];
+    // Finished today (an outcome saved today that still stands): shown as done on Today's route.
+    const today = nyToday();
+    const history = (Array.isArray(job.FieldVisitHistory) ? job.FieldVisitHistory : []) as { recordedAt?: string; outcome?: string | null }[];
+    const last = [...history].reverse().find((entry) => entry?.outcome && newYorkDay(entry.recordedAt) === today);
+    const done = last && queue !== 'pending' && FIELD_OUTCOMES[String(last.outcome)] ? { at: String(last.recordedAt), label: FIELD_OUTCOMES[String(last.outcome)] } : undefined;
+    return [{id:jobId(job),address:jobAddress(job),borough:jobBorough(job),...point,days:jobPriority(job).days,pending:queue==='pending',closed:queue==='completed'||queue==='archived',blocked:visitState(job).blocked,appointment:job.Appointment as Appointment|undefined,done}];
   }), [jobs, calendarDate]);
 
   // "Everything is correct": takes a finished job off the active map. Only offered once its

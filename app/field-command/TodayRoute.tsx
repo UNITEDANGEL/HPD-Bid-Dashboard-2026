@@ -6,7 +6,7 @@ import type { RoadRoute } from '../../lib/road-route';
 import { eligibleRouteJobs, planDay, routeTime, scheduleStops, validRouteSettings, type RouteJob, type RoutePoint, type RouteSettings } from '../../lib/day-route';
 
 const KEY='hpd-today-route-v1';
-export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,onNavigate,openRequest=0}: {jobs:RouteJob[];mapReady:boolean;getOrigin:()=>{point:RoutePoint;label:string};onPreview:(jobs:RouteJob[],origin:RoutePoint)=>Promise<RoadRoute|null>|void;onSelect:(id:string)=>void;onNavigate:(id:string)=>void;openRequest?:number}) {
+export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,onNavigate,openRequest=0}: {jobs:RouteJob[];mapReady:boolean;getOrigin:()=>{point:RoutePoint;label:string};onPreview:(jobs:RouteJob[],origin:RoutePoint,numbers?:number[],done?:RouteJob[])=>Promise<RoadRoute|null>|void;onSelect:(id:string)=>void;onNavigate:(id:string)=>void;openRequest?:number}) {
   const [open,setOpen]=useState(false);
   const [settings,setSettings]=useState<RouteSettings>({date:nyToday(),start:'08:00',end:'17:00',minutes:45,borough:'ALL'});
   const [ids,setIds]=useState<string[]>([]);
@@ -22,18 +22,22 @@ export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,o
   useEffect(()=>{if(!ready||!validRouteSettings(settings))return;const text=JSON.stringify({settings,ids,origin});if(text===lastSaved.current)return;try{localStorage.setItem(KEY,text);lastSaved.current=text;setMessage('Saved on this device');}catch{setMessage('Route could not be saved. Keep this page open.');}},[settings,ids,origin,ready]);
   const eligible=useMemo(()=>eligibleRouteJobs(jobs,settings),[jobs,settings]);
   const selected=useMemo(()=>ids.map(id=>eligible.find(j=>j.id===id)).filter((j):j is RouteJob=>!!j),[ids,eligible]);
+  // Finished today: they stay on the route with a ✓ and keep their stop numbers.
+  const done=useMemo(()=>ids.map(id=>jobs.find(j=>j.id===id)).filter((j):j is RouteJob=>!!j?.done),[ids,jobs]);
+  const numbers=useMemo(()=>selected.map(j=>ids.indexOf(j.id)+1),[selected,ids]);
   const roadRoute=road&&road!=='loading'&&road.legs.length===selected.length?road:null;
   const stops=useMemo(()=>origin?scheduleStops(selected,settings,origin.point,roadRoute?.legs.map(l=>l.minutes)):[],[selected,settings,origin,roadRoute]);
-  useEffect(()=>{if(!origin||!mapReady)return;let current=true;setRoad(selected.length?'loading':null);Promise.resolve(preview.current(selected,origin.point)).then(r=>{if(current)setRoad(r||null);});return()=>{current=false;};},[selected,origin,mapReady]);
+  useEffect(()=>{if(!origin||!mapReady)return;let current=true;setRoad(selected.length?'loading':null);Promise.resolve(preview.current(selected,origin.point,numbers,done)).then(r=>{if(current)setRoad(r||null);});return()=>{current=false;};},[selected,origin,mapReady,done]); // eslint-disable-line react-hooks/exhaustive-deps
   // The route button on the map: open the panel and plan the day if nothing is planned yet.
   const builtFor=useRef(0);
   useEffect(()=>{if(!openRequest||!ready||builtFor.current===openRequest)return;builtFor.current=openRequest;setOpen(true);if(!origin)setOrigin(getOrigin());if(!ids.length&&mapReady)build();else showRoute();},[openRequest,ready,mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
   // Re-draw the saved route, which also zooms the map to show all of it (the street line is remembered).
-  function showRoute(){if(origin&&mapReady&&selected.length)Promise.resolve(preview.current(selected,origin.point)).then(r=>setRoad(r||null));}
-  function build(){if(!validRouteSettings(settings))return;const start=getOrigin();setOrigin(start);setIds(planDay(jobs,settings,start.point).map(j=>j.id));requestAnimationFrame(()=>bodyRef.current?.scrollTo({top:0}));}
-  function move(index:number,delta:number){const next=selected.map(j=>j.id);[next[index],next[index+delta]]=[next[index+delta],next[index]];setIds(next);}
+  function showRoute(){if(origin&&mapReady&&(selected.length||done.length))Promise.resolve(preview.current(selected,origin.point,numbers,done)).then(r=>setRoad(r||null));}
+  function build(){if(!validRouteSettings(settings))return;const start=getOrigin();setOrigin(start);const kept=done.map(j=>j.id);setIds([...kept,...planDay(jobs,settings,start.point).map(j=>j.id).filter(id=>!kept.includes(id))]);requestAnimationFrame(()=>bodyRef.current?.scrollTo({top:0}));}
+  // Swap two open stops in place; finished stops stay where they are.
+  function move(index:number,delta:number){const a=ids.indexOf(selected[index].id),b=ids.indexOf(selected[index+delta].id);if(a<0||b<0)return;const next=[...ids];[next[a],next[b]]=[next[b],next[a]];setIds(next);}
   return <aside className={`fc-today-route ${open?'is-open':''}`} aria-label="Today's route">
-    <button className="fc-route-toggle" type="button" aria-expanded={open} onClick={()=>{setOpen(!open);if(!origin)setOrigin(getOrigin());else if(!open)showRoute();}}>Today&apos;s route {selected.length?`(${selected.length})`:''}<span aria-hidden="true">{open?'⌄':'⌃'}</span></button>
+    <button className="fc-route-toggle" type="button" aria-expanded={open} onClick={()=>{setOpen(!open);if(!origin)setOrigin(getOrigin());else if(!open)showRoute();}}>Today&apos;s route {done.length?`(${done.length}/${selected.length+done.length} done)`:selected.length?`(${selected.length})`:''}<span aria-hidden="true">{open?'⌄':'⌃'}</span></button>
     {open&&<div className="fc-route-body" ref={bodyRef}>
       <details open={!ids.length}><summary>Plan settings · {settings.start}-{settings.end}</summary><div className="fc-route-settings">
         <label>Day<input aria-label="Route day" type="date" value={settings.date} onChange={e=>setSettings({...settings,date:e.target.value})}/></label>
@@ -52,13 +56,15 @@ export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,o
       {origin&&selected.length>0&&routeLink([origin.point,...selected])&&<a className="fc-route-drive fc-route-all" data-hpd-smoke="fc-route-all" href={routeLink([origin.point,...selected])!} target="_blank" rel="noreferrer">Open whole route in Google Maps<small>All {selected.length} stops in this order</small></a>}
       {selected[0]&&drivingLink(selected[0])&&<div className="fc-route-next" data-hpd-smoke="fc-route-next"><p>Next stop · {selected[0].id}</p><div><a className="fc-route-drive fc-route-waze" data-hpd-smoke="fc-route-next-waze" href={wazeLink(selected[0])!} onClick={()=>onNavigate(selected[0].id)} target="_blank" rel="noreferrer">Waze</a><a className="fc-route-drive" data-hpd-smoke="fc-route-next-google" href={drivingLink(selected[0])!} onClick={()=>onNavigate(selected[0].id)} target="_blank" rel="noreferrer">Google Maps</a></div></div>}
       {stops.some(s=>s.warning)&&<p role="alert">Route needs review: appointment or workday conflicts below.</p>}
-      <ol>{stops.map((stop,index)=><li key={stop.job.id}>
-        <button className="fc-route-stop" type="button" onClick={()=>{setOpen(false);onSelect(stop.job.id);}}><b>{index+1}. {stop.job.id}</b><span>{stop.job.address}</span><span>{routeTime(stop.arrival)}-{routeTime(stop.finish)} · {roadRoute?`${roadRoute.legs[index].minutes} min drive · ${roadRoute.legs[index].miles.toFixed(1)} mi`:`${stop.travel} min travel est.`}</span><span>{stop.job.appointment?.state==='confirmed'?`Appointment ${stop.job.appointment.start}-${stop.job.appointment.end}`:stop.job.days===null?'Maturity unavailable':stop.job.days>0?`${stop.job.days} days overdue`:`Due in ${-stop.job.days} days`}</span></button>
+      {done.length>0&&<p className="fc-route-progress" data-hpd-smoke="fc-route-progress">✓ {done.length} of {selected.length+done.length} done{selected.length?` · ${selected.length} to go`:' · route finished'}</p>}
+      <ol>{ids.map(id=>{const d=done.find(j=>j.id===id);if(!d)return null;return <li key={id} className="fc-route-done-row" data-hpd-smoke="fc-route-done-row"><button className="fc-route-stop" type="button" onClick={()=>{setOpen(false);onSelect(id);}}><b>✓ {ids.indexOf(id)+1}. {id}</b><span>{d.address}</span><span>{d.done!.label} · {new Date(d.done!.at).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:'America/New_York'})}</span></button></li>;})}
+      {stops.map((stop,index)=><li key={stop.job.id}>
+        <button className="fc-route-stop" type="button" onClick={()=>{setOpen(false);onSelect(stop.job.id);}}><b>{numbers[index]}. {stop.job.id}</b><span>{stop.job.address}</span><span>{routeTime(stop.arrival)}-{routeTime(stop.finish)} · {roadRoute?`${roadRoute.legs[index].minutes} min drive · ${roadRoute.legs[index].miles.toFixed(1)} mi`:`${stop.travel} min travel est.`}</span><span>{stop.job.appointment?.state==='confirmed'?`Appointment ${stop.job.appointment.start}-${stop.job.appointment.end}`:stop.job.days===null?'Maturity unavailable':stop.job.days>0?`${stop.job.days} days overdue`:`Due in ${-stop.job.days} days`}</span></button>
         {stop.warning&&<strong role="alert">{stop.warning}</strong>}
         <div className="fc-route-stop-actions"><button type="button" title="Move stop earlier" aria-label={`Move ${stop.job.id} earlier`} disabled={index===0} onClick={()=>move(index,-1)}>↑</button><button type="button" title="Move stop later" aria-label={`Move ${stop.job.id} later`} disabled={index===stops.length-1} onClick={()=>move(index,1)}>↓</button><button type="button" onClick={()=>setIds(ids.filter(id=>id!==stop.job.id))}>Skip</button><a href={wazeLink(stop.job)||undefined} onClick={()=>onNavigate(stop.job.id)} target="_blank" rel="noreferrer">Waze</a><a href={drivingLink(stop.job)||undefined} onClick={()=>onNavigate(stop.job.id)} target="_blank" rel="noreferrer">Google</a></div>
       </li>)}</ol>
-      {!stops.length&&<p>No planned stops. Build a route or choose another area.</p>}
-      {selected.length<ids.length&&<p>{ids.length-selected.length} saved stops unavailable or no longer eligible.</p>}
+      {!stops.length&&!done.length&&<p>No planned stops. Build a route or choose another area.</p>}
+      {selected.length+done.length<ids.length&&<p>{ids.length-selected.length-done.length} saved stops unavailable or no longer eligible.</p>}
       <label>Add stop<select aria-label="Add route stop" value="" onChange={e=>{if(e.target.value)setIds([...ids,e.target.value]);}}><option value="">Select job</option>{eligible.filter(j=>!ids.includes(j.id)).map(j=><option key={j.id} value={j.id}>{j.id} · {j.address}</option>)}</select></label>
       <p role="status">{message}</p>
       <a href="/storage/">Drive backup / recovery</a>
