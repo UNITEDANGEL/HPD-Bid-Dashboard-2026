@@ -111,6 +111,7 @@ jobs:
           node scripts/test-job-location.cjs
           node scripts/test-tenant-contact-clean.cjs
           node scripts/test-road-route.cjs
+          node scripts/test-daily-report.mjs
           node cloudflare-worker/test-sync.mjs
 
       - name: Build Cloudflare Pages output
