@@ -13,12 +13,22 @@ try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   await context.addInitScript(() => { if (!sessionStorage.getItem("seeded")) { localStorage.removeItem("hpd-bid-prices-v1"); sessionStorage.setItem("seeded", "1"); } });
+  // Only bids that can still be submitted show: two that are already past are slipped into the
+  // real list (due yesterday, and due today at 12:01 AM) and must not appear.
+  const real = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();
+  const nyDay = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
+  const today = nyDay(new Date()), yesterday = nyDay(new Date(Date.now() - 86400000));
+  const past = [{ ...real.bids[0], omo: "PAST01", bidDue: yesterday, bidDueTime: "11:00 AM" }, { ...real.bids[0], omo: "PAST02", bidDue: today, bidDueTime: "12:01 AM" }];
+  await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...real, bids: [...past, ...real.bids] } }));
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
-  const data = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();
-  const mapped = data.bids.filter((b) => Number.isFinite(b.lat));
-  assert.ok(data.bids.length > 0, "there are upcoming bids to show");
+  const clock = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date()).split(":").map(Number);
+  const minutes = (t) => { const m = /^(\d{1,2}):(\d{2})\s*([AP])M$/i.exec(t || ""); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "P" ? 12 : 0)) * 60 + Number(m[2]) : 1440; };
+  const open = real.bids.filter((b) => b.bidDue > today || (b.bidDue === today && minutes(b.bidDueTime) > clock[0] * 60 + clock[1]));
+  const data = { bids: open };
+  const mapped = open.filter((b) => Number.isFinite(b.lat));
+  assert.ok(open.length > 0, "there are open bids to show");
 
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 50, null, { timeout: 120000 });
@@ -27,11 +37,14 @@ try {
   await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
   await page.locator('[data-hpd-smoke="fc-bids-list"] li').first().waitFor({ timeout: 20000 });
   const banner = await page.locator('[data-hpd-smoke="fc-bids-banner"]').innerText();
-  assert.match(banner, new RegExp(`${data.bids.length} not awarded yet`));
+  assert.match(banner, new RegExp(`${open.length} open to bid · due today or later`));
   await page.waitForFunction((n) => document.querySelectorAll(".fc-bid-pin").length === n, mapped.length, { timeout: 20000 });
   const jobPinsHidden = await page.evaluate(() => getComputedStyle(document.querySelector(".leaflet-marker-pane")).visibility === "hidden");
   assert.ok(jobPinsHidden, "job pins hidden while bids show");
-  assert.equal(await page.locator('[data-hpd-smoke="fc-bids-list"] li').count(), data.bids.length);
+  assert.equal(await page.locator('[data-hpd-smoke="fc-bids-list"] li').count(), open.length);
+  const listed = await page.locator('[data-hpd-smoke="fc-bids-list"]').innerText();
+  assert.ok(!/PAST01|PAST02/.test(listed), "bids already past their due time are not shown");
+  assert.ok(!/ago|award pending/.test(listed), "nothing in the list is past due");
 
   // Open the first bid in the list (soonest due).
   await page.locator('[data-hpd-smoke="fc-bids-list"] li button').first().click();
@@ -74,7 +87,7 @@ try {
   assert.ok(await page.evaluate(() => getComputedStyle(document.querySelector(".leaflet-marker-pane")).visibility !== "hidden"), "job pins back");
 
   assert.deepEqual(errors, [], "page errors");
-  console.log(`PASS bids: ${data.bids.length} invitations (${mapped.length} pins), ${omo} opened with description and invitation, $1,250 filled on page 1, page 2 and the work form (${pdf.numPages} pages), back to jobs`);
+  console.log(`PASS bids: ${open.length} open invitations (past ones hidden) (${mapped.length} pins), ${omo} opened with description and invitation, $1,250 filled on page 1, page 2 and the work form (${pdf.numPages} pages), back to jobs`);
 } finally {
   await browser.close();
 }

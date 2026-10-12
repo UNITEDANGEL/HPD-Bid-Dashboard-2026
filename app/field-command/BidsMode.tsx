@@ -36,6 +36,21 @@ function byUrgency(a: UpcomingBid, b: UpcomingBid) {
   return ta === 3 ? key(b).localeCompare(key(a)) : key(a).localeCompare(key(b));
 }
 
+// Still open: due today later than now, or a future day (New York time). A bid whose due time has
+// passed can't be submitted any more, so it isn't shown. No time on the invitation: open all day.
+const NY_CLOCK = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+function dueMinutes(time: string) {
+  const m = /^(\d{1,2}):(\d{2})\s*([AP])M$/i.exec(time.trim());
+  if (!m) return 24 * 60;
+  return ((Number(m[1]) % 12) + (m[3].toUpperCase() === "P" ? 12 : 0)) * 60 + Number(m[2]);
+}
+export function stillOpen(bid: UpcomingBid, now = new Date()) {
+  const today = NY_DAY.format(now);
+  if (bid.bidDue !== today) return bid.bidDue > today;
+  const [h, m] = NY_CLOCK.format(now).split(":").map(Number);
+  return dueMinutes(bid.bidDueTime || "") > h * 60 + m;
+}
+
 function readPrices(): Record<string, string> {
   try { return JSON.parse(localStorage.getItem(PRICES_KEY) || "{}"); } catch { return {}; }
 }
@@ -55,7 +70,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     if (!open || bids) return;
     fetch("/data/upcoming_bids.json", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((data) => setBids(Array.isArray(data?.bids) ? [...data.bids].sort(byUrgency) : []))
+      .then((data) => setBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => stillOpen(b)).sort(byUrgency) : []))
       .catch(() => { setBids([]); setError("Couldn't load the invitations right now."); });
   }, [open, bids]);
 
@@ -136,7 +151,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     <>
       <div className="fc-bids-banner" data-hpd-smoke="fc-bids-banner">
         <strong>📨 Invitations to bid</strong>
-        <span>{bids === null ? "Loading…" : error || `${list.length} not awarded yet${list.some((b) => !Number.isFinite(b.lat)) ? ` · ${list.filter((b) => !Number.isFinite(b.lat)).length} without a map spot` : ""}`}</span>
+        <span>{bids === null ? "Loading…" : error || `${list.length} open to bid · due today or later${list.some((b) => !Number.isFinite(b.lat)) ? ` · ${list.filter((b) => !Number.isFinite(b.lat)).length} without a map spot` : ""}`}</span>
         <button type="button" data-hpd-smoke="fc-bids-close" onClick={() => { setSelected(null); onClose(); }}>Back to jobs</button>
       </div>
       {selected ? (

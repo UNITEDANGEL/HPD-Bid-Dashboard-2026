@@ -114,6 +114,7 @@ jobs:
           node scripts/test-daily-report.mjs
           python3 scripts/test-upcoming-bids.py
           node scripts/test-bid-price.cjs
+          node scripts/test-bid-packages.mjs
           node cloudflare-worker/test-sync.mjs
 
       - name: Build Cloudflare Pages output

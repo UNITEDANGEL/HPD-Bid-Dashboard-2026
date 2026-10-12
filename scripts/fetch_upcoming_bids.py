@@ -29,7 +29,7 @@ NY = ZoneInfo("America/New_York")
 DOWNLOAD_DIR = os.path.join(ROOT, "ITB_Downloads_V5")
 OUT_FILES = [os.path.join(ROOT, "data", "upcoming_bids.json"), os.path.join(ROOT, "public", "data", "upcoming_bids.json")]
 PUBLIC_ITB_DIR = os.path.join(ROOT, "public", "documents", "itb")
-KEEP_PAST_DAYS = 7  # a bid stays on the map a week after it's due, while the award is pending
+KEEP_PAST_DAYS = 0  # only bids due today or later: a bid whose due date has passed can't be submitted
 BOROS = {"MANHATTAN": "MN", "BROOKLYN": "BK", "QUEENS": "QN", "BRONX": "BX", "STATEN ISLAND": "SI"}
 
 
