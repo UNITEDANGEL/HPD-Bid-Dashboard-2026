@@ -59,9 +59,13 @@ function periodLabel(period: StatsPeriod, days: string[]) {
   return `This month · ${fmt(days[0], { month: "long", year: "numeric" })}`;
 }
 
-function awardAmount(job: Job) {
-  const amount = Number(String(job.AwardAmount ?? job.awardAmount ?? "").replace(/[^0-9.-]/g, ""));
-  return Number.isFinite(amount) && amount > 0 ? amount : 0;
+// What was charged: the invoice total saved with the package, else the bid (award) amount.
+function chargedAmount(job: Job) {
+  for (const raw of [job.PackageChargeAmount, job.AwardAmount ?? job.awardAmount]) {
+    const amount = Number(String(raw ?? "").replace(/[^0-9.-]/g, ""));
+    if (Number.isFinite(amount) && amount > 0) return amount;
+  }
+  return 0;
 }
 
 export function fieldStats(jobs: Job[], period: StatsPeriod, options: { skip?: (job: Job) => boolean } = {}, now = new Date()): FieldStats {
@@ -92,7 +96,7 @@ export function fieldStats(jobs: Job[], period: StatsPeriod, options: { skip?: (
     if (last) {
       if (last.outcome === "WORK_COMPLETED" || last.outcome === "PARTIAL_WORK") {
         counts[last.outcome === "WORK_COMPLETED" ? "completed" : "partial"] += 1;
-        earned += awardAmount(job);
+        earned += chargedAmount(job);
         perDay.get(last.day)!.completed += 1;
       } else if (last.outcome.startsWith("NO_ACCESS")) counts.noAccess += 1;
       else if (last.outcome === "REFUSED_ACCESS") counts.refused += 1;

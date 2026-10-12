@@ -58,7 +58,7 @@ const start = page.indexOf('  async function markPackageGenerated(');
 const end = page.indexOf('  async function generateAffidavitPdf(', start);
 const marker = ts.transpileModule(page.slice(start, end) + '\nthis.mark = markPackageGenerated;', { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
 const patches = [];
-const context = { saveLocalPackageOverride: (id, patch) => patches.push(patch), HPD_STATUS_WORKER_URL: 'https://test.invalid', fetch: async () => ({ok:true}) };
+const context = { saveLocalPackageOverride: (id, patch) => patches.push(patch), HPD_STATUS_WORKER_URL: 'https://test.invalid', fetch: async () => ({ok:true}), lastChargeRef: { current: null } };
 new Function(`with(this) { ${marker} }`).call(context);
 (async () => {
   await context.mark('TEST');
@@ -68,6 +68,13 @@ new Function(`with(this) { ${marker} }`).call(context);
   assert.equal(patches[1].ArchivedFromMap, undefined, 'approval keeps the job on the map; archiving is a separate step');
   assert.ok(patches[1].PackageApprovedAt);
   assert.equal(patches[1].PackageReviewStatus, 'Approved');
+  // The invoice charge built for this job is saved with the package (field stats count it); not for another job.
+  assert.equal(patches[1].PackageChargeAmount, undefined);
+  context.lastChargeRef.current = { jobId: 'TEST', amount: 125 };
+  await context.mark('TEST', true);
+  assert.equal(patches[2].PackageChargeAmount, '125.00');
+  await context.mark('OTHER', true);
+  assert.equal(patches[3].PackageChargeAmount, undefined);
   assert.ok(!page.includes('else if (shouldAutoGeneratePackage) nextOutcome = "work_completed"'));
   console.log('PASS: signed outcome package flow; approval does not archive');
 })().catch(error => { console.error(error); process.exitCode=1; });

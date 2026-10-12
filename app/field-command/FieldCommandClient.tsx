@@ -3126,7 +3126,7 @@ export default function FieldCommandClient() {
             <p className="fc-stats-label">{stats.label}</p>
             <div className="fc-stats-earned" data-hpd-smoke="fc-stats-earned">
               <b>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(stats.earned)}</b>
-              <span>earned · bid amount of {stats.counts.completed + stats.counts.partial} job{stats.counts.completed + stats.counts.partial === 1 ? "" : "s"} finished</span>
+              <span>earned · invoice total (or bid) of {stats.counts.completed + stats.counts.partial} job{stats.counts.completed + stats.counts.partial === 1 ? "" : "s"} finished</span>
             </div>
             <div className="fc-summary-counts" data-hpd-smoke="fc-stats-counts">
               {([["Visited", stats.counts.visited], ["Completed", stats.counts.completed], ["Partial", stats.counts.partial], ["No access", stats.counts.noAccess], ["Refused", stats.counts.refused], ["Emailed", stats.counts.emailed]] as const).map(([label, n]) => (

@@ -1224,6 +1224,8 @@ export default function PaperworkPage() {
   // Opened for one job (from the job card): a short summary instead of the job list and type tiles.
   const [showJobPicker, setShowJobPicker] = useState(false);
   const packageBusyRef = useRef(false);
+  // The charge on the last invoice built, saved on the job with the package (field stats use it).
+  const lastChargeRef = useRef<{ jobId: string; amount: number } | null>(null);
   const [packageBusy, setPackageBusy] = useState(false);
   const [packageReviewed, setPackageReviewed] = useState(false);
   const [packageApproved, setPackageApproved] = useState(false);
@@ -1564,6 +1566,7 @@ export default function PaperworkPage() {
         ...(delivery.emailTo?.length ? { PackageEmailedTo: delivery.emailTo.join(", ") } : {}),
         ...(delivery.receipt?.messageId ? { PackageEmailId: delivery.receipt.messageId, PackageEmailInInbox: delivery.receipt.inInbox } : {}),
       } : {}) } : {}),
+      ...(lastChargeRef.current?.jobId === jobId ? { PackageChargeAmount: lastChargeRef.current.amount.toFixed(2) } : {}),
       PackageReviewStatus: approved ? "Approved" : "Pending review",
       PackageGeneratedAt: generatedAt,
       packageGeneratedAt: generatedAt,
@@ -1617,6 +1620,7 @@ export default function PaperworkPage() {
     const chargeValue = amountNumber(activeForm.amount || activeForm.bidAmount);
     const bidAmount = pdfMoney(bidValue);
     const chargeAmount = pdfMoney(chargeValue);
+    lastChargeRef.current = { jobId, amount: chargeValue };
     const changeAmount = pdfMoney(invoiceChangeAmount(bidValue, chargeValue), true);
     const fieldDate = activeForm.fieldDate || activeForm.workComplete || todayIsoDate();
     // Dates print as MM/DD/YY on HPD paperwork; the form state keeps ISO dates.

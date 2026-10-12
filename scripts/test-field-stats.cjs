@@ -26,7 +26,7 @@ const jobs = [
   // Refused last week: outside this week, inside this month.
   { OMO: 'C', FieldVisitHistory: [{ recordedAt: '2026-10-06T15:00:00Z', outcome: 'REFUSED_ACCESS', note: '' }] },
   // Partial work yesterday.
-  { OMO: 'D', AwardAmount: '$1,000.50', FieldVisitHistory: [{ recordedAt: '2026-10-13T18:00:00Z', outcome: 'PARTIAL_WORK', note: '' }] },
+  { OMO: 'D', AwardAmount: '$1,000.50', PackageChargeAmount: '650.00', FieldVisitHistory: [{ recordedAt: '2026-10-13T18:00:00Z', outcome: 'PARTIAL_WORK', note: '' }] },
   // The test job never counts.
   { OMO: 'TEST-0001', AwardAmount: '100', FieldVisitHistory: [{ recordedAt: '2026-10-14T16:00:00Z', outcome: 'WORK_COMPLETED' }] },
   // Nothing recorded on the phone.
@@ -41,7 +41,8 @@ assert.equal(today.earned, 390);
 
 const week = fieldStats(jobs, 'week', { skip }, now);
 assert.deepEqual(week.counts, { visited: 3, completed: 1, partial: 1, noAccess: 0, refused: 0, byOthers: 0, emailed: 1 });
-assert.equal(week.earned, 1390.5);
+// D's invoice charged $650 for the partial work, not the $1,000.50 bid.
+assert.equal(week.earned, 1040);
 assert.deepEqual(week.days.map((d) => [d.label, d.visited, d.completed]), [['Mon', 1, 0], ['Tue', 2, 1], ['Wed', 1, 1]]);
 
 const month = fieldStats(jobs, 'month', { skip }, now);

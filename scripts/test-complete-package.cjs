@@ -49,7 +49,7 @@ async function run(outcome, awardDate, broken = false) {
     renderPdfFirstPageImage: async bytes => ({ imageUrl: '', pageCount: (await pdf.PDFDocument.load(bytes)).getPageCount(), error: 'Headless test: preview rendered separately' }),
     clearPackagePreview() {}, setFullScreenPdfOpen() {}, setIncludePackageMedia() {}, setIncludePackageSignature() {}, setForm(value) { forms.push(value); }, setPackagePreview() {}, setPackagePreviewOpen() {}, setPackageContents() {},
     notaryRef: { current: null }, setNotaryKey() {}, rememberNotary() {}, packageNotaryRef: { current: null }, lastIncludeMediaRef: { current: true },
-    pendingCompletePackageRef: { current: null }, markPackageGenerated: async () => 'TEST ONLY - no job mutation',
+    pendingCompletePackageRef: { current: null }, lastChargeRef: { current: null }, markPackageGenerated: async () => 'TEST ONLY - no job mutation',
   };
   new Function(`with (this) { ${source} }`).call(context);
   await context.generate(true, false);
