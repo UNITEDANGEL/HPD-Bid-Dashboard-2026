@@ -24,13 +24,14 @@ try {
   await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...real, bids: [...past, ...real.bids] } }));
   // Fax: the request is checked and answered here; status is "confirmed" for the first bid, "failed" for the second.
   const faxes = [];
-  let failOmo = "";
+  let failOmo = "", waitOmo = "";
   await context.route(/\/api\/drive\/fax-bid/, (r) => {
     faxes.push({ subject: decodeURIComponent(r.request().headers()["x-hpd-subject"] || ""), body: r.request().postData() || "" });
     return r.fulfill({ json: { sent: true, to: "2128638655@humblefax.com", messageId: `m${faxes.length}`, sentAt: new Date().toISOString() } });
   });
   await context.route(/\/api\/drive\/fax-status/, (r) => {
     const { omo } = JSON.parse(r.request().postData() || "{}");
+    if (omo === waitOmo) return r.fulfill({ json: { status: "waiting" } });
     return r.fulfill({ json: omo === failOmo ? { status: "failed", subject: "Fax failed: busy", at: new Date().toISOString() } : { status: "confirmed", subject: "Your fax was sent successfully", at: new Date().toISOString() } });
   });
   await context.addInitScript(() => { if (!sessionStorage.getItem("seeded")) { localStorage.removeItem("hpd-bid-records-v1"); sessionStorage.setItem("seeded", "1"); } });
@@ -146,8 +147,12 @@ try {
   const revText = (await (await revPdf.getPage(1)).getTextContent()).items.map((i) => i.str).join(" ");
   assert.ok(revText.includes("1,250.00") && revText.includes("1,100.00") && revText.includes("JS") && /PRICE REVISED 1X ON \d+\/\d+\/\d+/.test(revText), "revised page 1");
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').innerText(), /Send revised bid/);
+  const faxesBefore = faxes.length;
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
-  await page.waitForFunction(() => /Fax confirmed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 15000 });
+  // The card still says "Fax confirmed" from the first send: wait for the confirmation of the $1,100 fax.
+  await page.waitForFunction(() => { const t = document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""; return /Fax confirmed/.test(t) && /1,100\.00/.test(t); }, null, { timeout: 15000 });
+  for (let i = 0; i < 50 && saved[`BID-${omo}`]?.status !== "confirmed"; i++) await page.waitForTimeout(100);
+  assert.equal(faxes.length, faxesBefore + 1, "one revised fax sent");
   assert.match(dialogs.at(-1), /Send the REVISED bid[\s\S]*Please disregard our previous bid of \$1,250\.00/);
   assert.match(faxes.at(-1).subject, new RegExp(`^REVISED Bid - OMO ${omo} - `));
   const coverText = Buffer.from(faxes.at(-1).body.split("\r\n\r\n")[1].split("\r\n--")[0].replace(/\s+/g, ""), "base64").toString("utf8");
@@ -159,8 +164,27 @@ try {
   await page.locator('[data-hpd-smoke="fc-bids-mine"]').click();
   const mine = await page.locator('[data-hpd-smoke="fc-my-bids"]').innerText();
   assert.match(mine, /No results yet · 2 sent/);
-  assert.ok(mine.includes(omo) && mine.includes(omo2) && /Pending/.test(mine));
+  assert.ok(mine.includes(omo) && mine.includes(omo2) && /Awaiting award/.test(mine));
   assert.match(mine, /revised 1x/);
+
+  // 5b. HumbleFax emailed "sent successfully" but the app can't read the email yet: the owner taps
+  // "I got HumbleFax's confirmation email" and the fax shows confirmed.
+  await page.locator('[data-hpd-smoke="fc-bids-close"]').click();
+  await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
+  await page.getByRole("tab", { name: /Open bids/ }).click();
+  const third = list.locator("ol > li button").nth(2);
+  waitOmo = (await third.locator("b").first().innerText()).trim();
+  await third.click();
+  await sheet.locator('[data-hpd-smoke="fc-bid-price"]').fill("700");
+  await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
+  await sheet.locator('[data-hpd-smoke="fc-bid-review"]').click();
+  await sheet.locator('[data-hpd-smoke="fc-bid-done"]').waitFor({ timeout: 30000 });
+  await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
+  await page.waitForFunction(() => /waiting for HumbleFax/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 15000 });
+  await sheet.locator('[data-hpd-smoke="fc-bid-mark-confirmed"]').click();
+  await page.waitForFunction(() => /Fax confirmed[\s\S]*Confirmed by you/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 10000 });
+  assert.equal(saved[`BID-${waitOmo}`]?.status, "confirmed");
+  await sheet.locator("header button").click();
 
   // 6. Bid stats: every awarded invitation with the winning price, by kind of work and area.
   await page.locator('[data-hpd-smoke="fc-bids-stats"]').click();

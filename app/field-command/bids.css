@@ -145,3 +145,5 @@
 .fc-bid-similar small { color: #94a3b8; font: 500 11.5px/1.35 system-ui; }
 .fc-bid-similar em { font-style: normal; color: #fca5a5; }
 .fc-bid-similar em.is-yours { color: #86efac; }
+
+.fc-bid-confirm { justify-self: start; margin-top: 6px; min-height: 40px; padding: 0 12px; border: 0; border-radius: 10px; background: #16a34a; color: #fff; font: 800 13px system-ui; }

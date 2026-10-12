@@ -235,6 +235,13 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     setBusy("");
   }
 
+  async function markConfirmed() {
+    if (!record || !window.confirm(`Mark the fax for ${record.omo} as delivered? Do this when HumbleFax emailed you that it was sent successfully.`)) return;
+    const now = new Date().toISOString();
+    await update({ ...record, status: "confirmed", confirmedAt: now, faxNote: "Confirmed by you from HumbleFax's email", updatedAt: now });
+    setNote("");
+  }
+
   async function markSentElsewhere() {
     if (!record) return;
     const answer = window.prompt(`What price did HPD get for ${record.omo}? (the bid you already faxed)`);
@@ -283,6 +290,9 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 <span>Sent {when(record.sentAt)} at {money2(record.sentPrice || record.price)} to HPD fax (212) 863-8655{record.attempts > 1 ? ` · ${record.attempts} sends` : ""}</span>
                 {record.confirmedAt ? <span>HumbleFax {state === "failed" ? "reported" : "confirmed"} {when(record.confirmedAt)}{record.faxNote ? `: "${record.faxNote}"` : ""}</span> : null}
                 {note ? <small>{note}</small> : null}
+                {state === "waiting" || state === "unconfirmed" ? (
+                  <button type="button" className="fc-bid-confirm" data-hpd-smoke="fc-bid-mark-confirmed" onClick={() => void markConfirmed()}>✓ I got HumbleFax&apos;s confirmation email</button>
+                ) : null}
               </div>
             ) : null}
             <section>
@@ -409,7 +419,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                     <button type="button" disabled={!openBidData} onClick={() => openBidData && openBid(openBidData)}>
                       <span className="fc-bid-row"><b>{rec.omo}</b> <span className="fc-bid-chip">{money2(rec.sentPrice || rec.price)}</span>
                         {rec.status === "saved" ? <span className="fc-bid-chip is-saved">saved, not sent</span>
-                          : <span className={`fc-bid-chip is-${res.result === "won" ? "sent" : res.result === "lost" ? "past" : "later"}`}>{res.result === "won" ? `Won · awarded ${money(res.amount || 0)}` : res.result === "lost" ? (res.winningPrice ? `Lost · won at ${money(res.winningPrice)}` : "Not awarded") : "Pending"}</span>}
+                          : <span className={`fc-bid-chip is-${res.result === "won" ? "sent" : res.result === "lost" ? "past" : "later"}`}>{res.result === "won" ? `Won · awarded ${money(res.amount || 0)}` : res.result === "lost" ? (res.winningPrice ? `Lost · won at ${money(res.winningPrice)}` : "Not awarded") : "Awaiting award"}</span>}
                       </span>
                       <span>{rec.address}{rec.borough ? ` · ${rec.borough}` : ""}</span>
                       <small>Due {dueLabel(rec)}{rec.status !== "saved" ? ` · ${FAX_TEXT[fax as keyof typeof FAX_TEXT]}` : ""}{rec.revisions?.length ? ` · revised ${rec.revisions.length}x` : ""}</small>
