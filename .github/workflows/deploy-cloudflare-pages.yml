@@ -110,6 +110,7 @@ jobs:
           node scripts/test-field-stats.cjs
           node scripts/test-job-location.cjs
           node scripts/test-tenant-contact-clean.cjs
+          node scripts/test-road-route.cjs
           node cloudflare-worker/test-sync.mjs
 
       - name: Build Cloudflare Pages output
@@ -121,12 +122,13 @@ jobs:
       - name: Install browser for paperwork test
         run: npx playwright install --with-deps chromium
 
-      - name: Test paperwork and stats in a browser
+      - name: Test paperwork, stats and route in a browser
         run: |
           python3 -m http.server 3000 --directory out > /tmp/static-server.log 2>&1 &
           for i in $(seq 1 30); do curl -sf http://localhost:3000/paperwork/ > /dev/null && break; sleep 1; done
           BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-stats.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-route.mjs
 
       - name: Resolve Cloudflare production branch
         id: pages-project

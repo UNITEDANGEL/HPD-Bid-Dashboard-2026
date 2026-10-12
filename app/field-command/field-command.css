@@ -1896,7 +1896,7 @@
 .fc-job-dot { display: block; box-sizing: border-box; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; background: var(--pin-color); box-shadow: 0 1px 3px #172b2540; }
 .fc-today-route { position:absolute; z-index:1550; bottom:max(24px,env(safe-area-inset-bottom)); left:8px; right:8px; color:#eff7f1; background:#202426f5; border:1px solid #74867c; border-radius:8px; overflow:hidden; }
 .fc-route-toggle { display:flex; justify-content:space-between; align-items:center; width:100%; min-height:44px; border:0; padding:10px 14px; background:transparent; color:#c4ead4; font:600 14px system-ui; }
-.fc-route-body { max-height:55dvh; overflow-y:auto; overscroll-behavior:contain; padding:0 12px 12px; }
+.fc-route-body { max-height:38dvh; overflow-y:auto; overscroll-behavior:contain; padding:0 12px 12px; }
 .fc-route-settings { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
 .fc-route-body summary { min-height:44px; padding:12px 0; box-sizing:border-box; cursor:pointer; font-size:13px; }
 .fc-route-body label { display:grid; gap:4px; min-width:0; font-size:12px; }
@@ -1920,6 +1920,10 @@
 .fc-route-number { display:grid; place-items:center; border:3px solid white; border-radius:50%; background:#1267df; color:white; font:750 14px system-ui; box-shadow:0 2px 6px #10233380; }
 .fc-route-number.is-next { background:#09503b; animation:fc-next-stop 2s ease-out infinite; }
 .fc-route-flow { animation:fc-route-flow 1.5s linear infinite; }
+/* Today's route: where the day starts, the road total, and the whole-route link. */
+.fc-route-start { border:3px solid white; border-radius:50%; background:#0f172a; box-shadow:0 0 0 3px #1267df, 0 2px 6px #10233380; }
+.fc-route-body .fc-route-total { margin:8px 0; padding:9px 10px; border-radius:8px; background:#1267df33; border:1px solid #5b9cff; color:#ffffff; font:700 13px system-ui; }
+.fc-route-all { background:#0b1220; border-color:#1267df; }
 .fc-route-direction { pointer-events:none; }
 .fc-route-direction span { display:block; width:18px; height:18px; background:white; clip-path:polygon(0 0,100% 50%,0 100%,28% 50%); filter:drop-shadow(0 1px 1px #1267df); }
 @keyframes fc-route-flow { to { stroke-dashoffset:-22; } }

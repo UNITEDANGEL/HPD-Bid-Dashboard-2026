@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
+import { fetchRoadRoute, type RoadRoute } from "../../lib/road-route";
 import { BuildingHero, SavedPackageLink } from "./BuildingPhoto";
 import VideoBackupLine from "./VideoBackupLine";
 import JobSafeLine from "./JobSafeLine";
@@ -44,6 +45,9 @@ type BoroughKey = "MN" | "BK" | "QN" | "BX" | "SI";
 
 const FIELD_WORKFLOW_STORAGE_KEY = "hpd-field-command-workflow";
 const SHARED_WORKFLOW_STORAGE_KEY = "hpd-job-workflow-overrides-v2";
+// United Angel's office (120-17 91st Ave, Richmond Hill): where the day's route starts when the phone
+// has no location yet.
+const OFFICE_LOCATION = { lat: 40.696592, lng: -73.827292 };
 
 const BOROUGHS: { key: BoroughKey; label: string; center: [number, number]; color: string }[] = [
   { key: "MN", label: "Manhattan", center: [40.7831, -73.9712], color: "#2dd4bf" },
@@ -460,21 +464,6 @@ function distanceMiles(a: { lat: number; lng: number }, b: { lat: number; lng: n
   return 2 * 3958.8 * Math.asin(Math.sqrt(h));
 }
 
-function googleRouteHref(points: { lat: number; lng: number }[]) {
-  if (points.length < 2) return "https://www.google.com/maps";
-  const [origin, ...rest] = points;
-  const destination = rest[rest.length - 1];
-  const waypoints = rest.slice(0, -1);
-  const params = new URLSearchParams({
-    api: "1",
-    travelmode: "driving",
-    origin: `${origin.lat},${origin.lng}`,
-    destination: `${destination.lat},${destination.lng}`,
-  });
-  if (waypoints.length) params.set("waypoints", waypoints.map((p) => `${p.lat},${p.lng}`).join("|"));
-  return `https://www.google.com/maps/dir/?${params.toString()}`;
-}
-
 function BellIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -793,7 +782,8 @@ export default function FieldCommandClient() {
   // Switching or closing the job card stops reading the old description.
   useEffect(() => { stopReading(); setReading(false); setScopeOpen(false); }, [selectedJobKey]);
   const [controlsOpen, setControlsOpen] = useState(false);
-  const [routeSummary, setRouteSummary] = useState<{ stops: number; miles: number; firstStop: string; href: string } | null>(null);
+  // The route button on the map opens Today's route (one route on the map, with its stop list).
+  const [routeOpenRequest, setRouteOpenRequest] = useState(0);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
   const [workflowLoaded, setWorkflowLoaded] = useState(false);
   const [jobsLoadFailed, setJobsLoadFailed] = useState(false);
@@ -1563,7 +1553,6 @@ export default function FieldCommandClient() {
   }, []);
 
   useEffect(() => {
-    setRouteSummary(null);
     if (routeLayerRef.current) {
       routeLayerRef.current.remove();
       routeLayerRef.current = null;
@@ -1761,37 +1750,52 @@ export default function FieldCommandClient() {
     );
   }
 
-  async function drawDayRoute(stops: RouteJob[], origin: RoutePoint) {
+  async function drawDayRoute(stops: RouteJob[], origin: RoutePoint): Promise<RoadRoute | null> {
     const request = ++dayRouteRequest.current;
     const leafletModule = await import("leaflet");
-    if (request !== dayRouteRequest.current || !mapRef.current) return;
+    if (request !== dayRouteRequest.current || !mapRef.current) return null;
     const L = (leafletModule as any).default || leafletModule;
     dayRouteLayerRef.current?.remove();
-    if (!stops.length) return;
+    dayRouteLayerRef.current = null;
+    if (!stops.length) return null;
     for (const [name, z] of [["fc-route-path", "610"], ["fc-route-stops", "620"]]) {
       const pane = mapRef.current.getPane(name) || mapRef.current.createPane(name);
       pane.style.zIndex = z;
     }
-    const line = [origin, ...stops].map(p => [p.lat, p.lng]);
-    dayRouteLayerRef.current = L.featureGroup([
-      L.polyline(line, { pane:"fc-route-path", color: "#ffffff", weight: 11, opacity: 0.95, interactive: false }),
-      L.polyline(line, { pane:"fc-route-path", color: "#1267df", weight: 7, opacity: 1, interactive: false }),
-      L.polyline(line, { pane:"fc-route-path", color: "#d8f8ff", weight: 3, dashArray: "3 19", opacity: 1, interactive: false, className: "fc-route-flow" }),
-      ...stops.flatMap((job, index) => {
-        const previous = index ? stops[index-1] : origin;
-        const from = mapRef.current.project([previous.lat, previous.lng], 14);
-        const to = mapRef.current.project([job.lat, job.lng], 14);
-        if (from.distanceTo(to) < 24) return [];
-        const angle = Math.atan2(to.y-from.y, to.x-from.x)*180/Math.PI;
-        const midpoint = mapRef.current.unproject([(from.x+to.x)/2, (from.y+to.y)/2],14);
-        return [L.marker(midpoint, {pane:"fc-route-stops", interactive:false, icon:L.divIcon({className:"fc-route-direction",html:`<span style="transform:rotate(${angle}deg)"></span>`,iconSize:[18,18],iconAnchor:[9,9]})})];
-      }),
+    const points = [origin, ...stops];
+    const stopMarkers = () => [
+      L.marker([origin.lat, origin.lng], { pane: "fc-route-stops", interactive: false, icon: L.divIcon({ className: "fc-route-start", html: "", iconSize: [18, 18], iconAnchor: [9, 9] }) }),
       ...stops.map((job, index) => L.marker([job.lat, job.lng], {
-        icon: L.divIcon({className:`fc-route-number${index===0?' is-next':''}`,html:String(index+1),iconSize:[32,32],iconAnchor:[16,16]}),
-        pane:"fc-route-stops", title: `Route stop ${index+1}: ${job.id}`, zIndexOffset: 2000,
-      }).on('click',()=>setSelectedJob(jobs.find(row=>jobId(row)===job.id)||null)))
-    ]).addTo(mapRef.current);
-    mapRef.current.fitBounds(dayRouteLayerRef.current.getBounds(), {padding:[36,60],maxZoom:15});
+        icon: L.divIcon({ className: `fc-route-number${index === 0 ? " is-next" : ""}`, html: String(index + 1), iconSize: [32, 32], iconAnchor: [16, 16] }),
+        pane: "fc-route-stops", title: `Route stop ${index + 1}: ${job.id}`, zIndexOffset: 2000,
+      }).on("click", () => setSelectedJob(jobs.find((row) => jobId(row) === job.id) || null))),
+    ];
+    const show = (layers: any[]) => {
+      dayRouteLayerRef.current?.remove();
+      dayRouteLayerRef.current = L.featureGroup(layers).addTo(mapRef.current);
+    };
+    // Right away: a faint dashed outline in stop order while the street route loads (or with no signal).
+    show([L.polyline(points.map((p) => [p.lat, p.lng]), { pane: "fc-route-path", color: "#1267df", weight: 3, opacity: 0.55, dashArray: "6 8", interactive: false }), ...stopMarkers()]);
+    // Fit the route into the part of the map above the route panel and below the pills.
+    mapRef.current.fitBounds(dayRouteLayerRef.current.getBounds(), { paddingTopLeft: [28, 150], paddingBottomRight: [56, Math.round(window.innerHeight * 0.38) + 90], maxZoom: 15 });
+    const road = await fetchRoadRoute(points);
+    if (!road || request !== dayRouteRequest.current || !mapRef.current) return request === dayRouteRequest.current ? road : null;
+    // The street route: white casing, blue line, a direction arrow halfway along each leg.
+    const arrows = road.legs.flatMap((leg) => {
+      if (leg.path.length < 2) return [];
+      const mid = Math.floor(leg.path.length / 2);
+      const a = mapRef.current.project(leg.path[Math.max(0, mid - 1)], 15);
+      const b = mapRef.current.project(leg.path[Math.min(leg.path.length - 1, mid + 1)], 15);
+      const angle = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+      return [L.marker(leg.path[mid], { pane: "fc-route-stops", interactive: false, icon: L.divIcon({ className: "fc-route-direction", html: `<span style="transform:rotate(${angle}deg)"></span>`, iconSize: [18, 18], iconAnchor: [9, 9] }) })];
+    });
+    show([
+      L.polyline(road.path, { pane: "fc-route-path", color: "#ffffff", weight: 9, opacity: 0.95, lineJoin: "round", interactive: false }),
+      L.polyline(road.path, { pane: "fc-route-path", color: "#1267df", weight: 5, opacity: 1, lineJoin: "round", interactive: false }),
+      ...arrows,
+      ...stopMarkers(),
+    ]);
+    return road;
   }
 
   const routeJobs = useMemo<RouteJob[]>(() => jobs.flatMap(job => {
@@ -1799,36 +1803,6 @@ export default function FieldCommandClient() {
     const queue = jobQueue(job);
     return [{id:jobId(job),address:jobAddress(job),borough:jobBorough(job),...point,days:jobPriority(job).days,pending:queue==='pending',closed:queue==='completed'||queue==='archived',blocked:visitState(job).blocked,appointment:job.Appointment as Appointment|undefined}];
   }), [jobs, calendarDate]);
-
-  async function previewLocalRoute() {
-    if (!mapRef.current || !pointsRef.current.length) return;
-    const leafletModule = await import("leaflet");
-    const L = (leafletModule as any).default || leafletModule;
-    const center = userMarkerRef.current?.getLatLng?.() || mapRef.current.getCenter();
-    const origin = { lat: Number(center.lat), lng: Number(center.lng) };
-    const stops = pointsRef.current
-      .filter(({ job }) => matchesJobQueue(job, "pending") && !visitState(job).blocked)
-      .map((point) => ({ ...point, miles: distanceMiles(origin, { lat: point.lat, lng: point.lng }) }))
-      .sort((a, b) => Math.max(0, jobPriority(b.job).days || 0) - Math.max(0, jobPriority(a.job).days || 0) || a.miles - b.miles)
-      .slice(0, 6);
-
-    if (!stops.length) return;
-    if (routeLayerRef.current) routeLayerRef.current.remove();
-    const routePoints = [origin, ...stops.map((point) => ({ lat: point.lat, lng: point.lng }))];
-    const latLngs = routePoints.map((point) => [point.lat, point.lng]);
-    routeLayerRef.current = L.featureGroup([
-      L.polyline(latLngs, { color: "#ffffff", weight: 11, opacity: 0.95, interactive:false }),
-      L.polyline(latLngs, { color: "#1267df", weight: 7, opacity: 1, interactive:false }),
-      L.polyline(latLngs, { color: "#d8f8ff", weight: 3, opacity: 1, dashArray: "3 19", interactive:false, className:"fc-route-flow" }),
-    ]).addTo(mapRef.current);
-    mapRef.current.fitBounds(routeLayerRef.current.getBounds(), { padding: [42, 42], maxZoom: 14 });
-    setRouteSummary({
-      stops: stops.length,
-      miles: routePoints.slice(1).reduce((sum, point, index) => sum + distanceMiles(routePoints[index], point), 0),
-      firstStop: jobId(stops[0].job),
-      href: googleRouteHref(routePoints),
-    });
-  }
 
   // "Everything is correct": takes a finished job off the active map. Only offered once its
   // paperwork is approved; archived jobs stay under Status > Archive.
@@ -2431,9 +2405,11 @@ export default function FieldCommandClient() {
         <div className="fc-map-controls">
           <button
             type="button"
-            className={`fc-map-fab fc-route-fab ${routeSummary ? "is-active" : ""}`}
-            aria-label="Preview smart route"
-            onClick={previewLocalRoute}
+            className="fc-map-fab fc-route-fab"
+            aria-label="Today's route"
+            title="Today's route"
+            data-hpd-smoke="fc-route-open"
+            onClick={() => { setSelectedJob(null); setRouteOpenRequest((n) => n + 1); }}
           >
             <RouteIcon />
           </button>
@@ -2460,15 +2436,6 @@ export default function FieldCommandClient() {
             <span>Visible Jobs</span>
           </div>
         </div>
-        {routeSummary ? (
-          <a className="fc-route-summary" href={routeSummary.href} target="_blank" rel="noreferrer">
-            <strong>{routeSummary.stops} stops</strong>
-            <span>{routeSummary.miles.toFixed(1)} mi estimated straight-line distance</span>
-            <small>Stop preview, not driving directions</small>
-            <small>First: {routeSummary.firstStop}</small>
-          </a>
-        ) : null}
-
         {/* Status messages stack below the search box instead of overlapping each other. */}
         <div className="fc-map-hints" hidden={filtersOpen}>
           {locateStatus === "error" ? (
@@ -2592,10 +2559,13 @@ export default function FieldCommandClient() {
         <div hidden={!!selectedJob || agendaOpen || chromeOpen}>
           {currentJob&&jobs.some(job=>jobId(job)===currentJob.id)&&<div className="fc-current-job"><button type="button" onClick={()=>resumeCurrentJob(currentJob)}>Resume current job · {currentJob.id}</button><button type="button" aria-label="Dismiss current job" onClick={()=>{currentJobRef.current=null;setCurrentJob(null);try{localStorage.removeItem(CURRENT_JOB_KEY);}catch{}}}>&times;</button></div>}
           <TodayRoute jobs={routeJobs} mapReady={routeMapReady} getOrigin={() => {
+            // Your location; else the map center if it's in the city; else the office.
             const location = userMarkerRef.current?.getLatLng?.();
-            const center = location || mapRef.current?.getCenter() || {lat:40.72,lng:-73.95};
-            return {point:{lat:center.lat,lng:center.lng},label:location?'Your location':'Map center (location not set)'};
-          }} onNavigate={rememberNavigation} onPreview={drawDayRoute} onSelect={id => {setSelectedJob(jobs.find(job=>jobId(job)===id)||null);setSheetExpanded(false);}} />
+            if (location) return {point:{lat:location.lat,lng:location.lng},label:'your location'};
+            const center = mapRef.current?.getCenter();
+            if (center && center.lat > 40.49 && center.lat < 40.92 && center.lng > -74.26 && center.lng < -73.7) return {point:{lat:center.lat,lng:center.lng},label:'map center (location not set)'};
+            return {point:OFFICE_LOCATION,label:'the office, 120-17 91st Ave (location not set)'};
+          }} openRequest={routeOpenRequest} onNavigate={rememberNavigation} onPreview={drawDayRoute} onSelect={id => {setSelectedJob(jobs.find(job=>jobId(job)===id)||null);setSheetExpanded(false);}} />
         </div>
         {agendaOpen ? <aside className="fc-appointment-agenda" aria-label="Today's appointments">
           <header><strong>Today&apos;s appointments</strong><button type="button" aria-label="Close appointments" onClick={() => setAgendaOpen(false)}>&times;</button></header>

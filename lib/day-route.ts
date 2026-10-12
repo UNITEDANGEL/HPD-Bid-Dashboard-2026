@@ -24,11 +24,15 @@ export function eligibleRouteJobs(jobs: RouteJob[], s: RouteSettings) {
       ? j.appointment.state==='confirmed' && j.appointment.date===s.date
       : j.pending));
 }
-export function scheduleStops(jobs: RouteJob[], s: RouteSettings, origin: RoutePoint): RouteStop[] {
+// Minutes to park and walk in, added to real road driving time (the straight-line estimate already has it).
+export const PARK_MINUTES = 5;
+// driveMinutes: real road driving time to each stop, when a road route is known; otherwise estimated.
+export function scheduleStops(jobs: RouteJob[], s: RouteSettings, origin: RoutePoint, driveMinutes?: number[]): RouteStop[] {
   if (!validRouteSettings(s)) return [];
   let cursor = timeMinutes(s.start), previous = origin;
-  return jobs.map(job => {
-    const travel = travelEstimate(previous,job);
+  return jobs.map((job, index) => {
+    const road = driveMinutes && driveMinutes.length === jobs.length ? driveMinutes[index] : undefined;
+    const travel = Number.isFinite(road) ? Math.ceil(road as number) + PARK_MINUTES : travelEstimate(previous,job);
     const appointment = job.appointment?.state==='confirmed' && job.appointment.date===s.date ? job.appointment : undefined;
     const arrival = Math.max(cursor + travel, appointment ? timeMinutes(appointment.start) : 0);
     const finish = arrival + s.minutes;
@@ -37,22 +41,58 @@ export function scheduleStops(jobs: RouteJob[], s: RouteSettings, origin: RouteP
     return {job,arrival,finish,travel,warning};
   });
 }
+// How much an overdue day is worth in minutes of driving when picking the next stop: a job 100 days
+// more overdue is worth a 10-minute longer drive. Capped so very old jobs don't pull across the city.
+const URGENCY_MINUTES_PER_DAY = 0.1;
+const URGENCY_CAP_DAYS = 365;
+function stopCost(from: RoutePoint, job: RouteJob) {
+  return travelEstimate(from, job) - Math.min(URGENCY_CAP_DAYS, Math.max(0, job.days || 0)) * URGENCY_MINUTES_PER_DAY;
+}
+
+function legsTotal(start: RoutePoint, run: RouteJob[], end: RoutePoint | null) {
+  let total = 0, previous = start;
+  for (const job of run) { total += travelEstimate(previous, job); previous = job; }
+  return end ? total + travelEstimate(previous, end) : total;
+}
+
+// 2-opt: reverse any stretch of the run that makes the drive shorter (no crossing back and forth).
+function untangle(start: RoutePoint, run: RouteJob[], end: RoutePoint | null) {
+  let best = run.slice(), bestTotal = legsTotal(start, best, end), improved = true;
+  while (improved) {
+    improved = false;
+    for (let i = 0; i < best.length - 1; i++) {
+      for (let k = i + 1; k < best.length; k++) {
+        const candidate = [...best.slice(0, i), ...best.slice(i, k + 1).reverse(), ...best.slice(k + 1)];
+        const total = legsTotal(start, candidate, end);
+        if (total < bestTotal - 0.01) { best = candidate; bestTotal = total; improved = true; }
+      }
+    }
+  }
+  return best;
+}
+
+// Confirmed appointments keep their times; the gaps fill with the most overdue work, taken in an order
+// that keeps the drive short (next stop = best mix of nearby and overdue), then untangled.
 export function planDay(jobs: RouteJob[], s: RouteSettings, origin: RoutePoint) {
   if (!validRouteSettings(s)) return [];
   const eligible = eligibleRouteJobs(jobs,s);
   const fixed = eligible.filter(j=>j.appointment?.state==='confirmed').sort((a,b)=>String(a.appointment?.start).localeCompare(String(b.appointment?.start)));
-  const pending = eligible.filter(j=>!fixed.includes(j)).sort((a,b)=>Math.max(0,b.days||0)-Math.max(0,a.days||0) || travelEstimate(origin,a)-travelEstimate(origin,b) || a.id.localeCompare(b.id));
+  const pending = eligible.filter(j=>!fixed.includes(j));
   const selected: RouteJob[] = [];
-  let cursor = timeMinutes(s.start), previous = origin;
-  // Reserve confirmed appointments first, then fill available gaps with overdue work.
+  let cursor = timeMinutes(s.start), previous: RoutePoint = origin;
   for (const next of [...fixed, null]) {
     const limit = next ? timeMinutes(next.appointment!.start) : timeMinutes(s.end);
-    while (selected.length < 8) {
-      const index = pending.findIndex(j=>cursor+travelEstimate(previous,j)+s.minutes+(next?travelEstimate(j,next):0)<=limit);
-      if (index<0) break;
-      const job = pending.splice(index,1)[0]; selected.push(job);
+    const runStart = previous, run: RouteJob[] = [];
+    while (selected.length + run.length < 8) {
+      const fits = pending.filter(j=>cursor+travelEstimate(previous,j)+s.minutes+(next?travelEstimate(j,next):0)<=limit);
+      if (!fits.length) break;
+      const job = fits.reduce((best,j)=>{const d=stopCost(previous,j)-stopCost(previous,best); return d<0||(d===0&&j.id<best.id)?j:best;});
+      pending.splice(pending.indexOf(job),1); run.push(job);
       cursor += travelEstimate(previous,job)+s.minutes; previous=job;
     }
+    const ordered = untangle(runStart, run, next);
+    selected.push(...ordered);
+    if (ordered.length) previous = ordered[ordered.length-1];
     if (next) {
       selected.push(next); cursor=Math.max(cursor+travelEstimate(previous,next),timeMinutes(next.appointment!.start))+s.minutes; previous=next;
     }
