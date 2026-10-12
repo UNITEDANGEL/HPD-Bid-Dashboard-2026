@@ -1,16 +1,19 @@
 name: Deploy Cloudflare Status Worker
 
+# The status server every phone syncs job steps through (hpd-status-worker). Deploys only when run
+# by hand (Actions > Deploy Cloudflare Status Worker > Run workflow), from main, after its tests.
+# Note (2026-10-12): the live server is older than cloudflare-worker/src: it has no /sync, so the
+# phones' cloud sync of field records is still off. The first deploy from here turns that on for
+# every phone - decide that on purpose, not as a side effect.
 on:
-  push:
-    branches:
-      - map-preview
-    paths:
-      - "cloudflare-worker/**"
-      - ".github/workflows/deploy-cloudflare-status-worker.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: status-worker-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -18,15 +21,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          ref: main
 
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
           node-version: "24"
 
-      - name: Install current Wrangler
-        working-directory: cloudflare-worker
-        run: npm install --no-save wrangler@4.110.0
+      - name: Test the status server
+        run: |
+          node cloudflare-worker/test-sync.mjs
+          node scripts/test-override-sync.cjs
 
       - name: Deploy status and sync Worker
         uses: cloudflare/wrangler-action@v4
