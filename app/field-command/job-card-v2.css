@@ -984,6 +984,8 @@
 /* After the outcome: the next closest open job */
 #fc-job-card .jc-next-job { display: grid; gap: 6px; margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: rgba(37, 99, 235, 0.16); border: 1px solid rgba(96, 165, 250, 0.5); color: #dbeafe; font: 600 14px/1.35 system-ui, sans-serif; }
 #fc-job-card .jc-next-job strong { color: #fff; font-size: 15px; }
+#fc-job-card .jc-next-job.is-route { background: rgba(22, 163, 74, 0.16); border-color: rgba(74, 222, 128, 0.55); }
+#fc-job-card .jc-next-actions a.jc-next-waze { background: #33ccff; color: #062b3a; }
 #fc-job-card .jc-next-job.is-none { color: #cbd5e1; background: rgba(51, 65, 85, 0.35); border-color: rgba(148, 163, 184, 0.4); }
 #fc-job-card .jc-next-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 #fc-job-card .jc-next-actions a, #fc-job-card .jc-next-actions button { min-height: 40px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 10px; border: 0; background: #2563eb; color: #fff; font: 800 14px/1 system-ui, sans-serif; text-decoration: none; }

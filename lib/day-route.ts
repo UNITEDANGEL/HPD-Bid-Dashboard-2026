@@ -99,3 +99,14 @@ export function planDay(jobs: RouteJob[], s: RouteSettings, origin: RoutePoint) 
   }
   return selected;
 }
+
+// After finishing a job: the next stop on today's route that is still open (stop N of M). If the
+// finished job isn't on the route (or everything after it is done), the route's first open stop.
+// null when the route has no open stop left.
+export function nextRouteStop(routeIds: string[], finishedId: string, isOpen: (id: string) => boolean) {
+  const open = (id: string) => id !== finishedId && isOpen(id);
+  const at = routeIds.indexOf(finishedId);
+  const id = (at >= 0 ? routeIds.slice(at + 1).find(open) : undefined) ?? routeIds.find(open);
+  if (!id) return null;
+  return { id, stop: routeIds.indexOf(id) + 1, of: routeIds.length, left: routeIds.filter(open).length };
+}

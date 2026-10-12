@@ -8,7 +8,7 @@ import { fetchRoadRoute, type RoadRoute } from "../../lib/road-route";
 import { BuildingHero, SavedPackageLink } from "./BuildingPhoto";
 import VideoBackupLine from "./VideoBackupLine";
 import JobSafeLine from "./JobSafeLine";
-import type { RouteJob, RoutePoint } from "../../lib/day-route";
+import { nextRouteStop, type RouteJob, type RoutePoint } from "../../lib/day-route";
 import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/current-job";
 import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointmentPatch, appointmentTiming, nyToday, type Appointment } from "../../lib/appointments";
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
@@ -410,6 +410,17 @@ function directionsHref(job: JobRecord) {
   const ll = jobLatLng(job);
   const query = ll ? `${ll.lat},${ll.lng}` : jobAddress(job);
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}&travelmode=driving&dir_action=navigate`;
+}
+
+// Today's route as the route panel saved it on this phone (stop IDs in order), or [] if it is
+// from another day or there is none.
+function todayRouteIds(): string[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem("hpd-today-route-v1") || "null");
+    return saved?.settings?.date === nyToday() && Array.isArray(saved.ids) ? saved.ids.filter((id: unknown) => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
 }
 
 function wazeHref(job: JobRecord) {
@@ -1799,7 +1810,7 @@ export default function FieldCommandClient() {
   }
 
   const routeJobs = useMemo<RouteJob[]>(() => jobs.flatMap(job => {
-    const point = jobLatLng(job); if (!point) return [];
+    const point = jobLatLng(job); if (!point || isTestJob(jobId(job))) return [];
     const queue = jobQueue(job);
     return [{id:jobId(job),address:jobAddress(job),borough:jobBorough(job),...point,days:jobPriority(job).days,pending:queue==='pending',closed:queue==='completed'||queue==='archived',blocked:visitState(job).blocked,appointment:job.Appointment as Appointment|undefined}];
   }), [jobs, calendarDate]);
@@ -2864,7 +2875,24 @@ export default function FieldCommandClient() {
                   );
                 })()}
                 {upgradeOn("next-job", id) && FIELD_OUTCOMES[value(selectedJob, ["FieldOutcome", "fieldOutcome"])] ? (() => {
-                  // Next stop: the closest open job to where you are (or to this job without a fix).
+                  // Next stop: the next open stop on Today's route; with no route (or none left),
+                  // the closest open job to where you are (or to this job without a fix).
+                  const openJob = (jobIdValue: string) => { const row = jobs.find((r) => jobId(r) === jobIdValue); return Boolean(row) && jobQueue(row!) === "pending" && !isTestJob(jobIdValue) && Boolean(jobLatLng(row!)); };
+                  const onRoute = nextRouteStop(todayRouteIds(), id, openJob);
+                  const routeTarget = onRoute ? jobs.find((row) => jobId(row) === onRoute.id) : null;
+                  if (onRoute && routeTarget) {
+                    return (
+                      <div className="jc-next-job is-route" data-hpd-smoke="jc-next-job" data-next-source="route">
+                        <strong>➡ Next on your route · stop {onRoute.stop} of {onRoute.of} · {onRoute.id}</strong>
+                        <span>{jobAddress(routeTarget)} · {onRoute.left === 1 ? "last stop left" : `${onRoute.left} stops left`}</span>
+                        <span className="jc-next-actions">
+                          <a className="jc-next-waze" data-hpd-smoke="jc-next-waze" href={wazeHref(routeTarget)} target="_blank" rel="noreferrer" onClick={() => rememberNavigation(onRoute.id)}>Waze</a>
+                          <a href={directionsHref(routeTarget)} target="_blank" rel="noreferrer" onClick={() => rememberNavigation(onRoute.id)}>Google</a>
+                          <button type="button" data-hpd-smoke="jc-next-open" onClick={() => openIssueJob(routeTarget)}>Open job</button>
+                        </span>
+                      </div>
+                    );
+                  }
                   const fix = lastFixRef.current;
                   const from = fix && Date.now() - fix.at < 600000 ? { lat: fix.lat, lng: fix.lng } : jobLatLng(selectedJob);
                   if (!from) return null;
@@ -2873,11 +2901,11 @@ export default function FieldCommandClient() {
                   const target = best ? jobs.find((row) => jobId(row) === best.id) : null;
                   if (!best || !target) return <p className="jc-next-job is-none" data-hpd-smoke="jc-next-job">➡ No other open job with a location nearby.</p>;
                   return (
-                    <div className="jc-next-job" data-hpd-smoke="jc-next-job">
+                    <div className="jc-next-job" data-hpd-smoke="jc-next-job" data-next-source="closest">
                       <strong>➡ Next closest job · {best.id}</strong>
                       <span>{jobAddress(target)} · {milesLabel(best.miles)}</span>
                       <span className="jc-next-actions">
-                        <a href={wazeHref(target)} target="_blank" rel="noreferrer" onClick={() => rememberNavigation(best.id)}>Waze</a>
+                        <a className="jc-next-waze" data-hpd-smoke="jc-next-waze" href={wazeHref(target)} target="_blank" rel="noreferrer" onClick={() => rememberNavigation(best.id)}>Waze</a>
                         <a href={directionsHref(target)} target="_blank" rel="noreferrer" onClick={() => rememberNavigation(best.id)}>Google</a>
                         <button type="button" data-hpd-smoke="jc-next-open" onClick={() => openIssueJob(target)}>Open job</button>
                       </span>

@@ -24,4 +24,11 @@ assert.equal(routeTime(480),'08:00');assert.equal(routeTime(NaN),'Unavailable');
 const saved=JSON.parse(JSON.stringify({settings:s,ids:plan.map(j=>j.id)}));assert.deepEqual(saved.ids,plan.map(j=>j.id));
 assert.equal(eligibleRouteJobs([{...appointment,closed:true}],s).length,0);
 assert.equal(scheduleStops([job('bad-window',1,{appointment:{...appointment.appointment,start:'bad'}})],s,origin)[0].warning,'Invalid appointment time');
+// Next stop after finishing a job: the next open stop on today's route, else the route's first open stop.
+const {nextRouteStop}=mod.exports;const route=['A','B','C','D'];const allOpen=()=>true;
+assert.deepEqual(nextRouteStop(route,'B',allOpen),{id:'C',stop:3,of:4,left:3});
+assert.deepEqual(nextRouteStop(route,'TEST-0001',allOpen),{id:'A',stop:1,of:4,left:4},'a job off the route goes to the first stop');
+assert.deepEqual(nextRouteStop(route,'B',id=>id!=='C'),{id:'D',stop:4,of:4,left:2},'done stops are skipped');
+assert.deepEqual(nextRouteStop(route,'D',id=>id==='B'),{id:'B',stop:2,of:4,left:1},'a skipped earlier stop is picked up');
+assert.equal(nextRouteStop(route,'B',()=>false),null);assert.equal(nextRouteStop([],'A',allOpen),null);
 console.log('PASS: overdue ordering, appointment reservation, workday conflicts, eligibility, invalid inputs, stop limit and saved IDs');

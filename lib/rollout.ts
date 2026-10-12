@@ -5,7 +5,7 @@ import { TEST_JOB_ID } from "./test-job";
 
 // Upgrades being tried on the test job only: name -> what it does (shown on the test job's card).
 export const TEST_FIRST: Record<string, string> = {
-  "next-job": "after the outcome, the next closest open job with directions",
+  "next-job": "after the outcome, your next stop on Today's route (or the closest open job) with Waze",
 };
 
 // Upgrades already given to every job (kept so code can ask about them by name).
