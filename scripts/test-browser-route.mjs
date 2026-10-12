@@ -66,8 +66,20 @@ try {
   assert.equal(stopWaze[0], nextWaze, "the first stop's Waze matches the next-stop button");
   assert.equal(new Set(stopWaze).size, stopCount, "each Waze button goes to its own stop");
 
+  // Close the panel, zoom far in somewhere else, tap the route button again: the whole route is back
+  // in view (every numbered stop on screen), without fetching the street route again.
+  await page.locator(".fc-route-toggle").first().click();
+  await page.evaluate(() => { const zoomIn = document.querySelector(".leaflet-control-zoom-in"); for (let i = 0; i < 4; i++) zoomIn?.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+  await page.mouse.move(195, 300); await page.mouse.down(); await page.mouse.move(60, 120, { steps: 8 }); await page.mouse.up();
+  await page.waitForTimeout(800);
+  await button.click();
+  await page.waitForTimeout(1500);
+  const onScreen = await page.locator(".fc-route-number").evaluateAll((markers) => markers.filter((m) => { const r = m.getBoundingClientRect(); return r.width > 0 && r.left >= 0 && r.right <= innerWidth && r.top >= 0 && r.bottom <= innerHeight; }).length);
+  assert.equal(onScreen, stopCount, `all ${stopCount} stops back in view after reopening (got ${onScreen})`);
+  assert.equal(routingCalls, 1, "reopening reuses the street route");
+
   assert.deepEqual(errors, [], "page errors");
-  console.log(`PASS route: one tap plans ${stopCount} stops, street line (${vertices} points), drive time per stop, arrows, whole-route link, Waze on every stop; ${totalText.replace(/\s+/g, " ")}${realRouting ? " [real routing]" : ""}`);
+  console.log(`PASS route: one tap plans ${stopCount} stops, street line (${vertices} points), drive time per stop, arrows, whole-route link, Waze on every stop, reopen shows the whole route; ${totalText.replace(/\s+/g, " ")}${realRouting ? " [real routing]" : ""}`);
 } finally {
   await browser.close();
 }

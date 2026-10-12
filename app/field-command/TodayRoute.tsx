@@ -27,11 +27,13 @@ export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,o
   useEffect(()=>{if(!origin||!mapReady)return;let current=true;setRoad(selected.length?'loading':null);Promise.resolve(preview.current(selected,origin.point)).then(r=>{if(current)setRoad(r||null);});return()=>{current=false;};},[selected,origin,mapReady]);
   // The route button on the map: open the panel and plan the day if nothing is planned yet.
   const builtFor=useRef(0);
-  useEffect(()=>{if(!openRequest||!ready||builtFor.current===openRequest)return;builtFor.current=openRequest;setOpen(true);if(!origin)setOrigin(getOrigin());if(!ids.length&&mapReady)build();},[openRequest,ready,mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(()=>{if(!openRequest||!ready||builtFor.current===openRequest)return;builtFor.current=openRequest;setOpen(true);if(!origin)setOrigin(getOrigin());if(!ids.length&&mapReady)build();else showRoute();},[openRequest,ready,mapReady]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Re-draw the saved route, which also zooms the map to show all of it (the street line is remembered).
+  function showRoute(){if(origin&&mapReady&&selected.length)Promise.resolve(preview.current(selected,origin.point)).then(r=>setRoad(r||null));}
   function build(){if(!validRouteSettings(settings))return;const start=getOrigin();setOrigin(start);setIds(planDay(jobs,settings,start.point).map(j=>j.id));requestAnimationFrame(()=>bodyRef.current?.scrollTo({top:0}));}
   function move(index:number,delta:number){const next=selected.map(j=>j.id);[next[index],next[index+delta]]=[next[index+delta],next[index]];setIds(next);}
   return <aside className={`fc-today-route ${open?'is-open':''}`} aria-label="Today's route">
-    <button className="fc-route-toggle" type="button" aria-expanded={open} onClick={()=>{setOpen(!open);if(!origin)setOrigin(getOrigin());}}>Today&apos;s route {selected.length?`(${selected.length})`:''}<span aria-hidden="true">{open?'⌄':'⌃'}</span></button>
+    <button className="fc-route-toggle" type="button" aria-expanded={open} onClick={()=>{setOpen(!open);if(!origin)setOrigin(getOrigin());else if(!open)showRoute();}}>Today&apos;s route {selected.length?`(${selected.length})`:''}<span aria-hidden="true">{open?'⌄':'⌃'}</span></button>
     {open&&<div className="fc-route-body" ref={bodyRef}>
       <details open={!ids.length}><summary>Plan settings · {settings.start}-{settings.end}</summary><div className="fc-route-settings">
         <label>Day<input aria-label="Route day" type="date" value={settings.date} onChange={e=>setSettings({...settings,date:e.target.value})}/></label>
