@@ -64,6 +64,17 @@ const mixed = priceHelp('INSTALL NEW DOOR CLOSER AND REPAIR FIRE ESCAPE DROP LAD
 assert.deepEqual(mixed.unmatched, ['fire escape'], 'work with no history is called out');
 assert.equal(mixed.confidence, 'low');
 
+// A much bigger floor job than any past one is flagged, not quietly priced like the small ones.
+const floors = [
+  { id: 'F1', description: 'REPLACE BROKEN FLOOR TILES APPROX 10 SQ FT', amount: 600 },
+  { id: 'F2', description: 'REPLACE CRACKED FLOOR TILES APPROX 20 SQ FT', amount: 800 },
+  { id: 'F3', description: 'REPLACE FLOOR TILES APPROX 30 SQ FT', amount: 900 },
+];
+const bigFloor = priceHelp('REMOVE ENTIRE BROKEN FLOOR TILES THROUGHOUT THE KITCHEN. INSTALL NEW CERAMIC TILES. APROX 150SQFT', floors);
+assert.equal(bigFloor.scope.repairSqft, 150);
+assert.equal(bigFloor.confidence, 'low');
+assert.match(bigFloor.why, /~150 sq ft, bigger than these past jobs \(up to 30 sq ft\): expect to price higher/);
+
 // Bid package text helpers.
 assert.equal(fill.bidPriceText(1250), '1,250.00');
 assert.equal(fill.bidDateText('2026-10-07'), '10/7/26');

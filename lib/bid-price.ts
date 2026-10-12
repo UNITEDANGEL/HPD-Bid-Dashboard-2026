@@ -182,8 +182,13 @@ export function priceHelp(description: string, history: PricedJob[], limit = 8):
   const unmatched = scope.items.filter((k) => !matchedItems.has(k)).map((k) => ITEMS.find(([key]) => key === k)![1]);
   const sameWork = scored.filter((row) => row.items >= 0.99).length;
   const spread = middle ? (high - low) / middle : 1;
-  const confidence: PriceHelp["confidence"] = unmatched.length || sameWork < 2 || spread > 0.8 ? "low" : sameWork >= 4 && spread <= 0.4 ? "good" : "fair";
+  // Bigger than anything it is compared with: the range is likely too low, so say so plainly.
+  const biggest = Math.max(...scored.map((row) => row.scope.sqft));
+  const bigger = scope.sqft >= 20 && scope.sqft > biggest * 1.5 ? `this job is ~${scope.sqft} sq ft, bigger than these past jobs (up to ${biggest} sq ft): expect to price higher` : "";
+  const confidence: PriceHelp["confidence"] = unmatched.length || sameWork < 2 || spread > 0.8 || bigger ? "low" : sameWork >= 4 && spread <= 0.4 ? "good" : "fair";
   const why = [
+    bigger,
+    spread > 0.8 ? "these past prices vary a lot" : "",
     sameWork === scored.length ? `priced from ${sameWork} past wins with the same kind of work` : sameWork ? `${sameWork} of ${scored.length} past wins had the same kind of work` : `no past win had exactly this mix of work; ${scored.length} closest shown`,
     unmatched.length ? `nothing in your history with ${unmatched.join(", ")}: price that part yourself` : "",
     scored.some((row) => sizeFactor(scope, row.scope) !== 1) ? "prices of jobs with a different number of doors/windows adjusted" : "",
