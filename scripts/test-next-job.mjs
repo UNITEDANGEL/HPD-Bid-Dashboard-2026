@@ -1,4 +1,5 @@
 // Next job after a visit: closest open job, never the same one or a closed one.
+import { pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -7,7 +8,7 @@ import ts from "typescript";
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "hpd-next-"));
 fs.writeFileSync(path.join(dir, "next-job.mjs"), ts.transpileModule(fs.readFileSync("lib/next-job.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText);
-const { nextJob, milesBetween, milesLabel } = await import(path.join(dir, "next-job.mjs"));
+const { nextJob, milesBetween, milesLabel } = await import(pathToFileURL(path.join(dir, "next-job.mjs")).href);
 
 const here = { lat: 40.7105, lng: -74.0043 }; // 100 Gold St
 const spots = [

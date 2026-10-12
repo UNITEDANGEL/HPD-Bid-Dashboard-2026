@@ -1,4 +1,5 @@
 // The "Add to Calendar" server function: builds the iPhone calendar entry from the button's link.
+import { pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -10,8 +11,8 @@ fs.mkdirSync(path.join(dir, "lib")); fs.mkdirSync(path.join(dir, "functions", "a
 const compile = (src) => ts.transpileModule(fs.readFileSync(src, "utf8"), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
 fs.writeFileSync(path.join(dir, "lib", "appointments.mjs"), compile("lib/appointments.ts"));
 fs.writeFileSync(path.join(dir, "functions", "api", "appointment-calendar.mjs"), fs.readFileSync("functions/api/appointment-calendar.js", "utf8").replace("../../lib/appointments.ts", "../../lib/appointments.mjs"));
-const { onRequestGet } = await import(path.join(dir, "functions", "api", "appointment-calendar.mjs"));
-const { appointmentCalendarHref } = await import(path.join(dir, "lib", "appointments.mjs"));
+const { onRequestGet } = await import(pathToFileURL(path.join(dir, "functions", "api", "appointment-calendar.mjs")).href);
+const { appointmentCalendarHref } = await import(pathToFileURL(path.join(dir, "lib", "appointments.mjs")).href);
 
 const appointment = { date: "2099-10-07", start: "14:00", end: "15:00", state: "requested", contact: "Maria Lopez", phone: "917-555-0100", note: "Ring 4B", reminder: 60 };
 const href = appointmentCalendarHref("ER05729", "500 FT WASHINGTON AVENUE, 10033", appointment, "https://hpd.example");

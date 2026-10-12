@@ -1,5 +1,6 @@
 // End-of-day summary: today's visits and outcomes, jobs to close out, and tomorrow's appointments
 // and 2nd tries, in New York time.
+import { pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -10,7 +11,7 @@ const dir = fs.mkdtempSync(path.join(os.tmpdir(), "hpd-sum-"));
 const compile = (src) => ts.transpileModule(fs.readFileSync(src, "utf8"), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText
   .replace(/from "\.\/(field-next-action|appointments)"/g, 'from "./$1.mjs"');
 for (const name of ["day-summary", "field-next-action", "appointments"]) fs.writeFileSync(path.join(dir, `${name}.mjs`), compile(`lib/${name}.ts`));
-const { daySummary } = await import(path.join(dir, "day-summary.mjs"));
+const { daySummary } = await import(pathToFileURL(path.join(dir, "day-summary.mjs")).href);
 
 // "Now": Tue Oct 6 2026, 6:00 PM New York (22:00 UTC).
 const now = new Date("2026-10-06T22:00:00Z");

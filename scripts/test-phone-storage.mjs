@@ -1,4 +1,5 @@
 // Phone space levels: when the app warns that space is running low or almost full.
+import { pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -7,7 +8,7 @@ import ts from "typescript";
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "hpd-space-"));
 fs.writeFileSync(path.join(dir, "phone-storage.mjs"), ts.transpileModule(fs.readFileSync("lib/phone-storage.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText);
-const { storageLevel, formatBytes } = await import(path.join(dir, "phone-storage.mjs"));
+const { storageLevel, formatBytes } = await import(pathToFileURL(path.join(dir, "phone-storage.mjs")).href);
 const MB = 1024 * 1024, GB = 1024 * MB;
 
 assert.equal(storageLevel(1 * GB, 10 * GB), "ok");

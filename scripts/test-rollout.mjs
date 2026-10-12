@@ -1,4 +1,5 @@
 // Test first, then everyone: a TEST_FIRST upgrade is on for TEST-0001 only; a LIVE one for all.
+import { pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -9,7 +10,7 @@ const dir = fs.mkdtempSync(path.join(os.tmpdir(), "hpd-rollout-"));
 const compile = (file, swaps = (t) => t) => swaps(ts.transpileModule(fs.readFileSync(file, "utf8"), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText);
 fs.writeFileSync(path.join(dir, "test-job.mjs"), compile("lib/test-job.ts"));
 fs.writeFileSync(path.join(dir, "rollout.mjs"), compile("lib/rollout.ts", (t) => t.replace('"./test-job"', '"./test-job.mjs"')));
-const rollout = await import(path.join(dir, "rollout.mjs"));
+const rollout = await import(pathToFileURL(path.join(dir, "rollout.mjs")).href);
 
 rollout.TEST_FIRST["new-thing"] = "Sample upgrade";
 assert.equal(rollout.upgradeOn("new-thing", "TEST-0001"), true);

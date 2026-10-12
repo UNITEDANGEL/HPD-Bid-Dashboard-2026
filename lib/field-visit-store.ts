@@ -62,8 +62,10 @@ function requestToPromise<T>(request: IDBRequest<T>): Promise<T> {
   });
 }
 
+// New York calendar day: a UTC day would file evening visits (after 8 PM) under tomorrow.
+const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
 function todayKey(date = new Date()) {
-  return date.toISOString().slice(0, 10);
+  return NY_DAY.format(date);
 }
 
 export function canStoreFieldVisits() {

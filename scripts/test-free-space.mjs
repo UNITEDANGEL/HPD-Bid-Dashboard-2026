@@ -1,4 +1,5 @@
 // Which jobs are safe to free on the phone: package saved to a Drive folder AND emailed.
+import { pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
@@ -8,7 +9,7 @@ import ts from "typescript";
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "hpd-free-"));
 const source = fs.readFileSync("lib/free-space.ts", "utf8").replace(/^import .*$/gm, "");
 fs.writeFileSync(path.join(dir, "free-space.mjs"), ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText);
-const { driveFolderId, sentJobs } = await import(path.join(dir, "free-space.mjs"));
+const { driveFolderId, sentJobs } = await import(pathToFileURL(path.join(dir, "free-space.mjs")).href);
 
 assert.equal(driveFolderId("https://drive.google.com/drive/folders/package_folder_01"), "package_folder_01");
 assert.equal(driveFolderId("https://drive.google.com/drive/folders/package_folder_01?usp=sharing"), "package_folder_01");

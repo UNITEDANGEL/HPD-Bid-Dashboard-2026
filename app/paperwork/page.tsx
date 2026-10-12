@@ -219,8 +219,11 @@ function asArray(value: unknown): JobRecord[] {
   return [];
 }
 
+// The phone's own calendar day. toISOString() is UTC, which in New York is already tomorrow
+// from 8 PM (7 PM in winter) and put the next day's date on evening affidavits and invoices.
 function todayIsoDate() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 function parseDateValue(value: unknown) {
@@ -995,7 +998,7 @@ function driveFiling(form: PackageForm, jobId: string, outcome: PaperworkOutcome
 
 function packageFolderName(form: PackageForm, jobId: string, outcome: PaperworkOutcome) {
   const location = safeFilename(form.location || form.address || form.borough || "LOCATION");
-  const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const stamp = todayIsoDate().replace(/-/g, "");
   return `${safeFilename(jobId)}_${packageStatusSlug(outcome)}_${location}_package_${stamp}`;
 }
 
@@ -1005,13 +1008,13 @@ function packageZipFileName(form: PackageForm, jobId: string, outcome: Paperwork
 
 function completePackageFileName(form: PackageForm, jobId: string) {
   const location = safeFilename(form.location || form.address || form.borough || "LOCATION");
-  const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const stamp = todayIsoDate().replace(/-/g, "");
   return `${safeFilename(jobId)}_${location}_complete-package_${stamp}.zip`;
 }
 
 function splitPackageFileName(form: PackageForm, jobId: string, suffix: "application-package" | "video-package") {
   const location = safeFilename(form.location || form.address || form.borough || "LOCATION");
-  const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const stamp = todayIsoDate().replace(/-/g, "");
   return `${safeFilename(jobId)}_${location}_${suffix}_${stamp}.zip`;
 }
 

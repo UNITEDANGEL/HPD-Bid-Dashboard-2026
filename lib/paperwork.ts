@@ -323,7 +323,8 @@ export function isNoWorkOutcome(outcome: PaperworkOutcome) {
 export function defaultPaperworkInvoiceNo(jobId = "") {
   const trimmed = String(jobId || "").trim();
   if (trimmed) return trimmed;
-  return `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}`;
+  const now = new Date();
+  return `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}`;
 }
 
 export function affidavitTemplateLabel(outcome: PaperworkOutcome) {
