@@ -16,3 +16,9 @@ export function routeLink(points: {lat:number;lng:number}[]) {
   url.search = params.toString();
   return url.href;
 }
+
+// Waze to one stop (same link as the job card's Waze button): opens the app and starts navigating.
+export function wazeLink(point: {lat:number;lng:number}) {
+  if (!drivingLink(point)) return null;
+  return `https://waze.com/ul?ll=${point.lat},${point.lng}&navigate=yes`;
+}

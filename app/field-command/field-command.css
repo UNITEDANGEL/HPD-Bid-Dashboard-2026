@@ -1924,6 +1924,11 @@
 .fc-route-start { border:3px solid white; border-radius:50%; background:#0f172a; box-shadow:0 0 0 3px #1267df, 0 2px 6px #10233380; }
 .fc-route-body .fc-route-total { margin:8px 0; padding:9px 10px; border-radius:8px; background:#1267df33; border:1px solid #5b9cff; color:#ffffff; font:700 13px system-ui; }
 .fc-route-all { background:#0b1220; border-color:#1267df; }
+/* Next stop: Waze (the usual way to drive) and Google Maps side by side. */
+.fc-route-next p { margin:8px 0 4px; color:#eff7f1; font:700 13px system-ui; }
+.fc-route-next > div { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.fc-route-next .fc-route-drive { margin:0; align-items:center; justify-content:center; text-align:center; }
+.fc-route-waze { background:#33ccff; color:#062b3a; border-color:#9be8ff; }
 .fc-route-direction { pointer-events:none; }
 .fc-route-direction span { display:block; width:18px; height:18px; background:white; clip-path:polygon(0 0,100% 50%,0 100%,28% 50%); filter:drop-shadow(0 1px 1px #1267df); }
 @keyframes fc-route-flow { to { stroke-dashoffset:-22; } }

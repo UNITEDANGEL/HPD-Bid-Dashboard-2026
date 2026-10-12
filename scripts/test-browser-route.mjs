@@ -57,8 +57,17 @@ try {
   assert.equal((new URL(allLink).searchParams.get("waypoints") || "").split("|").filter(Boolean).length, stopCount - 1);
   assert.equal(routingCalls, 1, "the street route is fetched once");
 
+  // Waze for the next stop and on every stop, opening Waze at that stop and starting navigation.
+  const nextWaze = await page.locator('[data-hpd-smoke="fc-route-next-waze"]').getAttribute("href");
+  assert.match(nextWaze, /^https:\/\/waze\.com\/ul\?ll=40\.\d+,-7[34]\.\d+&navigate=yes$/);
+  assert.match(await page.locator('[data-hpd-smoke="fc-route-next-google"]').getAttribute("href"), /google\.com\/maps\/dir\/.*destination=/);
+  const stopWaze = await page.locator(".fc-route-stop-actions a", { hasText: "Waze" }).evaluateAll((links) => links.map((a) => a.getAttribute("href")));
+  assert.equal(stopWaze.length, stopCount, "a Waze button on every stop");
+  assert.equal(stopWaze[0], nextWaze, "the first stop's Waze matches the next-stop button");
+  assert.equal(new Set(stopWaze).size, stopCount, "each Waze button goes to its own stop");
+
   assert.deepEqual(errors, [], "page errors");
-  console.log(`PASS route: one tap plans ${stopCount} stops, street line (${vertices} points), drive time per stop, arrows, whole-route link; ${totalText.replace(/\s+/g, " ")}${realRouting ? " [real routing]" : ""}`);
+  console.log(`PASS route: one tap plans ${stopCount} stops, street line (${vertices} points), drive time per stop, arrows, whole-route link, Waze on every stop; ${totalText.replace(/\s+/g, " ")}${realRouting ? " [real routing]" : ""}`);
 } finally {
   await browser.close();
 }

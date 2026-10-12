@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { nyToday } from '../../lib/appointments';
-import { drivingLink, routeLink } from '../../lib/driving-link';
+import { drivingLink, routeLink, wazeLink } from '../../lib/driving-link';
 import type { RoadRoute } from '../../lib/road-route';
 import { eligibleRouteJobs, planDay, routeTime, scheduleStops, validRouteSettings, type RouteJob, type RoutePoint, type RouteSettings } from '../../lib/day-route';
 
@@ -48,12 +48,12 @@ export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,o
       </details>
       {ids.length>0&&<p className="fc-route-total" data-hpd-smoke="fc-route-total">{roadRoute?`🚗 Road route · ${roadRoute.miles.toFixed(1)} mi · ${roadRoute.minutes} min driving (no live traffic)`:road==='loading'?'Finding the road route…':'No signal for the road route right now · times are estimates · Google Maps still gives turn-by-turn'}</p>}
       {origin&&selected.length>0&&routeLink([origin.point,...selected])&&<a className="fc-route-drive fc-route-all" data-hpd-smoke="fc-route-all" href={routeLink([origin.point,...selected])!} target="_blank" rel="noreferrer">Open whole route in Google Maps<small>All {selected.length} stops in this order</small></a>}
-      {selected[0]&&drivingLink(selected[0])&&<a className="fc-route-drive" href={drivingLink(selected[0])!} onClick={()=>onNavigate(selected[0].id)} target="_blank" rel="noreferrer">Navigate next stop · {selected[0].id}<small>Google Maps · Driving directions</small></a>}
+      {selected[0]&&drivingLink(selected[0])&&<div className="fc-route-next" data-hpd-smoke="fc-route-next"><p>Next stop · {selected[0].id}</p><div><a className="fc-route-drive fc-route-waze" data-hpd-smoke="fc-route-next-waze" href={wazeLink(selected[0])!} onClick={()=>onNavigate(selected[0].id)} target="_blank" rel="noreferrer">Waze</a><a className="fc-route-drive" data-hpd-smoke="fc-route-next-google" href={drivingLink(selected[0])!} onClick={()=>onNavigate(selected[0].id)} target="_blank" rel="noreferrer">Google Maps</a></div></div>}
       {stops.some(s=>s.warning)&&<p role="alert">Route needs review: appointment or workday conflicts below.</p>}
       <ol>{stops.map((stop,index)=><li key={stop.job.id}>
         <button className="fc-route-stop" type="button" onClick={()=>{setOpen(false);onSelect(stop.job.id);}}><b>{index+1}. {stop.job.id}</b><span>{stop.job.address}</span><span>{routeTime(stop.arrival)}-{routeTime(stop.finish)} · {roadRoute?`${roadRoute.legs[index].minutes} min drive · ${roadRoute.legs[index].miles.toFixed(1)} mi`:`${stop.travel} min travel est.`}</span><span>{stop.job.appointment?.state==='confirmed'?`Appointment ${stop.job.appointment.start}-${stop.job.appointment.end}`:stop.job.days===null?'Maturity unavailable':stop.job.days>0?`${stop.job.days} days overdue`:`Due in ${-stop.job.days} days`}</span></button>
         {stop.warning&&<strong role="alert">{stop.warning}</strong>}
-        <div className="fc-route-stop-actions"><button type="button" title="Move stop earlier" aria-label={`Move ${stop.job.id} earlier`} disabled={index===0} onClick={()=>move(index,-1)}>↑</button><button type="button" title="Move stop later" aria-label={`Move ${stop.job.id} later`} disabled={index===stops.length-1} onClick={()=>move(index,1)}>↓</button><button type="button" onClick={()=>setIds(ids.filter(id=>id!==stop.job.id))}>Skip</button><a href={drivingLink(stop.job)||undefined} onClick={()=>onNavigate(stop.job.id)} target="_blank" rel="noreferrer">Navigate</a></div>
+        <div className="fc-route-stop-actions"><button type="button" title="Move stop earlier" aria-label={`Move ${stop.job.id} earlier`} disabled={index===0} onClick={()=>move(index,-1)}>↑</button><button type="button" title="Move stop later" aria-label={`Move ${stop.job.id} later`} disabled={index===stops.length-1} onClick={()=>move(index,1)}>↓</button><button type="button" onClick={()=>setIds(ids.filter(id=>id!==stop.job.id))}>Skip</button><a href={wazeLink(stop.job)||undefined} onClick={()=>onNavigate(stop.job.id)} target="_blank" rel="noreferrer">Waze</a><a href={drivingLink(stop.job)||undefined} onClick={()=>onNavigate(stop.job.id)} target="_blank" rel="noreferrer">Google</a></div>
       </li>)}</ol>
       {!stops.length&&<p>No planned stops. Build a route or choose another area.</p>}
       {selected.length<ids.length&&<p>{ids.length-selected.length} saved stops unavailable or no longer eligible.</p>}
