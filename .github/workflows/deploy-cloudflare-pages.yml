@@ -94,6 +94,22 @@ jobs:
           node scripts/test-appointment-calendar.mjs
           node scripts/test-day-summary.mjs
 
+      - name: Test paperwork, packages, sync and stats
+        run: |
+          node scripts/test-invoice-amounts.cjs
+          node scripts/test-invoice-pdf.cjs
+          node scripts/test-no-access-rules.cjs
+          node scripts/test-description-quality.cjs
+          node scripts/test-visit-record.cjs
+          node scripts/test-package-delivery.cjs
+          node scripts/test-drive-packages.mjs
+          node scripts/test-override-sync.cjs
+          node scripts/test-private-sync-schema.cjs
+          node scripts/test-import-fetched-jobs.cjs
+          node scripts/test-planner-dictation.cjs
+          node scripts/test-field-stats.cjs
+          node cloudflare-worker/test-sync.mjs
+
       - name: Build Cloudflare Pages output
         run: npm run build:cloudflare
 
