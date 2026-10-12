@@ -108,10 +108,24 @@ jobs:
           node scripts/test-import-fetched-jobs.cjs
           node scripts/test-planner-dictation.cjs
           node scripts/test-field-stats.cjs
+          node scripts/test-job-location.cjs
+          node scripts/test-tenant-contact-clean.cjs
           node cloudflare-worker/test-sync.mjs
 
       - name: Build Cloudflare Pages output
         run: npm run build:cloudflare
+
+      # Drive the built paperwork page in a real browser before it goes live: signed and print
+      # packages, notary date, watermark. Google and the live status server are answered by the
+      # test itself, so nothing is uploaded, emailed or written to real jobs.
+      - name: Install browser for paperwork test
+        run: npx playwright install --with-deps chromium
+
+      - name: Test paperwork in a browser
+        run: |
+          python3 -m http.server 3000 --directory out > /tmp/static-server.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:3000/paperwork/ > /dev/null && break; sleep 1; done
+          BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork.mjs
 
       - name: Resolve Cloudflare production branch
         id: pages-project

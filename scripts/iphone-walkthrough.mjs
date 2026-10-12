@@ -12,7 +12,10 @@ fs.mkdirSync(outDir, { recursive: true });
 const iphone = { ...devices["iPhone 14"] };
 delete iphone.defaultBrowserType;
 const browser = await chromium.launch();
-const page = await (await browser.newContext(iphone)).newPage();
+// The status server is live: answer it here so the walkthrough never changes real jobs.
+const context = await browser.newContext(iphone);
+await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (route) => route.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
+const page = await context.newPage();
 const errors = [];
 page.on("pageerror", (error) => errors.push(String(error)));
 const shot = async (name) => {

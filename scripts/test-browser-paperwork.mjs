@@ -60,9 +60,20 @@ const cases = [
 ];
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
+// The status server is live (shared with the phones): answer it here so test packages for real
+// job numbers never land on those jobs. Every request is counted so the test can't miss one.
+const statusServerCalls = [];
+async function isolatedPage() {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (route) => {
+    statusServerCalls.push(route.request().url());
+    return route.fulfill({ json: { ok: true, overrides: {}, accepted: [] } });
+  });
+  return context.newPage();
+}
 try {
   for (const { job, outcome, pages } of cases) {
-    const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+    const page = await isolatedPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
 
@@ -152,7 +163,7 @@ try {
   // unsigned print copy goes to the same Drive folder. Google is faked here; nothing is sent.
   {
     const job = "ER05729";
-    const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+    const page = await isolatedPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
     const uploads = [];
@@ -244,7 +255,7 @@ try {
   // since this copy is meant to become the signed original.
   {
     const job = "ER05729";
-    const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+    const page = await isolatedPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
 
@@ -281,6 +292,7 @@ try {
     console.log(`PASS ${job} print copy: notary stamp + today's date filled with no digital notary step, no watermark, no signature image`);
     await page.close();
   }
+  console.log(`Status server calls answered locally (never reached the live server): ${statusServerCalls.length}`);
 } finally {
   await browser.close();
 }

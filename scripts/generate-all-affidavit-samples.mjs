@@ -73,7 +73,10 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 const results = [];
 try {
   for (const { outcome, job, label, fill } of cases) {
-    const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+    // The status server is live: answer it here so sample packages never land on real jobs.
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (route) => route.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
+    const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (error) => errors.push(String(error)));
 
