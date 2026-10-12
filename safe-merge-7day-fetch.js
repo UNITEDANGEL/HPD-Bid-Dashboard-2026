@@ -148,6 +148,23 @@ for (const raw of incoming) {
       existing.geocode = existing.Geocode;
       updatedExisting = true;
     }
+    // Award amount: the old COA reader dropped the thousands ("1,890.00" stored as "890.00").
+    // Repair only that exact case (the fresh reading is larger and ends with the stored digits);
+    // any other difference is left alone and just reported.
+    const incomingAmount = get(row, "AwardAmount");
+    const existingAmount = get(existing, "AwardAmount");
+    if (incomingAmount && incomingAmount !== existingAmount) {
+      const fresh = Number(incomingAmount.replace(/[^0-9.]/g, ""));
+      const stored = Number(existingAmount.replace(/[^0-9.]/g, "")) || 0;
+      const lostThousands = fresh >= 1000 && fresh > stored && incomingAmount.replace(/[^0-9.]/g, "").endsWith(existingAmount.replace(/[^0-9.]/g, ""));
+      report.amountDifferences = report.amountDifferences || [];
+      report.amountDifferences.push({ omo, stored: existingAmount, coa: incomingAmount, repaired: lostThousands });
+      if (lostThousands) {
+        existing.AwardAmount = fresh.toFixed(2);
+        updatedExisting = true;
+      }
+    }
+    console.log(`Award amount check ${omo}: stored ${existingAmount || "(none)"}, COA ${incomingAmount || "(none)"}`);
     if (updatedExisting) {
       report.updatedExisting = report.updatedExisting || [];
       report.updatedExisting.push(omo);
@@ -179,6 +196,9 @@ console.log("Incoming rows:", report.incomingRows);
 console.log("Added new OMOs:", report.added.length);
 console.log("Skipped existing OMOs:", report.skippedExisting.length);
 console.log("Updated existing OMOs:", (report.updatedExisting || []).length);
+for (const d of report.amountDifferences || []) {
+  console.log(`Award amount ${d.repaired ? "REPAIRED" : "DIFFERS (left as is)"} ${d.omo}: stored ${d.stored}, COA ${d.coa}`);
+}
 console.log("Need geocode:", report.incomingNeedsGeocode.length);
 console.log("Missing ITB:", report.incomingMissingITB.length);
 console.log("Missing description:", report.incomingMissingDescription.length);
