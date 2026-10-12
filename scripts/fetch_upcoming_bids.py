@@ -38,9 +38,16 @@ def clean(text):
 
 
 def normalize_omo(raw):
-    """OCR reads 0 as O ("ERO7193"): two letters, then digits."""
+    """HPD OMOs are two letters and five digits. OCR reads 0 as O ("ERO7193") and sometimes adds a
+    leading zero ("ER007032" for ER07032), so keep the last five digits."""
     m = re.match(r"([A-Z]{2})([0-9O]{5,6})$", raw.upper().replace(" ", ""))
-    return f"{m.group(1)}{m.group(2).replace('O', '0')}" if m else ""
+    return f"{m.group(1)}{m.group(2).replace('O', '0')[-5:]}" if m else ""
+
+
+def omo_from_filename(name):
+    """Invitation files are named after the OMO: "ER07193_100626035429.pdf"."""
+    m = re.match(r"([A-Z]{2}\d{5})_", os.path.basename(name).upper())
+    return m.group(1) if m else ""
 
 
 def parse_date(text):
@@ -257,7 +264,7 @@ def fetch(days):
             if "INVITATION TO BID" not in page1.upper():
                 continue  # a COA or other paper, not an invitation
             info = parse_invitation_text(page1, last)
-            omo = info["omo"] or normalize_omo(name.split("_")[0])
+            omo = omo_from_filename(name) or info["omo"]
             if not omo or omo in awarded or not info["bidDue"]:
                 continue
             if datetime.date.fromisoformat(info["bidDue"]) < today - datetime.timedelta(days=KEEP_PAST_DAYS):

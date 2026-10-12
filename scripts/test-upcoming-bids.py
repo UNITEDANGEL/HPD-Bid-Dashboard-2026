@@ -25,6 +25,9 @@ info = ub.parse_invitation_text("OMO #: EQ31457 BID DUE: 1/5/2027", "BUILDING AD
 assert (info["omo"], info["bidDue"], info["bidDueTime"], info["address"], info["borough"]) == ("EQ31457", "2027-01-05", "", "75 LENOX ROAD", "BK"), info
 
 assert ub.normalize_omo("ERO7193") == "ER07193" and ub.normalize_omo("eq 12345") == "EQ12345" and ub.normalize_omo("XYZ") == ""
+# An extra zero from OCR ("ER007032") must still match the awarded job ER07032.
+assert ub.normalize_omo("ER007032") == "ER07032" and ub.normalize_omo("ERO01085") == "ER01085"
+assert ub.omo_from_filename("ER07193_100626035429.pdf") == "ER07193" and ub.omo_from_filename("faxCopy_2025.pdf") == ""
 
 # Job description: after "Job Description:", without HPD's standard contact / affidavit lines.
 page3 = """Page 3 of 3

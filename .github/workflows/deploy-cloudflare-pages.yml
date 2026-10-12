@@ -113,6 +113,7 @@ jobs:
           node scripts/test-road-route.cjs
           node scripts/test-daily-report.mjs
           python3 scripts/test-upcoming-bids.py
+          node scripts/test-bid-price.cjs
           node cloudflare-worker/test-sync.mjs
 
       - name: Build Cloudflare Pages output
@@ -133,6 +134,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-route.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-next-stop.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-route-progress.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-bids.mjs
 
       - name: Resolve Cloudflare production branch
         id: pages-project

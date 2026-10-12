@@ -88,7 +88,14 @@ export async function fillBidPackage(pdfBytes: ArrayBuffer | Uint8Array, bid: Up
   if (box && pages[box.page]) {
     // On a white panel over the top of the table, so the grid lines don't run through the words.
     const width = (box.width || 500) - 10;
-    const lines = wrap(bidDescription(bid.description), font, 8, width - 8).slice(0, 12);
+    // Up to 12 lines; a long description is shortened with "…" but always ends with the debris line.
+    const ending = "REMOVE ALL WORK RELATED DEBRIS.";
+    let lines = wrap(bidDescription(bid.description), font, 8, width - 14);
+    if (lines.length > 12) {
+      const body = wrap(bidDescription(bid.description).replace(ending, "").trim(), font, 8, width - 14).slice(0, 11);
+      body[10] = `${body[10].replace(/\s+\S*$/, "")} …`;
+      lines = [...body, ending];
+    }
     const height = lines.length * 10 + 8;
     if (!box.rotate) pages[box.page].drawRectangle({ x: box.x - 4, y: box.y - height + 10, width, height, color: rgb(1, 1, 1), borderColor: rgb(0, 0, 0.55), borderWidth: 0.6 });
     lines.forEach((line, i) => pages[box.page].drawText(line, { x: box.x, y: box.y - i * 10, size: 8, font, color: rgb(0, 0, 0.55), rotate: degrees(box.rotate || 0) }));

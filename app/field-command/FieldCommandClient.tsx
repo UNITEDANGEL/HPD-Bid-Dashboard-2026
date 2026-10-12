@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
+import BidsMode from "./BidsMode";
 import { fetchRoadRoute, type RoadRoute } from "../../lib/road-route";
 import { BuildingHero, SavedPackageLink } from "./BuildingPhoto";
 import VideoBackupLine from "./VideoBackupLine";
@@ -511,6 +512,15 @@ function SearchIcon() {
   );
 }
 
+function BidsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 7l9 6 9-6" />
+    </svg>
+  );
+}
+
 function ListIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -795,6 +805,8 @@ export default function FieldCommandClient() {
   const [controlsOpen, setControlsOpen] = useState(false);
   // The route button on the map opens Today's route (one route on the map, with its stop list).
   const [routeOpenRequest, setRouteOpenRequest] = useState(0);
+  // The envelope button flips the map to upcoming invitations to bid (BidsMode).
+  const [bidsOpen, setBidsOpen] = useState(false);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
   const [workflowLoaded, setWorkflowLoaded] = useState(false);
   const [jobsLoadFailed, setJobsLoadFailed] = useState(false);
@@ -1228,6 +1240,8 @@ export default function FieldCommandClient() {
       closeOut: closeOutJobs.filter(real).length,
     };
   }, [statsOpen, jobs, secondTryJobs, closeOutJobs]);
+  // Your past awards (description + amount) for the bid price help.
+  const bidHistory = useMemo(() => jobs.filter((job) => !isTestJob(jobId(job))).map((job) => ({ id: jobId(job), description: value(job, ["ItbPage3Description", "JobDescription", "description"]), amount: jobAwardAmount(job), address: jobAddress(job) })), [jobs]);
   // End-of-day summary sheet (map menu): today's work, close-outs and what's due tomorrow.
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [summaryStatus, setSummaryStatus] = useState("");
@@ -2233,7 +2247,7 @@ export default function FieldCommandClient() {
 
 
   return (
-    <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
+    <main className={`fc-app fc-reference fc-full-map fc-clean-streets ${bidsOpen ? "fc-bids-mode" : ""} ${chromeOpen ? "fc-chrome-open" : ""} ${selectedJob ? "fc-has-job" : ""} ${controlsOpen ? "fc-controls-open" : ""} ${sheetExpanded ? "fc-sheet-expanded" : ""}`}>
       <button type="button" className="fc-reveal-controls" aria-label={chromeOpen ? "Hide all map controls" : "Show map controls"} title={chromeOpen ? "Hide controls" : "Map menu"} aria-expanded={chromeOpen} onClick={() => { setChromeOpen((open) => !open); setControlsOpen(false); setSelectedJob(null); }}><MenuIcon /></button>
       <div className="fc-search-row">
         <div className="fc-search-field">
@@ -2314,6 +2328,7 @@ export default function FieldCommandClient() {
         <button type="button" data-hpd-smoke="fc-test-job-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); const test = jobs.find((row) => jobId(row) === TEST_JOB_ID); if (test) openIssueJob(test); }}>🧪 Test job ({TEST_JOB_ID})</button>
         <button type="button" data-hpd-smoke="fc-summary-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setSummaryStatus(""); setSummaryOpen(true); }}><ListIcon />Today&apos;s summary</button>
         <button type="button" data-hpd-smoke="fc-stats-menu-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setStatsOpen(true); setSelectedJob(null); }}><StatsIcon />My stats</button>
+        <button type="button" data-hpd-smoke="fc-bids-menu-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setSelectedJob(null); setBidsOpen(true); }}><BidsIcon />Invitations to bid</button>
         <button type="button" aria-controls="field-map-filters" onClick={() => setControlsOpen(true)}><ListIcon />Filters</button>
         <Link href="/jobs/"><ListIcon />Jobs</Link>
         <Link href="/alerts/"><BellIcon />Alerts</Link>
@@ -2437,6 +2452,7 @@ export default function FieldCommandClient() {
           </button>
           <button type="button" className="fc-map-fab" aria-label="Today's appointments" title="Today's appointments" onClick={() => { setAgendaOpen(true); setSelectedJob(null); }}><ListIcon /></button>
           <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" title="My stats" onClick={() => { setStatsOpen(true); setSelectedJob(null); }}><StatsIcon /></button>
+          <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { setSelectedJob(null); setBidsOpen((o) => !o); }}><BidsIcon /></button>
           <button
             type="button"
             className={`fc-map-fab ${darkTiles ? "is-active" : ""}`}
@@ -3123,6 +3139,12 @@ export default function FieldCommandClient() {
 
       {/* Which version is running, always visible on the map: you can tell at a glance it's the newest. */}
       {appVersion && !selectedJob ? <small className="fc-version-tag" data-hpd-smoke="fc-version-tag">v{appVersion}</small> : null}
+      <BidsMode
+        open={bidsOpen}
+        map={mapRef.current}
+        history={bidHistory}
+        onClose={() => setBidsOpen(false)}
+      />
       {stats && statsOpenWork ? (
         <div className="fc-package-sheet fc-summary-sheet fc-stats-sheet" role="dialog" aria-label="My stats" data-hpd-smoke="fc-stats-sheet">
           <header>
