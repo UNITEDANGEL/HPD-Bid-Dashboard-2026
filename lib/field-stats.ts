@@ -8,8 +8,10 @@ export type StatsDay = { day: string; label: string; visited: number; completed:
 export type FieldStats = {
   period: StatsPeriod;
   label: string;
-  counts: { visited: number; completed: number; partial: number; noAccess: number; refused: number; byOthers: number; emailed: number };
+  counts: { visited: number; completed: number; partial: number; noAccess: number; refused: number; byOthers: number; emailed: number; serviceCalls: number };
   earned: number;
+  earnedWork: number;
+  earnedService: number;
   days: StatsDay[];
 };
 
@@ -68,12 +70,26 @@ function chargedAmount(job: Job) {
   return 0;
 }
 
+// No-work service charge, same rule as the paperwork (lib/paperwork.ts NO_WORK_* constants, checked
+// by the test): $100 for a bid under $2,000, $300 from $2,000. The invoice amount wins when saved.
+const SERVICE_CHARGE = 100;
+const LARGE_SERVICE_CHARGE = 300;
+const LARGE_JOB_THRESHOLD = 2000;
+
+function serviceCharge(job: Job) {
+  const invoiced = Number(String(job.PackageChargeAmount ?? "").replace(/[^0-9.-]/g, ""));
+  if (Number.isFinite(invoiced) && invoiced > 0) return invoiced;
+  const bid = Number(String(job.AwardAmount ?? job.awardAmount ?? "").replace(/[^0-9.-]/g, "")) || 0;
+  return bid >= LARGE_JOB_THRESHOLD ? LARGE_SERVICE_CHARGE : SERVICE_CHARGE;
+}
+
 export function fieldStats(jobs: Job[], period: StatsPeriod, options: { skip?: (job: Job) => boolean } = {}, now = new Date()): FieldStats {
   const days = periodDays(period, now);
   const inPeriod = new Set(days);
   const perDay = new Map(days.map((day) => [day, { visited: 0, completed: 0 }]));
-  const counts = { visited: 0, completed: 0, partial: 0, noAccess: 0, refused: 0, byOthers: 0, emailed: 0 };
-  let earned = 0;
+  const counts = { visited: 0, completed: 0, partial: 0, noAccess: 0, refused: 0, byOthers: 0, emailed: 0, serviceCalls: 0 };
+  let earnedWork = 0;
+  let earnedService = 0;
 
   for (const job of jobs) {
     if (options.skip?.(job)) continue;
@@ -96,11 +112,20 @@ export function fieldStats(jobs: Job[], period: StatsPeriod, options: { skip?: (
     if (last) {
       if (last.outcome === "WORK_COMPLETED" || last.outcome === "PARTIAL_WORK") {
         counts[last.outcome === "WORK_COMPLETED" ? "completed" : "partial"] += 1;
-        earned += chargedAmount(job);
+        earnedWork += chargedAmount(job);
         perDay.get(last.day)!.completed += 1;
-      } else if (last.outcome.startsWith("NO_ACCESS")) counts.noAccess += 1;
-      else if (last.outcome === "REFUSED_ACCESS") counts.refused += 1;
-      else if (last.outcome === "WORK_COMPLETED_BY_OTHERS") counts.byOthers += 1;
+      } else if (last.outcome.startsWith("NO_ACCESS")) {
+        counts.noAccess += 1;
+        // Billable once the 2nd try is done (or the job is closed as no access); the 1st try alone isn't.
+        if (last.outcome === "NO_ACCESS_COMPLETE" || inPeriod.has(nyDay(job.NoAccessSecondAttemptAt ?? job.noAccessSecondAttemptAt))) {
+          counts.serviceCalls += 1;
+          earnedService += serviceCharge(job);
+        }
+      } else if (last.outcome === "REFUSED_ACCESS" || last.outcome === "WORK_COMPLETED_BY_OTHERS") {
+        counts[last.outcome === "REFUSED_ACCESS" ? "refused" : "byOthers"] += 1;
+        counts.serviceCalls += 1;
+        earnedService += serviceCharge(job);
+      }
     }
 
     if (inPeriod.has(nyDay(job.PackageEmailedAt ?? job.packageEmailedAt))) counts.emailed += 1;
@@ -110,7 +135,9 @@ export function fieldStats(jobs: Job[], period: StatsPeriod, options: { skip?: (
     period,
     label: periodLabel(period, days),
     counts,
-    earned,
+    earned: earnedWork + earnedService,
+    earnedWork,
+    earnedService,
     days: days.map((day) => ({ day, label: dayLabel(day, period), ...perDay.get(day)! })),
   };
 }

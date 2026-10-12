@@ -121,11 +121,12 @@ jobs:
       - name: Install browser for paperwork test
         run: npx playwright install --with-deps chromium
 
-      - name: Test paperwork in a browser
+      - name: Test paperwork and stats in a browser
         run: |
           python3 -m http.server 3000 --directory out > /tmp/static-server.log 2>&1 &
           for i in $(seq 1 30); do curl -sf http://localhost:3000/paperwork/ > /dev/null && break; sleep 1; done
           BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-stats.mjs
 
       - name: Resolve Cloudflare production branch
         id: pages-project
