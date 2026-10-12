@@ -1,6 +1,6 @@
-// Browser test of "next stop" on the job card at iPhone size, tried on the test job first:
-// with Today's route planned, finishing TEST-0001 shows the route's next stop with Waze; a real job
-// doesn't get it yet (test-first upgrade); with no route, it falls back to the closest open job.
+// Browser test of "next stop" on the job card at iPhone size: with Today's route planned, finishing a
+// job shows the route's next stop with Waze (the test job, off the route, gets stop 1; a real job on
+// the route gets the stop after it); with no route, it falls back to the closest open job.
 // Saved job steps live on this browser only and the live status server is answered here.
 // Needs the app running. BASE_URL defaults to http://localhost:3000.
 import assert from "node:assert/strict";
@@ -49,8 +49,14 @@ try {
   assert.match(onRoute.text, /3 stops left/);
   assert.equal(onRoute.waze, `https://waze.com/ul?ll=${Number(first.Latitude)},${Number(first.Longitude)}&navigate=yes`);
 
+  // A real job on the route (stop 2 of 3): its next stop is stop 3.
   const realJob = await cardFor(route[1], { withRoute: true });
-  assert.equal(realJob, null, "a real job doesn't get the test-first upgrade yet");
+  console.log(`${route[1]} with a route:`, JSON.stringify(realJob));
+  assert.equal(realJob?.source, "route");
+  assert.match(realJob.text, new RegExp(`Next on your route · stop 3 of 3 · ${route[2]}`));
+  assert.match(realJob.text, /2 stops left/, "stop 1 wasn't done here, so it still counts");
+  const third = data.find((j) => j.OMO === route[2]);
+  assert.equal(realJob.waze, `https://waze.com/ul?ll=${Number(third.Latitude)},${Number(third.Longitude)}&navigate=yes`);
 
   const noRoute = await cardFor("TEST-0001", { withRoute: false });
   console.log("TEST-0001 without a route:", JSON.stringify(noRoute));
@@ -58,7 +64,7 @@ try {
   assert.match(noRoute.text, /Next closest job · E[QR]\d+/);
   assert.match(noRoute.waze || "", /^https:\/\/waze\.com\/ul\?ll=/);
 
-  console.log("PASS next stop: test job shows the route's next stop with Waze; real jobs not yet (test-first); no route falls back to the closest job");
+  console.log("PASS next stop: route's next stop with Waze for the test job (stop 1) and a real job (stop 2 -> 3); no route falls back to the closest job");
 } finally {
   await browser.close();
 }

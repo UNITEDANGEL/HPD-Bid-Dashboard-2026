@@ -4,12 +4,13 @@
 import { TEST_JOB_ID } from "./test-job";
 
 // Upgrades being tried on the test job only: name -> what it does (shown on the test job's card).
-export const TEST_FIRST: Record<string, string> = {
-  "next-job": "after the outcome, your next stop on Today's route (or the closest open job) with Waze",
-};
+export const TEST_FIRST: Record<string, string> = {};
 
 // Upgrades already given to every job (kept so code can ask about them by name).
-export const LIVE = new Set<string>([]);
+export const LIVE = new Set<string>([
+  // 2026-10-12: after the outcome, your next stop on Today's route (or the closest open job) with Waze.
+  "next-job",
+]);
 
 export function upgradeOn(name: string, jobId: unknown) {
   if (LIVE.has(name)) return true;
