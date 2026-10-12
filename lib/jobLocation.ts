@@ -53,6 +53,12 @@ export function inferJobLocationFromDescription(job: JobLocationSource) {
   if (/\bbuilding\s+entrance\b/.test(text)) return "Building Entrance";
   if (/\bstairs?|stairway\b/.test(text)) return "Stairs";
   if (/\bcellar|basement|boiler|bulkhead|roof|yard\b/.test(text)) return "Common Area";
+  // Public-area work HPD words differently; checked after the ones above so their results stand.
+  if (/\b(compactor|hopper)\b/.test(text)) return "Compactor Closet";
+  if (/\brefuse\s+room\b/.test(text)) return "Refuse Room";
+  if (/\bfire\s+escape\b|\bdrop\s+ladder\b/.test(text)) return "Fire Escape";
+  if (/\bfront\s+entrance\b/.test(text)) return "Building Entrance";
+  if (/\bfire\s+door\b/.test(text)) return "Public Hall";
 
   return "";
 }
