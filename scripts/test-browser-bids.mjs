@@ -64,6 +64,13 @@ try {
   assert.equal((await sheet.locator('[data-hpd-smoke="fc-bid-description"]').innerText()).trim(), bid.description);
   assert.equal((await page.request.get(baseUrl + await sheet.locator('[data-hpd-smoke="fc-bid-view"]').getAttribute("href"))).status(), 200);
   assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-review"]').count(), 0, "review comes after saving a price");
+  // The price help says what it read in the job and how good the match is.
+  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-scope"]').innerText(), /What this job includes/);
+  assert.ok(await sheet.locator('[data-hpd-smoke="fc-bid-scope"] li').count() >= 1, "the job's work items are listed");
+  if (await sheet.locator('[data-hpd-smoke="fc-bid-help"]').count()) {
+    assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-confidence"]').innerText(), /Good match|Fair match|Rough guide/);
+    assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-why"]').innerText(), /past win/);
+  }
   await sheet.locator('[data-hpd-smoke="fc-bid-price"]').fill("1250");
   await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-saved"]').innerText(), /Price saved: \$1,250\.00/);

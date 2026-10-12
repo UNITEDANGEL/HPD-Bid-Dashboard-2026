@@ -6,7 +6,7 @@
 // checked against HumbleFax's confirmation email and can be resent. "My bids" tracks every bid sent:
 // won, not awarded or pending, and your win rate (lib/bid-records.ts).
 import { useEffect, useMemo, useRef, useState } from "react";
-import { priceHelp, type PricedJob } from "../../lib/bid-price";
+import { priceHelp, readScope, type PricedJob } from "../../lib/bid-price";
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
 import { bidResult, checkBidFax, faxState, mergeServerBids, readBidRecords, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
@@ -146,6 +146,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   }, [record?.omo, record?.sentAt, record?.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const help = useMemo(() => (selected ? priceHelp(selected.description, history) : null), [selected, history]);
+  const scope = useMemo(() => readScope(selected?.description || ""), [selected]);
   const draftValue = Number(String(draft).replace(/[^0-9.]/g, ""));
 
   async function update(next: BidRecord) {
@@ -257,14 +258,28 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 <span>$</span>
                 <input inputMode="decimal" aria-label="Bid price" data-hpd-smoke="fc-bid-price" placeholder="0.00" value={draft} onChange={(e) => setDraft(e.target.value)} />
               </label>
+              <div className="fc-bid-scope" data-hpd-smoke="fc-bid-scope">
+                <small>What this job includes (read from the full description):</small>
+                <ul>
+                  {scope.labels.map((l) => <li key={l}>{l}</li>)}
+                  {!scope.labels.length ? <li>general repair</li> : null}
+                  {scope.doors ? <li className="is-size">{scope.doors} door{scope.doors > 1 ? "s" : ""}</li> : null}
+                  {scope.windows ? <li className="is-size">{scope.windows} window{scope.windows > 1 ? "s" : ""}</li> : null}
+                  {scope.repairSqft ? <li className="is-size">~{scope.repairSqft} sq ft repair</li> : null}
+                  {scope.paintSqft ? <li className="is-size">~{scope.paintSqft} sq ft paint</li> : null}
+                  {scope.tasks > 1 ? <li className="is-size">{scope.tasks} separate tasks</li> : null}
+                </ul>
+              </div>
               {help ? (
-                <div className="fc-bid-help" data-hpd-smoke="fc-bid-help">
-                  <b>Your past winning bids on similar work: {money(help.low)}–{money(help.high)} · middle {money(help.middle)}</b>
-                  <small>From {help.count} similar jobs you were awarded. A guide, not a quote.</small>
-                  <ul>{help.examples.map((e) => <li key={e.id}><button type="button" onClick={() => setDraft(String(e.amount))}>{e.id} · {money(e.amount)}</button> <span>{e.description}</span></li>)}</ul>
-                  <button type="button" className="fc-bid-use" onClick={() => setDraft(String(help.middle))}>Use {money(help.middle)}</button>
+                <div className={`fc-bid-help is-${help.confidence}`} data-hpd-smoke="fc-bid-help">
+                  <em data-hpd-smoke="fc-bid-confidence">{help.confidence === "good" ? "Good match" : help.confidence === "fair" ? "Fair match" : "Rough guide: check it"}</em>
+                  <b>Your past winning bids on this kind of work: {money(help.low)}–{money(help.high)} · middle {money(help.middle)}</b>
+                  <small data-hpd-smoke="fc-bid-why">{help.why}.</small>
+                  {help.unmatched.length ? <p className="fc-bid-warn" data-hpd-smoke="fc-bid-unmatched">Not covered by your history: {help.unmatched.join(", ")}. Add your own price for that part.</p> : null}
+                  <ul>{help.examples.map((e) => <li key={e.id}><button type="button" onClick={() => setDraft(String(e.amount))}>{e.id} · {money(e.amount)}</button> <span>{e.summary}</span></li>)}</ul>
+                  <button type="button" className="fc-bid-use" onClick={() => setDraft(String(help.middle))}>Use {money(help.middle)}{help.confidence === "low" ? " as a start" : ""}</button>
                 </div>
-              ) : <p className="fc-bid-help is-none">No similar past awards to compare with.</p>}
+              ) : <p className="fc-bid-help is-none">No similar past awards to compare with: price this one from the description.</p>}
               <button type="button" className="fc-bid-fill" data-hpd-smoke="fc-bid-save" disabled={!(draftValue > 0) || draftValue === record?.price} onClick={() => void savePrice()}>
                 {record && draftValue !== record.price && draftValue > 0 ? `Save new price ${money2(draftValue)}` : `Save price${draftValue > 0 ? ` ${money2(draftValue)}` : ""}`}
               </button>

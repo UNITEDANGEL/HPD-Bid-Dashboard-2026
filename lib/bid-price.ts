@@ -1,14 +1,113 @@
-// Price help for a new bid: the past awards whose job descriptions are most like this one (word
-// overlap, weighted so rare trade words count more than HPD boilerplate), with the middle and range of
-// what they were awarded. A guide from your own history, not a quote.
+// Price help for a new bid, from reading the whole job description: what kinds of work it asks for
+// (closer, lock, hinges, glass, sheetrock, painting, leak...), how many doors / windows, how many square
+// feet, and how many separate tasks. Past awards are matched on that scope first and on wording second,
+// and the answer says what it read and how sure it is. A guide from your own history, not a quote.
 
 export type PricedJob = { id: string; description: string; amount: number; address?: string };
-export type PriceHelp = { count: number; low: number; middle: number; high: number; examples: { id: string; amount: number; score: number; description: string }[] };
+export type JobScope = { items: string[]; labels: string[]; doors: number; windows: number; sqft: number; paintSqft: number; repairSqft: number; tasks: number; summary: string };
+export type PriceHelp = {
+  count: number; low: number; middle: number; high: number;
+  scope: JobScope;
+  confidence: "good" | "fair" | "low";
+  why: string;
+  unmatched: string[];
+  examples: { id: string; amount: number; score: number; description: string; summary: string }[];
+};
+
+// Kinds of work, as HPD writes them. Order is the order shown.
+const ITEMS: [key: string, label: string, pattern: RegExp][] = [
+  ["door-new", "new door", /\b(new|replace\w*)\b[^.]{0,40}\b(door and (door )?(jamb|frame)|fire[- ]?rated door|metal door|steel door|door assembly)|install (a )?new ((fire[- ]?rated|metal|steel|wood|entrance|apartment|bulkhead|hollow metal|kalamein) )?door\b(?! closer| knob| lock| hinge| sweep| stop| saddle| handle| viewer| chain)/],
+  ["closer", "door closer", /closer/],
+  ["lock", "lock / latch", /\block|latch ?set|door latch\b|lockset|cylinder|\bknob|lever handle|deadbolt|strik\w* plate/],
+  ["hinges", "hinges", /hinge/],
+  ["pushbar", "push bar / panic bar", /push ?bar|panic|re-?entry|exit device/],
+  ["door-adjust", "door adjust (self-close & latch)", /self[- ]?clos|latching|adjust\w* [^.]{0,20}door|realign/],
+  ["glass", "window glass", /(?<!semi[- ]?)glass|glazing|pane\b|plexi/],
+  ["window-hardware", "window balance / sash / guard", /balance|sash cord|sash chain|window guard|window lock|window hardware/],
+  ["window-new", "new window", /\b(new|replace\w*) (?:(?!glass|guard|balance|sash|lock|pane)\w+ ){0,3}window\b(?! glass| guard| lock| balance| sash| pane)/],
+  ["leak", "trace & repair leak", /leak|trace/],
+  ["sheetrock", "sheetrock / plaster", /sheetrock|gwb|gypsum|plaster|drywall|skim/],
+  ["paint", "painting", /paint|primer|prime\b|coats?\b/],
+  ["ceiling", "ceiling", /ceiling/],
+  ["wall", "walls", /\bwalls?\b/],
+  ["floor", "floor / tile", /floor|tile|vct|linoleum|saddle|tread|riser/],
+  ["plumbing", "plumbing", /faucet|toilet|sink|basin|bathtub|\btub\b|shower|drain|valve|\bpipe|plumb|water closet|flush/],
+  ["electric", "electrical", /electric(?!al)? (?!st\w* plate)|electrical|outlet|receptacle|\bswitch|light fixture|wiring|\blight\b|lighting|bulb|gfci|circuit/],
+  ["detector", "smoke / CO detector", /smoke|carbon monoxide|\bco detector|detector/],
+  ["mold", "mold", /\bmou?ld\b|mildew/],
+  ["fire-escape", "fire escape", /fire escape(?! (upper |lower )?(window|sash))|drop ladder|gooseneck/],
+  ["masonry", "masonry / concrete", /concrete|masonry|\bbrick|mortar|stucco|parapet|\bcoping|\bcement/],
+  ["metal", "railing / metal work", /railing|handrail|guard ?rail|welding|\bweld\b/],
+  ["roof", "roof", /(?<!(to|the) )\broof(?! door| bulkhead| access)|skylight|gutter|leader|flashing/],
+  ["heat", "heat / radiator", /radiator|heat\b|heating|boiler|steam|riser pipe/],
+  ["cabinet", "cabinets / counter", /cabinet|counter ?top|vanity/],
+  ["obstruction", "remove obstruction", /obstruct|cleanout|clean out|debris removal|rubbish|garbage/],
+  ["seal", "seal / board up", /board up|board-up|seal (up|off|the)|vacant|cinder block|cmu/],
+];
 
 const BOILERPLATE = new Set(("nyc hpd emergency operations division essential service work the and to of at in on for with all as per by be must from or a an any are is this that it its be other existing new proper properly working order condition total job done remove related debris contractor contact start date affidavit copy faxed site office landlord refuses access completes fax specifications approximately approx sqft sq ft public area story sty floor apartment apt building bldg location room make necessary repairs repair replace provide install restore return aep alternative enforcement program emergency vendor field dimension dimensions quantities verified prior bid tenant").split(" "));
 
+// Only the work itself: HPD's contact list, sign-and-return and AEP bidding notes say nothing about the job.
+function workText(description: string) {
+  return String(description || "")
+    .replace(/\s+/g, " ")
+    .replace(/contractor must (contact|sign)[\s\S]*$/i, " ")
+    .replace(/vendor is responsible for bidding[\s\S]*$/i, " ")
+    .toLowerCase();
+}
+
 function words(text: string) {
-  return String(text || "").toLowerCase().replace(/[^a-z\s]/g, " ").split(/\s+/).filter((w) => w.length >= 3 && !BOILERPLATE.has(w));
+  return text.replace(/[^a-z\s]/g, " ").split(/\s+/).filter((w) => w.length >= 3 && !BOILERPLATE.has(w));
+}
+
+function countAfter(text: string, noun: string) {
+  const forms = [
+    new RegExp(`total[^.;=()\\d]{0,22}${noun}s?[^\\d]{0,8}(\\d{1,2})\\b`, "g"),
+    new RegExp(`\\(?\\s*(\\d{1,2})\\s*\\)?\\s*${noun}s? in total`, "g"),
+    new RegExp(`number of ${noun}s?[^\\d]{0,6}(\\d{1,2})\\b`, "g"),
+  ];
+  let best = 0;
+  for (const re of forms) for (const m of text.matchAll(re)) best = Math.max(best, Number(m[1]));
+  return best;
+}
+
+// Square feet, read the way a contractor prices it: area to paint/finish and repair area
+// (sheetrock, plaster, tile, glass), each added up across rooms. "Remove 36 sq ft ... install 36 sq ft"
+// is the same 36, counted once.
+function squareFeet(text: string) {
+  let paint = 0, repair = 0, lastRepair = -1, from = 0;
+  for (const m of text.matchAll(/(\d{1,4}(?:\.\d+)?)\s*(?:sq\.?\s*f(?:ee)?t\.?|sqft|s\.?f\.?(?=[\s,.;)]|$)|square feet)/g)) {
+    const before = text.slice(Math.max(from, m.index! - 140), m.index);
+    from = m.index! + m[0].length;
+    const n = Number(m[1]);
+    if (/paint|coats?|primer|prime/.test(before)) paint += n;
+    else if (n !== lastRepair) { repair += n; lastRepair = n; }
+  }
+  return { paint: Math.round(paint), repair: Math.round(repair) };
+}
+
+function numberedTasks(text: string) {
+  const marks = new Set<string>();
+  for (const m of text.matchAll(/(?:^|[\s*])(\d)\s*[).]\s+[a-z]/g)) marks.add(m[1]);
+  return marks.size;
+}
+
+export function readScope(description: string): JobScope {
+  const text = workText(description);
+  const found = ITEMS.filter(([, , re]) => re.test(text));
+  let items = found.map(([key]) => key);
+  // "Adjust the door to self-close" is part of any closer/hinge/lock/push-bar job, not its own item.
+  if (items.some((k) => ["closer", "hinges", "lock", "pushbar", "door-new"].includes(k))) items = items.filter((k) => k !== "door-adjust");
+  // A ceiling/wall is a place, not a trade, when sheetrock or painting is already there.
+  if (items.includes("sheetrock") || items.includes("paint")) items = items.filter((k) => k !== "ceiling" && k !== "wall");
+  const labels = items.map((k) => ITEMS.find(([key]) => key === k)![1]);
+  const doors = countAfter(text, "door");
+  const windows = countAfter(text, "window");
+  const area = squareFeet(text);
+  const sqft = Math.max(area.paint, area.repair);
+  const tasks = Math.max(numberedTasks(text), 1);
+  const size = [doors > 0 ? `${doors} door${doors > 1 ? "s" : ""}` : "", windows > 0 ? `${windows} window${windows > 1 ? "s" : ""}` : "", area.repair > 0 ? `~${area.repair} sq ft repair area` : "", area.paint > 0 ? `~${area.paint} sq ft to paint` : "", tasks > 1 ? `${tasks} tasks` : ""].filter(Boolean);
+  return { items, labels, doors, windows, sqft, paintSqft: area.paint, repairSqft: area.repair, tasks, summary: [labels.join(" + ") || "general repair", ...size].join(" · ") };
 }
 
 function quantile(sorted: number[], q: number) {
@@ -17,32 +116,82 @@ function quantile(sorted: number[], q: number) {
   return Math.round(sorted[lo] + (sorted[hi] - sorted[lo]) * (at - lo));
 }
 
+// How close two sizes are, 1 = same, falling off with the ratio (2 doors vs 1 is 0.5).
+function sizeMatch(a: number, b: number) {
+  if (!a && !b) return 1;
+  if (!a || !b) return 0.6;
+  return Math.min(a, b) / Math.max(a, b);
+}
+
+// A past job with a different number of doors/windows counts at a scaled price: more units cost more,
+// but not in proportion (one trip, one setup). Tested on your past awards: square-root scaling fits best.
+function sizeFactor(job: JobScope, past: JobScope) {
+  const units = (s: JobScope) => Math.max(s.doors + s.windows, 1);
+  return Math.min(Math.max(Math.sqrt(units(job) / units(past)), 0.5), 2.5);
+}
+
 export function priceHelp(description: string, history: PricedJob[], limit = 8): PriceHelp | null {
-  const docs = history.filter((job) => job.amount > 0 && job.description).map((job) => ({ job, terms: new Set(words(job.description)) }));
+  const docs = history.filter((job) => job.amount > 0 && job.description).map((job) => {
+    const text = workText(job.description);
+    return { job, terms: new Set(words(text)), scope: readScope(job.description) };
+  });
   if (!docs.length) return null;
+  const scope = readScope(description);
+  const query = new Set(words(workText(description)));
+  if (!query.size && !scope.items.length) return null;
+
+  // Rare words and rare kinds of work count more than common ones.
   const df = new Map<string, number>();
-  for (const doc of docs) doc.terms.forEach((t) => df.set(t, (df.get(t) || 0) + 1));
+  const itemDf = new Map<string, number>();
+  for (const doc of docs) {
+    doc.terms.forEach((t) => df.set(t, (df.get(t) || 0) + 1));
+    doc.scope.items.forEach((k) => itemDf.set(k, (itemDf.get(k) || 0) + 1));
+  }
   const idf = (t: string) => Math.log((docs.length + 1) / ((df.get(t) || 0) + 1)) + 1;
-  const query = new Set(words(description));
-  if (!query.size) return null;
+  const itemWeight = (k: string) => Math.log((docs.length + 1) / ((itemDf.get(k) || 0) + 1)) + 1;
   const norm = (terms: Set<string>) => Math.sqrt([...terms].reduce((sum, t) => sum + idf(t) ** 2, 0)) || 1;
   const qNorm = norm(query);
-  const scored = docs
-    .map(({ job, terms }) => {
-      let dot = 0;
-      query.forEach((t) => { if (terms.has(t)) dot += idf(t) ** 2; });
-      return { job, score: dot / (qNorm * norm(terms)) };
-    })
-    .filter((row) => row.score >= 0.2)
-    .sort((a, b) => b.score - a.score || a.job.id.localeCompare(b.job.id))
-    .slice(0, limit);
+  const qItems = new Set(scope.items);
+
+  const ranked = docs.map(({ job, terms, scope: s }) => {
+    let dot = 0;
+    query.forEach((t) => { if (terms.has(t)) dot += idf(t) ** 2; });
+    const text = dot / (qNorm * norm(terms));
+    // Same kinds of work: weighted overlap of the two item lists (both ways, so extra work counts too).
+    let shared = 0, union = 0;
+    new Set([...qItems, ...s.items]).forEach((k) => {
+      const w = itemWeight(k);
+      union += w;
+      if (qItems.has(k) && s.items.includes(k)) shared += w;
+    });
+    const items = union ? shared / union : 1;
+    const size = (sizeMatch(scope.doors, s.doors) + sizeMatch(scope.windows, s.windows) + sizeMatch(scope.sqft, s.sqft) + sizeMatch(scope.tasks, s.tasks)) / 4;
+    return { job, scope: s, score: 0.45 * items + 0.3 * text + 0.25 * size, items };
+  })
+    .filter((row) => row.score >= 0.35)
+    .sort((a, b) => b.score - a.score || a.job.id.localeCompare(b.job.id));
+  // Enough past wins with exactly this mix of work: price from those only, so a closer + lock job
+  // isn't pulled down by closer-only jobs. Otherwise the closest jobs overall.
+  const same = ranked.filter((row) => row.items >= 0.99).slice(0, limit);
+  const scored = same.length >= 3 ? same : ranked.slice(0, limit);
   if (scored.length < 2) return null;
-  const amounts = scored.map((row) => row.job.amount).sort((a, b) => a - b);
+
+  const amounts = scored.map((row) => row.job.amount * sizeFactor(scope, row.scope)).sort((a, b) => a - b);
+  const low = quantile(amounts, 0.25), middle = quantile(amounts, 0.5), high = quantile(amounts, 0.75);
+  const matchedItems = new Set(scored.flatMap((row) => row.scope.items));
+  const unmatched = scope.items.filter((k) => !matchedItems.has(k)).map((k) => ITEMS.find(([key]) => key === k)![1]);
+  const sameWork = scored.filter((row) => row.items >= 0.99).length;
+  const spread = middle ? (high - low) / middle : 1;
+  const confidence: PriceHelp["confidence"] = unmatched.length || sameWork < 2 || spread > 0.8 ? "low" : sameWork >= 4 && spread <= 0.4 ? "good" : "fair";
+  const why = [
+    sameWork === scored.length ? `priced from ${sameWork} past wins with the same kind of work` : sameWork ? `${sameWork} of ${scored.length} past wins had the same kind of work` : `no past win had exactly this mix of work; ${scored.length} closest shown`,
+    unmatched.length ? `nothing in your history with ${unmatched.join(", ")}: price that part yourself` : "",
+    scored.some((row) => sizeFactor(scope, row.scope) !== 1) ? "prices of jobs with a different number of doors/windows adjusted" : "",
+    scope.tasks > 1 || scope.items.length > 2 ? "several items: check each one is covered" : "",
+  ].filter(Boolean).join(" · ");
+
   return {
-    count: scored.length,
-    low: quantile(amounts, 0.25),
-    middle: quantile(amounts, 0.5),
-    high: quantile(amounts, 0.75),
-    examples: scored.slice(0, 3).map(({ job, score }) => ({ id: job.id, amount: job.amount, score: Math.round(score * 100) / 100, description: job.description.replace(/\s+/g, " ").slice(0, 110) })),
+    count: scored.length, low, middle, high, scope, confidence, why, unmatched,
+    examples: scored.slice(0, 3).map(({ job, score, scope: s }) => ({ id: job.id, amount: job.amount, score: Math.round(score * 100) / 100, description: workText(job.description).slice(0, 110), summary: s.summary })),
   };
 }

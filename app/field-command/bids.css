@@ -51,6 +51,15 @@
 .fc-bid-help li { margin: 3px 0; color: #cbd5e1; }
 .fc-bid-help li button, .fc-bid-use { border: 0; border-radius: 8px; padding: 3px 8px; background: #334155; color: #fff; font: 700 13px system-ui; }
 .fc-bid-use { justify-self: start; margin-top: 4px; min-height: 36px; background: #16a34a; }
+.fc-bid-scope { margin: 10px 0 0; }
+.fc-bid-scope small { color: #94a3b8; font: 600 12px system-ui; }
+.fc-bid-scope ul { display: flex; flex-wrap: wrap; gap: 5px; margin: 5px 0 0; padding: 0; list-style: none; }
+.fc-bid-scope li { padding: 3px 9px; border-radius: 999px; background: #334155; color: #e2e8f0; font: 700 12px system-ui; }
+.fc-bid-scope li.is-size { background: #78350f; color: #fde68a; }
+.fc-bid-help em { justify-self: start; padding: 2px 8px; border-radius: 999px; font: 800 12px system-ui; font-style: normal; background: #166534; color: #dcfce7; }
+.fc-bid-help.is-fair em { background: #a16207; color: #fef9c3; }
+.fc-bid-help.is-low em { background: #b91c1c; color: #fee2e2; }
+.fc-bid-warn { margin: 2px 0; color: #fca5a5; font: 700 12px/1.35 system-ui; }
 .fc-bid-help.is-none { color: #94a3b8; background: none; padding: 0; }
 .fc-bid-fill { width: 100%; min-height: 52px; margin-top: 6px; border: 0; border-radius: 12px; background: #f97316; color: #fff; font: 900 16px system-ui; }
 .fc-bid-fill:disabled { opacity: 0.45; }
