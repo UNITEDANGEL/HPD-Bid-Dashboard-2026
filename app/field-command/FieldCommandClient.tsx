@@ -24,6 +24,8 @@ import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
 import { daySummary, type SummaryRow } from "../../lib/day-summary";
 import { fieldStats, type StatsPeriod } from "../../lib/field-stats";
+import { cleanJobLocationText } from "../../lib/jobLocation";
+import { cleanTenantContactName, cleanTenantPhone } from "../../lib/tenantContact";
 import { formatBytes, phoneStorage, type PhoneStorage } from "../../lib/phone-storage";
 import { clearFieldPackets } from "../../lib/field-packet-store";
 import { FREED_KEY } from "../../lib/free-space";
@@ -186,9 +188,10 @@ function packageStatusText(job: JobRecord) {
 }
 
 function tenantInfo(job: JobRecord) {
-  const apt = value(job, ["ItbTenantApartment", "ApartmentUnit", "Apartment", "Apt", "apt"]);
-  const name = value(job, ["ItbTenantName", "TenantName", "tenantName", "Tenant", "tenant"]);
-  const phone = value(job, ["ItbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"]);
+  // ITB extraction junk (HPD's fax line, page text glued to names, non-phone figures) is dropped.
+  const apt = cleanJobLocationText(value(job, ["ItbTenantApartment", "ApartmentUnit", "Apartment", "Apt", "apt"]));
+  const name = cleanTenantContactName(value(job, ["ItbTenantName", "TenantName", "tenantName", "Tenant", "tenant"]));
+  const phone = cleanTenantPhone(value(job, ["ItbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"]));
   const accessType = value(job, ["ItbTenantAccessType", "TenantAccessType"]);
   const status = value(job, ["ItbTenantContactStatus", "TenantContactStatus"]);
   const commonArea = accessType.toLowerCase().includes("common") || status.toLowerCase().includes("common");

@@ -1,6 +1,8 @@
 "use client";
 
 import { jobPriority } from "../../lib/job-priority";
+import { cleanJobLocationText } from "../../lib/jobLocation";
+import { cleanTenantContactName, cleanTenantPhone } from "../../lib/tenantContact";
 import { answerFieldQuestion } from "../../lib/field-assistant";
 import { startDictation, type RecognitionConstructor } from "../../lib/planner-dictation";
 import { jobQueue, visitState } from "../../lib/job-queue";
@@ -348,9 +350,9 @@ function rankJobs(plan: LocalPlan, origin: Point, source: JobRecord[]) {
       distance,
       reason: due ? due.label : appointment ? "Appointment today" : urgent ? "Urgent or overdue" : distance !== null ? "Good travel fit" : "Active job",
       description: textValue(job, ["ItbPage3Description", "ITBDescription", "JobDescription", "Job_Description", "description"]),
-      contactName: textValue(job, ["ItbTenantName", "TenantName", "tenantName", "ContactName", "contactName"]),
-      contactPhone: textValue(job, ["ItbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"]),
-      unit: textValue(job, ["ItbTenantApartment", "ApartmentUnit", "Location", "location"]),
+      contactName: cleanTenantContactName(textValue(job, ["ItbTenantName", "TenantName", "tenantName", "ContactName", "contactName"])),
+      contactPhone: cleanTenantPhone(textValue(job, ["ItbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"])),
+      unit: cleanJobLocationText(textValue(job, ["ItbTenantApartment", "ApartmentUnit", "Location", "location"])),
     }));
 
   return ordered;
@@ -369,9 +371,9 @@ function selectableJob(record: JobRecord, origin?: Point, reason = "Selected by 
     distance: origin && lat !== null && lng !== null ? distanceMiles(origin, { lat, lng }) : null,
     reason,
     description: textValue(record, ["ItbPage3Description", "ITBDescription", "JobDescription", "Job_Description", "description"]),
-    contactName: textValue(record, ["ItbTenantName", "TenantName", "tenantName", "ContactName", "contactName"]),
-    contactPhone: textValue(record, ["ItbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"]),
-    unit: textValue(record, ["ItbTenantApartment", "ApartmentUnit", "Location", "location"]),
+    contactName: cleanTenantContactName(textValue(record, ["ItbTenantName", "TenantName", "tenantName", "ContactName", "contactName"])),
+    contactPhone: cleanTenantPhone(textValue(record, ["ItbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"])),
+    unit: cleanJobLocationText(textValue(record, ["ItbTenantApartment", "ApartmentUnit", "Location", "location"])),
   };
 }
 

@@ -40,10 +40,25 @@ function firstText(job: TenantContactJob | null | undefined, keys: string[]) {
   return "";
 }
 
+// ITB text extraction sometimes glues the rest of the page onto the tenant name
+// ("ROSA FITZGERALDERPREPAIRS...", "MAXENGELAEPROUND"): keep only what comes before those markers.
+const TENANT_NAME_JUNK = /(AEPROUND|ERPREPAIRS|PFALMRTPT)/i;
+
 export function cleanTenantContactName(raw: unknown) {
-  const name = String(raw || "").trim();
-  if (!name || /^(T|TENANT|JOHN DOE|N\/A|NA|UNKNOWN)$/i.test(name)) return "";
+  let name = String(raw || "").trim();
+  const junk = name.search(TENANT_NAME_JUNK);
+  if (junk >= 0) name = name.slice(0, junk).trim();
+  if (!name || name.length > 40 || /^(T|TENANT|JOHN DOE|N\/A|NA|UNKNOWN)$/i.test(name)) return "";
   return name;
+}
+
+// A US phone number as (212) 555-0100, or "" when it can't be one: area codes and exchanges never
+// start with 0 or 1, so ITB numbers like "109 551 0156" are other figures read as a phone.
+export function cleanTenantPhone(raw: unknown) {
+  let digits = String(raw || "").replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) digits = digits.slice(1);
+  if (!/^[2-9]\d{2}[2-9]\d{6}$/.test(digits)) return "";
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
 }
 
 export function tenantContactRequestEmailHref(job: TenantContactJob, apartment = "") {
@@ -104,7 +119,7 @@ export function tenantContactInfo(job: TenantContactJob | null | undefined) {
   const explicitNeeded = job.ItbTenantAppointmentNeeded ?? job.itbTenantAppointmentNeeded;
   const apartment = cleanJobLocation(job);
   const name = cleanTenantContactName(firstText(job, ["ItbTenantName", "itbTenantName", "TenantName", "tenantName"]));
-  const phone = firstText(job, ["ItbTenantPhone", "itbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"]);
+  const phone = cleanTenantPhone(firstText(job, ["ItbTenantPhone", "itbTenantPhone", "TenantPhone", "tenantPhone", "Phone", "phone"]));
   const contactStatus = firstText(job, ["ItbTenantContactStatus", "itbTenantContactStatus"]).toUpperCase();
   const commonArea =
     accessType === "common_area" ||
