@@ -301,9 +301,11 @@ def extract_award_amount_no_dollar(text: str) -> str:
     for ln in lines:
         lower = ln.lower()
         if "award" in lower and "amount" in lower:
-            nums = re.findall(r"[0-9]+(?:\.[0-9]+)?", ln)
+            # Thousands come with a comma ("1,140.00"): keep them together, or the last chunk
+            # is only "140.00" and every $1,000+ award loses its thousands.
+            nums = re.findall(r"[0-9]{1,3}(?:,[0-9]{3})+(?:\.[0-9]+)?|[0-9]+(?:\.[0-9]+)?", ln)
             if nums:
-                return nums[-1].strip()
+                return nums[-1].replace(",", "").strip()
     return ""
 
 
