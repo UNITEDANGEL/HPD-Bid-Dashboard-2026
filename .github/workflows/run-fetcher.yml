@@ -101,6 +101,11 @@ jobs:
           # points the app at them. Without these, recent jobs linked to files that didn't exist.
           git add public/documents/itb public/documents/itb-pages public/data/itb_source_manifest.json
 
+          # Upcoming invitations to bid for the map (not awarded yet).
+          if [ -f data/upcoming_bids.json ]; then
+            git add data/upcoming_bids.json public/data/upcoming_bids.json
+          fi
+
           if git diff --cached --quiet; then
             echo "No fetcher data changes to commit."
           else

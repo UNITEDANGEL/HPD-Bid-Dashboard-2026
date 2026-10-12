@@ -335,6 +335,15 @@ async function main() {
       }
     }
 
+    // Upcoming bids for the map's Invitations view: invitations not awarded yet, with due date,
+    // address, location and where each field of the bid package goes. Never stops the fetcher run.
+    try {
+      runStep("Install upcoming-bids reader", "python", ["-m", "pip", "install", "--quiet", "--disable-pip-version-check", "pymupdf", "pytesseract", "pillow"]);
+      runStep("Read upcoming invitations to bid", "python", ["scripts/fetch_upcoming_bids.py", "--days", "14"]);
+    } catch (err) {
+      appendLog(`WARNING: Upcoming invitations were not refreshed: ${err.message || String(err)}`);
+    }
+
     const mappingOut = runStep("Verify mapping", "node", ["check-local-mapping.js"]);
     const descOut = runStep("Verify descriptions", "node", ["check-generic-descriptions.js"]);
     const itbOut = runStep("Verify missing ITB", "node", ["export-missing-itb.js"]);

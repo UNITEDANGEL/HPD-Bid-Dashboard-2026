@@ -112,6 +112,7 @@ jobs:
           node scripts/test-tenant-contact-clean.cjs
           node scripts/test-road-route.cjs
           node scripts/test-daily-report.mjs
+          python3 scripts/test-upcoming-bids.py
           node cloudflare-worker/test-sync.mjs
 
       - name: Build Cloudflare Pages output
