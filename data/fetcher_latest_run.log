@@ -1,4 +1,4 @@
-Fetcher run started: 2026-10-11T01:46:51.139Z
+Fetcher run started: 2026-10-12T01:14:41.373Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -15,7 +15,7 @@ $ python FetchrMatcherV5.py --update --days 14
 === FETCHR MATCHER V5 PIPELINE ===
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
-GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/09/27 before:2026/10/12
+GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/09/28 before:2026/10/13
 COA items parsed (latest per OMO): 4
 ITB items parsed (latest per OMO): 4
 Final JobRows: 4
@@ -25,22 +25,22 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/4 [00:00<?, ?it/s]Downloading COA messages:  25%|██▌       | 1/4 [00:00<00:00,  5.96it/s]Downloading COA messages:  50%|█████     | 2/4 [00:00<00:00,  6.96it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00,  7.73it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00,  7.46it/s]
+Downloading COA messages:   0%|          | 0/4 [00:00<?, ?it/s]Downloading COA messages:  25%|██▌       | 1/4 [00:00<00:00,  6.27it/s]Downloading COA messages:  50%|█████     | 2/4 [00:00<00:00,  7.59it/s]Downloading COA messages:  75%|███████▌  | 3/4 [00:00<00:00,  7.77it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00,  7.83it/s]Downloading COA messages: 100%|██████████| 4/4 [00:00<00:00,  7.64it/s]
 Geocoding COA addresses:   0%|          | 0/4 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 4/4 [00:00<00:00, 118987.35it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/4 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 1/4 [00:00<00:01,  1.91it/s]Fetching ITBs for COA OMOs:  50%|█████     | 2/4 [00:00<00:00,  2.17it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 3/4 [00:01<00:00,  2.24it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:01<00:00,  2.26it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:01<00:00,  2.22it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/4 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 1/4 [00:00<00:02,  1.32it/s]Fetching ITBs for COA OMOs:  50%|█████     | 2/4 [00:01<00:01,  1.68it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 3/4 [00:01<00:00,  1.87it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:02<00:00,  2.03it/s]Fetching ITBs for COA OMOs: 100%|██████████| 4/4 [00:02<00:00,  1.88it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
 Safe merge complete
-Master before: 675
+Master before: 676
 Incoming rows: 4
-Added new OMOs: 1
-Skipped existing OMOs: 3
+Added new OMOs: 0
+Skipped existing OMOs: 4
 Updated existing OMOs: 0
-Need geocode: 1
+Need geocode: 0
 Missing ITB: 0
-Missing description: 1
+Missing description: 0
 Master after: 676
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
@@ -48,9 +48,8 @@ Report: ./data/safe_7day_merge_report.json
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 1
-OK ER07567 353 EAST MOSHOLU PARKWAY NORTH, 10467 40.871211 -73.879969 NYC_PLANNING_OK
-Geocoded: 1
+Need geocode: 0
+Geocoded: 0
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -75,24 +74,22 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 13
-DESCRIPTION OK ER07567 ER07567_100826060835.pdf
-Descriptions patched: 1
+Matched ITBs needing description: 12
+Descriptions patched: 0
 Missing PDF: 12
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'ER07567', 'Address': '353 EAST MOSHOLU PARKWAY NORTH, 10467', 'RecoveredFrom': 'ER07567_100826060835.pdf', 'Preview': ': *******AEP****** AT APT. #24 BEDROOM - REMOVE ILLEGAL LOCK AND REPLACE WITH CODE COMPLYING LOCK REMOVE ILLEGAL KEY OPERATE LOCK FROM DOOR LEADING T O FIRE ESCAPE WINDOW AT BEDROOM (E1) AND REPLACE WITH CODE COMPLYING P'}
 
 Synced 3 data file(s) to public/data.
 
 ========== Render ITB page 3 assets ==========
 $ node scripts/render-itb-page3-assets.js --copy-pdfs
 {
-  "rendered": 1,
-  "reused": 675,
-  "copiedPdfs": 1,
+  "rendered": 0,
+  "reused": 676,
+  "copiedPdfs": 0,
   "missingSource": 0,
   "failed": 0
 }
@@ -197,13 +194,13 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-10-11T01:47:03.869Z
+Fetcher run finished: 2026-10-12T01:14:53.447Z
 {
   "fetchedCoaItems": 4,
   "fetchedItbItems": 4,
   "fetchedFinalJobRows": 4,
-  "addedNewOmos": 1,
-  "skippedExistingOmos": 3,
+  "addedNewOmos": 0,
+  "skippedExistingOmos": 4,
   "rawRows": 676,
   "rows2026": 625,
   "mapped2026": 625,
