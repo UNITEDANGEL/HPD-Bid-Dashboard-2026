@@ -54,8 +54,48 @@ function minimalSyncEntity(mutation, syncedAt) {
   }
   return { ...common, jobId: cleanKey(entity.jobId).slice(0, 80), status: cleanKey(entity.status).slice(0, 80), occurredAt: cleanKey(entity.occurredAt).slice(0, 40) };
 }
+// One combined copy of every job's saved steps: loading them costs 1 KV read instead of a list plus
+// one read per job (the free plan allows 1,000 lists a day, which busy days used up: error 1101).
+const ALL_KEY = "__all_overrides__";
+async function buildAll(env) {
+  const all = {};
+  let cursor;
+  do {
+    const page = await env.HPD_STATUS_OVERRIDES.list(cursor ? { cursor } : undefined);
+    for (const item of page.keys) {
+      if (item.name.startsWith("__sync__:") || item.name === ALL_KEY) continue;
+      const value = await env.HPD_STATUS_OVERRIDES.get(item.name, "json");
+      if (value) all[item.name] = value;
+    }
+    cursor = page.list_complete === false ? page.cursor : undefined;
+  } while (cursor);
+  await env.HPD_STATUS_OVERRIDES.put(ALL_KEY, JSON.stringify(all));
+  return all;
+}
+// Keep the combined copy in step with a save or delete. Only once it exists: a save made before the
+// first full build must not start a copy holding just that one job.
+async function updateAll(env, key, value) {
+  const all = await env.HPD_STATUS_OVERRIDES.get(ALL_KEY, "json");
+  if (!all) return;
+  if (value) all[key] = value; else delete all[key];
+  await env.HPD_STATUS_OVERRIDES.put(ALL_KEY, JSON.stringify(all));
+}
+// Cloud sync of field records stays off until SYNC_ENABLED = "1" is set on the Worker.
+const syncOn = (env) => env.SYNC_ENABLED === "1";
+
 export default {
   async fetch(request, env) {
+    try {
+      return await handle(request, env);
+    } catch (error) {
+      // A KV limit or outage answers as "busy" (the phones keep their saved steps and retry).
+      return json({ ok: false, error: "Status server is busy. Try again shortly.", detail: String(error?.message || error).slice(0, 160) }, 503);
+    }
+  },
+};
+
+async function handle(request, env) {
+  {
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: CORS_HEADERS });
     }
@@ -67,19 +107,14 @@ export default {
       return json({ ok: true, service: "HPD status override worker" });
     }
     if (url.pathname === "/overrides" && request.method === "GET") {
-      const list = await env.HPD_STATUS_OVERRIDES.list();
-      const overrides = {};
-      for (const item of list.keys) {
-        if (item.name.startsWith("__sync__:")) continue;
-        const value = await env.HPD_STATUS_OVERRIDES.get(item.name, "json");
-        if (value) overrides[item.name] = value;
-      }
+      const overrides = (await env.HPD_STATUS_OVERRIDES.get(ALL_KEY, "json")) || (await buildAll(env));
       return json({ ok: true, overrides });
     }
     if (url.pathname === "/sync" && request.method === "GET") {
-      return json({ ok: true, sync: true, version: 1, entityTypes: [...SYNC_ENTITY_TYPES] });
+      return json({ ok: true, sync: syncOn(env), version: 1, entityTypes: [...SYNC_ENTITY_TYPES] });
     }
     if (url.pathname === "/sync" && request.method === "POST") {
+      if (!syncOn(env)) return json({ ok: false, error: "Cloud sync is off." }, 403);
       if (!syncOriginAllowed(request)) return json({ ok: false, error: "Origin is not allowed." }, 403);
       const body = await request.json().catch(() => null);
       const deviceId = cleanKey(body?.deviceId).slice(0, 160);
@@ -114,6 +149,7 @@ export default {
         updatedAt: new Date().toISOString(),
       };
       await env.HPD_STATUS_OVERRIDES.put(key, JSON.stringify(saved));
+      await updateAll(env, key, saved);
       return json({ ok: true, key, override: saved });
     }
     if (url.pathname === "/override" && request.method === "DELETE") {
@@ -122,8 +158,9 @@ export default {
         return json({ ok: false, error: "Missing key." }, 400);
       }
       await env.HPD_STATUS_OVERRIDES.delete(key);
+      await updateAll(env, key, null);
       return json({ ok: true, deleted: key });
     }
     return json({ ok: false, error: "Not found." }, 404);
-  },
-};
+  }
+}
