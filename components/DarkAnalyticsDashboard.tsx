@@ -258,6 +258,28 @@ function isActive(job: JobRecord) {
   return !jobStatusInfo(job).done;
 }
 
+const STATUS_GROUPS = [
+  { key: "not_started", label: "Not started" },
+  { key: "in_progress", label: "In progress" },
+  { key: "no_access", label: "No access / refused" },
+  { key: "finished", label: "Finished" },
+] as const;
+type StatusGroup = (typeof STATUS_GROUPS)[number]["key"];
+
+function statusGroup(job: JobRecord): StatusGroup {
+  const info = jobStatusInfo(job);
+  const label = info.label.toLowerCase();
+  if (label.includes("no access") || label.includes("refused")) return "no_access";
+  if (info.done) return "finished";
+  if (info.label === "Not started") return "not_started";
+  return "in_progress";
+}
+
+function normalizedBorough(job: JobRecord) {
+  const borough = jobBorough(job);
+  return boroughs.includes(borough) ? borough : "NYC";
+}
+
 function hasItbFile(job: JobRecord) {
   return Boolean(firstValue(job, ["ITBFile", "itbFile"]));
 }
@@ -449,6 +471,10 @@ export default function DarkAnalyticsDashboard() {
   }, []);
 
   const [month, setMonth] = useState("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [borough, setBorough] = useState("all");
+  const [status, setStatus] = useState<"all" | StatusGroup>("all");
+  const activeFilters = (borough !== "all" ? 1 : 0) + (status !== "all" ? 1 : 0);
 
   const monthOptions = useMemo(
     () => [...new Set(jobs.map(awardMonthKey).filter(Boolean))].sort().reverse(),
@@ -456,7 +482,11 @@ export default function DarkAnalyticsDashboard() {
   );
 
   const model = useMemo(() => {
-    const scoped = month === "all" ? jobs : jobs.filter((job) => awardMonthKey(job) === month);
+    // Borough/status filters apply everywhere, charts included; the month only picks which slice is counted.
+    const base = jobs.filter(
+      (job) => (borough === "all" || normalizedBorough(job) === borough) && (status === "all" || statusGroup(job) === status)
+    );
+    const scoped = month === "all" ? base : base.filter((job) => awardMonthKey(job) === month);
     const activeJobs = scoped.filter(isActive);
     const mapped = scoped.filter(hasCoord);
     const totalValue = scoped.reduce((sum, job) => sum + parseAmount(job), 0);
@@ -465,10 +495,10 @@ export default function DarkAnalyticsDashboard() {
     const recoveredItbs = itbJobs.filter(isRecoveredItb).length;
     const coas = scoped.filter(hasCoaFile).length;
 
-    // Trend charts always use every job so the selected month is shown against the months before it.
+    // Trend charts span several months so the selected month is shown against the ones before it.
     const chartEnd = month !== "all" ? month : monthOptions[0] || "";
     const byMonth = (keys: string[], pick: (rows: JobRecord[]) => number) =>
-      keys.map((key) => pick(jobs.filter((job) => awardMonthKey(job) === key)));
+      keys.map((key) => pick(base.filter((job) => awardMonthKey(job) === key)));
     const chartMonths = chartEnd ? monthsEndingAt(chartEnd, 6) : [];
     const sparkMonths = chartEnd ? monthsEndingAt(chartEnd, 7) : [];
     const monthlyTrend = byMonth(chartMonths, (rows) => rows.length);
@@ -479,9 +509,8 @@ export default function DarkAnalyticsDashboard() {
     const trendChange = prior && !inProgress ? Math.round(((latest - prior) / prior) * 100) : null;
 
     const boroughCounts = scoped.reduce<Record<string, number>>((acc, job) => {
-      const borough = jobBorough(job);
-      const normalized = boroughs.includes(borough) ? borough : "NYC";
-      acc[normalized] = (acc[normalized] || 0) + 1;
+      const key = normalizedBorough(job);
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
 
@@ -520,7 +549,21 @@ export default function DarkAnalyticsDashboard() {
         value: byMonth(sparkMonths, (rows) => rows.reduce((sum, job) => sum + parseAmount(job), 0)),
       },
     };
-  }, [jobs, month, monthOptions]);
+  }, [jobs, month, monthOptions, borough, status]);
+
+  // Chip counts: how many jobs each choice would show, given the month and the other filter.
+  const filterCounts = useMemo(() => {
+    const inMonth = month === "all" ? jobs : jobs.filter((job) => awardMonthKey(job) === month);
+    const byBorough: Record<string, number> = {};
+    const byStatus: Record<string, number> = {};
+    for (const job of inMonth) {
+      const b = normalizedBorough(job);
+      const g = statusGroup(job);
+      if (status === "all" || g === status) byBorough[b] = (byBorough[b] || 0) + 1;
+      if (borough === "all" || b === borough) byStatus[g] = (byStatus[g] || 0) + 1;
+    }
+    return { byBorough, byStatus };
+  }, [jobs, month, borough, status]);
 
   const scopeLabel = month === "all" ? "all months" : monthLabel(month);
 
@@ -573,11 +616,67 @@ export default function DarkAnalyticsDashboard() {
                 <option key={key} value={key}>{monthLabel(key)}</option>
               ))}
             </select>
-            <button type="button">Filters</button>
+            <button
+              type="button"
+              className={`filters-toggle${activeFilters ? " has-filters" : ""}`}
+              data-hpd-smoke="dashboard-filters-toggle"
+              aria-expanded={filtersOpen}
+              aria-controls="dashboard-filters"
+              onClick={() => setFiltersOpen((open) => !open)}
+            >
+              Filters{activeFilters ? <b>{activeFilters}</b> : null}
+            </button>
             <Link href="/map/?view=all&map=1">Open Map</Link>
             <div className="avatar">UA</div>
           </div>
         </header>
+
+        {filtersOpen && (
+          <section className="filter-panel" id="dashboard-filters" data-hpd-smoke="dashboard-filters-panel">
+            <div className="filter-group">
+              <span>Borough</span>
+              <div className="filter-chips">
+                {["all", ...boroughs].map((key) => (
+                  <button
+                    type="button"
+                    key={key}
+                    className={borough === key ? "active" : ""}
+                    aria-pressed={borough === key}
+                    onClick={() => setBorough(key)}
+                  >
+                    {key === "all" ? "All" : key}
+                    {key !== "all" && <em>{filterCounts.byBorough[key] || 0}</em>}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="filter-group">
+              <span>Status</span>
+              <div className="filter-chips">
+                {[{ key: "all" as const, label: "All" }, ...STATUS_GROUPS].map(({ key, label }) => (
+                  <button
+                    type="button"
+                    key={key}
+                    className={status === key ? "active" : ""}
+                    aria-pressed={status === key}
+                    onClick={() => setStatus(key)}
+                  >
+                    {label}
+                    {key !== "all" && <em>{filterCounts.byStatus[key] || 0}</em>}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="filter-foot">
+              <span>{model.total} jobs shown</span>
+              {activeFilters > 0 && (
+                <button type="button" data-hpd-smoke="dashboard-filters-clear" onClick={() => { setBorough("all"); setStatus("all"); }}>
+                  Clear filters
+                </button>
+              )}
+            </div>
+          </section>
+        )}
 
         <section className="metric-grid">
           <MetricCard
@@ -937,6 +1036,110 @@ export default function DarkAnalyticsDashboard() {
           justify-content: flex-end;
           gap: 10px;
           flex-wrap: wrap;
+        }
+
+        .filters-toggle {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          cursor: pointer;
+        }
+
+        .filters-toggle.has-filters,
+        .filters-toggle[aria-expanded="true"] {
+          border-color: rgba(56, 189, 248, 0.55);
+          color: #ffffff;
+        }
+
+        .filters-toggle b {
+          min-width: 20px;
+          height: 20px;
+          display: grid;
+          place-items: center;
+          border-radius: 999px;
+          background: #38bdf8;
+          color: #04111f;
+          font-size: 11px;
+        }
+
+        .filter-panel {
+          display: grid;
+          gap: 14px;
+          margin: -6px 0 24px;
+          padding: 16px 18px;
+          border: 1px solid var(--dash-border);
+          border-radius: 22px;
+          background: rgba(15, 23, 42, 0.86);
+        }
+
+        .filter-group {
+          display: grid;
+          gap: 8px;
+        }
+
+        .filter-group > span {
+          color: var(--dash-muted);
+          font-size: 11px;
+          font-weight: 950;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+        }
+
+        .filter-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .filter-chips button {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          min-height: 36px;
+          padding: 0 13px;
+          border: 1px solid rgba(148, 163, 184, 0.22);
+          border-radius: 999px;
+          background: rgba(2, 6, 23, 0.5);
+          color: #cbd5e1;
+          font-size: 13px;
+          font-weight: 850;
+          cursor: pointer;
+        }
+
+        .filter-chips button em {
+          color: var(--dash-muted);
+          font-style: normal;
+          font-size: 12px;
+        }
+
+        .filter-chips button.active {
+          border-color: rgba(56, 189, 248, 0.6);
+          background: linear-gradient(90deg, rgba(56, 189, 248, 0.24), rgba(99, 102, 241, 0.14));
+          color: #ffffff;
+        }
+
+        .filter-chips button.active em {
+          color: #bae6fd;
+        }
+
+        .filter-foot {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          color: var(--dash-muted);
+          font-size: 13px;
+          font-weight: 800;
+        }
+
+        .filter-foot button {
+          border: 0;
+          background: none;
+          color: #7dd3fc;
+          font-weight: 900;
+          text-decoration: underline;
+          cursor: pointer;
         }
 
         .header-actions select {
