@@ -953,6 +953,22 @@
 .fc-summary-sheet > footer button { min-height: 48px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.35); background: #1f2937; color: #f8fafc; font: 800 15px system-ui, sans-serif; }
 .fc-summary-sheet > footer button.is-primary { border: 0; background: #2563eb; }
 .fc-summary-sheet > footer p { grid-column: 1 / -1; margin: 0; color: #cbd5e1; font: 600 13px system-ui, sans-serif; }
+/* My stats (chart button on the map): period tabs, money, counts, visits-per-day bars, open work. */
+.fc-stats-periods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 4px; border-radius: 14px; background: #0b1220; border: 1px solid rgba(148, 163, 184, 0.2); }
+.fc-stats-periods button { min-height: 40px; border: 0; border-radius: 10px; background: transparent; color: #94a3b8; font: 800 14px system-ui, sans-serif; }
+.fc-stats-periods button.is-active { background: #2563eb; color: #fff; }
+.fc-stats-label { margin: 10px 0 8px; color: #94a3b8; font: 700 13px system-ui, sans-serif; }
+.fc-stats-earned { display: grid; gap: 2px; margin-bottom: 8px; padding: 14px; border-radius: 14px; background: linear-gradient(135deg, rgba(22, 163, 74, 0.28), rgba(17, 24, 39, 0.9)); border: 1px solid rgba(74, 222, 128, 0.35); }
+.fc-stats-earned b { color: #f0fdf4; font: 900 30px/1.1 system-ui, sans-serif; }
+.fc-stats-earned span { color: #bbf7d0; font: 600 13px system-ui, sans-serif; }
+.fc-stats-bars { display: flex; align-items: flex-end; gap: 6px; height: 120px; padding: 8px 4px 0; border-radius: 12px; background: #111827; border: 1px solid rgba(148, 163, 184, 0.2); }
+.fc-stats-bars.is-month { gap: 2px; }
+.fc-stats-bars > div { flex: 1; display: grid; grid-template-rows: 1fr auto; height: 100%; min-width: 0; }
+.fc-stats-bars i { align-self: end; display: flex; align-items: flex-end; min-height: 2px; border-radius: 4px 4px 0 0; background: #3b82f6; overflow: hidden; }
+.fc-stats-bars em { display: block; width: 100%; background: #22c55e; }
+.fc-stats-bars small { padding: 3px 0; text-align: center; color: #94a3b8; font: 700 10px system-ui, sans-serif; overflow: hidden; }
+.fc-stats-bars.is-month small { font-size: 8px; }
+.fc-stats-note { margin: 14px 0 4px; color: #64748b; font: 600 12px/1.4 system-ui, sans-serif; }
 #fc-job-card .jc-video-backup { display: block; margin-top: 4px; font-weight: 600; opacity: 0.95; }
 #fc-job-card .jc-video-backup.is-saved { color: #bbf7d0; }
 #fc-job-card .jc-safe { display: grid; gap: 4px; margin: 2px 0; padding: 8px 10px; border-radius: 10px; background: rgba(21, 128, 61, 0.16); border: 1px solid rgba(74, 222, 128, 0.35); font: 600 13px/1.35 system-ui, sans-serif; color: #e2e8f0; }

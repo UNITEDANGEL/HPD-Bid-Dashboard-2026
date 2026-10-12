@@ -23,6 +23,7 @@ import { clearFieldEvidence, countAllFieldEvidence, listFieldEvidenceLite, redat
 import { AUTO_KEY as DRIVE_AUTO_BACKUP_KEY, backupState } from "../../lib/drive-backup-client.mjs";
 import { googleStatus, sendTextEmail } from "../../lib/package-delivery";
 import { daySummary, type SummaryRow } from "../../lib/day-summary";
+import { fieldStats, type StatsPeriod } from "../../lib/field-stats";
 import { formatBytes, phoneStorage, type PhoneStorage } from "../../lib/phone-storage";
 import { clearFieldPackets } from "../../lib/field-packet-store";
 import { FREED_KEY } from "../../lib/free-space";
@@ -535,6 +536,16 @@ function LayersIcon() {
       <polygon points="12 2 2 7 12 12 22 7 12 2" />
       <polyline points="2 17 12 22 22 17" />
       <polyline points="2 12 12 17 22 12" />
+    </svg>
+  );
+}
+
+function StatsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="5" y1="20" x2="5" y2="12" />
+      <line x1="12" y1="20" x2="12" y2="5" />
+      <line x1="19" y1="20" x2="19" y2="9" />
     </svg>
   );
 }
@@ -1198,6 +1209,21 @@ export default function FieldCommandClient() {
     .filter((row): row is { job: JobRecord; second: NonNullable<ReturnType<typeof secondTryState>> } => Boolean(row.second) && jobQueue(row.job) !== "archived")
     .sort((a, b) => a.second.dueDay.localeCompare(b.second.dueDay)), [jobs]);
   const [secondTryOpen, setSecondTryOpen] = useState(false);
+  // Stats sheet (chart button on the map): visits, outcomes, packages and money for today / this
+  // week / this month, plus what is still open. The test job never counts.
+  const [statsOpen, setStatsOpen] = useState(false);
+  const [statsPeriod, setStatsPeriod] = useState<StatsPeriod>("today");
+  const stats = useMemo(() => (statsOpen ? fieldStats(jobs, statsPeriod, { skip: (job) => isTestJob(jobId(job)) }) : null), [statsOpen, statsPeriod, jobs]);
+  const statsOpenWork = useMemo(() => {
+    if (!statsOpen) return null;
+    const real = (job: JobRecord) => !isTestJob(jobId(job));
+    return {
+      toVisit: jobs.filter((job) => real(job) && jobQueue(job) === "pending" && pinStyle(job).key === "awarded").length,
+      secondDue: secondTryJobs.filter((row) => real(row.job) && row.second.due).length,
+      secondWaiting: secondTryJobs.filter((row) => real(row.job) && !row.second.due).length,
+      closeOut: closeOutJobs.filter(real).length,
+    };
+  }, [statsOpen, jobs, secondTryJobs, closeOutJobs]);
   // End-of-day summary sheet (map menu): today's work, close-outs and what's due tomorrow.
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [summaryStatus, setSummaryStatus] = useState("");
@@ -2288,6 +2314,7 @@ export default function FieldCommandClient() {
         <button type="button" onClick={()=>{setChromeOpen(false);setControlsOpen(false);setPlannerRequest(value=>value+1);}}><ListIcon />Plan my day</button>
         <button type="button" data-hpd-smoke="fc-test-job-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); const test = jobs.find((row) => jobId(row) === TEST_JOB_ID); if (test) openIssueJob(test); }}>🧪 Test job ({TEST_JOB_ID})</button>
         <button type="button" data-hpd-smoke="fc-summary-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setSummaryStatus(""); setSummaryOpen(true); }}><ListIcon />Today&apos;s summary</button>
+        <button type="button" data-hpd-smoke="fc-stats-menu-open" onClick={() => { setChromeOpen(false); setControlsOpen(false); setStatsOpen(true); setSelectedJob(null); }}><StatsIcon />My stats</button>
         <button type="button" aria-controls="field-map-filters" onClick={() => setControlsOpen(true)}><ListIcon />Filters</button>
         <Link href="/jobs/"><ListIcon />Jobs</Link>
         <Link href="/alerts/"><BellIcon />Alerts</Link>
@@ -2408,6 +2435,7 @@ export default function FieldCommandClient() {
             <RouteIcon />
           </button>
           <button type="button" className="fc-map-fab" aria-label="Today's appointments" title="Today's appointments" onClick={() => { setAgendaOpen(true); setSelectedJob(null); }}><ListIcon /></button>
+          <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" title="My stats" onClick={() => { setStatsOpen(true); setSelectedJob(null); }}><StatsIcon /></button>
           <button
             type="button"
             className={`fc-map-fab ${darkTiles ? "is-active" : ""}`}
@@ -3083,6 +3111,57 @@ export default function FieldCommandClient() {
 
       {/* Which version is running, always visible on the map: you can tell at a glance it's the newest. */}
       {appVersion && !selectedJob ? <small className="fc-version-tag" data-hpd-smoke="fc-version-tag">v{appVersion}</small> : null}
+      {stats && statsOpenWork ? (
+        <div className="fc-package-sheet fc-summary-sheet fc-stats-sheet" role="dialog" aria-label="My stats" data-hpd-smoke="fc-stats-sheet">
+          <header>
+            <button type="button" onClick={() => setStatsOpen(false)}>← Map</button>
+            <strong>My stats</strong>
+          </header>
+          <div className="fc-summary-body">
+            <div className="fc-stats-periods" role="tablist" aria-label="Period">
+              {([["today", "Today"], ["week", "This week"], ["month", "This month"]] as const).map(([key, label]) => (
+                <button type="button" role="tab" key={key} aria-selected={statsPeriod === key} className={statsPeriod === key ? "is-active" : ""} data-hpd-smoke={`fc-stats-period-${key}`} onClick={() => setStatsPeriod(key)}>{label}</button>
+              ))}
+            </div>
+            <p className="fc-stats-label">{stats.label}</p>
+            <div className="fc-stats-earned" data-hpd-smoke="fc-stats-earned">
+              <b>{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(stats.earned)}</b>
+              <span>earned · bid amount of {stats.counts.completed + stats.counts.partial} job{stats.counts.completed + stats.counts.partial === 1 ? "" : "s"} finished</span>
+            </div>
+            <div className="fc-summary-counts" data-hpd-smoke="fc-stats-counts">
+              {([["Visited", stats.counts.visited], ["Completed", stats.counts.completed], ["Partial", stats.counts.partial], ["No access", stats.counts.noAccess], ["Refused", stats.counts.refused], ["Emailed", stats.counts.emailed]] as const).map(([label, n]) => (
+                <span key={label} className={n ? "has" : ""}><b>{n}</b>{label}</span>
+              ))}
+            </div>
+            {stats.days.length > 1 ? (() => {
+              const max = Math.max(1, ...stats.days.map((d) => d.visited));
+              return (
+                <section className="fc-stats-chart" aria-label="Visits per day" data-hpd-smoke="fc-stats-chart">
+                  <h3>Visits per day <small>(green: finished)</small></h3>
+                  <div className={`fc-stats-bars${stats.days.length > 7 ? " is-month" : ""}`}>
+                    {stats.days.map((d) => (
+                      <div key={d.day} title={`${d.day}: ${d.visited} visited, ${d.completed} finished`}>
+                        <i style={{ height: `${(d.visited / max) * 100}%` }}><em style={{ height: d.visited ? `${(Math.min(d.completed, d.visited) / d.visited) * 100}%` : "0" }} /></i>
+                        <small>{d.label}</small>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            })() : null}
+            <section data-hpd-smoke="fc-stats-open-work">
+              <h3>Still open</h3>
+              <div className="fc-summary-counts">
+                <span className={statsOpenWork.toVisit ? "has" : ""}><b>{statsOpenWork.toVisit}</b>Not visited</span>
+                <span className={statsOpenWork.secondDue ? "has" : ""}><b>{statsOpenWork.secondDue}</b>2nd try due</span>
+                <span className={statsOpenWork.closeOut ? "has" : ""}><b>{statsOpenWork.closeOut}</b>To close out</span>
+              </div>
+              {statsOpenWork.secondWaiting ? <p>{statsOpenWork.secondWaiting} more no-access job{statsOpenWork.secondWaiting === 1 ? "" : "s"} waiting out the 72 hours.</p> : null}
+            </section>
+            <p className="fc-stats-note">Counts what was saved on the job cards (arrivals, outcomes, emailed packages). The test job is left out.</p>
+          </div>
+        </div>
+      ) : null}
       {summary ? (
         <div className="fc-package-sheet fc-summary-sheet" role="dialog" aria-label="Today's summary" data-hpd-smoke="fc-summary-sheet">
           <header>
