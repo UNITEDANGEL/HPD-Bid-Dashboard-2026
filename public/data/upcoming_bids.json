@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T16:41:31.752307+00:00",
+  "generatedAt": "2026-10-12T16:59:48.668791+00:00",
   "days": 14,
   "bids": [
     {
@@ -507,7 +507,7 @@
       "lng": -73.948944
     },
     {
-      "omo": "ER001085",
+      "omo": "ER01085",
       "bidDue": "2026-10-07",
       "bidDueTime": "11:00 AM",
       "workStart": "2026-10-07",
@@ -631,132 +631,6 @@
       },
       "lat": 40.810325,
       "lng": -73.924157
-    },
-    {
-      "omo": "ER007032",
-      "bidDue": "2026-10-07",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-08",
-      "workCompletion": "2026-10-16",
-      "address": "41-15 50 STREET",
-      "borough": "QN",
-      "itbFile": "ER07032_100626024506.pdf",
-      "description": "REPLACE 3RD STY HOPPER LATCH SET AT 3RD STY PUBLIC HALL HOPPER CHUTE DOOR..REPLACE DEFECTIVE LATCH SET WITH NEW HOPPER DOOR LATCH SET SAME AS EXISTING..RESTORE HOPPER TO PROPER WORKING CONDITION TOTAL DOOR = 1",
-      "receivedAt": 1791312307000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325.0,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496.0,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467.0,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24.0,
-          "y": 774.0,
-          "rotate": 0
-        }
-      },
-      "lat": 40.745556,
-      "lng": -73.914174
     },
     {
       "omo": "ER06820",
@@ -1135,132 +1009,6 @@
       },
       "lat": 40.883141,
       "lng": -73.856861
-    },
-    {
-      "omo": "ER007394",
-      "bidDue": "2026-10-08",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-12",
-      "workCompletion": "2026-10-29",
-      "address": "316 WEST 97 STREET",
-      "borough": "MN",
-      "itbFile": "ER07394_100726011958.pdf",
-      "description": "AT THE FOLLOWING LOCATIONS AT THE COMMUNITY BATHROOMS NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \u201c ESSENTIAL SERVICE WORK \u201c AT THE FOLLWING LOCATIONS. INSTALL NEW PASSAGE LOCK AT COMMUNITY BATHROOM, 6TH STORY SECTION A. INSTALL HINGES AT COMMUNITY BATHROOM, 5TH STORY SECTION B INSTALL HINGES AT COMMUNITY BATHROOM, 5TH STORY SECTION A. INSTALL HINGES AT COMMUNITY BATHROOM, 4TH STORY SECTION B. INSTALL HINGES AT COMMUNITY BATHROOM, 5TH STORY SECTION D. INSTALL HINGES AT COMMUNITY BATHROOM, 4TH STORY SECTION A. INSTALL HINGES AND PASSAGE LOCK AT COMMUNITY BATHROOM, 4TH STORY SECTION C. MAKE ALL NECESSARY REPAIRS AND INSTALL HINGES AT COMMUNITY BATHROOM, 3RD STORY SECTION B. INSTALL HINGES AT COMMUNITY BATHROOM, 3RD STORY SECTION C. INSTALL HINGES AND PASSAGE LOCK AT COMMUNITY BATHROOM, 3RD STORY SECTION D. INSTALL HINGES AT FIRE DOOR, 3RD STORY SECTION B. INSTALL HINGES AT COMMUNITY BATHROOM, 3RD STORY SECTION A. INSTALL HINGES AND PASSAGE LOCK AT COMMUNITY BATHROOM, 2ND STORY SECTION D. INSTALL HINGES AT COMMUNITY BATHROOM, 2ND STORY SECTION C. INSTALL HINGES AT COMMUNITY BATHROOM, 1ST STORY SECTION B. INSTALL HINGES AND PASSAGE LOCK AT COMMUNITY BATHROOM, 1ST STORY SECTION A. ENSURE ALL DOORS SELF CLOSES AND LATCHING IN SAFE ORDER. TOTAL NOS OF DOOR = (19) REMOVE ALL WORK RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID.",
-      "receivedAt": 1791393601000,
-      "pages": 5,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325.0,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 4,
-          "x": 628.8,
-          "y": 501.0,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 4,
-          "x": 102.8,
-          "y": 45.5,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 4,
-          "x": 284.5,
-          "y": 44.2,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 4,
-          "x": 496.6,
-          "y": 45.5,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 4,
-          "x": 646.5,
-          "y": 44.9,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 4,
-          "x": 233.8,
-          "y": 88.6,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 4,
-          "x": 525.6,
-          "y": 88.6,
-          "rotate": 0
-        },
-        "description": {
-          "page": 4,
-          "x": 268.1,
-          "y": 467.6,
-          "rotate": 0,
-          "width": 493.9
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24.0,
-          "y": 774.0,
-          "rotate": 0
-        }
-      },
-      "lat": 40.796179,
-      "lng": -73.973832
     },
     {
       "omo": "ER03909",
@@ -2145,6 +1893,132 @@
       "lng": -73.934551
     },
     {
+      "omo": "ER07394",
+      "bidDue": "2026-10-08",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-12",
+      "workCompletion": "2026-10-29",
+      "address": "316 WEST 97 STREET",
+      "borough": "MN",
+      "itbFile": "ER07394_100726011958.pdf",
+      "description": "AT THE FOLLOWING LOCATIONS AT THE COMMUNITY BATHROOMS NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \u201c ESSENTIAL SERVICE WORK \u201c AT THE FOLLWING LOCATIONS. INSTALL NEW PASSAGE LOCK AT COMMUNITY BATHROOM, 6TH STORY SECTION A. INSTALL HINGES AT COMMUNITY BATHROOM, 5TH STORY SECTION B INSTALL HINGES AT COMMUNITY BATHROOM, 5TH STORY SECTION A. INSTALL HINGES AT COMMUNITY BATHROOM, 4TH STORY SECTION B. INSTALL HINGES AT COMMUNITY BATHROOM, 5TH STORY SECTION D. INSTALL HINGES AT COMMUNITY BATHROOM, 4TH STORY SECTION A. INSTALL HINGES AND PASSAGE LOCK AT COMMUNITY BATHROOM, 4TH STORY SECTION C. MAKE ALL NECESSARY REPAIRS AND INSTALL HINGES AT COMMUNITY BATHROOM, 3RD STORY SECTION B. INSTALL HINGES AT COMMUNITY BATHROOM, 3RD STORY SECTION C. INSTALL HINGES AND PASSAGE LOCK AT COMMUNITY BATHROOM, 3RD STORY SECTION D. INSTALL HINGES AT FIRE DOOR, 3RD STORY SECTION B. INSTALL HINGES AT COMMUNITY BATHROOM, 3RD STORY SECTION A. INSTALL HINGES AND PASSAGE LOCK AT COMMUNITY BATHROOM, 2ND STORY SECTION D. INSTALL HINGES AT COMMUNITY BATHROOM, 2ND STORY SECTION C. INSTALL HINGES AT COMMUNITY BATHROOM, 1ST STORY SECTION B. INSTALL HINGES AND PASSAGE LOCK AT COMMUNITY BATHROOM, 1ST STORY SECTION A. ENSURE ALL DOORS SELF CLOSES AND LATCHING IN SAFE ORDER. TOTAL NOS OF DOOR = (19) REMOVE ALL WORK RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID.",
+      "receivedAt": 1791393601000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 501.0,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.8,
+          "y": 45.5,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 44.2,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496.6,
+          "y": 45.5,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.5,
+          "y": 44.9,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.8,
+          "y": 88.6,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 88.6,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 268.1,
+          "y": 467.6,
+          "rotate": 0,
+          "width": 493.9
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.796179,
+      "lng": -73.973832
+    },
+    {
       "omo": "ER06834",
       "bidDue": "2026-10-08",
       "bidDueTime": "11:30 AM",
@@ -2269,258 +2143,6 @@
       },
       "lat": 40.76746,
       "lng": -73.812212
-    },
-    {
-      "omo": "ER007390",
-      "bidDue": "2026-10-09",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-09",
-      "workCompletion": "2026-10-31",
-      "address": "503 WEST 158 STREET",
-      "borough": "MN",
-      "itbFile": "ER07390_100626031244.pdf",
-      "description": "AT APT 5A SECOND ROOM FROM NORTH, REPLACE DAMAGED GLASS PANE AT LOWER SASH NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \u201c ESSENTIAL SERVICE WORK \u201c AT APT 5A SECOND ROOM FROM NORTH, REMOVE DAMAGE INTERIOR GLASS PANE AND INSTALL NEW PANE AT LOWER SASH TOTAL WINDOWS= (1) REMOVE ALL WORK-RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID.",
-      "receivedAt": 1791313968000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325.0,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496.0,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467.0,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24.0,
-          "y": 774.0,
-          "rotate": 0
-        }
-      },
-      "lat": 40.833875,
-      "lng": -73.941969
-    },
-    {
-      "omo": "ER007586",
-      "bidDue": "2026-10-09",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-09",
-      "workCompletion": "2026-10-16",
-      "address": "973 ST MARKS AVENUE",
-      "borough": "BK",
-      "itbFile": "ER07586_100826094927.pdf",
-      "description": "AT APT 4R, 4th STORY, 2nd APARTMENT FROM WEST AT NORTH NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \u201cESSENTIAL SERVICE WORK \u201c AT APT 4R ENTRANCE DOOR REPLACE HINGES , MAKE ALL NECESSARY REPAIR AND ADJUSTMENTS/ALINGNMENT TO DOOR, ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AS PER NYC GUIDELINES.RESTORE TO PROPER WORKING ORDER. TOTAL NO.OF DOORS=(1) REMOVE ALL WORK-RELATED DEBRIS.",
-      "receivedAt": 1791467372000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325.0,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496.0,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467.0,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24.0,
-          "y": 774.0,
-          "rotate": 0
-        }
-      },
-      "lat": 40.674837,
-      "lng": -73.93917
     },
     {
       "omo": "ER04466",
@@ -2773,6 +2395,258 @@
       },
       "lat": 40.670398,
       "lng": -73.932565
+    },
+    {
+      "omo": "ER07390",
+      "bidDue": "2026-10-09",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-09",
+      "workCompletion": "2026-10-31",
+      "address": "503 WEST 158 STREET",
+      "borough": "MN",
+      "itbFile": "ER07390_100626031244.pdf",
+      "description": "AT APT 5A SECOND ROOM FROM NORTH, REPLACE DAMAGED GLASS PANE AT LOWER SASH NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \u201c ESSENTIAL SERVICE WORK \u201c AT APT 5A SECOND ROOM FROM NORTH, REMOVE DAMAGE INTERIOR GLASS PANE AND INSTALL NEW PANE AT LOWER SASH TOTAL WINDOWS= (1) REMOVE ALL WORK-RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID.",
+      "receivedAt": 1791313968000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.0,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.0,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.833875,
+      "lng": -73.941969
+    },
+    {
+      "omo": "ER07586",
+      "bidDue": "2026-10-09",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-09",
+      "workCompletion": "2026-10-16",
+      "address": "973 ST MARKS AVENUE",
+      "borough": "BK",
+      "itbFile": "ER07586_100826094927.pdf",
+      "description": "AT APT 4R, 4th STORY, 2nd APARTMENT FROM WEST AT NORTH NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \u201cESSENTIAL SERVICE WORK \u201c AT APT 4R ENTRANCE DOOR REPLACE HINGES , MAKE ALL NECESSARY REPAIR AND ADJUSTMENTS/ALINGNMENT TO DOOR, ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AS PER NYC GUIDELINES.RESTORE TO PROPER WORKING ORDER. TOTAL NO.OF DOORS=(1) REMOVE ALL WORK-RELATED DEBRIS.",
+      "receivedAt": 1791467372000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.0,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.0,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.674837,
+      "lng": -73.93917
     },
     {
       "omo": "ER07642",
