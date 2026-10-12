@@ -1774,8 +1774,8 @@ export default function FieldCommandClient() {
       dayRouteLayerRef.current?.remove();
       dayRouteLayerRef.current = L.featureGroup(layers).addTo(mapRef.current);
     };
-    // Right away: a faint dashed outline in stop order while the street route loads (or with no signal).
-    show([L.polyline(points.map((p) => [p.lat, p.lng]), { pane: "fc-route-path", color: "#1267df", weight: 3, opacity: 0.55, dashArray: "6 8", interactive: false }), ...stopMarkers()]);
+    // Right away: just the numbered stops. No straight stop-to-stop lines; the street route follows.
+    show(stopMarkers());
     // Fit the route into the part of the map above the route panel and below the pills.
     mapRef.current.fitBounds(dayRouteLayerRef.current.getBounds(), { paddingTopLeft: [28, 150], paddingBottomRight: [56, Math.round(window.innerHeight * 0.38) + 90], maxZoom: 15 });
     const road = await fetchRoadRoute(points);

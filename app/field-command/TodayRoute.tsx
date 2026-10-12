@@ -46,7 +46,7 @@ export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,o
       <button type="button" className="fc-route-toggle" onClick={()=>setOrigin(getOrigin())}>Update start from location / map</button>
       <p>Starts from {origin?.label || 'map center'} · New York time · {settings.minutes} min per job</p>
       </details>
-      {ids.length>0&&<p className="fc-route-total" data-hpd-smoke="fc-route-total">{roadRoute?`🚗 Road route · ${roadRoute.miles.toFixed(1)} mi · ${roadRoute.minutes} min driving (no live traffic)`:road==='loading'?'Finding the road route…':'Straight-line estimate · road route unavailable right now'}</p>}
+      {ids.length>0&&<p className="fc-route-total" data-hpd-smoke="fc-route-total">{roadRoute?`🚗 Road route · ${roadRoute.miles.toFixed(1)} mi · ${roadRoute.minutes} min driving (no live traffic)`:road==='loading'?'Finding the road route…':'No signal for the road route right now · times are estimates · Google Maps still gives turn-by-turn'}</p>}
       {origin&&selected.length>0&&routeLink([origin.point,...selected])&&<a className="fc-route-drive fc-route-all" data-hpd-smoke="fc-route-all" href={routeLink([origin.point,...selected])!} target="_blank" rel="noreferrer">Open whole route in Google Maps<small>All {selected.length} stops in this order</small></a>}
       {selected[0]&&drivingLink(selected[0])&&<a className="fc-route-drive" href={drivingLink(selected[0])!} onClick={()=>onNavigate(selected[0].id)} target="_blank" rel="noreferrer">Navigate next stop · {selected[0].id}<small>Google Maps · Driving directions</small></a>}
       {stops.some(s=>s.warning)&&<p role="alert">Route needs review: appointment or workday conflicts below.</p>}
