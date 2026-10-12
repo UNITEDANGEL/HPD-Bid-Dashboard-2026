@@ -16,6 +16,7 @@ export type UpcomingBid = {
 export const BID_COMPANY = {
   name: "United Angel Construction Corp.",
   owner: "Jot Singh",
+  initials: "JS",
   addressLines: ["12017 91st Ave", "Richmond Hill, NY 11418"],
   phone: "718-989-1381",
   fax: "718-989-1382",
@@ -53,7 +54,12 @@ function wrap(text: string, font: PDFFont, size: number, width: number) {
   return lines;
 }
 
-export async function fillBidPackage(pdfBytes: ArrayBuffer | Uint8Array, bid: UpcomingBid, price: number): Promise<Uint8Array> {
+// A revised bid: the price sent before is crossed out, the new price next to it with the owner's
+// initials, and a small line under it: "PRICE REVISED 1X ON 10/12/26".
+export type BidRevision = { previousPrice: number; count: number; date: string };
+
+export async function fillBidPackage(pdfBytes: ArrayBuffer | Uint8Array, bid: UpcomingBid, price: number, revision?: BidRevision): Promise<Uint8Array> {
+  const previousPrice = revision?.previousPrice;
   if (!(price > 0)) throw new Error("Enter a bid price above $0.");
   const doc = await PDFDocument.load(pdfBytes);
   const font = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -66,9 +72,41 @@ export async function fillBidPackage(pdfBytes: ArrayBuffer | Uint8Array, bid: Up
     if (!f || !page || !text) return;
     page.drawText(text, { x: f.x, y: f.y - dy, size, font, color: rgb(0, 0, 0.55), rotate: degrees(f.rotate || 0) });
   };
-  write("price", amount, 12);
-  write("pageTotal", amount, 12);
-  write("bidAmount", amount, 12);
+  const writePrice = (key: string, inline = false) => {
+    if (!(previousPrice && previousPrice > 0 && previousPrice !== price)) return write(key, amount, 12);
+    const f = bid.fields[key];
+    const page: PDFPage | undefined = f ? pages[f.page] : undefined;
+    if (!f || !page) return;
+    const size = 12, a = ((f.rotate || 0) * Math.PI) / 180, cos = Math.cos(a), sin = Math.sin(a);
+    const at = (along: number, up: number) => ({ x: f.x + along * cos - up * sin, y: f.y + along * sin + up * cos });
+    const oldText = bidPriceText(previousPrice!), note = `REVISED ${revision!.count}X ON ${bidDateText(revision!.date)}`;
+    const grey = rgb(0.35, 0.35, 0.35), ink = rgb(0, 0, 0.55), rot = degrees(f.rotate || 0);
+    const strike = (along: number, up: number, text: string, sz: number) => {
+      const w = font.widthOfTextAtSize(text, sz);
+      page.drawText(text, { ...at(along, up), size: sz, font, color: grey, rotate: rot });
+      page.drawLine({ start: at(along - 2, up + sz * 0.35), end: at(along + w + 2, up + sz * 0.35), thickness: sz > 10 ? 1.6 : 1.2, color: rgb(0, 0, 0) });
+      return w;
+    };
+    if (inline) {
+      // Room on the line (page 1): old price crossed out, new price beside it, note underneath.
+      const oldWidth = strike(0, 0, oldText, size);
+      const newWidth = font.widthOfTextAtSize(amount, size);
+      page.drawText(amount, { ...at(oldWidth + 10, 0), size, font, color: ink, rotate: rot });
+      page.drawText(BID_COMPANY.initials, { ...at(oldWidth + 10 + newWidth + 5, size * 0.45), size: 7, font, color: ink, rotate: rot });
+      page.drawText(`PRICE ${note}`, { ...at(0, -8), size: 6, font, color: ink, rotate: rot });
+    } else {
+      // Narrow box (page 2, Work Description Form): old price crossed out and the note on a small line
+      // above, the new price with initials on the line itself.
+      const oldWidth = strike(0, size + 1, oldText, 9);
+      page.drawText(`REV. ${revision!.count}X ${bidDateText(revision!.date)}`, { ...at(oldWidth + 5, size + 2), size: 6, font, color: ink, rotate: rot });
+      const newWidth = font.widthOfTextAtSize(amount, size);
+      page.drawText(amount, { ...at(0, 0), size, font, color: ink, rotate: rot });
+      page.drawText(BID_COMPANY.initials, { ...at(newWidth + 4, size * 0.45), size: 7, font, color: ink, rotate: rot });
+    }
+  };
+  writePrice("price", true);
+  writePrice("pageTotal");
+  writePrice("bidAmount");
   write("contractor", BID_COMPANY.name);
   write("owner", BID_COMPANY.owner);
   write("address", BID_COMPANY.addressLines[0]);

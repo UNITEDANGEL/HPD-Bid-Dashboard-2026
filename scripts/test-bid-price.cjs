@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const load = (file) => { const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText; const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, require); return m.exports; };
-const { priceHelp, readScope } = load('lib/bid-price.ts');
+const { priceHelp, readScope, winChance } = load('lib/bid-price.ts');
 const fill = load('lib/bid-fill.ts');
 
 const history = [
@@ -73,7 +73,26 @@ const floors = [
 const bigFloor = priceHelp('REMOVE ENTIRE BROKEN FLOOR TILES THROUGHOUT THE KITCHEN. INSTALL NEW CERAMIC TILES. APROX 150SQFT', floors);
 assert.equal(bigFloor.scope.repairSqft, 150);
 assert.equal(bigFloor.confidence, 'low');
-assert.match(bigFloor.why, /~150 sq ft, bigger than these past jobs \(up to 30 sq ft\): expect to price higher/);
+assert.match(bigFloor.why, /~150 sq ft, bigger than these jobs \(up to 30 sq ft\): expect to price higher/);
+
+// Price to win, from every awarded glass job (all contractors): you win when you come in under the
+// winning price. Recent awards weigh more, and the price direction is shown.
+const now = new Date('2026-10-12T12:00:00Z');
+const day = (n) => new Date(now.getTime() - n * 86400000).toISOString().slice(0, 10);
+const glass = [
+  ...[420, 440, 450, 460, 470].map((amount, i) => ({ id: `G${i}`, description: 'REPLACE CRACKED GLASS AT WINDOW', amount, date: day(10 + i * 10) })),
+  ...[380, 390, 400, 410, 420].map((amount, i) => ({ id: `H${i}`, description: 'REPLACE BROKEN GLASS PANE AT WINDOW', amount, date: day(150 + i * 30) })),
+  { id: 'M1', description: 'REPLACE CRACKED GLASS AT WINDOW', amount: 500, date: day(5), won: true },
+];
+const g = priceHelp('REPLACE CRACKED GLASS AT LIVING ROOM WINDOW', glass, 12, now);
+assert.equal(g.count, 11);
+assert.equal(g.yours, 1);
+assert.ok(winChance(g, 500) < 0.15, `$500 beats almost none of these winning prices (${winChance(g, 500)})`);
+assert.ok(winChance(g, g.toWin) >= 0.7, `the "win most" price wins about 3 in 4 (${g.toWin}: ${winChance(g, g.toWin)})`);
+assert.ok(g.toWin < g.middle && g.middle < g.high && winChance(g, g.high) < winChance(g, g.middle), 'win most < middle < high, and a higher price wins less often');
+assert.ok(winChance(g, 300) === 1 && winChance(g, 9999) === 0);
+assert.deepEqual(g.trend && [g.trend.recent > g.trend.before, g.trend.change > 0], [true, true], 'glass prices went up in the last 90 days');
+assert.ok(g.middle >= 440, `recent (higher) prices weigh more (${g.middle})`);
 
 // Bid package text helpers.
 assert.equal(fill.bidPriceText(1250), '1,250.00');

@@ -9,6 +9,10 @@ export type BidRecord = {
   price: number; savedAt: string; status: BidStatus;
   sentAt?: string; sentPrice?: number; faxTo?: string; messageId?: string; confirmedAt?: string; faxNote?: string;
   attempts: number; updatedAt: string;
+  // Prices sent before a revision, oldest first: the latest one is crossed out on the revised package.
+  revisions?: { price: number; sentAt?: string }[];
+  // A bid faxed outside the app: the price HPD has, so a revision can cross it out.
+  priorPrice?: number;
 };
 export type BidResult = "won" | "lost" | "pending";
 
@@ -58,30 +62,35 @@ export function faxState(record: BidRecord, now = new Date()): "saved" | "waitin
   return waited > CONFIRM_WAIT_MINUTES ? "unconfirmed" : "waiting";
 }
 
-// Won: the award (COA) came in. Lost: a week past the bid date with no award. Else pending.
-export function bidResult(record: BidRecord, awarded: Map<string, number>, today: string): { result: BidResult; amount?: number } {
+// Won: the award (COA) came in. Lost: HPD's open data shows the job awarded to someone else (with the
+// price that won it), or a week past the bid date with no award. Else pending.
+export function bidResult(record: BidRecord, awarded: Map<string, number>, today: string, market?: Map<string, number>): { result: BidResult; amount?: number; winningPrice?: number } {
   if (awarded.has(record.omo)) return { result: "won", amount: awarded.get(record.omo) };
+  if (market?.has(record.omo)) return { result: "lost", winningPrice: market.get(record.omo) };
   const [y, m, d] = record.bidDue.split("-").map(Number);
   const lostAfter = new Date(Date.UTC(y, m - 1, d + 7)).toISOString().slice(0, 10);
   return { result: today > lostAfter ? "lost" : "pending" };
 }
 
-export function winRate(records: BidRecord[], awarded: Map<string, number>, today: string) {
+export function winRate(records: BidRecord[], awarded: Map<string, number>, today: string, market?: Map<string, number>) {
   const sent = records.filter((r) => r.status !== "saved");
-  const decided = sent.map((r) => bidResult(r, awarded, today).result).filter((r) => r !== "pending");
+  const decided = sent.map((r) => bidResult(r, awarded, today, market).result).filter((r) => r !== "pending");
   const won = decided.filter((r) => r === "won").length;
   return { sent: sent.length, decided: decided.length, won, percent: decided.length ? Math.round((won / decided.length) * 100) : null };
 }
 
 // The fax: the filled package PDF, with a short cover sheet (HumbleFax turns subject + body into it).
-export function bidFaxCover(bid: { omo: string; address: string; borough?: string }, price: number) {
-  const amount = price.toLocaleString("en-US", { style: "currency", currency: "USD" });
+// A revised bid says so on the cover: disregard the earlier price, here is the new one.
+export function bidFaxCover(bid: { omo: string; address: string; borough?: string }, price: number, previousPrice?: number) {
+  const usd = (v: number) => v.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  const amount = usd(price);
+  const revised = previousPrice && previousPrice > 0 && previousPrice !== price;
   return {
-    subject: `Bid - OMO ${bid.omo} - ${bid.address} - United Angel Construction Corp.`,
+    subject: `${revised ? "REVISED " : ""}Bid - OMO ${bid.omo} - ${bid.address} - United Angel Construction Corp.`,
     text: [
-      `Bid for OMO ${bid.omo}`,
+      `${revised ? "REVISED BID" : "Bid"} for OMO ${bid.omo}`,
       `${bid.address}${bid.borough ? `, ${bid.borough}` : ""}`,
-      `Bid price: ${amount}`,
+      ...(revised ? [`Please disregard our previous bid of ${usd(previousPrice)}.`, `Our new bid price is ${amount}.`] : [`Bid price: ${amount}`]),
       "",
       "United Angel Construction Corp.",
       "Jot Singh · 718-989-1381 · Fax 718-989-1382",
@@ -90,8 +99,8 @@ export function bidFaxCover(bid: { omo: string; address: string; borough?: strin
   };
 }
 
-export async function sendBidFax(bid: { omo: string; address: string; borough?: string }, price: number, pdf: Uint8Array, fileName: string, fetcher: typeof fetch = fetch) {
-  const cover = bidFaxCover(bid, price);
+export async function sendBidFax(bid: { omo: string; address: string; borough?: string }, price: number, pdf: Uint8Array, fileName: string, fetcher: typeof fetch = fetch, previousPrice?: number) {
+  const cover = bidFaxCover(bid, price, previousPrice);
   const email = buildPackageEmail(cover.text, [{ name: fileName, mimeType: "application/pdf", bytes: pdf }]);
   const response = await fetcher("/api/drive/fax-bid", {
     method: "POST",

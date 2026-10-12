@@ -3,7 +3,9 @@
 // feet, and how many separate tasks. Past awards are matched on that scope first and on wording second,
 // and the answer says what it read and how sure it is. A guide from your own history, not a quote.
 
-export type PricedJob = { id: string; description: string; amount: number; address?: string };
+// A past awarded job: yours (won) or another contractor's. HPD awards the low bid, so the amount is
+// the price it took to win that job.
+export type PricedJob = { id: string; description: string; amount: number; address?: string; date?: string; won?: boolean };
 export type JobScope = { items: string[]; labels: string[]; doors: number; windows: number; sqft: number; paintSqft: number; repairSqft: number; tasks: number; summary: string };
 export type PriceHelp = {
   count: number; low: number; middle: number; high: number;
@@ -11,8 +13,36 @@ export type PriceHelp = {
   confidence: "good" | "fair" | "low";
   why: string;
   unmatched: string[];
-  examples: { id: string; amount: number; score: number; description: string; summary: string }[];
+  examples: { id: string; amount: number; score: number; description: string; summary: string; date?: string; won?: boolean }[];
+  // Winning prices of the comparable jobs (size-adjusted), recent ones weigh more: for the chance of
+  // winning at a given price (winChance) and the suggested prices.
+  prices: { amount: number; weight: number }[];
+  // Every comparable job behind the numbers, closest first: to look back at what each was won for.
+  similar: { id: string; amount: number; date?: string; won?: boolean; address?: string; summary: string }[];
+  toWin: number;      // about 3 in 4 of these jobs were won at or above this
+  yours: number;      // how many of the comparable jobs you won
+  trend: { recent: number; before: number; change: number } | null;
 };
+
+// Chance a bid wins, from the comparable jobs: you win when you come in under the winning price.
+export function winChance(help: Pick<PriceHelp, "prices">, price: number) {
+  const total = help.prices.reduce((sum, p) => sum + p.weight, 0);
+  if (!total || !(price > 0)) return 0;
+  const beat = help.prices.reduce((sum, p) => sum + (p.amount > price ? p.weight : p.amount === price ? p.weight / 2 : 0), 0);
+  return beat / total;
+}
+
+function weightedQuantile(rows: { amount: number; weight: number }[], q: number) {
+  const sorted = [...rows].sort((a, b) => a.amount - b.amount);
+  const total = sorted.reduce((sum, r) => sum + r.weight, 0);
+  let run = 0;
+  for (const r of sorted) { run += r.weight; if (run >= total * q) return Math.round(r.amount); }
+  return Math.round(sorted.at(-1)?.amount || 0);
+}
+
+// Recent awards count more: a job from 6 months ago counts half as much as one from today.
+const HALF_LIFE_DAYS = 180;
+const ageDays = (date: string | undefined, now: Date) => (date ? Math.max(0, (now.getTime() - Date.parse(date)) / 86400000) : 365);
 
 // Kinds of work, as HPD writes them. Order is the order shown.
 const ITEMS: [key: string, label: string, pattern: RegExp][] = [
@@ -130,10 +160,14 @@ function sizeFactor(job: JobScope, past: JobScope) {
   return Math.min(Math.max(Math.sqrt(units(job) / units(past)), 0.5), 2.5);
 }
 
-export function priceHelp(description: string, history: PricedJob[], limit = 8): PriceHelp | null {
+// Each past job is read once (thousands of them), not on every lookup.
+const READ = new WeakMap<PricedJob, { terms: Set<string>; scope: JobScope }>();
+
+export function priceHelp(description: string, history: PricedJob[], limit = 12, now = new Date()): PriceHelp | null {
   const docs = history.filter((job) => job.amount > 0 && job.description).map((job) => {
-    const text = workText(job.description);
-    return { job, terms: new Set(words(text)), scope: readScope(job.description) };
+    let read = READ.get(job);
+    if (!read) { read = { terms: new Set(words(workText(job.description))), scope: readScope(job.description) }; READ.set(job, read); }
+    return { job, ...read };
   });
   if (!docs.length) return null;
   const scope = readScope(description);
@@ -176,27 +210,36 @@ export function priceHelp(description: string, history: PricedJob[], limit = 8):
   const scored = same.length >= 3 ? same : ranked.slice(0, limit);
   if (scored.length < 2) return null;
 
-  const amounts = scored.map((row) => row.job.amount * sizeFactor(scope, row.scope)).sort((a, b) => a - b);
-  const low = quantile(amounts, 0.25), middle = quantile(amounts, 0.5), high = quantile(amounts, 0.75);
+  const prices = scored.map((row) => ({ amount: row.job.amount * sizeFactor(scope, row.scope), weight: 0.5 ** (ageDays(row.job.date, now) / HALF_LIFE_DAYS) }));
+  const low = weightedQuantile(prices, 0.25), middle = weightedQuantile(prices, 0.5), high = weightedQuantile(prices, 0.75);
+  // Bid just under the lower winning prices to win most of these jobs.
+  const toWin = Math.max(low - 5, 1);
+  // Price direction for this kind of work: last 90 days against the 9 months before, all matching jobs.
+  const sameAll = ranked.filter((row) => row.items >= 0.99 && row.job.date);
+  const med = (rows: typeof sameAll) => quantile(rows.map((r) => r.job.amount * sizeFactor(scope, r.scope)).sort((x, y) => x - y), 0.5);
+  const recentRows = sameAll.filter((r) => ageDays(r.job.date, now) <= 90), beforeRows = sameAll.filter((r) => ageDays(r.job.date, now) > 90 && ageDays(r.job.date, now) <= 365);
+  const trend = recentRows.length >= 4 && beforeRows.length >= 4 ? (() => { const recent = med(recentRows), before = med(beforeRows); return { recent, before, change: Math.round(((recent - before) / before) * 100) }; })() : null;
   const matchedItems = new Set(scored.flatMap((row) => row.scope.items));
   const unmatched = scope.items.filter((k) => !matchedItems.has(k)).map((k) => ITEMS.find(([key]) => key === k)![1]);
   const sameWork = scored.filter((row) => row.items >= 0.99).length;
   const spread = middle ? (high - low) / middle : 1;
   // Bigger than anything it is compared with: the range is likely too low, so say so plainly.
   const biggest = Math.max(...scored.map((row) => row.scope.sqft));
-  const bigger = scope.sqft >= 20 && scope.sqft > biggest * 1.5 ? `this job is ~${scope.sqft} sq ft, bigger than these past jobs (up to ${biggest} sq ft): expect to price higher` : "";
+  const bigger = scope.sqft >= 20 && scope.sqft > biggest * 1.5 ? `this job is ~${scope.sqft} sq ft, bigger than these jobs (up to ${biggest} sq ft): expect to price higher` : "";
   const confidence: PriceHelp["confidence"] = unmatched.length || sameWork < 2 || spread > 0.8 || bigger ? "low" : sameWork >= 4 && spread <= 0.4 ? "good" : "fair";
   const why = [
     bigger,
-    spread > 0.8 ? "these past prices vary a lot" : "",
-    sameWork === scored.length ? `priced from ${sameWork} past wins with the same kind of work` : sameWork ? `${sameWork} of ${scored.length} past wins had the same kind of work` : `no past win had exactly this mix of work; ${scored.length} closest shown`,
-    unmatched.length ? `nothing in your history with ${unmatched.join(", ")}: price that part yourself` : "",
+    spread > 0.8 ? "these winning prices vary a lot" : "",
+    sameWork === scored.length ? `from ${sameWork} jobs HPD awarded with the same kind of work` : sameWork ? `${sameWork} of ${scored.length} awarded jobs had the same kind of work` : `no awarded job had exactly this mix of work; ${scored.length} closest shown`,
+    unmatched.length ? `no awarded job with ${unmatched.join(", ")}: price that part yourself` : "",
     scored.some((row) => sizeFactor(scope, row.scope) !== 1) ? "prices of jobs with a different number of doors/windows adjusted" : "",
     scope.tasks > 1 || scope.items.length > 2 ? "several items: check each one is covered" : "",
   ].filter(Boolean).join(" · ");
 
   return {
-    count: scored.length, low, middle, high, scope, confidence, why, unmatched,
-    examples: scored.slice(0, 3).map(({ job, score, scope: s }) => ({ id: job.id, amount: job.amount, score: Math.round(score * 100) / 100, description: workText(job.description).slice(0, 110), summary: s.summary })),
+    count: scored.length, low, middle, high, scope, confidence, why, unmatched, prices, toWin, trend,
+    yours: scored.filter((row) => row.job.won).length,
+    similar: scored.map(({ job, scope: s }) => ({ id: job.id, amount: job.amount, date: job.date, won: job.won, address: job.address, summary: s.summary })),
+    examples: scored.slice(0, 3).map(({ job, score, scope: s }) => ({ id: job.id, amount: job.amount, score: Math.round(score * 100) / 100, description: workText(job.description).slice(0, 110), summary: s.summary, date: job.date, won: job.won })),
   };
 }

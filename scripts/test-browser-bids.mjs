@@ -69,7 +69,12 @@ try {
   assert.ok(await sheet.locator('[data-hpd-smoke="fc-bid-scope"] li').count() >= 1, "the job's work items are listed");
   if (await sheet.locator('[data-hpd-smoke="fc-bid-help"]').count()) {
     assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-confidence"]').innerText(), /Good match|Fair match|Rough guide/);
-    assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-why"]').innerText(), /past win/);
+    assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-why"]').innerText(), /awarded/);
+    assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-targets"]').innerText(), /Win most[\s\S]*wins ~\d+%/);
+    await sheet.locator('[data-hpd-smoke="fc-bid-similar-toggle"]').click();
+    const similar = sheet.locator('[data-hpd-smoke="fc-bid-similar"] li');
+    assert.ok(await similar.count() >= 2, "past jobs like this are listed");
+    assert.match(await similar.first().innerText(), /\$[\d,]+[\s\S]*(you won|other contractor)/);
   }
   await sheet.locator('[data-hpd-smoke="fc-bid-price"]').fill("1250");
   await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
@@ -122,18 +127,55 @@ try {
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-status"]').innerText(), /2 sends/);
   assert.equal(faxes.length, 3);
 
+  // 4b. Revise the first bid: $1,250 -> $1,100. The old price is crossed out with initials and the
+  // revision date, and the cover tells HPD to disregard the earlier price.
+  await sheet.locator("header button").click();
+  await list.locator("ol > li button").first().click();
+  await sheet.locator('[data-hpd-smoke="fc-bid-price"]').fill("1100");
+  await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
+  await page.waitForFunction(() => /revised/.test(document.querySelector('[data-hpd-smoke="fc-bid-saved"]')?.textContent || ""), null, { timeout: 10000 });
+  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-saved"]').innerText(), /HPD has \$1,250\.00: fill and send the revised bid/);
+  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-review"]').innerText(), /Fill the revised package: \$1,250\.00 → \$1,100\.00/);
+  await sheet.locator('[data-hpd-smoke="fc-bid-review"]').click();
+  await sheet.locator('[data-hpd-smoke="fc-bid-done"]').waitFor({ timeout: 30000 });
+  const revB64 = await page.evaluate(async () => {
+    const bytes = new Uint8Array(await (await fetch(document.querySelector('[data-hpd-smoke="fc-bid-open"]').href)).arrayBuffer());
+    let s = ""; for (const x of bytes) s += String.fromCharCode(x); return btoa(s);
+  });
+  const revPdf = await pdfjs.getDocument({ data: new Uint8Array(Buffer.from(revB64, "base64")), useSystemFonts: true, verbosity: 0 }).promise;
+  const revText = (await (await revPdf.getPage(1)).getTextContent()).items.map((i) => i.str).join(" ");
+  assert.ok(revText.includes("1,250.00") && revText.includes("1,100.00") && revText.includes("JS") && /PRICE REVISED 1X ON \d+\/\d+\/\d+/.test(revText), "revised page 1");
+  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').innerText(), /Send revised bid/);
+  await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
+  await page.waitForFunction(() => /Fax confirmed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 15000 });
+  assert.match(dialogs.at(-1), /Send the REVISED bid[\s\S]*Please disregard our previous bid of \$1,250\.00/);
+  assert.match(faxes.at(-1).subject, new RegExp(`^REVISED Bid - OMO ${omo} - `));
+  const coverText = Buffer.from(faxes.at(-1).body.split("\r\n\r\n")[1].split("\r\n--")[0].replace(/\s+/g, ""), "base64").toString("utf8");
+  assert.match(coverText, /^REVISED BID for OMO [\s\S]*Please disregard our previous bid of \$1,250\.00\.\nOur new bid price is \$1,100\.00\./);
+  assert.deepEqual(saved[`BID-${omo}`]?.revisions?.map((r) => r.price), [1250], "the revision is recorded");
+
   // 5. My bids.
   await sheet.locator("header button").click();
   await page.locator('[data-hpd-smoke="fc-bids-mine"]').click();
   const mine = await page.locator('[data-hpd-smoke="fc-my-bids"]').innerText();
   assert.match(mine, /No results yet · 2 sent/);
   assert.ok(mine.includes(omo) && mine.includes(omo2) && /Pending/.test(mine));
+  assert.match(mine, /revised 1x/);
+
+  // 6. Bid stats: every awarded invitation with the winning price, by kind of work and area.
+  await page.locator('[data-hpd-smoke="fc-bids-stats"]').click();
+  const stats = page.locator('[data-hpd-smoke="fc-bid-stats"]');
+  await stats.waitFor({ timeout: 20000 });
+  assert.match(await stats.innerText(), /invitations won/);
+  assert.ok(await page.locator('[data-hpd-smoke="fc-stats-trade"] tbody tr').count() >= 5, "kinds of work listed");
+  assert.ok(await page.locator('[data-hpd-smoke="fc-stats-boro"] tbody tr').count() >= 5, "boroughs listed");
+  assert.ok(await page.locator('[data-hpd-smoke="fc-stats-losses"] li').count() >= 10, "recent jobs won by others");
 
   await page.locator('[data-hpd-smoke="fc-bids-close"]').click();
   await page.waitForTimeout(500);
   assert.equal(await page.locator(".fc-bid-pin").count(), 0);
   assert.deepEqual(errors, [], "page errors");
-  console.log(`PASS bids: ${open.length} open (past hidden); ${omo} saved $1,250, package checked, faxed, confirmed, green pin, Sent badge; ${omo2} failed then resent and confirmed; My bids lists both`);
+  console.log(`PASS bids: ${open.length} open (past hidden); ${omo} saved $1,250, package checked, faxed, confirmed, green pin, Sent badge, then revised to $1,100 (old price crossed out, cover says disregard); ${omo2} failed then resent and confirmed; My bids lists both; Bid stats shows`);
 } finally {
   await browser.close();
 }

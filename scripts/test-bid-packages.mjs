@@ -40,4 +40,18 @@ for (const [i, bid] of bids.entries()) {
   }
 }
 assert.deepEqual(problems, [], `bid packages with problems:\n${problems.join("\n")}`);
-console.log(`PASS bid packages: all ${bids.length} current invitations fill completely (price on page 1, page 2 and the work form, company, date, stamp, signature, description)`);
+
+// A revised bid: old price crossed out next to the new one with initials, and the revision noted, on
+// page 1, page 2 and the work form, for every current invitation.
+const revisedProblems = [];
+for (const bid of bids) {
+  const out = await fillBidPackage(fs.readFileSync(path.join(root, "public", "documents", "itb", bid.itbFile)), bid, 1100, { previousPrice: 1250, count: 1, date: "2026-10-12" });
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(out), useSystemFonts: true, verbosity: 0 }).promise;
+  const text = async (n) => (await (await pdf.getPage(n)).getTextContent()).items.map((x) => x.str).join(" ");
+  for (const [n, note] of [[1, "PRICE REVISED 1X ON 10/12/26"], [2, "REV. 1X 10/12/26"], [pdf.numPages, "REV. 1X 10/12/26"]]) {
+    const t = await text(n);
+    if (!(t.includes("1,250.00") && t.includes("1,100.00") && t.includes("JS") && t.includes(note))) revisedProblems.push(`${bid.omo} page ${n}`);
+  }
+}
+assert.deepEqual(revisedProblems, [], `revised packages missing the old/new price, initials or note: ${revisedProblems.join(", ")}`);
+console.log(`PASS bid packages: all ${bids.length} current invitations fill completely, revised ones cross out the old price with initials and date (price on page 1, page 2 and the work form, company, date, stamp, signature, description)`);

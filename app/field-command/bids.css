@@ -86,8 +86,62 @@
 .fc-bid-chip.is-failed { background: #dc2626; }
 .fc-bid-chip.is-later { background: #f59e0b; color: #1c1917; }
 .fc-bid-pin.is-sent { background: #16a34a; }
-.fc-bid-tabs { position: sticky; top: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px; background: #1c1917; border-bottom: 1px solid #ffffff1f; }
+.fc-bid-tabs { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding: 8px; background: #1c1917; border-bottom: 1px solid #ffffff1f; }
 .fc-bid-tabs button { min-height: 40px; border: 0; border-radius: 10px; background: #292524; color: #d6d3d1; font: 800 14px system-ui; }
 .fc-bid-tabs button.is-active { background: #f97316; color: #fff; }
 .fc-bid-rate { margin: 0; padding: 10px 12px; color: #fde68a; font: 700 13px system-ui; }
 .fc-bids-list li button:disabled { opacity: 0.75; }
+
+/* Price to win: three targets with their chance, the chance at the typed price, price direction. */
+.fc-bid-targets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px; }
+.fc-bid-targets button { display: grid; gap: 1px; padding: 6px 4px; border: 0; border-radius: 10px; background: #334155; color: #fff; text-align: center; }
+.fc-bid-targets button b { color: #fff; font: 900 16px system-ui; }
+.fc-bid-targets button small { color: #cbd5e1; font: 700 11px system-ui; }
+.fc-bid-targets button:first-child { background: #166534; }
+.fc-bid-chance { margin: 4px 0 0; color: #e2e8f0; font: 600 13px/1.4 system-ui; }
+.fc-bid-chance b { color: #fde68a; }
+.fc-bid-trend { color: #cbd5e1; }
+.fc-bid-trend.is-up { color: #86efac; }
+.fc-bid-trend.is-down { color: #fca5a5; }
+.fc-bid-lost { color: #fca5a5; }
+
+/* Bid stats */
+.fc-stats { padding: 10px 12px 24px; color: #e7e5e4; font: 500 13px/1.4 system-ui; }
+.fc-stats-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fc-stats-tiles div { display: grid; padding: 10px; border-radius: 12px; background: #292524; }
+.fc-stats-tiles b { color: #fff; font: 900 20px system-ui; }
+.fc-stats-tiles small { color: #a8a29e; font: 600 12px system-ui; }
+.fc-stats-note { margin: 8px 0 0; color: #a8a29e; font: 500 11.5px/1.4 system-ui; }
+.fc-stats-block { margin-top: 14px; }
+.fc-stats-block h4 { margin: 0 0 6px; color: #fdba74; font: 900 13px system-ui; text-transform: uppercase; letter-spacing: .03em; }
+.fc-stats-block table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.fc-stats-block th, .fc-stats-block td { padding: 6px 3px; border-bottom: 1px solid #ffffff14; text-align: right; font: 700 12.5px system-ui; color: #e7e5e4; overflow-wrap: anywhere; }
+.fc-stats-block thead th { color: #a8a29e; font: 700 11px system-ui; }
+.fc-stats-block tbody th { width: 38%; text-align: left; font-weight: 800; }
+.fc-stats-block td small { display: block; color: #a8a29e; font: 600 11px system-ui; }
+.fc-stats-block th em { display: block; font: 800 10.5px system-ui; font-style: normal; color: #fde68a; }
+.fc-stats-block tr.is-raise th em { color: #86efac; }
+.fc-stats-block tr.is-lower th em { color: #fca5a5; }
+.fc-stats-block td.is-up { color: #86efac; }
+.fc-stats-block td.is-down { color: #fca5a5; }
+.fc-stats-moves, .fc-stats-losses { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.fc-stats-moves li { display: grid; gap: 2px; padding: 9px 10px; border-radius: 10px; background: #292524; border-left: 4px solid #f59e0b; }
+.fc-stats-moves li.is-raise { border-left-color: #16a34a; }
+.fc-stats-moves li.is-lower { border-left-color: #dc2626; }
+.fc-stats-moves b { color: #fff; font: 800 13px system-ui; }
+.fc-stats-moves span { color: #d6d3d1; font: 500 12.5px/1.4 system-ui; }
+.fc-stats-losses li { display: grid; padding: 7px 0; border-bottom: 1px solid #ffffff14; }
+.fc-stats-losses b { color: #fff; font: 800 13px system-ui; }
+.fc-stats-losses span, .fc-stats-losses small { color: #a8a29e; font: 600 12px system-ui; }
+
+.fc-bid-link { margin-top: 6px; padding: 4px 0; border: 0; background: none; color: #93c5fd; font: 700 13px system-ui; text-decoration: underline; }
+.fc-bid-saved s { color: #fca5a5; }
+
+/* Past jobs like this: every comparable award, tap a price to use it. */
+.fc-bid-similar { margin: 4px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.fc-bid-similar li { display: grid; grid-template-columns: auto 1fr; column-gap: 8px; padding: 6px 0; border-top: 1px solid #ffffff14; }
+.fc-bid-similar li > button { grid-row: span 2; align-self: center; min-width: 64px; min-height: 36px; border: 0; border-radius: 8px; background: #334155; color: #fff; font: 800 13px system-ui; }
+.fc-bid-similar span { color: #e2e8f0; font: 600 12.5px system-ui; }
+.fc-bid-similar small { color: #94a3b8; font: 500 11.5px/1.35 system-ui; }
+.fc-bid-similar em { font-style: normal; color: #fca5a5; }
+.fc-bid-similar em.is-yours { color: #86efac; }

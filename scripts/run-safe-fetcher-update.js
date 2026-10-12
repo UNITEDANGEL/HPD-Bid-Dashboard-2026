@@ -344,6 +344,14 @@ async function main() {
       appendLog(`WARNING: Upcoming invitations were not refreshed: ${err.message || String(err)}`);
     }
 
+    // What HPD paid for every invitation received, whoever won (NYC Open Data), for the price help
+    // and "Lost: won at $X" in My bids. Never stops the fetcher run.
+    try {
+      runStep("Update market awards from NYC Open Data", "node", ["scripts/update-market-awards.mjs"]);
+    } catch (err) {
+      appendLog(`WARNING: Market awards were not refreshed: ${err.message || String(err)}`);
+    }
+
     const mappingOut = runStep("Verify mapping", "node", ["check-local-mapping.js"]);
     const descOut = runStep("Verify descriptions", "node", ["check-generic-descriptions.js"]);
     const itbOut = runStep("Verify missing ITB", "node", ["export-missing-itb.js"]);
