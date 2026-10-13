@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { loadLib } from "./daily-report.mjs";
 
-const { bidStats, easyWin, beats, historyRows, filterHistory, workHistory, workKey } = await loadLib("bid-stats");
+const { bidStats, easyWin, beats, historyRows, filterHistory, workHistory, workKey, myPrices } = await loadLib("bid-stats");
 const now = new Date("2026-10-12T12:00:00Z");
 const day = (n) => new Date(now.getTime() - n * 86400000).toISOString().slice(0, 10);
 const LOCK = "INSTALL NEW PASSAGE LOCK AT COMPACTOR DOOR. TOTAL DOORS = (1)";
@@ -71,4 +71,18 @@ const sept = jobs.filter((j) => j.description === LOCK && j.awardDate.startsWith
 const septM = byMonth("2026-09");
 assert.equal(septM.yoursN + septM.othersN, sept.length);
 assert.equal(wh.months.at(-1).month, "2026-10", "runs to this month");
-console.log("PASS bid stats: price list (your usual vs winners, suggested, beats N of M), should-have-bid from real awards, Easy win only with enough history, history search and filters, month-by-month price history");
+// Your prices, learned from your bids, by kind of work: newest first, with your reason.
+const SECURE = "REPAIR BUILDING ENTRANCE DOOR SECURE-TECH LOCK AND BUZZER SYSTEM. TOTAL DOORS= (1)";
+const descs = { ER05994: SECURE, ER11111: SECURE, ER22222: LOCK };
+const mp = myPrices([
+  { omo: "ER05994", price: 1987, sentPrice: 1987, status: "sent", updatedAt: "2026-10-13T00:51:57Z", reason: "Secure-Tech lock costs ~$2,000" },
+  { omo: "ER11111", price: 1500, status: "saved", updatedAt: "2026-09-01T10:00:00Z" },
+  { omo: "ER22222", price: 450, status: "confirmed", updatedAt: "2026-10-01T10:00:00Z" },
+  { omo: "ER99999", price: 999, status: "sent", updatedAt: "2026-10-01T10:00:00Z" },
+], (o) => descs[o]);
+const secure = mp.get(workKey(SECURE));
+assert.deepEqual(secure.map((p) => [p.omo, p.price, p.sent]), [["ER05994", 1987, true], ["ER11111", 1500, false]], "newest first, sent or saved");
+assert.equal(secure[0].reason, "Secure-Tech lock costs ~$2,000");
+assert.equal(mp.get(workKey(LOCK))[0].price, 450);
+assert.equal([...mp.values()].flat().length, 3, "a bid with no known description is left out");
+console.log("PASS bid stats: price list (your usual vs winners, suggested, beats N of M), should-have-bid from real awards, Easy win only with enough history, history search and filters, month-by-month price history, your prices learned by kind of work");

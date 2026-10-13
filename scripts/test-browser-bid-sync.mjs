@@ -10,10 +10,13 @@ try {
   const real = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();
   const nyDay = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
   const due = nyDay(new Date(Date.now() + 3 * 86400000));
-  const bid = { ...real.bids[0], omo: "ER77777", bidDue: due, bidDueTime: "10:00 AM" };
+  const SECURE = "REPAIR BUILDING ENTRANCE DOOR SECURE-TECH LOCK AND BUZZER SYSTEM. ***DO NOT CHANGE KEY LOCK CYLINDER***. MAKE ANY NEEDED ADJUSTMENTS TO ALLOW DOOR TO SELF CLOSE AND LATCH. TOTAL DOORS= (1) REMOVE ALL WORK-RELATED DEBRIS.";
+  const bid = { ...real.bids[0], omo: "ER77777", bidDue: due, bidDueTime: "10:00 AM", description: SECURE };
+  // A new invitation for the same kind of work: it should start from your price.
+  const twin = { ...real.bids[0], omo: "ER77778", bidDue: due, bidDueTime: "11:00 AM", address: "2 TWIN ST", description: SECURE.replace("REPAIR BUILDING ENTRANCE DOOR", "AT BUILDING ENTRANCE DOOR: REPAIR") };
   const base = { omo: "ER77777", address: bid.address, borough: bid.borough, bidDue: due, bidDueTime: "10:00 AM", faxTo: "2128638655@humblefax.com" };
   const older = { ...base, price: 1180, sentPrice: 1180, status: "sent", sentAt: "2026-10-12T22:47:39.343Z", savedAt: "2026-10-12T22:47:00.000Z", attempts: 1, updatedAt: "2026-10-12T22:47:39.500Z" };
-  const newer = { ...base, price: 1987, sentPrice: 1987, status: "sent", sentAt: "2026-10-13T00:51:57.111Z", savedAt: "2026-10-13T00:51:39.415Z", attempts: 2, updatedAt: "2026-10-13T00:51:57.272Z", revisions: [{ price: 1180, sentAt: older.sentAt }] };
+  const newer = { ...base, price: 1987, sentPrice: 1987, status: "sent", sentAt: "2026-10-13T00:51:57.111Z", savedAt: "2026-10-13T00:51:39.415Z", attempts: 2, updatedAt: "2026-10-13T00:51:57.272Z", revisions: [{ price: 1180, sentAt: older.sentAt }], reason: "Secure-Tech lock costs ~$2,000" };
 
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   let calls = 0;
@@ -21,7 +24,7 @@ try {
     if (r.request().method() === "GET" && /\/overrides/.test(r.request().url()) && ++calls === 1) return r.fulfill({ status: 503, body: "busy" });
     return r.fulfill({ json: { ok: true, overrides: { "BID-ER77777": newer }, accepted: [] } });
   });
-  await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...real, bids: [bid, ...real.bids.slice(1)] } }));
+  await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...real, bids: [bid, twin, ...real.bids.slice(1)] } }));
   const faxChecks = [];
   await context.route(/\/api\/drive\/fax-status/, (r) => { faxChecks.push(JSON.parse(r.request().postData() || "{}")); return r.fulfill({ json: { status: "confirmed", subject: "Successful transmission", at: "2026-10-13T00:56:00Z" } }); });
   await context.addInitScript((rec) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem("hpd-bid-records-v1", JSON.stringify({ ER77777: rec })); sessionStorage.setItem("seeded", "1"); } }, older);
@@ -49,8 +52,23 @@ try {
   await page.locator('[data-hpd-smoke="fc-bids-mine"]').click();
   assert.match(await page.locator('[data-hpd-smoke="fc-my-bids"]').innerText(), /ER77777[\s\S]*\$1,987[\s\S]*revised 1x/);
   assert.ok(calls >= 2, "tried the server again after it was busy");
+
+  // Learning from you: the same kind of job starts from your $1,987, with your reason.
+  await page.getByRole("tab", { name: /^Open/ }).click();
+  await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li').filter({ hasText: "ER77778" }).locator("button").click();
+  const mineBox = page.locator('[data-hpd-smoke="fc-bid-mine"]');
+  await mineBox.waitFor({ timeout: 10000 });
+  assert.match(await mineBox.innerText(), /Your price for this work: \$1,987[\s\S]*ER77777[\s\S]*sent to HPD[\s\S]*Secure-Tech lock costs ~\$2,000/);
+  assert.equal(await page.locator('[data-hpd-smoke="fc-bid-price"]').inputValue(), "1987", "started from your price");
+  await page.locator('[data-hpd-smoke="fc-bid-price"]').fill("1900");
+  await mineBox.getByRole("button", { name: "Use $1,987" }).click();
+  assert.equal(await page.locator('[data-hpd-smoke="fc-bid-price"]').inputValue(), "1987");
+  // Saving with a reason keeps it for next time.
+  await page.locator('[data-hpd-smoke="fc-bid-reason"]').fill("Buzzer needs a new transformer");
+  await page.locator('[data-hpd-smoke="fc-bid-save"]').click();
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}").ER77778?.reason === "Buzzer needs a new transformer", null, { timeout: 10000 });
   assert.deepEqual(errors, []);
-  console.log("PASS bid sync: the computer had $1,180, the iPhone revised to $1,987; the computer shows $1,987, 2 sends, revised 1x (server busy at first); HumbleFax confirmation found in the background without opening the job");
+  console.log("PASS bid sync: the computer had $1,180, the iPhone revised to $1,987; the computer shows $1,987, 2 sends, revised 1x (server busy at first); HumbleFax confirmation found in the background without opening the job; the same kind of job starts from your $1,987 with your reason");
 } finally {
   await browser.close();
 }

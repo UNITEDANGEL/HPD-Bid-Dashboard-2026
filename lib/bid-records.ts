@@ -13,6 +13,8 @@ export type BidRecord = {
   revisions?: { price: number; sentAt?: string }[];
   // A bid faxed outside the app: the price HPD has, so a revision can cross it out.
   priorPrice?: number;
+  // Why you chose this price (optional, e.g. "Secure-Tech lock costs ~$2,000"): shown on the next job like it.
+  reason?: string;
 };
 export type BidResult = "won" | "lost" | "pending";
 

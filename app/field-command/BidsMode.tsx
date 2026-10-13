@@ -7,7 +7,7 @@
 // won, not awarded or pending, and your win rate (lib/bid-records.ts).
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { priceHelp, readScope, winChance, type PricedJob } from "../../lib/bid-price";
-import { beats, bidStats, easyWin, historyRows, filterHistory, workHistory, type Group, type HistoryFilter, type MarketJob, type MonthPoint, type WorkPrice } from "../../lib/bid-stats";
+import { beats, bidStats, easyWin, historyRows, filterHistory, myPrices, workHistory, workKey, type Group, type HistoryFilter, type MarketJob, type MonthPoint, type WorkPrice } from "../../lib/bid-stats";
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
 import { bidResult, bidsToCheck, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
@@ -76,6 +76,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const [selected, setSelected] = useState<UpcomingBid | null>(null);
   const [records, setRecords] = useState<Record<string, BidRecord>>({});
   const [draft, setDraft] = useState("");
+  const [reason, setReason] = useState("");
   const [filled, setFilled] = useState<{ omo: string; price: number; previous?: number; url: string; name: string; file: File; bytes: Uint8Array } | null>(null);
   const [busy, setBusy] = useState("");
   const [note, setNote] = useState("");
@@ -207,6 +208,9 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const help = useMemo(() => (selected ? priceHelp(selected.description, pricing) : null), [selected, pricing]);
   const scope = useMemo(() => readScope(selected?.description || ""), [selected]);
   const easy = useMemo(() => (selected && stats ? easyWin(selected.description, stats.workPrices) : null), [selected, stats]);
+  const descriptions = useMemo(() => new Map<string, string>([...marketJobs.map((j) => [j.omo, j.description] as [string, string]), ...(bids || []).map((b) => [b.omo, b.description] as [string, string])]), [marketJobs, bids]);
+  const learned = useMemo(() => myPrices(Object.values(records), (omo) => descriptions.get(omo)), [records, descriptions]);
+  const mineForThis = useMemo(() => (selected ? (learned.get(workKey(selected.description)) || []).filter((p) => p.omo !== selected.omo) : []), [selected, learned]);
   const draftValue = Number(String(draft).replace(/[^0-9.]/g, ""));
 
   async function update(next: BidRecord) {
@@ -219,7 +223,9 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     setNote("");
     setBusy("");
     setSelected(bid);
-    setDraft(records[bid.omo] ? String(records[bid.omo].price) : "");
+    const yourLast = (learned.get(workKey(bid.description)) || []).find((p) => p.omo !== bid.omo);
+    setDraft(records[bid.omo] ? String(records[bid.omo].price) : yourLast ? String(yourLast.price) : "");
+    setReason(records[bid.omo]?.reason || "");
   }
 
   async function savePrice() {
@@ -230,6 +236,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
       ...(previous || { attempts: 0 }), omo: selected.omo, address: selected.address, borough: selected.borough,
       bidDue: selected.bidDue, bidDueTime: selected.bidDueTime, price: draftValue, savedAt: now,
       status: previous && previous.status !== "saved" ? previous.status : "saved", updatedAt: now,
+      reason: reason.trim().slice(0, 200) || undefined,
     } as BidRecord);
     if (filled && filled.price !== draftValue) setFilled(null);
   }
@@ -358,6 +365,15 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 <span>$</span>
                 <input inputMode="decimal" aria-label="Bid price" data-hpd-smoke="fc-bid-price" placeholder="0.00" value={draft} onChange={(e) => setDraft(e.target.value)} />
               </label>
+              <input className="fc-bid-reason" aria-label="Why this price" data-hpd-smoke="fc-bid-reason" placeholder="Why this price? (optional, remembered for jobs like this)" value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
+              {mineForThis.length ? (
+                <div className="fc-bid-mine" data-hpd-smoke="fc-bid-mine">
+                  <b>Your price for this work: {money(mineForThis[0].price)}</b>
+                  <span>{mineForThis[0].omo} · {mineForThis[0].date ? `${mineForThis[0].date.slice(5, 7)}/${mineForThis[0].date.slice(8, 10)}` : ""} · {mineForThis[0].sent ? "sent to HPD" : "saved"}{mineForThis.length > 1 ? ` · ${mineForThis.length} of your bids on this kind of work: ${mineForThis.slice(0, 4).map((p) => money(p.price)).join(", ")}` : ""}</span>
+                  {mineForThis[0].reason ? <span className="fc-bid-mine-reason">“{mineForThis[0].reason}”</span> : null}
+                  {draftValue !== mineForThis[0].price ? <button type="button" onClick={() => setDraft(String(mineForThis[0].price))}>Use {money(mineForThis[0].price)}</button> : <small>Started from your price. The market numbers are below for comparison.</small>}
+                </div>
+              ) : null}
               <div className="fc-bid-scope" data-hpd-smoke="fc-bid-scope">
                 <small>What this job includes (read from the full description):</small>
                 <ul>
@@ -401,8 +417,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   ) : null}
                 </div>
               ) : <p className="fc-bid-help is-none">No similar past awards to compare with: price this one from the description.</p>}
-              <button type="button" className="fc-bid-fill" data-hpd-smoke="fc-bid-save" disabled={!(draftValue > 0) || draftValue === record?.price} onClick={() => void savePrice()}>
-                {record && draftValue !== record.price && draftValue > 0 ? `Save new price ${money2(draftValue)}` : `Save price${draftValue > 0 ? ` ${money2(draftValue)}` : ""}`}
+              <button type="button" className="fc-bid-fill" data-hpd-smoke="fc-bid-save" disabled={!(draftValue > 0) || (draftValue === record?.price && (reason.trim() || undefined) === record?.reason)} onClick={() => void savePrice()}>
+                {record && draftValue === record.price && (reason.trim() || undefined) !== record.reason ? "Save reason" : record && draftValue !== record.price && draftValue > 0 ? `Save new price ${money2(draftValue)}` : `Save price${draftValue > 0 ? ` ${money2(draftValue)}` : ""}`}
               </button>
               {record ? <p className="fc-bid-saved" data-hpd-smoke="fc-bid-saved">✓ Price saved: <b>{money2(record.price)}</b> · {when(record.savedAt)}{revisedFrom(record) ? <> · HPD has <s>{money2(revisedFrom(record)!)}</s>: fill and send the <b>revised</b> bid</> : ""}</p> : null}
               {record && record.status === "saved" && !record.priorPrice ? <button type="button" className="fc-bid-link" data-hpd-smoke="fc-bid-sent-elsewhere" onClick={() => void markSentElsewhere()}>Already faxed this bid at a different price?</button> : null}
@@ -459,7 +475,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               })}</ol>
             ) : <p>No open invitations right now. New ones are read every night.</p>
           ) : tab === "stats" ? (
-            <BidStatsView stats={stats} loading={market === null} jobs={marketJobs} />
+            <BidStatsView stats={stats} loading={market === null} jobs={marketJobs} learned={learned} />
           ) : tab === "history" ? (
             <JobHistory jobs={marketJobs} loading={market === null} />
           ) : (
@@ -517,7 +533,7 @@ function GroupTable({ title, rows, smoke }: { title: string; rows: Group[]; smok
 }
 
 // Bid stats: every invitation HPD awarded, yours or not, with the winning price (NYC Open Data).
-function BidStatsView({ stats, loading, jobs }: { stats: ReturnType<typeof bidStats> | null; loading: boolean; jobs: MarketJob[] }) {
+function BidStatsView({ stats, loading, jobs, learned }: { stats: ReturnType<typeof bidStats> | null; loading: boolean; jobs: MarketJob[]; learned: Map<string, { price: number; omo: string }[]> }) {
   if (!stats) return <p>{loading ? "Loading bid history…" : "No award history yet."}</p>;
   const o = stats.overall;
   return (
@@ -558,7 +574,7 @@ function BidStatsView({ stats, loading, jobs }: { stats: ReturnType<typeof bidSt
         <p className="fc-stats-note">By award month: invitations you received that HPD awarded, and how many you won (from your award emails).</p>
       </section>
       <ShouldHaveBid stats={stats} />
-      <PriceList rows={stats.priceList} jobs={jobs} />
+      <PriceList rows={stats.priceList} jobs={jobs} learned={learned} />
       <GroupTable title="By kind of work" rows={stats.byTrade} smoke="fc-stats-trade" />
       <GroupTable title="By borough" rows={stats.byBoro} smoke="fc-stats-boro" />
       <GroupTable title="By neighborhood (8+ invitations)" rows={stats.byArea.slice(0, 25)} smoke="fc-stats-area" />
@@ -602,7 +618,7 @@ function ShouldHaveBid({ stats }: { stats: ReturnType<typeof bidStats> }) {
 
 // Your usual price next to what other contractors won the same work for, with a suggested price and how
 // many of the recent winners it would have beaten.
-function PriceList({ rows, jobs }: { rows: WorkPrice[]; jobs: MarketJob[] }) {
+function PriceList({ rows, jobs, learned }: { rows: WorkPrice[]; jobs: MarketJob[]; learned: Map<string, { price: number; omo: string }[]> }) {
   const [openKey, setOpenKey] = useState("");
   if (!rows.length) return null;
   return (
@@ -617,7 +633,7 @@ function PriceList({ rows, jobs }: { rows: WorkPrice[]; jobs: MarketJob[] }) {
             <Fragment key={p.key}>
             <tr className={`${p.suggested > p.yours ? "is-raise" : ""} is-tappable${openKey === p.key ? " is-open" : ""}`} data-hpd-smoke="fc-price-row" onClick={() => setOpenKey(openKey === p.key ? "" : p.key)}>
               <th>{p.label}<em className="fc-price-more">{openKey === p.key ? "▲ hide history" : "▼ price history"}</em></th>
-              <td>{money(p.yours)}<small>{p.yoursN} wins</small></td>
+              <td>{money(p.yours)}<small>{p.yoursN} wins</small>{learned.get(p.key)?.length ? <small className="fc-price-mine" data-hpd-smoke="fc-price-mine">your last bid {money(learned.get(p.key)![0].price)}</small> : null}</td>
               <td>{money(p.others)}<small>{p.othersN} jobs</small></td>
               <td><b>{money(p.suggested)}</b><small>beats {b.n}/{b.of}</small></td>
             </tr>

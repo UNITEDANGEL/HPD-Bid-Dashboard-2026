@@ -237,3 +237,25 @@ export function workHistory(jobs: MarketJob[], key: string, now = new Date(), mo
     jobs: rows.sort((a, b) => b.awardDate.localeCompare(a.awardDate)).map((r) => ({ omo: r.omo, amount: r.amount, awardDate: r.awardDate, won: r.won, address: r.address || "", area: r.area || r.boro || "" })),
   };
 }
+
+// Your own prices, learned from the bids you saved or sent: by kind of work (same work, same size),
+// newest first. The next invitation of that kind starts from your price.
+export type MyPrice = { omo: string; price: number; date: string; sent: boolean; reason?: string; label: string };
+export function myPrices(
+  records: { omo: string; price: number; sentPrice?: number; status: string; sentAt?: string; savedAt?: string; updatedAt?: string; reason?: string }[],
+  descriptionOf: (omo: string) => string | undefined,
+) {
+  const out = new Map<string, MyPrice[]>();
+  for (const r of records) {
+    const description = descriptionOf(r.omo);
+    if (!description || !(r.price > 0)) continue;
+    const { key, label } = workOf(description);
+    const sent = r.status !== "saved";
+    // A sent bid's price is what HPD has; a newer saved-but-unsent price is still your latest thinking.
+    const price = r.price;
+    const date = String(r.updatedAt || r.sentAt || r.savedAt || "");
+    out.set(key, [...(out.get(key) || []), { omo: r.omo, price, date, sent, reason: r.reason, label }]);
+  }
+  for (const list of out.values()) list.sort((a, b) => b.date.localeCompare(a.date));
+  return out;
+}
