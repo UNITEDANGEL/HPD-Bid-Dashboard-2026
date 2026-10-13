@@ -755,6 +755,8 @@ export function readableDescription(text: string) {
   return text
     .replace(/\s+(?=\d{1,2}\s?\)\s)/g, "\n")
     .replace(/\s+(?=\d{1,2}\s?[-.]\s(?=[A-Za-z]))/g, "\n")
+    .replace(/\s+(?=\*[A-Za-z])/g, "\n") // HPD's standard *NOTES* on their own line
+    .replace(/\s+(?=NYC HPD EMERGENCY OPERATIONS)/g, "\n")
     .replace(/\n{2,}/g, "\n")
     .trim();
 }
