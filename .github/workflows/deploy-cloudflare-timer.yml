@@ -42,6 +42,18 @@ jobs:
             exit 1
           fi
 
+      - name: Check the token can start the fetcher (starts one fetch now)
+        env:
+          FETCH_DISPATCH_TOKEN: ${{ secrets.FETCH_DISPATCH_TOKEN }}
+        run: |
+          code=$(curl -s -o /tmp/gh.txt -w '%{http_code}' -X POST             -H "Authorization: Bearer $FETCH_DISPATCH_TOKEN" -H "Accept: application/vnd.github+json"             https://api.github.com/repos/${{ github.repository }}/actions/workflows/run-fetcher.yml/dispatches             -d '{"ref":"main","inputs":{"days_back":"14"}}')
+          echo "GitHub answered $code"
+          if [ "$code" != "204" ]; then
+            head -c 300 /tmp/gh.txt; echo
+            echo "::error::FETCH_DISPATCH_TOKEN can't start workflows (HTTP $code). Make a new fine-grained token: owner UNITEDANGEL, only HPD-Bid-Dashboard-2026, Actions: Read and write; save it as FETCH_DISPATCH_TOKEN."
+            exit 1
+          fi
+
       - name: Deploy the timer
         uses: cloudflare/wrangler-action@v4
         env:
