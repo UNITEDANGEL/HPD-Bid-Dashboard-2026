@@ -12,9 +12,14 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const saved = {};
+  // The status server is busy on the first try (as it can be); the bids screen tries again. It holds a
+  // bid saved on another phone, which must show in My bids.
+  let overridesCalls = 0;
+  const otherPhone = { omo: "ER99999", address: "1 OTHER PHONE ST", borough: "BK", bidDue: "2026-10-01", bidDueTime: "10:00 AM", price: 777, savedAt: "2026-09-30T12:00:00Z", status: "confirmed", sentAt: "2026-09-30T12:00:00Z", sentPrice: 777, attempts: 1, updatedAt: "2026-09-30T12:05:00Z" };
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, async (r) => {
     if (r.request().method() === "POST") { const b = JSON.parse(r.request().postData() || "{}"); saved[b.key] = b.patch; }
-    return r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } });
+    else if (/\/overrides/.test(r.request().url()) && ++overridesCalls === 1) return r.fulfill({ status: 503, body: "busy" });
+    return r.fulfill({ json: { ok: true, overrides: { "BID-ER99999": otherPhone }, accepted: [] } });
   });
   // Only bids that can still be sent show: two already-past ones are slipped into the real list.
   const real = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();
@@ -191,9 +196,10 @@ try {
   await sheet.locator("header button").click();
   await page.locator('[data-hpd-smoke="fc-bids-mine"]').click();
   const mine = await page.locator('[data-hpd-smoke="fc-my-bids"]').innerText();
-  assert.match(mine, /No results yet · 2 sent/);
+  assert.match(mine, /3 sent/);
   assert.ok(mine.includes(omo) && mine.includes(omo2) && /Awaiting award/.test(mine));
   assert.match(mine, /revised 1x/);
+  assert.ok(mine.includes("ER99999") && mine.includes("1 OTHER PHONE ST"), "a bid from another phone shows after the server was busy once");
 
   // 5b. HumbleFax emailed "sent successfully" but the app can't read the email yet: the owner taps
   // "I got HumbleFax's confirmation email" and the fax shows confirmed.

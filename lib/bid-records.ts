@@ -42,7 +42,14 @@ export async function saveBidRecord(record: BidRecord, workerUrl: string, fetche
   return all;
 }
 
-// Records from the status server (other phones) merged in: the newer one wins.
+// Records from the status server (other phones) merged in: the newer one wins. Kept on this phone too,
+// so saving another bid here doesn't drop them.
+export function mergeServerBidsAndKeep(local: Record<string, BidRecord>, overrides: Record<string, unknown>) {
+  const merged = mergeServerBids({ ...readBidRecords(), ...local }, overrides);
+  writeLocal(merged);
+  return merged;
+}
+
 export function mergeServerBids(local: Record<string, BidRecord>, overrides: Record<string, unknown>) {
   const merged = { ...local };
   for (const [key, value] of Object.entries(overrides || {})) {

@@ -10,7 +10,7 @@ import { priceHelp, readScope, winChance, type PricedJob } from "../../lib/bid-p
 import { beats, bidStats, easyWin, historyRows, filterHistory, type Group, type HistoryFilter, type MarketJob, type WorkPrice } from "../../lib/bid-stats";
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
-import { bidResult, checkBidFax, faxState, mergeServerBids, readBidRecords, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
+import { bidResult, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
 import "./bids.css";
 
 const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
@@ -87,10 +87,21 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   useEffect(() => { setRecords(readBidRecords()); }, []);
   useEffect(() => {
     if (!open) return;
-    fetch(`${HPD_STATUS_WORKER_URL}/overrides`, { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => { if (data?.overrides) setRecords((local) => mergeServerBids(local, data.overrides)); })
-      .catch(() => {});
+    // Bids saved on other phones (status server). It can be slow or busy: try up to 3 times, then
+    // again every 2 minutes while the bids are open.
+    let stopped = false;
+    const pull = async (tries = 3) => {
+      for (let i = 0; i < tries && !stopped; i++) {
+        try {
+          const r = await fetch(`${HPD_STATUS_WORKER_URL}/overrides`, { cache: "no-store" });
+          const data = r.ok ? await r.json() : null;
+          if (data?.overrides) { setRecords((local) => mergeServerBidsAndKeep(local, data.overrides)); return; }
+        } catch { /* offline: try again */ }
+        await new Promise((done) => setTimeout(done, 1500 * (i + 1)));
+      }
+    };
+    void pull();
+    const refresh = window.setInterval(() => void pull(1), 120000);
     if (!market) {
       // What HPD paid for every invitation you received, whoever won (NYC Open Data, nightly).
       fetch("/data/market_awards.json", { cache: "no-store" })
@@ -99,12 +110,13 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
         .then((data) => setMarket(Array.isArray(data?.jobs) ? data.jobs.map((j: { omo: string; description: string; amount: number; awardDate: string; won: boolean; address?: string; area?: string; boro?: string }) => ({ id: j.omo, description: j.description, amount: j.amount, date: j.awardDate, won: j.won, address: [j.address, j.area || j.boro].filter(Boolean).join(" · ") })) : []))
         .catch(() => setMarket([]));
     }
-    if (bids) return;
+    if (bids) return () => { stopped = true; window.clearInterval(refresh); };
     fetch("/data/upcoming_bids.json", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((data) => setBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => stillOpen(b)).sort(byUrgency) : []))
       .catch(() => { setBids([]); setError("Couldn't load the invitations right now."); });
-  }, [open, bids]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => { stopped = true; window.clearInterval(refresh); };
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const awarded = useMemo(() => new Map(history.filter((j) => j.amount > 0).map((j) => [j.id, j.amount])), [history]);
   // Awarded to anyone (open data): a bid of yours that shows here and isn't in your awards was lost.
