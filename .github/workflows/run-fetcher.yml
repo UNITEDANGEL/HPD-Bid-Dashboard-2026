@@ -124,7 +124,14 @@ jobs:
             echo "No fetcher data changes to commit."
           else
             git commit -m "Run built-in fetcher from GitHub Action"
-            git push origin main
+            # Someone else may push at the same moment (another fetch, a code change): take their commits
+            # and push again, keeping this fetch's fresh data, instead of losing the whole fetch.
+            for attempt in 1 2 3 4 5; do
+              git push origin main && break
+              [ "$attempt" = 5 ] && exit 1
+              sleep $((attempt * 5))
+              git pull --rebase -X theirs origin main
+            done
           fi
 
       - name: Check Cloudflare credentials
