@@ -48,6 +48,10 @@ function ordinal(day) {
   if (day % 10 === 3 && day % 100 !== 13) return `${day}RD`;
   return `${day}TH`;
 }
+function juratOf(iso) {
+  const [y, m, d] = iso.split("-").map(Number);
+  return { day: ordinal(d), month: MONTH_NAMES[m - 1], year: String(y).slice(-2) };
+}
 function todayJurat() {
   const now = new Date();
   return { day: ordinal(now.getDate()), month: MONTH_NAMES[now.getMonth()], year: String(now.getFullYear()).slice(-2) };
@@ -250,9 +254,10 @@ try {
   }
 
   // Print Copy, with NO digital notary step at all: the notary signs on paper, so the stamp
-  // and today's jurat date must appear automatically -- never blank, never dependent on
-  // someone remembering to run the on-screen notary approval first. No COPY watermark either,
-  // since this copy is meant to become the signed original.
+  // and the jurat date must appear automatically -- never blank, never dependent on someone
+  // remembering to run the on-screen notary approval first. The jurat date is the job's last
+  // event: here the job is closed out with a past work date (3 days ago), and the notary date
+  // must be that day, not the day it's printed. No COPY watermark either.
   {
     const job = "ER05729";
     const page = await isolatedPage();
@@ -260,6 +265,11 @@ try {
     page.on("pageerror", (error) => errors.push(String(error)));
 
     await page.goto(`${baseUrl}/paperwork?job=${job}&outcome=work_completed`, { waitUntil: "networkidle" });
+    const pastDay = new Date(Date.now() - 3 * 86400000);
+    const eventDay = `${pastDay.getFullYear()}-${String(pastDay.getMonth() + 1).padStart(2, "0")}-${String(pastDay.getDate()).padStart(2, "0")}`;
+    await page.locator('[data-hpd-smoke="paperwork-work-start"]').fill(eventDay);
+    await page.locator('[data-hpd-smoke="paperwork-work-complete"]').fill(eventDay);
+    assert.equal(await page.locator('[data-hpd-smoke="paperwork-work-complete"]').inputValue(), eventDay, "the work date can be edited to a past day");
     await page.locator('[data-hpd-smoke="paperwork-generate-print"]').click();
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
 
@@ -285,11 +295,12 @@ try {
     assert.ok(!/\bCOPY\b/.test(printText), `${job}: print copy must NOT carry the COPY watermark`);
     assert.ok(printText.includes("CHETANPREET MALHI"), `${job}: print copy must show the notary stamp even with no digital notary step`);
     assert.ok(printText.includes("Qualified in Queens County"), `${job}: print copy notary stamp text incomplete`);
-    const jurat = todayJurat();
-    assert.ok(printText.includes(`${jurat.day} ${jurat.month}`), `${job}: print copy jurat date must be today (${jurat.day} ${jurat.month}), not blank or a picked date`);
-    assert.ok(printText.includes(jurat.year), `${job}: print copy jurat year must be today's year (${jurat.year})`);
+    // The jurat date is the job's last event (here the work-completed date on the page), not today.
+    const jurat = juratOf(eventDay);
+    assert.ok(printText.includes(`${jurat.day} ${jurat.month}`), `${job}: print copy jurat date must be the event date ${eventDay} (${jurat.day} ${jurat.month})`);
+    assert.ok(printText.includes(jurat.year), `${job}: print copy jurat year must be the event's year (${jurat.year})`);
     assert.deepEqual(errors, [], `${job}: page errors`);
-    console.log(`PASS ${job} print copy: notary stamp + today's date filled with no digital notary step, no watermark, no signature image`);
+    console.log(`PASS ${job} print copy: notary stamp + the job's event date (${eventDay}) filled with no digital notary step, no watermark, no signature image`);
     await page.close();
   }
   console.log(`Status server calls answered locally (never reached the live server): ${statusServerCalls.length}`);

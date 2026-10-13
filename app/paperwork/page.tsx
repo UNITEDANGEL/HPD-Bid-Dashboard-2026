@@ -484,10 +484,12 @@ function formFromJob(job: JobRecord, outcome: PaperworkOutcome): PackageForm {
     deniedPhone,
     tenantPhone: tenant.phone,
     phoneNote: tenant.phone ? "" : noTelephoneNote(tenant.accessType === "common_area", tenant.apartment),
-    // Work packages: completed = the day the package is generated; started = the recorded start
-    // (the day of the before photos, which can be earlier), else the same day. Both stay editable.
-    workStart: displayDate(actualStartAt) || (outcome === "work_completed" || outcome === "partial_work_completed" ? displayDate(todayIsoDate()) : ""),
-    workComplete: outcome === "work_completed" || outcome === "partial_work_completed" ? displayDate(todayIsoDate()) : displayDate(noWorkCompleteAt),
+    // Work packages: completed = the day the work was finished in the field (recorded on the job
+    // card), so a job closed out later keeps its real date; today only if nothing was recorded.
+    // Started = the recorded start (the day of the before photos), else the completion day. Both
+    // stay editable, and the notary date follows the completion date.
+    workStart: displayDate(actualStartAt) || (outcome === "work_completed" || outcome === "partial_work_completed" ? displayDate(actualCompleteAt) || displayDate(todayIsoDate()) : ""),
+    workComplete: outcome === "work_completed" || outcome === "partial_work_completed" ? displayDate(actualCompleteAt) || displayDate(todayIsoDate()) : displayDate(noWorkCompleteAt),
     sourceStatus,
     notes: getJobDescription(job).slice(0, 650),
   };
@@ -1598,10 +1600,11 @@ export default function PaperworkPage() {
     // The notary's stamp text and jurat date are filled whenever a notary approved this
     // package, independent of whether signature IMAGES are drawn. A print copy never has
     // signature pictures (signed in ink instead) and never waits on a digital notary approval
-    // either -- the notary signs on paper, so the stamp always shows and the jurat date is
-    // always today, the moment the print copy is generated.
+    // either -- the notary signs on paper, so the stamp always shows. Its jurat date is the
+    // job's last event (work completed, or the 2nd no-access / refusal date, as edited on this
+    // page), not the day the copy is printed: a job closed out days later keeps its real date.
     const notary = printCopy
-      ? { signature: "", name: options.notary?.name || DEFAULT_NOTARY_NAME, date: todayIsoDate() }
+      ? { signature: "", name: options.notary?.name || DEFAULT_NOTARY_NAME, date: packageDay(activeForm, activeOutcome) }
       : options.notary || null;
     const includeNotaryImage = includeSignatureImage && notary;
     const useWorkTemplate = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
