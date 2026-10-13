@@ -61,6 +61,17 @@ assert.match(withMarket.text, /OTHERS WON ABOVE YOUR USUAL PRICE \(LAST 7 DAYS\)
 assert.match(withMarket.html, /Easy wins due tomorrow: 1/);
 assert.ok(!/Easy wins due tomorrow/.test(report.text), "no easy-win line when there are none");
 
+// Job follow-up in the report.
+const withFollow = buildDailyReport(jobs, now, "https://example.test/map/", [], { followUp: {
+  dueWeek: [{ omo: "ER07281", address: "2385 2 AVENUE", maturityDay: "2026-10-16", daysLeft: 2, status: "no status yet" }],
+  overdue: [{ omo: "EQ14718", address: "156 SOUTH 9 STREET", maturityDay: "2026-01-02", daysLeft: -285, status: "no status yet" }],
+  overdueCount: 127, waitingOnHpd: 51, hpdClosed: 433,
+} });
+assert.match(withFollow.text, /Follow-up: 127 overdue · 1 due this week · 51 waiting on HPD \(paperwork sent\) · 433 closed at HPD, not updated in the app/);
+assert.match(withFollow.text, /JOBS DUE THIS WEEK \(1\)\n- ER07281 · 2385 2 AVENUE · complete by 10\/16 \(in 2 days\) · no status yet/);
+assert.match(withFollow.text, /OVERDUE JOBS: 127 \(OLDEST 1 SHOWN\) \(1\)\n- EQ14718 · 156 SOUTH 9 STREET · 285 days overdue \(complete by 1\/2\) · no status yet/);
+assert.ok(!/OVERDUE JOBS/.test(report.text), "no follow-up section without the data");
+
 // A quiet day still reads cleanly.
 const quiet = buildDailyReport([{ OMO: "Q1", AwardAmount: "400.00" }], now);
 assert.equal(quiet.subject, "HPD day report · Wed 10/14 · $0 earned · 0 visits");

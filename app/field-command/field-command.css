@@ -2384,3 +2384,36 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 /* Pins for jobs HPD closed / paperwork sent. */
 .fc-pin.is-hpd-closed .fc-pin-chip { background: #166534; color: #fff; }
 .fc-pin.is-paper-sent .fc-pin-chip { background: #1d4ed8; color: #fff; }
+
+/* Follow-up report */
+.fc-follow-fab { position: relative; }
+.fc-follow-fab.is-active { background: #dc2626 !important; color: #fff !important; }
+.fc-follow-badge { position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: #dc2626; color: #fff; font: 800 10.5px/18px system-ui; text-align: center; border: 1.5px solid #fff; }
+.fc-follow-note { margin: 0 0 8px; color: #94a3b8; font: 500 12px/1.4 system-ui; }
+.fc-follow-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.fc-follow-tiles button { display: grid; justify-items: start; gap: 1px; padding: 10px; border: 0; border-radius: 12px; background: #1e293b; color: #e2e8f0; text-align: left; border-left: 4px solid #64748b; }
+.fc-follow-tiles b { color: #fff; font: 900 22px system-ui; }
+.fc-follow-tiles span { font: 700 12.5px system-ui; }
+.fc-follow-tiles small { color: #93c5fd; font: 600 11px system-ui; }
+.fc-follow-tiles .is-overdue { border-left-color: #ef4444; }
+.fc-follow-tiles .is-due-week { border-left-color: #f59e0b; }
+.fc-follow-tiles .is-recent { border-left-color: #3b82f6; }
+.fc-follow-tiles .is-sent { border-left-color: #6366f1; }
+.fc-follow-tiles .is-hpd-closed { border-left-color: #22c55e; }
+.fc-follow-section { margin-top: 14px; }
+.fc-follow-section h4 { margin: 0 0 6px; color: #fdba74; font: 900 13px system-ui; text-transform: uppercase; letter-spacing: .03em; }
+.fc-follow-section ol { margin: 0; padding: 0; list-style: none; }
+.fc-follow-section li { border-bottom: 1px solid #ffffff14; }
+.fc-follow-section li button { display: grid; gap: 1px; width: 100%; padding: 8px 0; border: 0; background: none; color: #e2e8f0; text-align: left; }
+.fc-follow-section li button > span:first-child { display: flex; justify-content: space-between; gap: 8px; }
+.fc-follow-section li b { color: #fff; font: 800 14px system-ui; }
+.fc-follow-section li span { font: 600 13px system-ui; }
+.fc-follow-section li small { color: #94a3b8; font: 500 12px/1.35 system-ui; }
+.fc-follow-section em { font-style: normal; font: 800 12px system-ui; }
+.fc-follow-section em.is-late { color: #fca5a5; }
+.fc-follow-section em.is-soon { color: #fde68a; }
+.fc-follow-section > p { margin: 0; color: #94a3b8; }
+.fc-follow-more { margin-top: 8px; min-height: 40px; width: 100%; border: 0; border-radius: 10px; background: #334155; color: #fff; font: 800 13px system-ui; }
+.fc-follow-active { position: absolute; z-index: 1500; top: calc(env(safe-area-inset-top, 0px) + 64px); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; border-radius: 999px; background: #7f1d1d; color: #fee2e2; font: 600 13px system-ui; box-shadow: 0 4px 14px #0006; white-space: nowrap; }
+.fc-follow-active b { color: #fff; }
+.fc-follow-active button { width: 30px; height: 30px; border: 0; border-radius: 50%; background: #ffffff22; color: #fff; font: 800 14px system-ui; }

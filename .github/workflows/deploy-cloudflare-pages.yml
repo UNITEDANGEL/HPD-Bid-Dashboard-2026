@@ -142,6 +142,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-route-progress.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-bids.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-bid-sync.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
 
       - name: Resolve Cloudflare production branch
         id: pages-project

@@ -13,6 +13,9 @@ export type ReportBid = {
   easy?: { suggested: number; yours: number; yoursN: number; others: number; othersN: number; beatsN: number; of: number };
 };
 // A job awarded to someone else for more than your usual price for that work (lib/bid-stats.ts).
+// Job follow-up (lib/job-followup.ts): due this week, overdue (oldest first), waiting on HPD.
+export type ReportFollowRow = { omo: string; address: string; maturityDay: string; daysLeft: number | null; status: string; sentAt?: string };
+export type ReportFollowUp = { dueWeek: ReportFollowRow[]; overdue: ReportFollowRow[]; overdueCount: number; waitingOnHpd: number; hpdClosed: number };
 export type ReportMissed = { omo: string; address: string; area?: string; work: string; amount: number; yours: number; awardDate: string };
 export type DailyReport = { subject: string; text: string; html: string };
 
@@ -29,7 +32,7 @@ function addDay(iso: string) {
 // Bids you saved / faxed (lib/bid-records.ts, from the status server): only what the report needs.
 export type ReportBidRecord = { omo: string; address: string; status: string; price: number; sentPrice?: number; sentAt?: string };
 
-export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https://hpd-bid-dashboard-2026.pages.dev/map/", bids: ReportBid[] = [], extra: { bidRecords?: ReportBidRecord[]; note?: string; missed?: ReportMissed[] } = {}): DailyReport {
+export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https://hpd-bid-dashboard-2026.pages.dev/map/", bids: ReportBid[] = [], extra: { bidRecords?: ReportBidRecord[]; note?: string; missed?: ReportMissed[]; followUp?: ReportFollowUp } = {}): DailyReport {
   // The test job is never part of the business numbers.
   const real = jobs.filter((job) => String(job.OMO ?? job.id ?? "").trim().toUpperCase() !== "TEST-0001");
   const id = (job: Job) => String(job.OMO ?? job.id ?? "");
@@ -62,6 +65,10 @@ export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https:
   const sentToday: SummaryRow[] = (extra.bidRecords || [])
     .filter((r) => r.sentAt && NY_DAY.format(new Date(r.sentAt)) === NY_DAY.format(now))
     .map((r) => ({ id: r.omo, address: r.address, text: `${money(r.sentPrice || r.price)} · ${faxWord[r.status] || r.status}` }));
+  const md = (d: string) => (d ? `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}` : "-");
+  const fu = extra.followUp;
+  const dueWeekRows: SummaryRow[] = (fu?.dueWeek || []).map((r) => ({ id: r.omo, address: r.address, text: `complete by ${md(r.maturityDay)} (${r.daysLeft === 0 ? "today" : `in ${r.daysLeft} day${r.daysLeft === 1 ? "" : "s"}`}) · ${r.status}` }));
+  const overdueRows: SummaryRow[] = (fu?.overdue || []).map((r) => ({ id: r.omo, address: r.address, text: `${-(r.daysLeft || 0)} days overdue (complete by ${md(r.maturityDay)}) · ${r.status}` }));
   const sections: [string, SummaryRow[], string][] = [
     ["Visits today", summary.visited, "Nothing recorded today."],
     ["Ready to close out", summary.closeOut, "None."],
@@ -69,6 +76,10 @@ export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https:
     ["Bids due tomorrow", bidsTomorrow, "No invitations due tomorrow."],
     ["Bids sent today", sentToday, "No bids sent today."],
     ["Others won above your usual price (last 7 days)", missed, "None: no job went for more than your usual price."],
+    ...(fu ? [
+      ["Jobs due this week", dueWeekRows, "Nothing due this week."] as [string, SummaryRow[], string],
+      [`Overdue jobs: ${fu.overdueCount} (oldest ${overdueRows.length} shown)`, overdueRows, "Nothing overdue."] as [string, SummaryRow[], string],
+    ] : []),
   ];
 
   const text = [
@@ -79,6 +90,7 @@ export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https:
     `Today: ${plural(c.visited, "visit")} · ${outcomes}`,
     secondDue ? `2nd no-access tries due now: ${secondDue}` : "",
     easyCount ? `Easy wins due tomorrow: ${easyCount} (see Bids due tomorrow)` : "",
+    fu ? `Follow-up: ${fu.overdueCount} overdue · ${fu.dueWeek.length} due this week · ${fu.waitingOnHpd} waiting on HPD (paperwork sent) · ${fu.hpdClosed} closed at HPD, not updated in the app` : "",
     ...sections.flatMap(([title, rows, none]) => ["", `${title.toUpperCase()} (${rows.length})`, ...(rows.length ? rows.map((r) => `- ${r.id} · ${r.address} · ${r.text}`) : [none])]),
     "",
     extra.note ? `Note: ${extra.note}` : "",

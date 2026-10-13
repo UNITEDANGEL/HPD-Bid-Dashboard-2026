@@ -14,7 +14,7 @@ import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/cur
 import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointmentPatch, appointmentTiming, nyToday, type Appointment } from "../../lib/appointments";
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
-import { followUpOf, recoveredStatus, type HpdJobStatus, type SentPaperwork } from "../../lib/job-followup";
+import { followUpOf, followUpReport, recoveredStatus, type FollowUp, type HpdJobStatus, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
@@ -567,6 +567,15 @@ function LayersIcon() {
   );
 }
 
+function FollowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path d="M9 4V3h6v1" /><path d="M8.5 10.5l1.5 1.5 3-3" /><path d="M8 16h8" />
+    </svg>
+  );
+}
+
 function StatsIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -726,6 +735,10 @@ export default function FieldCommandClient() {
   const pointsRef = useRef<{ job: JobRecord; lng: number; lat: number }[]>([]);
   const renderMarkersRef = useRef<() => void>(() => {});
   const [jobs, setJobs] = useState<JobRecord[]>([]);
+  // Follow-up: the report sheet, and the map filter it can set (overdue, due this week, ...).
+  const [followOpen, setFollowOpen] = useState(false);
+  const [followFilter, setFollowFilter] = useState<"" | "overdue" | "due-week" | "recent" | "sent" | "hpd-closed">("");
+  const [followShowAll, setFollowShowAll] = useState(false);
   // HPD's closing reason for each job and when you sent HPD its paperwork (nightly files).
   const followRef = useRef<{ hpd: Record<string, HpdJobStatus>; sent: Record<string, SentPaperwork> } | null>(null);
   const reapplyFollowRef = useRef<(() => void) | null>(null);
@@ -1126,9 +1139,38 @@ export default function FieldCommandClient() {
   );
 
   const openJobKey = selectedJob ? jobId(selectedJob) : "";
+  // Where each job stands for follow-up (HPD status + paperwork sent are on the jobs once loaded).
+  const followUps = useMemo(() => {
+    const map = new Map<string, FollowUp>();
+    for (const job of jobs) {
+      if (isTestJob(jobId(job))) continue;
+      map.set(jobId(job), followUpOf(job, job.HpdClosedReason !== undefined ? { closedReason: String(job.HpdClosedReason || "") } : undefined, job.PaperworkSentAt ? { sentAt: String(job.PaperworkSentAt), count: 1 } : undefined, calendarDate));
+    }
+    return map;
+  }, [jobs, calendarDate]);
+  const followReport = useMemo(() => followUpReport(
+    jobs.filter((j) => !isTestJob(jobId(j))),
+    Object.fromEntries(jobs.filter((j) => j.HpdClosedReason !== undefined).map((j) => [jobId(j), { closedReason: String(j.HpdClosedReason || "") }])),
+    Object.fromEntries(jobs.filter((j) => j.PaperworkSentAt).map((j) => [jobId(j), { sentAt: String(j.PaperworkSentAt), count: 1 }])),
+    calendarDate,
+  ), [jobs, calendarDate]);
+  const followMatch = (job: JobRecord) => {
+    const f = followUps.get(jobId(job));
+    if (!f) return false;
+    if (followFilter === "recent") return followReport.recent.some((r) => r.omo === f.omo);
+    return f.state === followFilter;
+  };
+
   const filteredJobs = useMemo(() => {
     const q = search.trim().toLowerCase();
     return jobs.filter((job) => {
+      // Follow-up filter (from the report or the quick filters): only those jobs, any status or date.
+      if (followFilter) {
+        if (!followMatch(job)) return false;
+        if (borough !== "ALL" && jobBorough(job) !== borough) return false;
+        if (q && ![jobId(job), jobAddress(job)].join(" ").toLowerCase().includes(q)) return false;
+        return true;
+      }
       // A job never drops off the map while you work it: the open job, and any job worked
       // today, stay visible whatever its new status (until you archive it).
       if (jobId(job) === openJobKey || (workedToday(job) && jobQueue(job) !== "archived")) return true;
@@ -1148,7 +1190,7 @@ export default function FieldCommandClient() {
       }
       return true;
     });
-  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey]);
+  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey, followFilter, followUps, followReport]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The open job card has priority over "follow me": stop following and show the job's pin in
   // the open strip of map between the search bar and the top of the card. The locate button
@@ -1374,6 +1416,7 @@ export default function FieldCommandClient() {
   }
 
   function resetQuickFilters() {
+    setFollowFilter("");
     setStatus("pending");
     setBorough("ALL");
     setDaysBack(null);
@@ -2320,6 +2363,14 @@ export default function FieldCommandClient() {
             <button type="button" onClick={resetQuickFilters}>Reset</button>
             <button type="button" onClick={() => setFiltersOpen(false)}>Done</button>
           </div>
+          <span className="fc-quick-label">Follow-up</span>
+          <div className="fc-quick-chips" data-hpd-smoke="fc-follow-chips">
+            {([["", "Off", null], ["overdue", "Overdue", followReport.counts.overdue], ["due-week", "Due this week", followReport.counts.dueWeek], ["recent", "Awarded 30 days", followReport.counts.recent], ["sent", "Waiting on HPD", followReport.counts.waitingOnHpd], ["hpd-closed", "Closed at HPD", followReport.counts.hpdClosed]] as const).map(([key, label, count]) => (
+              <button key={key || "off"} type="button" className={followFilter === key ? "is-active" : ""} aria-pressed={followFilter === key} data-hpd-smoke={`fc-follow-${key || "off"}`} onClick={() => setFollowFilter(key)}>
+                {label}{count !== null ? <> <b>{count}</b></> : null}
+              </button>
+            ))}
+          </div>
           <span className="fc-quick-label">Status</span>
           <div className="fc-quick-chips">
             {STATUS_FILTERS.map(({ key, label }) => (
@@ -2484,6 +2535,9 @@ export default function FieldCommandClient() {
           </button>
           <button type="button" className="fc-map-fab" aria-label="Today's appointments" title="Today's appointments" onClick={() => { setAgendaOpen(true); setSelectedJob(null); }}><ListIcon /></button>
           <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" title="My stats" onClick={() => { setStatsOpen(true); setSelectedJob(null); }}><StatsIcon /></button>
+          <button type="button" className={`fc-map-fab fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" title="Follow-up report" onClick={() => { setFollowOpen(true); setSelectedJob(null); }}>
+            <FollowIcon />{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
+          </button>
           <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { setSelectedJob(null); setBidsOpen((o) => !o); }}><BidsIcon /></button>
           <button
             type="button"
@@ -3190,6 +3244,55 @@ export default function FieldCommandClient() {
         history={bidHistory}
         onClose={() => setBidsOpen(false)}
       />
+      {followOpen ? (
+        <div className="fc-package-sheet fc-summary-sheet fc-follow-sheet" role="dialog" aria-label="Follow-up report" data-hpd-smoke="fc-follow-sheet">
+          <header>
+            <button type="button" onClick={() => setFollowOpen(false)}>← Map</button>
+            <strong>Follow-up report</strong>
+          </header>
+          <div className="fc-summary-body">
+            <p className="fc-follow-note">Status from the app, the affidavits / invoices you sent HPD, and HPD&apos;s own closing reason (updated nightly). Maturity = the job&apos;s work completion date.</p>
+            <div className="fc-follow-tiles" data-hpd-smoke="fc-follow-tiles">
+              {([["overdue", "Overdue", followReport.counts.overdue], ["due-week", "Due this week", followReport.counts.dueWeek], ["recent", "Awarded last 30 days", followReport.counts.recent], ["sent", "Waiting on HPD", followReport.counts.waitingOnHpd], ["hpd-closed", "Closed at HPD", followReport.counts.hpdClosed]] as const).map(([key, label, count]) => (
+                <button key={key} type="button" className={`is-${key}`} data-hpd-smoke={`fc-follow-tile-${key}`} onClick={() => { setFollowFilter(key); setFollowOpen(false); }}>
+                  <b>{count}</b><span>{label}</span><small>show on map</small>
+                </button>
+              ))}
+            </div>
+            {([
+              ["due-week", "Due this week", followReport.dueWeek, "Nothing due this week."],
+              ["overdue", "Overdue · oldest first", followReport.overdue, "Nothing overdue."],
+              ["sent", "Waiting on HPD · paperwork sent, HPD hasn't closed it", followReport.waitingOnHpd, "None."],
+              ["recent", "Awarded in the last 30 days", followReport.recent, "No new awards in 30 days."],
+            ] as const).map(([key, title, rows, none]) => (
+              <section key={key} className={`fc-follow-section is-${key}`} data-hpd-smoke={`fc-follow-${key}-list`}>
+                <h4>{title} ({rows.length})</h4>
+                {rows.length ? (
+                  <ol>{(followShowAll || key !== "overdue" ? rows : rows.slice(0, 25)).map((r) => {
+                    const md = (d: string) => (d ? `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}/${d.slice(2, 4)}` : "-");
+                    return (
+                      <li key={r.omo}>
+                        <button type="button" onClick={() => { const job = jobs.find((j) => jobId(j) === r.omo); setFollowOpen(false); if (job) setSelectedJob(job); }}>
+                          <span><b>{r.omo}</b>{r.daysLeft !== null && (r.state === "overdue" || r.state === "due-week") ? <em className={r.daysLeft < 0 ? "is-late" : "is-soon"}>{r.daysLeft < 0 ? `${-r.daysLeft}d overdue` : r.daysLeft === 0 ? "due today" : `in ${r.daysLeft}d`}</em> : null}</span>
+                          <span>{r.address}</span>
+                          <small>Awarded {md(r.awardDay)} · complete by {md(r.maturityDay)} · {r.status}{r.sentAt ? ` · paperwork sent ${md(r.sentAt)}` : ""}</small>
+                        </button>
+                      </li>
+                    );
+                  })}</ol>
+                ) : <p>{none}</p>}
+                {key === "overdue" && rows.length > 25 ? <button type="button" className="fc-follow-more" onClick={() => setFollowShowAll((v) => !v)}>{followShowAll ? "Show fewer" : `Show all ${rows.length}`}</button> : null}
+              </section>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {followFilter && !followOpen ? (
+        <div className="fc-follow-active" data-hpd-smoke="fc-follow-active">
+          <span>Showing: <b>{({ overdue: "Overdue", "due-week": "Due this week", recent: "Awarded last 30 days", sent: "Waiting on HPD", "hpd-closed": "Closed at HPD" } as const)[followFilter]}</b> · {filteredJobs.length} jobs</span>
+          <button type="button" onClick={() => setFollowFilter("")} aria-label="Stop the follow-up filter">✕</button>
+        </div>
+      ) : null}
       {stats && statsOpenWork ? (
         <div className="fc-package-sheet fc-summary-sheet fc-stats-sheet" role="dialog" aria-label="My stats" data-hpd-smoke="fc-stats-sheet">
           <header>

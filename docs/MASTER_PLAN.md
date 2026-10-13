@@ -66,23 +66,20 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
   Easy wins, Should have bid, prices vs the market, price history and win rate by month, History tab,
   learning from your prices.
 - Paperwork notary date = last event date; work-completed date from the field record.
-- HPD's closing reason for every job, nightly (scripts/update-hpd-job-status.mjs).
+- HPD's closing reason for every job and the paperwork you sent HPD (Sent mail), nightly.
+- Job status recovered for all of 2026: pins show "HPD ✓" / "sent ✓"; job card key dates (award, start,
+  complete by, days overdue); invitation day buttons (Today / Tomorrow / day after / All).
+- Follow-up report (map button) with overdue / due this week / awarded 30 days / waiting on HPD / closed
+  at HPD; the same as a map filter; in the evening email (due this week + oldest 15 overdue).
 
 ## Now (in this order)
 
-1. **Recover job statuses** from your sent affidavit / invoice emails (scripts/fetch_sent_paperwork.py)
-   and HPD's closing reason, for all of 2026 (then 2025).
-2. **Job pins show status** (completed, no access, refused, by others, paperwork sent, HPD closed, open)
-   so finished jobs stand out and aren't visited again.
-3. **Invitation day buttons**: Today / Tomorrow / Day after / All, with due times and counts.
-4. **Job card dates**: award date, start, completion (maturity), days overdue / left, HPD status, always
-   visible at the top.
-5. **Follow-up**: map filter (overdue, due this week, awarded last 30 days, HPD closed / app not updated)
-   and the daily follow-up report (app + evening email).
-6. **Dates and locking** of sent paperwork, with revisions kept.
-7. **Master file**: nightly full backup of jobs, bids, paperwork records, statuses and award data.
-8. **"My cost" floor** per kind of work.
-9. **Win rate from sent bids** (your price vs the winner's on jobs you actually bid).
+1. **Dates and locking** of sent paperwork, with revisions kept.
+2. **Master file**: nightly full backup of jobs, bids, paperwork records, statuses and award data.
+3. **"My cost" floor** per kind of work.
+4. **Win rate from sent bids** (your price vs the winner's on jobs you actually bid).
+
+5. **2025 jobs**: recover statuses for last year's jobs too, if needed.
 
 ## Open items for the owner
 - Google reconnect with "read email" lets the phone confirm faxes by itself (the fax checker covers it).
