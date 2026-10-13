@@ -13,7 +13,7 @@ const TRADES: [name: string, items: string[]][] = [
   ["Leaks, plaster & paint", ["leak", "sheetrock", "paint", "ceiling", "wall", "mold"]],
   ["Floors & tile", ["floor"]],
   ["Plumbing", ["plumbing"]],
-  ["Electrical & detectors", ["electric", "detector"]],
+  ["Electrical & detectors", ["electric", "detector", "intercom"]],
   ["Outside: fire escape, masonry, roof", ["fire-escape", "masonry", "metal", "roof"]],
 ];
 

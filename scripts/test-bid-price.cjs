@@ -29,6 +29,7 @@ assert.equal(priceHelp('ROOF DRAIN', history), null, 'nothing similar: no made-u
 const closerLock = readScope('AT BUILDING ENTRANCE DOOR: INSTALL NEW DOOR CLOSER AND REPLACE BROKEN MORTISE LOCK. ENSURE DOOR IS SELF CLOSING AND LATCHING. TOTAL DOORS = (1)');
 assert.deepEqual(closerLock.items, ['closer', 'entrance-lock'], 'a mortise lock at the entrance is entrance hardware');
 assert.deepEqual(readScope('INSTALL NEW DOOR CLOSER AND NEW PASSAGE LOCK. TOTAL DOORS = (1)').items, ['closer', 'lock']);
+assert.deepEqual(readScope('MAKE ALL NECESSARY REPAIRS TO BUILDING ENTRANCE DOOR SECURE-TECH LOCK AND BUZZER SYSTEM. TOTAL DOORS= (1)').items, ['entrance-lock', 'intercom'], 'ER05994: the buzzer is its own work');
 assert.deepEqual(readScope('INSTALL A NEW ADAMS RITE LOCK KEEPING THE EXISTING CYLINDER AND A NEW ELECTRIC STRIKE PLATE. TOTAL DOORS= (1)').items, ['entrance-lock']);
 assert.deepEqual(readScope('REPLACE BROKEN/DEFECTIVE HOPPER DOOR WITH NEW PROPERLY FIRE RATED HOPPER DOOR, COMPLETE WITH SELF-CLOSING HINGES, LATCH. TOTAL DOORS= (1)').items, ['door-new', 'hinges'], 'a new fire-rated hopper door (its latch is part of the door)');
 assert.equal(closerLock.doors, 1);

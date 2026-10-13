@@ -50,7 +50,9 @@ const ITEMS: [key: string, label: string, pattern: RegExp][] = [
   ["closer", "door closer", /closer/],
   // Building-entrance hardware (Adams Rite, Securtec, mortise, electric strike, mag lock) costs more than
   // a passage lock, so it is its own kind of work.
-  ["entrance-lock", "entrance lock (Adams Rite / mortise / electric strike)", /adams ?rite|securtec|mortise|electric strik|electric stik|mag(netic)? ?lock|maglock|intercom|buzzer/],
+  ["entrance-lock", "entrance lock (Adams Rite / mortise / electric strike)", /adams ?rite|secure?[ -]?tec|mortise|electric strik|electric stik|mag(netic)? ?lock|maglock/],
+  // A buzzer / intercom repair is more work than the lock alone (lock + buzzer jobs win at ~$1,400).
+  ["intercom", "buzzer / intercom", /buzzer|intercom|door ?bell|entry phone/],
   ["lock", "lock / latch", /\block|latch ?set|door latch\b|lockset|cylinder|\bknob|lever handle|deadbolt|strik\w* plate/],
   ["hinges", "hinges", /hinge/],
   ["pushbar", "push bar / panic bar", /push ?bar|panic|re-?entry|exit device/],
