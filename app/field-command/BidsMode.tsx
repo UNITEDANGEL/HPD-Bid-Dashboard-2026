@@ -5,9 +5,9 @@
 // the filled package (lib/bid-fill.ts) and send it to HPD's bid fax through HumbleFax. The fax is
 // checked against HumbleFax's confirmation email and can be resent. "My bids" tracks every bid sent:
 // won, not awarded or pending, and your win rate (lib/bid-records.ts).
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { priceHelp, readScope, winChance, type PricedJob } from "../../lib/bid-price";
-import { beats, bidStats, easyWin, historyRows, filterHistory, type Group, type HistoryFilter, type MarketJob, type WorkPrice } from "../../lib/bid-stats";
+import { beats, bidStats, easyWin, historyRows, filterHistory, workHistory, type Group, type HistoryFilter, type MarketJob, type MonthPoint, type WorkPrice } from "../../lib/bid-stats";
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
 import { bidResult, bidsToCheck, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
@@ -459,7 +459,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               })}</ol>
             ) : <p>No open invitations right now. New ones are read every night.</p>
           ) : tab === "stats" ? (
-            <BidStatsView stats={stats} loading={market === null} />
+            <BidStatsView stats={stats} loading={market === null} jobs={marketJobs} />
           ) : tab === "history" ? (
             <JobHistory jobs={marketJobs} loading={market === null} />
           ) : (
@@ -517,7 +517,7 @@ function GroupTable({ title, rows, smoke }: { title: string; rows: Group[]; smok
 }
 
 // Bid stats: every invitation HPD awarded, yours or not, with the winning price (NYC Open Data).
-function BidStatsView({ stats, loading }: { stats: ReturnType<typeof bidStats> | null; loading: boolean }) {
+function BidStatsView({ stats, loading, jobs }: { stats: ReturnType<typeof bidStats> | null; loading: boolean; jobs: MarketJob[] }) {
   if (!stats) return <p>{loading ? "Loading bid history…" : "No award history yet."}</p>;
   const o = stats.overall;
   return (
@@ -542,8 +542,23 @@ function BidStatsView({ stats, loading }: { stats: ReturnType<typeof bidStats> |
           ))}</ul>
         </section>
       ) : null}
+      <section className="fc-stats-block" data-hpd-smoke="fc-stats-months">
+        <h4>Your win rate by month</h4>
+        <table className="fc-month-table">
+          <thead><tr><th>Month</th><th>Won</th><th>Rate</th><th>You won</th></tr></thead>
+          <tbody>{stats.byMonth.slice(0, 15).map((m) => (
+            <tr key={m.month} className={m.winRate < 0.2 ? "is-low" : m.winRate >= 0.3 ? "is-high" : ""}>
+              <th>{new Date(`${m.month}-15T12:00:00Z`).toLocaleDateString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })}</th>
+              <td>{m.won} of {m.invitations}</td>
+              <td><b>{Math.round(m.winRate * 100)}%</b></td>
+              <td>{money(m.moneyWon)}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+        <p className="fc-stats-note">By award month: invitations you received that HPD awarded, and how many you won (from your award emails).</p>
+      </section>
       <ShouldHaveBid stats={stats} />
-      <PriceList rows={stats.priceList} />
+      <PriceList rows={stats.priceList} jobs={jobs} />
       <GroupTable title="By kind of work" rows={stats.byTrade} smoke="fc-stats-trade" />
       <GroupTable title="By borough" rows={stats.byBoro} smoke="fc-stats-boro" />
       <GroupTable title="By neighborhood (8+ invitations)" rows={stats.byArea.slice(0, 25)} smoke="fc-stats-area" />
@@ -587,7 +602,8 @@ function ShouldHaveBid({ stats }: { stats: ReturnType<typeof bidStats> }) {
 
 // Your usual price next to what other contractors won the same work for, with a suggested price and how
 // many of the recent winners it would have beaten.
-function PriceList({ rows }: { rows: WorkPrice[] }) {
+function PriceList({ rows, jobs }: { rows: WorkPrice[]; jobs: MarketJob[] }) {
+  const [openKey, setOpenKey] = useState("");
   if (!rows.length) return null;
   return (
     <section className="fc-stats-block" data-hpd-smoke="fc-stats-prices">
@@ -598,12 +614,15 @@ function PriceList({ rows }: { rows: WorkPrice[] }) {
         <tbody>{rows.map((p) => {
           const b = beats(p, p.suggested);
           return (
-            <tr key={p.key} className={p.suggested > p.yours ? "is-raise" : ""}>
-              <th>{p.label}</th>
+            <Fragment key={p.key}>
+            <tr className={`${p.suggested > p.yours ? "is-raise" : ""} is-tappable${openKey === p.key ? " is-open" : ""}`} data-hpd-smoke="fc-price-row" onClick={() => setOpenKey(openKey === p.key ? "" : p.key)}>
+              <th>{p.label}<em className="fc-price-more">{openKey === p.key ? "▲ hide history" : "▼ price history"}</em></th>
               <td>{money(p.yours)}<small>{p.yoursN} wins</small></td>
               <td>{money(p.others)}<small>{p.othersN} jobs</small></td>
               <td><b>{money(p.suggested)}</b><small>beats {b.n}/{b.of}</small></td>
             </tr>
+            {openKey === p.key ? <tr className="fc-price-detail"><td colSpan={4}><WorkHistoryView jobs={jobs} work={p} /></td></tr> : null}
+            </Fragment>
           );
         })}</tbody>
       </table>
@@ -644,6 +663,63 @@ function JobHistory({ jobs, loading }: { jobs: MarketJob[]; loading: boolean }) 
         </li>
       ))}</ol>
       {result.rows.length > limit ? <button type="button" className="fc-bid-fill is-secondary" onClick={() => setLimit((n) => n + 60)}>Show more ({(result.rows.length - limit).toLocaleString()} left)</button> : null}
+    </div>
+  );
+}
+
+// Month-by-month winning prices for one kind of work: yours (blue) and other contractors' (orange).
+function WorkHistoryView({ jobs, work }: { jobs: MarketJob[]; work: WorkPrice }) {
+  const h = useMemo(() => workHistory(jobs, work.key), [jobs, work.key]);
+  const [tip, setTip] = useState<number | null>(null);
+  const [table, setTable] = useState(false);
+  const [all, setAll] = useState(false);
+  if (!h.months.length) return <p className="fc-stats-note">No awards for this work yet.</p>;
+  const W = 340, H = 170, L = 44, R = 12, T = 14, B = 26;
+  const vals = h.months.flatMap((m) => [m.yours, m.others]).filter((v): v is number => v != null);
+  const top = Math.max(...vals), low = Math.min(...vals);
+  const step = top - low > 1500 ? 500 : top - low > 600 ? 200 : top - low > 250 ? 100 : 50;
+  const y0 = Math.max(0, Math.floor((low * 0.9) / step) * step), y1 = Math.ceil((top * 1.05) / step) * step;
+  const x = (i: number) => L + (h.months.length === 1 ? (W - L - R) / 2 : (i * (W - L - R)) / (h.months.length - 1));
+  const y = (v: number) => T + ((y1 - v) * (H - T - B)) / (y1 - y0 || 1);
+  const ticks: number[] = []; for (let v = y0; v <= y1; v += step) ticks.push(v);
+  const path = (k: "yours" | "others") => {
+    let d = "", pen = false;
+    h.months.forEach((m, i) => { const v = m[k]; if (v == null) { pen = false; return; } d += `${pen ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`; pen = true; });
+    return d;
+  };
+  const label = (m: string) => new Date(`${m}-15T12:00:00Z`).toLocaleDateString("en-US", { month: "short", year: "2-digit", timeZone: "UTC" });
+  const last = (k: "yours" | "others") => { for (let i = h.months.length - 1; i >= 0; i--) if (h.months[i][k] != null) return i; return -1; };
+  const ly = last("yours"), lo = last("others");
+  const t = tip != null ? h.months[tip] : null;
+  return (
+    <div className="fc-workhist" data-hpd-smoke="fc-work-history">
+      <div className="fc-workhist-legend"><span><i className="is-you" />You</span><span><i className="is-others" />Other winners</span><small>typical winning price per month</small></div>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Monthly winning prices for ${work.label}`} onMouseLeave={() => setTip(null)}>
+        {ticks.map((v) => <g key={v}><line x1={L} x2={W - R} y1={y(v)} y2={y(v)} className="grid" /><text x={L - 6} y={y(v) + 3.5} textAnchor="end" className="axis">${v >= 1000 ? `${(v / 1000).toFixed(v % 1000 ? 1 : 0)}k` : v}</text></g>)}
+        {h.months.map((m, i) => (i % Math.ceil(h.months.length / 5) === 0 || i === h.months.length - 1) ? <text key={m.month} x={x(i)} y={H - 8} textAnchor="middle" className="axis">{label(m.month)}</text> : null)}
+        {tip != null ? <line x1={x(tip)} x2={x(tip)} y1={T} y2={H - B} className="cross" /> : null}
+        <path d={path("others")} className="line is-others" />
+        <path d={path("yours")} className="line is-you" />
+        {h.months.map((m, i) => <g key={m.month}>
+          {m.others != null ? <circle cx={x(i)} cy={y(m.others)} r={4} className="dot is-others" /> : null}
+          {m.yours != null ? <circle cx={x(i)} cy={y(m.yours)} r={4} className="dot is-you" /> : null}
+        </g>)}
+        {lo >= 0 ? <text x={Math.min(x(lo) + 6, W - R)} y={y(h.months[lo].others!) - 7} textAnchor={x(lo) > W - 60 ? "end" : "start"} className="direct">${h.months[lo].others}</text> : null}
+        {ly >= 0 ? <text x={Math.min(x(ly) + 6, W - R)} y={y(h.months[ly].yours!) + 15} textAnchor={x(ly) > W - 60 ? "end" : "start"} className="direct">${h.months[ly].yours}</text> : null}
+        {h.months.map((m, i) => <rect key={m.month} x={x(i) - (W - L - R) / Math.max(h.months.length - 1, 1) / 2} y={T} width={(W - L - R) / Math.max(h.months.length - 1, 1)} height={H - T - B} fill="transparent" onMouseEnter={() => setTip(i)} onClick={() => setTip(i)} />)}
+      </svg>
+      <p className="fc-workhist-tip" data-hpd-smoke="fc-work-tip">{t ? <><b>{label(t.month)}</b> · other winners {t.others != null ? `${money(t.others)} (${t.othersN} job${t.othersN === 1 ? "" : "s"})` : "none"} · you {t.yours != null ? `${money(t.yours)} (${t.yoursN} win${t.yoursN === 1 ? "" : "s"})` : "none"}</> : "Tap a month to see its prices."}</p>
+      <button type="button" className="fc-bid-link" onClick={() => setTable((v) => !v)}>{table ? "Hide table" : "Show as a table"}</button>
+      {table ? (
+        <table className="fc-workhist-table" data-hpd-smoke="fc-work-table">
+          <thead><tr><th>Month</th><th>Other winners</th><th>You</th></tr></thead>
+          <tbody>{[...h.months].reverse().map((m) => <tr key={m.month}><th>{label(m.month)}</th><td>{m.others != null ? `${money(m.others)} · ${m.othersN}` : "–"}</td><td>{m.yours != null ? `${money(m.yours)} · ${m.yoursN}` : "–"}</td></tr>)}</tbody>
+        </table>
+      ) : null}
+      <ol className="fc-stats-losses fc-workhist-jobs">{(all ? h.jobs : h.jobs.slice(0, 8)).map((j) => (
+        <li key={j.omo}><b>{j.omo} · {money(j.amount)} · {j.won ? "you won" : "other contractor"}</b><span>{j.address}{j.area ? ` · ${j.area}` : ""} · awarded {j.awardDate.slice(5, 7)}/{j.awardDate.slice(8, 10)}/{j.awardDate.slice(2, 4)}</span></li>
+      ))}</ol>
+      {h.jobs.length > 8 ? <button type="button" className="fc-bid-link" onClick={() => setAll((v) => !v)}>{all ? "Show fewer" : `All ${h.jobs.length} jobs`}</button> : null}
     </div>
   );
 }

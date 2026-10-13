@@ -64,7 +64,12 @@ async function main() {
   const descriptions = readJson(DESCRIPTIONS, {});
   const added = addUpcoming(descriptions, readJson(path.join(ROOT, "data", "upcoming_bids.json"), {}));
   fs.writeFileSync(DESCRIPTIONS, JSON.stringify(Object.fromEntries(Object.entries(descriptions).sort()), null, 0));
-  const won = new Set(readJson(path.join(ROOT, "data", "COA_Fetcher_2026.json"), []).map((j) => String(j.OMO || "").toUpperCase()));
+  // Yours: the job database plus every "CONFIRMATION OF AWARD" email since 2025 (data/your_awards.json,
+  // scripts/fetch_award_history.py); the job database alone starts in December 2025.
+  const won = new Set([
+    ...readJson(path.join(ROOT, "data", "COA_Fetcher_2026.json"), []).map((j) => String(j.OMO || "").toUpperCase()),
+    ...Object.keys(readJson(path.join(ROOT, "data", "your_awards.json"), {})),
+  ]);
   const awards = await fetchAwards();
   const jobs = joinAwards(descriptions, awards, won);
   const result = { generatedAt: new Date().toISOString(), source: "NYC Open Data: Open Market Order (OMO) Charges", jobs };

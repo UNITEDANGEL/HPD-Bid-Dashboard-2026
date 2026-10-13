@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { loadLib } from "./daily-report.mjs";
 
-const { bidStats, easyWin, beats, historyRows, filterHistory } = await loadLib("bid-stats");
+const { bidStats, easyWin, beats, historyRows, filterHistory, workHistory, workKey } = await loadLib("bid-stats");
 const now = new Date("2026-10-12T12:00:00Z");
 const day = (n) => new Date(now.getTime() - n * 86400000).toISOString().slice(0, 10);
 const LOCK = "INSTALL NEW PASSAGE LOCK AT COMPACTOR DOOR. TOTAL DOORS = (1)";
@@ -53,4 +53,22 @@ assert.equal(lockOthers.count, 7, "6 recent + 1 older lock job won by others");
 assert.equal(lockOthers.median, 600);
 assert.equal(filterHistory(rows, { text: "ER00001", trade: "", boro: "", who: "all" }).count, 1);
 assert.equal(filterHistory(rows, { text: "", trade: "", boro: "Queens", who: "all" }).count, 0);
-console.log("PASS bid stats: price list (your usual vs winners, suggested, beats N of M), should-have-bid from real awards, Easy win only with enough history, history search and filters");
+// Win rate by month adds up to the jobs.
+const monthsTotal = s.byMonth.reduce((sum, m) => sum + m.invitations, 0), monthsWon = s.byMonth.reduce((sum, m) => sum + m.won, 0);
+assert.ok(monthsTotal <= jobs.length && monthsWon <= jobs.filter((j) => j.won).length);
+for (const m of s.byMonth) assert.equal(m.won, jobs.filter((j) => j.won && j.awardDate.startsWith(m.month)).length, `wins in ${m.month}`);
+// Month-by-month history of one kind of work.
+const wh = workHistory(jobs, workKey(LOCK), now, 18);
+const byMonth = (m) => wh.months.find((x) => x.month === m);
+const lockJobs = jobs.filter((j) => j.description === LOCK);
+assert.equal(wh.jobs.length, lockJobs.length, "every lock job is listed");
+assert.ok(wh.jobs.every((j, i) => i === 0 || wh.jobs[i - 1].awardDate >= j.awardDate), "newest first");
+for (const j of lockJobs.filter((j) => (now - Date.parse(j.awardDate)) / 86400000 < 500)) {
+  const m = byMonth(j.awardDate.slice(0, 7));
+  assert.ok(m && (j.won ? m.yoursN : m.othersN) >= 1, `month ${j.awardDate.slice(0, 7)} counts ${j.omo}`);
+}
+const sept = jobs.filter((j) => j.description === LOCK && j.awardDate.startsWith("2026-09"));
+const septM = byMonth("2026-09");
+assert.equal(septM.yoursN + septM.othersN, sept.length);
+assert.equal(wh.months.at(-1).month, "2026-10", "runs to this month");
+console.log("PASS bid stats: price list (your usual vs winners, suggested, beats N of M), should-have-bid from real awards, Easy win only with enough history, history search and filters, month-by-month price history");

@@ -240,6 +240,26 @@ try {
   assert.ok(await page.locator('[data-hpd-smoke="fc-stats-prices"] tbody tr').count() >= 10, "price list rows");
   assert.match(await page.locator('[data-hpd-smoke="fc-stats-prices"] tbody tr').first().innerText(), /\d+ wins[\s\S]*\d+ jobs[\s\S]*beats \d+\/\d+/);
 
+  // Win rate by month matches the data file.
+  const marketData = (await (await fetch(`${baseUrl}/data/market_awards.json`)).json()).jobs;
+  const firstMonthRow = page.locator('[data-hpd-smoke="fc-stats-months"] tbody tr').first();
+  const newestMonth = marketData.map((j) => j.awardDate.slice(0, 7)).filter((m, _, all) => all.filter((x) => x === m).length >= 5).sort().at(-1);
+  const inMonth = marketData.filter((j) => j.awardDate.startsWith(newestMonth));
+  assert.match(await firstMonthRow.innerText(), new RegExp(`${inMonth.filter((j) => j.won).length} of ${inMonth.length}`), `win rate row for ${newestMonth}`);
+
+  // 6b. Price history: tap a price-list row, see months with both series, tap a month, open the table.
+  await page.locator('[data-hpd-smoke="fc-price-row"]').first().click();
+  const wh = page.locator('[data-hpd-smoke="fc-work-history"]');
+  await wh.waitFor({ timeout: 10000 });
+  assert.match(await wh.innerText(), /You[\s\S]*Other winners/);
+  assert.ok(await wh.locator("svg path.line.is-others").count() === 1 && await wh.locator("svg circle.dot").count() >= 6, "both lines and monthly dots drawn");
+  const rects = wh.locator("svg rect");
+  await rects.nth(await rects.count() - 2).click();
+  assert.match(await page.locator('[data-hpd-smoke="fc-work-tip"]').innerText(), /other winners (\$[\d,]+ \(\d+ jobs?\)|none) · you (\$[\d,]+ \(\d+ wins?\)|none)/);
+  await wh.getByText("Show as a table").click();
+  assert.ok(await page.locator('[data-hpd-smoke="fc-work-table"] tbody tr').count() >= 3, "table view of the months");
+  assert.match(await wh.locator(".fc-workhist-jobs li").first().innerText(), /E[QR]\d{5} · \$[\d,]+ · (you won|other contractor)/);
+
   // 7. History: every awarded invitation, checked against the raw data file.
   const market = (await (await fetch(`${baseUrl}/data/market_awards.json`)).json()).jobs;
   await page.locator('[data-hpd-smoke="fc-bids-history"]').click();

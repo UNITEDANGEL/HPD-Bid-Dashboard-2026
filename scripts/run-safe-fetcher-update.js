@@ -346,6 +346,13 @@ async function main() {
 
     // What HPD paid for every invitation received, whoever won (NYC Open Data), for the price help
     // and "Lost: won at $X" in My bids. Never stops the fetcher run.
+    // Jobs awarded to you (award emails, last 45 days added to the list), so the bid stats know every win.
+    try {
+      const since = new Date(Date.now() - 45 * 86400000).toISOString().slice(0, 10).replace(/-/g, "/");
+      runStep("Read award emails", "python", ["scripts/fetch_award_history.py", "--since", since]);
+    } catch (err) {
+      appendLog(`WARNING: Award emails were not read: ${err.message || String(err)}`);
+    }
     try {
       runStep("Update market awards from NYC Open Data", "node", ["scripts/update-market-awards.mjs"]);
     } catch (err) {

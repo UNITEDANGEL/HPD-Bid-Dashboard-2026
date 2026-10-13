@@ -181,3 +181,36 @@
 .fc-bid-predict.is-low { color: #fca5a5; }
 
 .fc-bid-pin.is-fax-failed { background: #dc2626; border-color: #fff; font-size: 16px; }
+
+/* Price history per kind of work. Series colors validated on the dark surface (blue = you, orange = others). */
+.fc-price-list tr.is-tappable { cursor: pointer; }
+.fc-price-more { display: block; color: #93c5fd !important; font: 700 10.5px system-ui; font-style: normal; }
+.fc-price-detail td { padding: 0 0 10px; text-align: left; }
+.fc-workhist { --you: #3987e5; --others: #d95926; padding: 8px; border-radius: 10px; background: #1c1917; }
+.fc-workhist svg { display: block; width: 100%; height: auto; }
+.fc-workhist .grid { stroke: #ffffff14; stroke-width: 1; }
+.fc-workhist .axis { fill: #a8a29e; font: 600 10px system-ui; }
+.fc-workhist .cross { stroke: #ffffff40; stroke-width: 1; }
+.fc-workhist .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.fc-workhist .line.is-you { stroke: var(--you); }
+.fc-workhist .line.is-others { stroke: var(--others); }
+.fc-workhist .dot { stroke: #1c1917; stroke-width: 2; }
+.fc-workhist .dot.is-you { fill: var(--you); }
+.fc-workhist .dot.is-others { fill: var(--others); }
+.fc-workhist .direct { fill: #e7e5e4; font: 800 11px system-ui; }
+.fc-workhist-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; margin-bottom: 4px; color: #e7e5e4; font: 700 12px system-ui; }
+.fc-workhist-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.fc-workhist-legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; }
+.fc-workhist-legend i.is-you { background: var(--you); }
+.fc-workhist-legend i.is-others { background: var(--others); }
+.fc-workhist-legend small { color: #a8a29e; font: 600 11px system-ui; }
+.fc-workhist-tip { margin: 4px 0 0; min-height: 18px; color: #d6d3d1; font: 600 12px/1.4 system-ui; }
+.fc-workhist-tip b { color: #fff; }
+.fc-workhist-table { width: 100%; margin-top: 6px; border-collapse: collapse; }
+.fc-workhist-table th, .fc-workhist-table td { padding: 4px 3px; border-bottom: 1px solid #ffffff14; text-align: right; color: #e7e5e4; font: 600 12px system-ui; }
+.fc-workhist-table th:first-child { text-align: left; }
+.fc-workhist-jobs { margin-top: 8px; }
+
+.fc-month-table tbody th { width: 30%; }
+.fc-month-table tr.is-low td b { color: #fca5a5; }
+.fc-month-table tr.is-high td b { color: #86efac; }

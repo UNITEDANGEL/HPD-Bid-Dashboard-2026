@@ -154,6 +154,18 @@ export function bidStats(jobs: MarketJob[], now = new Date()) {
     .sort((a, b) => b.r.awardDate.localeCompare(a.r.awardDate) || b.r.amount - a.r.amount)
     .map(({ r, p }) => ({ omo: r.omo, awardDate: r.awardDate, address: r.address || "", area: r.area || r.boro || "", work: r.label, amount: r.amount, yours: p.yours, yoursN: p.yoursN }));
 
+  // Win rate month by month (by award month), newest first.
+  const monthMap = new Map<string, { month: string; invitations: number; won: number; moneyWon: number; moneyAll: number }>();
+  for (const r of rows) {
+    const k = r.awardDate.slice(0, 7);
+    const m = monthMap.get(k) || { month: k, invitations: 0, won: 0, moneyWon: 0, moneyAll: 0 };
+    m.invitations++; m.moneyAll += r.amount;
+    if (r.won) { m.won++; m.moneyWon += r.amount; }
+    monthMap.set(k, m);
+  }
+  const byMonth = [...monthMap.values()].filter((m) => m.invitations >= 5).sort((a, b) => b.month.localeCompare(a.month))
+    .map((m) => ({ ...m, winRate: m.won / m.invitations, moneyWon: Math.round(m.moneyWon), moneyAll: Math.round(m.moneyAll) }));
+
   const losses = rows.filter((r) => !r.won).sort((a, b) => b.awardDate.localeCompare(a.awardDate)).slice(0, 30)
     .map((r) => ({ omo: r.omo, address: r.address || "", area: r.area || r.boro || "", trade: r.trade, amount: r.amount, awardDate: r.awardDate }));
   return {
@@ -162,6 +174,7 @@ export function bidStats(jobs: MarketJob[], now = new Date()) {
     byTrade, byBoro, byArea,
     moves: byTradeBoro.sort((a, b) => (b.advice === "raise" ? 1 : 0) - (a.advice === "raise" ? 1 : 0) || b.invitations - a.invitations).slice(0, 8),
     losses,
+    byMonth,
     priceList,
     workPrices,
     shouldHaveBid,
@@ -200,5 +213,27 @@ export function filterHistory(rows: HistoryRow[], f: HistoryFilter) {
     median: Math.round(median(list.map((r) => r.amount))),
     yoursMedian: Math.round(median(mine.map((r) => r.amount))),
     othersMedian: Math.round(median(others.map((r) => r.amount))),
+  };
+}
+
+// Price history of one kind of work, month by month: typical winning price for you and for other
+// contractors, with how many jobs each month, plus the jobs themselves (newest first).
+export type MonthPoint = { month: string; yours: number | null; yoursN: number; others: number | null; othersN: number };
+
+export function workHistory(jobs: MarketJob[], key: string, now = new Date(), months = 18) {
+  const rows = jobs.filter((j) => j.amount > 0 && j.awardDate && workKey(j.description) === key);
+  const list: MonthPoint[] = [];
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() - i, 1));
+    const month = d.toISOString().slice(0, 7);
+    const inMonth = rows.filter((r) => r.awardDate.slice(0, 7) === month);
+    const mine = inMonth.filter((r) => r.won).map((r) => r.amount), others = inMonth.filter((r) => !r.won).map((r) => r.amount);
+    list.push({ month, yours: mine.length ? Math.round(median(mine)) : null, yoursN: mine.length, others: others.length ? Math.round(median(others)) : null, othersN: others.length });
+  }
+  const first = list.findIndex((m) => m.yoursN || m.othersN);
+  return {
+    months: first < 0 ? [] : list.slice(first),
+    jobs: rows.sort((a, b) => b.awardDate.localeCompare(a.awardDate)).map((r) => ({ omo: r.omo, amount: r.amount, awardDate: r.awardDate, won: r.won, address: r.address || "", area: r.area || r.boro || "" })),
   };
 }
