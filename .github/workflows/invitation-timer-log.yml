@@ -1,0 +1,19 @@
+name: Invitation Timer Log
+
+# Watches the Cloudflare invitation timer for 12 minutes and prints what each run did (to check it).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tail:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Watch the timer's runs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          timeout 720 npx -y wrangler@4 tail hpd-invitation-timer --format pretty || true
