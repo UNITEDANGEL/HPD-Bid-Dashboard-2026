@@ -84,7 +84,11 @@ def should_check(overrides, today, force=False):
 
 
 def main(days, dry, force=False):
-    overrides = http("GET", "/overrides").get("overrides", {})
+    try:
+        overrides = http("GET", "/overrides").get("overrides", {})
+    except Exception as error:  # the status server is down: nothing to compare with or save to
+        print(f"Bid faxes: status server not answering ({error}); will try again next run")
+        return
     today = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-4))).date().isoformat()
     go, active, pending = should_check(overrides, today, force)
     if not go:
