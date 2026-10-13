@@ -1,0 +1,8 @@
+name = "hpd-invitation-timer"
+main = "src/index.js"
+compatibility_date = "2026-05-26"
+workers_dev = false
+
+# Every 10 minutes; the code only starts a fetch 7 AM - 10 PM New York time (handles daylight savings).
+[triggers]
+crons = ["*/10 * * * *"]

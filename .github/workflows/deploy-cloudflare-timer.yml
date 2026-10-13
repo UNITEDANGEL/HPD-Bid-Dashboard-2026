@@ -1,0 +1,55 @@
+name: Deploy Invitation Timer
+
+# The Cloudflare timer that starts "Run Built-In Fetcher" every 10 minutes, 7 AM - 10 PM New York time,
+# so new invitations reach the map when the laptop is off (cloudflare-timer/). Needs two things:
+#  - CLOUDFLARE_API_TOKEN with "Workers Scripts: Edit" (account) permission
+#  - repository secret FETCH_DISPATCH_TOKEN: a GitHub fine-grained token for this repository with
+#    "Actions: Read and write" (it only starts workflows)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["cloudflare-timer/**", ".github/workflows/deploy-cloudflare-timer.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: invitation-timer-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - name: Test the timer
+        run: node cloudflare-timer/test-timer.mjs
+
+      - name: Check the GitHub token is there
+        env:
+          FETCH_DISPATCH_TOKEN: ${{ secrets.FETCH_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$FETCH_DISPATCH_TOKEN" ]; then
+            echo "::error::Add the repository secret FETCH_DISPATCH_TOKEN (GitHub fine-grained token, this repo, Actions: Read and write)."
+            exit 1
+          fi
+
+      - name: Deploy the timer
+        uses: cloudflare/wrangler-action@v4
+        env:
+          GITHUB_DISPATCH_TOKEN: ${{ secrets.FETCH_DISPATCH_TOKEN }}
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: cloudflare-timer
+          command: deploy
+          secrets: |
+            GITHUB_DISPATCH_TOKEN

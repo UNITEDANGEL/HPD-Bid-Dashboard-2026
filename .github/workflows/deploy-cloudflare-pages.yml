@@ -122,6 +122,7 @@ jobs:
           node scripts/test-paperwork-lock.mjs
           node scripts/test-master-file.mjs
           node scripts/test-bid-fax-server.mjs
+          node cloudflare-timer/test-timer.mjs
           node cloudflare-worker/test-sync.mjs
 
       - name: Build Cloudflare Pages output

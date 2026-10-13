@@ -99,6 +99,11 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 3. **2025 jobs**: recover statuses for last year's jobs too, if needed.
 
 ## Open items for the owner
+- **Invitation timer in Cloudflare** (13 Oct: the laptop battery died at 2:58 PM, 3 invitations waited
+  2 hours; GitHub's schedule only runs ~once a day). Code is ready (cloudflare-timer/, every 10 min,
+  7 AM-10 PM). To turn it on: (1) Cloudflare API token: add Account > Workers Scripts > Edit;
+  (2) GitHub: fine-grained token for this repo with Actions: Read and write, saved as repository secret
+  FETCH_DISPATCH_TOKEN; then Actions > Deploy Invitation Timer > Run workflow.
 - GitHub secret MASTER_FILE_KEY (the key in OneDrive "HPD Master File/MASTER_FILE_KEY.txt") turns on the
   nightly encrypted master file; until then it's written when run on this PC.
 - Google reconnect with "read email" lets the phone confirm faxes by itself (the fax checker covers it).
