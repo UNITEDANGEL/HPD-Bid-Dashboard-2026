@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T12:17:43.872788+00:00",
+  "generatedAt": "2026-10-13T16:28:33.849748+00:00",
   "days": 14,
   "bids": [
     {
@@ -890,6 +890,1022 @@
       },
       "lat": 40.685228,
       "lng": -73.844202
+    },
+    {
+      "omo": "ER07574",
+      "bidDue": "2026-10-14",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-15",
+      "workCompletion": "2026-10-25",
+      "address": "1302 NEWKIRK AVENUE",
+      "borough": "BK",
+      "itbFile": "ER07574_101326102657.pdf",
+      "description": "DOOR REPAIR MAKE ALL NECESSARY REPAIRS TO INSTALL A DETEX PUSHBAR TO ENSURE DOOR SELF CLOSES AND AGAINST THE JAM AT ROOF DOOR NEXT TO APT 6M. TOTAL DOORS=1 ONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE.",
+      "notes": "IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008.",
+      "receivedAt": 1791901624000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.0,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.0,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.634576,
+      "lng": -73.964764
+    },
+    {
+      "omo": "ER07577",
+      "bidDue": "2026-10-14",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-17",
+      "workCompletion": "2026-10-30",
+      "address": "1216 ST JOHNS PLACE",
+      "borough": "BK",
+      "itbFile": "ER07577_101326112749.pdf",
+      "description": "MAKING DOOR SELF CLOSE & LATCH ***NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \"ESSENTIAL SERVICE WORK\"*** AT BLDG ENT DOOR & AT EAST FIRE DOOR LEADING TO YARD, 1ST STORY MAKE ALL NECESSARY REPAIRS TO REPLACE THE DEFECTIVE PASSAGE LOCK SET COMPLETE AND STRIKE PLATE WITH NEW SIMILAR TO EXISTING AT FIRE DOOR LEADING TO YARD AND REPLACE THE DEFECTIVE ADAM WRITE LOCKSET AND ELECTRIC STRIKE WITH NEW AT BLDG ENT DOOR. MAKE ALL NECESSARY ADJUSTMENT/ALIGNMENTS TO DOOR/FRAME TO MAKE DOOR FREELY SELF CLOSE & LATCH. RESTORE ALL AFFECTED AREAS. ENSURE ENT DOOR AND FRIE DOOR ARE PROPERLY SELF CLOSING AND LATCHING AS PER NYC GUIDELINES. TOTAL DOORS = (2) REMOVE ALL WORK-RELATED DEBRIS.",
+      "notes": "CONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008.",
+      "receivedAt": 1791905271000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 501.0,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.8,
+          "y": 45.5,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 44.2,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.6,
+          "y": 45.5,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.5,
+          "y": 44.9,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.8,
+          "y": 88.6,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 88.6,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 268.1,
+          "y": 467.6,
+          "rotate": 0,
+          "width": 493.9
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.670633,
+      "lng": -73.93808
+    },
+    {
+      "omo": "ER07715",
+      "bidDue": "2026-10-14",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-17",
+      "workCompletion": "2026-10-31",
+      "address": "99-45 67 ROAD",
+      "borough": "QN",
+      "itbFile": "ER07715_101326120625.pdf",
+      "description": "LOCATION: 1. 3RD STORY PUBLIC HALL/ NORTH SECTION/ COMPACTOR DOOR (LATCHING) 2. 1ST STORY PUBLIC HALL/ NORTH SECTION/ COMPACTOR DOOR (LATCHING) -EMERGENCY OPERATIONS DIVSION \"ESSENTIAL SERVICE REPAIRS\"- AT THE 3RD STORY PUBLIC HALL/ NORTH SECTION/ COMPACTOR DOOR MAKE ALL NECESSARY REPAIRS TO MAKE DOR SELF CLOSING AND LATCHING, INSTALL NEW PASSAGE LOCK TO MAKE DOOR SELF CLOSE AND LATCH. RESTORE DOOR TO IT'S PROPER WORKING CONDTION. AT THE 1ST STORY PUBLIC HALL/ NORTH SECTION/ COMPACTOR DOOR INSTALL NEW PASSAGE LOCK TO MAKE DOOR SELF CLOSE AND LATCH. RESTORE DOOR TO IT'S PROPER WORKING CONDITION. TOTAL DOORS = (2) REMOVE ALL WORK RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS.",
+      "notes": "CONTRACTOR MUST CONTACT HPD \u2013 S. HUGHES@ 212-863-5754; B. CARR@212-863-5518; S. CROSSLAND@212-863-6132; E. ORR@ 212-863-6875; A. MARTINEZ@212-863-6135; S. KOFUMA @ 212-863-6160; K. BRYANT @212-863-5496; R. REED @ 212-863-5481; SUPERVISOR D. SAUL@212-863-5527; WITH START DATE. IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212-863-6008.",
+      "receivedAt": 1791907601000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 501.0,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.8,
+          "y": 45.5,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 44.2,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.6,
+          "y": 45.5,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.5,
+          "y": 44.9,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.8,
+          "y": 88.6,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 88.6,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 268.1,
+          "y": 467.6,
+          "rotate": 0,
+          "width": 493.9
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.725058,
+      "lng": -73.854106
+    },
+    {
+      "omo": "ER07762",
+      "bidDue": "2026-10-14",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-15",
+      "workCompletion": "2026-10-25",
+      "address": "75 RALPH AVENUE",
+      "borough": "BK",
+      "itbFile": "ER07762_101326102915.pdf",
+      "description": "REPLACE 5TH STY HOPPER LATCH AT 5TH STY PUBLIC HALL HOPPER CHUTE..REPLACE DEFECTIVE LATCH SET WITH NEW LATCH SET SIMILAR TO EXISTING..ENSURE DOOR SELF CLOSE AND LATCH TOTAL DOOR = 1",
+      "notes": "CONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008.",
+      "receivedAt": 1791901759000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.0,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.0,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.687468,
+      "lng": -73.923231
+    },
+    {
+      "omo": "ER07764",
+      "bidDue": "2026-10-14",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-17",
+      "workCompletion": "2026-10-31",
+      "address": "169 LEWIS AVENUE",
+      "borough": "BK",
+      "itbFile": "ER07764_101326101057.pdf",
+      "description": "REPLACE BULKHEAD DOOR CLOSER AT BULKHEAD DOOR..MAKE ALL NECESSARY REPAIRS TO MAKE DOOR SELF CLOSE AGAINST THE JAM . .INSTALL NEW DOOR CLOSER..ENSURE DOOR SELF CLOSE . RETURN TO PROEPR WORKING ORDER. TOTAL DOOR = 1",
+      "notes": "CONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008.",
+      "receivedAt": 1791900662000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 501.0,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.8,
+          "y": 45.5,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 44.2,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.6,
+          "y": 45.5,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.5,
+          "y": 44.9,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.8,
+          "y": 88.6,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 88.6,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 268.1,
+          "y": 467.6,
+          "rotate": 0,
+          "width": 493.9
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.691049,
+      "lng": -73.936384
+    },
+    {
+      "omo": "ER07874",
+      "bidDue": "2026-10-14",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-14",
+      "workCompletion": "2026-10-28",
+      "address": "2028 CRESTON AVENUE",
+      "borough": "BX",
+      "itbFile": "ER07874_101326095934.pdf",
+      "description": "MAKE DOORS SELF CLOSING AT COMPACTOR CLOSET, 8th STORY & FIRE STAIR B IN 5TH STORY AT COMPACTOR CLOSET, 8th STORY & FIRE STAIR B IN 5TH STORY MAKE ALL NECESSARY REPAIRS TO FIX DEFECTIVE DOORS ALIGNMENT/ ADJUSTMENT WITH FLOOR AND FRAME THEN INSTALL NEW DOOR HINGES, TO MAKE DOORS SELF CLOSING AND LATCH, ACCORDING TO NYC GUIDE LINES, RESTORE DOORS TO PROPER WORKING ORDER. TOTAL DOORS= (2) ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS.",
+      "notes": "CONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008.",
+      "receivedAt": 1791899977000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.0,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.0,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.852215,
+      "lng": -73.904936
+    },
+    {
+      "omo": "ER06497",
+      "bidDue": "2026-10-15",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-15",
+      "workCompletion": "2026-11-10",
+      "address": "2105 MONTEREY AVENUE",
+      "borough": "BX",
+      "itbFile": "ER06497_101326101011.pdf",
+      "description": "DEFECTIVE SPRING BALANCE AT LOWER SASH WINDOW LOCATED AT APT 1, 1 STORY. PROPERLY REPLACE THE COUNTER BALANCE AT THE LOWER SASH WINDOW AND RETURN TO SAFE AND PROPER WORKING CONDITONS, AT EAST WALL WINDOW CAUSING A GUILLOTINE EFFECT IN THE 3rd ROOM FROM NORTH LOCATED AT APT 1, 1st STORY, 2nd APARTMENT FROM WEST AT NORTH. WINDOW(1) REMOVE ALL WORK RELATED DEBRIS.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT H.P.D. @ (212) 863-6161, 6135, 6231, 6175 OR 6046 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ (718) 623-9910. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS.",
+      "receivedAt": 1791900614000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.0,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.0,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.850502,
+      "lng": -73.893165
+    },
+    {
+      "omo": "ER07755",
+      "bidDue": "2026-10-15",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-17",
+      "workCompletion": "2026-10-24",
+      "address": "854 MYRTLE AVENUE",
+      "borough": "BK",
+      "itbFile": "ER07755_101326091717.pdf",
+      "description": "REPLACE 2ND STY HOPPER CHUTE NYC HPD EMERGENCY OPERATIONS DIVISION - (ESSENTIAL SERVICE WORK) 1) AT HOPPER DOOR LOCATED AT :PUBLIC HALL, ( 2ND STY ) DEMO COMPLETELY REMOVE THE DEFECTIVE EXISTING HOPPER DOOR AND FRAME. SUPPLY AND INSTALL NEW HOPPER DOOR AND FRAME WITH SIMILAR SIZE TO EXISTING. ENSURE HOOPER DOOR IS FIRE RATED,NYC SELF CLOSING AND LATCHING AS PER NYC GUIDE LINES. RESTORE AFFECTED AREAS AND RETURN TO PROPER WORKING ORDER. 2) AT STAIR A BULKHEAD DOOR..MAKE ALL NECESSARY REPAIRS TO DOOR AND JAMB. AT BULKHEAD DOOR INSTALL NEW DOOR CLOSER..ENSURE DOOR SELF CLOSE AND LATCH 3) AT STAIR B BULKHEAD DOOR..MAKE ALL NECESSARY REPAIRS TO DOOR AND FRAME. AT BULKHEAD DOOR INSTALL NEW DOOR CLOSER..ENSURE DOOR SELF CLOSE AND LATCH 4) AT 5TH STY PUBLIC HALL STAIR B, MAKE ALL NECESSARY REPAIRS TO DOOR AND STRIKER PLATE..ENSURE DOOR SELF CLOSE AND LATCH 5) AT 5TH STY HOPPER CHUTE..REPLACE DEFECTIVE LATCH SET WITH NEW LATCH SET SAME AS EXISTING..ENSURE DOOR SELF CLOSE AND LATCH 6) AT 1ST STY PUBLIC HALL STAIR B..REPLACE DEFECTIVE LATCH SET WITH NEW PASSAGE LATCH SET..ENSURE DOOR SELF CLOSE AND LATCH 7) AT 1ST STY LAUNDRY ROOM..REPLACE DEFECTIVE HINGES WITH NEW SELF CLOSING HINGES..REPLACE DEFCETIVELATCH SET WITH NEW MORTISE LATCH SET..ENSURE EDOOR SELF CLOSE AND LATCH",
+      "notes": "",
+      "receivedAt": 1791897440000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496.0,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467.0,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.695348,
+      "lng": -73.947956
     }
   ]
 }
