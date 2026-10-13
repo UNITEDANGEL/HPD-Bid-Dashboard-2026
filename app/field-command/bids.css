@@ -270,3 +270,21 @@
 
 /* An invitation the reader could not read: never hidden. */
 .fc-bids-unread { grid-column: 1 / -1; margin: 4px 0 0; padding: 6px 10px; border-radius: 8px; background: #fde8e8; color: #8a1c1c; font-weight: 600; font-size: 0.9rem; }
+
+/* Bigger, clearer job description (A+ makes it bigger still, remembered on the phone). */
+.fc-bid-description { font: 600 19px/1.6 system-ui; letter-spacing: 0.01em; }
+.fc-bid-description.is-xl { font-size: 23px; line-height: 1.6; }
+.fc-bid-notes { font-size: 16px; }
+.fc-bid-notes.is-xl { font-size: 19px; }
+.fc-bid-desc-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fc-bid-desc-head button { min-width: 48px; min-height: 40px; border-radius: 10px; border: 1px solid #475569; background: #1e293b; color: #f8fafc; font: 800 17px system-ui; }
+
+/* A sent bid is locked; changing it is a revision. */
+.fc-bid-locked { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; padding: 12px; border-radius: 12px; background: #052e16; border: 1px solid #166534; color: #dcfce7; }
+.fc-bid-locked b { font-size: 16px; }
+.fc-bid-locked span { font: 500 14px/1.4 system-ui; color: #bbf7d0; }
+.fc-bid-locked button { min-height: 46px; border-radius: 10px; border: 0; background: #f59e0b; color: #1c1917; font: 800 16px system-ui; }
+.fc-bid-locked.is-revising { background: #451a03; border-color: #b45309; color: #fef3c7; }
+.fc-bid-locked.is-revising span { color: #fde68a; }
+.fc-bid-locked button.is-plain { background: transparent; border: 1px solid #fde68a; color: #fef3c7; }
+.fc-bid-price input:disabled { opacity: 0.55; }

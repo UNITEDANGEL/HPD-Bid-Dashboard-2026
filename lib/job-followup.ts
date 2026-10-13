@@ -6,6 +6,8 @@
 
 export type HpdJobStatus = { closedReason: string; amount?: number };
 export type SentPaperwork = { sentAt: string; count: number };
+// HPD staff asking for affidavits / invoices / photos / status (scripts/fetch_hpd_requests.py).
+export type HpdRequest = { askedAt: string; count: number };
 export type Recovered = { kind: "complete" | "noaccess" | "refused" | "others" | "partial" | "closed" | "sent"; label: string; hpdReason: string; sentAt: string };
 
 const CLOSING = /WORK_COMPLETED|REFUSED_ACCESS|NO_ACCESS_COMPLETE|NO_ACCESS_2|BY_OTHERS|PARTIAL_WORK_COMPLETED/i;
@@ -64,9 +66,11 @@ export type FollowUp = {
   state: "done" | "hpd-closed" | "sent" | "overdue" | "due-week" | "open";
   status: string; // what to show
   hpdReason: string; sentAt: string;
+  askedAt: string; // last time HPD staff emailed asking about this job
+  hpdAsked: boolean; // HPD asked and nothing was sent since: send the paperwork first
 };
 
-export function followUpOf(job: Record<string, unknown>, hpd: HpdJobStatus | undefined, sent: SentPaperwork | undefined, today: string): FollowUp {
+export function followUpOf(job: Record<string, unknown>, hpd: HpdJobStatus | undefined, sent: SentPaperwork | undefined, today: string, asked?: HpdRequest): FollowUp {
   const omo = String(job.OMO || job.id || "");
   const awardDay = day(job.AwardDate || job.awardDate);
   const startDay = day(job.WorkStartDate || job.workStartDate);
@@ -77,23 +81,29 @@ export function followUpOf(job: Record<string, unknown>, hpd: HpdJobStatus | und
   const state: FollowUp["state"] = closedInApp ? "done" : rec && rec.kind !== "sent" ? "hpd-closed" : rec?.kind === "sent" ? "sent"
     : daysLeft !== null && daysLeft < 0 ? "overdue" : daysLeft !== null && daysLeft <= 7 ? "due-week" : "open";
   const status = closedInApp ? appOutcome(job).replace(/_/g, " ").toLowerCase() : rec ? rec.label : appOutcome(job) ? appOutcome(job).replace(/_/g, " ").toLowerCase() : "no status yet";
-  return { omo, address: String(job.BuildingAddress || job.address || ""), awardDay, startDay, maturityDay, daysLeft, state, status, hpdReason: hpd?.closedReason || "", sentAt: sent?.sentAt || rec?.sentAt || "" };
+  const sentAt = sent?.sentAt || rec?.sentAt || "";
+  const askedAt = asked?.askedAt || "";
+  const hpdAsked = !!askedAt && state !== "done" && state !== "hpd-closed" && (!sentAt || askedAt > sentAt);
+  return { omo, address: String(job.BuildingAddress || job.address || ""), awardDay, startDay, maturityDay, daysLeft, state, status, hpdReason: hpd?.closedReason || "", sentAt, askedAt, hpdAsked };
 }
 
 // The daily follow-up report: awarded in the last 30 days, overdue (open at HPD and in the app, past the
 // maturity date), due this week, and jobs HPD closed that the app never recorded.
-export function followUpReport(jobs: Record<string, unknown>[], hpd: Record<string, HpdJobStatus>, sent: Record<string, SentPaperwork>, today: string) {
+export function followUpReport(jobs: Record<string, unknown>[], hpd: Record<string, HpdJobStatus>, sent: Record<string, SentPaperwork>, today: string, asked: Record<string, HpdRequest> = {}) {
   const rows = jobs
     .filter((j) => String(j.OMO || "").toUpperCase() !== "TEST-0001")
-    .map((j) => followUpOf(j, hpd[String(j.OMO)], sent[String(j.OMO)], today));
+    .map((j) => followUpOf(j, hpd[String(j.OMO)], sent[String(j.OMO)], today, asked[String(j.OMO)]));
   const recent = rows.filter((r) => r.awardDay && daysBetween(r.awardDay, today) <= 30 && daysBetween(r.awardDay, today) >= 0)
     .sort((a, b) => b.awardDay.localeCompare(a.awardDay));
-  const overdue = rows.filter((r) => r.state === "overdue").sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
+  // Most recently overdue first (still fresh: do it now); a job 200 days overdue goes to the bottom.
+  const overdue = rows.filter((r) => r.state === "overdue").sort((a, b) => (b.daysLeft ?? 0) - (a.daysLeft ?? 0));
+  // HPD asked for paperwork and nothing was sent since: first thing to do, newest request first.
+  const hpdAsked = rows.filter((r) => r.hpdAsked).sort((a, b) => b.askedAt.localeCompare(a.askedAt));
   const dueWeek = rows.filter((r) => r.state === "due-week").sort((a, b) => (a.daysLeft ?? 0) - (b.daysLeft ?? 0));
   const hpdClosed = rows.filter((r) => r.state === "hpd-closed");
   const waitingOnHpd = rows.filter((r) => r.state === "sent").sort((a, b) => a.sentAt.localeCompare(b.sentAt));
   return {
-    rows, recent, overdue, dueWeek, hpdClosed, waitingOnHpd,
-    counts: { total: rows.length, done: rows.filter((r) => r.state === "done").length, hpdClosed: hpdClosed.length, waitingOnHpd: waitingOnHpd.length, overdue: overdue.length, dueWeek: dueWeek.length, recent: recent.length },
+    rows, recent, overdue, dueWeek, hpdClosed, waitingOnHpd, hpdAsked,
+    counts: { hpdAsked: hpdAsked.length, total: rows.length, done: rows.filter((r) => r.state === "done").length, hpdClosed: hpdClosed.length, waitingOnHpd: waitingOnHpd.length, overdue: overdue.length, dueWeek: dueWeek.length, recent: recent.length },
   };
 }

@@ -1,15 +1,6 @@
-import "./dashboard-table-upgrade.css";
-import DarkAnalyticsDashboard from "../components/DarkAnalyticsDashboard";
-import DashboardVisualPolish from "../components/DashboardVisualPolish";
+import "./home.css";
+import HomeScreen from "../components/HomeScreen";
 
 export default function HomePage() {
-  return (
-    <>
-      <DarkAnalyticsDashboard />
-      <DashboardVisualPolish />
-    </>
-  );
+  return <HomeScreen />;
 }
-
-
-

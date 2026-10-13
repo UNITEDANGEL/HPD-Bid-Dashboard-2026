@@ -50,3 +50,4 @@ __pycache__/
 data/master/*
 !data/master/master-file.json.enc
 MASTER_FILE_KEY*
+data/hpd_requests.json

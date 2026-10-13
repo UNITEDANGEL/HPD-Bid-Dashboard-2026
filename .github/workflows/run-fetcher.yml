@@ -117,6 +117,7 @@ jobs:
             if [ -f data/your_awards.json ]; then git add data/your_awards.json; fi
             if [ -f data/hpd_job_status.json ]; then git add data/hpd_job_status.json public/data/hpd_job_status.json; fi
             if [ -f data/sent_paperwork.json ]; then git add data/sent_paperwork.json public/data/sent_paperwork.json; fi
+            if [ -f public/data/hpd_requests.json ]; then git add public/data/hpd_requests.json; fi
             if [ -f data/master/master-file.json.enc ]; then git add data/master/master-file.json.enc; fi
           fi
 

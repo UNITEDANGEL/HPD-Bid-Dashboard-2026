@@ -360,6 +360,13 @@ async function main() {
     } catch (err) {
       appendLog(`WARNING: Sent paperwork was not read: ${err.message || String(err)}`);
     }
+    // HPD staff asking for affidavits / invoices / photos / status (last 14 days added to the list).
+    try {
+      const since = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10).replace(/-/g, "/");
+      runStep("Read HPD requests for paperwork", "python", ["scripts/fetch_hpd_requests.py", "--since", since]);
+    } catch (err) {
+      appendLog(`WARNING: HPD requests were not read: ${err.message || String(err)}`);
+    }
     // HPD's own status for each job (closed as No Access / Completed / Refused, or still open).
     try {
       runStep("Update HPD job status from NYC Open Data", "node", ["scripts/update-hpd-job-status.mjs"]);

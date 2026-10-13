@@ -180,6 +180,13 @@ try {
   // revision date, and the cover tells HPD to disregard the earlier price.
   await sheet.locator("header button").click();
   await list.locator("ol > li button").first().click();
+  // Sent and confirmed: the price is locked, the package can't be sent again, the only way is Revise.
+  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-locked"]').innerText(), /Sent to HPD at \$1,250\.00/);
+  assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-price"]').isDisabled(), true);
+  assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').isDisabled(), true);
+  await sheet.locator('[data-hpd-smoke="fc-bid-revise"]').click();
+  await sheet.locator('[data-hpd-smoke="fc-bid-revising"]').waitFor();
+  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-log"]').innerText(), /Revision started \(HPD has \$1,250\.00\)/);
   await sheet.locator('[data-hpd-smoke="fc-bid-price"]').fill("1100");
   await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
   await page.waitForFunction(() => /revised/.test(document.querySelector('[data-hpd-smoke="fc-bid-saved"]')?.textContent || ""), null, { timeout: 10000 });

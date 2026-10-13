@@ -57,14 +57,22 @@ def main(since):
     sys.path.insert(0, ROOT)
     from FetchrMatcherV5 import get_gmail_service
     service = get_gmail_service()
-    query = f"in:sent has:attachment after:{since} (aff OR affidavit OR invoice OR signed)"
-    ids, token = [], None
-    while True:
-        resp = service.users().messages().list(userId="me", q=query, maxResults=500, pageToken=token).execute(num_retries=3)
-        ids += [m["id"] for m in resp.get("messages", [])]
-        token = resp.get("nextPageToken")
-        if not token:
-            break
+    # Paperwork PDFs anywhere, and anything with attachments emailed to HPD staff (@hpd.nyc.gov): the
+    # paperwork is often sent straight to the person who asked for it, under "OMO No: EQ31852 ..." subjects.
+    queries = [f"in:sent has:attachment after:{since} (aff OR affidavit OR invoice OR signed)",
+               f"in:sent has:attachment to:hpd.nyc.gov after:{since}"]
+    ids, seen = [], set()
+    for query in queries:
+        token = None
+        while True:
+            resp = service.users().messages().list(userId="me", q=query, maxResults=500, pageToken=token).execute(num_retries=3)
+            for m in resp.get("messages", []):
+                if m["id"] not in seen:
+                    seen.add(m["id"])
+                    ids.append(m["id"])
+            token = resp.get("nextPageToken")
+            if not token:
+                break
     print(f"Reading {len(ids)} sent emails with attachments...", flush=True)
     # Keep what was found before (a nightly run only reads recent emails).
     try:
@@ -85,6 +93,16 @@ def main(since):
         if re.search(r"^TEST\b|TEST-0001", subject, re.I):
             continue
         day = datetime.datetime.fromtimestamp(int(msg.get("internalDate", 0)) / 1000, datetime.timezone.utc).date().isoformat()
+        to_hpd_staff = "hpd.nyc.gov" in to.lower() and "omobid@" not in to.lower()
+        if to_hpd_staff:
+            # Emailed to HPD staff with attachments: every OMO in the subject or an attachment name was sent.
+            names = [p.get("filename") or "" for p in parts(msg.get("payload", {})) if p.get("filename")]
+            found = {m.upper() for m in OMO.findall(subject + " " + " ".join(names))}
+            for omo in found:
+                entry = {"date": day, "to": to[:120], "file": (names[0] if names else "")[:120], "outcome": outcome_of(subject + " " + " ".join(names)), "subject": subject[:140], "via": "hpd-staff"}
+                if entry not in sent.setdefault(omo, []):
+                    sent[omo].append(entry)
+            continue
         for p in parts(msg.get("payload", {})):
             name = p.get("filename") or ""
             if not name.lower().endswith(".pdf") or not PAPER.search(name):

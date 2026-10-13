@@ -12,7 +12,8 @@ const get = async (f) => (await fetch(`${baseUrl}/data/${f}`)).json();
 const [jobs, hpd, sent] = await Promise.all([get("COA_Fetcher_2026.json"), get("hpd_job_status.json"), get("sent_paperwork.json")]);
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 const hpdFor = Object.fromEntries(jobs.map((j) => [j.OMO, { closedReason: hpd.jobs[j.OMO]?.closedReason || "" }]));
-const expected = followUpReport(jobs, hpdFor, sent.jobs, today);
+const asked = await get("hpd_requests.json");
+const expected = followUpReport(jobs, hpdFor, sent.jobs, today, asked.jobs);
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
@@ -30,14 +31,18 @@ try {
   const sheet = page.locator('[data-hpd-smoke="fc-follow-sheet"]');
   await sheet.waitFor({ timeout: 10000 });
   const tile = async (key) => Number((await page.locator(`[data-hpd-smoke="fc-follow-tile-${key}"] b`).innerText()).trim());
-  const shown = { overdue: await tile("overdue"), dueWeek: await tile("due-week"), recent: await tile("recent"), waitingOnHpd: await tile("sent"), hpdClosed: await tile("hpd-closed") };
-  const want = { overdue: expected.counts.overdue, dueWeek: expected.counts.dueWeek, recent: expected.counts.recent, waitingOnHpd: expected.counts.waitingOnHpd, hpdClosed: expected.counts.hpdClosed };
+  const shown = { hpdAsked: await tile("hpd-asked"), overdue: await tile("overdue"), dueWeek: await tile("due-week"), recent: await tile("recent"), waitingOnHpd: await tile("sent"), hpdClosed: await tile("hpd-closed") };
+  const want = { hpdAsked: expected.counts.hpdAsked, overdue: expected.counts.overdue, dueWeek: expected.counts.dueWeek, recent: expected.counts.recent, waitingOnHpd: expected.counts.waitingOnHpd, hpdClosed: expected.counts.hpdClosed };
   assert.deepEqual(shown, want, "report counts match the data files");
-  const overdueList = page.locator('[data-hpd-smoke="fc-follow-overdue-list"] li');
+  const overdueList = page.locator('[data-hpd-smoke="fc-follow-overdue-list"] li:not(.fc-follow-group)');
+  // Grouped by how late: the first group is the most recent one.
+  const groups = await page.locator('[data-hpd-smoke="fc-follow-overdue-list"] [data-hpd-smoke="fc-follow-group"]').allInnerTexts();
+  assert.ok(groups.length >= 1 && /overdue/i.test(groups[0]), `age groups shown (${groups.join(" / ")})`);
+  assert.equal(await page.locator('[data-hpd-smoke="fc-follow-hpd-asked-list"] li').count(), expected.hpdAsked.length, "every open HPD request listed first");
   assert.equal(await overdueList.count(), Math.min(25, expected.overdue.length), "first 25 overdue shown");
   if (expected.overdue.length) {
     const first = expected.overdue[0];
-    assert.match(await overdueList.first().innerText(), new RegExp(`${first.omo}[\\s\\S]*${-first.daysLeft}d overdue`), "oldest overdue first");
+    assert.match(await overdueList.first().innerText(), new RegExp(`${first.omo}[\\s\\S]*${-first.daysLeft}d overdue`), "most recently overdue first");
     // A row opens that job's card with its key dates.
     await overdueList.first().locator("button").click();
     await page.locator('[data-hpd-smoke="jc-key-dates"]').waitFor({ timeout: 10000 });

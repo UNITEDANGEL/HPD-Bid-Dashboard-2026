@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { tick, newYorkHour } from "./src/index.js";
+import { tick, newYorkMinute } from "./src/index.js";
 
 const calls = [];
 const github = (queuedCount, dispatchStatus = 204) => async (url, opts = {}) => {
@@ -10,7 +10,7 @@ const github = (queuedCount, dispatchStatus = 204) => async (url, opts = {}) => 
 const env = { GITHUB_DISPATCH_TOKEN: "test-token" };
 
 // 3:50 PM New York (daylight savings, 19:50 UTC): the 13 Oct invitations came in now; a fetch starts.
-assert.equal(newYorkHour(new Date("2026-10-13T19:50:00Z")), 15);
+assert.equal(newYorkMinute(new Date("2026-10-13T19:50:00Z")), 15 * 60 + 50);
 let r = await tick(env, new Date("2026-10-13T19:50:00Z"), github(0));
 assert.equal(r.started, true);
 const post = calls.find((c) => c.method === "POST");
@@ -18,11 +18,14 @@ assert.match(post.url, /UNITEDANGEL\/HPD-Bid-Dashboard-2026\/actions\/workflows\
 assert.deepEqual(JSON.parse(post.body), { ref: "main", inputs: { days_back: "14" } });
 assert.equal(post.auth, "Bearer test-token");
 
-// 7:00 AM and 10:50 PM in winter (EST) still run; 6:50 AM and 11 PM don't.
-assert.equal((await tick(env, new Date("2026-12-15T12:00:00Z"), github(0))).started, true);
-assert.equal((await tick(env, new Date("2026-12-16T03:50:00Z"), github(0))).started, true);
-assert.equal((await tick(env, new Date("2026-12-15T11:50:00Z"), github(0))).started, false);
-assert.equal((await tick(env, new Date("2026-10-14T03:00:00Z"), github(0))).started, false);
+// 6:30 AM and 7:50 PM run, summer (EDT) and winter (EST); 6:20 AM and 8:00 PM don't.
+assert.equal((await tick(env, new Date("2026-10-14T10:30:00Z"), github(0))).started, true);
+assert.equal((await tick(env, new Date("2026-10-13T23:50:00Z"), github(0))).started, true);
+assert.equal((await tick(env, new Date("2026-12-15T11:30:00Z"), github(0))).started, true);
+assert.equal((await tick(env, new Date("2026-12-16T00:50:00Z"), github(0))).started, true);
+assert.equal((await tick(env, new Date("2026-10-14T10:20:00Z"), github(0))).started, false);
+assert.equal((await tick(env, new Date("2026-10-14T00:00:00Z"), github(0))).started, false);
+assert.equal((await tick(env, new Date("2026-12-16T01:00:00Z"), github(0))).started, false);
 
 // A fetch already waiting: no extra one. No token: says so, never calls GitHub.
 calls.length = 0;
@@ -41,4 +44,4 @@ assert.equal(calls.find((c) => c.method === "POST").auth, "Bearer test-token");
 
 // GitHub refusing (wrong token) is an error in the Cloudflare log, not silence.
 await assert.rejects(tick(env, new Date("2026-10-13T19:50:00Z"), github(0, 401)), /GitHub said 401/);
-console.log("PASS invitation timer: every 10 min 7 AM-10 PM New York time (summer and winter), starts run-fetcher.yml on main, no pile-up, errors are loud");
+console.log("PASS invitation timer: every 10 min 6:30 AM-7:50 PM New York time (summer and winter), starts run-fetcher.yml on main, no pile-up, errors are loud");

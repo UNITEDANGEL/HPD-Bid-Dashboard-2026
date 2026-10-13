@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent } from "react";
 import AppointmentEditor from "./AppointmentEditor";
 import TodayRoute from "./TodayRoute";
 import BidsMode from "./BidsMode";
@@ -15,7 +15,7 @@ import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointme
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
-import { followUpOf, followUpReport, recoveredStatus, type FollowUp, type HpdJobStatus, type SentPaperwork } from "../../lib/job-followup";
+import { followUpOf, followUpReport, recoveredStatus, type FollowUp, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
@@ -738,17 +738,18 @@ export default function FieldCommandClient() {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   // Follow-up: the report sheet, and the map filter it can set (overdue, due this week, ...).
   const [followOpen, setFollowOpen] = useState(false);
-  const [followFilter, setFollowFilter] = useState<"" | "overdue" | "due-week" | "recent" | "sent" | "hpd-closed">("");
+  const [followFilter, setFollowFilter] = useState<"" | "hpd-asked" | "overdue" | "due-week" | "recent" | "sent" | "hpd-closed">("");
   const [followShowAll, setFollowShowAll] = useState(false);
   // HPD's closing reason for each job and when you sent HPD its paperwork (nightly files).
-  const followRef = useRef<{ hpd: Record<string, HpdJobStatus>; sent: Record<string, SentPaperwork> } | null>(null);
+  const followRef = useRef<{ hpd: Record<string, HpdJobStatus>; sent: Record<string, SentPaperwork>; asked: Record<string, HpdRequest> } | null>(null);
   const reapplyFollowRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     Promise.all([
       fetch("/data/hpd_job_status.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
       fetch("/data/sent_paperwork.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
-    ]).then(([hpd, sent]) => {
-      followRef.current = { hpd: hpd?.jobs || {}, sent: sent?.jobs || {} };
+      fetch("/data/hpd_requests.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([hpd, sent, asked]) => {
+      followRef.current = { hpd: hpd?.jobs || {}, sent: sent?.jobs || {}, asked: asked?.jobs || {} };
       reapplyFollowRef.current?.();
     });
   }, []);
@@ -847,6 +848,13 @@ export default function FieldCommandClient() {
   const [routeOpenRequest, setRouteOpenRequest] = useState(0);
   // The envelope button flips the map to upcoming invitations to bid (BidsMode).
   const [bidsOpen, setBidsOpen] = useState(false);
+  // The home screen's "Invitations to bid" / "Bid stats" buttons open the map straight on the invitations.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("bids") !== "1") return;
+    setBidsOpen(true);
+    try { window.history.replaceState(null, "", window.location.pathname + (params.get("tab") ? `?tab=${params.get("tab")}` : "")); } catch {}
+  }, []);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
   const [workflowLoaded, setWorkflowLoaded] = useState(false);
   const [jobsLoadFailed, setJobsLoadFailed] = useState(false);
@@ -1049,7 +1057,7 @@ export default function FieldCommandClient() {
       const follow = followRef.current;
       const next = latestRows.map((row: JobRecord) => {
         const id = jobId(row);
-        const extra = follow ? { HpdClosedReason: follow.hpd[id]?.closedReason || "", PaperworkSentAt: follow.sent[id]?.sentAt || "" } : {};
+        const extra = follow ? { HpdClosedReason: follow.hpd[id]?.closedReason || "", PaperworkSentAt: follow.sent[id]?.sentAt || "", HpdAskedAt: follow.asked[id]?.askedAt || "" } : {};
         return { ...row, ...(overrides[id] || {}), ...extra, ...(id === TEST_JOB_ID ? testJobPlace() : {}) };
       });
       setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
@@ -1145,7 +1153,7 @@ export default function FieldCommandClient() {
     const map = new Map<string, FollowUp>();
     for (const job of jobs) {
       if (isTestJob(jobId(job))) continue;
-      map.set(jobId(job), followUpOf(job, job.HpdClosedReason !== undefined ? { closedReason: String(job.HpdClosedReason || "") } : undefined, job.PaperworkSentAt ? { sentAt: String(job.PaperworkSentAt), count: 1 } : undefined, calendarDate));
+      map.set(jobId(job), followUpOf(job, job.HpdClosedReason !== undefined ? { closedReason: String(job.HpdClosedReason || "") } : undefined, job.PaperworkSentAt ? { sentAt: String(job.PaperworkSentAt), count: 1 } : undefined, calendarDate, job.HpdAskedAt ? { askedAt: String(job.HpdAskedAt), count: 1 } : undefined));
     }
     return map;
   }, [jobs, calendarDate]);
@@ -1154,11 +1162,13 @@ export default function FieldCommandClient() {
     Object.fromEntries(jobs.filter((j) => j.HpdClosedReason !== undefined).map((j) => [jobId(j), { closedReason: String(j.HpdClosedReason || "") }])),
     Object.fromEntries(jobs.filter((j) => j.PaperworkSentAt).map((j) => [jobId(j), { sentAt: String(j.PaperworkSentAt), count: 1 }])),
     calendarDate,
+    Object.fromEntries(jobs.filter((j) => j.HpdAskedAt).map((j) => [jobId(j), { askedAt: String(j.HpdAskedAt), count: 1 }])),
   ), [jobs, calendarDate]);
   const followMatch = (job: JobRecord) => {
     const f = followUps.get(jobId(job));
     if (!f) return false;
     if (followFilter === "recent") return followReport.recent.some((r) => r.omo === f.omo);
+    if (followFilter === "hpd-asked") return f.hpdAsked;
     return f.state === followFilter;
   };
 
@@ -2372,7 +2382,7 @@ export default function FieldCommandClient() {
           </div>
           <span className="fc-quick-label">Follow-up</span>
           <div className="fc-quick-chips" data-hpd-smoke="fc-follow-chips">
-            {([["", "Off", null], ["overdue", "Overdue", followReport.counts.overdue], ["due-week", "Due this week", followReport.counts.dueWeek], ["recent", "Awarded 30 days", followReport.counts.recent], ["sent", "Waiting on HPD", followReport.counts.waitingOnHpd], ["hpd-closed", "Closed at HPD", followReport.counts.hpdClosed]] as const).map(([key, label, count]) => (
+            {([["", "Off", null], ["hpd-asked", "HPD asked", followReport.counts.hpdAsked], ["overdue", "Overdue", followReport.counts.overdue], ["due-week", "Due this week", followReport.counts.dueWeek], ["recent", "Awarded 30 days", followReport.counts.recent], ["sent", "Waiting on HPD", followReport.counts.waitingOnHpd], ["hpd-closed", "Closed at HPD", followReport.counts.hpdClosed]] as const).map(([key, label, count]) => (
               <button key={key || "off"} type="button" className={followFilter === key ? "is-active" : ""} aria-pressed={followFilter === key} data-hpd-smoke={`fc-follow-${key || "off"}`} onClick={() => setFollowFilter(key)}>
                 {label}{count !== null ? <> <b>{count}</b></> : null}
               </button>
@@ -3131,7 +3141,7 @@ export default function FieldCommandClient() {
                 </div>
                 {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}
               {(() => {
-                const fu = followUpOf(selectedJob, selectedJob.HpdClosedReason ? { closedReason: String(selectedJob.HpdClosedReason) } : undefined, selectedJob.PaperworkSentAt ? { sentAt: String(selectedJob.PaperworkSentAt), count: 1 } : undefined, calendarDate);
+                const fu = followUpOf(selectedJob, selectedJob.HpdClosedReason ? { closedReason: String(selectedJob.HpdClosedReason) } : undefined, selectedJob.PaperworkSentAt ? { sentAt: String(selectedJob.PaperworkSentAt), count: 1 } : undefined, calendarDate, selectedJob.HpdAskedAt ? { askedAt: String(selectedJob.HpdAskedAt), count: 1 } : undefined);
                 const md = (d: string) => (d ? `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}/${d.slice(2, 4)}` : "-");
                 const left = fu.daysLeft === null ? "" : fu.state === "done" || fu.state === "hpd-closed" ? "" : fu.daysLeft < 0 ? `${-fu.daysLeft} days overdue` : fu.daysLeft === 0 ? "due today" : `${fu.daysLeft} days left`;
                 return (
@@ -3273,31 +3283,37 @@ export default function FieldCommandClient() {
           <div className="fc-summary-body">
             <p className="fc-follow-note">Status from the app, the affidavits / invoices you sent HPD, and HPD&apos;s own closing reason (updated nightly). Maturity = the job&apos;s work completion date.</p>
             <div className="fc-follow-tiles" data-hpd-smoke="fc-follow-tiles">
-              {([["overdue", "Overdue", followReport.counts.overdue], ["due-week", "Due this week", followReport.counts.dueWeek], ["recent", "Awarded last 30 days", followReport.counts.recent], ["sent", "Waiting on HPD", followReport.counts.waitingOnHpd], ["hpd-closed", "Closed at HPD", followReport.counts.hpdClosed]] as const).map(([key, label, count]) => (
+              {([["hpd-asked", "HPD asked for paperwork", followReport.counts.hpdAsked], ["overdue", "Overdue", followReport.counts.overdue], ["due-week", "Due this week", followReport.counts.dueWeek], ["recent", "Awarded last 30 days", followReport.counts.recent], ["sent", "Waiting on HPD", followReport.counts.waitingOnHpd], ["hpd-closed", "Closed at HPD", followReport.counts.hpdClosed]] as const).map(([key, label, count]) => (
                 <button key={key} type="button" className={`is-${key}`} data-hpd-smoke={`fc-follow-tile-${key}`} onClick={() => { setFollowFilter(key); setFollowOpen(false); }}>
                   <b>{count}</b><span>{label}</span><small>show on map</small>
                 </button>
               ))}
             </div>
             {([
+              ["hpd-asked", "HPD asked for paperwork · nothing sent since", followReport.hpdAsked, "No open requests from HPD."],
               ["due-week", "Due this week", followReport.dueWeek, "Nothing due this week."],
-              ["overdue", "Overdue · oldest first", followReport.overdue, "Nothing overdue."],
+              ["overdue", "Overdue · most recent first, oldest at the bottom", followReport.overdue, "Nothing overdue."],
               ["sent", "Waiting on HPD · paperwork sent, HPD hasn't closed it", followReport.waitingOnHpd, "None."],
               ["recent", "Awarded in the last 30 days", followReport.recent, "No new awards in 30 days."],
             ] as const).map(([key, title, rows, none]) => (
               <section key={key} className={`fc-follow-section is-${key}`} data-hpd-smoke={`fc-follow-${key}-list`}>
                 <h4>{title} ({rows.length})</h4>
                 {rows.length ? (
-                  <ol>{(followShowAll || key !== "overdue" ? rows : rows.slice(0, 25)).map((r) => {
+                  <ol>{(followShowAll || key !== "overdue" ? rows : rows.slice(0, 25)).map((r, i, shown) => {
                     const md = (d: string) => (d ? `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}/${d.slice(2, 4)}` : "-");
+                    const age = (x: FollowUp) => (x.daysLeft === null ? "" : -x.daysLeft <= 30 ? "1-30 days overdue" : -x.daysLeft <= 90 ? "31-90 days overdue" : "Over 90 days overdue: check the status");
+                    const group = key === "overdue" && (i === 0 || age(shown[i - 1]) !== age(r)) ? age(r) : "";
                     return (
-                      <li key={r.omo}>
+                      <Fragment key={r.omo}>
+                      {group ? <li className="fc-follow-group" data-hpd-smoke="fc-follow-group">{group}</li> : null}
+                      <li>
                         <button type="button" onClick={() => { const job = jobs.find((j) => jobId(j) === r.omo); setFollowOpen(false); if (job) setSelectedJob(job); }}>
                           <span><b>{r.omo}</b>{r.daysLeft !== null && (r.state === "overdue" || r.state === "due-week") ? <em className={r.daysLeft < 0 ? "is-late" : "is-soon"}>{r.daysLeft < 0 ? `${-r.daysLeft}d overdue` : r.daysLeft === 0 ? "due today" : `in ${r.daysLeft}d`}</em> : null}</span>
                           <span>{r.address}</span>
-                          <small>Awarded {md(r.awardDay)} · complete by {md(r.maturityDay)} · {r.status}{r.sentAt ? ` · paperwork sent ${md(r.sentAt)}` : ""}</small>
+                          <small>Awarded {md(r.awardDay)} · complete by {md(r.maturityDay)} · {r.status}{r.sentAt ? ` · paperwork sent ${md(r.sentAt)}` : ""}{r.askedAt ? ` · HPD asked ${md(r.askedAt)}` : ""}</small>
                         </button>
                       </li>
+                      </Fragment>
                     );
                   })}</ol>
                 ) : <p>{none}</p>}

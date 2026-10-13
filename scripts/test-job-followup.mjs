@@ -36,9 +36,12 @@ const report = followUpReport([
   job("A7", "09/20/26", "09/22/26", "09/30/26"),
   job("A5", "10/07/26", "10/09/26", "10/16/26"),
   job("TEST-0001", "10/01/26", "10/01/26", "10/02/26"),
-], { A2: { closedReason: "No Access" }, A3: { closedReason: "" } }, { A2: { sentAt: "2026-09-12", count: 1 }, A3: { sentAt: "2026-09-12", count: 1 } }, today);
-assert.deepEqual(report.counts, { total: 6, done: 1, hpdClosed: 1, waitingOnHpd: 1, overdue: 2, dueWeek: 1, recent: 2 }, "the test job is left out");
-assert.deepEqual(report.overdue.map((r) => r.omo), ["A4", "A7"], "oldest first");
+], { A2: { closedReason: "No Access" }, A3: { closedReason: "" } }, { A2: { sentAt: "2026-09-12", count: 1 }, A3: { sentAt: "2026-09-12", count: 1 } }, today,
+  // HPD staff asked about A4 (nothing sent: open request), A3 before its paperwork went out (answered), A2 (closed).
+  { A4: { askedAt: "2026-10-01", count: 2 }, A3: { askedAt: "2026-09-10", count: 1 }, A2: { askedAt: "2026-10-01", count: 1 } });
+assert.deepEqual(report.counts, { hpdAsked: 1, total: 6, done: 1, hpdClosed: 1, waitingOnHpd: 1, overdue: 2, dueWeek: 1, recent: 2 }, "the test job is left out");
+assert.deepEqual(report.overdue.map((r) => r.omo), ["A7", "A4"], "most recently overdue first, the oldest at the bottom");
+assert.deepEqual(report.hpdAsked.map((r) => [r.omo, r.askedAt]), [["A4", "2026-10-01"]], "HPD asked and nothing sent since; answered and closed requests drop off");
 assert.deepEqual(report.recent.map((r) => r.omo), ["A5", "A7"], "awarded in the last 30 days, newest first");
 
 // Map queues: HPD closed -> Completed; paperwork sent, HPD open -> Follow-up; nothing -> Pending.

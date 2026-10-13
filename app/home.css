@@ -1,0 +1,18 @@
+.home { min-height: 100dvh; box-sizing: border-box; padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px 32px; background: #0b1220; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; gap: 12px; max-width: 640px; margin: 0 auto; }
+.home-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.home-logo { width: 48px; height: 48px; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #7c3aed); display: grid; place-items: center; font-weight: 800; }
+.home-head h1 { margin: 0; font-size: 20px; }
+.home-head p { margin: 2px 0 0; color: #94a3b8; font-size: 15px; }
+.home-card { display: flex; gap: 14px; align-items: flex-start; padding: 18px 16px; border-radius: 16px; background: #16213a; border: 1px solid #24324f; color: inherit; text-decoration: none; }
+.home-card:active { transform: scale(0.99); background: #1c2a48; }
+.home-bids { background: #7c2d12; border-color: #9a3412; }
+.home-icon { font-size: 30px; line-height: 1; }
+.home-text { display: flex; flex-direction: column; gap: 4px; }
+.home-text strong { font-size: 19px; }
+.home-text em { font-style: normal; color: #cbd5e1; font-size: 15px; line-height: 1.35; }
+.home-bids .home-text em { color: #fed7aa; }
+.home-text small { color: #94a3b8; font-size: 13px; }
+.home-bids .home-text small { color: #fdba74; }
+.home-big { font-size: 28px; }
+.home-warn { color: #fecaca !important; font-weight: 700; }
+.home-more { margin-top: 8px; text-align: center; color: #94a3b8; font-size: 14px; padding: 12px; }

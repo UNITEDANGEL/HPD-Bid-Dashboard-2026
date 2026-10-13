@@ -29,7 +29,13 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - Revise a sent bid: old price crossed out, new price next to it with initials and "revised 1x on date";
   cover says to disregard the old price.
 - The bid list panel can be hidden to see the map.
-- Never miss one: the count must match the inbox (13 Oct: 14 invitations arrived; keep re-checking).
+- Never miss one: the count must match the inbox (13 Oct: 18 invitations arrived; keep re-checking).
+  Invitations and award emails arrive 7 AM - 7 PM (705 of 706, Jun-Oct 2026): check every 10 minutes
+  6:30 AM - 7:50 PM, from the cloud, not only from the laptop.
+- The job description big and clear (bigger text, A+ for bigger still, numbered items on their own lines).
+- Once a bid is sent it's gone: locked. The only way to change it is "Revise this bid" (old price crossed
+  out, HPD told to disregard it). Every step saved and logged.
+- A simple home screen: only what's used, with real numbers; the rest one tap away.
 
 ### Prices and winning more work
 - Read the complete description before suggesting a price: all items, quantities, sizes, units.
@@ -57,6 +63,10 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - Once paperwork is sent the job is locked; a job can be revised (e.g. no access, then access later),
   keeping the old version.
 - Everything saved in a master file.
+- Follow-up report sorted right: what's due / just overdue on top, 200-days-overdue at the bottom.
+- Status from the emails: what HPD staff asked for (affidavits, invoices, photos, videos, status) and what
+  was emailed to them, not only the paperwork address.
+- The owner's chat (WhatsApp) has job updates: read it and match by OMO (display only, never overwrite).
 
 ---
 
@@ -88,6 +98,12 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
   jobs before each one (1,587 awards): typical miss 18.6% -> 17.6%, single-item jobs 18.0% -> 16.7%.
 - Invitations never dropped silently (13 Oct): the banner shows how many arrived today (compare with the
   inbox) and a red warning lists any invitation PDF that couldn't be read (no OMO # / bid due date).
+
+- 13 Oct (evening): simple home screen (invitations open / due today / arrived today, map, paperwork,
+  stats; old dashboard at /overview/); invitation card: bigger description, numbered items on new lines,
+  sent bids locked with "Revise this bid" (logged); follow-up: "HPD asked for paperwork" first (HPD staff
+  emails, 901 OMOs since Nov 2025), overdue most-recent first grouped 1-30 / 31-90 / over 90 days,
+  paperwork emailed straight to HPD staff now counts as sent (+74 jobs, overdue 147 -> 124).
 
 ## Now (in this order)
 
