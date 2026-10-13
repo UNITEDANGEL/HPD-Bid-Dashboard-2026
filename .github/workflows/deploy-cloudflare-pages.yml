@@ -118,6 +118,7 @@ jobs:
           node scripts/test-bid-packages.mjs
           node scripts/test-market-awards.mjs
           node scripts/test-bid-stats.mjs
+          node scripts/test-job-followup.mjs
           node scripts/test-bid-fax-server.mjs
           node cloudflare-worker/test-sync.mjs
 

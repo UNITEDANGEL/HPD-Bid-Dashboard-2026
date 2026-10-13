@@ -118,6 +118,8 @@ jobs:
           if [ -f data/market_awards.json ]; then
             git add data/market_descriptions.json data/market_awards.json public/data/market_awards.json
             if [ -f data/your_awards.json ]; then git add data/your_awards.json; fi
+            if [ -f data/hpd_job_status.json ]; then git add data/hpd_job_status.json public/data/hpd_job_status.json; fi
+            if [ -f data/sent_paperwork.json ]; then git add data/sent_paperwork.json public/data/sent_paperwork.json; fi
           fi
 
           if git diff --cached --quiet; then

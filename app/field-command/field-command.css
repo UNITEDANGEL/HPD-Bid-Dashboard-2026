@@ -2368,3 +2368,19 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 /* The test job: purple flask pin with a TEST tag */
 .fc-pin.is-test .fc-pin-head { box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.55), 0 3px 8px rgba(0, 0, 0, 0.5); }
 .fc-pin.is-test .fc-pin-chip { background: #7c3aed; color: #fff; border-color: #ede9fe; }
+
+/* Job card: the key dates, always visible. */
+.jc-key-dates { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0; padding: 10px; border-radius: 12px; background: #0f172a; color: #e2e8f0; border-left: 4px solid #64748b; }
+.jc-key-dates div { display: grid; }
+.jc-key-dates span { color: #94a3b8; font: 700 11px system-ui; text-transform: uppercase; letter-spacing: .03em; }
+.jc-key-dates b { color: #fff; font: 800 16px system-ui; }
+.jc-key-dates p { grid-column: 1 / -1; margin: 2px 0 0; font: 600 13px/1.4 system-ui; }
+.jc-key-dates.is-overdue { border-left-color: #ef4444; }
+.jc-key-dates.is-overdue strong { color: #fca5a5; }
+.jc-key-dates.is-due-week { border-left-color: #f59e0b; }
+.jc-key-dates.is-due-week strong { color: #fde68a; }
+.jc-key-dates.is-done, .jc-key-dates.is-hpd-closed { border-left-color: #22c55e; }
+.jc-key-dates.is-sent { border-left-color: #3b82f6; }
+/* Pins for jobs HPD closed / paperwork sent. */
+.fc-pin.is-hpd-closed .fc-pin-chip { background: #166534; color: #fff; }
+.fc-pin.is-paper-sent .fc-pin-chip { background: #1d4ed8; color: #fff; }

@@ -1,0 +1,50 @@
+// Job follow-up: status from the app first, then HPD's closing reason / paperwork sent; maturity dates,
+// overdue and due-this-week; the daily follow-up report.
+import assert from "node:assert/strict";
+import { loadLib } from "./daily-report.mjs";
+
+const { followUpOf, followUpReport, recoveredStatus } = await loadLib("job-followup");
+const { jobQueue } = await loadLib("job-queue");
+const today = "2026-10-13";
+const job = (omo, award, start, finish, extra = {}) => ({ OMO: omo, BuildingAddress: `${omo} MAIN ST`, AwardDate: award, WorkStartDate: start, WorkCompletionDate: finish, ...extra });
+
+// The app's own status wins.
+const done = followUpOf(job("A1", "09/01/26", "09/03/26", "09/10/26", { FieldOutcome: "WORK_COMPLETED" }), { closedReason: "No Access" }, undefined, today);
+assert.equal(done.state, "done");
+// No app status, HPD closed it: closed, no overdue count.
+const hpd = followUpOf(job("A2", "09/01/26", "09/03/26", "09/10/26"), { closedReason: "No Access" }, { sentAt: "2026-09-12", count: 1 }, today);
+assert.deepEqual([hpd.state, hpd.status, hpd.sentAt], ["hpd-closed", "No access (HPD closed)", "2026-09-12"]);
+assert.equal(recoveredStatus(job("x"), { closedReason: "OMO Completed" }).kind, "complete");
+assert.equal(recoveredStatus(job("x"), { closedReason: "Owner Refused Access" }).kind, "refused");
+assert.equal(recoveredStatus(job("x"), { closedReason: "Landlord Complied" }).kind, "others");
+// Paperwork sent, HPD still open: waiting on HPD, not overdue work.
+const sent = followUpOf(job("A3", "09/01/26", "09/03/26", "09/10/26"), { closedReason: "" }, { sentAt: "2026-09-12", count: 1 }, today);
+assert.equal(sent.state, "sent");
+// Nothing anywhere, past the completion date: overdue by the right number of days.
+const late = followUpOf(job("A4", "09/01/26", "09/03/26", "09/10/26"), { closedReason: "" }, undefined, today);
+assert.deepEqual([late.state, late.daysLeft, late.awardDay, late.maturityDay], ["overdue", -33, "2026-09-01", "2026-09-10"]);
+const soon = followUpOf(job("A5", "10/07/26", "10/09/26", "10/16/26"), undefined, undefined, today);
+assert.deepEqual([soon.state, soon.daysLeft], ["due-week", 3]);
+const later = followUpOf(job("A6", "10/10/26", "10/12/26", "10/30/26"), undefined, undefined, today);
+assert.equal(later.state, "open");
+
+const report = followUpReport([
+  job("A1", "09/01/26", "09/03/26", "09/10/26", { FieldOutcome: "WORK_COMPLETED" }),
+  job("A2", "09/01/26", "09/03/26", "09/10/26"),
+  job("A3", "09/01/26", "09/03/26", "09/10/26"),
+  job("A4", "08/01/26", "08/03/26", "08/10/26"),
+  job("A7", "09/20/26", "09/22/26", "09/30/26"),
+  job("A5", "10/07/26", "10/09/26", "10/16/26"),
+  job("TEST-0001", "10/01/26", "10/01/26", "10/02/26"),
+], { A2: { closedReason: "No Access" }, A3: { closedReason: "" } }, { A2: { sentAt: "2026-09-12", count: 1 }, A3: { sentAt: "2026-09-12", count: 1 } }, today);
+assert.deepEqual(report.counts, { total: 6, done: 1, hpdClosed: 1, waitingOnHpd: 1, overdue: 2, dueWeek: 1, recent: 2 }, "the test job is left out");
+assert.deepEqual(report.overdue.map((r) => r.omo), ["A4", "A7"], "oldest first");
+assert.deepEqual(report.recent.map((r) => r.omo), ["A5", "A7"], "awarded in the last 30 days, newest first");
+
+// Map queues: HPD closed -> Completed; paperwork sent, HPD open -> Follow-up; nothing -> Pending.
+assert.equal(jobQueue({ OMO: "Q1", HpdClosedReason: "No Access" }), "completed");
+assert.equal(jobQueue({ OMO: "Q2", PaperworkSentAt: "2026-09-12" }), "followup");
+assert.equal(jobQueue({ OMO: "Q3" }), "pending");
+assert.equal(jobQueue({ OMO: "Q4", FieldOutcome: "NO_ACCESS_1_WAITING_72H", HpdClosedReason: "No Access" }), "followup", "the app's own status comes first");
+
+console.log("PASS job follow-up: app status first, then HPD's closing reason / paperwork sent; overdue, due this week, awarded last 30 days; queues");

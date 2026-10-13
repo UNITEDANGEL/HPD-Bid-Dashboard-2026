@@ -14,6 +14,7 @@ import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/cur
 import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointmentPatch, appointmentTiming, nyToday, type Appointment } from "../../lib/appointments";
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
+import { followUpOf, recoveredStatus, type HpdJobStatus, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
@@ -346,6 +347,13 @@ const STATUS_META: { key: StatusKey; label: string; color: string; match: (s: st
 function jobStatusMeta(job: JobRecord) {
   const specific = fieldStatusLabel(jobStatus(job));
   if (specific) return specific;
+  // No status in the app: HPD's closing reason (and the paperwork you sent) says where it stands.
+  const rec = job.HpdClosedReason || job.PaperworkSentAt ? recoveredStatus(job, { closedReason: String(job.HpdClosedReason || "") }, job.PaperworkSentAt ? { sentAt: String(job.PaperworkSentAt), count: 1 } : undefined) : null;
+  if (rec && rec.kind !== "sent") {
+    const key: StatusKey = rec.kind === "noaccess" ? "noaccess" : rec.kind === "refused" ? "refused" : rec.kind === "partial" ? "partial" : rec.kind === "others" ? "others" : "complete";
+    const base = STATUS_META.find((m) => m.key === key) || STATUS_META[0];
+    return { ...base, key, label: rec.label, color: key === "noaccess" ? "#ff9f0a" : key === "refused" ? "#ff453a" : "#30d158" };
+  }
   const s = jobStatus(job).toLowerCase().replace(/_/g, " ");
   return STATUS_META.find((meta) => meta.match(s, job)) || STATUS_META[STATUS_META.length - 1];
 }
@@ -381,6 +389,12 @@ function jobPinHtml(job: JobRecord, meta: { key: StatusKey; color: string }, pri
   } else if (second?.due) {
     chip = "2nd try";
     classes.push("is-due");
+  } else if (job.HpdClosedReason && !fieldStatusLabel(jobStatus(job))) {
+    chip = "HPD ✓";
+    classes.push("is-hpd-closed");
+  } else if (job.PaperworkSentAt && !fieldStatusLabel(jobStatus(job))) {
+    chip = "sent ✓";
+    classes.push("is-paper-sent");
   } else if (priority.pending && priority.days !== null) {
     chip = priority.days > 0 ? `${priority.days}d` : priority.days === 0 ? "today" : `in ${-priority.days}d`;
     classes.push(priority.days > 30 ? "is-late" : priority.days > 0 ? "is-overdue" : "is-upcoming");
@@ -712,6 +726,18 @@ export default function FieldCommandClient() {
   const pointsRef = useRef<{ job: JobRecord; lng: number; lat: number }[]>([]);
   const renderMarkersRef = useRef<() => void>(() => {});
   const [jobs, setJobs] = useState<JobRecord[]>([]);
+  // HPD's closing reason for each job and when you sent HPD its paperwork (nightly files).
+  const followRef = useRef<{ hpd: Record<string, HpdJobStatus>; sent: Record<string, SentPaperwork> } | null>(null);
+  const reapplyFollowRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    Promise.all([
+      fetch("/data/hpd_job_status.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+      fetch("/data/sent_paperwork.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]).then(([hpd, sent]) => {
+      followRef.current = { hpd: hpd?.jobs || {}, sent: sent?.jobs || {} };
+      reapplyFollowRef.current?.();
+    });
+  }, []);
   const [calendarDate, setCalendarDate] = useState(nyToday);
 
   useEffect(() => {
@@ -1001,11 +1027,17 @@ export default function FieldCommandClient() {
       setJobsLoadFailed(false);
       applyOverrides();
     }
+    reapplyFollowRef.current = () => applyOverrides();
     function applyOverrides() {
       if (cancelled || !latestRows) return;
       // Field by field, newer wins: the server's entry never wipes out steps saved on this phone.
       const overrides = mergeOverrideMaps(readSharedWorkflowOverrides(), serverOverrides);
-      const next = latestRows.map((row: JobRecord) => ({ ...row, ...(overrides[jobId(row)] || {}), ...(jobId(row) === TEST_JOB_ID ? testJobPlace() : {}) }));
+      const follow = followRef.current;
+      const next = latestRows.map((row: JobRecord) => {
+        const id = jobId(row);
+        const extra = follow ? { HpdClosedReason: follow.hpd[id]?.closedReason || "", PaperworkSentAt: follow.sent[id]?.sentAt || "" } : {};
+        return { ...row, ...(overrides[id] || {}), ...extra, ...(id === TEST_JOB_ID ? testJobPlace() : {}) };
+      });
       setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
     }
     // Pins show at once from the copy saved on this phone last time, then refresh from the network.
@@ -3037,6 +3069,19 @@ export default function FieldCommandClient() {
                   </div>
                 </div>
                 {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}
+              {(() => {
+                const fu = followUpOf(selectedJob, selectedJob.HpdClosedReason ? { closedReason: String(selectedJob.HpdClosedReason) } : undefined, selectedJob.PaperworkSentAt ? { sentAt: String(selectedJob.PaperworkSentAt), count: 1 } : undefined, calendarDate);
+                const md = (d: string) => (d ? `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}/${d.slice(2, 4)}` : "-");
+                const left = fu.daysLeft === null ? "" : fu.state === "done" || fu.state === "hpd-closed" ? "" : fu.daysLeft < 0 ? `${-fu.daysLeft} days overdue` : fu.daysLeft === 0 ? "due today" : `${fu.daysLeft} days left`;
+                return (
+                  <div className={`jc-key-dates is-${fu.state}`} data-hpd-smoke="jc-key-dates">
+                    <div><span>Awarded</span><b>{md(fu.awardDay)}</b></div>
+                    <div><span>Start</span><b>{md(fu.startDay)}</b></div>
+                    <div><span>Complete by</span><b>{md(fu.maturityDay)}</b></div>
+                    <p>{left ? <strong>{left}</strong> : null}{left ? " · " : ""}{fu.status}{fu.sentAt ? ` · paperwork sent to HPD ${md(fu.sentAt)}` : ""}{fu.hpdReason ? ` · HPD: closed (${fu.hpdReason})` : selectedJob.HpdClosedReason === "" && followRef.current ? " · HPD: still open" : ""}</p>
+                  </div>
+                );
+              })()}
               <div className="fc-visit-summary jc-visit" style={{borderLeftColor:visitState(selectedJob).color}}>
                 <strong>{visitState(selectedJob).label} · {visitState(selectedJob).count} recorded visits</strong>
                 {visitState(selectedJob).lastAt && <span>Last visit: {/^\d{4}-\d{2}-\d{2}$/.test(visitState(selectedJob).lastAt) ? visitState(selectedJob).lastAt : formatSavedTime(visitState(selectedJob).lastAt)}</span>}

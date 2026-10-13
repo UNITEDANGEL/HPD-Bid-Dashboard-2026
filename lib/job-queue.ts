@@ -21,6 +21,10 @@ export function jobQueue(job: Job): string {
   if (visit.approved && visit.kind !== "finished" && !/appointment|scheduled/.test(status)) return "pending";
   if (/no access|refused|partial|appointment|scheduled|not completed|incomplete/.test(status)) return "followup";
   if (/\b(completed|complete|closed|cancelled|canceled)\b/.test(status)) return "completed";
+  // No status in the app: HPD closed it (No Access, Completed, Refused...) -> done; you sent HPD the
+  // paperwork but HPD hasn't closed it -> follow up with HPD.
+  if (String(job.HpdClosedReason || "").trim()) return "completed";
+  if (String(job.PaperworkSentAt || "").trim()) return "followup";
   return "pending";
 }
 

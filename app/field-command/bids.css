@@ -258,3 +258,12 @@
 .fc-session-alerts button { width: 100%; padding: 8px; border: 0; border-radius: 8px; background: #7f1d1d; color: #fee2e2; text-align: left; font: 700 12.5px/1.35 system-ui; }
 .fc-session-start { display: block; width: calc(100% - 16px); margin: 8px; min-height: 48px; border: 0; border-radius: 12px; background: #2563eb; color: #fff; font: 900 15px system-ui; }
 .fc-session-start:active { transform: scale(0.98); }
+
+/* Day buttons in the invitations banner. */
+.fc-bids-days { grid-column: 1 / -1; display: flex; gap: 6px; margin-top: 6px; overflow-x: auto; scrollbar-width: none; }
+.fc-bids-days button { flex: 0 0 auto; display: grid; justify-items: start; gap: 0; min-height: 40px; padding: 4px 10px; border: 1px solid #fed7aa66; border-radius: 10px; background: #431407; color: #fff7ed; font: 700 12px system-ui, sans-serif; }
+.fc-bids-days button b { font: 800 13px system-ui, sans-serif; }
+.fc-bids-days button span { display: inline; color: #fdba74; font-weight: 900; }
+.fc-bids-days button small { color: #fed7aa; font: 600 10.5px system-ui, sans-serif; }
+.fc-bids-days button.is-active { background: #fff7ed; color: #7c2d12; border-color: #fff7ed; }
+.fc-bids-days button.is-active span, .fc-bids-days button.is-active small { color: #9a3412; }

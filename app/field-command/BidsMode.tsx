@@ -60,6 +60,13 @@ const FAX_TEXT = {
   confirmed: "✓ Fax confirmed by HumbleFax", failed: "✗ Fax failed: resend it", unconfirmed: "⚠ Sent, but no confirmation from HumbleFax after 15 minutes",
 } as const;
 
+// "3:00 PM" -> "0900" style key for sorting by time of day.
+function minutesOf(time?: string) {
+  const m = /^(\d{1,2}):(\d{2})\s*([AP])M$/i.exec(time || "");
+  const n = m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "P" ? 12 : 0)) * 60 + Number(m[2]) : 1439;
+  return String(n).padStart(4, "0");
+}
+
 function badge(record?: BidRecord) {
   if (!record) return null;
   const state = faxState(record);
@@ -84,6 +91,11 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const [showSimilar, setShowSimilar] = useState(false);
   const [session, setSession] = useState<BiddingSession | null>(null);
   const [listCollapsed, setListCollapsed] = useState(false);
+  // Which day's invitations to show: all, today, tomorrow or the day after (remembered on the phone).
+  const [dayPick, setDayPick] = useState<"all" | "0" | "1" | "2">(() => {
+    try { const v = localStorage.getItem("hpd-bids-day"); return v === "0" || v === "1" || v === "2" ? v : "all"; } catch { return "all"; }
+  });
+  useEffect(() => { try { localStorage.setItem("hpd-bids-day", dayPick); } catch { /* private mode */ } }, [dayPick]);
   const [clock, setClock] = useState(() => Date.now());
   const [market, setMarket] = useState<PricedJob[] | null>(null);
   const [marketJobs, setMarketJobs] = useState<MarketJob[]>([]);
@@ -147,6 +159,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const record = selected ? records[selected.omo] : undefined;
 
   const stats = useMemo(() => (marketJobs.length ? bidStats(marketJobs) : null), [marketJobs]);
+  const dayKeys = useMemo(() => [0, 1, 2].map((n) => NY_DAY.format(new Date(clock + n * 86400000))), [clock]);
+  const shownBids = useMemo(() => (bids || []).filter((b) => dayPick === "all" || b.bidDue === dayKeys[Number(dayPick)]), [bids, dayPick, dayKeys]);
   // Open invitations that are easy wins (work you win well under what other winners get).
   const rowHelp = useMemo(() => new Map((bids || []).map((b) => [b.omo, market?.length ? priceHelp(b.description, pricing) : null])), [bids, market, pricing]);
   const easyOmos = useMemo(() => new Set((bids || []).filter((b) => stats && easyWin(b.description, stats.workPrices)).map((b) => b.omo)), [bids, stats]);
@@ -173,7 +187,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
       const L = (mod as any).default || mod;
       const pane = map.getPane("fc-bids") || map.createPane("fc-bids");
       pane.style.zIndex = "640";
-      const markers = bids.filter((b) => Number.isFinite(b.lat) && Number.isFinite(b.lng)).map((bid) => {
+      const markers = shownBids.filter((b) => Number.isFinite(b.lat) && Number.isFinite(b.lng)).map((bid) => {
         const tone = dueWhen(bid).tone;
         const tone2 = badge(records[bid.omo])?.tone;
         const sent = tone2 === "sent";
@@ -192,7 +206,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
       map.fitBounds(layerRef.current.getBounds(), { paddingTopLeft: [30, 150], paddingBottomRight: [30, Math.round(window.innerHeight * 0.4)], maxZoom: 14 });
     });
     return () => { cancelled = true; };
-  }, [open, bids, map, records, easyOmos, alertKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, bids, map, records, easyOmos, alertKey, shownBids]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => { layerRef.current?.remove(); map?.getContainer?.()?.classList.remove("is-bids"); }, [map]);
 
   // HumbleFax emails a confirmation (or a failure) a few minutes after each fax: check Gmail for every
@@ -368,6 +382,17 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
         <strong>📨 Invitations to bid</strong>
         <span>{bids === null ? "Loading…" : error || `${list.length} open to bid · due today or later${list.some((b) => !Number.isFinite(b.lat)) ? ` · ${list.filter((b) => !Number.isFinite(b.lat)).length} without a map spot` : ""}`}</span>
         <button type="button" data-hpd-smoke="fc-bids-close" onClick={() => { setSelected(null); onClose(); }}>Back to jobs</button>
+        <div className="fc-bids-days" role="group" aria-label="Which day" data-hpd-smoke="fc-bids-days">
+          {([["all", "All"], ["0", "Today"], ["1", "Tomorrow"], ["2", new Date(`${dayKeys[2]}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" })]] as const).map(([key, label]) => {
+            const dayList = key === "all" ? list : list.filter((b) => b.bidDue === dayKeys[Number(key)]);
+            const first = [...dayList].sort((a, b) => (a.bidDue + minutesOf(a.bidDueTime)).localeCompare(b.bidDue + minutesOf(b.bidDueTime)))[0];
+            return (
+              <button key={key} type="button" className={dayPick === key ? "is-active" : ""} aria-pressed={dayPick === key} data-hpd-smoke={`fc-bids-day-${key}`} onClick={() => setDayPick(key)}>
+                <b>{label}</b> <span>{dayList.length}</span>{key !== "all" && first ? <small>first due {first.bidDueTime}</small> : null}
+              </button>
+            );
+          })}
+        </div>
       </div>
       {selected ? (
         <div className="fc-bid-sheet" role="dialog" aria-label={`Invitation ${selected.omo}`} data-hpd-smoke="fc-bid-sheet">
@@ -534,14 +559,14 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             </button>
           ) : null}
           <div className="fc-bid-tabs" role="tablist">
-            <button type="button" role="tab" aria-selected={tab === "open"} className={tab === "open" ? "is-active" : ""} onClick={() => setTab("open")}>Open ({list.length})</button>
+            <button type="button" role="tab" aria-selected={tab === "open"} className={tab === "open" ? "is-active" : ""} onClick={() => setTab("open")}>Open ({shownBids.length})</button>
             <button type="button" role="tab" aria-selected={tab === "mine"} className={tab === "mine" ? "is-active" : ""} data-hpd-smoke="fc-bids-mine" onClick={() => setTab("mine")}>Mine ({sentCount})</button>
             <button type="button" role="tab" aria-selected={tab === "stats"} className={tab === "stats" ? "is-active" : ""} data-hpd-smoke="fc-bids-stats" onClick={() => setTab("stats")}>Stats</button>
             <button type="button" role="tab" aria-selected={tab === "history"} className={tab === "history" ? "is-active" : ""} data-hpd-smoke="fc-bids-history" onClick={() => setTab("history")}>History</button>
           </div>
           {tab === "open" ? (
-            bids === null ? <p>Loading invitations…</p> : list.length ? (
-              <ol>{list.map((bid) => {
+            bids === null ? <p>Loading invitations…</p> : shownBids.length ? (
+              <ol>{shownBids.map((bid) => {
                 const due = dueWhen(bid);
                 const b = badge(records[bid.omo]);
                 const ew = stats && !records[bid.omo] ? easyWin(bid.description, stats.workPrices) : null;
@@ -556,7 +581,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   </li>
                 );
               })}</ol>
-            ) : <p>No open invitations right now. New ones are read every night.</p>
+            ) : <p>{list.length ? "No invitations due that day. Pick another day above." : "No open invitations right now. New ones are read through the day (8 AM to 9 PM)."}</p>
           ) : tab === "stats" ? (
             <BidStatsView stats={stats} loading={market === null} jobs={marketJobs} learned={learned} />
           ) : tab === "history" ? (

@@ -53,6 +53,14 @@ try {
   if (Number.isFinite(pendingBid.lat)) assert.equal(await page.locator('.fc-bid-pin.is-pending[title^="ER77779 "]').count(), 1, "blue pin while the fax goes through");
   if (Number.isFinite(unsentBid.lat)) await page.waitForFunction(() => document.querySelectorAll('.fc-bid-pin.is-alert[title^="ER77780 "]').length === 1, null, { timeout: 10000 });
 
+  // Day buttons: Today shows only today's invitations (and pins); All brings everything back.
+  await page.locator('[data-hpd-smoke="fc-bids-day-0"]').click();
+  const todayRows = await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li').allInnerTexts();
+  assert.deepEqual(todayRows.map((t) => t.match(/E[QR]\d{5}/)[0]).sort(), ["ER77779", "ER77780"], "Today: only today's bids");
+  assert.match(await page.locator('[data-hpd-smoke="fc-bids-day-0"]').innerText(), /Today\s*2[\s\S]*first due/);
+  await page.locator('[data-hpd-smoke="fc-bids-day-all"]').click();
+  assert.ok(await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li').count() >= 4, "All: everything again");
+
   // Start bidding: counter of today's bids and an alert for the one not sent.
   const start = page.locator('[data-hpd-smoke="fc-session-start"]');
   assert.match(await start.innerText(), /Start bidding · 2 due today · 1 not sent/);

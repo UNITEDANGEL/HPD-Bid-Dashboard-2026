@@ -9,7 +9,8 @@ import { chromium } from "playwright";
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 const doneAt = new Date(Date.now() - 20 * 60000).toISOString();
-const route = ["EQ21462", "EQ13990", "EQ16020"];
+// Jobs still open at HPD (a job HPD closed is left off the route).
+const route = ["EQ18710", "EQ15239", "EQ24465"];
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {

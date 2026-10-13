@@ -353,6 +353,19 @@ async function main() {
     } catch (err) {
       appendLog(`WARNING: Award emails were not read: ${err.message || String(err)}`);
     }
+    // What you sent HPD (affidavit / invoice emails, last 14 days added to the list).
+    try {
+      const since = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10).replace(/-/g, "/");
+      runStep("Read sent affidavits and invoices", "python", ["scripts/fetch_sent_paperwork.py", "--since", since]);
+    } catch (err) {
+      appendLog(`WARNING: Sent paperwork was not read: ${err.message || String(err)}`);
+    }
+    // HPD's own status for each job (closed as No Access / Completed / Refused, or still open).
+    try {
+      runStep("Update HPD job status from NYC Open Data", "node", ["scripts/update-hpd-job-status.mjs"]);
+    } catch (err) {
+      appendLog(`WARNING: HPD job status was not refreshed: ${err.message || String(err)}`);
+    }
     try {
       runStep("Update market awards from NYC Open Data", "node", ["scripts/update-market-awards.mjs"]);
     } catch (err) {

@@ -9,7 +9,8 @@ import { chromium } from "playwright";
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
 const finished = { FieldOutcome: "WORK_COMPLETED", WorkflowStatus: "WORK_COMPLETED", FieldVisitHistory: [{ recordedAt: new Date().toISOString(), outcome: "WORK_COMPLETED", note: "" }] };
-const route = ["EQ21462", "EQ13990", "EQ16020"];
+// Jobs still open at HPD (a job HPD closed is left off the route).
+const route = ["EQ18710", "EQ15239", "EQ24465"];
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 async function cardFor(job, { withRoute }) {
@@ -30,9 +31,10 @@ async function cardFor(job, { withRoute }) {
   await page.locator("#fc-job-card").waitFor({ timeout: 120000 });
   await page.waitForTimeout(1500);
   const next = page.locator('[data-hpd-smoke="jc-next-job"]');
+  const keyDates = await page.locator('[data-hpd-smoke="jc-key-dates"]').innerText().catch(() => "");
   const result = (await next.count())
-    ? { source: await next.getAttribute("data-next-source"), text: (await next.innerText()).replace(/\s+/g, " "), waze: await next.locator('[data-hpd-smoke="jc-next-waze"]').getAttribute("href").catch(() => null) }
-    : null;
+    ? { source: await next.getAttribute("data-next-source"), text: (await next.innerText()).replace(/\s+/g, " "), waze: await next.locator('[data-hpd-smoke="jc-next-waze"]').getAttribute("href").catch(() => null), keyDates }
+    : { keyDates };
   await context.close();
   assert.deepEqual(errors, [], `${job}: page errors`);
   return result;
@@ -49,10 +51,16 @@ try {
   assert.match(onRoute.text, /3 stops left/);
   assert.equal(onRoute.waze, `https://waze.com/ul?ll=${Number(first.Latitude)},${Number(first.Longitude)}&navigate=yes`);
 
+  // The job card's key dates, always visible: award, start and complete-by from the job file.
+  const md = (v) => { const [m, d, y] = String(v).split("/"); return `${Number(m)}/${Number(d)}/${y.slice(-2)}`; };
+  const keyJob = data.find((j) => j.OMO === route[1]);
   // A real job on the route (stop 2 of 3): its next stop is stop 3.
   const realJob = await cardFor(route[1], { withRoute: true });
   console.log(`${route[1]} with a route:`, JSON.stringify(realJob));
   assert.equal(realJob?.source, "route");
+  const flat = realJob.keyDates.replace(/\s+/g, " ").toUpperCase();
+  assert.ok(flat.includes(`AWARDED ${md(keyJob.AwardDate)}`) && flat.includes(`START ${md(keyJob.WorkStartDate)}`) && flat.includes(`COMPLETE BY ${md(keyJob.WorkCompletionDate)}`), `key dates: ${flat}`);
+  assert.match(realJob.keyDates, /work completed · HPD: still open/, "finished in the app (no overdue count), and HPD hasn't closed it yet");
   assert.match(realJob.text, new RegExp(`Next on your route · stop 3 of 3 · ${route[2]}`));
   assert.match(realJob.text, /2 stops left/, "stop 1 wasn't done here, so it still counts");
   const third = data.find((j) => j.OMO === route[2]);
