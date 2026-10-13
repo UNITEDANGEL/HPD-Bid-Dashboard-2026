@@ -33,6 +33,21 @@ export function loadBids() {
   try { return JSON.parse(fs.readFileSync(path.join(root, "data", "upcoming_bids.json"), "utf8")).bids || []; } catch { return []; }
 }
 
+// Easy wins among the invitations and jobs others won above your usual price in the last 7 days (HPD posts awards a day or two late), from
+// the award history (data/market_awards.json). Without it the report simply leaves these out.
+export async function withMarket(bids, extra, now = new Date()) {
+  let jobs;
+  try { jobs = JSON.parse(fs.readFileSync(path.join(root, "data", "market_awards.json"), "utf8")).jobs; } catch { return bids; }
+  const { bidStats, easyWin } = await loadLib("bid-stats");
+  const stats = bidStats(jobs, now);
+  const since = new Date(now.getTime() - 7 * 86400000).toISOString().slice(0, 10);
+  extra.missed = stats.shouldHaveBid.filter((j) => j.awardDate >= since);
+  return bids.map((bid) => {
+    const e = easyWin(bid.description || "", stats.workPrices);
+    return e ? { ...bid, easy: { suggested: e.suggested, yours: e.yours, yoursN: e.yoursN, others: e.others, othersN: e.othersN, beatsN: e.beatsN, of: e.of } } : bid;
+  });
+}
+
 // The job data plus what the phones saved (status server). If the status server can't answer, the
 // report still goes out from the job data, with a note (bidRecords and the visits may be missing).
 export async function loadJobs(fetcher = fetch, extra = {}) {
@@ -78,10 +93,10 @@ export async function sendReport(report, tokenJson) {
   return { to: token.email, id: sent.data.id };
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const { buildDailyReport } = await loadLib("daily-report");
   const extra = {};
-  const report = buildDailyReport(await loadJobs(fetch, extra), new Date(), undefined, loadBids(), extra);
+  const report = buildDailyReport(await loadJobs(fetch, extra), new Date(), undefined, await withMarket(loadBids(), extra), extra);
   console.log(`${report.subject}\n\n${report.text}\n`);
   if (process.argv.includes("--send")) {
     const token = process.env.DAILY_REPORT_GOOGLE_TOKEN;

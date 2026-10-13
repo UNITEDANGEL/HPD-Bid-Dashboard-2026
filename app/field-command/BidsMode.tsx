@@ -117,7 +117,11 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   }, [market, history]);
   const record = selected ? records[selected.omo] : undefined;
 
-  // Pins: green with a check once a bid is sent. The job pins are hidden while the map shows bids.
+  const stats = useMemo(() => (marketJobs.length ? bidStats(marketJobs) : null), [marketJobs]);
+  // Open invitations that are easy wins (work you win well under what other winners get).
+  const easyOmos = useMemo(() => new Set((bids || []).filter((b) => stats && easyWin(b.description, stats.workPrices)).map((b) => b.omo)), [bids, stats]);
+
+  // Pins: green with a check once a bid is sent; a green ring and $ for an easy win. The job pins are hidden while the map shows bids.
   useEffect(() => {
     if (!map) return;
     map.getContainer?.()?.classList.toggle("is-bids", open);
@@ -133,9 +137,10 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
       const markers = bids.filter((b) => Number.isFinite(b.lat) && Number.isFinite(b.lng)).map((bid) => {
         const tone = dueWhen(bid).tone;
         const sent = badge(records[bid.omo])?.tone === "sent";
+        const easyPin = !sent && !records[bid.omo] && easyOmos.has(bid.omo);
         return L.marker([bid.lat, bid.lng], {
-          pane: "fc-bids", title: `${bid.omo} · ${bid.address} · ${dueLabel(bid)}`,
-          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${sent ? " is-sent" : ""}`, html: `<b>${sent ? "✓" : dueLabel(bid).split(" ")[0]}</b>`, iconSize: [34, 34], iconAnchor: [17, 17] }),
+          pane: "fc-bids", title: `${bid.omo} · ${bid.address} · ${dueLabel(bid)}${easyPin ? " · Easy win" : ""}`,
+          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${sent ? " is-sent" : ""}${easyPin ? " is-easy" : ""}`, html: `<b>${sent ? "✓" : dueLabel(bid).split(" ")[0]}</b>${easyPin ? "<i>$</i>" : ""}`, iconSize: [34, 34], iconAnchor: [17, 17] }),
           zIndexOffset: 1000 - TONE_ORDER[tone] * 100,
         }).on("click", () => openBid(bid));
       });
@@ -144,7 +149,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
       map.fitBounds(layerRef.current.getBounds(), { paddingTopLeft: [30, 150], paddingBottomRight: [30, Math.round(window.innerHeight * 0.4)], maxZoom: 14 });
     });
     return () => { cancelled = true; };
-  }, [open, bids, map, records]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, bids, map, records, easyOmos]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => { layerRef.current?.remove(); map?.getContainer?.()?.classList.remove("is-bids"); }, [map]);
 
   // After a fax goes out: ask Gmail for HumbleFax's confirmation now and every minute while waiting.
@@ -167,7 +172,6 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
 
   const help = useMemo(() => (selected ? priceHelp(selected.description, pricing) : null), [selected, pricing]);
   const scope = useMemo(() => readScope(selected?.description || ""), [selected]);
-  const stats = useMemo(() => (marketJobs.length ? bidStats(marketJobs) : null), [marketJobs]);
   const easy = useMemo(() => (selected && stats ? easyWin(selected.description, stats.workPrices) : null), [selected, stats]);
   const draftValue = Number(String(draft).replace(/[^0-9.]/g, ""));
 

@@ -62,6 +62,15 @@ try {
   await page.waitForTimeout(1500);
   const easyChips = list.locator('[data-hpd-smoke="fc-bid-easy-chip"]');
   let easyChecked = "none today";
+  // Every easy-win invitation with a map location has the green $ pin, and no other pin does.
+  const easyRows = list.locator("ol > li").filter({ has: page.locator('[data-hpd-smoke="fc-bid-easy-chip"]') });
+  const easyOmos = [];
+  for (let i = 0; i < await easyRows.count(); i++) easyOmos.push((await easyRows.nth(i).locator("b").first().innerText()).trim());
+  const easyMapped = easyOmos.filter((o) => Number.isFinite(open.find((b) => b.omo === o)?.lat)).length;
+  assert.equal(await page.locator(".fc-bid-pin.is-easy").count(), easyMapped, `easy-win pins (${easyOmos.join(", ") || "none"})`);
+  for (const o of easyOmos.filter((o) => Number.isFinite(open.find((b) => b.omo === o)?.lat))) {
+    assert.ok(await page.locator(`.fc-bid-pin.is-easy[title^="${o} "]`).count() === 1, `pin for ${o}`);
+  }
   if (await easyChips.count()) {
     const row = list.locator("ol > li").filter({ has: page.locator('[data-hpd-smoke="fc-bid-easy-chip"]') }).first();
     const chipPrice = (await easyChips.first().innerText()).match(/\$[\d,]+/)[0];

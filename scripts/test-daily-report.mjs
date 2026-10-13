@@ -50,6 +50,17 @@ const withSent = buildDailyReport(jobs, now, "https://example.test/map/", [], {
 assert.match(withSent.text, /BIDS SENT TODAY \(2\)\n- ER09001 · 8 OAK ST · \$1,250 · fax confirmed\n- ER09002 · 9 ELM ST · \$980 · FAX FAILED, resend it/);
 assert.match(withSent.text, /Note: Phone updates weren't available/);
 
+// Easy wins among tomorrow's bids, and jobs others won above your usual price.
+const withMarket = buildDailyReport(jobs, now, "https://example.test/map/", [
+  { omo: "ER09001", address: "8 OAK ST", borough: "QN", bidDue: "2026-10-15", bidDueTime: "10:00 AM", easy: { suggested: 560, yours: 488, yoursN: 36, others: 624, othersN: 77, beatsN: 53, of: 77 } },
+  { omo: "ER09002", address: "9 ELM ST", borough: "BK", bidDue: "2026-10-15", bidDueTime: "11:00 AM" },
+], { missed: [{ omo: "ER07586", address: "973 ST MARKS AVENUE", area: "Crown Heights (North)", work: "hinges", amount: 435, yours: 390, awardDate: "2026-10-09" }] });
+assert.match(withMarket.text, /Easy wins due tomorrow: 1 \(see Bids due tomorrow\)/);
+assert.match(withMarket.text, /- ER09001 · 8 OAK ST \(QN\) · bid due 10:00 AM · EASY WIN: bid ~\$560 \(you usually win it at \$488, other winners got \$624; beats 53 of 77 recent winners\)\n- ER09002 · 9 ELM ST \(BK\) · bid due 11:00 AM\n/);
+assert.match(withMarket.text, /OTHERS WON ABOVE YOUR USUAL PRICE \(LAST 7 DAYS\) \(1\)\n- ER07586 · 973 ST MARKS AVENUE \(Crown Heights \(North\)\) · hinges · won at \$435 · your usual \$390 · awarded 10\/09/);
+assert.match(withMarket.html, /Easy wins due tomorrow: 1/);
+assert.ok(!/Easy wins due tomorrow/.test(report.text), "no easy-win line when there are none");
+
 // A quiet day still reads cleanly.
 const quiet = buildDailyReport([{ OMO: "Q1", AwardAmount: "400.00" }], now);
 assert.equal(quiet.subject, "HPD day report · Wed 10/14 · $0 earned · 0 visits");

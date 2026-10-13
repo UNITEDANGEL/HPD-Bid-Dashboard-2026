@@ -7,7 +7,13 @@ import { secondTryState } from "./field-next-action";
 
 type Job = Record<string, unknown>;
 // An open invitation (data/upcoming_bids.json): only what the report needs.
-export type ReportBid = { omo: string; address: string; borough?: string; bidDue: string; bidDueTime?: string };
+export type ReportBid = {
+  omo: string; address: string; borough?: string; bidDue: string; bidDueTime?: string;
+  // Easy win (lib/bid-stats.ts): work you win well under what other winners get.
+  easy?: { suggested: number; yours: number; yoursN: number; others: number; othersN: number; beatsN: number; of: number };
+};
+// A job awarded to someone else for more than your usual price for that work (lib/bid-stats.ts).
+export type ReportMissed = { omo: string; address: string; area?: string; work: string; amount: number; yours: number; awardDate: string };
 export type DailyReport = { subject: string; text: string; html: string };
 
 const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
@@ -23,7 +29,7 @@ function addDay(iso: string) {
 // Bids you saved / faxed (lib/bid-records.ts, from the status server): only what the report needs.
 export type ReportBidRecord = { omo: string; address: string; status: string; price: number; sentPrice?: number; sentAt?: string };
 
-export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https://hpd-bid-dashboard-2026.pages.dev/map/", bids: ReportBid[] = [], extra: { bidRecords?: ReportBidRecord[]; note?: string } = {}): DailyReport {
+export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https://hpd-bid-dashboard-2026.pages.dev/map/", bids: ReportBid[] = [], extra: { bidRecords?: ReportBidRecord[]; note?: string; missed?: ReportMissed[] } = {}): DailyReport {
   // The test job is never part of the business numbers.
   const real = jobs.filter((job) => String(job.OMO ?? job.id ?? "").trim().toUpperCase() !== "TEST-0001");
   const id = (job: Job) => String(job.OMO ?? job.id ?? "");
@@ -46,7 +52,12 @@ export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https:
   const bidsTomorrow: SummaryRow[] = bids
     .filter((bid) => bid.bidDue === tomorrow)
     .sort((a, b) => String(a.bidDueTime || "").localeCompare(String(b.bidDueTime || "")) || a.omo.localeCompare(b.omo))
-    .map((bid) => ({ id: bid.omo, address: `${bid.address}${bid.borough ? ` (${bid.borough})` : ""}`, text: `bid due ${bid.bidDueTime || "tomorrow"}` }));
+    .map((bid) => ({
+      id: bid.omo, address: `${bid.address}${bid.borough ? ` (${bid.borough})` : ""}`,
+      text: `bid due ${bid.bidDueTime || "tomorrow"}${bid.easy ? ` · EASY WIN: bid ~${money(bid.easy.suggested)} (you usually win it at ${money(bid.easy.yours)}, other winners got ${money(bid.easy.others)}; beats ${bid.easy.beatsN} of ${bid.easy.of} recent winners)` : ""}`,
+    }));
+  const easyCount = bids.filter((bid) => bid.bidDue === tomorrow && bid.easy).length;
+  const missed: SummaryRow[] = (extra.missed || []).map((m) => ({ id: m.omo, address: `${m.address}${m.area ? ` (${m.area})` : ""}`, text: `${m.work} · won at ${money(m.amount)} · your usual ${money(m.yours)} · awarded ${m.awardDate.slice(5, 7)}/${m.awardDate.slice(8, 10)}` }));
   const faxWord: Record<string, string> = { sent: "faxed, waiting for confirmation", confirmed: "fax confirmed", failed: "FAX FAILED, resend it" };
   const sentToday: SummaryRow[] = (extra.bidRecords || [])
     .filter((r) => r.sentAt && NY_DAY.format(new Date(r.sentAt)) === NY_DAY.format(now))
@@ -57,6 +68,7 @@ export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https:
     ["Tomorrow", summary.tomorrow, "Nothing due."],
     ["Bids due tomorrow", bidsTomorrow, "No invitations due tomorrow."],
     ["Bids sent today", sentToday, "No bids sent today."],
+    ["Others won above your usual price (last 7 days)", missed, "None: no job went for more than your usual price."],
   ];
 
   const text = [
@@ -66,6 +78,7 @@ export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https:
     `This week: ${money(week.earned)} · This month: ${money(month.earned)}`,
     `Today: ${plural(c.visited, "visit")} · ${outcomes}`,
     secondDue ? `2nd no-access tries due now: ${secondDue}` : "",
+    easyCount ? `Easy wins due tomorrow: ${easyCount} (see Bids due tomorrow)` : "",
     ...sections.flatMap(([title, rows, none]) => ["", `${title.toUpperCase()} (${rows.length})`, ...(rows.length ? rows.map((r) => `- ${r.id} · ${r.address} · ${r.text}`) : [none])]),
     "",
     extra.note ? `Note: ${extra.note}` : "",
@@ -82,6 +95,7 @@ export function buildDailyReport(jobs: Job[], now = new Date(), appUrl = "https:
 </div>
 <table style="border-collapse:separate;border-spacing:6px;width:100%"><tr>${card("Visited", String(c.visited))}${card("Completed", String(c.completed))}${card("Partial", String(c.partial))}</tr><tr>${card("No access", String(c.noAccess))}${card("Refused", String(c.refused))}${card("Emailed", String(c.emailed))}</tr></table>
 ${secondDue ? `<p style="color:#9a3412"><b>2nd no-access tries due now: ${secondDue}</b></p>` : ""}
+${easyCount ? `<p style="color:#166534"><b>Easy wins due tomorrow: ${easyCount}</b> (see Bids due tomorrow)</p>` : ""}
 ${sections.map(([title, rows, none]) => `<h3 style="margin:16px 0 6px">${escape(title)} (${rows.length})</h3>${rows.length ? `<ul style="margin:0;padding-left:18px">${rows.map((r) => `<li><b>${escape(r.id)}</b> · ${escape(r.address)}<br><span style="color:#475569">${escape(r.text)}</span></li>`).join("")}</ul>` : `<p style="margin:0;color:#64748b">${escape(none)}</p>`}`).join("\n")}
 <p style="margin-top:18px"><a href="${escape(appUrl)}">Open the app</a></p>
 </div>`;
