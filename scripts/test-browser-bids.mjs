@@ -145,7 +145,7 @@ try {
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-status"]').innerText(), /Sent .* at \$1,250\.00 to HPD fax \(212\) 863-8655/);
   assert.equal(saved[`BID-${omo}`]?.status, "confirmed", "the bid record reached the status server");
   await sheet.locator("header button").click();
-  assert.match(await list.locator("ol > li").first().innerText(), /✓ Sent \$1,250/);
+  assert.match(await list.locator("ol > li").first().innerText(), /✓ Sent \$1,250 · confirmed/);
   assert.equal(await page.locator(".fc-bid-pin.is-sent").count(), Number.isFinite(bid.lat) ? 1 : 0, "the pin turns green");
 
   // 4. A failed fax offers Resend.
@@ -160,6 +160,7 @@ try {
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
   await page.waitForFunction(() => /Fax failed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 15000 });
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').innerText(), /Resend bid by fax/);
+  assert.equal(await page.locator(".fc-bid-pin.is-fax-failed").count(), Number.isFinite(open.find((b) => b.omo === omo2)?.lat) ? 1 : 0, "a failed fax shows a red pin");
   failOmo = "";
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
   await page.waitForFunction(() => /Fax confirmed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 15000 });

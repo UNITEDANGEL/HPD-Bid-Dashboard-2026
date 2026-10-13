@@ -22,7 +22,8 @@ try {
     return r.fulfill({ json: { ok: true, overrides: { "BID-ER77777": newer }, accepted: [] } });
   });
   await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...real, bids: [bid, ...real.bids.slice(1)] } }));
-  await context.route(/\/api\/drive\/fax-status/, (r) => r.fulfill({ json: { status: "waiting" } }));
+  const faxChecks = [];
+  await context.route(/\/api\/drive\/fax-status/, (r) => { faxChecks.push(JSON.parse(r.request().postData() || "{}")); return r.fulfill({ json: { status: "confirmed", subject: "Successful transmission", at: "2026-10-13T00:56:00Z" } }); });
   await context.addInitScript((rec) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem("hpd-bid-records-v1", JSON.stringify({ ER77777: rec })); sessionStorage.setItem("seeded", "1"); } }, older);
   const page = await context.newPage();
   const errors = [];
@@ -34,17 +35,22 @@ try {
   await page.waitForFunction(() => /\$1,987/.test(document.querySelector('[data-hpd-smoke="fc-bids-list"]')?.textContent || ""), null, { timeout: 20000 });
   assert.match(await row.innerText(), /\$1,987/, "the computer shows the iPhone's revised price");
   assert.ok(!/\$1,180/.test(await row.innerText()));
+  // HumbleFax's email is found in the background: the list says confirmed and the pin is green, without
+  // opening the job.
+  await page.waitForFunction(() => /\$1,987 · confirmed/.test(document.querySelector('[data-hpd-smoke="fc-bids-list"]')?.textContent || ""), null, { timeout: 20000 });
+  assert.equal(faxChecks[0].omo, "ER77777");
+  assert.equal(faxChecks[0].sentAt, "2026-10-13T00:51:57.111Z", "checked from the time of the revised fax");
   await row.locator("button").click();
   const status = page.locator('[data-hpd-smoke="fc-bid-status"]');
   await status.waitFor({ timeout: 10000 });
-  assert.match(await status.innerText(), /at \$1,987\.00 to HPD fax[\s\S]*2 sends/);
+  assert.match(await status.innerText(), /Fax confirmed by HumbleFax[\s\S]*at \$1,987\.00 to HPD fax[\s\S]*2 sends[\s\S]*Successful transmission/);
   assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("hpd-bid-records-v1"))).ER77777.price, 1987, "kept on the computer too");
   await page.locator('[data-hpd-smoke="fc-bid-sheet"] header button').click();
   await page.locator('[data-hpd-smoke="fc-bids-mine"]').click();
   assert.match(await page.locator('[data-hpd-smoke="fc-my-bids"]').innerText(), /ER77777[\s\S]*\$1,987[\s\S]*revised 1x/);
   assert.ok(calls >= 2, "tried the server again after it was busy");
   assert.deepEqual(errors, []);
-  console.log("PASS bid sync: the computer had $1,180, the iPhone revised to $1,987; the computer shows $1,987, 2 sends, revised 1x (server busy at first)");
+  console.log("PASS bid sync: the computer had $1,180, the iPhone revised to $1,987; the computer shows $1,987, 2 sends, revised 1x (server busy at first); HumbleFax confirmation found in the background without opening the job");
 } finally {
   await browser.close();
 }

@@ -10,7 +10,7 @@ import { priceHelp, readScope, winChance, type PricedJob } from "../../lib/bid-p
 import { beats, bidStats, easyWin, historyRows, filterHistory, type Group, type HistoryFilter, type MarketJob, type WorkPrice } from "../../lib/bid-stats";
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
-import { bidResult, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
+import { bidResult, bidsToCheck, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
 import "./bids.css";
 
 const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
@@ -57,15 +57,16 @@ function byUrgency(a: UpcomingBid, b: UpcomingBid) {
 
 const FAX_TEXT = {
   saved: "", waiting: "📠 Faxed to HPD · waiting for HumbleFax's confirmation",
-  confirmed: "✓ Fax confirmed by HumbleFax", failed: "✗ Fax failed", unconfirmed: "⚠ No confirmation from HumbleFax yet",
+  confirmed: "✓ Fax confirmed by HumbleFax", failed: "✗ Fax failed: resend it", unconfirmed: "⚠ Sent, but no confirmation from HumbleFax after 15 minutes",
 } as const;
 
 function badge(record?: BidRecord) {
   if (!record) return null;
   const state = faxState(record);
   if (state === "saved") return { text: `${money(record.price)} saved`, tone: "saved" };
-  if (state === "failed" || state === "unconfirmed") return { text: `Resend · ${money(record.sentPrice || record.price)}`, tone: "failed" };
-  return { text: `✓ Sent ${money(record.sentPrice || record.price)}`, tone: "sent" };
+  if (state === "failed") return { text: `Fax failed · resend ${money(record.sentPrice || record.price)}`, tone: "failed" };
+  if (state === "confirmed") return { text: `✓ Sent ${money(record.sentPrice || record.price)} · confirmed`, tone: "sent" };
+  return { text: `✓ Sent ${money(record.sentPrice || record.price)}${state === "unconfirmed" ? " · not confirmed yet" : " · checking"}`, tone: "sent" };
 }
 
 export default function BidsMode({ open, map, history, onClose }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void }) {
@@ -84,24 +85,30 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const [marketJobs, setMarketJobs] = useState<MarketJob[]>([]);
   const layerRef = useRef<any>(null);
 
-  useEffect(() => { setRecords(readBidRecords()); }, []);
+  // Bids saved on other phones (status server), as soon as the app opens and every 2 minutes. It can be
+  // slow or busy: try up to 3 times. Fax checks wait for this first pull, so an old copy on this device
+  // is never checked or saved over the newer one from another phone.
+  const [pulled, setPulled] = useState(false);
   useEffect(() => {
-    if (!open) return;
-    // Bids saved on other phones (status server). It can be slow or busy: try up to 3 times, then
-    // again every 2 minutes while the bids are open.
+    setRecords(readBidRecords());
     let stopped = false;
     const pull = async (tries = 3) => {
       for (let i = 0; i < tries && !stopped; i++) {
         try {
           const r = await fetch(`${HPD_STATUS_WORKER_URL}/overrides`, { cache: "no-store" });
           const data = r.ok ? await r.json() : null;
-          if (data?.overrides) { setRecords((local) => mergeServerBidsAndKeep(local, data.overrides)); return; }
+          if (data?.overrides) { setRecords((local) => mergeServerBidsAndKeep(local, data.overrides)); break; }
         } catch { /* offline: try again */ }
         await new Promise((done) => setTimeout(done, 1500 * (i + 1)));
       }
+      if (!stopped) setPulled(true);
     };
     void pull();
     const refresh = window.setInterval(() => void pull(1), 120000);
+    return () => { stopped = true; window.clearInterval(refresh); };
+  }, []);
+  useEffect(() => {
+    if (!open) return;
     if (!market) {
       // What HPD paid for every invitation you received, whoever won (NYC Open Data, nightly).
       fetch("/data/market_awards.json", { cache: "no-store" })
@@ -110,12 +117,11 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
         .then((data) => setMarket(Array.isArray(data?.jobs) ? data.jobs.map((j: { omo: string; description: string; amount: number; awardDate: string; won: boolean; address?: string; area?: string; boro?: string }) => ({ id: j.omo, description: j.description, amount: j.amount, date: j.awardDate, won: j.won, address: [j.address, j.area || j.boro].filter(Boolean).join(" · ") })) : []))
         .catch(() => setMarket([]));
     }
-    if (bids) return () => { stopped = true; window.clearInterval(refresh); };
+    if (bids) return;
     fetch("/data/upcoming_bids.json", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((data) => setBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => stillOpen(b)).sort(byUrgency) : []))
       .catch(() => { setBids([]); setError("Couldn't load the invitations right now."); });
-    return () => { stopped = true; window.clearInterval(refresh); };
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const awarded = useMemo(() => new Map(history.filter((j) => j.amount > 0).map((j) => [j.id, j.amount])), [history]);
@@ -150,10 +156,11 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
       const markers = bids.filter((b) => Number.isFinite(b.lat) && Number.isFinite(b.lng)).map((bid) => {
         const tone = dueWhen(bid).tone;
         const sent = badge(records[bid.omo])?.tone === "sent";
+        const faxFailed = badge(records[bid.omo])?.tone === "failed";
         const easyPin = !sent && !records[bid.omo] && easyOmos.has(bid.omo);
         return L.marker([bid.lat, bid.lng], {
           pane: "fc-bids", title: `${bid.omo} · ${bid.address} · ${dueLabel(bid)}${easyPin ? " · Easy win" : ""}`,
-          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${sent ? " is-sent" : ""}${easyPin ? " is-easy" : ""}`, html: `<b>${sent ? "✓" : dueLabel(bid).split(" ")[0]}</b>${easyPin ? "<i>$</i>" : ""}`, iconSize: [34, 34], iconAnchor: [17, 17] }),
+          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${sent ? " is-sent" : ""}${faxFailed ? " is-fax-failed" : ""}${easyPin ? " is-easy" : ""}`, html: `<b>${sent ? "✓" : faxFailed ? "!" : dueLabel(bid).split(" ")[0]}</b>${easyPin ? "<i>$</i>" : ""}`, iconSize: [34, 34], iconAnchor: [17, 17] }),
           zIndexOffset: 1000 - TONE_ORDER[tone] * 100,
         }).on("click", () => openBid(bid));
       });
@@ -165,23 +172,37 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   }, [open, bids, map, records, easyOmos]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => { layerRef.current?.remove(); map?.getContainer?.()?.classList.remove("is-bids"); }, [map]);
 
-  // After a fax goes out: ask Gmail for HumbleFax's confirmation now and every minute while waiting.
+  // HumbleFax emails a confirmation (or a failure) a few minutes after each fax: check Gmail for every
+  // bid still waiting, now and every minute, whether or not its sheet is open, so the map and list
+  // show sent / confirmed / failed by themselves.
+  const recordsRef = useRef(records);
+  recordsRef.current = records;
+  const [faxCheckNote, setFaxCheckNote] = useState("");
   useEffect(() => {
-    if (!record || faxState(record) !== "waiting" || !record.sentAt) return;
+    if (!pulled) return;
     let stopped = false;
-    const check = async () => {
-      const result = await checkBidFax(record.omo, record.sentAt!);
-      if (stopped) return;
-      if (result.status === "confirmed" || result.status === "failed") {
-        await update({ ...record, status: result.status, confirmedAt: result.at, faxNote: result.subject, updatedAt: new Date().toISOString() });
-      } else if (result.status === "unknown") {
-        setNote(result.error || "");
+    const checkAll = async () => {
+      for (const rec of bidsToCheck(recordsRef.current)) {
+        if (stopped) return;
+        const result = await checkBidFax(rec.omo, rec.sentAt!);
+        if (result.status === "confirmed" || result.status === "failed") {
+          const latest = recordsRef.current[rec.omo];
+          if (latest && latest.sentAt === rec.sentAt && latest.status === "sent") {
+            await update({ ...latest, status: result.status, confirmedAt: result.at, faxNote: result.subject, updatedAt: new Date().toISOString() });
+          }
+          setFaxCheckNote("");
+        } else if (result.status === "unknown") {
+          setFaxCheckNote(result.noReadAccess ? "read" : result.error || "");
+          if (result.noReadAccess) return; // same answer for every bid
+        } else {
+          setFaxCheckNote("");
+        }
       }
     };
-    void check();
-    const timer = window.setInterval(check, 60000);
+    void checkAll();
+    const timer = window.setInterval(() => void checkAll(), 60000);
     return () => { stopped = true; window.clearInterval(timer); };
-  }, [record?.omo, record?.sentAt, record?.status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pulled, Object.values(records).filter((r) => r.status === "sent").map((r) => r.omo + r.sentAt).join()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const help = useMemo(() => (selected ? priceHelp(selected.description, pricing) : null), [selected, pricing]);
   const scope = useMemo(() => readScope(selected?.description || ""), [selected]);
@@ -308,6 +329,11 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 <span>Sent {when(record.sentAt)} at {money2(record.sentPrice || record.price)} to HPD fax (212) 863-8655{record.attempts > 1 ? ` · ${record.attempts} sends` : ""}</span>
                 {record.confirmedAt ? <span>HumbleFax {state === "failed" ? "reported" : "confirmed"} {when(record.confirmedAt)}{record.faxNote ? `: "${record.faxNote}"` : ""}</span> : null}
                 {note ? <small>{note}</small> : null}
+                {(state === "waiting" || state === "unconfirmed") && faxCheckNote ? (
+                  <small className="fc-bid-warn" data-hpd-smoke="fc-fax-check-note">{faxCheckNote === "read"
+                    ? <>The app can&apos;t read HumbleFax&apos;s emails yet, so it can&apos;t confirm by itself. On the <a href="/storage/">Storage page</a> tap Disconnect, then Connect, and allow reading email. Or tap the button below once HumbleFax emails you.</>
+                    : `Couldn't check HumbleFax's email: ${faxCheckNote}`}</small>
+                ) : null}
                 {state === "waiting" || state === "unconfirmed" ? (
                   <button type="button" className="fc-bid-confirm" data-hpd-smoke="fc-bid-mark-confirmed" onClick={() => void markConfirmed()}>✓ I got HumbleFax&apos;s confirmation email</button>
                 ) : null}

@@ -179,3 +179,5 @@
 
 .fc-bid-predict { color: #fde68a; font: 700 12px system-ui; }
 .fc-bid-predict.is-low { color: #fca5a5; }
+
+.fc-bid-pin.is-fax-failed { background: #dc2626; border-color: #fff; font-size: 16px; }

@@ -18,8 +18,8 @@ export type BidResult = "won" | "lost" | "pending";
 
 const LOCAL_KEY = "hpd-bid-records-v1";
 export const BID_KEY_PREFIX = "BID-";
-// No HumbleFax confirmation this long after sending: treat it as not delivered and offer a resend.
-export const CONFIRM_WAIT_MINUTES = 30;
+// HumbleFax usually confirms within 5-10 minutes. No confirmation after this long: say so and offer a resend.
+export const CONFIRM_WAIT_MINUTES = 15;
 
 export function readBidRecords(): Record<string, BidRecord> {
   try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}"); } catch { return {}; }
@@ -50,13 +50,22 @@ export function mergeServerBidsAndKeep(local: Record<string, BidRecord>, overrid
   return merged;
 }
 
+// Which copy of a bid is current: the one with the later fax wins (a revision sent from the iPhone beats
+// an older copy on the computer, even if the computer touched its copy more recently); for the same fax,
+// the later update wins.
+export function isNewer(a: BidRecord, b: BidRecord) {
+  const sentA = String(a.sentAt || ""), sentB = String(b.sentAt || "");
+  if (sentA !== sentB) return sentA > sentB;
+  return String(a.updatedAt || "") > String(b.updatedAt || "");
+}
+
 export function mergeServerBids(local: Record<string, BidRecord>, overrides: Record<string, unknown>) {
   const merged = { ...local };
   for (const [key, value] of Object.entries(overrides || {})) {
     if (!key.startsWith(BID_KEY_PREFIX) || !value || typeof value !== "object") continue;
     const rec = value as BidRecord;
     if (!rec.omo || !(rec.price > 0)) continue;
-    if (!merged[rec.omo] || String(rec.updatedAt || "") > String(merged[rec.omo].updatedAt || "")) merged[rec.omo] = rec;
+    if (!merged[rec.omo] || isNewer(rec, merged[rec.omo])) merged[rec.omo] = rec;
   }
   return merged;
 }
@@ -123,9 +132,14 @@ export async function checkBidFax(omo: string, sentAt: string, fetcher: typeof f
   try {
     const response = await fetcher("/api/drive/fax-status", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ omo, sentAt }) });
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) return { status: "unknown" as const, error: String(body.error || `HTTP ${response.status}`) };
+    if (!response.ok) return { status: "unknown" as const, error: String(body.error || `HTTP ${response.status}`), noReadAccess: response.status === 403 };
     return { status: body.status as "confirmed" | "failed" | "waiting", subject: String(body.subject || ""), at: String(body.at || "") };
   } catch {
     return { status: "unknown" as const, error: "No connection to check the fax." };
   }
+}
+
+// Sent bids still waiting for HumbleFax's email (last 2 days): the app checks these in the background.
+export function bidsToCheck(records: Record<string, BidRecord>, now = new Date()) {
+  return Object.values(records).filter((r) => r.status === "sent" && r.sentAt && now.getTime() - Date.parse(r.sentAt) < 2 * 86400000);
 }

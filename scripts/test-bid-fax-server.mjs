@@ -49,6 +49,10 @@ assert.equal((await check([
   { subject: "Fax delivered", snippet: "Bid - OMO ER09999", at: "2026-10-12T20:01:00Z" },
   { subject: "Fax could not be delivered", snippet: "Bid - OMO ER07409", at: "2026-10-12T20:06:00Z" },
 ])).status, "failed");
+// Only another job's email since the send: still waiting (it must not confirm this bid).
+assert.equal((await check([{ subject: "Your fax was sent successfully", snippet: "Bid - OMO ER09999 - 1 MAIN ST", at: "2026-10-12T20:02:00Z" }])).status, "waiting");
+// An email that names no job (e.g. "Successful transmission") still counts.
+assert.equal((await check([{ subject: "Successful transmission", snippet: "Your fax to 2128638655 was delivered", at: "2026-10-12T20:04:00Z" }])).status, "confirmed");
 const noRead = await handleDrivePackages(statusRequest(), "fax-status", auth, async () => new Response("{}", { status: 403 }), {}, "owner@example.test");
 assert.equal(noRead.status, 403);
 assert.match((await noRead.json()).error, /read access to email/);

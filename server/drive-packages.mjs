@@ -193,8 +193,11 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
         const header = (name) => (m.payload?.headers || []).find((h) => String(h.name).toLowerCase() === name)?.value || "";
         replies.push({ subject: header("subject"), snippet: String(m.snippet || ""), at: new Date(Number(m.internalDate) || Date.parse(header("date"))).toISOString() });
       }
-      // Prefer the reply that names this OMO; otherwise the first reply after the send.
-      const pick = replies.find((r) => omo && `${r.subject} ${r.snippet}`.toUpperCase().includes(omo)) || replies.sort((a, b) => a.at.localeCompare(b.at))[0];
+      // The reply that names this OMO; otherwise the first reply after the send that names no other OMO
+      // (with several bids out, one job's confirmation must not count for another).
+      const names = (r) => (`${r.subject} ${r.snippet}`.toUpperCase().match(/\b[A-Z]{2}\d{5}\b/g) || []);
+      const pick = replies.find((r) => omo && names(r).includes(omo))
+        || replies.filter((r) => !names(r).some((o) => o !== omo)).sort((a, b) => a.at.localeCompare(b.at))[0];
       const status = pick ? faxResult(pick.subject, pick.snippet) || "confirmed" : "waiting";
       return reply({ status, subject: pick?.subject || "", at: pick?.at || "" });
     }
