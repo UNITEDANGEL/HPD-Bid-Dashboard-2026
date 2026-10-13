@@ -109,7 +109,9 @@ try {
   await sheet.waitFor();
   const omo = (await sheet.locator("header strong").innerText()).trim();
   const bid = open.find((b) => b.omo === omo);
-  assert.equal((await sheet.locator('[data-hpd-smoke="fc-bid-description"]').innerText()).trim(), bid.description);
+  // The whole description, word for word (numbered items and HPD's notes start new lines).
+  const shownDesc = (await sheet.locator('[data-hpd-smoke="fc-bid-description"]').innerText()).trim();
+  assert.equal(shownDesc.replace(/\s+/g, " "), bid.description.replace(/\s+/g, " ").trim(), "nothing missing or changed");
   assert.equal((await page.request.get(baseUrl + await sheet.locator('[data-hpd-smoke="fc-bid-view"]').getAttribute("href"))).status(), 200);
   assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-review"]').count(), 0, "review comes after saving a price");
   // The price help says what it read in the job and how good the match is.
