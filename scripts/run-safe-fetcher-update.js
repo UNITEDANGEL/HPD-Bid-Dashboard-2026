@@ -372,6 +372,15 @@ async function main() {
       appendLog(`WARNING: Market awards were not refreshed: ${err.message || String(err)}`);
     }
 
+    // Master file: every job, bid and saved status in one record, encrypted (the repository is public).
+    if (process.env.MASTER_FILE_KEY) {
+      try {
+        runStep("Write the master file (encrypted)", "node", ["scripts/build-master-file.mjs"]);
+      } catch (err) {
+        appendLog(`WARNING: Master file not written: ${err.message || String(err)}`);
+      }
+    }
+
     const mappingOut = runStep("Verify mapping", "node", ["check-local-mapping.js"]);
     const descOut = runStep("Verify descriptions", "node", ["check-generic-descriptions.js"]);
     const itbOut = runStep("Verify missing ITB", "node", ["export-missing-itb.js"]);

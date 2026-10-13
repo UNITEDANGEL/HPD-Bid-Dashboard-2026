@@ -45,3 +45,8 @@ public/map-worker/
 # Generated test output and Python cache
 output/
 __pycache__/
+
+# Master file: only the encrypted copy may be committed (the repository is public).
+data/master/*
+!data/master/master-file.json.enc
+MASTER_FILE_KEY*

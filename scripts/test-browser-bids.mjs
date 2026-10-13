@@ -22,9 +22,15 @@ try {
     return r.fulfill({ json: { ok: true, overrides: { "BID-ER99999": otherPhone }, accepted: [] } });
   });
   // Only bids that can still be sent show: two already-past ones are slipped into the real list.
-  const real = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();
+  const fetched = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();
   const nyDay = (d) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(d);
-  const today = nyDay(new Date()), yesterday = nyDay(new Date(Date.now() - 86400000));
+  const today = nyDay(new Date()), yesterday = nyDay(new Date(Date.now() - 86400000)), tomorrow = nyDay(new Date(Date.now() + 86400000));
+  const clockNow = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date()).split(":").map(Number);
+  const mins = (t) => { const m = /^(\d{1,2}):(\d{2})\s*([AP])M$/i.exec(t || ""); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "P" ? 12 : 0)) * 60 + Number(m[2]) : 1440; };
+  const stillOpenNow = (b) => b.bidDue > today || (b.bidDue === today && mins(b.bidDueTime) > clockNow[0] * 60 + clockNow[1]);
+  // Late in the day all of today's invitations can be past due: then the test moves the real ones to
+  // tomorrow (test only), so the full flow always runs on real invitations and their PDFs.
+  const real = fetched.bids.filter(stillOpenNow).length >= 3 ? fetched : { ...fetched, bids: fetched.bids.map((b) => (stillOpenNow(b) ? b : { ...b, bidDue: tomorrow })) };
   const past = [{ ...real.bids[0], omo: "PAST01", bidDue: yesterday, bidDueTime: "11:00 AM" }, { ...real.bids[0], omo: "PAST02", bidDue: today, bidDueTime: "12:01 AM" }];
   await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...real, bids: [...past, ...real.bids] } }));
   // Fax: the request is checked and answered here; status is "confirmed" for the first bid, "failed" for the second.

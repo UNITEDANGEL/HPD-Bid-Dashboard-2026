@@ -74,15 +74,20 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - Paperwork lock: once sent to HPD the job is locked (job card banner, no outcome change / clear / start
   over; paperwork page shows the sent version read-only). "Revise paperwork" asks why, keeps the sent
   version (outcome, dates, approval, email, Drive link) in the job's record, and opens the job again.
+- Master file: every job (details, everything saved from the phones, HPD status, paperwork sent, follow-up),
+  every bid and the session, in one record. Readable copies in OneDrive "HPD Master File" (one per day);
+  encrypted copy in the repository (public repo: never plain), every night's version kept; restore tool
+  puts back only missing / older entries on the status server, never deletes.
 
 ## Now (in this order)
 
-1. **Master file**: nightly full backup of jobs, bids, paperwork records, statuses and award data.
-2. **"My cost" floor** per kind of work.
-3. **Win rate from sent bids** (your price vs the winner's on jobs you actually bid).
+1. **"My cost" floor** per kind of work.
+2. **Win rate from sent bids** (your price vs the winner's on jobs you actually bid).
 
-4. **2025 jobs**: recover statuses for last year's jobs too, if needed.
+3. **2025 jobs**: recover statuses for last year's jobs too, if needed.
 
 ## Open items for the owner
+- GitHub secret MASTER_FILE_KEY (the key in OneDrive "HPD Master File/MASTER_FILE_KEY.txt") turns on the
+  nightly encrypted master file; until then it's written when run on this PC.
 - Google reconnect with "read email" lets the phone confirm faxes by itself (the fax checker covers it).
 - Status-server worker deploy needs Cloudflare Workers permission on the API token.
