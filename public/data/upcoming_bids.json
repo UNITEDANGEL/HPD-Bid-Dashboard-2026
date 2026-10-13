@@ -1,642 +1,7 @@
 {
-  "generatedAt": "2026-10-13T03:32:39.818459+00:00",
+  "generatedAt": "2026-10-13T12:17:43.872788+00:00",
   "days": 14,
   "bids": [
-    {
-      "omo": "ER07409",
-      "bidDue": "2026-10-12",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-12",
-      "workCompletion": "2026-10-20",
-      "address": "2500 WEBB AVENUE",
-      "borough": "BX",
-      "itbFile": "ER07409_100926110704.pdf",
-      "description": "AEP - ALTERNATIVE ENFORCEMENT PROGRAM APT 1K DEFECTIVE CEILING IN THE BATHROOM AND IN THE BEDROOM IN THE BEDROOM DEMO THE DEFECTIVE PLASTER. TRACE, LOCATE AND REPAIR WATER LEAKS AND CRACKS ON THE CEILING AND WALLS. ENSURE THE LEAKS ARE COMPLETELLY STOPPED BEFORE REPAIRING THE CEILINGS AND WALLS. PROVIDE AND INSTALL APPROX. 25 SQ.FT. 5/8\u2019\u2019 THICK GWB AT CEILING. SCRAPE, TAPE, PLASTER AND APPLY ONE COAT OF MOLD KILLING PRIMER/PAINT AND TWO COATS OF SEMI-GLASS PAINT TO THE ENTIRE CEILING OF ABOVE SURFACES, APPROX 140 SF. IN THE BATHROOM TRACE LOCATE AND REPAIR THE CONCEALED WATER LEAK COMING FROM THE BATHROOM AT THE ABOVE APARTMENT CAUSING DAMAGE TO THE CEILING, PROVIDE AND INSTALL APPROX.32 SQ. FT. OF 5/8\u2019\u2019 THICK GWB AT CEILING AND WALLS AS NEEDED. SCRAPE, TAPE, PLASTER, PRIME AND APPLY 2 COATS OF SIMILAR PAINT TO ENTIRE CEILING AND WALLS APPROX. 130 SQ. FT. NOTE: \u2022FIELD DIMENSION AND QUANTITIES ARE TO BE VERIFIED BY THE VENDOR PRIOR TO BID. VENDOR MUST SUBMIT UNIT BREAKDOWN OF HIS BID AWARDED AMOUNT. \u2022CONTRACTORS MUST HAVE BEFORE, DURING AND COMPLETED PHOTOGRAPHS OF JOB. \u2022ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION. \u2022VENDOR MUST FOLLOW OSHA AND DOB REGULATION. \u2022VENDOR SHALL BE RESPONSIBLE FOR FULL RESTORATION TO DAMAGE CAUSED DURING CONSTRUCTION PHASE. \u2022REMOVE ALL WORK-RELATED DEBRIS. \u2022VENDOR MUST CALL CPM YANA SMELYANSKY @ (212) 863-6958 OR (929) 271-4715 EMAIL: SMELYANY@HPD.NYC.GOV AND SUPERVISOR EMAD ASAAD @ (347) 563-4499 EMAIL: ASAADE@HPD.NYC.GOV TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT STAGES OF WORK AND COPY OF DRAWINGS. ALTERNATIVE ENFORCEMENT PROGRAM",
-      "receivedAt": 1791558430000,
-      "pages": 5,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325.0,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 4,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 4,
-          "x": 102.7,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 4,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 4,
-          "x": 496.0,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 4,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 4,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 4,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 4,
-          "x": 267.8,
-          "y": 467.0,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24.0,
-          "y": 774.0,
-          "rotate": 0
-        }
-      },
-      "lat": 40.86588,
-      "lng": -73.904008,
-      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD @ (212) 863-5262, OR (212) 863-7769 WITH START DATE. CONTRACTOR MUST SIGN AND RETURN WITH BID. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETES WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ (212) 863-6959. CONTACT INFO: SCARANGELO TERRANCE (347) 579-0687"
-    },
-    {
-      "omo": "ER07509",
-      "bidDue": "2026-10-12",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-13",
-      "workCompletion": "2026-10-27",
-      "address": "3607 BROADWAY",
-      "borough": "MN",
-      "itbFile": "ER07509_100926031846.pdf",
-      "description": "REPAIRED 4TH MARBLE TREAD 3RD STORY INTERMEDIATE LANDING NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \u201cESSENTIAL SERVICE WORK AT INTERMEDIATE LANDING, 3RD STORY - PROPERLY REPAIR / REPLACE THE CRACKED / BROKEN 4TH MARBLE TREAD FROM BOTTOM AT INTERMEDIATE LANDING AT PUBLIC HALL STAIRS, 3rd STORY. RETURN STEP TO UNDAMAGED CONDITION. REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS",
-      "receivedAt": 1791573530000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325.0,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496.0,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467.0,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24.0,
-          "y": 774.0,
-          "rotate": 0
-        }
-      },
-      "lat": 40.828953,
-      "lng": -73.949068,
-      "notes": "NOTE \u2013 CONTRACTOR MUST CONTACT HPD - S. HUGHES @ 212 863 5754; B. CARR @ 212 863 5518; S. CROSSLAND @ 212 863 6132; E. ORR @ 212 863 6875; A. MARTINEZ @ 212 863 6135; S. KOFUMA @ 212 863 6160; K. BRYANT @ 212 863 5496; R. REED @ 212 863 5481; SUPERVISOR D. SAUL @ 212 863 5527; WITH START DATE. IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008."
-    },
-    {
-      "omo": "ER07530",
-      "bidDue": "2026-10-12",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-12",
-      "workCompletion": "2026-10-23",
-      "address": "81 SEAMAN AVENUE",
-      "borough": "MN",
-      "itbFile": "ER07530_100926110435.pdf",
-      "description": "AT APT 3D TRACE, LOCATE AND PROPERLY REPAIR THE SOURCES OF CONCEALED WATER LEAK(S) AT CEILING AND WALLS . THE PROBABLE SOURCE IS UNKNOWN. ENSURE THAT THE LEAK(S) DOES NOT RE-OCCUR. LOCATION OF WORKS : KITCHEN,BATHROOM,ROOM NORTH WEST 3 (CEILING,WALLS) REMOVE ALL LOOSE MATERIAL FROM DAMAGED AREAS BEFORE REPAIRS. PROVIDE APPROXIMATELY 290 SQ. FT. OF RESTORATION FOR CEILING AND WALL DAMAGES AS A RESULT OF THE LEAK(S),CRACKS AND DETERIORATED SURFACES.. PLASTER PRIME AND PAINT WITH TWO COATS AT ALL WORK AREAS. REMOVE ALL WORK RELATED DEBRIS. CONTRACTOR MUST SIGN AND RETURN BID. CALL TENANT FOR ACCESS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS. NOTE 1: CONTRACTOR MUST NOTIFY HPD PROMPTLY IN CASE OF ANY DELAYS AND/OR UNFORESEEN CONDITIONS AFFECTING PROPER AND TIMELY COMPLETION OF THE SCOPE OF THIS WORK ORDER.",
-      "receivedAt": 1791558277000,
-      "pages": 5,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325.0,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 4,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 4,
-          "x": 102.7,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 4,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 4,
-          "x": 496.0,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 4,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 4,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 4,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 4,
-          "x": 267.8,
-          "y": 467.0,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24.0,
-          "y": 774.0,
-          "rotate": 0
-        }
-      },
-      "lat": 40.86792,
-      "lng": -73.92496,
-      "notes": "NOTE 2: CONTRACTOR MUST CONTACT HPD EHU OFFICE AT 212-863-6017,5893,5527 AND/OR VIA EMAIL TO INFORM THE TARGETED START DATE AT LEAST 3 (THREE) WORKING DAYS BEFORE START OF WORK TENANT CONTACT : CARINA(SUKCHUN) (917)434-8498 ERP OMO's ( GC-NON SWP) CONTRACTORS MUST CONTACT HPD- S. HUGHES @ 212-863-5754; B. CARR @ 212-863-5518; S. CROSSLAND @212-863-6132; A. MARTINEZ @ 212-863-6135; S. KOFUMA @ 212-863-6160; K. BRYANT @ 212-863-5496; R. REED @ 212-863-5481; R. BUSHRA @ 212-863-6046; E. ORR @"
-    },
-    {
-      "omo": "ER07558",
-      "bidDue": "2026-10-12",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-12",
-      "workCompletion": "2026-10-31",
-      "address": "862 MACON STREET",
-      "borough": "BK",
-      "itbFile": "ER07558_100826105909.pdf",
-      "description": "AT ENTRANCE DOOR TO APT 4A...MAKE SELF CLOSING INSTALL NEW SELF CLOSING HINGES, NEW MORTISE LOCK, STRIKE PLATE AND MAKE ALL NECESSARY ADJUSTMENTS TO MAKE ENTRANCE DOOR TO APT 4A SELF CLOSING AND LATCHING. TOTAL DOORS: (1)",
-      "receivedAt": 1791471553000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325.0,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496.0,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467.0,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24.0,
-          "y": 774.0,
-          "rotate": 0
-        }
-      },
-      "lat": 40.684703,
-      "lng": -73.916297,
-      "notes": "CONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008."
-    },
-    {
-      "omo": "ER07590",
-      "bidDue": "2026-10-12",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-12",
-      "workCompletion": "2026-10-31",
-      "address": "880 GATES AVENUE",
-      "borough": "BK",
-      "itbFile": "ER07590_100826094531.pdf",
-      "description": "THE FOLLOWING DOORS 1)AT BULKHEAD DOOR 2)AT BUILDING ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \u201cESSENTIAL SERVICE WORK \u201c 1)AT BULKHEAD DOOR REPLACE BROKEN/DEFECTIVE DOOR AND JAMB WITH NEW PROPERLY FIRE RATED DOOR AND JAMB SIMILAR TO EXISTING, COMPLETE WITH SELF-CLOSING HINGES, ALL NECESSARY HARDWARE AND RESTORATION OF AFFECTED FINISHES AND PRIME AND PAINT TWO COATS PAINT AT (BULKHEAD DOOR). 2)AT BUILDING ENTRANCE DOOR REPLACE ADAMS RITE LOCK WITH SAME CYLINDER WITH SAME CYLINDER AND REPLACE ELECTRIC STIKING PLATE TO CLOSE AND LATCH THE DOOR IN SAFE ORDER. TOTAL DOORS= (2) REMOVE ALL WORK-RELATED DEBRIS.",
-      "receivedAt": 1791467135000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325.0,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496.0,
-          "y": 45.0,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467.0,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24.0,
-          "y": 774.0,
-          "rotate": 0
-        }
-      },
-      "lat": 40.688527,
-      "lng": -73.928938,
-      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: R. BUSHRA- 212 863 6046; S. HUGHES- 212 863 5754; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; E. ORR- 212 863 6875; A. MARTINEZ- 212 863 6135; S. KOFUMA- 212 863 6160; K. BRYANT- 212 863 5496; R. REED- 212 863 5481 SUPERVISOR D. SAUL- 212 863 5527 IF NO WORK IS PERFORMED OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008."
-    },
     {
       "omo": "ER05994",
       "bidDue": "2026-10-13",
@@ -647,6 +12,7 @@
       "borough": "MN",
       "itbFile": "ER05994_100826030105.pdf",
       "description": "REPAIR BUILDING ENTRANCE DOOR NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \u201cESSENTIAL SERVICE WORK MAKE ALL NECESSARY REPAIRS TO BUILDING ENTRANCE DOOR SECURE-TECH LOCK AND BUZZER SYSTEM.***DO NOT CHANGE KEY LOCK CYLINDER***. MAKE ANY NEEDED ADJUSTMENTS AND ALIGNMENTS TO DOOR TO ALLOW DOOR TO SELF CLOSE AND LATCH AS PER NYC CODE. (BUILDING ENTRANCE DOOR). TOTAL DOORS= (1) REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS",
+      "notes": "NOTE \u2013 CONTRACTOR MUST CONTACT HPD - S. HUGHES @ 212 863 5754; B. CARR @ 212 863 5518; S. CROSSLAND @ 212 863 6132; E. ORR @ 212 863 6875; A. MARTINEZ @ 212 863 6135; S. KOFUMA @ 212 863 6160; K. BRYANT @ 212 863 5496; R. REED @ 212 863 5481; SUPERVISOR D. SAUL @ 212 863 5527; WITH START DATE. IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008.",
       "receivedAt": 1791486067000,
       "pages": 4,
       "fields": {
@@ -761,8 +127,7 @@
         }
       },
       "lat": 40.805246,
-      "lng": -73.950583,
-      "notes": "NOTE \u2013 CONTRACTOR MUST CONTACT HPD - S. HUGHES @ 212 863 5754; B. CARR @ 212 863 5518; S. CROSSLAND @ 212 863 6132; E. ORR @ 212 863 6875; A. MARTINEZ @ 212 863 6135; S. KOFUMA @ 212 863 6160; K. BRYANT @ 212 863 5496; R. REED @ 212 863 5481; SUPERVISOR D. SAUL @ 212 863 5527; WITH START DATE. IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008."
+      "lng": -73.950583
     },
     {
       "omo": "ER07648",
@@ -774,6 +139,7 @@
       "borough": "BK",
       "itbFile": "ER07648_100826025816.pdf",
       "description": "MAKING DOORS SELF CLOSE & LATCH ***NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \"ESSENTIAL SERVICE WORK\"*** AT COMPACTOR CLOSET, 2ND STORY MAKE ALL NECESSARY REPAIRS TO MAKE COMPACTOR CLOSET DOOR AND HOPPER CHUTE PROPER SELF CLOSE & LATCH. RESTORE ALL AFFECTED AREAS. ENSURE DOORS ARE SELF CLOSING AND LATCHING AS PER NYC GUIDELINES. TOTAL DOORS = (2) REMOVE ALL WORK-RELATED DEBRIS.",
+      "notes": "CONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008.",
       "receivedAt": 1791485899000,
       "pages": 4,
       "fields": {
@@ -888,8 +254,7 @@
         }
       },
       "lat": 40.697918,
-      "lng": -73.922288,
-      "notes": "CONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008."
+      "lng": -73.922288
     },
     {
       "omo": "ER06360",
@@ -901,6 +266,7 @@
       "borough": "QN",
       "itbFile": "ER06360_100926034048.pdf",
       "description": "REPLACE CERMAIC TILES AT KITCEHN NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \u201cESSENTIAL SERVICE WORK \u201c AT KITCHEN FLOOR: PROPERLY DEMOLISH/REMOVE THE CERAMIC FLOOR TILES AT LEAST -8- 12X12 TILES APPROX 8 SQFT. MAKE ALL NECESSARY REPAIRS TO ALL LOOSE AREAS OF SUB-FLOOR WHERE NECESSARY. REPLACE WITH NEW CERAMIC FLOOR TILES SIMILAR TO EXISTING IN SIZE AND COLOR, GROUT FOR FINILA FINISH AND MAKE ALL NECESSARY CLEAN UP TO RESTORE FLOOR TO A SAFE/APPROPRIATE ORDER REMOVE ALL WORK RELATED DEBRIS.",
+      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD DREW SUTCHEN @ 212 863-6046; MERLE GORDON @ 212-863-6208; BRENDA CARR @ 212-863-5518; SHAMEL CROSSLAND @ 212-863-6132; DANILO DE LA CRUZ @ 212 863-6010; MADINA BELLO @ 212 863-5496; WILLIAM FRENCH @ 212 863-5976; DESFORD SAUL @ 212-863-5237 WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ (212)-863-6008. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS AKA 81-10 135 ST",
       "receivedAt": 1791574852000,
       "pages": 4,
       "fields": {
@@ -1015,8 +381,7 @@
         }
       },
       "lat": 40.714758,
-      "lng": -73.823629,
-      "notes": "NOTE: CONTRACTOR MUST CONTACT HPD DREW SUTCHEN @ 212 863-6046; MERLE GORDON @ 212-863-6208; BRENDA CARR @ 212-863-5518; SHAMEL CROSSLAND @ 212-863-6132; DANILO DE LA CRUZ @ 212 863-6010; MADINA BELLO @ 212 863-5496; WILLIAM FRENCH @ 212 863-5976; DESFORD SAUL @ 212-863-5237 WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ (212)-863-6008. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS AKA 81-10 135 ST"
+      "lng": -73.823629
     },
     {
       "omo": "ER06362",
@@ -1028,6 +393,7 @@
       "borough": "QN",
       "itbFile": "ER06362_100926034554.pdf",
       "description": "REPLACE GLASS AT LOWER WINDOW AT LIVING ROOM APT 2F NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \u201c ESSENTIAL SERVICE WORK \u201c AT APARTMENT 2F \u2013 REPLACE WITH NEW THE BROKEN GLASS PANE ON LOWER SASH APPROX. 30\u201dX 28\u201d AT LIVING ROOM AND RETURN TO SAFE/PROPER WORKING ORDER. REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS",
+      "notes": "NOTE \u2013 CONTRACTOR MUST CONTACT HPD D. SUTCHEN@ 212 863 6046; S. HUGHES @ 212 863 5754; B. CARR @ 212 863 5518; S. CROSSLAND @ 212 863 6132; E. ORR @ 212 863 6875; A. MARTINEZ @ 212 863 6135; S. KOFUMA @ 212 863 6160; K. BRYANT @ 212 863 5496; R. REED @ 212 863 5481; D. SAUL @ 212 863 5527; R. JAGDEO @ 212 863 5893 WITH START DATE. IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008.",
       "receivedAt": 1791575159000,
       "pages": 4,
       "fields": {
@@ -1142,8 +508,7 @@
         }
       },
       "lat": 40.69568,
-      "lng": -73.855609,
-      "notes": "NOTE \u2013 CONTRACTOR MUST CONTACT HPD D. SUTCHEN@ 212 863 6046; S. HUGHES @ 212 863 5754; B. CARR @ 212 863 5518; S. CROSSLAND @ 212 863 6132; E. ORR @ 212 863 6875; A. MARTINEZ @ 212 863 6135; S. KOFUMA @ 212 863 6160; K. BRYANT @ 212 863 5496; R. REED @ 212 863 5481; D. SAUL @ 212 863 5527; R. JAGDEO @ 212 863 5893 WITH START DATE. IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008."
+      "lng": -73.855609
     },
     {
       "omo": "ER06498",
@@ -1155,6 +520,7 @@
       "borough": "QN",
       "itbFile": "ER06498_100926032347.pdf",
       "description": "APT - 5S ENTRANCE DOOR REPAIRS. NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 \u201cESSENTIAL SERVICE WORK \u201c AT APT - 5S ENTRANCE DOOR, 5TH. STORY \u2013 INSTALL NEW SELF CLOSING HINGES AND MAKE ALL NECESSARY REPAIRS ADJUSTMENTS/ ALIGNMENT TO DOOR AND ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AND RESTORE DOOR TO SAFE ORDER. TOTAL DOORS= (1) REMOVE ALL WORK-RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS",
+      "notes": "NOTE \u2013 CONTRACTOR MUST CONTACT HPD - S. HUGHES @ 212 863 5754; B. CARR @ 212 863 5518; S. CROSSLAND @ 212 863 6132; E. ORR @ 212 863 6875; A. MARTINEZ @ 212 863 6135; S. KOFUMA @ 212 863 6160; K. BRYANT @ 212 863 5496; R. REED @ 212 863 5481; SUPERVISOR D. SAUL @ 212 863 5527; WITH START DATE. IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008. AZIMOV, FARKHOD (718) 666-8262",
       "receivedAt": 1791573830000,
       "pages": 4,
       "fields": {
@@ -1269,8 +635,7 @@
         }
       },
       "lat": 40.729394,
-      "lng": -73.854971,
-      "notes": "NOTE \u2013 CONTRACTOR MUST CONTACT HPD - S. HUGHES @ 212 863 5754; B. CARR @ 212 863 5518; S. CROSSLAND @ 212 863 6132; E. ORR @ 212 863 6875; A. MARTINEZ @ 212 863 6135; S. KOFUMA @ 212 863 6160; K. BRYANT @ 212 863 5496; R. REED @ 212 863 5481; SUPERVISOR D. SAUL @ 212 863 5527; WITH START DATE. IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008. AZIMOV, FARKHOD (718) 666-8262"
+      "lng": -73.854971
     },
     {
       "omo": "ER07554",
@@ -1282,6 +647,7 @@
       "borough": "BK",
       "itbFile": "ER07554_100926112134.pdf",
       "description": "FLOOR REPAIR kitchen AT APT 2R: PRIVATE HALLWAY AND KITCHEN FLOOR REMOVE ENTIRE BROKEN/CRACKED FLOOR TILES THROUGHTOUT THE KITCHEN AND PRIVATE HALL. INSTALL WITH NEW CERAMIC TILES WITH SIMILAR TO EXISTING FLOORING. APROX 150SQFT . MAKE ANY NECESSARY REPAIRS TO SUBFLOOR AS NEEDED. RETURN TO SAFE AND PROPER ORDER.",
+      "notes": "CONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008. REMOVE ALL WORK-RELATED DEBRIS.",
       "receivedAt": 1791559298000,
       "pages": 4,
       "fields": {
@@ -1396,8 +762,7 @@
         }
       },
       "lat": 40.666869,
-      "lng": -73.922049,
-      "notes": "CONTRACTOR MUST CONTACT HPD @ 212 863-5496; 5976; 6046; 6132; 6135; 6160; 6191; 6231, WITH START DATE. IF LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863-6008. REMOVE ALL WORK-RELATED DEBRIS."
+      "lng": -73.922049
     },
     {
       "omo": "ER07717",
@@ -1409,6 +774,7 @@
       "borough": "QN",
       "itbFile": "ER07717_100926111844.pdf",
       "description": "LOCATION: APARTMENT 2, 2ND STORY, 1ST APARTMENT FROM WEST AT NORTH (SPRING BALANCE) -EMERGENCY OPERATIONS DIVISION \"ESSENTIAL SERVICE REPAIRS\"- AT THE BATHROOM REPLACE THE BROKEN/ DEFECTIVE LOWER SASH SPRING BALANCE. RESTORE WINDOW TO IT'S ORIGINAL SAFE WORKING CONDITION. REMOVE ALL WORK RELATED DEBRIS. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS.",
+      "notes": "CONTRACTOR MUST CONTACT HPD \u2013 S. HUGHES@ 212-863-5754; B. CARR@212-863-5518; S. CROSSLAND@212-863-6132; E. ORR@ 212-863-6875; A. MARTINEZ@212-863-6135; S. KOFUMA @ 212-863-6160; K. BRYANT @212-863-5496; R. REED @ 212-863-5481; SUPERVISOR D. SAUL@212-863-5527; WITH START DATE. IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212-863-6008.",
       "receivedAt": 1791559128000,
       "pages": 4,
       "fields": {
@@ -1523,8 +889,7 @@
         }
       },
       "lat": 40.685228,
-      "lng": -73.844202,
-      "notes": "CONTRACTOR MUST CONTACT HPD \u2013 S. HUGHES@ 212-863-5754; B. CARR@212-863-5518; S. CROSSLAND@212-863-6132; E. ORR@ 212-863-6875; A. MARTINEZ@212-863-6135; S. KOFUMA @ 212-863-6160; K. BRYANT @212-863-5496; R. REED @ 212-863-5481; SUPERVISOR D. SAUL@212-863-5527; WITH START DATE. IF THE LANDLORD REFUSES ACCESS OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212-863-6008."
+      "lng": -73.844202
     }
   ]
 }
