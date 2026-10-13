@@ -79,6 +79,8 @@ function badge(record?: BidRecord) {
 export default function BidsMode({ open, map, history, onClose }: { open: boolean; map: any; history: PricedJob[]; onClose: () => void }) {
   const [bids, setBids] = useState<UpcomingBid[] | null>(null);
   const [bidsReadAt, setBidsReadAt] = useState("");
+  // Invitation PDFs the reader couldn't read (no OMO # or bid due date): shown, never dropped silently.
+  const [unread, setUnread] = useState<{ file: string; omo?: string; why: string }[]>([]);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"open" | "mine" | "stats" | "history">("open");
   const [selected, setSelected] = useState<UpcomingBid | null>(null);
@@ -144,7 +146,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     if (bids) return;
     fetch("/data/upcoming_bids.json", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((data) => { setBidsReadAt(String(data?.generatedAt || "")); setBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => stillOpen(b)).sort(byUrgency) : []); })
+      .then((data) => { setBidsReadAt(String(data?.generatedAt || "")); setUnread(Array.isArray(data?.unread) ? data.unread : []); setBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => stillOpen(b)).sort(byUrgency) : []); })
       .catch(() => { setBids([]); setError("Couldn't load the invitations right now."); });
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -381,7 +383,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     <>
       <div className="fc-bids-banner" data-hpd-smoke="fc-bids-banner">
         <strong>📨 Invitations to bid</strong>
-        <span>{bids === null ? "Loading…" : error || `${list.length} open to bid · due today or later${list.some((b) => !Number.isFinite(b.lat)) ? ` · ${list.filter((b) => !Number.isFinite(b.lat)).length} without a map spot` : ""}`}{bidsReadAt ? <small className="fc-bids-read" data-hpd-smoke="fc-bids-read"> · emails last checked {new Date(bidsReadAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" })}</small> : null}</span>
+        <span>{bids === null ? "Loading…" : error || `${list.length} open to bid · due today or later${list.some((b) => !Number.isFinite(b.lat)) ? ` · ${list.filter((b) => !Number.isFinite(b.lat)).length} without a map spot` : ""}`}{bids ? <small className="fc-bids-read" data-hpd-smoke="fc-bids-today"> · {bids.filter((b) => b.receivedAt && new Date(b.receivedAt).toLocaleDateString("en-US", { timeZone: "America/New_York" }) === new Date().toLocaleDateString("en-US", { timeZone: "America/New_York" })).length} received today</small> : null}{bidsReadAt ? <small className="fc-bids-read" data-hpd-smoke="fc-bids-read"> · emails last checked {new Date(bidsReadAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" })}</small> : null}</span>
+        {unread.length ? <p className="fc-bids-unread" role="alert" data-hpd-smoke="fc-bids-unread">⚠️ {unread.length} invitation{unread.length > 1 ? "s" : ""} couldn&apos;t be read, open in your email: {unread.map((u) => `${u.omo || u.file} (${u.why})`).join(", ")}</p> : null}
         <button type="button" data-hpd-smoke="fc-bids-close" onClick={() => { setSelected(null); onClose(); }}>Back to jobs</button>
         <div className="fc-bids-days" role="group" aria-label="Which day" data-hpd-smoke="fc-bids-days">
           {([["all", "All"], ["0", "Today"], ["1", "Tomorrow"], ["2", new Date(`${dayKeys[2]}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" })]] as const).map(([key, label]) => {

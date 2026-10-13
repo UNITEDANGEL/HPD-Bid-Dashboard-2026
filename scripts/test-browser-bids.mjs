@@ -32,7 +32,7 @@ try {
   // tomorrow (test only), so the full flow always runs on real invitations and their PDFs.
   const real = fetched.bids.filter(stillOpenNow).length >= 3 ? fetched : { ...fetched, bids: fetched.bids.map((b) => (stillOpenNow(b) ? b : { ...b, bidDue: tomorrow })) };
   const past = [{ ...real.bids[0], omo: "PAST01", bidDue: yesterday, bidDueTime: "11:00 AM" }, { ...real.bids[0], omo: "PAST02", bidDue: today, bidDueTime: "12:01 AM" }];
-  await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...real, bids: [...past, ...real.bids] } }));
+  await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...real, bids: [...past, ...real.bids], unread: [{ file: 'ER09999_101326.pdf', omo: 'ER09999', why: 'no bid due date' }] } }));
   // Fax: the request is checked and answered here; status is "confirmed" for the first bid, "failed" for the second.
   const faxes = [];
   let failOmo = "", waitOmo = "";
@@ -63,6 +63,9 @@ try {
   const list = page.locator('[data-hpd-smoke="fc-bids-list"]');
   await list.locator("li").first().waitFor({ timeout: 20000 });
   assert.match(await page.locator('[data-hpd-smoke="fc-bids-banner"]').innerText(), new RegExp(`${open.length} open to bid · due today or later`));
+  // How many arrived today (to compare with the inbox), and an invitation the reader couldn't read is shown, not dropped.
+  assert.match(await page.locator('[data-hpd-smoke="fc-bids-today"]').innerText(), /\d+ received today/);
+  assert.match(await page.locator('[data-hpd-smoke="fc-bids-unread"]').innerText(), /1 invitation couldn.t be read.*ER09999 \(no bid due date\)/);
   assert.equal(await list.locator("ol > li").count(), open.length);
   assert.ok(!/PAST01|PAST02/.test(await list.innerText()), "past bids are not shown");
   assert.ok(await page.evaluate(() => getComputedStyle(document.querySelector(".leaflet-marker-pane")).visibility === "hidden"), "job pins hidden");

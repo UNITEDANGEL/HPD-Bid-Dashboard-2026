@@ -11,6 +11,7 @@ export type UpcomingBid = {
   omo: string; address: string; borough: string; bidDue: string; bidDueTime: string;
   workStart: string; workCompletion: string; itbFile: string; description: string;
   pages: number; fields: Record<string, BidField>; lat?: number | null; lng?: number | null;
+  receivedAt?: number; // when the invitation email arrived (ms)
 };
 
 // Same details as Filler_Code/fill_all_pages_FINAL_ALL_PAGES.py.

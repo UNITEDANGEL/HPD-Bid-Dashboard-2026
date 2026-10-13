@@ -29,6 +29,7 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - Revise a sent bid: old price crossed out, new price next to it with initials and "revised 1x on date";
   cover says to disregard the old price.
 - The bid list panel can be hidden to see the map.
+- Never miss one: the count must match the inbox (13 Oct: 14 invitations arrived; keep re-checking).
 
 ### Prices and winning more work
 - Read the complete description before suggesting a price: all items, quantities, sizes, units.
@@ -39,6 +40,8 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - Learn from the owner: the owner's own price and reason for each kind of work (e.g. Secure-Tech lock
   and buzzer ~$2,000) become the starting point next time.
 - All historical data: whole year, then the year before if needed.
+- Read the description carefully: 1 door vs 2 doors, a new door vs a lock / hinge / closer on a door,
+  sq ft, cubic yards of rubbish; the price follows the size.
 
 ### Work orders (jobs)
 - The award date always on the job card (it's the most important date); work start and work completion
@@ -78,9 +81,18 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
   every bid and the session, in one record. Readable copies in OneDrive "HPD Master File" (one per day);
   encrypted copy in the repository (public repo: never plain), every night's version kept; restore tool
   puts back only missing / older entries on the status server, never deletes.
+- Price help reads descriptions more carefully (13 Oct): new door vs door hardware read sentence by
+  sentence ("replace door passage lock / strike plate / closure" is hardware, "replace the hopper door
+  with fire rated hopper door" is a door); door counts from numbered lists and "both doors"; plural
+  windows; every Secure-Tech spelling HPD uses; cubic yards and sq ft scale the price. Tested only on
+  jobs before each one (1,587 awards): typical miss 18.6% -> 17.6%, single-item jobs 18.0% -> 16.7%.
+- Invitations never dropped silently (13 Oct): the banner shows how many arrived today (compare with the
+  inbox) and a red warning lists any invitation PDF that couldn't be read (no OMO # / bid due date).
 
 ## Now (in this order)
 
+0. **Multi-door prices** are still the weakest (typical miss 22%): read "per door" / "each" amounts and
+   jobs that mix a new door with hardware on other doors.
 1. **"My cost" floor** per kind of work.
 2. **Win rate from sent bids** (your price vs the winner's on jobs you actually bid).
 

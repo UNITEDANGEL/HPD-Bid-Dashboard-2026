@@ -251,7 +251,7 @@ def fetch(days):
         if not token:
             break
     os.makedirs(DOWNLOAD_DIR, exist_ok=True)
-    awarded, known, found = awarded_omos(), previous_bids(), {}
+    awarded, known, found, unread = awarded_omos(), previous_bids(), {}, []
     today = datetime.datetime.now(NY).date()
     for msg in messages:
         data = service.users().messages().get(userId="me", id=msg["id"]).execute(num_retries=3)
@@ -275,12 +275,18 @@ def fetch(days):
                 page1, last, description, notes = read_pdf(path)
             except Exception as error:
                 print(f"  could not read {name}: {error}")
+                unread.append({"file": os.path.basename(name), "receivedAt": received, "why": "PDF could not be opened"})
                 continue
             if "INVITATION TO BID" not in page1.upper():
                 continue  # a COA or other paper, not an invitation
             info = parse_invitation_text(page1, last)
             omo = omo_from_filename(name) or info["omo"]
-            if not omo or omo in awarded or not info["bidDue"]:
+            if not omo or not info["bidDue"]:
+                # Never drop an invitation silently: the app lists it so it can be opened from the email.
+                print(f"  INVITATION NOT READ: {name} (OMO {omo or '?'}, bid due {info['bidDue'] or '?'})")
+                unread.append({"file": os.path.basename(name), "omo": omo, "receivedAt": received, "why": "no OMO #" if not omo else "no bid due date"})
+                continue
+            if omo in awarded:
                 continue
             if datetime.date.fromisoformat(info["bidDue"]) < today - datetime.timedelta(days=KEEP_PAST_DAYS):
                 continue
@@ -298,12 +304,13 @@ def fetch(days):
         os.makedirs(PUBLIC_ITB_DIR, exist_ok=True)
         shutil.copyfile(os.path.join(DOWNLOAD_DIR, bid["itbFile"]), os.path.join(PUBLIC_ITB_DIR, bid["itbFile"]))
         bids.append(bid)
-    result = {"generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(), "days": days, "bids": bids}
+    result = {"generatedAt": datetime.datetime.now(datetime.timezone.utc).isoformat(), "days": days, "bids": bids, "unread": unread}
     for out in OUT_FILES:
         os.makedirs(os.path.dirname(out), exist_ok=True)
         with open(out, "w", encoding="utf-8") as f:
             json.dump(result, f, indent=2)
-    print(f"Upcoming bids: {len(bids)} not awarded yet ({sum(1 for b in bids if b.get('lat'))} on the map) from {len(messages)} emails")
+    received_today = sum(1 for b in bids if datetime.datetime.fromtimestamp(b["receivedAt"] / 1000, NY).date() == today)
+    print(f"Upcoming bids: {len(bids)} not awarded yet ({sum(1 for b in bids if b.get('lat'))} on the map), {received_today} received today, from {len(messages)} emails" + (f"; {len(unread)} NOT READ: " + ", ".join(u["file"] for u in unread) if unread else ""))
 
 
 if __name__ == "__main__":
