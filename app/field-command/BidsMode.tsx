@@ -131,6 +131,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
 
   const stats = useMemo(() => (marketJobs.length ? bidStats(marketJobs) : null), [marketJobs]);
   // Open invitations that are easy wins (work you win well under what other winners get).
+  const rowHelp = useMemo(() => new Map((bids || []).map((b) => [b.omo, market?.length ? priceHelp(b.description, pricing) : null])), [bids, market, pricing]);
   const easyOmos = useMemo(() => new Set((bids || []).filter((b) => stats && easyWin(b.description, stats.workPrices)).map((b) => b.omo)), [bids, stats]);
 
   // Pins: green with a check once a bid is sent; a green ring and $ for an easy win. The job pins are hidden while the map shows bids.
@@ -423,6 +424,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   <li key={bid.omo}>
                     <button type="button" onClick={() => openBid(bid)}>
                       <span className="fc-bid-row"><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}{ew ? <span className="fc-bid-chip is-easy" data-hpd-smoke="fc-bid-easy-chip">Easy win · ~{money(ew.suggested)}</span> : null}</span>
+                      {!records[bid.omo] && !ew && rowHelp.get(bid.omo) ? (() => { const h = rowHelp.get(bid.omo)!; return <span className={`fc-bid-predict is-${h.confidence}`} data-hpd-smoke="fc-bid-predict">Win most ~{money(h.toWin)} · middle {money(h.middle)}{h.confidence === "low" ? " · rough guide" : ""}</span>; })() : null}
                       <span>{bid.address}{bid.borough ? ` · ${bid.borough}` : ""}</span>
                       <small>{due.text}</small>
                     </button>

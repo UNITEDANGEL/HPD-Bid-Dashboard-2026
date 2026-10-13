@@ -67,6 +67,11 @@ try {
   await page.waitForTimeout(1500);
   const easyChips = list.locator('[data-hpd-smoke="fc-bid-easy-chip"]');
   let easyChecked = "none today";
+  const rowsAll = list.locator("ol > li");
+  for (let i = 0; i < await rowsAll.count(); i++) {
+    const t = await rowsAll.nth(i).innerText();
+    assert.ok(/Easy win · ~\$[\d,]+|Win most ~\$[\d,]+ · middle \$[\d,]+/.test(t), `prediction on every row: ${t.split("\n")[0]}`);
+  }
   // Every easy-win invitation with a map location has the green $ pin, and no other pin does.
   const easyRows = list.locator("ol > li").filter({ has: page.locator('[data-hpd-smoke="fc-bid-easy-chip"]') });
   const easyOmos = [];

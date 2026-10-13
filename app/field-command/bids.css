@@ -176,3 +176,6 @@
 .fc-bid-pin { position: relative; }
 .fc-bid-pin.is-easy { border: 3px solid #22c55e; box-shadow: 0 0 0 3px #22c55e55, 0 2px 6px #0f172a66; }
 .fc-bid-pin i { position: absolute; top: -7px; right: -7px; display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #16a34a; color: #fff; font: 900 10px/1 system-ui; font-style: normal; border: 1.5px solid #fff; }
+
+.fc-bid-predict { color: #fde68a; font: 700 12px system-ui; }
+.fc-bid-predict.is-low { color: #fca5a5; }
