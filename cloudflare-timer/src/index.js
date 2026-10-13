@@ -16,9 +16,11 @@ export function newYorkHour(date) {
 export async function tick(env, now = new Date(), fetchImpl = fetch) {
   const hour = newYorkHour(now);
   if (hour < FIRST_HOUR || hour > LAST_HOUR) return { started: false, why: `outside ${FIRST_HOUR} AM - 10 PM (hour ${hour})` };
-  if (!env.GITHUB_DISPATCH_TOKEN) return { started: false, why: "GITHUB_DISPATCH_TOKEN is not set" };
+  // A pasted token can carry a line break or spaces: they'd break the request.
+  const token = String(env.GITHUB_DISPATCH_TOKEN || "").replace(/\s+/g, "");
+  if (!token) return { started: false, why: "GITHUB_DISPATCH_TOKEN is not set" };
   const headers = {
-    Authorization: `Bearer ${env.GITHUB_DISPATCH_TOKEN}`,
+    Authorization: `Bearer ${token}`,
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
     "User-Agent": "hpd-invitation-timer",

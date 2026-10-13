@@ -34,6 +34,11 @@ r = await tick({}, new Date("2026-10-13T19:50:00Z"), github(0));
 assert.match(r.why, /GITHUB_DISPATCH_TOKEN/);
 assert.equal(calls.length, 0);
 
+// A pasted token with a line break still works.
+calls.length = 0;
+await tick({ GITHUB_DISPATCH_TOKEN: " test-token\n" },new Date("2026-10-13T19:50:00Z"), github(0));
+assert.equal(calls.find((c) => c.method === "POST").auth, "Bearer test-token");
+
 // GitHub refusing (wrong token) is an error in the Cloudflare log, not silence.
 await assert.rejects(tick(env, new Date("2026-10-13T19:50:00Z"), github(0, 401)), /GitHub said 401/);
 console.log("PASS invitation timer: every 10 min 7 AM-10 PM New York time (summer and winter), starts run-fetcher.yml on main, no pile-up, errors are loud");
