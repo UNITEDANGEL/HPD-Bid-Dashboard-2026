@@ -1,6 +1,7 @@
 # Starts the invitation fetcher on GitHub now (new invitations to bid -> map). GitHub's own schedule is
-# delayed or skipped for hours, so this PC's Task Scheduler runs this every 20 minutes during the day
-# ("HPD fetch invitations"). Skips if a fetch is already running or one finished in the last 15 minutes.
+# delayed or skipped for hours, so scripts/fetch-loop.ps1 runs this every 20 minutes during the day (started
+# from the Windows Startup folder; Task Scheduler can't run tasks on this PC). Skips if a fetch is already
+# running or one finished in the last 15 minutes.
 # Also confirms bid faxes from HumbleFax's emails (scripts/check_bid_faxes.py) while you're bidding.
 # Uses the GitHub CLI and Gmail logins already on this PC.
 $ErrorActionPreference = "Stop"

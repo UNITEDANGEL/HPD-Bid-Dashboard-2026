@@ -4,7 +4,7 @@ on:
   schedule:
     # New invitations to bid come in from morning to evening. GitHub delays (or skips) runs at the top
     # of the hour, so these are off the hour, every 30 minutes from 7:40 AM to 9:40 PM New York time
-    # (daylight savings). The PC's own timer (scripts/fetch-now.ps1) is the dependable trigger.
+    # (daylight savings). The PC's own timer (scripts/fetch-loop.ps1 -> fetch-now.ps1) is the dependable trigger.
     - cron: "40,10 11-23 * * *"
     - cron: "40,10 0-1 * * *"
   workflow_dispatch:
