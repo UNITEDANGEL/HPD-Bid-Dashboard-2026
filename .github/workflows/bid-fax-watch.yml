@@ -1,0 +1,55 @@
+name: Bid Fax Watch
+
+# Confirms bid faxes from HumbleFax's emails and records any fax the phone didn't save
+# (scripts/check_bid_faxes.py), so every phone shows going through / confirmed / failed. Scheduled every
+# 5 minutes from 6 AM to 10 PM New York time, but it only reads Gmail while you're bidding (a bidding
+# session is on, or a fax is still going through); otherwise it stops in seconds.
+on:
+  schedule:
+    - cron: "*/5 10-23 * * *"
+    - cron: "*/5 0-2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hpd-bid-fax-watch
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      # Only go on while you're bidding (session on, or a fax going through): seconds otherwise.
+      - name: Bidding now?
+        id: gate
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import datetime, sys
+          sys.path.insert(0, "scripts")
+          from check_bid_faxes import http, should_check
+          today = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=-4))).date().isoformat()
+          go, active, pending = should_check(http("GET", "/overrides").get("overrides", {}), today)
+          print(f"go={'true' if go else 'false'}")
+          PY
+      - name: Install Gmail client
+        if: steps.gate.outputs.go == 'true'
+        run: python -m pip install --quiet --disable-pip-version-check google-api-python-client google-auth-oauthlib google-auth-httplib2 requests tqdm PyPDF2 pdfplumber
+      - name: Restore Google credentials
+        if: steps.gate.outputs.go == 'true'
+        shell: bash
+        run: |
+          printf '%s' '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > credentials.json
+          printf '%s' '${{ secrets.GOOGLE_TOKEN_JSON }}' > token.json
+          test -s credentials.json && test -s token.json
+      - name: Confirm bid faxes
+        if: steps.gate.outputs.go == 'true'
+        run: python scripts/check_bid_faxes.py --days 3

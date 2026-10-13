@@ -15,8 +15,64 @@ export type BidRecord = {
   priorPrice?: number;
   // Why you chose this price (optional, e.g. "Secure-Tech lock costs ~$2,000"): shown on the next job like it.
   reason?: string;
+  // Everything that happened to this bid, oldest first: price saved, package filled, fax sent, HumbleFax.
+  log?: BidLogEntry[];
 };
 export type BidResult = "won" | "lost" | "pending";
+export type BidLogEntry = { at: string; what: string };
+
+export function withLog(record: BidRecord, what: string, at = new Date().toISOString()): BidRecord {
+  return { ...record, log: [...(record.log || []), { at, what }].slice(-60) };
+}
+
+// The bid's history for the job card: its log, or (for bids saved before the log existed) what the record
+// itself shows.
+export function bidHistory(record: BidRecord): BidLogEntry[] {
+  if (record.log?.length) return [...record.log].sort((a, b) => a.at.localeCompare(b.at));
+  const usd = (v?: number) => (v || 0).toLocaleString("en-US", { style: "currency", currency: "USD" });
+  const out: BidLogEntry[] = [];
+  for (const r of record.revisions || []) if (r.sentAt) out.push({ at: r.sentAt, what: `Fax sent to HPD at ${usd(r.price)}` });
+  if (record.savedAt) out.push({ at: record.savedAt, what: `Price saved ${usd(record.price)}` });
+  if (record.sentAt) out.push({ at: record.sentAt, what: `${record.revisions?.length ? "Revised fax" : "Fax"} sent to HPD at ${usd(record.sentPrice || record.price)}` });
+  if (record.confirmedAt) out.push({ at: record.confirmedAt, what: record.status === "failed" ? "HumbleFax: fax FAILED" : "HumbleFax: Successful Transmission" });
+  return out.sort((a, b) => a.at.localeCompare(b.at));
+}
+
+// A bidding session: you press "Start bidding"; until it ends, the app (and the fax checker) watch the
+// bids due today. Saved on the status server under this key so every phone and the checker see it.
+export const SESSION_KEY = "BIDDING-SESSION";
+export type BiddingSession = { active: boolean; startedAt: string; endedAt?: string; day: string };
+
+export async function saveSession(session: BiddingSession, workerUrl: string, fetcher: typeof fetch = fetch) {
+  try { localStorage.setItem("hpd-bidding-session", JSON.stringify(session)); } catch { /* private mode */ }
+  try {
+    await fetcher(`${workerUrl.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: SESSION_KEY, patch: session }) });
+  } catch { /* offline: kept on the phone */ }
+}
+
+export function readSession(): BiddingSession | null {
+  try { return JSON.parse(localStorage.getItem("hpd-bidding-session") || "null"); } catch { return null; }
+}
+
+// Bids due today and where each stands: what the session panel and the alerts show.
+export type TodayRow = { omo: string; address: string; bidDue: string; bidDueTime?: string; minutesLeft: number; state: "not-priced" | "saved" | "pending" | "confirmed" | "failed" };
+export function todaySummary(bids: { omo: string; address: string; bidDue: string; bidDueTime?: string }[], records: Record<string, BidRecord>, today: string, minutesNow: number, now = new Date()) {
+  const minutes = (t?: string) => { const m = /^(\d{1,2}):(\d{2})\s*([AP])M$/i.exec(t || ""); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "P" ? 12 : 0)) * 60 + Number(m[2]) : 1440; };
+  const rows: TodayRow[] = bids.filter((b) => b.bidDue === today).map((b) => {
+    const rec = records[b.omo];
+    const fax = rec ? faxState(rec, now) : "saved";
+    const state: TodayRow["state"] = !rec ? "not-priced" : fax === "saved" ? "saved" : fax === "confirmed" ? "confirmed" : fax === "failed" ? "failed" : "pending";
+    return { omo: b.omo, address: b.address, bidDue: b.bidDue, bidDueTime: b.bidDueTime, minutesLeft: minutes(b.bidDueTime) - minutesNow, state };
+  }).sort((a, b) => a.minutesLeft - b.minutesLeft || a.omo.localeCompare(b.omo));
+  const count = (st: TodayRow["state"][]) => rows.filter((r) => st.includes(r.state)).length;
+  return {
+    rows, total: rows.length,
+    sent: count(["pending", "confirmed"]), confirmed: count(["confirmed"]), pending: count(["pending"]), failed: count(["failed"]),
+    notSent: rows.filter((r) => ["not-priced", "saved", "failed"].includes(r.state) && r.minutesLeft > 0),
+    allDone: rows.length > 0 && rows.every((r) => r.state === "confirmed"),
+  };
+}
+
 
 const LOCAL_KEY = "hpd-bid-records-v1";
 export const BID_KEY_PREFIX = "BID-";

@@ -104,10 +104,25 @@ def job_description(page3_text):
     start = re.search(r"Job\s*Description\s*:", text, re.I)
     if start:
         text = text[start.end():]
-    stop = re.search(r"CONTRACTOR\s+MUST\s+CONTACT|IF\s+LANDLORD\s+REFUSES|IF\s+NO\s+WORK\s+IS\s+PERFORMED|NOTE\s*:\s*CONTRACTOR", text, re.I)
+    stop = re.search(NOTES_START, text, re.I)
     if stop:
         text = text[:stop.start()]
-    return clean(text)
+    # A "NOTE -" / "NOTE 2:" left dangling where HPD's notes begin belongs to the notes, not the work.
+    return re.sub(r"\s*\bNOTE\s*\d*\s*[-–:]?\s*$", "", clean(text), flags=re.I)
+
+
+NOTES_START = r"(?:NOTE\s*\d*\s*[-–:]?\s*)?(?:CONTRACTORS?\s+MUST\s+CONTACT|IF\s+(?:THE\s+)?LANDLORD\s+REFUSES|IF\s+NO\s+WORK\s+IS\s+PERFORMED)"
+
+
+def job_notes(page3_text):
+    """Everything on the work page after the job description, word for word: HPD contacts, notice rules,
+    tenant and landlord contacts, the affidavit fax. Shown under the description so nothing is missing."""
+    text = page3_text or ""
+    start = re.search(r"Job\s*Description\s*:", text, re.I)
+    if start:
+        text = text[start.end():]
+    stop = re.search(NOTES_START, text, re.I)
+    return clean(text[stop.start():]) if stop else ""
 
 
 def read_pdf(path):
@@ -117,8 +132,8 @@ def read_pdf(path):
     doc = fitz.open(path)
     page1 = pytesseract.image_to_string(Image.open(io.BytesIO(doc[0].get_pixmap(dpi=300).tobytes("png"))))
     last = doc[-1].get_text() if len(doc) else ""
-    description = job_description(doc[2].get_text()) if len(doc) >= 3 else ""
-    return page1, last, description
+    page3 = doc[2].get_text() if len(doc) >= 3 else ""
+    return page1, last, job_description(page3), job_notes(page3)
 
 
 # Where the bid package gets filled in, found from the labels printed on each invitation (so a form
@@ -257,7 +272,7 @@ def fetch(days):
                 with open(path, "wb") as f:
                     f.write(base64.urlsafe_b64decode(raw["data"]))
             try:
-                page1, last, description = read_pdf(path)
+                page1, last, description, notes = read_pdf(path)
             except Exception as error:
                 print(f"  could not read {name}: {error}")
                 continue
@@ -271,7 +286,7 @@ def fetch(days):
                 continue
             if omo in found and found[omo]["receivedAt"] >= received:
                 continue  # keep the newest invitation for each OMO
-            found[omo] = {**info, "omo": omo, "itbFile": os.path.basename(name), "description": description[:6000], "receivedAt": received, **bid_fields(path)}
+            found[omo] = {**info, "omo": omo, "itbFile": os.path.basename(name), "description": description[:6000], "notes": notes[:4000], "receivedAt": received, **bid_fields(path)}
     bids = []
     for omo, bid in sorted(found.items(), key=lambda kv: (kv[1]["bidDue"], kv[1]["bidDueTime"], kv[0])):
         old = known.get(omo, {})
@@ -297,7 +312,7 @@ if __name__ == "__main__":
     args.add_argument("--parse", help="read one invitation PDF and print what was found")
     opts = args.parse_args()
     if opts.parse:
-        page1, last, description = read_pdf(opts.parse)
+        page1, last, description, notes = read_pdf(opts.parse)
         print(json.dumps({**parse_invitation_text(page1, last), "description": description[:160], **bid_fields(opts.parse)}, indent=2))
     else:
         fetch(opts.days)

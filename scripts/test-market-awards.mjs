@@ -15,7 +15,30 @@ const jobs = joinAwards({ ...descriptions, ER00003: { description: "AEP TRACE LE
 ], new Set(["ER00002"]));
 assert.deepEqual(jobs.map((j) => [j.omo, j.amount, j.awardDate, j.won]), [["ER00002", 520, "2026-10-05", true], ["ER00001", 455, "2026-10-01", false]]);
 
-const { bidResult, winRate, bidFaxCover, bidsToCheck, faxState } = await loadLib("bid-records");
+const { bidResult, winRate, bidFaxCover, bidsToCheck, faxState, todaySummary, withLog, bidHistory } = await loadLib("bid-records");
+{
+  const nowT = new Date("2026-10-13T14:00:00Z"); // 10:00 AM New York
+  const bids = [
+    { omo: "A", address: "a", bidDue: "2026-10-13", bidDueTime: "11:00 AM" },
+    { omo: "B", address: "b", bidDue: "2026-10-13", bidDueTime: "11:00 AM" },
+    { omo: "C", address: "c", bidDue: "2026-10-13", bidDueTime: "10:30 AM" },
+    { omo: "D", address: "d", bidDue: "2026-10-13", bidDueTime: "11:00 AM" },
+    { omo: "E", address: "e", bidDue: "2026-10-14", bidDueTime: "11:00 AM" },
+  ];
+  const recs = {
+    A: { omo: "A", status: "confirmed", sentAt: "2026-10-13T13:00:00Z", price: 1 },
+    B: { omo: "B", status: "sent", sentAt: "2026-10-13T13:55:00Z", price: 1 },
+    C: { omo: "C", status: "saved", price: 1 },
+  };
+  const t = todaySummary(bids, recs, "2026-10-13", 600, nowT);
+  assert.deepEqual([t.total, t.sent, t.confirmed, t.pending, t.failed], [4, 2, 1, 1, 0]);
+  assert.deepEqual(t.notSent.map((r) => [r.omo, r.minutesLeft, r.state]), [["C", 30, "saved"], ["D", 60, "not-priced"]], "not sent, soonest first");
+  assert.equal(t.allDone, false);
+  const logged = withLog(withLog({ omo: "A" }, "Price saved $500.00", "2026-10-13T10:00:00Z"), "Fax sent to HPD at $500.00", "2026-10-13T10:05:00Z");
+  assert.deepEqual(bidHistory(logged).map((e) => e.what), ["Price saved $500.00", "Fax sent to HPD at $500.00"]);
+  const old = bidHistory({ omo: "X", price: 1987, sentPrice: 1987, savedAt: "2026-10-13T00:51:00Z", sentAt: "2026-10-13T00:51:57Z", status: "confirmed", confirmedAt: "2026-10-13T00:56:00Z", revisions: [{ price: 1180, sentAt: "2026-10-12T22:47:00Z" }] });
+  assert.deepEqual(old.map((e) => e.what), ["Fax sent to HPD at $1,180.00", "Price saved $1,987.00", "Revised fax sent to HPD at $1,987.00", "HumbleFax: Successful Transmission"], "history for bids saved before the log");
+}
 // The copy with the later fax wins, even if an old copy was touched more recently.
 const { mergeServerBids } = await loadLib("bid-records");
 const oldCopy = { omo: "ER05994", price: 1180, sentPrice: 1180, status: "confirmed", sentAt: "2026-10-12T22:47:39Z", updatedAt: "2026-10-13T02:00:00Z" };

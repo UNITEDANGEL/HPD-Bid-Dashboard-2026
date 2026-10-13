@@ -26,7 +26,7 @@
 .fc-bid-chip.is-today { background: #dc2626; }
 .fc-bid-chip.is-past { background: #64748b; }
 
-.fc-bid-sheet { position: absolute; z-index: 1650; inset: auto 0 0 0; max-height: 82dvh; display: flex; flex-direction: column; border-radius: 16px 16px 0 0; background: #0f172a; color: #e2e8f0; box-shadow: 0 -8px 24px #0006; }
+.fc-bid-sheet { position: absolute; z-index: 1650; inset: auto 0 0 0; max-height: 94dvh; display: flex; flex-direction: column; border-radius: 16px 16px 0 0; background: #0f172a; color: #e2e8f0; box-shadow: 0 -8px 24px #0006; }
 .fc-bid-sheet > header { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid #ffffff22; }
 .fc-bid-sheet > header button { min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #ffffff44; background: #1e293b; color: #fff; font: 700 14px system-ui; }
 .fc-bid-sheet > header strong { font: 800 18px system-ui; }
@@ -37,7 +37,7 @@
 .fc-bid-due.is-today { background: #dc262644; }
 .fc-bid-due.is-past { background: #64748b44; }
 .fc-bid-dates { margin: 6px 0 0; color: #94a3b8; font: 600 13px system-ui; }
-.fc-bid-description { margin: 0; white-space: pre-wrap; font: 500 14px/1.45 system-ui; }
+.fc-bid-description { margin: 0; white-space: pre-wrap; color: #f8fafc; font: 600 16.5px/1.55 system-ui; }
 .fc-bid-description.is-short { display: -webkit-box; -webkit-line-clamp: 8; -webkit-box-orient: vertical; overflow: hidden; }
 .fc-bid-more { margin-top: 4px; padding: 4px 0; border: 0; background: none; color: #93c5fd; font: 700 14px system-ui; }
 .fc-bid-link { display: inline-block; margin-top: 8px; color: #93c5fd; font: 700 14px system-ui; }
@@ -223,3 +223,38 @@
 .fc-bid-mine button { justify-self: start; min-height: 36px; padding: 0 12px; border: 0; border-radius: 8px; background: #2563eb; color: #fff; font: 800 13px system-ui; }
 .fc-bid-mine small { color: #bfdbfe; font: 600 11.5px system-ui; }
 .fc-price-mine { color: #93c5fd !important; }
+
+/* Job card: HPD notes, steps that show they're done, pressed buttons, bid history. */
+.fc-bid-notes { margin: 0; white-space: pre-wrap; color: #cbd5e1; font: 500 14px/1.5 system-ui; }
+.fc-bid-step { border-radius: 12px; transition: background 0.2s; }
+.fc-bid-step.is-done { background: #052e1655; box-shadow: inset 3px 0 0 #22c55e; padding-left: 8px; }
+.fc-bid-step.is-done > h4, .fc-bid-price h4.is-done.is-confirmed { color: #86efac; }
+.fc-bid-price h4.is-done.is-waiting, .fc-bid-price h4.is-done.is-unconfirmed { color: #93c5fd; }
+.fc-bid-price h4.is-done.is-failed { color: #fca5a5; }
+.fc-bid-fill { transition: transform 0.08s, filter 0.08s; }
+.fc-bid-fill:active:not(:disabled) { transform: scale(0.97); filter: brightness(1.25); }
+.fc-bid-fill.is-done { background: #15803d !important; opacity: 1; }
+.fc-bid-log { margin-top: 14px; }
+.fc-bid-log ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.fc-bid-log li { display: grid; grid-template-columns: 96px 1fr; gap: 8px; padding: 6px 8px; border-radius: 8px; background: #1e293b; font: 500 12.5px/1.4 system-ui; }
+.fc-bid-log time { color: #94a3b8; font-weight: 700; }
+/* Pending (fax going through): blue hourglass; confirmed: green check; failed / due soon and not sent: red !. */
+.fc-bid-chip.is-pending { background: #1d4ed8; color: #fff; }
+.fc-bid-pin.is-pending { background: #2563eb; }
+.fc-bid-pin.is-alert { background: #dc2626; animation: fc-pin-pulse 1.4s ease-in-out infinite; }
+@keyframes fc-pin-pulse { 0%, 100% { box-shadow: 0 0 0 0 #ef4444aa, 0 2px 6px #0f172a66; } 50% { box-shadow: 0 0 0 10px #ef444400, 0 2px 6px #0f172a66; } }
+@media (prefers-reduced-motion: reduce) { .fc-bid-pin.is-alert { animation: none; box-shadow: 0 0 0 4px #ef444488; } }
+/* Bidding session + collapsible list. */
+.fc-bids-handle { display: block; width: 100%; min-height: 36px; border: 0; border-bottom: 1px solid #ffffff1f; background: #292524; color: #fdba74; font: 800 13px system-ui; }
+.fc-bids-list.is-collapsed { max-height: none; overflow: visible; }
+.fc-bids-list.is-collapsed > :not(.fc-bids-handle) { display: none; }
+.fc-session { margin: 8px; padding: 10px; border-radius: 12px; background: #172554; border: 1px solid #3b82f6; color: #dbeafe; font: 600 13px/1.4 system-ui; }
+.fc-session.is-done { background: #052e16; border-color: #22c55e; color: #dcfce7; }
+.fc-session-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.fc-session-head b { color: #fff; font: 800 14px system-ui; }
+.fc-session-head button { min-height: 32px; padding: 0 12px; border: 1px solid #ffffff55; border-radius: 8px; background: none; color: #fff; font: 700 12px system-ui; }
+.fc-session p { margin: 6px 0 0; }
+.fc-session-alerts { margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.fc-session-alerts button { width: 100%; padding: 8px; border: 0; border-radius: 8px; background: #7f1d1d; color: #fee2e2; text-align: left; font: 700 12.5px/1.35 system-ui; }
+.fc-session-start { display: block; width: calc(100% - 16px); margin: 8px; min-height: 48px; border: 0; border-radius: 12px; background: #2563eb; color: #fff; font: 900 15px system-ui; }
+.fc-session-start:active { transform: scale(0.98); }

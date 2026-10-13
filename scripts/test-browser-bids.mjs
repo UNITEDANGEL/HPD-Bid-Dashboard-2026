@@ -145,7 +145,7 @@ try {
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-status"]').innerText(), /Sent .* at \$1,250\.00 to HPD fax \(212\) 863-8655/);
   assert.equal(saved[`BID-${omo}`]?.status, "confirmed", "the bid record reached the status server");
   await sheet.locator("header button").click();
-  assert.match(await list.locator("ol > li").first().innerText(), /✓ Sent \$1,250 · confirmed/);
+  assert.match(await list.locator("ol > li").first().innerText(), /✓ Fax confirmed · \$1,250/);
   assert.equal(await page.locator(".fc-bid-pin.is-sent").count(), Number.isFinite(bid.lat) ? 1 : 0, "the pin turns green");
 
   // 4. A failed fax offers Resend.

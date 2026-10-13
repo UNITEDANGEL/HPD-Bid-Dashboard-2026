@@ -7,6 +7,7 @@ import { PDFDocument, StandardFonts, degrees, rgb, type PDFFont, type PDFPage } 
 
 export type BidField = { page: number; x: number; y: number; rotate: number; width?: number };
 export type UpcomingBid = {
+  notes?: string; // HPD's notes and contacts after the job description, word for word
   omo: string; address: string; borough: string; bidDue: string; bidDueTime: string;
   workStart: string; workCompletion: string; itbFile: string; description: string;
   pages: number; fields: Record<string, BidField>; lat?: number | null; lng?: number | null;
