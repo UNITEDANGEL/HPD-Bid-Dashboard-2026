@@ -63,6 +63,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-bid-price"]').fill("1900");
   await mineBox.getByRole("button", { name: "Use $1,987" }).click();
   assert.equal(await page.locator('[data-hpd-smoke="fc-bid-price"]').inputValue(), "1987");
+  assert.equal(await page.locator('[data-hpd-smoke="fc-bid-reason"]').evaluate((e) => getComputedStyle(e).fontSize), "13px", "the reason box is normal-size text, not the big price font");
   // Saving with a reason keeps it for next time.
   await page.locator('[data-hpd-smoke="fc-bid-reason"]').fill("Buzzer needs a new transformer");
   await page.locator('[data-hpd-smoke="fc-bid-save"]').click();

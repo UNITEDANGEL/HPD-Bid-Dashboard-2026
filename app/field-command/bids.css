@@ -216,7 +216,7 @@
 .fc-month-table tr.is-high td b { color: #86efac; }
 
 /* Your price for this kind of work, learned from your bids. */
-.fc-bid-reason { width: 100%; box-sizing: border-box; margin-top: 6px; min-height: 40px; padding: 0 10px; border: 1px solid #475569; border-radius: 10px; background: #0f172a; color: #fff; font: 600 13px system-ui; }
+.fc-bid-price input.fc-bid-reason { display: block; flex: none; width: 100%; box-sizing: border-box; margin-top: 6px; min-height: 40px; padding: 0 10px; border: 1px solid #475569; border-radius: 10px; background: #0f172a; color: #fff; font: 600 13px system-ui; outline: revert; }
 .fc-bid-mine { display: grid; gap: 3px; margin-top: 8px; padding: 10px; border-radius: 10px; background: #1e3a8a; color: #dbeafe; font: 500 12.5px/1.4 system-ui; }
 .fc-bid-mine b { color: #fff; font: 800 14px system-ui; }
 .fc-bid-mine-reason { color: #fde68a; font-style: italic; }
