@@ -63,6 +63,48 @@ assert.deepEqual(readScope('INSTALL NEW HINGES TO MAKE DOOR SELF-CLOSING').items
 assert.deepEqual(readScope('TRACE THE WATER LEAK FROM THE PLUMBING FIXTURES ABOVE').items, ['leak', 'plumbing'], 'plumbing fixtures are not electrical');
 assert.match(aep.summary, /~57 sq ft repair area · ~270 sq ft to paint/);
 
+// New door vs. new hardware / glass on a door (checked against real HPD descriptions).
+const isNew = (d) => readScope(d).items.includes('door-new');
+for (const d of [
+  'REPLACE THE HOPPER DOOR WITH PROPERLY FIRE RATED HOPPER DOOR BOTTOM HINGED WITH LATCH', // ER00245
+  'REMOVE DEFECTIVE HOPPER DOOR AND INSTALL NEW FIRE RATED HOPPER DOOR BOTTOM HINGED THAT WILL SELF CLOSE', // EQ26166
+  'MAKE ALL NECESSARY REPAIRS TO REPLACE THE BROKEN/ DEFECTIVE DOOR WITH NEW PROPERLY RATE HEAVY METAL GALVANIZED STEELE DOOR, JAMB', // EQ23130
+  'SUPPLY AND INSTALL NEW STEEL FIRE RATED DOUBLE HALLWAY DOOR, ALONG DOOR JAMB WITH SELF- CLOSING HINGE', // EQ28208
+  'REPLACE THE BROKEN / DEFECTIVE BILCO DOORS WITH NEW BILCO DOORS SIMILAR TO EXISTING', // EQ32113
+  'INSTALL NEW FIRE RATED, SELF CLOSING HOPPER CHUTE DOOR', // ER05393
+  'REPLACE BULKHEAD DOOR AT ROOF', // EQ27541
+]) assert.ok(isNew(d), `new door: ${d}`);
+for (const d of [
+  'REPLACE THE BROKEN / DEFECTIVE DOOR LOCK ASSEMBLY', // ER00653
+  'REPLACE BROKEN/DEFECTIVE DOOR SECURE TECH SET', // EQ31855
+  'REPLACE DOOR ELECTRIC STRIKE PLATE', // EQ22501
+  'REPLACE DOOR DEFECTIVE LOCK', // EQ19973
+  'INSTALL NEW DOOR LOCK', // EQ16334
+  'REPLACE DOOR PASSAGE LOCK', // EQ05961
+  'ADJUST OR REPLACE DOOR CLOSURE AND MAKE ALL NECESSARY ADJUSTMENTS', // EQ07411
+  'REPLACE DEFECTIVE LATCH SET AT COMPACTOR DOOR WITH NEW PASSAGE LATCH SET', // EQ14145
+  'INSTALL NEW GLASS AT VESTIBULE DOOR',
+]) assert.ok(!isNew(d), `not a new door: ${d}`);
+
+// How many doors / windows, however HPD writes it.
+assert.equal(readScope('MAKE THE FOLLOWING FIRE DOORS SELF CLOSING: 1) 2ND FL STAIR 2) 3RD FL STAIR 3) 4TH FL HALL').doors, 3, 'a numbered list of the doors');
+assert.equal(readScope('REPLACE BOTH HOPPER DOORS AT 3RD AND 5TH STORY').doors, 2);
+assert.ok(readScope('APT 2 A-1) INSTALL NEW DOOR CLOSER').doors <= 1, 'apartment letters are not a list');
+assert.ok(readScope('REPLACE 3 BROKEN WINDOWS AT KITCHEN').items.includes('window-new'), 'windows (plural) are new windows');
+for (const d of ['SECURE-TECH LOCK', 'SECURITECH LOCK', 'SECURATEHC LOCK', 'SECURI-TECH LOCK', 'SECURITYTECH LOCK', 'SECURA TECH LOCK', 'SECURTEC LOCK']) assert.ok(readScope(`REPLACE ENTRANCE DOOR ${d}`).items.includes('entrance-lock'), d);
+
+// Rubbish volume counts toward the size.
+const rubbish = readScope('REMOVE APPROXIMATELY 80 CU YDS OF RUBBISH FROM THE YARD');
+assert.equal(rubbish.cubicYards, 80);
+assert.match(rubbish.summary, /~80 cu yd/);
+const yards = [
+  { id: 'R1', description: 'REMOVE APPROX 10 CU YDS OF RUBBISH FROM YARD', amount: 800 },
+  { id: 'R2', description: 'REMOVE APPROX 10 CU YDS OF DEBRIS AND RUBBISH FROM CELLAR', amount: 850 },
+  { id: 'R3', description: 'REMOVE 10 CUBIC YARDS OF RUBBISH FROM YARD', amount: 820 },
+];
+const big = priceHelp('REMOVE APPROX 40 CU YDS OF RUBBISH FROM YARD', yards);
+assert.ok(big.middle > 820 && big.middle < 3300, `4x the rubbish costs more, not 4x (${big.middle})`);
+
 // A closer + lock job is priced against closer + lock jobs, not single-closer ones; sizes are adjusted.
 const doors = [
   { id: 'C1', description: 'INSTALL NEW DOOR CLOSER. TOTAL DOORS = (1)', amount: 450 },

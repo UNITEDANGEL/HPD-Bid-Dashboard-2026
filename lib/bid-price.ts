@@ -6,7 +6,7 @@
 // A past awarded job: yours (won) or another contractor's. HPD awards the low bid, so the amount is
 // the price it took to win that job.
 export type PricedJob = { id: string; description: string; amount: number; address?: string; date?: string; won?: boolean };
-export type JobScope = { items: string[]; labels: string[]; doors: number; windows: number; sqft: number; paintSqft: number; repairSqft: number; tasks: number; summary: string };
+export type JobScope = { items: string[]; labels: string[]; doors: number; windows: number; sqft: number; paintSqft: number; repairSqft: number; cubicYards: number; tasks: number; summary: string };
 export type PriceHelp = {
   count: number; low: number; middle: number; high: number;
   scope: JobScope;
@@ -50,11 +50,11 @@ const ITEMS: [key: string, label: string, pattern: RegExp][] = [
   // jobs at ~$1,800, against ~$790 for regular ERP work, so they are only compared with their own kind.
   ["lead", "lead abatement (DELEAD)", /\bdelead|lead[- ]based|\blbp\b|\bxrf\b|lead abatement|lead hazard|lead dust|lead[- ]safe|\blead paint|epa rrp|\blead\b(?! time| to)/],
   ["aep", "AEP program", /\baep\b|alternative enforcement/],
-  ["door-new", "new door", /\b(new|replace\w*)\b[^.]{0,40}\b(door and (door )?(jamb|frame)|fire[- ]?rated (\w+ )?door|metal door|steel door|door assembly)|install (a )?new ((fire[- ]?rated|metal|steel|wood|entrance|apartment|bulkhead|hollow metal|kalamein) )?door\b(?! closer| knob| lock| hinge| sweep| stop| saddle| handle| viewer| chain)|replace (the )?(broken|defective|damaged)?[/ a-z]{0,25}door with (a )?new/],
+  ["door-new", "new door", /(?!)/],
   ["closer", "door closer", /closer/],
   // Building-entrance hardware (Adams Rite, Securtec, mortise, electric strike, mag lock) costs more than
   // a passage lock, so it is its own kind of work.
-  ["entrance-lock", "entrance lock (Adams Rite / mortise / electric strike)", /adams ?rite|secure?[ -]?tec|mortise|electric strik|electric stik|mag(netic)? ?lock|maglock/],
+  ["entrance-lock", "entrance lock (Adams Rite / mortise / electric strike)", /adams ?rite|secur[a-z]*[ -]?te(c|ch|hc)\b|securi?tech|mortise|electric strik|electric stik|mag(netic)? ?lock|maglock/],
   // A buzzer / intercom repair is more work than the lock alone (lock + buzzer jobs win at ~$1,400).
   ["intercom", "buzzer / intercom", /buzzer|intercom|door ?bell|entry phone/],
   ["lock", "lock / latch", /\block|latch ?set|door latch\b|lockset|cylinder|\bknob|lever handle|deadbolt|strik\w* plate/],
@@ -63,7 +63,7 @@ const ITEMS: [key: string, label: string, pattern: RegExp][] = [
   ["door-adjust", "door adjust (self-close & latch)", /self[- ]?clos|latching|adjust\w* [^.]{0,20}door|realign/],
   ["glass", "window glass", /(?<!semi[- ]?)glass|glazing|pane\b|plexi/],
   ["window-hardware", "window balance / sash / guard", /balance|sash cord|sash chain|window guard|window lock|window hardware/],
-  ["window-new", "new window", /\b(new|replace\w*) (?:(?!glass|guard|balance|sash|lock|pane)\w+ ){0,3}window\b(?! glass| guard| lock| balance| sash| pane)/],
+  ["window-new", "new window", /\b(new|replace\w*) (?:(?!glass|guard|balance|sash|lock|pane)\w+ ){0,3}windows?\b(?! glass| guard| lock| balance| sash| pane)/],
   ["leak", "trace & repair leak", /leak|trace/],
   ["sheetrock", "sheetrock / plaster", /sheetrock|gwb|gypsum|plaster|drywall|skim/],
   ["paint", "painting", /paint|primer|prime\b|coats?\b/],
@@ -99,14 +99,35 @@ function words(text: string) {
   return text.replace(/[^a-z\s]/g, " ").split(/\s+/).filter((w) => w.length >= 3 && !BOILERPLATE.has(w));
 }
 
+const WORD_NUMBERS: Record<string, number> = { two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, both: 2 };
+
+// How many doors (or windows): HPD's "TOTAL DOORS = (2)" first; otherwise "(2) doors", "two doors",
+// "both doors", or a numbered list of doors ("1- building entrance door ... 2- fire door ...").
 function countAfter(text: string, noun: string) {
   const forms = [
     new RegExp(`total[^.;=()\\d]{0,22}${noun}s?[^\\d]{0,8}(\\d{1,2})\\b`, "g"),
     new RegExp(`\\(?\\s*(\\d{1,2})\\s*\\)?\\s*${noun}s? in total`, "g"),
     new RegExp(`number of ${noun}s?[^\\d]{0,6}(\\d{1,2})\\b`, "g"),
   ];
+  let total = 0;
+  for (const re of forms) for (const m of text.matchAll(re)) total = Math.max(total, Number(m[1]));
+  if (total) return total;
   let best = 0;
-  for (const re of forms) for (const m of text.matchAll(re)) best = Math.max(best, Number(m[1]));
+  // "(2) doors", "2 fire doors", "two apartment doors", "both doors"
+  const adj = "(?:fire |entrance |apartment |apt |vestibule |bulkhead |public hall |stair |hallway |interior |exterior |roof |cellar |basement |compactor |closet |front |rear |\\w+ ){0,2}";
+  for (const m of text.matchAll(new RegExp(`(?:\\(\\s*)?\\b(\\d{1,2}|two|three|four|five|six|seven|eight|nine|ten|both)\\b(?:\\s*\\))?\\s+${adj}${noun}s\\b`, "g"))) {
+    best = Math.max(best, WORD_NUMBERS[m[1]] || Number(m[1]));
+  }
+  // A numbered list where the items are doors: "1- ... door", "2) ... door"; the same list repeated counts once.
+  // When HPD writes "make (the) following (fire) doors ...", every numbered item is one of them.
+  const items = new Set<string>();
+  const listOfThem = new RegExp(`following (?:\\w+ ){0,2}${noun}s`).test(text);
+  const item = listOfThem
+    ? /(?:^|[\s.:;,])(\d{1,2})\s*[-)]\s*(?![a-z]\b)/g
+    : new RegExp(`(?:^|[\\s.:;,])(\\d{1,2})\\s*[-)]\\s*(?![a-z]\\b)[^.;]{0,90}?\\b${noun}s?\\b`, "g");
+  for (const m of text.matchAll(item)) if (Number(m[1]) >= 1 && Number(m[1]) <= 20) items.add(m[1]);
+  // Only a list counting 1, 2, 3... (not stray numbers).
+  if (items.size >= 2 && items.has("1") && items.has("2")) best = Math.max(best, items.size);
   return best;
 }
 
@@ -131,9 +152,51 @@ function numberedTasks(text: string) {
   return marks.size;
 }
 
+
+// A new / replaced door (not new hardware, glass or parts on a door). Read sentence by sentence:
+// "install / supply / provide (a) new [hopper / fire rated / steel / vestibule ...] door", "replace
+// [the] [defective] [hopper / bulkhead ...] door(s)", "new door ... with frame / jamb", Bilco doors.
+// Not when what's installed or replaced is glass, a lock, hinges, a closer, an arm, a saddle, a
+// threshold, a cap, a balance or a window, or the words between "new" and "door" link to something else
+// ("new counter balance at window next to yard door").
+const NOT_A_DOOR = /^(?:hinge|lock|latch|closer|closier|closure|cylinder|knob|push|bar|sweep|stop|saddle|threshold|handle|viewer|peep|chain|strike|arm|spring|hardware|glass|pane|plexi|balance|counter|window|floor|tile|cap|valve|radiator|frame|jamb|paint|sheetrock|cabinet|weather|seal|gasket|kick|plate|hook|bolt|key|buzzer|intercom|guard|sign|light)/;
+const LINK_WORD = /^(?:at|to|in|on|with|next|for|of|by|from|near|behind|under|over|and|or|the|its|that|which)$/;
+const DOOR_KIND = /^(?:hopper|chute|fire|rated|fire-rated|steel|metal|kalamein|hollow|wood|wooden|solid|core|vestibule|entrance|entry|apartment|apt|bulkhead|roof|cellar|basement|bilco|compactor|hallway|double|single|exterior|interior|front|rear|yard|stair|stairway|security|heavy|duty|heavy-duty|proof|self|closing|self-closing|non|similar|new|a|an|one|\d+|two|three|four|both|properly|proper|size|sized|same|type|standard|code|compliant|approved|labeled|labelled|minute|hour|\d+-minute|90|[/-])$/;
+const NEW_DOOR_PATTERN = /\b(new|replace\w*)\b[^.]{0,40}\b(door and (door )?(jamb|frame)|fire[- ]?rated door|metal door|steel door|door assembly)|install (a )?new ((fire[- ]?rated|metal|steel|wood|entrance|apartment|bulkhead|hollow metal|kalamein) )?door\b(?! closer| knob| lock| hinge| sweep| stop| saddle| handle| viewer| chain)/;
+function isNewDoor(text: string) {
+  if (NEW_DOOR_PATTERN.test(text)) return true;
+  for (const sentence of text.split(/[.;:\n]|\*{2,}/)) {
+    const w = sentence.replace(/[,()"“”]/g, " ").split(/\s+/).filter(Boolean);
+    for (let i = 0; i < w.length; i++) {
+      const isNew = w[i] === "new" && i > 0 && /^(install|supply|provide|a|with|and)$/.test(w[i - 1]);
+      const isReplace = /^replac/.test(w[i]);
+      if (!isNew && !isReplace) continue;
+      // Walk to the next "door(s)"; every word in between must describe a door, not hardware or a link.
+      let ok = true;
+      for (let j = i + 1; j < Math.min(w.length, i + 10); j++) {
+        if (/^doors?$/.test(w[j])) {
+          // "replace defective door [secure tech] lock set": door describes the hardware after it.
+          const next = w.slice(j + 1, j + 5);
+          const hardwareAfter = next.findIndex((x) => (NOT_A_DOOR.test(x) && x !== "hinged") || /^(adam|secur|passage|electric|mortise|set$|lockset|thick)/.test(x));
+          const verbAfter = next.findIndex((x) => /^(make|ensure|to|and|with|along|including|at|on|in|complete|leading|located|similar|demo|remove|bottom|that)$/.test(x));
+          const describesHardware = hardwareAfter >= 0 && (verbAfter < 0 || hardwareAfter < verbAfter);
+          if (ok && !describesHardware && !/^(alignment|adjust)/.test(next[0] || "")) return true;
+          break;
+        }
+        if (NOT_A_DOOR.test(w[j]) || LINK_WORD.test(w[j]) && !(isReplace && /^(the|a)$/.test(w[j]))) { ok = false; break; }
+        const parts = w[j].split(/[-/]/).filter(Boolean);
+        const describes = (x: string) => DOOR_KIND.test(x) || (isReplace && /^(the|a)$/.test(x)) || /^(broken|defective|damaged|existing|missing|old|deteriorated|rotted|bent|warped)$/.test(x);
+        if (!(describes(w[j]) || (parts.length && parts.every(describes)))) { ok = false; break; }
+      }
+    }
+    if (/\bnew bilco|bilco doors? with new|new (?:cellar|roof) hatch/.test(sentence)) return true;
+  }
+  return false;
+}
+
 export function readScope(description: string): JobScope {
   const text = workText(description);
-  const found = ITEMS.filter(([, , re]) => re.test(text));
+  const found = ITEMS.filter(([key, , re]) => (key === "door-new" ? isNewDoor(text) : re.test(text)));
   let items = found.map(([key]) => key);
   // "Adjust the door to self-close" is part of any closer/hinge/lock/push-bar job, not its own item.
   if (items.some((k) => ["closer", "hinges", "lock", "entrance-lock", "pushbar", "door-new"].includes(k))) items = items.filter((k) => k !== "door-adjust");
@@ -146,8 +209,11 @@ export function readScope(description: string): JobScope {
   const area = squareFeet(text);
   const sqft = Math.max(area.paint, area.repair);
   const tasks = Math.max(numberedTasks(text), 1);
-  const size = [doors > 0 ? `${doors} door${doors > 1 ? "s" : ""}` : "", windows > 0 ? `${windows} window${windows > 1 ? "s" : ""}` : "", area.repair > 0 ? `~${area.repair} sq ft repair area` : "", area.paint > 0 ? `~${area.paint} sq ft to paint` : "", tasks > 1 ? `${tasks} tasks` : ""].filter(Boolean);
-  return { items, labels, doors, windows, sqft, paintSqft: area.paint, repairSqft: area.repair, tasks, summary: [labels.join(" + ") || "general repair", ...size].join(" · ") };
+  // Rubbish / debris removal: "approximately 5 cu of rubbish", "80 cu yds".
+  const cy = [...text.matchAll(/(\d{1,4})\s*(?:cu\.?\s*(?:yds?|yards?|ft)?|cubic\s+(?:yds?|yards?))\b/g)].map((m) => Number(m[1]));
+  const cubicYards = cy.length ? Math.max(...cy) : 0;
+  const size = [doors > 0 ? `${doors} door${doors > 1 ? "s" : ""}` : "", windows > 0 ? `${windows} window${windows > 1 ? "s" : ""}` : "", area.repair > 0 ? `~${area.repair} sq ft repair area` : "", area.paint > 0 ? `~${area.paint} sq ft to paint` : "", cubicYards ? `~${cubicYards} cu yd` : "", tasks > 1 ? `${tasks} tasks` : ""].filter(Boolean);
+  return { items, labels, doors, windows, sqft, paintSqft: area.paint, repairSqft: area.repair, cubicYards, tasks, summary: [labels.join(" + ") || "general repair", ...size].join(" · ") };
 }
 
 function quantile(sorted: number[], q: number) {
@@ -165,9 +231,15 @@ function sizeMatch(a: number, b: number) {
 
 // A past job with a different number of doors/windows counts at a scaled price: more units cost more,
 // but not in proportion (one trip, one setup). Tested on your past awards: square-root scaling fits best.
+const UNIT_POWER = 0.5; // tested on past awards: higher made multi-door predictions worse
+const AREA_POWER = 0.3; // tested on past awards (0 / 0.2 / 0.3 / 0.5 / 0.7): 0.3 missed least
 function sizeFactor(job: JobScope, past: JobScope) {
   const units = (s: JobScope) => Math.max(s.doors + s.windows, 1);
-  return Math.min(Math.max(Math.sqrt(units(job) / units(past)), 0.5), 2.5);
+  let f = (units(job) / units(past)) ** UNIT_POWER;
+  // Floors, sheetrock, paint, tile: a 450 sq ft job isn't priced like a 40 sq ft one. Rubbish: 5 vs 80 cu yd.
+  if (AREA_POWER && job.sqft >= 20 && past.sqft >= 20) f *= (job.sqft / past.sqft) ** AREA_POWER;
+  if (AREA_POWER && job.cubicYards && past.cubicYards) f *= (job.cubicYards / past.cubicYards) ** AREA_POWER;
+  return Math.min(Math.max(f, 0.3), 4);
 }
 
 // Each past job is read once (thousands of them), not on every lookup.
@@ -252,7 +324,7 @@ export function priceHelp(description: string, history: PricedJob[], limit = 12,
     qUnit !== "regular" && scored.some((row) => !row.sameUnit) ? `only ${scored.filter((row) => row.sameUnit).length} ${qUnit === "lead" ? "lead abatement" : "AEP"} job${scored.filter((row) => row.sameUnit).length === 1 ? "" : "s"} to compare with; regular jobs added (${qUnit === "lead" ? "lead" : "AEP"} usually pays more)` : "",
     sameWork === scored.length ? `from ${sameWork} jobs HPD awarded with the same kind of work` : sameWork ? `${sameWork} of ${scored.length} awarded jobs had the same kind of work` : `no awarded job had exactly this mix of work; ${scored.length} closest shown`,
     unmatched.length ? `no awarded job with ${unmatched.join(", ")}: price that part yourself` : "",
-    scored.some((row) => sizeFactor(scope, row.scope) !== 1) ? "prices of jobs with a different number of doors/windows adjusted" : "",
+    scored.some((row) => sizeFactor(scope, row.scope) !== 1) ? "prices of jobs of a different size (doors, windows, sq ft, cu yd) adjusted" : "",
     scope.tasks > 1 || scope.items.length > 2 ? "several items: check each one is covered" : "",
   ].filter(Boolean).join(" · ");
 
