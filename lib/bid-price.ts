@@ -46,6 +46,10 @@ const ageDays = (date: string | undefined, now: Date) => (date ? Math.max(0, (no
 
 // Kinds of work, as HPD writes them. Order is the order shown.
 const ITEMS: [key: string, label: string, pattern: RegExp][] = [
+  // The unit the job comes from changes the price: lead abatement (DELEAD) jobs win at ~$2,540 and AEP
+  // jobs at ~$1,800, against ~$790 for regular ERP work, so they are only compared with their own kind.
+  ["lead", "lead abatement (DELEAD)", /\bdelead|lead[- ]based|\blbp\b|\bxrf\b|lead abatement|lead hazard|lead dust|lead[- ]safe|\blead paint|epa rrp|\blead\b(?! time| to)/],
+  ["aep", "AEP program", /\baep\b|alternative enforcement/],
   ["door-new", "new door", /\b(new|replace\w*)\b[^.]{0,40}\b(door and (door )?(jamb|frame)|fire[- ]?rated (\w+ )?door|metal door|steel door|door assembly)|install (a )?new ((fire[- ]?rated|metal|steel|wood|entrance|apartment|bulkhead|hollow metal|kalamein) )?door\b(?! closer| knob| lock| hinge| sweep| stop| saddle| handle| viewer| chain)|replace (the )?(broken|defective|damaged)?[/ a-z]{0,25}door with (a )?new/],
   ["closer", "door closer", /closer/],
   // Building-entrance hardware (Adams Rite, Securtec, mortise, electric strike, mag lock) costs more than
@@ -191,7 +195,12 @@ export function priceHelp(description: string, history: PricedJob[], limit = 12,
   const itemWeight = (k: string) => Math.log((docs.length + 1) / ((itemDf.get(k) || 0) + 1)) + 1;
   const norm = (terms: Set<string>) => Math.sqrt([...terms].reduce((sum, t) => sum + idf(t) ** 2, 0)) || 1;
   const qNorm = norm(query);
-  const qItems = new Set(scope.items);
+  // The unit (lead abatement, AEP, regular ERP) is a filter, not shared work: an AEP leak job is not like
+  // an AEP door job. Work is compared without the unit; a job from another unit counts much less.
+  const UNITS = ["lead", "aep"];
+  const unitOf = (s: JobScope) => s.items.find((k) => UNITS.includes(k)) || "regular";
+  const qUnit = unitOf(scope);
+  const qItems = new Set(scope.items.filter((k) => !UNITS.includes(k)));
 
   const ranked = docs.map(({ job, terms, scope: s }) => {
     let dot = 0;
@@ -199,16 +208,20 @@ export function priceHelp(description: string, history: PricedJob[], limit = 12,
     const text = dot / (qNorm * norm(terms));
     // Same kinds of work: weighted overlap of the two item lists (both ways, so extra work counts too).
     let shared = 0, union = 0;
-    new Set([...qItems, ...s.items]).forEach((k) => {
+    const work = s.items.filter((k) => !UNITS.includes(k));
+    new Set([...qItems, ...work]).forEach((k) => {
       const w = itemWeight(k);
       union += w;
-      if (qItems.has(k) && s.items.includes(k)) shared += w;
+      if (qItems.has(k) && work.includes(k)) shared += w;
     });
+    const sameUnit = unitOf(s) === qUnit;
     const items = union ? shared / union : 1;
     const size = (sizeMatch(scope.doors, s.doors) + sizeMatch(scope.windows, s.windows) + sizeMatch(scope.sqft, s.sqft) + sizeMatch(scope.tasks, s.tasks)) / 4;
-    return { job, scope: s, score: 0.45 * items + 0.3 * text + 0.25 * size, items };
+    const raw = 0.45 * items + 0.3 * text + 0.25 * size;
+    // Same unit first: a job from another unit only comes after them (and the screen says so).
+    return { job, scope: s, raw, score: raw * (sameUnit ? 1 : 0.6), items: sameUnit ? items : items * 0.5, sameUnit };
   })
-    .filter((row) => row.score >= 0.35)
+    .filter((row) => row.raw >= 0.35)
     .sort((a, b) => b.score - a.score || a.job.id.localeCompare(b.job.id));
   // Enough past wins with exactly this mix of work: price from those only, so a closer + lock job
   // isn't pulled down by closer-only jobs. Otherwise the closest jobs overall.
@@ -236,6 +249,7 @@ export function priceHelp(description: string, history: PricedJob[], limit = 12,
   const why = [
     bigger,
     spread > 0.8 ? "these winning prices vary a lot" : "",
+    qUnit !== "regular" && scored.some((row) => !row.sameUnit) ? `only ${scored.filter((row) => row.sameUnit).length} ${qUnit === "lead" ? "lead abatement" : "AEP"} job${scored.filter((row) => row.sameUnit).length === 1 ? "" : "s"} to compare with; regular jobs added (${qUnit === "lead" ? "lead" : "AEP"} usually pays more)` : "",
     sameWork === scored.length ? `from ${sameWork} jobs HPD awarded with the same kind of work` : sameWork ? `${sameWork} of ${scored.length} awarded jobs had the same kind of work` : `no awarded job had exactly this mix of work; ${scored.length} closest shown`,
     unmatched.length ? `no awarded job with ${unmatched.join(", ")}: price that part yourself` : "",
     scored.some((row) => sizeFactor(scope, row.scope) !== 1) ? "prices of jobs with a different number of doors/windows adjusted" : "",

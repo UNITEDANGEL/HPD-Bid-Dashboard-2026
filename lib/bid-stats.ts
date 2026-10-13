@@ -8,6 +8,7 @@ import { readScope } from "./bid-price";
 export type MarketJob = { omo: string; amount: number; awardDate: string; won: boolean; boro?: string; zip?: string; area?: string; address?: string; description: string };
 
 const TRADES: [name: string, items: string[]][] = [
+  ["Lead abatement (DELEAD)", ["lead"]],
   ["Doors & locks", ["door-new", "closer", "lock", "entrance-lock", "hinges", "pushbar", "door-adjust"]],
   ["Windows & glass", ["glass", "window-hardware", "window-new"]],
   ["Leaks, plaster & paint", ["leak", "sheetrock", "paint", "ceiling", "wall", "mold"]],
@@ -20,6 +21,8 @@ const TRADES: [name: string, items: string[]][] = [
 // The main kind of work: the first trade any of its items belongs to; several trades -> "Mixed".
 export function tradeOf(description: string) {
   const items = readScope(description).items;
+  if (items.includes("lead")) return "Lead abatement (DELEAD)";
+  if (items.includes("aep")) return "AEP program";
   const trades = TRADES.filter(([, keys]) => items.some((k) => keys.includes(k))).map(([name]) => name);
   return trades.length === 1 ? trades[0] : trades.length > 1 ? "Mixed / several trades" : "Other";
 }

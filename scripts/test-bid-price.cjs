@@ -20,6 +20,18 @@ assert.deepEqual(hopper.examples.map((e) => e.id).sort(), ['D1', 'D2', 'D3']);
 assert.equal(hopper.middle, 400);
 assert.ok(hopper.low <= hopper.middle && hopper.middle <= hopper.high);
 // "AEP" is a program label, not the kind of work: a leak job matches leak jobs, not the AEP door job.
+// A lead job is priced against lead jobs, not regular paint jobs.
+const leadHist = [
+  { id: 'P1', description: 'SCRAPE AND PAINT WINDOW SILL AND WALLS', amount: 900 },
+  { id: 'P2', description: 'SCRAPE AND REPAINT WALLS IN BEDROOM', amount: 950 },
+  { id: 'P3', description: 'PAINT WALLS AND WINDOW SILL', amount: 920 },
+  { id: 'L1', description: 'LEAD BASED PAINT HAZARD: SCRAPE AND PAINT WINDOW SILL USING LEAD SAFE WORK PRACTICES', amount: 2500 },
+  { id: 'L2', description: 'LEAD ABATEMENT: SCRAPE AND REPAINT WALLS, LEAD DUST WIPE TEST', amount: 2600 },
+  { id: 'L3', description: 'DELEAD WINDOW SILL AND PAINT. XRF REQUIRED', amount: 2450 },
+];
+const leadJob = priceHelp('LEAD BASED PAINT: SCRAPE AND PAINT WALLS AND WINDOW SILL, LEAD SAFE PRACTICES', leadHist);
+assert.deepEqual(leadJob.examples.map((e) => e.id).sort(), ['L1', 'L2', 'L3'], 'lead priced against lead jobs');
+assert.ok(leadJob.middle >= 2400, `lead middle ${leadJob.middle}`);
 const leak = priceHelp('AEP AT APT 2J REPAIR WATER LEAKS AND DAMAGED CEILING PLASTER', history);
 assert.deepEqual(leak.examples.map((e) => e.id).sort(), ['D4', 'D6']);
 assert.equal(priceHelp('', history), null);
@@ -37,7 +49,10 @@ assert.equal(readScope('INSTALL NEW PASSAGE LOCKS ON 6 FIRE DOORS. TOTAL DOORS= 
 assert.equal(readScope('ADJUST DOORS. TOTAL NOS OF DOOR = (19) REMOVE ALL WORK RELATED DEBRIS.').doors, 19);
 assert.equal(readScope('MAKE DOOR SELF CLOSING ( 2 DOORS IN TOTAL )').doors, 2);
 const aep = readScope('AEP - ALTERNATIVE ENFORCEMENT PROGRAM APT 1K. TRACE, LOCATE AND REPAIR WATER LEAKS. PROVIDE AND INSTALL APPROX. 25 SQ.FT. 5/8 THICK GWB AT CEILING. SCRAPE, TAPE, PLASTER AND APPLY ONE COAT OF PRIMER AND TWO COATS OF SEMI-GLASS PAINT TO THE ENTIRE CEILING, APPROX 140 SF. IN THE BATHROOM INSTALL APPROX.32 SQ. FT. OF GWB. PRIME AND APPLY 2 COATS OF PAINT TO ENTIRE CEILING AND WALLS APPROX. 130 SQ. FT.');
-assert.deepEqual(aep.items, ['leak', 'sheetrock', 'paint'], '"Enforcement" is not cement, "semi-glass paint" is not window glass');
+assert.deepEqual(aep.items, ['aep', 'leak', 'sheetrock', 'paint'], 'AEP is its own unit; "Enforcement" is not cement, "semi-glass paint" is not window glass');
+assert.deepEqual(readScope('LEAD BASED PAINT HAZARD: SCRAPE AND REPAINT WINDOW SILL USING LEAD SAFE WORK PRACTICES. XRF TESTING REQUIRED.').items.slice(0, 1), ['lead'], 'lead abatement is its own unit');
+assert.ok(!readScope('REPAIR ROOF LEADER AND GUTTER. MISLEADING SIGN.').items.includes('lead'), 'a roof leader is not lead work');
+assert.ok(!readScope('REPAIR THE LEAK LEADING TO THE CEILING').items.includes('lead'));
 assert.equal(aep.repairSqft, 57, 'sheetrock in both rooms added up');
 assert.equal(aep.paintSqft, 270, 'paint in both rooms added up');
 assert.equal(readScope('REMOVE 36 SQ.FT. OF CEILING. INSTALL NEW GWB 36 SQ.FT.').repairSqft, 36, 'remove/install of the same area counts once');
