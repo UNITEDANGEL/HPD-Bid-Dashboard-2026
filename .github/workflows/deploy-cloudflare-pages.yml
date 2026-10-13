@@ -119,6 +119,7 @@ jobs:
           node scripts/test-market-awards.mjs
           node scripts/test-bid-stats.mjs
           node scripts/test-job-followup.mjs
+          node scripts/test-paperwork-lock.mjs
           node scripts/test-bid-fax-server.mjs
           node cloudflare-worker/test-sync.mjs
 
@@ -143,6 +144,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-bids.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-bid-sync.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork-lock.mjs
 
       - name: Resolve Cloudflare production branch
         id: pages-project

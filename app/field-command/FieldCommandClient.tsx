@@ -14,6 +14,7 @@ import { CURRENT_JOB_KEY, parseCurrentJob, type CurrentJob } from "../../lib/cur
 import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointmentPatch, appointmentTiming, nyToday, type Appointment } from "../../lib/appointments";
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
+import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
 import { followUpOf, followUpReport, recoveredStatus, type FollowUp, type HpdJobStatus, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
@@ -2064,6 +2065,7 @@ export default function FieldCommandClient() {
 
   // Records an outcome right away (no draft, no page change).
   function setJobOutcome(job: JobRecord, outcome: string, note: string) {
+    if (paperworkLock(job).locked && !isTestJob(jobId(job))) { setOutcomeMessage(lockedMessage(jobId(job), paperworkLock(job))); return; }
     const id = jobId(job);
     try {
       const patch = withVisitLocation(job, fieldOutcomePatch(job, outcome, note, new Date().toISOString()));
@@ -2083,6 +2085,7 @@ export default function FieldCommandClient() {
   }
   // 2nd visit after a no-access try: the door opened, so the job goes back to the normal work steps.
   function gotInOnSecondTry(job: JobRecord) {
+    if (paperworkLock(job).locked && !isTestJob(jobId(job))) { setOutcomeMessage(lockedMessage(jobId(job), paperworkLock(job))); return; }
     const id = jobId(job);
     const now = new Date().toISOString();
     const latest = { ...job, ...(readSharedWorkflowOverrides()[id] || {}) };
@@ -2100,6 +2103,7 @@ export default function FieldCommandClient() {
   function saveVisitOutcome(job: JobRecord, review = false) {
     const id = jobId(job);
     const draft = outcomeDrafts[id] || { outcome: "", note: "" };
+    if (draft.outcome && paperworkLock(job).locked && !isTestJob(id)) { setOutcomeMessage(lockedMessage(id, paperworkLock(job))); return; }
     try {
       const patch = withVisitLocation(job, fieldOutcomePatch(job, draft.outcome, draft.note, new Date().toISOString()));
       writeSharedWorkflowPatch(id, patch);
@@ -2269,6 +2273,7 @@ export default function FieldCommandClient() {
   // arrival, photos and visit history stay; a history line records what was cleared, and the
   // job is open for work again.
   function clearOutcome(job: JobRecord) {
+    if (paperworkLock(job).locked && !isTestJob(jobId(job))) { setOutcomeMessage(lockedMessage(jobId(job), paperworkLock(job))); return; }
     const id = jobId(job);
     const previous = FIELD_OUTCOMES[value(job, ["FieldOutcome", "fieldOutcome", "WorkflowStatus"])] || value(job, ["StatusOverride", "status"]) || "outcome";
     if (!window.confirm(`Clear "${previous}" for ${id}? Photos and visit history are kept.`)) return;
@@ -2296,6 +2301,8 @@ export default function FieldCommandClient() {
   // this job on the phone, here and on the status server, so the job is Pending again.
   async function clearWorkflow(job: JobRecord, confirmed = false) {
     const id = jobId(job);
+    // "Start over" can't wipe a job whose paperwork was sent (the test job can always be reset).
+    if (paperworkLock(job).locked && !isTestJob(id)) { setMediaMessage(lockedMessage(id, paperworkLock(job))); setClearJobId(""); return; }
     if (!confirmed && clearText.trim().toUpperCase() !== "CLEAR") {
       setMediaMessage("Type CLEAR to start this job over.");
       return;
@@ -3133,6 +3140,19 @@ export default function FieldCommandClient() {
                     <div><span>Start</span><b>{md(fu.startDay)}</b></div>
                     <div><span>Complete by</span><b>{md(fu.maturityDay)}</b></div>
                     <p>{left ? <strong>{left}</strong> : null}{left ? " · " : ""}{fu.status}{fu.sentAt ? ` · paperwork sent to HPD ${md(fu.sentAt)}` : ""}{fu.hpdReason ? ` · HPD: closed (${fu.hpdReason})` : selectedJob.HpdClosedReason === "" && followRef.current ? " · HPD: still open" : ""}</p>
+                  </div>
+                );
+              })()}
+              {(() => {
+                const lock = paperworkLock(selectedJob);
+                if (!lock.locked && !lock.revisions.length) return null;
+                const day = (iso: string) => (iso && iso !== "approved" ? new Date(iso).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "2-digit" }) : "");
+                return (
+                  <div className={`jc-lock ${lock.locked ? "is-locked" : "is-revising"}`} data-hpd-smoke="jc-lock">
+                    {lock.locked
+                      ? <><strong>🔒 Paperwork sent to HPD{day(lock.approvedAt) ? ` ${day(lock.approvedAt)}` : ""}</strong><span>{lock.emailedAt ? `Emailed ${day(lock.emailedAt)}${lock.emailedTo ? ` to ${lock.emailedTo}` : ""}. ` : ""}Locked: the outcome and dates can&apos;t change. To change them, open the paperwork and tap Revise.</span></>
+                      : <><strong>✏️ Paperwork being revised</strong><span>The version sent {day(lock.revisions[lock.revisions.length - 1].approvedAt)} is kept. Reason: {lock.revisions[lock.revisions.length - 1].reason}</span></>}
+                    {lock.revisions.length ? <small>Revised {lock.revisions.length}x · earlier versions are kept in the job&apos;s record</small> : null}
                   </div>
                 );
               })()}

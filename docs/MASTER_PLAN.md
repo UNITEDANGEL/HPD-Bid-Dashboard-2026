@@ -71,15 +71,17 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
   complete by, days overdue); invitation day buttons (Today / Tomorrow / day after / All).
 - Follow-up report (map button) with overdue / due this week / awarded 30 days / waiting on HPD / closed
   at HPD; the same as a map filter; in the evening email (due this week + oldest 15 overdue).
+- Paperwork lock: once sent to HPD the job is locked (job card banner, no outcome change / clear / start
+  over; paperwork page shows the sent version read-only). "Revise paperwork" asks why, keeps the sent
+  version (outcome, dates, approval, email, Drive link) in the job's record, and opens the job again.
 
 ## Now (in this order)
 
-1. **Dates and locking** of sent paperwork, with revisions kept.
-2. **Master file**: nightly full backup of jobs, bids, paperwork records, statuses and award data.
-3. **"My cost" floor** per kind of work.
-4. **Win rate from sent bids** (your price vs the winner's on jobs you actually bid).
+1. **Master file**: nightly full backup of jobs, bids, paperwork records, statuses and award data.
+2. **"My cost" floor** per kind of work.
+3. **Win rate from sent bids** (your price vs the winner's on jobs you actually bid).
 
-5. **2025 jobs**: recover statuses for last year's jobs too, if needed.
+4. **2025 jobs**: recover statuses for last year's jobs too, if needed.
 
 ## Open items for the owner
 - Google reconnect with "read email" lets the phone confirm faxes by itself (the fax checker covers it).

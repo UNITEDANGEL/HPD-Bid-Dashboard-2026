@@ -9,6 +9,7 @@ import { drawInvoicePage } from "../../lib/invoice-pdf";
 import { signatureBytes } from "../../lib/signature";
 import SignatureCard from "./SignatureCard";
 import NotaryCard, { type NotaryApproval } from "./NotaryCard";
+import { paperworkLock, revisionPatch } from "../../lib/paperwork-lock";
 import { deliverPackage, googleStatus, sendPackageEmail, type DeliveryFile, type EmailAttachmentSummary, type GoogleStatus } from "../../lib/package-delivery";
 import { calendarDay } from "../../lib/job-priority";
 import { isTestJob, withTestJob } from "../../lib/test-job";
@@ -1385,7 +1386,22 @@ export default function PaperworkPage() {
   }, [jobs, selectedId, queryWorkflowPatch]);
   const selectedJobId = selectedJob ? getJobId(selectedJob) : "";
   const packageJobLoading = Boolean(selectedId && (!selectedJob || form.jobId !== selectedJobId));
-  const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading && !packageBusy);
+  // Sent paperwork is locked (read-only) until "Revise paperwork"; revisedFor unlocks at once on this page.
+  const [revisedFor, setRevisedFor] = useState("");
+  // The lock and the kept version come from the job as saved, not from the outcome in the page's link.
+  const savedJob = useMemo(() => findJob(jobs, selectedId), [jobs, selectedId]);
+  const lock = paperworkLock(savedJob);
+  const locked = lock.locked && revisedFor !== selectedJobId;
+  const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading && !packageBusy && !locked);
+  async function revisePaperwork() {
+    if (!savedJob || !selectedJobId) return;
+    const reason = window.prompt(`Revise the paperwork sent for ${selectedJobId}?\n\nThe sent version (outcome, dates, when it was emailed) is kept in the job's record. Why are you revising it? (e.g. "Got access on 10/20, work done")`);
+    if (!reason || !reason.trim()) return;
+    const patch = revisionPatch(savedJob, reason);
+    saveLocalPackageOverride(selectedJobId, patch);
+    setRevisedFor(selectedJobId);
+    try { await flushOverrideOutbox(HPD_STATUS_WORKER_URL); } catch { /* queued; sent when back online */ }
+  }
   const mapBackHref = selectedId ? `/map/?omo=${encodeURIComponent(selectedId)}&view=all&map=1` : "/map/?view=all&map=1";
 
   useEffect(() => {
@@ -4884,6 +4900,17 @@ export default function PaperworkPage() {
         .paperwork-more-options > summary, .paperwork-preview-toggle > summary { cursor: pointer; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.3); color: #cbd5e1; font-weight: 800; font-size: 15px; list-style: none; }
         .paperwork-more-options[open] > summary { margin-bottom: 10px; }
         .paperwork-preview-toggle { max-width: 960px; margin-left: auto; margin-right: auto; }
+        /* Sent paperwork: only the locked summary shows until "Revise paperwork". */
+        .paperwork-card.is-locked > :not(.paperwork-locked) { display: none !important; }
+        .paperwork-locked { display: grid; gap: 8px; padding: 14px; border-radius: 14px; background: #052e16; border: 1px solid #22c55e; color: #dcfce7; font: 500 14px/1.45 system-ui, sans-serif; }
+        .paperwork-locked strong { color: #fff; font: 800 17px system-ui, sans-serif; }
+        .paperwork-locked dl { display: grid; gap: 4px; margin: 4px 0; }
+        .paperwork-locked dl div { display: grid; grid-template-columns: 140px 1fr; gap: 8px; }
+        .paperwork-locked dt { color: #86efac; font-weight: 700; }
+        .paperwork-locked dd { margin: 0; color: #f0fdf4; }
+        .paperwork-locked a { color: #93c5fd; font-weight: 700; }
+        .paperwork-locked small { color: #bbf7d0; }
+        .paperwork-locked button { justify-self: start; }
       `}</style>
 
       <section className="paperwork-wrap" data-hpd-smoke="paperwork-package-page">
@@ -4896,7 +4923,26 @@ export default function PaperworkPage() {
           </div>
         </header>}
 
-        <section className="paperwork-card" data-hpd-smoke="paperwork-package-card">
+        <section className={`paperwork-card${locked ? " is-locked" : ""}`} data-hpd-smoke="paperwork-package-card">
+          {locked ? (
+            <div className="paperwork-locked" data-hpd-smoke="paperwork-locked">
+              <strong>🔒 Paperwork sent to HPD{lock.approvedAt && lock.approvedAt !== "approved" ? ` on ${new Date(lock.approvedAt).toLocaleDateString("en-US")}` : ""}</strong>
+              <span>Locked: this is the version HPD has. The outcome and dates can&apos;t be changed by accident.</span>
+              <dl>
+                <div><dt>Job</dt><dd>{selectedJobId} · {form.address}</dd></div>
+                <div><dt>Outcome sent</dt><dd>{form.affidavitType || lock.outcome || "-"}</dd></div>
+                {lock.emailedAt ? <div><dt>Emailed</dt><dd>{new Date(lock.emailedAt).toLocaleString("en-US")}{lock.emailedTo ? ` to ${lock.emailedTo}` : ""}</dd></div> : null}
+                {form.workStart ? <div><dt>Work started</dt><dd>{form.workStart}</dd></div> : null}
+                {form.workComplete ? <div><dt>Work completed</dt><dd>{form.workComplete}</dd></div> : null}
+                {form.firstAttempt ? <div><dt>1st attempt</dt><dd>{form.firstAttempt}</dd></div> : null}
+                {form.secondAttempt ? <div><dt>2nd attempt / refusal</dt><dd>{form.secondAttempt}</dd></div> : null}
+              </dl>
+              {lock.driveLink ? <a href={lock.driveLink} target="_blank" rel="noreferrer" data-hpd-smoke="paperwork-locked-drive">Open the sent package in Google Drive</a> : null}
+              {lock.revisions.length ? <small>Revised {lock.revisions.length}x before: {lock.revisions.map((r) => `${r.revisedAt.slice(0, 10)} (${r.reason})`).join("; ")}</small> : null}
+              <button type="button" className="paperwork-print" data-hpd-smoke="paperwork-revise" onClick={() => void revisePaperwork()}>Revise paperwork</button>
+              <small>Revise when something changed after sending, e.g. no access was sent and later you got access. The sent version stays in the job&apos;s record.</small>
+            </div>
+          ) : null}
           {!selectedId || showJobPicker ? <span className={`paperwork-package-badge ${packageTone}`}>{affidavitTemplateLabel(outcome)}</span> : null}
           {pdfStatus ? (
             <p className="paperwork-pdf-status" aria-live="polite">
