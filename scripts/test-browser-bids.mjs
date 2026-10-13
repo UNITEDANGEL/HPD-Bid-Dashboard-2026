@@ -186,7 +186,7 @@ try {
   assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').isDisabled(), true);
   await sheet.locator('[data-hpd-smoke="fc-bid-revise"]').click();
   await sheet.locator('[data-hpd-smoke="fc-bid-revising"]').waitFor();
-  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-log"]').innerText(), /Revision started \(HPD has \$1,250\.00\)/);
+  await page.waitForFunction(() => /Revision started \(HPD has \$1,250\.00\)/.test(document.querySelector('[data-hpd-smoke="fc-bid-log"]')?.textContent || ""), null, { timeout: 10000 });
   await sheet.locator('[data-hpd-smoke="fc-bid-price"]').fill("1100");
   await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
   await page.waitForFunction(() => /revised/.test(document.querySelector('[data-hpd-smoke="fc-bid-saved"]')?.textContent || ""), null, { timeout: 10000 });
