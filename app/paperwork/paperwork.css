@@ -1,0 +1,6 @@
+
+/* Correcting an HPD payment rejection: ink signatures, notary stamp dated the day of the correction. */
+.paperwork-correction { display: grid; gap: 6px; margin: 12px 0; padding: 12px; border-radius: 12px; background: #450a0a; border: 2px solid #ef4444; color: #fee2e2; }
+.paperwork-correction b { font-size: 15px; }
+.paperwork-correction span { font-weight: 700; }
+.paperwork-correction small { color: #fecaca; line-height: 1.4; }

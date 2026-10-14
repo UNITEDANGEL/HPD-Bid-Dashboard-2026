@@ -2452,3 +2452,23 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-notices-sheet header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .fc-notices-sheet li { display: grid; gap: 4px; }
 .fc-final-attempt { color: #fff; background: #dc2626; padding: 0 4px; border-radius: 4px; }
+
+/* Map buttons: rounded tiles with an icon, a short label and a count. Bids badge: orange = due today,
+   blue = due tomorrow. Notices: red when HPD rejected paperwork. */
+.fc-map-controls { gap: 7px; }
+.fc-map-controls .fc-map-fab { position: relative; width: 56px; height: 52px; border-radius: 14px; grid-template-rows: 1fr auto; gap: 1px; padding: 6px 2px 4px; color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.25); background: rgba(15, 23, 42, 0.92); }
+.fc-map-controls .fc-map-fab svg { width: 20px; height: 20px; }
+.fc-map-controls .fc-map-fab.is-active { background: var(--fc-accent); border-color: transparent; }
+.fc-fab-label { display: block; font: 800 9.5px/1 system-ui, sans-serif; letter-spacing: 0.01em; color: #cbd5e1; }
+.fc-map-fab.is-active .fc-fab-label { color: #fff; }
+.fc-fab-emoji { font-size: 19px; line-height: 1; }
+.fc-follow-badge.is-bids-today { background: #ea580c; }
+.fc-follow-badge.is-bids-tomorrow { background: #2563eb; }
+.fc-notice-detail { margin: 0; padding: 6px 8px; border-radius: 8px; background: #1e293b; color: #cbd5e1; font: 600 12.5px/1.4 system-ui; }
+.fc-follow-paper.is-gmail { background: #1e3a8a; color: #dbeafe; }
+/* Light map style: same labelled tiles, dark readable labels. */
+.fc-app.fc-reference .fc-map-controls .fc-map-fab { width: 60px; height: 54px; border-radius: 15px; grid-template-rows: 1fr auto; gap: 2px; padding: 6px 2px 5px; }
+.fc-app.fc-reference .fc-map-controls .fc-map-fab svg { width: 21px; height: 21px; }
+.fc-app.fc-reference .fc-fab-label { color: #0f2a44; font-size: 10px; }
+.fc-app.fc-reference.fc-clean-streets .fc-fab-label { color: #23463a; }
+.fc-app.fc-reference .fc-map-fab.is-active .fc-fab-label { color: #fff; }

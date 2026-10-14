@@ -117,15 +117,18 @@ export function followUpReport(jobs: Record<string, unknown>[], hpd: Record<stri
 
 // Payment paperwork HPD rejected and you haven't answered since (your last email to HPD staff about the job
 // is older than the rejection). Every OMO, including older jobs that aren't on the map. Newest first.
-export type Rejection = { omo: string; at: string; by: string; reason: string; attempt: string; count: number; answered: boolean; address: string; onMap: boolean };
+export type Rejection = { omo: string; at: string; by: string; reason: string; attempt: string; count: number; answered: boolean; correctedAt: string; address: string; onMap: boolean };
 export function paperworkRejections(asked: Record<string, HpdRequest>, jobs: Record<string, unknown>[]) {
   const byOmo = new Map(jobs.map((j) => [String(j.OMO || j.id || "").toUpperCase(), j]));
   const rows: Rejection[] = [];
   for (const [omo, r] of Object.entries(asked)) {
     if (!r.rejectedTs) continue;
     const job = byOmo.get(omo.toUpperCase());
+    // Corrected in the app (corrected package made on or after the rejection) counts as answered too.
+    const correctedAt = String(job?.RejectionCorrectedAt || "");
+    const corrected = !!correctedAt && correctedAt >= (r.rejectedAt || "");
     rows.push({ omo, at: r.rejectedAt || "", by: r.rejectedBy || "HPD", reason: r.rejectedReason || "", attempt: r.rejectedAttempt || "", count: r.rejectedCount || 1,
-      answered: !!r.repliedTs && r.repliedTs > r.rejectedTs, address: String(job?.BuildingAddress || job?.address || ""), onMap: !!job });
+      answered: (!!r.repliedTs && r.repliedTs > r.rejectedTs) || corrected, correctedAt: corrected ? correctedAt : "", address: String(job?.BuildingAddress || job?.address || ""), onMap: !!job });
   }
   return rows.sort((a, b) => Number(a.answered) - Number(b.answered) || Number(b.attempt === "FINAL") - Number(a.attempt === "FINAL") || b.at.localeCompare(a.at));
 }

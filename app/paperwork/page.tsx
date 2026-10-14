@@ -1224,6 +1224,10 @@ export default function PaperworkPage() {
   const [form, setForm] = useState<PackageForm>(initialForm);
   const [queryWorkflowPatch, setQueryWorkflowPatch] = useState<Record<string, unknown>>({});
   const [loadedQuery, setLoadedQuery] = useState(false);
+  // Correcting a payment paperwork rejection (opened from "Fix & resend"): HPD needs original ink
+  // signatures, so the corrected package has no signature pictures, keeps the notary stamp, and the
+  // notary date is the day of the correction.
+  const [correction, setCorrection] = useState<{ rejectedAt: string; reason: string; attempt: string } | null>(null);
   const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
   // Opened for one job (from the job card): a short summary instead of the job list and type tiles.
   const [showJobPicker, setShowJobPicker] = useState(false);
@@ -1349,6 +1353,14 @@ export default function PaperworkPage() {
       else if (packageParam.includes("work")) nextOutcome = "work_completed";
     }
 
+    const fixFor = params.get("fix") || "";
+    if (job && fixFor) {
+      setCorrection({ rejectedAt: fixFor, reason: "", attempt: "" });
+      fetch("/data/hpd_requests.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
+        const r = d?.jobs?.[job.toUpperCase()];
+        if (r) setCorrection({ rejectedAt: r.rejectedAt || fixFor, reason: r.rejectedReason || "", attempt: r.rejectedAttempt || "" });
+      }).catch(() => {});
+    }
     setSelectedId(job);
     setOutcome(nextOutcome);
     setQueryWorkflowPatch(workflowPatchFromQuery(params, nextOutcome));
@@ -1621,7 +1633,7 @@ export default function PaperworkPage() {
     // job's last event (work completed, or the 2nd no-access / refusal date, as edited on this
     // page), not the day the copy is printed: a job closed out days later keeps its real date.
     const notary = printCopy
-      ? { signature: "", name: options.notary?.name || DEFAULT_NOTARY_NAME, date: packageDay(activeForm, activeOutcome) }
+      ? { signature: "", name: options.notary?.name || DEFAULT_NOTARY_NAME, date: correction ? todayIsoDate() : packageDay(activeForm, activeOutcome) }
       : options.notary || null;
     const includeNotaryImage = includeSignatureImage && notary;
     const useWorkTemplate = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
@@ -5391,6 +5403,17 @@ export default function PaperworkPage() {
             />
           ) : null}
 
+          {correction && !packagePreview ? (
+            <div className="paperwork-correction" data-hpd-smoke="paperwork-correction">
+              <b>❗ Correcting HPD&apos;s rejection of {correction.rejectedAt}{correction.attempt ? ` (${correction.attempt} ATTEMPT)` : ""}</b>
+              {correction.reason ? <span>HPD: {correction.reason}</span> : null}
+              <small>Fix the details above, then make the corrected package. HPD needs original ink signatures: it has <b>no signature pictures</b> (you and the notary sign by hand); the notary stamp stays and is dated <b>today ({todayIsoDate()})</b>. The paperwork check runs first.</small>
+              <button className="paperwork-print" data-hpd-smoke="paperwork-generate-correction" type="button" disabled={!canGeneratePackage} onClick={async () => {
+                await generateCompletePackage(false, true, true);
+                saveLocalPackageOverride(selectedId, { RejectionCorrectedAt: todayIsoDate(), RejectionCorrectedFor: correction.rejectedAt });
+              }}>Make the corrected package (sign in ink)</button>
+            </div>
+          ) : null}
           {!packagePreview ? (
             <details className="paperwork-more-options" open={!autoGeneratePackage} data-hpd-smoke="paperwork-more-options">
             <summary>{autoGeneratePackage ? "More options: build now, PDF only, print copy" : "Make the package"}</summary>

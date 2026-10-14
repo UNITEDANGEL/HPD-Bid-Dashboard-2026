@@ -853,6 +853,22 @@ export default function FieldCommandClient() {
   const [routeOpenRequest, setRouteOpenRequest] = useState(0);
   // The envelope button flips the map to upcoming invitations to bid (BidsMode).
   const [bidsOpen, setBidsOpen] = useState(false);
+  const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number }>({ today: 0, tomorrow: 0 });
+  useEffect(() => {
+    const load = () => fetch("/data/upcoming_bids.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
+      const day = (offset: number) => new Date(Date.now() + offset * 86400000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      const nowMin = (() => { const [h, m] = new Date().toLocaleTimeString("en-GB", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).split(":").map(Number); return h * 60 + m; })();
+      const minutes = (t: string) => { const m = /(\d{1,2}):(\d{2})\s*(AM|PM)/i.exec(t || ""); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0)) * 60 + Number(m[2]) : 24 * 60; };
+      const bids: { bidDue: string; bidDueTime: string }[] = Array.isArray(d?.bids) ? d.bids : [];
+      setBidsDue({
+        today: bids.filter((b) => b.bidDue === day(0) && minutes(b.bidDueTime) > nowMin).length,
+        tomorrow: bids.filter((b) => b.bidDue === day(1)).length,
+      });
+    }).catch(() => {});
+    load();
+    const t = window.setInterval(load, 5 * 60 * 1000);
+    return () => window.clearInterval(t);
+  }, []);
   // The home screen's "Invitations to bid" / "Bid stats" buttons open the map straight on the invitations.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1174,6 +1190,8 @@ export default function FieldCommandClient() {
   const rejections = useMemo(() => paperworkRejections(askedMap, jobs), [askedMap, jobs]);
   const openRejections = rejections.filter((r) => !r.answered);
   const [showAnsweredRejections, setShowAnsweredRejections] = useState(false);
+  const [openNotice, setOpenNotice] = useState("");
+  const senderName = (by: string) => (/^Department of Housing/i.test(by) ? "HPD Accounts Payable" : by);
   const followMatch = (job: JobRecord) => {
     const f = followUps.get(jobId(job));
     if (!f) return false;
@@ -2559,24 +2577,24 @@ export default function FieldCommandClient() {
             data-hpd-smoke="fc-route-open"
             onClick={() => { setSelectedJob(null); setRouteOpenRequest((n) => n + 1); }}
           >
-            <RouteIcon />
+            <RouteIcon /><span className="fc-fab-label">Route</span>
           </button>
-          <button type="button" className="fc-map-fab" aria-label="Today's appointments" title="Today's appointments" onClick={() => { setAgendaOpen(true); setSelectedJob(null); }}><ListIcon /></button>
-          <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" title="My stats" onClick={() => { setStatsOpen(true); setSelectedJob(null); }}><StatsIcon /></button>
+          <button type="button" className="fc-map-fab" aria-label="Today's appointments" title="Today's appointments" onClick={() => { setAgendaOpen(true); setSelectedJob(null); }}><ListIcon /><span className="fc-fab-label">Today</span></button>
+          <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" title="My stats" onClick={() => { setStatsOpen(true); setSelectedJob(null); }}><StatsIcon /><span className="fc-fab-label">Stats</span></button>
           <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}`} data-hpd-smoke="fc-notices-open" aria-label="HPD notices" title="HPD notices: rejected paperwork and requests" onClick={() => { setSelectedJob(null); setFollowFilter("notices"); setNoticesOpen(true); }}>
-            <span aria-hidden="true">📩</span>{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
+            <span aria-hidden="true" className="fc-fab-emoji">📩</span><span className="fc-fab-label">Notices</span>{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
           </button>
           <button type="button" className={`fc-map-fab fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" title="Follow-up report" onClick={() => { setFollowOpen(true); setSelectedJob(null); }}>
-            <FollowIcon />{openRejections.length ? <span className="fc-follow-badge is-rejected" data-hpd-smoke="fc-follow-rejected-badge">{openRejections.length}❗</span> : followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
+            <FollowIcon /><span className="fc-fab-label">Follow-up</span>{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge" data-hpd-smoke="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
           </button>
-          <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { setSelectedJob(null); setBidsOpen((o) => !o); }}><BidsIcon /></button>
+          <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { setSelectedJob(null); setBidsOpen((o) => !o); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.today ? <span className="fc-follow-badge is-bids-today" data-hpd-smoke="fc-bids-badge" title={`${bidsDue.today} due today`}>{bidsDue.today}</span> : bidsDue.tomorrow ? <span className="fc-follow-badge is-bids-tomorrow" data-hpd-smoke="fc-bids-badge" title={`${bidsDue.tomorrow} due tomorrow`}>{bidsDue.tomorrow}</span> : null}</button>
           <button
             type="button"
             className={`fc-map-fab ${darkTiles ? "is-active" : ""}`}
             aria-label="Toggle map style"
             onClick={toggleTileStyle}
           >
-            <LayersIcon />
+            <LayersIcon /><span className="fc-fab-label">Map</span>
           </button>
           <button
             type="button"
@@ -3168,8 +3186,8 @@ export default function FieldCommandClient() {
                       const rj = rejections.find((r) => r.omo === fu.omo);
                       return rj ? (
                         <p className={`jc-rejected${rj.answered ? " is-answered" : ""}`} data-hpd-smoke="jc-rejected">
-                          {rj.answered ? "✓ Paperwork was rejected, you answered HPD" : `❗ Payment paperwork REJECTED by HPD${rj.attempt ? ` (${rj.attempt} ATTEMPT)` : ""}`} · {md(rj.at)} · {rj.by}: {rj.reason || "see HPD's email"}
-                          {!rj.answered ? <a href={`/paperwork/?job=${encodeURIComponent(fu.omo)}`}> Fix &amp; resend →</a> : null}
+                          {rj.answered ? (rj.correctedAt ? `✓ Rejected paperwork corrected ${rj.correctedAt}` : "✓ Paperwork was rejected, you answered HPD") : `❗ Payment paperwork REJECTED by HPD${rj.attempt ? ` (${rj.attempt} ATTEMPT)` : ""}`} · {md(rj.at)} · {senderName(rj.by)}: {rj.reason || "see HPD's email"}
+                          {!rj.answered ? <a href={`/paperwork/?job=${encodeURIComponent(fu.omo)}&fix=${encodeURIComponent(rj.at)}`}> Fix &amp; resend →</a> : null}
                         </p>
                       ) : null;
                     })()}
@@ -3315,12 +3333,14 @@ export default function FieldCommandClient() {
               <h4>❗ Rejected paperwork · fix &amp; resend ({openRejections.length})</h4>
               {openRejections.length ? <ol>{openRejections.map((r) => (
                 <li key={r.omo}>
-                  <button type="button" onClick={() => { const job = jobs.find((j) => jobId(j) === r.omo); if (job) { setNoticesOpen(false); setSelectedJob(job); } }}>
-                    <span><b>{r.omo}</b> <em className="is-late">rejected {r.at}</em>{r.onMap ? "" : " · not on the map"}</span>
-                    <span>{r.address || "older job"}</span>
-                    <small>{r.attempt ? <b className={r.attempt === "FINAL" ? "fc-final-attempt" : ""}>{r.attempt} ATTEMPT · </b> : null}{r.by}: {r.reason || "see HPD's email"}</small>
+                  <button type="button" data-hpd-smoke="fc-notice-row" onClick={() => { const job = jobs.find((j) => jobId(j) === r.omo); if (job) { setNoticesOpen(false); setSelectedJob(job); } else setOpenNotice((o) => (o === r.omo ? "" : r.omo)); }}>
+                    <span><b>{r.omo}</b> <em className="is-late">rejected {r.at}</em>{r.onMap ? " · tap to open the job" : " · older job, tap for details"}</span>
+                    <span>{r.address || "older job (2024-2025, not on the map)"}</span>
+                    <small>{r.attempt ? <b className={r.attempt === "FINAL" ? "fc-final-attempt" : ""}>{r.attempt} ATTEMPT · </b> : null}{senderName(r.by)}: {r.reason || "see HPD's email"}</small>
                   </button>
-                  <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}`}>Fix &amp; resend →</a>
+                  {openNotice === r.omo ? <p className="fc-notice-detail" data-hpd-smoke="fc-notice-detail">This job is from before 2026, so it isn&apos;t on the map. HPD&apos;s notice (with the rejection PDF) is in your email; correct the affidavit / invoice and send it back to HPD.</p> : null}
+                  <a className="fc-follow-paper is-gmail" href={`https://mail.google.com/mail/u/0/#search/${encodeURIComponent(r.omo)}`} target="_blank" rel="noreferrer">Open HPD&apos;s notice in Gmail ↗</a>
+                  {r.onMap ? <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}`}>Fix &amp; resend →</a> : null}
                 </li>
               ))}</ol> : <p>None waiting on you.</p>}
             </section>
@@ -3357,7 +3377,7 @@ export default function FieldCommandClient() {
                       <span><b>{r.omo}</b> <em className="is-late">rejected {Number(r.at.slice(5, 7))}/{Number(r.at.slice(8, 10))}/{r.at.slice(2, 4)}</em></span>
                       <span>{r.address || "older job (not on the map)"}</span>
                       <small>{r.attempt ? <b className={r.attempt === "FINAL" ? "fc-final-attempt" : ""}>{r.attempt} ATTEMPT · </b> : null}{r.by}: {r.reason || "see HPD's email"}{r.count > 1 ? ` · rejected ${r.count}x` : ""}</small>
-                      <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}`}>Fix &amp; resend paperwork →</a>
+                      <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}`}>Fix &amp; resend paperwork →</a>
                     </div>
                   </li>
                 ))}</ol>
