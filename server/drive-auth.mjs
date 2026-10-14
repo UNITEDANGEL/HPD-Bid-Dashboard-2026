@@ -58,7 +58,8 @@ async function session(request, env, cfg) {
   const id = readCookie(request, SESSION);
   if (!id || !/^[A-Za-z0-9_-]{43}$/.test(id)) return null;
   const stored = await env.HPD_DRIVE_SESSIONS.get(`session:${id}`);
-  const value = stored && await unseal(env, stored, `session:${id}`);
+  let value = null;
+  try { value = stored && await unseal(env, stored, `session:${id}`); } catch { value = null; } // damaged: sign in again
   return value?.email === cfg.email ? { ...value, id } : null;
 }
 
@@ -81,11 +82,13 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
     if (action === "check" || BACKUP_ACTIONS.includes(action) || PACKAGE_ACTIONS.includes(action) || VIDEO_ACTIONS.includes(action)) {
       const saved = await session(request, env, cfg);
       if (!saved) return json({ reconnectRequired: true, error: "Sign in to Google Drive again." }, 401);
-      const renewed = await fetcher("https://oauth2.googleapis.com/token", {
+      const renew = () => fetcher("https://oauth2.googleapis.com/token", {
         method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ client_id: env.HPD_DRIVE_CLIENT_ID, client_secret: env.HPD_DRIVE_CLIENT_SECRET,
           refresh_token: saved.refreshToken, grant_type: "refresh_token" }), signal: AbortSignal.timeout(15000),
       });
+      let renewed;
+      try { renewed = await renew(); } catch { renewed = await renew(); } // one retry when Google is slow
       const token = await renewed.json();
       if (!renewed.ok) {
         if (token.error === "invalid_grant") {
@@ -115,7 +118,10 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
       const value = { ...previous, refreshToken: token.refresh_token || saved.refreshToken, canEmail, verifiedAt, expires: Date.now() + TTL * 1000 };
       const renewSession = action === "check" || Boolean(token.refresh_token) || canEmail !== Boolean(saved.canEmail) || !saved.verifiedAt
         || Date.now() - Date.parse(saved.verifiedAt) >= 6 * 3600000;
-      if (renewSession) await env.HPD_DRIVE_SESSIONS.put(`session:${id}`, await seal(env, value, `session:${id}`), { expirationTtl: TTL });
+      let renewedSaved = false;
+      if (renewSession) {
+        try { await env.HPD_DRIVE_SESSIONS.put(`session:${id}`, await seal(env, value, `session:${id}`), { expirationTtl: TTL }); renewedSaved = true; } catch { /* kept the current sign-in */ }
+      }
       const response = BACKUP_ACTIONS.includes(action)
         ? await handleDriveBackups(request, action, authHeaders, fetcher)
         : PACKAGE_ACTIONS.includes(action)
@@ -123,7 +129,7 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
           : VIDEO_ACTIONS.includes(action)
             ? await handleDriveVideos(request, action, authHeaders, fetcher)
             : json({ configured: true, connected: true, email: cfg.email, verifiedAt, canEmail, syncEnabled: false });
-      if (renewSession) response.headers.append("Set-Cookie", cookie(SESSION, id, TTL));
+      if (renewedSaved) response.headers.append("Set-Cookie", cookie(SESSION, id, TTL));
       return response;
     }
     if (action === "disconnect") {
@@ -169,8 +175,9 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
     const value = { email: cfg.email, sub: identity.sub, refreshToken: token.refresh_token, canEmail, expires: Date.now() + TTL * 1000 };
     await env.HPD_DRIVE_SESSIONS.put(`session:${id}`, await seal(env, value, `session:${id}`), { expirationTtl: TTL });
     return redirect(`${cfg.origin}/storage/`, [cookie(FLOW, "", 0), cookie(SESSION, id, TTL)]);
-  } catch {
-    // Never return OAuth responses, credentials or storage errors to the client.
-    return json({ connected: false, syncEnabled: false, error: "Drive connection failed. Your local records are unchanged." }, 503);
+  } catch (error) {
+    // Never return OAuth responses or credentials: only where it failed and the kind of error.
+    const kind = error?.name === "TimeoutError" || error?.name === "AbortError" ? "Google didn't answer in time" : `${String(error?.name || "Error").slice(0, 40)}`;
+    return json({ connected: false, syncEnabled: false, error: `Google connection problem (${kind}, step: ${action}). Try again in a minute; your local records are unchanged.` }, 503);
   }
 }
