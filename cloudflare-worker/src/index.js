@@ -80,6 +80,16 @@ async function updateAll(env, key, value) {
   if (value) all[key] = value; else delete all[key];
   await env.HPD_STATUS_OVERRIDES.put(ALL_KEY, JSON.stringify(all));
 }
+// The last good copy, kept in memory: phones asking within 20 seconds share one KV read, and when KV is
+// over its free daily limit (14 Oct 2026) the phones get the last copy instead of an error.
+let memory = null; // { at, overrides }
+const FRESH_MS = 20_000;
+function remember(overrides) { memory = { at: Date.now(), overrides }; }
+function rememberChange(key, value) {
+  if (!memory) return;
+  if (value) memory.overrides[key] = value; else delete memory.overrides[key];
+}
+
 // Cloud sync of field records stays off until SYNC_ENABLED = "1" is set on the Worker.
 const syncOn = (env) => env.SYNC_ENABLED === "1";
 
@@ -107,8 +117,16 @@ async function handle(request, env) {
       return json({ ok: true, service: "HPD status override worker" });
     }
     if (url.pathname === "/overrides" && request.method === "GET") {
-      const overrides = (await env.HPD_STATUS_OVERRIDES.get(ALL_KEY, "json")) || (await buildAll(env));
-      return json({ ok: true, overrides });
+      const freshMs = env.OVERRIDES_CACHE_MS === undefined ? FRESH_MS : Number(env.OVERRIDES_CACHE_MS);
+      if (memory && Date.now() - memory.at < freshMs) return json({ ok: true, overrides: memory.overrides });
+      try {
+        const overrides = (await env.HPD_STATUS_OVERRIDES.get(ALL_KEY, "json")) || (await buildAll(env));
+        remember(overrides);
+        return json({ ok: true, overrides });
+      } catch (error) {
+        if (memory) return json({ ok: true, overrides: memory.overrides, stale: true });
+        throw error;
+      }
     }
     if (url.pathname === "/sync" && request.method === "GET") {
       return json({ ok: true, sync: syncOn(env), version: 1, entityTypes: [...SYNC_ENTITY_TYPES] });
@@ -150,6 +168,7 @@ async function handle(request, env) {
       };
       await env.HPD_STATUS_OVERRIDES.put(key, JSON.stringify(saved));
       await updateAll(env, key, saved);
+      rememberChange(key, saved);
       return json({ ok: true, key, override: saved });
     }
     if (url.pathname === "/override" && request.method === "DELETE") {
@@ -159,6 +178,7 @@ async function handle(request, env) {
       }
       await env.HPD_STATUS_OVERRIDES.delete(key);
       await updateAll(env, key, null);
+      rememberChange(key, null);
       return json({ ok: true, deleted: key });
     }
     return json({ ok: false, error: "Not found." }, 404);

@@ -3,7 +3,7 @@ import worker from "./src/index.js";
 
 const rows = new Map();
 let lists = 0, failLists = false;
-const env = {
+const env = { OVERRIDES_CACHE_MS: "0",
   SYNC_ENABLED: "1",
   HPD_STATUS_OVERRIDES: {
     async put(key, value) { rows.set(key, value); },
@@ -92,15 +92,28 @@ rows.delete("__all_overrides__");
 await post("ER3", { FieldOutcome: "WORK_COMPLETED" });
 assert.equal(rows.get("__all_overrides__"), undefined);
 assert.deepEqual(Object.keys(await load()).sort(), ["ER2", "ER3"]);
-// A KV limit answers "busy" (503 JSON), not a crash.
+// A KV limit: the phones get the last good copy (marked stale), not an error or a crash.
 rows.delete("__all_overrides__"); failLists = true;
 const busy = await worker.fetch(new Request("https://worker.example/overrides"), env);
-assert.equal(busy.status, 503);
-assert.match((await busy.json()).error, /busy/);
+assert.equal(busy.status, 200);
+const busyBody = await busy.json();
+assert.equal(busyBody.stale, true);
+assert.deepEqual(Object.keys(busyBody.overrides).sort(), ["ER2", "ER3"]);
 failLists = false;
 // Cloud sync stays off unless SYNC_ENABLED is "1".
 const off = { HPD_STATUS_OVERRIDES: env.HPD_STATUS_OVERRIDES };
 assert.equal((await (await worker.fetch(new Request("https://worker.example/sync"), off)).json()).sync, false);
 assert.equal((await worker.fetch(new Request("https://worker.example/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }), off)).status, 403);
 
+// KV over its daily limit: phones get the last good copy, not an error.
+{
+  const okEnv = { ...env };
+  const good = await (await worker.fetch(new Request("https://worker.example/overrides"), okEnv)).json();
+  const down = { ...env, HPD_STATUS_OVERRIDES: { ...env.HPD_STATUS_OVERRIDES, get: async () => { throw new Error("KV get() limit exceeded for the day."); }, list: async () => { throw new Error("KV list() limit exceeded for the day."); } } };
+  const res = await worker.fetch(new Request("https://worker.example/overrides"), down);
+  assert.equal(res.status, 200, "last good copy served while KV is over its limit");
+  const body = await res.json();
+  assert.equal(body.stale, true);
+  assert.deepEqual(Object.keys(body.overrides).sort(), Object.keys(good.overrides).sort());
+}
 console.log("CLOUDFLARE SYNC TEST PASSED");
