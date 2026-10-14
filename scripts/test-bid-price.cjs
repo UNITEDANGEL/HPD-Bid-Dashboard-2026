@@ -86,6 +86,14 @@ for (const d of [
   'INSTALL NEW GLASS AT VESTIBULE DOOR',
 ]) assert.ok(!isNew(d), `not a new door: ${d}`);
 
+// Work that costs more than it reads: a whole hopper chute, an ADA / electronic closer, a compactor pump.
+assert.ok(readScope('#1: INSTALL NEW HOPPER CHUTE COMPLETE.AND MAKE ALL NECESSARY ADJUSTMENTS').items.includes('hopper-chute'), 'ER03039');
+assert.ok(!readScope('REPLACE HOPPER CHUTE DOOR AT 3RD STORY').items.includes('hopper-chute'), 'a hopper chute door is a door, not the chute');
+assert.ok(readScope('INSTALL NEW ADA ELECTRONIC DOOR CLOSER').items.includes('ada-closer'), 'EQ31090');
+assert.ok(readScope('REPLACE THE LATCH LOCK AND HYDRAULIC PUMP ON THE COMPACTOR DOOR').items.includes('compactor-hydraulic'), 'EQ27441');
+assert.ok(!readScope('REPLACE HYDRAULIC CLOSER FOR HOPPER DOOR').items.includes('compactor-hydraulic'), 'a hydraulic closer is a closer');
+assert.ok(!isNew('AT 1ST STORY FIRE DOOR LEADING RECYCLE ROOM, INSTALL NEW DOOR PASSAGE LOCK TO SECURE PROPER LATCHING'), 'EQ25182: a new passage lock, not a new door');
+
 // How many doors / windows, however HPD writes it.
 assert.equal(readScope('MAKE THE FOLLOWING FIRE DOORS SELF CLOSING: 1) 2ND FL STAIR 2) 3RD FL STAIR 3) 4TH FL HALL').doors, 3, 'a numbered list of the doors');
 assert.equal(readScope('REPLACE BOTH HOPPER DOORS AT 3RD AND 5TH STORY').doors, 2);

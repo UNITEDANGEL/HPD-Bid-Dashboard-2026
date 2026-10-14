@@ -52,6 +52,10 @@ const ITEMS: [key: string, label: string, pattern: RegExp][] = [
   ["aep", "AEP program", /\baep\b|alternative enforcement/],
   ["door-new", "new door", /(?!)/],
   ["closer", "door closer", /closer/],
+  // A whole new hopper chute unit (not the hopper door): about $2,000, priced like no door job.
+  ["hopper-chute", "new hopper chute unit", /(?:new|replace\w*|install\w*)\s+(?:the\s+|a\s+)?(?:defective\s+|broken\s+)?(?:compactor\s+)?hopper\s+chute(?!\s+doors?)|hopper chute (?:unit|complete|assembly)/],
+  ["ada-closer", "ADA / electronic door closer", /\bada\b|electronic (?:door )?closer|automatic door|power(?:ed)? (?:door )?operator|handicap/],
+  ["compactor-hydraulic", "compactor hydraulic / pump", /hydraulic (?:pump|cylinder|unit|system|ram|motor)|(?:compactor|trash) (?:motor|ram|pump)/],
   // Building-entrance hardware (Adams Rite, Securtec, mortise, electric strike, mag lock) costs more than
   // a passage lock, so it is its own kind of work.
   ["entrance-lock", "entrance lock (Adams Rite / mortise / electric strike)", /adams ?rite|secur[a-z]*[ -]?te(c|ch|hc)\b|securi?tech|mortise|electric strik|electric stik|mag(netic)? ?lock|maglock/],
@@ -162,7 +166,7 @@ function numberedTasks(text: string) {
 const NOT_A_DOOR = /^(?:hinge|lock|latch|closer|closier|closure|cylinder|knob|push|bar|sweep|stop|saddle|threshold|handle|viewer|peep|chain|strike|arm|spring|hardware|glass|pane|plexi|balance|counter|window|floor|tile|cap|valve|radiator|frame|jamb|paint|sheetrock|cabinet|weather|seal|gasket|kick|plate|hook|bolt|key|buzzer|intercom|guard|sign|light)/;
 const LINK_WORD = /^(?:at|to|in|on|with|next|for|of|by|from|near|behind|under|over|and|or|the|its|that|which)$/;
 const DOOR_KIND = /^(?:hopper|chute|fire|rated|fire-rated|steel|metal|kalamein|hollow|wood|wooden|solid|core|vestibule|entrance|entry|apartment|apt|bulkhead|roof|cellar|basement|bilco|compactor|hallway|double|single|exterior|interior|front|rear|yard|stair|stairway|security|heavy|duty|heavy-duty|proof|self|closing|self-closing|non|similar|new|a|an|one|\d+|two|three|four|both|properly|proper|size|sized|same|type|standard|code|compliant|approved|labeled|labelled|minute|hour|\d+-minute|90|[/-])$/;
-const NEW_DOOR_PATTERN = /\b(new|replace\w*)\b[^.]{0,40}\b(door and (door )?(jamb|frame)|fire[- ]?rated door|metal door|steel door|door assembly)|install (a )?new ((fire[- ]?rated|metal|steel|wood|entrance|apartment|bulkhead|hollow metal|kalamein) )?door\b(?! closer| knob| lock| hinge| sweep| stop| saddle| handle| viewer| chain)/;
+const NEW_DOOR_PATTERN = /\b(new|replace\w*)\b[^.]{0,40}\b(door and (door )?(jamb|frame)|fire[- ]?rated door|metal door|steel door|door assembly)|install (a )?new ((fire[- ]?rated|metal|steel|wood|entrance|apartment|bulkhead|hollow metal|kalamein) )?door\b(?! closer| knob| lock| hinge| sweep| stop| saddle| handle| viewer| chain| passage| latch| strike| frame| jamb| hardware| pull| alarm| sign| guard| bottom| seal| check| arm| knocker)/;
 function isNewDoor(text: string) {
   if (NEW_DOOR_PATTERN.test(text)) return true;
   for (const sentence of text.split(/[.;:\n]|\*{2,}/)) {
