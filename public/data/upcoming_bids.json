@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T17:43:39.088025+00:00",
+  "generatedAt": "2026-10-14T17:55:40.921545+00:00",
   "days": 14,
   "bids": [
     {
@@ -2795,6 +2795,260 @@
       },
       "lat": 40.805246,
       "lng": -73.950583
+    },
+    {
+      "omo": "ER07701",
+      "bidDue": "2026-10-16",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-16",
+      "workCompletion": "2026-11-15",
+      "address": "608 WEST 191 STREET",
+      "borough": "MN",
+      "itbFile": "ER07701_101426014454.pdf",
+      "description": "NYC HPD EMERGENCY OPERATIONS DIVISION -'ESSENTIAL SERVICE WORK' REPLACE DEFECTIVE DOOR AT APT 31 MAKE ALL NECESSARY REPAIRS TO PROPERLY REPLACE BROKEN/DEFECTIVE DOOR AND JAMB WITH NEW PROPERLY FIRE RATED DOOR AND JAMB SIMILAR TO EXISTING, KEEPING EXISING MORTISE LOCK FOR RE-USE, COMPLETE WITH SELF-CLOSING HINGES, ALL NECESSARY HARDWARE AND RESTORATION OF AFFECTED FINISHES AT (APT 31). TOTAL DOORS= (1)",
+      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: K. BRYANT- 212 863 5496; R. BUSHRA- 212 863 6046; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; S. HUGHES- 212 863 5754; S. KOFUMA- 212 863 6160; A. MARTINEZ- 212 863 6135; E. ORR- 212 863 6875; R. REED- 212 863 5481 SUPERVISOR D. SAUL- 212 863 5527 IF THE LANDLORD REFUSES ACCESS, CONTRACTOR COMPLETED WORK OR WORK WAS COMPLETED BY OTHERS, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE - 212 863 6008. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS",
+      "receivedAt": 1791999896000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.0,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.0,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.855841,
+      "lng": -73.93018
+    },
+    {
+      "omo": "ER07704",
+      "bidDue": "2026-10-16",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-16",
+      "workCompletion": "2026-11-15",
+      "address": "646 WEST 160 STREET",
+      "borough": "MN",
+      "itbFile": "ER07704_101426014332.pdf",
+      "description": "NYC HPD EMERGENCY OPERATIONS DIVISION - 'ESSENTIAL SERVICE WORK' MAKE APT 1C DOOR PROPERLY SELF CLOSE AND LATCH AT APT 1C: MAKE ALL NECESSARY ADJUSTMENTS/ALIGNMENTS TO DOOR TO MAKE DOOR PROPERLY SELF CLOSE AND LATCH AS PER NYC GUIDELINES. RESTORE ALL AFFECTED AREAS. REMOVE ALL WORK RELATED DEBRIS.",
+      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: K. BRYANT- 212 863 5496; R. BUSHRA- 212 863 6046; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; S. HUGHES- 212 863 5754; S. KOFUMA- 212 863 6160; A. MARTINEZ- 212 863 6135; E. ORR- 212 863 6875; R. REED- 212 863 5481 SUPERVISOR D. SAUL- 212 863 5527 IF THE LANDLORD REFUSES ACCESS, CONTRACTOR COMPLETED WORK OR WORK WAS COMPLETED BY OTHERS, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE - 212 863 6008. ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS ENTRANCE TO APT THRU EAST YARD",
+      "receivedAt": 1791999814000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.0,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.0,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.836675,
+      "lng": -73.945799
     },
     {
       "omo": "ER07737",
