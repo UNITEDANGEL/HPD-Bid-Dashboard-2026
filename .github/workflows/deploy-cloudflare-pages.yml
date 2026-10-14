@@ -121,6 +121,7 @@ jobs:
           node scripts/test-bid-stats.mjs
           node scripts/test-job-followup.mjs
           node scripts/test-paperwork-lock.mjs
+          node scripts/test-paperwork-check.mjs
           node scripts/test-master-file.mjs
           node scripts/test-bid-fax-server.mjs
           node cloudflare-timer/test-timer.mjs

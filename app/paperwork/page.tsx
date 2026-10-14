@@ -6,6 +6,7 @@ import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate 
 import { tenantContactInfo } from "../../lib/tenantContact";
 import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
 import { drawInvoicePage } from "../../lib/invoice-pdf";
+import { checkPaperwork } from "../../lib/paperwork-check";
 import { signatureBytes } from "../../lib/signature";
 import SignatureCard from "./SignatureCard";
 import NotaryCard, { type NotaryApproval } from "./NotaryCard";
@@ -1702,8 +1703,11 @@ export default function PaperworkPage() {
         invoiceValues[name] = value || "";
       };
 
+      // What's printed on the affidavit, for the check against HPD's rejection reasons.
+      const affidavitValues: Record<string, string> = {};
       // One-line blanks print at one size and shrink only if the value would run past the line.
       const setAffidavitText = (name: string, value: string, fontSize = 10.5) => {
+        affidavitValues[name] = value || "";
         try {
           const field = affidavitForm.getTextField(name);
           const text = value || "";
@@ -1864,8 +1868,9 @@ export default function PaperworkPage() {
           setAffidavitText("Denied Actions", activeForm.deniedName ? upper(activeForm.partialReason) : "", 9);
         }
 
-        setInvoiceText("START DATE", activeOutcome === "work_completed" ? workStart : "");
-        setInvoiceText("COMPLETE DATE", activeOutcome === "work_completed" ? workComplete : "");
+        // Partial work too: HPD wants the work dates on every invoice.
+        setInvoiceText("START DATE", workStart);
+        setInvoiceText("COMPLETE DATE", workComplete);
         setInvoiceText(
           "Work Description",
           activeOutcome === "partial_work_completed"
@@ -1925,9 +1930,25 @@ export default function PaperworkPage() {
           setAffidavitText("Denied Relationship", upper(deniedRelationship));
         }
 
-        setInvoiceText("START DATE", activeOutcome === "no_access" ? firstAttempt : "");
-        setInvoiceText("COMPLETE DATE", activeOutcome === "no_access" ? secondAttempt : "");
+        // Every outcome: HPD rejects an invoice without dates. Work started = the first day you attempted
+        // the job, work completed = the last day (the 2nd attempt / refusal / verified date).
+        setInvoiceText("START DATE", activeOutcome === "no_access" ? firstAttempt : activeForm.firstAttempt ? firstAttempt : secondAttempt);
+        setInvoiceText("COMPLETE DATE", secondAttempt);
         setInvoiceText("Work Description", activeForm.description || noWorkReason, 12);
+      }
+
+      // HPD's rejection reasons, checked on what's printed: stop here rather than send paperwork HPD will reject.
+      const issues = checkPaperwork({
+        outcome: activeOutcome,
+        affidavit: affidavitValues,
+        invoice: invoiceValues,
+        signature: printCopy ? null : includeSignatureImage ? Boolean(signatureRef.current) : false,
+        notaryDate: printCopy ? null : notary ? String(notary.date || "") : "",
+        location: activeForm.location,
+      });
+      if (issues.length) {
+        setPdfStatus(`Fix before sending (HPD rejects paperwork for this): ${issues.map((i, n) => `${n + 1}) ${i.message}`).join(" ")}`);
+        return null;
       }
 
       // The template's opaque white field backgrounds hide printed form text and lines next to the fields.

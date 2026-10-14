@@ -129,7 +129,17 @@ try {
       await page.locator('[data-hpd-smoke="paperwork-unsigned-copy"] .pkg-page img').nth(pages - 1).waitFor({ timeout: 30000 });
       assert.ok(await page.locator('[data-hpd-smoke="paperwork-download-unsigned"]').getAttribute("download"), `${job}: unsigned copy must be downloadable from the review screen`);
     } else {
+      // Every affidavit is notarized (HPD rejects one without the notary): the package is checked
+      // first, then the notary's approval builds it.
       await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
+      await page.getByText(/isn't notarized yet/).first().waitFor({ timeout: 15000 });
+      await page.locator('[data-hpd-smoke="paperwork-notary-quick"]').click();
+      await page.locator('[data-hpd-smoke="paperwork-notary-preview"]').waitFor({ timeout: 10000 });
+      await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
+      if (!(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count())) {
+        await page.waitForTimeout(1500);
+        if (!(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count())) await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
+      }
     }
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
     // Every PDF page must render as a preview image (pdfjs failed on browsers without new JS APIs).
@@ -154,7 +164,7 @@ try {
     // Each signature PNG is two image objects (picture + transparency mask). The signer's is on the
     // affidavit and the invoice (4); the notary's adds 2 more.
     const imageCount = (Buffer.from(bytes).toString("latin1").match(/\/Subtype \/Image/g) || []).length;
-    assert.ok(imageCount >= (outcome === "work_completed" ? 6 : 4), `${job}: signer${outcome === "work_completed" ? " and notary" : ""} signature images must be in the PDF (found ${imageCount})`);
+    assert.ok(imageCount >= 6, `${job}: signer and notary signature images must be in the PDF (found ${imageCount})`);
     console.log(`  ${job}: ${imageCount} signature image(s) in the PDF`);
     assert.ok(/\bCOPY\b/.test(extractPdfText(bytes)), `${job}: emailed/Drive copy must carry the COPY watermark`);
     assert.deepEqual(errors, [], `${job}: page errors`);
