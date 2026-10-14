@@ -2436,3 +2436,18 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .jc-hpd-notice.is-open { background: #7f1d1d; color: #fee2e2; }
 .jc-hpd-notice.is-rejected { background: #450a0a; border: 1px solid #ef4444; color: #fecaca; }
 .jc-hpd-notice a { color: #fff; text-decoration: underline; margin-left: 4px; }
+
+/* Rejected payment paperwork: top of the follow-up report and on the job card until you answer. */
+.fc-follow-section.is-rejected h4 { color: #fca5a5; }
+.fc-reject-row { display: grid; gap: 2px; padding: 8px 4px; }
+.fc-reject-row small { color: #fecaca; font: 600 12.5px/1.4 system-ui; }
+.fc-follow-section .is-answered { opacity: 0.7; }
+.jc-rejected { margin: 6px 0 0; padding: 8px; border-radius: 8px; background: #450a0a; border: 2px solid #ef4444; color: #fee2e2; font: 800 13px/1.4 system-ui; }
+.jc-rejected.is-answered { background: #1e293b; border: 1px solid #475569; color: #cbd5e1; font-weight: 600; }
+.jc-rejected a { color: #fff; text-decoration: underline; margin-left: 4px; }
+.fc-follow-badge.is-rejected { background: #dc2626; }
+
+/* HPD notices button and list (rejected paperwork, open requests). */
+.fc-notices-fab { position: relative; font-size: 20px; }
+.fc-notices-sheet header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.fc-notices-sheet li { display: grid; gap: 4px; }

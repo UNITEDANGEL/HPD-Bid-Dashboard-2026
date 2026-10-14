@@ -15,7 +15,7 @@ import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointme
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
-import { followUpOf, followUpReport, recoveredStatus, type FollowUp, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
+import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
@@ -738,11 +738,15 @@ export default function FieldCommandClient() {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   // Follow-up: the report sheet, and the map filter it can set (overdue, due this week, ...).
   const [followOpen, setFollowOpen] = useState(false);
-  const [followFilter, setFollowFilter] = useState<"" | "hpd-asked" | "overdue" | "due-week" | "recent" | "sent" | "hpd-closed">("");
+  const [followFilter, setFollowFilter] = useState<"" | "notices" | "hpd-asked" | "overdue" | "due-week" | "recent" | "sent" | "hpd-closed">("");
+  // The HPD notices layer: jobs with rejected paperwork or an open HPD request, on the map and in a list.
+  const [noticesOpen, setNoticesOpen] = useState(false);
   const [followShowAll, setFollowShowAll] = useState(false);
   // HPD's closing reason for each job and when you sent HPD its paperwork (nightly files).
   const followRef = useRef<{ hpd: Record<string, HpdJobStatus>; sent: Record<string, SentPaperwork>; asked: Record<string, HpdRequest> } | null>(null);
   const reapplyFollowRef = useRef<(() => void) | null>(null);
+  // Every HPD email about every OMO (requests, rejections), also jobs that aren't on the map.
+  const [askedMap, setAskedMap] = useState<Record<string, HpdRequest>>({});
   useEffect(() => {
     Promise.all([
       fetch("/data/hpd_job_status.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
@@ -750,6 +754,7 @@ export default function FieldCommandClient() {
       fetch("/data/hpd_requests.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
     ]).then(([hpd, sent, asked]) => {
       followRef.current = { hpd: hpd?.jobs || {}, sent: sent?.jobs || {}, asked: asked?.jobs || {} };
+      setAskedMap(asked?.jobs || {});
       reapplyFollowRef.current?.();
     });
   }, []);
@@ -1166,11 +1171,15 @@ export default function FieldCommandClient() {
     calendarDate,
     Object.fromEntries(jobs.filter((j) => j.HpdAskedAt).map((j) => [jobId(j), { askedAt: String(j.HpdAskedAt), count: 1, by: String(j.HpdAskedBy || ""), kind: String(j.HpdAskedFor || ""), askedTs: Number(j.HpdAskedTs || 0), repliedTs: Number(j.HpdRepliedTs || 0) }])),
   ), [jobs, calendarDate]);
+  const rejections = useMemo(() => paperworkRejections(askedMap, jobs), [askedMap, jobs]);
+  const openRejections = rejections.filter((r) => !r.answered);
+  const [showAnsweredRejections, setShowAnsweredRejections] = useState(false);
   const followMatch = (job: JobRecord) => {
     const f = followUps.get(jobId(job));
     if (!f) return false;
     if (followFilter === "recent") return followReport.recent.some((r) => r.omo === f.omo);
     if (followFilter === "hpd-asked") return f.hpdAsked;
+    if (followFilter === "notices") return f.hpdAsked || openRejections.some((r) => r.omo === f.omo);
     return f.state === followFilter;
   };
 
@@ -2554,8 +2563,11 @@ export default function FieldCommandClient() {
           </button>
           <button type="button" className="fc-map-fab" aria-label="Today's appointments" title="Today's appointments" onClick={() => { setAgendaOpen(true); setSelectedJob(null); }}><ListIcon /></button>
           <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" title="My stats" onClick={() => { setStatsOpen(true); setSelectedJob(null); }}><StatsIcon /></button>
+          <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}`} data-hpd-smoke="fc-notices-open" aria-label="HPD notices" title="HPD notices: rejected paperwork and requests" onClick={() => { setSelectedJob(null); setFollowFilter("notices"); setNoticesOpen(true); }}>
+            <span aria-hidden="true">📩</span>{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
+          </button>
           <button type="button" className={`fc-map-fab fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" title="Follow-up report" onClick={() => { setFollowOpen(true); setSelectedJob(null); }}>
-            <FollowIcon />{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
+            <FollowIcon />{openRejections.length ? <span className="fc-follow-badge is-rejected" data-hpd-smoke="fc-follow-rejected-badge">{openRejections.length}❗</span> : followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
           </button>
           <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { setSelectedJob(null); setBidsOpen((o) => !o); }}><BidsIcon /></button>
           <button
@@ -3152,6 +3164,15 @@ export default function FieldCommandClient() {
                     <div><span>Start</span><b>{md(fu.startDay)}</b></div>
                     <div><span>Complete by</span><b>{md(fu.maturityDay)}</b></div>
                     <p>{left ? <strong>{left}</strong> : null}{left ? " · " : ""}{fu.status}{fu.sentAt ? ` · paperwork sent to HPD ${md(fu.sentAt)}` : ""}{fu.hpdReason ? ` · HPD: closed (${fu.hpdReason})` : selectedJob.HpdClosedReason === "" && followRef.current ? " · HPD: still open" : ""}</p>
+                    {(() => {
+                      const rj = rejections.find((r) => r.omo === fu.omo);
+                      return rj ? (
+                        <p className={`jc-rejected${rj.answered ? " is-answered" : ""}`} data-hpd-smoke="jc-rejected">
+                          {rj.answered ? "✓ Paperwork was rejected, you answered HPD" : "❗ Payment paperwork REJECTED by HPD"} · {md(rj.at)} · {rj.by}: {rj.reason || "see HPD's email"}
+                          {!rj.answered ? <a href={`/paperwork/?job=${encodeURIComponent(fu.omo)}`}> Fix &amp; resend →</a> : null}
+                        </p>
+                      ) : null;
+                    })()}
                     {fu.askedAt ? (
                       <p className={`jc-hpd-notice${fu.hpdAsked ? " is-open" : ""}${/rejected/.test(fu.askedFor) ? " is-rejected" : ""}`} data-hpd-smoke="jc-hpd-notice">
                         📩 {fu.askedBy || "HPD"} · {fu.askedFor || "email"} · {md(fu.askedAt)}{fu.hpdAsked ? " · waiting on you" : " · answered"}
@@ -3282,6 +3303,43 @@ export default function FieldCommandClient() {
         history={bidHistory}
         onClose={() => setBidsOpen(false)}
       />
+      {noticesOpen ? (
+        <div className="fc-package-sheet fc-summary-sheet fc-notices-sheet" role="dialog" aria-label="HPD notices" data-hpd-smoke="fc-notices-sheet">
+          <header>
+            <strong>📩 HPD notices</strong>
+            <button type="button" aria-label="Close" onClick={() => setNoticesOpen(false)}>Close (keep on map)</button>
+          </header>
+          <div className="fc-follow-body">
+            <p className="fc-follow-note">From HPD&apos;s emails (rejections, requests for affidavits / invoices / photos / videos, status). Red = paperwork rejected. The map shows these jobs; tap ✕ on the map to show all jobs again.</p>
+            <section className="fc-follow-section is-rejected" data-hpd-smoke="fc-notices-rejected">
+              <h4>❗ Rejected paperwork · fix &amp; resend ({openRejections.length})</h4>
+              {openRejections.length ? <ol>{openRejections.map((r) => (
+                <li key={r.omo}>
+                  <button type="button" onClick={() => { const job = jobs.find((j) => jobId(j) === r.omo); if (job) { setNoticesOpen(false); setSelectedJob(job); } }}>
+                    <span><b>{r.omo}</b> <em className="is-late">rejected {r.at}</em>{r.onMap ? "" : " · not on the map"}</span>
+                    <span>{r.address || "older job"}</span>
+                    <small>{r.by}: {r.reason || "see HPD's email"}</small>
+                  </button>
+                  <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}`}>Fix &amp; resend →</a>
+                </li>
+              ))}</ol> : <p>None waiting on you.</p>}
+            </section>
+            <section className="fc-follow-section is-hpd-asked" data-hpd-smoke="fc-notices-requests">
+              <h4>HPD asked · waiting on you ({followReport.hpdAsked.length})</h4>
+              {followReport.hpdAsked.length ? <ol>{followReport.hpdAsked.map((r) => (
+                <li key={r.omo}>
+                  <button type="button" onClick={() => { const job = jobs.find((j) => jobId(j) === r.omo); if (job) { setNoticesOpen(false); setSelectedJob(job); } }}>
+                    <span><b>{r.omo}</b> <em className="is-soon">{r.askedFor || "request"} · {r.askedAt}</em></span>
+                    <span>{r.address}</span>
+                    <small>{r.askedBy || "HPD"} · {r.status}</small>
+                  </button>
+                  <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}`}>Open paperwork →</a>
+                </li>
+              ))}</ol> : <p>None waiting on you.</p>}
+            </section>
+          </div>
+        </div>
+      ) : null}
       {followOpen ? (
         <div className="fc-package-sheet fc-summary-sheet fc-follow-sheet" role="dialog" aria-label="Follow-up report" data-hpd-smoke="fc-follow-sheet">
           <header>
@@ -3290,6 +3348,29 @@ export default function FieldCommandClient() {
           </header>
           <div className="fc-summary-body">
             <p className="fc-follow-note">Status from the app, the affidavits / invoices you sent HPD, and HPD&apos;s own closing reason (updated nightly). Maturity = the job&apos;s work completion date.</p>
+            <section className="fc-follow-section is-rejected" data-hpd-smoke="fc-follow-rejected">
+              <h4>❗ Payment paperwork rejected · fix &amp; resend ({openRejections.length})</h4>
+              {openRejections.length ? (
+                <ol>{openRejections.map((r) => (
+                  <li key={r.omo}>
+                    <div className="fc-reject-row">
+                      <span><b>{r.omo}</b> <em className="is-late">rejected {Number(r.at.slice(5, 7))}/{Number(r.at.slice(8, 10))}/{r.at.slice(2, 4)}</em></span>
+                      <span>{r.address || "older job (not on the map)"}</span>
+                      <small>{r.by}: {r.reason || "see HPD's email"}{r.count > 1 ? ` · rejected ${r.count}x` : ""}</small>
+                      <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}`}>Fix &amp; resend paperwork →</a>
+                    </div>
+                  </li>
+                ))}</ol>
+              ) : <p>No rejected paperwork waiting on you.</p>}
+              {rejections.length > openRejections.length ? (
+                <button type="button" className="fc-follow-more" onClick={() => setShowAnsweredRejections((v) => !v)}>{showAnsweredRejections ? "Hide" : "Show"} {rejections.length - openRejections.length} already answered</button>
+              ) : null}
+              {showAnsweredRejections ? (
+                <ol className="is-answered">{rejections.filter((r) => r.answered).map((r) => (
+                  <li key={r.omo}><div className="fc-reject-row"><span><b>{r.omo}</b> · rejected {r.at} · answered</span><small>{r.by}: {r.reason}</small></div></li>
+                ))}</ol>
+              ) : null}
+            </section>
             <div className="fc-follow-tiles" data-hpd-smoke="fc-follow-tiles">
               {([["hpd-asked", "HPD asked for paperwork", followReport.counts.hpdAsked], ["overdue", "Overdue", followReport.counts.overdue], ["due-week", "Due this week", followReport.counts.dueWeek], ["recent", "Awarded last 30 days", followReport.counts.recent], ["sent", "Waiting on HPD", followReport.counts.waitingOnHpd], ["hpd-closed", "Closed at HPD", followReport.counts.hpdClosed]] as const).map(([key, label, count]) => (
                 <button key={key} type="button" className={`is-${key}`} data-hpd-smoke={`fc-follow-tile-${key}`} onClick={() => { setFollowFilter(key); setFollowOpen(false); }}>
@@ -3334,7 +3415,7 @@ export default function FieldCommandClient() {
       ) : null}
       {followFilter && !followOpen ? (
         <div className="fc-follow-active" data-hpd-smoke="fc-follow-active">
-          <span>Showing: <b>{({ overdue: "Overdue", "due-week": "Due this week", recent: "Awarded last 30 days", sent: "Waiting on HPD", "hpd-closed": "Closed at HPD" } as const)[followFilter]}</b> · {filteredJobs.length} jobs</span>
+          <span>Showing: <b>{({ notices: "HPD notices", "hpd-asked": "HPD asked for paperwork", overdue: "Overdue", "due-week": "Due this week", recent: "Awarded last 30 days", sent: "Waiting on HPD", "hpd-closed": "Closed at HPD" } as const)[followFilter]}</b> · {filteredJobs.length} jobs</span>
           <button type="button" onClick={() => setFollowFilter("")} aria-label="Stop the follow-up filter">✕</button>
         </div>
       ) : null}

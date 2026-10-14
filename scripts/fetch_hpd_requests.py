@@ -59,6 +59,20 @@ def text_of(payload):
     return "\n".join(out)
 
 
+def reason_for(omo, subject, body):
+    """HPD's reason for rejecting this OMO's paperwork: the line naming it ("EO34807 - Dates on Invoice does
+    not match affidavit"), else the notice's own sentence."""
+    for line in body.splitlines():
+        if omo.lower() in line.lower():
+            m = re.search(re.escape(omo) + r"\W{0,6}[-–:]\s*(.{4,140})", line, re.I)
+            if m:
+                return m.group(1).strip()[:140]
+    m = re.search(r"(documentation submitted for payment[^.]{0,120}\.)", body, re.I)
+    if m:
+        return re.sub(r"\s+", " ", m.group(1)).strip()[:140] + " (details in the attached notice)"
+    return subject[:140]
+
+
 def own_part(text):
     """Only HPD's own message, not the quoted thread below it (it repeats older requests)."""
     cut = re.split(r"\n\s*(?:On .{5,80}wrote:|From:\s|-----Original Message-----|________________)", text, maxsplit=1)
@@ -89,7 +103,10 @@ def main(since):
             continue
         day = datetime.datetime.fromtimestamp(int(msg.get("internalDate", 0)) / 1000, datetime.timezone.utc).date().isoformat()
         for omo in {m.upper() for m in OMO.findall(subject + "\n" + body)}:
-            entry = {"date": day, "ts": int(msg.get("internalDate", 0)), "subject": subject[:140], "by": staff_of(sender), "kind": kind_of(subject + " " + body[:1500])}
+            kind = kind_of(subject + " " + body[:1500])
+            entry = {"date": day, "ts": int(msg.get("internalDate", 0)), "subject": subject[:140], "by": staff_of(sender), "kind": kind}
+            if "rejected" in kind:
+                entry["reason"] = reason_for(omo, subject, body)
             if entry not in asked.setdefault(omo, []):
                 asked[omo].append(entry)
     for entries in asked.values():
@@ -127,6 +144,14 @@ def main(since):
         public[o] = {"askedAt": max(old["askedAt"], last["date"]), "count": max(old["count"], len(e)),
                      "by": last["by"] if newer else old.get("by", ""), "kind": last["kind"] if newer else old.get("kind", ""),
                      "askedTs": max(old.get("askedTs", 0), last["ts"])}
+        rejections = [x for x in e if "rejected" in x["kind"]]
+        if rejections:
+            r = rejections[-1]
+            if r["ts"] >= old.get("rejectedTs", 0):
+                public[o].update({"rejectedTs": r["ts"], "rejectedAt": r["date"], "rejectedBy": r["by"], "rejectedReason": r.get("reason", ""), "rejectedCount": len(rejections)})
+        else:
+            for k in ("rejectedTs", "rejectedAt", "rejectedBy", "rejectedReason", "rejectedCount"):
+                if k in old: public[o][k] = old[k]
     for o, ts in replied.items():
         if o in public:
             public[o]["repliedTs"] = max(public[o].get("repliedTs", 0), ts)

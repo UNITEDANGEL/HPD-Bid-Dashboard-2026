@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { loadLib } from "./daily-report.mjs";
 
-const { followUpOf, followUpReport, recoveredStatus } = await loadLib("job-followup");
+const { followUpOf, followUpReport, recoveredStatus, paperworkRejections } = await loadLib("job-followup");
 const { jobQueue } = await loadLib("job-queue");
 const today = "2026-10-13";
 const job = (omo, award, start, finish, extra = {}) => ({ OMO: omo, BuildingAddress: `${omo} MAIN ST`, AwardDate: award, WorkStartDate: start, WorkCompletionDate: finish, ...extra });
@@ -43,6 +43,15 @@ assert.deepEqual(report.counts, { hpdAsked: 1, total: 6, done: 1, hpdClosed: 1, 
 assert.deepEqual(report.overdue.map((r) => r.omo), ["A7", "A4"], "most recently overdue first, the oldest at the bottom");
 assert.deepEqual(report.hpdAsked.map((r) => [r.omo, r.askedAt]), [["A4", "2026-10-01"]], "HPD asked and nothing sent since; answered and closed requests drop off");
 assert.deepEqual(report.recent.map((r) => r.omo), ["A5", "A7"], "awarded in the last 30 days, newest first");
+
+// Rejected payment paperwork: waiting on you until you email HPD after the rejection; older jobs too.
+const rej = paperworkRejections({
+  EO34807: { askedAt: "2026-05-07", count: 1, rejectedTs: Date.parse("2026-05-07T15:00:00Z"), rejectedAt: "2026-05-07", rejectedBy: "B. Basdeo", rejectedReason: "Dates on Invoice does not match affidavit" },
+  A2: { askedAt: "2026-10-01", count: 1, rejectedTs: Date.parse("2026-10-01T15:00:00Z"), rejectedAt: "2026-10-01", rejectedBy: "HPD", rejectedReason: "deemed unacceptable", repliedTs: Date.parse("2026-10-02T15:00:00Z") },
+  A3: { askedAt: "2026-10-01", count: 2 },
+}, [job("A2", "09/01/26", "09/03/26", "09/10/26")]);
+assert.deepEqual(rej.map((r) => [r.omo, r.answered, r.onMap]), [["EO34807", false, false], ["A2", true, true]], "open first; an older job not on the map is listed; requests without a rejection are not");
+assert.equal(rej[0].reason, "Dates on Invoice does not match affidavit");
 
 // Map queues: HPD closed -> Completed; paperwork sent, HPD open -> Follow-up; nothing -> Pending.
 assert.equal(jobQueue({ OMO: "Q1", HpdClosedReason: "No Access" }), "completed");
