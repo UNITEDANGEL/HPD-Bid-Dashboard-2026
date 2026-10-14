@@ -17,6 +17,29 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "hpd_requests.json")
 PUBLIC = os.path.join(ROOT, "public", "data", "hpd_requests.json")
 OMO = re.compile(r"\b(E[A-Z]\d{5})\b", re.I)
+# Who asked (short name only) and what they asked for. J. Lewis is the vendor tracker since 12 Oct 2026
+# (before: K. Atkins; D. Gafur for AEP).
+def staff_of(sender):
+    name = sender.split("<")[0].strip().strip('"')
+    m = re.match(r"\s*([^,]+),\s*([^(]+)", name)  # "Lewis, Joy-Ann (HPD)"
+    if not m:
+        return name.replace("(HPD)", "").strip()[:30] or "HPD"
+    return f"{m.group(2).strip()[0]}. {m.group(1).strip()}"
+
+
+def kind_of(text):
+    t = text.lower()
+    if re.search(r"resubmit|re-submit|correct|revis", t):
+        return "resubmit"
+    if re.search(r"poor performance|past due|stop work|overdue", t):
+        return "past due"
+    if re.search(r"photo|video", t):
+        return "photos / videos"
+    if re.search(r"affidavit|invoice", t):
+        return "affidavit / invoice"
+    return "status"
+
+
 ASK = re.compile(r"affidavit|invoice|photo|video|request|past\s+due|poor\s+performance|status\s+update|outstanding|missing", re.I)
 
 
@@ -57,16 +80,33 @@ def main(since):
         msg = service.users().messages().get(userId="me", id=mid, format="full").execute(num_retries=3)
         headers = {h["name"].lower(): h["value"] for h in msg.get("payload", {}).get("headers", [])}
         subject = headers.get("subject", "")
+        sender = headers.get("from", "")
         body = own_part(text_of(msg.get("payload", {})))
         if not ASK.search(subject + " " + body):
             continue
         day = datetime.datetime.fromtimestamp(int(msg.get("internalDate", 0)) / 1000, datetime.timezone.utc).date().isoformat()
         for omo in {m.upper() for m in OMO.findall(subject + "\n" + body)}:
-            entry = {"date": day, "subject": subject[:140]}
+            entry = {"date": day, "ts": int(msg.get("internalDate", 0)), "subject": subject[:140], "by": staff_of(sender), "kind": kind_of(subject + " " + body[:1500])}
             if entry not in asked.setdefault(omo, []):
                 asked[omo].append(entry)
     for entries in asked.values():
-        entries.sort(key=lambda e: e["date"])
+        entries.sort(key=lambda e: e["ts"])
+    # Who wrote last: every email you sent HPD staff about a job (subject, your own text, attachment names).
+    replied, token, sent_ids = {}, None, []
+    while True:
+        resp = service.users().messages().list(userId="me", q=f"in:sent to:hpd.nyc.gov -to:OMOBid@hpd.nyc.gov after:{since}", maxResults=500, pageToken=token).execute(num_retries=3)
+        sent_ids += [m["id"] for m in resp.get("messages", [])]
+        token = resp.get("nextPageToken")
+        if not token:
+            break
+    print(f"Reading {len(sent_ids)} emails you sent HPD staff...", flush=True)
+    for mid in sent_ids:
+        msg = service.users().messages().get(userId="me", id=mid, format="full").execute(num_retries=3)
+        headers = {h["name"].lower(): h["value"] for h in msg.get("payload", {}).get("headers", [])}
+        text = headers.get("subject", "") + "\n" + own_part(text_of(msg.get("payload", {})))
+        ts = int(msg.get("internalDate", 0))
+        for omo in {m.upper() for m in OMO.findall(text)}:
+            replied[omo] = max(replied.get(omo, 0), ts)
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:
@@ -79,7 +119,14 @@ def main(since):
         public = {}
     for o, e in asked.items():
         old = public.get(o, {"askedAt": "", "count": 0})
-        public[o] = {"askedAt": max(old["askedAt"], e[-1]["date"]), "count": max(old["count"], len(e))}
+        last = e[-1]
+        newer = last["date"] >= old["askedAt"]
+        public[o] = {"askedAt": max(old["askedAt"], last["date"]), "count": max(old["count"], len(e)),
+                     "by": last["by"] if newer else old.get("by", ""), "kind": last["kind"] if newer else old.get("kind", ""),
+                     "askedTs": max(old.get("askedTs", 0), last["ts"])}
+    for o, ts in replied.items():
+        if o in public:
+            public[o]["repliedTs"] = max(public[o].get("repliedTs", 0), ts)
     with open(PUBLIC, "w", encoding="utf-8") as f:
         json.dump({"generatedAt": now, "jobs": dict(sorted(public.items()))}, f)
     print(f"HPD requests: {len(asked)} OMOs HPD asked about (paperwork / status) from {len(ids)} staff emails since {since}")

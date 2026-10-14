@@ -1057,7 +1057,7 @@ export default function FieldCommandClient() {
       const follow = followRef.current;
       const next = latestRows.map((row: JobRecord) => {
         const id = jobId(row);
-        const extra = follow ? { HpdClosedReason: follow.hpd[id]?.closedReason || "", PaperworkSentAt: follow.sent[id]?.sentAt || "", HpdAskedAt: follow.asked[id]?.askedAt || "" } : {};
+        const extra = follow ? { HpdClosedReason: follow.hpd[id]?.closedReason || "", PaperworkSentAt: follow.sent[id]?.sentAt || "", HpdAskedAt: follow.asked[id]?.askedAt || "", HpdAskedBy: follow.asked[id]?.by || "", HpdAskedFor: follow.asked[id]?.kind || "", HpdAskedTs: follow.asked[id]?.askedTs || 0, HpdRepliedTs: follow.asked[id]?.repliedTs || 0 } : {};
         return { ...row, ...(overrides[id] || {}), ...extra, ...(id === TEST_JOB_ID ? testJobPlace() : {}) };
       });
       setJobs((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
@@ -1153,7 +1153,7 @@ export default function FieldCommandClient() {
     const map = new Map<string, FollowUp>();
     for (const job of jobs) {
       if (isTestJob(jobId(job))) continue;
-      map.set(jobId(job), followUpOf(job, job.HpdClosedReason !== undefined ? { closedReason: String(job.HpdClosedReason || "") } : undefined, job.PaperworkSentAt ? { sentAt: String(job.PaperworkSentAt), count: 1 } : undefined, calendarDate, job.HpdAskedAt ? { askedAt: String(job.HpdAskedAt), count: 1 } : undefined));
+      map.set(jobId(job), followUpOf(job, job.HpdClosedReason !== undefined ? { closedReason: String(job.HpdClosedReason || "") } : undefined, job.PaperworkSentAt ? { sentAt: String(job.PaperworkSentAt), count: 1 } : undefined, calendarDate, job.HpdAskedAt ? { askedAt: String(job.HpdAskedAt), count: 1, by: String(job.HpdAskedBy || ""), kind: String(job.HpdAskedFor || ""), askedTs: Number(job.HpdAskedTs || 0), repliedTs: Number(job.HpdRepliedTs || 0) } : undefined));
     }
     return map;
   }, [jobs, calendarDate]);
@@ -1162,7 +1162,7 @@ export default function FieldCommandClient() {
     Object.fromEntries(jobs.filter((j) => j.HpdClosedReason !== undefined).map((j) => [jobId(j), { closedReason: String(j.HpdClosedReason || "") }])),
     Object.fromEntries(jobs.filter((j) => j.PaperworkSentAt).map((j) => [jobId(j), { sentAt: String(j.PaperworkSentAt), count: 1 }])),
     calendarDate,
-    Object.fromEntries(jobs.filter((j) => j.HpdAskedAt).map((j) => [jobId(j), { askedAt: String(j.HpdAskedAt), count: 1 }])),
+    Object.fromEntries(jobs.filter((j) => j.HpdAskedAt).map((j) => [jobId(j), { askedAt: String(j.HpdAskedAt), count: 1, by: String(j.HpdAskedBy || ""), kind: String(j.HpdAskedFor || ""), askedTs: Number(j.HpdAskedTs || 0), repliedTs: Number(j.HpdRepliedTs || 0) }])),
   ), [jobs, calendarDate]);
   const followMatch = (job: JobRecord) => {
     const f = followUps.get(jobId(job));
@@ -3141,7 +3141,7 @@ export default function FieldCommandClient() {
                 </div>
                 {jobDateWarning(selectedJob) && <p className="jc-warning" role="status">{jobDateWarning(selectedJob)}</p>}
               {(() => {
-                const fu = followUpOf(selectedJob, selectedJob.HpdClosedReason ? { closedReason: String(selectedJob.HpdClosedReason) } : undefined, selectedJob.PaperworkSentAt ? { sentAt: String(selectedJob.PaperworkSentAt), count: 1 } : undefined, calendarDate, selectedJob.HpdAskedAt ? { askedAt: String(selectedJob.HpdAskedAt), count: 1 } : undefined);
+                const fu = followUpOf(selectedJob, selectedJob.HpdClosedReason ? { closedReason: String(selectedJob.HpdClosedReason) } : undefined, selectedJob.PaperworkSentAt ? { sentAt: String(selectedJob.PaperworkSentAt), count: 1 } : undefined, calendarDate, selectedJob.HpdAskedAt ? { askedAt: String(selectedJob.HpdAskedAt), count: 1, by: String(selectedJob.HpdAskedBy || ""), kind: String(selectedJob.HpdAskedFor || ""), askedTs: Number(selectedJob.HpdAskedTs || 0), repliedTs: Number(selectedJob.HpdRepliedTs || 0) } : undefined);
                 const md = (d: string) => (d ? `${Number(d.slice(5, 7))}/${Number(d.slice(8, 10))}/${d.slice(2, 4)}` : "-");
                 const left = fu.daysLeft === null ? "" : fu.state === "done" || fu.state === "hpd-closed" ? "" : fu.daysLeft < 0 ? `${-fu.daysLeft} days overdue` : fu.daysLeft === 0 ? "due today" : `${fu.daysLeft} days left`;
                 return (
@@ -3310,7 +3310,8 @@ export default function FieldCommandClient() {
                         <button type="button" onClick={() => { const job = jobs.find((j) => jobId(j) === r.omo); setFollowOpen(false); if (job) setSelectedJob(job); }}>
                           <span><b>{r.omo}</b>{r.daysLeft !== null && (r.state === "overdue" || r.state === "due-week") ? <em className={r.daysLeft < 0 ? "is-late" : "is-soon"}>{r.daysLeft < 0 ? `${-r.daysLeft}d overdue` : r.daysLeft === 0 ? "due today" : `in ${r.daysLeft}d`}</em> : null}</span>
                           <span>{r.address}</span>
-                          <small>Awarded {md(r.awardDay)} · complete by {md(r.maturityDay)} · {r.status}{r.sentAt ? ` · paperwork sent ${md(r.sentAt)}` : ""}{r.askedAt ? ` · HPD asked ${md(r.askedAt)}` : ""}</small>
+                          <small>Awarded {md(r.awardDay)} · complete by {md(r.maturityDay)} · {r.status}{r.sentAt ? ` · paperwork sent ${md(r.sentAt)}` : ""}{r.askedAt ? ` · ${r.askedBy || "HPD"} asked${r.askedFor ? ` (${r.askedFor})` : ""} ${md(r.askedAt)}` : ""}</small>
+                          {key === "hpd-asked" ? <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}`} onClick={(e) => e.stopPropagation()} data-hpd-smoke="fc-follow-paperwork">Open paperwork →</a> : null}
                         </button>
                       </li>
                       </Fragment>

@@ -2429,3 +2429,4 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-follow-section.is-hpd-asked h4 { color: #fca5a5; }
 .fc-follow-tiles .is-hpd-asked { border-left-color: #ef4444; }
 .fc-follow-group { list-style: none; margin: 10px 0 4px; padding: 4px 8px; border-radius: 6px; background: #1e293b; color: #fcd34d; font: 800 12px system-ui; text-transform: uppercase; letter-spacing: .03em; }
+.fc-follow-paper { display: inline-block; margin-top: 4px; padding: 6px 10px; border-radius: 8px; background: #7f1d1d; color: #fee2e2; font: 800 13px system-ui; text-decoration: none; }

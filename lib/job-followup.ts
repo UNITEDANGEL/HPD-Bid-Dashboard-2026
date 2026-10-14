@@ -7,7 +7,8 @@
 export type HpdJobStatus = { closedReason: string; amount?: number };
 export type SentPaperwork = { sentAt: string; count: number };
 // HPD staff asking for affidavits / invoices / photos / status (scripts/fetch_hpd_requests.py).
-export type HpdRequest = { askedAt: string; count: number };
+// askedTs / repliedTs: exact times of HPD's last request and your last email to HPD staff about the job.
+export type HpdRequest = { askedAt: string; count: number; by?: string; kind?: string; askedTs?: number; repliedTs?: number };
 export type Recovered = { kind: "complete" | "noaccess" | "refused" | "others" | "partial" | "closed" | "sent"; label: string; hpdReason: string; sentAt: string };
 
 const CLOSING = /WORK_COMPLETED|REFUSED_ACCESS|NO_ACCESS_COMPLETE|NO_ACCESS_2|BY_OTHERS|PARTIAL_WORK_COMPLETED/i;
@@ -67,6 +68,7 @@ export type FollowUp = {
   status: string; // what to show
   hpdReason: string; sentAt: string;
   askedAt: string; // last time HPD staff emailed asking about this job
+  askedBy: string; askedFor: string; // who (e.g. "J. Lewis") and what ("resubmit", "photos / videos", ...)
   hpdAsked: boolean; // HPD asked and nothing was sent since: send the paperwork first
 };
 
@@ -83,8 +85,11 @@ export function followUpOf(job: Record<string, unknown>, hpd: HpdJobStatus | und
   const status = closedInApp ? appOutcome(job).replace(/_/g, " ").toLowerCase() : rec ? rec.label : appOutcome(job) ? appOutcome(job).replace(/_/g, " ").toLowerCase() : "no status yet";
   const sentAt = sent?.sentAt || rec?.sentAt || "";
   const askedAt = asked?.askedAt || "";
-  const hpdAsked = !!askedAt && state !== "done" && state !== "hpd-closed" && (!sentAt || askedAt > sentAt);
-  return { omo, address: String(job.BuildingAddress || job.address || ""), awardDay, startDay, maturityDay, daysLeft, state, status, hpdReason: hpd?.closedReason || "", sentAt, askedAt, hpdAsked };
+  // HPD wrote last: their request is newer than your last email to them about it (exact times when known,
+  // otherwise newer than the day the paperwork went out).
+  const answered = asked?.askedTs && asked.repliedTs ? asked.repliedTs > asked.askedTs : !!sentAt && askedAt <= sentAt;
+  const hpdAsked = !!askedAt && state !== "done" && state !== "hpd-closed" && !answered;
+  return { omo, address: String(job.BuildingAddress || job.address || ""), awardDay, startDay, maturityDay, daysLeft, state, status, hpdReason: hpd?.closedReason || "", sentAt, askedAt, askedBy: asked?.by || "", askedFor: asked?.kind || "", hpdAsked };
 }
 
 // The daily follow-up report: awarded in the last 30 days, overdue (open at HPD and in the app, past the
