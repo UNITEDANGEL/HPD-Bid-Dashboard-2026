@@ -62,10 +62,10 @@ assert.match((await callback(flow, noNetwork)).headers.get("Location"), /invalid
 Date.now = now;
 const success = await callback(await begin(), googleMock());
 assert.equal(success.headers.get("Location"), `${origin}/storage/`);
-assert.equal(records.size, 1);
-const sessionCookie = success.headers.getSetCookie().find((v) => v.startsWith("__Host-hpd-drive-session=")).split(";")[0];
+assert.equal(records.size, 0, "the sign-in is an encrypted cookie: nothing in KV (KV daily limits can't block it)");
+let sessionCookie = success.headers.getSetCookie().find((v) => v.startsWith("__Host-hpd-drive-session=")).split(";")[0];
 assert.ok(!sessionCookie.includes("private-refresh"));
-assert.ok(![...records.values()][0].includes("private-refresh"));
+assert.match(sessionCookie, /^__Host-hpd-drive-session=s2\./, "encrypted sign-in cookie");
 const status = await handleDriveAuth(request("session", "GET", sessionCookie), env, noNetwork);
 assert.equal(status.headers.get("Cache-Control"), "no-store");
 assert.deepEqual(await status.json(), { configured: true, connected: true, email: identity.email, verifiedAt: null, canEmail: false, syncEnabled: false });
@@ -80,10 +80,9 @@ for (const action of ["backup-id", "save-backup", "test-backup", "package-folder
 for (const action of ["backups", "backup"]) {
   assert.equal((await handleDriveAuth(request(action), env, noNetwork)).status, 401);
 }
-const beforeRefresh = [...records.values()][0];
 const outage = await handleDriveAuth(request("check", "POST", sessionCookie), env, async () => Response.json({ error: "temporarily_unavailable" }, { status: 503 }));
 assert.equal(outage.status, 503);
-assert.equal([...records.values()][0], beforeRefresh);
+assert.equal(outage.headers.get("Set-Cookie"), null, "an outage keeps the current sign-in");
 let refreshCount = 0;
 const refreshMock = async (url, options) => {
   if (url === "https://oauth2.googleapis.com/token") {
@@ -100,6 +99,7 @@ const refreshMock = async (url, options) => {
 const renew = await handleDriveAuth(request("check", "POST", sessionCookie), env, refreshMock);
 assert.equal(renew.status, 200);
 assert.match(renew.headers.get("Set-Cookie"), /Max-Age=2592000/);
+sessionCookie = renew.headers.get("Set-Cookie").split(";")[0]; // the phone keeps the renewed sign-in cookie
 const renewedBody = await renew.text();
 assert.ok(!renewedBody.includes("renewed-access"));
 assert.equal(JSON.parse(renewedBody).connected, true);
@@ -117,29 +117,31 @@ const withGmail = async (url, options) => url === "https://oauth2.googleapis.com
   : refreshMock(url, options);
 const granted = await handleDriveAuth(request("check", "POST", sessionCookie), env, withGmail);
 assert.equal((await granted.json()).canEmail, true);
+sessionCookie = granted.headers.get("Set-Cookie").split(";")[0];
 assert.equal((await (await handleDriveAuth(request("session", "GET", sessionCookie), env, noNetwork)).json()).canEmail, true);
-const lastGood = [...records.values()][0];
 const driveDenied = await handleDriveAuth(request("check", "POST", sessionCookie), env, async (url, options) =>
   url.includes("/drive/v3/about") ? Response.json({ error: "api_unavailable" }, { status: 403 }) : refreshMock(url, options));
 assert.equal(driveDenied.status, 503);
-assert.equal([...records.values()][0], lastGood, "Unavailable Drive API preserves credential");
+assert.equal(driveDenied.headers.get("Set-Cookie"), null, "Unavailable Drive API preserves credential");
 const wrongRenewedAccount = await handleDriveAuth(request("check", "POST", sessionCookie), env, async (url, options) =>
   url.includes("/userinfo") ? Response.json({ ...identity, sub: "someone-else" }) : refreshMock(url, options));
 assert.equal(wrongRenewedAccount.status, 403);
-assert.equal([...records.values()][0], lastGood);
+assert.equal(wrongRenewedAccount.headers.get("Set-Cookie"), null);
 Date.now = () => now() + 31 * 86400000;
 assert.equal((await (await handleDriveAuth(request("session", "GET", sessionCookie), env)).json()).connected, false);
 Date.now = now;
 assert.equal((await handleDriveAuth(request("disconnect", "POST", sessionCookie, "https://evil.test"), env)).status, 403);
-assert.equal(records.size, 1);
-assert.equal((await handleDriveAuth(request("disconnect", "POST", sessionCookie), env)).status, 303);
-assert.equal(records.size, 0);
-assert.equal((await (await handleDriveAuth(request("session", "GET", sessionCookie), env)).json()).connected, false);
+const disconnected = await handleDriveAuth(request("disconnect", "POST", sessionCookie), env, async () => new Response(null, { status: 200 }));
+assert.equal(disconnected.status, 303);
+assert.match(disconnected.headers.getSetCookie().join(";"), /__Host-hpd-drive-session=; .*Max-Age=0/, "disconnect clears the sign-in cookie");
 assert.equal((await handleDriveAuth(new Request("https://evil.test/api/drive/session"), env)).status, 403);
-const brokenEnv = { ...env, HPD_DRIVE_SESSIONS: { get: async () => { throw new Error("private-storage-details"); } } };
-const failure = await handleDriveAuth(request("session", "GET", sessionCookie), brokenEnv);
-assert.equal(failure.status, 503);
-assert.ok(!(await failure.text()).includes("private-storage-details"));
+// KV over its daily limit (14 Oct 2026: "KV get() limit exceeded for the day") can't break the sign-in.
+const brokenEnv = { ...env, HPD_DRIVE_SESSIONS: { get: async () => { throw new Error("private-storage-details"); }, put: async () => { throw new Error("private-storage-details"); } } };
+const stillSignedIn = await handleDriveAuth(request("session", "GET", sessionCookie), brokenEnv);
+assert.equal(stillSignedIn.status, 200);
+const stillText = await stillSignedIn.text();
+assert.equal(JSON.parse(stillText).connected, true, "sign-in works with KV down");
+assert.ok(!stillText.includes("private-storage-details"));
 const revokedLogin = await callback(await begin(), googleMock());
 const revokedCookie = revokedLogin.headers.getSetCookie().find((v) => v.startsWith("__Host-hpd-drive-session=")).split(";")[0];
 const revoked = await handleDriveAuth(request("check", "POST", revokedCookie), env, async () => Response.json({ error: "invalid_grant" }, { status: 400 }));

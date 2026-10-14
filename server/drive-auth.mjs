@@ -54,12 +54,21 @@ async function unseal(env, value, purpose) {
     return result.expires > Date.now() ? result : null;
   } catch { return null; }
 }
+const COOKIE_SESSION = "s2.";
+const sessionCookie = async (env, value) => cookie(SESSION, COOKIE_SESSION + await seal(env, value, "session-cookie"), TTL);
 async function session(request, env, cfg) {
   const id = readCookie(request, SESSION);
-  if (!id || !/^[A-Za-z0-9_-]{43}$/.test(id)) return null;
-  const stored = await env.HPD_DRIVE_SESSIONS.get(`session:${id}`);
+  if (!id) return null;
   let value = null;
-  try { value = stored && await unseal(env, stored, `session:${id}`); } catch { value = null; } // damaged: sign in again
+  if (id.startsWith(COOKIE_SESSION)) {
+    value = await unseal(env, id.slice(COOKIE_SESSION.length), "session-cookie");
+  } else if (/^[A-Za-z0-9_-]{43}$/.test(id)) {
+    // Older sign-ins kept in KV: still read (and moved into the cookie on the next renewal) while KV answers.
+    try {
+      const stored = await env.HPD_DRIVE_SESSIONS.get(`session:${id}`);
+      value = stored && await unseal(env, stored, `session:${id}`);
+    } catch { value = null; }
+  }
   return value?.email === cfg.email ? { ...value, id } : null;
 }
 
@@ -92,7 +101,7 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
       const token = await renewed.json();
       if (!renewed.ok) {
         if (token.error === "invalid_grant") {
-          await env.HPD_DRIVE_SESSIONS.delete(`session:${saved.id}`);
+          if (!saved.id.startsWith(COOKIE_SESSION)) { try { await env.HPD_DRIVE_SESSIONS.delete(`session:${saved.id}`); } catch {} }
           const response = json({ reconnectRequired: true, error: "Google revoked or expired access (invalid_grant). Reconnect Google Drive." }, 401);
           response.headers.append("Set-Cookie", cookie(SESSION, "", 0));
           return response;
@@ -118,10 +127,8 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
       const value = { ...previous, refreshToken: token.refresh_token || saved.refreshToken, canEmail, verifiedAt, expires: Date.now() + TTL * 1000 };
       const renewSession = action === "check" || Boolean(token.refresh_token) || canEmail !== Boolean(saved.canEmail) || !saved.verifiedAt
         || Date.now() - Date.parse(saved.verifiedAt) >= 6 * 3600000;
-      let renewedSaved = false;
-      if (renewSession) {
-        try { await env.HPD_DRIVE_SESSIONS.put(`session:${id}`, await seal(env, value, `session:${id}`), { expirationTtl: TTL }); renewedSaved = true; } catch { /* kept the current sign-in */ }
-      }
+      const fromKv = !id.startsWith(COOKIE_SESSION);
+      const renewedCookie = renewSession || fromKv ? await sessionCookie(env, value) : "";
       const response = BACKUP_ACTIONS.includes(action)
         ? await handleDriveBackups(request, action, authHeaders, fetcher)
         : PACKAGE_ACTIONS.includes(action)
@@ -129,12 +136,15 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
           : VIDEO_ACTIONS.includes(action)
             ? await handleDriveVideos(request, action, authHeaders, fetcher)
             : json({ configured: true, connected: true, email: cfg.email, verifiedAt, canEmail, syncEnabled: false });
-      if (renewedSaved) response.headers.append("Set-Cookie", cookie(SESSION, id, TTL));
+      if (renewedCookie) response.headers.append("Set-Cookie", renewedCookie);
       return response;
     }
     if (action === "disconnect") {
       const saved = await session(request, env, cfg);
-      if (saved) await env.HPD_DRIVE_SESSIONS.delete(`session:${saved.id}`);
+      if (saved && !saved.id.startsWith(COOKIE_SESSION)) { try { await env.HPD_DRIVE_SESSIONS.delete(`session:${saved.id}`); } catch {} }
+      if (saved?.refreshToken) {
+        try { await fetcher(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(saved.refreshToken)}`, { method: "POST", signal: AbortSignal.timeout(10000) }); } catch {}
+      }
       return redirect(`${cfg.origin}/storage/`, [cookie(SESSION, "", 0)]);
     }
     if (action === "start") {
@@ -172,11 +182,9 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
     if (!identityResponse.ok) return fail("identity_failed");
     const identity = await identityResponse.json();
     if (!identity.sub || identity.email_verified !== true || identity.email?.toLowerCase() !== cfg.email) return fail("wrong_account");
-    const id = random();
     const canEmail = String(token.scope || "").split(" ").includes(GMAIL_SCOPE);
     const value = { email: cfg.email, sub: identity.sub, refreshToken: token.refresh_token, canEmail, expires: Date.now() + TTL * 1000 };
-    await env.HPD_DRIVE_SESSIONS.put(`session:${id}`, await seal(env, value, `session:${id}`), { expirationTtl: TTL });
-    return redirect(`${cfg.origin}${flow.back || "/storage/"}`, [cookie(FLOW, "", 0), cookie(SESSION, id, TTL)]);
+    return redirect(`${cfg.origin}${flow.back || "/storage/"}`, [cookie(FLOW, "", 0), await sessionCookie(env, value)]);
   } catch (error) {
     console.error(`drive ${action} failed in the Google connection: ${error?.name}: ${String(error?.message || "").slice(0, 120)}`);
     // Never return OAuth responses or credentials: only where it failed and the kind of error.
