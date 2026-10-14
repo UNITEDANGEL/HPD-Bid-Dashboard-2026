@@ -105,8 +105,18 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
   emails, 901 OMOs since Nov 2025), overdue most-recent first grouped 1-30 / 31-90 / over 90 days,
   paperwork emailed straight to HPD staff now counts as sent (+74 jobs, overdue 147 -> 124).
 
+- 14 Oct: your real win rate from the 1,926 bids you faxed since Nov 2025 (price read from each package;
+  matched HPD's award on 570 of 622 wins). Won 622 of 1,541 awarded (40%); last 3 months 25% (before 41%).
+  Lock / latch prices went from ~$490 to ~$970 in Aug-Oct while winners stayed ~$600-730. 131 times you were
+  the lowest and lost (4 of the 41 checked were late). Bid stats page: totals only; prices stay private.
+  HPD worklist: who asked (J. Lewis is the vendor tracker since 12 Oct; K. Atkins; D. Gafur AEP) and what.
+  OMO numbers before "_" in file names were missed by the email readers: +52 jobs with paperwork sent.
+
 ## Now (in this order)
 
+0. **Why the lowest bid lost** (131 jobs): check against HPD's poor-performance / paperwork notices and fax
+   receipts; ask HPD about the clear ones.
+0. **Lock / latch pricing**: back toward the market (~$600-730) where the job is a plain lock.
 0. **Multi-door prices** are still the weakest (typical miss 22%): read "per door" / "each" amounts and
    jobs that mix a new door with hardware on other doors.
 1. **"My cost" floor** per kind of work.
