@@ -100,6 +100,12 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   // Two taps instead of confirm() boxes: iPhone Safari blocks those after a few, and the button then does nothing.
   const [armed, setArmed] = useState<"" | "send" | "revise" | "confirmed" | "self">("");
   const [shareNote, setShareNote] = useState("");
+  // Google connection (sending the fax goes through your Gmail): checked when the invitations open.
+  const [google, setGoogle] = useState<{ connected: boolean; canEmail: boolean } | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/drive/session", { cache: "no-store" }).then((r) => r.json()).then((d) => setGoogle({ connected: !!d?.connected, canEmail: !!d?.canEmail })).catch(() => {});
+  }, [open]);
   // Description text size (remembered on this phone).
   const [bigText, setBigText] = useState(false);
   useEffect(() => { try { setBigText(localStorage.getItem("hpd-bid-text") === "xl"); } catch {} }, []);
@@ -437,6 +443,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
         <span>{bids === null ? "Loading…" : error || `${list.length} open to bid · due today or later${list.some((b) => !Number.isFinite(b.lat)) ? ` · ${list.filter((b) => !Number.isFinite(b.lat)).length} without a map spot` : ""}`}{bids ? <small className="fc-bids-read" data-hpd-smoke="fc-bids-today"> · {bids.filter((b) => b.receivedAt && new Date(b.receivedAt).toLocaleDateString("en-US", { timeZone: "America/New_York" }) === new Date().toLocaleDateString("en-US", { timeZone: "America/New_York" })).length} received today</small> : null}{bidsReadAt ? <small className="fc-bids-read" data-hpd-smoke="fc-bids-read"> · emails last checked {new Date(bidsReadAt).toLocaleString("en-US", { timeZone: "America/New_York", weekday: "short", hour: "numeric", minute: "2-digit" })}</small> : null}</span>
         {unread.length ? <p className="fc-bids-unread" role="alert" data-hpd-smoke="fc-bids-unread">⚠️ {unread.length} invitation{unread.length > 1 ? "s" : ""} couldn&apos;t be read, open in your email: {unread.map((u) => `${u.omo || u.file} (${u.why})`).join(", ")}</p> : null}
         <button type="button" data-hpd-smoke="fc-bids-close" onClick={() => { setSelected(null); onClose(); }}>Back to jobs</button>
+        {google && (!google.connected || !google.canEmail) ? <ReconnectGoogle text={google.connected ? "Google is connected but can't send email: reconnect and allow sending email." : "Google isn't connected: bids can't be faxed until you reconnect."} /> : null}
         <div className="fc-bids-days" role="group" aria-label="Which day" data-hpd-smoke="fc-bids-days">
           {([["all", "All"], ["0", "Today"], ["1", "Tomorrow"], ["2", new Date(`${dayKeys[2]}T12:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "numeric", day: "numeric" })]] as const).map(([key, label]) => {
             const dayList = key === "all" ? list : list.filter((b) => b.bidDue === dayKeys[Number(key)]);
@@ -597,6 +604,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 </button>
                 {armed === "send" ? <button type="button" className="fc-bid-link" data-hpd-smoke="fc-bid-send-cancel" onClick={() => setArmed("")}>Cancel, don&apos;t send</button> : null}
                 {busy.startsWith("Not sent") ? <p className="fc-bid-send-error" role="alert" data-hpd-smoke="fc-bid-send-error">❌ {busy}</p> : null}
+                {busy.startsWith("Not sent") && /sign in|reconnect|google/i.test(busy) ? <ReconnectGoogle text="Reconnect Google, then tap Send again (you come straight back here)." /> : null}
                 <small className="fc-bid-note">{reviewedSaved ? (armed === "send" ? (revisedFrom(record) ? `Old price ${money2(revisedFrom(record)!)} crossed out, new price ${money2(record.price)}; the cover asks HPD to disregard the old price.` : "This submits your bid to HPD's bid fax (212) 863-8655 through HumbleFax, with a cover sheet.") : "Goes to HPD's bid fax (212) 863-8655 through HumbleFax, with a cover sheet. Tap twice to send.") : "Fill and review the package first."}</small>
               </section>
             ) : null}
@@ -770,6 +778,16 @@ function BidStatsView({ stats, loading, jobs, learned }: { stats: ReturnType<typ
         ))}</ol>
       </section>
     </div>
+  );
+}
+
+// One tap to reconnect Google (sending the fax uses your Gmail); comes back to the invitations afterwards.
+function ReconnectGoogle({ text }: { text: string }) {
+  return (
+    <form className="fc-reconnect" method="post" action="/api/drive/start?back=%2Fmap%2F%3Fbids%3D1" data-hpd-smoke="fc-reconnect-google">
+      <span>⚠️ {text}</span>
+      <button type="submit">Reconnect Google</button>
+    </form>
   );
 }
 

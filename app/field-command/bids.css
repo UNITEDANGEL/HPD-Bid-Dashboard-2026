@@ -303,3 +303,8 @@
 
 /* A send that failed: shown right under the button, in words. */
 .fc-bid-send-error { margin: 6px 0 0; padding: 8px 10px; border-radius: 8px; background: #450a0a; border: 1px solid #b91c1c; color: #fecaca; font: 700 14px/1.4 system-ui; }
+
+/* Google not connected: the fax can't go out until you reconnect (one tap). */
+.fc-reconnect { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0 0; padding: 8px 10px; border-radius: 10px; background: #7f1d1d; border: 1px solid #ef4444; color: #fee2e2; font: 700 13.5px/1.35 system-ui; }
+.fc-reconnect span { flex: 1 1 180px; }
+.fc-reconnect button { min-height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: #fff; color: #7f1d1d; font: 800 14px system-ui; }

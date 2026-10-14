@@ -140,7 +140,9 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
     if (action === "start") {
       const state = random();
       const verifier = random();
-      const flow = await seal(env, { state, verifier, expires: Date.now() + 600000 }, "oauth-flow");
+      const asked = url.searchParams.get("back") || "";
+      const back = /^\/(map|paperwork|storage)\/[A-Za-z0-9/?=&_.-]*$/.test(asked) ? asked : "/storage/";
+      const flow = await seal(env, { state, verifier, back, expires: Date.now() + 600000 }, "oauth-flow");
       const challenge = encode(new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(verifier))));
       const auth = new URL("https://accounts.google.com/o/oauth2/v2/auth");
       auth.search = new URLSearchParams({ client_id: env.HPD_DRIVE_CLIENT_ID, redirect_uri: cfg.callback,
@@ -174,7 +176,7 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
     const canEmail = String(token.scope || "").split(" ").includes(GMAIL_SCOPE);
     const value = { email: cfg.email, sub: identity.sub, refreshToken: token.refresh_token, canEmail, expires: Date.now() + TTL * 1000 };
     await env.HPD_DRIVE_SESSIONS.put(`session:${id}`, await seal(env, value, `session:${id}`), { expirationTtl: TTL });
-    return redirect(`${cfg.origin}/storage/`, [cookie(FLOW, "", 0), cookie(SESSION, id, TTL)]);
+    return redirect(`${cfg.origin}${flow.back || "/storage/"}`, [cookie(FLOW, "", 0), cookie(SESSION, id, TTL)]);
   } catch (error) {
     console.error(`drive ${action} failed in the Google connection: ${error?.name}: ${String(error?.message || "").slice(0, 120)}`);
     // Never return OAuth responses or credentials: only where it failed and the kind of error.
