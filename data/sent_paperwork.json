@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-14T18:25:37.163276+00:00",
+"generatedAt": "2026-10-14T18:35:06.045133+00:00",
 "since": "2026/09/30",
 "jobs": {
 "EN04541": [
@@ -20372,6 +20372,14 @@
 "file": "EQ30935 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: OMO#EQ30935- PHOTOS & VIDEO REQUEST",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-14",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "EQ30935 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: OMO#EQ30935- AFFIDAVIT & INVOICE- INCORRECT BOROUGH",
 "via": "hpd-staff"
 }
 ],
