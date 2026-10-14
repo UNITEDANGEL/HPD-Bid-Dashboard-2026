@@ -37,7 +37,7 @@ try {
   const faxes = [];
   let failOmo = "", waitOmo = "";
   await context.route(/\/api\/drive\/fax-bid/, (r) => {
-    faxes.push({ subject: decodeURIComponent(r.request().headers()["x-hpd-subject"] || ""), body: r.request().postData() || "" });
+    faxes.push({ subject: decodeURIComponent(r.request().headers()["x-hpd-subject"] || ""), line: r.request().headers()["x-hpd-fax-line"] || "", body: r.request().postData() || "" });
     return r.fulfill({ json: { sent: true, to: "2128638655@humblefax.com", messageId: `m${faxes.length}`, sentAt: new Date().toISOString() } });
   });
   await context.route(/\/api\/drive\/fax-status/, (r) => {
@@ -79,7 +79,7 @@ try {
   const rowsAll = list.locator("ol > li");
   for (let i = 0; i < await rowsAll.count(); i++) {
     const t = await rowsAll.nth(i).innerText();
-    assert.ok(/Easy win · ~\$[\d,]+|Win most ~\$[\d,]+ · middle \$[\d,]+/.test(t), `prediction on every row: ${t.split("\n")[0]}`);
+    assert.ok(/Easy win · ~\$[\d,]+|Best ~\$[\d,]+ \(wins ~\d+%\) · middle \$[\d,]+/.test(t), `prediction on every row: ${t.split("\n")[0]}`);
   }
   // Every easy-win invitation with a map location has the green $ pin, and no other pin does.
   const easyRows = list.locator("ol > li").filter({ has: page.locator('[data-hpd-smoke="fc-bid-easy-chip"]') });
@@ -151,6 +151,7 @@ try {
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click(); // second tap (no confirm boxes: iPhone blocks them)
   await sheet.locator('[data-hpd-smoke="fc-bid-status"]').waitFor({ timeout: 20000 });
   assert.equal(dialogs.length, 0, "no confirm boxes");
+  assert.equal(faxes.at(-1).line, "main", "first send goes to (212) 863-8655");
   assert.equal(faxes.length, 1);
   assert.match(faxes[0].subject, new RegExp(`^Bid - OMO ${omo} - `));
   assert.match(faxes[0].body, /Content-Type: application\/pdf; name="[^"]*_BID_1250_/);
@@ -176,9 +177,14 @@ try {
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').innerText(), /Resend bid by fax/);
   assert.equal(await page.locator(".fc-bid-pin.is-fax-failed").count(), Number.isFinite(open.find((b) => b.omo === omo2)?.lat) ? 1 : 0, "a failed fax shows a red pin");
   failOmo = "";
-  await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
-  await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click(); // second tap (no confirm boxes: iPhone blocks them)
+  // The failed fax offers HPD's backup lines (HumbleFax to 863-7804, then 863-7805): two taps, like Send.
+  await sheet.locator('[data-hpd-smoke="fc-bid-backup"]').waitFor();
+  await sheet.locator('[data-hpd-smoke="fc-bid-send-7804"]').click();
+  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send-7804"]').innerText(), /Tap again to send to \(212\) 863-7804/);
+  await sheet.locator('[data-hpd-smoke="fc-bid-send-7804"]').click();
   await page.waitForFunction(() => /Fax confirmed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 15000 });
+  assert.equal(faxes.at(-1).line, "7804", "sent to the backup line");
+  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-log"]').innerText(), /Fax sent to HPD \(212\) 863-7804/);
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-status"]').innerText(), /2 sends/);
   assert.equal(faxes.length, 3);
 

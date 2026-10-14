@@ -25,6 +25,11 @@ assert.equal(sent.messageId, "fax-msg-1");
 assert.match(sentMessage, /^From: owner@example\.test\r\nTo: 2128638655@humblefax\.com\r\nSubject: Bid - OMO ER07409\r\n/);
 assert.ok(!sentMessage.includes("someone@else"), "the browser can't change who gets the fax");
 assert.equal(bidFaxRecipient({ HPD_BID_FAX_TO: "7189891382@humblefax.com" }), "7189891382@humblefax.com");
+// Backup lines (printed on HPD's invitations): only these two, always through HumbleFax.
+assert.equal(bidFaxRecipient({}, "7804"), "2128637804@humblefax.com");
+assert.equal(bidFaxRecipient({}, "7805"), "2128637805@humblefax.com");
+assert.equal(bidFaxRecipient({}, "main"), "2128638655@humblefax.com");
+assert.throws(() => bidFaxRecipient({}, "attacker@evil.example"), /Unknown fax line/);
 const wrong = await handleDrivePackages(faxRequest(), "fax-bid", auth, gmailSend, { HPD_BID_FAX_TO: "attacker@evil.example" }, "owner@example.test");
 assert.equal(wrong.status, 500, "only a HumbleFax number is accepted as the bid fax");
 const bad = await handleDrivePackages(faxRequest({ "X-HPD-Boundary": "x" }), "fax-bid", auth, gmailSend, {}, "owner@example.test");

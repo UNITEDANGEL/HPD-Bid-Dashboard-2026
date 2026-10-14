@@ -7,11 +7,11 @@
 // won, not awarded or pending, and your win rate (lib/bid-records.ts).
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import SentBidStats from "./SentBidStats";
-import { priceHelp, readScope, winChance, type PricedJob } from "../../lib/bid-price";
-import { beats, bidStats, easyWin, historyRows, filterHistory, myPrices, workHistory, workKey, type Group, type HistoryFilter, type MarketJob, type MonthPoint, type WorkPrice } from "../../lib/bid-stats";
+import { priceHelp, readScope, winChance, type PricedJob, bestPrice } from "../../lib/bid-price";
+import { tradeOf, beats, bidStats, easyWin, historyRows, filterHistory, myPrices, workHistory, workKey, type Group, type HistoryFilter, type MarketJob, type MonthPoint, type WorkPrice } from "../../lib/bid-stats";
 import type { UpcomingBid } from "../../lib/bid-fill";
 import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
-import { bidHistory, currentRecord, earlierRounds, bidResult, bidsToCheck, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, readSession, saveSession, SESSION_KEY, todaySummary, withLog, type BiddingSession, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
+import { bidHistory, currentRecord, earlierRounds, FAX_LINES, type FaxLine, bidResult, bidsToCheck, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, readSession, saveSession, SESSION_KEY, todaySummary, withLog, type BiddingSession, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
 import "./bids.css";
 
 const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
@@ -98,8 +98,15 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   // A sent bid is locked: its price changes only through "Revise this bid" (HPD already has it).
   const [revising, setRevising] = useState(false);
   // Two taps instead of confirm() boxes: iPhone Safari blocks those after a few, and the button then does nothing.
-  const [armed, setArmed] = useState<"" | "send" | "revise" | "confirmed" | "self">("");
+  const [armed, setArmed] = useState<"" | "send" | "send-7804" | "send-7805" | "revise" | "confirmed" | "self">("");
+  // "Price saved" shown for a few seconds after saving.
+  const [savedFlash, setSavedFlash] = useState(0);
   const [shareNote, setShareNote] = useState("");
+  const [sentStats, setSentStats] = useState<{ byWork: { work: string; bids: number; won: number; winRate: number; lostAboveBy: number | null; lostAbovePct: number | null }[] } | null>(null);
+  useEffect(() => {
+    if (!open || sentStats) return;
+    fetch("/data/bid_win_stats.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then(setSentStats).catch(() => {});
+  }, [open, sentStats]);
   // Mine: a bid whose invitation is closed opens its timeline and history right in the list.
   const [openRecord, setOpenRecord] = useState("");
   // Google connection (sending the fax goes through your Gmail): checked when the invitations open.
@@ -336,6 +343,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     } as BidRecord;
     const what = previous && previous.price === draftValue ? `Reason saved: "${why || ""}"` : `Price saved ${money2(draftValue)}${why ? ` ("${why}")` : ""}`;
     await update(withLog(base, what, now));
+    setSavedFlash(Date.now());
+    window.setTimeout(() => setSavedFlash(0), 6000);
     if (filled && filled.price !== draftValue) setFilled(null);
   }
 
@@ -367,25 +376,27 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     } catch (err) { setBusy(`Couldn't fill it: ${err instanceof Error ? err.message : String(err)}`); }
   }
 
-  async function send() {
+  async function send(line: FaxLine = "main") {
     if (!selected || !record || !filled || filled.price !== record.price) return;
     const again = record.status !== "saved";
     const previous = revisedFrom(record);
     if (previous && filled.previous !== previous) return;
-    if (armed !== "send") { setArmed("send"); return; } // first tap: the button asks to tap again
+    const armKey = line === "main" ? "send" : `send-${line}`;
+    if (armed !== armKey) { setArmed(armKey as typeof armed); return; } // first tap: the button asks to tap again
     setArmed("");
     void again;
     setBusy("Sending the fax…");
-    const result = await sendBidFax(selected, record.price, filled.bytes, filled.name, fetch, previous);
+    const lineLabel = FAX_LINES.find((l) => l.id === line)!.label;
+    const result = await sendBidFax(selected, record.price, filled.bytes, filled.name, fetch, previous, line);
     if (!result.ok) {
       setBusy(`Not sent: ${result.error}`);
-      await update(withLog({ ...record, updatedAt: new Date().toISOString() }, `Fax NOT sent: ${result.error}`));
+      await update(withLog({ ...record, updatedAt: new Date().toISOString() }, `Fax NOT sent to ${lineLabel}: ${result.error}`));
       return;
     }
     const revisions = previous ? [...(record.revisions || []), { price: previous, sentAt: record.sentAt }] : record.revisions;
     const attempts = (record.attempts || 0) + 1;
     await update(withLog({ ...record, status: "sent", sentAt: result.sentAt, sentPrice: record.price, priorPrice: undefined, revisions, faxTo: result.to, messageId: result.messageId, confirmedAt: undefined, faxNote: undefined, attempts, updatedAt: new Date().toISOString() },
-      previous ? `Revised fax sent to HPD: ${money2(previous)} → ${money2(record.price)}` : `Fax sent to HPD at ${money2(record.price)}${attempts > 1 ? ` (send ${attempts})` : ""}`, result.sentAt));
+      previous ? `Revised fax sent to HPD ${lineLabel}: ${money2(previous)} → ${money2(record.price)}` : `Fax sent to HPD ${lineLabel} at ${money2(record.price)}${attempts > 1 ? ` (send ${attempts})` : ""}`, result.sentAt));
     setRevising(false);
     setBusy("");
   }
@@ -584,6 +595,21 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   <small data-hpd-smoke="fc-bid-why">{help.why}{help.yours ? ` · ${help.yours} of these ${help.yours === 1 ? "was" : "were"} yours` : ""}.</small>
                   {help.trend ? <small className={`fc-bid-trend ${help.trend.change > 0 ? "is-up" : help.trend.change < 0 ? "is-down" : ""}`} data-hpd-smoke="fc-bid-trend">Last 90 days: middle {money(help.trend.recent)}, {help.trend.change === 0 ? "same as" : `${help.trend.change > 0 ? "up" : "down"} ${Math.abs(help.trend.change)}% from`} {money(help.trend.before)} before.</small> : null}
                   {help.unmatched.length ? <p className="fc-bid-warn" data-hpd-smoke="fc-bid-unmatched">No awarded job with: {help.unmatched.join(", ")}. Add your own price for that part.</p> : null}
+                  {(() => {
+                    const best = bestPrice(help);
+                    const move = stats?.allMoves.find((g) => g.name === `${tradeOf(selected.description)} · ${selected.borough === "MN" ? "Manhattan" : selected.borough === "BK" ? "Brooklyn" : selected.borough === "QN" ? "Queens" : selected.borough === "BX" ? "Bronx" : selected.borough === "SI" ? "Staten Island" : selected.borough}`);
+                    const mineForWork = sentStats?.byWork.find((g) => g.work === scope.labels[0]);
+                    return (
+                      <div className="fc-bid-best" data-hpd-smoke="fc-bid-best">
+                        <span>💰 Best price</span>
+                        <b>{money(best.price)}</b>
+                        <small>Wins about {Math.round(best.chance * 100)}% of jobs like this: the most money over time (price × chance of winning). Tested on past awards since April: more money than the middle or the safest price.</small>
+                        <button type="button" data-hpd-smoke="fc-bid-use-best" onClick={() => pickPrice(String(best.price))}>Use {money(best.price)}</button>
+                        {move ? <p className={`fc-bid-move is-${move.advice}`} data-hpd-smoke="fc-bid-move">{move.advice === "raise" ? "📈 Raise your price" : "📉 Others win cheaper"} on {move.name}: you win {Math.round(move.winRate * 100)}% · you usually get {money(move.yourPrice)}, others win at {money(move.othersPrice)}.</p> : null}
+                        {mineForWork && mineForWork.bids >= 5 ? <p className="fc-bid-move" data-hpd-smoke="fc-bid-mine-work">Your bids on {mineForWork.work}: won {mineForWork.won} of {mineForWork.bids} ({mineForWork.winRate}%){mineForWork.lostAboveBy ? ` · when you lost, you were ~${money(mineForWork.lostAboveBy)} above the winner` : ""}.</p> : null}
+                      </div>
+                    );
+                  })()}
                   <div className="fc-bid-targets" data-hpd-smoke="fc-bid-targets">
                     {[
                       { label: "Win most", price: help.toWin },
@@ -626,6 +652,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   <button type="button" className="is-plain" data-hpd-smoke="fc-bid-revise-cancel" onClick={() => void cancelRevision()}>Cancel revision</button>
                 </div>
               ) : null}
+              {savedFlash && record ? <p className="fc-bid-saved-flash" role="status" data-hpd-smoke="fc-bid-saved-flash">✅ Price saved: {money2(record.price)}. Next: fill the package (step 2).</p> : null}
               {record ? <p className="fc-bid-saved" data-hpd-smoke="fc-bid-saved">✓ Price saved: <b>{money2(record.price)}</b> · {when(record.savedAt)}{revisedFrom(record) ? <> · HPD has <s>{money2(revisedFrom(record)!)}</s>: fill and send the <b>revised</b> bid</> : ""}</p> : null}
               {record && record.status === "saved" ? <button type="button" className="fc-bid-link" data-hpd-smoke="fc-bid-sent-elsewhere" onClick={() => void markSentElsewhere()}>{armed === "self" ? `✅ Tap again: record that you sent it at ${money2(record.price)}` : "I sent this bid myself (Gmail / fax)"}</button> : null}
             </section>
@@ -646,10 +673,20 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   </div>
                 ) : null}
                 <h4 className={step3Done ? `is-done is-${state}` : ""} data-hpd-smoke="fc-step-3">{step3Done ? (state === "confirmed" ? "✓" : state === "failed" ? "✗" : "⏳") : "3"} · Send to HPD{step3Done ? (state === "confirmed" ? ` · fax confirmed ${money2(record.sentPrice || record.price)}` : state === "failed" ? " · fax failed" : ` · fax going through ${money2(record.sentPrice || record.price)}`) : ""}</h4>
-                <button type="button" className={`fc-bid-fill is-send${step3Done && state === "confirmed" ? " is-done" : ""}`} data-hpd-smoke="fc-bid-send" disabled={faxLocked || !reviewedSaved || busy === "Sending the fax…"} onClick={() => void send()}>
+                <button type="button" className={`fc-bid-fill is-send${step3Done && state === "confirmed" ? " is-done" : ""}`} data-hpd-smoke="fc-bid-send" disabled={faxLocked || !reviewedSaved || busy === "Sending the fax…"} onClick={() => void send("main")}>
                   {busy === "Sending the fax…" ? "⏳ Sending the fax…" : armed === "send" ? `✅ Tap again to send ${revisedFrom(record) ? "the REVISED bid" : "the bid"} at ${money2(record.price)} to HPD` : revisedFrom(record) ? "📠 Send revised bid to HPD" : state === "saved" ? "📠 Send bid by fax to HPD" : state === "failed" || state === "unconfirmed" ? "📠 Resend bid by fax" : state === "confirmed" ? "✓ Fax confirmed by HumbleFax · locked" : "⏳ Fax going through · send again"}
                 </button>
                 {armed === "send" ? <button type="button" className="fc-bid-link" data-hpd-smoke="fc-bid-send-cancel" onClick={() => setArmed("")}>Cancel, don&apos;t send</button> : null}
+                {reviewedSaved && (state === "failed" || state === "unconfirmed" || busy.startsWith("Not sent")) ? (
+                  <div className="fc-bid-backup" data-hpd-smoke="fc-bid-backup">
+                    <small>Didn&apos;t go through? Send to HPD&apos;s backup fax (HumbleFax):</small>
+                    {FAX_LINES.filter((l) => l.id !== "main").map((l) => (
+                      <button key={l.id} type="button" className="fc-bid-fill is-secondary" data-hpd-smoke={`fc-bid-send-${l.id}`} disabled={busy === "Sending the fax…"} onClick={() => void send(l.id)}>
+                        {armed === `send-${l.id}` ? `✅ Tap again to send to ${l.label}` : `📠 Send to backup ${l.label}`}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 {busy.startsWith("Not sent") ? <p className="fc-bid-send-error" role="alert" data-hpd-smoke="fc-bid-send-error">❌ {busy}</p> : null}
                 {busy.startsWith("Not sent") && /sign in|reconnect|google/i.test(busy) ? <ReconnectGoogle text="Reconnect Google, then tap Send again (you come straight back here)." /> : null}
                 <small className="fc-bid-note">{reviewedSaved ? (armed === "send" ? (revisedFrom(record) ? `Old price ${money2(revisedFrom(record)!)} crossed out, new price ${money2(record.price)}; the cover asks HPD to disregard the old price.` : "This submits your bid to HPD's bid fax (212) 863-8655 through HumbleFax, with a cover sheet.") : "Goes to HPD's bid fax (212) 863-8655 through HumbleFax, with a cover sheet. Tap twice to send.") : "Fill and review the package first."}</small>
@@ -706,7 +743,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   <li key={bid.omo}>
                     <button type="button" onClick={() => openBid(bid)}>
                       <span className="fc-bid-row"><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}{again ? <span className="fc-bid-chip is-again" data-hpd-smoke="fc-bid-again-chip">🔁 bid before · {money(again.price)}</span> : null}{ew ? <span className="fc-bid-chip is-easy" data-hpd-smoke="fc-bid-easy-chip">Easy win · ~{money(ew.suggested)}</span> : null}</span>
-                      {!currentRecord(bid, records) && !ew && rowHelp.get(bid.omo) ? (() => { const h = rowHelp.get(bid.omo)!; return <span className={`fc-bid-predict is-${h.confidence}`} data-hpd-smoke="fc-bid-predict">Win most ~{money(h.toWin)} · middle {money(h.middle)}{h.confidence === "low" ? " · rough guide" : ""}</span>; })() : null}
+                      {!currentRecord(bid, records) && !ew && rowHelp.get(bid.omo) ? (() => { const h = rowHelp.get(bid.omo)!; const best = bestPrice(h); return <span className={`fc-bid-predict is-${h.confidence}`} data-hpd-smoke="fc-bid-predict">💰 Best ~{money(best.price)} (wins ~{Math.round(best.chance * 100)}%) · middle {money(h.middle)}{h.confidence === "low" ? " · rough guide" : ""}</span>; })() : null}
                       <span>{bid.address}{bid.borough ? ` · ${bid.borough}` : ""}</span>
                       <small>{due.text}</small>
                     </button>

@@ -29,6 +29,8 @@ def staff_of(sender):
 
 def kind_of(text):
     t = text.lower()
+    if re.search(r"reject|denied|not accepted|returned|incomplete|missing (?:signature|notar|date|photo)|cannot be processed|unable to process", t):
+        return "rejected"
     if re.search(r"resubmit|re-submit|correct|revis", t):
         return "resubmit"
     if re.search(r"poor performance|past due|stop work|overdue", t):
@@ -40,7 +42,7 @@ def kind_of(text):
     return "status"
 
 
-ASK = re.compile(r"affidavit|invoice|photo|video|request|past\s+due|poor\s+performance|status\s+update|outstanding|missing", re.I)
+ASK = re.compile(r"affidavit|invoice|photo|video|request|past\s+due|poor\s+performance|status\s+update|outstanding|missing|reject|returned|incomplete|denied", re.I)
 
 
 def text_of(payload):

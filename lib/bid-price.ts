@@ -339,3 +339,19 @@ export function priceHelp(description: string, history: PricedJob[], limit = 12,
     examples: scored.slice(0, 3).map(({ job, score, scope: s }) => ({ id: job.id, amount: job.amount, score: Math.round(score * 100) / 100, description: workText(job.description).slice(0, 110), summary: s.summary, date: job.date, won: job.won })),
   };
 }
+
+// The most money for jobs like this one: the price where price x chance of winning is highest, from the
+// winning prices of similar past jobs (just under each one). Never under the "win most" price, never a
+// price that wins less than 1 in 4.
+export function bestPrice(help: Pick<PriceHelp, "prices" | "toWin">) {
+  let best = { price: help.toWin, chance: winChance(help, help.toWin) };
+  let value = best.price * best.chance;
+  const amounts = [...new Set(help.prices.map((p) => Math.round(p.amount)))].sort((a, b) => a - b);
+  for (const amount of amounts) {
+    const price = Math.max(amount - 5, 1);
+    if (price < help.toWin) continue; // never under the "win most" price: charge the most you can
+    const chance = winChance(help, price);
+    if (chance >= 0.25 && price * chance > value) { best = { price, chance }; value = price * chance; }
+  }
+  return { ...best, expected: Math.round(value) };
+}

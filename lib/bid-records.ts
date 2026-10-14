@@ -177,12 +177,20 @@ export function bidFaxCover(bid: { omo: string; address: string; borough?: strin
   };
 }
 
-export async function sendBidFax(bid: { omo: string; address: string; borough?: string }, price: number, pdf: Uint8Array, fileName: string, fetcher: typeof fetch = fetch, previousPrice?: number) {
+// HPD's bid fax lines: the main one, then the backups printed on every invitation.
+export const FAX_LINES = [
+  { id: "main", label: "(212) 863-8655" },
+  { id: "7804", label: "(212) 863-7804" },
+  { id: "7805", label: "(212) 863-7805" },
+] as const;
+export type FaxLine = (typeof FAX_LINES)[number]["id"];
+
+export async function sendBidFax(bid: { omo: string; address: string; borough?: string }, price: number, pdf: Uint8Array, fileName: string, fetcher: typeof fetch = fetch, previousPrice?: number, line: FaxLine = "main") {
   const cover = bidFaxCover(bid, price, previousPrice);
   const email = buildPackageEmail(cover.text, [{ name: fileName, mimeType: "application/pdf", bytes: pdf }]);
   const response = await fetcher("/api/drive/fax-bid", {
     method: "POST",
-    headers: { "Content-Type": "text/plain", "X-HPD-Boundary": email.boundary, "X-HPD-Subject": encodeURIComponent(cover.subject) },
+    headers: { "Content-Type": "text/plain", "X-HPD-Boundary": email.boundary, "X-HPD-Subject": encodeURIComponent(cover.subject), "X-HPD-Fax-Line": line },
     body: email.body,
   });
   const body = await response.json().catch(() => ({}));

@@ -53,7 +53,15 @@ export async function gmailRefusal(response) {
   return `Gmail could not send the package (HTTP ${response.status}${reasons ? `: ${reasons.slice(0, 160)}` : ""}).`;
 }
 
-export function bidFaxRecipient(env) {
+// HPD's backup bid fax lines (printed on every invitation), used when (212) 863-8655 fails. The browser
+// only picks which line; the address is always built here, through HumbleFax.
+export const BACKUP_FAX_LINES = { "7804": "2128637804@humblefax.com", "7805": "2128637805@humblefax.com" };
+export function bidFaxRecipient(env, line = "") {
+  if (line && line !== "main") {
+    const backup = BACKUP_FAX_LINES[line];
+    if (!backup) fail("Unknown fax line.", 400);
+    return backup;
+  }
   const to = String(env.HPD_BID_FAX_TO || DEFAULT_BID_FAX).trim().toLowerCase();
   if (!/^\d{10}@humblefax\.com$/.test(to)) fail("Bid fax number is not set up correctly.", 500);
   return to;
@@ -159,7 +167,7 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       let subject;
       try { subject = decodeURIComponent(request.headers.get("X-HPD-Subject") || ""); } catch { fail("Invalid fax subject.", 400); }
       const parts = await bodyBytes(request, MAX_EMAIL_BYTES, "Bid fax");
-      const to = bidFaxRecipient(env);
+      const to = bidFaxRecipient(env, request.headers.get("X-HPD-Fax-Line") || "");
       const head = new TextEncoder().encode([
         `From: ${ownerEmail}`, `To: ${to}`, `Subject: ${encodeHeader(subject || "HPD bid")}`, "MIME-Version: 1.0",
         `Content-Type: multipart/mixed; boundary="${boundary}"`, "", "",

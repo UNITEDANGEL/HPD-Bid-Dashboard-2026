@@ -175,6 +175,7 @@ export function bidStats(jobs: MarketJob[], now = new Date()) {
     overall,
     last90: { invitations: last90.length, won: last90.filter((r) => r.won).length, winRate: last90.length ? last90.filter((r) => r.won).length / last90.length : 0 },
     byTrade, byBoro, byArea,
+    allMoves: byTradeBoro, // every kind of work + borough where the price should change (for each invitation)
     moves: byTradeBoro.sort((a, b) => (b.advice === "raise" ? 1 : 0) - (a.advice === "raise" ? 1 : 0) || b.invitations - a.invitations).slice(0, 8),
     losses,
     byMonth,

@@ -329,3 +329,18 @@
 .fc-bid-again.is-building { background: #172554; border-color: #60a5fa; }
 .fc-bid-again-warn { margin-top: 4px; padding: 6px 8px; border-radius: 8px; background: #7f1d1d; color: #fee2e2; font-weight: 800; }
 .fc-bid-chip.is-again { background: #312e81; color: #e0e7ff; }
+
+/* "Price saved" right after saving; backup fax lines after a failed send. */
+.fc-bid-saved-flash { margin: 6px 0; padding: 10px; border-radius: 10px; background: #14532d; border: 1px solid #22c55e; color: #dcfce7; font: 800 15px/1.35 system-ui; }
+.fc-bid-backup { display: grid; gap: 6px; margin-top: 8px; padding: 8px; border-radius: 10px; border: 1px dashed #f59e0b; }
+.fc-bid-backup small { color: #fde68a; font-weight: 700; }
+
+/* Best price for this job (most money over time), and what the numbers say about this kind of work. */
+.fc-bid-best { display: grid; grid-template-columns: 1fr auto; gap: 4px 10px; align-items: center; margin: 8px 0; padding: 12px; border-radius: 12px; background: #052e16; border: 2px solid #22c55e; color: #dcfce7; }
+.fc-bid-best > span { font: 800 13px system-ui; color: #86efac; }
+.fc-bid-best > b { grid-column: 1; font: 900 26px system-ui; color: #fff; }
+.fc-bid-best > small { grid-column: 1 / -1; font: 500 12.5px/1.4 system-ui; color: #bbf7d0; }
+.fc-bid-best > button { grid-column: 2; grid-row: 1 / span 2; min-height: 44px; padding: 0 14px; border: 0; border-radius: 10px; background: #22c55e; color: #052e16; font: 900 15px system-ui; }
+.fc-bid-move { grid-column: 1 / -1; margin: 4px 0 0; padding: 8px; border-radius: 8px; background: #1e293b; color: #e2e8f0; font: 700 13px/1.4 system-ui; }
+.fc-bid-move.is-raise { background: #14532d; color: #dcfce7; }
+.fc-bid-move.is-lower { background: #7c2d12; color: #ffedd5; }

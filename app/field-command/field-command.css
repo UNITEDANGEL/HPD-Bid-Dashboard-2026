@@ -2430,3 +2430,9 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-follow-tiles .is-hpd-asked { border-left-color: #ef4444; }
 .fc-follow-group { list-style: none; margin: 10px 0 4px; padding: 4px 8px; border-radius: 6px; background: #1e293b; color: #fcd34d; font: 800 12px system-ui; text-transform: uppercase; letter-spacing: .03em; }
 .fc-follow-paper { display: inline-block; margin-top: 4px; padding: 6px 10px; border-radius: 8px; background: #7f1d1d; color: #fee2e2; font: 800 13px system-ui; text-decoration: none; }
+
+/* HPD's latest email about this job (request / rejection), on the job card. */
+.jc-hpd-notice { margin: 6px 0 0; padding: 6px 8px; border-radius: 8px; background: #1e293b; color: #cbd5e1; font: 700 12.5px/1.4 system-ui; }
+.jc-hpd-notice.is-open { background: #7f1d1d; color: #fee2e2; }
+.jc-hpd-notice.is-rejected { background: #450a0a; border: 1px solid #ef4444; color: #fecaca; }
+.jc-hpd-notice a { color: #fff; text-decoration: underline; margin-left: 4px; }

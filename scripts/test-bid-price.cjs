@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const ts = require('typescript');
 const load = (file) => { const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText; const m = { exports: {} }; new Function('exports', 'module', 'require', code)(m.exports, m, require); return m.exports; };
-const { priceHelp, readScope, winChance } = load('lib/bid-price.ts');
+const { priceHelp, readScope, winChance, bestPrice } = load('lib/bid-price.ts');
 const fill = load('lib/bid-fill.ts');
 
 const history = [
@@ -162,6 +162,13 @@ assert.ok(g.toWin < g.middle && g.middle < g.high && winChance(g, g.high) < winC
 assert.ok(winChance(g, 300) === 1 && winChance(g, 9999) === 0);
 assert.deepEqual(g.trend && [g.trend.recent > g.trend.before, g.trend.change > 0], [true, true], 'glass prices went up in the last 90 days');
 assert.ok(g.middle >= 440, `recent (higher) prices weigh more (${g.middle})`);
+
+// Best price: the most money over time (price x chance of winning), never winning less than 1 in 4.
+const bp = bestPrice(g);
+assert.ok(bp.price >= g.toWin, `best price is never below the safest price (${bp.price} vs ${g.toWin})`);
+assert.ok(bp.chance >= 0.25, `wins at least 1 in 4 (${bp.chance})`);
+assert.equal(bp.expected, Math.round(bp.price * winChance(g, bp.price)));
+for (const p of [g.toWin, g.middle, g.high]) assert.ok(bp.price * bp.chance >= p * winChance(g, p) - 1, `beats ${p} on expected money`);
 
 // Bid package text helpers.
 assert.equal(fill.bidPriceText(1250), '1,250.00');
