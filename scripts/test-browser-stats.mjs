@@ -6,7 +6,10 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
-const minutesAgo = (m) => new Date(Date.now() - m * 60000).toISOString();
+// Visits "m minutes ago", kept inside today (New York) even in the first hour after midnight.
+const nyMinutesNow = (() => { const [h, mi] = new Intl.DateTimeFormat("en-GB", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date()).split(":").map(Number); return h * 60 + mi; })();
+const BASE = nyMinutesNow < 60 ? Date.now() + (61 - nyMinutesNow) * 60000 : Date.now();
+const minutesAgo = (m) => new Date(BASE - m * 60000).toISOString();
 const entry = (outcome, at, note = "") => ({ recordedAt: at, outcome, note });
 
 // Today: a $3,400 job completed, a no-access job under $2,000 on its 2nd try ($100 service call),

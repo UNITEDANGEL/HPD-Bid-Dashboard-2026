@@ -84,13 +84,13 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const [unread, setUnread] = useState<{ file: string; omo?: string; why: string }[]>([]);
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"open" | "mine" | "stats" | "history">("open");
+  // The home screen's "Bid stats" opens straight on Stats (this stays mounted, so check each time it opens).
   useEffect(() => {
-    const asked = new URLSearchParams(window.location.search).get("tab");
-    if (asked === "stats" || asked === "history" || asked === "mine") {
-      setTab(asked);
-      try { window.history.replaceState(null, "", window.location.pathname); } catch {}
-    }
-  }, []);
+    if (!open) return;
+    let asked: string | null = null;
+    try { asked = sessionStorage.getItem("hpd-bids-tab"); sessionStorage.removeItem("hpd-bids-tab"); } catch {}
+    if (asked === "stats" || asked === "history" || asked === "mine") setTab(asked);
+  }, [open]);
   const [selected, setSelected] = useState<UpcomingBid | null>(null);
   const [records, setRecords] = useState<Record<string, BidRecord>>({});
   const [draft, setDraft] = useState("");

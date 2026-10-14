@@ -853,7 +853,9 @@ export default function FieldCommandClient() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("bids") !== "1") return;
     setBidsOpen(true);
-    try { window.history.replaceState(null, "", window.location.pathname + (params.get("tab") ? `?tab=${params.get("tab")}` : "")); } catch {}
+    // The tab goes by sessionStorage: changing the address twice reset the screen.
+    try { if (params.get("tab")) sessionStorage.setItem("hpd-bids-tab", String(params.get("tab"))); } catch {}
+    try { window.history.replaceState(null, "", window.location.pathname); } catch {}
   }, []);
   const [workflowStamps, setWorkflowStamps] = useState<Record<string, { arrived?: string; visit?: string; work?: string; status?: string }>>({});
   const [workflowLoaded, setWorkflowLoaded] = useState(false);
