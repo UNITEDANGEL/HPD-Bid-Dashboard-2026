@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T17:55:40.921545+00:00",
+  "generatedAt": "2026-10-14T18:14:37.597690+00:00",
   "days": 14,
   "bids": [
     {
@@ -2795,6 +2795,133 @@
       },
       "lat": 40.805246,
       "lng": -73.950583
+    },
+    {
+      "omo": "ER07918",
+      "bidDue": "2026-10-15",
+      "bidDueTime": "12:00 PM",
+      "workStart": "2026-10-15",
+      "workCompletion": "2026-10-25",
+      "address": "3560 WEBSTER AVENUE",
+      "borough": "BX",
+      "itbFile": "ER07918_101426021046.pdf",
+      "description": "BUILDING ENTRANCE DOOR 1ST STORY, PUBLIC HALL RE-ALIGN DOOR INSTALL DOOR CLOSER REPAIR LATCH ASSEMBLY NYC HPD EMERGENCY OPERATIONS DIVISION \u2013 ESSENTIAL SERVICE WORK BUILDING ENTRANCE DOOR: RE-ALIGN THE BUILDING ENTRANCE DOOR TO THE DOOR FRAME; INSTALL A HEAVY DUTY DOOR CLOSER; MAKE ALL NECESSARY REPAIRS TO THE LATCH ASSEMBLY TO ENSURE BUILDING ENTRANCE DOOR LATCHES PROPERLY; MAKE ALL NECESSARY ADJUSTMENTS/ ALIGNMENT TO DOOR TO ENSURE DOOR IS PROPERLY SELF CLOSING AND LATCHING AS PER NYC GUIDELINES. RESTORE TO PROPER WORKING ORDER. TOTAL DOORS= (1) :REMOVE ALL WORK RELATED DEBRIS: ALL WORK MUST BE DONE AS PER HPD SPECIFICATIONS:",
+      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: R. BUSHRA- 212 863 6046; S. HUGHES- 212 863 5754; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; E. ORR- 212 863 6875; A. MARTINEZ- 212 863 6135; S. KOFUMA- 212 863 6160; K. BRYANT- 212 863 5496; R. REED- 212 863 5481 SUPERVISOR D. SAUL- 212 863 5527 IF NO WORK IS PERFORMED OR CONTRACTOR COMPLETED WORK, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE @ 212 863 6008.",
+      "receivedAt": 1792001452000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496.0,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467.0,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.881099,
+      "lng": -73.870212
     },
     {
       "omo": "ER07701",
