@@ -81,7 +81,7 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
     }
     if (action === "check" || BACKUP_ACTIONS.includes(action) || PACKAGE_ACTIONS.includes(action) || VIDEO_ACTIONS.includes(action)) {
       const saved = await session(request, env, cfg);
-      if (!saved) return json({ reconnectRequired: true, error: "Sign in to Google Drive again." }, 401);
+      if (!saved) { console.error(`drive ${action}: not signed in (no saved Google sign-in on this device)`); return json({ reconnectRequired: true, error: "Sign in to Google Drive again." }, 401); }
       const renew = () => fetcher("https://oauth2.googleapis.com/token", {
         method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ client_id: env.HPD_DRIVE_CLIENT_ID, client_secret: env.HPD_DRIVE_CLIENT_SECRET,
@@ -176,6 +176,7 @@ export async function handleDriveAuth(request, env, fetcher = fetch) {
     await env.HPD_DRIVE_SESSIONS.put(`session:${id}`, await seal(env, value, `session:${id}`), { expirationTtl: TTL });
     return redirect(`${cfg.origin}/storage/`, [cookie(FLOW, "", 0), cookie(SESSION, id, TTL)]);
   } catch (error) {
+    console.error(`drive ${action} failed in the Google connection: ${error?.name}: ${String(error?.message || "").slice(0, 120)}`);
     // Never return OAuth responses or credentials: only where it failed and the kind of error.
     const kind = error?.name === "TimeoutError" || error?.name === "AbortError" ? "Google didn't answer in time" : `${String(error?.name || "Error").slice(0, 40)}`;
     return json({ connected: false, syncEnabled: false, error: `Google connection problem (${kind}, step: ${action}). Try again in a minute; your local records are unchanged.` }, 503);

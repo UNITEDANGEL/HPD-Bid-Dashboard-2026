@@ -235,6 +235,8 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
 
     fail("Not found.", 404);
   } catch (e) {
+    // In the server log (Cloudflare): which step failed and why (messages are ours: no tokens, no file contents).
+    console.error(`drive ${action} failed: ${e.status || 503} ${e.status ? e.message : `${e?.name}: ${String(e?.message || "").slice(0, 120)}`}`);
     return reply({ error: e.status ? e.message : "Package delivery failed. The package is still on this device." }, e.status || 503);
   }
 }
