@@ -16,4 +16,6 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          timeout 480 npx -y wrangler@4 pages deployment tail --project-name hpd-bid-dashboard-2026 --environment production --format pretty || true
+          id=$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/hpd-bid-dashboard-2026/deployments?env=production&per_page=1" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).result[0].id))')
+          echo "deployment $id"
+          timeout 480 npx -y wrangler@4 pages deployment tail "$id" --project-name hpd-bid-dashboard-2026 --format pretty || true
