@@ -73,6 +73,30 @@ def reason_for(omo, subject, body):
     return subject[:140]
 
 
+def notice_notes(service, msg):
+    """HPD's DOCUMENT REJECTION NOTICE (PDF attachment): the notes ("invoice is missing vendor signature",
+    "dates do not match on the invoice + affidavit") and the attempt ("FIRST" / "SECOND" / "FINAL")."""
+    import fitz
+    stack, found = [msg.get("payload", {})], []
+    while stack:
+        part = stack.pop()
+        stack += part.get("parts", []) or []
+        name = part.get("filename") or ""
+        att = (part.get("body") or {}).get("attachmentId")
+        if not att or not name.lower().endswith(".pdf") or "reject" not in name.lower():
+            continue
+        raw = service.users().messages().attachments().get(userId="me", messageId=msg["id"], id=att).execute(num_retries=3)
+        with fitz.open(stream=base64.urlsafe_b64decode(raw["data"]), filetype="pdf") as doc:
+            text = "\n".join(page.get_text() for page in doc)
+        attempts = re.findall(r"\*(FIRST|SECOND|THIRD|FINAL) ATTEMPT\*", text)
+        body = text.split("Note", 1)[-1]
+        body = re.split(r"\n\s*(?:Invalid Invoice|UNITED ANGEL|Dear|OMO:|Your prompt attention)", body)[0]
+        lines = [re.sub(r"\s+", " ", l).strip() for l in body.splitlines()]
+        notes = " ".join(l for l in lines if l and not re.fullmatch(r"\*?(FIRST|SECOND|THIRD|FINAL) ATTEMPT\*?|ü", l))
+        found.append({"notes": notes[:400], "attempt": attempts[0] if attempts else ""})
+    return found
+
+
 def own_part(text):
     """Only HPD's own message, not the quoted thread below it (it repeats older requests)."""
     cut = re.split(r"\n\s*(?:On .{5,80}wrote:|From:\s|-----Original Message-----|________________)", text, maxsplit=1)
@@ -102,11 +126,17 @@ def main(since):
         if not ASK.search(subject + " " + body):
             continue
         day = datetime.datetime.fromtimestamp(int(msg.get("internalDate", 0)) / 1000, datetime.timezone.utc).date().isoformat()
+        notices = None  # HPD's rejection notice PDF, read once per email
         for omo in {m.upper() for m in OMO.findall(subject + "\n" + body)}:
             kind = kind_of(subject + " " + body[:1500])
             entry = {"date": day, "ts": int(msg.get("internalDate", 0)), "subject": subject[:140], "by": staff_of(sender), "kind": kind}
             if "rejected" in kind:
                 entry["reason"] = reason_for(omo, subject, body)
+                if notices is None:
+                    notices = notice_notes(service, msg) if "notification from hpd" in subject.lower() else []
+                if notices:
+                    entry["reason"] = notices[0]["notes"] or entry["reason"]
+                    entry["attempt"] = notices[0]["attempt"]
             if entry not in asked.setdefault(omo, []):
                 asked[omo].append(entry)
     for entries in asked.values():
@@ -148,9 +178,9 @@ def main(since):
         if rejections:
             r = rejections[-1]
             if r["ts"] >= old.get("rejectedTs", 0):
-                public[o].update({"rejectedTs": r["ts"], "rejectedAt": r["date"], "rejectedBy": r["by"], "rejectedReason": r.get("reason", ""), "rejectedCount": len(rejections)})
+                public[o].update({"rejectedTs": r["ts"], "rejectedAt": r["date"], "rejectedBy": r["by"], "rejectedReason": r.get("reason", ""), "rejectedAttempt": r.get("attempt", ""), "rejectedCount": len(rejections)})
         else:
-            for k in ("rejectedTs", "rejectedAt", "rejectedBy", "rejectedReason", "rejectedCount"):
+            for k in ("rejectedTs", "rejectedAt", "rejectedBy", "rejectedReason", "rejectedAttempt", "rejectedCount"):
                 if k in old: public[o][k] = old[k]
     for o, ts in replied.items():
         if o in public:

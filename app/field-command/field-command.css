@@ -2451,3 +2451,4 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-notices-fab { position: relative; font-size: 20px; }
 .fc-notices-sheet header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .fc-notices-sheet li { display: grid; gap: 4px; }
+.fc-final-attempt { color: #fff; background: #dc2626; padding: 0 4px; border-radius: 4px; }

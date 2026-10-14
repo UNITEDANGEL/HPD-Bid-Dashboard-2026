@@ -10,7 +10,7 @@ export type SentPaperwork = { sentAt: string; count: number };
 // askedTs / repliedTs: exact times of HPD's last request and your last email to HPD staff about the job.
 export type HpdRequest = { askedAt: string; count: number; by?: string; kind?: string; askedTs?: number; repliedTs?: number;
   // HPD rejected the payment paperwork ("deemed unacceptable", "Rejections"): when, who, why.
-  rejectedTs?: number; rejectedAt?: string; rejectedBy?: string; rejectedReason?: string; rejectedCount?: number };
+  rejectedTs?: number; rejectedAt?: string; rejectedBy?: string; rejectedReason?: string; rejectedAttempt?: string; rejectedCount?: number };
 export type Recovered = { kind: "complete" | "noaccess" | "refused" | "others" | "partial" | "closed" | "sent"; label: string; hpdReason: string; sentAt: string };
 
 const CLOSING = /WORK_COMPLETED|REFUSED_ACCESS|NO_ACCESS_COMPLETE|NO_ACCESS_2|BY_OTHERS|PARTIAL_WORK_COMPLETED/i;
@@ -117,15 +117,15 @@ export function followUpReport(jobs: Record<string, unknown>[], hpd: Record<stri
 
 // Payment paperwork HPD rejected and you haven't answered since (your last email to HPD staff about the job
 // is older than the rejection). Every OMO, including older jobs that aren't on the map. Newest first.
-export type Rejection = { omo: string; at: string; by: string; reason: string; count: number; answered: boolean; address: string; onMap: boolean };
+export type Rejection = { omo: string; at: string; by: string; reason: string; attempt: string; count: number; answered: boolean; address: string; onMap: boolean };
 export function paperworkRejections(asked: Record<string, HpdRequest>, jobs: Record<string, unknown>[]) {
   const byOmo = new Map(jobs.map((j) => [String(j.OMO || j.id || "").toUpperCase(), j]));
   const rows: Rejection[] = [];
   for (const [omo, r] of Object.entries(asked)) {
     if (!r.rejectedTs) continue;
     const job = byOmo.get(omo.toUpperCase());
-    rows.push({ omo, at: r.rejectedAt || "", by: r.rejectedBy || "HPD", reason: r.rejectedReason || "", count: r.rejectedCount || 1,
+    rows.push({ omo, at: r.rejectedAt || "", by: r.rejectedBy || "HPD", reason: r.rejectedReason || "", attempt: r.rejectedAttempt || "", count: r.rejectedCount || 1,
       answered: !!r.repliedTs && r.repliedTs > r.rejectedTs, address: String(job?.BuildingAddress || job?.address || ""), onMap: !!job });
   }
-  return rows.sort((a, b) => Number(a.answered) - Number(b.answered) || b.at.localeCompare(a.at));
+  return rows.sort((a, b) => Number(a.answered) - Number(b.answered) || Number(b.attempt === "FINAL") - Number(a.attempt === "FINAL") || b.at.localeCompare(a.at));
 }

@@ -3168,7 +3168,7 @@ export default function FieldCommandClient() {
                       const rj = rejections.find((r) => r.omo === fu.omo);
                       return rj ? (
                         <p className={`jc-rejected${rj.answered ? " is-answered" : ""}`} data-hpd-smoke="jc-rejected">
-                          {rj.answered ? "✓ Paperwork was rejected, you answered HPD" : "❗ Payment paperwork REJECTED by HPD"} · {md(rj.at)} · {rj.by}: {rj.reason || "see HPD's email"}
+                          {rj.answered ? "✓ Paperwork was rejected, you answered HPD" : `❗ Payment paperwork REJECTED by HPD${rj.attempt ? ` (${rj.attempt} ATTEMPT)` : ""}`} · {md(rj.at)} · {rj.by}: {rj.reason || "see HPD's email"}
                           {!rj.answered ? <a href={`/paperwork/?job=${encodeURIComponent(fu.omo)}`}> Fix &amp; resend →</a> : null}
                         </p>
                       ) : null;
@@ -3318,7 +3318,7 @@ export default function FieldCommandClient() {
                   <button type="button" onClick={() => { const job = jobs.find((j) => jobId(j) === r.omo); if (job) { setNoticesOpen(false); setSelectedJob(job); } }}>
                     <span><b>{r.omo}</b> <em className="is-late">rejected {r.at}</em>{r.onMap ? "" : " · not on the map"}</span>
                     <span>{r.address || "older job"}</span>
-                    <small>{r.by}: {r.reason || "see HPD's email"}</small>
+                    <small>{r.attempt ? <b className={r.attempt === "FINAL" ? "fc-final-attempt" : ""}>{r.attempt} ATTEMPT · </b> : null}{r.by}: {r.reason || "see HPD's email"}</small>
                   </button>
                   <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}`}>Fix &amp; resend →</a>
                 </li>
@@ -3356,7 +3356,7 @@ export default function FieldCommandClient() {
                     <div className="fc-reject-row">
                       <span><b>{r.omo}</b> <em className="is-late">rejected {Number(r.at.slice(5, 7))}/{Number(r.at.slice(8, 10))}/{r.at.slice(2, 4)}</em></span>
                       <span>{r.address || "older job (not on the map)"}</span>
-                      <small>{r.by}: {r.reason || "see HPD's email"}{r.count > 1 ? ` · rejected ${r.count}x` : ""}</small>
+                      <small>{r.attempt ? <b className={r.attempt === "FINAL" ? "fc-final-attempt" : ""}>{r.attempt} ATTEMPT · </b> : null}{r.by}: {r.reason || "see HPD's email"}{r.count > 1 ? ` · rejected ${r.count}x` : ""}</small>
                       <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}`}>Fix &amp; resend paperwork →</a>
                     </div>
                   </li>
