@@ -6,6 +6,7 @@
 // checked against HumbleFax's confirmation email and can be resent. "My bids" tracks every bid sent:
 // won, not awarded or pending, and your win rate (lib/bid-records.ts).
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import SentBidStats from "./SentBidStats";
 import { priceHelp, readScope, winChance, type PricedJob } from "../../lib/bid-price";
 import { beats, bidStats, easyWin, historyRows, filterHistory, myPrices, workHistory, workKey, type Group, type HistoryFilter, type MarketJob, type MonthPoint, type WorkPrice } from "../../lib/bid-stats";
 import type { UpcomingBid } from "../../lib/bid-fill";
@@ -705,6 +706,7 @@ function BidStatsView({ stats, loading, jobs, learned }: { stats: ReturnType<typ
         <div><b>{money(o.moneyWon)}</b><small>you won</small></div>
         <div><b>{money(o.moneyLost)}</b><small>went to other contractors</small></div>
       </div>
+      <SentBidStats />
       <p className="fc-stats-note">From {o.invitations.toLocaleString()} invitations you received that HPD awarded, with the price each was won at (NYC Open Data, updated nightly). &quot;You&quot; is your typical winning price, &quot;Others&quot; other contractors&apos; typical winning price. Won counts every invitation received, including ones you didn&apos;t bid on.</p>
       {stats.moves.length ? (
         <section className="fc-stats-block" data-hpd-smoke="fc-stats-moves">

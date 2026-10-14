@@ -1,6 +1,6 @@
 {
-"generatedAt": "2026-10-14T01:48:59.382850+00:00",
-"since": "2026/09/30",
+"generatedAt": "2026-10-14T03:33:38.574134+00:00",
+"since": "2025/11/01",
 "jobs": {
 "EN04541": [
 {
@@ -103,6 +103,16 @@
 "via": "hpd-staff"
 }
 ],
+"EO04289": [
+{
+"date": "2026-04-08",
+"to": "\"Basdeo, Bheesham (HPD)\" <BasdeoB@hpd.nyc.gov>",
+"file": "EO04289_101123032634 614, WEST 152 STREET PAGE 1 AFF.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Re: Rejections",
+"via": "hpd-staff"
+}
+],
 "EO07421": [
 {
 "date": "2025-12-18",
@@ -170,6 +180,16 @@
 "file": "EO13896 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: FW: Stop Work Notice",
+"via": "hpd-staff"
+}
+],
+"EO14779": [
+{
+"date": "2026-04-08",
+"to": "\"Basdeo, Bheesham (HPD)\" <BasdeoB@hpd.nyc.gov>",
+"file": "EO14779_120723103740 1520, ST NICHOLAS AVENUE PAGE 1 AFF.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Re: Rejections",
 "via": "hpd-staff"
 }
 ],
@@ -415,6 +435,16 @@
 "file": "EO22653 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] Re: Status Update / Missing Documents",
+"via": "hpd-staff"
+}
+],
+"EO24905": [
+{
+"date": "2026-04-08",
+"to": "\"Basdeo, Bheesham (HPD)\" <BasdeoB@hpd.nyc.gov>",
+"file": "EO24905_041824025651 252, KINGSLAND AVENUE  PAGE 1 AFF.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Re: Rejections",
 "via": "hpd-staff"
 }
 ],
@@ -3317,6 +3347,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ00908": [
+{
+"date": "2025-11-21",
+"to": "\"Walls, Adrean (HPD)\" <WallsAdr@hpd.nyc.gov>",
+"file": "EQ00908_071125025153.pdf",
+"outcome": "",
+"subject": "Re: United Angel Construction Insurance request",
+"via": "hpd-staff"
+}
+],
 "EQ01300": [
 {
 "date": "2025-11-25",
@@ -4168,6 +4208,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ04541": [
+{
+"date": "2025-11-03",
+"to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
+"file": "EQ04541AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] United Angel Updates",
+"via": "hpd-staff"
+}
+],
 "EQ04561": [
 {
 "date": "2025-12-04",
@@ -5008,6 +5058,14 @@
 "via": "hpd-staff"
 },
 {
+"date": "2026-02-17",
+"to": "\"Patel, Mahendra (HPD)\" <patelma@hpd.nyc.gov>",
+"file": "EQ07251_091925113151.pdf",
+"outcome": "",
+"subject": "EQ07251_091925113151 DOH Clean",
+"via": "hpd-staff"
+},
+{
 "date": "2026-02-25",
 "to": "\"Woods, Sean (HPD)\" <WoodsS@hpd.nyc.gov>",
 "file": "EO27251 AFF INVOICE.pdf",
@@ -5368,6 +5426,30 @@
 "file": "EQ07910 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] Re: Yet to file- DOH Clean OMOs- EQ07363",
+"via": "hpd-staff"
+},
+{
+"date": "2026-02-18",
+"to": "\"Campbell, Roy (HPD)\" <campbelr@hpd.nyc.gov>",
+"file": "EQ07910_092925122419.pdf",
+"outcome": "",
+"subject": "EQ07910_092925122419 DOH Clean",
+"via": "hpd-staff"
+},
+{
+"date": "2026-02-18",
+"to": "\"Campbell, Roy  (HPD)\" <campbelr@hpd.nyc.gov>",
+"file": "image001.png",
+"outcome": "",
+"subject": "Re: [EXTERNAL] EQ07910_092925122419 DOH Clean",
+"via": "hpd-staff"
+},
+{
+"date": "2026-02-19",
+"to": "\"Campbell, Roy (HPD)\" <campbelr@hpd.nyc.gov>",
+"file": "image001.png",
+"outcome": "",
+"subject": "Re: [EXTERNAL] EQ07910_092925122419 DOH Clean",
 "via": "hpd-staff"
 },
 {
@@ -6111,6 +6193,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ09623": [
+{
+"date": "2025-11-12",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ10860_110625112908_94-85_218_STREET_Queens_NY.pdf",
+"outcome": "",
+"subject": "Fwd: Bid",
+"via": "hpd-staff"
+}
+],
 "EQ09832": [
 {
 "date": "2025-12-02",
@@ -6546,6 +6638,14 @@
 ],
 "EQ10429": [
 {
+"date": "2025-11-03",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ10429_102325051753_274_MOTT_STREET_Apt._CMN_Manhattan_NY.pdf",
+"outcome": "",
+"subject": "Bid Doh Clean",
+"via": "hpd-staff"
+},
+{
 "date": "2025-12-16",
 "to": "\"Mathen John, Manu (HPD)\" <JohnMan@hpd.nyc.gov>",
 "file": "EQ10429 AFF INVOICE.pdf",
@@ -6594,6 +6694,14 @@
 }
 ],
 "EQ10486": [
+{
+"date": "2025-11-03",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ10486_102325051626_926_EAST_29_STREET_Apt._PVT_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Doh clean bid",
+"via": "hpd-staff"
+},
 {
 "date": "2025-12-04",
 "to": "\"Mathen John, Manu (HPD)\" <JohnMan@hpd.nyc.gov>",
@@ -6752,6 +6860,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ10829": [
+{
+"date": "2025-11-03",
+"to": "\"Carvajal Dimas, Juan (HPD)\" <CarvajaJ@hpd.nyc.gov>",
+"file": "EQ10829_103125014647_468_RALPH_AVENUE_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Bids",
+"via": "hpd-staff"
+}
+],
 "EQ10851": [
 {
 "date": "2025-11-08",
@@ -6774,6 +6892,16 @@
 "file": "EQ10851 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] OMO No: EQ10851 Issuer: JEAN VRINE Boro: Brooklyn Bldg Address: 110, THATFORD AVENUE",
+"via": "hpd-staff"
+}
+],
+"EQ10860": [
+{
+"date": "2025-11-12",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ10860_110625112908_94-85_218_STREET_Queens_NY.pdf",
+"outcome": "",
+"subject": "Fwd: Bid",
 "via": "hpd-staff"
 }
 ],
@@ -6846,6 +6974,34 @@
 "via": "hpd-staff"
 }
 ],
+"EQ11030": [
+{
+"date": "2025-11-03",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ11030_103125010408_744_PENNSYLVANIA_AVENUE_Apt._B6_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Bids United",
+"via": "hpd-staff"
+}
+],
+"EQ11111": [
+{
+"date": "2025-11-03",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ11111_103125034501_2850_FREDERICK_DOUGLASS_BOULEVARD_Apt._CMN_Manhattan_NY.pdf",
+"outcome": "",
+"subject": "Doh Clean Bid",
+"via": "hpd-staff"
+},
+{
+"date": "2025-11-06",
+"to": "\"Kowlessar, Dennis (HPD)\" <KowlessD@hpd.nyc.gov>",
+"file": "EQ11292_110625021004_114-21_178_STREET_Apt._PVT_Queens_NY.pdf",
+"outcome": "",
+"subject": "DOH CLEAN BIDS",
+"via": "hpd-staff"
+}
+],
 "EQ11113": [
 {
 "date": "2025-11-03",
@@ -6857,6 +7013,14 @@
 }
 ],
 "EQ11128": [
+{
+"date": "2025-11-03",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ11128_103125040031_324_IRVING_AVENUE_Apt._1_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Doh Clean Bid",
+"via": "hpd-staff"
+},
 {
 "date": "2025-12-04",
 "to": "\"Mathen John, Manu (HPD)\" <JohnMan@hpd.nyc.gov>",
@@ -6870,6 +7034,16 @@
 "file": "EQ11128 AFF INVOICE DOH CLEAN.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] Re: Yet to file- DOH Clean OMOs",
+"via": "hpd-staff"
+}
+],
+"EQ11155": [
+{
+"date": "2025-11-03",
+"to": "\"Mathi, Mathews (HPD)\" <MathiM@hpd.nyc.gov>",
+"file": "EQ11155_103125120956_141_BEACH_56_PLACE_Queens_NY.pdf",
+"outcome": "",
+"subject": "Bids",
 "via": "hpd-staff"
 }
 ],
@@ -6927,6 +7101,22 @@
 ],
 "EQ11292": [
 {
+"date": "2025-11-03",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ11292_103125040402_114-21_178_STREET_Apt._PVT_Queens_NY.pdf",
+"outcome": "",
+"subject": "Doh Clean Bid",
+"via": "hpd-staff"
+},
+{
+"date": "2025-11-06",
+"to": "\"Kowlessar, Dennis (HPD)\" <KowlessD@hpd.nyc.gov>",
+"file": "EQ11292_110625021004_114-21_178_STREET_Apt._PVT_Queens_NY.pdf",
+"outcome": "",
+"subject": "DOH CLEAN BIDS",
+"via": "hpd-staff"
+},
+{
 "date": "2025-12-04",
 "to": "\"Mathen John, Manu (HPD)\" <JohnMan@hpd.nyc.gov>",
 "file": "EQ11292 AFF INVOICE DOH CLEAN.pdf",
@@ -6939,6 +7129,24 @@
 "file": "EQ11128 AFF INVOICE DOH CLEAN.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] Re: Yet to file- DOH Clean OMOs",
+"via": "hpd-staff"
+}
+],
+"EQ11302": [
+{
+"date": "2025-11-03",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ11302_103125040222_87-69_123_STREET_Apt._PVT_Queens_NY.pdf",
+"outcome": "",
+"subject": "Corrected Bid Amount",
+"via": "hpd-staff"
+},
+{
+"date": "2025-11-03",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ11302_103125040222_87-69_123_STREET_Apt._PVT_Queens_NY.pdf",
+"outcome": "",
+"subject": "Doh Clean Bid",
 "via": "hpd-staff"
 }
 ],
@@ -7043,7 +7251,43 @@
 "via": "hpd-staff"
 }
 ],
+"EQ11669": [
+{
+"date": "2025-11-12",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ10860_110625112908_94-85_218_STREET_Queens_NY.pdf",
+"outcome": "",
+"subject": "Fwd: Bid",
+"via": "hpd-staff"
+}
+],
+"EQ11675": [
+{
+"date": "2025-11-12",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ10860_110625112908_94-85_218_STREET_Queens_NY.pdf",
+"outcome": "",
+"subject": "Fwd: Bid",
+"via": "hpd-staff"
+}
+],
 "EQ11691": [
+{
+"date": "2025-11-12",
+"to": "\"Fahmy, George (HPD)\" <fahmyg@hpd.nyc.gov>",
+"file": "EQ11693_111025104202_101_28_AVENUE_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Fwd: Bid",
+"via": "hpd-staff"
+},
+{
+"date": "2025-11-12",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ11693_111025104202_101_28_AVENUE_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Fwd: Bid",
+"via": "hpd-staff"
+},
 {
 "date": "2025-12-26",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
@@ -7061,6 +7305,22 @@
 }
 ],
 "EQ11693": [
+{
+"date": "2025-11-12",
+"to": "\"Fahmy, George (HPD)\" <fahmyg@hpd.nyc.gov>",
+"file": "EQ11693_111025104202_101_28_AVENUE_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Fwd: Bid",
+"via": "hpd-staff"
+},
+{
+"date": "2025-11-12",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ11693_111025104202_101_28_AVENUE_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Fwd: Bid",
+"via": "hpd-staff"
+},
 {
 "date": "2025-11-13",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
@@ -7124,6 +7384,22 @@
 ],
 "EQ11782": [
 {
+"date": "2025-11-12",
+"to": "\"Fahmy, George (HPD)\" <fahmyg@hpd.nyc.gov>",
+"file": "EQ11693_111025104202_101_28_AVENUE_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Fwd: Bid",
+"via": "hpd-staff"
+},
+{
+"date": "2025-11-12",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ11693_111025104202_101_28_AVENUE_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Fwd: Bid",
+"via": "hpd-staff"
+},
+{
 "date": "2025-12-26",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "EQ11782 AFF INVOICE.pdf",
@@ -7140,6 +7416,22 @@
 }
 ],
 "EQ11816": [
+{
+"date": "2025-11-12",
+"to": "\"Fahmy, George (HPD)\" <fahmyg@hpd.nyc.gov>",
+"file": "EQ11693_111025104202_101_28_AVENUE_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Fwd: Bid",
+"via": "hpd-staff"
+},
+{
+"date": "2025-11-12",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ11693_111025104202_101_28_AVENUE_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Fwd: Bid",
+"via": "hpd-staff"
+},
 {
 "date": "2025-11-18",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
@@ -7190,6 +7482,22 @@
 }
 ],
 "EQ11855": [
+{
+"date": "2025-11-07",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ11855_110725042416_232_HULL_STREET_Apt._1L_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Updated Bid DOH CLEAN",
+"via": "hpd-staff"
+},
+{
+"date": "2025-11-07",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ11855_110725124122_232_HULL_STREET_Apt._1L_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "DOH clean bid",
+"via": "hpd-staff"
+},
 {
 "date": "2025-11-20",
 "to": "\"Peters, Rupert  (HPD)\" <petersr@hpd.nyc.gov>",
@@ -7475,6 +7783,14 @@
 "via": "hpd-staff"
 },
 {
+"date": "2026-03-05",
+"to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
+"file": "EQ12322_111925053114.pdf",
+"outcome": "",
+"subject": "EQ12322_111925053114 Appointment Scheduled",
+"via": "hpd-staff"
+},
+{
 "date": "2026-03-07",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "VIDEO-2026-03-07-15-58-31.mp4",
@@ -7516,6 +7832,22 @@
 "outcome": "",
 "subject": "Re: Invitation to Bid for OMO # EQ12355",
 "via": "hpd-staff"
+},
+{
+"date": "2025-11-14",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ12366_111425120356_1102_FLATBUSH_AVENUE_Apt._3F_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Doh Clean Bids United Angel Const",
+"via": "hpd-staff"
+},
+{
+"date": "2025-11-14",
+"to": "\"Perrotte-David, Kelly Ann (HPD)\" <DavidK@hpd.nyc.gov>",
+"file": "EQ12355_111325044558_95-02_90_AVENUE_Apt._BSMT_Queens_NY.pdf",
+"outcome": "",
+"subject": "Doh clean bid",
+"via": "hpd-staff"
 }
 ],
 "EQ12362": [
@@ -7542,6 +7874,22 @@
 "file": "Invitationto bid OMO EQ12366.pdf",
 "outcome": "",
 "subject": "Re: Invitation to Bid for OMO # EQ12366",
+"via": "hpd-staff"
+},
+{
+"date": "2025-11-14",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ12366_111425120356_1102_FLATBUSH_AVENUE_Apt._3F_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Doh Clean Bids United Angel Const",
+"via": "hpd-staff"
+},
+{
+"date": "2025-11-14",
+"to": "\"Perrotte-David, Kelly Ann (HPD)\" <DavidK@hpd.nyc.gov>",
+"file": "EQ12366_111325044410_1102_FLATBUSH_AVENUE_Apt._3F_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Doh Clean Bid",
 "via": "hpd-staff"
 },
 {
@@ -8032,6 +8380,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ12994": [
+{
+"date": "2025-12-17",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ12994_121625124453_95-02_90_AVENUE_Apt._BSMT_Queens_NY.pdf",
+"outcome": "",
+"subject": "Re: Doh Clean Bid",
+"via": "hpd-staff"
+}
+],
 "EQ13025": [
 {
 "date": "2026-07-06",
@@ -8046,6 +8404,16 @@
 "file": "EQ13025 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: Missing Documents / Status Update",
+"via": "hpd-staff"
+}
+],
+"EQ13075": [
+{
+"date": "2025-12-30",
+"to": "2128638655@rcfax.com, \"D'Antuono, Anthony (HPD)\" <DAntuonA@hpd.nyc.gov>",
+"file": "EQ13075_122925083452_404_WESTMINSTER_ROAD_Apt._2_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Bid",
 "via": "hpd-staff"
 }
 ],
@@ -8147,6 +8515,16 @@
 "file": "EQ13270 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] OMO No: EQ13270 Issuer: ALI ABDULLAH Boro: Brooklyn Bldg Address: 774, ROCKAWAY AVENUE",
+"via": "hpd-staff"
+}
+],
+"EQ13297": [
+{
+"date": "2025-12-02",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ13297_112625020712_479_HARMAN_STREET_Apt._1R_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Doh Clean Bid",
 "via": "hpd-staff"
 }
 ],
@@ -8413,6 +8791,34 @@
 "file": "EQ13828 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: OMO No: EQ16312 Issuer: YVETTE CARRERO Boro: Brooklyn Bldg Address: 1682, PARK PLACE",
+"via": "hpd-staff"
+}
+],
+"EQ13853": [
+{
+"date": "2025-12-11",
+"to": "2128638655@rcfax.com, \"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ13853_121025011822_1054_PARK_PLACE_Apt._2A_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Doh Clean Bids",
+"via": "hpd-staff"
+},
+{
+"date": "2025-12-17",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ13853_121625123157_1054_PARK_PLACE_Apt._2A_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Doh Clean Bid",
+"via": "hpd-staff"
+}
+],
+"EQ13938": [
+{
+"date": "2026-02-03",
+"to": "\"Fahmy, George (HPD)\" <fahmyg@hpd.nyc.gov>",
+"file": "EQ13938_020226113440_270_15_STREET_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "EQ13938_020226113440_270_15_STREET_Brooklyn_NY",
 "via": "hpd-staff"
 }
 ],
@@ -8714,6 +9120,14 @@
 ],
 "EQ14085": [
 {
+"date": "2025-12-16",
+"to": "\"Carvajal Dimas, Juan (HPD)\" <CarvajaJ@hpd.nyc.gov>",
+"file": "EQ14085_121525011924_510_WEST_218_STREET_Manhattan_NY.pdf",
+"outcome": "",
+"subject": "Bid Price Included",
+"via": "hpd-staff"
+},
+{
 "date": "2026-03-02",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "EQ14085 AFF INVOICE.pdf",
@@ -8785,6 +9199,16 @@
 "file": "EQ14128 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: FW: STOP WROK NOTICE",
+"via": "hpd-staff"
+}
+],
+"EQ14140": [
+{
+"date": "2025-12-10",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ14140_121025114440_97_MILLER_AVENUE_Apt._1_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Doh clean bid",
 "via": "hpd-staff"
 }
 ],
@@ -8902,6 +9326,14 @@
 "file": "EQ14193 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: FW: STOP WROK NOTICE",
+"via": "hpd-staff"
+},
+{
+"date": "2026-02-25",
+"to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
+"file": "EQ14193_121025014148.pdf",
+"outcome": "",
+"subject": "EQ14193_121025014148",
 "via": "hpd-staff"
 }
 ],
@@ -9032,6 +9464,24 @@
 "file": "EQ14326 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: FW: STOP WROK NOTICE",
+"via": "hpd-staff"
+}
+],
+"EQ14327": [
+{
+"date": "2025-12-11",
+"to": "2128638655@rcfax.com, \"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ13853_121025011822_1054_PARK_PLACE_Apt._2A_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Doh Clean Bids",
+"via": "hpd-staff"
+},
+{
+"date": "2025-12-17",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ13853_121625123157_1054_PARK_PLACE_Apt._2A_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Doh Clean Bid",
 "via": "hpd-staff"
 }
 ],
@@ -9217,6 +9667,16 @@
 "file": "EQ14519 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: FW: STOP WROK NOTICE",
+"via": "hpd-staff"
+}
+],
+"EQ14525": [
+{
+"date": "2025-12-17",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ13853_121625123157_1054_PARK_PLACE_Apt._2A_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Doh Clean Bid",
 "via": "hpd-staff"
 }
 ],
@@ -9616,6 +10076,14 @@
 ],
 "EQ15223": [
 {
+"date": "2025-12-24",
+"to": "2128638655@rcfax.com, \"Fahmy, George (HPD)\" <fahmyg@hpd.nyc.gov>",
+"file": "EQ15223_122325024416_2502_CORTELYOU_ROAD_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Bids",
+"via": "hpd-staff"
+},
+{
 "date": "2026-02-06",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "EQ15223 AFF INVOICE.pdf",
@@ -9670,6 +10138,16 @@
 "file": "EQ15260 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] Re: FW: Stop Work Notice",
+"via": "hpd-staff"
+}
+],
+"EQ15266": [
+{
+"date": "2025-12-29",
+"to": "2128638655@rcfax.com, \"Perrotte-David, Kelly Ann (HPD)\" <DavidK@hpd.nyc.gov>",
+"file": "EQ15266_122625102251_702_PENNSYLVANIA_AVENUE_Apt._2F_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Bids",
 "via": "hpd-staff"
 }
 ],
@@ -9910,6 +10388,16 @@
 "file": "EQ15489 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "EQ15489  395 MAPLE STREET",
+"via": "hpd-staff"
+}
+],
+"EQ15538": [
+{
+"date": "2025-12-29",
+"to": "2128638655@rcfax.com, \"Perrotte-David, Kelly Ann (HPD)\" <DavidK@hpd.nyc.gov>",
+"file": "EQ15538_122625012416_110_CATON_AVENUE_Apt._3F_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Bids",
 "via": "hpd-staff"
 }
 ],
@@ -10362,6 +10850,14 @@
 "file": "EQ15878_123125103532_240_EAST_119_STREET_Apt._2D_Manhattan_NY.pdf",
 "outcome": "",
 "subject": "Bid retract EQ15878",
+"via": "hpd-staff"
+},
+{
+"date": "2026-01-02",
+"to": "\"Lesure, Michael (HPD)\" <lesurem@hpd.nyc.gov>",
+"file": "EQ15878_123125103532_240_EAST_119_STREET_Apt._2D_Manhattan_NY.pdf",
+"outcome": "",
+"subject": "Revised bid",
 "via": "hpd-staff"
 }
 ],
@@ -11669,6 +12165,14 @@
 "outcome": "",
 "subject": "EQ17661 888 East 96 Street",
 "via": "hpd-staff"
+},
+{
+"date": "2026-03-30",
+"to": "\"Gafur, Deoranie (HPD)\" <GafurD@hpd.nyc.gov>",
+"file": "PHOTO-2026-03-26-14-20-20.jpg",
+"outcome": "",
+"subject": "EQ17661_012426041148",
+"via": "hpd-staff"
 }
 ],
 "EQ17689": [
@@ -11714,6 +12218,22 @@
 }
 ],
 "EQ17708": [
+{
+"date": "2026-03-02",
+"to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
+"file": "EQ17008 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: EQ17708_012026100854",
+"via": "hpd-staff"
+},
+{
+"date": "2026-03-02",
+"to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
+"file": "PHOTO-2026-02-28-12-32-28.jpg",
+"outcome": "",
+"subject": "EQ17708_012026100854",
+"via": "hpd-staff"
+},
 {
 "date": "2026-03-24",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
@@ -12109,6 +12629,14 @@
 ],
 "EQ18096": [
 {
+"date": "2026-01-26",
+"to": "105E106Canon6@hpd.nyc.gov, 2128638655@rcfax.com",
+"file": "EQ18096_012326045332_77-10_DITMARS_BOULEVARD_Apt._B3_Queens_NY.pdf",
+"outcome": "",
+"subject": "Fwd: Bid",
+"via": "hpd-staff"
+},
+{
 "date": "2026-02-27",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "EQ18096 AFF INVOICE.pdf",
@@ -12288,6 +12816,24 @@
 "via": "hpd-staff"
 }
 ],
+"EQ18323": [
+{
+"date": "2026-01-27",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ18323_012626030146_1314_OAKLEY_STREET_Bronx_NY.pdf",
+"outcome": "",
+"subject": "Bid price updated",
+"via": "hpd-staff"
+},
+{
+"date": "2026-01-27",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ18323_012626030146_1314_OAKLEY_STREET_Bronx_NY.pdf",
+"outcome": "",
+"subject": "Bid",
+"via": "hpd-staff"
+}
+],
 "EQ18367": [
 {
 "date": "2026-03-12",
@@ -12427,6 +12973,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ18722": [
+{
+"date": "2026-02-13",
+"to": "\"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>, 2128638655@rcfax.com",
+"file": "EQ18722_021226083441_255_EASTERN_PARKWAY_Apt._D3_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Fwd: EQ18722_021226083441_255_EASTERN_PARKWAY_Apt._D3_Brooklyn_NY",
+"via": "hpd-staff"
+}
+],
 "EQ18870": [
 {
 "date": "2026-03-20",
@@ -12488,6 +13044,24 @@
 "file": "image001.png",
 "outcome": "",
 "subject": "Re: [EXTERNAL] Fwd: OMO No: EQ18870 Boro: Brooklyn Bldg Address: 487, EAST 93 STREET",
+"via": "hpd-staff"
+}
+],
+"EQ18873": [
+{
+"date": "2026-02-06",
+"to": "\"Fahmy, George (HPD)\" <fahmyg@hpd.nyc.gov>",
+"file": "EQ18873_020526114320_88-40_163_STREET_Apt._1F_Queens_NY.pdf",
+"outcome": "",
+"subject": "EQ18873_020526114320_88-40_163_STREET_Apt._1F_Queens_NY",
+"via": "hpd-staff"
+},
+{
+"date": "2026-02-06",
+"to": "\"Fahmy, George (HPD)\" <FahmyG@hpd.nyc.gov>",
+"file": "Outlook-logo.png",
+"outcome": "",
+"subject": "Re: [EXTERNAL] EQ18873_020526114320_88-40_163_STREET_Apt._1F_Queens_NY",
 "via": "hpd-staff"
 }
 ],
@@ -12638,6 +13212,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ19354": [
+{
+"date": "2026-05-04",
+"to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
+"file": "EQ19354_021126102324_1427_FLATBUSH_AVENUE_Brooklyn_NY AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Re: UNITED ANGEL CONSTRUCTION UPDATES",
+"via": "hpd-staff"
+}
+],
 "EQ19358": [
 {
 "date": "2026-04-01",
@@ -12652,6 +13236,16 @@
 "file": "EQ19358 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: FW: Stop Work Notice",
+"via": "hpd-staff"
+}
+],
+"EQ19388": [
+{
+"date": "2026-02-09",
+"to": "2128638655@rcfax.com, \"Perrotte-David, Kelly Ann (HPD)\" <DavidK@hpd.nyc.gov>",
+"file": "EQ19388_020526023113_30-81_47_STREET_Queens_NY.pdf",
+"outcome": "",
+"subject": "EQ19388_020526023113_30-81_47_STREET_Queens_NY",
 "via": "hpd-staff"
 }
 ],
@@ -13004,6 +13598,14 @@
 ],
 "EQ19956": [
 {
+"date": "2026-02-19",
+"to": "105E106Canon6@hpd.nyc.gov, 2128638655@rcfax.com, 2128637805@rcfax.com, 2128637804@rcfax.com",
+"file": "EQ19956_021726103235_1413_STANLEY_AVENUE_Apt._2_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Fwd: EQ19956_021726103235_1413_STANLEY_AVENUE_Apt._2_Brooklyn_NY",
+"via": "hpd-staff"
+},
+{
 "date": "2026-04-22",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "EQ19956 AFF INVOICE.pdf",
@@ -13046,6 +13648,14 @@
 ],
 "EQ19990": [
 {
+"date": "2026-02-13",
+"to": "2128638655@rcfax.com, \"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ19990_021226021319_226_MT_HOPE_PLACE_Apt._4A_Bronx_NY.pdf",
+"outcome": "",
+"subject": "Fwd: EQ19990_021226021319_226_MT_HOPE_PLACE_Apt._4A_Bronx_NY",
+"via": "hpd-staff"
+},
+{
 "date": "2026-09-17",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "EQ19990 AFF INVOICE.pdf",
@@ -13087,6 +13697,14 @@
 }
 ],
 "EQ20008": [
+{
+"date": "2026-02-13",
+"to": "2128638655@rcfax.com, \"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ20008_021226040342_2420_MORRIS_AVENUE_Apt._2F_Bronx_NY.pdf",
+"outcome": "",
+"subject": "Fwd: EQ20008_021226040342_2420_MORRIS_AVENUE_Apt._2F_Bronx_NY",
+"via": "hpd-staff"
+},
 {
 "date": "2026-02-24",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
@@ -13138,6 +13756,30 @@
 }
 ],
 "EQ20134": [
+{
+"date": "2026-02-19",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ20134_021726114656_435_HERZL_STREET_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "Fwd: EQ20134_021726114656_435_HERZL_STREET_Brooklyn_NY",
+"via": "hpd-staff"
+},
+{
+"date": "2026-02-19",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ20134_021726114656_435_HERZL_STREET_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "EQ20134_021726114656_435_HERZL_STREET_Brooklyn_NY",
+"via": "hpd-staff"
+},
+{
+"date": "2026-02-19",
+"to": "2128638655@rcfax.com, 2128637805@rcfax.com, 2128637804@rcfax.com, \"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ20134_021726114656_435_HERZL_STREET_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "EQ20134_021726114656_435_HERZL_STREET_Brooklyn_NY",
+"via": "hpd-staff"
+},
 {
 "date": "2026-03-13",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
@@ -13224,6 +13866,16 @@
 "file": "EQ20161 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] OMO No: EQ20161 Boro: Manhattan Bldg Address: 1766, 2 AVENUE",
+"via": "hpd-staff"
+}
+],
+"EQ20171": [
+{
+"date": "2026-02-19",
+"to": "\"Carvajal Dimas, Juan (HPD)\" <CarvajaJ@hpd.nyc.gov>",
+"file": "EQ20171_021726011200_88-25_MERRICK_BOULEVARD_Queens_NY.pdf",
+"outcome": "",
+"subject": "EQ20171_021726011200_88-25_MERRICK_BOULEVARD_Queens_NY",
 "via": "hpd-staff"
 }
 ],
@@ -13516,6 +14168,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ20675": [
+{
+"date": "2026-04-23",
+"to": "\"D'Antuono, Anthony (HPD)\" <DAntuonA@hpd.nyc.gov>",
+"file": "EQ20675_042226125156_920_72_STREET_Apt._4E_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "EQ20675_042226125156_920_72_STREET_Apt._4E_Brooklyn_NY",
+"via": "hpd-staff"
+}
+],
 "EQ20689": [
 {
 "date": "2026-03-13",
@@ -13597,6 +14259,16 @@
 "file": "image001.png",
 "outcome": "",
 "subject": "Re: OMO EQ20771",
+"via": "hpd-staff"
+}
+],
+"EQ20802": [
+{
+"date": "2026-03-12",
+"to": "2128638655@humblefax.com, \"Gorodnichenko, Vladimir (HPD)\" <gorodniv@hpd.nyc.gov>",
+"file": "EQ20802_031126051920_130-13_92_AVENUE_Queens_NY.pdf",
+"outcome": "",
+"subject": "EQ20802_031126051920_130-13_92_AVENUE_Queens_NY",
 "via": "hpd-staff"
 }
 ],
@@ -13851,6 +14523,16 @@
 "file": "EQ21151 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] Re: FW 72/24 Hr Poor Performance : Xerox Scan",
+"via": "hpd-staff"
+}
+],
+"EQ21156": [
+{
+"date": "2026-03-16",
+"to": "\"D'Antuono, Anthony (HPD)\" <DAntuonA@hpd.nyc.gov>, 2128638655@humblefax.com",
+"file": "EQ21156_031326012030_1971_GRAND_AVENUE_Apt._1F_Bronx_NY.pdf",
+"outcome": "",
+"subject": "EQ21156_031326012030_1971_GRAND_AVENUE_Apt._1F_Bronx_NY",
 "via": "hpd-staff"
 }
 ],
@@ -14557,6 +15239,22 @@
 ],
 "EQ21960": [
 {
+"date": "2026-03-16",
+"to": "\"Perrotte-David, Kelly Ann (HPD)\" <DavidK@hpd.nyc.gov>",
+"file": "EQ21960_031126024920_UnknownAddress_UnknownBoro_NY.pdf",
+"outcome": "",
+"subject": "Re: EQ21960_031126024920_UnknownAddress_UnknownBoro_NY",
+"via": "hpd-staff"
+},
+{
+"date": "2026-03-16",
+"to": "\"Perrotte-David, Kelly Ann (HPD)\" <DavidK@hpd.nyc.gov>",
+"file": "EQ21960_031126024920_UnknownAddress_UnknownBoro_NY.pdf",
+"outcome": "",
+"subject": "EQ21960_031126024920_UnknownAddress_UnknownBoro_NY",
+"via": "hpd-staff"
+},
+{
 "date": "2026-04-30",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "EQ21960 AFF INVOICE.pdf",
@@ -15162,6 +15860,14 @@
 ],
 "EQ23165": [
 {
+"date": "2026-03-24",
+"to": "\"Carvajal Dimas, Juan (HPD)\" <CarvajaJ@hpd.nyc.gov>",
+"file": "EQ23165_032326051145_3211_PARKSIDE_PLACE_Bronx_NY.pdf",
+"outcome": "",
+"subject": "EQ23165_032326051145_3211_PARKSIDE_PLACE_Bronx_NY",
+"via": "hpd-staff"
+},
+{
 "date": "2026-04-15",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "EQ23165  AFF INVOICE.pdf",
@@ -15215,6 +15921,16 @@
 "file": "PHOTO-2026-05-13-10-00-01.jpg",
 "outcome": "",
 "subject": "OMO No: EQ23180 Issuer: ANTHONY DANTUONO Boro: Queens Bldg Address: 119-26, 153 STREET",
+"via": "hpd-staff"
+}
+],
+"EQ23185": [
+{
+"date": "2026-04-17",
+"to": "\"Lesure, Michael (HPD)\" <lesurem@hpd.nyc.gov>",
+"file": "EQ23185_041726024008_248-18_FRANCIS_LEWIS_BOULEVARD_Apt._2_Queens_NY.pdf",
+"outcome": "",
+"subject": "EQ23185_041726024008_248-18_FRANCIS_LEWIS_BOULEVARD_Apt._2_Queens_NY",
 "via": "hpd-staff"
 }
 ],
@@ -15485,6 +16201,36 @@
 "file": "EQ23517 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] UNITED ANGEL CONSTRUCTION UPDATES",
+"via": "hpd-staff"
+}
+],
+"EQ23530": [
+{
+"date": "2026-04-02",
+"to": "\"Carvajal Dimas, Juan (HPD)\" <CarvajaJ@hpd.nyc.gov>",
+"file": "EQ23530_033126041659_4197_BROADWAY_Apt._31_Manhattan_NY.pdf",
+"outcome": "",
+"subject": "EQ23530_033126041659_4197_BROADWAY_Apt._31_Manhattan_NY",
+"via": "hpd-staff"
+}
+],
+"EQ23570": [
+{
+"date": "2026-04-09",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ23936_040726041200_1581_FULTON_AVENUE_Bronx_NY.pdf",
+"outcome": "",
+"subject": "Fwd: EQ24521_040726041405_2134_AMSTERDAM_AVENUE_Manhattan_NY",
+"via": "hpd-staff"
+}
+],
+"EQ23571": [
+{
+"date": "2026-04-09",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ23936_040726041200_1581_FULTON_AVENUE_Bronx_NY.pdf",
+"outcome": "",
+"subject": "Fwd: EQ24521_040726041405_2134_AMSTERDAM_AVENUE_Manhattan_NY",
 "via": "hpd-staff"
 }
 ],
@@ -15813,6 +16559,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ23936": [
+{
+"date": "2026-04-09",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ23936_040726041200_1581_FULTON_AVENUE_Bronx_NY.pdf",
+"outcome": "",
+"subject": "Fwd: EQ24521_040726041405_2134_AMSTERDAM_AVENUE_Manhattan_NY",
+"via": "hpd-staff"
+}
+],
 "EQ24010": [
 {
 "date": "2026-06-25",
@@ -15965,6 +16721,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ24318": [
+{
+"date": "2026-04-09",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ23936_040726041200_1581_FULTON_AVENUE_Bronx_NY.pdf",
+"outcome": "",
+"subject": "Fwd: EQ24521_040726041405_2134_AMSTERDAM_AVENUE_Manhattan_NY",
+"via": "hpd-staff"
+}
+],
 "EQ24355": [
 {
 "date": "2026-05-21",
@@ -16055,6 +16821,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ24440": [
+{
+"date": "2026-04-09",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ23936_040726041200_1581_FULTON_AVENUE_Bronx_NY.pdf",
+"outcome": "",
+"subject": "Fwd: EQ24521_040726041405_2134_AMSTERDAM_AVENUE_Manhattan_NY",
+"via": "hpd-staff"
+}
+],
 "EQ24468": [
 {
 "date": "2026-04-16",
@@ -16077,6 +16853,26 @@
 "file": "EQ24468 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] OMO No: EQ24468 Issuer: YVETTE CARRERO Boro: Brooklyn Bldg Address: 380, CRESCENT STREET",
+"via": "hpd-staff"
+}
+],
+"EQ24481": [
+{
+"date": "2026-04-09",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ23936_040726041200_1581_FULTON_AVENUE_Bronx_NY.pdf",
+"outcome": "",
+"subject": "Fwd: EQ24521_040726041405_2134_AMSTERDAM_AVENUE_Manhattan_NY",
+"via": "hpd-staff"
+}
+],
+"EQ24521": [
+{
+"date": "2026-04-09",
+"to": "\"Carrero, Yvette (HPD)\" <CarreroY@hpd.nyc.gov>",
+"file": "EQ23936_040726041200_1581_FULTON_AVENUE_Bronx_NY.pdf",
+"outcome": "",
+"subject": "Fwd: EQ24521_040726041405_2134_AMSTERDAM_AVENUE_Manhattan_NY",
 "via": "hpd-staff"
 }
 ],
@@ -16340,6 +17136,14 @@
 }
 ],
 "EQ25189": [
+{
+"date": "2026-04-15",
+"to": "\"Lesure, Michael (HPD)\" <lesurem@hpd.nyc.gov>",
+"file": "EQ25189_041326123744_463_AVENUE_P_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "EQ25189_041326123744_463_AVENUE_P_Brooklyn_NY",
+"via": "hpd-staff"
+},
 {
 "date": "2026-06-08",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
@@ -17204,6 +18008,14 @@
 ],
 "EQ26376": [
 {
+"date": "2026-05-05",
+"to": "\"Carvajal Dimas, Juan (HPD)\" <CarvajaJ@hpd.nyc.gov>",
+"file": "EQ26376_050426033634_190_WEST_BURNSIDE_AVENUE_Bronx_NY.pdf",
+"outcome": "",
+"subject": "EQ26376_050426033634_190_WEST_BURNSIDE_AVENUE_Bronx_NY",
+"via": "hpd-staff"
+},
+{
 "date": "2026-07-23",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "EQ26376 AFF INVOICE.pdf",
@@ -17528,6 +18340,14 @@
 ],
 "EQ27076": [
 {
+"date": "2026-07-01",
+"to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
+"file": "EQ27076_7_complete-package_20260701.zip",
+"outcome": "",
+"subject": "Fwd: EQ27076_7_complete-package_20260701",
+"via": "hpd-staff"
+},
+{
 "date": "2026-07-13",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "EQ27076 AFF INVOICE.pdf",
@@ -17618,6 +18438,13 @@
 }
 ],
 "EQ27202": [
+{
+"date": "2026-07-25",
+"to": "Jot Singh <uac525@gmail.com>",
+"file": "EQ27202_work-completed_1B_package_20260725__invoice-affidavit-package__EQ27202-work-completed-affidavit-invoice.pdf",
+"outcome": "",
+"subject": "EQ27202_work-completed_1B_package_20260725__PACKAGE-MANIFEST"
+},
 {
 "date": "2026-07-28",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
@@ -17729,6 +18556,16 @@
 "file": "EQ27348 AFF INVOICE.pdf",
 "outcome": "",
 "subject": "Re: [EXTERNAL] Re: FW: Stop Work Notice",
+"via": "hpd-staff"
+}
+],
+"EQ27340": [
+{
+"date": "2026-05-06",
+"to": "2128638655@humblefax.com, \"Lesure, Michael (HPD)\" <lesurem@hpd.nyc.gov>",
+"file": "EQ27340_050626033438_889_ST_MARKS_AVENUE_Apt._4B_Brooklyn_NY.pdf",
+"outcome": "",
+"subject": "EQ27340_050626033438_889_ST_MARKS_AVENUE_Apt._4B_Brooklyn_NY",
 "via": "hpd-staff"
 }
 ],
@@ -18013,6 +18850,20 @@
 ],
 "EQ27780": [
 {
+"date": "2026-07-25",
+"to": "Jot Singh <uac525@gmail.com>",
+"file": "EQ27780_work-completed_Public-Area-Interior_package_20260725__invoice-affidavit-package__EQ27780-work-completed-affidavi",
+"outcome": "",
+"subject": "EQ27780_work-completed_Public-Area-Interior_package_20260725__PACKAGE-MANIFEST"
+},
+{
+"date": "2026-07-25",
+"to": "Jagraj Singh <uac525@gmail.com>",
+"file": "EQ27780_work-completed_Public-Area-Interior_package_20260725__invoice-affidavit-package__EQ27780-work-completed-affidavi",
+"outcome": "",
+"subject": ""
+},
+{
 "date": "2026-09-17",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "EQ27780 AFF INVOICE.pdf",
@@ -18119,6 +18970,15 @@
 "outcome": "",
 "subject": "Re: [EXTERNAL] Re: FW: Stop Work Notice",
 "via": "hpd-staff"
+}
+],
+"EQ28161": [
+{
+"date": "2026-10-02",
+"to": "Jot Singh <uac525@gmail.com>",
+"file": "EQ28161_refused-access_Public-Hallway_package_20261002__invoice-affidavit-package__EQ28161-refused-access-affidavit-invo",
+"outcome": "refused_access",
+"subject": "EQ28161_refused-access_Public-Hallway_package_20261002__PACKAGE-MANIFEST"
 }
 ],
 "EQ28221": [
@@ -18577,6 +19437,16 @@
 "via": "hpd-staff"
 }
 ],
+"EQ29136": [
+{
+"date": "2026-06-15",
+"to": "\"Kowlessar, Dennis (HPD)\" <KowlessD@hpd.nyc.gov>",
+"file": "EQ29136_053026013705.pdf",
+"outcome": "",
+"subject": "Fwd: INVITATION TO BID",
+"via": "hpd-staff"
+}
+],
 "EQ29160": [
 {
 "date": "2026-09-18",
@@ -18791,6 +19661,13 @@
 }
 ],
 "EQ29471": [
+{
+"date": "2026-07-08",
+"to": "Jot Singh <uac525@gmail.com>",
+"file": "EQ29471_work-completed_1B_package_20260708__invoice-affidavit-package__EQ29471-work-completed-affidavit-invoice.pdf",
+"outcome": "",
+"subject": "EQ29471_work-completed_1B_package_20260708__videos__after__07-work-completed-After-Video-1-EQ29471_1B_AFTER-VIDEO-1_VIDEO_20260708"
+},
 {
 "date": "2026-07-24",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
@@ -19198,6 +20075,13 @@
 "via": "hpd-staff"
 },
 {
+"date": "2026-07-09",
+"to": "Jot Singh <uac525@gmail.com>",
+"file": "EQ30047_work-completed_2_package_20260709__invoice-affidavit-package__EQ30047-work-completed-affidavit-invoice.pdf",
+"outcome": "",
+"subject": "EQ30047_work-completed_2_package_20260709__invoice-affidavit-package__EQ30047-work-completed-affidavit-invoice"
+},
+{
 "date": "2026-07-10",
 "to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
 "file": "EQ30057 AFF INVOICE.pdf",
@@ -19391,6 +20275,15 @@
 "via": "hpd-staff"
 }
 ],
+"EQ30587": [
+{
+"date": "2026-07-27",
+"to": "Jot Singh <uac525@gmail.com>",
+"file": "EQ30587_work-completed_Public-Hallway_package_20260727__invoice-affidavit-package__EQ30587-work-completed-affidavit-invo",
+"outcome": "",
+"subject": "EQ30587_work-completed_Public-Hallway_package_20260727__invoice-affidavit-package__EQ30587-work-completed-affidavit-invoice"
+}
+],
 "EQ30624": [
 {
 "date": "2026-06-12",
@@ -19497,6 +20390,24 @@
 "outcome": "",
 "subject": "Re: Affidavit Request for OMO #EQ31144",
 "via": "hpd-staff"
+}
+],
+"EQ31176": [
+{
+"date": "2026-07-22",
+"to": "Jot Singh <uac525@gmail.com>",
+"file": "EQ31176_refused-access_Public-Hallway_package_20260722__invoice-affidavit-package__EQ31176-refused-access-affidavit-invo",
+"outcome": "refused_access",
+"subject": "EQ31176_refused-access_Public-Hallway_package_20260722__invoice-affidavit-package__EQ31176-refused-access-affidavit-invoice"
+}
+],
+"EQ31394": [
+{
+"date": "2026-07-25",
+"to": "Jot Singh <uac525@gmail.com>",
+"file": "EQ31394_work-completed_3A_package_20260725__invoice-affidavit-package__EQ31394-work-completed-affidavit-invoice.pdf",
+"outcome": "",
+"subject": "EQ31394_work-completed_3A_package_20260725__videos__after__13-work-completed-After-Work-Evidence-EQ31394_3A_AFTER-WORK-EVIDENCE_VIDEO_202607"
 }
 ],
 "EQ31423": [
@@ -19616,6 +20527,13 @@
 "outcome": "",
 "subject": "OMO No: EQ31852 Issuer: GEORGE FAHMY Boro: Manhattan Bldg Address: 241, EAST 115 STREET",
 "via": "hpd-staff"
+},
+{
+"date": "2026-07-22",
+"to": "Jot Singh <uac525@gmail.com>",
+"file": "EQ31852_work-completed_B3_package_20260722__invoice-affidavit-package__EQ31852-work-completed-affidavit-invoice.pdf",
+"outcome": "",
+"subject": "EQ31852_work-completed_B3_package_20260722__invoice-affidavit-package__EQ31852-work-completed-affidavit-invoice"
 }
 ],
 "EQ31893": [
@@ -19689,6 +20607,15 @@
 "via": "hpd-staff"
 }
 ],
+"ER00171": [
+{
+"date": "2026-07-28",
+"to": "Jot Singh <uac525@gmail.com>",
+"file": "ER00171_refused-access_Public-Area-Exterior_package_20260728__invoice-affidavit-package__ER00171-refused-access-affidavi",
+"outcome": "refused_access",
+"subject": "ER00171_refused-access_Public-Area-Exterior_package_20260728__invoice-affidavit-package__ER00171-refused-access-affidavit-invoice"
+}
+],
 "ER00272": [
 {
 "date": "2026-08-06",
@@ -19696,6 +20623,26 @@
 "file": "VIDEO-2026-08-06-11-35-34.mp4",
 "outcome": "",
 "subject": "OMO No: ER00272 Issuer: AREWA AJEWOLE Boro: Brooklyn Bldg Address: 2324, PITKIN AVENUE",
+"via": "hpd-staff"
+}
+],
+"ER00318": [
+{
+"date": "2026-07-08",
+"to": "\"Atkins, Kizzy (HPD)\" <AtkinsKi@hpd.nyc.gov>",
+"file": "ER00318_1R_complete-package_20260708.zip",
+"outcome": "",
+"subject": "Fwd: ER00318_1R_complete-package_20260708",
+"via": "hpd-staff"
+}
+],
+"ER00414": [
+{
+"date": "2026-07-08",
+"to": "\"Carvajal Dimas, Juan (HPD)\" <CarvajaJ@hpd.nyc.gov>",
+"file": "ER00414_070726035839_121_SEAMAN_AVENUE_Manhattan_NY.pdf",
+"outcome": "",
+"subject": "ER00414_070726035839_121_SEAMAN_AVENUE_Manhattan_NY",
 "via": "hpd-staff"
 }
 ],
@@ -19824,6 +20771,16 @@
 "file": "VIDEO-2026-07-22-16-39-29.mp4",
 "outcome": "",
 "subject": "OMO No: ER01115 Issuer: KELLY ANN PERROTTE-DAVID Boro: Manhattan Bldg Address: 115, EDGECOMBE AVENUE",
+"via": "hpd-staff"
+}
+],
+"ER01924": [
+{
+"date": "2026-07-29",
+"to": "\"D'Antuono, Anthony (HPD)\" <DAntuonA@hpd.nyc.gov>",
+"file": "ER01924_072826031046_3525_ROCHAMBEAU_AVENUE_Bronx_NY.pdf",
+"outcome": "",
+"subject": "ER01924_072826031046_3525_ROCHAMBEAU_AVENUE_Bronx_NY",
 "via": "hpd-staff"
 }
 ],
@@ -20134,6 +21091,13 @@
 "outcome": "",
 "subject": "OMO No: ER05729 Issuer: ANTHONY DANTUONO Boro: Manhattan Bldg Address: 500, FT WASHINGTON AVENUE",
 "via": "hpd-staff"
+},
+{
+"date": "2026-10-02",
+"to": "Jot Singh <uac525@gmail.com>",
+"file": "ER05729_work-completed_Public-Area-Exterior_package_20261002__invoice-affidavit-package__ER05729-work-completed-affidavi",
+"outcome": "",
+"subject": "ER05729 HPD package files"
 }
 ],
 "ER05733": [

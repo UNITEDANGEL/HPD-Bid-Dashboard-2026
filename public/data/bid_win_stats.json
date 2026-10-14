@@ -1,0 +1,383 @@
+{
+ "generatedAt": "2026-10-14T03:27:20.101Z",
+ "note": "From the bids you faxed HPD (price read from each package) against HPD's awards. Totals only.",
+ "ocrCheck": {
+  "wonJobsChecked": 622,
+  "exact": 570
+ },
+ "total": {
+  "bids": 1541,
+  "won": 622,
+  "winRate": 40,
+  "lostAboveBy": 404,
+  "lostAbovePct": 38,
+  "closeLosses": 138,
+  "lostBelow": 131
+ },
+ "byWork": [
+  {
+   "work": "lock / latch",
+   "bids": 302,
+   "won": 151,
+   "winRate": 50,
+   "lostAboveBy": 176,
+   "lostAbovePct": 22,
+   "closeLosses": 36,
+   "lostBelow": 25
+  },
+  {
+   "work": "hinges",
+   "bids": 244,
+   "won": 139,
+   "winRate": 57,
+   "lostAboveBy": 74,
+   "lostAbovePct": 17,
+   "closeLosses": 25,
+   "lostBelow": 32
+  },
+  {
+   "work": "door closer",
+   "bids": 164,
+   "won": 87,
+   "winRate": 53,
+   "lostAboveBy": 208,
+   "lostAbovePct": 23,
+   "closeLosses": 17,
+   "lostBelow": 10
+  },
+  {
+   "work": "new door",
+   "bids": 139,
+   "won": 13,
+   "winRate": 9,
+   "lostAboveBy": 592,
+   "lostAbovePct": 35,
+   "closeLosses": 8,
+   "lostBelow": 10
+  },
+  {
+   "work": "floor / tile",
+   "bids": 138,
+   "won": 28,
+   "winRate": 20,
+   "lostAboveBy": 650,
+   "lostAbovePct": 53,
+   "closeLosses": 6,
+   "lostBelow": 6
+  },
+  {
+   "work": "entrance lock (Adams Rite / mortise / electric strike)",
+   "bids": 125,
+   "won": 50,
+   "winRate": 40,
+   "lostAboveBy": 264,
+   "lostAbovePct": 30,
+   "closeLosses": 16,
+   "lostBelow": 7
+  },
+  {
+   "work": "trace & repair leak",
+   "bids": 101,
+   "won": 25,
+   "winRate": 25,
+   "lostAboveBy": 1532,
+   "lostAbovePct": 85,
+   "closeLosses": 5,
+   "lostBelow": 5
+  },
+  {
+   "work": "window glass",
+   "bids": 79,
+   "won": 26,
+   "winRate": 33,
+   "lostAboveBy": 413,
+   "lostAbovePct": 53,
+   "closeLosses": 8,
+   "lostBelow": 8
+  },
+  {
+   "work": "door adjust (self-close & latch)",
+   "bids": 57,
+   "won": 38,
+   "winRate": 67,
+   "lostAboveBy": 360,
+   "lostAbovePct": 51,
+   "closeLosses": 2,
+   "lostBelow": 6
+  },
+  {
+   "work": "window balance / sash / guard",
+   "bids": 46,
+   "won": 20,
+   "winRate": 43,
+   "lostAboveBy": 207,
+   "lostAbovePct": 45,
+   "closeLosses": 7,
+   "lostBelow": 4
+  },
+  {
+   "work": "walls",
+   "bids": 24,
+   "won": 8,
+   "winRate": 33,
+   "lostAboveBy": 713,
+   "lostAbovePct": 88,
+   "closeLosses": 0,
+   "lostBelow": 3
+  },
+  {
+   "work": "AEP program",
+   "bids": 18,
+   "won": 9,
+   "winRate": 50,
+   "lostAboveBy": 332,
+   "lostAbovePct": 29,
+   "closeLosses": 1,
+   "lostBelow": 1
+  },
+  {
+   "work": "plumbing",
+   "bids": 17,
+   "won": 2,
+   "winRate": 12,
+   "lostAboveBy": 613,
+   "lostAbovePct": 98,
+   "closeLosses": 1,
+   "lostBelow": 0
+  },
+  {
+   "work": "sheetrock / plaster",
+   "bids": 15,
+   "won": 4,
+   "winRate": 27,
+   "lostAboveBy": 774,
+   "lostAbovePct": 35,
+   "closeLosses": 2,
+   "lostBelow": 3
+  },
+  {
+   "work": "new window",
+   "bids": 13,
+   "won": 1,
+   "winRate": 8,
+   "lostAboveBy": 946,
+   "lostAbovePct": 61,
+   "closeLosses": 1,
+   "lostBelow": 0
+  },
+  {
+   "work": "fire escape",
+   "bids": 12,
+   "won": 3,
+   "winRate": 25,
+   "lostAboveBy": 410,
+   "lostAbovePct": 77,
+   "closeLosses": 0,
+   "lostBelow": 3
+  },
+  {
+   "work": "general repair",
+   "bids": 12,
+   "won": 4,
+   "winRate": 33,
+   "lostAboveBy": 228,
+   "lostAbovePct": 30,
+   "closeLosses": 1,
+   "lostBelow": 2
+  },
+  {
+   "work": "painting",
+   "bids": 11,
+   "won": 4,
+   "winRate": 36,
+   "lostAboveBy": 288,
+   "lostAbovePct": 48,
+   "closeLosses": 1,
+   "lostBelow": 2
+  },
+  {
+   "work": "push bar / panic bar",
+   "bids": 7,
+   "won": 5,
+   "winRate": 71,
+   "lostAboveBy": 348,
+   "lostAbovePct": 31,
+   "closeLosses": 0,
+   "lostBelow": 0
+  }
+ ],
+ "byBoro": [
+  {
+   "boro": "Brooklyn",
+   "bids": 514,
+   "won": 213,
+   "winRate": 41,
+   "lostAboveBy": 340,
+   "lostAbovePct": 30,
+   "closeLosses": 52,
+   "lostBelow": 50
+  },
+  {
+   "boro": "Bronx",
+   "bids": 443,
+   "won": 159,
+   "winRate": 36,
+   "lostAboveBy": 355,
+   "lostAbovePct": 35,
+   "closeLosses": 44,
+   "lostBelow": 32
+  },
+  {
+   "boro": "Manhattan",
+   "bids": 304,
+   "won": 127,
+   "winRate": 42,
+   "lostAboveBy": 605,
+   "lostAbovePct": 57,
+   "closeLosses": 23,
+   "lostBelow": 16
+  },
+  {
+   "boro": "Queens",
+   "bids": 243,
+   "won": 103,
+   "winRate": 42,
+   "lostAboveBy": 440,
+   "lostAbovePct": 38,
+   "closeLosses": 18,
+   "lostBelow": 31
+  },
+  {
+   "boro": "Staten Island",
+   "bids": 37,
+   "won": 20,
+   "winRate": 54,
+   "lostAboveBy": 1801,
+   "lostAbovePct": 114,
+   "closeLosses": 1,
+   "lostBelow": 2
+  }
+ ],
+ "byMonth": [
+  {
+   "month": "2025-11",
+   "bids": 113,
+   "won": 38,
+   "winRate": 34,
+   "lostAboveBy": 390,
+   "lostAbovePct": 40,
+   "closeLosses": 15,
+   "lostBelow": 6
+  },
+  {
+   "month": "2025-12",
+   "bids": 135,
+   "won": 66,
+   "winRate": 49,
+   "lostAboveBy": 432,
+   "lostAbovePct": 36,
+   "closeLosses": 11,
+   "lostBelow": 6
+  },
+  {
+   "month": "2026-01",
+   "bids": 173,
+   "won": 89,
+   "winRate": 51,
+   "lostAboveBy": 454,
+   "lostAbovePct": 44,
+   "closeLosses": 12,
+   "lostBelow": 12
+  },
+  {
+   "month": "2026-02",
+   "bids": 89,
+   "won": 46,
+   "winRate": 52,
+   "lostAboveBy": 415,
+   "lostAbovePct": 28,
+   "closeLosses": 10,
+   "lostBelow": 11
+  },
+  {
+   "month": "2026-03",
+   "bids": 155,
+   "won": 75,
+   "winRate": 48,
+   "lostAboveBy": 341,
+   "lostAbovePct": 29,
+   "closeLosses": 12,
+   "lostBelow": 7
+  },
+  {
+   "month": "2026-04",
+   "bids": 187,
+   "won": 63,
+   "winRate": 34,
+   "lostAboveBy": 376,
+   "lostAbovePct": 47,
+   "closeLosses": 19,
+   "lostBelow": 19
+  },
+  {
+   "month": "2026-05",
+   "bids": 154,
+   "won": 60,
+   "winRate": 39,
+   "lostAboveBy": 290,
+   "lostAbovePct": 34,
+   "closeLosses": 18,
+   "lostBelow": 8
+  },
+  {
+   "month": "2026-06",
+   "bids": 146,
+   "won": 61,
+   "winRate": 42,
+   "lostAboveBy": 483,
+   "lostAbovePct": 42,
+   "closeLosses": 11,
+   "lostBelow": 19
+  },
+  {
+   "month": "2026-07",
+   "bids": 189,
+   "won": 75,
+   "winRate": 40,
+   "lostAboveBy": 528,
+   "lostAbovePct": 45,
+   "closeLosses": 11,
+   "lostBelow": 17
+  },
+  {
+   "month": "2026-08",
+   "bids": 56,
+   "won": 10,
+   "winRate": 18,
+   "lostAboveBy": 490,
+   "lostAbovePct": 38,
+   "closeLosses": 6,
+   "lostBelow": 6
+  },
+  {
+   "month": "2026-09",
+   "bids": 131,
+   "won": 36,
+   "winRate": 27,
+   "lostAboveBy": 355,
+   "lostAbovePct": 40,
+   "closeLosses": 12,
+   "lostBelow": 18
+  },
+  {
+   "month": "2026-10",
+   "bids": 13,
+   "won": 3,
+   "winRate": 23,
+   "lostAboveBy": 623,
+   "lostAbovePct": 65,
+   "closeLosses": 1,
+   "lostBelow": 2
+  }
+ ]
+}

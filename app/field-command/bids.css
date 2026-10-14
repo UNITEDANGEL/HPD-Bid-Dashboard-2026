@@ -288,3 +288,15 @@
 .fc-bid-locked.is-revising span { color: #fde68a; }
 .fc-bid-locked button.is-plain { background: transparent; border: 1px solid #fde68a; color: #fef3c7; }
 .fc-bid-price input:disabled { opacity: 0.55; }
+
+/* Bids you sent: win rate by month (bar height = bids, fill = share won) and by kind of work. */
+.fc-sent-stats { border-top: 1px solid #44403c; padding-top: 10px; }
+.fc-sent-months { display: flex; gap: 6px; align-items: flex-end; overflow-x: auto; padding: 8px 0; }
+.fc-sent-months > div { display: flex; flex-direction: column; align-items: center; min-width: 34px; gap: 2px; }
+.fc-sent-bar { position: relative; width: 22px; border-radius: 4px 4px 0 0; background: #44403c; overflow: hidden; display: block; }
+.fc-sent-bar i { position: absolute; left: 0; right: 0; bottom: 0; background: #22c55e; }
+.fc-sent-months b { font: 800 11px system-ui; color: #f5f5f4; }
+.fc-sent-months small { font: 500 10px system-ui; color: #a8a29e; }
+.fc-sent-table { width: 100%; border-collapse: collapse; font: 500 12.5px/1.35 system-ui; color: #e7e5e4; }
+.fc-sent-table th { text-align: left; color: #a8a29e; font-weight: 700; padding: 4px; border-bottom: 1px solid #44403c; }
+.fc-sent-table td { padding: 5px 4px; border-bottom: 1px solid #292524; vertical-align: top; }

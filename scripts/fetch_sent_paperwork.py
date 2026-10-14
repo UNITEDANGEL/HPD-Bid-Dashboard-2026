@@ -17,7 +17,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "sent_paperwork.json")
-OMO = re.compile(r"\b(E[A-Z]\d{5})\b", re.I)
+OMO = re.compile(r"(?<![A-Za-z0-9])(E[A-Za-z]\d{5})(?!\d)")  # also "EQ31852_work-completed...pdf": \b fails before "_"
 PAPER = re.compile(r"\b(AFF|AFFIDAVIT|INVOICE|SIGNED)\b", re.I)
 OUTCOMES = [
     ("refused_access", re.compile(r"refus", re.I)),

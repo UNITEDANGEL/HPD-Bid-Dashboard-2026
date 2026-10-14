@@ -1,0 +1,72 @@
+// Your real win rate, from the bids you faxed (data/private/bid_history.json, scripts/fetch_bid_history.py)
+// against what HPD awarded (public/data/market_awards.json).
+//  - Private (gitignored): data/private/bid_results.json, every job with your price and the winning price.
+//  - Public: public/data/bid_win_stats.json, only totals: win rate, how far above the winner you were, by
+//    kind of work, borough and month. No job's price is published (the site is public).
+// Your price: the last one you faxed for the job. On jobs you won, HPD's award amount is your price, so it
+// replaces the OCR reading. A reading under $150 or more than 8x off the winning price is "check" (left out).
+import fs from "node:fs";
+import path from "node:path";
+import { loadLib } from "./daily-report.mjs";
+
+const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, "$1")), "..");
+const read = (p) => JSON.parse(fs.readFileSync(path.join(ROOT, p), "utf8"));
+const { readScope } = await loadLib("bid-price");
+
+const history = read("data/private/bid_history.json").bids;
+const awards = new Map(read("public/data/market_awards.json").jobs.map((j) => [j.omo, j]));
+
+const rows = [];
+let checked = 0, exact = 0;
+for (const [omo, sends] of Object.entries(history)) {
+  const last = [...sends].reverse().find((s) => s.price);
+  const award = awards.get(omo);
+  if (!last || !award || !(award.amount > 0)) continue;
+  let price = last.price;
+  let check = false;
+  if (award.won) {
+    checked += 1;
+    if (Math.abs(price - award.amount) < 1) exact += 1;
+    price = award.amount;
+  } else if (price < 150 || price > award.amount * 8 || price * 8 < award.amount) {
+    check = true;
+  }
+  const scope = readScope(award.description || "");
+  rows.push({
+    omo, won: !!award.won, price, winPrice: award.amount, check, month: (award.awardDate || "").slice(0, 7),
+    boro: award.boro || "", work: scope.labels[0] || "general repair", sentAt: new Date(last.sentAt).toISOString().slice(0, 10),
+  });
+}
+
+const median = (xs) => { if (!xs.length) return null; const s = [...xs].sort((a, b) => a - b); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2); };
+function summary(list) {
+  const good = list.filter((r) => !r.check);
+  const won = good.filter((r) => r.won);
+  const lost = good.filter((r) => !r.won);
+  const above = lost.map((r) => r.price - r.winPrice).filter((d) => d > 0);
+  const abovePct = lost.map((r) => Math.round(((r.price - r.winPrice) / r.winPrice) * 100)).filter((d) => d > 0);
+  return {
+    bids: good.length, won: won.length, winRate: good.length ? Math.round((won.length / good.length) * 100) : null,
+    lostAboveBy: median(above), lostAbovePct: median(abovePct),
+    closeLosses: lost.filter((r) => r.price > r.winPrice && r.price <= r.winPrice * 1.1).length, // within 10%: one small cut wins these
+    lostBelow: lost.filter((r) => r.price <= r.winPrice).length, // you were lower and still lost (not the lowest responsive, or a later bid)
+  };
+}
+const group = (key, min = 5) => Object.entries(rows.reduce((acc, r) => ((acc[r[key]] ||= []).push(r), acc), {}))
+  .map(([k, list]) => ({ [key]: k, ...summary(list) }))
+  .filter((g) => g.bids >= min)
+  .sort((a, b) => b.bids - a.bids);
+
+const stats = {
+  generatedAt: new Date().toISOString(),
+  note: "From the bids you faxed HPD (price read from each package) against HPD's awards. Totals only.",
+  ocrCheck: { wonJobsChecked: checked, exact }, // how often the price read from the PDF matched HPD's award
+  total: summary(rows),
+  byWork: group("work"),
+  byBoro: group("boro"),
+  byMonth: group("month", 1).sort((a, b) => a.month.localeCompare(b.month)),
+};
+fs.mkdirSync(path.join(ROOT, "data", "private"), { recursive: true });
+fs.writeFileSync(path.join(ROOT, "data", "private", "bid_results.json"), JSON.stringify({ generatedAt: stats.generatedAt, rows }, null, 1));
+fs.writeFileSync(path.join(ROOT, "public", "data", "bid_win_stats.json"), JSON.stringify(stats, null, 1));
+console.log(`Bid results: ${rows.length} bids with an award (${rows.filter((r) => r.check).length} to check), won ${stats.total.won} (${stats.total.winRate}%); lost by a median $${stats.total.lostAboveBy} (${stats.total.lostAbovePct}%); ${stats.total.closeLosses} lost within 10%; price read matched the award on ${exact} of ${checked} wins`);

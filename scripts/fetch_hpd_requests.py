@@ -16,7 +16,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "hpd_requests.json")
 PUBLIC = os.path.join(ROOT, "public", "data", "hpd_requests.json")
-OMO = re.compile(r"\b(E[A-Z]\d{5})\b", re.I)
+OMO = re.compile(r"(?<![A-Za-z0-9])(E[A-Za-z]\d{5})(?!\d)")  # also "ER04466_1008...pdf": \b fails before "_"
 # Who asked (short name only) and what they asked for. J. Lewis is the vendor tracker since 12 Oct 2026
 # (before: K. Atkins; D. Gafur for AEP).
 def staff_of(sender):
