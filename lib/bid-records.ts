@@ -8,6 +8,10 @@ export type BidRecord = {
   omo: string; address: string; borough?: string; bidDue: string; bidDueTime?: string;
   price: number; savedAt: string; status: BidStatus;
   sentAt?: string; sentPrice?: number; faxTo?: string; messageId?: string; confirmedAt?: string; faxNote?: string;
+  // When the package was last filled, and at what price (the timeline at the top of the bid).
+  filledAt?: string; filledPrice?: number;
+  // HPD invited the same OMO again (a new due date): each earlier round, oldest first.
+  rounds?: { bidDue: string; price: number; sentAt?: string; status: BidStatus }[];
   attempts: number; updatedAt: string;
   // Prices sent before a revision, oldest first: the latest one is crossed out on the revised package.
   revisions?: { price: number; sentAt?: string }[];
@@ -200,4 +204,20 @@ export async function checkBidFax(omo: string, sentAt: string, fetcher: typeof f
 // Sent bids still waiting for HumbleFax's email (last 2 days): the app checks these in the background.
 export function bidsToCheck(records: Record<string, BidRecord>, now = new Date()) {
   return Object.values(records).filter((r) => r.status === "sent" && r.sentAt && now.getTime() - Date.parse(r.sentAt) < 2 * 86400000);
+}
+
+// The bid for this invitation round: a record for an earlier due date that was already sent belongs to the
+// earlier round (HPD invited the same OMO again), so this round starts fresh (and isn't "locked").
+export function currentRecord(bid: { omo: string; bidDue: string }, records: Record<string, BidRecord>) {
+  const stored = records[bid.omo];
+  if (!stored) return undefined;
+  return stored.bidDue === bid.bidDue || stored.status === "saved" ? stored : undefined;
+}
+// What you bid on this OMO in earlier rounds, newest first (the stored earlier round, then older ones).
+export function earlierRounds(bid: { omo: string; bidDue: string }, records: Record<string, BidRecord>) {
+  const stored = records[bid.omo];
+  if (!stored) return [];
+  const older = [...(stored.rounds || [])].reverse();
+  if (currentRecord(bid, records)) return older;
+  return [{ bidDue: stored.bidDue, price: stored.sentPrice || stored.price, sentAt: stored.sentAt, status: stored.status }, ...older];
 }

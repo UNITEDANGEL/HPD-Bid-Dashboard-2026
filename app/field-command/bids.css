@@ -308,3 +308,24 @@
 .fc-reconnect { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0 0; padding: 8px 10px; border-radius: 10px; background: #7f1d1d; border: 1px solid #ef4444; color: #fee2e2; font: 700 13.5px/1.35 system-ui; }
 .fc-reconnect span { flex: 1 1 180px; }
 .fc-reconnect button { min-height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: #fff; color: #7f1d1d; font: 800 14px system-ui; }
+
+/* Each bid's timeline: price saved -> package filled -> sent to HPD -> confirmed, with times. */
+.fc-bid-timeline { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 8px 0; padding: 0; }
+.fc-bid-timeline li { display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 8px; background: #1e293b; border: 1px solid #334155; color: #94a3b8; }
+.fc-bid-timeline li b { font: 800 12px/1.2 system-ui; color: #cbd5e1; }
+.fc-bid-timeline li small { font: 600 11px/1.2 system-ui; }
+.fc-bid-timeline li.is-done { background: #052e16; border-color: #16a34a; color: #bbf7d0; }
+.fc-bid-timeline li.is-done b { color: #dcfce7; }
+.fc-bid-timeline li.is-bad { background: #450a0a; border-color: #dc2626; color: #fecaca; }
+
+/* Mine: a closed bid's timeline and history, opened in the list. */
+.fc-my-bid-detail { padding: 0 12px 10px; }
+.fc-my-bid-log { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 3px; font: 500 12.5px/1.35 system-ui; color: #d6d3d1; }
+.fc-my-bid-log time { color: #a8a29e; margin-right: 4px; }
+
+/* Same OMO invited again / same building: what you bid before (a new price shouldn't be lower by mistake). */
+.fc-bid-again { display: grid; gap: 3px; margin: 6px 0; padding: 10px; border-radius: 10px; background: #1e1b4b; border: 1px solid #818cf8; color: #e0e7ff; font: 600 13.5px/1.4 system-ui; }
+.fc-bid-again b { font-size: 14.5px; color: #fff; }
+.fc-bid-again.is-building { background: #172554; border-color: #60a5fa; }
+.fc-bid-again-warn { margin-top: 4px; padding: 6px 8px; border-radius: 8px; background: #7f1d1d; color: #fee2e2; font-weight: 800; }
+.fc-bid-chip.is-again { background: #312e81; color: #e0e7ff; }

@@ -115,6 +115,7 @@ jobs:
           python3 scripts/test-upcoming-bids.py
           python3 scripts/test-bid-fax-watch.py
           node scripts/test-bid-price.cjs
+          node scripts/test-bid-rounds.mjs
           node scripts/test-bid-packages.mjs
           node scripts/test-market-awards.mjs
           node scripts/test-bid-stats.mjs
