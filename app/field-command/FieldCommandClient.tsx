@@ -3153,7 +3153,7 @@ export default function FieldCommandClient() {
                     <div><span>Complete by</span><b>{md(fu.maturityDay)}</b></div>
                     <p>{left ? <strong>{left}</strong> : null}{left ? " · " : ""}{fu.status}{fu.sentAt ? ` · paperwork sent to HPD ${md(fu.sentAt)}` : ""}{fu.hpdReason ? ` · HPD: closed (${fu.hpdReason})` : selectedJob.HpdClosedReason === "" && followRef.current ? " · HPD: still open" : ""}</p>
                     {fu.askedAt ? (
-                      <p className={`jc-hpd-notice${fu.hpdAsked ? " is-open" : ""}${fu.askedFor === "rejected" ? " is-rejected" : ""}`} data-hpd-smoke="jc-hpd-notice">
+                      <p className={`jc-hpd-notice${fu.hpdAsked ? " is-open" : ""}${/rejected/.test(fu.askedFor) ? " is-rejected" : ""}`} data-hpd-smoke="jc-hpd-notice">
                         📩 {fu.askedBy || "HPD"} · {fu.askedFor || "email"} · {md(fu.askedAt)}{fu.hpdAsked ? " · waiting on you" : " · answered"}
                         {fu.hpdAsked ? <a href={`/paperwork/?job=${encodeURIComponent(fu.omo)}`}> Open paperwork →</a> : null}
                       </p>
