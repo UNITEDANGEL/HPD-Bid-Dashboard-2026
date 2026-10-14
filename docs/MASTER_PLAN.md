@@ -112,6 +112,14 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
   HPD worklist: who asked (J. Lewis is the vendor tracker since 12 Oct; K. Atkins; D. Gafur AEP) and what.
   OMO numbers before "_" in file names were missed by the email readers: +52 jobs with paperwork sent.
 
+- 14 Oct morning: faxes couldn't be sent ("Drive connection failed", then "Sign in again"). Cause: the
+  old status server read Cloudflare KV once per job on every phone refresh and used up KV's free daily
+  reads ("KV get() limit exceeded for the day"); Google sign-ins were stored in the same KV. Fixed for good:
+  the Google sign-in is an encrypted cookie on the phone (no KV); the status server reads KV once per 20 s
+  and serves its last good copy when KV is over the limit; iPhone Send/Revise use two taps (Safari blocks
+  pop-up boxes); a red "Reconnect Google" bar shows when Google isn't connected; failed sends are logged.
+  Optional insurance: Cloudflare Workers Paid ($5/month) removes KV's daily limits.
+
 ## Now (in this order)
 
 0. **Why the lowest bid lost** (131 jobs): check against HPD's poor-performance / paperwork notices and fax
