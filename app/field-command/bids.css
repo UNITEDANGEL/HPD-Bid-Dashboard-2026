@@ -300,3 +300,6 @@
 .fc-sent-table { width: 100%; border-collapse: collapse; font: 500 12.5px/1.35 system-ui; color: #e7e5e4; }
 .fc-sent-table th { text-align: left; color: #a8a29e; font-weight: 700; padding: 4px; border-bottom: 1px solid #44403c; }
 .fc-sent-table td { padding: 5px 4px; border-bottom: 1px solid #292524; vertical-align: top; }
+
+/* A send that failed: shown right under the button, in words. */
+.fc-bid-send-error { margin: 6px 0 0; padding: 8px 10px; border-radius: 8px; background: #450a0a; border: 1px solid #b91c1c; color: #fecaca; font: 700 14px/1.4 system-ui; }

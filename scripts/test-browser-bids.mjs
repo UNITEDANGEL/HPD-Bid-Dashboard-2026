@@ -147,8 +147,10 @@ try {
 
   // 3. Send by fax (asks first), then HumbleFax confirms.
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
+  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').innerText(), /Tap again to send the bid at \$1,250\.00 to HPD/, "first tap asks for a second");
+  await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click(); // second tap (no confirm boxes: iPhone blocks them)
   await sheet.locator('[data-hpd-smoke="fc-bid-status"]').waitFor({ timeout: 20000 });
-  assert.match(dialogs.at(-1), new RegExp(`Send the bid for ${omo} at \\$1,250\\.00 to HPD's bid fax \\(212\\) 863-8655\\?[\\s\\S]*submits your bid`));
+  assert.equal(dialogs.length, 0, "no confirm boxes");
   assert.equal(faxes.length, 1);
   assert.match(faxes[0].subject, new RegExp(`^Bid - OMO ${omo} - `));
   assert.match(faxes[0].body, /Content-Type: application\/pdf; name="[^"]*_BID_1250_/);
@@ -169,11 +171,13 @@ try {
   await sheet.locator('[data-hpd-smoke="fc-bid-review"]').click();
   await sheet.locator('[data-hpd-smoke="fc-bid-done"]').waitFor({ timeout: 30000 });
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
+  await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click(); // second tap (no confirm boxes: iPhone blocks them)
   await page.waitForFunction(() => /Fax failed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 15000 });
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').innerText(), /Resend bid by fax/);
   assert.equal(await page.locator(".fc-bid-pin.is-fax-failed").count(), Number.isFinite(open.find((b) => b.omo === omo2)?.lat) ? 1 : 0, "a failed fax shows a red pin");
   failOmo = "";
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
+  await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click(); // second tap (no confirm boxes: iPhone blocks them)
   await page.waitForFunction(() => /Fax confirmed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 15000 });
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-status"]').innerText(), /2 sends/);
   assert.equal(faxes.length, 3);
@@ -187,6 +191,7 @@ try {
   assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-price"]').isDisabled(), true);
   assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').isDisabled(), true);
   await sheet.locator('[data-hpd-smoke="fc-bid-revise"]').click();
+  await sheet.locator('[data-hpd-smoke="fc-bid-revise"]').click(); // second tap (no confirm boxes: iPhone blocks them)
   await sheet.locator('[data-hpd-smoke="fc-bid-revising"]').waitFor();
   await page.waitForFunction(() => /Revision started \(HPD has \$1,250\.00\)/.test(document.querySelector('[data-hpd-smoke="fc-bid-log"]')?.textContent || ""), null, { timeout: 10000 });
   await sheet.locator('[data-hpd-smoke="fc-bid-price"]').fill("1100");
@@ -206,11 +211,12 @@ try {
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').innerText(), /Send revised bid/);
   const faxesBefore = faxes.length;
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
+  await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click(); // second tap (no confirm boxes: iPhone blocks them)
   // The card still says "Fax confirmed" from the first send: wait for the confirmation of the $1,100 fax.
   await page.waitForFunction(() => { const t = document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""; return /Fax confirmed/.test(t) && /1,100\.00/.test(t); }, null, { timeout: 15000 });
   for (let i = 0; i < 50 && saved[`BID-${omo}`]?.status !== "confirmed"; i++) await page.waitForTimeout(100);
   assert.equal(faxes.length, faxesBefore + 1, "one revised fax sent");
-  assert.match(dialogs.at(-1), /Send the REVISED bid[\s\S]*Please disregard our previous bid of \$1,250\.00/);
+  assert.equal(dialogs.length, 0, "no confirm boxes");
   assert.match(faxes.at(-1).subject, new RegExp(`^REVISED Bid - OMO ${omo} - `));
   const coverText = Buffer.from(faxes.at(-1).body.split("\r\n\r\n")[1].split("\r\n--")[0].replace(/\s+/g, ""), "base64").toString("utf8");
   assert.match(coverText, /^REVISED BID for OMO [\s\S]*Please disregard our previous bid of \$1,250\.00\.\nOur new bid price is \$1,100\.00\./);
@@ -238,8 +244,10 @@ try {
   await sheet.locator('[data-hpd-smoke="fc-bid-review"]').click();
   await sheet.locator('[data-hpd-smoke="fc-bid-done"]').waitFor({ timeout: 30000 });
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
+  await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click(); // second tap (no confirm boxes: iPhone blocks them)
   await page.waitForFunction(() => /waiting for HumbleFax/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 15000 });
   await sheet.locator('[data-hpd-smoke="fc-bid-mark-confirmed"]').click();
+  await sheet.locator('[data-hpd-smoke="fc-bid-mark-confirmed"]').click(); // second tap (no confirm boxes: iPhone blocks them)
   await page.waitForFunction(() => /Fax confirmed[\s\S]*Confirmed by you/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 10000 });
   assert.equal(saved[`BID-${waitOmo}`]?.status, "confirmed");
   await sheet.locator("header button").click();

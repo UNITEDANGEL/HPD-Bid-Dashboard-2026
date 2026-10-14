@@ -97,6 +97,9 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const [reason, setReason] = useState("");
   // A sent bid is locked: its price changes only through "Revise this bid" (HPD already has it).
   const [revising, setRevising] = useState(false);
+  // Two taps instead of confirm() boxes: iPhone Safari blocks those after a few, and the button then does nothing.
+  const [armed, setArmed] = useState<"" | "send" | "revise" | "confirmed" | "self">("");
+  const [shareNote, setShareNote] = useState("");
   // Description text size (remembered on this phone).
   const [bigText, setBigText] = useState(false);
   useEffect(() => { try { setBigText(localStorage.getItem("hpd-bid-text") === "xl"); } catch {} }, []);
@@ -278,6 +281,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     const yourLast = (learned.get(workKey(bid.description)) || []).find((p) => p.omo !== bid.omo);
     setDraft(records[bid.omo] ? String(records[bid.omo].price) : yourLast ? String(yourLast.price) : "");
     setRevising(false);
+    setArmed("");
     setReason(records[bid.omo]?.reason || "");
   }
 
@@ -329,13 +333,16 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     const again = record.status !== "saved";
     const previous = revisedFrom(record);
     if (previous && filled.previous !== previous) return;
-    const ask = previous
-      ? `Send the REVISED bid for ${selected.omo} to HPD's bid fax (212) 863-8655?\n\nOld price ${money2(previous)} is crossed out, new price ${money2(record.price)} next to it. The cover says: "Please disregard our previous bid of ${money2(previous)}. Our new bid price is ${money2(record.price)}."`
-      : `${again ? "Send again" : "Send"} the bid for ${selected.omo} at ${money2(record.price)} to HPD's bid fax (212) 863-8655?\n\nThis submits your bid.`;
-    if (!window.confirm(ask)) return;
+    if (armed !== "send") { setArmed("send"); return; } // first tap: the button asks to tap again
+    setArmed("");
+    void again;
     setBusy("Sending the fax…");
     const result = await sendBidFax(selected, record.price, filled.bytes, filled.name, fetch, previous);
-    if (!result.ok) { setBusy(`Not sent: ${result.error}`); return; }
+    if (!result.ok) {
+      setBusy(`Not sent: ${result.error}`);
+      await update(withLog({ ...record, updatedAt: new Date().toISOString() }, `Fax NOT sent: ${result.error}`));
+      return;
+    }
     const revisions = previous ? [...(record.revisions || []), { price: previous, sentAt: record.sentAt }] : record.revisions;
     const attempts = (record.attempts || 0) + 1;
     await update(withLog({ ...record, status: "sent", sentAt: result.sentAt, sentPrice: record.price, priorPrice: undefined, revisions, faxTo: result.to, messageId: result.messageId, confirmedAt: undefined, faxNote: undefined, attempts, updatedAt: new Date().toISOString() },
@@ -345,19 +352,23 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   }
 
   async function markConfirmed() {
-    if (!record || !window.confirm(`Mark the fax for ${record.omo} as delivered? Do this when HumbleFax emailed you that it was sent successfully.`)) return;
+    if (!record) return;
+    if (armed !== "confirmed") { setArmed("confirmed"); return; }
+    setArmed("");
     const now = new Date().toISOString();
     await update(withLog({ ...record, status: "confirmed", confirmedAt: now, faxNote: "Confirmed by you from HumbleFax's email", updatedAt: now }, "Confirmed by you from HumbleFax's email", now));
     setNote("");
   }
 
+  // You faxed / emailed this bid yourself (Gmail to HumbleFax, or another fax): record it as sent at the saved price.
   async function markSentElsewhere() {
     if (!record) return;
-    const answer = window.prompt(`What price did HPD get for ${record.omo}? (the bid you already faxed)`);
-    const old = Number(String(answer || "").replace(/[^0-9.]/g, ""));
-    if (!(old > 0)) return;
-    await update({ ...record, priorPrice: old, updatedAt: new Date().toISOString() });
-    setFilled(null);
+    if (armed !== "self") { setArmed("self"); return; }
+    setArmed("");
+    const now = new Date().toISOString();
+    await update(withLog({ ...record, status: "sent", sentAt: now, sentPrice: record.price, priorPrice: undefined, faxTo: "sent by you", attempts: (record.attempts || 0) + 1, updatedAt: now },
+      `Sent by you outside the app (Gmail / fax) at ${money2(record.price)}`, now));
+    setBusy("");
   }
 
   async function startSession() {
@@ -374,9 +385,16 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
 
   async function share() {
     if (!filled) return;
+    setShareNote("");
     const data = { files: [filled.file], title: filled.name };
-    if (navigator.canShare?.(data)) await navigator.share(data).catch(() => {});
-    else window.open(filled.url, "_blank");
+    try {
+      if (navigator.canShare?.(data)) { await navigator.share(data); return; }
+    } catch (error) {
+      if ((error as { name?: string })?.name === "AbortError") return; // you closed the share sheet
+    }
+    // No share sheet here (or it refused): open the PDF; from there use the iPhone's share icon.
+    const opened = window.open(filled.url, "_blank");
+    setShareNote(opened ? "Opened the package: use the share icon there (Mail, Gmail, Files)." : "Sharing isn't available here: tap Save, then share it from the Files app.");
   }
 
   if (!open) return null;
@@ -400,7 +418,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   async function startRevision() {
     if (!record || !selected) return;
     const has = record.sentPrice || record.price;
-    if (!window.confirm(`HPD already has your bid for ${selected.omo} at ${money2(has)}.\n\nA revised bid crosses out ${money2(has)}, puts the new price next to it with your initials and the date, and the cover asks HPD to disregard the old price.\n\nRevise this bid?`)) return;
+    if (armed !== "revise") { setArmed("revise"); return; }
+    setArmed("");
     setRevising(true);
     await update(withLog({ ...record, updatedAt: new Date().toISOString() }, `Revision started (HPD has ${money2(has)})`));
   }
@@ -452,7 +471,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                     : `Couldn't check HumbleFax's email: ${faxCheckNote}`}</small>
                 ) : null}
                 {state === "waiting" || state === "unconfirmed" ? (
-                  <button type="button" className="fc-bid-confirm" data-hpd-smoke="fc-bid-mark-confirmed" onClick={() => void markConfirmed()}>✓ I got HumbleFax&apos;s confirmation email</button>
+                  <button type="button" className="fc-bid-confirm" data-hpd-smoke="fc-bid-mark-confirmed" onClick={() => void markConfirmed()}>{armed === "confirmed" ? "✅ Tap again: mark delivered" : "✓ I got HumbleFax\u2019s confirmation email"}</button>
                 ) : null}
               </div>
             ) : null}
@@ -539,7 +558,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 <div className="fc-bid-locked" data-hpd-smoke="fc-bid-locked">
                   <b>🔒 Sent to HPD at {money2(record!.sentPrice || record!.price)} · {when(record!.sentAt)}</b>
                   <span>HPD has this price. To change it, send a revised bid: the old price is crossed out and HPD is told to disregard it.</span>
-                  <button type="button" data-hpd-smoke="fc-bid-revise" onClick={() => void startRevision()}>✏️ Revise this bid</button>
+                  <button type="button" data-hpd-smoke="fc-bid-revise" onClick={() => void startRevision()}>{armed === "revise" ? "✅ Tap again: revise (HPD is told to disregard the old price)" : "✏️ Revise this bid"}</button>
                 </div>
               ) : (
               <button type="button" className={`fc-bid-fill${step1Done && (reason.trim() || undefined) === record?.reason ? " is-done" : ""}`} data-hpd-smoke="fc-bid-save" disabled={!(draftValue > 0) || (draftValue === record?.price && (reason.trim() || undefined) === record?.reason)} onClick={() => void savePrice()}>
@@ -554,7 +573,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 </div>
               ) : null}
               {record ? <p className="fc-bid-saved" data-hpd-smoke="fc-bid-saved">✓ Price saved: <b>{money2(record.price)}</b> · {when(record.savedAt)}{revisedFrom(record) ? <> · HPD has <s>{money2(revisedFrom(record)!)}</s>: fill and send the <b>revised</b> bid</> : ""}</p> : null}
-              {record && record.status === "saved" && !record.priorPrice ? <button type="button" className="fc-bid-link" data-hpd-smoke="fc-bid-sent-elsewhere" onClick={() => void markSentElsewhere()}>Already faxed this bid at a different price?</button> : null}
+              {record && record.status === "saved" ? <button type="button" className="fc-bid-link" data-hpd-smoke="fc-bid-sent-elsewhere" onClick={() => void markSentElsewhere()}>{armed === "self" ? `✅ Tap again: record that you sent it at ${money2(record.price)}` : "I sent this bid myself (Gmail / fax)"}</button> : null}
             </section>
             {record ? (
               <section className={`fc-bid-price fc-bid-step${reviewedSaved ? " is-done" : ""}`} data-hpd-smoke="fc-step-2">
@@ -568,14 +587,17 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                     <b>✓ Package ready · {money2(reviewedSaved.price)}</b>
                     <a href={reviewedSaved.url} target="_blank" rel="noreferrer" data-hpd-smoke="fc-bid-open">Open to review</a>
                     <a href={reviewedSaved.url} download={reviewedSaved.name}>Save</a>
-                    <button type="button" onClick={() => void share()}>Share</button>
+                    <button type="button" data-hpd-smoke="fc-bid-share" onClick={() => void share()}>Share</button>
+                    {shareNote ? <small className="fc-bid-note" data-hpd-smoke="fc-bid-share-note">{shareNote}</small> : null}
                   </div>
                 ) : null}
                 <h4 className={step3Done ? `is-done is-${state}` : ""} data-hpd-smoke="fc-step-3">{step3Done ? (state === "confirmed" ? "✓" : state === "failed" ? "✗" : "⏳") : "3"} · Send to HPD{step3Done ? (state === "confirmed" ? ` · fax confirmed ${money2(record.sentPrice || record.price)}` : state === "failed" ? " · fax failed" : ` · fax going through ${money2(record.sentPrice || record.price)}`) : ""}</h4>
                 <button type="button" className={`fc-bid-fill is-send${step3Done && state === "confirmed" ? " is-done" : ""}`} data-hpd-smoke="fc-bid-send" disabled={faxLocked || !reviewedSaved || busy === "Sending the fax…"} onClick={() => void send()}>
-                  {busy === "Sending the fax…" ? "⏳ Sending the fax…" : revisedFrom(record) ? "📠 Send revised bid to HPD" : state === "saved" ? "📠 Send bid by fax to HPD" : state === "failed" || state === "unconfirmed" ? "📠 Resend bid by fax" : state === "confirmed" ? "✓ Fax confirmed by HumbleFax · locked" : "⏳ Fax going through · send again"}
+                  {busy === "Sending the fax…" ? "⏳ Sending the fax…" : armed === "send" ? `✅ Tap again to send ${revisedFrom(record) ? "the REVISED bid" : "the bid"} at ${money2(record.price)} to HPD` : revisedFrom(record) ? "📠 Send revised bid to HPD" : state === "saved" ? "📠 Send bid by fax to HPD" : state === "failed" || state === "unconfirmed" ? "📠 Resend bid by fax" : state === "confirmed" ? "✓ Fax confirmed by HumbleFax · locked" : "⏳ Fax going through · send again"}
                 </button>
-                <small className="fc-bid-note">{reviewedSaved ? "Goes to HPD's bid fax (212) 863-8655 through HumbleFax, with a cover sheet. You'll be asked to confirm." : "Fill and review the package first."}</small>
+                {armed === "send" ? <button type="button" className="fc-bid-link" data-hpd-smoke="fc-bid-send-cancel" onClick={() => setArmed("")}>Cancel, don&apos;t send</button> : null}
+                {busy.startsWith("Not sent") ? <p className="fc-bid-send-error" role="alert" data-hpd-smoke="fc-bid-send-error">❌ {busy}</p> : null}
+                <small className="fc-bid-note">{reviewedSaved ? (armed === "send" ? (revisedFrom(record) ? `Old price ${money2(revisedFrom(record)!)} crossed out, new price ${money2(record.price)}; the cover asks HPD to disregard the old price.` : "This submits your bid to HPD's bid fax (212) 863-8655 through HumbleFax, with a cover sheet.") : "Goes to HPD's bid fax (212) 863-8655 through HumbleFax, with a cover sheet. Tap twice to send.") : "Fill and review the package first."}</small>
               </section>
             ) : null}
             {busy ? <p role="status" className="fc-bid-busy">{busy}</p> : null}
