@@ -3,6 +3,11 @@ name: Invitation Timer Log
 # Watches the Cloudflare invitation timer for 12 minutes and prints what each run did (to check it).
 on:
   workflow_dispatch:
+    inputs:
+      recreate:
+        description: "Delete the timer Worker first (then run Deploy Invitation Timer)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -11,6 +16,15 @@ jobs:
   tail:
     runs-on: ubuntu-24.04
     steps:
+      - name: Delete the timer Worker (to set it up fresh)
+        if: ${{ inputs.recreate }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          curl -s -X DELETE -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/hpd-invitation-timer?force=true" | head -c 400; echo
+          exit 0
+
       - name: What Cloudflare has for the timer
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
