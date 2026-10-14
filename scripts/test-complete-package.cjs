@@ -28,6 +28,7 @@ require.extensions['.ts'] = (m, file) => m._compile(ts.transpileModule(fs.readFi
 const { drawInvoicePage } = require(path.join(root, 'lib/invoice-pdf.ts'));
 const { signatureBytes } = require(path.join(root, 'lib/signature.ts'));
 const { visitRecordText } = require(path.join(root, 'lib/visit-record.ts'));
+const { checkPaperwork } = require(path.join(root, 'lib/paperwork-check.ts'));
 const output = path.join(root, 'output/pdf/complete-package-test');
 fs.mkdirSync(output, { recursive: true });
 // Synthetic packaging fixture only, never uploaded to a real job or Drive.
@@ -35,7 +36,7 @@ const imageBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAA
 async function run(outcome, awardDate, broken = false) {
   const saved = [], statuses = [], requested = [], forms = [];
   const media = ['before', 'after', 'general'].map((kind, i) => ({ id: `TEST-${i}`, jobId: 'TEST-PACKAGE', kind, mediaType: 'image', evidenceLabel: kind === 'general' ? 'Building exterior' : `${kind} TEST ONLY`, name: `TEST-ONLY-${kind}.png`, type: 'image/png', size: imageBytes.length, capturedAt: '2026-09-15T12:00:00Z', dataUrl: broken && i === 0 ? '' : `data:image/png;base64,${imageBytes.toString('base64')}`, stamped: false }));
-  const context = { ...pdf, ...paperwork, ...noAccess, ...tenantContact, ...materials, ...descriptionQuality, drawInvoicePage, signatureBytes, visitRecordText, signatureRef: { current: `data:image/png;base64,${imageBytes.toString('base64')}` }, calendarDay, console, Uint8Array, ArrayBuffer, TextEncoder, Date, Buffer, Blob, File, URL,
+  const context = { ...pdf, ...paperwork, ...noAccess, ...tenantContact, ...materials, ...descriptionQuality, drawInvoicePage, checkPaperwork, signatureBytes, visitRecordText, signatureRef: { current: `data:image/png;base64,${imageBytes.toString('base64')}` }, calendarDay, console, Uint8Array, ArrayBuffer, TextEncoder, Date, Buffer, Blob, File, URL,
     emailMediaCopies: async rows => rows,
     fitEmailVideos: async rows => rows,
     packageBusyRef: { current: false }, setPackageBusy() {},

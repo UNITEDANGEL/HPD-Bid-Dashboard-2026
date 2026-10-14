@@ -1942,8 +1942,9 @@ export default function PaperworkPage() {
         outcome: activeOutcome,
         affidavit: affidavitValues,
         invoice: invoiceValues,
-        signature: printCopy ? null : includeSignatureImage ? Boolean(signatureRef.current) : false,
-        notaryDate: printCopy ? null : notary ? String(notary.date || "") : "",
+        // A print copy or an unsigned package is signed and notarized in ink: not checked here.
+        signature: printCopy || !includeSignature ? null : includeSignatureImage ? Boolean(signatureRef.current) : false,
+        notaryDate: printCopy || !includeSignature ? null : notary ? String(notary.date || "") : "",
         location: activeForm.location,
       });
       if (issues.length) {
