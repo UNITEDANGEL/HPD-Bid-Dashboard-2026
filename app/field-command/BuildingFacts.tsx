@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { loadBuildingFacts, type BuildingFacts as Facts } from "../../lib/building-facts";
 
 const CACHE_MS = 12 * 60 * 60 * 1000;
-const cacheKey = (address: string, borough: string) => `hpd-building-v1:${address}|${borough}`;
+const cacheKey = (address: string, borough: string) => `hpd-building-v2:${address}|${borough}`;
 
 export default function BuildingFacts({ address, borough, description }: { address: string; borough: string; description: string }) {
   const [facts, setFacts] = useState<Facts | null | undefined>(undefined);

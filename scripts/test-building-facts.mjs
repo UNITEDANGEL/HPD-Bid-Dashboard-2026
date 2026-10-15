@@ -13,6 +13,7 @@ assert.equal(bidApartment("PUBLIC HALL 1ST STORY"), "");
 assert.equal(plainViolation("§ 27-2005, 27-2007, 27-2041.1 HMC, §238, § 309; § 107 (2) ( C) MDL AND 28 RCNY §25-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS"), "REPLACE OR REPAIR THE SELF-CLOSING DOORS");
 assert.equal(plainViolation("§ 27-2005 ADM CODE PROPERLY REPAIR WITH SIMILAR MATERIAL THE BROKEN TILES"), "PROPERLY REPAIR WITH SIMILAR MATERIAL THE BROKEN TILES");
 assert.equal(plainViolation("§ 27-2044, 2041.1 HMC: §238 MDL and 28 RCNY §25-171: REPLACE OR REPAIR THE SELF-CLOSING DOORS"), "REPLACE OR REPAIR THE SELF-CLOSING DOORS");
+assert.equal(plainViolation("§ 27-2005 HMC: REFIT LOWER SASH, 2ND WINDOW"), "REFIT LOWER SASH, 2ND WINDOW");
 assert.equal(buildingKind("C7"), "walk-up");
 assert.equal(buildingKind("D1"), "elevator building");
 
