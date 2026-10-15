@@ -38,8 +38,31 @@ try {
   await sheet.waitFor({ timeout: 10000 });
   assert.equal((await sheet.locator("header strong").innerText()).trim(), omo);
   assert.equal(Number(await sheet.locator('[data-hpd-smoke="fc-bid-price"]').inputValue()), price, "best price filled in");
-  // Back to the list, close the checklist: stays closed for today.
+  // Multi-bid sitting: "Bid all 6 in a row" walks the to-do bids in order, best price filled in each time.
   await sheet.locator("header button").first().click();
+  const order = await list.locator('[data-hpd-smoke="fc-checklist-row"]').evaluateAll((rs) => rs.map((r) => r.dataset.omo));
+  await list.locator('[data-hpd-smoke="fc-sitting-start"]').click();
+  const bar = page.locator('[data-hpd-smoke="fc-sitting-bar"]');
+  for (let i = 0; i < order.length; i++) {
+    await bar.waitFor({ timeout: 10000 });
+    assert.match(await bar.innerText(), new RegExp(`Bid ${i + 1} of ${order.length}`));
+    assert.equal((await sheet.locator("header strong").innerText()).trim(), order[i], `sitting step ${i + 1} is ${order[i]}`);
+    const filled = Number(await sheet.locator('[data-hpd-smoke="fc-bid-price"]').inputValue());
+    assert.ok(filled > 0, `best price filled in for ${order[i]}`);
+    await page.locator('[data-hpd-smoke="fc-sitting-skip"]').click();
+  }
+  const summary = page.locator('[data-hpd-smoke="fc-sitting-summary"]');
+  await summary.waitFor({ timeout: 5000 });
+  assert.match(await summary.innerText(), new RegExp(`0 sent, ${order.length} skipped`));
+  await summary.locator("button").click();
+  // Stop in the middle brings the checklist back.
+  await list.locator('[data-hpd-smoke="fc-sitting-start"]').click();
+  await bar.waitFor({ timeout: 10000 });
+  await page.locator('[data-hpd-smoke="fc-sitting-stop"]').click();
+  assert.equal(await bar.count(), 0);
+  await sheet.locator("header button").first().click();
+  await rows.first().waitFor({ timeout: 5000 });
+  // Close the checklist: stays closed for today.
   await list.locator('[data-hpd-smoke="fc-checklist-toggle"]').click();
   assert.equal(await rows.count(), 0);
   await page.reload({ waitUntil: "load" });
@@ -48,7 +71,7 @@ try {
   await page.locator('[data-hpd-smoke="fc-checklist"]').waitFor({ timeout: 20000 });
   assert.equal(await page.locator('[data-hpd-smoke="fc-checklist-row"]').count(), 0, "closed stays closed today");
   assert.deepEqual(errors, []);
-  console.log(`PASS bid checklist: 6 due today/tomorrow, 0 of 6 sent, 'Bid $${price.toLocaleString()}' opened ${omo} with that price, closed stays closed`);
+  console.log(`PASS bid checklist: 6 due today/tomorrow, 0 of 6 sent, 'Bid $${price.toLocaleString()}' opened ${omo} with that price, 6-bid sitting in order with best prices, skip to the summary, stop; closed stays closed`);
 } finally {
   await browser.close();
 }

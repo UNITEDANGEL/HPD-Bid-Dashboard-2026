@@ -129,6 +129,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const [showSimilar, setShowSimilar] = useState(false);
   const [session, setSession] = useState<BiddingSession | null>(null);
   // The checklist opens by itself the first time you open bids each day; your open / closed choice is kept for the day.
+  // Multi-bid sitting: the checklist's to-do bids one after another (OMOs in order), and what happened to each.
+  const [sitting, setSitting] = useState<{ omos: string[]; at: number; skipped: string[]; done: boolean } | null>(null);
   const [checklistOpen, setChecklistOpen] = useState(() => {
     try { return localStorage.getItem(`hpd-checklist-${NY_DAY.format(new Date())}`) !== "closed"; } catch { return true; }
   });
@@ -485,6 +487,37 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const todayInfo = todaySummary(list, records, today, nyNow[0] * 60 + nyNow[1], new Date(clock));
   // Morning checklist: every invitation due today or tomorrow, its state and the best price (lib/bid-checklist.ts).
   const tomorrowDay = NY_DAY.format(new Date(clock + 86400000));
+  // Open a bid from the checklist; not priced yet: start from the best price (not your last price for this kind of work).
+  function openFromChecklist(omo: string) {
+    const bid = (bids || []).find((b) => b.omo === omo);
+    if (!bid) return;
+    const row = checklist.rows.find((r) => r.omo === omo);
+    openBid(bid);
+    if (row && row.state === "not-priced" && row.best) setDraft(String(row.best));
+  }
+  function startSitting() {
+    const omos = checklist.todo.map((r) => r.omo);
+    if (!omos.length) return;
+    setSitting({ omos, at: 0, skipped: [], done: false });
+    setChecklistOpen(false);
+    openFromChecklist(omos[0]);
+  }
+  // Next bid in the sitting that still needs a bid (skips ones sent meanwhile); none left: the summary.
+  function nextInSitting(skip: boolean) {
+    if (!sitting) return;
+    const skipped = skip && selected ? [...sitting.skipped, selected.omo] : sitting.skipped;
+    const stillToDo = new Set(checklist.todo.map((r) => r.omo));
+    let at = sitting.at + 1;
+    while (at < sitting.omos.length && !stillToDo.has(sitting.omos[at])) at += 1;
+    if (at >= sitting.omos.length) {
+      setSitting({ ...sitting, skipped, at: sitting.omos.length, done: true });
+      setSelected(null);
+      setChecklistOpen(true);
+      return;
+    }
+    setSitting({ ...sitting, skipped, at });
+    openFromChecklist(sitting.omos[at]);
+  }
   const checklist = bidChecklist(bids || [], records, today, tomorrowDay, nyNow[0] * 60 + nyNow[1], new Date(clock), (omo) => {
     const h = rowHelp.get(omo);
     if (!h) return null;
@@ -547,6 +580,20 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               if (Number.isFinite(b.lat) && Number.isFinite(b.lng)) map?.setView?.([b.lat, b.lng], 16);
             }}>🗺 Map</button>
           </header>
+          {sitting && !sitting.done && sitting.omos[sitting.at] === selected.omo ? (() => {
+            const st = record ? faxState(record) : "";
+            const sentNow = st === "waiting" || st === "confirmed" || st === "unconfirmed";
+            const last = sitting.at >= sitting.omos.length - 1;
+            return (
+              <div className={`fc-sitting-bar${sentNow ? " is-sent" : ""}`} data-hpd-smoke="fc-sitting-bar">
+                <b>🎯 Bid {sitting.at + 1} of {sitting.omos.length}{sentNow ? " · sent ✓" : ""}</b>
+                {sentNow
+                  ? <button type="button" className="is-next" data-hpd-smoke="fc-sitting-next" onClick={() => nextInSitting(false)}>{last ? "Finish ✓" : "Next bid ▶"}</button>
+                  : <button type="button" data-hpd-smoke="fc-sitting-skip" onClick={() => nextInSitting(true)}>{last ? "Skip & finish" : "Skip ▶"}</button>}
+                <button type="button" className="is-stop" data-hpd-smoke="fc-sitting-stop" onClick={() => { setSitting(null); setChecklistOpen(true); }}>Stop</button>
+              </div>
+            );
+          })() : null}
           <div className="fc-bid-body">
             <h3>{selected.address}{selected.borough ? ` · ${selected.borough}` : ""}</h3>
             {/* See the building before pricing: Google's 360° street view (opens the Google Maps app on the iPhone; no key needed). */}
@@ -793,6 +840,15 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 <span>{checklist.todo.length ? `${checklist.todayLeft} due today, ${checklist.todo.length - checklist.todayLeft} tomorrow still to bid` : "everything due today and tomorrow is sent"}{checklist.missed ? ` · ${checklist.missed} past due without a bid` : ""}</span>
                 <i className="fc-checklist-bar" aria-hidden="true"><i style={{ width: `${checklist.total ? Math.round((checklist.sent / checklist.total) * 100) : 0}%` }} /></i>
               </button>
+              {sitting?.done ? (
+                <p className="fc-sitting-summary" data-hpd-smoke="fc-sitting-summary">
+                  🎯 Sitting done: {sitting.omos.length - sitting.skipped.length - checklist.todo.filter((r) => sitting.omos.includes(r.omo) && !sitting.skipped.includes(r.omo)).length} sent{sitting.skipped.length ? `, ${sitting.skipped.length} skipped (${sitting.skipped.join(", ")})` : ""}.
+                  <button type="button" onClick={() => setSitting(null)}>OK</button>
+                </p>
+              ) : null}
+              {checklist.todo.length > 1 && !sitting ? (
+                <button type="button" className="fc-sitting-start" data-hpd-smoke="fc-sitting-start" onClick={startSitting}>🎯 Bid all {checklist.todo.length} in a row · best price filled in</button>
+              ) : null}
               {checklistOpen ? (
                 <div className="fc-cl-rows" role="list">
                   {checklist.rows.map((r) => {
@@ -808,11 +864,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                           <small>{r.day === "today" ? "Today" : "Tomorrow"} {r.bidDueTime} · {timeLeft(r.minutesLeft)} · {stateText}</small>
                         </span>
                         {bid && (r.state === "not-priced" || r.state === "saved" || r.state === "failed") ? (
-                          <button type="button" data-hpd-smoke="fc-checklist-bid" onClick={() => {
-                            openBid(bid);
-                            // Not priced yet: start from the best price (not the last price you used for this kind of work).
-                            if (r.state === "not-priced" && r.best) setDraft(String(r.best));
-                          }}>{r.state === "not-priced" && r.best ? <>Bid {money(r.best)}<small>wins ~{Math.round((r.chance || 0) * 100)}%</small></> : r.state === "failed" ? "Resend" : "Review & send"}</button>
+                          <button type="button" data-hpd-smoke="fc-checklist-bid" onClick={() => openFromChecklist(r.omo)}>{r.state === "not-priced" && r.best ? <>Bid {money(r.best)}<small>wins ~{Math.round((r.chance || 0) * 100)}%</small></> : r.state === "failed" ? "Resend" : "Review & send"}</button>
                         ) : null}
                       </div>
                     );

@@ -164,6 +164,12 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - One-screen fill order: look (Street View) -> read description -> price (best price shown) -> Fill ->
   check -> Send (two taps).
 
+## Done 16 Oct 2026: multi-bid sitting
+- "🎯 Bid all N in a row" (checklist): the to-do bids one after another, soonest due first, each opened with
+  the best price filled in. A bar on the bid: "Bid 2 of 6", Skip ▶ / Stop; once the fax is sent it turns
+  green with "Next bid ▶" (bids sent meanwhile are skipped automatically). Ends with a summary
+  ("5 sent, 1 skipped (ER...)").
+
 ## Done 16 Oct 2026: morning bid checklist
 - Bids screen opens with "☀️ Bid checklist · N of M sent": every invitation due today and tomorrow, its
   state (no price yet / price saved, not sent / fax going through / sent and confirmed / fax failed / past
@@ -254,7 +260,7 @@ Collected from the owner's requests; every change is checked against these.
 - Measurements read from the description ("30x26 glass", "TOTAL WINDOWS = 3") into the price.
 - Correction dates filled in automatically from the paperwork originally sent (Sent mail PDFs), so older
   jobs don't need dates typed by hand.
-- One fax for several bids due today.
+- One fax for several bids due today (the sitting covers the one-after-another part).
 - Tenant data out of the public repo (needs the owner's OK; see Owner decision needed).
 
 ## Rule: HPD rejection corrections (owner's instruction, 15 Oct 2026)
