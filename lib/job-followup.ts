@@ -117,8 +117,12 @@ export function followUpReport(jobs: Record<string, unknown>[], hpd: Record<stri
 
 // Payment paperwork HPD rejected and you haven't answered since (your last email to HPD staff about the job
 // is older than the rejection). Every OMO, including older jobs that aren't on the map. Newest first.
-export type Rejection = { omo: string; at: string; by: string; reason: string; attempt: string; count: number; answered: boolean; correctedAt: string; address: string; onMap: boolean };
-export function paperworkRejections(asked: Record<string, HpdRequest>, jobs: Record<string, unknown>[]) {
+// PIP (NYC Payee Information Portal) per OMO: paid in full, partly, or not yet (and what's still open).
+export type PipPayment = { status: "paid" | "partly paid" | "not paid yet"; paid: number; outstanding: number; closed: boolean; closedDate?: string };
+export type Rejection = { omo: string; at: string; by: string; reason: string; attempt: string; count: number; answered: boolean; correctedAt: string; address: string; onMap: boolean;
+  // paid: HPD paid it after all (done); payable: not paid and still open in PIP (fix now); lost: HPD closed it with nothing paid.
+  pay: "paid" | "payable" | "lost" | ""; paidAmount: number; openAmount: number };
+export function paperworkRejections(asked: Record<string, HpdRequest>, jobs: Record<string, unknown>[], pip: Record<string, PipPayment> = {}) {
   const byOmo = new Map(jobs.map((j) => [String(j.OMO || j.id || "").toUpperCase(), j]));
   const rows: Rejection[] = [];
   for (const [omo, r] of Object.entries(asked)) {
@@ -127,8 +131,12 @@ export function paperworkRejections(asked: Record<string, HpdRequest>, jobs: Rec
     // Corrected in the app (corrected package made on or after the rejection) counts as answered too.
     const correctedAt = String(job?.RejectionCorrectedAt || "");
     const corrected = !!correctedAt && correctedAt >= (r.rejectedAt || "");
+    const p = pip[omo.toUpperCase()];
+    const pay: Rejection["pay"] = !p ? "" : p.status === "paid" ? "paid" : p.outstanding > 0 ? "payable" : p.closed ? "lost" : "payable";
     rows.push({ omo, at: r.rejectedAt || "", by: r.rejectedBy || "HPD", reason: r.rejectedReason || "", attempt: r.rejectedAttempt || "", count: r.rejectedCount || 1,
-      answered: (!!r.repliedTs && r.repliedTs > r.rejectedTs) || corrected, correctedAt: corrected ? correctedAt : "", address: String(job?.BuildingAddress || job?.address || ""), onMap: !!job });
+      pay, paidAmount: p?.paid || 0, openAmount: p?.outstanding || 0,
+      answered: (!!r.repliedTs && r.repliedTs > r.rejectedTs) || corrected || pay === "paid", correctedAt: corrected ? correctedAt : "", address: String(job?.BuildingAddress || job?.address || ""), onMap: !!job });
   }
-  return rows.sort((a, b) => Number(a.answered) - Number(b.answered) || Number(b.attempt === "FINAL") - Number(a.attempt === "FINAL") || b.at.localeCompare(a.at));
+  const order = (r: Rejection) => (r.pay === "payable" ? 0 : r.pay === "" ? 1 : 2);
+  return rows.sort((a, b) => Number(a.answered) - Number(b.answered) || order(a) - order(b) || Number(b.attempt === "FINAL") - Number(a.attempt === "FINAL") || b.at.localeCompare(a.at));
 }

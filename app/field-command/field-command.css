@@ -2475,3 +2475,12 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-follow-active-list { min-height: 30px; padding: 0 10px; border: 0; border-radius: 8px; background: #fff; color: #7f1d1d; font: 800 12px system-ui; }
 .fc-follow-active { max-width: calc(100vw - 24px); }
 .fc-follow-active > span { overflow: hidden; text-overflow: ellipsis; }
+
+/* PIP payment status (notices list and job card). */
+.fc-pip { display: block; font: 800 12.5px/1.35 system-ui; padding: 3px 0; }
+.fc-pip.is-payable { color: #fde68a; }
+.fc-pip.is-lost { color: #fca5a5; }
+.fc-pip.is-paid { color: #86efac; }
+.jc-pip { margin: 6px 0 0; padding: 6px 8px; border-radius: 8px; font: 800 12.5px/1.35 system-ui; background: #1e293b; color: #e2e8f0; }
+.jc-pip.is-paid { background: #052e16; color: #bbf7d0; }
+.jc-pip.is-not-paid-yet, .jc-pip.is-partly-paid { background: #451a03; color: #fde68a; }

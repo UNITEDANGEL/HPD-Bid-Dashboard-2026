@@ -52,6 +52,13 @@ const rej = paperworkRejections({
 }, [job("A2", "09/01/26", "09/03/26", "09/10/26")]);
 assert.deepEqual(rej.map((r) => [r.omo, r.answered, r.onMap]), [["EO34807", false, false], ["A2", true, true]], "open first; an older job not on the map is listed; requests without a rejection are not");
 assert.equal(rej[0].reason, "Dates on Invoice does not match affidavit");
+// PIP: paid after all -> done; still open -> fix now (first); closed with nothing paid -> lost.
+const withPip = paperworkRejections({
+  P1: { askedAt: "2026-09-01", count: 1, rejectedTs: 1, rejectedAt: "2026-09-01" },
+  P2: { askedAt: "2026-09-02", count: 1, rejectedTs: 2, rejectedAt: "2026-09-02" },
+  P3: { askedAt: "2026-09-03", count: 1, rejectedTs: 3, rejectedAt: "2026-09-03" },
+}, [], { P1: { status: "paid", paid: 500, outstanding: 0, closed: true }, P2: { status: "not paid yet", paid: 0, outstanding: 390, closed: false }, P3: { status: "not paid yet", paid: 0, outstanding: 0, closed: true } });
+assert.deepEqual(withPip.map((r) => [r.omo, r.pay, r.answered]), [["P2", "payable", false], ["P3", "lost", false], ["P1", "paid", true]]);
 
 // Map queues: HPD closed -> Completed; paperwork sent, HPD open -> Follow-up; nothing -> Pending.
 assert.equal(jobQueue({ OMO: "Q1", HpdClosedReason: "No Access" }), "completed");

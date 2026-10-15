@@ -15,7 +15,7 @@ import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointme
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
-import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
+import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type PipPayment, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
 import { canReadAloud, readAloud, stopReading } from "../../lib/read-aloud";
@@ -749,6 +749,11 @@ export default function FieldCommandClient() {
   const [askedMap, setAskedMap] = useState<Record<string, HpdRequest>>({});
   // Older jobs (2024-2025) with HPD notices: on the notices layer, not in the 2026 work lists.
   const [olderJobs, setOlderJobs] = useState<JobRecord[]>([]);
+  // Paid / not paid per OMO, from PIP (scripts/import_pip_agreements.mjs).
+  const [pipMap, setPipMap] = useState<Record<string, PipPayment>>({});
+  useEffect(() => {
+    fetch("/data/pip_paid.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => setPipMap(d?.jobs || {})).catch(() => {});
+  }, []);
   useEffect(() => {
     fetch("/data/COA_older.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : [])).then((rows) => setOlderJobs(Array.isArray(rows) ? rows : [])).catch(() => {});
   }, []);
@@ -1192,7 +1197,7 @@ export default function FieldCommandClient() {
     calendarDate,
     Object.fromEntries(jobs.filter((j) => j.HpdAskedAt).map((j) => [jobId(j), { askedAt: String(j.HpdAskedAt), count: 1, by: String(j.HpdAskedBy || ""), kind: String(j.HpdAskedFor || ""), askedTs: Number(j.HpdAskedTs || 0), repliedTs: Number(j.HpdRepliedTs || 0) }])),
   ), [jobs, calendarDate]);
-  const rejections = useMemo(() => paperworkRejections(askedMap, [...jobs, ...olderJobs]), [askedMap, jobs, olderJobs]);
+  const rejections = useMemo(() => paperworkRejections(askedMap, [...jobs, ...olderJobs], pipMap), [askedMap, jobs, olderJobs, pipMap]);
   const findAnyJob = (omo: string) => jobs.find((j) => jobId(j) === omo) || olderJobs.find((j) => jobId(j) === omo);
   const openRejections = rejections.filter((r) => !r.answered);
   const [showAnsweredRejections, setShowAnsweredRejections] = useState(false);
@@ -3190,6 +3195,11 @@ export default function FieldCommandClient() {
                     <div><span>Start</span><b>{md(fu.startDay)}</b></div>
                     <div><span>Complete by</span><b>{md(fu.maturityDay)}</b></div>
                     <p>{left ? <strong>{left}</strong> : null}{left ? " · " : ""}{fu.status}{fu.sentAt ? ` · paperwork sent to HPD ${md(fu.sentAt)}` : ""}{fu.hpdReason ? ` · HPD: closed (${fu.hpdReason})` : selectedJob.HpdClosedReason === "" && followRef.current ? " · HPD: still open" : ""}</p>
+                    {pipMap[fu.omo] ? (
+                      <p className={`jc-pip is-${pipMap[fu.omo].status.replace(/ /g, "-")}`} data-hpd-smoke="jc-pip">
+                        💵 PIP: {pipMap[fu.omo].status === "paid" ? `paid $${pipMap[fu.omo].paid.toLocaleString()}` : pipMap[fu.omo].status === "partly paid" ? `partly paid $${pipMap[fu.omo].paid.toLocaleString()}, $${pipMap[fu.omo].outstanding.toLocaleString()} still open` : pipMap[fu.omo].outstanding > 0 ? `not paid yet ($${pipMap[fu.omo].outstanding.toLocaleString()} open)` : "closed with $0 paid"}
+                      </p>
+                    ) : null}
                     {(() => {
                       const rj = rejections.find((r) => r.omo === fu.omo);
                       return rj ? (
@@ -3343,6 +3353,7 @@ export default function FieldCommandClient() {
                 <li key={r.omo}>
                   <button type="button" data-hpd-smoke="fc-notice-row" onClick={() => { const job = findAnyJob(r.omo); if (job) { setNoticesOpen(false); setSelectedJob(job); } else setOpenNotice((o) => (o === r.omo ? "" : r.omo)); }}>
                     <span><b>{r.omo}</b> <em className="is-late">rejected {r.at}</em>{findAnyJob(r.omo) ? " · tap to open the job" : " · tap for details"}</span>
+                    {r.pay ? <span className={`fc-pip is-${r.pay}`} data-hpd-smoke="fc-notice-pip">{r.pay === "payable" ? `💵 Not paid: $${r.openAmount.toLocaleString()} still open in PIP. Fix & resend to get paid` : r.pay === "lost" ? "⚠️ HPD closed it with $0 paid (PIP). Dispute with HPD to recover it" : `💵 Paid $${r.paidAmount.toLocaleString()} (PIP)`}</span> : null}
                     <span>{r.address || "older job (details in HPD's email)"}{!jobs.some((j) => jobId(j) === r.omo) && findAnyJob(r.omo) ? " · 2024-2025 job" : ""}</span>
                     <small>{r.attempt ? <b className={r.attempt === "FINAL" ? "fc-final-attempt" : ""}>{r.attempt} ATTEMPT · </b> : null}{senderName(r.by)}: {r.reason || "see HPD's email"}</small>
                   </button>
