@@ -3191,9 +3191,9 @@ export default function FieldCommandClient() {
                         </p>
                       ) : null;
                     })()}
-                    {fu.askedAt ? (
+                    {fu.askedAt && !rejections.some((r) => r.omo === fu.omo) ? (
                       <p className={`jc-hpd-notice${fu.hpdAsked ? " is-open" : ""}${/rejected/.test(fu.askedFor) ? " is-rejected" : ""}`} data-hpd-smoke="jc-hpd-notice">
-                        📩 {fu.askedBy || "HPD"} · {fu.askedFor || "email"} · {md(fu.askedAt)}{fu.hpdAsked ? " · waiting on you" : " · answered"}
+                        📩 {senderName(fu.askedBy || "HPD")} · {fu.askedFor || "email"} · {md(fu.askedAt)}{fu.hpdAsked ? " · waiting on you" : " · answered"}
                         {fu.hpdAsked ? <a href={`/paperwork/?job=${encodeURIComponent(fu.omo)}`}> Open paperwork →</a> : null}
                       </p>
                     ) : null}
@@ -3435,7 +3435,8 @@ export default function FieldCommandClient() {
       ) : null}
       {followFilter && !followOpen ? (
         <div className="fc-follow-active" data-hpd-smoke="fc-follow-active">
-          <span>Showing: <b>{({ notices: "HPD notices", "hpd-asked": "HPD asked for paperwork", overdue: "Overdue", "due-week": "Due this week", recent: "Awarded last 30 days", sent: "Waiting on HPD", "hpd-closed": "Closed at HPD" } as const)[followFilter]}</b> · {filteredJobs.length} jobs</span>
+          <span>Showing: <b>{followFilter === "notices" ? `HPD notices · ${filteredJobs.length} on the map${openRejections.filter((r) => !r.onMap).length ? ` · ${openRejections.filter((r) => !r.onMap).length} older jobs in the list` : ""}` : ({ notices: "HPD notices", "hpd-asked": "HPD asked for paperwork", overdue: "Overdue", "due-week": "Due this week", recent: "Awarded last 30 days", sent: "Waiting on HPD", "hpd-closed": "Closed at HPD" } as const)[followFilter]}</b>{followFilter === "notices" ? null : ` · ${filteredJobs.length} jobs`}</span>
+          {followFilter === "notices" ? <button type="button" className="fc-follow-active-list" onClick={() => setNoticesOpen(true)}>List</button> : null}
           <button type="button" onClick={() => setFollowFilter("")} aria-label="Stop the follow-up filter">✕</button>
         </div>
       ) : null}
