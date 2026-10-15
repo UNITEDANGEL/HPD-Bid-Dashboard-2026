@@ -28,6 +28,7 @@ export default function HomeScreen() {
   const [unread, setUnread] = useState(0);
   const [awards, setAwards] = useState<Award[] | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [pay, setPay] = useState<{ staleCount: number; stale: number; disbursedCount: number; disbursed: number } | null>(null);
 
   useEffect(() => {
     fetch("/data/upcoming_bids.json", { cache: "no-store" }).then((r) => r.json()).then((d) => {
@@ -36,6 +37,7 @@ export default function HomeScreen() {
       setUnread(Array.isArray(d?.unread) ? d.unread.length : 0);
     }).catch(() => setBids([]));
     fetch("/data/COA_Fetcher_2026.json", { cache: "no-store" }).then((r) => r.json()).then((d) => setAwards(Array.isArray(d) ? d : [])).catch(() => setAwards([]));
+    fetch("/data/pip_payments.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => setPay(d?.totals || null)).catch(() => {});
     const t = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(t);
   }, []);
@@ -95,6 +97,14 @@ export default function HomeScreen() {
         <span className="home-text">
           <strong>Bid stats &amp; prices</strong>
           <em>What jobs were won for, your win rate</em>
+        </span>
+      </a>
+
+      <a className={`home-card${pay && pay.staleCount ? " home-pay-alert" : ""}`} href="/payments/" data-hpd-smoke="home-payments">
+        <span className="home-icon">💵</span>
+        <span className="home-text">
+          <strong>Payments</strong>
+          {pay ? <em>{pay.staleCount ? `⚠️ ${pay.staleCount} checks never cashed ($${Math.round(pay.stale).toLocaleString()}) · ` : ""}{pay.disbursedCount} on the way ($${Math.round(pay.disbursed).toLocaleString()})</em> : <em>From PIP: paid, on the way, uncashed checks</em>}
         </span>
       </a>
 
