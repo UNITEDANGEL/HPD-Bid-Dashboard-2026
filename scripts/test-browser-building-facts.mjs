@@ -59,7 +59,7 @@ try {
   assert.equal(await sheet.locator(".fc-bldg-link").getAttribute("href"), "https://hpdonline.nyc.gov/hpdonline/building/39531");
   // 3. Reopen: comes from the phone's copy (no new lookup).
   const before = geoCalls;
-  await sheet.locator("header button").click();
+  await sheet.locator("header button").first().click();
   await list.locator("ol > li", { hasText: pick.omo }).first().locator("button").first().click();
   await sheet.locator('[data-hpd-smoke="fc-bldg-facts"]').waitFor({ timeout: 5000 });
   assert.equal(geoCalls, before, "cached on the phone");

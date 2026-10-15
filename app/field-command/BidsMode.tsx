@@ -15,6 +15,7 @@ import { bidHistory, currentRecord, earlierRounds, FAX_LINES, type FaxLine, bidR
 import "./bids.css";
 import BuildingFacts from "./BuildingFacts";
 import ItbPages from "./ItbPages";
+import { buildingHistory } from "../../lib/building-bids";
 
 const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
 const NY_TIME = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -210,6 +211,13 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const record = selected ? currentRecord(selected, records) : undefined;
   // Same OMO invited again: what you sent before. Same building, other jobs you bid recently.
   const rounds = selected ? earlierRounds(selected, records) : [];
+  // Earlier HPD jobs at this building: winning price, won or not, your price when the app sent the bid.
+  const buildingJobs = useMemo(() => {
+    if (!selected || !marketJobs.length) return [];
+    const yours: Record<string, number> = {};
+    for (const r of Object.values(records)) if (r.status !== "saved" && (r.sentPrice || r.price)) yours[r.omo] = Number(r.sentPrice || r.price);
+    return buildingHistory(selected, marketJobs, yours);
+  }, [selected, marketJobs, records]);
   const sameBuilding = selected ? Object.values(records).filter((r) => r.omo !== selected.omo && r.address && r.address === selected.address && r.status !== "saved").sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt))).slice(0, 3) : [];
 
   const stats = useMemo(() => (marketJobs.length ? bidStats(marketJobs) : null), [marketJobs]);
@@ -507,6 +515,13 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
           <header>
             <button type="button" onClick={() => setSelected(null)}>← All bids</button>
             <strong>{selected.omo}</strong>
+            {/* Back to the map, centred on this building (the list folds away; "Show the list" brings it back). */}
+            <button type="button" className="fc-bid-to-map" data-hpd-smoke="fc-bid-to-map" onClick={() => {
+              const b = selected;
+              setSelected(null);
+              setListCollapsed(true);
+              if (Number.isFinite(b.lat) && Number.isFinite(b.lng)) map?.setView?.([b.lat, b.lng], 16);
+            }}>🗺 Map</button>
           </header>
           <div className="fc-bid-body">
             <h3>{selected.address}{selected.borough ? ` · ${selected.borough}` : ""}</h3>
@@ -570,6 +585,25 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   <b>Easy win: bid this one · ~{money(easy.suggested)}</b>
                   <span>{easy.label}: you usually win it at {money(easy.yours)} ({easy.yoursN} of your wins). Other contractors won it at {money(easy.others)} ({easy.othersN} jobs, last 12 months). At {money(easy.suggested)} you would have beaten {easy.beatsN} of those {easy.of} winners.</span>
                   <button type="button" onClick={() => pickPrice(String(easy.suggested))}>Use {money(easy.suggested)}</button>
+                </div>
+              ) : null}
+              {buildingJobs.length ? (
+                <div className="fc-bid-building-history" data-hpd-smoke="fc-bid-building-history">
+                  <b>🏢 Earlier jobs at this building ({buildingJobs.length})</b>
+                  <ul>
+                    {buildingJobs.slice(0, 5).map((j) => (
+                      <li key={j.omo} className={j.sameWork ? "is-same" : ""}>
+                        <span className="fc-bbh-price">{money(j.paid)}</span>
+                        <span className="fc-bbh-what">
+                          {j.won ? <em className="is-won">you won</em> : <em>other contractor won</em>}
+                          {j.yours ? <> · you bid {money(j.yours)}</> : null}
+                          {" · "}{j.awardDate.slice(5, 7)}/{j.awardDate.slice(2, 4)}
+                          <small>{j.sameWork ? "same kind of work · " : ""}{j.work} · {j.omo}</small>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  {buildingJobs.some((j) => j.sameWork) ? <small>Same kind of work is listed first. The winning price is what HPD paid.</small> : <small>Different work from this bid: compare with care. The winning price is what HPD paid.</small>}
                 </div>
               ) : null}
               <label>

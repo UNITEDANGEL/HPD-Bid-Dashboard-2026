@@ -383,3 +383,31 @@
 .fc-itb-bar button:disabled { opacity: .4; }
 .fc-itb-full-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; touch-action: pan-x pan-y pinch-zoom; -webkit-overflow-scrolling: touch; background: #fff; }
 .fc-itb-full-body img { display: block; width: 100%; height: auto; }
+
+/* The bids panel leaves the map buttons free, so Bids (tap again to close), Notices, Map and Locate can
+   always be tapped. Buttons that don't apply to bids (route, today, follow-up) step aside. */
+.fc-app.fc-bids-mode .fc-bids-banner, .fc-app.fc-bids-mode .fc-bids-list { right: calc(76px + env(safe-area-inset-right)); }
+.fc-app.fc-bids-mode .fc-map-controls { z-index: 1700; }
+.fc-app.fc-bids-mode .fc-map-controls > :is([aria-label="Today's route"], [aria-label^="Today's appointments"], [aria-label="Follow-up report"], [aria-label="My stats"]) { display: none; }
+/* iPhone sideways: bids as a panel on the left, the map and its buttons on the right. */
+@media (orientation: landscape) and (max-height: 540px) and (pointer: coarse) {
+  .fc-app.fc-bids-mode .fc-bids-banner, .fc-app.fc-bids-mode .fc-bids-list { right: auto; width: min(460px, calc(100vw - 150px)); left: calc(8px + env(safe-area-inset-left)); }
+  .fc-app.fc-bids-mode .fc-bids-banner { padding: 6px 10px; }
+  .fc-app.fc-bids-mode .fc-map-controls { top: calc(8px + env(safe-area-inset-top)) !important; }
+}
+.fc-bid-sheet > header .fc-bid-to-map { margin-left: auto; }
+
+/* Earlier jobs at the same building, right above the price box. */
+.fc-bid-building-history { display: grid; gap: 4px; margin: 6px 0 8px; padding: 8px 10px; border-radius: 10px; background: #1e293b; border: 1px solid #334155; color: #e2e8f0; font: 600 13px/1.35 system-ui; }
+.fc-bid-building-history > b { color: #93c5fd; font-size: 13.5px; }
+.fc-bid-building-history ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.fc-bid-building-history li { display: grid; grid-template-columns: 70px 1fr; gap: 8px; align-items: start; padding: 4px 6px; border-radius: 8px; }
+.fc-bid-building-history li.is-same { background: #0b3b2e; }
+.fc-bbh-price { font: 900 15px system-ui; color: #fff; }
+.fc-bbh-what em { font-style: normal; font-weight: 800; color: #fca5a5; }
+.fc-bbh-what em.is-won { color: #86efac; }
+.fc-bbh-what small { display: block; color: #94a3b8; font-weight: 600; }
+.fc-bid-building-history > small { color: #94a3b8; }
+/* An open invitation covers the map: its buttons step aside (they'd block the sheet's top corner). */
+.fc-app.fc-bids-mode:has(.fc-bid-sheet) .fc-map-controls { display: none; }
+.fc-app.fc-bids-mode .fc-map-hints { display: none; }

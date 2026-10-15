@@ -100,7 +100,7 @@ try {
     assert.ok(easyText.includes(`Easy win: bid this one · ~${chipPrice}`), easyText);
     assert.match(easyText, /of your wins[\s\S]*beaten \d+ of those \d+ winners/);
     easyChecked = chipPrice;
-    await page.locator('[data-hpd-smoke="fc-bid-sheet"] header button').click();
+    await page.locator('[data-hpd-smoke="fc-bid-sheet"] header button').first().click();
   }
 
   // 1. Save a price.
@@ -130,7 +130,7 @@ try {
   await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-saved"]').innerText(), /Price saved: \$1,250\.00/);
   assert.ok(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').isDisabled(), "send waits for the review");
-  await sheet.locator("header button").click();
+  await sheet.locator("header button").first().click();
   assert.match(await list.locator("ol > li").first().innerText(), /\$1,250 saved/);
   await list.locator("ol > li button").first().click();
 
@@ -158,7 +158,7 @@ try {
   await page.waitForFunction(() => /Fax confirmed/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 15000 });
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-status"]').innerText(), /Sent .* at \$1,250\.00 to HPD fax \(212\) 863-8655/);
   assert.equal(saved[`BID-${omo}`]?.status, "confirmed", "the bid record reached the status server");
-  await sheet.locator("header button").click();
+  await sheet.locator("header button").first().click();
   assert.match(await list.locator("ol > li").first().innerText(), /✓ Fax confirmed · \$1,250/);
   assert.equal(await page.locator(".fc-bid-pin.is-sent").count(), Number.isFinite(bid.lat) ? 1 : 0, "the pin turns green");
 
@@ -190,7 +190,7 @@ try {
 
   // 4b. Revise the first bid: $1,250 -> $1,100. The old price is crossed out with initials and the
   // revision date, and the cover tells HPD to disregard the earlier price.
-  await sheet.locator("header button").click();
+  await sheet.locator("header button").first().click();
   await list.locator("ol > li button").first().click();
   // Sent and confirmed: the price is locked, the package can't be sent again, the only way is Revise.
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-locked"]').innerText(), /Sent to HPD at \$1,250\.00/);
@@ -229,7 +229,7 @@ try {
   assert.deepEqual(saved[`BID-${omo}`]?.revisions?.map((r) => r.price), [1250], "the revision is recorded");
 
   // 5. My bids.
-  await sheet.locator("header button").click();
+  await sheet.locator("header button").first().click();
   await page.locator('[data-hpd-smoke="fc-bids-mine"]').click();
   const mine = await page.locator('[data-hpd-smoke="fc-my-bids"]').innerText();
   assert.match(mine, /3 sent/);
@@ -256,7 +256,7 @@ try {
   await sheet.locator('[data-hpd-smoke="fc-bid-mark-confirmed"]').click(); // second tap (no confirm boxes: iPhone blocks them)
   await page.waitForFunction(() => /Fax confirmed[\s\S]*Confirmed by you/.test(document.querySelector('[data-hpd-smoke="fc-bid-status"]')?.textContent || ""), null, { timeout: 10000 });
   assert.equal(saved[`BID-${waitOmo}`]?.status, "confirmed");
-  await sheet.locator("header button").click();
+  await sheet.locator("header button").first().click();
 
   // 6. Bid stats: every awarded invitation with the winning price, by kind of work and area.
   await page.locator('[data-hpd-smoke="fc-bids-stats"]').click();

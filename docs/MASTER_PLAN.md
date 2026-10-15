@@ -164,6 +164,43 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - One-screen fill order: look (Street View) -> read description -> price (best price shown) -> Fill ->
   check -> Send (two taps).
 
+## Owner's standing requirements (keep upgrading until it's perfect; follow this list)
+Collected from the owner's requests; every change is checked against these.
+1. **Works on the iPhone in both directions.** The owner now uses it sideways (landscape): every screen
+   must use the full screen, every button reachable, nothing covered. Tested at 844x390 and 390x844
+   (scripts/test-browser-landscape.mjs).
+2. **Buttons toggle.** Tap Bids / Notices again to close; there is always a way back to the map
+   (Back to jobs, the 🗺 Map button on an open bid, Close on every sheet).
+3. **HPD notices first.** Every notice opens and scrolls; each rejection can be fixed **individually**
+   (Fix & resend per notice) with a **full preview** before anything is saved or sent.
+4. **Everything gets a nice preview.** Paperwork, corrections and invitations show the actual pages as
+   pictures before any action (correction preview with HPD's reason; invitation pages 2-3).
+5. **Invitations: see the real job description.** HPD's own pages (actual images), tap to enlarge/zoom,
+   plus the building (Street View, facts, violations) and the earlier jobs at the same building next to
+   the price.
+6. **Corrections are signed in ink** (no signature pictures; notary stamp kept; notary date = day of the
+   correction) and saved to print later (see the rule above).
+7. **Accurate, real data only**; test like the owner (real taps, iPhone size, real numbers); push verified
+   changes to main and show the live result.
+
+## Done 15 Oct 2026 (evening)
+- **iPhone landscape**: a desktop-only "phone frame" rule was shrinking the app to 390 px when the phone is
+  sideways (wider than 700 px), and the map buttons ran off the bottom: Notices / Bids / Map / Locate could
+  not be tapped. Now the frame is for computers only; sideways phones get the full screen, the map buttons
+  in two columns, the search and chips stop short of them, bids and the job card as left side panels.
+- **Bids button toggles** (the bids panel no longer covers it); Notices opens from the bids screen; a second
+  tap on Notices shows all jobs again; an open bid has a **🗺 Map** button (centres the map on it).
+- **Earlier jobs at the same building** next to the bid price: winning price (what HPD paid), won or not,
+  kind of work (same work first), your price when the app sent the bid (lib/building-bids.ts; public award
+  data only, no private bid prices).
+
+## Next on the plan
+- Invitation pages: load faster (keep the drawn pages on the phone) and show them in the bid list too.
+- Notices: per-notice preview of HPD's own email/PDF inside the app (not only the Gmail link).
+- Measurements read from the description ("30x26 glass", "TOTAL WINDOWS = 3") into the price.
+- One fax for several bids due today.
+- Tenant data out of the public repo (needs the owner's OK; see Owner decision needed).
+
 ## Rule: HPD rejection corrections (owner's instruction, 15 Oct 2026)
 - Corrected paperwork is **printed and signed by hand**: the owner signs the affidavit (page 2) and the
   invoice's "Signature of Principal" line in blue ink, and the notary signs in ink. **No signature

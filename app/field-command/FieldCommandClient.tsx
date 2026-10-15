@@ -2628,7 +2628,14 @@ export default function FieldCommandClient() {
           </button>
           <button type="button" className="fc-map-fab" aria-label="Today's appointments" title="Today's appointments" onClick={() => { setAgendaOpen(true); setSelectedJob(null); }}><ListIcon /><span className="fc-fab-label">Today</span></button>
           <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" title="My stats" onClick={() => { setStatsOpen(true); setSelectedJob(null); }}><StatsIcon /><span className="fc-fab-label">Stats</span></button>
-          <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}`} data-hpd-smoke="fc-notices-open" aria-label="HPD notices" title="HPD notices: rejected paperwork and requests" onClick={() => { setSelectedJob(null); setFollowFilter("notices"); setNoticesOpen(true); }}>
+          <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}`} data-hpd-smoke="fc-notices-open" aria-label="HPD notices" aria-pressed={followFilter === "notices"} title="HPD notices: rejected paperwork and requests" onClick={() => {
+            setSelectedJob(null);
+            // Second tap while the map shows the notices: back to all jobs.
+            if (followFilter === "notices" && !noticesOpen) { setFollowFilter(""); return; }
+            setBidsOpen(false);
+            setFollowFilter("notices");
+            setNoticesOpen(true);
+          }}>
             <span aria-hidden="true" className="fc-fab-emoji">📩</span><span className="fc-fab-label">Notices</span>{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
           </button>
           <button type="button" className={`fc-map-fab fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" title="Follow-up report" onClick={() => { setFollowOpen(true); setSelectedJob(null); }}>

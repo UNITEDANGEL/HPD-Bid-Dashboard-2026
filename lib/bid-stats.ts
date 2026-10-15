@@ -41,6 +41,11 @@ export function workKey(description: string) {
   return workOf(description).key;
 }
 
+// The same, in words ("lock / latch", "window glass · 2-3 doors/windows").
+export function workLabel(description: string) {
+  return workOf(description).label;
+}
+
 const SIZE_LABEL: Record<string, string> = { "1 unit": "", "2-3 units": "2-3 doors/windows", "4+ units": "4+ doors/windows", "<50 sqft": "under 50 sq ft", "50-200 sqft": "50-200 sq ft", "200+ sqft": "200+ sq ft" };
 
 function workOf(description: string) {

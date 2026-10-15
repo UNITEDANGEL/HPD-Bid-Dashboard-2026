@@ -1679,7 +1679,7 @@
 }
 
 /* Scale up on larger viewports; map still stays the dominant element */
-@media (min-width: 700px) {
+@media (min-width: 700px) and (hover: hover) and (pointer: fine) {
   body:has(.fc-app) {
     min-height: 100vh;
     display: grid;
@@ -1749,7 +1749,7 @@
   }
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 1100px) and (hover: hover) and (pointer: fine) {
   .fc-app {
     max-width: 760px;
   }
@@ -1848,7 +1848,7 @@
 .fc-app.fc-reference .fc-quick-action.is-photos { color: #ae79fa; background: #1c1033; border: 1px solid #9251df; }
 .fc-app.fc-reference .fc-quick-action.is-documents { color: #09d3e8; background: #022630; border: 1px solid #00afc1; }
 .fc-app.fc-reference :is(button,a,input):focus-visible { outline: 2px solid #41b9ff; outline-offset: 2px; }
-@media (min-width:700px) {
+@media (min-width:700px) and (hover: hover) and (pointer: fine) {
   body:has(.fc-app.fc-reference) { background: #070a10; }
   .fc-app.fc-reference { border: 6px solid #1f2b34; border-radius: 30px; }
   .fc-app.fc-reference::before, .fc-app.fc-reference::after { display: none; }
@@ -2516,3 +2516,24 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-to-print-actions button { min-height: 44px; border: 0; border-radius: 10px; background: #16a34a; color: #fff; font: 800 13.5px system-ui; }
 .fc-to-print-actions button + button { background: #334155; }
 .fc-to-print-actions button.is-armed { background: #dc2626; }
+
+/* iPhone turned sideways (short, touch screen): use the whole width, and put the round map buttons in
+   two columns so all of them (Notices, Follow-up, Bids, Map, Locate...) fit on the short screen. */
+@media (orientation: landscape) and (max-height: 540px) and (pointer: coarse) {
+  .fc-app, .fc-tabbar { max-width: none; }
+  .fc-app .fc-map-controls { grid-template-columns: repeat(2, auto); gap: 5px; top: calc(60px + env(safe-area-inset-top)) !important; right: calc(6px + env(safe-area-inset-right)); }
+  .fc-app.fc-reference .fc-map-controls .fc-map-fab, .fc-app .fc-map-controls .fc-map-fab { width: 56px; height: 44px; padding: 3px 2px; border-radius: 12px; }
+  .fc-app .fc-map-controls .fc-map-fab svg { width: 18px; height: 18px; }
+  /* Search, chips and hints stop short of the two button columns; boroughs + dates in one short row. */
+  .fc-full-map .fc-search-row, .fc-app .fc-borough-bar { right: calc(132px + env(safe-area-inset-right)); left: calc(10px + env(safe-area-inset-left)); }
+  .fc-full-map .fc-search-row { top: calc(6px + env(safe-area-inset-top)); }
+  .fc-app .fc-borough-bar { top: calc(58px + env(safe-area-inset-top)); grid-template-columns: 6fr 5fr; gap: 5px; }
+  .fc-app .fc-bar-boroughs button { height: 32px; min-height: 0; padding: 0 2px; grid-template-rows: none; }
+  .fc-app .fc-bar-boroughs button span { display: none; }
+  .fc-app .fc-bar-boroughs button small { font-size: 12px; }
+  .fc-app .fc-bar-days-row button { height: 32px; font-size: 11.5px; }
+  .fc-app .fc-map-wrap .fc-map-hints { right: calc(132px + env(safe-area-inset-right)) !important; }
+  /* A job card: full-height panel on the left, the map (and its buttons) on the right. */
+  .fc-app.fc-has-job .fc-job-sheet.fc-job-sheet-flow { top: calc(8px + env(safe-area-inset-top)) !important; bottom: 8px !important; left: calc(8px + env(safe-area-inset-left)) !important; right: auto !important; width: min(500px, calc(100vw - 150px)) !important; height: auto !important; max-height: none !important; overflow-y: auto; overscroll-behavior: contain; }
+  .fc-app.fc-has-job .fc-search-row, .fc-app.fc-has-job .fc-map-wrap .fc-map-hints { display: none !important; }
+}

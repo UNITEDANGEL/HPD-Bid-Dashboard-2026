@@ -99,7 +99,7 @@ try {
   assert.ok(await page.locator('[data-hpd-smoke="fc-bid-description"]').evaluate((e) => parseFloat(getComputedStyle(e).fontSize)) >= 16, "big description text");
   assert.ok(!(await page.locator('[data-hpd-smoke="fc-bid-description"]').getAttribute("class")).includes("is-short"), "the whole description shows");
   assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("hpd-bid-records-v1"))).ER77777.price, 1987, "kept on the computer too");
-  await page.locator('[data-hpd-smoke="fc-bid-sheet"] header button').click();
+  await page.locator('[data-hpd-smoke="fc-bid-sheet"] header button').first().click();
   await page.locator('[data-hpd-smoke="fc-bids-mine"]').click();
   assert.match(await page.locator('[data-hpd-smoke="fc-my-bids"]').innerText(), /ER77777[\s\S]*\$1,987[\s\S]*revised 1x/);
   assert.ok(calls >= 2, "tried the server again after it was busy");
