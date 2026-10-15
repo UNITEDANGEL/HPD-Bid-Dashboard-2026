@@ -348,3 +348,20 @@
 /* Look at the building before pricing. */
 .fc-bid-look { display: flex; gap: 8px; margin: 4px 0 8px; }
 .fc-bid-look a { flex: 1; min-height: 40px; display: grid; place-items: center; border-radius: 10px; background: #1e3a8a; color: #fff; font: 800 13px system-ui; text-decoration: none; }
+
+/* Building facts on a bid (PLUTO + HPD violations). */
+.fc-bldg { margin: 6px 0 10px; padding: 8px 10px; border-radius: 10px; background: #1e293b; color: #e2e8f0; font: 600 13px/1.4 system-ui; }
+.fc-bldg h4 { margin: 0 0 2px; font: 800 13px system-ui; color: #93c5fd; }
+.fc-bldg p { margin: 2px 0; }
+.fc-bldg-facts { font-weight: 800; color: #fff; }
+.fc-bldg-viol { color: #fde68a; }
+.fc-bldg-viol b { color: #fca5a5; }
+.fc-bldg-sub { display: block; margin-top: 6px; color: #94a3b8; font: 700 11.5px system-ui; }
+.fc-bldg-related { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; }
+.fc-bldg-related li { display: grid; grid-template-columns: 22px 1fr; gap: 6px; align-items: start; font: 600 12px/1.35 system-ui; color: #cbd5e1; }
+.fc-bldg-related li b { display: grid; place-items: center; height: 20px; border-radius: 5px; background: #475569; color: #fff; font: 900 11px system-ui; }
+.fc-bldg-related li.is-c b { background: #dc2626; }
+.fc-bldg-related li.is-b b { background: #d97706; }
+.fc-bldg-link { display: inline-block; margin-top: 6px; color: #93c5fd; font: 800 12.5px system-ui; }
+.fc-bldg.is-loading, .fc-bldg.is-off { color: #94a3b8; }
+.fc-bldg.is-off button { margin-left: 4px; min-height: 30px; padding: 0 10px; border: 0; border-radius: 8px; background: #334155; color: #fff; font: 800 12px system-ui; }

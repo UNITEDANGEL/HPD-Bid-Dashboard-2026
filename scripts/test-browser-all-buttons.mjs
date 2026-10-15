@@ -25,6 +25,9 @@ page.on("pageerror", (e) => problems.push(`${current}: page error: ${String(e).s
 page.on("dialog", (d) => d.dismiss().catch(() => {}));
 page.on("response", (r) => {
   const url = r.url();
+  // On a local static server: version.json / build_health.json are written by the deploy, and the page
+  // data files (__next.<page>.__PAGE__.txt) are routed by Cloudflare Pages; both answer 200 on the live site.
+  if (/localhost|127\.0\.0\.1/.test(origin) && /\/version\.json|\/data\/build_health\.json|\/__next\.[\w.-]+\.txt/.test(url)) return;
   if (url.startsWith(origin) && r.status() >= 400 && !/\/api\//.test(url)) problems.push(`${current}: ${r.status()} ${url.replace(origin, "")}`);
 });
 
@@ -44,7 +47,7 @@ async function checkLinks(where) {
   }
   const external = await page.evaluate(() => [...document.querySelectorAll("a[href]")].map((a) => a.getAttribute("href") || "").filter((h) => /^https?:/.test(h) && !h.startsWith(location.origin)));
   for (const href of external) {
-    if (/waze\.com\/ul\?ll=-?\d/.test(href) || /google\.com\/maps/.test(href) || /^https:\/\/(drive|docs|mail|accounts)\.google\.com|github\.com|cloudflare|openstreetmap|openfreemap|openmaptiles|leafletjs/.test(href)) continue;
+    if (/waze\.com\/ul\?ll=-?\d/.test(href) || /google\.com\/maps/.test(href) || /^https:\/\/(drive|docs|mail|accounts)\.google\.com|github\.com|[\w-]+\.nyc\.gov|hpdonline\.nyc\.gov|cloudflare|openstreetmap|openfreemap|openmaptiles|leafletjs/.test(href)) continue;
     problems.push(`${where}: unexpected outside link ${href.slice(0, 120)}`);
   }
 }
@@ -76,7 +79,7 @@ try {
   for (const p of pages) await visit(p);
 
   // 2. Dashboard: month picker and every filter chip.
-  await visit("/", () => /HPD records loaded/.test(document.body.innerText));
+  await visit("/overview/", () => /HPD records loaded/.test(document.body.innerText)); // the full dashboard (home is the new start screen)
   current = "dashboard";
   const months = await page.locator('[data-hpd-smoke="dashboard-month-select"] option').evaluateAll((o) => o.map((x) => x.value));
   for (const m of months.slice(0, 3)) { await page.selectOption('[data-hpd-smoke="dashboard-month-select"]', m); checked.buttons += 1; await page.waitForTimeout(300); await scanText(`dashboard month ${m}`); }

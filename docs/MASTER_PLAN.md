@@ -150,9 +150,17 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
   pins against their coordinates at zoom 10 and 14 (under 1 pixel off).
 - **360° Street View + Map & photos** buttons at the top of every invitation (Google Maps links, no key).
 
+- **Building facts on every bid** (lib/building-facts.ts, app/field-command/BuildingFacts.tsx): year built,
+  floors, walk-up / elevator, apartments (PLUTO), open HPD violations by class, and up to 3 open violations
+  that match the bid's work, ranked by how closely they read like the bid (usually the violation behind the
+  OMO), with a link to HPD Online. Free NYC Open Data, read from the phone, kept 12 hours. Checked on all 19
+  open invitations. Tests: scripts/test-building-facts.mjs, scripts/test-browser-building-facts.mjs.
+- **No more "Loading jobs..." after an update**: if an app file is missing right after a deploy the page
+  reloads by itself (at most twice in 5 minutes). Test: scripts/test-browser-update-recovery.mjs.
+- All-buttons test updated (dashboard is at /overview/, nyc.gov links allowed): 17 pages, 76 links, 64 buttons.
+
 ## Ideas for the bid flow (proposed 15 Oct)
-- Building facts on the bid: year built, floors, units, open HPD violations at the address (NYC Open Data,
-  free), so old / big buildings price higher.
+- Later: use building age / walk-up in the price advice once a backtest shows it pays.
 - One-screen fill order: look (Street View) -> read description -> price (best price shown) -> Fill ->
   check -> Send (two taps).
 

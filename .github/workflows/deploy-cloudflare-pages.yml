@@ -123,6 +123,7 @@ jobs:
           node scripts/test-paperwork-lock.mjs
           node scripts/test-paperwork-check.mjs
           node scripts/test-job-stages.mjs
+          node scripts/test-building-facts.mjs
           node scripts/test-master-file.mjs
           node scripts/test-bid-fax-server.mjs
           node cloudflare-timer/test-timer.mjs
@@ -148,6 +149,8 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-route-progress.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-bids.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-bid-sync.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-building-facts.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-update-recovery.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork-lock.mjs
 

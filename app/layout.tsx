@@ -25,6 +25,10 @@ export const viewport: Viewport = {
   themeColor: "#0b1220",
 };
 
+const UPDATE_RECOVERY = `(function(){var K="hpd-update-reload",once=false;function again(){if(once)return;once=true;var n=0,t=0;try{var v=JSON.parse(sessionStorage.getItem(K)||"{}");n=v.n||0;t=v.t||0;if(Date.now()-t>300000)n=0;if(n>=2)return;sessionStorage.setItem(K,JSON.stringify({n:n+1,t:Date.now()}))}catch(e){}setTimeout(function(){location.reload()},1500)}
+addEventListener("error",function(e){var el=e.target,u=el&&(el.src||el.href)||"";if(typeof u==="string"&&u.indexOf("/_next/static/")>=0)again()},true);
+addEventListener("unhandledrejection",function(e){var r=e.reason,m=String(r&&((r.name||"")+" "+(r.message||""))||r);if(/ChunkLoadError|Loading (CSS )?chunk|dynamically imported module|Importing a module script failed/i.test(m))again()})})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,6 +36,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Right after a deploy a page can ask for an app file that isn't published yet (or is gone):
+            the map then sat on "Loading jobs..." until reloaded. Reload by itself, at most twice in 5 minutes. */}
+        <script dangerouslySetInnerHTML={{ __html: UPDATE_RECOVERY }} />
+      </head>
       <body><DriveSessionKeeper /><DriveAutoBackup /><ServiceWorkerRegister />{children}</body>
     </html>
   );
