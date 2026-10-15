@@ -69,6 +69,19 @@ try {
       await hist.waitFor({ timeout: 10000 });
       assert.equal(await hist.locator("li").count(), Math.min(5, buildingHistory(withHistory, market).length), `${where}: earlier jobs at ${withHistory.address}`);
       assert.match(await hist.innerText(), /\$\d/);
+      // A price far above what wins jobs like this: warning, Save needs a second tap, "Use" fixes it.
+      const price = page.locator('[data-hpd-smoke="fc-bid-price"]');
+      if (await price.isEnabled()) {
+        await price.fill("25000");
+        const warn = page.locator('[data-hpd-smoke="fc-bid-high"]');
+        if (await warn.count()) {
+          await page.locator('[data-hpd-smoke="fc-bid-save"]').click();
+          assert.match(await page.locator('[data-hpd-smoke="fc-bid-save"]').innerText(), /Tap again to save/, `${where}: high price needs a second tap`);
+          await warn.locator("button").click();
+          assert.equal(await warn.count(), 0, `${where}: best price clears the warning`);
+        }
+        await price.fill("");
+      }
       await page.locator('[data-hpd-smoke="fc-bid-to-map"]').click();
       await page.waitForFunction(() => !document.querySelector('[data-hpd-smoke="fc-bid-sheet"]'), null, { timeout: 5000 });
       assert.ok(await page.locator(".fc-bids-list.is-collapsed").count(), `${where}: list folded so the map shows`);

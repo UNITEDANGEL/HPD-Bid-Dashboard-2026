@@ -7,6 +7,12 @@ import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 
+// A price far above what wins jobs like this asks for a second tap on Save (the app's warning).
+async function saveBid(scope) {
+  const btn = scope.locator('[data-hpd-smoke="fc-bid-save"]');
+  await btn.click();
+  if (/Tap again/.test(await btn.innerText().catch(() => ""))) await btn.click();
+}
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
@@ -127,7 +133,7 @@ try {
     assert.match(await similar.first().innerText(), /\$[\d,]+[\s\S]*(you won|other contractor)/);
   }
   await sheet.locator('[data-hpd-smoke="fc-bid-price"]').fill("1250");
-  await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
+  await saveBid(sheet);
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-saved"]').innerText(), /Price saved: \$1,250\.00/);
   assert.ok(await sheet.locator('[data-hpd-smoke="fc-bid-send"]').isDisabled(), "send waits for the review");
   await sheet.locator("header button").first().click();
@@ -168,7 +174,7 @@ try {
   failOmo = omo2;
   await second.click();
   await sheet.locator('[data-hpd-smoke="fc-bid-price"]').fill("980");
-  await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
+  await saveBid(sheet);
   await sheet.locator('[data-hpd-smoke="fc-bid-review"]').click();
   await sheet.locator('[data-hpd-smoke="fc-bid-done"]').waitFor({ timeout: 30000 });
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();
@@ -201,7 +207,7 @@ try {
   await sheet.locator('[data-hpd-smoke="fc-bid-revising"]').waitFor();
   await page.waitForFunction(() => /Revision started \(HPD has \$1,250\.00\)/.test(document.querySelector('[data-hpd-smoke="fc-bid-log"]')?.textContent || ""), null, { timeout: 10000 });
   await sheet.locator('[data-hpd-smoke="fc-bid-price"]').fill("1100");
-  await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
+  await saveBid(sheet);
   await page.waitForFunction(() => /revised/.test(document.querySelector('[data-hpd-smoke="fc-bid-saved"]')?.textContent || ""), null, { timeout: 10000 });
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-saved"]').innerText(), /HPD has \$1,250\.00: fill and send the revised bid/);
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-review"]').innerText(), /Fill the revised package: \$1,250\.00 → \$1,100\.00/);
@@ -246,7 +252,7 @@ try {
   waitOmo = (await third.locator("b").first().innerText()).trim();
   await third.click();
   await sheet.locator('[data-hpd-smoke="fc-bid-price"]').fill("700");
-  await sheet.locator('[data-hpd-smoke="fc-bid-save"]').click();
+  await saveBid(sheet);
   await sheet.locator('[data-hpd-smoke="fc-bid-review"]').click();
   await sheet.locator('[data-hpd-smoke="fc-bid-done"]').waitFor({ timeout: 30000 });
   await sheet.locator('[data-hpd-smoke="fc-bid-send"]').click();

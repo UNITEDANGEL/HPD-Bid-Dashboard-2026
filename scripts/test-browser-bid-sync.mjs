@@ -4,6 +4,12 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 
+// A price far above what wins jobs like this asks for a second tap on Save (the app's warning).
+async function saveBid(scope) {
+  const btn = scope.locator('[data-hpd-smoke="fc-bid-save"]');
+  await btn.click();
+  if (/Tap again/.test(await btn.innerText().catch(() => ""))) await btn.click();
+}
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
@@ -117,7 +123,7 @@ try {
   assert.equal(await page.locator('[data-hpd-smoke="fc-bid-reason"]').evaluate((e) => getComputedStyle(e).fontSize), "13px", "the reason box is normal-size text, not the big price font");
   // Saving with a reason keeps it for next time.
   await page.locator('[data-hpd-smoke="fc-bid-reason"]').fill("Buzzer needs a new transformer");
-  await page.locator('[data-hpd-smoke="fc-bid-save"]').click();
+  await saveBid(page);
   await page.waitForFunction(() => JSON.parse(localStorage.getItem("hpd-bid-records-v1") || "{}").ER77778?.reason === "Buzzer needs a new transformer", null, { timeout: 10000 });
   assert.deepEqual(errors, []);
   console.log("PASS bid sync: the computer had $1,180, the iPhone revised to $1,987; the computer shows $1,987, 2 sends, revised 1x (server busy at first); HumbleFax confirmation found in the background without opening the job; the same kind of job starts from your $1,987 with your reason; bidding session, pending / alert pins, notes, history, hide the list");

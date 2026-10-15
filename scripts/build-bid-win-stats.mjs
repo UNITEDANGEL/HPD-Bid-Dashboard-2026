@@ -57,11 +57,33 @@ const group = (key, min = 5) => Object.entries(rows.reduce((acc, r) => ((acc[r[k
   .filter((g) => g.bids >= min)
   .sort((a, b) => b.bids - a.bids);
 
+// The last 30 days, totals only: invitations HPD awarded that got no bid from you (and what they were
+// worth to other contractors), and bids lost on price with the typical gap (lock / latch was ~double).
+const last30 = (() => {
+  const since = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const awarded = [...awards.values()].filter((j) => j.awardDate >= since && j.amount > 0);
+  const notBid = awarded.filter((j) => !history[j.omo]);
+  const mine = rows.filter((r) => (awards.get(r.omo)?.awardDate || "") >= since && !r.check);
+  const lostHigher = mine.filter((r) => !r.won && r.price > r.winPrice);
+  const gaps = lostHigher.map((r) => r.price / r.winPrice - 1).sort((x, y) => x - y);
+  const median = (list) => (list.length ? Math.round(list[Math.floor(list.length / 2)] * 100) : null);
+  const byWork = Object.entries(lostHigher.reduce((acc, r) => ((acc[r.work] ||= []).push(r.price / r.winPrice - 1), acc), {}))
+    .map(([work, g]) => ({ work, lost: g.length, medianGapPct: median(g.sort((x, y) => x - y)) }))
+    .filter((g) => g.lost >= 2).sort((x, y) => y.lost - x.lost).slice(0, 5);
+  return {
+    since, awarded: awarded.length, bid: awarded.length - notBid.length, notBid: notBid.length,
+    notBidValue: Math.round(notBid.reduce((sum, j) => sum + j.amount, 0)),
+    won: mine.filter((r) => r.won).length, lostHigher: lostHigher.length, medianGapPct: median(gaps),
+    lostBelow: mine.filter((r) => !r.won && r.price <= r.winPrice).length, byWork,
+  };
+})();
+
 const stats = {
   generatedAt: new Date().toISOString(),
   note: "From the bids you faxed HPD (price read from each package) against HPD's awards. Totals only.",
   ocrCheck: { wonJobsChecked: checked, exact }, // how often the price read from the PDF matched HPD's award
   total: summary(rows),
+  last30,
   byWork: group("work"),
   byBoro: group("boro"),
   byMonth: group("month", 1).sort((a, b) => a.month.localeCompare(b.month)),

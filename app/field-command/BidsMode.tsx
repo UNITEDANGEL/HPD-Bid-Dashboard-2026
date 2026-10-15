@@ -101,7 +101,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   // A sent bid is locked: its price changes only through "Revise this bid" (HPD already has it).
   const [revising, setRevising] = useState(false);
   // Two taps instead of confirm() boxes: iPhone Safari blocks those after a few, and the button then does nothing.
-  const [armed, setArmed] = useState<"" | "send" | "send-7804" | "send-7805" | "revise" | "confirmed" | "self">("");
+  const [armed, setArmed] = useState<"" | "send" | "send-7804" | "send-7805" | "revise" | "confirmed" | "self" | "high">("");
   // "Price saved" shown for a few seconds after saving.
   const [savedFlash, setSavedFlash] = useState(0);
   const [shareNote, setShareNote] = useState("");
@@ -308,6 +308,17 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   }, [pulled, Object.values(records).filter((r) => r.status === "sent").map((r) => r.omo + r.sentAt).join()]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const help = useMemo(() => (selected ? priceHelp(selected.description, pricing) : null), [selected, pricing]);
+  // Since mid-September most lost bids were far above the winner (lock / latch about double): a price that
+  // would win fewer than 1 in 4 similar jobs gets a clear warning, and saving it takes a second tap.
+  const draftNumber = Number(String(draft).replace(/[^0-9.]/g, ""));
+  useEffect(() => { setArmed((a) => (a === "high" ? "" : a)); }, [draft]); // a new price needs its own second tap
+  const highPrice = useMemo(() => {
+    if (!help || !(draftNumber > 0) || help.prices.length < 5) return null;
+    const chance = Math.round(winChance(help, draftNumber) * 100);
+    const best = bestPrice(help);
+    if (chance >= 25 || draftNumber <= best.price) return null;
+    return { chance, best: best.price, bestChance: Math.round(winChance(help, best.price) * 100), n: help.prices.length };
+  }, [help, draftNumber]);
   const scope = useMemo(() => readScope(selected?.description || ""), [selected]);
   const easy = useMemo(() => (selected && stats ? easyWin(selected.description, stats.workPrices) : null), [selected, stats]);
   const descriptions = useMemo(() => new Map<string, string>([...marketJobs.map((j) => [j.omo, j.description] as [string, string]), ...(bids || []).map((b) => [b.omo, b.description] as [string, string])]), [marketJobs, bids]);
@@ -610,6 +621,13 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 <span>$</span>
                 <input inputMode="decimal" aria-label="Bid price" data-hpd-smoke="fc-bid-price" placeholder="0.00" value={draft} disabled={sentLocked} onChange={(e) => setDraft(e.target.value)} />
               </label>
+              {highPrice ? (
+                <div className="fc-bid-high" data-hpd-smoke="fc-bid-high" role="alert">
+                  <b>⚠️ {money(draftValue)} will probably lose</b>
+                  <span>It would have won only about {highPrice.chance}% of jobs like this ({highPrice.n} recent awards). The best price is {money(highPrice.best)} (wins ~{highPrice.bestChance}%).</span>
+                  <button type="button" onClick={() => pickPrice(String(highPrice.best))}>Use {money(highPrice.best)}</button>
+                </div>
+              ) : null}
               <input className="fc-bid-reason" disabled={sentLocked} aria-label="Why this price" data-hpd-smoke="fc-bid-reason" placeholder="Why this price? (optional, remembered for jobs like this)" value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />
               {mineForThis.length ? (
                 <div className="fc-bid-mine" data-hpd-smoke="fc-bid-mine">
@@ -684,8 +702,12 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   <button type="button" data-hpd-smoke="fc-bid-revise" onClick={() => void startRevision()}>{armed === "revise" ? "✅ Tap again: revise (HPD is told to disregard the old price)" : "✏️ Revise this bid"}</button>
                 </div>
               ) : (
-              <button type="button" className={`fc-bid-fill${step1Done && (reason.trim() || undefined) === record?.reason ? " is-done" : ""}`} data-hpd-smoke="fc-bid-save" disabled={!(draftValue > 0) || (draftValue === record?.price && (reason.trim() || undefined) === record?.reason)} onClick={() => void savePrice()}>
-                {record && draftValue === record.price && (reason.trim() || undefined) !== record.reason ? "Save reason" : record && draftValue !== record.price && draftValue > 0 ? `Save new price ${money2(draftValue)}` : step1Done ? `✓ Price saved · ${money2(record!.price)}` : `Save price${draftValue > 0 ? ` ${money2(draftValue)}` : ""}`}
+              <button type="button" className={`fc-bid-fill${step1Done && (reason.trim() || undefined) === record?.reason ? " is-done" : ""}`} data-hpd-smoke="fc-bid-save" disabled={!(draftValue > 0) || (draftValue === record?.price && (reason.trim() || undefined) === record?.reason)} onClick={() => {
+                if (highPrice && draftValue !== record?.price && armed !== "high") { setArmed("high"); return; } // second tap saves a high price
+                void savePrice();
+              }}>
+                {armed === "high" && highPrice && draftValue !== record?.price ? `Tap again to save ${money2(draftValue)} anyway` :
+                record && draftValue === record.price && (reason.trim() || undefined) !== record.reason ? "Save reason" : record && draftValue !== record.price && draftValue > 0 ? `Save new price ${money2(draftValue)}` : step1Done ? `✓ Price saved · ${money2(record!.price)}` : `Save price${draftValue > 0 ? ` ${money2(draftValue)}` : ""}`}
               </button>
               )}
               {revising && record && !revisedFrom(record) ? (

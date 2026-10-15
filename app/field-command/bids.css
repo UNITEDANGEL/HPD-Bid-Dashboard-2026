@@ -412,3 +412,11 @@
 .fc-app.fc-bids-mode:has(.fc-bid-sheet) .fc-map-controls { display: none; }
 .fc-app.fc-bids-mode .fc-map-hints { display: none; }
 .fc-itb-more { margin-left: auto; padding: 2px 8px; border-radius: 999px; background: #7c2d12; color: #fed7aa; font: 800 11.5px system-ui; }
+
+/* Price far above what wins jobs like this (most lost bids since September). */
+.fc-bid-high { display: grid; gap: 4px; margin: 6px 0; padding: 8px 10px; border-radius: 10px; background: #450a0a; border: 2px solid #ef4444; color: #fee2e2; font: 600 13px/1.35 system-ui; }
+.fc-bid-high b { font-size: 14.5px; color: #fff; }
+.fc-bid-high button { justify-self: start; min-height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: #16a34a; color: #fff; font: 800 14px system-ui; }
+
+.fc-last30 { margin-bottom: 12px; }
+.fc-last30 .fc-stats-tiles > div.is-bad { border-color: #ef4444; background: #450a0a; }

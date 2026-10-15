@@ -1239,6 +1239,10 @@ export default function PaperworkPage() {
   const [correctionSaved, setCorrectionSaved] = useState("");
   // The outcome HPD's closing status shows, picked for you once the job has loaded (same as tapping it).
   const [hpdOutcome, setHpdOutcome] = useState("");
+  // The dates on the paperwork you already sent HPD (Gmail Sent, scripts/fetch_sent_paperwork_dates.py).
+  type SentDates = { outcome?: string; workStart?: string; workComplete?: string; attempt1?: string; attempt2?: string; call1?: string; call2?: string; refused?: string; doneByOthers?: string; sentAt?: string };
+  const [sentDates, setSentDates] = useState<SentDates | null>(null);
+  const [sentDatesUsed, setSentDatesUsed] = useState(false);
   const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
   // Opened for one job (from the job card): a short summary instead of the job list and type tiles.
   const [showJobPicker, setShowJobPicker] = useState(false);
@@ -1385,6 +1389,10 @@ export default function PaperworkPage() {
     const fixFor = params.get("fix") || "";
     if (job && fixFor) {
       setCorrection({ rejectedAt: fixFor, reason: "", attempt: "" });
+      fetch("/data/correction_dates.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
+        const got = d?.jobs?.[job.toUpperCase()];
+        if (got) setSentDates(got);
+      }).catch(() => {});
       // HPD's own closing status tells what happened, when the phone has no outcome for the job.
       if (nextOutcome === "pending") {
         fetch("/data/hpd_job_status.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
@@ -1444,8 +1452,27 @@ export default function PaperworkPage() {
   // A correction is a new version by definition: the "sent" lock doesn't apply to it.
   const locked = lock.locked && revisedFor !== selectedJobId && !correction;
   useEffect(() => {
-    if (hpdOutcome && outcome === "pending" && selectedJob) chooseOutcome(hpdOutcome);
-  }, [hpdOutcome, outcome, selectedJob]); // eslint-disable-line react-hooks/exhaustive-deps
+    // What you sent HPD says which affidavit it was (refused vs no access...): it goes first.
+    const sentOutcome = sentDates?.outcome && sentDates.outcome !== "no_work" ? sentDates.outcome : "";
+    if ((sentOutcome || hpdOutcome) && outcome === "pending" && selectedJob) chooseOutcome(sentOutcome || hpdOutcome);
+  }, [hpdOutcome, sentDates, outcome, selectedJob]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Fill the correction's dates from the sent paperwork, where the phone has none (or only today's default).
+  useEffect(() => {
+    if (!correction || !sentDates || sentDatesUsed || !selectedJob || outcome === "pending") return;
+    const us = (iso?: string) => (iso ? displayDate(iso) : "");
+    const today = displayDate(todayIsoDate());
+    const blank = (v: string) => !v || displayDate(v) === today;
+    setForm((current) => ({
+      ...current,
+      workStart: blank(current.workStart) && sentDates.workStart ? us(sentDates.workStart) : current.workStart,
+      workComplete: blank(current.workComplete) && sentDates.workComplete ? us(sentDates.workComplete) : current.workComplete,
+      firstAttempt: blank(current.firstAttempt) && sentDates.attempt1 ? us(sentDates.attempt1) : current.firstAttempt,
+      secondAttempt: blank(current.secondAttempt) && (sentDates.attempt2 || sentDates.refused || sentDates.doneByOthers) ? us(sentDates.attempt2 || sentDates.refused || sentDates.doneByOthers) : current.secondAttempt,
+      phone1Date: !current.phone1Date && sentDates.call1 ? us(sentDates.call1) : current.phone1Date,
+      phone2Date: !current.phone2Date && sentDates.call2 ? us(sentDates.call2) : current.phone2Date,
+    }));
+    setSentDatesUsed(true);
+  }, [correction, sentDates, sentDatesUsed, selectedJob, outcome]);
   const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading && !packageBusy && !locked);
   async function revisePaperwork() {
     if (!savedJob || !selectedJobId) return;
@@ -5494,6 +5521,9 @@ export default function PaperworkPage() {
                     ))}
                   </div>
                 </div>
+              ) : null}
+              {sentDatesUsed && sentDates ? (
+                <p className="paperwork-correction-sent" data-hpd-smoke="paperwork-correction-sent">📨 Dates filled in from the paperwork you sent HPD{sentDates.sentAt ? ` on ${displayDate(sentDates.sentAt)}` : ""}. Check them against HPD&apos;s reason before you save.</p>
               ) : null}
               {outcome === "work_completed" || outcome === "partial_work_completed" ? (
                 <div className="paperwork-correction-dates" data-hpd-smoke="paperwork-correction-dates">

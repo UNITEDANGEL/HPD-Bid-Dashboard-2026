@@ -1,18 +1,56 @@
 {
- "generatedAt": "2026-10-14T03:27:20.101Z",
+ "generatedAt": "2026-10-15T21:51:03.684Z",
  "note": "From the bids you faxed HPD (price read from each package) against HPD's awards. Totals only.",
  "ocrCheck": {
-  "wonJobsChecked": 622,
-  "exact": 570
+  "wonJobsChecked": 625,
+  "exact": 573
  },
  "total": {
-  "bids": 1541,
-  "won": 622,
+  "bids": 1547,
+  "won": 625,
   "winRate": 40,
-  "lostAboveBy": 404,
+  "lostAboveBy": 405,
   "lostAbovePct": 38,
   "closeLosses": 138,
   "lostBelow": 131
+ },
+ "last30": {
+  "since": "2026-09-15",
+  "awarded": 124,
+  "bid": 77,
+  "notBid": 47,
+  "notBidValue": 84909,
+  "won": 16,
+  "lostHigher": 49,
+  "medianGapPct": 53,
+  "lostBelow": 9,
+  "byWork": [
+   {
+    "work": "lock / latch",
+    "lost": 11,
+    "medianGapPct": 98
+   },
+   {
+    "work": "floor / tile",
+    "lost": 8,
+    "medianGapPct": 63
+   },
+   {
+    "work": "hinges",
+    "lost": 8,
+    "medianGapPct": 11
+   },
+   {
+    "work": "entrance lock (Adams Rite / mortise / electric strike)",
+    "lost": 3,
+    "medianGapPct": 91
+   },
+   {
+    "work": "door adjust (self-close & latch)",
+    "lost": 2,
+    "medianGapPct": 116
+   }
+  ]
  },
  "byWork": [
   {
@@ -27,8 +65,8 @@
   },
   {
    "work": "hinges",
-   "bids": 244,
-   "won": 139,
+   "bids": 245,
+   "won": 140,
    "winRate": 57,
    "lostAboveBy": 74,
    "lostAbovePct": 17,
@@ -46,6 +84,16 @@
    "lostBelow": 10
   },
   {
+   "work": "floor / tile",
+   "bids": 139,
+   "won": 28,
+   "winRate": 20,
+   "lostAboveBy": 650,
+   "lostAbovePct": 53,
+   "closeLosses": 6,
+   "lostBelow": 6
+  },
+  {
    "work": "new door",
    "bids": 139,
    "won": 13,
@@ -54,16 +102,6 @@
    "lostAbovePct": 35,
    "closeLosses": 8,
    "lostBelow": 10
-  },
-  {
-   "work": "floor / tile",
-   "bids": 138,
-   "won": 28,
-   "winRate": 20,
-   "lostAboveBy": 650,
-   "lostAbovePct": 53,
-   "closeLosses": 6,
-   "lostBelow": 6
   },
   {
    "work": "entrance lock (Adams Rite / mortise / electric strike)",
@@ -87,29 +125,29 @@
   },
   {
    "work": "window glass",
-   "bids": 79,
-   "won": 26,
+   "bids": 81,
+   "won": 27,
    "winRate": 33,
-   "lostAboveBy": 413,
-   "lostAbovePct": 53,
+   "lostAboveBy": 402,
+   "lostAbovePct": 51,
    "closeLosses": 8,
    "lostBelow": 8
   },
   {
    "work": "door adjust (self-close & latch)",
-   "bids": 57,
+   "bids": 58,
    "won": 38,
-   "winRate": 67,
-   "lostAboveBy": 360,
-   "lostAbovePct": 51,
+   "winRate": 66,
+   "lostAboveBy": 440,
+   "lostAbovePct": 67,
    "closeLosses": 2,
    "lostBelow": 6
   },
   {
    "work": "window balance / sash / guard",
-   "bids": 46,
-   "won": 20,
-   "winRate": 43,
+   "bids": 47,
+   "won": 21,
+   "winRate": 45,
    "lostAboveBy": 207,
    "lostAbovePct": 45,
    "closeLosses": 7,
@@ -209,10 +247,10 @@
  "byBoro": [
   {
    "boro": "Brooklyn",
-   "bids": 514,
+   "bids": 516,
    "won": 213,
    "winRate": 41,
-   "lostAboveBy": 340,
+   "lostAboveBy": 341,
    "lostAbovePct": 30,
    "closeLosses": 52,
    "lostBelow": 50
@@ -229,19 +267,19 @@
   },
   {
    "boro": "Manhattan",
-   "bids": 304,
+   "bids": 305,
    "won": 127,
    "winRate": 42,
-   "lostAboveBy": 605,
+   "lostAboveBy": 598,
    "lostAbovePct": 57,
    "closeLosses": 23,
    "lostBelow": 16
   },
   {
    "boro": "Queens",
-   "bids": 243,
-   "won": 103,
-   "winRate": 42,
+   "bids": 246,
+   "won": 106,
+   "winRate": 43,
    "lostAboveBy": 440,
    "lostAbovePct": 38,
    "closeLosses": 18,
@@ -371,11 +409,11 @@
   },
   {
    "month": "2026-10",
-   "bids": 13,
-   "won": 3,
-   "winRate": 23,
-   "lostAboveBy": 623,
-   "lostAbovePct": 65,
+   "bids": 19,
+   "won": 6,
+   "winRate": 32,
+   "lostAboveBy": 605,
+   "lostAbovePct": 63,
    "closeLosses": 1,
    "lostBelow": 2
   }

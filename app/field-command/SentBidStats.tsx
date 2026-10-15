@@ -12,6 +12,7 @@ type Stats = {
   byWork: (Group & { work: string })[];
   byBoro: (Group & { boro: string })[];
   byMonth: (Group & { month: string })[];
+  last30?: { since: string; awarded: number; bid: number; notBid: number; notBidValue: number; won: number; lostHigher: number; medianGapPct: number | null; lostBelow: number; byWork: { work: string; lost: number; medianGapPct: number | null }[] };
 };
 
 const money = (n: number | null) => (n === null ? "-" : `$${Math.round(n).toLocaleString()}`);
@@ -30,6 +31,18 @@ export default function SentBidStats() {
   const maxBids = Math.max(...s.byMonth.map((g) => g.bids), 1);
   return (
     <section className="fc-stats-block fc-sent-stats" data-hpd-smoke="fc-sent-stats">
+      {s.last30 ? (
+        <div className="fc-last30" data-hpd-smoke="fc-last30">
+          <h4>Last 30 days: where the jobs went</h4>
+          <div className="fc-stats-tiles">
+            <div className="is-bad"><b>{s.last30.notBid} of {s.last30.awarded}</b><small>invitations got <b>no bid</b> from you: {money(s.last30.notBidValue)} went to others</small></div>
+            <div><b>{s.last30.won} won</b><small>of {s.last30.bid} you bid</small></div>
+            <div className="is-bad"><b>{s.last30.lostHigher}</b><small>lost on price: typically <b>{s.last30.medianGapPct}% above</b> the winner</small></div>
+            <div><b>{s.last30.lostBelow}</b><small>lost although your price was lower</small></div>
+          </div>
+          {s.last30.byWork.length ? <p className="fc-stats-note">Biggest price gaps: {s.last30.byWork.map((g) => `${g.work} (${g.lost} lost, ${g.medianGapPct}% above)`).join(" · ")}. The price box now warns when a price would win fewer than 1 in 4 jobs like it.</p> : null}
+        </div>
+      ) : null}
       <h4>Bids you sent: win rate</h4>
       <div className="fc-stats-tiles">
         <div><b>{t.won} / {t.bids}</b><small>bids won ({t.winRate}%)</small></div>

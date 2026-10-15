@@ -29,3 +29,5 @@
 .paperwork-correction-text { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
 .paperwork-correction-text label { display: grid; gap: 2px; font: 700 12.5px system-ui; color: #e5e7eb; }
 .paperwork-correction-text input { min-height: 44px; border-radius: 10px; border: 1px solid #475569; background: #0f172a; color: #fff; padding: 0 8px; font: 700 15px system-ui; text-transform: uppercase; }
+
+.paperwork-correction-sent { margin: 0; padding: 8px 10px; border-radius: 10px; background: #0c4a6e; color: #e0f2fe; font: 700 13px/1.4 system-ui; }
