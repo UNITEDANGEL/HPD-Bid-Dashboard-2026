@@ -1,4 +1,4 @@
-Fetcher run started: 2026-10-15T13:31:42.068Z
+Fetcher run started: 2026-10-15T13:41:41.641Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,9 +25,9 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/7 [00:00<?, ?it/s]Downloading COA messages:  14%|█▍        | 1/7 [00:00<00:00,  6.61it/s]Downloading COA messages:  29%|██▊       | 2/7 [00:00<00:00,  7.35it/s]Downloading COA messages:  43%|████▎     | 3/7 [00:00<00:00,  7.34it/s]Downloading COA messages:  57%|█████▋    | 4/7 [00:00<00:00,  7.18it/s]Downloading COA messages:  71%|███████▏  | 5/7 [00:00<00:00,  6.60it/s]Downloading COA messages:  86%|████████▌ | 6/7 [00:00<00:00,  7.40it/s]Downloading COA messages: 100%|██████████| 7/7 [00:00<00:00,  7.86it/s]Downloading COA messages: 100%|██████████| 7/7 [00:00<00:00,  7.41it/s]
-Geocoding COA addresses:   0%|          | 0/7 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 7/7 [00:00<00:00, 166818.91it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/7 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  14%|█▍        | 1/7 [00:00<00:03,  1.79it/s]Fetching ITBs for COA OMOs:  29%|██▊       | 2/7 [00:01<00:02,  2.00it/s]Fetching ITBs for COA OMOs:  43%|████▎     | 3/7 [00:01<00:02,  1.76it/s]Fetching ITBs for COA OMOs:  57%|█████▋    | 4/7 [00:02<00:01,  1.93it/s]Fetching ITBs for COA OMOs:  71%|███████▏  | 5/7 [00:02<00:01,  1.99it/s]Fetching ITBs for COA OMOs:  86%|████████▌ | 6/7 [00:03<00:00,  2.02it/s]Fetching ITBs for COA OMOs: 100%|██████████| 7/7 [00:03<00:00,  2.13it/s]Fetching ITBs for COA OMOs: 100%|██████████| 7/7 [00:03<00:00,  2.01it/s]
+Downloading COA messages:   0%|          | 0/7 [00:00<?, ?it/s]Downloading COA messages:  14%|█▍        | 1/7 [00:00<00:00,  6.32it/s]Downloading COA messages:  29%|██▊       | 2/7 [00:00<00:00,  7.85it/s]Downloading COA messages:  43%|████▎     | 3/7 [00:00<00:00,  6.79it/s]Downloading COA messages:  57%|█████▋    | 4/7 [00:00<00:00,  7.17it/s]Downloading COA messages:  71%|███████▏  | 5/7 [00:00<00:00,  7.17it/s]Downloading COA messages: 100%|██████████| 7/7 [00:00<00:00,  7.08it/s]Downloading COA messages: 100%|██████████| 7/7 [00:00<00:00,  7.08it/s]
+Geocoding COA addresses:   0%|          | 0/7 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 7/7 [00:00<00:00, 161319.38it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/7 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  14%|█▍        | 1/7 [00:00<00:03,  1.79it/s]Fetching ITBs for COA OMOs:  29%|██▊       | 2/7 [00:01<00:02,  1.75it/s]Fetching ITBs for COA OMOs:  43%|████▎     | 3/7 [00:01<00:02,  1.82it/s]Fetching ITBs for COA OMOs:  57%|█████▋    | 4/7 [00:02<00:01,  1.85it/s]Fetching ITBs for COA OMOs:  71%|███████▏  | 5/7 [00:02<00:01,  1.95it/s]Fetching ITBs for COA OMOs:  86%|████████▌ | 6/7 [00:03<00:00,  2.01it/s]Fetching ITBs for COA OMOs: 100%|██████████| 7/7 [00:03<00:00,  2.13it/s]Fetching ITBs for COA OMOs: 100%|██████████| 7/7 [00:03<00:00,  1.98it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -173,7 +173,7 @@ HPD job status: 656 of 679 jobs found, 187 still open at HPD, 469 closed
 
 ========== Update market awards from NYC Open Data ==========
 $ node scripts/update-market-awards.mjs
-Market awards: 3692 awarded jobs with full descriptions (961 yours, 2731 other contractors) from 4074 invitations; 1 new descriptions kept tonight; 39715 awards in Open Data since 2025-01-01
+Market awards: 3692 awarded jobs with full descriptions (961 yours, 2731 other contractors) from 4074 invitations; 0 new descriptions kept tonight; 39715 awards in Open Data since 2025-01-01
 
 
 ========== Verify mapping ==========
@@ -261,7 +261,7 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-10-15T13:36:53.665Z
+Fetcher run finished: 2026-10-15T13:47:01.031Z
 {
   "fetchedCoaItems": 7,
   "fetchedItbItems": 7,
