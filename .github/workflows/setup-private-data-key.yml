@@ -1,0 +1,23 @@
+# One-time (or after changing the key): copy the GitHub secret HPD_PRIVATE_DATA_KEY into the Cloudflare
+# Pages project, so /api/private/* (server/private-data.mjs) can open the encrypted tenant files.
+name: Set up private data key
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  set-secret:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Copy the key into Cloudflare Pages (production)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          KEY: ${{ secrets.HPD_PRIVATE_DATA_KEY }}
+        run: |
+          test -n "$KEY" || { echo "GitHub secret HPD_PRIVATE_DATA_KEY is missing"; exit 1; }
+          printf '%s' "$KEY" | npx --yes wrangler@3 pages secret put HPD_PRIVATE_DATA_KEY --project-name=hpd-bid-dashboard-2026
+          echo "Key set (takes effect on the next deploy)."
