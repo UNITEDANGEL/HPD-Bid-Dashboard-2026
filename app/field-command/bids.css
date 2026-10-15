@@ -173,7 +173,7 @@
 .fc-history-desc { margin: 0 0 8px; padding: 8px; border-radius: 8px; background: #292524; color: #e7e5e4; font: 500 12px/1.45 system-ui; }
 
 /* Easy-win pin: green ring and a $ badge. */
-.fc-bid-pin { position: relative; }
+/* No position override here: Leaflet places each pin with position:absolute + translate (relative pushed pins off their spot). */
 .fc-bid-pin.is-easy { border: 3px solid #22c55e; box-shadow: 0 0 0 3px #22c55e55, 0 2px 6px #0f172a66; }
 .fc-bid-pin i { position: absolute; top: -7px; right: -7px; display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #16a34a; color: #fff; font: 900 10px/1 system-ui; font-style: normal; border: 1.5px solid #fff; }
 
@@ -344,3 +344,7 @@
 .fc-bid-move { grid-column: 1 / -1; margin: 4px 0 0; padding: 8px; border-radius: 8px; background: #1e293b; color: #e2e8f0; font: 700 13px/1.4 system-ui; }
 .fc-bid-move.is-raise { background: #14532d; color: #dcfce7; }
 .fc-bid-move.is-lower { background: #7c2d12; color: #ffedd5; }
+
+/* Look at the building before pricing. */
+.fc-bid-look { display: flex; gap: 8px; margin: 4px 0 8px; }
+.fc-bid-look a { flex: 1; min-height: 40px; display: grid; place-items: center; border-radius: 10px; background: #1e3a8a; color: #fff; font: 800 13px system-ui; text-decoration: none; }

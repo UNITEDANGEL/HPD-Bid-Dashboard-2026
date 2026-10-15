@@ -140,6 +140,22 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 
 3. **2025 jobs**: recover statuses for last year's jobs too, if needed.
 
+## Done 15 Oct 2026
+- **Job status line** on every job card: Awarded -> Work done -> Papers sent -> HPD closed -> Paid,
+  green / amber / red per step, plus "Next: ..." (lib/job-stages.ts, scripts/test-job-stages.mjs). Uses the
+  job's outcome and dates, the package approved / emailed, Sent mail, HPD's closing reason, open HPD
+  rejections (red) and PIP paid / $ open. A date recorded after the papers went out shows "recorded <date>".
+- **Bid pins stay on their building when zooming**: a CSS rule (position: relative on .fc-bid-pin) was
+  overriding Leaflet's placement and pushing each pin down by the ones before it. Removed; checked all 19
+  pins against their coordinates at zoom 10 and 14 (under 1 pixel off).
+- **360° Street View + Map & photos** buttons at the top of every invitation (Google Maps links, no key).
+
+## Ideas for the bid flow (proposed 15 Oct)
+- Building facts on the bid: year built, floors, units, open HPD violations at the address (NYC Open Data,
+  free), so old / big buildings price higher.
+- One-screen fill order: look (Street View) -> read description -> price (best price shown) -> Fill ->
+  check -> Send (two taps).
+
 ## Open items for the owner
 - **Invitation timer in Cloudflare** (13 Oct: the laptop battery died at 2:58 PM, 3 invitations waited
   2 hours; GitHub's schedule only runs ~once a day). Code is ready (cloudflare-timer/, every 10 min,

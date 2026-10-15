@@ -15,6 +15,7 @@ import { activeAppointment, appointmentCalendarHref, appointmentLabel, appointme
 import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDateField, jobDate, matchesJobDateRange, calendarDay, jobDateWarning, currentYearRange } from "../../lib/job-priority";
 import { fieldStatusLabel } from "../../lib/field-status";
 import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
+import { jobStages, nextStep } from "../../lib/job-stages";
 import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type PipPayment, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
@@ -3205,6 +3206,25 @@ export default function FieldCommandClient() {
                 const left = fu.daysLeft === null ? "" : fu.state === "done" || fu.state === "hpd-closed" ? "" : fu.daysLeft < 0 ? `${-fu.daysLeft} days overdue` : fu.daysLeft === 0 ? "due today" : `${fu.daysLeft} days left`;
                 return (
                   <div className={`jc-key-dates is-${fu.state}`} data-hpd-smoke="jc-key-dates">
+                    {(() => {
+                      // Where this job stands: Awarded -> Work done -> Paperwork sent -> HPD closed -> Paid.
+                      const rj = rejections.find((r) => r.omo === fu.omo);
+                      const stages = jobStages({ ...selectedJob, AwardDate: fu.awardDay || selectedJob.AwardDate, WorkCompletionDate: fu.maturityDay || selectedJob.WorkCompletionDate, HpdClosedReason: fu.hpdReason || selectedJob.HpdClosedReason || "", PaperworkSentAt: fu.sentAt || selectedJob.PaperworkSentAt || "" }, pipMap[fu.omo], rj || null);
+                      return (
+                        <div className="jc-journey" data-hpd-smoke="jc-journey">
+                          <ol>
+                            {stages.map((st) => (
+                              <li key={st.key} className={`is-${st.tone}`} data-stage={st.key} data-tone={st.tone}>
+                                <i aria-hidden="true">{st.tone === "done" ? "✓" : st.tone === "bad" ? "!" : st.tone === "now" ? "●" : ""}</i>
+                                <b>{st.label}</b>
+                                <small>{st.detail}</small>
+                              </li>
+                            ))}
+                          </ol>
+                          <p className="jc-journey-next" data-hpd-smoke="jc-journey-next">Next: {nextStep(stages)}</p>
+                        </div>
+                      );
+                    })()}
                     <div><span>Awarded</span><b>{md(fu.awardDay)}</b></div>
                     <div><span>Start</span><b>{md(fu.startDay)}</b></div>
                     <div><span>Complete by</span><b>{md(fu.maturityDay)}</b></div>

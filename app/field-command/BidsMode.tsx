@@ -508,6 +508,11 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
           </header>
           <div className="fc-bid-body">
             <h3>{selected.address}{selected.borough ? ` · ${selected.borough}` : ""}</h3>
+            {/* See the building before pricing: Google's 360° street view (opens the Google Maps app on the iPhone; no key needed). */}
+            <div className="fc-bid-look" data-hpd-smoke="fc-bid-look">
+              {Number.isFinite(selected.lat) ? <a href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${selected.lat},${selected.lng}`} target="_blank" rel="noopener noreferrer" data-hpd-smoke="fc-bid-streetview">🏢 360° Street View</a> : null}
+              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.address}, ${selected.borough || ""} NY`)}`} target="_blank" rel="noopener noreferrer">📍 Map &amp; photos</a>
+            </div>
             <p className={`fc-bid-due is-${dueWhen(selected).tone}`} data-hpd-smoke="fc-bid-due">⏰ Bid due {dueLabel(selected)} · {dueWhen(selected).text}</p>
             <BidTimeline record={record} />
             <p className="fc-bid-dates">Work {selected.workStart ? `starts ${selected.workStart.slice(5).replace("-", "/")}` : "start not listed"}{selected.workCompletion ? ` · done by ${selected.workCompletion.slice(5).replace("-", "/")}` : ""}</p>
