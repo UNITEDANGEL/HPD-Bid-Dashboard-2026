@@ -125,6 +125,7 @@ jobs:
           node scripts/test-job-stages.mjs
           node scripts/test-building-facts.mjs
           node scripts/test-building-bids.mjs
+          node scripts/test-private-data.mjs
           node scripts/test-master-file.mjs
           node scripts/test-bid-fax-server.mjs
           node cloudflare-timer/test-timer.mjs

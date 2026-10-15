@@ -1237,6 +1237,8 @@ export default function PaperworkPage() {
   const [correction, setCorrection] = useState<{ rejectedAt: string; reason: string; attempt: string } | null>(null);
   // The corrected package once you've checked the preview and saved it to print (ISO time), or an error.
   const [correctionSaved, setCorrectionSaved] = useState("");
+  // The outcome HPD's closing status shows, picked for you once the job has loaded (same as tapping it).
+  const [hpdOutcome, setHpdOutcome] = useState("");
   const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
   // Opened for one job (from the job card): a short summary instead of the job list and type tiles.
   const [showJobPicker, setShowJobPicker] = useState(false);
@@ -1333,7 +1335,22 @@ export default function PaperworkPage() {
         // Older jobs (2024-2025, scripts/fetch_older_jobs.py): to correct their rejected paperwork.
         const older = await fetch("/data/COA_older.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : [])).catch(() => []);
         const have = new Set(asArray(data).map((j) => String((j as Record<string, unknown>).OMO || "").toUpperCase()));
-        const rows = await applySavedWorkflowStatuses(withTestJob([...asArray(data), ...asArray(older).filter((j) => !have.has(String((j as Record<string, unknown>).OMO || "").toUpperCase()))]));
+        // No award amount read from the COA (common on 2024-2025 jobs): HPD's agreed amount from PIP
+        // (paid + still open), so the invoice isn't missing its charge.
+        const pip = await fetch("/data/pip_paid.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => (d?.jobs || {}) as Record<string, { paid?: number; outstanding?: number }>).catch(() => ({} as Record<string, { paid?: number; outstanding?: number }>));
+        // ...or HPD's own award amount (NYC Open Data, hpd_job_status.json).
+        const hpdStatus = await fetch("/data/hpd_job_status.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => (d?.jobs || {}) as Record<string, { amount?: number }>).catch(() => ({} as Record<string, { amount?: number }>));
+        const withAmount = (j: unknown) => {
+          const row = j as Record<string, unknown>;
+          const omo = String(row.OMO || "").toUpperCase();
+          const p = pip[omo];
+          const total = p ? Number(p.paid || 0) + Number(p.outstanding || 0) : 0;
+          const hpd = Number(hpdStatus[omo]?.amount || 0);
+          if (getJobAmount(row)) return row;
+          if (total > 0) return { ...row, AwardAmount: total.toFixed(2), AwardAmountSource: "PIP" };
+          return hpd > 0 ? { ...row, AwardAmount: hpd.toFixed(2), AwardAmountSource: "HPD" } : row;
+        };
+        const rows = await applySavedWorkflowStatuses(withTestJob([...asArray(data), ...asArray(older).filter((j) => !have.has(String((j as Record<string, unknown>).OMO || "").toUpperCase()))].map(withAmount)));
         if (!cancelled) setJobs(rows);
       } catch (error) {
         console.error(error);
@@ -1368,6 +1385,14 @@ export default function PaperworkPage() {
     const fixFor = params.get("fix") || "";
     if (job && fixFor) {
       setCorrection({ rejectedAt: fixFor, reason: "", attempt: "" });
+      // HPD's own closing status tells what happened, when the phone has no outcome for the job.
+      if (nextOutcome === "pending") {
+        fetch("/data/hpd_job_status.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
+          const reason = String(d?.jobs?.[job.toUpperCase()]?.closedReason || "");
+          const fromHpd = /no access/i.test(reason) ? "no_access" : /refus/i.test(reason) ? "refused_access" : /others/i.test(reason) ? "completed_by_others" : /complet/i.test(reason) ? "work_completed" : "";
+          if (fromHpd) setHpdOutcome(fromHpd);
+        }).catch(() => {});
+      }
       fetch("/data/hpd_requests.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
         const r = d?.jobs?.[job.toUpperCase()];
         if (r) setCorrection({ rejectedAt: r.rejectedAt || fixFor, reason: r.rejectedReason || "", attempt: r.rejectedAttempt || "" });
@@ -1416,7 +1441,11 @@ export default function PaperworkPage() {
   // The lock and the kept version come from the job as saved, not from the outcome in the page's link.
   const savedJob = useMemo(() => findJob(jobs, selectedId), [jobs, selectedId]);
   const lock = paperworkLock(savedJob);
-  const locked = lock.locked && revisedFor !== selectedJobId;
+  // A correction is a new version by definition: the "sent" lock doesn't apply to it.
+  const locked = lock.locked && revisedFor !== selectedJobId && !correction;
+  useEffect(() => {
+    if (hpdOutcome && outcome === "pending" && selectedJob) chooseOutcome(hpdOutcome);
+  }, [hpdOutcome, outcome, selectedJob]); // eslint-disable-line react-hooks/exhaustive-deps
   const canGeneratePackage = Boolean((form.jobId || selectedId) && outcome !== "pending" && !packageJobLoading && !packageBusy && !locked);
   async function revisePaperwork() {
     if (!savedJob || !selectedJobId) return;
@@ -5435,9 +5464,10 @@ export default function PaperworkPage() {
             </div>
           ) : null}
 
-          {!packagePreview ? <SignatureCard signer={form.signer} onChange={rememberSignature} /> : null}
+          {/* Corrections are signed by hand (you and the notary): no signature pad, no notary approval here. */}
+          {!packagePreview && !correction ? <SignatureCard signer={form.signer} onChange={rememberSignature} /> : null}
 
-          {!packagePreview && !(editingPackage && packageNotaryRef.current) ? (
+          {!packagePreview && !correction && !(editingPackage && packageNotaryRef.current) ? (
             <NotaryCard
               key={notaryKey}
               minDate={
@@ -5455,9 +5485,75 @@ export default function PaperworkPage() {
               <b>❗ Correcting HPD&apos;s rejection of {correction.rejectedAt}{correction.attempt ? ` (${correction.attempt} ATTEMPT)` : ""}</b>
               {correction.reason ? <span>HPD: {correction.reason}</span> : null}
               <small>Fix the details above, then preview the corrected package. Nothing is marked or sent until you check the preview and save it. HPD needs original ink signatures: it has <b>no signature pictures</b> (you and the notary sign by hand); the notary stamp stays and is dated <b>today ({todayIsoDate()})</b>. The paperwork check runs first.</small>
-              <button className="paperwork-print" data-hpd-smoke="paperwork-generate-correction" type="button" disabled={!canGeneratePackage || packageBusy} onClick={() => { setCorrectionSaved(""); void generateCompletePackage(false, true, true); }}>
+              {outcome === "pending" ? (
+                <div className="paperwork-correction-outcome" data-hpd-smoke="paperwork-correction-outcome">
+                  <b>What happened on this job?</b>
+                  <div>
+                    {([["work_completed", "Work done"], ["partial_work_completed", "Partial work"], ["no_access", "No access"], ["refused_access", "Refused access"], ["completed_by_others", "Done by others"]] as const).map(([value, label]) => (
+                      <button key={value} type="button" onClick={() => chooseOutcome(value)}>{label}</button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {outcome === "work_completed" || outcome === "partial_work_completed" ? (
+                <div className="paperwork-correction-dates" data-hpd-smoke="paperwork-correction-dates">
+                  <b>Work dates on this correction</b>
+                  <small>Use the real dates (the ones on the paperwork you sent HPD), not today.</small>
+                  <div>
+                    <label>Work started<input type="date" data-hpd-smoke="paperwork-correction-start" value={dateInputValue(form.workStart)} onChange={(e) => update("workStart", displayDate(e.target.value))} /></label>
+                    <label>Work completed<input type="date" data-hpd-smoke="paperwork-correction-complete" value={dateInputValue(form.workComplete)} onChange={(e) => update("workComplete", displayDate(e.target.value))} /></label>
+                  </div>
+                </div>
+              ) : null}
+              {outcome === "no_access" || outcome === "refused_access" || outcome === "completed_by_others" ? (
+                <div className="paperwork-correction-dates" data-hpd-smoke="paperwork-correction-nowork">
+                  <b>{outcome === "no_access" ? "Access attempts on this correction" : outcome === "refused_access" ? "The refusal on this correction" : "When you found the work done"}</b>
+                  <small>Use the real dates (the ones on the paperwork you sent HPD), not today.</small>
+                  <div>
+                    {outcome === "no_access" ? <label>1st attempt<input type="date" data-hpd-smoke="paperwork-correction-attempt1" value={dateInputValue(form.firstAttempt)} onChange={(e) => update("firstAttempt", displayDate(e.target.value))} /></label> : null}
+                    <label>{outcome === "no_access" ? "2nd attempt" : outcome === "refused_access" ? "Date refused" : "Date found done"}<input type="date" data-hpd-smoke="paperwork-correction-attempt2" value={dateInputValue(form.secondAttempt)} onChange={(e) => update("secondAttempt", displayDate(e.target.value))} /></label>
+                    {outcome === "no_access" && form.tenantPhone ? <label>1st call to tenant<input type="date" data-hpd-smoke="paperwork-correction-call1" value={dateInputValue(form.phone1Date)} onChange={(e) => update("phone1Date", displayDate(e.target.value))} /></label> : null}
+                    {outcome === "no_access" && form.tenantPhone ? <label>2nd call<input type="date" value={dateInputValue(form.phone2Date)} onChange={(e) => update("phone2Date", displayDate(e.target.value))} /></label> : null}
+                  </div>
+                  {outcome === "refused_access" ? (
+                    <div className="paperwork-correction-text">
+                      <label>Name given<input value={form.deniedName} placeholder="or DID NOT PROVIDE" onChange={(e) => update("deniedName", e.target.value)} /></label>
+                      <label>Relationship<input value={form.deniedRelationship} placeholder="SUPER, TENANT, OWNER…" onChange={(e) => update("deniedRelationship", e.target.value)} /></label>
+                      <label>Description<input data-hpd-smoke="paperwork-correction-described" value={form.deniedDescription} placeholder={REFUSED_ACCESS_DESCRIPTION_EXAMPLE} onChange={(e) => update("deniedDescription", e.target.value)} /></label>
+                      <label>Their phone<input value={form.deniedPhone} placeholder="or DID NOT PROVIDE" onChange={(e) => update("deniedPhone", e.target.value)} /></label>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+              <button className="paperwork-print" data-hpd-smoke="paperwork-generate-correction" type="button" disabled={!canGeneratePackage || packageBusy} onClick={() => {
+                setCorrectionSaved("");
+                // An older job with no recorded work dates gets today's date by default: never put that on a correction.
+                const today = displayDate(todayIsoDate());
+                const award = calendarDay(getJobDate(selectedJob, "award"));
+                const old = award !== null && calendarDay(todayIsoDate())! - award > 14;
+                // The dates that would print (an empty date falls back to the field date, which defaults to today).
+                const printedComplete = displayDate(form.workComplete || form.fieldDate);
+                const printedStart = displayDate(form.workStart || form.workComplete || form.fieldDate);
+                const printedFirst = displayDate(form.firstAttempt || form.fieldDate);
+                const printedSecond = displayDate(form.secondAttempt || form.fieldDate);
+                if ((outcome === "work_completed" || outcome === "partial_work_completed") && old && (printedComplete === today || printedStart === today)) {
+                  setPdfStatus("Enter the real work dates above (the ones on the paperwork you sent HPD). Today's date would be wrong on this job.");
+                  return;
+                }
+                // No access / refused / done by others: an empty date falls back to today, just as wrong.
+                if ((outcome === "no_access" || outcome === "refused_access" || outcome === "completed_by_others") && old && (printedSecond === today || (outcome === "no_access" && printedFirst === today))) {
+                  setPdfStatus(outcome === "no_access" ? "Enter both access attempt dates above (the real ones, at least 72 hours apart)." : outcome === "refused_access" ? "Enter the date you were refused above." : "Enter the date you found the work done above.");
+                  return;
+                }
+                void generateCompletePackage(false, true, true);
+              }}>
                 {packageBusy ? "Making the preview…" : "👁 Preview the corrected package"}
               </button>
+              {!canGeneratePackage && !packageBusy ? (
+                <p className="paperwork-correction-status" data-hpd-smoke="paperwork-correction-why">
+                  {packageJobLoading || (selectedId && !selectedJob) ? "Loading this job's details…" : outcome === "pending" ? "Pick what happened on this job (above) to make the preview." : "Can't make the preview yet."}
+                </p>
+              ) : null}
               {pdfStatus ? <p className="paperwork-correction-status" data-hpd-smoke="paperwork-correction-status" aria-live="polite">{pdfStatus}</p> : null}
             </div>
           ) : null}

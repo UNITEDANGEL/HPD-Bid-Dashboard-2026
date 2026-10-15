@@ -15,3 +15,17 @@
 .pkg-correction-actions button { min-height: 48px; }
 .pkg-correction-done { margin: 4px 0 0; padding: 8px 10px; border-radius: 10px; background: #052e16; color: #bbf7d0; font-weight: 700; }
 .pkg-correction-error { margin: 0; color: #fca5a5; font-weight: 700; }
+
+.paperwork-correction-outcome { display: grid; gap: 6px; padding: 8px; border-radius: 10px; background: #1f2937; }
+.paperwork-correction-outcome > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.paperwork-correction-outcome button { min-height: 44px; padding: 0 12px; border: 0; border-radius: 10px; background: #334155; color: #fff; font: 800 14px system-ui; }
+
+.paperwork-correction-dates { display: grid; gap: 4px; padding: 8px; border-radius: 10px; background: #1f2937; }
+.paperwork-correction-dates small { color: #fde68a; font-weight: 700; }
+.paperwork-correction-dates > div { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.paperwork-correction-dates label { display: grid; gap: 2px; font: 700 12.5px system-ui; color: #e5e7eb; }
+.paperwork-correction-dates input { min-height: 44px; border-radius: 10px; border: 1px solid #475569; background: #0f172a; color: #fff; padding: 0 8px; font: 700 15px system-ui; }
+
+.paperwork-correction-text { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.paperwork-correction-text label { display: grid; gap: 2px; font: 700 12.5px system-ui; color: #e5e7eb; }
+.paperwork-correction-text input { min-height: 44px; border-radius: 10px; border: 1px solid #475569; background: #0f172a; color: #fff; padding: 0 8px; font: 700 15px system-ui; text-transform: uppercase; }

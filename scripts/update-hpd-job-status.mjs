@@ -25,7 +25,12 @@ export function statusRows(rows) {
 
 async function main() {
   const coa = JSON.parse(fs.readFileSync(path.join(ROOT, "data", "COA_Fetcher_2026.json"), "utf8"));
-  const omos = [...new Set(coa.map((j) => String(j.OMO || "").toUpperCase()).filter((o) => /^[A-Z]{2}\d{5}$/.test(o)))];
+  // Older jobs too (2021-2025, public/data/COA_older.json): their rejections are corrected from the
+  // notices, and HPD's closing reason tells what happened (work done, no access, ...).
+  const olderFile = path.join(ROOT, "public", "data", "COA_older.json");
+  const older = fs.existsSync(olderFile) ? JSON.parse(fs.readFileSync(olderFile, "utf8")) : [];
+  const olderRows = Array.isArray(older) ? older : older.jobs || [];
+  const omos = [...new Set([...coa, ...olderRows].map((j) => String(j.OMO || "").toUpperCase()).filter((o) => /^[A-Z]{2}\d{5}$/.test(o)))];
   const rows = [];
   for (let i = 0; i < omos.length; i += 150) {
     const ids = omos.slice(i, i + 150).map((o) => `'${o}'`).join(",");

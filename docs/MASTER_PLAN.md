@@ -164,6 +164,32 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - One-screen fill order: look (Street View) -> read description -> price (best price shown) -> Fill ->
   check -> Send (two taps).
 
+## Done 16 Oct 2026: corrections really work on the owner's phone
+- **Preview button was greyed out on the iPhone**: every rejected job's paperwork had been sent, so the page
+  was "locked" (the sent version can't be changed by accident). A correction is a new version: the lock no
+  longer applies in correction mode. (Tests passed before because the test phone had no sent paperwork; the
+  correction test now seeds the job as sent.)
+- **No signature pad or notary approval on the correction page** (signed by hand, see the rule).
+- Older jobs: HPD's closing reason (now fetched for 2021-2025 jobs too, scripts/update-hpd-job-status.mjs)
+  picks what happened; otherwise the correction box asks ("What happened on this job?"). Missing award
+  amount comes from PIP (paid + still open) or HPD's award amount.
+- **Dates on corrections are never "today" by default** on an older job: the correction box has the date
+  fields for the outcome (work dates / access attempts + calls / refusal date + person / date found done)
+  and refuses to make the preview with today's date.
+- All open rejections tried one by one (node_modules/.cache/all-fixes.mjs): what each still needs is listed
+  in the notices (dates / what happened only the owner knows).
+
+## Privacy plan (owner said yes, 16 Oct 2026)
+Tenant names/phones are public: 745 invitation PDFs (page 2) and the tenant fields in
+public/data/COA_Fetcher_2026.json (339 names, 14 phones), committed by the fetcher.
+1. New secret HPD_PRIVATE_DATA_KEY (GitHub secret + Cloudflare Pages secret, set by a workflow).
+2. The fetcher encrypts the invitation PDFs and the tenant fields (AES-GCM) before committing; plain copies
+   are no longer committed.
+3. A signed-in route (/api/private/..., Google sign-in cookie) decrypts them for the app: bid pages, bid
+   fill, job card tenant name/phone, paperwork phone dates.
+4. Remove the plain files from the site, then (last, cannot be undone) rewrite git history to drop them and
+   force-push main, with the fetcher paused during the rewrite.
+
 ## Owner's standing requirements (keep upgrading until it's perfect; follow this list)
 Collected from the owner's requests; every change is checked against these.
 1. **Works on the iPhone in both directions.** The owner now uses it sideways (landscape): every screen

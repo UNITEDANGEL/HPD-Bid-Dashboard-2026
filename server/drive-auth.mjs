@@ -72,6 +72,13 @@ async function session(request, env, cfg) {
   return value?.email === cfg.email ? { ...value, id } : null;
 }
 
+// Signed in as the owner (the Google sign-in cookie)? For other private routes (server/private-data.mjs).
+export async function signedInOwner(request, env) {
+  const cfg = config(env);
+  if (!cfg) return false;
+  return Boolean(await session(request, env, cfg));
+}
+
 // All private file operations pass the same owner/session/Google identity checks.
 export async function handleDriveAuth(request, env, fetcher = fetch) {
   const url = new URL(request.url);

@@ -21,6 +21,8 @@ try {
   const requests = await (await fetch(`${baseUrl}/data/hpd_requests.json`)).json();
   const rej = requests.jobs?.[OMO];
   assert.ok(rej?.rejectedAt, `${OMO} has a rejection`);
+  // The phone has this job's paperwork as sent (that's what HPD rejected): it used to lock the button.
+  await context.addInitScript((omo) => { if (localStorage.getItem("seeded")) return; localStorage.setItem("seeded", "1"); localStorage.setItem("hpd-job-workflow-overrides-v2", JSON.stringify({ [omo]: { OMO: omo, FieldOutcome: "WORK_COMPLETED", ActualWorkStartDate: "2026-02-11", ActualWorkCompletionDate: "2026-02-11", PackageApprovedAt: "2026-02-12T15:00:00.000Z", PackageEmailedAt: "2026-02-12T15:01:00.000Z", PackageReviewStatus: "Approved", updatedAt: "2026-02-12T15:01:00.000Z" } })); }, OMO);
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -28,6 +30,9 @@ try {
   const button = page.locator('[data-hpd-smoke="paperwork-generate-correction"]');
   await button.waitFor({ timeout: 60000 });
   await page.waitForFunction(() => !document.querySelector('[data-hpd-smoke="paperwork-generate-correction"]')?.disabled, null, { timeout: 60000 });
+  // Signed by hand: no signature pad or notary approval on a correction.
+  assert.equal(await page.locator("[data-hpd-smoke=paperwork-signature-card], .sig-card, [data-hpd-smoke^=paperwork-notary]").count(), 0, "no signature / notary cards");
+  assert.ok(await button.isEnabled(), "preview button works on a job whose paperwork was sent before");
   const before = posts.length;
   await button.click();
   // 1. The preview opens (earlier form used, nothing marked yet).
@@ -80,7 +85,34 @@ try {
   await row.locator('[data-hpd-smoke="fc-to-print-sent"]').click();
   await page.waitForFunction((omo) => ![...document.querySelectorAll('[data-hpd-smoke="fc-to-print-row"]')].some((r) => r.textContent.includes(omo)), OMO, { timeout: 10000 });
   assert.deepEqual(errors, []);
-  console.log(`PASS correction (${OMO}, awarded before 8/28/26): preview with HPD's reason and ${pages} pages, nothing marked until saved, saved to print, listed in HPD notices (scrolls), opens, signed & sent clears it`);
+  // An older (2024-2025) job with no outcome or work dates on the phone: pick what happened, today's
+  // date is refused, real dates entered, charge from PIP.
+  const OLD = process.env.CORRECTION_OLD_OMO || "EP21054";
+  const oldRej = requests.jobs?.[OLD];
+  if (oldRej?.rejectedAt) {
+    const p2 = await context.newPage();
+    await p2.goto(`${baseUrl}/paperwork/?job=${OLD}&fix=${oldRej.rejectedAt}`, { waitUntil: "load", timeout: 180000 });
+    // HPD's closing reason picks what happened; if HPD has none, the box asks.
+    await p2.waitForFunction(() => document.querySelector('[data-hpd-smoke="paperwork-correction-dates"], [data-hpd-smoke="paperwork-correction-outcome"]'), null, { timeout: 60000 });
+    await p2.waitForTimeout(3000);
+    const outcomeBox = p2.locator('[data-hpd-smoke="paperwork-correction-outcome"]');
+    if (await outcomeBox.count()) await outcomeBox.locator("button", { hasText: "Work done" }).click();
+    await p2.locator('[data-hpd-smoke="paperwork-correction-dates"]').waitFor({ timeout: 10000 });
+    await p2.waitForFunction(() => !document.querySelector('[data-hpd-smoke="paperwork-generate-correction"]')?.disabled, null, { timeout: 30000 });
+    const today = new Date().toISOString().slice(0, 10);
+    await p2.locator('[data-hpd-smoke="paperwork-correction-start"]').fill(today);
+    await p2.locator('[data-hpd-smoke="paperwork-correction-complete"]').fill(today);
+    await p2.locator('[data-hpd-smoke="paperwork-generate-correction"]').click();
+    assert.match(await p2.locator('[data-hpd-smoke="paperwork-correction-status"]').innerText(), /real work dates/, "today's date refused on an older job");
+    await p2.locator('[data-hpd-smoke="paperwork-correction-start"]').fill("2025-03-20");
+    await p2.locator('[data-hpd-smoke="paperwork-correction-complete"]').fill("2025-03-21");
+    await p2.locator('[data-hpd-smoke="paperwork-generate-correction"]').click();
+    await p2.locator('[data-hpd-smoke="paperwork-correction-review"]').waitFor({ timeout: 60000 });
+    const pdfText = await p2.evaluate(async () => { const a = document.querySelector('[data-hpd-smoke="paperwork-download-print-copy"]'); return new Uint8Array(await (await fetch(a.href)).arrayBuffer()).length; });
+    assert.ok(pdfText > 10000, "older job PDF made");
+    await p2.close();
+  }
+  console.log(`PASS correction (${OMO}, awarded before 8/28/26): preview with HPD's reason and ${pages} pages, nothing marked until saved, saved to print, listed in HPD notices (scrolls), opens, signed & sent clears it; ${OLD} (2024-25): outcome from HPD or picked, today's date refused, real dates, preview made`);
 } finally {
   await browser.close();
 }
