@@ -164,6 +164,16 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - One-screen fill order: look (Street View) -> read description -> price (best price shown) -> Fill ->
   check -> Send (two taps).
 
+## Done 16 Oct 2026: morning bid checklist
+- Bids screen opens with "☀️ Bid checklist · N of M sent": every invitation due today and tomorrow, its
+  state (no price yet / price saved, not sent / fax going through / sent and confirmed / fax failed / past
+  due), time left, and the best price with its win chance. "Bid $X" opens the bid with the best price filled
+  in (opening a bid otherwise starts from your last price for that kind of work, which kept lock prices
+  high). Opens by itself each day; closing it is remembered for the day. (lib/bid-checklist.ts)
+- The invitation reader skips HPD's Confirmation of Award letters (ER07755's award was flagged "couldn't be
+  read" on 10/15). ER07755 was won at $5,200.
+- Work moved to C:\dev\HPD-Bid-Dashboard-2026 (D: kept failing); private files restored from the C: backup.
+
 ## Done 16 Oct 2026: colorful map buttons (owner picked style C)
 - Round colored bubbles with the label underneath (Route teal, Today blue, Stats purple, Notices red with a
   bell, Follow-up amber, Bids coral, Map green, Locate gray); count badges on the bubble.

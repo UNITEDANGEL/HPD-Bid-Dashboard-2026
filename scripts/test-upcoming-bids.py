@@ -58,4 +58,8 @@ assert "3) AT ENTRANCE DOOR REPLACE LATCH SET TOTAL DOORS = 3" in desc and "Gene
 assert "CONTRACTOR MUST CONTACT" in ub.job_notes(work)
 assert itb_text.work_text(["a", "b", "Job Description: X", "WORK DESCRIPTION FORM"])[1] == [3]
 
-print("PASS upcoming bids reader: OMO (O->0), bid due date/time, work dates, address (last page wins), boro, job description (page 3 + continuation pages)")
+# HPD's Confirmation of Award is not an invitation (it opens with that title; invitations only mention it).
+assert ub.is_award_letter("missing.pdf", "Confirmation  of  Award" + chr(10) + "10" + chr(10) + "Y") is True
+assert ub.is_award_letter("missing.pdf", "INVITATION TO BID QUOTATION SHEET ... Confirmation of Award") is False
+
+print("PASS upcoming bids reader: OMO (O->0), bid due date/time, work dates, address (last page wins), boro, job description (page 3 + continuation pages), award letters skipped")

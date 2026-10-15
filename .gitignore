@@ -53,3 +53,5 @@ MASTER_FILE_KEY*
 data/hpd_requests.json
 data/private/
 data/COA_older.json
+
+data/sent_paperwork_dates.json

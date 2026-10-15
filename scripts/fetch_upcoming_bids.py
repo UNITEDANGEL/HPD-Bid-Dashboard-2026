@@ -128,6 +128,23 @@ def job_notes(page3_text):
     return clean(text[stop.start():]) if stop else ""
 
 
+def is_award_letter(path, page1_ocr=""):
+    """HPD's "Confirmation of Award" (ER07755 on 10/15/26 was read as an invitation with no due date).
+    It opens with that title; an invitation opens with its bid form and only mentions an award in the
+    fine print, so only the start of page 1 counts."""
+    start = ""
+    try:
+        import fitz  # PyMuPDF
+        with fitz.open(path) as doc:
+            start = " ".join((doc[0].get_text() if len(doc) else "").split())[:80]
+    except Exception:
+        pass
+    if re.search(r"CONFIRMATION\s+OF\s+AWARD", start, re.I):
+        return True
+    ocr = page1_ocr or ""
+    return bool(re.search(r"CONFIRMATION\s+OF\s+AWARD", ocr[:200], re.I)) and "INVITATION TO BID" not in ocr.upper()
+
+
 def read_pdf(path):
     import fitz  # PyMuPDF
     import pytesseract
@@ -281,6 +298,8 @@ def fetch(days):
                 print(f"  could not read {name}: {error}")
                 unread.append({"file": os.path.basename(name), "receivedAt": received, "why": "PDF could not be opened"})
                 continue
+            if is_award_letter(path, page1):
+                continue  # HPD's Confirmation of Award (you won it): not an invitation, never "couldn't be read"
             if "INVITATION TO BID" not in page1.upper():
                 continue  # a COA or other paper, not an invitation
             info = parse_invitation_text(page1, last)

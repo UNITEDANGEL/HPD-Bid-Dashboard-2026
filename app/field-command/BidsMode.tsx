@@ -16,6 +16,7 @@ import "./bids.css";
 import BuildingFacts from "./BuildingFacts";
 import ItbPages from "./ItbPages";
 import { buildingHistory } from "../../lib/building-bids";
+import { bidChecklist, timeLeft } from "../../lib/bid-checklist";
 
 const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
 const NY_TIME = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -127,6 +128,10 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const [fullText, setFullText] = useState(false);
   const [showSimilar, setShowSimilar] = useState(false);
   const [session, setSession] = useState<BiddingSession | null>(null);
+  // The checklist opens by itself the first time you open bids each day; your open / closed choice is kept for the day.
+  const [checklistOpen, setChecklistOpen] = useState(() => {
+    try { return localStorage.getItem(`hpd-checklist-${NY_DAY.format(new Date())}`) !== "closed"; } catch { return true; }
+  });
   const [listCollapsed, setListCollapsed] = useState(false);
   // Which day's invitations to show: all, today, tomorrow or the day after (remembered on the phone).
   const [dayPick, setDayPick] = useState<"all" | "0" | "1" | "2">(() => {
@@ -478,6 +483,14 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const reviewedSaved = filled && record && filled.omo === record.omo && filled.price === record.price && filled.previous === revisedFrom(record) ? filled : null;
   const nyNow = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(clock)).split(":").map(Number);
   const todayInfo = todaySummary(list, records, today, nyNow[0] * 60 + nyNow[1], new Date(clock));
+  // Morning checklist: every invitation due today or tomorrow, its state and the best price (lib/bid-checklist.ts).
+  const tomorrowDay = NY_DAY.format(new Date(clock + 86400000));
+  const checklist = bidChecklist(bids || [], records, today, tomorrowDay, nyNow[0] * 60 + nyNow[1], new Date(clock), (omo) => {
+    const h = rowHelp.get(omo);
+    if (!h) return null;
+    const best = bestPrice(h).price;
+    return { best, chance: winChance(h, best) };
+  }, easyOmos);
   const sessionOn = !!session?.active && session.day === today;
   const leftText = (m: number) => (m <= 0 ? "past due" : m < 60 ? `${m} min left` : `${Math.floor(m / 60)}h ${m % 60}m left`);
   const step1Done = !!record && draftValue === record.price;
@@ -773,6 +786,41 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
           <button type="button" className="fc-bids-handle" data-hpd-smoke="fc-bids-collapse" onClick={() => setListCollapsed((v) => !v)}>
             {listCollapsed ? `▲ Show the list · ${todayInfo.total ? `${todayInfo.sent} of ${todayInfo.total} due today sent` : `${list.length} open`}` : "▼ Hide the list (see the map)"}
           </button>
+          {checklist.rows.length ? (
+            <section className={`fc-checklist${checklistOpen ? "" : " is-closed"}`} data-hpd-smoke="fc-checklist">
+              <button type="button" className="fc-checklist-head" data-hpd-smoke="fc-checklist-toggle" aria-expanded={checklistOpen} onClick={() => setChecklistOpen((v) => { const next = !v; try { localStorage.setItem(`hpd-checklist-${today}`, next ? "open" : "closed"); } catch {} return next; })}>
+                <b>☀️ Bid checklist · {checklist.sent} of {checklist.total} sent</b>
+                <span>{checklist.todo.length ? `${checklist.todayLeft} due today, ${checklist.todo.length - checklist.todayLeft} tomorrow still to bid` : "everything due today and tomorrow is sent"}{checklist.missed ? ` · ${checklist.missed} past due without a bid` : ""}</span>
+                <i className="fc-checklist-bar" aria-hidden="true"><i style={{ width: `${checklist.total ? Math.round((checklist.sent / checklist.total) * 100) : 0}%` }} /></i>
+              </button>
+              {checklistOpen ? (
+                <div className="fc-cl-rows" role="list">
+                  {checklist.rows.map((r) => {
+                    const bid = (bids || []).find((b) => b.omo === r.omo);
+                    const icon = { "not-priced": "○", saved: "💾", pending: "⏳", confirmed: "✓", failed: "!", past: "✕" }[r.state];
+                    const stateText = { "not-priced": "no price yet", saved: "price saved, not sent", pending: "fax going through", confirmed: "sent and confirmed", failed: "fax failed: resend", past: "past due, no bid" }[r.state];
+                    return (
+                      <div key={r.omo} role="listitem" className={`fc-cl-row is-${r.state}`} data-hpd-smoke="fc-checklist-row" data-omo={r.omo}>
+                        <span className="fc-cl-icon" aria-hidden="true">{icon}</span>
+                        <span className="fc-cl-main">
+                          <b>{r.omo}{r.easy ? <em> · easy win</em> : null}</b>
+                          <small>{r.address}{r.borough ? ` · ${r.borough}` : ""}</small>
+                          <small>{r.day === "today" ? "Today" : "Tomorrow"} {r.bidDueTime} · {timeLeft(r.minutesLeft)} · {stateText}</small>
+                        </span>
+                        {bid && (r.state === "not-priced" || r.state === "saved" || r.state === "failed") ? (
+                          <button type="button" data-hpd-smoke="fc-checklist-bid" onClick={() => {
+                            openBid(bid);
+                            // Not priced yet: start from the best price (not the last price you used for this kind of work).
+                            if (r.state === "not-priced" && r.best) setDraft(String(r.best));
+                          }}>{r.state === "not-priced" && r.best ? <>Bid {money(r.best)}<small>wins ~{Math.round((r.chance || 0) * 100)}%</small></> : r.state === "failed" ? "Resend" : "Review & send"}</button>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </section>
+          ) : null}
           {sessionOn ? (
             <div className={`fc-session${todayInfo.allDone ? " is-done" : ""}`} data-hpd-smoke="fc-session">
               <div className="fc-session-head">

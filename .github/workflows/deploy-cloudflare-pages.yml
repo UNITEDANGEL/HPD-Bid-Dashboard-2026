@@ -126,6 +126,7 @@ jobs:
           node scripts/test-building-facts.mjs
           node scripts/test-building-bids.mjs
           node scripts/test-private-data.mjs
+          node scripts/test-bid-checklist.mjs
           node scripts/test-master-file.mjs
           node scripts/test-bid-fax-server.mjs
           node cloudflare-timer/test-timer.mjs
@@ -155,6 +156,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-update-recovery.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-correction.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-landscape.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-checklist.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork-lock.mjs
 
