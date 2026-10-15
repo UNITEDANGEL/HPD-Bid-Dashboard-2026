@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-15T17:56:20.959571+00:00",
+  "generatedAt": "2026-10-15T18:06:38.867235+00:00",
   "days": 14,
   "bids": [
     {
@@ -1525,6 +1525,133 @@
       },
       "lat": 40.881099,
       "lng": -73.870212
+    },
+    {
+      "omo": "ER08091",
+      "bidDue": "2026-10-15",
+      "bidDueTime": "4:30 PM",
+      "workStart": "2026-10-16",
+      "workCompletion": "2026-10-26",
+      "address": "301 EAST 26 STREET",
+      "borough": "BK",
+      "itbFile": "ER08091_101526020010.pdf",
+      "description": "AEP AT APT 3R, 3RD STORY REPAIR THE CLOGGED WATER CLOSET AND DEFECTIVE FLUSH AT BATHROOM AT APT 3R, 3RD STORY CLEAR THE STOPPAGE IN THE CLOGGED WATER CLOSET. SNAKE/AUGER THE WATER CLOSET AND WASTE LINE TO THE MAIN STACK AS REQUIRED TO REMOVE ALL OBSTRUCTIONS. IF STOPPAGE CANNOT BE CLEARED FROM THE BOWL, REMOVE THE WATER CLOSET , CLEAR THE LINE AND RESET ON A NEW WAX RING AND CLOSET BOLTS. REPAIR THE DEFECTIVE FLUSH. PROVIDE AND INSTALL ALL REQUIRED INTERNAL FLUSH COMPONENTS INCLUDING BUT NOT LIMITED TO FILL VALVE, FLUSH VALVE, FLAPPER AND HANDLE. IF DEFECTIVE BEYOND REPAIR, PROVIDE AND INSTALL A NEW WATER CLOSET COMPLETE, INCLUDING NEW SEAT, WAX RING, CLOSET BOLTS, SUPPLY LINE, SHUT-OFF VALVE AND ALL CONNECTIONS. CAULK BASE TO FLOOR. FLUSH REPEATEDLY TO CONFIRM FREE-FLOWING DRAINAGE. RESTORE THE WATER CLOSET TO PROPER FLUSHING, FREE-FLOWING AND LEAK FREE WORKING ORDER. *CONTRACTORS ARE REQUIRED TO DOCUMENT THEIR WORK BY TAKING PICTURES BEFORE, DURING AND AFTER THE JOB COMPLETED. THESE PHOTOS SHOULD BE SENT VIA EMAIL TO GAFURD@HPD.NYC.GOV OR PEREZBIA@HPD.NYC.GOV OR REDDINGS@HPD.NYC.GOV ALONG WITH AFFIDAVIT PICTURES AND INVOICE UPON THE COMPLETION OF THE WORK. NOTE: \u2022 FIELD DIMENSION AND QUANTITIES ARE TO BE VERIFIED BY THE VENDOR PRIOR TO BID. VENDOR MUST SUBMIT UNIT BREAKDOWN OF HIS BID AWARDED AMOUNT. \u2022 CONTRACTORS MUST HAVE BEFORE, DURING AND COMPLETED PHOTOGRAPHS OF JOB. \u2022 ALL WORK MUST COMPLY WITH HPD STANDARD SPECIFICATION. \u2022 VENDOR MUST FOLLOW OSHA AND DOB REGULATION. \u2022 VENDOR SHALL BE RESPONSIBLE FOR FULL RESTORATION TO DAMAGE CAUSED DURING CONSTRUCTION PHASE. \u2022 REMOVE ALL WORK-RELATED DEBRIS. \u2022 VENDOR MUST CALL CPM LIJO RAJU CHACKO AT CELL 646-618-0268 AND EMAIL CHACKOL@HPD.NYC.GOV ALSO EMAIL SUPERVISORS PASQUALE DELLITURRI AT 212 863 5111, 646 210 3636 DELLITUP@HPD.NYC.GOV, OR ASAAD EMAD 212 863 8346 CELL 347 563 4499 TO INFORM THE STARTING DATE AND THE DATES AND TIMES OF THE DIFFERENT",
+      "notes": "",
+      "receivedAt": 1792087216000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325.0,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496.0,
+          "y": 45.0,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467.0,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24.0,
+          "y": 774.0,
+          "rotate": 0
+        }
+      },
+      "lat": 40.642866,
+      "lng": -73.952329
     },
     {
       "omo": "ER05098",
