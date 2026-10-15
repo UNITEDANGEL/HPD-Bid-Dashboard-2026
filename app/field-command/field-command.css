@@ -2537,3 +2537,52 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
   .fc-app.fc-has-job .fc-job-sheet.fc-job-sheet-flow { top: calc(8px + env(safe-area-inset-top)) !important; bottom: 8px !important; left: calc(8px + env(safe-area-inset-left)) !important; right: auto !important; width: min(500px, calc(100vw - 150px)) !important; height: auto !important; max-height: none !important; overflow-y: auto; overscroll-behavior: contain; }
   .fc-app.fc-has-job .fc-search-row, .fc-app.fc-has-job .fc-map-wrap .fc-map-hints { display: none !important; }
 }
+
+/* Map buttons, style C (the owner's pick): a round colored bubble per button, the label underneath. */
+.fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab) {
+  --fab: #444441; width: 60px; height: auto; min-height: 0; padding: 0; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: transparent !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none; color: #fff !important; position: relative;
+}
+.fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab) > svg {
+  width: 46px !important; height: 46px !important; padding: 11px; box-sizing: border-box; border-radius: 50%;
+  background: var(--fab); color: #fff; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+}
+.fc-app .fc-map-controls .fc-map-fab .fc-fab-label { padding: 0 5px; border-radius: 6px; background: rgba(255, 255, 255, 0.92); color: #1f2937 !important; font: 800 11px/16px system-ui, sans-serif; white-space: nowrap; }
+.fc-app .fc-map-controls .fc-map-fab.is-active > svg { border-color: #facc15; box-shadow: 0 0 0 3px #facc15, 0 2px 8px rgba(0, 0, 0, 0.28); }
+.fc-app .fc-map-controls .fc-map-fab.is-busy > svg { opacity: 0.7; }
+.fc-app .fc-map-controls .fc-follow-badge { top: -2px; right: 2px; border: 1.5px solid #fff; }
+.fc-app .fc-map-controls .fc-map-fab[aria-label="Today's route"] { --fab: #1D9E75; }
+.fc-app .fc-map-controls .fc-map-fab[aria-label="Today's appointments"] { --fab: #378ADD; }
+.fc-app .fc-map-controls .fc-map-fab[aria-label="My stats"] { --fab: #7F77DD; }
+.fc-app .fc-map-controls .fc-map-fab[aria-label="HPD notices"] { --fab: #E24B4A; }
+.fc-app .fc-map-controls .fc-map-fab[aria-label="Follow-up report"] { --fab: #C2770E; }
+.fc-app .fc-map-controls .fc-map-fab[aria-label="Invitations to bid"] { --fab: #D85A30; }
+.fc-app .fc-map-controls .fc-map-fab[aria-label="Toggle map style"] { --fab: #639922; }
+.fc-app .fc-map-controls .fc-map-fab[aria-label="Locate me"] { --fab: #444441; }
+@media (orientation: landscape) and (max-height: 540px) and (pointer: coarse) {
+  .fc-app.fc-reference .fc-map-controls .fc-map-fab:not(.fc-visible-fab), .fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab) { width: 58px; height: auto; padding: 0; }
+  .fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab) > svg { width: 42px !important; height: 42px !important; padding: 10px; }
+}
+/* Know what you're about to tap: pressing (or hovering with a mouse) zooms the bubble and shows a callout
+   with the button's full name. On phones only the pressed state shows it (no sticky hover after a tap). */
+.fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab) > svg { transition: transform 0.14s ease-out, box-shadow 0.14s ease-out; }
+.fc-app .fc-map-controls .fc-map-fab[data-tip]::after {
+  content: attr(data-tip); position: absolute; right: calc(100% + 10px); top: 8px; z-index: 5; white-space: nowrap; pointer-events: none;
+  padding: 7px 11px; border-radius: 10px; background: #0f172a; color: #fff; font: 800 13px/1.2 system-ui, sans-serif;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); opacity: 0; transform: translateX(8px) scale(0.92); transform-origin: right center; transition: opacity 0.14s, transform 0.14s;
+}
+.fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab):active > svg,
+.fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab):focus-visible > svg { transform: scale(1.25); box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.9), 0 8px 20px rgba(0, 0, 0, 0.35); }
+.fc-app .fc-map-controls .fc-map-fab[data-tip]:active::after,
+.fc-app .fc-map-controls .fc-map-fab[data-tip]:focus-visible::after { opacity: 1; transform: none; }
+.fc-app .fc-map-controls .fc-map-fab:active, .fc-app .fc-map-controls .fc-map-fab:focus-visible { z-index: 6; }
+@media (hover: hover) and (pointer: fine) {
+  .fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab):hover > svg { transform: scale(1.25); box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.9), 0 8px 20px rgba(0, 0, 0, 0.35); }
+  .fc-app .fc-map-controls .fc-map-fab[data-tip]:hover::after { opacity: 1; transform: none; }
+  .fc-app .fc-map-controls .fc-map-fab:hover { z-index: 6; }
+}
+@media (prefers-reduced-motion: reduce) { .fc-app .fc-map-controls .fc-map-fab > svg, .fc-app .fc-map-controls .fc-map-fab::after { transition: none; } }
+@media (orientation: landscape) and (max-height: 540px) and (pointer: coarse) {
+  /* The "Today's route" bar stops short of the button columns (Map / Locate sat on top of it). */
+  .fc-app .fc-today-route { right: calc(132px + env(safe-area-inset-right)) !important; left: calc(8px + env(safe-area-inset-left)) !important; width: auto !important; max-width: none !important; transform: none !important; }
+}

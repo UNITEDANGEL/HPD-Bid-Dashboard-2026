@@ -570,6 +570,15 @@ function LayersIcon() {
   );
 }
 
+// HPD notices: a bell (the envelope is the invitations-to-bid button).
+function NoticesIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z" /><path d="M10 20a2 2 0 0 0 4 0" />
+    </svg>
+  );
+}
+
 function FollowIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -2615,20 +2624,21 @@ export default function FieldCommandClient() {
 
       <div className="fc-map-wrap">
         <div ref={mapNode} className={`fc-map-node ${darkTiles ? "is-dark" : ""}`} />
-        <div className="fc-map-controls">
+        {/* onTouchStart lets iPhone Safari show the pressed (zoomed) state with its callout before the tap lands. */}
+        <div className="fc-map-controls" onTouchStart={() => undefined}>
           <button
             type="button"
             className="fc-map-fab fc-route-fab"
-            aria-label="Today's route"
+            aria-label="Today's route" data-tip="Today's route: plan your stops"
             title="Today's route"
             data-hpd-smoke="fc-route-open"
             onClick={() => { setSelectedJob(null); setRouteOpenRequest((n) => n + 1); }}
           >
             <RouteIcon /><span className="fc-fab-label">Route</span>
           </button>
-          <button type="button" className="fc-map-fab" aria-label="Today's appointments" title="Today's appointments" onClick={() => { setAgendaOpen(true); setSelectedJob(null); }}><ListIcon /><span className="fc-fab-label">Today</span></button>
-          <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" title="My stats" onClick={() => { setStatsOpen(true); setSelectedJob(null); }}><StatsIcon /><span className="fc-fab-label">Stats</span></button>
-          <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}`} data-hpd-smoke="fc-notices-open" aria-label="HPD notices" aria-pressed={followFilter === "notices"} title="HPD notices: rejected paperwork and requests" onClick={() => {
+          <button type="button" className="fc-map-fab" aria-label="Today's appointments" data-tip="Today's appointments" title="Today's appointments" onClick={() => { setAgendaOpen(true); setSelectedJob(null); }}><ListIcon /><span className="fc-fab-label">Today</span></button>
+          <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" data-tip="My stats: jobs and money" title="My stats" onClick={() => { setStatsOpen(true); setSelectedJob(null); }}><StatsIcon /><span className="fc-fab-label">Stats</span></button>
+          <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}`} data-hpd-smoke="fc-notices-open" aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={followFilter === "notices"} title="HPD notices: rejected paperwork and requests" onClick={() => {
             setSelectedJob(null);
             // Second tap while the map shows the notices: back to all jobs.
             if (followFilter === "notices" && !noticesOpen) { setFollowFilter(""); return; }
@@ -2636,16 +2646,16 @@ export default function FieldCommandClient() {
             setFollowFilter("notices");
             setNoticesOpen(true);
           }}>
-            <span aria-hidden="true" className="fc-fab-emoji">📩</span><span className="fc-fab-label">Notices</span>{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
+            <NoticesIcon /><span className="fc-fab-label">Notices</span>{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
           </button>
-          <button type="button" className={`fc-map-fab fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" title="Follow-up report" onClick={() => { setFollowOpen(true); setSelectedJob(null); }}>
+          <button type="button" className={`fc-map-fab fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" data-tip="Follow-up: overdue jobs" title="Follow-up report" onClick={() => { setFollowOpen(true); setSelectedJob(null); }}>
             <FollowIcon /><span className="fc-fab-label">Follow-up</span>{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge" data-hpd-smoke="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
           </button>
-          <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { setSelectedJob(null); setBidsOpen((o) => !o); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.today ? <span className="fc-follow-badge is-bids-today" data-hpd-smoke="fc-bids-badge" title={`${bidsDue.today} due today`}>{bidsDue.today}</span> : bidsDue.tomorrow ? <span className="fc-follow-badge is-bids-tomorrow" data-hpd-smoke="fc-bids-badge" title={`${bidsDue.tomorrow} due tomorrow`}>{bidsDue.tomorrow}</span> : null}</button>
+          <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" data-tip="Invitations to bid" aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { setSelectedJob(null); setBidsOpen((o) => !o); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.today ? <span className="fc-follow-badge is-bids-today" data-hpd-smoke="fc-bids-badge" title={`${bidsDue.today} due today`}>{bidsDue.today}</span> : bidsDue.tomorrow ? <span className="fc-follow-badge is-bids-tomorrow" data-hpd-smoke="fc-bids-badge" title={`${bidsDue.tomorrow} due tomorrow`}>{bidsDue.tomorrow}</span> : null}</button>
           <button
             type="button"
             className={`fc-map-fab ${darkTiles ? "is-active" : ""}`}
-            aria-label="Toggle map style"
+            aria-label="Toggle map style" data-tip="Change the map style"
             onClick={toggleTileStyle}
           >
             <LayersIcon /><span className="fc-fab-label">Map</span>
@@ -2653,10 +2663,10 @@ export default function FieldCommandClient() {
           <button
             type="button"
             className={`fc-map-fab ${locateStatus === "loading" ? "is-busy" : ""}`}
-            aria-label="Locate me"
+            aria-label="Locate me" data-tip="Show where I am"
             onClick={locateMe}
           >
-            <LocateIcon />
+            <LocateIcon /><span className="fc-fab-label">Locate</span>
           </button>
           <div className="fc-map-fab fc-visible-fab" aria-label="Visible jobs">
             <strong>{filteredJobs.length}</strong>

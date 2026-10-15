@@ -164,6 +164,14 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - One-screen fill order: look (Street View) -> read description -> price (best price shown) -> Fill ->
   check -> Send (two taps).
 
+## Done 16 Oct 2026: colorful map buttons (owner picked style C)
+- Round colored bubbles with the label underneath (Route teal, Today blue, Stats purple, Notices red with a
+  bell, Follow-up amber, Bids coral, Map green, Locate gray); count badges on the bubble.
+- Press (or hover with a mouse) zooms the bubble and shows a callout with the full name ("HPD notices:
+  rejections and requests") so you know what you're about to tap. Checked: no overlaps in portrait or
+  landscape (the route bar stops short of the buttons sideways).
+- Sent-mail correction dates (32 jobs), high-price warning, last-30-days scorecard (see above).
+
 ## Rule: read the WHOLE job description (owner, 16 Oct 2026, ER07755)
 Big jobs continue past page 3. ER07755 has 10 door items: 1-7 on page 3, 8-10 and "TOTAL = 10" on page 4
 (under a wage-rate header). Always read page 3 plus every following page up to HPD's bid form
