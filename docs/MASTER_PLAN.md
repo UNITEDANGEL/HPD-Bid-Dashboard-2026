@@ -120,6 +120,14 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
   pop-up boxes); a red "Reconnect Google" bar shows when Google isn't connected; failed sends are logged.
   Optional insurance: Cloudflare Workers Paid ($5/month) removes KV's daily limits.
 
+- 15 Oct: multi-door prices tested on 1,371 past awards. Predictions run low as door count grows
+  (x1.09 at 2 doors, x1.52 at 6+). Fixes tried (stronger scale-up, pricing from jobs with the same door
+  count) removed the bias but made LESS money with the best price ($893-897k vs $900,683; multi-door
+  $150-154k vs $157k): best price already bids just under past winners. Not shipped. Multi-door misses
+  are mostly job-to-job variety, not a fixable bias.
+- 15 Oct: PIP: payments page (7 stale-dated checks $24,715, 21 disbursed not paid), paid / not paid per
+  job (3,320 OMOs), 2024-25 jobs layer (1,199 jobs, HPD Open Data + PIP), older rejected jobs (2021-2025).
+
 ## Now (in this order)
 
 0. **Why the lowest bid lost** (131 jobs): check against HPD's poor-performance / paperwork notices and fax
