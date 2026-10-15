@@ -1,4 +1,4 @@
-Fetcher run started: 2026-10-15T17:31:38.466Z
+Fetcher run started: 2026-10-15T17:42:09.454Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,13 +25,14 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00, 12.48it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00, 13.77it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00, 12.55it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00, 13.39it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00, 13.15it/s]
-Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 154076.47it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:02,  2.80it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:00<00:02,  3.04it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:00<00:01,  3.08it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:01,  3.13it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:01<00:01,  3.01it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:01<00:00,  3.03it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:02<00:00,  3.07it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:02<00:00,  3.04it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:02<00:00,  3.14it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:02<00:00,  3.08it/s]
+Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00, 11.21it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00, 10.75it/s]Downloading COA messages:  67%|██████▋   | 6/9 [00:00<00:00, 10.99it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00, 11.33it/s]Downloading COA messages: 100%|██████████| 9/9 [00:00<00:00, 11.38it/s]
+Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 288158.29it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:02,  2.94it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:00<00:02,  3.30it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:00<00:01,  3.19it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:01,  3.23it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:01<00:01,  3.34it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:01<00:00,  3.27it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:02<00:00,  3.10it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:02<00:00,  2.99it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:02<00:00,  3.10it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:02<00:00,  3.15it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
+Award amount check ER07995: stored 383.00, COA 383.00
 Award amount check ER08096: stored 420.00, COA 420.00
 Award amount check ER06498: stored 444.00, COA 444.00
 Award amount check ER06362: stored 465.00, COA 465.00
@@ -41,14 +42,14 @@ Award amount check ER07193: stored 890.00, COA 890.00
 Award amount check ER07281: stored 1890.00, COA 1890.00
 Award amount check ER07032: stored 440.00, COA 440.00
 Safe merge complete
-Master before: 680
+Master before: 681
 Incoming rows: 9
-Added new OMOs: 1
-Skipped existing OMOs: 8
+Added new OMOs: 0
+Skipped existing OMOs: 9
 Updated existing OMOs: 0
-Need geocode: 1
+Need geocode: 0
 Missing ITB: 0
-Missing description: 1
+Missing description: 0
 Master after: 681
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
@@ -56,9 +57,8 @@ Report: ./data/safe_7day_merge_report.json
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 1
-OK ER07995 178 HOOPER STREET, 11211 40.704287 -73.957705 NYC_PLANNING_OK
-Geocoded: 1
+Need geocode: 0
+Geocoded: 0
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -83,23 +83,21 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 13
-DESCRIPTION OK ER07995 ER07995_101426024902.pdf
-Descriptions patched: 1
+Matched ITBs needing description: 12
+Descriptions patched: 0
 Missing PDF: 12
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'ER07995', 'Address': '178 HOOPER STREET, 11211', 'RecoveredFrom': 'ER07995_101426024902.pdf', 'Preview': ': DEFECTIVE LATCH SET AT FIRE EXIT TO EAST YARD AT P UBLIC HALL, 1st STORY. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ REMOVE THE SLIDING BOLT AND MAKE ALL NECESSARY REPA IRS TO INSTALL A NEW PASSA'}
 
 Synced 3 data file(s) to public/data.
 
 ========== Render ITB page 3 assets ==========
 $ node scripts/render-itb-page3-assets.js --copy-pdfs
 {
-  "rendered": 1,
-  "reused": 680,
+  "rendered": 0,
+  "reused": 681,
   "copiedPdfs": 0,
   "missingSource": 0,
   "failed": 0
@@ -166,15 +164,14 @@ $ python scripts/fetch_hpd_requests.py --since 2026/10/01
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 Loaded Gmail token.json with OAuth client fields.
 Reading 68 emails from HPD staff...
-Reading 47 emails you sent HPD staff...
+Reading 48 emails you sent HPD staff...
 HPD requests: 26 OMOs HPD asked about (paperwork / status) from 68 staff emails since 2026/10/01
 
 
 ========== Update HPD job status from NYC Open Data ==========
 $ node scripts/update-hpd-job-status.mjs
-HPD job status not updated: NYC Open Data answered 500
+HPD job status: 658 of 681 jobs found, 188 still open at HPD, 470 closed
 
-WARNING: HPD job status was not refreshed: Update HPD job status from NYC Open Data failed with exit code 1
 
 ========== Update market awards from NYC Open Data ==========
 $ node scripts/update-market-awards.mjs
@@ -266,13 +263,13 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-10-15T17:36:50.884Z
+Fetcher run finished: 2026-10-15T17:45:39.884Z
 {
   "fetchedCoaItems": 9,
   "fetchedItbItems": 9,
   "fetchedFinalJobRows": 9,
-  "addedNewOmos": 1,
-  "skippedExistingOmos": 8,
+  "addedNewOmos": 0,
+  "skippedExistingOmos": 9,
   "rawRows": 681,
   "rows2026": 630,
   "mapped2026": 630,
