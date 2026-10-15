@@ -411,3 +411,4 @@
 /* An open invitation covers the map: its buttons step aside (they'd block the sheet's top corner). */
 .fc-app.fc-bids-mode:has(.fc-bid-sheet) .fc-map-controls { display: none; }
 .fc-app.fc-bids-mode .fc-map-hints { display: none; }
+.fc-itb-more { margin-left: auto; padding: 2px 8px; border-radius: 999px; background: #7c2d12; color: #fed7aa; font: 800 11.5px system-ui; }

@@ -13,6 +13,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fetch_upcoming_bids import job_description, omo_from_filename  # noqa: E402
+from itb_text import work_text  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "market_descriptions.json")
@@ -57,11 +58,14 @@ def main(folders):
         # the next one. The description is on page 3, or on whichever page says "Job Description:".
         for candidate in sorted(paths, key=stamp, reverse=True):
             try:
-                doc = fitz.open(candidate)
-                pages = [doc[2]] if len(doc) >= 3 else []
-                pages += [p for p in doc if "job description" in p.get_text().lower()]
-                for page in pages:
-                    description = job_description(page.get_text())
+                with fitz.open(candidate) as doc:
+                    texts = [p.get_text() for p in doc]
+                # Page 3 plus its continuation pages (long jobs run onto page 4: scripts/itb_text.py),
+                # else whichever page says "Job Description:".
+                work, _ = work_text(texts)
+                candidates_text = [work] + [t for t in texts if "job description" in t.lower()]
+                for text in candidates_text:
+                    description = job_description(text)
                     if len(description) >= 20:
                         break
             except Exception as error:  # a damaged or online-only file: try the next one

@@ -551,7 +551,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               </div>
             ) : null}
             <section>
-              {selected.itbFile ? <ItbPages pdfUrl={`/documents/itb/${encodeURIComponent(selected.itbFile)}`} pageCount={selected.pages || 3} /> : null}
+              {selected.itbFile ? <ItbPages pdfUrl={`/documents/itb/${encodeURIComponent(selected.itbFile)}`} pageCount={selected.pages || 3} descPages={selected.descPages} /> : null}
               <div className="fc-bid-desc-head">
                 <h4>Job description</h4>
                 <button type="button" data-hpd-smoke="fc-bid-text-size" aria-label={bigText ? "Smaller text" : "Bigger text"} aria-pressed={bigText} onClick={() => setBigText((v) => { try { localStorage.setItem("hpd-bid-text", v ? "l" : "xl"); } catch {} return !v; })}>{bigText ? "A−" : "A+"}</button>

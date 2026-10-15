@@ -130,6 +130,15 @@ function countAfter(text: string, noun: string) {
     ? /(?:^|[\s.:;,])(\d{1,2})\s*[-)]\s*(?![a-z]\b)/g
     : new RegExp(`(?:^|[\\s.:;,])(\\d{1,2})\\s*[-)]\\s*(?![a-z]\\b)[^.;]{0,90}?\\b${noun}s?\\b`, "g");
   for (const m of text.matchAll(item)) if (Number(m[1]) >= 1 && Number(m[1]) <= 20) items.add(m[1]);
+  // Door lists written with ".." between phrases ("5) at 5th sty hopper chute..replace latch set..ensure
+  // door self close"): an item whose own text (up to the next number) names a door or its hardware counts.
+  if (noun === "door") {
+    const marks = [...text.matchAll(/(?:^|[\s.:;,])(\d{1,2})\s*\)\s*/g)].filter((m) => Number(m[1]) >= 1 && Number(m[1]) <= 20);
+    marks.forEach((m, i) => {
+      const body = text.slice(m.index! + m[0].length, marks[i + 1]?.index ?? text.length);
+      if (/doors?|latch|hinges?|closer|push ?bar|striker|saddle|mortise|hopper/.test(body)) items.add(m[1]);
+    });
+  }
   // Only a list counting 1, 2, 3... (not stray numbers).
   if (items.size >= 2 && items.has("1") && items.has("2")) best = Math.max(best, items.size);
   return best;
@@ -208,8 +217,12 @@ export function readScope(description: string): JobScope {
   // A ceiling/wall is a place, not a trade, when sheetrock or painting is already there.
   if (items.includes("sheetrock") || items.includes("paint")) items = items.filter((k) => k !== "ceiling" && k !== "wall");
   const labels = items.map((k) => ITEMS.find(([key]) => key === k)![1]);
-  const doors = countAfter(text, "door");
-  const windows = countAfter(text, "window");
+  let doors = countAfter(text, "door");
+  let windows = countAfter(text, "window");
+  // HPD sometimes writes "TOTAL WINDOWS = 10" under a list of doors (ER07755): with no window work in the
+  // job, those are doors.
+  const windowWork = /windows?|sash|glass|pane|window guard/.test(text.replace(/total[^.;=()\d]{0,22}windows?[^\d]{0,8}\d{1,2}/g, ""));
+  if (windows > 0 && !windowWork && doors > 0) { doors = Math.max(doors, windows); windows = 0; }
   const area = squareFeet(text);
   const sqft = Math.max(area.paint, area.repair);
   const tasks = Math.max(numberedTasks(text), 1);

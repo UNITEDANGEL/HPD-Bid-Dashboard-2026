@@ -24,6 +24,9 @@ import urllib.parse
 import urllib.request
 from zoneinfo import ZoneInfo
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from itb_text import work_text  # noqa: E402  (page 3 + continuation pages)
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NY = ZoneInfo("America/New_York")
 DOWNLOAD_DIR = os.path.join(ROOT, "ITB_Downloads_V5")
@@ -132,8 +135,9 @@ def read_pdf(path):
     doc = fitz.open(path)
     page1 = pytesseract.image_to_string(Image.open(io.BytesIO(doc[0].get_pixmap(dpi=300).tobytes("png"))))
     last = doc[-1].get_text() if len(doc) else ""
-    page3 = doc[2].get_text() if len(doc) >= 3 else ""
-    return page1, last, job_description(page3), job_notes(page3)
+    # Page 3 and its continuation pages (long jobs run onto page 4: scripts/itb_text.py).
+    work, desc_pages = work_text([p.get_text() for p in doc])
+    return page1, last, job_description(work), job_notes(work), desc_pages
 
 
 # Where the bid package gets filled in, found from the labels printed on each invitation (so a form
@@ -272,7 +276,7 @@ def fetch(days):
                 with open(path, "wb") as f:
                     f.write(base64.urlsafe_b64decode(raw["data"]))
             try:
-                page1, last, description, notes = read_pdf(path)
+                page1, last, description, notes, desc_pages = read_pdf(path)
             except Exception as error:
                 print(f"  could not read {name}: {error}")
                 unread.append({"file": os.path.basename(name), "receivedAt": received, "why": "PDF could not be opened"})
@@ -292,7 +296,7 @@ def fetch(days):
                 continue
             if omo in found and found[omo]["receivedAt"] >= received:
                 continue  # keep the newest invitation for each OMO
-            found[omo] = {**info, "omo": omo, "itbFile": os.path.basename(name), "description": description[:6000], "notes": notes[:4000], "receivedAt": received, **bid_fields(path)}
+            found[omo] = {**info, "omo": omo, "itbFile": os.path.basename(name), "description": description[:8000], "notes": notes[:4000], "descPages": desc_pages, "receivedAt": received, **bid_fields(path)}
     bids = []
     for omo, bid in sorted(found.items(), key=lambda kv: (kv[1]["bidDue"], kv[1]["bidDueTime"], kv[0])):
         old = known.get(omo, {})
@@ -319,7 +323,7 @@ if __name__ == "__main__":
     args.add_argument("--parse", help="read one invitation PDF and print what was found")
     opts = args.parse_args()
     if opts.parse:
-        page1, last, description, notes = read_pdf(opts.parse)
+        page1, last, description, notes, desc_pages = read_pdf(opts.parse)
         print(json.dumps({**parse_invitation_text(page1, last), "description": description[:160], **bid_fields(opts.parse)}, indent=2))
     else:
         fetch(opts.days)

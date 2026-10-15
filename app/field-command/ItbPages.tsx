@@ -35,7 +35,9 @@ async function renderPages(pdfUrl: string, pages: number[]) {
   }
 }
 
-export default function ItbPages({ pdfUrl, pageCount }: { pdfUrl: string; pageCount: number }) {
+export default function ItbPages({ pdfUrl, pageCount, descPages }: { pdfUrl: string; pageCount: number; descPages?: number[] }) {
+  // HPD's form (page 2) and every page the job description is on (3, and 4+ when a long job continues).
+  const descriptionPages = [...new Set([2, ...(descPages?.length ? descPages : [3])])].filter((p) => p <= pageCount).sort((a, b) => a - b);
   const [shown, setShown] = useState<Rendered[] | null>(null);
   const [all, setAll] = useState(false);
   const [error, setError] = useState("");
@@ -48,7 +50,7 @@ export default function ItbPages({ pdfUrl, pageCount }: { pdfUrl: string; pageCo
     setShown(null);
     setError("");
     // Page 1 is HPD's cover / header; the job description is on pages 2 and 3.
-    const wanted = all ? Array.from({ length: pageCount }, (_, i) => i + 1) : pageCount >= 3 ? [2, 3] : pageCount === 2 ? [2] : [1];
+    const wanted = all ? Array.from({ length: pageCount }, (_, i) => i + 1) : descriptionPages.length ? descriptionPages : [1];
     renderPages(pdfUrl, wanted)
       .then(({ pages }) => {
         if (!live) { pages.forEach((p) => URL.revokeObjectURL(p.url)); return; }
@@ -58,14 +60,15 @@ export default function ItbPages({ pdfUrl, pageCount }: { pdfUrl: string; pageCo
       })
       .catch((e) => { if (live) setError(String(e?.message || e)); });
     return () => { live = false; };
-  }, [pdfUrl, pageCount, all]);
+  }, [pdfUrl, pageCount, all, descriptionPages.join()]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => urls.current.forEach((u) => URL.revokeObjectURL(u)), []);
 
   return (
     <section className="fc-itb-pages" data-hpd-smoke="fc-itb-pages">
       <div className="fc-itb-head">
-        <b>📄 HPD&apos;s job description {all ? `(all ${pageCount} pages)` : pageCount >= 3 ? "(pages 2–3)" : ""}</b>
-        {pageCount > 3 || all ? <button type="button" onClick={() => setAll((v) => !v)}>{all ? "Pages 2–3" : "All pages"}</button> : null}
+        <b>📄 HPD&apos;s job description {all ? `(all ${pageCount} pages)` : descriptionPages.length > 1 ? `(pages ${descriptionPages[0]}–${descriptionPages[descriptionPages.length - 1]})` : ""}</b>
+        {descriptionPages.length > 2 ? <span className="fc-itb-more" data-hpd-smoke="fc-itb-continues">continues on page {descriptionPages.slice(2).join(", ")}</span> : null}
+        {pageCount > descriptionPages.length || all ? <button type="button" onClick={() => setAll((v) => !v)}>{all ? "Description pages" : "All pages"}</button> : null}
       </div>
       {error ? <p className="fc-itb-msg">Couldn&apos;t show the pages ({error}). <a href={pdfUrl} target="_blank" rel="noreferrer">Open the PDF</a></p>
         : shown === null ? <p className="fc-itb-msg">Loading the invitation pages…</p>

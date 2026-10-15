@@ -10,6 +10,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fetch_upcoming_bids import OUT_FILES, ROOT, job_description, job_notes  # noqa: E402
+from itb_text import work_text  # noqa: E402
 
 
 def main():
@@ -21,15 +22,16 @@ def main():
         path = os.path.join(ROOT, "public", "documents", "itb", bid.get("itbFile", ""))
         if not os.path.exists(path):
             continue
-        doc = fitz.open(path)
-        page3 = doc[2].get_text() if len(doc) >= 3 else ""
-        bid["description"] = job_description(page3)[:6000] or bid.get("description", "")
-        bid["notes"] = job_notes(page3)[:4000]
+        with fitz.open(path) as doc:
+            work, pages = work_text([p.get_text() for p in doc])  # page 3 + continuation pages
+        bid["description"] = job_description(work)[:8000] or bid.get("description", "")
+        bid["notes"] = job_notes(work)[:4000]
+        bid["descPages"] = pages
         done += 1
     for out in OUT_FILES:
         with open(out, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
-    print(f"Notes added to {done} invitations")
+    print(f"Description (page 3 + continuation) and notes re-read for {done} invitations")
 
 
 if __name__ == "__main__":

@@ -4,6 +4,13 @@ from pathlib import Path
 
 import pdfplumber
 
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from itb_text import FORM_PAGE, continuation  # noqa: E402  (long jobs continue on page 4+)
+
+# Where HPD's notes start (contacts, affidavit fax): a continuation page adds only the work before them.
+NOTES_START = re.compile(r"(?:NOTE\s*\d*\s*[-–:]?\s*)?(?:CONTRACTORS?\s+MUST\s+CONTACT|IF\s+(?:THE\s+)?LANDLORD\s+REFUSES|IF\s+NO\s+WORK\s+IS\s+PERFORMED)", re.I)
+
 
 ROOT = Path.cwd()
 DATA_FILE = ROOT / "public" / "data" / "COA_Fetcher_2026.json"
@@ -37,6 +44,20 @@ def extract_page_description(pdf_path, page_number):
         if len(pdf.pages) < page_number:
             return ""
         text = pdf.pages[page_number - 1].extract_text(x_tolerance=1, y_tolerance=3) or ""
+        # The description runs onto the next page(s) on long jobs (ER07755: items 8-10 on page 4).
+        if not NOTES_START.search(text):
+            for page in pdf.pages[page_number:]:
+                more = page.extract_text(x_tolerance=1, y_tolerance=3) or ""
+                if FORM_PAGE.search(more):
+                    break
+                extra = continuation(more)
+                stop = NOTES_START.search(extra)
+                if stop:
+                    extra = extra[:stop.start()]
+                if extra.strip():
+                    text += chr(10) + extra
+                if stop:
+                    break
 
     match = re.search(r"Job\s+Description\s*:\s*", text, flags=re.IGNORECASE)
     if match:

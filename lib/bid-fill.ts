@@ -12,6 +12,7 @@ export type UpcomingBid = {
   workStart: string; workCompletion: string; itbFile: string; description: string;
   pages: number; fields: Record<string, BidField>; lat?: number | null; lng?: number | null;
   receivedAt?: number; // when the invitation email arrived (ms)
+  descPages?: number[]; // pages the job description is on (3, plus 4+ when a long job continues)
 };
 
 // Same details as Filler_Code/fill_all_pages_FINAL_ALL_PAGES.py.

@@ -38,4 +38,24 @@ TOTAL DOOR = 1
 CONTRACTOR MUST CONTACT HPD WITH START DATE: R. BUSHRA- 212 863 6046"""
 assert ub.job_description(page3) == "REPLACE 3RD STY HOPPER LATCH SET TOTAL DOOR = 1", ub.job_description(page3)
 
-print("PASS upcoming bids reader: OMO (O->0), bid due date/time, work dates, address (last page wins), boro, job description")
+# A long job continues on page 4, under the wage header and some scan debris; the bid form ends it.
+import sys  # noqa: E402
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import itb_text  # noqa: E402
+NL = chr(10)
+pages = [
+    "cover",
+    "omo form",
+    NL.join(["OMO No: ER1", "Job Description:", "1) AT HOPPER DOOR REPLACE LATCH", "2) AT BULKHEAD DOOR INSTALL CLOSER"]),
+    NL.join([" ", " ", "General Decision Number: NY200003 04/10/2020Superseded General Decision Number: NY190003State: New Yor",
+             "NO", ":", "V N O", "3) AT ENTRANCE DOOR REPLACE LATCH SET", "TOTAL DOORS = 3", "CONTRACTOR MUST CONTACT HPD WITH START DATE"]),
+    NL.join(["WORK DESCRIPTION FORM", "BID AMOUNT $"]),
+]
+work, used = itb_text.work_text(pages)
+assert used == [3, 4], used
+desc = ub.job_description(work)
+assert "3) AT ENTRANCE DOOR REPLACE LATCH SET TOTAL DOORS = 3" in desc and "General Decision" not in desc and "V N O" not in desc, desc
+assert "CONTRACTOR MUST CONTACT" in ub.job_notes(work)
+assert itb_text.work_text(["a", "b", "Job Description: X", "WORK DESCRIPTION FORM"])[1] == [3]
+
+print("PASS upcoming bids reader: OMO (O->0), bid due date/time, work dates, address (last page wins), boro, job description (page 3 + continuation pages)")

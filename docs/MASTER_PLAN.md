@@ -164,6 +164,16 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - One-screen fill order: look (Street View) -> read description -> price (best price shown) -> Fill ->
   check -> Send (two taps).
 
+## Rule: read the WHOLE job description (owner, 16 Oct 2026, ER07755)
+Big jobs continue past page 3. ER07755 has 10 door items: 1-7 on page 3, 8-10 and "TOTAL = 10" on page 4
+(under a wage-rate header). Always read page 3 plus every following page up to HPD's bid form
+(scripts/itb_text.py, used by the invitation reader, the awarded-job reader and the price history), show
+all those pages in the bid card ("continues on page 4"), and count every item.
+- Also: HPD wrote "TOTAL WINDOWS = 10" under a list of doors: with no window work, those are doors
+  (lib/bid-price.ts). Items written with ".." between phrases count as doors when they name a door or its
+  hardware. Backtest (all awards since April): same wins, +$522 (multi-unit jobs 128 -> 129 wins).
+- 7 of 745 invitations so far had numbered items on page 4.
+
 ## Done 16 Oct 2026: corrections really work on the owner's phone
 - **Preview button was greyed out on the iPhone**: every rejected job's paperwork had been sent, so the page
   was "locked" (the sent version can't be changed by accident). A correction is a new version: the lock no
@@ -224,6 +234,8 @@ Collected from the owner's requests; every change is checked against these.
 - Invitation pages: load faster (keep the drawn pages on the phone) and show them in the bid list too.
 - Notices: per-notice preview of HPD's own email/PDF inside the app (not only the Gmail link).
 - Measurements read from the description ("30x26 glass", "TOTAL WINDOWS = 3") into the price.
+- Correction dates filled in automatically from the paperwork originally sent (Sent mail PDFs), so older
+  jobs don't need dates typed by hand.
 - One fax for several bids due today.
 - Tenant data out of the public repo (needs the owner's OK; see Owner decision needed).
 
