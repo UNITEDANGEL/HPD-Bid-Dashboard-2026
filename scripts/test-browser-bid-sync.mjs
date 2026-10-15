@@ -21,8 +21,11 @@ try {
   const pendingRec = { omo: "ER77779", address: "3 PENDING ST", bidDue: today, bidDueTime: "11:59 PM", price: 500, sentPrice: 500, status: "sent", sentAt: new Date(Date.now() - 3 * 60000).toISOString(), savedAt: new Date(Date.now() - 5 * 60000).toISOString(), attempts: 1, updatedAt: new Date(Date.now() - 3 * 60000).toISOString(), faxTo: "2128638655@humblefax.com" };
   const twin = { ...real.bids[0], omo: "ER77778", bidDue: due, bidDueTime: "11:00 AM", address: "2 TWIN ST", description: SECURE.replace("REPAIR BUILDING ENTRANCE DOOR", "AT BUILDING ENTRANCE DOOR: REPAIR") };
   const base = { omo: "ER77777", address: bid.address, borough: bid.borough, bidDue: due, bidDueTime: "10:00 AM", faxTo: "2128638655@humblefax.com" };
-  const older = { ...base, price: 1180, sentPrice: 1180, status: "sent", sentAt: "2026-10-12T22:47:39.343Z", savedAt: "2026-10-12T22:47:00.000Z", attempts: 1, updatedAt: "2026-10-12T22:47:39.500Z" };
-  const newer = { ...base, price: 1987, sentPrice: 1987, status: "sent", sentAt: "2026-10-13T00:51:57.111Z", savedAt: "2026-10-13T00:51:39.415Z", attempts: 2, updatedAt: "2026-10-13T00:51:57.272Z", revisions: [{ price: 1180, sentAt: older.sentAt }], reason: "Secure-Tech lock costs ~$2,000" };
+  // Faxes from the last hours (the app re-checks faxes sent in the last 2 days).
+  const ago = (min) => new Date(Date.now() - min * 60000).toISOString();
+  const newerSentAt = ago(60);
+  const older = { ...base, price: 1180, sentPrice: 1180, status: "sent", sentAt: ago(185), savedAt: ago(186), attempts: 1, updatedAt: ago(185) };
+  const newer = { ...base, price: 1987, sentPrice: 1987, status: "sent", sentAt: newerSentAt, savedAt: ago(61), attempts: 2, updatedAt: ago(59), revisions: [{ price: 1180, sentAt: older.sentAt }], reason: "Secure-Tech lock costs ~$2,000" };
 
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   let calls = 0;
@@ -34,7 +37,7 @@ try {
   });
   await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...real, bids: [bid, twin, pendingBid, unsentBid, ...real.bids.slice(1).filter((b) => b.bidDue !== today)] } }));
   const faxChecks = [];
-  await context.route(/\/api\/drive\/fax-status/, (r) => { faxChecks.push(JSON.parse(r.request().postData() || "{}")); const body = JSON.parse(r.request().postData() || "{}"); return r.fulfill({ json: body.omo === "ER77779" ? { status: "waiting" } : { status: "confirmed", subject: "Successful transmission", at: "2026-10-13T00:56:00Z" } }); });
+  await context.route(/\/api\/drive\/fax-status/, (r) => { faxChecks.push(JSON.parse(r.request().postData() || "{}")); const body = JSON.parse(r.request().postData() || "{}"); return r.fulfill({ json: body.omo === "ER77779" ? { status: "waiting" } : { status: "confirmed", subject: "Successful transmission", at: ago(55) } }); });
   await context.addInitScript((rec) => { if (!sessionStorage.getItem("seeded")) { localStorage.setItem("hpd-bid-records-v1", JSON.stringify({ ER77777: rec })); sessionStorage.setItem("seeded", "1"); } }, older);
   const page = await context.newPage();
   const errors = [];
@@ -83,7 +86,7 @@ try {
   // opening the job.
   await page.waitForFunction(() => /Fax confirmed · \$1,987/.test(document.querySelector('[data-hpd-smoke="fc-bids-list"]')?.textContent || ""), null, { timeout: 20000 });
   assert.equal(faxChecks[0].omo, "ER77777");
-  assert.equal(faxChecks[0].sentAt, "2026-10-13T00:51:57.111Z", "checked from the time of the revised fax");
+  assert.equal(faxChecks[0].sentAt, newerSentAt, "checked from the time of the revised fax");
   await row.locator("button").click();
   const status = page.locator('[data-hpd-smoke="fc-bid-status"]');
   await status.waitFor({ timeout: 10000 });
