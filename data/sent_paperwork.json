@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-15T22:15:11.123063+00:00",
+"generatedAt": "2026-10-15T22:27:13.328567+00:00",
 "since": "2026/10/01",
 "jobs": {
 "EN04541": [
@@ -13052,6 +13052,22 @@
 "file": "image001.png",
 "outcome": "",
 "subject": "Re: [EXTERNAL] Fwd: OMO No: EQ18870 Boro: Brooklyn Bldg Address: 487, EAST 93 STREET",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-15",
+"to": "\"Gafur, Deoranie (HPD)\" <GafurD@hpd.nyc.gov>",
+"file": "EQ18870 AFF INVOICE.pdf",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Fwd: OMO No: EQ18870 Boro: Brooklyn Bldg Address: 487, EAST 93 STREET",
+"via": "hpd-staff"
+},
+{
+"date": "2026-10-15",
+"to": "\"Gafur, Deoranie (HPD)\" <GafurD@hpd.nyc.gov>",
+"file": "VIDEO-2026-03-19-11-12-39.mp4",
+"outcome": "work_completed",
+"subject": "OMO No: EQ18870 Boro: Brooklyn Bldg Address: 487, EAST 93 STREET Work completed 3/19/26",
 "via": "hpd-staff"
 }
 ],
