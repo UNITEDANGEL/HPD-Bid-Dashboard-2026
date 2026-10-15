@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-15T18:46:33.085589+00:00",
+"generatedAt": "2026-10-15T19:06:48.575189+00:00",
 "since": "2026/10/01",
 "jobs": {
 "EN04541": [
@@ -13045,6 +13045,14 @@
 "outcome": "",
 "subject": "Re: [EXTERNAL] Fwd: OMO No: EQ18870 Boro: Brooklyn Bldg Address: 487, EAST 93 STREET",
 "via": "hpd-staff"
+},
+{
+"date": "2026-10-15",
+"to": "\"Gafur, Deoranie (HPD)\" <GafurD@hpd.nyc.gov>",
+"file": "image001.png",
+"outcome": "",
+"subject": "Re: [EXTERNAL] Fwd: OMO No: EQ18870 Boro: Brooklyn Bldg Address: 487, EAST 93 STREET",
+"via": "hpd-staff"
 }
 ],
 "EQ18873": [
@@ -21115,6 +21123,16 @@
 "file": "SIGNED - ER05733 - Work Completed.pdf",
 "outcome": "work_completed",
 "subject": "SIGNED - ER05733 - Work Completed - 25 SHERMAN AVENUE, 10040"
+}
+],
+"ER07755": [
+{
+"date": "2026-10-15",
+"to": "\"Lesure, Michael (HPD)\" <lesurem@hpd.nyc.gov>",
+"file": "ER07755_BID_5200_854-MYRTLE-AVENUE.pdf",
+"outcome": "",
+"subject": "Re: Bid - OMO ER07755 - 854 MYRTLE AVENUE - United Angel Construction Corp.",
+"via": "hpd-staff"
 }
 ]
 }
