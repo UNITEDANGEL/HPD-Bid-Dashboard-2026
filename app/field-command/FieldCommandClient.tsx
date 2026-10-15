@@ -747,6 +747,11 @@ export default function FieldCommandClient() {
   const reapplyFollowRef = useRef<(() => void) | null>(null);
   // Every HPD email about every OMO (requests, rejections), also jobs that aren't on the map.
   const [askedMap, setAskedMap] = useState<Record<string, HpdRequest>>({});
+  // Older jobs (2024-2025) with HPD notices: on the notices layer, not in the 2026 work lists.
+  const [olderJobs, setOlderJobs] = useState<JobRecord[]>([]);
+  useEffect(() => {
+    fetch("/data/COA_older.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : [])).then((rows) => setOlderJobs(Array.isArray(rows) ? rows : [])).catch(() => {});
+  }, []);
   useEffect(() => {
     Promise.all([
       fetch("/data/hpd_job_status.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).catch(() => null),
@@ -1187,7 +1192,8 @@ export default function FieldCommandClient() {
     calendarDate,
     Object.fromEntries(jobs.filter((j) => j.HpdAskedAt).map((j) => [jobId(j), { askedAt: String(j.HpdAskedAt), count: 1, by: String(j.HpdAskedBy || ""), kind: String(j.HpdAskedFor || ""), askedTs: Number(j.HpdAskedTs || 0), repliedTs: Number(j.HpdRepliedTs || 0) }])),
   ), [jobs, calendarDate]);
-  const rejections = useMemo(() => paperworkRejections(askedMap, jobs), [askedMap, jobs]);
+  const rejections = useMemo(() => paperworkRejections(askedMap, [...jobs, ...olderJobs]), [askedMap, jobs, olderJobs]);
+  const findAnyJob = (omo: string) => jobs.find((j) => jobId(j) === omo) || olderJobs.find((j) => jobId(j) === omo);
   const openRejections = rejections.filter((r) => !r.answered);
   const [showAnsweredRejections, setShowAnsweredRejections] = useState(false);
   const [openNotice, setOpenNotice] = useState("");
@@ -1203,7 +1209,8 @@ export default function FieldCommandClient() {
 
   const filteredJobs = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return jobs.filter((job) => {
+    const olderOnNotices = followFilter === "notices" ? olderJobs.filter((j) => openRejections.some((r) => r.omo === jobId(j))) : [];
+    return [...jobs, ...olderOnNotices].filter((job) => {
       // Follow-up filter (from the report or the quick filters): only those jobs, any status or date.
       if (followFilter) {
         if (!followMatch(job)) return false;
@@ -3334,14 +3341,14 @@ export default function FieldCommandClient() {
               <h4>❗ Rejected paperwork · fix &amp; resend ({openRejections.length})</h4>
               {openRejections.length ? <ol>{openRejections.map((r) => (
                 <li key={r.omo}>
-                  <button type="button" data-hpd-smoke="fc-notice-row" onClick={() => { const job = jobs.find((j) => jobId(j) === r.omo); if (job) { setNoticesOpen(false); setSelectedJob(job); } else setOpenNotice((o) => (o === r.omo ? "" : r.omo)); }}>
-                    <span><b>{r.omo}</b> <em className="is-late">rejected {r.at}</em>{r.onMap ? " · tap to open the job" : " · older job, tap for details"}</span>
-                    <span>{r.address || "older job (2024-2025, not on the map)"}</span>
+                  <button type="button" data-hpd-smoke="fc-notice-row" onClick={() => { const job = findAnyJob(r.omo); if (job) { setNoticesOpen(false); setSelectedJob(job); } else setOpenNotice((o) => (o === r.omo ? "" : r.omo)); }}>
+                    <span><b>{r.omo}</b> <em className="is-late">rejected {r.at}</em>{findAnyJob(r.omo) ? " · tap to open the job" : " · tap for details"}</span>
+                    <span>{r.address || "older job (details in HPD's email)"}{!jobs.some((j) => jobId(j) === r.omo) && findAnyJob(r.omo) ? " · 2024-2025 job" : ""}</span>
                     <small>{r.attempt ? <b className={r.attempt === "FINAL" ? "fc-final-attempt" : ""}>{r.attempt} ATTEMPT · </b> : null}{senderName(r.by)}: {r.reason || "see HPD's email"}</small>
                   </button>
                   {openNotice === r.omo ? <p className="fc-notice-detail" data-hpd-smoke="fc-notice-detail">This job is from before 2026, so it isn&apos;t on the map. HPD&apos;s notice (with the rejection PDF) is in your email; correct the affidavit / invoice and send it back to HPD.</p> : null}
                   <a className="fc-follow-paper is-gmail" href={`https://mail.google.com/mail/u/0/#search/${encodeURIComponent(r.omo)}`} target="_blank" rel="noreferrer">Open HPD&apos;s notice in Gmail ↗</a>
-                  {r.onMap ? <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}`}>Fix &amp; resend →</a> : null}
+                  {findAnyJob(r.omo) ? <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}`}>Fix &amp; resend →</a> : null}
                 </li>
               ))}</ol> : <p>None waiting on you.</p>}
             </section>

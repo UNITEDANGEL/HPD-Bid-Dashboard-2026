@@ -98,6 +98,14 @@ export default function HomeScreen() {
         </span>
       </a>
 
+      <a className="home-card" href="https://a127-pip.nyc.gov/webapp/PRDPCW/SelfService" target="_blank" rel="noreferrer" data-hpd-smoke="home-pip">
+        <span className="home-icon">💵</span>
+        <span className="home-text">
+          <strong>HPD payments (PIP)</strong>
+          <em>NYC Payee Information Portal: invoices and payments</em>
+        </span>
+      </a>
+
       <a className="home-more" href="/overview/">Full dashboard (charts, tables, system)</a>
     </main>
   );

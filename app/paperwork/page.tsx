@@ -1321,7 +1321,10 @@ export default function PaperworkPage() {
         if (!res.ok) return;
 
         const data = await res.json();
-        const rows = await applySavedWorkflowStatuses(withTestJob(asArray(data)));
+        // Older jobs (2024-2025, scripts/fetch_older_jobs.py): to correct their rejected paperwork.
+        const older = await fetch("/data/COA_older.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : [])).catch(() => []);
+        const have = new Set(asArray(data).map((j) => String((j as Record<string, unknown>).OMO || "").toUpperCase()));
+        const rows = await applySavedWorkflowStatuses(withTestJob([...asArray(data), ...asArray(older).filter((j) => !have.has(String((j as Record<string, unknown>).OMO || "").toUpperCase()))]));
         if (!cancelled) setJobs(rows);
       } catch (error) {
         console.error(error);
