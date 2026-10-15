@@ -2473,3 +2473,5 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-app.fc-reference.fc-clean-streets .fc-fab-label { color: #23463a; }
 .fc-app.fc-reference .fc-map-fab.is-active .fc-fab-label { color: #fff; }
 .fc-follow-active-list { min-height: 30px; padding: 0 10px; border: 0; border-radius: 8px; background: #fff; color: #7f1d1d; font: 800 12px system-ui; }
+.fc-follow-active { max-width: calc(100vw - 24px); }
+.fc-follow-active > span { overflow: hidden; text-overflow: ellipsis; }

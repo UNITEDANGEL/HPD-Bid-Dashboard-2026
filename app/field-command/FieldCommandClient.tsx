@@ -1644,7 +1644,8 @@ export default function FieldCommandClient() {
 
       // Only a borough tap or a search moves the map. Date windows (30/60/90) and status
       // filters just change which pins show; the map stays on you.
-      const framing = `${borough}|${search}`;
+      // The HPD notices layer frames its jobs too (they're spread over the city).
+      const framing = `${borough}|${search}|${followFilter === "notices" ? "notices" : ""}`;
       if (mapFramingRef.current !== framing && points.length && restoredMapViewRef.current && !mapFramingRef.current) {
         // First load after reopening: keep the saved view; later filter/search changes still frame.
         mapFramingRef.current = framing;
@@ -1656,7 +1657,7 @@ export default function FieldCommandClient() {
           showJobAboveCard(openJob.lat, openJob.lng);
         } else if (points.length === 1) {
           map.setView([points[0].lat, points[0].lng], 15);
-        } else if (points.length > 1 && borough === "ALL" && !search.trim()) {
+        } else if (points.length > 1 && borough === "ALL" && !search.trim() && followFilter !== "notices") {
           // Back to All: return to you, never to a fixed point in the city.
           const me = lastPositionRef.current;
           if (me) { followMeRef.current = true; map.setView([me.lat, me.lng], Math.max(map.getZoom(), 15)); }
@@ -1672,7 +1673,7 @@ export default function FieldCommandClient() {
     return () => {
       cancelled = true;
     };
-  }, [filteredJobs, borough, search, status, daysBack, dateRange]);
+  }, [filteredJobs, borough, search, status, daysBack, dateRange, followFilter]);
 
   useEffect(() => {
     darkTilesRef.current = darkTiles;
@@ -3435,7 +3436,7 @@ export default function FieldCommandClient() {
       ) : null}
       {followFilter && !followOpen ? (
         <div className="fc-follow-active" data-hpd-smoke="fc-follow-active">
-          <span>Showing: <b>{followFilter === "notices" ? `HPD notices · ${filteredJobs.length} on the map${openRejections.filter((r) => !r.onMap).length ? ` · ${openRejections.filter((r) => !r.onMap).length} older jobs in the list` : ""}` : ({ notices: "HPD notices", "hpd-asked": "HPD asked for paperwork", overdue: "Overdue", "due-week": "Due this week", recent: "Awarded last 30 days", sent: "Waiting on HPD", "hpd-closed": "Closed at HPD" } as const)[followFilter]}</b>{followFilter === "notices" ? null : ` · ${filteredJobs.length} jobs`}</span>
+          <span>Showing: <b>{followFilter === "notices" ? `Notices: ${filteredJobs.length} on map${openRejections.filter((r) => !r.onMap).length ? ` · ${openRejections.filter((r) => !r.onMap).length} older` : ""}` : ({ notices: "HPD notices", "hpd-asked": "HPD asked for paperwork", overdue: "Overdue", "due-week": "Due this week", recent: "Awarded last 30 days", sent: "Waiting on HPD", "hpd-closed": "Closed at HPD" } as const)[followFilter]}</b>{followFilter === "notices" ? null : ` · ${filteredJobs.length} jobs`}</span>
           {followFilter === "notices" ? <button type="button" className="fc-follow-active-list" onClick={() => setNoticesOpen(true)}>List</button> : null}
           <button type="button" onClick={() => setFollowFilter("")} aria-label="Stop the follow-up filter">✕</button>
         </div>
