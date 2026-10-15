@@ -1,5 +1,5 @@
 {
-"generatedAt": "2026-10-15T19:52:57.443340+00:00",
+"generatedAt": "2026-10-15T20:01:58.254420+00:00",
 "since": "2026/10/01",
 "jobs": {
 "EN04541": [
@@ -20290,6 +20290,14 @@
 "file": "EQ30587_work-completed_Public-Hallway_package_20260727__invoice-affidavit-package__EQ30587-work-completed-affidavit-invo",
 "outcome": "",
 "subject": "EQ30587_work-completed_Public-Hallway_package_20260727__invoice-affidavit-package__EQ30587-work-completed-affidavit-invoice"
+},
+{
+"date": "2026-10-15",
+"to": "\"Lewis, Joy-Ann (HPD)\" <LewisJ@hpd.nyc.gov>",
+"file": "VIDEO-2026-07-27-15-49-47.mp4",
+"outcome": "",
+"subject": "OMO No: EQ30587 Boro: Bronx Bldg Address: 1151, ELDER AVENUE",
+"via": "hpd-staff"
 }
 ],
 "EQ30624": [

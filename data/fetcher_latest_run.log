@@ -1,4 +1,4 @@
-Fetcher run started: 2026-10-15T19:47:28.849Z
+Fetcher run started: 2026-10-15T19:56:25.268Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -16,18 +16,18 @@ $ python FetchrMatcherV5.py --update --days 14
 Loaded Gmail token.json with OAuth client fields.
 Refreshing expired Gmail token headlessly.
 GMAIL COA QUERY: from:OMOBid@hpd.nyc.gov subject:"CONFIRMATION OF AWARD" has:attachment filename:pdf after:2026/10/01 before:2026/10/16
-COA items parsed (latest per OMO): 9
-ITB items parsed (latest per OMO): 9
-Final JobRows: 9
+COA items parsed (latest per OMO): 12
+ITB items parsed (latest per OMO): 12
+Final JobRows: 12
 
 CSV saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.csv
 JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/mereged_data_csv_2025/COA_Fetcher_2026.json
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/9 [00:00<?, ?it/s]Downloading COA messages:  11%|█         | 1/9 [00:00<00:01,  7.25it/s]Downloading COA messages:  22%|██▏       | 2/9 [00:00<00:00,  7.28it/s]Downloading COA messages:  33%|███▎      | 3/9 [00:00<00:00,  7.55it/s]Downloading COA messages:  44%|████▍     | 4/9 [00:00<00:00,  8.30it/s]Downloading COA messages:  56%|█████▌    | 5/9 [00:00<00:00,  8.24it/s]Downloading COA messages:  78%|███████▊  | 7/9 [00:00<00:00,  8.99it/s]Downloading COA messages:  89%|████████▉ | 8/9 [00:00<00:00,  9.08it/s]Downloading COA messages: 100%|██████████| 9/9 [00:01<00:00,  8.96it/s]Downloading COA messages: 100%|██████████| 9/9 [00:01<00:00,  8.55it/s]
-Geocoding COA addresses:   0%|          | 0/9 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 9/9 [00:00<00:00, 149796.57it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/9 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:  11%|█         | 1/9 [00:00<00:03,  2.06it/s]Fetching ITBs for COA OMOs:  22%|██▏       | 2/9 [00:00<00:03,  2.15it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 3/9 [00:01<00:03,  1.98it/s]Fetching ITBs for COA OMOs:  44%|████▍     | 4/9 [00:01<00:02,  2.13it/s]Fetching ITBs for COA OMOs:  56%|█████▌    | 5/9 [00:02<00:01,  2.14it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 6/9 [00:02<00:01,  2.03it/s]Fetching ITBs for COA OMOs:  78%|███████▊  | 7/9 [00:03<00:01,  1.99it/s]Fetching ITBs for COA OMOs:  89%|████████▉ | 8/9 [00:03<00:00,  1.95it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:04<00:00,  2.02it/s]Fetching ITBs for COA OMOs: 100%|██████████| 9/9 [00:04<00:00,  2.04it/s]
+Downloading COA messages:   0%|          | 0/12 [00:00<?, ?it/s]Downloading COA messages:  17%|█▋        | 2/12 [00:00<00:00, 13.44it/s]Downloading COA messages:  33%|███▎      | 4/12 [00:00<00:00, 14.68it/s]Downloading COA messages:  50%|█████     | 6/12 [00:00<00:00, 14.99it/s]Downloading COA messages:  67%|██████▋   | 8/12 [00:00<00:00, 14.58it/s]Downloading COA messages:  83%|████████▎ | 10/12 [00:01<00:00,  6.89it/s]Downloading COA messages: 100%|██████████| 12/12 [00:01<00:00,  8.31it/s]Downloading COA messages: 100%|██████████| 12/12 [00:01<00:00,  9.56it/s]
+Geocoding COA addresses:   0%|          | 0/12 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 12/12 [00:00<00:00, 206277.25it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/12 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   8%|▊         | 1/12 [00:00<00:03,  3.31it/s]Fetching ITBs for COA OMOs:  17%|█▋        | 2/12 [00:00<00:03,  3.21it/s]Fetching ITBs for COA OMOs:  25%|██▌       | 3/12 [00:02<00:08,  1.01it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 4/12 [00:02<00:05,  1.39it/s]Fetching ITBs for COA OMOs:  42%|████▏     | 5/12 [00:03<00:03,  1.76it/s]Fetching ITBs for COA OMOs:  50%|█████     | 6/12 [00:03<00:02,  2.08it/s]Fetching ITBs for COA OMOs:  58%|█████▊    | 7/12 [00:03<00:02,  2.32it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 8/12 [00:03<00:01,  2.57it/s]Fetching ITBs for COA OMOs:  75%|███████▌  | 9/12 [00:04<00:01,  2.81it/s]Fetching ITBs for COA OMOs:  83%|████████▎ | 10/12 [00:04<00:00,  2.97it/s]Fetching ITBs for COA OMOs:  92%|█████████▏| 11/12 [00:04<00:00,  3.13it/s]Fetching ITBs for COA OMOs: 100%|██████████| 12/12 [00:05<00:00,  3.16it/s]Fetching ITBs for COA OMOs: 100%|██████████| 12/12 [00:05<00:00,  2.34it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
@@ -43,22 +43,25 @@ Award amount check ER07281: stored 1890.00, COA 1890.00
 Award amount check ER07032: stored 440.00, COA 440.00
 Safe merge complete
 Master before: 681
-Incoming rows: 9
-Added new OMOs: 0
+Incoming rows: 12
+Added new OMOs: 3
 Skipped existing OMOs: 9
 Updated existing OMOs: 0
-Need geocode: 0
+Need geocode: 3
 Missing ITB: 0
-Missing description: 0
-Master after: 681
+Missing description: 3
+Master after: 684
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
 
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 0
-Geocoded: 0
+Need geocode: 3
+OK ER07202 36 BEDFORD PARK BOULEVARD, 10468 40.872316 -73.888531 NYC_PLANNING_OK
+OK ER07755 854 MYRTLE AVENUE, 11206 40.695348 -73.947956 NYC_PLANNING_OK
+OK ER07610 3346 FULTON STREET, 11208 40.683503 -73.871985 NYC_PLANNING_OK
+Geocoded: 3
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -83,20 +86,26 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 12
-Descriptions patched: 0
+Matched ITBs needing description: 15
+DESCRIPTION OK ER07202 ER07202_101426115405.pdf
+DESCRIPTION OK ER07755 ER07755_101326091717.pdf
+DESCRIPTION OK ER07610 ER07610_101326125915.pdf
+Descriptions patched: 3
 Missing PDF: 12
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
+{'OMO': 'ER07202', 'Address': '36 BEDFORD PARK BOULEVARD, 10468', 'RecoveredFrom': 'ER07202_101426115405.pdf', 'Preview': ': NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK" MAKE THE BULKHEAD TO ROOF DOOR SELF CLOSE AND LATCH AND REPLACE MARBLE LANDING AT ROOF. AT THE BULKHEAD TO ROOF DOOR FROM EAST, 5TH STORY. MAKE ALL NECES'}
+{'OMO': 'ER07755', 'Address': '854 MYRTLE AVENUE, 11206', 'RecoveredFrom': 'ER07755_101326091717.pdf', 'Preview': ': REPLACE 2ND STY HOPPER CHUTE  NYC HPD EMERGENCY OPERATIONS DIVISION - (ESSENTIAL SERVICE WORK)  1) AT HOPPER DOOR LOCATED AT :PUBLIC HALL, ( 2ND STY )  DEMO COMPLETELY REMOVE THE DEFECTIVE EXISTING HOPP ER DOOR AND FRA'}
+{'OMO': 'ER07610', 'Address': '3346 FULTON STREET, 11208', 'RecoveredFrom': 'ER07610_101326125915.pdf', 'Preview': ': DEFECTIVE BUILDING ENTRANCE AND VESTIBULE DOOR. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ INSTALL A NEW ADAMS RITE LOCK KEEPING THE EXISTING CYLINDER FOR RE-INSTALLATION WITH A NEW STRIKE PLATE.'}
 
 Synced 3 data file(s) to public/data.
 
 ========== Render ITB page 3 assets ==========
 $ node scripts/render-itb-page3-assets.js --copy-pdfs
 {
-  "rendered": 0,
+  "rendered": 3,
   "reused": 681,
   "copiedPdfs": 0,
   "missingSource": 0,
@@ -108,9 +117,9 @@ ITB page manifest written to /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Da
 ========== Sync ITB page 3 descriptions ==========
 $ python scripts/sync-itb-page3-descriptions.py
 {
-  "jobs": 681,
-  "manifestEntries": 681,
-  "descriptionsAdded": 9,
+  "jobs": 684,
+  "manifestEntries": 684,
+  "descriptionsAdded": 12,
   "legacyDescriptionReplaced": 0,
   "missingManifestEntry": 672,
   "extractFailed": 0
@@ -130,7 +139,8 @@ $ python scripts/fetch_upcoming_bids.py --days 14
 Loaded Gmail token.json with OAuth client fields.
 UPCOMING BIDS QUERY: from:OMOBid@hpd.nyc.gov "INVITATION TO BID" has:attachment filename:pdf after:2026/10/01
 warning: The `fitz` API is deprecated and will be removed in future. Use `import pymupdf` instead.
-Upcoming bids: 28 not awarded yet (28 on the map), 12 received today, from 85 emails
+  INVITATION NOT READ: ER07755_101526035121.pdf (OMO ER07755, bid due ?)
+Upcoming bids: 26 not awarded yet (26 on the map), 13 received today, from 87 emails; 1 NOT READ: ER07755_101526035121.pdf
 
 
 ========== Read award emails ==========
@@ -140,8 +150,8 @@ $ python scripts/fetch_award_history.py --since 2026/08/31
 
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 Loaded Gmail token.json with OAuth client fields.
-  0/53
-Your awards: 1428 OMOs from 53 award emails since 2026/08/31 (0 without an OMO)
+  0/54
+Your awards: 1429 OMOs from 54 award emails since 2026/08/31 (0 without an OMO)
 
 
 ========== Read sent affidavits and invoices ==========
@@ -151,9 +161,9 @@ $ python scripts/fetch_sent_paperwork.py --since 2026/10/01
 
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 Loaded Gmail token.json with OAuth client fields.
-Reading 99 sent emails with attachments...
-  0/99
-Sent paperwork: 944 OMOs with an affidavit / invoice sent (36 with the affidavit type read) from 99 emails since 2026/10/01
+Reading 100 sent emails with attachments...
+  0/100
+Sent paperwork: 944 OMOs with an affidavit / invoice sent (36 with the affidavit type read) from 100 emails since 2026/10/01
 
 
 ========== Read HPD requests for paperwork ==========
@@ -164,26 +174,26 @@ $ python scripts/fetch_hpd_requests.py --since 2026/10/01
 Ã¢Å¡Â Ã¯Â¸Â  WARNING: No Google API key found. Geocoding will return NO_KEY.
 Loaded Gmail token.json with OAuth client fields.
 Reading 69 emails from HPD staff...
-Reading 50 emails you sent HPD staff...
+Reading 51 emails you sent HPD staff...
 HPD requests: 26 OMOs HPD asked about (paperwork / status) from 69 staff emails since 2026/10/01
 
 
 ========== Update HPD job status from NYC Open Data ==========
 $ node scripts/update-hpd-job-status.mjs
-HPD job status: 890 of 925 jobs found, 188 still open at HPD, 702 closed
+HPD job status: 893 of 928 jobs found, 191 still open at HPD, 702 closed
 
 
 ========== Update market awards from NYC Open Data ==========
 $ node scripts/update-market-awards.mjs
-Market awards: 3700 awarded jobs with full descriptions (961 yours, 2739 other contractors) from 4084 invitations; 1 new descriptions kept tonight; 39792 awards in Open Data since 2025-01-01
+Market awards: 3700 awarded jobs with full descriptions (961 yours, 2739 other contractors) from 4085 invitations; 1 new descriptions kept tonight; 39792 awards in Open Data since 2025-01-01
 
 
 ========== Verify mapping ==========
 $ node check-local-mapping.js
-Raw JSON rows: 681
-2026 rows: 630
-2026 rows with any Latitude/Longitude: 630
-2026 rows with valid NYC coordinates: 630
+Raw JSON rows: 684
+2026 rows: 633
+2026 rows with any Latitude/Longitude: 633
+2026 rows with valid NYC coordinates: 633
 2026 rows NOT valid mapped: 0
 
 Not mapped sample:
@@ -220,7 +230,7 @@ Missing sample:
 
 ========== Verify missing ITB ==========
 $ node export-missing-itb.js
-Total jobs: 681
+Total jobs: 684
 Missing ITB jobs: 0
 Exported: ./data/missing_itb_jobs_2026.csv
 ┌─────────┐
@@ -232,7 +242,7 @@ Exported: ./data/missing_itb_jobs_2026.csv
 ========== Verify paperwork required data ==========
 $ node scripts/verify-paperwork-data.js --write-report
 PAPERWORK DATA QUALITY
-Total jobs: 681
+Total jobs: 684
 Missing addresses: 0
 Missing descriptions: 0
 Missing ITB page 3 descriptions: 0
@@ -263,16 +273,16 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-10-15T19:53:30.724Z
+Fetcher run finished: 2026-10-15T20:02:21.983Z
 {
-  "fetchedCoaItems": 9,
-  "fetchedItbItems": 9,
-  "fetchedFinalJobRows": 9,
-  "addedNewOmos": 0,
+  "fetchedCoaItems": 12,
+  "fetchedItbItems": 12,
+  "fetchedFinalJobRows": 12,
+  "addedNewOmos": 3,
   "skippedExistingOmos": 9,
-  "rawRows": 681,
-  "rows2026": 630,
-  "mapped2026": 630,
+  "rawRows": 684,
+  "rows2026": 633,
+  "mapped2026": 633,
   "notMapped2026": 0,
   "missingAddresses": 0,
   "badDescriptions": 0,
