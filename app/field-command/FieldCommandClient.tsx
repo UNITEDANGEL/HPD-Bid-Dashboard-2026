@@ -749,6 +749,13 @@ export default function FieldCommandClient() {
   const [askedMap, setAskedMap] = useState<Record<string, HpdRequest>>({});
   // Older jobs (2024-2025) with HPD notices: on the notices layer, not in the 2026 work lists.
   const [olderJobs, setOlderJobs] = useState<JobRecord[]>([]);
+  // The 2024-2025 layer (scripts/build-older-jobs-layer.mjs): shown on the map only when turned on.
+  const [showOlderLayer, setShowOlderLayer] = useState(false);
+  const [olderLayer, setOlderLayer] = useState<JobRecord[] | null>(null);
+  useEffect(() => {
+    if (!showOlderLayer || olderLayer) return;
+    fetch("/data/jobs_2024_2025.json", { cache: "no-cache" }).then((r) => (r.ok ? r.json() : null)).then((d) => setOlderLayer(Array.isArray(d?.jobs) ? d.jobs : [])).catch(() => setOlderLayer([]));
+  }, [showOlderLayer, olderLayer]);
   // Paid / not paid per OMO, from PIP (scripts/import_pip_agreements.mjs).
   const [pipMap, setPipMap] = useState<Record<string, PipPayment>>({});
   useEffect(() => {
@@ -1198,7 +1205,7 @@ export default function FieldCommandClient() {
     Object.fromEntries(jobs.filter((j) => j.HpdAskedAt).map((j) => [jobId(j), { askedAt: String(j.HpdAskedAt), count: 1, by: String(j.HpdAskedBy || ""), kind: String(j.HpdAskedFor || ""), askedTs: Number(j.HpdAskedTs || 0), repliedTs: Number(j.HpdRepliedTs || 0) }])),
   ), [jobs, calendarDate]);
   const rejections = useMemo(() => paperworkRejections(askedMap, [...jobs, ...olderJobs], pipMap), [askedMap, jobs, olderJobs, pipMap]);
-  const findAnyJob = (omo: string) => jobs.find((j) => jobId(j) === omo) || olderJobs.find((j) => jobId(j) === omo);
+  const findAnyJob = (omo: string) => jobs.find((j) => jobId(j) === omo) || olderJobs.find((j) => jobId(j) === omo) || (olderLayer || []).find((j) => jobId(j) === omo);
   const openRejections = rejections.filter((r) => !r.answered);
   const [showAnsweredRejections, setShowAnsweredRejections] = useState(false);
   const [openNotice, setOpenNotice] = useState("");
@@ -1215,6 +1222,10 @@ export default function FieldCommandClient() {
   const filteredJobs = useMemo(() => {
     const q = search.trim().toLowerCase();
     const olderOnNotices = followFilter === "notices" ? olderJobs.filter((j) => openRejections.some((r) => r.omo === jobId(j))) : [];
+    // 2024-2025 jobs: only with the "2024-25" button on (and no follow-up filter), same borough / search.
+    if (showOlderLayer && !followFilter && olderLayer) {
+      return olderLayer.filter((job) => (borough === "ALL" || jobBorough(job) === borough) && (!q || [jobId(job), jobAddress(job)].join(" ").toLowerCase().includes(q)));
+    }
     return [...jobs, ...olderOnNotices].filter((job) => {
       // Follow-up filter (from the report or the quick filters): only those jobs, any status or date.
       if (followFilter) {
@@ -1242,7 +1253,7 @@ export default function FieldCommandClient() {
       }
       return true;
     });
-  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey, followFilter, followUps, followReport]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [jobs, borough, status, search, daysBack, dateRange, calendarDate, openJobKey, followFilter, followUps, followReport, showOlderLayer, olderLayer, olderJobs, openRejections]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // The open job card has priority over "follow me": stop following and show the job's pin in
   // the open strip of map between the search bar and the top of the card. The locate button
@@ -1657,7 +1668,7 @@ export default function FieldCommandClient() {
       // Only a borough tap or a search moves the map. Date windows (30/60/90) and status
       // filters just change which pins show; the map stays on you.
       // The HPD notices layer frames its jobs too (they're spread over the city).
-      const framing = `${borough}|${search}|${followFilter === "notices" ? "notices" : ""}`;
+      const framing = `${borough}|${search}|${followFilter === "notices" ? "notices" : ""}|${showOlderLayer ? "older" : ""}`;
       if (mapFramingRef.current !== framing && points.length && restoredMapViewRef.current && !mapFramingRef.current) {
         // First load after reopening: keep the saved view; later filter/search changes still frame.
         mapFramingRef.current = framing;
@@ -1669,7 +1680,7 @@ export default function FieldCommandClient() {
           showJobAboveCard(openJob.lat, openJob.lng);
         } else if (points.length === 1) {
           map.setView([points[0].lat, points[0].lng], 15);
-        } else if (points.length > 1 && borough === "ALL" && !search.trim() && followFilter !== "notices") {
+        } else if (points.length > 1 && borough === "ALL" && !search.trim() && followFilter !== "notices" && !showOlderLayer) {
           // Back to All: return to you, never to a fixed point in the city.
           const me = lastPositionRef.current;
           if (me) { followMeRef.current = true; map.setView([me.lat, me.lng], Math.max(map.getZoom(), 15)); }
@@ -1685,7 +1696,7 @@ export default function FieldCommandClient() {
     return () => {
       cancelled = true;
     };
-  }, [filteredJobs, borough, search, status, daysBack, dateRange, followFilter]);
+  }, [filteredJobs, borough, search, status, daysBack, dateRange, followFilter, showOlderLayer]);
 
   useEffect(() => {
     darkTilesRef.current = darkTiles;
@@ -2412,6 +2423,9 @@ export default function FieldCommandClient() {
               </button>
             ))}
             <button type="button" onClick={() => setFiltersOpen(true)}>Custom</button>
+            <button type="button" className={showOlderLayer ? "is-active fc-older-chip" : "fc-older-chip"} aria-pressed={showOlderLayer} data-hpd-smoke="fc-older-layer" title="Your 2024-2025 jobs (HPD Open Data + PIP paid status)" onClick={() => { setSelectedJob(null); setFollowFilter(""); setShowOlderLayer((v) => !v); }}>
+              {showOlderLayer ? `2024-25 · ${olderLayer ? olderLayer.length : "…"}` : "2024-25"}
+            </button>
           </div>
         </nav>
       ) : null}
