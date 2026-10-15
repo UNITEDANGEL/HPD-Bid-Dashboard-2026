@@ -937,7 +937,7 @@
 #fc-job-card .jc-calendar-add small { font-weight: 600; font-size: 12px; opacity: 0.85; }
 
 /* Today's summary (map menu): counts, today / close out / tomorrow, email or share. */
-.fc-summary-body { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; padding: 12px 14px; color: #e2e8f0; }
+.fc-summary-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch; padding: 12px 14px; color: #e2e8f0; }
 .fc-summary-counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
 .fc-summary-counts span { display: grid; place-items: center; padding: 8px 4px; border-radius: 12px; background: #111827; border: 1px solid rgba(148, 163, 184, 0.2); color: #94a3b8; font: 600 12px system-ui, sans-serif; }
 .fc-summary-counts span b { color: #64748b; font: 800 22px/1.1 system-ui, sans-serif; }

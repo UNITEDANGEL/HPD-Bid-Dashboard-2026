@@ -151,6 +151,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-bid-sync.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-building-facts.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-update-recovery.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-correction.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork-lock.mjs
 

@@ -164,6 +164,34 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - One-screen fill order: look (Street View) -> read description -> price (best price shown) -> Fill ->
   check -> Send (two taps).
 
+## Rule: HPD rejection corrections (owner's instruction, 15 Oct 2026)
+- Corrected paperwork is **printed and signed by hand**: the owner signs the affidavit (page 2) and the
+  invoice's "Signature of Principal" line in blue ink, and the notary signs in ink. **No signature
+  pictures** on a correction. The **notary stamp stays** and the **notary date is the day of the correction**.
+- Always **preview first**: nothing is marked corrected until the owner checks every page against HPD's
+  reason and taps "It's right: save to print". Saved corrections wait in HPD notices -> "Corrections to
+  print" (on that phone) until printed, signed, notarized and sent ("Signed & sent", two taps).
+
+## Done 15 Oct 2026 (afternoon)
+- **HPD notices scroll again**: the list had no scrolling area (unstyled body); now it scrolls and the map
+  can't grab the swipe.
+- **Corrections work for older jobs**: jobs awarded before Aug 28, 2026 need HPD's earlier affidavit
+  (12.2024 Rev. 01.21.2025); the app used to stop ("legacy mapping not verified"), so almost no correction
+  could be made. Clean copies with named boxes: public/templates/*-2025.pdf (scripts/build_legacy_affidavits.py;
+  box 4 = award date per the old filler). Signature / notary / stamp positions measured for those pages.
+  Checked by rendering real corrections (EQ17038 work, EQ13174 no access).
+- Correction flow: preview -> check (HPD's reason shown, ink reminders) -> save to print -> Corrections to
+  print in HPD notices -> open/print -> Signed & sent. Messages now show next to the button (they were
+  1,800 px above it, so the tap looked dead). paperwork.css was never loaded; now it is.
+- **Invitation pages in the bid card**: HPD's pages 2-3 (job description) drawn from the invitation PDF;
+  tap for full screen with zoom (1x/2x/3x); "All pages" for the whole invitation.
+- Tests: scripts/test-browser-correction.mjs (+ both form versions in test-complete-package.cjs).
+
+## Owner decision needed
+- **Tenant names/phones are public**: 745 invitation PDFs (page 2 has the tenant's name and phone) are in the
+  public GitHub repo and on the open site (public/documents/itb, committed by run-fetcher.yml). Fix: keep
+  them private (Drive / signed-in function), stop committing them, and clean them out of git history.
+
 ## Open items for the owner
 - **Invitation timer in Cloudflare** (13 Oct: the laptop battery died at 2:58 PM, 3 invitations waited
   2 hours; GitHub's schedule only runs ~once a day). Code is ready (cloudflare-timer/, every 10 min,

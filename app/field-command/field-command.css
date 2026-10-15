@@ -2506,3 +2506,13 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .jc-journey li.is-bad b { color: #fecaca; }
 .jc-journey li.is-bad small { color: #fca5a5; }
 .jc-journey-next { margin: 5px 0 0 !important; font: 800 12.5px/1.3 system-ui; color: #e2e8f0; }
+
+/* Corrections saved to print and sign in ink (HPD notices). */
+.fc-follow-section.is-to-print { border-left: 4px solid #22c55e; padding-left: 10px; }
+.fc-follow-section.is-to-print ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 8px; }
+.fc-follow-section.is-to-print li { display: grid; gap: 4px; padding: 8px 10px; border-radius: 10px; background: #052e16; color: #dcfce7; }
+.fc-follow-section.is-to-print li small { color: #bbf7d0; }
+.fc-to-print-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.fc-to-print-actions button { min-height: 44px; border: 0; border-radius: 10px; background: #16a34a; color: #fff; font: 800 13.5px system-ui; }
+.fc-to-print-actions button + button { background: #334155; }
+.fc-to-print-actions button.is-armed { background: #dc2626; }

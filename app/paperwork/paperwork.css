@@ -4,3 +4,14 @@
 .paperwork-correction b { font-size: 15px; }
 .paperwork-correction span { font-weight: 700; }
 .paperwork-correction small { color: #fecaca; line-height: 1.4; }
+
+/* Correction: the status right under the button, and the check-then-save panel on the preview. */
+.paperwork-correction-status { margin: 4px 0 0; padding: 8px 10px; border-radius: 10px; background: #1f2937; color: #fde68a; font: 700 13.5px/1.4 system-ui; }
+.pkg-correction { display: grid; gap: 6px; margin: 0 0 12px; padding: 12px; border-radius: 12px; background: #450a0a; border: 2px solid #ef4444; color: #fee2e2; font: 600 14px/1.4 system-ui; }
+.pkg-correction > b { font-size: 16px; }
+.pkg-correction em { font-style: normal; color: #fff; font-weight: 800; }
+.pkg-correction ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+.pkg-correction-actions { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; margin-top: 4px; }
+.pkg-correction-actions button { min-height: 48px; }
+.pkg-correction-done { margin: 4px 0 0; padding: 8px 10px; border-radius: 10px; background: #052e16; color: #bbf7d0; font-weight: 700; }
+.pkg-correction-error { margin: 0; color: #fca5a5; font-weight: 700; }

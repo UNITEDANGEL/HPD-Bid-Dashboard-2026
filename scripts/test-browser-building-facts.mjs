@@ -63,11 +63,24 @@ try {
   await list.locator("ol > li", { hasText: pick.omo }).first().locator("button").first().click();
   await sheet.locator('[data-hpd-smoke="fc-bldg-facts"]').waitFor({ timeout: 5000 });
   assert.equal(geoCalls, before, "cached on the phone");
+  // HPD's own job-description pages (2-3) in the card; tap one for full screen, zoom, close.
+  if (pick.itbFile) {
+    await sheet.locator('[data-hpd-smoke="fc-itb-thumb"]').first().waitFor({ timeout: 30000 });
+    const thumbs = await sheet.locator('[data-hpd-smoke="fc-itb-thumb"] img').evaluateAll((imgs) => imgs.map((i) => i.naturalWidth));
+    assert.ok(thumbs.length >= 1 && thumbs.every((w) => w > 500), `invitation pages drawn (${thumbs})`);
+    await sheet.locator('[data-hpd-smoke="fc-itb-thumb"]').first().click();
+    const full = page.locator('[data-hpd-smoke="fc-itb-full"]');
+    await full.waitFor({ timeout: 5000 });
+    await full.locator('[data-hpd-smoke="fc-itb-zoom"]').click();
+    assert.equal(await full.locator("img").evaluate((i) => i.style.width), "200%");
+    await full.locator('[data-hpd-smoke="fc-itb-close"]').click();
+    assert.equal(await full.count(), 0);
+  }
   // Fits the iPhone width.
   const overflow = await page.evaluate(() => { const b = document.querySelector('[data-hpd-smoke="fc-bldg"]'); return b.scrollWidth - b.clientWidth; });
   assert.ok(overflow <= 1, `building box overflows by ${overflow}px`);
   assert.deepEqual(errors, []);
-  console.log(`PASS building facts (${pick.omo}): Open Data down -> message + Try again, then built 1901 · 6 floors · walk-up · 16 apartments, 128 open (13 C), ${related.length} matching violation(s), HPD Online link, cached on reopen`);
+  console.log(`PASS building facts (${pick.omo}): Open Data down -> message + Try again, then built 1901 · 6 floors · walk-up · 16 apartments, 128 open (13 C), ${related.length} matching violation(s), HPD Online link, cached on reopen; invitation pages 2-3 shown, full screen + zoom`);
 } finally {
   await browser.close();
 }

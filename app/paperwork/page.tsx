@@ -6,10 +6,12 @@ import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate 
 import { tenantContactInfo } from "../../lib/tenantContact";
 import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
 import { drawInvoicePage } from "../../lib/invoice-pdf";
+import { saveCorrection } from "../../lib/correction-store";
 import { checkPaperwork } from "../../lib/paperwork-check";
 import { signatureBytes } from "../../lib/signature";
 import SignatureCard from "./SignatureCard";
 import NotaryCard, { type NotaryApproval } from "./NotaryCard";
+import "./paperwork.css";
 import { paperworkLock, revisionPatch } from "../../lib/paperwork-lock";
 import { deliverPackage, googleStatus, sendPackageEmail, type DeliveryFile, type EmailAttachmentSummary, type GoogleStatus } from "../../lib/package-delivery";
 import { calendarDay } from "../../lib/job-priority";
@@ -83,6 +85,11 @@ type PackageForm = {
 
 const WORK_AFFIDAVIT_TEMPLATE = "/templates/work-performed-affidavit.pdf";
 const NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-performed-affidavit.pdf";
+// Jobs awarded before August 28, 2026 use HPD's earlier forms (12.2024 Rev. 01.21.2025), with the boxes
+// named like the current ones (scripts/build_legacy_affidavits.py).
+const LEGACY_WORK_AFFIDAVIT_TEMPLATE = "/templates/work-performed-affidavit-2025.pdf";
+const LEGACY_NO_WORK_AFFIDAVIT_TEMPLATE = "/templates/no-work-performed-affidavit-2025.pdf";
+const NEW_AFFIDAVIT_FROM = "2026-08-28";
 const CONTRACTOR_NAME = "UNITED ANGEL CONSTRUCTION CORP";
 const DEFAULT_PACKAGE_SIGNER = "JOTJAGRAJ SINGH";
 // Default notary name for the notary card. The notary's signature may be saved on the phone,
@@ -1228,6 +1235,8 @@ export default function PaperworkPage() {
   // signatures, so the corrected package has no signature pictures, keeps the notary stamp, and the
   // notary date is the day of the correction.
   const [correction, setCorrection] = useState<{ rejectedAt: string; reason: string; attempt: string } | null>(null);
+  // The corrected package once you've checked the preview and saved it to print (ISO time), or an error.
+  const [correctionSaved, setCorrectionSaved] = useState("");
   const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
   // Opened for one job (from the job card): a short summary instead of the job list and type tiles.
   const [showJobPicker, setShowJobPicker] = useState(false);
@@ -1531,6 +1540,21 @@ export default function PaperworkPage() {
     void generateCompletePackage(lastIncludeMediaRef.current, true);
   }
 
+  // You checked the preview: keep the PDF on this phone to print, sign in ink and have notarized,
+  // and note on the job that the rejection was corrected (synced like every job change).
+  async function saveCorrectionForPrinting() {
+    if (!packagePreview || !correction || !selectedId) return;
+    try {
+      const pdf = await (await fetch(packagePreview.pdfUrl)).blob();
+      const savedAt = new Date().toISOString();
+      await saveCorrection({ omo: selectedId.toUpperCase(), savedAt, rejectedAt: correction.rejectedAt, reason: correction.reason, fileName: packagePreview.pdfFileName, pdf });
+      saveLocalPackageOverride(selectedId, { RejectionCorrectedAt: todayIsoDate(), RejectionCorrectedFor: correction.rejectedAt, CorrectionSavedAt: savedAt, CorrectionReason: correction.reason });
+      setCorrectionSaved(savedAt);
+    } catch (error) {
+      setCorrectionSaved(`error:${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
   function clearPackagePreview() {
     setPackageReviewed(false);
     setPackageApproved(false);
@@ -1641,13 +1665,14 @@ export default function PaperworkPage() {
     const includeNotaryImage = includeSignatureImage && notary;
     const useWorkTemplate = activeOutcome === "work_completed" || activeOutcome === "partial_work_completed";
     const awardDay = calendarDay(getJobDate(selectedJob, "award"));
-    if (awardDay === null || awardDay < calendarDay("2026-08-28")!) {
-      setPdfStatus(awardDay === null
-        ? "Verify the job award date before generating an affidavit. Work dates cannot select the affidavit version."
-        : "This award needs the pre-August 28, 2026 affidavit. Legacy field mapping is not yet verified; generation stopped to avoid using the wrong form.");
+    if (awardDay === null) {
+      setPdfStatus("Verify the job award date before generating an affidavit. Work dates cannot select the affidavit version.");
       return null;
     }
-    const templateUrl = useWorkTemplate ? WORK_AFFIDAVIT_TEMPLATE : NO_WORK_AFFIDAVIT_TEMPLATE;
+    const legacyForm = awardDay < calendarDay(NEW_AFFIDAVIT_FROM)!;
+    const templateUrl = legacyForm
+      ? (useWorkTemplate ? LEGACY_WORK_AFFIDAVIT_TEMPLATE : LEGACY_NO_WORK_AFFIDAVIT_TEMPLATE)
+      : (useWorkTemplate ? WORK_AFFIDAVIT_TEMPLATE : NO_WORK_AFFIDAVIT_TEMPLATE);
     const jobId = activeForm.jobId || selectedId || "HPD";
     const archiveJobId = activeForm.jobId || selectedId;
     const borough = activeForm.borough || (selectedJob ? getJobBorough(selectedJob) : "");
@@ -1835,14 +1860,18 @@ export default function PaperworkPage() {
       check("APPROVED INCREASE DECREASE NO");
       check("PERMIT REQUIRED NO");
 
-      const deponentLine = `I, ${signer.toUpperCase()}`;
+      // The earlier form has no contractor-name box: the name line carries the company (as HPD accepted it).
+      const deponentLine = legacyForm ? `I, ${signer.toUpperCase()}/${CONTRACTOR_NAME.toUpperCase()}` : `I, ${signer.toUpperCase()}`;
 
       widenField(affidavitForm, "Name of Contractor", 50);
       setAffidavitText("Name of Contractor", CONTRACTOR_NAME, 9);
       showUnderline(affidavitForm, "Name of Contractor");
-      adjustFieldRect(affidavitForm, "OMO", { dy: 2 });
+      if (!legacyForm) adjustFieldRect(affidavitForm, "OMO", { dy: 2 });
       setAffidavitText("OMO", jobId);
       setAffidavitText("OMO Header2", jobId);
+      // Earlier form only: "3. ... Open Market Order # ___" and "2. That on ___ I was directed by HPD" (the award date).
+      setAffidavitText("OMO Body", jobId);
+      setAffidavitText("Award Date", (() => { const a = getJobDate(selectedJob, "award"); const d = a ? parseDateValue(a) : null; return d ? `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}/${d.getFullYear()}` : ""; })());
       const fullBuildingAddress = [activeForm.address, activeForm.location, activeForm.borough ? `${activeForm.borough}, NY` : "NY"]
         .filter(Boolean)
         .join(", ");
@@ -1859,7 +1888,7 @@ export default function PaperworkPage() {
         showUnderline(affidavitForm, "Deponent Name");
         setAffidavitText("Start Date", activeOutcome === "work_completed" ? workStart : "");
         showUnderline(affidavitForm, "Start Date");
-        adjustFieldRect(affidavitForm, "Complete Date", { dx: -20, dy: 2.5 });
+        if (!legacyForm) adjustFieldRect(affidavitForm, "Complete Date", { dx: -20, dy: 2.5 });
         setAffidavitText("Complete Date", activeOutcome === "work_completed" ? workComplete : "");
         showUnderline(affidavitForm, "Complete Date");
         setAffidavitText(
@@ -1869,18 +1898,27 @@ export default function PaperworkPage() {
         );
         showUnderline(affidavitForm, "Partial Reason");
         setAffidavitText("Partial Amount", activeOutcome === "partial_work_completed" ? chargeAmount : "");
-        adjustFieldRect(affidavitForm, "Partial Reason", { dy: 4 });
-        adjustFieldRect(affidavitForm, "Partial Amount", { dx: 5 });
+        if (!legacyForm) adjustFieldRect(affidavitForm, "Partial Reason", { dy: 4 });
+        if (!legacyForm) adjustFieldRect(affidavitForm, "Partial Amount", { dx: 5 });
         showUnderline(affidavitForm, "Partial Amount");
         const notaryDate = notary ? notaryDateParts(notary.date) : { day: "", month: "", year: "" };
         setAffidavitText("Notary Day Month", notary ? `${notaryDate.day} ${notaryDate.month}` : "");
         setAffidavitText("Notary Year", notary ? notaryDate.year : "");
+        // The earlier form has separate day and month blanks.
+        setAffidavitText("Notary Day", notary ? notaryDate.day : "");
+        setAffidavitText("Notary Month", notary ? notaryDate.month : "");
 
         if (activeOutcome === "partial_work_completed") {
           setAffidavitText("Denied Name", upper(activeForm.deniedName));
           setAffidavitText("Denied Relationship", upper(activeForm.deniedRelationship));
           setAffidavitText("Denied Description", upper(activeForm.deniedDescription));
           setAffidavitText("Denied Actions", activeForm.deniedName ? upper(activeForm.partialReason) : "", 9);
+          // Earlier form: "Answer 6, 7 OR 8": interrupted and ordered to leave is line 8 with its own amount.
+          if (legacyForm && activeForm.deniedName) {
+            setAffidavitText("Partial Reason", "");
+            setAffidavitText("Partial Amount", "");
+            setAffidavitText("Interrupted Amount", chargeAmount);
+          }
         }
 
         // Partial work too: HPD wants the work dates on every invoice.
@@ -1928,7 +1966,7 @@ export default function PaperworkPage() {
         }
 
         if (activeOutcome === "completed_by_others") {
-          adjustFieldRect(affidavitForm, "WorkSite Date5", { dx: 14, dw: -14 });
+          if (!legacyForm) adjustFieldRect(affidavitForm, "WorkSite Date5", { dx: 14, dw: -14 });
           setAffidavitText("WorkSite Date5", secondAttempt);
         }
 
@@ -1936,8 +1974,8 @@ export default function PaperworkPage() {
           // 7a: the template's boxes start partway along their blanks, and the relationship box starts
           // inside the line above. Start each at its blank and keep the relationship on its own line,
           // so answers never run into "their name(s) as:", "and stated" or "(e.g.".
-          adjustFieldRect(affidavitForm, "Denied Name", { dx: -7, dw: 5 });
-          adjustFieldRect(affidavitForm, "Denied Relationship", { dx: -14, dy: -2.5, dw: 13 });
+          if (!legacyForm) adjustFieldRect(affidavitForm, "Denied Name", { dx: -7, dw: 5 });
+          if (!legacyForm) adjustFieldRect(affidavitForm, "Denied Relationship", { dx: -14, dy: -2.5, dw: 13 });
           setAffidavitText("Denied Date", secondAttempt);
           setAffidavitText("Denied Phone", deniedPhone);
           setAffidavitText("Denied Name", upper(deniedName));
@@ -1982,7 +2020,10 @@ export default function PaperworkPage() {
       // Signer's signature above the page 2 "Signature" line. The notary block is left for the notary.
       if (includeSignatureImage && signatureRef.current) {
         const signatureImage = await affidavitDoc.embedPng(signatureBytes(signatureRef.current));
-        const box = useWorkTemplate ? { x: 398, y: 261, width: 150, height: 32 } : { x: 362, y: 347, width: 160, height: 40 };
+        // Above the "Signature" line (page 2); the earlier forms have it higher up the page.
+        const box = legacyForm
+          ? useWorkTemplate ? { x: 398, y: 570, width: 128, height: 30 } : { x: 362, y: 466, width: 158, height: 36 }
+          : useWorkTemplate ? { x: 398, y: 261, width: 150, height: 32 } : { x: 362, y: 347, width: 160, height: 40 };
         const scale = Math.min(box.width / signatureImage.width, box.height / signatureImage.height);
         affidavitDoc.getPages()[1]?.drawImage(signatureImage, { x: box.x, y: box.y, width: signatureImage.width * scale, height: signatureImage.height * scale });
       }
@@ -1993,7 +2034,9 @@ export default function PaperworkPage() {
       // signature. The notary's name is not drawn next to "Notary Public" since it's already
       // the first line of the stamp.
       if (notary) {
-        const box = useWorkTemplate ? { x: 36, y: 148, width: 146, height: 28 } : { x: 36, y: 197, width: 153, height: 28 };
+        const box = legacyForm
+          ? useWorkTemplate ? { x: 36, y: 461, width: 150, height: 28 } : { x: 36, y: 332, width: 150, height: 28 }
+          : useWorkTemplate ? { x: 36, y: 148, width: 146, height: 28 } : { x: 36, y: 197, width: 153, height: 28 };
         const page2 = affidavitDoc.getPages()[1];
         if (includeNotaryImage) {
           const notaryImage = await affidavitDoc.embedPng(signatureBytes(notary.signature));
@@ -2004,7 +2047,8 @@ export default function PaperworkPage() {
         const stampSize = 7;
         const stampWidths = NOTARY_STAMP_LINES.map((line) => affidavitBoldFont.widthOfTextAtSize(line, stampSize));
         const stampCenterX = box.x + Math.max(...stampWidths) / 2;
-        const stampTop = useWorkTemplate ? 104 : 142;
+        // Just under "Notary Public".
+        const stampTop = legacyForm ? (useWorkTemplate ? 417 : 277) : useWorkTemplate ? 104 : 142;
         NOTARY_STAMP_LINES.forEach((line, index) => {
           page2?.drawText(line, { x: stampCenterX - stampWidths[index] / 2, y: stampTop - index * 9, size: stampSize, font: affidavitBoldFont });
         });
@@ -5410,11 +5454,11 @@ export default function PaperworkPage() {
             <div className="paperwork-correction" data-hpd-smoke="paperwork-correction">
               <b>❗ Correcting HPD&apos;s rejection of {correction.rejectedAt}{correction.attempt ? ` (${correction.attempt} ATTEMPT)` : ""}</b>
               {correction.reason ? <span>HPD: {correction.reason}</span> : null}
-              <small>Fix the details above, then make the corrected package. HPD needs original ink signatures: it has <b>no signature pictures</b> (you and the notary sign by hand); the notary stamp stays and is dated <b>today ({todayIsoDate()})</b>. The paperwork check runs first.</small>
-              <button className="paperwork-print" data-hpd-smoke="paperwork-generate-correction" type="button" disabled={!canGeneratePackage} onClick={async () => {
-                await generateCompletePackage(false, true, true);
-                saveLocalPackageOverride(selectedId, { RejectionCorrectedAt: todayIsoDate(), RejectionCorrectedFor: correction.rejectedAt });
-              }}>Make the corrected package (sign in ink)</button>
+              <small>Fix the details above, then preview the corrected package. Nothing is marked or sent until you check the preview and save it. HPD needs original ink signatures: it has <b>no signature pictures</b> (you and the notary sign by hand); the notary stamp stays and is dated <b>today ({todayIsoDate()})</b>. The paperwork check runs first.</small>
+              <button className="paperwork-print" data-hpd-smoke="paperwork-generate-correction" type="button" disabled={!canGeneratePackage || packageBusy} onClick={() => { setCorrectionSaved(""); void generateCompletePackage(false, true, true); }}>
+                {packageBusy ? "Making the preview…" : "👁 Preview the corrected package"}
+              </button>
+              {pdfStatus ? <p className="paperwork-correction-status" data-hpd-smoke="paperwork-correction-status" aria-live="polite">{pdfStatus}</p> : null}
             </div>
           ) : null}
           {!packagePreview ? (
@@ -5470,6 +5514,26 @@ export default function PaperworkPage() {
                 <div className="pkg-copy-head" data-hpd-smoke="paperwork-signed-head">
                   <strong>Signed copy</strong>
                   <small>Signed by the principal and the notary. Emailed to you with the before/after photos and saved to Google Drive when you approve. Forward this one.</small>
+                </div>
+              ) : null}
+              {correction && packagePreview.printCopy ? (
+                <div className="pkg-correction" data-hpd-smoke="paperwork-correction-review">
+                  <b>❗ Check the correction before saving</b>
+                  <span>HPD rejected this on {correction.rejectedAt}{correction.attempt ? ` (${correction.attempt} attempt)` : ""}{correction.reason ? <>: <em>{correction.reason}</em></> : null}</span>
+                  <ul>
+                    <li>Look at every page below and make sure that problem is fixed.</li>
+                    <li><b>No signature pictures</b>: you and the notary sign by hand in ink (HPD needs original signatures). Sign the affidavit (page 2) <b>and</b> the invoice&apos;s &quot;Signature of Principal&quot; line in <b>blue ink</b>.</li>
+                    <li>The notary stamp stays; the notary date is <b>today, {todayIsoDate()}</b>.</li>
+                  </ul>
+                  {correctionSaved && !correctionSaved.startsWith("error:") ? (
+                    <p className="pkg-correction-done" data-hpd-smoke="paperwork-correction-saved">✓ Saved on this phone {new Date(correctionSaved).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}. It&apos;s in HPD notices → <b>Corrections to print</b>. Print it, sign in ink with the notary, then send it to HPD.</p>
+                  ) : (
+                    <div className="pkg-correction-actions">
+                      <button type="button" className="paperwork-print" data-hpd-smoke="paperwork-correction-save" onClick={() => void saveCorrectionForPrinting()}>✓ It&apos;s right: save to print</button>
+                      <button type="button" className="paperwork-secondary" data-hpd-smoke="paperwork-correction-edit" onClick={editPackageDetails}>✏️ Change something</button>
+                    </div>
+                  )}
+                  {correctionSaved.startsWith("error:") ? <p className="pkg-correction-error">Couldn&apos;t save it on this phone ({correctionSaved.slice(6)}). Use Download PDF below instead.</p> : null}
                 </div>
               ) : null}
               <div className="pkg-pages" data-hpd-smoke="paperwork-package-pages" aria-label="PDF pages">

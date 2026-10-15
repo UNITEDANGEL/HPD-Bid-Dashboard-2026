@@ -14,6 +14,7 @@ import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
 import { bidHistory, currentRecord, earlierRounds, FAX_LINES, type FaxLine, bidResult, bidsToCheck, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, readSession, saveSession, SESSION_KEY, todaySummary, withLog, type BiddingSession, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
 import "./bids.css";
 import BuildingFacts from "./BuildingFacts";
+import ItbPages from "./ItbPages";
 
 const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
 const NY_TIME = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -535,6 +536,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               </div>
             ) : null}
             <section>
+              {selected.itbFile ? <ItbPages pdfUrl={`/documents/itb/${encodeURIComponent(selected.itbFile)}`} pageCount={selected.pages || 3} /> : null}
               <div className="fc-bid-desc-head">
                 <h4>Job description</h4>
                 <button type="button" data-hpd-smoke="fc-bid-text-size" aria-label={bigText ? "Smaller text" : "Bigger text"} aria-pressed={bigText} onClick={() => setBigText((v) => { try { localStorage.setItem("hpd-bid-text", v ? "l" : "xl"); } catch {} return !v; })}>{bigText ? "A−" : "A+"}</button>

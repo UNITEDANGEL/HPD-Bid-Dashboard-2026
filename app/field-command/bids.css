@@ -365,3 +365,21 @@
 .fc-bldg-link { display: inline-block; margin-top: 6px; color: #93c5fd; font: 800 12.5px system-ui; }
 .fc-bldg.is-loading, .fc-bldg.is-off { color: #94a3b8; }
 .fc-bldg.is-off button { margin-left: 4px; min-height: 30px; padding: 0 10px; border: 0; border-radius: 8px; background: #334155; color: #fff; font: 800 12px system-ui; }
+
+/* HPD's own job-description pages (2-3) in the bid card; tap for full screen. */
+.fc-itb-pages { margin: 6px 0 10px; }
+.fc-itb-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; color: #fdba74; font: 800 13px system-ui; }
+.fc-itb-head button { min-height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: #334155; color: #fff; font: 800 12px system-ui; }
+.fc-itb-strip { display: grid; gap: 8px; }
+.fc-itb-thumb { position: relative; display: block; width: 100%; padding: 0; border: 1px solid #475569; border-radius: 10px; overflow: hidden; background: #fff; }
+.fc-itb-thumb img { display: block; width: 100%; height: auto; }
+.fc-itb-thumb span { position: absolute; right: 6px; bottom: 6px; padding: 4px 8px; border-radius: 8px; background: #0f172acc; color: #fff; font: 800 11.5px system-ui; }
+.fc-itb-msg { margin: 0; color: #94a3b8; font: 600 13px system-ui; }
+.fc-itb-msg a { color: #93c5fd; }
+.fc-itb-full { position: fixed; inset: 0; z-index: 300000; display: flex; flex-direction: column; background: #020617; }
+.fc-itb-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; padding: calc(env(safe-area-inset-top, 0px) + 8px) 10px 8px; background: #111827; color: #fff; font: 800 14px system-ui; }
+.fc-itb-bar span { display: flex; gap: 6px; }
+.fc-itb-bar button { min-height: 40px; padding: 0 12px; border: 1px solid #475569; border-radius: 10px; background: #1f2937; color: #fff; font: 800 14px system-ui; }
+.fc-itb-bar button:disabled { opacity: .4; }
+.fc-itb-full-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; touch-action: pan-x pan-y pinch-zoom; -webkit-overflow-scrolling: touch; background: #fff; }
+.fc-itb-full-body img { display: block; width: 100%; height: auto; }

@@ -16,6 +16,7 @@ import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDa
 import { fieldStatusLabel } from "../../lib/field-status";
 import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
 import { jobStages, nextStep } from "../../lib/job-stages";
+import { listCorrections, removeCorrection, type SavedCorrection } from "../../lib/correction-store";
 import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type PipPayment, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
@@ -742,6 +743,24 @@ export default function FieldCommandClient() {
   const [followFilter, setFollowFilter] = useState<"" | "notices" | "hpd-asked" | "overdue" | "due-week" | "recent" | "sent" | "hpd-closed">("");
   // The HPD notices layer: jobs with rejected paperwork or an open HPD request, on the map and in a list.
   const [noticesOpen, setNoticesOpen] = useState(false);
+  // Corrected paperwork saved on this phone to print and sign in ink (lib/correction-store.ts).
+  const [toPrint, setToPrint] = useState<SavedCorrection[]>([]);
+  const [printArmed, setPrintArmed] = useState("");
+  useEffect(() => { if (noticesOpen) listCorrections().then(setToPrint); }, [noticesOpen]);
+  function openCorrectionPdf(c: SavedCorrection) {
+    const url = URL.createObjectURL(c.pdf);
+    // Same-site file: a plain new tab (with "noopener" the PDF tab can open blank).
+    if (!window.open(url, "_blank")) window.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 120000);
+  }
+  async function correctionSent(c: SavedCorrection) {
+    if (printArmed !== c.omo) { setPrintArmed(c.omo); return; } // second tap confirms (iPhone blocks confirm boxes)
+    const patch = { CorrectionSentAt: new Date().toISOString() };
+    try { writeSharedWorkflowPatch(c.omo, patch); mergeWorkflowPatchIntoScreen(c.omo, patch); } catch {}
+    await removeCorrection(c.omo);
+    setPrintArmed("");
+    setToPrint(await listCorrections());
+  }
   const [followShowAll, setFollowShowAll] = useState(false);
   // HPD's closing reason for each job and when you sent HPD its paperwork (nightly files).
   const followRef = useRef<{ hpd: Record<string, HpdJobStatus>; sent: Record<string, SentPaperwork>; asked: Record<string, HpdRequest> } | null>(null);
@@ -3379,7 +3398,24 @@ export default function FieldCommandClient() {
             <strong>📩 HPD notices</strong>
             <button type="button" aria-label="Close" onClick={() => setNoticesOpen(false)}>Close (keep on map)</button>
           </header>
-          <div className="fc-follow-body">
+          <div className="fc-summary-body fc-follow-body" data-hpd-smoke="fc-notices-body">
+            {toPrint.length ? (
+              <section className="fc-follow-section is-to-print" data-hpd-smoke="fc-notices-to-print">
+                <h4>🖨 Corrections to print &amp; sign in ink ({toPrint.length})</h4>
+                <p className="fc-follow-note">Print each one, sign it by hand and have the notary sign (the stamp and today&apos;s notary date are already on it). Then send it to HPD and tap Signed &amp; sent.</p>
+                <ul>
+                  {toPrint.map((c) => (
+                    <li key={c.omo} data-hpd-smoke="fc-to-print-row">
+                      <b>{c.omo}</b> <small>saved {new Date(c.savedAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}{c.reason ? ` · HPD: ${c.reason}` : ""}</small>
+                      <div className="fc-to-print-actions">
+                        <button type="button" data-hpd-smoke="fc-to-print-open" onClick={() => openCorrectionPdf(c)}>📄 Open / print</button>
+                        <button type="button" className={printArmed === c.omo ? "is-armed" : ""} data-hpd-smoke="fc-to-print-sent" onClick={() => void correctionSent(c)}>{printArmed === c.omo ? "Tap again: signed & sent" : "✓ Signed & sent"}</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
             <p className="fc-follow-note">From HPD&apos;s emails (rejections, requests for affidavits / invoices / photos / videos, status). Red = paperwork rejected. The map shows these jobs; tap ✕ on the map to show all jobs again.</p>
             <section className="fc-follow-section is-rejected" data-hpd-smoke="fc-notices-rejected">
               <h4>❗ Rejected paperwork · fix &amp; resend ({openRejections.length})</h4>

@@ -62,9 +62,9 @@ async function run(outcome, awardDate, broken = false) {
     assert.ok(!pendingPackage.completeShareFiles.some(file => /VISIT-RECORD/.test(file.name)), 'the visit record stays out of the share sheet');
   }
   const packet = saved.find(row => row.packetType === 'full_evidence_zip');
-  if (!broken && (calendarDay(awardDate) === null || calendarDay(awardDate) < calendarDay('2026-08-28'))) {
+  if (!broken && calendarDay(awardDate) === null) {
     assert.equal(packet, undefined);
-    assert.ok(statuses.some(value => value.includes('Legacy field mapping') || value.includes('Verify the job award date')));
+    assert.ok(statuses.some(value => value.includes('Verify the job award date')));
     console.log(`PASS ${awardDate || 'missing award'}: unsafe affidavit version blocked`);
     return;
   }
@@ -73,6 +73,10 @@ async function run(outcome, awardDate, broken = false) {
     assert.ok(statuses.some(value => value.includes('Package stopped')));
     return;
   }
+  // Awarded before August 28, 2026: HPD's earlier form (12.2024 Rev. 01.21.2025); from then on, the current one.
+  const earlier = calendarDay(awardDate) < calendarDay('2026-08-28');
+  const affidavitUrl = requested.find(url => /affidavit/.test(url)) || '';
+  assert.ok(earlier ? /-2025\.pdf$/.test(affidavitUrl) : /performed-affidavit\.pdf$/.test(affidavitUrl), `affidavit version for ${awardDate}: ${affidavitUrl}`);
   assert.ok(packet, statuses.join('; '));
   assert.equal(forms.at(-1).workStart, '2026-09-10', 'Photo date must not replace entered start');
   assert.equal(forms.at(-1).workComplete, '2026-09-15');

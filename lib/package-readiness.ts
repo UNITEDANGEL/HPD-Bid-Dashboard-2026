@@ -4,9 +4,8 @@ import { longestCleanDescription } from "./description-quality";
 export function packageReadiness(job: Record<string, unknown>, media: { before: number; after: number } | null) {
   const issues: string[] = [];
   const award = calendarDay(jobDate(job, "award"));
-  const template = award === null ? "Award date required" : award < calendarDay("2026-08-28")! ? "Legacy affidavit required" : "August 28, 2026 affidavit";
+  const template = award === null ? "Award date required" : award < calendarDay("2026-08-28")! ? "Earlier affidavit (Rev. 01.21.2025)" : "August 28, 2026 affidavit";
   if (award === null) issues.push("Verify the award date; actual work dates do not determine the affidavit version.");
-  else if (award < calendarDay("2026-08-28")!) issues.push("Legacy affidavit generation is not supported by the current generator. Do not use the new form for this award.");
   const warning = jobDateWarning(job);
   if (warning) issues.push(warning);
   if (!longestCleanDescription(job, ["JobDescription", "description", "Description", "ITBDescription"])) issues.push("Verify a readable work description against the ITB.");
