@@ -45,7 +45,7 @@ export const MASK = "(tenant contact: sign in to see)";
 // (212) 555-0100") is masked too; HPD's office lines (212-863-xxxx) stay. NYC-area codes only, so building /
 // violation numbers aren't touched.
 const AREA = "(?:212|332|347|516|631|646|718|845|914|917|929|201|551|732|862|973|908|203|475|860|215|267|610|484)";
-const ANY_PHONE = new RegExp("\\(?" + AREA + "\\)?[\\s.-]{0,2}\\d{3}[\\s.-]?\\d{4}(?!\\d)", "g");
+const ANY_PHONE = new RegExp("(?<!\\d)\\(?" + AREA + "\\)?[\\s.-]{0,2}\\d{3}[\\s.-]?\\d{4}(?!\\d)", "g");
 export const PHONE_MASK = "(phone: sign in to see)";
 function maskPhones(value) {
   return value.replace(ANY_PHONE, (p) => (/^\(?212\)?[\s.-]{0,2}863/.test(p) ? p : PHONE_MASK));
@@ -63,9 +63,13 @@ export function maskText(value) {
 }
 
 // One record: the private values out (only what changed), the public record back.
+// File names (HPD's "ER07755_101326091717.pdf": the 12-digit stamp can look like a phone) are never masked.
+export const FILE_FIELD = /file/i;
+
 export function splitRecord(rec) {
   const pub = { ...rec }, priv = {};
   for (const [k, v] of Object.entries(rec)) {
+    if (FILE_FIELD.test(k)) continue;
     if (PRIVATE_FIELDS.has(k)) {
       if (v !== "" && v !== null && v !== undefined) priv[k] = v;
       pub[k] = "";
@@ -99,7 +103,13 @@ function main() {
     if (!fs.existsSync(p)) continue;
     const raw = fs.readFileSync(p, "utf8");
     const rows = JSON.parse(raw);
-    const out = rows.map((r) => {
+    const out = rows.map((r0) => {
+      // An earlier run masked file names by mistake: put the originals back (they aren't private).
+      const r = { ...r0 };
+      const saved = bundle.jobs[String(r0.OMO || r0.omo || "").toUpperCase()] || {};
+      for (const k of Object.keys(r)) {
+        if (FILE_FIELD.test(k) && typeof r[k] === "string" && (r[k].includes(PHONE_MASK) || r[k].includes(MASK)) && typeof saved[k] === "string") r[k] = saved[k];
+      }
       const { pub, priv } = splitRecord(r);
       const omo = String(r.OMO || r.omo || "").toUpperCase();
       if (omo) fields += mergeInto(bundle.jobs, omo, priv);
@@ -107,6 +117,9 @@ function main() {
     });
     writeJson(p, out, /\n {2}"/.test(raw.slice(0, 200)));
   }
+  // File names were never private (an earlier run saved some by mistake): drop them from the bundle, now that
+  // both job files are done.
+  for (const saved of Object.values(bundle.jobs)) for (const k of Object.keys(saved)) if (FILE_FIELD.test(k)) delete saved[k];
   // The CSV copy: tenant columns blanked, tenant text masked.
   const csvPath = path.join(ROOT, "public/data/COA_Fetcher_2026.csv");
   if (fs.existsSync(csvPath)) {

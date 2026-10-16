@@ -21,6 +21,10 @@ assert.equal(maskText("SUPER MARK TEST (212) 555-0100"), `SUPER MARK TEST ${PHON
 assert.equal(maskText("CALL HPD 212 863 6046 OR (212) 863-5262"), "CALL HPD 212 863 6046 OR (212) 863-5262", "HPD office lines stay");
 assert.equal(maskText("VIOLATION 16351128 BIN 1059533"), "VIOLATION 16351128 BIN 1059533", "violation / building numbers untouched");
 assert.ok(PRIVATE_FIELDS.has("itbTenantPhone"));
+// File names keep their 12-digit stamps (they can look like a phone number).
+const filed = splitRecord({ OMO: "EQ2", ITBFile: "ER07755_101326212345.pdf", COAFile: "EQ17038_091626718555.pdf" });
+assert.equal(filed.pub.ITBFile, "ER07755_101326212345.pdf"); assert.equal(filed.pub.COAFile, "EQ17038_091626718555.pdf");
+assert.equal(maskText("FILE ER07755_101326212345"), "FILE ER07755_101326212345", "digits inside a longer number aren't a phone");
 // Encryption: same format as the server (12-byte IV + ciphertext + 16-byte tag).
 const box = encrypt(Buffer.from("hello tenant"));
 assert.equal(decrypt(box).toString(), "hello tenant");

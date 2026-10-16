@@ -164,6 +164,22 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - One-screen fill order: look (Street View) -> read description -> price (best price shown) -> Fill ->
   check -> Send (two taps).
 
+## Done 16 Oct 2026: tenant details off the public site (stages 1-3 of the privacy plan)
+- scripts/privatize_public_data.mjs runs in the fetcher before every commit (nothing is committed if it
+  fails): tenant name / phone / apartment fields blanked in data/ and public/data/COA_Fetcher_2026.json and
+  the CSV; "TENANT ... phone" text and any non-HPD phone number (212-863 lines kept; file names untouched)
+  masked in descriptions, HPD's notes, market descriptions and notices; the originals go into
+  public/private/tenants.json.enc (AES-256-GCM). HPD's invitation PDFs (763) and page-3 pictures (686)
+  encrypted under public/private/, plain copies removed (kept on the owner's PC in data/private-itb and in
+  the C: HPD-private-backup folder). 117 filled affidavit / invoice copies removed from templates/.
+- The app gets them from /api/private/* with the owner's Google sign-in: job card tenant + Call, paperwork
+  phone dates, bid fill and HPD's pages. Not signed in: "Private: sign in with Google" / pages ask to sign in.
+- Checked: 3,257 job values and 63 invitation values restore exactly; 0 personal phones left in public
+  files; all 3,163 file-name fields unchanged; tests open the encrypted files like the server.
+- Also: fetcher push retries no longer drop a fetch (--autostash); the laptop timer runs from C:.
+- STILL TO DO (owner's OK needed, cannot be undone): rewrite git history so the old plain PDFs / tenant
+  fields are gone from earlier commits, then force-push (fetcher paused while doing it).
+
 ## Done 16 Oct 2026: measurements from the description into the price
 - Glass pane sizes ("30”X26”", "34”X44”") -> glass sq ft; a past job with a different pane size is scaled
   (power 0.3). Room / floor sizes in feet ("KITCHEN FLOOR 13 X 17") count as the repair area when no sq ft
