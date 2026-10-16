@@ -2586,3 +2586,12 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
   /* The "Today's route" bar stops short of the button columns (Map / Locate sat on top of it). */
   .fc-app .fc-today-route { right: calc(132px + env(safe-area-inset-right)) !important; left: calc(8px + env(safe-area-inset-left)) !important; width: auto !important; max-width: none !important; transform: none !important; }
 }
+
+/* One HPD notice inside the app: HPD's email and every page of its PDF. Above the notices list. */
+.fc-package-sheet.fc-notice-viewer { z-index: 200100; }
+.fc-notice-mail { margin: 0 0 14px; padding: 10px; border-radius: 12px; background: #111827; border: 1px solid #334155; }
+.fc-notice-meta { display: grid; gap: 2px; margin: 0 0 6px; }
+.fc-notice-meta b { color: #fecaca; font: 800 14px/1.3 system-ui; }
+.fc-notice-meta span { color: #94a3b8; font: 600 12px system-ui; }
+.fc-notice-body { margin: 0 0 8px; white-space: pre-wrap; font: 600 13.5px/1.45 system-ui; color: #e2e8f0; }
+.fc-follow-paper.is-notice { display: block; width: 100%; margin-top: 6px; min-height: 40px; border: 0; border-radius: 10px; background: #7c3aed; color: #fff; font: 800 13.5px system-ui; text-align: center; }

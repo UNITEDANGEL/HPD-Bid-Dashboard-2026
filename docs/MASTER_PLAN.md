@@ -292,7 +292,12 @@ Collected from the owner's requests; every change is checked against these.
 
 ## Next on the plan
 - Invitation pages: load faster (keep the drawn pages on the phone) and show them in the bid list too.
-- Notices: per-notice preview of HPD's own email/PDF inside the app (not only the Gmail link).
+- ~~Notices: per-notice preview of HPD's own email/PDF inside the app (not only the Gmail link).~~ **Done
+  2026-10-15**: each rejection in HPD notices has **👁 See HPD's notice**: HPD's email (subject, date,
+  sender, full text) and every page of the PDF they sent back as pictures (tap = full screen, zoom), then
+  **Fix & resend this one**. Read from Gmail by scripts/fetch_notice_documents.py (47 jobs, 90 PDFs at
+  start; the GitHub fetcher adds new rejections each run), stored encrypted in public/private/notices*,
+  shown only when signed in with Google. Test: scripts/test-browser-notice-view.mjs.
 - Correction dates filled in automatically from the paperwork originally sent (Sent mail PDFs), so older
   jobs don't need dates typed by hand.
 - One fax for several bids due today (the sitting covers the one-after-another part).

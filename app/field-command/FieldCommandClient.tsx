@@ -16,7 +16,8 @@ import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDa
 import { fieldStatusLabel } from "../../lib/field-status";
 import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
 import { jobStages, nextStep } from "../../lib/job-stages";
-import { loadPrivate, privateDocUrl, withPrivate } from "../../lib/private-data";
+import { loadNotices, loadPrivate, noticePdfUrl, privateDocUrl, withPrivate, type NoticeEmail } from "../../lib/private-data";
+import ItbPages from "./ItbPages";
 import { listCorrections, removeCorrection, type SavedCorrection } from "../../lib/correction-store";
 import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type PipPayment, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
@@ -753,6 +754,10 @@ export default function FieldCommandClient() {
   const [followFilter, setFollowFilter] = useState<"" | "notices" | "hpd-asked" | "overdue" | "due-week" | "recent" | "sent" | "hpd-closed">("");
   // The HPD notices layer: jobs with rejected paperwork or an open HPD request, on the map and in a list.
   const [noticesOpen, setNoticesOpen] = useState(false);
+  // HPD's own notice emails + their PDFs (private route), shown inside the app one notice at a time.
+  const [noticeMail, setNoticeMail] = useState<Record<string, NoticeEmail[]> | null | undefined>(undefined);
+  const [noticeView, setNoticeView] = useState("");
+  useEffect(() => { if (noticesOpen && noticeMail === undefined) loadNotices().then((d) => setNoticeMail(d)); }, [noticesOpen, noticeMail]);
   // Tenant names / phones are private: null while loading, false when this phone isn't signed in with Google.
   const [privateOk, setPrivateOk] = useState<boolean | null>(null);
   // Corrected paperwork saved on this phone to print and sign in ink (lib/correction-store.ts).
@@ -3419,6 +3424,27 @@ export default function FieldCommandClient() {
         history={bidHistory}
         onClose={() => setBidsOpen(false)}
       />
+      {noticeView ? (
+        <div className="fc-package-sheet fc-summary-sheet fc-notice-viewer" role="dialog" aria-label={`HPD's notice for ${noticeView}`} data-hpd-smoke="fc-notice-viewer">
+          <header>
+            <button type="button" data-hpd-smoke="fc-notice-viewer-close" onClick={() => setNoticeView("")}>← Notices</button>
+            <strong>HPD&apos;s notice · {noticeView}</strong>
+          </header>
+          <div className="fc-summary-body">
+            {noticeMail === null ? <p className="fc-follow-note" data-hpd-smoke="fc-notice-signin">HPD&apos;s notices are private (they name people and addresses). <a href="/storage/">Sign in with Google</a> on this phone to see them here.</p>
+              : noticeMail === undefined ? <p className="fc-follow-note">Loading HPD&apos;s notice…</p>
+              : !noticeMail[noticeView]?.length ? <p className="fc-follow-note">This notice hasn&apos;t been read from your email yet. <a href={`https://mail.google.com/mail/u/0/#search/${encodeURIComponent(noticeView)}`} target="_blank" rel="noreferrer">Open it in Gmail ↗</a></p>
+              : noticeMail[noticeView].map((m, i) => (
+                <article key={i} className="fc-notice-mail" data-hpd-smoke="fc-notice-mail">
+                  <p className="fc-notice-meta"><b>{m.subject}</b><span>{new Date(m.date).toLocaleString("en-US", { month: "numeric", day: "numeric", year: "2-digit", hour: "numeric", minute: "2-digit" })} · {m.from.replace(/<.*>/, "").replace(/"/g, "").trim()}</span></p>
+                  {m.body ? <pre className="fc-notice-body">{m.body}</pre> : null}
+                  {m.files.map((f) => <ItbPages key={f.file} pdfUrl={noticePdfUrl(f.file)} pageCount={12} everyPage title={f.name} />)}
+                </article>
+              ))}
+            {(() => { const rj = openRejections.find((x) => x.omo === noticeView); return rj && findAnyJob(noticeView) ? <a className="fc-follow-paper" data-hpd-smoke="fc-notice-fix" href={`/paperwork/?job=${encodeURIComponent(noticeView)}&fix=${encodeURIComponent(rj.at)}`}>Fix &amp; resend this one →</a> : null; })()}
+          </div>
+        </div>
+      ) : null}
       {noticesOpen ? (
         <div className="fc-package-sheet fc-summary-sheet fc-notices-sheet" role="dialog" aria-label="HPD notices" data-hpd-smoke="fc-notices-sheet">
           <header>
@@ -3455,6 +3481,7 @@ export default function FieldCommandClient() {
                     <small>{r.attempt ? <b className={r.attempt === "FINAL" ? "fc-final-attempt" : ""}>{r.attempt} ATTEMPT · </b> : null}{senderName(r.by)}: {r.reason || "see HPD's email"}</small>
                   </button>
                   {openNotice === r.omo ? <p className="fc-notice-detail" data-hpd-smoke="fc-notice-detail">This job is from before 2026, so it isn&apos;t on the map. HPD&apos;s notice (with the rejection PDF) is in your email; correct the affidavit / invoice and send it back to HPD.</p> : null}
+                  <button type="button" className="fc-follow-paper is-notice" data-hpd-smoke="fc-notice-view" onClick={() => setNoticeView(r.omo)}>👁 See HPD&apos;s notice{noticeMail?.[r.omo]?.length ? ` (${noticeMail[r.omo][0].files.length} page file${noticeMail[r.omo][0].files.length === 1 ? "" : "s"})` : ""}</button>
                   <a className="fc-follow-paper is-gmail" href={`https://mail.google.com/mail/u/0/#search/${encodeURIComponent(r.omo)}`} target="_blank" rel="noreferrer">Open HPD&apos;s notice in Gmail ↗</a>
                   {findAnyJob(r.omo) ? <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}`}>Fix &amp; resend →</a> : null}
                 </li>

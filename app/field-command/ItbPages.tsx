@@ -35,7 +35,7 @@ async function renderPages(pdfUrl: string, pages: number[]) {
   }
 }
 
-export default function ItbPages({ pdfUrl, pageCount, descPages }: { pdfUrl: string; pageCount: number; descPages?: number[] }) {
+export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, title }: { pdfUrl: string; pageCount: number; descPages?: number[]; everyPage?: boolean; title?: string }) {
   // HPD's form (page 2) and every page the job description is on (3, and 4+ when a long job continues).
   const descriptionPages = [...new Set([2, ...(descPages?.length ? descPages : [3])])].filter((p) => p <= pageCount).sort((a, b) => a - b);
   const [shown, setShown] = useState<Rendered[] | null>(null);
@@ -50,7 +50,8 @@ export default function ItbPages({ pdfUrl, pageCount, descPages }: { pdfUrl: str
     setShown(null);
     setError("");
     // Page 1 is HPD's cover / header; the job description is on pages 2 and 3.
-    const wanted = all ? Array.from({ length: pageCount }, (_, i) => i + 1) : descriptionPages.length ? descriptionPages : [1];
+    // Any other PDF (HPD's notices): every page.
+    const wanted = all || everyPage ? Array.from({ length: pageCount }, (_, i) => i + 1) : descriptionPages.length ? descriptionPages : [1];
     renderPages(pdfUrl, wanted)
       .then(({ pages }) => {
         if (!live) { pages.forEach((p) => URL.revokeObjectURL(p.url)); return; }
@@ -60,27 +61,27 @@ export default function ItbPages({ pdfUrl, pageCount, descPages }: { pdfUrl: str
       })
       .catch((e) => { if (live) setError(String(e?.message || e)); });
     return () => { live = false; };
-  }, [pdfUrl, pageCount, all, descriptionPages.join()]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pdfUrl, pageCount, all, everyPage, descriptionPages.join()]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => urls.current.forEach((u) => URL.revokeObjectURL(u)), []);
 
   return (
     <section className="fc-itb-pages" data-hpd-smoke="fc-itb-pages">
       <div className="fc-itb-head">
-        <b>📄 HPD&apos;s job description {all ? `(all ${pageCount} pages)` : descriptionPages.length > 1 ? `(pages ${descriptionPages[0]}–${descriptionPages[descriptionPages.length - 1]})` : ""}</b>
-        {descriptionPages.length > 2 ? <span className="fc-itb-more" data-hpd-smoke="fc-itb-continues">continues on page {descriptionPages.slice(2).join(", ")}</span> : null}
-        {pageCount > descriptionPages.length || all ? <button type="button" onClick={() => setAll((v) => !v)}>{all ? "Description pages" : "All pages"}</button> : null}
+        <b>{title ? `📄 ${title}` : <>📄 HPD&apos;s job description {all ? `(all ${pageCount} pages)` : descriptionPages.length > 1 ? `(pages ${descriptionPages[0]}–${descriptionPages[descriptionPages.length - 1]})` : ""}</>}</b>
+        {!everyPage && descriptionPages.length > 2 ? <span className="fc-itb-more" data-hpd-smoke="fc-itb-continues">continues on page {descriptionPages.slice(2).join(", ")}</span> : null}
+        {!everyPage && (pageCount > descriptionPages.length || all) ? <button type="button" onClick={() => setAll((v) => !v)}>{all ? "Description pages" : "All pages"}</button> : null}
       </div>
       {error ? (/401/.test(error)
-          ? <p className="fc-itb-msg" data-hpd-smoke="fc-itb-signin">HPD&apos;s pages are private (they show the tenant). <a href="/storage/">Sign in with Google</a> on this phone to see them.</p>
+          ? <p className="fc-itb-msg" data-hpd-smoke="fc-itb-signin">HPD&apos;s pages are private (they name the tenant). <a href="/storage/">Sign in with Google</a> on this phone to see them.</p>
           : <p className="fc-itb-msg">Couldn&apos;t show the pages ({error}). <a href={pdfUrl} target="_blank" rel="noreferrer">Open the PDF</a></p>)
-        : shown === null ? <p className="fc-itb-msg">Loading the invitation pages…</p>
+        : shown === null ? <p className="fc-itb-msg">Loading {title ? "HPD's pages" : "the invitation pages"}…</p>
         : !shown.length ? <p className="fc-itb-msg">No pages to show. <a href={pdfUrl} target="_blank" rel="noreferrer">Open the PDF</a></p>
         : (
           <div className="fc-itb-strip">
             {shown.map((p) => (
               <button key={p.page} type="button" className="fc-itb-thumb" data-hpd-smoke="fc-itb-thumb" aria-label={`Open page ${p.page} full screen`} onClick={() => setBig(p)}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.url} alt={`Invitation page ${p.page}`} />
+                <img src={p.url} alt={`${title || "Invitation"} page ${p.page}`} />
                 <span>Page {p.page} · tap to enlarge</span>
               </button>
             ))}
@@ -89,7 +90,7 @@ export default function ItbPages({ pdfUrl, pageCount, descPages }: { pdfUrl: str
       {big ? (
         <div className="fc-itb-full" role="dialog" aria-label={`Invitation page ${big.page}`} data-hpd-smoke="fc-itb-full">
           <div className="fc-itb-bar">
-            <b>Page {big.page} of {pageCount}</b>
+            <b>Page {big.page}{everyPage ? "" : ` of ${pageCount}`}</b>
             {shown && shown.length > 1 ? (
               <span>
                 <button type="button" disabled={shown[0].page === big.page} onClick={() => setBig(shown[shown.findIndex((p) => p.page === big.page) - 1])}>‹ Prev</button>
@@ -101,7 +102,7 @@ export default function ItbPages({ pdfUrl, pageCount, descPages }: { pdfUrl: str
           </div>
           <div className="fc-itb-full-body">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={big.url} alt={`Invitation page ${big.page}`} style={{ width: `${zoom * 100}%`, maxWidth: "none" }} />
+            <img src={big.url} alt={`${title || "Invitation"} page ${big.page}`} style={{ width: `${zoom * 100}%`, maxWidth: "none" }} />
           </div>
         </div>
       ) : null}

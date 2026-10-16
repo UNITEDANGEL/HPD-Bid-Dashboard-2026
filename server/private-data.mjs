@@ -3,6 +3,7 @@
 // HPD_PRIVATE_DATA_KEY) under /private/...; this route decrypts them only for the signed-in owner.
 //   GET /api/private/itb/<file>.pdf   -> the invitation PDF
 //   GET /api/private/itb-page/<file>.png -> the page-3 picture
+//   GET /api/private/notices          -> HPD's notice emails per OMO; /api/private/notice/<file>.pdf -> an attachment
 //   GET /api/private/tenants          -> { jobs: { "<OMO>": { TenantName, TenantPhone, ... } }, bids: { ... } }
 // File format: 12-byte IV followed by the AES-GCM ciphertext (scripts/private_data.py writes it).
 import { signedInOwner } from "./drive-auth.mjs";
@@ -31,6 +32,8 @@ export async function handlePrivate(request, env, signedIn = signedInOwner) {
   if (itb && !itb[1].includes("..")) { asset = `/private/itb/${encodeURIComponent(itb[1])}.enc`; type = "application/pdf"; }
   else if (page && !page[1].includes("..")) { asset = `/private/itb-pages/${encodeURIComponent(page[1])}.enc`; type = "image/png"; }
   else if (name === "tenants") { asset = "/private/tenants.json.enc"; type = "application/json"; }
+  else if (name === "notices") { asset = "/private/notices.json.enc"; type = "application/json"; }
+  else if (/^notice\/[A-Za-z0-9_.-]+\.pdf$/.test(name) && !name.includes("..")) { asset = `/private/notices/${name.slice(7)}.enc`; type = "application/pdf"; }
   else return new Response("Not found", { status: 404, headers: NO_STORE });
   if (!env.HPD_PRIVATE_DATA_KEY) return new Response(JSON.stringify({ error: "Private data is not set up on the server." }), { status: 503, headers: { ...NO_STORE, "Content-Type": "application/json" } });
   if (!(await signedIn(request, env))) return new Response(JSON.stringify({ error: "Sign in with Google (Storage page) to see tenant details and invitation pages." }), { status: 401, headers: { ...NO_STORE, "Content-Type": "application/json" } });

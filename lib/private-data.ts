@@ -38,3 +38,16 @@ export function privateDocUrl(url: string) {
   const file = decodeURIComponent(m[2]);
   return m[1] === "itb" ? itbPdfUrl(file) : itbPageUrl(file);
 }
+
+// HPD's notice emails (scripts/fetch_notice_documents.py): OMO -> newest first.
+export type NoticeEmail = { date: string; from: string; subject: string; body: string; files: { file: string; name: string }[] };
+let noticesPending: Promise<Record<string, NoticeEmail[]> | null> | null = null;
+export function loadNotices(fetcher: typeof fetch = fetch): Promise<Record<string, NoticeEmail[]> | null> {
+  if (!noticesPending) {
+    noticesPending = fetcher("/api/private/notices", { cache: "no-store", credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+  }
+  return noticesPending;
+}
+export const noticePdfUrl = (file: string) => `/api/private/notice/${encodeURIComponent(file)}`;

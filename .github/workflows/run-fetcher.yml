@@ -85,6 +85,13 @@ jobs:
       - name: Build dashboard
         run: npm run build
 
+      # HPD's own rejection emails + PDFs for new open rejections, encrypted (shown one notice at a time in the app).
+      - name: Read HPD's notice emails
+        continue-on-error: true
+        env:
+          HPD_PRIVATE_DATA_KEY: ${{ secrets.HPD_PRIVATE_DATA_KEY }}
+        run: python -m pip install --quiet --disable-pip-version-check cryptography && python scripts/fetch_notice_documents.py
+
       - name: Commit fetcher output
         if: always()
         shell: bash
