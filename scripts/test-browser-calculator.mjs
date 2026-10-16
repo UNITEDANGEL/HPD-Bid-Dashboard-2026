@@ -84,6 +84,7 @@ try {
   await wn.locator('[data-hpd-smoke="fc-ask-change-text"]').fill("Add 15 days to the day filter");
   await wn.locator('[data-hpd-smoke="fc-ask-change-save"]').click();
   await wn.locator('[data-hpd-smoke="fc-ask-change-status"]').waitFor({ timeout: 5000 });
+  assert.match(await wn.locator('[data-hpd-smoke="fc-ask-change-status"]').innerText(), /Received\. Claude will start (within about 5-10 minutes|at 7 AM)/);
   const req = Object.entries(posted).find(([k]) => k.startsWith("CHANGE-REQUEST-"));
   assert.equal(req?.[1]?.text, "Add 15 days to the day filter");
   assert.deepEqual(errors, []);

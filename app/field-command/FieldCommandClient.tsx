@@ -146,6 +146,11 @@ const versionLabel = () => {
   return [when ? `Updated ${when}` : "", BUILT_NUMBER ? `#${BUILT_NUMBER}` : BUILT_COMMIT ? `v${BUILT_COMMIT}` : ""].filter(Boolean).join(" · ");
 };
 type WhatsNew = { date: string; title: string; items: string[] }[];
+// When Claude picks up a new request: the check runs every 5 minutes from 7 AM to 11 PM (New York time).
+const pickupLabel = () => {
+  const h = Number(new Date().toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", hour12: false }));
+  return h >= 7 && h < 23 ? "Claude will start within about 5-10 minutes" : "Claude will start at 7 AM";
+};
 
 function itbFileName(job: JobRecord | null | undefined) {
   const raw = String((job as Record<string, unknown> | null)?.ITBFile || (job as Record<string, unknown> | null)?.itbFile || "").trim();
@@ -1050,7 +1055,7 @@ export default function FieldCommandClient() {
     setChangeText("");
     try {
       const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-REQUEST-${at.replace(/[^0-9]/g, "").slice(0, 14)}`, patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
-      setChangeStatus(r.ok ? "✓ Saved. Progress reports will show below." : "Saved on this phone; it will be sent when the server answers.");
+      setChangeStatus(r.ok ? `📥 Received. ${pickupLabel()}; progress shows below.` : "Saved on this phone; it will be sent when the server answers.");
       if (r.ok) void loadChangeThreads();
     } catch { setChangeStatus("Saved on this phone (offline)."); }
   };
@@ -3620,7 +3625,7 @@ export default function FieldCommandClient() {
                 : changeThreads.map((t) => (
                   <article key={t.id} className={`fc-change-thread is-${t.status.toLowerCase().replace(/[^a-z]+/g, "-")}`} data-hpd-smoke="fc-change-thread">
                     <p className="fc-change-ask"><small>You · {new Date(t.at).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</small>{t.text}</p>
-                    <b className="fc-change-status" data-hpd-smoke="fc-change-status">{t.status === "Done" ? "✅" : t.status === "Working on it" ? "🔧" : "📥"} {t.status}</b>
+                    <b className="fc-change-status" data-hpd-smoke="fc-change-status">{t.status === "Done" ? "✅" : t.status === "Working on it" ? "🔧" : "📥"} {t.status}{t.status === "Received" && !t.updates.length ? <small className="fc-change-pickup" data-hpd-smoke="fc-change-pickup"> · {pickupLabel()}</small> : null}</b>
                     {t.workingAt && Date.now() - Date.parse(t.workingAt) < 30 * 60000 ? <p className="fc-change-working" data-hpd-smoke="fc-change-working"><i aria-hidden="true" /> Claude is working on this right now (since {new Date(t.workingAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })})</p> : null}
                     {t.steps.length ? (() => {
                       const done = t.steps.filter((x) => x.done).length;

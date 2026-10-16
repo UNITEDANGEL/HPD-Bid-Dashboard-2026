@@ -2,6 +2,7 @@
 // progress counter (steps, done / total), "Claude is working on this now", and dated progress notes, stored next
 // to the request on the status server (CHANGE-REPLY-<same id>). No tenant names / phones: the server isn't private.
 //     node scripts/reply-change-request.mjs --list
+//     node scripts/reply-change-request.mjs --check     (BUSY / OPEN <n> / NONE, for the 5-minute check)
 //     node scripts/reply-change-request.mjs --id <id> --status "Working on it" --working --steps "Read the emails|Check each OMO|Build it|Test|Push" --update "..."
 //     node scripts/reply-change-request.mjs --id <id> --done 2 --update "..."      (step 2 done; --done all = every step)
 //     node scripts/reply-change-request.mjs --id <id> --idle                       (no longer working on it right now)
@@ -12,6 +13,14 @@ const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 
 const flag = (name) => process.argv.includes(`--${name}`);
 const all = (await (await fetch(`${URL_}/overrides`, { cache: "no-store" })).json()).overrides || {};
 const requests = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUEST-")).sort(([a], [b]) => a.localeCompare(b));
+// One line for the 5-minute check: BUSY (another run is working on a request: green light under 30 minutes old),
+// OPEN <n> (requests to work on) or NONE.
+if (flag("check")) {
+  const open = requests.filter(([k]) => (all[`CHANGE-REPLY-${k.slice(15)}`]?.status || "Received") !== "Done");
+  const busy = Object.entries(all).some(([k, v]) => k.startsWith("CHANGE-REPLY-") && v?.workingAt && Date.now() - Date.parse(v.workingAt) < 30 * 60000);
+  console.log(busy ? "BUSY" : open.length ? `OPEN ${open.length}` : "NONE");
+  process.exit(0);
+}
 if (flag("list")) {
   for (const [k, v] of requests) {
     const id = k.slice("CHANGE-REQUEST-".length);

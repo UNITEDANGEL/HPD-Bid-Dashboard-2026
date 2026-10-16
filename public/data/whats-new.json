@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Oct 16, 2026",
+      "title": "Requests checked every 5 minutes",
+      "items": [
+        "Claude checks your requests every 5 minutes (7 AM to 11 PM) while the Claude app is open on the computer.",
+        "When you save a request it says Received right away and when Claude will start."
+      ]
+    },
+    {
+      "date": "Oct 16, 2026",
       "title": "Progress counter on every request",
       "items": [
         "Each request shows a progress bar with its steps (e.g. 2 of 5 steps · 40%) and a green light while Claude is working on it.",
