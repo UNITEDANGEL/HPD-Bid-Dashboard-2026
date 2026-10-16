@@ -14,6 +14,7 @@ import { HPD_STATUS_WORKER_URL } from "../../lib/paperwork";
 import { bidHistory, currentRecord, earlierRounds, FAX_LINES, type FaxLine, bidResult, bidsToCheck, checkBidFax, faxState, mergeServerBidsAndKeep, readBidRecords, readSession, saveSession, SESSION_KEY, todaySummary, withLog, type BiddingSession, saveBidRecord, sendBidFax, winRate, type BidRecord } from "../../lib/bid-records";
 import "./bids.css";
 import BuildingFacts from "./BuildingFacts";
+import { BuildingHero } from "./BuildingPhoto";
 import ItbPages, { bidPages, pagePictures } from "./ItbPages";
 import { getPages } from "../../lib/page-cache";
 import { bestWithFloor, floorKind, readFloors, saveFloor, type Floors } from "../../lib/cost-floor";
@@ -100,6 +101,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   // Your rates (per sq ft / door / window / part / job) -> "My price" from the job summary.
   const [rates, setRates] = useState<Rates>({});
   const [rateEdit, setRateEdit] = useState<Record<string, string>>({});
+  // HPD's full description text is folded away by default (the page pictures above show the same words).
+  const [showText, setShowText] = useState(false);
   useEffect(() => { setRates(readRates()); }, []);
   // No bid (lib/no-bid): decided not to bid this invitation, with a reason.
   const [noBids, setNoBids] = useState<Record<string, NoBid>>({});
@@ -685,11 +688,14 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
           })() : null}
           <div className="fc-bid-body">
             <h3>{selected.address}{selected.borough ? ` · ${selected.borough}` : ""}</h3>
-            {/* See the building before pricing: Google's 360° street view (opens the Google Maps app on the iPhone; no key needed). */}
-            <div className="fc-bid-look" data-hpd-smoke="fc-bid-look">
-              {Number.isFinite(selected.lat) ? <a href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${selected.lat},${selected.lng}`} target="_blank" rel="noopener noreferrer" data-hpd-smoke="fc-bid-streetview">🏢 360° Street View</a> : null}
-              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.address}, ${selected.borough || ""} NY`)}`} target="_blank" rel="noopener noreferrer">📍 Map &amp; photos</a>
-            </div>
+            {/* The building, like the awarded job card: your photo or Google Street View, 360° and camera. */}
+            <BuildingHero key={selected.omo} id={`BID-${selected.omo}`} address={selected.address} borough={selected.borough || ""} point={Number.isFinite(selected.lat) && Number.isFinite(selected.lng) ? { lat: selected.lat as number, lng: selected.lng as number } : null} />
+            <nav className="fc-bid-jump" aria-label="Jump to" data-hpd-smoke="fc-bid-jump">
+              {([["fc-sec-job", "📋 Job"], ["fc-sec-price", "💰 Price"], ["fc-sec-building", "🏢 Building"], ["fc-sec-send", "📠 Send"]] as const).map(([id, label]) => (
+                <button key={id} type="button" onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })}>{label}</button>
+              ))}
+              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.address}, ${selected.borough || ""} NY`)}`} target="_blank" rel="noopener noreferrer" data-hpd-smoke="fc-bid-maplink">📍 Map</a>
+            </nav>
             <p className={`fc-bid-due is-${dueWhen(selected).tone}`} data-hpd-smoke="fc-bid-due">⏰ Bid due {dueLabel(selected)} · {dueWhen(selected).text}</p>
             {(() => {
               const nb = noBidOf(selected);
@@ -710,7 +716,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 </div>
               ) : <button type="button" className="fc-nobid-open" data-hpd-smoke="fc-nobid" onClick={() => setNoBidAsk(true)}>🚫 No bid</button>;
             })()}
-            <div className="fc-job-sum" data-hpd-smoke="fc-job-sum">
+            <div className="fc-job-sum" id="fc-sec-job" data-hpd-smoke="fc-job-sum">
               <b>📋 The job</b>
               <ul>{summary.lines.length ? summary.lines.map((l) => <li key={l.key} className={`is-${l.key}`}>{lineText(l)}</li>) : <li>General repair (see HPD&apos;s text below)</li>}</ul>
               {summary.where.length || summary.rooms.length ? <p data-hpd-smoke="fc-job-where">📍 {[...summary.where, ...summary.rooms].join(" · ")}{summary.rooms.length > 1 ? ` (${summary.rooms.length} areas)` : ""}</p> : null}
@@ -727,7 +733,6 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             })()}
             <BidTimeline record={record} />
             <p className="fc-bid-dates">Work {selected.workStart ? `starts ${selected.workStart.slice(5).replace("-", "/")}` : "start not listed"}{selected.workCompletion ? ` · done by ${selected.workCompletion.slice(5).replace("-", "/")}` : ""}</p>
-            <BuildingFacts address={selected.address} borough={selected.borough} description={selected.description} />
             {record && state !== "saved" ? (
               <div className={`fc-bid-status is-${state}`} data-hpd-smoke="fc-bid-status">
                 <b>{FAX_TEXT[state]}</b>
@@ -747,10 +752,10 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             <section>
               {selected.itbFile ? <ItbPages pdfUrl={itbPdfUrl(selected.itbFile)} pageCount={selected.pages || 3} descPages={selected.descPages} /> : null}
               <div className="fc-bid-desc-head">
-                <h4>Job description</h4>
+                <button type="button" className="fc-bid-text-toggle" data-hpd-smoke="fc-bid-text-toggle" aria-expanded={showText} onClick={() => setShowText((v) => !v)}>{showText ? "▾ HPD's text" : "▸ Show HPD's text"}</button>
                 <button type="button" data-hpd-smoke="fc-bid-text-size" aria-label={bigText ? "Smaller text" : "Bigger text"} aria-pressed={bigText} onClick={() => setBigText((v) => { try { localStorage.setItem("hpd-bid-text", v ? "l" : "xl"); } catch {} return !v; })}>{bigText ? "A−" : "A+"}</button>
               </div>
-              <p className={`fc-bid-description${bigText ? " is-xl" : ""}`} data-hpd-smoke="fc-bid-description">{selected.description ? readableDescription(selected.description) : "No description on the invitation."}</p>
+              <p hidden={!showText} className={`fc-bid-description${bigText ? " is-xl" : ""}`} data-hpd-smoke="fc-bid-description">{selected.description ? readableDescription(selected.description) : "No description on the invitation."}</p>
               {selected.notes ? (
                 <>
                   <h4>HPD notes &amp; contacts</h4>
@@ -759,7 +764,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               ) : null}
               <a className="fc-bid-link" data-hpd-smoke="fc-bid-view" href={itbPdfUrl(selected.itbFile)} target="_blank" rel="noreferrer">📄 View the invitation ({selected.pages} pages)</a>
             </section>
-            <section className={`fc-bid-price fc-bid-step${step1Done ? " is-done" : ""}`} data-hpd-smoke="fc-step-1">
+            <section id="fc-sec-price" className={`fc-bid-price fc-bid-step${step1Done ? " is-done" : ""}`} data-hpd-smoke="fc-step-1">
               <h4>{step1Done ? "✓" : "1"} · Your bid price{step1Done ? ` · saved ${money2(record!.price)}` : ""}</h4>
               {rounds.length ? (
                 <div className="fc-bid-again" data-hpd-smoke="fc-bid-again">
@@ -768,36 +773,11 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   {draftValue > 0 && draftValue < rounds[0].price ? <span className="fc-bid-again-warn" data-hpd-smoke="fc-bid-lower-warn">⚠️ {money2(draftValue)} is lower than your last bid of {money2(rounds[0].price)}.</span> : null}
                 </div>
               ) : null}
-              {sameBuilding.length ? (
-                <div className="fc-bid-again is-building" data-hpd-smoke="fc-bid-same-building">
-                  <b>🏢 Same building: you bid here recently</b>
-                  {sameBuilding.map((r) => <span key={r.omo}>{r.omo}: {money2(r.sentPrice || r.price)}{r.sentAt ? ` · sent ${when(r.sentAt)}` : ""}</span>)}
-                </div>
-              ) : null}
               {easy ? (
                 <div className="fc-bid-easy" data-hpd-smoke="fc-bid-easy">
                   <b>Easy win: bid this one · ~{money(easy.suggested)}</b>
                   <span>{easy.label}: you usually win it at {money(easy.yours)} ({easy.yoursN} of your wins). Other contractors won it at {money(easy.others)} ({easy.othersN} jobs, last 12 months). At {money(easy.suggested)} you would have beaten {easy.beatsN} of those {easy.of} winners.</span>
                   <button type="button" onClick={() => pickPrice(String(easy.suggested))}>Use {money(easy.suggested)}</button>
-                </div>
-              ) : null}
-              {buildingJobs.length ? (
-                <div className="fc-bid-building-history" data-hpd-smoke="fc-bid-building-history">
-                  <b>🏢 Earlier jobs at this building ({buildingJobs.length})</b>
-                  <ul>
-                    {buildingJobs.slice(0, 5).map((j) => (
-                      <li key={j.omo} className={j.sameWork ? "is-same" : ""}>
-                        <span className="fc-bbh-price">{money(j.paid)}</span>
-                        <span className="fc-bbh-what">
-                          {j.won ? <em className="is-won">you won</em> : <em>other contractor won</em>}
-                          {j.yours ? <> · you bid {money(j.yours)}</> : null}
-                          {" · "}{j.awardDate.slice(5, 7)}/{j.awardDate.slice(2, 4)}
-                          <small>{j.sameWork ? "same kind of work · " : ""}{j.work} · {j.omo}</small>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  {buildingJobs.some((j) => j.sameWork) ? <small>Same kind of work is listed first. The winning price is what HPD paid.</small> : <small>Different work from this bid: compare with care. The winning price is what HPD paid.</small>}
                 </div>
               ) : null}
               <label>
@@ -832,20 +812,6 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   {draftValue !== mineForThis[0].price ? <button type="button" onClick={() => pickPrice(String(mineForThis[0].price))}>Use {money(mineForThis[0].price)}</button> : <small>Started from your price. The market numbers are below for comparison.</small>}
                 </div>
               ) : null}
-              <div className="fc-bid-scope" data-hpd-smoke="fc-bid-scope">
-                <small>What this job includes (read from the full description):</small>
-                <ul>
-                  {scope.labels.map((l) => <li key={l}>{l}</li>)}
-                  {!scope.labels.length ? <li>general repair</li> : null}
-                  {scope.doors ? <li className="is-size">{scope.doors} door{scope.doors > 1 ? "s" : ""}</li> : null}
-                  {scope.windows ? <li className="is-size">{scope.windows} window{scope.windows > 1 ? "s" : ""}</li> : null}
-                  {scope.glassSqft ? <li className="is-size" data-hpd-smoke="fc-bid-glass">{scope.sizes.filter((x) => x.includes("glass")).map((x) => x.replace(" in glass", "″")).join(" + ")} glass · ~{scope.glassSqft} sq ft</li> : null}
-                  {scope.sizes.some((x) => x.endsWith("ft")) ? <li className="is-size">{scope.sizes.filter((x) => x.endsWith("ft")).join(" + ")}</li> : null}
-                  {scope.repairSqft ? <li className="is-size">~{scope.repairSqft} sq ft repair</li> : null}
-                  {scope.paintSqft ? <li className="is-size">~{scope.paintSqft} sq ft paint</li> : null}
-                  {scope.tasks > 1 ? <li className="is-size">{scope.tasks} separate tasks</li> : null}
-                </ul>
-              </div>
               <div className="fc-my-price" data-hpd-smoke="fc-my-price">
                 <b>🧮 My price (your rates)</b>
                 {myCalc.rows.map((r) => {
@@ -962,6 +928,36 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               {record ? <p className="fc-bid-saved" data-hpd-smoke="fc-bid-saved">✓ Price saved: <b>{money2(record.price)}</b> · {when(record.savedAt)}{revisedFrom(record) ? <> · HPD has <s>{money2(revisedFrom(record)!)}</s>: fill and send the <b>revised</b> bid</> : ""}</p> : null}
               {record && record.status === "saved" ? <button type="button" className="fc-bid-link" data-hpd-smoke="fc-bid-sent-elsewhere" onClick={() => void markSentElsewhere()}>{armed === "self" ? `✅ Tap again: record that you sent it at ${money2(record.price)}` : "I sent this bid myself (Gmail / fax)"}</button> : null}
             </section>
+            <section id="fc-sec-building" className="fc-bid-building" data-hpd-smoke="fc-bid-building">
+              <h4>🏢 The building</h4>
+              <BuildingFacts address={selected.address} borough={selected.borough} description={selected.description} />
+              {sameBuilding.length ? (
+                <div className="fc-bid-again is-building" data-hpd-smoke="fc-bid-same-building">
+                  <b>🏢 Same building: you bid here recently</b>
+                  {sameBuilding.map((r) => <span key={r.omo}>{r.omo}: {money2(r.sentPrice || r.price)}{r.sentAt ? ` · sent ${when(r.sentAt)}` : ""}</span>)}
+                </div>
+              ) : null}
+              {buildingJobs.length ? (
+                <div className="fc-bid-building-history" data-hpd-smoke="fc-bid-building-history">
+                  <b>🏢 Earlier jobs at this building ({buildingJobs.length})</b>
+                  <ul>
+                    {buildingJobs.slice(0, 5).map((j) => (
+                      <li key={j.omo} className={j.sameWork ? "is-same" : ""}>
+                        <span className="fc-bbh-price">{money(j.paid)}</span>
+                        <span className="fc-bbh-what">
+                          {j.won ? <em className="is-won">you won</em> : <em>other contractor won</em>}
+                          {j.yours ? <> · you bid {money(j.yours)}</> : null}
+                          {" · "}{j.awardDate.slice(5, 7)}/{j.awardDate.slice(2, 4)}
+                          <small>{j.sameWork ? "same kind of work · " : ""}{j.work} · {j.omo}</small>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  {buildingJobs.some((j) => j.sameWork) ? <small>Same kind of work is listed first. The winning price is what HPD paid.</small> : <small>Different work from this bid: compare with care. The winning price is what HPD paid.</small>}
+                </div>
+              ) : null}
+            </section>
+            <span id="fc-sec-send" />
             {record ? (
               <section className={`fc-bid-price fc-bid-step${reviewedSaved ? " is-done" : ""}`} data-hpd-smoke="fc-step-2">
                 <h4>{reviewedSaved ? "✓" : "2"} · Review the package{reviewedSaved ? ` · filled at ${money2(reviewedSaved.price)}` : ""}</h4>

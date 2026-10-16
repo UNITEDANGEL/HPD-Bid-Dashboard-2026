@@ -554,3 +554,17 @@
 .fc-nobid-cancel { justify-self: start; background: transparent !important; border-color: transparent !important; color: #d6d3d1 !important; }
 .fc-bid-chip.is-nobid { background: #57534e; color: #f5f5f4; }
 .fc-bid-pin.is-nobid { filter: grayscale(1) opacity(0.7); }
+
+/* The invitation card, like the awarded job card (owner, 16 Oct): the building's picture on top, jump buttons
+   that stay under the header, the job / price / building / send parts each shown once. */
+.fc-bid-sheet .jc-hero-photo { margin: 4px 0 8px; border-radius: 14px; overflow: hidden; }
+.fc-bid-sheet .jc-hero-photo img { display: block; width: 100%; max-height: 220px; object-fit: cover; }
+.fc-bid-jump { position: sticky; top: 0; z-index: 5; display: flex; gap: 6px; margin: 0 -2px 8px; padding: 6px 2px; overflow-x: auto; scrollbar-width: none; background: #0f172a; }
+.fc-bid-jump button, .fc-bid-jump a { flex: 0 0 auto; min-height: 36px; padding: 0 12px; display: inline-flex; align-items: center; border-radius: 18px; border: 1px solid #334155; background: #1e293b; color: #f8fafc; font: 800 13px system-ui; text-decoration: none; }
+.fc-bid-sheet [id^="fc-sec-"] { scroll-margin-top: 56px; }
+.fc-bid-building { display: grid; gap: 8px; margin: 10px 0; padding: 10px 12px; border-radius: 12px; background: #111827; border: 1px solid #334155; }
+.fc-bid-building > h4 { margin: 0; }
+.fc-bid-text-toggle { min-height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid #475569; background: #1e293b; color: #f8fafc; font: 800 13.5px system-ui; }
+.fc-bid-sheet .jc-hero-photo.is-empty { min-height: 0; padding: 0; border: 0; background: transparent; }
+.fc-bid-sheet .jc-hero-photo.is-empty .jc-hero-empty { display: none; }
+.fc-bid-sheet .jc-hero-photo.is-empty .jc-hero-actions { position: static; display: flex; gap: 6px; padding: 0; transform: none; }

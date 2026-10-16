@@ -243,6 +243,10 @@ Done 16 Oct (same day):
    can see, also sideways. test-browser-bids-panel.)
 5. **Invitation card like the awarded job card**: everything in one card, no duplicate information, less
    scrolling, with the building's picture.
+   (Done: the building's picture on top (your photo or Street View, 360°, camera: same as the job card), jump
+   buttons that stay under the header (Job / Price / Building / Send / Map); The job summary + HPD's pages, HPD's
+   text folded behind "Show HPD's text"; the old "What this job includes" list removed (The job replaces it);
+   building facts, violations, earlier jobs and your bids there in one "🏢 The building" section below the price.)
 
 - **Test all (16 Oct)**: 60 unit tests + 21 browser tests pass, including the whole-app sweep
   (test-browser-all-buttons: 17 pages, 75 links, 64 buttons, no missing-data text), now run on every deploy.

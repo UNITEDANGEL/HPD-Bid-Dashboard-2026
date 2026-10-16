@@ -50,7 +50,7 @@ try {
   // 1. Open Data is down: the box says so, the rest of the bid is still there.
   await page.waitForFunction(() => /didn.t load/.test(document.querySelector('[data-hpd-smoke="fc-bldg"]')?.textContent || ""), null, { timeout: 15000 });
   assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-due"]').count(), 1, "bid still shows its due date");
-  assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-streetview"]').count(), Number.isFinite(pick.lat) ? 1 : 0);
+  assert.equal(await sheet.locator('[data-hpd-smoke="jc-hero-360"]').count(), Number.isFinite(pick.lat) ? 1 : 0, "360° view on the building picture");
   // 2. Try again once it's back.
   down = false;
   await box.locator("button", { hasText: "Try again" }).click();
@@ -83,7 +83,7 @@ try {
     assert.equal(await full.count(), 0);
   }
   // A glass size in the description shows as a measurement chip (ER07908: 30x26 fire-rated glass).
-  if (/30”\s*X\s*26”/i.test(pick.description)) assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-glass"]').innerText(), /30×26″ glass · ~5\.4 sq ft/);
+  if (/30”\s*X\s*26”/i.test(pick.description)) assert.match(await sheet.locator('[data-hpd-smoke="fc-job-sum"]').innerText(), /~5\.4 sq ft of glass/);
   // Fits the iPhone width.
   const overflow = await page.evaluate(() => { const b = document.querySelector('[data-hpd-smoke="fc-bldg"]'); return b.scrollWidth - b.clientWidth; });
   assert.ok(overflow <= 1, `building box overflows by ${overflow}px`);

@@ -120,6 +120,8 @@ try {
   const omo = (await sheet.locator("header strong").innerText()).trim();
   const bid = open.find((b) => b.omo === omo);
   // The whole description, word for word (numbered items and HPD's notes start new lines).
+  // HPD's text is folded away (the page pictures show it): "Show HPD's text" opens it.
+  await sheet.locator('[data-hpd-smoke="fc-bid-text-toggle"]').click();
   const shownDesc = (await sheet.locator('[data-hpd-smoke="fc-bid-description"]').innerText()).trim();
   assert.equal(shownDesc.replace(/\s+/g, " "), bid.description.replace(/\s+/g, " ").trim(), "nothing missing or changed");
   // The invitation link opens HPD's PDF through the signed-in private route (fetched like the phone does).
@@ -128,8 +130,14 @@ try {
   assert.deepEqual(await page.evaluate(async (u) => { const r = await fetch(u); const b = new Uint8Array(await r.arrayBuffer()); return [r.status, String.fromCharCode(...b.slice(0, 5))]; }, viewHref), [200, "%PDF-"]);
   assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-review"]').count(), 0, "review comes after saving a price");
   // The price help says what it read in the job and how good the match is.
-  assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-scope"]').innerText(), /What this job includes/);
-  assert.ok(await sheet.locator('[data-hpd-smoke="fc-bid-scope"] li').count() >= 1, "the job's work items are listed");
+  assert.ok(await sheet.locator('[data-hpd-smoke="fc-job-sum"] li').count() >= 1, "The job lists the work");
+  // One card: the building's picture / 360° on top, jump buttons, the building section below the price.
+  assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-jump"] button').count(), 4);
+  assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-building"]').count(), 1);
+  await sheet.locator('[data-hpd-smoke="fc-bid-jump"] button', { hasText: "Building" }).click();
+  await page.waitForTimeout(700);
+  const bTop = await sheet.locator('[data-hpd-smoke="fc-bid-building"]').evaluate((el) => el.getBoundingClientRect().top);
+  assert.ok(bTop >= 0 && bTop < (page.viewportSize()?.height || 800) - 80, `Building jump brings the building section on screen (${Math.round(bTop)})`);
   if (await sheet.locator('[data-hpd-smoke="fc-bid-help"]').count()) {
     assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-confidence"]').innerText(), /Good match|Fair match|Rough guide/);
     assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-why"]').innerText(), /awarded/);
