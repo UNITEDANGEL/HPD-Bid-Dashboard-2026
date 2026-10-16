@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-16T20:59:40.084147+00:00",
+  "generatedAt": "2026-10-16T21:09:45.309087+00:00",
   "days": 14,
   "bids": [
     {
@@ -3644,6 +3644,137 @@
       },
       "lat": 40.753449,
       "lng": -73.877162
+    },
+    {
+      "omo": "KR00699",
+      "bidDue": "2026-10-20",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-20",
+      "workCompletion": "2026-11-01",
+      "address": "507 EAST 11 STREET",
+      "borough": "MN",
+      "itbFile": "KR00699_101626045426.pdf",
+      "description": "LOCATION: 507-509 EAST 11 STREET APT. 3, AND APT. 7, HPD OWNED BUILDING - THERE IS A CONSEALED WATER LEAK APPARENTLY COMING FROM APT. 7 BATHROOM AREA. THE BATHROOM WALLS AND TILES ARE DAMAGE AT APT.7. ADDITIONALY, THE LEAK HAS DAMAGED THE APARTMENT BELOW (APT. 3) THE BATHROOM CELING AND THE WALLS THAT HOLD THE TILES ON THE BATHTUB AREA. AT THE BEDROOM CLOSET (IN APT. 3) BEHIND THE BATHTUB, THE WALLS, CEILING, AND FLOOR ARE DAMAGE BY WATER. - JOB DESCRIPTION: **AT APT. 7 BATHROOM. TRACE & ABATE CONCEALED WATER LEAK. REPLACE SHOWER TILES & WALLS IN BATHTUB AREA *PROVIDE & INSTALL NEW MOISTURE RESISTANT GREEN SHEETROCK APPROX.65 SF. & NEW TILES APPROX.54 SF. TO FINISH CONDITION. ADD NEW BASEBOARD NEXT TO BATHTUB APPROX. 2LFT. CORNERS AND AREA AROUND THE TUB TO BE SEALED WITH 100% MOLD RESISTANT WHITE SILICONE. COMPOUND ANY DAMAGE AREA IN THE BATHROOM AND SAND TO A SMOOTH FINISH ALL WALLS AND CEILING SURFACES, RE-PAINT ENTIRE BATHROOM, PRIME WITH ONE (1) COAT OF MOLD RESISTANT PAINT, SEAL ANY GAPS AND/OR EDGES WITH WHITE CAULK, AND PAINT WITH TWO (2) COATS OF MOLD RESISTANT WHITE PAINT. - **AT APT.3 BATHROOM REPLACE ENTIRE DAMAGE CEILING APPROX. 36FT2. REPLACE SHOWER TILES & WALLS IN BATHTUB AREA *PROVIDE & INSTALL NEW MOISTURE RESISTANT GREEN SHEETROCK APPROX.65 SF. AND NEW TILES APPROX.54 SF. TO FINISH CONDITION. CORNERS & AREA AROUND THE TUB TO BE SEALED WITH 100% MOLD RESISTANT WHITE SILICONE. ADD NEW BASEBOARD NEXT TO BATHTUB APPROX. 2LFT. COMPOUND ANY DAMAGE AREA IN THE BATHROOM AND SAND TO A SMOOTH FINISH ALL WALLS & CEILING SURFACES, RE-PAINT ENTIRE BATHROOM, PRIME WITH ONE (1) COAT OF MOLD RESISTANT PAINT, SEAL ANY GAPS AND/OR EDGES WITH WHITECAULK, & PAINT WITH TWO (2) COATS OF MOLD RESISTANT WHITE PAINT. - **AT APT.3 BEDROOM CLOSET BEHIND BATHROOM. REMOVE & INSTALL NEW SHEETROCK IN ENTIRE CLOSET APPROX. 92 FT2, REMOVE & REPLACE CLOSET FLOOR WITH NEW SIMILAR TO EXISTING IN SIZE, SHAPE, THICKNESS, AND COLOR APPROX. 10 FT2. ADD NEW BASEBOARDS APPROX. 9LFT. TAPE, COMPUND, AND SAND TO A SMOOTH FINISH ALL WALLS AND CEILING SURFACES OF CLOSET, PRIME WITH ONE (1) COAT OF MOLD RESISTING PAINT, SEAL ANY GAPS AND/OR EDGES WITH WHITE CAULK, & PAINT WITH TWO (2) COATS OF WHITE PAINT. AND RE-INSTALL CLOSET ROD TO PWO - ALL WORK PERFORMED BY THE CONTRACTOR SHALL BE DELIVERED IN A FULLY FUNTIONAL, TURNKEY STATUS. CONTRACTOR IS TO VERIFY AND PROVIDE ALL MATERIALS ON SITE AS NEEDED, INCLUDING ALL DIMENSIONS OF MATERIALS TO COMPLETE JOB 100 % AS WRITTEN IN THE OMO JOB DESCRIPTION - -REMOVE ALL JOB-RELATED DEBRIS FROM PREMISES & DISPOSE OF IN A SAFE AND LEGAL MANNER. - *FOR ALL ACCESS CONTACT APT.7 LEE @ (phone: sign in to see). CONTACT APT. 3 DONNA @ (phone: sign in to see). HPD DPM BUILDING CARETAKER MS. ESTHER @ (phone: sign in to see), * ANY ACCESS PROBLEM AND/OR ADDITIONAL NEEDED INFORMATION VENDOR MUST CONTACT HPD DPM BUILDING MANAGER MICHAEL BERNSTEIN @ 1-(phone: sign in to see) - - THIS OMO WILL BE MONITORED AND VENDOR TRACKED BY THE HPD URPM TECH UNIT. TO STABLISH A STARTING DATE, REQUEST A JOINT INSPECTION AND/OR FINAL INSPECTION, OR ANY FURTHER INFORMATION NEEDED TO START & COMPLETE THE JOB 100 % AS WRITTEN IN THE SCOPE ABOVE CONTACT CPM: OSCAR GARCIA (phone: sign in to see), O'DANE PAULWELL (phone: sign in to see). - UPON COMPLETION SEND A COPY OF THE INVOICE AND AFFIDAVIT TO DEPUTY DIRECTOR ARCHER AT: ARCHERA@HPD.NYC.GOV , (phone: sign in to see) OR (212) 863-5247",
+      "notes": "",
+      "descPages": [
+        3,
+        4
+      ],
+      "receivedAt": 1792184071000,
+      "pages": 5,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 4,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 4,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 4,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 4,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 4,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 4,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 4,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 4,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.728407,
+      "lng": -73.981204
     }
   ],
   "unread": []
