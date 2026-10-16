@@ -2614,3 +2614,23 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 }
 .fc-work-fab .fc-follow-badge { background: #1f2937; }
 .fc-work-fab .fc-follow-badge.is-rejected { background: #dc2626; }
+
+/* Upright phones with less height (Safari's toolbars, smaller iPhones): the "Today's route" bar stops short of
+   the button column so Bids / Map / Locate are never hidden under it, and on short screens the buttons shrink
+   a little so all of them fit. */
+@media (orientation: portrait) and (max-height: 800px) and (pointer: coarse) {
+  .fc-app .fc-today-route { right: calc(80px + env(safe-area-inset-right)) !important; width: auto !important; max-width: none !important; transform: none !important; }
+}
+@media (orientation: portrait) and (max-height: 720px) and (pointer: coarse) {
+  .fc-app .fc-map-controls { gap: 3px !important; }
+  .fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab) { gap: 1px; }
+  .fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab) > svg { width: 40px !important; height: 40px !important; padding: 9px; }
+  .fc-app .fc-map-controls .fc-map-fab .fc-fab-label { font-size: 10px; line-height: 13px; }
+}
+@media (orientation: portrait) and (max-height: 560px) and (pointer: coarse) {
+  .fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab) > svg { width: 36px !important; height: 36px !important; padding: 8px; }
+}
+@media (orientation: portrait) and (max-height: 800px) and (pointer: coarse) {
+  /* The map's scale sits left of the buttons, not under Locate. */
+  .fc-app .leaflet-bottom.leaflet-right .leaflet-control-scale { margin-right: 86px; }
+}
