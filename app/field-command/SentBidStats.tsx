@@ -5,6 +5,8 @@
 import { useEffect, useState } from "react";
 
 type Group = { bids: number; won: number; winRate: number | null; lostAboveBy: number | null; lostAbovePct: number | null; closeLosses: number; lostBelow: number };
+// Your price against the app's best price at the time (scripts/build-bid-win-stats.mjs).
+type VsBest = { bids: number; won: number; wonAmount: number; bestWon: number; bestAmount: number; abovePct: number | null; over15Pct: number | null; chanceYours: number | null; chanceBest: number | null };
 type Stats = {
   generatedAt: string;
   ocrCheck: { wonJobsChecked: number; exact: number };
@@ -12,6 +14,7 @@ type Stats = {
   byWork: (Group & { work: string })[];
   byBoro: (Group & { boro: string })[];
   byMonth: (Group & { month: string })[];
+  vsBest?: { total: VsBest; byMonth: (VsBest & { month: string })[] };
   last30?: { since: string; awarded: number; bid: number; notBid: number; notBidValue: number; won: number; lostHigher: number; medianGapPct: number | null; lostBelow: number; byWork: { work: string; lost: number; medianGapPct: number | null }[] };
 };
 
@@ -31,6 +34,23 @@ export default function SentBidStats() {
   const maxBids = Math.max(...s.byMonth.map((g) => g.bids), 1);
   return (
     <section className="fc-stats-block fc-sent-stats" data-hpd-smoke="fc-sent-stats">
+      {s.vsBest?.total.bids ? (() => { const v = s.vsBest.total; const last = s.vsBest.byMonth.slice(-6); return (
+        <div className="fc-vsbest" data-hpd-smoke="fc-vsbest">
+          <h4>Your price vs the app&apos;s best price</h4>
+          <p className="fc-vsbest-head">At the best price you would have won <b>{v.bestWon} jobs ({money(v.bestAmount)})</b> instead of <b>{v.won} ({money(v.wonAmount)})</b>.</p>
+          <div className="fc-stats-tiles">
+            <div className="is-bad"><b>{v.abovePct}% above</b><small>your typical price vs the best price; {v.over15Pct}% of your bids were more than 15% above</small></div>
+            <div><b>{v.chanceYours}% vs {v.chanceBest}%</b><small>typical chance to win at your price vs at the best price</small></div>
+          </div>
+          <table className="fc-sent-table" data-hpd-smoke="fc-vsbest-months">
+            <thead><tr><th>Month</th><th>You won</th><th>Best price would have won</th><th>You vs best</th></tr></thead>
+            <tbody>{last.map((m) => (
+              <tr key={m.month}><td>{monthLabel(m.month)}</td><td>{m.won}/{m.bids} · {money(m.wonAmount)}</td><td><b>{m.bestWon}/{m.bids} · {money(m.bestAmount)}</b></td><td>{m.abovePct === null ? "-" : `${m.abovePct > 0 ? "+" : ""}${m.abovePct}%`}</td></tr>
+            ))}</tbody>
+          </table>
+          <p className="fc-stats-note">From the {v.bids.toLocaleString()} bids you faxed that HPD has awarded. The best price for each job uses only the awards HPD had made before it, the same way the app prices a new invitation. It assumes the other bidders bid the same; a lower price is also less per job, so set your own floor where a job stops paying.</p>
+        </div>
+      ); })() : null}
       {s.last30 ? (
         <div className="fc-last30" data-hpd-smoke="fc-last30">
           <h4>Last 30 days: where the jobs went</h4>

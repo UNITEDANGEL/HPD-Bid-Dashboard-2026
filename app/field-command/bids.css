@@ -478,3 +478,10 @@
 .fc-bid-pages-sheet > header button { min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid #475569; background: #1f2937; color: #f8fafc; font: 800 14px system-ui; }
 .fc-bid-pages-sheet > header button.is-go { background: #16a34a; border-color: #16a34a; }
 .fc-bid-pages-body { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 10px calc(env(safe-area-inset-right, 0px) + 12px) 20px calc(env(safe-area-inset-left, 0px) + 12px); }
+
+/* Your price vs the app's best price (Stats). */
+.fc-vsbest { margin: 0 0 14px; padding: 10px 12px; border-radius: 12px; background: #1c1917; border: 1px solid #f59e0b66; }
+.fc-vsbest h4 { margin: 0 0 6px; }
+.fc-vsbest-head { margin: 0 0 8px; font: 700 15px/1.4 system-ui; color: #fef3c7; }
+.fc-vsbest-head b { color: #fde047; }
+.fc-bid-high.is-soft { background: #422006; border-color: #f59e0b; color: #fef3c7; }

@@ -11,7 +11,7 @@ import { loadLib } from "./daily-report.mjs";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, "$1")), "..");
 const read = (p) => JSON.parse(fs.readFileSync(path.join(ROOT, p), "utf8"));
-const { readScope } = await loadLib("bid-price");
+const { readScope, priceHelp, bestPrice, winChance } = await loadLib("bid-price");
 
 const history = read("data/private/bid_history.json").bids;
 const awards = new Map(read("public/data/market_awards.json").jobs.map((j) => [j.omo, j]));
@@ -78,12 +78,43 @@ const last30 = (() => {
   };
 })();
 
+// Your price against the app's best price at the time (only awards HPD had made before that job): how often
+// each would have won and what it would have brought in. Totals only, by month. Since March 2026 your
+// prices were about 20% above the best price, and the best price would have won far more jobs.
+const vsBest = (() => {
+  const market = [...awards.values()].filter((j) => j.amount > 0).map((j) => ({ id: j.omo, description: j.description || "", amount: j.amount, date: j.awardDate || "" })).sort((a, b) => a.date.localeCompare(b.date));
+  const months = {};
+  const all = { bids: 0, won: 0, wonAmount: 0, bestWon: 0, bestAmount: 0, over15: 0, ratios: [], chanceYours: [], chanceBest: [] };
+  for (const r of rows.filter((x) => !x.check)) {
+    const job = awards.get(r.omo);
+    const date = job.awardDate || "";
+    const h = priceHelp(job.description || "", market.filter((m) => m.date < date), 12, new Date(date));
+    if (!h) continue;
+    const best = bestPrice(h).price;
+    const m = (months[r.month] ||= { month: r.month, bids: 0, won: 0, wonAmount: 0, bestWon: 0, bestAmount: 0, over15: 0, ratios: [], chanceYours: [], chanceBest: [] });
+    for (const t of [m, all]) {
+      t.bids++;
+      if (r.won) { t.won++; t.wonAmount += r.winPrice; }
+      if (best < r.winPrice) { t.bestWon++; t.bestAmount += best; }
+      if (r.price > best * 1.15) t.over15++;
+      t.ratios.push(r.price / best);
+      if (h.prices.length >= 5) { t.chanceYours.push(winChance(h, r.price)); t.chanceBest.push(winChance(h, best)); }
+    }
+  }
+  const mid = (xs) => { const s2 = [...xs].sort((a, b) => a - b); return s2.length ? s2[Math.floor(s2.length / 2)] : null; };
+  const out = (t) => ({ ...(t.month ? { month: t.month } : {}), bids: t.bids, won: t.won, wonAmount: Math.round(t.wonAmount), bestWon: t.bestWon, bestAmount: Math.round(t.bestAmount),
+    abovePct: t.ratios.length ? Math.round((mid(t.ratios) - 1) * 100) : null, over15Pct: t.bids ? Math.round((t.over15 / t.bids) * 100) : null,
+    chanceYours: t.chanceYours.length ? Math.round(mid(t.chanceYours) * 100) : null, chanceBest: t.chanceBest.length ? Math.round(mid(t.chanceBest) * 100) : null });
+  return { total: out(all), byMonth: Object.values(months).sort((a, b) => a.month.localeCompare(b.month)).filter((m) => m.bids >= 5).map(out) };
+})();
+
 const stats = {
   generatedAt: new Date().toISOString(),
   note: "From the bids you faxed HPD (price read from each package) against HPD's awards. Totals only.",
   ocrCheck: { wonJobsChecked: checked, exact }, // how often the price read from the PDF matched HPD's award
   total: summary(rows),
   last30,
+  vsBest,
   byWork: group("work"),
   byBoro: group("boro"),
   byMonth: group("month", 1).sort((a, b) => a.month.localeCompare(b.month)),
@@ -91,4 +122,5 @@ const stats = {
 fs.mkdirSync(path.join(ROOT, "data", "private"), { recursive: true });
 fs.writeFileSync(path.join(ROOT, "data", "private", "bid_results.json"), JSON.stringify({ generatedAt: stats.generatedAt, rows }, null, 1));
 fs.writeFileSync(path.join(ROOT, "public", "data", "bid_win_stats.json"), JSON.stringify(stats, null, 1));
+console.log(`Vs best price: ${vsBest.total.bids} bids, you won ${vsBest.total.won} ($${vsBest.total.wonAmount}), best price would have won ${vsBest.total.bestWon} ($${vsBest.total.bestAmount}); your prices a median ${vsBest.total.abovePct}% above best`);
 console.log(`Bid results: ${rows.length} bids with an award (${rows.filter((r) => r.check).length} to check), won ${stats.total.won} (${stats.total.winRate}%); lost by a median $${stats.total.lostAboveBy} (${stats.total.lostAbovePct}%); ${stats.total.closeLosses} lost within 10%; price read matched the award on ${exact} of ${checked} wins`);

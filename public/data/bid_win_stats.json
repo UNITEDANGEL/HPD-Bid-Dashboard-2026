@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-15T21:51:03.684Z",
+ "generatedAt": "2026-10-16T11:25:37.888Z",
  "note": "From the bids you faxed HPD (price read from each package) against HPD's awards. Totals only.",
  "ocrCheck": {
   "wonJobsChecked": 625,
@@ -15,19 +15,19 @@
   "lostBelow": 131
  },
  "last30": {
-  "since": "2026-09-15",
-  "awarded": 124,
-  "bid": 77,
-  "notBid": 47,
-  "notBidValue": 84909,
-  "won": 16,
-  "lostHigher": 49,
-  "medianGapPct": 53,
-  "lostBelow": 9,
+  "since": "2026-09-16",
+  "awarded": 103,
+  "bid": 64,
+  "notBid": 39,
+  "notBidValue": 68395,
+  "won": 14,
+  "lostHigher": 41,
+  "medianGapPct": 61,
+  "lostBelow": 8,
   "byWork": [
    {
     "work": "lock / latch",
-    "lost": 11,
+    "lost": 9,
     "medianGapPct": 98
    },
    {
@@ -37,8 +37,8 @@
    },
    {
     "work": "hinges",
-    "lost": 8,
-    "medianGapPct": 11
+    "lost": 5,
+    "medianGapPct": 10
    },
    {
     "work": "entrance lock (Adams Rite / mortise / electric strike)",
@@ -46,9 +46,168 @@
     "medianGapPct": 91
    },
    {
-    "work": "door adjust (self-close & latch)",
+    "work": "new door",
     "lost": 2,
-    "medianGapPct": 116
+    "medianGapPct": 53
+   }
+  ]
+ },
+ "vsBest": {
+  "total": {
+   "bids": 1547,
+   "won": 625,
+   "wonAmount": 423722,
+   "bestWon": 964,
+   "bestAmount": 795066,
+   "abovePct": 16,
+   "over15Pct": 50,
+   "chanceYours": 39,
+   "chanceBest": 80
+  },
+  "byMonth": [
+   {
+    "month": "2025-11",
+    "bids": 113,
+    "won": 38,
+    "wonAmount": 35460,
+    "bestWon": 84,
+    "bestAmount": 71277,
+    "abovePct": 31,
+    "over15Pct": 58,
+    "chanceYours": 30,
+    "chanceBest": 79
+   },
+   {
+    "month": "2025-12",
+    "bids": 135,
+    "won": 66,
+    "wonAmount": 44155,
+    "bestWon": 63,
+    "bestAmount": 63127,
+    "abovePct": 4,
+    "over15Pct": 33,
+    "chanceYours": 62,
+    "chanceBest": 79
+   },
+   {
+    "month": "2026-01",
+    "bids": 173,
+    "won": 89,
+    "wonAmount": 54823,
+    "bestWon": 100,
+    "bestAmount": 90625,
+    "abovePct": 12,
+    "over15Pct": 48,
+    "chanceYours": 50,
+    "chanceBest": 80
+   },
+   {
+    "month": "2026-02",
+    "bids": 89,
+    "won": 46,
+    "wonAmount": 28275,
+    "bestWon": 48,
+    "bestAmount": 42314,
+    "abovePct": 1,
+    "over15Pct": 35,
+    "chanceYours": 68,
+    "chanceBest": 80
+   },
+   {
+    "month": "2026-03",
+    "bids": 155,
+    "won": 75,
+    "wonAmount": 48573,
+    "bestWon": 91,
+    "bestAmount": 73309,
+    "abovePct": 13,
+    "over15Pct": 48,
+    "chanceYours": 42,
+    "chanceBest": 80
+   },
+   {
+    "month": "2026-04",
+    "bids": 187,
+    "won": 63,
+    "wonAmount": 45270,
+    "bestWon": 117,
+    "bestAmount": 108492,
+    "abovePct": 22,
+    "over15Pct": 55,
+    "chanceYours": 37,
+    "chanceBest": 81
+   },
+   {
+    "month": "2026-05",
+    "bids": 154,
+    "won": 60,
+    "wonAmount": 35836,
+    "bestWon": 102,
+    "bestAmount": 62023,
+    "abovePct": 19,
+    "over15Pct": 53,
+    "chanceYours": 37,
+    "chanceBest": 81
+   },
+   {
+    "month": "2026-06",
+    "bids": 146,
+    "won": 61,
+    "wonAmount": 39919,
+    "bestWon": 97,
+    "bestAmount": 71793,
+    "abovePct": 23,
+    "over15Pct": 51,
+    "chanceYours": 43,
+    "chanceBest": 79
+   },
+   {
+    "month": "2026-07",
+    "bids": 189,
+    "won": 75,
+    "wonAmount": 59942,
+    "bestWon": 111,
+    "bestAmount": 104898,
+    "abovePct": 18,
+    "over15Pct": 52,
+    "chanceYours": 29,
+    "chanceBest": 80
+   },
+   {
+    "month": "2026-08",
+    "bids": 56,
+    "won": 10,
+    "wonAmount": 5584,
+    "bestWon": 42,
+    "bestAmount": 31291,
+    "abovePct": 30,
+    "over15Pct": 64,
+    "chanceYours": 21,
+    "chanceBest": 79
+   },
+   {
+    "month": "2026-09",
+    "bids": 131,
+    "won": 36,
+    "wonAmount": 21369,
+    "bestWon": 96,
+    "bestAmount": 65064,
+    "abovePct": 24,
+    "over15Pct": 57,
+    "chanceYours": 25,
+    "chanceBest": 80
+   },
+   {
+    "month": "2026-10",
+    "bids": 19,
+    "won": 6,
+    "wonAmount": 4516,
+    "bestWon": 13,
+    "bestAmount": 10853,
+    "abovePct": 17,
+    "over15Pct": 68,
+    "chanceYours": 29,
+    "chanceBest": 81
    }
   ]
  },

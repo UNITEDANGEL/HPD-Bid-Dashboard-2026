@@ -364,6 +364,14 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     if (chance >= 25 || draftNumber <= best.price) return null;
     return { chance, best: best.price, bestChance: Math.round(winChance(help, best.price) * 100), n: help.prices.length };
   }, [help, draftNumber]);
+  // More than 15% above the best price (but not as bad as above): a softer note. Since Nov 2025 half of
+  // your bids were more than 15% above the best price, and those won far fewer jobs (Stats).
+  const abovePrice = useMemo(() => {
+    if (highPrice || !help || !(draftNumber > 0) || help.prices.length < 5) return null;
+    const best = bestPrice(help);
+    if (draftNumber <= best.price * 1.15) return null;
+    return { pct: Math.round((draftNumber / best.price - 1) * 100), chance: Math.round(winChance(help, draftNumber) * 100), best: best.price, bestChance: Math.round(winChance(help, best.price) * 100) };
+  }, [help, draftNumber, highPrice]);
   const scope = useMemo(() => readScope(selected?.description || ""), [selected]);
   const easy = useMemo(() => (selected && stats ? easyWin(selected.description, stats.workPrices) : null), [selected, stats]);
   const descriptions = useMemo(() => new Map<string, string>([...marketJobs.map((j) => [j.omo, j.description] as [string, string]), ...(bids || []).map((b) => [b.omo, b.description] as [string, string])]), [marketJobs, bids]);
@@ -734,6 +742,12 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   <b>⚠️ {money(draftValue)} will probably lose</b>
                   <span>It would have won only about {highPrice.chance}% of jobs like this ({highPrice.n} recent awards). The best price is {money(highPrice.best)} (wins ~{highPrice.bestChance}%).</span>
                   <button type="button" onClick={() => pickPrice(String(highPrice.best))}>Use {money(highPrice.best)}</button>
+                </div>
+              ) : abovePrice ? (
+                <div className="fc-bid-high is-soft" data-hpd-smoke="fc-bid-above" role="note">
+                  <b>{abovePrice.pct}% above the best price</b>
+                  <span>Wins about {abovePrice.chance}% of jobs like this; {money(abovePrice.best)} wins about {abovePrice.bestChance}%.</span>
+                  <button type="button" onClick={() => pickPrice(String(abovePrice.best))}>Use {money(abovePrice.best)}</button>
                 </div>
               ) : null}
               <input className="fc-bid-reason" disabled={sentLocked} aria-label="Why this price" data-hpd-smoke="fc-bid-reason" placeholder="Why this price? (optional, remembered for jobs like this)" value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} />

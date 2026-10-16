@@ -188,6 +188,19 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
   wins; room-size jobs +$1,605. Power 0.5 did worse.
 - 72 of 3,700 past descriptions have a glass size, 16 a room size.
 
+## Done 16 Oct 2026: your price vs the app's best price
+- Finding (1,547 of your faxed bids that HPD awarded, Nov 2025 - Oct 2026): your prices were a median 16%
+  above the app's best price (about 20% since March; half of all bids more than 15% above). Typical chance to
+  win: 39% at your price, 80% at the best price. At the best price you would have won 964 jobs ($795k)
+  instead of 625 ($424k). Lock / latch: the app's best price already wins 86% of plain lock jobs, so the
+  "+98%" on lost lock bids was the price sent, not the app's advice.
+- **Stats -> "Your price vs the app's best price"**: the totals and the last 6 months (totals only,
+  scripts/build-bid-win-stats.mjs -> vsBest).
+- **Bid screen**: a price more than 15% above the best price shows "N% above the best price, wins about X%;
+  $best wins about Y%" with **Use $best** (one tap, saving still allowed). Under 1 in 4: the old red warning
+  and a second tap to save. Test: scripts/test-browser-price-check.mjs.
+- Next: the owner's own cost floor per kind of work (so the best price never goes below what a job costs).
+
 ## Lost although our price was lower: what happened (reviewed 16 Oct 2026)
 9 bids (Sept 10 - Oct 8) lost at a price at or under the winner's (scripts/analyze_lost_bids.py, Gmail
 fax records; private details in data/private/lost_bids_review.json):
