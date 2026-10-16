@@ -188,6 +188,22 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
   wins; room-size jobs +$1,605. Power 0.5 did worse.
 - 72 of 3,700 past descriptions have a glass size, 16 a room size.
 
+## Owner's requests 16 Oct 2026 (afternoon): pricing, job summary, flow
+1. **My rates when pricing**: enter what I charge per square foot (floor / tile, sheetrock / plaster,
+   painting), per door, and per part (Secure Tech lock, electric strike, lock, closer, hinges...). The app
+   works out "My price" for each invitation from those rates and the quantities in the description.
+2. **A clean job summary on every invitation** (keep HPD's full text too): e.g. "Ceramic floor tile · 85 sq
+   ft · 2 rooms", "Leak: trace & repair", "3 doors", "Secure Tech lock", "electric strike plate ×2", where
+   (public hall / apartment / floor). So I can see at a glance what the job is.
+3. **Expensive parts priced right**: a Secure Tech lock alone is over $1,000 (job over $2,000; HPD's awards
+   agree: median $2,000 on 35 Secure Tech jobs); an electric strike plate is ~$150 plus install and
+   programming. The app was pricing ER05098 (Secure Tech) at $585 as a plain entrance lock: fix.
+4. **Best price strategy, better**: learn from every winning price. (HPD's open data has only the winning
+   amount for each job, not who won or the other bids; we use all of it.)
+5. **Flow between map, notices, stats, route, today**: every button opens what it says from any screen,
+   closes what was open, and a second tap closes it; Notices sometimes went back to the wrong screen: fix.
+   Test every button from every screen.
+
 ## Done 16 Oct 2026: your price vs the app's best price
 - Finding (1,547 of your faxed bids that HPD awarded, Nov 2025 - Oct 2026): your prices were a median 16%
   above the app's best price (about 20% since March; half of all bids more than 15% above). Typical chance to

@@ -905,6 +905,8 @@ export default function FieldCommandClient() {
   const [controlsOpen, setControlsOpen] = useState(false);
   // The route button on the map opens Today's route (one route on the map, with its stop list).
   const [routeOpenRequest, setRouteOpenRequest] = useState(0);
+  const [routeCloseRequest, setRouteCloseRequest] = useState(0);
+  const [routeOpen, setRouteOpen] = useState(false);
   // The envelope button flips the map to upcoming invitations to bid (BidsMode).
   const [bidsOpen, setBidsOpen] = useState(false);
   const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number }>({ today: 0, tomorrow: 0 });
@@ -1425,6 +1427,21 @@ export default function FieldCommandClient() {
   const bidHistory = useMemo(() => jobs.filter((job) => !isTestJob(jobId(job))).map((job) => ({ id: jobId(job), description: value(job, ["ItbPage3Description", "JobDescription", "description"]), amount: jobAwardAmount(job), address: jobAddress(job) })), [jobs]);
   // End-of-day summary sheet (map menu): today's work, close-outs and what's due tomorrow.
   const [summaryOpen, setSummaryOpen] = useState(false);
+  // One screen at a time: a map button closes whatever else is open (bids, notices, stats, today, follow-up,
+  // summary, route, the job card, menus) before opening its own. Tapping it again closes it (back to the map).
+  const closeScreens = (keep = "") => {
+    if (keep !== "bids") setBidsOpen(false);
+    if (keep !== "notices") setNoticesOpen(false);
+    if (keep !== "stats") setStatsOpen(false);
+    if (keep !== "agenda") setAgendaOpen(false);
+    if (keep !== "follow") setFollowOpen(false);
+    if (keep !== "summary") setSummaryOpen(false);
+    if (keep !== "route") setRouteCloseRequest((n) => n + 1);
+    setSelectedJob(null);
+    setFiltersOpen(false);
+    setChromeOpen(false);
+    setControlsOpen(false);
+  };
   const [summaryStatus, setSummaryStatus] = useState("");
   const summary = useMemo(() => (summaryOpen ? daySummary(jobs, { id: jobId, address: jobAddress }) : null), [summaryOpen, jobs]);
   async function emailSummary() {
@@ -2647,26 +2664,27 @@ export default function FieldCommandClient() {
             aria-label="Today's route" data-tip="Today's route: plan your stops"
             title="Today's route"
             data-hpd-smoke="fc-route-open"
-            onClick={() => { setSelectedJob(null); setRouteOpenRequest((n) => n + 1); }}
+            aria-pressed={routeOpen}
+            onClick={() => { if (routeOpen) { setRouteCloseRequest((n) => n + 1); return; } closeScreens("route"); setRouteOpenRequest((n) => n + 1); }}
           >
             <RouteIcon /><span className="fc-fab-label">Route</span>
           </button>
-          <button type="button" className="fc-map-fab" aria-label="Today's appointments" data-tip="Today's appointments" title="Today's appointments" onClick={() => { setAgendaOpen(true); setSelectedJob(null); }}><ListIcon /><span className="fc-fab-label">Today</span></button>
-          <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" data-tip="My stats: jobs and money" title="My stats" onClick={() => { setStatsOpen(true); setSelectedJob(null); }}><StatsIcon /><span className="fc-fab-label">Stats</span></button>
-          <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}`} data-hpd-smoke="fc-notices-open" aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={followFilter === "notices"} title="HPD notices: rejected paperwork and requests" onClick={() => {
-            setSelectedJob(null);
-            // Second tap while the map shows the notices: back to all jobs.
-            if (followFilter === "notices" && !noticesOpen) { setFollowFilter(""); return; }
-            setBidsOpen(false);
+          <button type="button" className="fc-map-fab" aria-label="Today's appointments" data-tip="Today's appointments" title="Today's appointments" aria-pressed={agendaOpen} onClick={() => { if (agendaOpen) { setAgendaOpen(false); return; } closeScreens("agenda"); setAgendaOpen(true); }}><ListIcon /><span className="fc-fab-label">Today</span></button>
+          <button type="button" className="fc-map-fab" data-hpd-smoke="fc-stats-open" aria-label="My stats" data-tip="My stats: jobs and money" title="My stats" aria-pressed={statsOpen} onClick={() => { if (statsOpen) { setStatsOpen(false); return; } closeScreens("stats"); setStatsOpen(true); }}><StatsIcon /><span className="fc-fab-label">Stats</span></button>
+          <button type="button" className={`fc-map-fab fc-notices-fab${followFilter === "notices" ? " is-active" : ""}`} data-hpd-smoke="fc-notices-open" aria-label="HPD notices" data-tip="HPD notices: rejections and requests" aria-pressed={noticesOpen} title="HPD notices: rejected paperwork and requests" onClick={() => {
+            // Always opens the notices list (the map shows those jobs); tapping again closes the list.
+            // "Show all jobs" in the list (or ✕ on the map) goes back to every job.
+            if (noticesOpen) { setNoticesOpen(false); return; }
+            closeScreens("notices");
             setFollowFilter("notices");
             setNoticesOpen(true);
           }}>
             <NoticesIcon /><span className="fc-fab-label">Notices</span>{openRejections.length + followReport.counts.hpdAsked ? <span className={`fc-follow-badge${openRejections.length ? " is-rejected" : ""}`}>{openRejections.length + followReport.counts.hpdAsked}</span> : null}
           </button>
-          <button type="button" className={`fc-map-fab fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" data-tip="Follow-up: overdue jobs" title="Follow-up report" onClick={() => { setFollowOpen(true); setSelectedJob(null); }}>
+          <button type="button" className={`fc-map-fab fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" data-tip="Follow-up: overdue jobs" title="Follow-up report" aria-pressed={followOpen} onClick={() => { if (followOpen) { setFollowOpen(false); return; } closeScreens("follow"); setFollowOpen(true); }}>
             <FollowIcon /><span className="fc-fab-label">Follow-up</span>{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge" data-hpd-smoke="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
           </button>
-          <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" data-tip="Invitations to bid" aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { setSelectedJob(null); setBidsOpen((o) => !o); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.today ? <span className="fc-follow-badge is-bids-today" data-hpd-smoke="fc-bids-badge" title={`${bidsDue.today} due today`}>{bidsDue.today}</span> : bidsDue.tomorrow ? <span className="fc-follow-badge is-bids-tomorrow" data-hpd-smoke="fc-bids-badge" title={`${bidsDue.tomorrow} due tomorrow`}>{bidsDue.tomorrow}</span> : null}</button>
+          <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" data-tip="Invitations to bid" aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.today ? <span className="fc-follow-badge is-bids-today" data-hpd-smoke="fc-bids-badge" title={`${bidsDue.today} due today`}>{bidsDue.today}</span> : bidsDue.tomorrow ? <span className="fc-follow-badge is-bids-tomorrow" data-hpd-smoke="fc-bids-badge" title={`${bidsDue.tomorrow} due tomorrow`}>{bidsDue.tomorrow}</span> : null}</button>
           <button
             type="button"
             className={`fc-map-fab ${darkTiles ? "is-active" : ""}`}
@@ -2817,7 +2835,7 @@ export default function FieldCommandClient() {
             const center = mapRef.current?.getCenter();
             if (center && center.lat > 40.49 && center.lat < 40.92 && center.lng > -74.26 && center.lng < -73.7) return {point:{lat:center.lat,lng:center.lng},label:'map center (location not set)'};
             return {point:OFFICE_LOCATION,label:'the office, 120-17 91st Ave (location not set)'};
-          }} openRequest={routeOpenRequest} onNavigate={rememberNavigation} onPreview={drawDayRoute} onSelect={id => {setSelectedJob(jobs.find(job=>jobId(job)===id)||null);setSheetExpanded(false);}} />
+          }} openRequest={routeOpenRequest} closeRequest={routeCloseRequest} onOpenChange={setRouteOpen} onNavigate={rememberNavigation} onPreview={drawDayRoute} onSelect={id => {setSelectedJob(jobs.find(job=>jobId(job)===id)||null);setSheetExpanded(false);}} />
         </div>
         {agendaOpen ? <aside className="fc-appointment-agenda" aria-label="Today's appointments">
           <header><strong>Today&apos;s appointments</strong><button type="button" aria-label="Close appointments" onClick={() => setAgendaOpen(false)}>&times;</button></header>
@@ -3450,6 +3468,7 @@ export default function FieldCommandClient() {
           <header>
             <strong>📩 HPD notices</strong>
             <button type="button" aria-label="Close" onClick={() => setNoticesOpen(false)}>Close (keep on map)</button>
+            <button type="button" data-hpd-smoke="fc-notices-show-all" onClick={() => { setNoticesOpen(false); setFollowFilter(""); }}>Show all jobs</button>
           </header>
           <div className="fc-summary-body fc-follow-body" data-hpd-smoke="fc-notices-body">
             {toPrint.length ? (

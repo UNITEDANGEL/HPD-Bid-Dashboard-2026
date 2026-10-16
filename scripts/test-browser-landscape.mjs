@@ -47,10 +47,12 @@ try {
     await body.waitFor({ timeout: 5000 });
     const scrolled = await body.evaluate(async (b) => { b.scrollTop = 600; await new Promise((r) => setTimeout(r, 100)); return b.scrollHeight <= b.clientHeight || b.scrollTop > 0; });
     assert.ok(scrolled, `${where}: notices scroll`);
-    await page.locator('[data-hpd-smoke="fc-notices-sheet"] header button').click();
-    // Second tap on Notices: back to all jobs.
+    await page.locator('[data-hpd-smoke="fc-notices-sheet"] header button[aria-label="Close"]').click();
+    // Notices again: the list opens again; Show all jobs brings every job back.
     await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
-    assert.equal(await page.locator('[data-hpd-smoke="fc-notices-open"]').getAttribute("aria-pressed"), "false", `${where}: second tap on Notices shows all jobs again`);
+    await page.locator('[data-hpd-smoke="fc-notices-sheet"]').waitFor({ timeout: 5000 });
+    await page.locator('[data-hpd-smoke="fc-notices-show-all"]').click();
+    assert.equal(await page.locator('[data-hpd-smoke="fc-notices-open"]').getAttribute("aria-pressed"), "false", `${where}: Show all jobs closes the notices`);
     // Bids: open, second tap closes.
     await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
     await page.locator('[data-hpd-smoke="fc-bids-list"] li').first().waitFor({ timeout: 20000 });
@@ -61,7 +63,7 @@ try {
     await page.locator('[data-hpd-smoke="fc-bids-list"] li').first().waitFor({ timeout: 20000 });
     await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
     await page.locator('[data-hpd-smoke="fc-notices-sheet"]').waitFor({ timeout: 5000 });
-    await page.locator('[data-hpd-smoke="fc-notices-sheet"] header button').click();
+    await page.locator('[data-hpd-smoke="fc-notices-sheet"] header button[aria-label="Close"]').click();
     // An open bid: earlier jobs at the building, then Map goes back to the map.
     if (!(await page.locator('[data-hpd-smoke="fc-bids-list"]').count())) await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
     await page.locator('[data-hpd-smoke="fc-bids-list"] li').first().waitFor({ timeout: 20000 });
@@ -89,7 +91,7 @@ try {
       assert.ok(await page.locator(".fc-bids-list.is-collapsed").count(), `${where}: list folded so the map shows`);
     }
     assert.deepEqual(errors, []);
-    console.log(`PASS ${where}: full width, ${layout.count} map buttons reachable, notices open + scroll + 2nd tap closes, bids open/close, notices from bids${withHistory ? `, ${withHistory.omo} building history + Map button` : ""}`);
+    console.log(`PASS ${where}: full width, ${layout.count} map buttons reachable, notices open + scroll + reopen + show all, bids open/close, notices from bids${withHistory ? `, ${withHistory.omo} building history + Map button` : ""}`);
     await context.close();
   }
 } finally {

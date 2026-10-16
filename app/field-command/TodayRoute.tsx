@@ -6,8 +6,11 @@ import type { RoadRoute } from '../../lib/road-route';
 import { eligibleRouteJobs, planDay, routeTime, scheduleStops, validRouteSettings, type RouteJob, type RoutePoint, type RouteSettings } from '../../lib/day-route';
 
 const KEY='hpd-today-route-v1';
-export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,onNavigate,openRequest=0}: {jobs:RouteJob[];mapReady:boolean;getOrigin:()=>{point:RoutePoint;label:string};onPreview:(jobs:RouteJob[],origin:RoutePoint,numbers?:number[],done?:RouteJob[])=>Promise<RoadRoute|null>|void;onSelect:(id:string)=>void;onNavigate:(id:string)=>void;openRequest?:number}) {
+export default function TodayRoute({jobs,mapReady,getOrigin,onPreview,onSelect,onNavigate,openRequest=0,closeRequest=0,onOpenChange}: {jobs:RouteJob[];mapReady:boolean;getOrigin:()=>{point:RoutePoint;label:string};onPreview:(jobs:RouteJob[],origin:RoutePoint,numbers?:number[],done?:RouteJob[])=>Promise<RoadRoute|null>|void;onSelect:(id:string)=>void;onNavigate:(id:string)=>void;openRequest?:number;closeRequest?:number;onOpenChange?:(open:boolean)=>void}) {
   const [open,setOpen]=useState(false);
+  // Another map button opened its own screen: close the route panel. The map knows whether it's open.
+  useEffect(()=>{if(closeRequest)setOpen(false);},[closeRequest]);
+  useEffect(()=>{onOpenChange?.(open);},[open]); // eslint-disable-line react-hooks/exhaustive-deps
   const [settings,setSettings]=useState<RouteSettings>({date:nyToday(),start:'08:00',end:'17:00',minutes:45,borough:'ALL'});
   const [ids,setIds]=useState<string[]>([]);
   const [origin,setOrigin]=useState<{point:RoutePoint;label:string}|null>(null);
