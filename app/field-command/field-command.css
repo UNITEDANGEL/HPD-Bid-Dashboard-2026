@@ -2774,3 +2774,28 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab)[aria-pressed="true"] > svg,
 .fc-work-fab[aria-pressed="true"] > svg { animation: fc-fab-pop 0.28s ease-out; box-shadow: 0 0 0 4px #facc15, 0 0 18px color-mix(in srgb, var(--fab) 70%, transparent); }
 @media (prefers-reduced-motion: reduce) { .fc-app .fc-map-controls .fc-map-fab > svg, .fc-work-fab > svg { animation: none !important; } }
+
+/* Priority list: what HPD is waiting on, most urgent first. */
+.fc-prio-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fc-prio-list > li { padding: 10px; border-radius: 12px; background: #111827; border: 1px solid #334155; border-left-width: 6px; }
+.fc-prio-list > li.is-24h { border-left-color: #ef4444; }
+.fc-prio-list > li.is-72h { border-left-color: #f59e0b; }
+.fc-prio-list > li.is-rejection { border-left-color: #f43f5e; }
+.fc-prio-list > li.is-missing { border-left-color: #60a5fa; }
+.fc-prio-list > li.is-print { border-left-color: #22c55e; }
+.fc-prio-list > li.is-overdue { background: #2a1215; }
+.fc-prio-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.fc-prio-head b { font: 800 17px system-ui; color: #f8fafc; }
+.fc-prio-head span { color: #cbd5e1; font: 600 14px system-ui; }
+.fc-prio-title { margin: 4px 0 0; font: 800 15px/1.35 system-ui; color: #fde68a; }
+.fc-prio-due { margin: 2px 0 0; font: 800 15px system-ui; color: #fca5a5; }
+.fc-prio-list > li:not(.is-overdue) .fc-prio-due { color: #fdba74; }
+.fc-prio-asked { margin: 2px 0 0; font: 600 13px system-ui; color: #94a3b8; }
+.fc-prio-want { margin: 4px 0 0; font: 600 15px/1.4 system-ui; color: #e2e8f0; }
+.fc-prio-sent { margin: 4px 0 0; font: 700 13.5px system-ui; color: #fdba74; }
+.fc-prio-sent.is-sent { color: #86efac; }
+.fc-notices-sheet .fc-prio-list .fc-notice-actions > button.is-armed { background: #16a34a; border-color: #16a34a; }
+.fc-prio-list > li.fc-prio-group { padding: 8px 2px 2px; background: none; border: 0; font: 800 14px/1.35 system-ui; color: #f8fafc; }
+.fc-notices-sheet .fc-notice-actions > button { min-height: 38px !important; padding: 0 12px !important; border-radius: 19px !important; border: 1px solid #475569 !important; background: #1e293b !important; color: #f8fafc !important; font: 800 13px system-ui !important; }
+.fc-notices-sheet .fc-notice-actions > button.is-armed { background: #16a34a !important; border-color: #16a34a !important; }
+.fc-notices-sheet .fc-notice-actions > button.is-notice { background: #0f172a !important; border-color: #a78bfa !important; }

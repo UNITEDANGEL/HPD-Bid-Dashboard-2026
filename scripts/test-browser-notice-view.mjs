@@ -19,6 +19,7 @@ try {
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
     await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+    await page.locator('[data-hpd-smoke="fc-notice-tab-rejected"]').click(); // Priority is the first tab
     const buttons = page.locator('[data-hpd-smoke="fc-notice-view"]');
     await buttons.first().waitFor({ timeout: 30000 });
     // Signed in: the first notice that has HPD's PDF (the button says how many page files).

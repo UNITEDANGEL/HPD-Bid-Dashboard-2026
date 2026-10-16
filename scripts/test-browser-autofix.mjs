@@ -26,6 +26,7 @@ try {
   // From the Rejected tab.
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+    await page.locator('[data-hpd-smoke="fc-notice-tab-rejected"]').click(); // Priority is the first tab
   const link = page.locator('[data-hpd-smoke="fc-notices-rejected"] li', { hasText: OMO }).locator('[data-hpd-smoke="fc-notice-autofix"]');
   await link.waitFor({ timeout: 15000 });
   await link.click();

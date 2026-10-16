@@ -18,6 +18,7 @@ import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
 import { jobStages, nextStep } from "../../lib/job-stages";
 import { loadConversations, loadNotices, loadPrivate, noticePdfUrl, privateDocUrl, withPrivate, type HpdThread, type NoticeEmail } from "../../lib/private-data";
 import ItbPages from "./ItbPages";
+import { buildPriorities, dueText, type PriorityItem } from "../../lib/priorities";
 import { listCorrections, removeCorrection, type SavedCorrection, updateCorrection } from "../../lib/correction-store";
 import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type PipPayment, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
@@ -797,7 +798,18 @@ export default function FieldCommandClient() {
   const [threadsAll, setThreadsAll] = useState(false);
   useEffect(() => { loadConversations().then((d) => setThreads(d ? d.threads : null)); }, []);
   const threadsFor = (omo: string) => (threads || []).filter((t) => t.omos.includes(omo));
-  const [noticesTab, setNoticesTab] = useState<"rejected" | "corrections" | "requests" | "messages" | "print">("rejected");
+  const [noticesTab, setNoticesTab] = useState<"priority" | "rejected" | "corrections" | "requests" | "messages" | "print">("priority");
+  // Priority list (lib/priorities): what HPD is waiting on, most urgent first; "Handled" (two taps) hides an item
+  // on this phone.
+  const [prioDone, setPrioDone] = useState<Record<string, string>>({});
+  const [prioArmed, setPrioArmed] = useState("");
+  useEffect(() => { try { setPrioDone(JSON.parse(localStorage.getItem("hpd-priority-done") || "{}")); } catch { /* private mode */ } }, []);
+  const markPrioDone = (key: string) => {
+    if (prioArmed !== key) { setPrioArmed(key); return; }
+    const next = { ...prioDone, [key]: new Date().toISOString() };
+    setPrioDone(next); setPrioArmed("");
+    try { localStorage.setItem("hpd-priority-done", JSON.stringify(next)); } catch { /* private mode */ }
+  };
   // "It's fixed and in the mail" note to whoever signed HPD's notice: shown first, sent with a second tap.
   const [ack, setAck] = useState<{ omo: string; to: string; name: string; subject: string; text: string; armed: boolean; status: string } | null>(null);
   const [ackSent, setAckSent] = useState<Record<string, string>>({});
@@ -1440,6 +1452,13 @@ export default function FieldCommandClient() {
   const [showAnsweredRejections, setShowAnsweredRejections] = useState(false);
   const [openNotice, setOpenNotice] = useState("");
   const senderName = (by: string) => (/^Department of Housing/i.test(by) ? "HPD Accounts Payable" : by);
+  const priorities: PriorityItem[] = buildPriorities({
+    threads: (threads || []) as unknown as Parameters<typeof buildPriorities>[0]["threads"],
+    rejections: openRejections.map((r) => ({ omo: r.omo, at: r.at, reason: r.reason || "", by: senderName(r.by || "HPD") })),
+    toPrint, sent: (followRef.current?.sent || {}) as Record<string, { sentAt?: string }>, done: prioDone,
+    // Nothing to do on jobs HPD closed or PIP paid.
+    closed: new Set([...Object.entries(followRef.current?.hpd || {}).filter(([, h]) => (h as { closedReason?: string })?.closedReason).map(([o]) => o), ...Object.entries(pipMap).filter(([, p]) => p?.status === "paid").map(([o]) => o)]),
+  });
   const followMatch = (job: JobRecord) => {
     const f = followUps.get(jobId(job));
     if (!f) return false;
@@ -3770,15 +3789,55 @@ export default function FieldCommandClient() {
                 requests for affidavits, invoices, photos / other messages / fixed paperwork waiting to print. */}
             <nav className="fc-notice-tabs" role="tablist" data-hpd-smoke="fc-notice-tabs">
               {([
-                ["rejected", "❗ Rejected", openRejections.length],
+                ["priority", "🔥 Priority", priorities.length],
+                ["rejected", "💵 Payment rejected", openRejections.length],
                 ["corrections", "✏️ Corrections", threadsOf(CORRECTION_KINDS).filter((t) => t.waiting).length],
-                ["requests", "📎 Requests", followReport.hpdAsked.length + threadsOf(REQUEST_KINDS).filter((t) => t.waiting).length],
+                ["requests", "📋 Vendor tracking", followReport.hpdAsked.length + threadsOf(REQUEST_KINDS).filter((t) => t.waiting).length],
                 ["messages", "💬 Messages", threadsOf(MESSAGE_KINDS).filter((t) => t.waiting).length],
                 ["print", "🖨 Print folder", toPrint.filter((c) => !c.mailedAt).length],
               ] as const).map(([key, label, n]) => (
                 <button key={key} type="button" role="tab" aria-selected={noticesTab === key} className={noticesTab === key ? "is-active" : ""} data-hpd-smoke={`fc-notice-tab-${key}`} onClick={() => setNoticesTab(key)}>{label}{n ? <b>{n}</b> : null}</button>
               ))}
             </nav>
+            {noticesTab === "priority" ? (
+              <section className="fc-follow-section is-priority" data-hpd-smoke="fc-priorities">
+                <h4>🔥 HPD is waiting on these ({priorities.length})</h4>
+                <p className="fc-follow-note">Most urgent first: 24-hour notices, 72-hour notices, rejected paperwork, missing documents, fixed paperwork to print. Do each one, then tap Handled.{threads === null ? " Sign in with Google on this phone to see HPD's emails here." : ""}</p>
+                {!priorities.length ? <p className="fc-follow-note">Nothing waiting. 🎉</p> : (
+                  <ol className="fc-prio-list">
+                    {priorities.map((it, idx) => {
+                      const job = findAnyJob(it.omo);
+                      const due = dueText(it.dueAt);
+                      // Three kinds, kept apart: vendor tracking (affidavit / invoice, poor performance), payment rejected, print & mail.
+                      const group = (k: string) => (k === "rejection" ? "payment" : k === "print" ? "print" : "vendor");
+                      const head = idx === 0 || group(priorities[idx - 1].kind) !== group(it.kind)
+                        ? { vendor: "📋 Vendor tracking: Lewis / Gafur asking for the affidavit, invoice, photos (poor performance notices first)", payment: "💵 Payment rejected: paperwork you sent, rejected for payment", print: "🖨 Fixed: print, sign in ink and mail" }[group(it.kind)]
+                        : "";
+                      return (
+                        <Fragment key={it.key}>
+                        {head ? <li className="fc-prio-group" data-hpd-smoke="fc-prio-group">{head}</li> : null}
+                        <li className={`is-${it.kind}${/overdue/.test(due) ? " is-overdue" : ""}`} data-hpd-smoke="fc-prio-item" data-kind={it.kind}>
+                          <div className="fc-prio-head"><b>{it.omo}</b><span>{job ? jobAddress(job) : ""}</span></div>
+                          <p className="fc-prio-title">{it.kind === "24h" ? "🔥" : it.kind === "72h" ? "⏰" : it.kind === "rejection" ? "❗" : it.kind === "print" ? "🖨" : "📎"} {it.title}{it.who ? ` · ${it.who}` : ""}</p>
+                          {due ? <p className="fc-prio-due" data-hpd-smoke="fc-prio-due">⏱ {due}</p> : <p className="fc-prio-asked">Asked {new Date(it.askedAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}</p>}
+                          <p className="fc-prio-want">{it.want}</p>
+                          {it.kind !== "print" ? <p className={`fc-prio-sent${it.sentAt ? " is-sent" : ""}`} data-hpd-smoke="fc-prio-sent">{it.sentAt ? `✓ Paperwork already sent ${it.sentAt}: answer them with that date` : "⚠️ No paperwork sent for this job yet"}</p> : null}
+                          <div className="fc-notice-actions">
+                            {job ? <button type="button" data-hpd-smoke="fc-prio-open" onClick={() => { setNoticesOpen(false); setSelectedJob(job); }}>Open job</button> : null}
+                            {it.kind === "rejection" && job ? <a className="is-autofix" href={`/paperwork/?job=${encodeURIComponent(it.omo)}&fix=${encodeURIComponent(it.askedAt)}&auto=1`}>✨ Auto-fix &amp; preview</a> : null}
+                            {(it.kind === "24h" || it.kind === "72h" || it.kind === "missing") && job ? <a href={`/paperwork/?job=${encodeURIComponent(it.omo)}`} data-hpd-smoke="fc-prio-paperwork">📄 Make the paperwork</a> : null}
+                            {it.kind === "print" ? <button type="button" onClick={() => setNoticesTab("print")}>🖨 Print folder</button> : null}
+                            {it.threadId ? <button type="button" data-hpd-smoke="fc-prio-email" onClick={() => setThreadView({ ids: [it.threadId], title: `${it.omo}: ${it.title}` })}>💬 HPD&apos;s email</button> : null}
+                            <button type="button" className={prioArmed === it.key ? "is-armed" : ""} data-hpd-smoke="fc-prio-done" onClick={() => markPrioDone(it.key)}>{prioArmed === it.key ? "Tap again: handled" : "✓ Handled"}</button>
+                          </div>
+                        </li>
+                        </Fragment>
+                      );
+                    })}
+                  </ol>
+                )}
+              </section>
+            ) : null}
             {noticesTab === "corrections" ? threadSection("corrections", "✏️ HPD asked for corrections", CORRECTION_KINDS, "HPD staff emails asking you to correct an affidavit / invoice (the automatic rejection notices are under Rejected).") : null}
             {noticesTab === "messages" ? threadSection("messages", "💬 Messages with HPD", MESSAGE_KINDS, "AEP, work orders and other emails with HPD staff.") : null}
             {noticesTab === "print" && !toPrint.length ? <p className="fc-follow-note" data-hpd-smoke="fc-notices-to-print-empty">Nothing waiting to print. Fixed rejections land here after you check the preview and save them.</p> : null}
@@ -3888,7 +3947,7 @@ export default function FieldCommandClient() {
                 </li>
               ))}</ol> : <p>None waiting on you.</p>}
             </section>
-            {threadSection("requests", "📧 Their emails asking for affidavits / invoices / photos", REQUEST_KINDS, "")}
+            {threadSection("requests", "📋 Vendor tracking: emails asking for the affidavit, invoice, photos and poor performance notices", REQUEST_KINDS, "J. Lewis (ERP) and D. Gafur (AEP) track vendors: they ask for the affidavit and invoice. Not the same as payment rejections or corrections.")}
             </>) : null}
           </div>
         </div>

@@ -131,6 +131,7 @@ jobs:
           node scripts/test-auto-fix.mjs
           node scripts/test-bid-calc.mjs
           node scripts/test-costs.mjs
+          node scripts/test-priorities.mjs
           node scripts/test-building-facts.mjs
           node scripts/test-building-bids.mjs
           node scripts/test-private-data.mjs
@@ -182,6 +183,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-costs.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-bids-badge.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-prefill.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-priorities.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork-lock.mjs
 

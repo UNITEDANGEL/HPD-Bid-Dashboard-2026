@@ -3,6 +3,15 @@
   "versions": [
     {
       "date": "Oct 16, 2026",
+      "title": "Priority list of what HPD is waiting on",
+      "items": [
+        "HPD notices opens on 🔥 Priority: everything HPD is waiting on, most urgent first: Lewis's 24-hour and 72-hour notices with a countdown, rejected paperwork, missing documents, fixed paperwork to print and mail.",
+        "Each item says who asked, what for, and whether paperwork was already sent, with buttons to open the job, make the paperwork, see the email, and mark it handled.",
+        "Kept apart: 💵 Payment rejected, 📋 Vendor tracking (affidavit and invoice requests), ✏️ Corrections."
+      ]
+    },
+    {
+      "date": "Oct 16, 2026",
       "title": "Recommended price and bigger buttons",
       "items": [
         "Next to the price box: the recommended price with its chance to win (and My price if your rates cover the job). Tap Use, or type your own: the price is always your choice.",
