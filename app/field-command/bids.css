@@ -485,3 +485,18 @@
 .fc-vsbest-head { margin: 0 0 8px; font: 700 15px/1.4 system-ui; color: #fef3c7; }
 .fc-vsbest-head b { color: #fde047; }
 .fc-bid-high.is-soft { background: #422006; border-color: #f59e0b; color: #fef3c7; }
+
+/* Your minimum per kind of work, under the best price. */
+.fc-floor { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #ffffff33; font: 600 13.5px/1.35 system-ui; }
+.fc-floor b { color: #fde047; }
+.fc-floor > button, .fc-floor-form button { min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #ffffff44; background: #1f2937; color: #fff; font: 800 13.5px system-ui; }
+.fc-floor-form { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fc-floor-form label { display: flex; align-items: center; gap: 4px; font: 800 15px system-ui; }
+.fc-floor-form input { width: 96px; min-height: 40px; padding: 0 8px; border-radius: 10px; border: 1px solid #64748b; background: #020617; color: #fff; font: 800 16px system-ui; }
+.fc-floor-form button[data-hpd-smoke="fc-floor-save"] { background: #16a34a; border-color: #16a34a; }
+.fc-floor small { flex-basis: 100%; color: #cbd5e1; font-weight: 500; }
+.fc-floors ul { list-style: none; margin: 0; padding: 0; }
+.fc-floors li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #ffffff1f; }
+.fc-floors li span { flex: 1; min-width: 0; }
+.fc-floors li b { color: #fde047; }
+.fc-floors li button { min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #ffffff44; background: #1f2937; color: #fff; font: 800 13px system-ui; }

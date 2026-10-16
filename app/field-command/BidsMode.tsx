@@ -16,6 +16,7 @@ import "./bids.css";
 import BuildingFacts from "./BuildingFacts";
 import ItbPages, { bidPages, pagePictures } from "./ItbPages";
 import { getPages } from "../../lib/page-cache";
+import { bestWithFloor, floorKind, readFloors, saveFloor, type Floors } from "../../lib/cost-floor";
 import { buildingHistory } from "../../lib/building-bids";
 import { bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
@@ -89,6 +90,10 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const [privOk, setPrivOk] = useState(false);
   const [thumbs, setThumbs] = useState<Record<string, string>>({});
   const [pagesFor, setPagesFor] = useState<UpcomingBid | null>(null);
+  // Your own minimum per kind of work (lib/cost-floor): the best price never goes under it.
+  const [floors, setFloors] = useState<Floors>({});
+  const [floorEdit, setFloorEdit] = useState<string | null>(null);
+  useEffect(() => { setFloors(readFloors()); }, []);
   const [bidsReadAt, setBidsReadAt] = useState("");
   // Invitation PDFs the reader couldn't read (no OMO # or bid due date): shown, never dropped silently.
   const [unread, setUnread] = useState<{ file: string; omo?: string; why: string }[]>([]);
@@ -356,22 +361,25 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   // Since mid-September most lost bids were far above the winner (lock / latch about double): a price that
   // would win fewer than 1 in 4 similar jobs gets a clear warning, and saving it takes a second tap.
   const draftNumber = Number(String(draft).replace(/[^0-9.]/g, ""));
+  const selKind = selected ? floorKind(selected.description) : "";
+  const selFloor = selKind ? floors[selKind] : undefined;
+  useEffect(() => { setFloorEdit(null); }, [selected?.omo]);
   useEffect(() => { setArmed((a) => (a === "high" ? "" : a)); }, [draft]); // a new price needs its own second tap
   const highPrice = useMemo(() => {
     if (!help || !(draftNumber > 0) || help.prices.length < 5) return null;
     const chance = Math.round(winChance(help, draftNumber) * 100);
-    const best = bestPrice(help);
+    const best = bestWithFloor(help, selFloor);
     if (chance >= 25 || draftNumber <= best.price) return null;
     return { chance, best: best.price, bestChance: Math.round(winChance(help, best.price) * 100), n: help.prices.length };
-  }, [help, draftNumber]);
+  }, [help, draftNumber, selFloor]);
   // More than 15% above the best price (but not as bad as above): a softer note. Since Nov 2025 half of
   // your bids were more than 15% above the best price, and those won far fewer jobs (Stats).
   const abovePrice = useMemo(() => {
     if (highPrice || !help || !(draftNumber > 0) || help.prices.length < 5) return null;
-    const best = bestPrice(help);
+    const best = bestWithFloor(help, selFloor);
     if (draftNumber <= best.price * 1.15) return null;
     return { pct: Math.round((draftNumber / best.price - 1) * 100), chance: Math.round(winChance(help, draftNumber) * 100), best: best.price, bestChance: Math.round(winChance(help, best.price) * 100) };
-  }, [help, draftNumber, highPrice]);
+  }, [help, draftNumber, highPrice, selFloor]);
   const scope = useMemo(() => readScope(selected?.description || ""), [selected]);
   const easy = useMemo(() => (selected && stats ? easyWin(selected.description, stats.workPrices) : null), [selected, stats]);
   const descriptions = useMemo(() => new Map<string, string>([...marketJobs.map((j) => [j.omo, j.description] as [string, string]), ...(bids || []).map((b) => [b.omo, b.description] as [string, string])]), [marketJobs, bids]);
@@ -567,8 +575,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const checklist = bidChecklist(bids || [], records, today, tomorrowDay, nyNow[0] * 60 + nyNow[1], new Date(clock), (omo) => {
     const h = rowHelp.get(omo);
     if (!h) return null;
-    const best = bestPrice(h).price;
-    return { best, chance: winChance(h, best) };
+    const b = bestWithFloor(h, floors[floorKind((bids || []).find((x) => x.omo === omo)?.description || "")]);
+    return { best: b.price, chance: b.chance };
   }, easyOmos);
   const sessionOn = !!session?.active && session.day === today;
   const leftText = (m: number) => (m <= 0 ? "past due" : m < 60 ? `${m} min left` : `${Math.floor(m / 60)}h ${m % 60}m left`);
@@ -743,6 +751,12 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   <span>It would have won only about {highPrice.chance}% of jobs like this ({highPrice.n} recent awards). The best price is {money(highPrice.best)} (wins ~{highPrice.bestChance}%).</span>
                   <button type="button" onClick={() => pickPrice(String(highPrice.best))}>Use {money(highPrice.best)}</button>
                 </div>
+              ) : selFloor && draftNumber > 0 && draftNumber < selFloor ? (
+                <div className="fc-bid-high is-soft" data-hpd-smoke="fc-bid-below-floor" role="note">
+                  <b>Below your minimum for {selKind}</b>
+                  <span>You set {money(selFloor)} as the least you&apos;ll take for this kind of work.</span>
+                  <button type="button" onClick={() => pickPrice(String(selFloor))}>Use {money(selFloor)}</button>
+                </div>
               ) : abovePrice ? (
                 <div className="fc-bid-high is-soft" data-hpd-smoke="fc-bid-above" role="note">
                   <b>{abovePrice.pct}% above the best price</b>
@@ -781,15 +795,30 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   {help.trend ? <small className={`fc-bid-trend ${help.trend.change > 0 ? "is-up" : help.trend.change < 0 ? "is-down" : ""}`} data-hpd-smoke="fc-bid-trend">Last 90 days: middle {money(help.trend.recent)}, {help.trend.change === 0 ? "same as" : `${help.trend.change > 0 ? "up" : "down"} ${Math.abs(help.trend.change)}% from`} {money(help.trend.before)} before.</small> : null}
                   {help.unmatched.length ? <p className="fc-bid-warn" data-hpd-smoke="fc-bid-unmatched">No awarded job with: {help.unmatched.join(", ")}. Add your own price for that part.</p> : null}
                   {(() => {
-                    const best = bestPrice(help);
+                    const best = bestWithFloor(help, selFloor);
                     const move = stats?.allMoves.find((g) => g.name === `${tradeOf(selected.description)} · ${selected.borough === "MN" ? "Manhattan" : selected.borough === "BK" ? "Brooklyn" : selected.borough === "QN" ? "Queens" : selected.borough === "BX" ? "Bronx" : selected.borough === "SI" ? "Staten Island" : selected.borough}`);
                     const mineForWork = sentStats?.byWork.find((g) => g.work === scope.labels[0]);
                     return (
                       <div className="fc-bid-best" data-hpd-smoke="fc-bid-best">
                         <span>💰 Best price</span>
                         <b>{money(best.price)}</b>
-                        <small>Wins about {Math.round(best.chance * 100)}% of jobs like this: the most money over time (price × chance of winning). Tested on past awards since April: more money than the middle or the safest price.</small>
+                        {best.floored
+                          ? <small data-hpd-smoke="fc-bid-floored">Your minimum for {selKind} ({money(best.price)}) is above the app&apos;s best price ({money(best.appBest)}): at {money(best.price)} it wins about {Math.round(best.chance * 100)}% of jobs like this.</small>
+                          : <small>Wins about {Math.round(best.chance * 100)}% of jobs like this: the most money over time (price × chance of winning). Tested on past awards since April: more money than the middle or the safest price.</small>}
                         <button type="button" data-hpd-smoke="fc-bid-use-best" onClick={() => pickPrice(String(best.price))}>Use {money(best.price)}</button>
+                        <div className="fc-floor" data-hpd-smoke="fc-floor">
+                          <span>{selFloor ? <>Your minimum for {selKind}: <b>{money(selFloor)}</b></> : <>No minimum set for {selKind}</>}</span>
+                          {floorEdit === null ? <button type="button" data-hpd-smoke="fc-floor-edit" onClick={() => setFloorEdit(selFloor ? String(selFloor) : "")}>{selFloor ? "Change" : "Set my minimum"}</button> : null}
+                          {floorEdit !== null ? (
+                            <span className="fc-floor-form">
+                              <label>$<input inputMode="decimal" aria-label={`Your minimum for ${selKind}`} data-hpd-smoke="fc-floor-input" placeholder="e.g. 450" value={floorEdit} onChange={(e) => setFloorEdit(e.target.value)} /></label>
+                              <button type="button" data-hpd-smoke="fc-floor-save" onClick={() => { setFloors(saveFloor(selKind, Number(floorEdit.replace(/[^0-9.]/g, "")) || null)); setFloorEdit(null); }}>Save</button>
+                              {selFloor ? <button type="button" data-hpd-smoke="fc-floor-remove" onClick={() => { setFloors(saveFloor(selKind, null)); setFloorEdit(null); }}>Remove</button> : null}
+                              <button type="button" onClick={() => setFloorEdit(null)}>Cancel</button>
+                            </span>
+                          ) : null}
+                          <small>The least you&apos;ll take for this kind of work (kept on this phone). The best price never goes below it.</small>
+                        </div>
                         {move ? <p className={`fc-bid-move is-${move.advice}`} data-hpd-smoke="fc-bid-move">{move.advice === "raise" ? "📈 Raise your price" : "📉 Others win cheaper"} on {move.name}: you win {Math.round(move.winRate * 100)}% · you usually get {money(move.yourPrice)}, others win at {money(move.othersPrice)}.</p> : null}
                         {mineForWork && mineForWork.bids >= 5 ? <p className="fc-bid-move" data-hpd-smoke="fc-bid-mine-work">Your bids on {mineForWork.work}: won {mineForWork.won} of {mineForWork.bids} ({mineForWork.winRate}%){mineForWork.lostAboveBy ? ` · when you lost, you were ~${money(mineForWork.lostAboveBy)} above the winner` : ""}.</p> : null}
                       </div>
@@ -990,7 +1019,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   <li key={bid.omo}>
                     <button type="button" onClick={() => openBid(bid)}>
                       <span className="fc-bid-row"><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}{again ? <span className="fc-bid-chip is-again" data-hpd-smoke="fc-bid-again-chip">🔁 bid before · {money(again.price)}</span> : null}{ew ? <span className="fc-bid-chip is-easy" data-hpd-smoke="fc-bid-easy-chip">Easy win · ~{money(ew.suggested)}</span> : null}</span>
-                      {!currentRecord(bid, records) && !ew && rowHelp.get(bid.omo) ? (() => { const h = rowHelp.get(bid.omo)!; const best = bestPrice(h); return <span className={`fc-bid-predict is-${h.confidence}`} data-hpd-smoke="fc-bid-predict">💰 Best ~{money(best.price)} (wins ~{Math.round(best.chance * 100)}%) · middle {money(h.middle)}{h.confidence === "low" ? " · rough guide" : ""}</span>; })() : null}
+                      {!currentRecord(bid, records) && !ew && rowHelp.get(bid.omo) ? (() => { const h = rowHelp.get(bid.omo)!; const best = bestWithFloor(h, floors[floorKind(bid.description)]); return <span className={`fc-bid-predict is-${h.confidence}`} data-hpd-smoke="fc-bid-predict">💰 Best ~{money(best.price)} (wins ~{Math.round(best.chance * 100)}%) · middle {money(h.middle)}{h.confidence === "low" ? " · rough guide" : ""}</span>; })() : null}
                       <span>{bid.address}{bid.borough ? ` · ${bid.borough}` : ""}</span>
                       <small>{due.text}</small>
                     </button>
@@ -1006,7 +1035,17 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               })}</ol>
             ) : <p>{list.length ? "No invitations due that day. Pick another day above." : "No open invitations right now. New ones are read through the day (8 AM to 9 PM)."}</p>
           ) : tab === "stats" ? (
-            <BidStatsView stats={stats} loading={market === null} jobs={marketJobs} learned={learned} />
+            <>
+              <section className="fc-stats-block fc-floors" data-hpd-smoke="fc-floors">
+                <h4>Your minimums</h4>
+                {Object.keys(floors).length ? (
+                  <ul>{Object.entries(floors).sort((x, y) => x[0].localeCompare(y[0])).map(([kind, amount]) => (
+                    <li key={kind}><span>{kind}</span><b>{money(amount)}</b><button type="button" data-hpd-smoke="fc-floors-remove" onClick={() => setFloors(saveFloor(kind, null))}>Remove</button></li>
+                  ))}</ul>
+                ) : <p className="fc-stats-note">None yet. Open a bid and tap &quot;Set my minimum&quot; under the best price: the least you&apos;ll take for that kind of work. The best price never goes below it.</p>}
+              </section>
+              <BidStatsView stats={stats} loading={market === null} jobs={marketJobs} learned={learned} />
+            </>
           ) : tab === "history" ? (
             <JobHistory jobs={marketJobs} loading={market === null} />
           ) : (

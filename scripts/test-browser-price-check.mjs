@@ -56,9 +56,30 @@ try {
   await price.fill(String(Math.floor(best * 1.14)));
   await page.waitForTimeout(200);
   assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-above"]').count(), 0, "no soft note under 15% above");
+  // Your minimum: set it above the best price -> the best price becomes the minimum, under it a note.
+  const floor = best + 100;
+  await sheet.locator('[data-hpd-smoke="fc-floor-edit"]').click();
+  await sheet.locator('[data-hpd-smoke="fc-floor-input"]').fill(String(floor));
+  await sheet.locator('[data-hpd-smoke="fc-floor-save"]').click();
+  await sheet.locator('[data-hpd-smoke="fc-bid-floored"]').waitFor({ timeout: 3000 });
+  assert.equal(Number((await sheet.locator('[data-hpd-smoke="fc-bid-best"] b').first().innerText()).replace(/[^0-9]/g, "")), floor, "best price raised to your minimum");
+  { const t = await sheet.locator('[data-hpd-smoke="fc-floor"]').innerText(); assert.ok(t.includes("Your minimum for") && t.includes(money(floor)), `minimum shown: ${t}`); }
+  await price.fill(String(floor - 50));
+  await sheet.locator('[data-hpd-smoke="fc-bid-below-floor"]').waitFor({ timeout: 3000 });
+  await sheet.locator('[data-hpd-smoke="fc-bid-below-floor"] button').click();
+  assert.equal((await price.inputValue()).replace(/[^0-9]/g, ""), String(floor), "Use minimum puts it in");
+  const omo = (await sheet.locator("header strong, header b").first().innerText().catch(() => "")).trim();
   await sheet.locator("header button").first().click();
-  // Stats: the same totals as the data file.
+  // Kept after a reload; the list row shows the minimum as the best price too.
+  await page.goto(`${baseUrl}/map/?bids=1`, { waitUntil: "load" });
+  await list.locator("ol > li > button:first-child").first().waitFor({ timeout: 30000 });
   await page.locator('[data-hpd-smoke="fc-bids-stats"]').click();
+  const floorsBox = page.locator('[data-hpd-smoke="fc-floors"]');
+  await floorsBox.waitFor({ timeout: 10000 });
+  assert.ok((await floorsBox.innerText()).includes(money(floor)), "Stats lists your minimum");
+  await floorsBox.locator('[data-hpd-smoke="fc-floors-remove"]').click();
+  assert.match(await floorsBox.innerText(), /None yet/, "removed");
+  // Stats: the same totals as the data file.
   const box = page.locator('[data-hpd-smoke="fc-vsbest"]');
   await box.waitFor({ timeout: 20000 });
   const v = stats.vsBest.total;
@@ -66,7 +87,7 @@ try {
   assert.ok(head.includes(`${v.bestWon} jobs (${money(v.bestAmount)})`) && head.includes(`${v.won} (${money(v.wonAmount)})`), `Stats headline matches the data: ${head}`);
   assert.equal(await box.locator('[data-hpd-smoke="fc-vsbest-months"] tbody tr').count(), Math.min(6, stats.vsBest.byMonth.length));
   assert.deepEqual(errors, []);
-  console.log(`PASS price check: best ${money(best)} no note; ${money(high)} (+20%) shows "${kind === "fc-bid-above" ? "20% above the best price" : "will probably lose"}" and Use ${money(best)} puts it back; under 15% no note; Stats: best price would have won ${v.bestWon} (${money(v.bestAmount)}) vs your ${v.won} (${money(v.wonAmount)})`);
+  console.log(`PASS price check: best ${money(best)} no note; ${money(high)} (+20%) shows "${kind === "fc-bid-above" ? "20% above the best price" : "will probably lose"}" and Use ${money(best)} puts it back; under 15% no note; minimum ${money(best + 100)} raises the best price, a lower price gets "below your minimum", kept after reload, listed and removed in Stats; Stats: best price would have won ${v.bestWon} (${money(v.bestAmount)}) vs your ${v.won} (${money(v.wonAmount)})`);
   await context.close();
 } finally {
   await browser.close();
