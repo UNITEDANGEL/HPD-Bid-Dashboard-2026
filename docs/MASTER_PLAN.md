@@ -204,6 +204,24 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
    closes what was open, and a second tap closes it; Notices sometimes went back to the wrong screen: fix.
    Test every button from every screen.
 
+Done 16 Oct (same day):
+- **Flow (5)**: every map button closes whatever else is open and a second tap closes its own screen; Notices
+  always opens the list (it used to clear the map instead when tapped after closing the list); the list has
+  **Show all jobs**. scripts/test-browser-flow.mjs taps every button from every screen (30 pairs, both ways
+  of holding the phone).
+- **Expensive parts (3)**: Secure Tech lock and electric strike are their own kinds of work (only compared
+  with jobs that had them); "ADAM WRITE" read as Adams Rite. Backtest since April: +6 jobs won, +$13,250
+  (Secure Tech +$8,100; Adams Rite / mortise +8 wins). ER05098 (Secure Tech + strike + buzzer): $585 -> $1,329.
+- **Job summary (2)**: "📋 The job" at the top of every bid and on each list row: Vinyl floor · 120 sq ft,
+  Secure Tech lock ×1, Door closer · 2 doors, Sheetrock 44 sq ft + Painting 620 sq ft (each sq ft goes to the
+  work named before it; "remove 44 ... install 44" counted once), where (Apt, floor, entrance) and rooms
+  (lib/job-summary.ts, scripts/test-job-summary.mjs).
+- **My rates (1)**: "🧮 My price" on every bid: tap a line to set your rate (per sq ft / door / window / each
+  part / per job); My price = each line × your rate, with its chance to win and **Use**; list rows show My
+  price when every line has a rate; Stats -> Your rates (Remove). Kept on the phone (lib/my-rates.ts,
+  scripts/test-browser-my-price.mjs).
+- Still to do: sync rates and minimums between phone and computer; stair treads / risers counted by step.
+
 ## Done 16 Oct 2026: your price vs the app's best price
 - Finding (1,547 of your faxed bids that HPD awarded, Nov 2025 - Oct 2026): your prices were a median 16%
   above the app's best price (about 20% since March; half of all bids more than 15% above). Typical chance to

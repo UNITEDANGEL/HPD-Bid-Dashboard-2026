@@ -41,8 +41,8 @@ assert.equal(priceHelp('ROOF DRAIN', history), null, 'nothing similar: no made-u
 const closerLock = readScope('AT BUILDING ENTRANCE DOOR: INSTALL NEW DOOR CLOSER AND REPLACE BROKEN MORTISE LOCK. ENSURE DOOR IS SELF CLOSING AND LATCHING. TOTAL DOORS = (1)');
 assert.deepEqual(closerLock.items, ['closer', 'entrance-lock'], 'a mortise lock at the entrance is entrance hardware');
 assert.deepEqual(readScope('INSTALL NEW DOOR CLOSER AND NEW PASSAGE LOCK. TOTAL DOORS = (1)').items, ['closer', 'lock']);
-assert.deepEqual(readScope('MAKE ALL NECESSARY REPAIRS TO BUILDING ENTRANCE DOOR SECURE-TECH LOCK AND BUZZER SYSTEM. TOTAL DOORS= (1)').items, ['entrance-lock', 'intercom'], 'ER05994: the buzzer is its own work');
-assert.deepEqual(readScope('INSTALL A NEW ADAMS RITE LOCK KEEPING THE EXISTING CYLINDER AND A NEW ELECTRIC STRIKE PLATE. TOTAL DOORS= (1)').items, ['entrance-lock']);
+assert.deepEqual(readScope('MAKE ALL NECESSARY REPAIRS TO BUILDING ENTRANCE DOOR SECURE-TECH LOCK AND BUZZER SYSTEM. TOTAL DOORS= (1)').items, ['secure-tech', 'intercom'], 'ER05994: Secure Tech lock and the buzzer, each its own work');
+assert.deepEqual(readScope('INSTALL A NEW ADAMS RITE LOCK KEEPING THE EXISTING CYLINDER AND A NEW ELECTRIC STRIKE PLATE. TOTAL DOORS= (1)').items, ['electric-strike', 'entrance-lock'], 'Adams Rite + electric strike');
 assert.deepEqual(readScope('REPLACE BROKEN/DEFECTIVE HOPPER DOOR WITH NEW PROPERLY FIRE RATED HOPPER DOOR, COMPLETE WITH SELF-CLOSING HINGES, LATCH. TOTAL DOORS= (1)').items, ['door-new', 'hinges'], 'a new fire-rated hopper door (its latch is part of the door)');
 assert.equal(closerLock.doors, 1);
 assert.equal(readScope('INSTALL NEW PASSAGE LOCKS ON 6 FIRE DOORS. TOTAL DOORS= (6)').doors, 6);
@@ -99,7 +99,7 @@ assert.equal(readScope('MAKE THE FOLLOWING FIRE DOORS SELF CLOSING: 1) 2ND FL ST
 assert.equal(readScope('REPLACE BOTH HOPPER DOORS AT 3RD AND 5TH STORY').doors, 2);
 assert.ok(readScope('APT 2 A-1) INSTALL NEW DOOR CLOSER').doors <= 1, 'apartment letters are not a list');
 assert.ok(readScope('REPLACE 3 BROKEN WINDOWS AT KITCHEN').items.includes('window-new'), 'windows (plural) are new windows');
-for (const d of ['SECURE-TECH LOCK', 'SECURITECH LOCK', 'SECURATEHC LOCK', 'SECURI-TECH LOCK', 'SECURITYTECH LOCK', 'SECURA TECH LOCK', 'SECURTEC LOCK']) assert.ok(readScope(`REPLACE ENTRANCE DOOR ${d}`).items.includes('entrance-lock'), d);
+for (const d of ['SECURE-TECH LOCK', 'SECURITECH LOCK', 'SECURATEHC LOCK', 'SECURI-TECH LOCK', 'SECURITYTECH LOCK', 'SECURA TECH LOCK', 'SECURTEC LOCK']) assert.ok(readScope(`REPLACE ENTRANCE DOOR ${d}`).items.includes('secure-tech'), d);
 
 // Rubbish volume counts toward the size.
 const rubbish = readScope('REMOVE APPROXIMATELY 80 CU YDS OF RUBBISH FROM THE YARD');

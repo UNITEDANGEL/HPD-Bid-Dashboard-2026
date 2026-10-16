@@ -500,3 +500,25 @@
 .fc-floors li span { flex: 1; min-width: 0; }
 .fc-floors li b { color: #fde047; }
 .fc-floors li button { min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #ffffff44; background: #1f2937; color: #fff; font: 800 13px system-ui; }
+
+/* The job at a glance (lib/job-summary.ts) and My price from your rates (lib/my-rates.ts). */
+.fc-job-sum { margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: #0c4a6e; border: 1px solid #38bdf8; color: #f0f9ff; }
+.fc-job-sum > b { display: block; margin-bottom: 4px; font: 800 15px system-ui; }
+.fc-job-sum ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+.fc-job-sum li { font: 700 15.5px/1.35 system-ui; }
+.fc-job-sum li.is-secure-tech, .fc-job-sum li.is-electric-strike { color: #fde047; }
+.fc-job-sum p { margin: 6px 0 0; font: 600 13.5px/1.35 system-ui; color: #bae6fd; }
+.fc-my-price { display: grid; gap: 6px; margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: #1e1b4b; border: 1px solid #818cf8; color: #eef2ff; }
+.fc-my-price > b { font: 800 15px system-ui; }
+.fc-my-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; padding: 4px 0; border-top: 1px solid #ffffff1f; font: 600 14px/1.35 system-ui; }
+.fc-my-rate { min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #a5b4fc; background: #312e81; color: #fff; font: 700 13.5px system-ui; }
+.fc-my-rate em { font-style: normal; color: #fca5a5; }
+.fc-my-edit { display: flex; align-items: center; gap: 6px; }
+.fc-my-edit label { display: flex; align-items: center; gap: 3px; font: 800 15px system-ui; }
+.fc-my-edit input { width: 84px; min-height: 40px; padding: 0 8px; border-radius: 10px; border: 1px solid #a5b4fc; background: #020617; color: #fff; font: 800 16px system-ui; }
+.fc-my-edit button, .fc-my-total button { min-height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: #16a34a; color: #fff; font: 800 14px system-ui; }
+.fc-my-total { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; padding-top: 6px; border-top: 1px solid #a5b4fc66; font: 700 15px system-ui; }
+.fc-my-total b { color: #fde047; font-size: 18px; }
+.fc-my-hint { color: #c7d2fe; }
+.fc-bids-list li .fc-bid-sum { color: #bae6fd; font: 700 13.5px/1.35 system-ui; }
+.fc-bids-list li .fc-bid-sum b { color: #c7d2fe; }

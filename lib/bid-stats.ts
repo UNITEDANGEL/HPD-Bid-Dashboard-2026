@@ -9,7 +9,7 @@ export type MarketJob = { omo: string; amount: number; awardDate: string; won: b
 
 const TRADES: [name: string, items: string[]][] = [
   ["Lead abatement (DELEAD)", ["lead"]],
-  ["Doors & locks", ["door-new", "closer", "lock", "entrance-lock", "hinges", "pushbar", "door-adjust"]],
+  ["Doors & locks", ["door-new", "closer", "lock", "entrance-lock", "secure-tech", "electric-strike", "hinges", "pushbar", "door-adjust"]],
   ["Windows & glass", ["glass", "window-hardware", "window-new"]],
   ["Leaks, plaster & paint", ["leak", "sheetrock", "paint", "ceiling", "wall", "mold"]],
   ["Floors & tile", ["floor"]],

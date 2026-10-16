@@ -56,9 +56,13 @@ const ITEMS: [key: string, label: string, pattern: RegExp][] = [
   ["hopper-chute", "new hopper chute unit", /(?:new|replace\w*|install\w*)\s+(?:the\s+|a\s+)?(?:defective\s+|broken\s+)?(?:compactor\s+)?hopper\s+chute(?!\s+doors?)|hopper chute (?:unit|complete|assembly)/],
   ["ada-closer", "ADA / electronic door closer", /\bada\b|electronic (?:door )?closer|automatic door|power(?:ed)? (?:door )?operator|handicap/],
   ["compactor-hydraulic", "compactor hydraulic / pump", /hydraulic (?:pump|cylinder|unit|system|ram|motor)|(?:compactor|trash) (?:motor|ram|pump)/],
-  // Building-entrance hardware (Adams Rite, Securtec, mortise, electric strike, mag lock) costs more than
-  // a passage lock, so it is its own kind of work.
-  ["entrance-lock", "entrance lock (Adams Rite / mortise / electric strike)", /adams ?rite|secur[a-z]*[ -]?te(c|ch|hc)\b|securi?tech|mortise|electric strik|electric stik|mag(netic)? ?lock|maglock/],
+  // A Secure Tech (Securitech) lock alone costs over $1,000: those jobs win at ~$2,000 (35 awards), so they are
+  // only compared with each other. An electric strike is ~$150 plus install and programming (~$800-900).
+  ["secure-tech", "Secure Tech lock", /secur[a-z]*[ -]?te(c|ch|hc)\b|securi?tech/],
+  ["electric-strike", "electric strike", /electric(?:al)? stri?ke?|electric stik|electronic strike/],
+  // Other building-entrance hardware (Adams Rite, mortise, mag lock) costs more than a passage lock, so it is
+  // its own kind of work.
+  ["entrance-lock", "entrance lock (Adams Rite / mortise)", /adams? ?w?rite|mortise|mag(netic)? ?lock|maglock/],
   // A buzzer / intercom repair is more work than the lock alone (lock + buzzer jobs win at ~$1,400).
   ["intercom", "buzzer / intercom", /buzzer|intercom|door ?bell|entry phone/],
   ["lock", "lock / latch", /\block|latch ?set|door latch\b|lockset|cylinder|\bknob|lever handle|deadbolt|strik\w* plate/],
@@ -245,8 +249,8 @@ export function readScope(description: string): JobScope {
   const found = ITEMS.filter(([key, , re]) => (key === "door-new" ? isNewDoor(text) : re.test(text)));
   let items = found.map(([key]) => key);
   // "Adjust the door to self-close" is part of any closer/hinge/lock/push-bar job, not its own item.
-  if (items.some((k) => ["closer", "hinges", "lock", "entrance-lock", "pushbar", "door-new"].includes(k))) items = items.filter((k) => k !== "door-adjust");
-  if (items.includes("entrance-lock")) items = items.filter((k) => k !== "lock");
+  if (items.some((k) => ["closer", "hinges", "lock", "entrance-lock", "secure-tech", "electric-strike", "pushbar", "door-new"].includes(k))) items = items.filter((k) => k !== "door-adjust");
+  if (items.some((k) => ["entrance-lock", "secure-tech", "electric-strike"].includes(k))) items = items.filter((k) => k !== "lock");
   // A ceiling/wall is a place, not a trade, when sheetrock or painting is already there.
   if (items.includes("sheetrock") || items.includes("paint")) items = items.filter((k) => k !== "ceiling" && k !== "wall");
   const labels = items.map((k) => ITEMS.find(([key]) => key === k)![1]);

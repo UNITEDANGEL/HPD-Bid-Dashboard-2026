@@ -17,6 +17,8 @@ import BuildingFacts from "./BuildingFacts";
 import ItbPages, { bidPages, pagePictures } from "./ItbPages";
 import { getPages } from "../../lib/page-cache";
 import { bestWithFloor, floorKind, readFloors, saveFloor, type Floors } from "../../lib/cost-floor";
+import { jobSummary, lineText, unitOf } from "../../lib/job-summary";
+import { myPrice, readRates, saveRate, unitWord, type Rates } from "../../lib/my-rates";
 import { buildingHistory } from "../../lib/building-bids";
 import { bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
@@ -94,6 +96,10 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const [floors, setFloors] = useState<Floors>({});
   const [floorEdit, setFloorEdit] = useState<string | null>(null);
   useEffect(() => { setFloors(readFloors()); }, []);
+  // Your rates (per sq ft / door / window / part / job) -> "My price" from the job summary.
+  const [rates, setRates] = useState<Rates>({});
+  const [rateEdit, setRateEdit] = useState<Record<string, string>>({});
+  useEffect(() => { setRates(readRates()); }, []);
   const [bidsReadAt, setBidsReadAt] = useState("");
   // Invitation PDFs the reader couldn't read (no OMO # or bid due date): shown, never dropped silently.
   const [unread, setUnread] = useState<{ file: string; omo?: string; why: string }[]>([]);
@@ -278,6 +284,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     if (bids && bids.length && dayPick !== "all" && !shownBids.length) setDayPick("all");
   }, [bids, dayPick, shownBids.length]);
   // Open invitations that are easy wins (work you win well under what other winners get).
+  // Each row: the job at a glance, and My price when your rates cover every line.
+  const rowSummary = useMemo(() => new Map((bids || []).map((b) => [b.omo, jobSummary(b.description)])), [bids]);
   const rowHelp = useMemo(() => new Map((bids || []).map((b) => [b.omo, market?.length ? priceHelp(b.description, pricing) : null])), [bids, market, pricing]);
   const easyOmos = useMemo(() => new Set((bids || []).filter((b) => stats && easyWin(b.description, stats.workPrices)).map((b) => b.omo)), [bids, stats]);
 
@@ -381,6 +389,9 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     return { pct: Math.round((draftNumber / best.price - 1) * 100), chance: Math.round(winChance(help, draftNumber) * 100), best: best.price, bestChance: Math.round(winChance(help, best.price) * 100) };
   }, [help, draftNumber, highPrice, selFloor]);
   const scope = useMemo(() => readScope(selected?.description || ""), [selected]);
+  const summary = useMemo(() => jobSummary(selected?.description || ""), [selected]);
+  const myCalc = useMemo(() => myPrice(summary, rates), [summary, rates]);
+  useEffect(() => { setRateEdit({}); }, [selected?.omo]);
   const easy = useMemo(() => (selected && stats ? easyWin(selected.description, stats.workPrices) : null), [selected, stats]);
   const descriptions = useMemo(() => new Map<string, string>([...marketJobs.map((j) => [j.omo, j.description] as [string, string]), ...(bids || []).map((b) => [b.omo, b.description] as [string, string])]), [marketJobs, bids]);
   const learned = useMemo(() => myPrices(Object.values(records), (omo) => descriptions.get(omo)), [records, descriptions]);
@@ -656,6 +667,11 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.address}, ${selected.borough || ""} NY`)}`} target="_blank" rel="noopener noreferrer">📍 Map &amp; photos</a>
             </div>
             <p className={`fc-bid-due is-${dueWhen(selected).tone}`} data-hpd-smoke="fc-bid-due">⏰ Bid due {dueLabel(selected)} · {dueWhen(selected).text}</p>
+            <div className="fc-job-sum" data-hpd-smoke="fc-job-sum">
+              <b>📋 The job</b>
+              <ul>{summary.lines.length ? summary.lines.map((l) => <li key={l.key} className={`is-${l.key}`}>{lineText(l)}</li>) : <li>General repair (see HPD&apos;s text below)</li>}</ul>
+              {summary.where.length || summary.rooms.length ? <p data-hpd-smoke="fc-job-where">📍 {[...summary.where, ...summary.rooms].join(" · ")}{summary.rooms.length > 1 ? ` (${summary.rooms.length} areas)` : ""}</p> : null}
+            </div>
             {(() => {
               const row = checklist.rows.find((r) => r.omo === selected.omo);
               const u = row ? urgency(row.minutesLeft, row.state === "pending" || row.state === "confirmed") : "";
@@ -786,6 +802,35 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   {scope.paintSqft ? <li className="is-size">~{scope.paintSqft} sq ft paint</li> : null}
                   {scope.tasks > 1 ? <li className="is-size">{scope.tasks} separate tasks</li> : null}
                 </ul>
+              </div>
+              <div className="fc-my-price" data-hpd-smoke="fc-my-price">
+                <b>🧮 My price (your rates)</b>
+                {myCalc.rows.map((r) => {
+                  const k = r.line.key;
+                  const editing = rateEdit[k] !== undefined;
+                  return (
+                    <div key={k} className="fc-my-row" data-hpd-smoke="fc-my-row" data-key={k}>
+                      <span>{lineText(r.line)}</span>
+                      {editing ? (
+                        <span className="fc-my-edit">
+                          <label>$<input inputMode="decimal" aria-label={`Your rate ${unitWord(r.line.unit)} for ${r.line.label}`} data-hpd-smoke="fc-rate-input" value={rateEdit[k]} onChange={(e) => setRateEdit((x) => ({ ...x, [k]: e.target.value }))} /></label>
+                          <small>{unitWord(r.line.unit)}</small>
+                          <button type="button" data-hpd-smoke="fc-rate-save" onClick={() => { setRates(saveRate(k, Number(rateEdit[k].replace(/[^0-9.]/g, "")) || null)); setRateEdit((x) => { const n = { ...x }; delete n[k]; return n; }); }}>Save</button>
+                        </span>
+                      ) : (
+                        <button type="button" className="fc-my-rate" data-hpd-smoke="fc-rate-edit" onClick={() => setRateEdit((x) => ({ ...x, [k]: r.rate ? String(r.rate) : "" }))}>
+                          {r.rate ? <>{money2(r.rate).replace(".00", "")} {unitWord(r.line.unit)}{r.amount !== null ? <b> = {money(r.amount)}</b> : <em> · {r.why}</em>}</> : <>Set my rate {unitWord(r.line.unit)}</>}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+                {myCalc.total > 0 ? (
+                  <div className="fc-my-total" data-hpd-smoke="fc-my-total">
+                    <span>{myCalc.complete ? "My price" : `My price so far (${myCalc.missing} line${myCalc.missing === 1 ? "" : "s"} without a rate)`}: <b>{money(myCalc.total)}</b>{help && help.prices.length >= 5 ? <small> · wins about {Math.round(winChance(help, myCalc.total) * 100)}% of jobs like this</small> : null}</span>
+                    <button type="button" data-hpd-smoke="fc-my-use" onClick={() => pickPrice(String(myCalc.total))}>Use {money(myCalc.total)}</button>
+                  </div>
+                ) : <small className="fc-my-hint">Tap a line to set what you charge (per sq ft, per door, each part). Saved on this phone for every job like it.</small>}
               </div>
               {help ? (
                 <div className={`fc-bid-help is-${help.confidence}`} data-hpd-smoke="fc-bid-help">
@@ -1020,6 +1065,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                     <button type="button" onClick={() => openBid(bid)}>
                       <span className="fc-bid-row"><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}{again ? <span className="fc-bid-chip is-again" data-hpd-smoke="fc-bid-again-chip">🔁 bid before · {money(again.price)}</span> : null}{ew ? <span className="fc-bid-chip is-easy" data-hpd-smoke="fc-bid-easy-chip">Easy win · ~{money(ew.suggested)}</span> : null}</span>
                       {!currentRecord(bid, records) && !ew && rowHelp.get(bid.omo) ? (() => { const h = rowHelp.get(bid.omo)!; const best = bestWithFloor(h, floors[floorKind(bid.description)]); return <span className={`fc-bid-predict is-${h.confidence}`} data-hpd-smoke="fc-bid-predict">💰 Best ~{money(best.price)} (wins ~{Math.round(best.chance * 100)}%) · middle {money(h.middle)}{h.confidence === "low" ? " · rough guide" : ""}</span>; })() : null}
+                      {(() => { const sm = rowSummary.get(bid.omo); if (!sm?.lines.length) return null; const mp = myPrice(sm, rates); return <span className="fc-bid-sum" data-hpd-smoke="fc-bid-sum">📋 {sm.lines.map(lineText).join(" + ")}{mp.complete ? <b data-hpd-smoke="fc-bid-row-mine"> · 🧮 My price {money(mp.total)}</b> : null}</span>; })()}
                       <span>{bid.address}{bid.borough ? ` · ${bid.borough}` : ""}</span>
                       <small>{due.text}</small>
                     </button>
@@ -1037,6 +1083,12 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
           ) : tab === "stats" ? (
             <>
               <section className="fc-stats-block fc-floors" data-hpd-smoke="fc-floors">
+                <h4>Your rates</h4>
+                {Object.keys(rates).length ? (
+                  <ul data-hpd-smoke="fc-rates-list">{Object.entries(rates).sort((x, y) => x[0].localeCompare(y[0])).map(([key, amount]) => (
+                    <li key={key}><span>{key.replace(/-/g, " ")}</span><b>{money2(amount).replace(".00", "")} {unitWord(unitOf(key))}</b><button type="button" data-hpd-smoke="fc-rates-remove" onClick={() => setRates(saveRate(key, null))}>Remove</button></li>
+                  ))}</ul>
+                ) : <p className="fc-stats-note">None yet. On a bid, tap a line under &quot;My price&quot; to set what you charge (per sq ft, per door, each part).</p>}
                 <h4>Your minimums</h4>
                 {Object.keys(floors).length ? (
                   <ul>{Object.entries(floors).sort((x, y) => x[0].localeCompare(y[0])).map(([kind, amount]) => (
