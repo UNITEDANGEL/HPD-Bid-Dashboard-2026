@@ -1228,7 +1228,12 @@ export default function PaperworkPage() {
   const [jobs, setJobs] = useState<JobRecord[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [outcome, setOutcome] = useState<PaperworkOutcome>("pending");
-  const [form, setForm] = useState<PackageForm>(initialForm);
+  // Today's dates are filled in on the phone after the page loads: the page is pre-built (on a UTC clock, on
+  // an earlier day), and a date baked in there didn't match the phone's ("React error 418" on load).
+  const [form, setForm] = useState<PackageForm>(() => ({ ...initialForm(), invoiceNo: "", invoiceDate: "", fieldDate: "" }));
+  useEffect(() => {
+    setForm((current) => ({ ...current, invoiceNo: current.invoiceNo || defaultPaperworkInvoiceNo(), invoiceDate: current.invoiceDate || todayIsoDate(), fieldDate: current.fieldDate || todayIsoDate() }));
+  }, []);
   const [queryWorkflowPatch, setQueryWorkflowPatch] = useState<Record<string, unknown>>({});
   const [loadedQuery, setLoadedQuery] = useState(false);
   // Correcting a payment paperwork rejection (opened from "Fix & resend"): HPD needs original ink
