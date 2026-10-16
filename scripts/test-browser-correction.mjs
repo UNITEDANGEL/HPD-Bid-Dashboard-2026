@@ -99,7 +99,7 @@ try {
     if (await outcomeBox.count()) await outcomeBox.locator("button", { hasText: "Work done" }).click();
     await p2.locator('[data-hpd-smoke="paperwork-correction-dates"]').waitFor({ timeout: 10000 });
     await p2.waitForFunction(() => !document.querySelector('[data-hpd-smoke="paperwork-generate-correction"]')?.disabled, null, { timeout: 30000 });
-    const today = new Date().toISOString().slice(0, 10);
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()); // the app's "today" is New York's
     await p2.locator('[data-hpd-smoke="paperwork-correction-start"]').fill(today);
     await p2.locator('[data-hpd-smoke="paperwork-correction-complete"]').fill(today);
     await p2.locator('[data-hpd-smoke="paperwork-generate-correction"]').click();

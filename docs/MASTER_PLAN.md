@@ -164,6 +164,18 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - One-screen fill order: look (Street View) -> read description -> price (best price shown) -> Fill ->
   check -> Send (two taps).
 
+## Lost although our price was lower: what happened (reviewed 16 Oct 2026)
+9 bids (Sept 10 - Oct 8) lost at a price at or under the winner's (scripts/analyze_lost_bids.py, Gmail
+fax records; private details in data/private/lost_bids_review.json):
+- 4 LATE: ER05900 (due 10:00 AM, faxed 10:14-10:24); ER05619 + ER05693 (faxed 10:53-10:56, RingCentral
+  delivered 11:07-11:15); ER05042 (5 tries, HumbleFax line busy, confirmed 11:05 / 11:18).
+- 1 SENT INSIDE ANOTHER JOB'S FAX: ER06823 went in a 26-page fax titled ER07042 with other bids.
+- 4 sent early and delivered (ER06179, ER06009, ER05956, ER05790): only HPD can say why -> ask HPD's bid
+  desk (owner) whether the bids were received / responsive.
+Changes: one bid per fax (the app's HumbleFax send already does this); checklist and bid screen say
+"Send now" 45 minutes before the deadline and "may arrive too late" under 10; deadlines before 11:00 AM
+are tagged "early deadline". Rule: send at least 45 minutes before the deadline.
+
 ## Done 16 Oct 2026: multi-bid sitting
 - "🎯 Bid all N in a row" (checklist): the to-do bids one after another, soonest due first, each opened with
   the best price filled in. A bar on the bid: "Bid 2 of 6", Skip ▶ / Stop; once the fax is sent it turns

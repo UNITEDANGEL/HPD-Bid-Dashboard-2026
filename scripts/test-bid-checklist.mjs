@@ -26,4 +26,9 @@ assert.equal(timeLeft(130), "2h 10m left"); assert.equal(timeLeft(45), "45m left
 const reb = [{ omo: "R", address: "", bidDue: today, bidDueTime: "11:00 AM" }];
 const old = { R: { ...rec("A", "confirmed", { sentAt: "2026-10-01T12:00:00Z" }), omo: "R", bidDue: "2026-10-02" } };
 assert.equal(bidChecklist(reb, old, today, tomorrow, 9 * 60, now).rows[0].state, "not-priced");
-console.log("PASS bid checklist: today + tomorrow, state, best price, to-do soonest first, past due counted, re-invitation is a new round");
+// Deadline warnings: 45 minutes or less = send now; 10 or less = may arrive too late; sent = no warning.
+const { urgency, earlyDeadline } = await loadLib("bid-checklist");
+assert.equal(urgency(120, false), ""); assert.equal(urgency(45, false), "send-now"); assert.equal(urgency(10, false), "too-late");
+assert.equal(urgency(30, true), ""); assert.equal(urgency(-5, false), "");
+assert.equal(earlyDeadline("10:00 AM"), true); assert.equal(earlyDeadline("11:00 AM"), false); assert.equal(earlyDeadline("1:30 PM"), false);
+console.log("PASS bid checklist: today + tomorrow, state, best price, to-do soonest first, past due counted, re-invitation is a new round, send-now / too-late warnings, early deadlines");

@@ -14,6 +14,11 @@ try {
   const today = ny(new Date()), tomorrow = ny(new Date(Date.now() + 86400000)), later = ny(new Date(Date.now() + 4 * 86400000));
   // Real invitations: three due today (late in the day so they're still open), three tomorrow, the rest later.
   const bids = fetched.bids.map((b, i) => ({ ...b, bidDue: i < 3 ? today : i < 6 ? tomorrow : later, bidDueTime: "11:59 PM" }));
+  // One of today's bids due in 30 minutes (when that's still today): it must say "Send now".
+  const soon = new Date(Date.now() + 30 * 60000);
+  const soonTime = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }).format(soon).replace(/ /g, " ");
+  const urgentOmo = ny(soon) === today ? bids[0].omo : "";
+  if (urgentOmo) bids[0] = { ...bids[0], bidDueTime: soonTime };
   await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...fetched, bids } }));
   const page = await context.newPage();
   const errors = [];
@@ -28,6 +33,10 @@ try {
   assert.equal(await rows.count(), 6, "today + tomorrow only");
   assert.match(await list.locator('[data-hpd-smoke="fc-checklist-toggle"]').innerText(), /0 of 6 sent/);
   assert.match(await list.locator('[data-hpd-smoke="fc-checklist-toggle"]').innerText(), /3 due today, 3 tomorrow still to bid/);
+  if (urgentOmo) {
+    const urgentRow = list.locator(`[data-hpd-smoke="fc-checklist-row"][data-omo="${urgentOmo}"]`);
+    assert.match(await urgentRow.locator('[data-hpd-smoke="fc-cl-urgent"]').innerText(), /Send now/, "due in 30 min: send now");
+  }
   // Wait for prices (market history) and tap the first "Bid $X".
   const bidBtn = list.locator('[data-hpd-smoke="fc-checklist-bid"]', { hasText: /Bid \$/ }).first();
   await bidBtn.waitFor({ timeout: 30000 });

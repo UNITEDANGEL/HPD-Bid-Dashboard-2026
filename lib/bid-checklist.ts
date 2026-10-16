@@ -51,6 +51,24 @@ export function isDone(r: ChecklistRow) {
   return r.state === "pending" || r.state === "confirmed";
 }
 
+// Lost bids at a lower price (Sept-Oct 2026): 4 of 9 arrived after the deadline (faxes started 3-7 minutes
+// before 11:00 delivered at 11:05-11:18; a 10:00 AM deadline missed) and 1 went inside another job's fax.
+// A fax can take up to ~25 minutes and HPD's line is busy right before the deadline.
+export type Urgency = "" | "send-now" | "too-late";
+export function urgency(minutesLeft: number, done: boolean): Urgency {
+  if (done || minutesLeft <= 0) return "";
+  if (minutesLeft <= 10) return "too-late";
+  return minutesLeft <= 45 ? "send-now" : "";
+}
+
+// HPD's usual deadline is 11:00 AM or later; an earlier one (10:00 AM) is easy to miss.
+export function earlyDeadline(bidDueTime?: string) {
+  const m = /^(\d{1,2}):(\d{2})\s*([AP])/i.exec((bidDueTime || "").trim());
+  if (!m) return false;
+  const minutes = ((Number(m[1]) % 12) + (m[3].toUpperCase() === "P" ? 12 : 0)) * 60 + Number(m[2]);
+  return minutes < 11 * 60;
+}
+
 // "2h 10m left" / "45m left" / "due"
 export function timeLeft(minutes: number) {
   if (minutes <= 0) return "past due";

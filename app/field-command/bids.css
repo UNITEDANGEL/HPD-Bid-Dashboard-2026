@@ -452,3 +452,14 @@
 .fc-sitting-bar button { min-height: 40px; padding: 0 12px; border: 0; border-radius: 10px; background: #334155; color: #fff; font: 800 14px system-ui; }
 .fc-sitting-bar button.is-next { background: #16a34a; min-width: 120px; font-size: 15px; }
 .fc-sitting-bar button.is-stop { background: transparent; border: 1px solid #ffffff55; }
+
+/* Deadline warnings (lost bids: faxes that landed after 11:00, a 10:00 AM deadline missed). */
+.fc-checklist .fc-cl-row.is-send-now { background: #451a03; }
+.fc-checklist .fc-cl-row.is-too-late { background: #450a0a; }
+.fc-cl-urgent { color: #fdba74 !important; font-weight: 800 !important; }
+.fc-cl-urgent.is-late { color: #fca5a5 !important; }
+.fc-cl-early { font-style: normal; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: #b45309; color: #fff; font-weight: 800; }
+.fc-bid-early, .fc-bid-urgent { margin: 4px 0; padding: 7px 10px; border-radius: 10px; font: 800 13px/1.35 system-ui; }
+.fc-bid-early { background: #78350f; color: #fef3c7; }
+.fc-bid-urgent { background: #7c2d12; color: #ffedd5; }
+.fc-bid-urgent.is-late { background: #7f1d1d; color: #fee2e2; }

@@ -16,7 +16,7 @@ import "./bids.css";
 import BuildingFacts from "./BuildingFacts";
 import ItbPages from "./ItbPages";
 import { buildingHistory } from "../../lib/building-bids";
-import { bidChecklist, timeLeft } from "../../lib/bid-checklist";
+import { bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
 
 const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
 const NY_TIME = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -602,6 +602,16 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.address}, ${selected.borough || ""} NY`)}`} target="_blank" rel="noopener noreferrer">📍 Map &amp; photos</a>
             </div>
             <p className={`fc-bid-due is-${dueWhen(selected).tone}`} data-hpd-smoke="fc-bid-due">⏰ Bid due {dueLabel(selected)} · {dueWhen(selected).text}</p>
+            {(() => {
+              const row = checklist.rows.find((r) => r.omo === selected.omo);
+              const u = row ? urgency(row.minutesLeft, row.state === "pending" || row.state === "confirmed") : "";
+              return (
+                <>
+                  {earlyDeadline(selected.bidDueTime) && row && row.state !== "pending" && row.state !== "confirmed" ? <p className="fc-bid-early" data-hpd-smoke="fc-bid-early">⏰ Early deadline ({selected.bidDueTime}): HPD usually closes bids at 11:00 AM; this one closes sooner.</p> : null}
+                  {u ? <p className={`fc-bid-urgent${u === "too-late" ? " is-late" : ""}`} data-hpd-smoke="fc-bid-urgent">{u === "too-late" ? "⛔ It may arrive too late: send it now and call HPD to say it's coming." : "⚠️ Send now: a fax can take up to 25 min and HPD's line is busy before the deadline."}</p> : null}
+                </>
+              );
+            })()}
             <BidTimeline record={record} />
             <p className="fc-bid-dates">Work {selected.workStart ? `starts ${selected.workStart.slice(5).replace("-", "/")}` : "start not listed"}{selected.workCompletion ? ` · done by ${selected.workCompletion.slice(5).replace("-", "/")}` : ""}</p>
             <BuildingFacts address={selected.address} borough={selected.borough} description={selected.description} />
@@ -856,12 +866,17 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                     const icon = { "not-priced": "○", saved: "💾", pending: "⏳", confirmed: "✓", failed: "!", past: "✕" }[r.state];
                     const stateText = { "not-priced": "no price yet", saved: "price saved, not sent", pending: "fax going through", confirmed: "sent and confirmed", failed: "fax failed: resend", past: "past due, no bid" }[r.state];
                     return (
-                      <div key={r.omo} role="listitem" className={`fc-cl-row is-${r.state}`} data-hpd-smoke="fc-checklist-row" data-omo={r.omo}>
+                      <div key={r.omo} role="listitem" className={`fc-cl-row is-${r.state}${urgency(r.minutesLeft, r.state === "pending" || r.state === "confirmed") ? ` is-${urgency(r.minutesLeft, r.state === "pending" || r.state === "confirmed")}` : ""}`} data-hpd-smoke="fc-checklist-row" data-omo={r.omo}>
                         <span className="fc-cl-icon" aria-hidden="true">{icon}</span>
                         <span className="fc-cl-main">
                           <b>{r.omo}{r.easy ? <em> · easy win</em> : null}</b>
                           <small>{r.address}{r.borough ? ` · ${r.borough}` : ""}</small>
-                          <small>{r.day === "today" ? "Today" : "Tomorrow"} {r.bidDueTime} · {timeLeft(r.minutesLeft)} · {stateText}</small>
+                          <small>{r.day === "today" ? "Today" : "Tomorrow"} {r.bidDueTime}{earlyDeadline(r.bidDueTime) ? <em className="fc-cl-early"> early deadline</em> : null} · {timeLeft(r.minutesLeft)} · {stateText}</small>
+                          {(() => {
+                            const u = urgency(r.minutesLeft, r.state === "pending" || r.state === "confirmed");
+                            return u === "send-now" ? <small className="fc-cl-urgent" data-hpd-smoke="fc-cl-urgent">⚠️ Send now: a fax can take up to 25 min and HPD&apos;s line is busy before the deadline.</small>
+                              : u === "too-late" ? <small className="fc-cl-urgent is-late" data-hpd-smoke="fc-cl-urgent">⛔ It may arrive too late: send it now and call HPD to say it&apos;s coming.</small> : null;
+                          })()}
                         </span>
                         {bid && (r.state === "not-priced" || r.state === "saved" || r.state === "failed") ? (
                           <button type="button" data-hpd-smoke="fc-checklist-bid" onClick={() => openFromChecklist(r.omo)}>{r.state === "not-priced" && r.best ? <>Bid {money(r.best)}<small>wins ~{Math.round((r.chance || 0) * 100)}%</small></> : r.state === "failed" ? "Resend" : "Review & send"}</button>
