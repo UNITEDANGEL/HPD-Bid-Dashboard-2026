@@ -3,6 +3,13 @@
   "versions": [
     {
       "date": "Oct 16, 2026",
+      "title": "Bids count on the map",
+      "items": [
+        "The Bids button always shows how many invitations are open, like Notices: red when some are due today, blue otherwise."
+      ]
+    },
+    {
+      "date": "Oct 16, 2026",
       "title": "Your costs and profit on every bid",
       "items": [
         "Bids → Stats → Your costs: what each kind of work costs you (materials and labor) plus the trip. Starts with your numbers: hollow metal door $500, hinges $15 each, door closer $30, Secure Tech lock $1,000, electric strike $150.",

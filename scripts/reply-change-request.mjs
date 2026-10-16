@@ -2,24 +2,42 @@
 // progress counter (steps, done / total), "Claude is working on this now", and dated progress notes, stored next
 // to the request on the status server (CHANGE-REPLY-<same id>). No tenant names / phones: the server isn't private.
 //     node scripts/reply-change-request.mjs --list
-//     node scripts/reply-change-request.mjs --check     (BUSY / OPEN <n> / NONE, for the 5-minute check)
+//     node scripts/reply-change-request.mjs --check     (BUSY / OPEN <n> / NONE)
+//     node scripts/reply-change-request.mjs --wait 9    (waits up to 9 minutes for a new request, looking every 20 s)
 //     node scripts/reply-change-request.mjs --id <id> --status "Working on it" --working --steps "Read the emails|Check each OMO|Build it|Test|Push" --update "..."
 //     node scripts/reply-change-request.mjs --id <id> --done 2 --update "..."      (step 2 done; --done all = every step)
 //     node scripts/reply-change-request.mjs --id <id> --idle                       (no longer working on it right now)
+//     --status "Waiting for you"   (needs the owner's answer: not picked up again until they write)
 import fs from "node:fs";
 
 const URL_ = /HPD_STATUS_WORKER_URL = "([^"]+)"/.exec(fs.readFileSync(new URL("../lib/paperwork.ts", import.meta.url), "utf8"))[1];
 const arg = (name) => { const i = process.argv.indexOf(`--${name}`); return i > 0 ? process.argv[i + 1] : ""; };
 const flag = (name) => process.argv.includes(`--${name}`);
-const all = (await (await fetch(`${URL_}/overrides`, { cache: "no-store" })).json()).overrides || {};
+const load = async () => (await (await fetch(`${URL_}/overrides`, { cache: "no-store" })).json()).overrides || {};
+const all = await load();
 const requests = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUEST-")).sort(([a], [b]) => a.localeCompare(b));
-// One line for the 5-minute check: BUSY (another run is working on a request: green light under 30 minutes old),
-// OPEN <n> (requests to work on) or NONE.
+
+// Open = not "Done" and not "Waiting for you". Busy = another run's green light is under 30 minutes old.
+const openOnes = (o) => Object.keys(o).filter((k) => k.startsWith("CHANGE-REQUEST-")).filter((k) => !["Done", "Waiting for you"].includes(o[`CHANGE-REPLY-${k.slice(15)}`]?.status || "Received"));
+const busyNow = (o) => Object.entries(o).some(([k, v]) => k.startsWith("CHANGE-REPLY-") && v?.workingAt && Date.now() - Date.parse(v.workingAt) < 30 * 60000);
+
 if (flag("check")) {
-  const open = requests.filter(([k]) => (all[`CHANGE-REPLY-${k.slice(15)}`]?.status || "Received") !== "Done");
-  const busy = Object.entries(all).some(([k, v]) => k.startsWith("CHANGE-REPLY-") && v?.workingAt && Date.now() - Date.parse(v.workingAt) < 30 * 60000);
-  console.log(busy ? "BUSY" : open.length ? `OPEN ${open.length}` : "NONE");
+  const open = openOnes(all);
+  console.log(busyNow(all) ? "BUSY" : open.length ? `OPEN ${open.length}` : "NONE");
   process.exit(0);
+}
+// Wait up to <minutes> (max 9, so one command fits the tool time limit), looking every 20 seconds; returns as soon
+// as there's an open request no one is working on ("OPEN <n>"), else "NONE".
+if (flag("wait")) {
+  const until = Date.now() + Math.min(9, Number(arg("wait")) || 9) * 60000;
+  let o = all;
+  for (;;) {
+    const open = openOnes(o);
+    if (open.length && !busyNow(o)) { console.log(`OPEN ${open.length}`); process.exit(0); }
+    if (Date.now() + 20000 > until) { console.log("NONE"); process.exit(0); }
+    await new Promise((r) => setTimeout(r, 20000));
+    try { o = await load(); } catch { /* try again next time */ }
+  }
 }
 if (flag("list")) {
   for (const [k, v] of requests) {

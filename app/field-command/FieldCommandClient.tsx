@@ -1091,7 +1091,8 @@ export default function FieldCommandClient() {
   const [routeOpen, setRouteOpen] = useState(false);
   // The envelope button flips the map to upcoming invitations to bid (BidsMode).
   const [bidsOpen, setBidsOpen] = useState(false);
-  const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number }>({ today: 0, tomorrow: 0 });
+  // How many invitations are open (shown on the Bids button like the Notices count), and how many are due today / tomorrow.
+  const [bidsDue, setBidsDue] = useState<{ today: number; tomorrow: number; open: number }>({ today: 0, tomorrow: 0, open: 0 });
   useEffect(() => {
     const load = () => fetch("/data/upcoming_bids.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((d) => {
       const day = (offset: number) => new Date(Date.now() + offset * 86400000).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
@@ -1101,6 +1102,7 @@ export default function FieldCommandClient() {
       setBidsDue({
         today: bids.filter((b) => b.bidDue === day(0) && minutes(b.bidDueTime) > nowMin).length,
         tomorrow: bids.filter((b) => b.bidDue === day(1)).length,
+        open: bids.filter((b) => b.bidDue > day(0) || (b.bidDue === day(0) && minutes(b.bidDueTime) > nowMin)).length,
       });
     }).catch(() => {});
     load();
@@ -2883,7 +2885,7 @@ export default function FieldCommandClient() {
           <button type="button" className={`fc-map-fab fc-follow-fab${followFilter ? " is-active" : ""}`} data-hpd-smoke="fc-follow-open" aria-label="Follow-up report" data-tip="Follow-up: overdue jobs" title="Follow-up report" aria-pressed={followOpen} onClick={() => { if (followOpen) { setFollowOpen(false); return; } closeScreens("follow"); setFollowOpen(true); }}>
             <FollowIcon /><span className="fc-fab-label">Follow-up</span>{followReport.counts.overdue + followReport.counts.dueWeek ? <span className="fc-follow-badge" data-hpd-smoke="fc-follow-badge">{followReport.counts.overdue + followReport.counts.dueWeek}</span> : null}
           </button>
-          <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" data-tip="Invitations to bid" aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.today ? <span className="fc-follow-badge is-bids-today" data-hpd-smoke="fc-bids-badge" title={`${bidsDue.today} due today`}>{bidsDue.today}</span> : bidsDue.tomorrow ? <span className="fc-follow-badge is-bids-tomorrow" data-hpd-smoke="fc-bids-badge" title={`${bidsDue.tomorrow} due tomorrow`}>{bidsDue.tomorrow}</span> : null}</button>
+          <button type="button" className={`fc-map-fab ${bidsOpen ? "is-active" : ""}`} data-hpd-smoke="fc-bids-open" aria-label="Invitations to bid" data-tip={bidsDue.open ? `Invitations to bid: ${bidsDue.open} open${bidsDue.today ? `, ${bidsDue.today} due today` : ""}` : "Invitations to bid"} aria-pressed={bidsOpen} title="Invitations to bid" onClick={() => { if (bidsOpen) { setBidsOpen(false); return; } closeScreens("bids"); setBidsOpen(true); }}><BidsIcon /><span className="fc-fab-label">Bids</span>{bidsDue.open ? <span className={`fc-follow-badge ${bidsDue.today ? "is-bids-today" : "is-bids-tomorrow"}`} data-hpd-smoke="fc-bids-badge" title={`${bidsDue.open} open${bidsDue.today ? ` · ${bidsDue.today} due today` : ""}${bidsDue.tomorrow ? ` · ${bidsDue.tomorrow} due tomorrow` : ""}`}>{bidsDue.open}</span> : null}</button>
           <button
             type="button"
             className={`fc-map-fab ${darkTiles ? "is-active" : ""}`}
