@@ -22,8 +22,8 @@ try {
     const buttons = page.locator('[data-hpd-smoke="fc-notice-view"]');
     await buttons.first().waitFor({ timeout: 30000 });
     // Signed in: the first notice that has HPD's PDF (the button says how many page files).
-    if (signedIn) await page.waitForFunction(() => [...document.querySelectorAll('[data-hpd-smoke="fc-notice-view"]')].some((b) => /page file/.test(b.textContent)), null, { timeout: 20000 });
-    const pick = signedIn ? buttons.filter({ hasText: /page file/ }).first() : buttons.first();
+    if (signedIn) await page.waitForFunction(() => [...document.querySelectorAll('[data-hpd-smoke="fc-notice-view"]')].some((b) => /\(\d+ PDFs?\)/.test(b.textContent)), null, { timeout: 20000 });
+    const pick = signedIn ? buttons.filter({ hasText: /\(\d+ PDFs?\)/ }).first() : buttons.first();
     await pick.scrollIntoViewIfNeeded();
     await pick.click();
     const viewer = page.locator('[data-hpd-smoke="fc-notice-viewer"]');

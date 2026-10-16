@@ -3481,7 +3481,7 @@ export default function FieldCommandClient() {
                     <small>{r.attempt ? <b className={r.attempt === "FINAL" ? "fc-final-attempt" : ""}>{r.attempt} ATTEMPT · </b> : null}{senderName(r.by)}: {r.reason || "see HPD's email"}</small>
                   </button>
                   {openNotice === r.omo ? <p className="fc-notice-detail" data-hpd-smoke="fc-notice-detail">This job is from before 2026, so it isn&apos;t on the map. HPD&apos;s notice (with the rejection PDF) is in your email; correct the affidavit / invoice and send it back to HPD.</p> : null}
-                  <button type="button" className="fc-follow-paper is-notice" data-hpd-smoke="fc-notice-view" onClick={() => setNoticeView(r.omo)}>👁 See HPD&apos;s notice{noticeMail?.[r.omo]?.length ? ` (${noticeMail[r.omo][0].files.length} page file${noticeMail[r.omo][0].files.length === 1 ? "" : "s"})` : ""}</button>
+                  <button type="button" className="fc-follow-paper is-notice" data-hpd-smoke="fc-notice-view" onClick={() => setNoticeView(r.omo)}>👁 See HPD&apos;s notice{noticeMail?.[r.omo]?.length ? ` (${noticeMail[r.omo][0].files.length} PDF${noticeMail[r.omo][0].files.length === 1 ? "" : "s"})` : ""}</button>
                   <a className="fc-follow-paper is-gmail" href={`https://mail.google.com/mail/u/0/#search/${encodeURIComponent(r.omo)}`} target="_blank" rel="noreferrer">Open HPD&apos;s notice in Gmail ↗</a>
                   {findAnyJob(r.omo) ? <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}`}>Fix &amp; resend →</a> : null}
                 </li>
