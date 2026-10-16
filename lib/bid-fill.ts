@@ -61,9 +61,11 @@ function wrap(text: string, font: PDFFont, size: number, width: number) {
 // initials, and a small line under it: "PRICE REVISED 1X ON 10/12/26".
 export type BidRevision = { previousPrice: number; count: number; date: string };
 
-export async function fillBidPackage(pdfBytes: ArrayBuffer | Uint8Array, bid: UpcomingBid, price: number, revision?: BidRevision): Promise<Uint8Array> {
+// noPrice: everything filled in (company, owner, address, phone, dates, description) except the price, so the bid
+// document is ready when the invitation opens and only the owner's price is missing (owner, 16 Oct 2026).
+export async function fillBidPackage(pdfBytes: ArrayBuffer | Uint8Array, bid: UpcomingBid, price: number, revision?: BidRevision, opts: { noPrice?: boolean } = {}): Promise<Uint8Array> {
   const previousPrice = revision?.previousPrice;
-  if (!(price > 0)) throw new Error("Enter a bid price above $0.");
+  if (!opts.noPrice && !(price > 0)) throw new Error("Enter a bid price above $0.");
   const doc = await PDFDocument.load(pdfBytes);
   const font = await doc.embedFont(StandardFonts.HelveticaBold);
   const pages = doc.getPages();
@@ -107,9 +109,11 @@ export async function fillBidPackage(pdfBytes: ArrayBuffer | Uint8Array, bid: Up
       page.drawText(BID_COMPANY.initials, { ...at(newWidth + 4, size * 0.45), size: 7, font, color: ink, rotate: rot });
     }
   };
-  writePrice("price", true);
-  writePrice("pageTotal");
-  writePrice("bidAmount");
+  if (!opts.noPrice) {
+    writePrice("price", true);
+    writePrice("pageTotal");
+    writePrice("bidAmount");
+  }
   write("contractor", BID_COMPANY.name);
   write("owner", BID_COMPANY.owner);
   write("address", BID_COMPANY.addressLines[0]);

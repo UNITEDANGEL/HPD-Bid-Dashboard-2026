@@ -3,10 +3,10 @@
   "versions": [
     {
       "date": "Oct 16, 2026",
-      "title": "Invitations filled out already",
+      "title": "Bid form filled in when it opens",
       "items": [
-        "An invitation with no price opens with the price already in: My price from your rates, or the best price (never under your minimum), and says where it came from.",
-        "Saving the price makes the bid document right away, ready to review and send."
+        "Opening an invitation fills in the bid form for you: company, owner, address, phone, fax, dates and the job description. The price stays blank for you to type (no automatic price).",
+        "Typing your price and tapping Save makes the final bid document right away, ready to review and send."
       ]
     },
     {
