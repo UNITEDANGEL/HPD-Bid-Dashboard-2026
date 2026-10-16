@@ -1,4 +1,4 @@
-Fetcher run started: 2026-10-16T16:11:24.660Z
+Fetcher run started: 2026-10-16T16:21:24.474Z
 credentials.json validated as JSON.
 token.json validated as JSON.
 Credentials file exists. Starting 14-day fetcher pipeline.
@@ -25,13 +25,14 @@ JSON saved -> /home/runner/work/HPD-Bid-Dashboard-2026/HPD-Bid-Dashboard-2026/me
 
 === FETCHR MATCHER V5 DONE ===
 
-Downloading COA messages:   0%|          | 0/15 [00:00<?, ?it/s]Downloading COA messages:  13%|█▎        | 2/15 [00:00<00:01, 12.05it/s]Downloading COA messages:  27%|██▋       | 4/15 [00:00<00:00, 13.26it/s]Downloading COA messages:  40%|████      | 6/15 [00:00<00:00, 13.83it/s]Downloading COA messages:  53%|█████▎    | 8/15 [00:00<00:00, 14.50it/s]Downloading COA messages:  67%|██████▋   | 10/15 [00:00<00:00, 14.85it/s]Downloading COA messages:  80%|████████  | 12/15 [00:00<00:00, 13.83it/s]Downloading COA messages:  93%|█████████▎| 14/15 [00:01<00:00, 11.65it/s]Downloading COA messages: 100%|██████████| 15/15 [00:01<00:00, 13.03it/s]
-Geocoding COA addresses:   0%|          | 0/15 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 15/15 [00:00<00:00, 393216.00it/s]
-Fetching ITBs for COA OMOs:   0%|          | 0/15 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   7%|▋         | 1/15 [00:00<00:04,  3.10it/s]Fetching ITBs for COA OMOs:  13%|█▎        | 2/15 [00:00<00:04,  2.98it/s]Fetching ITBs for COA OMOs:  20%|██        | 3/15 [00:00<00:03,  3.30it/s]Fetching ITBs for COA OMOs:  27%|██▋       | 4/15 [00:01<00:03,  3.39it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 5/15 [00:01<00:03,  3.26it/s]Fetching ITBs for COA OMOs:  40%|████      | 6/15 [00:01<00:02,  3.36it/s]Fetching ITBs for COA OMOs:  47%|████▋     | 7/15 [00:02<00:02,  3.27it/s]Fetching ITBs for COA OMOs:  53%|█████▎    | 8/15 [00:02<00:02,  3.38it/s]Fetching ITBs for COA OMOs:  60%|██████    | 9/15 [00:02<00:01,  3.50it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 10/15 [00:02<00:01,  3.50it/s]Fetching ITBs for COA OMOs:  73%|███████▎  | 11/15 [00:03<00:01,  3.46it/s]Fetching ITBs for COA OMOs:  80%|████████  | 12/15 [00:03<00:00,  3.61it/s]Fetching ITBs for COA OMOs:  87%|████████▋ | 13/15 [00:03<00:00,  3.69it/s]Fetching ITBs for COA OMOs:  93%|█████████▎| 14/15 [00:04<00:00,  3.66it/s]Fetching ITBs for COA OMOs: 100%|██████████| 15/15 [00:04<00:00,  3.60it/s]Fetching ITBs for COA OMOs: 100%|██████████| 15/15 [00:04<00:00,  3.46it/s]
+Downloading COA messages:   0%|          | 0/15 [00:00<?, ?it/s]Downloading COA messages:   7%|▋         | 1/15 [00:00<00:02,  6.36it/s]Downloading COA messages:  13%|█▎        | 2/15 [00:00<00:01,  7.27it/s]Downloading COA messages:  20%|██        | 3/15 [00:00<00:01,  8.21it/s]Downloading COA messages:  27%|██▋       | 4/15 [00:00<00:01,  8.49it/s]Downloading COA messages:  33%|███▎      | 5/15 [00:00<00:01,  8.94it/s]Downloading COA messages:  47%|████▋     | 7/15 [00:00<00:00,  9.10it/s]Downloading COA messages:  53%|█████▎    | 8/15 [00:00<00:00,  9.23it/s]Downloading COA messages:  60%|██████    | 9/15 [00:01<00:00,  8.07it/s]Downloading COA messages:  67%|██████▋   | 10/15 [00:01<00:01,  4.62it/s]Downloading COA messages:  73%|███████▎  | 11/15 [00:01<00:00,  5.35it/s]Downloading COA messages:  80%|████████  | 12/15 [00:01<00:00,  6.01it/s]Downloading COA messages:  87%|████████▋ | 13/15 [00:01<00:00,  6.68it/s]Downloading COA messages:  93%|█████████▎| 14/15 [00:01<00:00,  7.17it/s]Downloading COA messages: 100%|██████████| 15/15 [00:02<00:00,  7.78it/s]Downloading COA messages: 100%|██████████| 15/15 [00:02<00:00,  7.17it/s]
+Geocoding COA addresses:   0%|          | 0/15 [00:00<?, ?it/s]Geocoding COA addresses: 100%|██████████| 15/15 [00:00<00:00, 305410.49it/s]
+Fetching ITBs for COA OMOs:   0%|          | 0/15 [00:00<?, ?it/s]Fetching ITBs for COA OMOs:   7%|▋         | 1/15 [00:00<00:05,  2.40it/s]Fetching ITBs for COA OMOs:  13%|█▎        | 2/15 [00:00<00:05,  2.44it/s]Fetching ITBs for COA OMOs:  20%|██        | 3/15 [00:01<00:05,  2.37it/s]Fetching ITBs for COA OMOs:  27%|██▋       | 4/15 [00:01<00:05,  1.87it/s]Fetching ITBs for COA OMOs:  33%|███▎      | 5/15 [00:02<00:04,  2.09it/s]Fetching ITBs for COA OMOs:  40%|████      | 6/15 [00:03<00:06,  1.43it/s]Fetching ITBs for COA OMOs:  47%|████▋     | 7/15 [00:04<00:05,  1.41it/s]Fetching ITBs for COA OMOs:  53%|█████▎    | 8/15 [00:04<00:04,  1.56it/s]Fetching ITBs for COA OMOs:  60%|██████    | 9/15 [00:05<00:03,  1.76it/s]Fetching ITBs for COA OMOs:  67%|██████▋   | 10/15 [00:05<00:02,  1.94it/s]Fetching ITBs for COA OMOs:  73%|███████▎  | 11/15 [00:05<00:01,  2.07it/s]Fetching ITBs for COA OMOs:  80%|████████  | 12/15 [00:06<00:01,  2.27it/s]Fetching ITBs for COA OMOs:  87%|████████▋ | 13/15 [00:06<00:00,  2.33it/s]Fetching ITBs for COA OMOs:  93%|█████████▎| 14/15 [00:07<00:00,  2.28it/s]Fetching ITBs for COA OMOs: 100%|██████████| 15/15 [00:07<00:00,  2.41it/s]Fetching ITBs for COA OMOs: 100%|██████████| 15/15 [00:07<00:00,  2.01it/s]
 
 
 ========== Safe merge fetcher output into dashboard data ==========
 $ node safe-merge-7day-fetch.js
+Award amount check ER07737: stored 407.00, COA 407.00
 Award amount check ER07918: stored 670.00, COA 670.00
 Award amount check ER07923: stored 574.00, COA 574.00
 Award amount check ER07202: stored 1590.00, COA 1590.00
@@ -47,14 +48,14 @@ Award amount check ER07193: stored 890.00, COA 890.00
 Award amount check ER07281: stored 1890.00, COA 1890.00
 Award amount check ER07032: stored 440.00, COA 440.00
 Safe merge complete
-Master before: 686
+Master before: 687
 Incoming rows: 15
-Added new OMOs: 1
-Skipped existing OMOs: 14
+Added new OMOs: 0
+Skipped existing OMOs: 15
 Updated existing OMOs: 0
-Need geocode: 1
+Need geocode: 0
 Missing ITB: 0
-Missing description: 1
+Missing description: 0
 Master after: 687
 Backup: ./data/COA_Fetcher_2026.before_safe_7day_merge.json
 Report: ./data/safe_7day_merge_report.json
@@ -62,9 +63,8 @@ Report: ./data/safe_7day_merge_report.json
 
 ========== Geocode new safe-merged jobs ==========
 $ node geocode-new-safe-fetch-jobs.js
-Need geocode: 1
-OK ER07737 41 WEST 72 STREET, 10023 40.777373 -73.978003 NYC_PLANNING_OK
-Geocoded: 1
+Need geocode: 0
+Geocoded: 0
 Failed: 0
 Backup: ./data/COA_Fetcher_2026.before_osm_geocode_30_new.json
 
@@ -89,23 +89,21 @@ Backup: ./data/COA_Fetcher_2026.before_recover_9_drive_itbs.json
 
 ========== Recover descriptions from matched ITBs ==========
 $ python recover-new-itb-descriptions.py
-Matched ITBs needing description: 13
-DESCRIPTION OK ER07737 ER07737_101326035907.pdf
-Descriptions patched: 1
+Matched ITBs needing description: 12
+Descriptions patched: 0
 Missing PDF: 12
 Failed: 0
 Backup: data/COA_Fetcher_2026.before_deep_description_recovery.json
 
 Samples:
-{'OMO': 'ER07737', 'Address': '41 WEST 72 STREET, 10023', 'RecoveredFrom': 'ER07737_101326035907.pdf', 'Preview': ': AT 1ST FIRE DOOR AT 16TH STORY. NYC HPD EMERGENCY OPERATIONS DIVISION – “ESSENTIAL SERVICE WORK “ AT 1ST FIRE DOOR AT 16TH STORY. MAKE ALL NECESSARY REPAIRS TO MAKE 1ST FIRE DOOR AT 16TH STORY SELF CLOSING AND LATCH. T'}
 
 Synced 3 data file(s) to public/data.
 
 ========== Render ITB page 3 assets ==========
 $ node scripts/render-itb-page3-assets.js --copy-pdfs
 {
-  "rendered": 1,
-  "reused": 686,
+  "rendered": 0,
+  "reused": 687,
   "copiedPdfs": 0,
   "missingSource": 0,
   "failed": 0
@@ -273,13 +271,13 @@ Junk-only description sample:
 PAPERWORK DATA QUALITY CHECKED
 
 
-Fetcher run finished: 2026-10-16T16:16:18.824Z
+Fetcher run finished: 2026-10-16T16:27:52.248Z
 {
   "fetchedCoaItems": 15,
   "fetchedItbItems": 15,
   "fetchedFinalJobRows": 15,
-  "addedNewOmos": 1,
-  "skippedExistingOmos": 14,
+  "addedNewOmos": 0,
+  "skippedExistingOmos": 15,
   "rawRows": 687,
   "rows2026": 636,
   "mapped2026": 636,
