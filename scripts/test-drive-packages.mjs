@@ -159,9 +159,7 @@ assert.match(await emailWith(gmailSays(500, { error: { message: "Backend Error" 
   // Send to me first: always the owner's own address, whatever "to" says.
   res = await send({ toSelf: true, to: "attacker@example.test", subject: "RE: x", text: "check me" });
   assert.equal(res.status, 200);
-  assert.ok(sentMail[2].raw.includes("
-To: owner@example.test
-"), "sent to the owner only");
+  assert.ok(/^To: owner@example.test$/m.test(sentMail[2].raw), "sent to the owner only");
   assert.ok(!sentMail[2].raw.includes("attacker@example.test"), "never to the address in the request");
   assert.equal(sentMail.length, 3, "nothing else was sent");
 }
