@@ -31,3 +31,13 @@
 .paperwork-correction-text input { min-height: 44px; border-radius: 10px; border: 1px solid #475569; background: #0f172a; color: #fff; padding: 0 8px; font: 700 15px system-ui; text-transform: uppercase; }
 
 .paperwork-correction-sent { margin: 0; padding: 8px 10px; border-radius: 10px; background: #0c4a6e; color: #e0f2fe; font: 700 13px/1.4 system-ui; }
+
+/* Auto-fix from HPD's reason: what changed, notes, what to check by hand. */
+.paperwork-print.is-autofix { background: #7c3aed; }
+.paperwork-autofixed { margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: #f5f3ff; border: 2px solid #7c3aed; color: #1e1b4b; font: 600 14px/1.4 system-ui; }
+.paperwork-autofixed ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; }
+.paperwork-autofixed s { color: #9f1239; }
+.paperwork-autofixed li.is-note { color: #166534; }
+.paperwork-autofixed li.is-check { color: #9a3412; font-weight: 800; }
+.paperwork-secondary.is-reject { border-color: #dc2626; color: #b91c1c; }
+.pkg-correction .paperwork-secondary.is-reject { background: #fee2e2; color: #991b1b; border: 2px solid #fecaca; }

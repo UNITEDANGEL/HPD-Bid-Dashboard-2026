@@ -135,4 +135,20 @@ assert.match(await emailWith(gmailSays(403, { error: { status: "PERMISSION_DENIE
 assert.match(await emailWith(gmailSays(401, { error: { status: "UNAUTHENTICATED" } })), /sign-in expired/);
 assert.match(await emailWith(gmailSays(500, { error: { message: "Backend Error" } })), /HTTP 500: Backend Error/);
 
+// hpd-reply: one short plain-text note, only to an @hpd.nyc.gov address.
+{
+  const sentTo = [];
+  const gm = async (url, options = {}) => { sentTo.push({ url, body: JSON.parse(options.body) }); return Response.json({ id: "msg_reply_01", labelIds: ["SENT"] }); };
+  const send = (body) => handleDrivePackages(new Request("https://app.example.test/api/drive/hpd-reply", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }), "hpd-reply", auth, gm, {}, owner);
+  let res = await send({ to: "wrightmi@hpd.nyc.gov", subject: "RE: OMO EP19269 rejection: corrected paperwork in the mail", text: "Hello Mr. Wright,\nThe corrected paperwork is in the mail.\nThank you" });
+  assert.equal(res.status, 200);
+  const raw = Buffer.from(sentTo[0].body.raw.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
+  assert.match(raw, /^From: owner@example\.test\r\nTo: wrightmi@hpd\.nyc\.gov\r\nSubject: /);
+  assert.match(Buffer.from(raw.split("\r\n\r\n")[1].replace(/\r\n/g, ""), "base64").toString("utf8"), /corrected paperwork is in the mail/);
+  for (const bad of [{ to: "attacker@example.test" }, { to: "x@hpd.nyc.gov.evil.test" }, { to: "a@hpd.nyc.gov, b@evil.test" }, { subject: "ok\r\nBcc: x@evil.test" }, { text: "" }, { text: "x".repeat(4001) }]) {
+    res = await send({ to: "wrightmi@hpd.nyc.gov", subject: "RE: x", text: "hi", ...bad });
+    assert.equal(res.status, 400, JSON.stringify(bad));
+  }
+  assert.equal(sentTo.length, 1, "nothing else was sent");
+}
 console.log("PASS Drive packages: per-package folders, owned-folder uploads, server-set email recipients, header injection and Gmail permission errors.");

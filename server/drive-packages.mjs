@@ -210,6 +210,36 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       return reply({ status, subject: pick?.subject || "", at: pick?.at || "" });
     }
 
+    if (action === "hpd-reply") {
+      // A short plain-text note to the HPD person who sent a notice (e.g. "the rejection is fixed and in the
+      // mail"). Only ever to one @hpd.nyc.gov address, from the owner's account, sent when the owner taps Send.
+      if (!/^application\/json/.test(request.headers.get("Content-Type") || "")) fail("Invalid reply.", 415);
+      let body;
+      try { body = JSON.parse(new TextDecoder().decode(await bodyBytes(request, 16000, "Reply"))); } catch (e) { if (e?.status) throw e; fail("Invalid reply.", 400); }
+      const to = String(body?.to || "").trim().toLowerCase();
+      const subject = String(body?.subject || "").trim();
+      const text = String(body?.text || "").trim();
+      if (!/^[a-z0-9._%+-]+@hpd\.nyc\.gov$/.test(to)) fail("Replies only go to an @hpd.nyc.gov address.", 400);
+      if (!subject || subject.length > 200 || /[\r\n]/.test(subject)) fail("Invalid subject.", 400);
+      if (!text || text.length > 4000) fail("Invalid message.", 400);
+      const raw = [
+        `From: ${ownerEmail}`,
+        `To: ${to}`,
+        `Subject: ${encodeHeader(subject)}`,
+        "MIME-Version: 1.0",
+        'Content-Type: text/plain; charset="UTF-8"',
+        "Content-Transfer-Encoding: base64",
+        "",
+        btoa(String.fromCharCode(...new TextEncoder().encode(text.replace(/\r?\n/g, "\r\n")))).replace(/.{76}/g, "$&\r\n"),
+      ].join("\r\n");
+      const b64url = btoa(String.fromCharCode(...new TextEncoder().encode(raw))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      const sent = await call("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ raw: b64url }) });
+      if (!sent.ok) fail(await gmailRefusal(sent), sent.status === 401 || sent.status === 403 ? 403 : 503);
+      let receipt = {};
+      try { receipt = await sent.json(); } catch {}
+      return reply({ sent: true, to, messageId: typeof receipt.id === "string" ? receipt.id : "" });
+    }
+
     if (action === "email-package") {
       // The browser builds the multipart body (attachments already base64); the server sets
       // From/To/Subject so this can only email the owner's configured recipients.

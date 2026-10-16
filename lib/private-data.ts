@@ -40,7 +40,8 @@ export function privateDocUrl(url: string) {
 }
 
 // HPD's notice emails (scripts/fetch_notice_documents.py): OMO -> newest first.
-export type NoticeEmail = { date: string; from: string; subject: string; body: string; files: { file: string; name: string }[] };
+// signer: the name at the bottom of HPD's notice ("MICHAEL WRIGHT JR, CCAP"); replyTo: their @hpd.nyc.gov address.
+export type NoticeEmail = { date: string; from: string; subject: string; body: string; files: { file: string; name: string }[]; signer?: string; replyTo?: string };
 let noticesPending: Promise<Record<string, NoticeEmail[]> | null> | null = null;
 export function loadNotices(fetcher: typeof fetch = fetch): Promise<Record<string, NoticeEmail[]> | null> {
   if (!noticesPending) {

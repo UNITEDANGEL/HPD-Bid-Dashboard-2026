@@ -6,7 +6,8 @@ import { dateInputValue, noAccessAttemptProblem, noTelephoneNote, parseFormDate 
 import { tenantContactInfo } from "../../lib/tenantContact";
 import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
 import { drawInvoicePage } from "../../lib/invoice-pdf";
-import { saveCorrection } from "../../lib/correction-store";
+import { removeCorrection, saveCorrection } from "../../lib/correction-store";
+import { autoFix, type FixResult } from "../../lib/auto-fix";
 import { loadPrivate, withPrivate } from "../../lib/private-data";
 import { checkPaperwork } from "../../lib/paperwork-check";
 import { signatureBytes } from "../../lib/signature";
@@ -1249,6 +1250,11 @@ export default function PaperworkPage() {
   type SentDates = { outcome?: string; workStart?: string; workComplete?: string; attempt1?: string; attempt2?: string; call1?: string; call2?: string; refused?: string; doneByOthers?: string; sentAt?: string };
   const [sentDates, setSentDates] = useState<SentDates | null>(null);
   const [sentDatesUsed, setSentDatesUsed] = useState(false);
+  // Auto-fix from HPD's reason (lib/auto-fix): what was changed (and the old values, so Reject puts them back).
+  const [autoFixed, setAutoFixed] = useState<FixResult | null>(null);
+  const autoFixBefore = useRef<Partial<PackageForm> | null>(null);
+  const autoFixAsked = useRef(false);
+  const previewButton = useRef<HTMLButtonElement | null>(null);
   const [autoGeneratePackage, setAutoGeneratePackage] = useState(false);
   // Opened for one job (from the job card): a short summary instead of the job list and type tiles.
   const [showJobPicker, setShowJobPicker] = useState(false);
@@ -1591,6 +1597,40 @@ export default function PaperworkPage() {
   }, [packagePreview, packageApproved, packageBusy]);
 
   // Review -> Edit: back to the details with the signatures kept, then one tap rebuilds both copies.
+  // Fix the paperwork from HPD's reason, list what changed, and make the preview.
+  function runAutoFix() {
+    if (!correction || !selectedJob) return;
+    const iso = (d?: string) => (d ? displayDate(d) : "");
+    const result = autoFix(correction.reason, {
+      omo: selectedId.toUpperCase(),
+      address: getJobAddress(selectedJob), borough: getJobBorough(selectedJob), location: getJobLocation(selectedJob),
+      amount: Number(String(form.bidAmount || form.amount || "").replace(/[^0-9.]/g, "")) || 0,
+      workStart: iso(sentDates?.workStart) || form.workStart, workComplete: iso(sentDates?.workComplete) || form.workComplete,
+      tenantPhone: form.tenantPhone,
+      current: { address: form.address, borough: form.borough, location: form.location, amount: form.amount, workStart: form.workStart, workComplete: form.workComplete, invoiceDate: form.invoiceDate, tenantPhone: form.tenantPhone },
+    });
+    autoFixBefore.current = Object.fromEntries(result.changes.map((c) => [c.field, form[c.field as keyof PackageForm]])) as Partial<PackageForm>;
+    for (const c of result.changes) update(c.field as keyof PackageForm, c.to);
+    setAutoFixed(result);
+    setCorrectionSaved("");
+    // The preview button reads the updated fields on the next render.
+    window.setTimeout(() => previewButton.current?.click(), 350);
+  }
+  // Reject: the preview and anything saved for it are thrown away, the old values come back; start again.
+  async function rejectAutoFix() {
+    if (correctionSaved && !correctionSaved.startsWith("error:")) {
+      try { await removeCorrection(selectedId.toUpperCase()); } catch { /* not saved on this phone */ }
+    }
+    const before = autoFixBefore.current || {};
+    for (const [k, v] of Object.entries(before)) update(k as keyof PackageForm, String(v ?? ""));
+    autoFixBefore.current = null;
+    setAutoFixed(null);
+    setCorrectionSaved("");
+    clearPackagePreview();
+    setPdfStatus("Rejected: the fixed copy was deleted and the old details are back. Change what's needed and preview again, or tap Auto-fix to try again.");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function editPackageDetails() {
     clearPackagePreview();
     setEditingPackage(true);
@@ -1606,6 +1646,13 @@ export default function PaperworkPage() {
 
   // You checked the preview: keep the PDF on this phone to print, sign in ink and have notarized,
   // and note on the job that the rejection was corrected (synced like every job change).
+  useEffect(() => {
+    if (autoFixAsked.current || !correction?.reason || !selectedJob || !canGeneratePackage || packageBusy || packagePreview) return;
+    if (new URLSearchParams(window.location.search).get("auto") !== "1") return;
+    autoFixAsked.current = true;
+    runAutoFix();
+  }); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function saveCorrectionForPrinting() {
     if (!packagePreview || !correction || !selectedId) return;
     try {
@@ -5563,7 +5610,18 @@ export default function PaperworkPage() {
                   ) : null}
                 </div>
               ) : null}
-              <button className="paperwork-print" data-hpd-smoke="paperwork-generate-correction" type="button" disabled={!canGeneratePackage || packageBusy} onClick={() => {
+              {correction.reason ? <button className="paperwork-print is-autofix" data-hpd-smoke="paperwork-autofix" type="button" disabled={!canGeneratePackage || packageBusy} onClick={runAutoFix}>✨ Auto-fix from HPD&apos;s reason</button> : null}
+              {autoFixed ? (
+                <div className="paperwork-autofixed" data-hpd-smoke="paperwork-autofixed">
+                  <b>✨ Auto-fixed{autoFixed.changes.length ? `: ${autoFixed.changes.length} change${autoFixed.changes.length === 1 ? "" : "s"}` : ": nothing needed changing"}</b>
+                  <ul>
+                    {autoFixed.changes.map((c) => <li key={c.field} data-hpd-smoke="paperwork-autofix-change">{c.label}: {c.from ? <s>{c.from}</s> : <i>empty</i>} → <b>{c.to}</b></li>)}
+                    {autoFixed.notes.map((n) => <li key={n} className="is-note">✓ {n}</li>)}
+                    {autoFixed.checks.map((n) => <li key={n} className="is-check" data-hpd-smoke="paperwork-autofix-check">⚠️ {n}</li>)}
+                  </ul>
+                </div>
+              ) : null}
+              <button ref={previewButton} className="paperwork-print" data-hpd-smoke="paperwork-generate-correction" type="button" disabled={!canGeneratePackage || packageBusy} onClick={() => {
                 setCorrectionSaved("");
                 // An older job with no recorded work dates gets today's date by default: never put that on a correction.
                 const today = displayDate(todayIsoDate());
@@ -5654,17 +5712,31 @@ export default function PaperworkPage() {
                 <div className="pkg-correction" data-hpd-smoke="paperwork-correction-review">
                   <b>❗ Check the correction before saving</b>
                   <span>HPD rejected this on {correction.rejectedAt}{correction.attempt ? ` (${correction.attempt} attempt)` : ""}{correction.reason ? <>: <em>{correction.reason}</em></> : null}</span>
+                  {autoFixed ? (
+                    <div className="paperwork-autofixed" data-hpd-smoke="paperwork-autofixed-review">
+                      <b>✨ Auto-fixed{autoFixed.changes.length ? `: ${autoFixed.changes.length} change${autoFixed.changes.length === 1 ? "" : "s"}` : ": nothing needed changing"}</b>
+                      <ul>
+                        {autoFixed.changes.map((c) => <li key={c.field} data-hpd-smoke="paperwork-autofix-change">{c.label}: {c.from ? <s>{c.from}</s> : <i>empty</i>} → <b>{c.to}</b></li>)}
+                        {autoFixed.notes.map((n) => <li key={n} className="is-note">✓ {n}</li>)}
+                        {autoFixed.checks.map((n) => <li key={n} className="is-check" data-hpd-smoke="paperwork-autofix-check">⚠️ {n}</li>)}
+                      </ul>
+                    </div>
+                  ) : null}
                   <ul>
                     <li>Look at every page below and make sure that problem is fixed.</li>
                     <li><b>No signature pictures</b>: you and the notary sign by hand in ink (HPD needs original signatures). Sign the affidavit (page 2) <b>and</b> the invoice&apos;s &quot;Signature of Principal&quot; line in <b>blue ink</b>.</li>
                     <li>The notary stamp stays; the notary date is <b>today, {todayIsoDate()}</b>.</li>
                   </ul>
                   {correctionSaved && !correctionSaved.startsWith("error:") ? (
-                    <p className="pkg-correction-done" data-hpd-smoke="paperwork-correction-saved">✓ Saved on this phone {new Date(correctionSaved).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}. It&apos;s in HPD notices → <b>Corrections to print</b>. Print it, sign in ink with the notary, then send it to HPD.</p>
+                    <p className="pkg-correction-done" data-hpd-smoke="paperwork-correction-saved">✓ Saved on this phone {new Date(correctionSaved).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}. It&apos;s in the fixed folder: HPD notices → <b>🖨 To print</b>. Print it, sign in ink with the notary, then mail it to HPD.</p>
+                  ) : null}
+                  {correctionSaved && !correctionSaved.startsWith("error:") ? (
+                    <button type="button" className="paperwork-secondary is-reject" data-hpd-smoke="paperwork-correction-reject" onClick={() => void rejectAutoFix()}>✗ Reject: delete it and start again</button>
                   ) : (
                     <div className="pkg-correction-actions">
-                      <button type="button" className="paperwork-print" data-hpd-smoke="paperwork-correction-save" onClick={() => void saveCorrectionForPrinting()}>✓ It&apos;s right: save to print</button>
+                      <button type="button" className="paperwork-print" data-hpd-smoke="paperwork-correction-save" onClick={() => void saveCorrectionForPrinting()}>✓ Accept: save to the fixed folder</button>
                       <button type="button" className="paperwork-secondary" data-hpd-smoke="paperwork-correction-edit" onClick={editPackageDetails}>✏️ Change something</button>
+                      <button type="button" className="paperwork-secondary is-reject" data-hpd-smoke="paperwork-correction-reject" onClick={() => void rejectAutoFix()}>✗ Reject: delete it and start again</button>
                     </div>
                   )}
                   {correctionSaved.startsWith("error:") ? <p className="pkg-correction-error">Couldn&apos;t save it on this phone ({correctionSaved.slice(6)}). Use Download PDF below instead.</p> : null}

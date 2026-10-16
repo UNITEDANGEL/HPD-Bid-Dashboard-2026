@@ -258,6 +258,13 @@ Done 16 Oct (same day):
    the "fixed, ready to print" folder; Reject -> deleted, start again. Then, with my tap, a short email back to
    whoever sent the notice (their name from the bottom of it): the rejection is fixed, printed and in the mail;
    please confirm when received.
+   (Done: Rejected -> "✨ Auto-fix & preview" (lib/auto-fix.ts reads HPD's reason: borough, apartment / location,
+   address, dates, amount, section 5 phone, OMO; lists each change, what already prints from HPD's record, and
+   what to check by hand like signing in blue ink) and shows the preview. Accept -> saved to the fixed folder
+   (🖨 To print); Reject -> deleted, old details back. In To print, "✉ Tell HPD it's in the mail" writes to whoever
+   signed the notice (name read from the notice PDF: 45 of 47 by MICHAEL WRIGHT JR, CCAP, wrightmi@hpd.nyc.gov),
+   shows the email first, sends from your Google account on the second tap; the server only sends to one
+   @hpd.nyc.gov address (action hpd-reply). Tests: test-auto-fix, test-drive-packages, test-browser-autofix.)
 
 - **Test all (16 Oct)**: 60 unit tests + 21 browser tests pass, including the whole-app sweep
   (test-browser-all-buttons: 17 pages, 75 links, 64 buttons, no missing-data text), now run on every deploy.

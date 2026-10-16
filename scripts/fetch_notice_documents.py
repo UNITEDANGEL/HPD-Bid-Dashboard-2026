@@ -70,6 +70,43 @@ def body_text(payload):
     return re.sub(r"\n{3,}", "\n\n", text).strip()[:8000]
 
 
+def signer_of(pdf_bytes):
+    """Who signed HPD's notice: the name under "Sincerely," at the bottom (e.g. MICHAEL WRIGHT JR, CCAP)."""
+    try:
+        import fitz
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        lines = [l.strip() for p in doc for l in p.get_text().splitlines() if l.strip()]
+    except Exception:  # noqa: BLE001 - no PDF reader: no name
+        return ""
+    for i, line in enumerate(lines):
+        if re.match(r"^sincerely,?$", line, re.I) and i + 1 < len(lines):
+            name = lines[i + 1].strip().rstrip(",")
+            unit = lines[i + 2].strip().rstrip(",") if i + 2 < len(lines) and len(lines[i + 2]) <= 12 else ""
+            return f"{name}{', ' + unit if unit else ''}"[:60]
+    return ""
+
+
+def reply_address(sender):
+    m = re.search(r"<([^>]+@hpd\.nyc\.gov)>", sender or "", re.I) or re.search(r"([\w.+-]+@hpd\.nyc\.gov)", sender or "", re.I)
+    return m.group(1).lower() if m else ""
+
+
+def fill_signers(bundle, k):
+    """Name and reply address for every kept notice (the acknowledgement goes back to whoever sent it)."""
+    for items in bundle.values():
+        for it in items:
+            it.setdefault("replyTo", reply_address(it.get("from", "")))
+            if it.get("signer") is not None:
+                continue
+            it["signer"] = ""
+            for f in it.get("files", []):
+                path = os.path.join(FILES, f["file"] + ".enc")
+                if os.path.exists(path):
+                    it["signer"] = signer_of(decrypt_bytes(open(path, "rb").read(), k)) or it["signer"]
+                    if it["signer"]:
+                        break
+
+
 def open_rejections():
     with open(os.path.join(ROOT, "public", "data", "hpd_requests.json"), encoding="utf-8") as f:
         req = json.load(f).get("jobs", {})
@@ -124,6 +161,7 @@ def main(omos, everything):
         if items:
             bundle[omo] = items
         print(f"  {i + 1}/{len(todo)} {omo}: {len(items)} email(s), {sum(len(x['files']) for x in items)} PDF(s)", flush=True)
+    fill_signers(bundle, k)
     with open(BUNDLE, "wb") as f:
         f.write(encrypt_bytes(json.dumps(bundle).encode("utf-8"), k))
     print(f"HPD notices: {len(bundle)} jobs with HPD's emails kept (encrypted)")

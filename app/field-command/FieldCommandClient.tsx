@@ -785,6 +785,39 @@ export default function FieldCommandClient() {
   useEffect(() => { loadConversations().then((d) => setThreads(d ? d.threads : null)); }, []);
   const threadsFor = (omo: string) => (threads || []).filter((t) => t.omos.includes(omo));
   const [noticesTab, setNoticesTab] = useState<"rejected" | "corrections" | "requests" | "messages" | "print">("rejected");
+  // "It's fixed and in the mail" note to whoever signed HPD's notice: shown first, sent with a second tap.
+  const [ack, setAck] = useState<{ omo: string; to: string; name: string; subject: string; text: string; armed: boolean; status: string } | null>(null);
+  const [ackSent, setAckSent] = useState<Record<string, string>>({});
+  useEffect(() => { try { setAckSent(JSON.parse(localStorage.getItem("hpd-ack-sent-v1") || "{}")); } catch { /* private mode */ } }, []);
+  const startAck = (omo: string, reason: string) => {
+    const mail = noticeMail?.[omo]?.[0];
+    const name = (mail?.signer || "").replace(/,\s*CCAP$/i, "").trim();
+    const nice = name ? name.toLowerCase().replace(/\b[a-z]/g, (m) => m.toUpperCase()).replace(/\bJr\b/, "Jr.") : "";
+    const job = findAnyJob(omo);
+    const rj = openRejections.find((x) => x.omo === omo);
+    setAck({
+      omo, to: mail?.replyTo || "", name: mail?.signer || "",
+      subject: `RE: OMO# ${omo} rejection: corrected paperwork in the mail`,
+      text: `Hello${nice ? ` ${nice}` : ""},\n\nRe: OMO# ${omo}${job ? ` - ${jobAddress(job)}` : ""}\n\nThe rejection you sent${rj?.at ? ` on ${rj.at}` : ""}${reason ? ` ("${reason.slice(0, 160)}")` : ""} has been corrected. The corrected affidavit and invoice are signed, notarized, printed and in the mail back to you.\n\nPlease let us know when you receive them.\n\nThank you,\nUnited Angel Construction Corp`,
+      armed: false, status: "",
+    });
+  };
+  const sendAck = async () => {
+    if (!ack) return;
+    if (!ack.armed) { setAck({ ...ack, armed: true }); return; }
+    setAck({ ...ack, status: "Sending…" });
+    try {
+      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: ack.to, subject: ack.subject, text: ack.text }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
+      const next = { ...ackSent, [ack.omo]: new Date().toISOString() };
+      setAckSent(next);
+      try { localStorage.setItem("hpd-ack-sent-v1", JSON.stringify(next)); } catch { /* private mode */ }
+      setAck(null);
+    } catch (e) {
+      setAck({ ...ack, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
+    }
+  };
   const threadsOf = (kinds: readonly string[]) => (threads || []).filter((t) => kinds.includes(t.kind));
   // A list of HPD email threads of some kinds, waiting-on-you first; 8 shown, then "Show all".
   const threadSection = (key: string, title: string, kinds: readonly string[], note: string) => {
@@ -3609,7 +3642,22 @@ export default function FieldCommandClient() {
                       <div className="fc-to-print-actions">
                         <button type="button" data-hpd-smoke="fc-to-print-open" onClick={() => openCorrectionPdf(c)}>📄 Open / print</button>
                         <button type="button" className={printArmed === c.omo ? "is-armed" : ""} data-hpd-smoke="fc-to-print-sent" onClick={() => void correctionSent(c)}>{printArmed === c.omo ? "Tap again: signed & sent" : "✓ Signed & sent"}</button>
+                        {ackSent[c.omo] ? <small className="fc-ack-done" data-hpd-smoke="fc-ack-done">✉ HPD told it&apos;s in the mail · {new Date(ackSent[c.omo]).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</small>
+                          : <button type="button" data-hpd-smoke="fc-ack-open" onClick={() => startAck(c.omo, c.reason || "")}>✉ Tell HPD it&apos;s in the mail</button>}
                       </div>
+                      {ack?.omo === c.omo ? (
+                        <div className="fc-ack" data-hpd-smoke="fc-ack">
+                          <b>Email to {ack.name || "HPD"}{ack.to ? ` <${ack.to}>` : ""}</b>
+                          {!ack.to ? <p className="fc-ack-status">The app doesn&apos;t have the sender&apos;s address for this notice yet. Reply to HPD&apos;s notice in Gmail instead.</p> : null}
+                          <label>Subject<input data-hpd-smoke="fc-ack-subject" value={ack.subject} onChange={(e) => setAck({ ...ack, subject: e.target.value, armed: false })} /></label>
+                          <label>Message<textarea data-hpd-smoke="fc-ack-text" rows={9} value={ack.text} onChange={(e) => setAck({ ...ack, text: e.target.value, armed: false })} /></label>
+                          <div className="fc-ack-actions">
+                            <button type="button" className={ack.armed ? "is-armed" : ""} data-hpd-smoke="fc-ack-send" disabled={!ack.to || ack.status === "Sending…"} onClick={() => void sendAck()}>{ack.armed ? `✅ Tap again: send to ${ack.to}` : "✉ Send"}</button>
+                            <button type="button" onClick={() => setAck(null)}>Cancel</button>
+                          </div>
+                          {ack.status ? <p className="fc-ack-status" data-hpd-smoke="fc-ack-status">{ack.status}</p> : null}
+                        </div>
+                      ) : null}
                     </li>
                   ))}
                 </ul>
@@ -3630,7 +3678,8 @@ export default function FieldCommandClient() {
                   {openNotice === r.omo ? <p className="fc-notice-detail" data-hpd-smoke="fc-notice-detail">This job is from before 2026, so it isn&apos;t on the map. HPD&apos;s notice (with the rejection PDF) is in your email; correct the affidavit / invoice and send it back to HPD.</p> : null}
                   <button type="button" className="fc-follow-paper is-notice" data-hpd-smoke="fc-notice-view" onClick={() => setNoticeView(r.omo)}>👁 See HPD&apos;s notice{noticeMail?.[r.omo]?.length ? ` (${noticeMail[r.omo][0].files.length} PDF${noticeMail[r.omo][0].files.length === 1 ? "" : "s"})` : ""}</button>
                   <a className="fc-follow-paper is-gmail" href={`https://mail.google.com/mail/u/0/#search/${encodeURIComponent(r.omo)}`} target="_blank" rel="noreferrer">Open HPD&apos;s notice in Gmail ↗</a>
-                  {findAnyJob(r.omo) ? <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}`}>Fix &amp; resend →</a> : null}
+                  {findAnyJob(r.omo) ? <a className="fc-follow-paper is-autofix" data-hpd-smoke="fc-notice-autofix" href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}&auto=1`}>✨ Auto-fix &amp; preview</a> : null}
+                  {findAnyJob(r.omo) ? <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}`}>Fix by hand →</a> : null}
                 </li>
               ))}</ol> : <p>None waiting on you.</p>}
             </section>
