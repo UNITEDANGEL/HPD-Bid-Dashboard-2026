@@ -51,3 +51,17 @@ export function loadNotices(fetcher: typeof fetch = fetch): Promise<Record<strin
   return noticesPending;
 }
 export const noticePdfUrl = (file: string) => `/api/private/notice/${encodeURIComponent(file)}`;
+
+// Email threads with HPD staff (scripts/fetch_hpd_conversations.py), newest first. waiting = HPD wrote last.
+export type HpdMessage = { at: string; from: string; hpd: boolean; mine: boolean; subject: string; text: string; files: string[] };
+export type HpdThread = { id: string; subject: string; omos: string[]; kind: string; people: string[]; count: number; lastAt: string; waiting: boolean; messages: HpdMessage[] };
+let convPending: Promise<{ generatedAt: string; threads: HpdThread[] } | null> | null = null;
+export function loadConversations(fetcher: typeof fetch = fetch) {
+  if (!convPending) {
+    convPending = fetcher("/api/private/conversations", { cache: "no-store", credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => (d && Array.isArray(d.threads) ? d : null))
+      .catch(() => null);
+  }
+  return convPending;
+}

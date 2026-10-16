@@ -16,7 +16,7 @@ import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDa
 import { fieldStatusLabel } from "../../lib/field-status";
 import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
 import { jobStages, nextStep } from "../../lib/job-stages";
-import { loadNotices, loadPrivate, noticePdfUrl, privateDocUrl, withPrivate, type NoticeEmail } from "../../lib/private-data";
+import { loadConversations, loadNotices, loadPrivate, noticePdfUrl, privateDocUrl, withPrivate, type HpdThread, type NoticeEmail } from "../../lib/private-data";
 import ItbPages from "./ItbPages";
 import { listCorrections, removeCorrection, type SavedCorrection } from "../../lib/correction-store";
 import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type PipPayment, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
@@ -772,6 +772,12 @@ export default function FieldCommandClient() {
   const [noticesOpen, setNoticesOpen] = useState(false);
   // HPD's own notice emails + their PDFs (private route), shown inside the app one notice at a time.
   const [noticeMail, setNoticeMail] = useState<Record<string, NoticeEmail[]> | null | undefined>(undefined);
+  // Email threads with HPD staff (work orders, corrections, AEP...), loaded when signed in. One opens as a chat.
+  const [threads, setThreads] = useState<HpdThread[] | null | undefined>(undefined);
+  const [threadView, setThreadView] = useState<{ ids: string[]; title: string } | null>(null);
+  const [threadsAll, setThreadsAll] = useState(false);
+  useEffect(() => { loadConversations().then((d) => setThreads(d ? d.threads : null)); }, []);
+  const threadsFor = (omo: string) => (threads || []).filter((t) => t.omos.includes(omo));
   const [noticeView, setNoticeView] = useState("");
   useEffect(() => { if (noticesOpen && noticeMail === undefined) loadNotices().then((d) => setNoticeMail(d)); }, [noticesOpen, noticeMail]);
   // Tenant names / phones are private: null while loading, false when this phone isn't signed in with Google.
@@ -3281,6 +3287,11 @@ export default function FieldCommandClient() {
                             ))}
                           </ol>
                           <p className="jc-journey-next" data-hpd-smoke="jc-journey-next">Next: {nextStep(stages)}</p>
+                          {(() => { const ts = threadsFor(fu.omo); if (!ts.length) return null; const waiting = ts.filter((t) => t.waiting).length; return (
+                            <button type="button" className={`jc-threads${waiting ? " is-waiting" : ""}`} data-hpd-smoke="jc-threads" onClick={() => setThreadView({ ids: ts.map((t) => t.id), title: `${fu.omo}: emails with HPD` })}>
+                              💬 Emails with HPD ({ts.length}){waiting ? ` · ${waiting} waiting on you` : ""}
+                            </button>
+                          ); })()}
                         </div>
                       );
                     })()}
@@ -3478,6 +3489,33 @@ export default function FieldCommandClient() {
           </div>
         </div>
       ) : null}
+      {threadView ? (
+        <div className="fc-package-sheet fc-summary-sheet fc-thread-viewer" role="dialog" aria-label="Conversation with HPD" data-hpd-smoke="fc-thread-viewer">
+          <header>
+            <button type="button" data-hpd-smoke="fc-thread-close" onClick={() => setThreadView(null)}>← Back</button>
+            <strong>💬 {threadView.title}</strong>
+          </header>
+          <div className="fc-summary-body">
+            {(threads || []).filter((t) => threadView.ids.includes(t.id)).map((t) => (
+              <article key={t.id} className="fc-thread" data-hpd-smoke="fc-thread">
+                {threadView.ids.length > 1 ? <h4>{t.subject}</h4> : null}
+                <p className="fc-follow-note">{t.kind}{t.omos.length ? ` · ${t.omos.join(", ")}` : ""} · {t.waiting ? "HPD wrote last: waiting on your answer" : "you answered last"}</p>
+                {t.messages.map((m, i) => (
+                  <div key={i} className={`fc-msg ${m.mine ? "is-mine" : "is-hpd"}`} data-hpd-smoke="fc-msg">
+                    <small>{m.from} · {new Date(m.at).toLocaleString("en-US", { month: "numeric", day: "numeric", year: "2-digit", hour: "numeric", minute: "2-digit" })}</small>
+                    <p>{m.text || "(no text)"}</p>
+                    {m.files.length ? <small className="fc-msg-files">📎 {[...new Set(m.files)].join(", ")}</small> : null}
+                  </div>
+                ))}
+                <div className="fc-thread-actions">
+                  <a className="fc-follow-paper is-gmail" data-hpd-smoke="fc-thread-gmail" href={`https://mail.google.com/mail/u/0/#all/${t.id}`} target="_blank" rel="noreferrer">↩ Reply in Gmail</a>
+                  {t.omos.filter((o) => findAnyJob(o)).slice(0, 3).map((o) => <button key={o} type="button" className="fc-follow-paper" onClick={() => { setThreadView(null); setNoticesOpen(false); const j = findAnyJob(o); if (j) setSelectedJob(j); }}>Open job {o} →</button>)}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      ) : null}
       {noticeView ? (
         <div className="fc-package-sheet fc-summary-sheet fc-notice-viewer" role="dialog" aria-label={`HPD's notice for ${noticeView}`} data-hpd-smoke="fc-notice-viewer">
           <header>
@@ -3507,6 +3545,28 @@ export default function FieldCommandClient() {
             <button type="button" data-hpd-smoke="fc-notices-show-all" onClick={() => { setNoticesOpen(false); setFollowFilter(""); }}>Show all jobs</button>
           </header>
           <div className="fc-summary-body fc-follow-body" data-hpd-smoke="fc-notices-body">
+            <section className="fc-follow-section is-conversations" data-hpd-smoke="fc-conversations">
+              <h4>💬 Conversations with HPD{threads?.length ? ` (${threads.filter((t) => t.waiting).length} waiting on you)` : ""}</h4>
+              {threads === null ? <p className="fc-follow-note" data-hpd-smoke="fc-conversations-signin">Your emails with HPD are private. <a href="/storage/">Sign in with Google</a> on this phone to see them here.</p>
+                : threads === undefined ? <p className="fc-follow-note">Loading…</p>
+                : !threads.length ? <p className="fc-follow-note">No emails with HPD read yet.</p>
+                : (
+                  <>
+                    <ul className="fc-thread-list">
+                      {[...threads].sort((a, b) => Number(b.waiting) - Number(a.waiting) || b.lastAt.localeCompare(a.lastAt)).slice(0, threadsAll ? 200 : 8).map((t) => (
+                        <li key={t.id} className={t.waiting ? "is-waiting" : ""}>
+                          <button type="button" data-hpd-smoke="fc-thread-row" onClick={() => setThreadView({ ids: [t.id], title: t.subject })}>
+                            <b>{t.waiting ? "🔴 " : ""}{t.subject || "(no subject)"}</b>
+                            <span>{t.people.join(", ") || "HPD"} · {t.kind}{t.omos.length ? ` · ${t.omos.slice(0, 3).join(", ")}` : ""}</span>
+                            <small>{new Date(t.lastAt).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })} · {t.count} message{t.count === 1 ? "" : "s"}{t.waiting ? " · HPD wrote last" : " · you replied"}</small>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    {threads.length > 8 ? <button type="button" className="fc-follow-paper" data-hpd-smoke="fc-threads-more" onClick={() => setThreadsAll((v) => !v)}>{threadsAll ? "Show fewer" : `Show all ${threads.length}`}</button> : null}
+                  </>
+                )}
+            </section>
             {toPrint.length ? (
               <section className="fc-follow-section is-to-print" data-hpd-smoke="fc-notices-to-print">
                 <h4>🖨 Corrections to print &amp; sign in ink ({toPrint.length})</h4>

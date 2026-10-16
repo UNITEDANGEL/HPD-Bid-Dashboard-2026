@@ -231,6 +231,11 @@ Done 16 Oct (same day):
 2. **Read my email daily and keep HPD conversations**: every email thread with HPD staff (work orders,
    correction requests, AEP e.g. D. Gafur, the vendor tracker), kept whole (their messages and my replies),
    per job, separate from rejection notices; show which ones wait on my answer.
+   (Done: scripts/fetch_hpd_conversations.py reads every thread with hpd.nyc.gov, both sides, on every fetcher
+   run (first run 180 days: 518 threads), encrypted in public/private/conversations.json.enc. HPD notices ->
+   "💬 Conversations with HPD" (waiting ones first) opens a thread as a chat with Reply in Gmail; job cards show
+   "💬 Emails with HPD (n)". Waiting = a person at HPD wrote last in 45 days about something needing an answer,
+   not "Received. Thanks", not answered by paperwork sent later: 29 today. test-browser-conversations.)
 3. **Map buttons hidden behind "Today's route"** on shorter iPhone screens: fix. (Done: the route bar stops
    short of the button column; buttons shrink on short screens; test-browser-buttons-visible at 4 sizes.)
 4. **Bids open on the map first**, the list as a half-height panel I can pull up / down. (Done: compact header;

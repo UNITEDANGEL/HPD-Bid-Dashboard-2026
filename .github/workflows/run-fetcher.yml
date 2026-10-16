@@ -92,6 +92,14 @@ jobs:
           HPD_PRIVATE_DATA_KEY: ${{ secrets.HPD_PRIVATE_DATA_KEY }}
         run: python -m pip install --quiet --disable-pip-version-check cryptography && python scripts/fetch_notice_documents.py
 
+      # Every email thread with HPD staff (work orders, corrections, AEP, the vendor tracker), both sides,
+      # encrypted; only new mail after the first run. Shown in HPD notices and on each job card.
+      - name: Read conversations with HPD
+        continue-on-error: true
+        env:
+          HPD_PRIVATE_DATA_KEY: ${{ secrets.HPD_PRIVATE_DATA_KEY }}
+        run: python scripts/fetch_hpd_conversations.py --days 180
+
       - name: Commit fetcher output
         if: always()
         shell: bash

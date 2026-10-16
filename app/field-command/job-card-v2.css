@@ -1001,3 +1001,7 @@
 .jc-assistant input { min-width: 0; width: 100%; min-height: 44px; box-sizing: border-box; font-size: 16px; border: 1px solid #708980; border-radius: 6px; background: #fff; color: #15241e; }
 .jc-assistant p, .jc-assistant li { white-space: pre-line; overflow-wrap: anywhere; font-size: 14px; line-height: 1.5; }
 .jc-assistant [role="status"] { margin-top: 12px; }
+
+/* Emails with HPD about this job (opens the conversation). */
+.jc-threads { display: block; width: 100%; margin-top: 8px; min-height: 42px; border-radius: 10px; border: 1px solid #60a5fa; background: #1e3a8a; color: #fff; font: 800 13.5px system-ui; }
+.jc-threads.is-waiting { border-color: #f87171; background: #7f1d1d; }
