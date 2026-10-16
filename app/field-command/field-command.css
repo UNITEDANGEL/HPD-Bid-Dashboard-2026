@@ -2743,3 +2743,15 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-change-update.is-new { box-shadow: 0 0 0 2px #fde047; }
 .fc-change-update small { color: #94a3b8; font: 700 11.5px system-ui; }
 .fc-change-update p { margin: 3px 0 0; white-space: pre-wrap; font: 500 14.5px/1.45 system-ui; }
+
+/* Progress counter per request and "Claude is working on this right now". */
+.fc-change-working { margin: 0; display: flex; align-items: center; gap: 8px; color: #86efac; font: 800 13.5px system-ui; }
+.fc-change-working i { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 0 #22c55e88; animation: fc-pulse 1.4s infinite; }
+@keyframes fc-pulse { 0% { box-shadow: 0 0 0 0 #22c55e88; } 70% { box-shadow: 0 0 0 9px #22c55e00; } 100% { box-shadow: 0 0 0 0 #22c55e00; } }
+.fc-change-progress { display: grid; gap: 4px; }
+.fc-change-bar { height: 10px; border-radius: 5px; background: #1e293b; overflow: hidden; }
+.fc-change-bar i { display: block; height: 100%; border-radius: 5px; background: linear-gradient(90deg, #f59e0b, #22c55e); transition: width 0.4s; }
+.fc-change-progress small { color: #fde68a; font: 800 12.5px system-ui; }
+.fc-change-progress ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font: 600 13.5px/1.35 system-ui; color: #94a3b8; }
+.fc-change-progress li.is-done { color: #bbf7d0; }
+@media (prefers-reduced-motion: reduce) { .fc-change-working i { animation: none; } }

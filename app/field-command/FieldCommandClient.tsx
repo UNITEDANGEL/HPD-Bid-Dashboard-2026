@@ -1024,7 +1024,7 @@ export default function FieldCommandClient() {
   useEffect(() => { try { setMyRequests(JSON.parse(localStorage.getItem("hpd-change-requests") || "[]")); } catch { /* private mode */ } }, []);
   // Your requests with their answers (status + dated progress notes), from the status server: CHANGE-REQUEST-<id>
   // and CHANGE-REPLY-<id> (scripts/reply-change-request.mjs). "New" = an update after you last opened the list.
-  type ChangeThread = { id: string; at: string; text: string; status: string; updates: { at: string; text: string }[] };
+  type ChangeThread = { id: string; at: string; text: string; status: string; updates: { at: string; text: string }[]; steps: { text: string; done: boolean }[]; workingAt: string };
   const [changeThreads, setChangeThreads] = useState<ChangeThread[] | null>(null);
   const [repliesSeen, setRepliesSeen] = useState("");
   const loadChangeThreads = async () => {
@@ -1032,8 +1032,8 @@ export default function FieldCommandClient() {
       const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/overrides`, { cache: "no-store" });
       const all = (await r.json())?.overrides || {};
       const list: ChangeThread[] = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUEST-")).map(([k, v]) => {
-        const id = k.slice(15); const req = v as { at?: string; text?: string }; const rep = all[`CHANGE-REPLY-${id}`] as { status?: string; updates?: { at: string; text: string }[] } | undefined;
-        return { id, at: String(req.at || ""), text: String(req.text || ""), status: rep?.status || "Received", updates: Array.isArray(rep?.updates) ? rep!.updates : [] };
+        const id = k.slice(15); const req = v as { at?: string; text?: string }; const rep = all[`CHANGE-REPLY-${id}`] as { status?: string; updates?: { at: string; text: string }[]; steps?: { text: string; done: boolean }[]; workingAt?: string } | undefined;
+        return { id, at: String(req.at || ""), text: String(req.text || ""), status: rep?.status || "Received", updates: Array.isArray(rep?.updates) ? rep!.updates : [], steps: Array.isArray(rep?.steps) ? rep!.steps : [], workingAt: String(rep?.workingAt || "") };
       }).sort((a, b) => b.at.localeCompare(a.at));
       setChangeThreads(list);
     } catch { setChangeThreads(null); }
@@ -3621,6 +3621,18 @@ export default function FieldCommandClient() {
                   <article key={t.id} className={`fc-change-thread is-${t.status.toLowerCase().replace(/[^a-z]+/g, "-")}`} data-hpd-smoke="fc-change-thread">
                     <p className="fc-change-ask"><small>You · {new Date(t.at).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</small>{t.text}</p>
                     <b className="fc-change-status" data-hpd-smoke="fc-change-status">{t.status === "Done" ? "✅" : t.status === "Working on it" ? "🔧" : "📥"} {t.status}</b>
+                    {t.workingAt && Date.now() - Date.parse(t.workingAt) < 30 * 60000 ? <p className="fc-change-working" data-hpd-smoke="fc-change-working"><i aria-hidden="true" /> Claude is working on this right now (since {new Date(t.workingAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })})</p> : null}
+                    {t.steps.length ? (() => {
+                      const done = t.steps.filter((x) => x.done).length;
+                      const pct = Math.round((done / t.steps.length) * 100);
+                      return (
+                        <div className="fc-change-progress" data-hpd-smoke="fc-change-progress">
+                          <div className="fc-change-bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}><i style={{ width: `${pct}%` }} /></div>
+                          <small data-hpd-smoke="fc-change-count">{done} of {t.steps.length} steps · {pct}%</small>
+                          <ol>{t.steps.map((x) => <li key={x.text} className={x.done ? "is-done" : ""}>{x.done ? "✓" : "○"} {x.text}</li>)}</ol>
+                        </div>
+                      );
+                    })() : null}
                     {t.updates.map((u) => (
                       <div key={u.at} className={`fc-change-update${u.at > repliesSeen ? " is-new" : ""}`} data-hpd-smoke="fc-change-update">
                         <small>Update · {new Date(u.at).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}{u.at > repliesSeen ? " · new" : ""}</small>

@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Oct 16, 2026",
+      "title": "Progress counter on every request",
+      "items": [
+        "Each request shows a progress bar with its steps (e.g. 2 of 5 steps · 40%) and a green light while Claude is working on it.",
+        "An hourly check reads your new requests and posts progress here."
+      ]
+    },
+    {
+      "date": "Oct 16, 2026",
       "title": "Progress reports on your requests",
       "items": [
         "Your requests from Ask for a change show here with their status (Received, Working on it, Done) and my progress notes: what happened and what changed.",
