@@ -71,6 +71,7 @@ try {
   for (let i = 0; i < 30 && !posts.some((p) => JSON.stringify(p).includes("RejectionCorrectedAt")); i++) await page.waitForTimeout(500);
   assert.ok(posts.some((p) => JSON.stringify(p).includes("RejectionCorrectedAt")), "correction synced to the status server");
   await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
+  await page.locator('[data-hpd-smoke="fc-notice-tab-print"]').click(); // fixed paperwork waiting to print: its own tab
   const row = page.locator('[data-hpd-smoke="fc-to-print-row"]', { hasText: OMO });
   await row.waitFor({ timeout: 15000 });
   // The notices list scrolls (it used to be stuck).

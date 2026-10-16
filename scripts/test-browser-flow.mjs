@@ -89,6 +89,8 @@ try {
     await page.locator(BUTTONS.closeout.tap).click();
     assert.equal(await page.locator('[data-hpd-smoke="fc-close-out-sheet"] .fc-close-out-row').count(), 3);
     assert.equal(await page.locator('[data-hpd-smoke="fc-close-out-package"]').count(), 3, "Package link on each");
+    // The list isn't a small box with its own scroll (it showed ~3 jobs): it uses the whole sheet.
+    assert.ok(await page.locator('[data-hpd-smoke="fc-close-out-sheet"] .fc-work-list').evaluate((ul) => ul.scrollHeight <= ul.clientHeight + 2 && getComputedStyle(ul).maxHeight === "none"), "no inner scroll box");
     await page.locator(BUTTONS.closeout.close).click();
     await page.locator(BUTTONS.secondtry.tap).click();
     assert.match(await page.locator('[data-hpd-smoke="fc-second-try-sheet"] header').innerText(), /2 2nd tries · 1 due now/);

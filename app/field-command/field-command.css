@@ -2652,3 +2652,14 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-msg p { margin: 3px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .fc-msg-files { margin-top: 4px; }
 .fc-thread-actions { display: grid; gap: 6px; }
+/* In the full-screen Close out / 2nd try sheets the list uses the whole screen (it had the map dropdown's
+   small scroll box, showing ~3 jobs). The sheet itself scrolls. */
+.fc-work-sheet .fc-work-list { max-height: none; overflow: visible; border: 0; box-shadow: none; padding: 0; background: transparent; }
+.fc-work-sheet .fc-work-list li { border-radius: 10px; background: #111827; border: 1px solid #334155; margin-bottom: 6px; }
+.fc-work-sheet .fc-work-list li + li { border-top: 1px solid #334155; }
+
+/* HPD notices tabs: one kind at a time. */
+.fc-notice-tabs { position: sticky; top: -12px; z-index: 3; display: flex; gap: 6px; margin: -12px -14px 10px; padding: 8px 14px; overflow-x: auto; scrollbar-width: none; background: #0b1220; border-bottom: 1px solid #1f2937; }
+.fc-notice-tabs button { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border-radius: 20px; border: 1px solid #334155; background: #111827; color: #e2e8f0; font: 800 13.5px system-ui; }
+.fc-notice-tabs button.is-active { background: #f8fafc; color: #0f172a; border-color: #f8fafc; }
+.fc-notice-tabs button b { min-width: 20px; padding: 0 6px; border-radius: 10px; background: #dc2626; color: #fff; font: 800 11.5px/20px system-ui; text-align: center; }

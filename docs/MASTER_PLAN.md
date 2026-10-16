@@ -248,6 +248,17 @@ Done 16 Oct (same day):
    text folded behind "Show HPD's text"; the old "What this job includes" list removed (The job replaces it);
    building facts, violations, earlier jobs and your bids there in one "🏢 The building" section below the price.)
 
+## Owner's requests 16 Oct 2026 (late)
+1. **Keep every kind apart**: rejected paperwork (HPD's automatic notices) / HPD staff asking for corrections /
+   requests for affidavits, invoices, photos / other conversations. (Done: HPD notices has tabs ❗ Rejected ·
+   ✏️ Corrections · 📎 Requests · 💬 Messages · 🖨 To print, each with its count; award letters and rejection
+   notices are never listed with the conversations.)
+2. **Close out / 2nd try lists showed ~3 jobs in a small scroll box**: fixed, the list uses the whole sheet.
+3. **Auto-fix rejected paperwork**: the app fixes it from HPD's reason, shows the preview; Accept -> saved in
+   the "fixed, ready to print" folder; Reject -> deleted, start again. Then, with my tap, a short email back to
+   whoever sent the notice (their name from the bottom of it): the rejection is fixed, printed and in the mail;
+   please confirm when received.
+
 - **Test all (16 Oct)**: 60 unit tests + 21 browser tests pass, including the whole-app sweep
   (test-browser-all-buttons: 17 pages, 75 links, 64 buttons, no missing-data text), now run on every deploy.
 

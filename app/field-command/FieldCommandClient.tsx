@@ -581,6 +581,12 @@ function NoticesIcon() {
   );
 }
 
+// HPD email threads by kind (scripts/fetch_hpd_conversations.py). Rejection notices and award letters have their
+// own screens, so they're not listed with the conversations.
+const CORRECTION_KINDS = ["correction"] as const;
+const REQUEST_KINDS = ["paperwork", "past due"] as const;
+const MESSAGE_KINDS = ["AEP", "work order", "message"] as const;
+
 function CloseOutIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -778,6 +784,37 @@ export default function FieldCommandClient() {
   const [threadsAll, setThreadsAll] = useState(false);
   useEffect(() => { loadConversations().then((d) => setThreads(d ? d.threads : null)); }, []);
   const threadsFor = (omo: string) => (threads || []).filter((t) => t.omos.includes(omo));
+  const [noticesTab, setNoticesTab] = useState<"rejected" | "corrections" | "requests" | "messages" | "print">("rejected");
+  const threadsOf = (kinds: readonly string[]) => (threads || []).filter((t) => kinds.includes(t.kind));
+  // A list of HPD email threads of some kinds, waiting-on-you first; 8 shown, then "Show all".
+  const threadSection = (key: string, title: string, kinds: readonly string[], note: string) => {
+    const list = [...threadsOf(kinds)].sort((a, b) => Number(b.waiting) - Number(a.waiting) || b.lastAt.localeCompare(a.lastAt));
+    return (
+      <section className="fc-follow-section is-conversations" data-hpd-smoke={`fc-threads-${key}`} key={key}>
+        <h4>{title}{list.length ? ` (${list.filter((t) => t.waiting).length} waiting on you)` : ""}</h4>
+        {note ? <p className="fc-follow-note">{note}</p> : null}
+        {threads === null ? <p className="fc-follow-note" data-hpd-smoke="fc-conversations-signin">Your emails with HPD are private. <a href="/storage/">Sign in with Google</a> on this phone to see them here.</p>
+          : threads === undefined ? <p className="fc-follow-note">Loading…</p>
+          : !list.length ? <p className="fc-follow-note">None.</p>
+          : (
+            <>
+              <ul className="fc-thread-list">
+                {list.slice(0, threadsAll ? 300 : 8).map((t) => (
+                  <li key={t.id} className={t.waiting ? "is-waiting" : ""}>
+                    <button type="button" data-hpd-smoke="fc-thread-row" onClick={() => setThreadView({ ids: [t.id], title: t.subject })}>
+                      <b>{t.waiting ? "🔴 " : ""}{t.subject || "(no subject)"}</b>
+                      <span>{t.people.join(", ") || "HPD"}{t.omos.length ? ` · ${t.omos.slice(0, 3).join(", ")}` : ""}</span>
+                      <small>{new Date(t.lastAt).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })} · {t.count} message{t.count === 1 ? "" : "s"}{t.waiting ? " · HPD wrote last" : " · you replied"}</small>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {list.length > 8 ? <button type="button" className="fc-follow-paper" data-hpd-smoke="fc-threads-more" onClick={() => setThreadsAll((v) => !v)}>{threadsAll ? "Show fewer" : `Show all ${list.length}`}</button> : null}
+            </>
+          )}
+      </section>
+    );
+  };
   const [noticeView, setNoticeView] = useState("");
   useEffect(() => { if (noticesOpen && noticeMail === undefined) loadNotices().then((d) => setNoticeMail(d)); }, [noticesOpen, noticeMail]);
   // Tenant names / phones are private: null while loading, false when this phone isn't signed in with Google.
@@ -3545,29 +3582,23 @@ export default function FieldCommandClient() {
             <button type="button" data-hpd-smoke="fc-notices-show-all" onClick={() => { setNoticesOpen(false); setFollowFilter(""); }}>Show all jobs</button>
           </header>
           <div className="fc-summary-body fc-follow-body" data-hpd-smoke="fc-notices-body">
-            <section className="fc-follow-section is-conversations" data-hpd-smoke="fc-conversations">
-              <h4>💬 Conversations with HPD{threads?.length ? ` (${threads.filter((t) => t.waiting).length} waiting on you)` : ""}</h4>
-              {threads === null ? <p className="fc-follow-note" data-hpd-smoke="fc-conversations-signin">Your emails with HPD are private. <a href="/storage/">Sign in with Google</a> on this phone to see them here.</p>
-                : threads === undefined ? <p className="fc-follow-note">Loading…</p>
-                : !threads.length ? <p className="fc-follow-note">No emails with HPD read yet.</p>
-                : (
-                  <>
-                    <ul className="fc-thread-list">
-                      {[...threads].sort((a, b) => Number(b.waiting) - Number(a.waiting) || b.lastAt.localeCompare(a.lastAt)).slice(0, threadsAll ? 200 : 8).map((t) => (
-                        <li key={t.id} className={t.waiting ? "is-waiting" : ""}>
-                          <button type="button" data-hpd-smoke="fc-thread-row" onClick={() => setThreadView({ ids: [t.id], title: t.subject })}>
-                            <b>{t.waiting ? "🔴 " : ""}{t.subject || "(no subject)"}</b>
-                            <span>{t.people.join(", ") || "HPD"} · {t.kind}{t.omos.length ? ` · ${t.omos.slice(0, 3).join(", ")}` : ""}</span>
-                            <small>{new Date(t.lastAt).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })} · {t.count} message{t.count === 1 ? "" : "s"}{t.waiting ? " · HPD wrote last" : " · you replied"}</small>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                    {threads.length > 8 ? <button type="button" className="fc-follow-paper" data-hpd-smoke="fc-threads-more" onClick={() => setThreadsAll((v) => !v)}>{threadsAll ? "Show fewer" : `Show all ${threads.length}`}</button> : null}
-                  </>
-                )}
-            </section>
-            {toPrint.length ? (
+            {/* One kind per tab, never mixed (owner, 16 Oct): rejected paperwork / HPD's correction requests /
+                requests for affidavits, invoices, photos / other messages / fixed paperwork waiting to print. */}
+            <nav className="fc-notice-tabs" role="tablist" data-hpd-smoke="fc-notice-tabs">
+              {([
+                ["rejected", "❗ Rejected", openRejections.length],
+                ["corrections", "✏️ Corrections", threadsOf(CORRECTION_KINDS).filter((t) => t.waiting).length],
+                ["requests", "📎 Requests", followReport.hpdAsked.length + threadsOf(REQUEST_KINDS).filter((t) => t.waiting).length],
+                ["messages", "💬 Messages", threadsOf(MESSAGE_KINDS).filter((t) => t.waiting).length],
+                ["print", "🖨 To print", toPrint.length],
+              ] as const).map(([key, label, n]) => (
+                <button key={key} type="button" role="tab" aria-selected={noticesTab === key} className={noticesTab === key ? "is-active" : ""} data-hpd-smoke={`fc-notice-tab-${key}`} onClick={() => setNoticesTab(key)}>{label}{n ? <b>{n}</b> : null}</button>
+              ))}
+            </nav>
+            {noticesTab === "corrections" ? threadSection("corrections", "✏️ HPD asked for corrections", CORRECTION_KINDS, "HPD staff emails asking you to correct an affidavit / invoice (the automatic rejection notices are under Rejected).") : null}
+            {noticesTab === "messages" ? threadSection("messages", "💬 Messages with HPD", MESSAGE_KINDS, "AEP, work orders and other emails with HPD staff.") : null}
+            {noticesTab === "print" && !toPrint.length ? <p className="fc-follow-note" data-hpd-smoke="fc-notices-to-print-empty">Nothing waiting to print. Fixed rejections land here after you check the preview and save them.</p> : null}
+            {noticesTab === "print" && toPrint.length ? (
               <section className="fc-follow-section is-to-print" data-hpd-smoke="fc-notices-to-print">
                 <h4>🖨 Corrections to print &amp; sign in ink ({toPrint.length})</h4>
                 <p className="fc-follow-note">Print each one, sign it by hand and have the notary sign (the stamp and today&apos;s notary date are already on it). Then send it to HPD and tap Signed &amp; sent.</p>
@@ -3584,7 +3615,8 @@ export default function FieldCommandClient() {
                 </ul>
               </section>
             ) : null}
-            <p className="fc-follow-note">From HPD&apos;s emails (rejections, requests for affidavits / invoices / photos / videos, status). Red = paperwork rejected. The map shows these jobs; tap ✕ on the map to show all jobs again.</p>
+            {noticesTab === "rejected" ? (<>
+            <p className="fc-follow-note">HPD&apos;s automatic notices that payment paperwork was rejected. The map shows these jobs; tap ✕ on the map to show all jobs again.</p>
             <section className="fc-follow-section is-rejected" data-hpd-smoke="fc-notices-rejected">
               <h4>❗ Rejected paperwork · fix &amp; resend ({openRejections.length})</h4>
               {openRejections.length ? <ol>{openRejections.map((r) => (
@@ -3602,6 +3634,8 @@ export default function FieldCommandClient() {
                 </li>
               ))}</ol> : <p>None waiting on you.</p>}
             </section>
+            </>) : null}
+            {noticesTab === "requests" ? (<>
             <section className="fc-follow-section is-hpd-asked" data-hpd-smoke="fc-notices-requests">
               <h4>HPD asked · waiting on you ({followReport.hpdAsked.length})</h4>
               {followReport.hpdAsked.length ? <ol>{followReport.hpdAsked.map((r) => (
@@ -3615,6 +3649,8 @@ export default function FieldCommandClient() {
                 </li>
               ))}</ol> : <p>None waiting on you.</p>}
             </section>
+            {threadSection("requests", "📧 Their emails asking for affidavits / invoices / photos", REQUEST_KINDS, "")}
+            </>) : null}
           </div>
         </div>
       ) : null}
