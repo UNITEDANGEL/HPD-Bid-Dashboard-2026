@@ -20,7 +20,8 @@ try {
   await routePrivate(context);
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, async (r) => {
     if (r.request().method() === "POST" && /\/override$/.test(r.request().url())) { const b = r.request().postDataJSON(); posted[b.key] = b.patch; return r.fulfill({ json: { ok: true } }); }
-    return r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } });
+    // One earlier request with a progress report (the owner reads it in What's new).
+    return r.fulfill({ json: { ok: true, overrides: { "CHANGE-REQUEST-20261016193210": { at: "2026-10-16T19:32:10.006Z", text: "Look at the email from HPD" }, "CHANGE-REPLY-20261016193210": { status: "Working on it", updates: [{ at: new Date().toISOString(), text: "Checked the 14 OMOs on her list" }] } }, accepted: [] } });
   });
   await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...fetched, bids } }));
   await context.route(/geosearch\.planninglabs\.nyc|data\.cityofnewyork\.us/, (r) => r.fulfill({ status: 503, body: "" }));
@@ -69,11 +70,15 @@ try {
   const tag = page.locator('[data-hpd-smoke="fc-version-tag"]');
   await tag.waitFor({ timeout: 20000 });
   assert.match(await tag.innerText(), /what's new/);
+  assert.match(await tag.innerText(), /1 new update/, "badge for a new progress report");
   await tag.click();
   const wn = page.locator('[data-hpd-smoke="fc-whatsnew"]');
   await wn.waitFor({ timeout: 5000 });
   await wn.locator('[data-hpd-smoke="fc-whatsnew-day"]').first().waitFor({ timeout: 10000 });
   assert.match(await wn.locator('[data-hpd-smoke="fc-whatsnew-day"]').first().innerText(), /Bid calculator/);
+  const th = wn.locator('[data-hpd-smoke="fc-change-thread"]').first();
+  await th.waitFor({ timeout: 5000 });
+  { const t = await th.innerText(); assert.ok(t.includes("Look at the email from HPD") && t.includes("Working on it") && t.includes("Checked the 14 OMOs"), t); }
   await wn.locator('[data-hpd-smoke="fc-ask-change-text"]').fill("Add 15 days to the day filter");
   await wn.locator('[data-hpd-smoke="fc-ask-change-save"]').click();
   await wn.locator('[data-hpd-smoke="fc-ask-change-status"]').waitFor({ timeout: 5000 });

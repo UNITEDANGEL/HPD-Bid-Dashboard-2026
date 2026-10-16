@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Oct 16, 2026",
+      "title": "Progress reports on your requests",
+      "items": [
+        "Your requests from Ask for a change show here with their status (Received, Working on it, Done) and my progress notes: what happened and what changed.",
+        "The version at the bottom of the map says when there is a new update for you."
+      ]
+    },
+    {
+      "date": "Oct 16, 2026",
       "title": "Bid calculator and version on screen",
       "items": [
         "Bid calculator on every invitation: the whole job laid out (what, where, floor, locations), then your price line by line from your rates plus extras (floors up, more locations, borough), next to the best price and its chance to win. Adjust any line or the total and it recalculates.",

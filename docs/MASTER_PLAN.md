@@ -279,6 +279,12 @@ E. **Notices flow finished** (see the rules below): rejections before/after with
 F. **Map screen neat at iPhone size**: one compact top bar (search + one menu for days 15 / 30 / 45 / 60 / custom
    and boroughs); every button glows / reacts when pressed; large clear text everywhere (jobs, invitations,
    messages, previews).
+I. **Progress reports in the app** (owner, 16 Oct): "I put requests in What's new; give me progress reports there
+   so we don't have to talk here." Done: What's new -> "Your requests and progress": each request with a status
+   (Received / Working on it / Done) and dated updates (scripts/reply-change-request.mjs writes CHANGE-REPLY-<id>);
+   the version label says "💬 N new updates". Every session starts by reading the requests
+   (node scripts/reply-change-request.mjs --list) and answers them there. No tenant names in replies (the status
+   server isn't private).
 H. **Change the app from the app** (owner, 16 Oct): today "Ask for a change" collects requests for the next
    session. Fully automatic (the app files a request, an AI on GitHub makes the change, the owner approves the
    preview) needs a Claude GitHub Action with its own API key and costs: owner's decision before setting it up.

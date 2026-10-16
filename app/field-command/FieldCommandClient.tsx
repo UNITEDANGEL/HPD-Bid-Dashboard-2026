@@ -1022,6 +1022,24 @@ export default function FieldCommandClient() {
   const [changeStatus, setChangeStatus] = useState("");
   const [myRequests, setMyRequests] = useState<{ at: string; text: string }[]>([]);
   useEffect(() => { try { setMyRequests(JSON.parse(localStorage.getItem("hpd-change-requests") || "[]")); } catch { /* private mode */ } }, []);
+  // Your requests with their answers (status + dated progress notes), from the status server: CHANGE-REQUEST-<id>
+  // and CHANGE-REPLY-<id> (scripts/reply-change-request.mjs). "New" = an update after you last opened the list.
+  type ChangeThread = { id: string; at: string; text: string; status: string; updates: { at: string; text: string }[] };
+  const [changeThreads, setChangeThreads] = useState<ChangeThread[] | null>(null);
+  const [repliesSeen, setRepliesSeen] = useState("");
+  const loadChangeThreads = async () => {
+    try {
+      const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/overrides`, { cache: "no-store" });
+      const all = (await r.json())?.overrides || {};
+      const list: ChangeThread[] = Object.entries(all).filter(([k]) => k.startsWith("CHANGE-REQUEST-")).map(([k, v]) => {
+        const id = k.slice(15); const req = v as { at?: string; text?: string }; const rep = all[`CHANGE-REPLY-${id}`] as { status?: string; updates?: { at: string; text: string }[] } | undefined;
+        return { id, at: String(req.at || ""), text: String(req.text || ""), status: rep?.status || "Received", updates: Array.isArray(rep?.updates) ? rep!.updates : [] };
+      }).sort((a, b) => b.at.localeCompare(a.at));
+      setChangeThreads(list);
+    } catch { setChangeThreads(null); }
+  };
+  useEffect(() => { try { setRepliesSeen(localStorage.getItem("hpd-replies-seen") || ""); } catch { /* private mode */ } void loadChangeThreads(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const newReplies = (changeThreads || []).filter((t) => t.updates.some((u) => u.at > repliesSeen)).length;
   const askForChange = async () => {
     const text = changeText.trim();
     if (!text) return;
@@ -1032,7 +1050,8 @@ export default function FieldCommandClient() {
     setChangeText("");
     try {
       const r = await fetch(`${HPD_STATUS_WORKER_URL.replace(/\/$/, "")}/override`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: `CHANGE-REQUEST-${at.replace(/[^0-9]/g, "").slice(0, 14)}`, patch: { at, text: text.slice(0, 2000), version: BUILT_NUMBER || BUILT_COMMIT } }) });
-      setChangeStatus(r.ok ? "✓ Saved. It will be in the next upgrade." : "Saved on this phone; it will be sent when the server answers.");
+      setChangeStatus(r.ok ? "✓ Saved. Progress reports will show below." : "Saved on this phone; it will be sent when the server answers.");
+      if (r.ok) void loadChangeThreads();
     } catch { setChangeStatus("Saved on this phone (offline)."); }
   };
   const loadWhatsNew = async () => {
@@ -3572,7 +3591,7 @@ export default function FieldCommandClient() {
       </div>
 
       {/* Which version is running, always visible on the map: you can tell at a glance it's the newest. */}
-      {appVersion && !selectedJob ? <button type="button" className="fc-version-tag" data-hpd-smoke="fc-version-tag" onClick={() => { setWhatsNewOpen(true); void loadWhatsNew(); }}>{versionLabel() || `v${appVersion}`} · what&apos;s new</button> : null}
+      {appVersion && !selectedJob ? <button type="button" className="fc-version-tag" data-hpd-smoke="fc-version-tag" onClick={() => { setWhatsNewOpen(true); void loadWhatsNew(); void loadChangeThreads(); const now = new Date().toISOString(); window.setTimeout(() => { setRepliesSeen(now); try { localStorage.setItem("hpd-replies-seen", now); } catch { /* private mode */ } }, 4000); }}>{versionLabel() || `v${appVersion}`} · what&apos;s new{newReplies ? <b className="fc-version-new" data-hpd-smoke="fc-version-new"> · 💬 {newReplies} new update{newReplies === 1 ? "" : "s"}</b> : null}</button> : null}
       {justUpdated && !selectedJob && !whatsNewOpen ? (
         <div className="fc-updated-banner" role="status" data-hpd-smoke="fc-updated-banner">
           <span>✨ App updated{whatsNew?.[0]?.items?.[0] ? `: ${whatsNew[0].items[0]}` : ""}</span>
@@ -3593,7 +3612,23 @@ export default function FieldCommandClient() {
               <textarea rows={3} data-hpd-smoke="fc-ask-change-text" placeholder="What should be better? e.g. make the notice text bigger, add 15 days to the filter…" value={changeText} onChange={(e) => setChangeText(e.target.value)} />
               <button type="button" data-hpd-smoke="fc-ask-change-save" disabled={!changeText.trim()} onClick={() => void askForChange()}>Save my request</button>
               {changeStatus ? <p className="fc-follow-note" data-hpd-smoke="fc-ask-change-status">{changeStatus}</p> : null}
-              {myRequests.length ? <ul>{myRequests.slice(0, 5).map((r) => <li key={r.at}><small>{new Date(r.at).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}</small> {r.text}</li>)}</ul> : null}
+            </section>
+            <section className="fc-change-threads" data-hpd-smoke="fc-change-threads">
+              <h4>💬 Your requests and progress</h4>
+              {changeThreads === null ? <p className="fc-follow-note">Couldn&apos;t load them right now.</p>
+                : !changeThreads.length ? (myRequests.length ? <ul>{myRequests.slice(0, 5).map((r) => <li key={r.at}>{r.text}</li>)}</ul> : <p className="fc-follow-note">No requests yet.</p>)
+                : changeThreads.map((t) => (
+                  <article key={t.id} className={`fc-change-thread is-${t.status.toLowerCase().replace(/[^a-z]+/g, "-")}`} data-hpd-smoke="fc-change-thread">
+                    <p className="fc-change-ask"><small>You · {new Date(t.at).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</small>{t.text}</p>
+                    <b className="fc-change-status" data-hpd-smoke="fc-change-status">{t.status === "Done" ? "✅" : t.status === "Working on it" ? "🔧" : "📥"} {t.status}</b>
+                    {t.updates.map((u) => (
+                      <div key={u.at} className={`fc-change-update${u.at > repliesSeen ? " is-new" : ""}`} data-hpd-smoke="fc-change-update">
+                        <small>Update · {new Date(u.at).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}{u.at > repliesSeen ? " · new" : ""}</small>
+                        <p>{u.text}</p>
+                      </div>
+                    ))}
+                  </article>
+                ))}
             </section>
             {whatsNew === null ? <p className="fc-follow-note">Couldn&apos;t load the list of changes.</p> : !whatsNew ? <p className="fc-follow-note">Loading…</p> : whatsNew.map((v) => (
               <section key={v.date + v.title} className="fc-whatsnew-day" data-hpd-smoke="fc-whatsnew-day">
