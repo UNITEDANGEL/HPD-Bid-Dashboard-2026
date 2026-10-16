@@ -511,14 +511,17 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     const bytes = await fillBidPackage(pdf, selected, price, previous ? { previousPrice: previous, count: (rec?.revisions?.length || 0) + 1, date: NY_DAY.format(new Date()) } : undefined);
     const name = `${selected.omo}_${previous ? "REVISED_" : ""}BID_${Math.round(price)}_${selected.address.replace(/[^A-Z0-9]+/gi, "-")}.pdf`;
     const file = new File([bytes as BlobPart], name, { type: "application/pdf" });
-    if (filled) URL.revokeObjectURL(filled.url);
+    const old = filled;
     const ready = { omo: selected.omo, price, previous, url: URL.createObjectURL(file), name, file, bytes };
     setFilled(ready);
+    // The previous copy stays openable a little longer (it may be open in a tab right now).
+    if (old) window.setTimeout(() => URL.revokeObjectURL(old.url), 60000);
     return ready;
   }
 
   async function review() {
     if (!record) return;
+    if (busy === "Filling the bid package…") return; // already being made (saving the price starts it)
     setBusy("Filling the bid package…");
     try {
       await buildPackage(record.price);
