@@ -17,7 +17,9 @@ permissions:
 
 concurrency:
   group: cloudflare-pages-production
-  cancel-in-progress: true
+  # A running deploy finishes (the fetcher pushes every ~10 minutes and a deploy with all its tests takes
+  # longer, so cancelling would never let one finish); newer pushes wait, and only the newest waiting runs.
+  cancel-in-progress: false
 
 jobs:
   deploy:
