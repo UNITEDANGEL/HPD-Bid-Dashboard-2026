@@ -32,6 +32,19 @@ try {
     await page.locator('[data-hpd-smoke="fc-thread-viewer"]').waitFor({ timeout: 5000 });
     await page.locator('[data-hpd-smoke="fc-thread-close"]').click();
   }
+  // Reply to the tracker: a ready message to her @hpd.nyc.gov address; Send to me first goes to the owner only.
+  const withReply = box.locator('[data-hpd-smoke="fc-prio-reply"]').first();
+  if (await withReply.count()) {
+    await withReply.click();
+    const rb = box.locator('[data-hpd-smoke="fc-prio-reply-box"]');
+    await rb.waitFor();
+    assert.match(await rb.locator("b").first().innerText(), /@hpd.nyc.gov>/);
+    const txt = await rb.locator('[data-hpd-smoke="fc-prio-reply-text"]').inputValue();
+    assert.ok(/^Hello /.test(txt) && /OMO# /.test(txt) && /(were sent on|will send the affidavit and invoice)/.test(txt), txt);
+    await rb.locator('[data-hpd-smoke="fc-prio-reply-send"]').click();
+    assert.match(await rb.locator('[data-hpd-smoke="fc-prio-reply-send"]').innerText(), /Tap again: send to .*@hpd.nyc.gov/, "first tap only arms");
+    await rb.locator("button", { hasText: "Close" }).click();
+  }
   // Handled: two taps, then it's off the list (and stays off after reload).
   const key = await items.first().locator('[data-hpd-smoke="fc-prio-done"]').evaluate((b) => b.closest("li").querySelector("b").textContent);
   await items.first().locator('[data-hpd-smoke="fc-prio-done"]').click();

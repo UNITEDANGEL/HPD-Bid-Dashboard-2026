@@ -2799,3 +2799,4 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-notices-sheet .fc-notice-actions > button { min-height: 38px !important; padding: 0 12px !important; border-radius: 19px !important; border: 1px solid #475569 !important; background: #1e293b !important; color: #f8fafc !important; font: 800 13px system-ui !important; }
 .fc-notices-sheet .fc-notice-actions > button.is-armed { background: #16a34a !important; border-color: #16a34a !important; }
 .fc-notices-sheet .fc-notice-actions > button.is-notice { background: #0f172a !important; border-color: #a78bfa !important; }
+.fc-prio-replied { align-self: center; color: #86efac; font: 800 13px system-ui; }

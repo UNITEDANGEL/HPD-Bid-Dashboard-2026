@@ -804,6 +804,41 @@ export default function FieldCommandClient() {
   const [prioDone, setPrioDone] = useState<Record<string, string>>({});
   const [prioArmed, setPrioArmed] = useState("");
   useEffect(() => { try { setPrioDone(JSON.parse(localStorage.getItem("hpd-priority-done") || "{}")); } catch { /* private mode */ } }, []);
+  // A reply to the vendor tracker about one notice (e.g. Lewis's 24-hour notice), written for the owner to check:
+  // "Send to me first" or Send (two taps). Only to an @hpd.nyc.gov address (the server checks).
+  const [prioReply, setPrioReply] = useState<{ key: string; omo: string; to: string; name: string; subject: string; text: string; armed: boolean; status: string } | null>(null);
+  const startPrioReply = (it: PriorityItem) => {
+    const t = (threads || []).find((x) => x.id === it.threadId);
+    const hpdMsgs = (t?.messages || []).filter((m) => m.hpd && !m.mine);
+    const to = (hpdMsgs.map((m) => (/([a-z0-9._%+-]+@hpd\.nyc\.gov)/i.exec(m.text) || [])[1]).find(Boolean) || "").toLowerCase();
+    const first = (it.who || "").split(/\s+/)[0] || "";
+    const job = findAnyJob(it.omo);
+    const when = it.sentAt ? new Date(`${it.sentAt}T12:00:00`).toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" }) : "";
+    const body = it.sentAt
+      ? `The affidavit and invoice for this job were sent on ${when}. Please let us know if you need anything else or if you did not receive them.`
+      : `We are working on this job and will send the affidavit and invoice as soon as it is completed. Please let us know if you need anything else in the meantime.`;
+    setPrioReply({ key: it.key, omo: it.omo, to, name: it.who, armed: false, status: "",
+      subject: `RE: ${t?.subject || `OMO# ${it.omo}`}`.slice(0, 200),
+      text: `Hello${first ? ` ${first}` : ""},\n\nRe: OMO# ${it.omo}${job ? ` - ${jobAddress(job)}` : ""}\n\n${body}\n\nThank you,\nJot Singh\nUnited Angel Construction Corp`,
+    });
+  };
+  const sendPrioReply = async (toSelf: boolean) => {
+    if (!prioReply) return;
+    if (!toSelf && !prioReply.armed) { setPrioReply({ ...prioReply, armed: true }); return; }
+    setPrioReply({ ...prioReply, status: "Sending…" });
+    try {
+      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(toSelf ? { toSelf: true, subject: prioReply.subject, text: prioReply.text } : { to: prioReply.to, subject: prioReply.subject, text: prioReply.text }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
+      if (toSelf) { setPrioReply({ ...prioReply, armed: false, status: `✓ Sent to you (${d.to}). Nothing went to HPD.` }); return; }
+      const next = { ...prioDone, [`replied:${prioReply.key}`]: new Date().toISOString() };
+      setPrioDone(next);
+      try { localStorage.setItem("hpd-priority-done", JSON.stringify(next)); } catch { /* private mode */ }
+      setPrioReply({ ...prioReply, armed: false, status: `✓ Sent to ${d.to}.` });
+    } catch (e) {
+      setPrioReply({ ...prioReply, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
+    }
+  };
   const markPrioDone = (key: string) => {
     if (prioArmed !== key) { setPrioArmed(key); return; }
     const next = { ...prioDone, [key]: new Date().toISOString() };
@@ -3828,8 +3863,23 @@ export default function FieldCommandClient() {
                             {(it.kind === "24h" || it.kind === "72h" || it.kind === "missing") && job ? <a href={`/paperwork/?job=${encodeURIComponent(it.omo)}`} data-hpd-smoke="fc-prio-paperwork">📄 Make the paperwork</a> : null}
                             {it.kind === "print" ? <button type="button" onClick={() => setNoticesTab("print")}>🖨 Print folder</button> : null}
                             {it.threadId ? <button type="button" data-hpd-smoke="fc-prio-email" onClick={() => setThreadView({ ids: [it.threadId], title: `${it.omo}: ${it.title}` })}>💬 HPD&apos;s email</button> : null}
+                            {it.threadId && (it.kind === "24h" || it.kind === "72h" || it.kind === "missing") ? (prioDone[`replied:${it.key}`] ? <span className="fc-prio-replied" data-hpd-smoke="fc-prio-replied">✉ Replied {new Date(prioDone[`replied:${it.key}`]).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</span> : <button type="button" data-hpd-smoke="fc-prio-reply" onClick={() => startPrioReply(it)}>✉ Reply to {(it.who || "HPD").split(/\s+/)[0]}</button>) : null}
                             <button type="button" className={prioArmed === it.key ? "is-armed" : ""} data-hpd-smoke="fc-prio-done" onClick={() => markPrioDone(it.key)}>{prioArmed === it.key ? "Tap again: handled" : "✓ Handled"}</button>
                           </div>
+                          {prioReply?.key === it.key ? (
+                            <div className="fc-ack" data-hpd-smoke="fc-prio-reply-box">
+                              <b>Email to {prioReply.name || "HPD"}{prioReply.to ? ` <${prioReply.to}>` : ""}</b>
+                              {!prioReply.to ? <p className="fc-ack-status">No @hpd.nyc.gov address found in their email: use 💬 HPD&apos;s email -&gt; Reply in Gmail.</p> : null}
+                              <label>Subject<input data-hpd-smoke="fc-prio-reply-subject" value={prioReply.subject} onChange={(e) => setPrioReply({ ...prioReply, subject: e.target.value, armed: false })} /></label>
+                              <label>Message<textarea data-hpd-smoke="fc-prio-reply-text" rows={8} value={prioReply.text} onChange={(e) => setPrioReply({ ...prioReply, text: e.target.value, armed: false })} /></label>
+                              <div className="fc-ack-actions">
+                                <button type="button" className={prioReply.armed ? "is-armed" : ""} data-hpd-smoke="fc-prio-reply-send" disabled={!prioReply.to || prioReply.status === "Sending…"} onClick={() => void sendPrioReply(false)}>{prioReply.armed ? `✅ Tap again: send to ${prioReply.to}` : "✉ Send"}</button>
+                                <button type="button" data-hpd-smoke="fc-prio-reply-me" disabled={prioReply.status === "Sending…"} onClick={() => void sendPrioReply(true)}>📨 Send to me first</button>
+                                <button type="button" onClick={() => setPrioReply(null)}>Close</button>
+                              </div>
+                              {prioReply.status ? <p className="fc-ack-status" data-hpd-smoke="fc-prio-reply-status">{prioReply.status}</p> : null}
+                            </div>
+                          ) : null}
                         </li>
                         </Fragment>
                       );
