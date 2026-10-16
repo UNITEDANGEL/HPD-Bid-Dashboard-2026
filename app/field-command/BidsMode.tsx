@@ -15,7 +15,7 @@ import { bidHistory, currentRecord, earlierRounds, FAX_LINES, type FaxLine, bidR
 import "./bids.css";
 import BuildingFacts from "./BuildingFacts";
 import { BuildingHero } from "./BuildingPhoto";
-import ItbPages, { bidPages, pagePictures } from "./ItbPages";
+import ItbPages, { pagePictures } from "./ItbPages";
 import { getPages } from "../../lib/page-cache";
 import { bestWithFloor, floorKind, readFloors, saveFloor, type Floors } from "../../lib/cost-floor";
 import { jobSummary, lineText, unitOf } from "../../lib/job-summary";
@@ -284,7 +284,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
       for (const b of withFile.slice(0, 8)) {
         if (!live) return;
         try {
-          const pics = await pagePictures(itbPdfUrl(b.itbFile!), bidPages(b.pages || 3, b.descPages));
+          const pics = await pagePictures(itbPdfUrl(b.itbFile!), Array.from({ length: b.pages || 3 }, (_, i) => i + 1)); // every page (the card shows them all)
           const d = pics.find((p) => p.page === descPage(b));
           if (d) show(b.omo, d.blob);
         } catch {

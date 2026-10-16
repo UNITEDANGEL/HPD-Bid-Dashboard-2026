@@ -18,7 +18,7 @@ import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
 import { jobStages, nextStep } from "../../lib/job-stages";
 import { loadConversations, loadNotices, loadPrivate, noticePdfUrl, privateDocUrl, withPrivate, type HpdThread, type NoticeEmail } from "../../lib/private-data";
 import ItbPages from "./ItbPages";
-import { listCorrections, removeCorrection, type SavedCorrection } from "../../lib/correction-store";
+import { listCorrections, removeCorrection, type SavedCorrection, updateCorrection } from "../../lib/correction-store";
 import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type PipPayment, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
 import { nextFieldAction, paperworkNextHref, paperworkGenerateHref, FIELD_OUTCOMES, fieldOutcomePatch, arrivalVisitPatch, secondTryState, newYorkDay } from "../../lib/field-next-action";
@@ -789,6 +789,7 @@ export default function FieldCommandClient() {
   const [ack, setAck] = useState<{ omo: string; to: string; name: string; subject: string; text: string; armed: boolean; status: string } | null>(null);
   const [ackSent, setAckSent] = useState<Record<string, string>>({});
   useEffect(() => { try { setAckSent(JSON.parse(localStorage.getItem("hpd-ack-sent-v1") || "{}")); } catch { /* private mode */ } }, []);
+  const markPrinted = async (c: SavedCorrection) => { await updateCorrection(c.omo, { printedAt: c.printedAt ? undefined : new Date().toISOString() }); setToPrint(await listCorrections()); };
   const startAck = (omo: string, reason: string) => {
     const mail = noticeMail?.[omo]?.[0];
     const name = (mail?.signer || "").replace(/,\s*CCAP$/i, "").trim();
@@ -798,7 +799,7 @@ export default function FieldCommandClient() {
     setAck({
       omo, to: mail?.replyTo || "", name: mail?.signer || "",
       subject: `RE: OMO# ${omo} rejection: corrected paperwork in the mail`,
-      text: `Hello${nice ? ` ${nice}` : ""},\n\nRe: OMO# ${omo}${job ? ` - ${jobAddress(job)}` : ""}\n\nThe rejection you sent${rj?.at ? ` on ${rj.at}` : ""}${reason ? ` ("${reason.slice(0, 160)}")` : ""} has been corrected. The corrected affidavit and invoice are signed, notarized, printed and in the mail back to you.\n\nPlease let us know when you receive them.\n\nThank you,\nUnited Angel Construction Corp`,
+      text: `Hello${nice ? ` ${nice}` : ""},\n\nRe: OMO# ${omo}${job ? ` - ${jobAddress(job)}` : ""}\n\nThe rejection you sent${rj?.at ? ` on ${rj.at}` : ""}${reason ? ` ("${reason.slice(0, 160)}")` : ""} has been corrected. A copy of the corrected affidavit and invoice is attached. The original, signed and notarized, is printed and on its way to you in the mail.\n\nPlease let us know when you receive it.\n\nThank you,\nUnited Angel Construction Corp`,
       armed: false, status: "",
     });
   };
@@ -807,12 +808,18 @@ export default function FieldCommandClient() {
     if (!ack.armed) { setAck({ ...ack, armed: true }); return; }
     setAck({ ...ack, status: "Sending…" });
     try {
-      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: ack.to, subject: ack.subject, text: ack.text }) });
+      // The copy of the fixed paperwork (the original is printed, signed in ink and mailed).
+      const saved = toPrint.find((x) => x.omo === ack.omo);
+      const data = saved?.pdf ? await new Promise<string>((ok, bad) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result).split(",")[1] || ""); fr.onerror = () => bad(fr.error); fr.readAsDataURL(saved.pdf); }) : "";
+      const attachment = data ? { name: `${ack.omo} corrected affidavit and invoice (copy).pdf`, data } : undefined;
+      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to: ack.to, subject: ack.subject, text: ack.text, attachment }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
       const next = { ...ackSent, [ack.omo]: new Date().toISOString() };
       setAckSent(next);
       try { localStorage.setItem("hpd-ack-sent-v1", JSON.stringify(next)); } catch { /* private mode */ }
+      await updateCorrection(ack.omo, { emailedAt: next[ack.omo], emailedTo: ack.to });
+      setToPrint(await listCorrections());
       setAck(null);
     } catch (e) {
       setAck({ ...ack, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}. Nothing went out.` });
@@ -866,7 +873,8 @@ export default function FieldCommandClient() {
     if (printArmed !== c.omo) { setPrintArmed(c.omo); return; } // second tap confirms (iPhone blocks confirm boxes)
     const patch = { CorrectionSentAt: new Date().toISOString() };
     try { writeSharedWorkflowPatch(c.omo, patch); mergeWorkflowPatchIntoScreen(c.omo, patch); } catch {}
-    await removeCorrection(c.omo);
+    // Kept in the folder as done (with the dates), so you can see it was printed, emailed and mailed.
+    await updateCorrection(c.omo, { mailedAt: patch.CorrectionSentAt });
     setPrintArmed("");
     setToPrint(await listCorrections());
   }
@@ -3623,7 +3631,7 @@ export default function FieldCommandClient() {
                 ["corrections", "✏️ Corrections", threadsOf(CORRECTION_KINDS).filter((t) => t.waiting).length],
                 ["requests", "📎 Requests", followReport.hpdAsked.length + threadsOf(REQUEST_KINDS).filter((t) => t.waiting).length],
                 ["messages", "💬 Messages", threadsOf(MESSAGE_KINDS).filter((t) => t.waiting).length],
-                ["print", "🖨 To print", toPrint.length],
+                ["print", "🖨 Print folder", toPrint.filter((c) => !c.mailedAt).length],
               ] as const).map(([key, label, n]) => (
                 <button key={key} type="button" role="tab" aria-selected={noticesTab === key} className={noticesTab === key ? "is-active" : ""} data-hpd-smoke={`fc-notice-tab-${key}`} onClick={() => setNoticesTab(key)}>{label}{n ? <b>{n}</b> : null}</button>
               ))}
@@ -3633,34 +3641,60 @@ export default function FieldCommandClient() {
             {noticesTab === "print" && !toPrint.length ? <p className="fc-follow-note" data-hpd-smoke="fc-notices-to-print-empty">Nothing waiting to print. Fixed rejections land here after you check the preview and save them.</p> : null}
             {noticesTab === "print" && toPrint.length ? (
               <section className="fc-follow-section is-to-print" data-hpd-smoke="fc-notices-to-print">
-                <h4>🖨 Corrections to print &amp; sign in ink ({toPrint.length})</h4>
-                <p className="fc-follow-note">Print each one, sign it by hand and have the notary sign (the stamp and today&apos;s notary date are already on it). Then send it to HPD and tap Signed &amp; sent.</p>
-                <ul>
-                  {toPrint.map((c) => (
-                    <li key={c.omo} data-hpd-smoke="fc-to-print-row">
-                      <b>{c.omo}</b> <small>saved {new Date(c.savedAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}{c.reason ? ` · HPD: ${c.reason}` : ""}</small>
-                      <div className="fc-to-print-actions">
-                        <button type="button" data-hpd-smoke="fc-to-print-open" onClick={() => openCorrectionPdf(c)}>📄 Open / print</button>
-                        <button type="button" className={printArmed === c.omo ? "is-armed" : ""} data-hpd-smoke="fc-to-print-sent" onClick={() => void correctionSent(c)}>{printArmed === c.omo ? "Tap again: signed & sent" : "✓ Signed & sent"}</button>
-                        {ackSent[c.omo] ? <small className="fc-ack-done" data-hpd-smoke="fc-ack-done">✉ HPD told it&apos;s in the mail · {new Date(ackSent[c.omo]).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</small>
-                          : <button type="button" data-hpd-smoke="fc-ack-open" onClick={() => startAck(c.omo, c.reason || "")}>✉ Tell HPD it&apos;s in the mail</button>}
-                      </div>
-                      {ack?.omo === c.omo ? (
-                        <div className="fc-ack" data-hpd-smoke="fc-ack">
-                          <b>Email to {ack.name || "HPD"}{ack.to ? ` <${ack.to}>` : ""}</b>
-                          {!ack.to ? <p className="fc-ack-status">The app doesn&apos;t have the sender&apos;s address for this notice yet. Reply to HPD&apos;s notice in Gmail instead.</p> : null}
-                          <label>Subject<input data-hpd-smoke="fc-ack-subject" value={ack.subject} onChange={(e) => setAck({ ...ack, subject: e.target.value, armed: false })} /></label>
-                          <label>Message<textarea data-hpd-smoke="fc-ack-text" rows={9} value={ack.text} onChange={(e) => setAck({ ...ack, text: e.target.value, armed: false })} /></label>
-                          <div className="fc-ack-actions">
-                            <button type="button" className={ack.armed ? "is-armed" : ""} data-hpd-smoke="fc-ack-send" disabled={!ack.to || ack.status === "Sending…"} onClick={() => void sendAck()}>{ack.armed ? `✅ Tap again: send to ${ack.to}` : "✉ Send"}</button>
-                            <button type="button" onClick={() => setAck(null)}>Cancel</button>
-                          </div>
-                          {ack.status ? <p className="fc-ack-status" data-hpd-smoke="fc-ack-status">{ack.status}</p> : null}
+                <h4>🖨 Print folder: fixed rejections ({toPrint.filter((c) => !c.mailedAt).length} to finish)</h4>
+                <p className="fc-follow-note">Each fixed rejection: print the original and sign it in ink with the notary, email HPD a copy, mail the original. The steps are kept here with their dates.</p>
+                <ul className="fc-print-list">
+                  {toPrint.filter((c) => !c.mailedAt).map((c) => {
+                    const d = (x?: string) => (x ? new Date(x).toLocaleDateString("en-US", { month: "numeric", day: "numeric" }) : "");
+                    const signer = noticeMail?.[c.omo]?.[0]?.signer?.replace(/,\s*CCAP$/i, "") || "HPD";
+                    return (
+                      <li key={c.omo} data-hpd-smoke="fc-to-print-row">
+                        <div className="fc-print-head"><b>{c.omo}</b><span>{findAnyJob(c.omo) ? jobAddress(findAnyJob(c.omo)!) : ""}</span></div>
+                        {c.reason ? <p className="fc-print-reason">HPD: {c.reason}</p> : null}
+                        <ol className="fc-print-steps" data-hpd-smoke="fc-print-steps">
+                          <li className="is-done">✓ Fixed {d(c.savedAt)}</li>
+                          <li className={c.printedAt ? "is-done" : ""}>{c.printedAt ? `✓ Printed ${d(c.printedAt)}` : "Print"}</li>
+                          <li className={c.emailedAt ? "is-done" : ""}>{c.emailedAt ? `✓ Copy emailed ${d(c.emailedAt)}` : "Email copy"}</li>
+                          <li>Mail original</li>
+                        </ol>
+                        <div className="fc-to-print-actions">
+                          <button type="button" data-hpd-smoke="fc-to-print-open" onClick={() => openCorrectionPdf(c)}>📄 Open / print</button>
+                          <button type="button" data-hpd-smoke="fc-to-print-printed" onClick={() => void markPrinted(c)}>{c.printedAt ? "↺ Not printed" : "✓ Printed"}</button>
+                          {c.emailedAt ? null : <button type="button" data-hpd-smoke="fc-ack-open" onClick={() => startAck(c.omo, c.reason || "")}>✉ Email copy to {signer}</button>}
+                          <button type="button" className={printArmed === c.omo ? "is-armed" : ""} data-hpd-smoke="fc-to-print-sent" onClick={() => void correctionSent(c)}>{printArmed === c.omo ? "Tap again: original mailed" : "📮 Original mailed"}</button>
                         </div>
-                      ) : null}
-                    </li>
-                  ))}
+                        {c.emailedAt ? <small className="fc-ack-done" data-hpd-smoke="fc-ack-done">✉ Copy emailed to {c.emailedTo || signer} · {new Date(c.emailedAt).toLocaleString("en-US", { month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" })}</small> : null}
+                        {ack?.omo === c.omo ? (
+                          <div className="fc-ack" data-hpd-smoke="fc-ack">
+                            <b>Email to {ack.name || "HPD"}{ack.to ? ` <${ack.to}>` : ""}</b>
+                            <small className="fc-ack-attach" data-hpd-smoke="fc-ack-attach">📎 {c.omo} corrected affidavit and invoice (copy).pdf</small>
+                            {!ack.to ? <p className="fc-ack-status">The app doesn&apos;t have the sender&apos;s address for this notice yet. Reply to HPD&apos;s notice in Gmail instead.</p> : null}
+                            <label>Subject<input data-hpd-smoke="fc-ack-subject" value={ack.subject} onChange={(e) => setAck({ ...ack, subject: e.target.value, armed: false })} /></label>
+                            <label>Message<textarea data-hpd-smoke="fc-ack-text" rows={9} value={ack.text} onChange={(e) => setAck({ ...ack, text: e.target.value, armed: false })} /></label>
+                            <div className="fc-ack-actions">
+                              <button type="button" className={ack.armed ? "is-armed" : ""} data-hpd-smoke="fc-ack-send" disabled={!ack.to || ack.status === "Sending…"} onClick={() => void sendAck()}>{ack.armed ? `✅ Tap again: send to ${ack.to}` : "✉ Send"}</button>
+                              <button type="button" onClick={() => setAck(null)}>Cancel</button>
+                            </div>
+                            {ack.status ? <p className="fc-ack-status" data-hpd-smoke="fc-ack-status">{ack.status}</p> : null}
+                          </div>
+                        ) : null}
+                      </li>
+                    );
+                  })}
                 </ul>
+                {toPrint.some((c) => c.mailedAt) ? (
+                  <details className="fc-print-done" data-hpd-smoke="fc-print-done">
+                    <summary>✓ Done ({toPrint.filter((c) => c.mailedAt).length}): printed, copy emailed, original mailed</summary>
+                    <ul>
+                      {toPrint.filter((c) => c.mailedAt).map((c) => (
+                        <li key={c.omo} data-hpd-smoke="fc-print-done-row">
+                          <b>{c.omo}</b> <span>fixed {new Date(c.savedAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}{c.printedAt ? ` · printed ${new Date(c.printedAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}` : ""}{c.emailedAt ? ` · copy emailed ${new Date(c.emailedAt).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}` : ""} · mailed {new Date(c.mailedAt!).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })}</span>
+                          <button type="button" onClick={() => void removeCorrection(c.omo).then(async () => setToPrint(await listCorrections()))}>Remove</button>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : null}
               </section>
             ) : null}
             {noticesTab === "rejected" ? (<>
@@ -3676,13 +3710,25 @@ export default function FieldCommandClient() {
                     <small>{r.attempt ? <b className={r.attempt === "FINAL" ? "fc-final-attempt" : ""}>{r.attempt} ATTEMPT · </b> : null}{senderName(r.by)}: {r.reason || "see HPD's email"}</small>
                   </button>
                   {openNotice === r.omo ? <p className="fc-notice-detail" data-hpd-smoke="fc-notice-detail">This job is from before 2026, so it isn&apos;t on the map. HPD&apos;s notice (with the rejection PDF) is in your email; correct the affidavit / invoice and send it back to HPD.</p> : null}
-                  <button type="button" className="fc-follow-paper is-notice" data-hpd-smoke="fc-notice-view" onClick={() => setNoticeView(r.omo)}>👁 See HPD&apos;s notice{noticeMail?.[r.omo]?.length ? ` (${noticeMail[r.omo][0].files.length} PDF${noticeMail[r.omo][0].files.length === 1 ? "" : "s"})` : ""}</button>
-                  <a className="fc-follow-paper is-gmail" href={`https://mail.google.com/mail/u/0/#search/${encodeURIComponent(r.omo)}`} target="_blank" rel="noreferrer">Open HPD&apos;s notice in Gmail ↗</a>
-                  {findAnyJob(r.omo) ? <a className="fc-follow-paper is-autofix" data-hpd-smoke="fc-notice-autofix" href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}&auto=1`}>✨ Auto-fix &amp; preview</a> : null}
-                  {findAnyJob(r.omo) ? <a className="fc-follow-paper" href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}`}>Fix by hand →</a> : null}
+                  {toPrint.some((c) => c.omo === r.omo) ? <p className="fc-notice-fixed" data-hpd-smoke="fc-notice-fixed">✅ Fixed · rejection cleared, in the print folder{toPrint.find((c) => c.omo === r.omo)?.mailedAt ? " · original mailed" : ""}</p> : null}
+                  <div className="fc-notice-actions">
+                    <button type="button" className="is-notice" data-hpd-smoke="fc-notice-view" onClick={() => setNoticeView(r.omo)}>👁 HPD&apos;s notice{noticeMail?.[r.omo]?.length ? ` (${noticeMail[r.omo][0].files.length} PDF${noticeMail[r.omo][0].files.length === 1 ? "" : "s"})` : ""}</button>
+                    {findAnyJob(r.omo) ? <a className="is-autofix" data-hpd-smoke="fc-notice-autofix" href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}&auto=1`}>✨ Auto-fix &amp; preview</a> : null}
+                    {findAnyJob(r.omo) ? <a href={`/paperwork/?job=${encodeURIComponent(r.omo)}&fix=${encodeURIComponent(r.at)}`}>✏️ By hand</a> : null}
+                    <a href={`https://mail.google.com/mail/u/0/#search/${encodeURIComponent(r.omo)}`} target="_blank" rel="noreferrer">Gmail ↗</a>
+                  </div>
                 </li>
               ))}</ol> : <p>None waiting on you.</p>}
             </section>
+            {toPrint.length ? (
+              <section className="fc-follow-section is-cleared" data-hpd-smoke="fc-notices-cleared">
+                <h4>✅ Cleared: fixed, in the print folder ({toPrint.length})</h4>
+                <ul>{toPrint.map((c) => (
+                  <li key={c.omo} data-hpd-smoke="fc-notice-cleared-row"><b>{c.omo}</b> <span>{c.mailedAt ? "original mailed" : c.emailedAt ? "copy emailed, original to mail" : c.printedAt ? "printed" : "ready to print"}</span></li>
+                ))}</ul>
+                <button type="button" className="fc-follow-paper" data-hpd-smoke="fc-notices-go-print" onClick={() => setNoticesTab("print")}>🖨 Open the print folder</button>
+              </section>
+            ) : null}
             </>) : null}
             {noticesTab === "requests" ? (<>
             <section className="fc-follow-section is-hpd-asked" data-hpd-smoke="fc-notices-requests">

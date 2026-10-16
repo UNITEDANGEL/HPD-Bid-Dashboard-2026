@@ -2,7 +2,8 @@
 // device (IndexedDB) until you mark it signed and sent: HPD rejects copies of signatures, so these are
 // printed, signed by hand, stamped by the notary and mailed / handed in.
 
-export type SavedCorrection = { omo: string; savedAt: string; rejectedAt: string; reason: string; fileName: string; pdf: Blob };
+// The print folder keeps each fixed rejection with its steps: printed, copy emailed to HPD, original mailed.
+export type SavedCorrection = { omo: string; savedAt: string; rejectedAt: string; reason: string; fileName: string; pdf: Blob; printedAt?: string; emailedAt?: string; emailedTo?: string; mailedAt?: string };
 
 const DB = "hpd-corrections";
 const STORE = "pdfs";
@@ -36,3 +37,11 @@ export const listCorrections = () => run<SavedCorrection[]>("readonly", (s) => s
   .then((rows) => rows.sort((a, b) => b.savedAt.localeCompare(a.savedAt)))
   .catch(() => [] as SavedCorrection[]);
 export const removeCorrection = (omo: string) => run("readwrite", (s) => s.delete(omo)).then(() => undefined);
+
+// One step done (printed / emailed / mailed): the record stays in the folder with the date.
+export async function updateCorrection(omo: string, patch: Partial<Omit<SavedCorrection, "omo" | "pdf">>) {
+  const rows = await listCorrections();
+  const row = rows.find((r) => r.omo === omo);
+  if (!row) return;
+  await saveCorrection({ ...row, ...patch });
+}

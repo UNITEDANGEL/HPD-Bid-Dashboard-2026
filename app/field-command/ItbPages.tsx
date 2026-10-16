@@ -63,7 +63,9 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
   // HPD's form (page 2) and every page the job description is on (3, and 4+ when a long job continues).
   const descriptionPages = bidPages(pageCount, descPages);
   const [shown, setShown] = useState<Rendered[] | null>(null);
-  const [all, setAll] = useState(false);
+  // The whole invitation by default (owner, 16 Oct: other pages can have more information); the button shows
+  // only the job-description pages.
+  const [all, setAll] = useState(true);
   const [error, setError] = useState("");
   const [big, setBig] = useState<Rendered | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -93,7 +95,7 @@ export default function ItbPages({ pdfUrl, pageCount, descPages, everyPage, titl
       <div className="fc-itb-head">
         <b>{title ? `📄 ${title}` : <>📄 HPD&apos;s job description {all ? `(all ${pageCount} pages)` : descriptionPages.length > 1 ? `(pages ${descriptionPages[0]}–${descriptionPages[descriptionPages.length - 1]})` : ""}</>}</b>
         {!everyPage && descriptionPages.length > 2 ? <span className="fc-itb-more" data-hpd-smoke="fc-itb-continues">continues on page {descriptionPages.slice(2).join(", ")}</span> : null}
-        {!everyPage && (pageCount > descriptionPages.length || all) ? <button type="button" onClick={() => setAll((v) => !v)}>{all ? "Description pages" : "All pages"}</button> : null}
+        {!everyPage && (pageCount > descriptionPages.length || all) ? <button type="button" data-hpd-smoke="fc-itb-all" onClick={() => setAll((v) => !v)}>{all ? "Only the job description" : "All pages"}</button> : null}
       </div>
       {error ? (/401/.test(error)
           ? <p className="fc-itb-msg" data-hpd-smoke="fc-itb-signin">HPD&apos;s pages are private (they name the tenant). <a href="/storage/">Sign in with Google</a> on this phone to see them.</p>

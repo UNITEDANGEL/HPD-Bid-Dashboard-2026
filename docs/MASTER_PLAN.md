@@ -248,6 +248,45 @@ Done 16 Oct (same day):
    text folded behind "Show HPD's text"; the old "What this job includes" list removed (The job replaces it);
    building facts, violations, earlier jobs and your bids there in one "🏢 The building" section below the price.)
 
+## Owner's requests 16 Oct 2026 (night): four kinds, each with its own flow, preview, folder and timer
+Rules (owner's words, kept):
+- **Four different things, never mixed**: Rejections (paperwork I already sent, rejected for payment because of
+  an error) / Corrections (HPD staff asking to correct something) / Requests (HPD asking for an affidavit and
+  invoice) / Messages (everything else).
+- **Rejections**: be very careful. Show BEFORE and AFTER: what the error was (HPD's notice, large) and how it was
+  fixed, with the page images side by side. Printed with **no signature** (I sign the original in ink and mail
+  it). Interface for rejections much better: the work order and the problem shown large.
+- **Requests**: first check the system: did we already send the affidavit and invoice? do we have them? If not,
+  make them. Requests are **signed by the app** (my saved signature + notary), ask me **one time only**, never make
+  me type what the app already knows. "Just sign for me" -> it signs and shows me the preview.
+- **Everything has a preview** before it's saved or sent, so I know what I'm correcting and that it's corrected.
+  The preview shows the whole document, nicer (all pages, large, zoom).
+- **Folders**: done items wait in their own folder, reviewed and ready to send: Requests folder, Rejections
+  folder (fixed, ready to print), Corrections folder.
+- **Messages back to HPD**: answer any HPD email with a suggested reply I only approve ("Yes, please see the
+  attached requested documents", "We don't understand this, could you explain..."), AI-drafted, sent with my tap.
+- **Timers**: every request / correction shows how long it has been waiting and how long HPD gives (deadline),
+  so we answer on time.
+- **Space**: no big colored buttons wasting space (e.g. "See HPD's notice (1 PDF)"); text large enough to read;
+  compact rows. Fix things live; show what's going on.
+- **Package generation asks too many questions**: ask once, fill the rest from what's known.
+- **Invitations to bid: show the whole document** (all pages), not only 2 pages: other pages can have more
+  information.
+
+- **Rejection cleared -> copy to the sender** (done 16 Oct): the print folder keeps each fixed rejection with
+  its steps (Fixed -> Printed -> Copy emailed -> Original mailed, with dates; done ones folded under Done); "Email
+  copy to <signer>" attaches the fixed paperwork as "<OMO> corrected affidavit and invoice (copy).pdf"; the
+  Rejected tab lists it as Cleared. No signing asked for the copy.
+- **Next (owner, 16 Oct night)**: on the copy sent to HPD, **highlight what was corrected** (box + "was X, now
+  Y") so they see it at once. **Two versions made automatically, no tapping to sign**: a COPY signed with my
+  saved signature and the notary's (emailed), and the unsigned original (printed and signed in ink). Make every
+  notice's kind and what HPD wants obvious at a glance (formal request notices for affidavit / invoice /
+  photos / videos separate from conversations).
+
+Order: (1) whole documents in every preview (invitations + notices + packages) [invitations: done]; (2) compact
+notices screen with large text [done]; (3) rejections before/after view; (4) requests: already-sent check + one-time signing + Requests
+folder; (5) timers; (6) suggested replies to HPD; (7) package flow with fewer questions.
+
 ## Owner's requests 16 Oct 2026 (late)
 1. **Keep every kind apart**: rejected paperwork (HPD's automatic notices) / HPD staff asking for corrections /
    requests for affidavits, invoices, photos / other conversations. (Done: HPD notices has tabs ❗ Rejected ·

@@ -83,10 +83,15 @@ try {
   const opened = await page.evaluate(async () => { const u = window.__opened[0] || ""; const r = u ? await fetch(u) : null; return { u, type: r ? (await r.blob()).type : "" }; });
   assert.match(opened.u, /^blob:/, "the saved PDF opens");
   assert.equal(opened.type, "application/pdf");
+  // Printed, then the original mailed (two taps): it leaves the to-do list and is kept under Done with its dates.
+  await row.locator('[data-hpd-smoke="fc-to-print-printed"]').click();
+  await row.locator('[data-hpd-smoke="fc-print-steps"] li.is-done', { hasText: "Printed" }).waitFor({ timeout: 5000 });
   await row.locator('[data-hpd-smoke="fc-to-print-sent"]').click();
   assert.match(await row.locator('[data-hpd-smoke="fc-to-print-sent"]').innerText(), /Tap again/);
   await row.locator('[data-hpd-smoke="fc-to-print-sent"]').click();
   await page.waitForFunction((omo) => ![...document.querySelectorAll('[data-hpd-smoke="fc-to-print-row"]')].some((r) => r.textContent.includes(omo)), OMO, { timeout: 10000 });
+  const done = page.locator('[data-hpd-smoke="fc-print-done-row"]', { hasText: OMO });
+  assert.match(await done.textContent(), /printed .* mailed /, "kept under Done with the dates");
   assert.deepEqual(errors, []);
   // An older (2024-2025) job with no outcome or work dates on the phone: pick what happened, today's
   // date is refused, real dates entered, charge from PIP.

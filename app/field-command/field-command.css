@@ -2675,3 +2675,40 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-ack-actions button.is-armed { background: #16a34a; border-color: #16a34a; }
 .fc-ack-status { margin: 0; color: #fde68a; }
 .fc-ack-done { color: #86efac; font-weight: 700; }
+
+/* Notices, compact (owner, 16 Oct): HPD's reason large, the actions as one row of small buttons. */
+.fc-notices-sheet .is-rejected li > button small { display: block; margin-top: 3px; font: 600 15px/1.4 system-ui; color: #fecaca; }
+.fc-notice-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+.fc-notice-actions > a, .fc-notice-actions > button { display: inline-flex; align-items: center; min-height: 38px; padding: 0 12px; border-radius: 19px; border: 1px solid #475569; background: #1e293b; color: #f8fafc; font: 800 13px system-ui; text-decoration: none; }
+.fc-notice-actions > .is-autofix { background: #6d28d9; border-color: #6d28d9; }
+.fc-notice-actions > .is-notice { background: #0f172a; border-color: #a78bfa; }
+.fc-notice-body { font-size: 16px !important; line-height: 1.5 !important; }
+.fc-notice-meta b { font-size: 16px !important; }
+.fc-notice-meta span { font-size: 13.5px !important; }
+
+/* Print folder: each fixed rejection with its steps; done ones folded below. */
+.fc-print-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.fc-print-list > li { padding: 10px; border-radius: 12px; background: #111827; border: 1px solid #334155; }
+.fc-print-head { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.fc-print-head b { font: 800 17px system-ui; color: #f8fafc; }
+.fc-print-head span { color: #cbd5e1; font: 600 14px system-ui; }
+.fc-print-reason { margin: 4px 0; color: #fecaca; font: 600 15px/1.4 system-ui; }
+.fc-print-steps { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0; padding: 0; list-style: none; }
+.fc-print-steps li { padding: 3px 9px; border-radius: 12px; background: #1e293b; color: #94a3b8; font: 700 12.5px system-ui; }
+.fc-print-steps li.is-done { background: #14532d; color: #bbf7d0; }
+.fc-to-print-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.fc-to-print-actions button { min-height: 38px; padding: 0 12px; border-radius: 19px; border: 1px solid #475569; background: #1e293b; color: #f8fafc; font: 800 13px system-ui; width: auto; }
+.fc-to-print-actions button.is-armed { background: #16a34a; border-color: #16a34a; }
+.fc-ack-attach { color: #93c5fd; font-weight: 700; }
+.fc-print-done { margin-top: 10px; color: #cbd5e1; }
+.fc-print-done summary { cursor: pointer; font: 800 14px system-ui; color: #86efac; padding: 6px 0; }
+.fc-print-done ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.fc-print-done li { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font: 600 13px system-ui; }
+.fc-print-done li button { margin-left: auto; min-height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #475569; background: transparent; color: #cbd5e1; }
+.fc-notice-fixed { margin: 6px 0 0; padding: 6px 10px; border-radius: 10px; background: #14532d; color: #dcfce7; font: 800 14px system-ui; }
+/* Notice action buttons stay small (an older rule made every button in the list full width). */
+.fc-notices-sheet .fc-notice-actions > button, .fc-notices-sheet .fc-notice-actions > a { width: auto !important; display: inline-flex !important; }
+.fc-follow-section.is-cleared ul { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 3px; }
+.fc-follow-section.is-cleared li { color: #bbf7d0; font: 600 14px system-ui; }
+.fc-notices-sheet .fc-to-print-actions > button { width: auto !important; display: inline-flex !important; align-items: center; flex: 0 0 auto; }
+.fc-notices-sheet .fc-print-steps li { flex: 0 0 auto; }

@@ -211,33 +211,42 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
     }
 
     if (action === "hpd-reply") {
-      // A short plain-text note to the HPD person who sent a notice (e.g. "the rejection is fixed and in the
-      // mail"). Only ever to one @hpd.nyc.gov address, from the owner's account, sent when the owner taps Send.
+      // A short note to the HPD person who sent a notice (e.g. "the rejection is fixed, a copy is attached, the
+      // original is in the mail"), with at most one PDF (the copy of the fixed paperwork). Only ever to one
+      // @hpd.nyc.gov address, from the owner's account, sent when the owner taps Send.
       if (!/^application\/json/.test(request.headers.get("Content-Type") || "")) fail("Invalid reply.", 415);
       let body;
-      try { body = JSON.parse(new TextDecoder().decode(await bodyBytes(request, 16000, "Reply"))); } catch (e) { if (e?.status) throw e; fail("Invalid reply.", 400); }
+      try { body = JSON.parse(new TextDecoder().decode(await bodyBytes(request, 14 * 1024 * 1024, "Reply"))); } catch (e) { if (e?.status) throw e; fail("Invalid reply.", 400); }
       const to = String(body?.to || "").trim().toLowerCase();
       const subject = String(body?.subject || "").trim();
       const text = String(body?.text || "").trim();
       if (!/^[a-z0-9._%+-]+@hpd\.nyc\.gov$/.test(to)) fail("Replies only go to an @hpd.nyc.gov address.", 400);
       if (!subject || subject.length > 200 || /[\r\n]/.test(subject)) fail("Invalid subject.", 400);
       if (!text || text.length > 4000) fail("Invalid message.", 400);
-      const raw = [
-        `From: ${ownerEmail}`,
-        `To: ${to}`,
-        `Subject: ${encodeHeader(subject)}`,
-        "MIME-Version: 1.0",
-        'Content-Type: text/plain; charset="UTF-8"',
-        "Content-Transfer-Encoding: base64",
-        "",
-        btoa(String.fromCharCode(...new TextEncoder().encode(text.replace(/\r?\n/g, "\r\n")))).replace(/.{76}/g, "$&\r\n"),
-      ].join("\r\n");
-      const b64url = btoa(String.fromCharCode(...new TextEncoder().encode(raw))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-      const sent = await call("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ raw: b64url }) });
+      const att = body?.attachment;
+      let pdf = null;
+      if (att) {
+        const name = String(att.name || "");
+        const data = String(att.data || "");
+        if (!/^[A-Za-z0-9 _.,()-]{1,100}\.pdf$/.test(name)) fail("Invalid attachment name.", 400);
+        if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data) || data.length > 13 * 1024 * 1024) fail("Invalid attachment.", 400);
+        if (!data.startsWith("JVBER")) fail("Only a PDF can be attached.", 400); // "%PDF"
+        pdf = { name, data };
+      }
+      const b64text = (t) => btoa(String.fromCharCode(...new TextEncoder().encode(t.replace(/\r?\n/g, "\r\n")))).replace(/.{76}/g, "$&\r\n");
+      const boundary = `hpdreply${crypto.randomUUID().replace(/-/g, "")}`;
+      const lines = [`From: ${ownerEmail}`, `To: ${to}`, `Subject: ${encodeHeader(subject)}`, "MIME-Version: 1.0"];
+      if (!pdf) lines.push('Content-Type: text/plain; charset="UTF-8"', "Content-Transfer-Encoding: base64", "", b64text(text));
+      else lines.push(
+        `Content-Type: multipart/mixed; boundary="${boundary}"`, "",
+        `--${boundary}`, 'Content-Type: text/plain; charset="UTF-8"', "Content-Transfer-Encoding: base64", "", b64text(text),
+        `--${boundary}`, `Content-Type: application/pdf; name="${pdf.name}"`, `Content-Disposition: attachment; filename="${pdf.name}"`, "Content-Transfer-Encoding: base64", "", pdf.data.replace(/.{76}/g, "$&\r\n"),
+        `--${boundary}--`, "");
+      const sent = await call(GMAIL_SEND, { method: "POST", headers: { "Content-Type": "message/rfc822" }, body: new TextEncoder().encode(lines.join("\r\n")) });
       if (!sent.ok) fail(await gmailRefusal(sent), sent.status === 401 || sent.status === 403 ? 403 : 503);
       let receipt = {};
       try { receipt = await sent.json(); } catch {}
-      return reply({ sent: true, to, messageId: typeof receipt.id === "string" ? receipt.id : "" });
+      return reply({ sent: true, to, messageId: typeof receipt.id === "string" ? receipt.id : "", attached: pdf ? pdf.name : "" });
     }
 
     if (action === "email-package") {

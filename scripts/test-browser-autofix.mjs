@@ -65,7 +65,8 @@ try {
   const text = await ack.locator('[data-hpd-smoke="fc-ack-text"]').inputValue();
   assert.match(text, /^Hello Michael Wright Jr\.,/);
   assert.match(text, new RegExp(`OMO# ${OMO}`));
-  assert.match(text, /in the mail back to you\.[\s\S]*Please let us know when you receive them/);
+  assert.match(text, /A copy of the corrected affidavit and invoice is attached\.[\s\S]*on its way to you in the mail[\s\S]*Please let us know when you receive it/);
+  assert.match(await ack.locator('[data-hpd-smoke="fc-ack-attach"]').innerText(), new RegExp(`${OMO} corrected affidavit and invoice \\(copy\\)\\.pdf`));
   await ack.locator('[data-hpd-smoke="fc-ack-send"]').click();
   assert.equal(replies.length, 0, "first tap only arms");
   assert.match(await ack.locator('[data-hpd-smoke="fc-ack-send"]').innerText(), /Tap again: send to wrightmi@hpd\.nyc\.gov/);
@@ -74,8 +75,15 @@ try {
   assert.equal(replies.length, 1);
   assert.equal(replies[0].to, "wrightmi@hpd.nyc.gov");
   assert.equal(replies[0].text, text);
+  assert.equal(replies[0].attachment?.name, `${OMO} corrected affidavit and invoice (copy).pdf`);
+  assert.ok(Buffer.from(replies[0].attachment.data, "base64").subarray(0, 5).toString() === "%PDF-", "the fixed copy (a PDF) is attached");
+  assert.match(await row.locator('[data-hpd-smoke="fc-print-steps"]').innerText(), /Copy emailed/);
+  // The Rejected tab says it's fixed and in the print folder.
+  await page.locator('[data-hpd-smoke="fc-notice-tab-rejected"]').click();
+  assert.match(await page.locator('[data-hpd-smoke="fc-notice-cleared-row"]', { hasText: OMO }).innerText(), /copy emailed, original to mail/);
+  assert.equal(await page.locator('[data-hpd-smoke="fc-notices-rejected"] li', { hasText: OMO }).count(), 0, "no longer waiting on you");
   assert.deepEqual(errors, []);
-  console.log(`PASS auto-fix: ${OMO} from Rejected -> fixed from HPD's reason (${changed.length ? changed.join("; ") : "nothing needed changing"}) + preview; Reject deleted it and put the old details back; Accept saved it to 🖨 To print; "Tell HPD it's in the mail" goes to MICHAEL WRIGHT JR (wrightmi@hpd.nyc.gov), shown first, sent only on the second tap`);
+  console.log(`PASS auto-fix: ${OMO} from Rejected -> fixed from HPD's reason (${changed.length ? changed.join("; ") : "nothing needed changing"}) + preview; Reject deleted it and put the old details back; Accept saved it to 🖨 To print; "Email copy" to MICHAEL WRIGHT JR (wrightmi@hpd.nyc.gov) with the fixed PDF attached, shown first, sent only on the second tap; Rejected lists it as Cleared (no longer waiting)`);
   await context.close();
 } finally {
   await browser.close();
