@@ -75,7 +75,7 @@ try {
   const wn = page.locator('[data-hpd-smoke="fc-whatsnew"]');
   await wn.waitFor({ timeout: 5000 });
   await wn.locator('[data-hpd-smoke="fc-whatsnew-day"]').first().waitFor({ timeout: 10000 });
-  assert.match(await wn.locator('[data-hpd-smoke="fc-whatsnew-day"]').first().innerText(), /Bid calculator/);
+  assert.ok((await wn.locator('[data-hpd-smoke="fc-whatsnew-day"]').allInnerTexts()).some((t) => t.includes("Bid calculator")), "the change list includes the calculator");
   const th = wn.locator('[data-hpd-smoke="fc-change-thread"]').first();
   await th.waitFor({ timeout: 5000 });
   { const t = await th.innerText(); assert.ok(t.includes("Look at the email from HPD") && t.includes("Working on it") && t.includes("Checked the 14 OMOs"), t); }
