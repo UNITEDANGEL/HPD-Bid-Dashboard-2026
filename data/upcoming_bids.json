@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-16T18:05:07.409308+00:00",
+  "generatedAt": "2026-10-16T18:17:54.015543+00:00",
   "days": 14,
   "bids": [
     {
@@ -131,136 +131,6 @@
       },
       "lat": 40.84088,
       "lng": -73.916369
-    },
-    {
-      "omo": "ER07263",
-      "bidDue": "2026-10-16",
-      "bidDueTime": "11:00 AM",
-      "workStart": "2026-10-19",
-      "workCompletion": "2026-10-30",
-      "address": "1255 STRATFORD AVENUE",
-      "borough": "BX",
-      "itbFile": "ER07263_101526010823.pdf",
-      "description": "NYC HPD EMERGENCY OPERATIONS DIVISION - 'ESSENTIAL SERVICE WORK' RESTORE DEFECTIVE FLOORING AT APT C3 AT APT C3 PRIVATE HALLWAY: PROPERLY REMOVE THE DEFECTIVE VINYL FLOORING, APPROXIMATELY 120 SQ FT.. REPLACE WITH VINYL FLOORINGG APPROXIMATELY 120 SQ.FT. SEAL ALL EDGES AND CORNERS. RESTORE FLOOR TO A SAFE MANNER. RESTORE ALL AFFECTED AREAS. REMOVE ALL WORK RELATED DEBRIS. **",
-      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: K. BRYANT- 212 863 5496; R. BUSHRA- 212 863 6046; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; S. HUGHES- 212 863 5754; S. KOFUMA- 212 863 6160; A. MARTINEZ- 212 863 6135; E. ORR- 212 863 6875; R. REED- 212 863 5481** **SUPERVISOR D. SAUL- 212 863 5527** &#x20; **IF THE LANDLORD REFUSES ACCESS, CONTRACTOR COMPLETED WORK OR WORK WAS COMPLETED BY OTHERS, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE - 212 863 6008.**",
-      "descPages": [
-        3
-      ],
-      "receivedAt": 1792084107000,
-      "pages": 4,
-      "fields": {
-        "price": {
-          "page": 0,
-          "x": 95.9,
-          "y": 107.6,
-          "rotate": 0
-        },
-        "contractor": {
-          "page": 0,
-          "x": 88.3,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "owner": {
-          "page": 0,
-          "x": 325,
-          "y": 91.1,
-          "rotate": 0
-        },
-        "address": {
-          "page": 0,
-          "x": 76.8,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "signature": {
-          "page": 0,
-          "x": 339.7,
-          "y": 73.1,
-          "rotate": 0
-        },
-        "date": {
-          "page": 0,
-          "x": 315.4,
-          "y": 56.5,
-          "rotate": 0
-        },
-        "phone": {
-          "page": 0,
-          "x": 86.6,
-          "y": 40.1,
-          "rotate": 0
-        },
-        "fax": {
-          "page": 0,
-          "x": 351.4,
-          "y": 40.8,
-          "rotate": 0
-        },
-        "pageTotal": {
-          "page": 1,
-          "x": 489.8,
-          "y": 209.5,
-          "rotate": 0
-        },
-        "bidAmount": {
-          "page": 3,
-          "x": 628.8,
-          "y": 500.4,
-          "rotate": 0
-        },
-        "preparedBy": {
-          "page": 3,
-          "x": 102.7,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastSignature": {
-          "page": 3,
-          "x": 284.5,
-          "y": 43.6,
-          "rotate": 0
-        },
-        "lastDate": {
-          "page": 3,
-          "x": 496,
-          "y": 45,
-          "rotate": 0
-        },
-        "lastContractor": {
-          "page": 3,
-          "x": 646.2,
-          "y": 44.3,
-          "rotate": 0
-        },
-        "permitNo": {
-          "page": 3,
-          "x": 233.2,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "bridgeNo": {
-          "page": 3,
-          "x": 525.6,
-          "y": 87.8,
-          "rotate": 0
-        },
-        "description": {
-          "page": 3,
-          "x": 267.8,
-          "y": 467,
-          "rotate": 0,
-          "width": 494.2
-        },
-        "stamp3": {
-          "page": 2,
-          "x": 24,
-          "y": 774,
-          "rotate": 0
-        }
-      },
-      "lat": 40.831049,
-      "lng": -73.876194
     },
     {
       "omo": "ER07346",
@@ -1952,6 +1822,266 @@
       },
       "lat": 40.790428,
       "lng": -73.948498
+    },
+    {
+      "omo": "ER07262",
+      "bidDue": "2026-10-19",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-20",
+      "workCompletion": "2026-10-31",
+      "address": "2013 AMSTERDAM AVENUE",
+      "borough": "MN",
+      "itbFile": "ER07262_101626020222.pdf",
+      "description": "NYC HPD EMERGENCY OPERATIONS DIVISION - 'ESSENTIAL SERVICE WORK' RESTORE APT 5C KITCHEN FLOORING AT APT 5C KITCHEN: PROPERLY REMOVE THE DEFECTIVE FLOORING 4 SQFT. REPLACE WITH SIMILAR TO EXISTING WOOD FLOORING OF AT LEAST 4 SQ.FT.. RESTORE FLOOR TO A SAFE MANNER. RESTORE ALL AFFECTED AREAS. REMOVE ALL WORK RELATED DEBRIS. **",
+      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: K. BRYANT- 212 863 5496; R. BUSHRA- 212 863 6046; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; S. HUGHES- 212 863 5754; S. KOFUMA- 212 863 6160; A. MARTINEZ- 212 863 6135; E. ORR- 212 863 6875; R. REED- 212 863 5481** **SUPERVISOR D. SAUL- 212 863 5527** &#x20; **IF THE LANDLORD REFUSES ACCESS, CONTRACTOR COMPLETED WORK OR WORK WAS COMPLETED BY OTHERS, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE - 212 863 6008.**",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1792173748000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.834482,
+      "lng": -73.940462
+    },
+    {
+      "omo": "ER07263",
+      "bidDue": "2026-10-19",
+      "bidDueTime": "11:00 AM",
+      "workStart": "2026-10-20",
+      "workCompletion": "2026-10-31",
+      "address": "1255 STRATFORD AVENUE",
+      "borough": "BX",
+      "itbFile": "ER07263_101626020534.pdf",
+      "description": "NYC HPD EMERGENCY OPERATIONS DIVISION - 'ESSENTIAL SERVICE WORK' RESTORE DEFECTIVE FLOORING AT APT C3 AT APT C3 PRIVATE HALLWAY: PROPERLY REMOVE THE DEFECTIVE VINYL FLOORING, APPROXIMATELY 120 SQ FT.. REPLACE WITH VINYL FLOORINGG APPROXIMATELY 120 SQ.FT. SEAL ALL EDGES AND CORNERS. RESTORE FLOOR TO A SAFE MANNER. RESTORE ALL AFFECTED AREAS. REMOVE ALL WORK RELATED DEBRIS. **",
+      "notes": "CONTRACTOR MUST CONTACT HPD WITH START DATE: K. BRYANT- 212 863 5496; R. BUSHRA- 212 863 6046; B. CARR- 212 863 5518; S. CROSSLAND- 212 863 6132; S. HUGHES- 212 863 5754; S. KOFUMA- 212 863 6160; A. MARTINEZ- 212 863 6135; E. ORR- 212 863 6875; R. REED- 212 863 5481** **SUPERVISOR D. SAUL- 212 863 5527** &#x20; **IF THE LANDLORD REFUSES ACCESS, CONTRACTOR COMPLETED WORK OR WORK WAS COMPLETED BY OTHERS, AN AFFIDAVIT COPY MUST BE FAXED TO OUR SITE OFFICE - 212 863 6008.**",
+      "descPages": [
+        3
+      ],
+      "receivedAt": 1792173936000,
+      "pages": 4,
+      "fields": {
+        "price": {
+          "page": 0,
+          "x": 95.9,
+          "y": 107.6,
+          "rotate": 0
+        },
+        "contractor": {
+          "page": 0,
+          "x": 88.3,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "owner": {
+          "page": 0,
+          "x": 325,
+          "y": 91.1,
+          "rotate": 0
+        },
+        "address": {
+          "page": 0,
+          "x": 76.8,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "signature": {
+          "page": 0,
+          "x": 339.7,
+          "y": 73.1,
+          "rotate": 0
+        },
+        "date": {
+          "page": 0,
+          "x": 315.4,
+          "y": 56.5,
+          "rotate": 0
+        },
+        "phone": {
+          "page": 0,
+          "x": 86.6,
+          "y": 40.1,
+          "rotate": 0
+        },
+        "fax": {
+          "page": 0,
+          "x": 351.4,
+          "y": 40.8,
+          "rotate": 0
+        },
+        "pageTotal": {
+          "page": 1,
+          "x": 489.8,
+          "y": 209.5,
+          "rotate": 0
+        },
+        "bidAmount": {
+          "page": 3,
+          "x": 628.8,
+          "y": 500.4,
+          "rotate": 0
+        },
+        "preparedBy": {
+          "page": 3,
+          "x": 102.7,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastSignature": {
+          "page": 3,
+          "x": 284.5,
+          "y": 43.6,
+          "rotate": 0
+        },
+        "lastDate": {
+          "page": 3,
+          "x": 496,
+          "y": 45,
+          "rotate": 0
+        },
+        "lastContractor": {
+          "page": 3,
+          "x": 646.2,
+          "y": 44.3,
+          "rotate": 0
+        },
+        "permitNo": {
+          "page": 3,
+          "x": 233.2,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "bridgeNo": {
+          "page": 3,
+          "x": 525.6,
+          "y": 87.8,
+          "rotate": 0
+        },
+        "description": {
+          "page": 3,
+          "x": 267.8,
+          "y": 467,
+          "rotate": 0,
+          "width": 494.2
+        },
+        "stamp3": {
+          "page": 2,
+          "x": 24,
+          "y": 774,
+          "rotate": 0
+        }
+      },
+      "lat": 40.831049,
+      "lng": -73.876194
     },
     {
       "omo": "ER07265",
