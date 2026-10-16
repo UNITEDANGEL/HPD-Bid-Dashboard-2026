@@ -692,7 +692,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             <BuildingHero key={selected.omo} id={`BID-${selected.omo}`} address={selected.address} borough={selected.borough || ""} point={Number.isFinite(selected.lat) && Number.isFinite(selected.lng) ? { lat: selected.lat as number, lng: selected.lng as number } : null} />
             <nav className="fc-bid-jump" aria-label="Jump to" data-hpd-smoke="fc-bid-jump">
               {([["fc-sec-job", "📋 Job"], ["fc-sec-price", "💰 Price"], ["fc-sec-building", "🏢 Building"], ["fc-sec-send", "📠 Send"]] as const).map(([id, label]) => (
-                <button key={id} type="button" onClick={() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" })}>{label}</button>
+                <button key={id} type="button" onClick={() => document.getElementById(id)?.scrollIntoView({ block: "start" })}>{label}</button>
               ))}
               <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.address}, ${selected.borough || ""} NY`)}`} target="_blank" rel="noopener noreferrer" data-hpd-smoke="fc-bid-maplink">📍 Map</a>
             </nav>

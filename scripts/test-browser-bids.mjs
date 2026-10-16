@@ -135,7 +135,7 @@ try {
   assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-jump"] button').count(), 4);
   assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-building"]').count(), 1);
   await sheet.locator('[data-hpd-smoke="fc-bid-jump"] button', { hasText: "Building" }).click();
-  // The smooth scroll can take a moment on a slow machine: wait until the section is on screen.
+  // Jumps straight to the section.
   await page.waitForFunction(() => { const r = document.querySelector('[data-hpd-smoke="fc-bid-building"]').getBoundingClientRect(); return r.top >= 0 && r.top < innerHeight - 80; }, null, { timeout: 8000 });
   if (await sheet.locator('[data-hpd-smoke="fc-bid-help"]').count()) {
     assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-confidence"]').innerText(), /Good match|Fair match|Rough guide/);
