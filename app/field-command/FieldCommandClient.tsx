@@ -803,6 +803,22 @@ export default function FieldCommandClient() {
       armed: false, status: "",
     });
   };
+  // The same email to your own Gmail first (to check it, or forward it yourself). Nothing goes to HPD.
+  const sendAckToMe = async () => {
+    if (!ack) return;
+    setAck({ ...ack, status: "Sending to you…" });
+    try {
+      const saved = toPrint.find((x) => x.omo === ack.omo);
+      const data = saved?.pdf ? await new Promise<string>((ok, bad) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result).split(",")[1] || ""); fr.onerror = () => bad(fr.error); fr.readAsDataURL(saved.pdf); }) : "";
+      const attachment = data ? { name: `${ack.omo} corrected affidavit and invoice (copy).pdf`, data } : undefined;
+      const r = await fetch("/api/drive/hpd-reply", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ toSelf: true, subject: ack.subject, text: ack.text, attachment }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.sent) throw new Error(d.error || `HTTP ${r.status}`);
+      setAck({ ...ack, armed: false, status: `✓ Sent to you (${d.to}). Check it in Gmail; nothing went to HPD.` });
+    } catch (e) {
+      setAck({ ...ack, armed: false, status: `Not sent: ${e instanceof Error ? e.message : "error"}.` });
+    }
+  };
   const sendAck = async () => {
     if (!ack) return;
     if (!ack.armed) { setAck({ ...ack, armed: true }); return; }
@@ -3673,6 +3689,7 @@ export default function FieldCommandClient() {
                             <label>Message<textarea data-hpd-smoke="fc-ack-text" rows={9} value={ack.text} onChange={(e) => setAck({ ...ack, text: e.target.value, armed: false })} /></label>
                             <div className="fc-ack-actions">
                               <button type="button" className={ack.armed ? "is-armed" : ""} data-hpd-smoke="fc-ack-send" disabled={!ack.to || ack.status === "Sending…"} onClick={() => void sendAck()}>{ack.armed ? `✅ Tap again: send to ${ack.to}` : "✉ Send"}</button>
+                              <button type="button" data-hpd-smoke="fc-ack-me" disabled={ack.status === "Sending to you…"} onClick={() => void sendAckToMe()}>📨 Send to me first</button>
                               <button type="button" onClick={() => setAck(null)}>Cancel</button>
                             </div>
                             {ack.status ? <p className="fc-ack-status" data-hpd-smoke="fc-ack-status">{ack.status}</p> : null}

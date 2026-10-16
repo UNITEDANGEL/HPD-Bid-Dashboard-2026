@@ -217,10 +217,12 @@ export async function handleDrivePackages(request, action, authHeaders, fetcher,
       if (!/^application\/json/.test(request.headers.get("Content-Type") || "")) fail("Invalid reply.", 415);
       let body;
       try { body = JSON.parse(new TextDecoder().decode(await bodyBytes(request, 14 * 1024 * 1024, "Reply"))); } catch (e) { if (e?.status) throw e; fail("Invalid reply.", 400); }
-      const to = String(body?.to || "").trim().toLowerCase();
-      const subject = String(body?.subject || "").trim();
+      // "Send to me first": the same email to the owner's own address, to check it (or forward it) from Gmail.
+      const toSelf = body?.toSelf === true;
+      const to = toSelf ? String(ownerEmail).toLowerCase() : String(body?.to || "").trim().toLowerCase();
+      const subject = `${toSelf ? "[CHECK BEFORE SENDING] " : ""}${String(body?.subject || "").trim()}`;
       const text = String(body?.text || "").trim();
-      if (!/^[a-z0-9._%+-]+@hpd\.nyc\.gov$/.test(to)) fail("Replies only go to an @hpd.nyc.gov address.", 400);
+      if (!toSelf && !/^[a-z0-9._%+-]+@hpd\.nyc\.gov$/.test(to)) fail("Replies only go to an @hpd.nyc.gov address.", 400);
       if (!subject || subject.length > 200 || /[\r\n]/.test(subject)) fail("Invalid subject.", 400);
       if (!text || text.length > 4000) fail("Invalid message.", 400);
       const att = body?.attachment;

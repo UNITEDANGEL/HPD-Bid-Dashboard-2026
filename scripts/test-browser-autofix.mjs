@@ -67,6 +67,11 @@ try {
   assert.match(text, new RegExp(`OMO# ${OMO}`));
   assert.match(text, /A copy of the corrected affidavit and invoice is attached\.[\s\S]*on its way to you in the mail[\s\S]*Please let us know when you receive it/);
   assert.match(await ack.locator('[data-hpd-smoke="fc-ack-attach"]').innerText(), new RegExp(`${OMO} corrected affidavit and invoice \\(copy\\)\\.pdf`));
+  // Send to me first: to the owner's own Gmail, nothing to HPD.
+  await ack.locator('[data-hpd-smoke="fc-ack-me"]').click();
+  await page.waitForFunction(() => /Sent to you/.test(document.querySelector('[data-hpd-smoke="fc-ack-status"]')?.textContent || ""), null, { timeout: 10000 });
+  assert.equal(replies.length, 1); assert.equal(replies[0].toSelf, true); assert.ok(replies[0].attachment?.data, "with the copy attached");
+  replies.length = 0;
   await ack.locator('[data-hpd-smoke="fc-ack-send"]').click();
   assert.equal(replies.length, 0, "first tap only arms");
   assert.match(await ack.locator('[data-hpd-smoke="fc-ack-send"]').innerText(), /Tap again: send to wrightmi@hpd\.nyc\.gov/);

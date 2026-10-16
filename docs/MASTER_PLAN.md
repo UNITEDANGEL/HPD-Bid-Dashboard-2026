@@ -283,6 +283,15 @@ Rules (owner's words, kept):
   notice's kind and what HPD wants obvious at a glance (formal request notices for affidavit / invoice /
   photos / videos separate from conversations).
 
+- **Email from the app to anybody, test on myself first** (owner, 16 Oct night): "📨 Send to me first" sends the
+  same email (with the attachment) to my own Gmail, marked [CHECK BEFORE SENDING]; I can check or forward it.
+  (Done for the HPD note.) Next: reply to any HPD email from the app (suggested replies to approve).
+- **Map screen, iPhone size, nice and neat** (owner, 16 Oct night): the borough chips (All / MN / BK ...), the
+  day chips (30 days / 60 / 90 / Custom / 2024-25) and the search box take too much of the map. One compact
+  bar: search + one menu for days (15 / 30 / 45 / 60 / custom) and boroughs, chosen fast; every button glows and
+  reacts when pressed (like the map buttons); everything large and clear, also inside jobs, invitations,
+  messages and previews.
+
 Order: (1) whole documents in every preview (invitations + notices + packages) [invitations: done]; (2) compact
 notices screen with large text [done]; (3) rejections before/after view; (4) requests: already-sent check + one-time signing + Requests
 folder; (5) timers; (6) suggested replies to HPD; (7) package flow with fewer questions.

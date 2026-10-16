@@ -156,6 +156,14 @@ assert.match(await emailWith(gmailSays(500, { error: { message: "Backend Error" 
     res = await send({ to: "wrightmi@hpd.nyc.gov", subject: "RE: x", text: "hi", ...bad });
     assert.equal(res.status, 400, JSON.stringify(bad).slice(0, 80));
   }
-  assert.equal(sentMail.length, 2, "nothing else was sent");
+  // Send to me first: always the owner's own address, whatever "to" says.
+  res = await send({ toSelf: true, to: "attacker@example.test", subject: "RE: x", text: "check me" });
+  assert.equal(res.status, 200);
+  assert.match(sentMail[2].raw, /
+To: owner@example\.test
+Subject: =\?UTF-8\?|
+To: owner@example\.test
+Subject: \[CHECK BEFORE SENDING\]/);
+  assert.equal(sentMail.length, 3, "nothing else was sent");
 }
 console.log("PASS Drive packages: per-package folders, owned-folder uploads, server-set email recipients, header injection and Gmail permission errors.");
