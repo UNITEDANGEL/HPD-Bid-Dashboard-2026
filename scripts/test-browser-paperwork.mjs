@@ -140,10 +140,11 @@ try {
       await page.locator('[data-hpd-smoke="paperwork-notary-approve"]').click();
       // The approval builds the package; on a slow machine it can take a while. Wait for the review screen, or
       // for Generate to come back (then tap it) - whichever shows first.
-      await page.waitForFunction(() => !!document.querySelector('[data-hpd-smoke="paperwork-package-review"]') || !!document.querySelector('[data-hpd-smoke="paperwork-generate-pdf-only"]:not([disabled])'), null, { timeout: 60000 });
+      const genVisible = () => { const b = document.querySelector('[data-hpd-smoke="paperwork-generate-pdf-only"]'); return !!b && !b.disabled && !!b.offsetParent; };
+      await page.waitForFunction(`!!document.querySelector('[data-hpd-smoke="paperwork-package-review"]') || (${genVisible.toString()})()`, null, { timeout: 90000 });
       if (!(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count())) {
         await page.waitForTimeout(1500);
-        if (!(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count()) && await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').count()) await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
+        if (!(await page.locator('[data-hpd-smoke="paperwork-package-review"]').count()) && await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').isVisible().catch(() => false)) await page.locator('[data-hpd-smoke="paperwork-generate-pdf-only"]').click();
       }
     }
     await page.locator('[data-hpd-smoke="paperwork-package-review"]').waitFor({ timeout: 60000 });
