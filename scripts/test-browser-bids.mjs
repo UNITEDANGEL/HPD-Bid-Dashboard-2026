@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
+import { openBidList } from "./bids-test-helpers.mjs";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 
 // A price far above what wins jobs like this asks for a second tap on Save (the app's warning).
@@ -68,6 +69,7 @@ try {
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 50, null, { timeout: 120000 });
   await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
+  await openBidList(page);
   const list = page.locator('[data-hpd-smoke="fc-bids-list"]');
   await list.locator("li").first().waitFor({ timeout: 20000 });
   assert.match(await page.locator('[data-hpd-smoke="fc-bids-banner"]').innerText(), new RegExp(`${open.length} open to bid · due today or later`));
@@ -252,6 +254,7 @@ try {
   // "I got HumbleFax's confirmation email" and the fax shows confirmed.
   await page.locator('[data-hpd-smoke="fc-bids-close"]').click();
   await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
+  await openBidList(page);
   await page.getByRole("tab", { name: /^Open/ }).click();
   const third = list.locator("ol > li > button:first-child").nth(2);
   waitOmo = (await third.locator("b").first().innerText()).trim();

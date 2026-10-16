@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
+import { openBidList } from "./bids-test-helpers.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const fetched = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();
@@ -22,6 +23,7 @@ try {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto(`${baseUrl}/map/?bids=1`, { waitUntil: "load", timeout: 180000 });
+  await openBidList(page);
   const list = page.locator('[data-hpd-smoke="fc-bids-list"]');
   await list.locator("ol > li > button:first-child").first().waitFor({ timeout: 30000 });
   // A bid with a best price (needs past awards for its kind of work).
@@ -72,6 +74,7 @@ try {
   await sheet.locator("header button").first().click();
   // Kept after a reload; the list row shows the minimum as the best price too.
   await page.goto(`${baseUrl}/map/?bids=1`, { waitUntil: "load" });
+  await openBidList(page);
   await list.locator("ol > li > button:first-child").first().waitFor({ timeout: 30000 });
   await page.locator('[data-hpd-smoke="fc-bids-stats"]').click();
   const floorsBox = page.locator('[data-hpd-smoke="fc-floors"]');

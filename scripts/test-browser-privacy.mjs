@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
+import { openBidList } from "./bids-test-helpers.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const OMO = process.env.PRIVACY_OMO || "EQ14157";
@@ -37,6 +38,7 @@ try {
       assert.equal(await page.locator("#fc-job-card .fc-call-btn").count(), 0);
       // Invitation pages: ask to sign in.
       await page.goto(`${baseUrl}/map/?bids=1`, { waitUntil: "load" });
+      await openBidList(page);
       const row = page.locator('[data-hpd-smoke="fc-bids-list"] ol > li > button:first-child').first();
       await row.waitFor({ timeout: 30000 });
       await row.click();

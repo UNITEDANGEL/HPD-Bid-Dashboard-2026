@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
+import { openBidList } from "./bids-test-helpers.mjs";
 
 // A price far above what wins jobs like this asks for a second tap on Save (the app's warning).
 async function saveBid(scope) {
@@ -54,6 +55,7 @@ try {
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.waitForFunction(() => document.querySelectorAll(".leaflet-marker-icon").length > 50, null, { timeout: 120000 });
   await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
+  await openBidList(page);
   const row = page.locator('[data-hpd-smoke="fc-bids-list"] ol > li').filter({ hasText: "ER77777" });
   await page.waitForFunction(() => /\$1,987/.test(document.querySelector('[data-hpd-smoke="fc-bids-list"]')?.textContent || ""), null, { timeout: 20000 });
   assert.match(await row.innerText(), /\$1,987/, "the computer shows the iPhone's revised price");
@@ -85,11 +87,12 @@ try {
   assert.equal(posted["BIDDING-SESSION"]?.active, true, "the session reaches the status server (the fax checker follows it)");
   assert.equal(posted["BIDDING-SESSION"]?.day, today);
 
-  // Hide the list to see the map, and bring it back.
-  await page.locator('[data-hpd-smoke="fc-bids-collapse"]').click();
+  // 🗺 Map folds the list to its bar (the map shows), the bar keeps the count; tapping the bar brings it back.
+  await page.locator('[data-hpd-smoke="fc-bids-peek"]').click();
   assert.equal(await page.locator('[data-hpd-smoke="fc-bids-list"] ol').isVisible(), false, "list hidden");
-  assert.match(await page.locator('[data-hpd-smoke="fc-bids-collapse"]').innerText(), /Show the list · 1 of 2 due today sent/);
+  assert.match(await page.locator('[data-hpd-smoke="fc-bids-collapse"]').innerText(), /invitations · 1 of 2 due today sent/);
   await page.locator('[data-hpd-smoke="fc-bids-collapse"]').click();
+  assert.equal(await page.locator('[data-hpd-smoke="fc-bids-list"]').getAttribute("data-size"), "half", "tap: half way up");
   assert.equal(await page.locator('[data-hpd-smoke="fc-bids-list"] ol').first().isVisible(), true);
   // HumbleFax's email is found in the background: the list says confirmed and the pin is green, without
   // opening the job.

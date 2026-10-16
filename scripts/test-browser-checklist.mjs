@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
+import { openBidList } from "./bids-test-helpers.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
@@ -28,6 +29,7 @@ try {
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 50, null, { timeout: 120000 });
   await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
+  await openBidList(page);
   const list = page.locator('[data-hpd-smoke="fc-checklist"]');
   await list.waitFor({ timeout: 20000 });
   const rows = list.locator('[data-hpd-smoke="fc-checklist-row"]');
@@ -79,6 +81,7 @@ try {
   await page.reload({ waitUntil: "load" });
   await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 50, null, { timeout: 120000 });
   await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
+  await openBidList(page);
   await page.locator('[data-hpd-smoke="fc-checklist"]').waitFor({ timeout: 20000 });
   assert.equal(await page.locator('[data-hpd-smoke="fc-checklist-row"]').count(), 0, "closed stays closed today");
   assert.deepEqual(errors, []);

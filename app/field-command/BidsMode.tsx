@@ -151,7 +151,12 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const [checklistOpen, setChecklistOpen] = useState(() => {
     try { return localStorage.getItem(`hpd-checklist-${NY_DAY.format(new Date())}`) !== "closed"; } catch { return true; }
   });
-  const [listCollapsed, setListCollapsed] = useState(false);
+  // The list is a panel over the map with three heights: "peek" (just its bar: the map shows, how it opens),
+  // "half" and "full". Tap or drag the bar to change it.
+  const [listSize, setListSize] = useState<"peek" | "half" | "full">("peek");
+  const listCollapsed = listSize === "peek";
+  const setListCollapsed = (v: boolean | ((x: boolean) => boolean)) => setListSize((cur) => ((typeof v === "function" ? v(cur === "peek") : v) ? "peek" : cur === "peek" ? "half" : cur));
+  const dragRef = useRef<{ y: number; size: "peek" | "half" | "full" } | null>(null);
   // Which day's invitations to show: all, today, tomorrow or the day after (remembered on the phone).
   const [dayPick, setDayPick] = useState<"all" | "0" | "1" | "2">(() => {
     try { const v = localStorage.getItem("hpd-bids-day"); return v === "0" || v === "1" || v === "2" ? v : "all"; } catch { return "all"; }
@@ -327,7 +332,12 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
       });
       if (!markers.length) return;
       layerRef.current = L.featureGroup(markers).addTo(map);
-      map.fitBounds(layerRef.current.getBounds(), { paddingTopLeft: [30, 150], paddingBottomRight: [30, Math.round(window.innerHeight * 0.4)], maxZoom: 14 });
+      // Fit the pins in the map you can actually see: below the header, above the list's bar, left of the buttons.
+      const area = map.getContainer().getBoundingClientRect();
+      const banner = bannerRef.current?.getBoundingClientRect();
+      const top = banner ? Math.max(20, banner.bottom - area.top + 16) : 120;
+      const room = area.height - top - 90;
+      map.fitBounds(layerRef.current.getBounds(), { paddingTopLeft: [24, Math.min(top, Math.max(20, area.height - 200))], paddingBottomRight: [90, room > 120 ? 90 : 30], maxZoom: 14 });
     });
     return () => { cancelled = true; };
   }, [open, bids, map, records, easyOmos, alertKey, shownBids]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -980,10 +990,25 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
             </div>
           </div>
         ) : null}
-        <aside className={`fc-bids-list${listCollapsed ? " is-collapsed" : ""}`} style={listRoom && !listCollapsed ? { maxHeight: `${Math.round(listRoom)}px` } : undefined} aria-label="Invitations to bid" data-hpd-smoke="fc-bids-list">
-          <button type="button" className="fc-bids-handle" data-hpd-smoke="fc-bids-collapse" onClick={() => setListCollapsed((v) => !v)}>
-            {listCollapsed ? `▲ Show the list · ${todayInfo.total ? `${todayInfo.sent} of ${todayInfo.total} due today sent` : `${list.length} open`}` : "▼ Hide the list (see the map)"}
+        <aside className={`fc-bids-list is-${listSize}${listCollapsed ? " is-collapsed" : ""}`} data-size={listSize} style={listRoom && !listCollapsed ? { height: `${Math.round(listSize === "full" ? listRoom : Math.max(Math.min(200, listRoom * 0.6), listRoom * 0.5))}px`, maxHeight: `${Math.round(listRoom)}px` } : undefined} aria-label="Invitations to bid" data-hpd-smoke="fc-bids-list">
+          <button type="button" className="fc-bids-handle" data-hpd-smoke="fc-bids-collapse" aria-label={listSize === "full" ? "Make the list smaller" : "Show more of the list"}
+            onClick={() => setListSize((v) => (v === "peek" ? "half" : v === "half" ? "full" : "half"))}
+            onPointerDown={(e) => { dragRef.current = { y: e.clientY, size: listSize }; try { (e.currentTarget as HTMLButtonElement).setPointerCapture(e.pointerId); } catch { /* old browser */ } }}
+            onPointerCancel={() => { dragRef.current = null; }}
+            onPointerUp={(e) => {
+              const d = dragRef.current; dragRef.current = null;
+              if (!d || Math.abs(e.clientY - d.y) < 24) return; // a tap: onClick handles it
+              e.preventDefault();
+              const order = ["peek", "half", "full"] as const;
+              const step = e.clientY < d.y ? 1 : -1;
+              setListSize(order[Math.min(2, Math.max(0, order.indexOf(d.size) + step * (Math.abs(e.clientY - d.y) > 180 ? 2 : 1)))]);
+              (e.currentTarget as HTMLButtonElement).dataset.dragged = "1";
+            }}
+            onClickCapture={(e) => { const t = e.currentTarget as HTMLButtonElement; if (t.dataset.dragged) { delete t.dataset.dragged; e.stopPropagation(); e.preventDefault(); } }}>
+            <i className="fc-bids-grip" aria-hidden="true" />
+            {listCollapsed ? `▲ ${list.length} invitation${list.length === 1 ? "" : "s"}${todayInfo.total ? ` · ${todayInfo.sent} of ${todayInfo.total} due today sent` : checklist.todo.length ? ` · ${checklist.todo.length} to bid` : ""}` : listSize === "half" ? "▲ Pull up for the whole list" : "▼ Smaller (see the map)"}
           </button>
+          {!listCollapsed ? <button type="button" className="fc-bids-tomap" data-hpd-smoke="fc-bids-peek" onClick={() => setListSize("peek")}>🗺 Map</button> : null}
           {checklist.rows.length ? (
             <section className={`fc-checklist${checklistOpen ? "" : " is-closed"}`} data-hpd-smoke="fc-checklist">
               <button type="button" className="fc-checklist-head" data-hpd-smoke="fc-checklist-toggle" aria-expanded={checklistOpen} onClick={() => setChecklistOpen((v) => { const next = !v; try { localStorage.setItem(`hpd-checklist-${today}`, next ? "open" : "closed"); } catch {} return next; })}>

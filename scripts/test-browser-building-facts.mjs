@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
+import { openBidList } from "./bids-test-helpers.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
@@ -36,6 +37,7 @@ try {
   await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load", timeout: 180000 });
   await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 50, null, { timeout: 120000 });
   await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
+  await openBidList(page);
   const list = page.locator('[data-hpd-smoke="fc-bids-list"]');
   await list.locator("ol > li > button:first-child").first().waitFor({ timeout: 20000 });
   // Pick a bid whose description names a door or glass so matching violations show.

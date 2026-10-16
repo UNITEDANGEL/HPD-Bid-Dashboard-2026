@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
+import { openBidList } from "./bids-test-helpers.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const fetched = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();
@@ -26,6 +27,7 @@ try {
     const pdfLoads = [];
     page.on("request", (r) => { if (/\/api\/private\/itb\//.test(r.url())) pdfLoads.push(r.url()); });
     await page.goto(`${baseUrl}/map/?bids=1`, { waitUntil: "load", timeout: 180000 });
+    await openBidList(page);
     // Drawn ahead: page pictures appear on the rows without opening anything.
     await page.waitForFunction(() => document.querySelectorAll('[data-hpd-smoke="fc-bid-thumb"]').length >= 2, null, { timeout: 90000 });
     const thumbs = await page.locator('[data-hpd-smoke="fc-bid-thumb"]').count();

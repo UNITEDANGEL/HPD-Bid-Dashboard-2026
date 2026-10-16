@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
 import { routePrivate } from "./private-route-for-tests.mjs";
+import { openBidList } from "./bids-test-helpers.mjs";
 import { loadLib } from "./daily-report.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
@@ -55,17 +56,21 @@ try {
     assert.equal(await page.locator('[data-hpd-smoke="fc-notices-open"]').getAttribute("aria-pressed"), "false", `${where}: Show all jobs closes the notices`);
     // Bids: open, second tap closes.
     await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
+    await openBidList(page);
     await page.locator('[data-hpd-smoke="fc-bids-list"] li').first().waitFor({ timeout: 20000 });
     await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
+    await openBidList(page);
     await page.waitForFunction(() => !document.querySelector('[data-hpd-smoke="fc-bids-list"]'), null, { timeout: 5000 });
     // Notices from the bids screen.
     await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
+    await openBidList(page);
     await page.locator('[data-hpd-smoke="fc-bids-list"] li').first().waitFor({ timeout: 20000 });
     await page.locator('[data-hpd-smoke="fc-notices-open"]').click();
     await page.locator('[data-hpd-smoke="fc-notices-sheet"]').waitFor({ timeout: 5000 });
     await page.locator('[data-hpd-smoke="fc-notices-sheet"] header button[aria-label="Close"]').click();
     // An open bid: earlier jobs at the building, then Map goes back to the map.
     if (!(await page.locator('[data-hpd-smoke="fc-bids-list"]').count())) await page.locator('[data-hpd-smoke="fc-bids-open"]').click();
+    await openBidList(page);
     await page.locator('[data-hpd-smoke="fc-bids-list"] li').first().waitFor({ timeout: 20000 });
     if (withHistory) {
       await page.locator('[data-hpd-smoke="fc-bids-list"] ol > li', { hasText: withHistory.omo }).first().locator("button").first().click();

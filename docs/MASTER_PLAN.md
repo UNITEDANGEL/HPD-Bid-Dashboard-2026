@@ -231,7 +231,9 @@ Done 16 Oct (same day):
    per job, separate from rejection notices; show which ones wait on my answer.
 3. **Map buttons hidden behind "Today's route"** on shorter iPhone screens: fix. (Done: the route bar stops
    short of the button column; buttons shrink on short screens; test-browser-buttons-visible at 4 sizes.)
-4. **Bids open on the map first**, the list as a half-height panel I can pull up / down.
+4. **Bids open on the map first**, the list as a half-height panel I can pull up / down. (Done: compact header;
+   the list opens as a bar, tap / pull up = half, pull again = whole list, 🗺 Map folds it; pins fit the map you
+   can see, also sideways. test-browser-bids-panel.)
 5. **Invitation card like the awarded job card**: everything in one card, no duplicate information, less
    scrolling, with the building's picture.
 
