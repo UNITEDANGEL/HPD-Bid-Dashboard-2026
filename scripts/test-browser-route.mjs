@@ -5,6 +5,7 @@
 // Needs the app running. BASE_URL defaults to http://localhost:3000.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const realRouting = process.env.REAL_ROUTING === "1";
@@ -12,6 +13,7 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 let routingCalls = 0;
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await routePrivate(context); // tenant data / invitation PDFs via the private route
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (route) => route.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   await context.route(/router\.project-osrm\.org/, async (route) => {
     routingCalls += 1;

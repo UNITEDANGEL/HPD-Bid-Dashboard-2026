@@ -23,6 +23,8 @@ jobs:
   deploy:
     runs-on: ubuntu-24.04
     env:
+      # Tests open the encrypted tenant data / invitation PDFs the way the signed-in route does.
+      HPD_PRIVATE_DATA_KEY: ${{ secrets.HPD_PRIVATE_DATA_KEY }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       NEXT_PUBLIC_MAPTILER_KEY: ${{ secrets.NEXT_PUBLIC_MAPTILER_KEY }}
@@ -127,6 +129,7 @@ jobs:
           node scripts/test-building-bids.mjs
           node scripts/test-private-data.mjs
           node scripts/test-bid-checklist.mjs
+          node scripts/test-privatize.mjs
           node scripts/test-master-file.mjs
           node scripts/test-bid-fax-server.mjs
           node cloudflare-timer/test-timer.mjs
@@ -157,6 +160,7 @@ jobs:
           BASE_URL=http://localhost:3000 node scripts/test-browser-correction.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-landscape.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-checklist.mjs
+          BASE_URL=http://localhost:3000 node scripts/test-browser-privacy.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-followup.mjs
           BASE_URL=http://localhost:3000 node scripts/test-browser-paperwork-lock.mjs
 

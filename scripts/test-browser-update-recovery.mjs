@@ -2,11 +2,13 @@
 // until reloaded by hand. Now it reloads by itself (at most twice in 5 minutes) and loads the jobs.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
+  await routePrivate(context); // tenant data / invitation PDFs via the private route
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   // 1. One app file is missing on the first load only.
   let missing = "";

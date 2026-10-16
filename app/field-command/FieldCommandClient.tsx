@@ -16,6 +16,7 @@ import { jobPriority, maturityDate, matchesAwardLookback, JOB_DATE_FIELDS, JobDa
 import { fieldStatusLabel } from "../../lib/field-status";
 import { lockedMessage, paperworkLock } from "../../lib/paperwork-lock";
 import { jobStages, nextStep } from "../../lib/job-stages";
+import { loadPrivate, privateDocUrl, withPrivate } from "../../lib/private-data";
 import { listCorrections, removeCorrection, type SavedCorrection } from "../../lib/correction-store";
 import { followUpOf, followUpReport, recoveredStatus, paperworkRejections, type FollowUp, type PipPayment, type HpdJobStatus, type HpdRequest, type SentPaperwork } from "../../lib/job-followup";
 import { JOB_QUEUES, jobQueue, matchesJobQueue, visitState } from "../../lib/job-queue";
@@ -752,6 +753,8 @@ export default function FieldCommandClient() {
   const [followFilter, setFollowFilter] = useState<"" | "notices" | "hpd-asked" | "overdue" | "due-week" | "recent" | "sent" | "hpd-closed">("");
   // The HPD notices layer: jobs with rejected paperwork or an open HPD request, on the map and in a list.
   const [noticesOpen, setNoticesOpen] = useState(false);
+  // Tenant names / phones are private: null while loading, false when this phone isn't signed in with Google.
+  const [privateOk, setPrivateOk] = useState<boolean | null>(null);
   // Corrected paperwork saved on this phone to print and sign in ink (lib/correction-store.ts).
   const [toPrint, setToPrint] = useState<SavedCorrection[]>([]);
   const [printArmed, setPrintArmed] = useState("");
@@ -1028,7 +1031,7 @@ export default function FieldCommandClient() {
     }
     const entry = itbManifestRef.current?.[fileName] || {};
     const page = Number(entry.page || 3) || 3;
-    setItbPage({ id: jobId(job), fileName, image: entry.pageImage || "", pdf: entry.pdf || `/documents/itb/${encodeURIComponent(fileName)}`, page, failed: false });
+    setItbPage({ id: jobId(job), fileName, image: privateDocUrl(entry.pageImage || ""), pdf: privateDocUrl(entry.pdf || `/documents/itb/${encodeURIComponent(fileName)}`), page, failed: false });
   }
   function closePackageSheet() {
     const sheet = packageSheet;
@@ -1110,11 +1113,18 @@ export default function FieldCommandClient() {
     let loading = false;
     let latestRows: JobRecord[] | null = null;
     let serverOverrides: Record<string, JobRecord> = {};
+    // Tenant names / phones come from the signed-in private route (not the public job file).
+    let privateJobs: Record<string, Record<string, unknown>> | null = null;
+    loadPrivate().then((bundle) => {
+      setPrivateOk(Boolean(bundle));
+      privateJobs = bundle?.jobs || null;
+      if (privateJobs && latestRows) { latestRows = withPrivate(latestRows, privateJobs); applyOverrides(); }
+    });
     function showRows(data: unknown) {
       const body = data as { jobs?: unknown; data?: unknown; records?: unknown } | unknown[];
       const rows = Array.isArray(body) ? body : body?.jobs || body?.data || body?.records;
       if (!Array.isArray(rows)) throw new Error("Invalid job response");
-      latestRows = withTestJob(rows as JobRecord[]);
+      latestRows = withTestJob(withPrivate(rows as JobRecord[], privateJobs));
       setJobsLoadFailed(false);
       applyOverrides();
     }
@@ -3231,7 +3241,7 @@ export default function FieldCommandClient() {
                   </div>
                   <div className="jc-fact jc-fact-wide">
                     <small>Tenant</small>
-                    <strong>{tenant.name || (tenant.phone ? "Name not listed" : "Not listed")}</strong>
+                    <strong data-hpd-smoke="jc-tenant">{tenant.name || (tenant.phone ? "Name not listed" : privateOk === false ? "Private: sign in with Google (Storage page) to see" : "Not listed")}</strong>
                     {tenant.phone ? <span>{tenant.phone} <a className="fc-call-btn" href={`tel:${tenant.phone}`}>Call</a></span> : tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim() ? <span>{tenant.summary.replace(tenant.name, "").replace(/^\s*·\s*/, "").trim()}</span> : null}
                   </div>
                 </div>

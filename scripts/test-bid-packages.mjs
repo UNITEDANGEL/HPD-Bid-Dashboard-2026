@@ -2,6 +2,7 @@
 // PDF: the price on page 1, page 2 and the Work Description Form, company / phone / date on page 1,
 // the page 3 stamp, the signature and the debris line on the last page, and no page lost.
 import fs from "node:fs";
+import { readPrivateFile } from "./private-files.mjs"; // invitation PDFs are kept encrypted
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
@@ -21,7 +22,7 @@ for (const [i, bid] of bids.entries()) {
   const price = 375 + i * 37.5;
   const priceText = price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   try {
-    const out = await fillBidPackage(fs.readFileSync(path.join(root, "public", "documents", "itb", bid.itbFile)), bid, price);
+    const out = await fillBidPackage(readPrivateFile("itb", bid.itbFile), bid, price);
     const pdf = await pdfjs.getDocument({ data: new Uint8Array(out), useSystemFonts: true, verbosity: 0 }).promise;
     const text = async (n) => (await (await pdf.getPage(n)).getTextContent()).items.map((x) => x.str).join(" ");
     const [p1, p2, last] = [await text(1), await text(2), await text(pdf.numPages)];
@@ -45,7 +46,7 @@ assert.deepEqual(problems, [], `bid packages with problems:\n${problems.join("\n
 // page 1, page 2 and the work form, for every current invitation.
 const revisedProblems = [];
 for (const bid of bids) {
-  const out = await fillBidPackage(fs.readFileSync(path.join(root, "public", "documents", "itb", bid.itbFile)), bid, 1100, { previousPrice: 1250, count: 1, date: "2026-10-12" });
+  const out = await fillBidPackage(readPrivateFile("itb", bid.itbFile), bid, 1100, { previousPrice: 1250, count: 1, date: "2026-10-12" });
   const pdf = await pdfjs.getDocument({ data: new Uint8Array(out), useSystemFonts: true, verbosity: 0 }).promise;
   const text = async (n) => (await (await pdf.getPage(n)).getTextContent()).items.map((x) => x.str).join(" ");
   for (const [n, note] of [[1, "PRICE REVISED 1X ON 10/12/26"], [2, "REV. 1X 10/12/26"], [pdf.numPages, "REV. 1X 10/12/26"]]) {

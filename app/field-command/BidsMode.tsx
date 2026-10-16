@@ -17,6 +17,7 @@ import BuildingFacts from "./BuildingFacts";
 import ItbPages from "./ItbPages";
 import { buildingHistory } from "../../lib/building-bids";
 import { bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
+import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
 
 const NY_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
 const NY_TIME = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" });
@@ -200,8 +201,9 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
         .catch(() => setMarket([]));
     }
     if (bids) return;
-    fetch("/data/upcoming_bids.json", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+    Promise.all([fetch("/data/upcoming_bids.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))), loadPrivate()])
+      // HPD's notes with the tenant's contact come from the signed-in private route.
+      .then(([raw, priv]) => ({ ...raw, bids: Array.isArray(raw?.bids) ? withPrivate(raw.bids, priv?.bids) : raw?.bids }))
       .then((data) => { setBidsReadAt(String(data?.generatedAt || "")); setUnread(Array.isArray(data?.unread) ? data.unread : []); setBids(Array.isArray(data?.bids) ? data.bids.filter((b: UpcomingBid) => stillOpen(b)).sort(byUrgency) : []); })
       .catch(() => { setBids([]); setError("Couldn't load the invitations right now."); });
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -380,7 +382,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     if (!selected) return null;
     const [{ fillBidPackage }, pdf] = await Promise.all([
       import("../../lib/bid-fill"),
-      fetch(`/documents/itb/${encodeURIComponent(selected.itbFile)}`).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`invitation PDF: HTTP ${r.status}`)))),
+      fetch(itbPdfUrl(selected.itbFile)).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(`invitation PDF: HTTP ${r.status}`)))),
     ]);
     const previous = revisedFrom(records[selected.omo]);
     const rec = records[selected.omo];
@@ -632,7 +634,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               </div>
             ) : null}
             <section>
-              {selected.itbFile ? <ItbPages pdfUrl={`/documents/itb/${encodeURIComponent(selected.itbFile)}`} pageCount={selected.pages || 3} descPages={selected.descPages} /> : null}
+              {selected.itbFile ? <ItbPages pdfUrl={itbPdfUrl(selected.itbFile)} pageCount={selected.pages || 3} descPages={selected.descPages} /> : null}
               <div className="fc-bid-desc-head">
                 <h4>Job description</h4>
                 <button type="button" data-hpd-smoke="fc-bid-text-size" aria-label={bigText ? "Smaller text" : "Bigger text"} aria-pressed={bigText} onClick={() => setBigText((v) => { try { localStorage.setItem("hpd-bid-text", v ? "l" : "xl"); } catch {} return !v; })}>{bigText ? "A−" : "A+"}</button>
@@ -644,7 +646,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   <p className={`fc-bid-notes${bigText ? " is-xl" : ""}`} data-hpd-smoke="fc-bid-notes">{selected.notes}</p>
                 </>
               ) : null}
-              <a className="fc-bid-link" data-hpd-smoke="fc-bid-view" href={`/documents/itb/${encodeURIComponent(selected.itbFile)}`} target="_blank" rel="noreferrer">📄 View the invitation ({selected.pages} pages)</a>
+              <a className="fc-bid-link" data-hpd-smoke="fc-bid-view" href={itbPdfUrl(selected.itbFile)} target="_blank" rel="noreferrer">📄 View the invitation ({selected.pages} pages)</a>
             </section>
             <section className={`fc-bid-price fc-bid-step${step1Done ? " is-done" : ""}`} data-hpd-smoke="fc-step-1">
               <h4>{step1Done ? "✓" : "1"} · Your bid price{step1Done ? ` · saved ${money2(record!.price)}` : ""}</h4>

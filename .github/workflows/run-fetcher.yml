@@ -88,9 +88,17 @@ jobs:
       - name: Commit fetcher output
         if: always()
         shell: bash
+        env:
+          HPD_PRIVATE_DATA_KEY: ${{ secrets.HPD_PRIVATE_DATA_KEY }}
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+
+          # Tenant names / phones and HPD's invitation PDFs never go into the public repo: encrypt them first
+          # (scripts/privatize_public_data.mjs). If that fails, nothing is committed.
+          node scripts/privatize_public_data.mjs || { echo "Tenant data could not be privatized: nothing committed"; exit 1; }
+          git add public/private
+          git add -A public/documents/itb public/documents/itb-pages
 
           git add data/COA_Fetcher_2026.json data/fetcher_latest_status.json data/fetcher_latest_run.log public/data/COA_Fetcher_2026.json public/data/fetcher_latest_status.json public/data/fetcher_latest_run.log
 
@@ -104,7 +112,7 @@ jobs:
 
           # New jobs' ITB PDFs and page-3 pictures (job card "Job documents"), and the manifest that
           # points the app at them. Without these, recent jobs linked to files that didn't exist.
-          git add public/documents/itb public/documents/itb-pages public/data/itb_source_manifest.json
+          git add public/data/itb_source_manifest.json
 
           # Upcoming invitations to bid for the map (not awarded yet).
           if [ -f data/upcoming_bids.json ]; then

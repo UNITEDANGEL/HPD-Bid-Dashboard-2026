@@ -3,11 +3,13 @@
 // and Open Data are answered here. A failed lookup says so and "Try again" loads it; the bid still works.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await routePrivate(context); // tenant data / invitation PDFs via the private route
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   // Every bid open tomorrow, so the list always has them.
   const fetched = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();

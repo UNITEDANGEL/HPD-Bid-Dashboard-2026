@@ -4,6 +4,7 @@
 // Needs the app running (npm run dev, or the built site). BASE_URL defaults to http://localhost:3000.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 // Visits "m minutes ago", kept inside today (New York) even in the first hour after midnight.
@@ -28,6 +29,7 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 let statusServerCalls = 0;
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await routePrivate(context); // tenant data / invitation PDFs via the private route
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (route) => {
     statusServerCalls += 1;
     return route.fulfill({ json: { ok: true, overrides: {}, accepted: [] } });

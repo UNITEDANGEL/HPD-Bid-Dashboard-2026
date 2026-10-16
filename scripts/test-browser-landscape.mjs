@@ -4,6 +4,7 @@
 // bid shows the earlier jobs at the same building next to the price.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 import { loadLib } from "./daily-report.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
@@ -18,6 +19,7 @@ try {
   for (const [w, h] of [[844, 390], [390, 844]]) {
     const where = `${w}x${h}`;
     const context = await browser.newContext({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
+    await routePrivate(context); // tenant data / invitation PDFs via the private route
     await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
     await context.route(/\/data\/upcoming_bids\.json/, (r) => r.fulfill({ json: { ...fetched, bids } }));
     await context.route(/geosearch\.planninglabs\.nyc|data\.cityofnewyork\.us/, (r) => r.fulfill({ status: 503, body: "" }));

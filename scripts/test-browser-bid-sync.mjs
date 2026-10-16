@@ -3,6 +3,7 @@
 // show the iPhone's version, including when the server is busy at first. Nothing real is contacted.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 
 // A price far above what wins jobs like this asks for a second tap on Save (the app's warning).
 async function saveBid(scope) {
@@ -34,6 +35,8 @@ try {
   const newer = { ...base, price: 1987, sentPrice: 1987, status: "sent", sentAt: newerSentAt, savedAt: ago(61), attempts: 2, updatedAt: ago(59), revisions: [{ price: 1180, sentAt: older.sentAt }], reason: "Secure-Tech lock costs ~$2,000" };
 
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+
+  await routePrivate(context); // tenant data / invitation PDFs via the private route
   let calls = 0;
   const posted = {};
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => {

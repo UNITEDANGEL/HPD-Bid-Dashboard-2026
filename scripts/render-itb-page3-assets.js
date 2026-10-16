@@ -28,10 +28,21 @@ const descriptionPageOverrides = new Map([
 
 function fileExists(target) {
   try {
-    return fs.existsSync(target) && fs.statSync(target).isFile();
+    if (fs.existsSync(target) && fs.statSync(target).isFile()) return true;
   } catch {
     return false;
   }
+  return encryptedTwinExists(target);
+}
+
+// HPD's PDFs and page pictures are kept encrypted (public/private/itb[-pages]/<name>.enc,
+// scripts/privatize_public_data.mjs): an encrypted copy counts as the file being there.
+function encryptedTwinExists(target) {
+  const rel = path.relative(path.join(root, "public", "documents"), target);
+  if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) return false;
+  const [dir, ...rest] = rel.split(path.sep);
+  if (dir !== "itb" && dir !== "itb-pages") return false;
+  return fs.existsSync(path.join(root, "public", "private", dir, `${rest.join(path.sep)}.enc`));
 }
 
 function directoryExists(target) {

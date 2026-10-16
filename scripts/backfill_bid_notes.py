@@ -20,6 +20,8 @@ def main():
     done = 0
     for bid in data.get("bids", []):
         path = os.path.join(ROOT, "public", "documents", "itb", bid.get("itbFile", ""))
+        if not os.path.exists(path):  # kept encrypted on the site; the plain copy stays on this computer
+            path = os.path.join(ROOT, "data", "private-itb", "itb", bid.get("itbFile", ""))
         if not os.path.exists(path):
             continue
         with fitz.open(path) as doc:

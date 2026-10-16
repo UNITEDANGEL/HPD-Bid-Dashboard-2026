@@ -5,6 +5,7 @@
 // "Sent" badge; a failed fax offers Resend; My bids lists them. Needs the app running.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 
 // A price far above what wins jobs like this asks for a second tap on Save (the app's warning).
@@ -17,6 +18,7 @@ const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await routePrivate(context); // tenant data / invitation PDFs via the private route
   const saved = {};
   // The status server is busy on the first try (as it can be); the bids screen tries again. It holds a
   // bid saved on another phone, which must show in My bids.
@@ -118,7 +120,10 @@ try {
   // The whole description, word for word (numbered items and HPD's notes start new lines).
   const shownDesc = (await sheet.locator('[data-hpd-smoke="fc-bid-description"]').innerText()).trim();
   assert.equal(shownDesc.replace(/\s+/g, " "), bid.description.replace(/\s+/g, " ").trim(), "nothing missing or changed");
-  assert.equal((await page.request.get(baseUrl + await sheet.locator('[data-hpd-smoke="fc-bid-view"]').getAttribute("href"))).status(), 200);
+  // The invitation link opens HPD's PDF through the signed-in private route (fetched like the phone does).
+  const viewHref = await sheet.locator('[data-hpd-smoke="fc-bid-view"]').getAttribute("href");
+  assert.match(viewHref, /^\/api\/private\/itb\//);
+  assert.deepEqual(await page.evaluate(async (u) => { const r = await fetch(u); const b = new Uint8Array(await r.arrayBuffer()); return [r.status, String.fromCharCode(...b.slice(0, 5))]; }, viewHref), [200, "%PDF-"]);
   assert.equal(await sheet.locator('[data-hpd-smoke="fc-bid-review"]').count(), 0, "review comes after saving a price");
   // The price help says what it read in the job and how good the match is.
   assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-scope"]').innerText(), /What this job includes/);

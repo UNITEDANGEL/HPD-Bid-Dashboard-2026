@@ -2,11 +2,13 @@
 // its state and best price; "Bid $X" opens that bid with the best price filled in; it remembers closed.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block" });
+  await routePrivate(context); // tenant data / invitation PDFs via the private route
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   await context.route(/geosearch\.planninglabs\.nyc|data\.cityofnewyork\.us/, (r) => r.fulfill({ status: 503, body: "" }));
   const fetched = await (await fetch(`${baseUrl}/data/upcoming_bids.json`)).json();

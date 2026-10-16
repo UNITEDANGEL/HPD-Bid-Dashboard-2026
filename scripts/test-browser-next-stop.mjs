@@ -5,6 +5,7 @@
 // Needs the app running. BASE_URL defaults to http://localhost:3000.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
@@ -15,6 +16,7 @@ const route = ["EQ18710", "EQ15239", "EQ24465"];
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 async function cardFor(job, { withRoute }) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await routePrivate(context); // tenant data / invitation PDFs via the private route
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   await context.route(/router\.project-osrm\.org/, (r) => r.fulfill({ json: { code: "NoRoute" } }));
   await context.addInitScript(({ job, withRoute, finished, route, today }) => {

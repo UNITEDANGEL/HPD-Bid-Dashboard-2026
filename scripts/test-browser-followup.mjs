@@ -4,6 +4,7 @@
 // statuses), so the numbers come from the job file, HPD's status file and the paperwork-sent file.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 import { loadLib } from "./daily-report.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
@@ -18,6 +19,7 @@ const expected = followUpReport(jobs, hpdFor, sent.jobs, today, asked.jobs);
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await routePrivate(context); // tenant data / invitation PDFs via the private route
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
   const page = await context.newPage();
   const errors = [];

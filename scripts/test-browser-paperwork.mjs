@@ -6,6 +6,7 @@ import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 import { PDFDocument } from "pdf-lib";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
@@ -69,6 +70,7 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 const statusServerCalls = [];
 async function isolatedPage() {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await routePrivate(context); // tenant data / invitation PDFs via the private route
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (route) => {
     statusServerCalls.push(route.request().url());
     return route.fulfill({ json: { ok: true, overrides: {}, accepted: [] } });

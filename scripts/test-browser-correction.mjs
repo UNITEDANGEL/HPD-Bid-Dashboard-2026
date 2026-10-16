@@ -6,12 +6,14 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const OMO = process.env.CORRECTION_OMO || "EQ17038";
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: "block", timezoneId: "America/New_York" /* an iPhone in New York: the app's "today" */ });
+  await routePrivate(context); // tenant data / invitation PDFs via the private route
   const posts = [];
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => {
     if (r.request().method() === "POST") posts.push(JSON.parse(r.request().postData() || "{}"));

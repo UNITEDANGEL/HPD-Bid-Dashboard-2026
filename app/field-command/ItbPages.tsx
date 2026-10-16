@@ -70,7 +70,9 @@ export default function ItbPages({ pdfUrl, pageCount, descPages }: { pdfUrl: str
         {descriptionPages.length > 2 ? <span className="fc-itb-more" data-hpd-smoke="fc-itb-continues">continues on page {descriptionPages.slice(2).join(", ")}</span> : null}
         {pageCount > descriptionPages.length || all ? <button type="button" onClick={() => setAll((v) => !v)}>{all ? "Description pages" : "All pages"}</button> : null}
       </div>
-      {error ? <p className="fc-itb-msg">Couldn&apos;t show the pages ({error}). <a href={pdfUrl} target="_blank" rel="noreferrer">Open the PDF</a></p>
+      {error ? (/401/.test(error)
+          ? <p className="fc-itb-msg" data-hpd-smoke="fc-itb-signin">HPD&apos;s pages are private (they show the tenant). <a href="/storage/">Sign in with Google</a> on this phone to see them.</p>
+          : <p className="fc-itb-msg">Couldn&apos;t show the pages ({error}). <a href={pdfUrl} target="_blank" rel="noreferrer">Open the PDF</a></p>)
         : shown === null ? <p className="fc-itb-msg">Loading the invitation pages…</p>
         : !shown.length ? <p className="fc-itb-msg">No pages to show. <a href={pdfUrl} target="_blank" rel="noreferrer">Open the PDF</a></p>
         : (

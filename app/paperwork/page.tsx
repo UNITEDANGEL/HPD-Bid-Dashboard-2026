@@ -7,6 +7,7 @@ import { tenantContactInfo } from "../../lib/tenantContact";
 import { invoiceMaterials, materialsFromText, materialsToText, type InvoiceMaterial } from "../../lib/invoice-materials";
 import { drawInvoicePage } from "../../lib/invoice-pdf";
 import { saveCorrection } from "../../lib/correction-store";
+import { loadPrivate, withPrivate } from "../../lib/private-data";
 import { checkPaperwork } from "../../lib/paperwork-check";
 import { signatureBytes } from "../../lib/signature";
 import SignatureCard from "./SignatureCard";
@@ -1359,7 +1360,9 @@ export default function PaperworkPage() {
           if (total > 0) return { ...row, AwardAmount: total.toFixed(2), AwardAmountSource: "PIP" };
           return hpd > 0 ? { ...row, AwardAmount: hpd.toFixed(2), AwardAmountSource: "HPD" } : row;
         };
-        const rows = await applySavedWorkflowStatuses(withTestJob([...asArray(data), ...asArray(older).filter((j) => !have.has(String((j as Record<string, unknown>).OMO || "").toUpperCase()))].map(withAmount)));
+        // Tenant name / phone (the no-access affidavit's call dates need it) from the signed-in private route.
+        const priv = await loadPrivate();
+        const rows = await applySavedWorkflowStatuses(withTestJob(withPrivate([...asArray(data), ...asArray(older).filter((j) => !have.has(String((j as Record<string, unknown>).OMO || "").toUpperCase()))].map(withAmount) as Record<string, unknown>[], priv?.jobs)));
         if (!cancelled) setJobs(rows);
       } catch (error) {
         console.error(error);

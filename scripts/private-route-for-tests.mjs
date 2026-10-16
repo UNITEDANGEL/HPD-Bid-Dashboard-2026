@@ -1,0 +1,34 @@
+// Browser tests run against a plain static server (no Pages Functions): answer /api/private/* the way the
+// signed-in route does (server/private-data.mjs), by decrypting public/private/*.enc with HPD_PRIVATE_DATA_KEY
+// (env in CI, data/private/HPD_PRIVATE_DATA_KEY.txt on the owner's PC). No key: the route answers 401, like a
+// phone that isn't signed in.
+import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
+
+const ROOT = process.cwd();
+function key() {
+  const file = path.join(ROOT, "data/private/HPD_PRIVATE_DATA_KEY.txt");
+  const text = process.env.HPD_PRIVATE_DATA_KEY || (fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "");
+  const k = Buffer.from(text.trim(), "base64");
+  return k.length === 32 ? k : null;
+}
+function open(file, k) {
+  const buf = fs.readFileSync(file);
+  const d = crypto.createDecipheriv("aes-256-gcm", k, buf.subarray(0, 12));
+  d.setAuthTag(buf.subarray(buf.length - 16));
+  return Buffer.concat([d.update(buf.subarray(12, buf.length - 16)), d.final()]);
+}
+
+export async function routePrivate(context) {
+  const k = key();
+  await context.route(/\/api\/private\//, (route) => {
+    if (!k) return route.fulfill({ status: 401, json: { error: "not signed in (test)" } });
+    const rel = decodeURIComponent(new URL(route.request().url()).pathname.replace(/^\/api\/private\//, ""));
+    const target = rel === "tenants" ? "tenants.json.enc" : rel.startsWith("itb/") ? `itb/${rel.slice(4)}.enc` : rel.startsWith("itb-page/") ? `itb-pages/${rel.slice(9)}.enc` : "";
+    const file = target && path.join(ROOT, "public", "private", target);
+    if (!file || rel.includes("..") || !fs.existsSync(file)) return route.fulfill({ status: 404, body: "Not found" });
+    const type = rel === "tenants" ? "application/json" : rel.endsWith(".png") ? "image/png" : "application/pdf";
+    return route.fulfill({ status: 200, contentType: type, body: open(file, k) });
+  });
+}

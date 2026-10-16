@@ -5,6 +5,7 @@
 // The status server is faked: nothing is sent.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = process.env.BASE_URL || "http://localhost:3000";
 const job = "EQ26843";
@@ -18,6 +19,7 @@ const locked = {
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 try {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  await routePrivate(context); // tenant data / invitation PDFs via the private route
   const posted = [];
   await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => {
     if (r.request().method() === "POST") posted.push(JSON.parse(r.request().postData() || "{}"));

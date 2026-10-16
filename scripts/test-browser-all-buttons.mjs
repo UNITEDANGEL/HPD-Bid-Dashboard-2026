@@ -5,6 +5,7 @@
 // that save steps change nothing real. BASE_URL defaults to http://localhost:3000.
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { routePrivate } from "./private-route-for-tests.mjs";
 
 const baseUrl = (process.env.BASE_URL || "http://localhost:3000").replace(/\/$/, "");
 const origin = new URL(baseUrl).origin;
@@ -14,6 +15,7 @@ const MISSING = /\b(undefined|NaN)\b|\[object Object\]/;
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+await routePrivate(context); // tenant data / invitation PDFs via the private route
 await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
 await context.route(/\/api\/drive\//, (r) => r.fulfill({ json: { configured: false, connected: false } }));
 await context.route(/gmail\.googleapis\.com|www\.googleapis\.com\/upload/, (r) => r.abort());

@@ -2,7 +2,8 @@
 // PDFs and the tenant contact fields. The fetcher stores them encrypted (AES-GCM, key
 // HPD_PRIVATE_DATA_KEY) under /private/...; this route decrypts them only for the signed-in owner.
 //   GET /api/private/itb/<file>.pdf   -> the invitation PDF
-//   GET /api/private/tenants          -> { "<OMO>": { TenantName, TenantPhone, ... } }
+//   GET /api/private/itb-page/<file>.png -> the page-3 picture
+//   GET /api/private/tenants          -> { jobs: { "<OMO>": { TenantName, TenantPhone, ... } }, bids: { ... } }
 // File format: 12-byte IV followed by the AES-GCM ciphertext (scripts/private_data.py writes it).
 import { signedInOwner } from "./drive-auth.mjs";
 
@@ -22,9 +23,14 @@ export async function handlePrivate(request, env, signedIn = signedInOwner) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/^\/api\/private\/?/, "");
   let asset = "", type = "";
-  const itb = /^itb\/([A-Za-z0-9_.-]+\.pdf)$/.exec(path);
-  if (itb) { asset = `/private/itb/${itb[1]}.enc`; type = "application/pdf"; }
-  else if (path === "tenants") { asset = "/private/tenants.json.enc"; type = "application/json"; }
+  let name = "";
+  try { name = decodeURIComponent(path); } catch { return new Response("Not found", { status: 404, headers: NO_STORE }); }
+  // HPD's file names: letters, digits, _ . - and a few with spaces / commas ("EO17794_... 141, MAC DONOUGH STREET.pdf").
+  const itb = /^itb\/([A-Za-z0-9_.,' -]+\.pdf)$/.exec(name);
+  const page = /^itb-page\/([A-Za-z0-9_.,' -]+\.png)$/.exec(name);
+  if (itb && !itb[1].includes("..")) { asset = `/private/itb/${encodeURIComponent(itb[1])}.enc`; type = "application/pdf"; }
+  else if (page && !page[1].includes("..")) { asset = `/private/itb-pages/${encodeURIComponent(page[1])}.enc`; type = "image/png"; }
+  else if (name === "tenants") { asset = "/private/tenants.json.enc"; type = "application/json"; }
   else return new Response("Not found", { status: 404, headers: NO_STORE });
   if (!env.HPD_PRIVATE_DATA_KEY) return new Response(JSON.stringify({ error: "Private data is not set up on the server." }), { status: 503, headers: { ...NO_STORE, "Content-Type": "application/json" } });
   if (!(await signedIn(request, env))) return new Response(JSON.stringify({ error: "Sign in with Google (Storage page) to see tenant details and invitation pages." }), { status: 401, headers: { ...NO_STORE, "Content-Type": "application/json" } });
