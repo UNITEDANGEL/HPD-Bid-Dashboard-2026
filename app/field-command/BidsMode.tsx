@@ -420,9 +420,22 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   // Bid calculator: your rates + extras (floors, locations, borough), lines changed for this job, +/- %.
   const [calcOverride, setCalcOverride] = useState<Record<string, number>>({});
   const [calcAdjust, setCalcAdjust] = useState(0);
+  // Filled out already (owner, 16 Oct): an invitation with no price yet opens at your price (My price when every
+  // line has a rate, else the best price, never under your minimum); saving it makes the bid document at once.
+  const [prefilled, setPrefilled] = useState<{ omo: string; why: string } | null>(null);
+  const [autoFill, setAutoFill] = useState(false);
   const [overrideEdit, setOverrideEdit] = useState<{ key: string; value: string } | null>(null);
   const calc = useMemo(() => calcPrice(summary, rates, calcContext(summary, scope.tasks, selected?.borough || ""), calcOverride, calcAdjust), [summary, rates, scope.tasks, selected?.borough, calcOverride, calcAdjust]);
   const myCalc = { total: calc.total, complete: calc.complete, missing: calc.missing };
+  useEffect(() => {
+    if (!selected || prefilled?.omo === selected.omo || String(draft).trim()) return;
+    if (currentRecord(selected, records)) return;
+    const best = help && help.prices.length >= 5 ? bestWithFloor(help, selFloor) : null;
+    const price = calc.complete && calc.total > 0 ? calc.total : best ? best.price : 0;
+    if (!price) return;
+    setDraft(String(price));
+    setPrefilled({ omo: selected.omo, why: calc.complete && calc.total > 0 ? "My price from your rates" : best?.floored ? "your minimum for this kind of work" : `the best price (wins ~${Math.round((best?.chance || 0) * 100)}%)` });
+  }, [selected, help, calc.complete, calc.total, draft, records, selFloor, prefilled]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setRateEdit({}); setNoBidAsk(false); setCalcOverride({}); setCalcAdjust(0); setOverrideEdit(null); }, [selected?.omo]);
   const markNoBid = async (reason: string | null) => {
     if (!selected) return;
@@ -474,6 +487,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     } as BidRecord;
     const what = previous && previous.price === draftValue ? `Reason saved: "${why || ""}"` : `Price saved ${money2(draftValue)}${why ? ` ("${why}")` : ""}`;
     await update(withLog(base, what, now));
+    setAutoFill(true); // the bid document is made right away (no separate Fill tap)
     setSavedFlash(Date.now());
     window.setTimeout(() => setSavedFlash(0), 6000);
     if (filled && filled.price !== draftValue) setFilled(null);
@@ -506,6 +520,13 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
       setBusy("");
     } catch (err) { setBusy(`Couldn't fill it: ${err instanceof Error ? err.message : String(err)}`); }
   }
+
+  useEffect(() => {
+    if (!autoFill || !record || !(record.price > 0) || record.status !== "saved") return;
+    if (filled && filled.price === record.price) { setAutoFill(false); return; }
+    setAutoFill(false);
+    void review();
+  }, [autoFill, record]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function send(line: FaxLine = "main") {
     if (!selected || !record || !filled || filled.price !== record.price) return;
@@ -795,6 +816,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 <span>$</span>
                 <input inputMode="decimal" aria-label="Bid price" data-hpd-smoke="fc-bid-price" placeholder="0.00" value={draft} disabled={sentLocked} onChange={(e) => setDraft(e.target.value)} />
               </label>
+              {prefilled?.omo === selected.omo && !record ? <p className="fc-bid-prefilled" data-hpd-smoke="fc-bid-prefilled">✨ Filled in: {prefilled.why}. Change it if you like, then tap Save: the bid document is made right away.</p> : null}
               {highPrice ? (
                 <div className="fc-bid-high" data-hpd-smoke="fc-bid-high" role="alert">
                   <b>⚠️ {money(draftValue)} will probably lose</b>

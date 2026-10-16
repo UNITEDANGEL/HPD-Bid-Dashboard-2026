@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Oct 16, 2026",
+      "title": "Invitations filled out already",
+      "items": [
+        "An invitation with no price opens with the price already in: My price from your rates, or the best price (never under your minimum), and says where it came from.",
+        "Saving the price makes the bid document right away, ready to review and send."
+      ]
+    },
+    {
+      "date": "Oct 16, 2026",
       "title": "Bids count on the map",
       "items": [
         "The Bids button always shows how many invitations are open, like Notices: red when some are due today, blue otherwise."

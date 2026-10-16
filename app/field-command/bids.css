@@ -596,3 +596,4 @@
 .fc-costs { padding: 0 12px; }
 /* The panel's Map button scrolls away with its bar (it sat on top of the tabs when the list was scrolled). */
 .fc-bids-tomap { position: static !important; margin: -42px 8px 6px auto !important; }
+.fc-bid-prefilled { margin: 4px 0 6px; color: #fde68a; font: 700 13.5px/1.4 system-ui; }
