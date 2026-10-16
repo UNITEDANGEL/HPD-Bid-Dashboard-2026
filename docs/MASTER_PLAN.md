@@ -164,6 +164,14 @@ the owner's tap. Dragon / ForexAgent is a separate program: never mixed in here.
 - One-screen fill order: look (Street View) -> read description -> price (best price shown) -> Fill ->
   check -> Send (two taps).
 
+## Done 16 Oct 2026: measurements from the description into the price
+- Glass pane sizes ("30”X26”", "34”X44”") -> glass sq ft; a past job with a different pane size is scaled
+  (power 0.3). Room / floor sizes in feet ("KITCHEN FLOOR 13 X 17") count as the repair area when no sq ft
+  is given. Tile sizes ("12 X 12 tiles") are ignored. The bid card shows e.g. "30×26″ glass · ~5.4 sq ft".
+- Backtest on all awards since April: 937 -> 938 wins, $903,701 -> $907,109 (+$3,408); glass jobs 17 -> 18
+  wins; room-size jobs +$1,605. Power 0.5 did worse.
+- 72 of 3,700 past descriptions have a glass size, 16 a room size.
+
 ## Lost although our price was lower: what happened (reviewed 16 Oct 2026)
 9 bids (Sept 10 - Oct 8) lost at a price at or under the winner's (scripts/analyze_lost_bids.py, Gmail
 fax records; private details in data/private/lost_bids_review.json):
@@ -269,7 +277,6 @@ Collected from the owner's requests; every change is checked against these.
 ## Next on the plan
 - Invitation pages: load faster (keep the drawn pages on the phone) and show them in the bid list too.
 - Notices: per-notice preview of HPD's own email/PDF inside the app (not only the Gmail link).
-- Measurements read from the description ("30x26 glass", "TOTAL WINDOWS = 3") into the price.
 - Correction dates filled in automatically from the paperwork originally sent (Sent mail PDFs), so older
   jobs don't need dates typed by hand.
 - One fax for several bids due today (the sitting covers the one-after-another part).

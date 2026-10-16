@@ -76,6 +76,8 @@ try {
     await full.locator('[data-hpd-smoke="fc-itb-close"]').click();
     assert.equal(await full.count(), 0);
   }
+  // A glass size in the description shows as a measurement chip (ER07908: 30x26 fire-rated glass).
+  if (/30”\s*X\s*26”/i.test(pick.description)) assert.match(await sheet.locator('[data-hpd-smoke="fc-bid-glass"]').innerText(), /30×26″ glass · ~5\.4 sq ft/);
   // Fits the iPhone width.
   const overflow = await page.evaluate(() => { const b = document.querySelector('[data-hpd-smoke="fc-bldg"]'); return b.scrollWidth - b.clientWidth; });
   assert.ok(overflow <= 1, `building box overflows by ${overflow}px`);

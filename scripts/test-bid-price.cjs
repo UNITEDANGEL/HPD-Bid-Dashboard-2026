@@ -181,4 +181,12 @@ assert.equal(er07755.doors, 10);
 assert.equal(er07755.windows, 0);
 // Real windows keep their count.
 assert.equal(readScope('1) REPLACE BROKEN GLASS AT LOWER SASH 2) REPLACE SASH CORD. TOTAL WINDOWS = 2').windows, 2);
-console.log('PASS bid price help: reads the whole description (work items, doors, windows, repair and paint sq ft, tasks), matches the same mix of work, adjusts for size, flags work with no history; bid package text');
+// Measurements: glass pane sizes in inches -> glass sq ft; a room size in feet -> repair area; tile sizes ignored.
+const glassJob = readScope('PROPERLY REPLACE THE DEFECTIVE FIRE RATED GLASS ( APPROX. 30”X26”) AND RETURN THE DOOR TO PROPER WORKING ORDER');
+assert.equal(glassJob.glassSqft, 5.4);
+assert.match(glassJob.summary, /5\.4 sq ft of glass \(30×26 in glass\)/);
+assert.equal(readScope('REPLACE 12 X 12 CERAMIC TILES AT KITCHEN FLOOR').glassSqft, 0);
+assert.equal(readScope('REPLACE 12 X 12 CERAMIC TILES AT KITCHEN FLOOR').repairSqft, 0, 'a tile size is not an area');
+assert.equal(readScope('AT KITCHEN FLOOR 13 X 17 INSTALL NEW VINYL TILES').repairSqft, 221);
+assert.equal(readScope('REMOVE 36 SQ FT OF DEFECTIVE PLASTER AT KITCHEN WALL 6 X 6').repairSqft, 36, 'given sq ft wins over a room size');
+console.log('PASS bid price help: reads the whole description (glass pane sizes, room sizes, work items, doors, windows, repair and paint sq ft, tasks), matches the same mix of work, adjusts for size, flags work with no history; bid package text');

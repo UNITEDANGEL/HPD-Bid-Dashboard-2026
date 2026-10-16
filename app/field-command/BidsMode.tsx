@@ -714,6 +714,8 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                   {!scope.labels.length ? <li>general repair</li> : null}
                   {scope.doors ? <li className="is-size">{scope.doors} door{scope.doors > 1 ? "s" : ""}</li> : null}
                   {scope.windows ? <li className="is-size">{scope.windows} window{scope.windows > 1 ? "s" : ""}</li> : null}
+                  {scope.glassSqft ? <li className="is-size" data-hpd-smoke="fc-bid-glass">{scope.sizes.filter((x) => x.includes("glass")).map((x) => x.replace(" in glass", "″")).join(" + ")} glass · ~{scope.glassSqft} sq ft</li> : null}
+                  {scope.sizes.some((x) => x.endsWith("ft")) ? <li className="is-size">{scope.sizes.filter((x) => x.endsWith("ft")).join(" + ")}</li> : null}
                   {scope.repairSqft ? <li className="is-size">~{scope.repairSqft} sq ft repair</li> : null}
                   {scope.paintSqft ? <li className="is-size">~{scope.paintSqft} sq ft paint</li> : null}
                   {scope.tasks > 1 ? <li className="is-size">{scope.tasks} separate tasks</li> : null}

@@ -6,7 +6,7 @@
 // A past awarded job: yours (won) or another contractor's. HPD awards the low bid, so the amount is
 // the price it took to win that job.
 export type PricedJob = { id: string; description: string; amount: number; address?: string; date?: string; won?: boolean };
-export type JobScope = { items: string[]; labels: string[]; doors: number; windows: number; sqft: number; paintSqft: number; repairSqft: number; cubicYards: number; tasks: number; summary: string };
+export type JobScope = { items: string[]; labels: string[]; doors: number; windows: number; sqft: number; paintSqft: number; repairSqft: number; cubicYards: number; tasks: number; glassSqft: number; sizes: string[]; summary: string };
 export type PriceHelp = {
   count: number; low: number; middle: number; high: number;
   scope: JobScope;
@@ -144,6 +144,39 @@ function countAfter(text: string, noun: string) {
   return best;
 }
 
+// Measurements written as width x height: a glass pane "30”X26”" (inches) or a room / floor "13 X 17" (feet).
+// Glass area is added up across panes (a 48x48 pane isn't priced like a 12x12 one); a room size counts as the
+// repair area when the job gives no square feet. Tile sizes ("12 x 12 tiles") are not areas.
+export function measurements(text: string) {
+  const re = /(\d{1,3}(?:\.\d+)?)\s*(["”″]|''|in\.?(?=\s)|inch(?:es)?|ft\.?|feet|'|’)?\s*(?:x|×|by)\s*(\d{1,3}(?:\.\d+)?)\s*(["”″]|''|in\.?(?=[\s,.;)]|$)|inch(?:es)?|ft\.?|feet|'|’)?/g;
+  let glass = 0, room = 0;
+  const sizes: string[] = [];
+  const seen = new Set<string>();
+  for (const m of text.matchAll(re)) {
+    const w = Number(m[1]), h = Number(m[3]);
+    if (!(w >= 4 && h >= 4 && w <= 144 && h <= 144)) continue;
+    const before = text.slice(Math.max(0, m.index! - 70), m.index);
+    const after = text.slice(m.index! + m[0].length, m.index! + m[0].length + 25);
+    const unit = (m[2] || m[4] || "").toLowerCase();
+    const feet = /ft|feet|'|’/.test(unit) && !/''/.test(unit);
+    const inches = /["”″]|''|in/.test(unit);
+    if (/^\s*(?:ceramic |vinyl |floor |wall )?tiles?/.test(after) || /tiles?\s*(?:\(|size)?\s*$/.test(before)) continue; // a tile size
+    const key = `${w}x${h}`;
+    if (/glass|pane|sash|window|lite|mirror|plexi|wire[d]? glass/.test(before) && !feet) {
+      if (seen.has(key + "g")) continue;
+      seen.add(key + "g");
+      glass += (w * h) / 144;
+      sizes.push(`${w}×${h} in glass`);
+    } else if (/floor|room|ceiling|wall|area|kitchen|bath|hall|roof/.test(before) && !inches && w <= 60 && h <= 60) {
+      if (seen.has(key + "r")) continue;
+      seen.add(key + "r");
+      room += w * h;
+      sizes.push(`${w}×${h} ft`);
+    }
+  }
+  return { glassSqft: Math.round(glass * 10) / 10, roomSqft: Math.round(room), sizes };
+}
+
 // Square feet, read the way a contractor prices it: area to paint/finish and repair area
 // (sheetrock, plaster, tile, glass), each added up across rooms. "Remove 36 sq ft ... install 36 sq ft"
 // is the same 36, counted once.
@@ -224,13 +257,16 @@ export function readScope(description: string): JobScope {
   const windowWork = /windows?|sash|glass|pane|window guard/.test(text.replace(/total[^.;=()\d]{0,22}windows?[^\d]{0,8}\d{1,2}/g, ""));
   if (windows > 0 && !windowWork && doors > 0) { doors = Math.max(doors, windows); windows = 0; }
   const area = squareFeet(text);
+  const measured = measurements(text);
+  if (!area.repair && !area.paint && measured.roomSqft) area.repair = measured.roomSqft; // "floor 13 x 17" with no sq ft given
   const sqft = Math.max(area.paint, area.repair);
   const tasks = Math.max(numberedTasks(text), 1);
   // Rubbish / debris removal: "approximately 5 cu of rubbish", "80 cu yds".
   const cy = [...text.matchAll(/(\d{1,4})\s*(?:cu\.?\s*(?:yds?|yards?|ft)?|cubic\s+(?:yds?|yards?))\b/g)].map((m) => Number(m[1]));
   const cubicYards = cy.length ? Math.max(...cy) : 0;
   const size = [doors > 0 ? `${doors} door${doors > 1 ? "s" : ""}` : "", windows > 0 ? `${windows} window${windows > 1 ? "s" : ""}` : "", area.repair > 0 ? `~${area.repair} sq ft repair area` : "", area.paint > 0 ? `~${area.paint} sq ft to paint` : "", cubicYards ? `~${cubicYards} cu yd` : "", tasks > 1 ? `${tasks} tasks` : ""].filter(Boolean);
-  return { items, labels, doors, windows, sqft, paintSqft: area.paint, repairSqft: area.repair, cubicYards, tasks, summary: [labels.join(" + ") || "general repair", ...size].join(" · ") };
+  if (measured.glassSqft) size.push(`~${measured.glassSqft} sq ft of glass (${measured.sizes.filter((x) => x.includes("glass")).join(", ")})`);
+  return { items, labels, doors, windows, sqft, paintSqft: area.paint, repairSqft: area.repair, cubicYards, tasks, glassSqft: measured.glassSqft, sizes: measured.sizes, summary: [labels.join(" + ") || "general repair", ...size].join(" · ") };
 }
 
 function quantile(sorted: number[], q: number) {
@@ -250,12 +286,15 @@ function sizeMatch(a: number, b: number) {
 // but not in proportion (one trip, one setup). Tested on your past awards: square-root scaling fits best.
 const UNIT_POWER = 0.5; // tested on past awards: higher made multi-door predictions worse
 const AREA_POWER = 0.3; // tested on past awards (0 / 0.2 / 0.3 / 0.5 / 0.7): 0.3 missed least
+// Glass by pane size (sq ft): bigger panes cost more. Set from the backtest (scripts in node_modules/.cache/hpd-bidtest).
+export const GLASS_POWER = { value: 0.3 };
 function sizeFactor(job: JobScope, past: JobScope) {
   const units = (s: JobScope) => Math.max(s.doors + s.windows, 1);
   let f = (units(job) / units(past)) ** UNIT_POWER;
   // Floors, sheetrock, paint, tile: a 450 sq ft job isn't priced like a 40 sq ft one. Rubbish: 5 vs 80 cu yd.
   if (AREA_POWER && job.sqft >= 20 && past.sqft >= 20) f *= (job.sqft / past.sqft) ** AREA_POWER;
   if (AREA_POWER && job.cubicYards && past.cubicYards) f *= (job.cubicYards / past.cubicYards) ** AREA_POWER;
+  if (GLASS_POWER.value && job.glassSqft && past.glassSqft) f *= (job.glassSqft / past.glassSqft) ** GLASS_POWER.value;
   return Math.min(Math.max(f, 0.3), 4);
 }
 
