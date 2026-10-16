@@ -248,6 +248,40 @@ Done 16 Oct (same day):
    text folded behind "Show HPD's text"; the old "What this job includes" list removed (The job replaces it);
    building facts, violations, earlier jobs and your bids there in one "🏢 The building" section below the price.)
 
+## Next level (owner, 16 Oct 2026, night): the plan + recommendations
+Owner: "keep upgrading this app until it looks perfect." Everything below is wanted; order is my recommendation.
+
+A. **Version on screen, every version saved.** At the bottom: "Version 2026.10.16 #42 · updated 4:10 PM · what's
+   new" (tap -> the list of changes in plain words). Every deploy is kept (git + Cloudflare keep each build;
+   a "What's new" file is written from each change). Recommendation: do this first, it's small and lets the
+   owner know where we stand after every update.
+B. **Bid calculator ("calculation mode") on every invitation.** The whole job read neatly on screen first (what,
+   where, how many locations, which floor / how many stories up, sq ft, doors, parts: "trace & locate leak + repair
+   · 2 locations · 3rd floor walk-up"), then a price built line by line from my rates (per sq ft / door / part /
+   location) + materials + labor + extras (stories without elevator, far borough, 2nd location), shown next to
+   the market's best price and its chance to win: "Does this sound right?" -> I raise / lower a line and it
+   recalculates. HPD's whole document stays one tap away to verify.
+C. **Materials & costs database** (my real costs, editable list, kept private): hollow metal door ~$500, hopper
+   door ~$300, hinges ~$15, door closer ~$30, locks, Secure Tech lock ~$1,000+, electric strike ~$150, tile /
+   sheetrock / paint per sq ft, labor per hour / per day, trip cost. Each job then shows estimated cost and
+   **profit (and %)** at my price and at the best price, and the stats show profit per kind of work.
+D. **Job history database** (built from what we have: awards, bids, notices, paperwork, payments): per job and per
+   building, everything in one place, searchable; per kind of work: my cost, my price, winning price, profit.
+E. **Notices flow finished** (see the rules below): rejections before/after with highlighted corrections on the
+   copy, signed COPY (emailed) + unsigned original (printed) made automatically, requests checked against what
+   was already sent, timers, suggested replies to approve, every kind obvious at a glance.
+F. **Map screen neat at iPhone size**: one compact top bar (search + one menu for days 15 / 30 / 45 / 60 / custom
+   and boroughs); every button glows / reacts when pressed; large clear text everywhere (jobs, invitations,
+   messages, previews).
+G. **Email from the app to anybody**, with "Send to me first" to check (done for the HPD note), then replies to
+   any HPD email and to tenants / landlords from the job card.
+
+My recommendations on top (owner asked "what else can we do"):
+- Profit per job after payment (PIP amount - my costs) so we know which work actually pays.
+- A weekly summary (Monday): bids sent / won, money waiting at HPD, rejections open, requests overdue.
+- Price alerts: when my price for a kind of work keeps losing (or keeps winning by a lot), say so.
+- Backups of my private lists (rates, costs, minimums) to my Google Drive, so a new phone has them.
+
 ## Owner's requests 16 Oct 2026 (night): four kinds, each with its own flow, preview, folder and timer
 Rules (owner's words, kept):
 - **Four different things, never mixed**: Rejections (paperwork I already sent, rejected for payment because of
