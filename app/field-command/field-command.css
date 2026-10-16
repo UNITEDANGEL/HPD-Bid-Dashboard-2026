@@ -2756,3 +2756,21 @@ button.fc-version-tag { pointer-events: auto; min-height: 24px; padding: 3px 9px
 .fc-change-progress li.is-done { color: #bbf7d0; }
 @media (prefers-reduced-motion: reduce) { .fc-change-working i { animation: none; } }
 .fc-change-pickup { color: #93c5fd; font: 700 12.5px system-ui; }
+
+/* Bigger, livelier map buttons (owner's request, 16 Oct): on taller phone screens the bubbles are larger; each has
+   a soft glow in its own color, pops when tapped and glows stronger while pressed (also Close out / 2nd try). */
+@media (min-height: 760px) and (orientation: portrait) {
+  .fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab) { width: 66px; }
+  .fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab) > svg { width: 54px !important; height: 54px !important; padding: 13px; }
+  .fc-app .fc-map-controls .fc-map-fab .fc-fab-label { font-size: 12px; line-height: 17px; }
+  .fc-work-fab > svg { width: 54px; height: 54px; padding: 13px; }
+}
+.fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab) > svg,
+.fc-work-fab > svg { box-shadow: 0 0 0 3px color-mix(in srgb, var(--fab) 30%, transparent), 0 3px 10px rgba(0, 0, 0, 0.3); }
+.fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab):active > svg,
+.fc-work-fab:active > svg { box-shadow: 0 0 0 6px color-mix(in srgb, var(--fab) 55%, transparent), 0 0 22px color-mix(in srgb, var(--fab) 80%, transparent); }
+.fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab):focus-visible > svg { outline: 3px solid #fff; outline-offset: 2px; }
+@keyframes fc-fab-pop { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
+.fc-app .fc-map-controls .fc-map-fab:not(.fc-visible-fab)[aria-pressed="true"] > svg,
+.fc-work-fab[aria-pressed="true"] > svg { animation: fc-fab-pop 0.28s ease-out; box-shadow: 0 0 0 4px #facc15, 0 0 18px color-mix(in srgb, var(--fab) 70%, transparent); }
+@media (prefers-reduced-motion: reduce) { .fc-app .fc-map-controls .fc-map-fab > svg, .fc-work-fab > svg { animation: none !important; } }

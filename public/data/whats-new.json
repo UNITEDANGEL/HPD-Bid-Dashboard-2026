@@ -3,6 +3,14 @@
   "versions": [
     {
       "date": "Oct 16, 2026",
+      "title": "Recommended price and bigger buttons",
+      "items": [
+        "Next to the price box: the recommended price with its chance to win (and My price if your rates cover the job). Tap Use, or type your own: the price is always your choice.",
+        "Bigger map buttons on taller screens; each glows in its color, pops when tapped and glows stronger while pressed."
+      ]
+    },
+    {
+      "date": "Oct 16, 2026",
       "title": "Bid form filled in when it opens",
       "items": [
         "Opening an invitation fills in the bid form for you: company, owner, address, phone, fax, dates and the job description. The price stays blank for you to type (no automatic price).",

@@ -826,6 +826,18 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 <span>$</span>
                 <input inputMode="decimal" aria-label="Bid price" data-hpd-smoke="fc-bid-price" placeholder="0.00" value={draft} disabled={sentLocked} onChange={(e) => setDraft(e.target.value)} />
               </label>
+              {!sentLocked && help && help.prices.length >= 5 ? (() => {
+                const best = bestWithFloor(help, selFloor);
+                const mineOk = calc.complete && calc.total > 0;
+                return (
+                  <div className="fc-bid-reco" data-hpd-smoke="fc-bid-reco">
+                    <span>💡 Recommended <b>{money(best.price)}</b> · wins about {Math.round(best.chance * 100)}%{best.floored ? " (your minimum)" : ""}</span>
+                    <button type="button" data-hpd-smoke="fc-bid-reco-use" onClick={() => pickPrice(String(best.price))}>Use</button>
+                    {mineOk ? <><span className="fc-bid-reco-mine">🧮 My price <b>{money(calc.total)}</b> · wins about {Math.round(winChance(help, calc.total) * 100)}%</span><button type="button" data-hpd-smoke="fc-bid-reco-mine" onClick={() => pickPrice(String(calc.total))}>Use</button></> : null}
+                    <small>You choose: tap Use or type your own price.</small>
+                  </div>
+                );
+              })() : null}
               {draftDoc?.omo === selected.omo && !record ? <p className="fc-bid-prefilled" data-hpd-smoke="fc-bid-prefilled">📄 The bid form is filled in: company, owner, address, phone, dates and the job description. Only your price is missing: type it and tap Save, and the bid document is made right away. <a href={draftDoc.url} target="_blank" rel="noreferrer" data-hpd-smoke="fc-bid-draft-doc">Open the filled form</a></p> : null}
               {highPrice ? (
                 <div className="fc-bid-high" data-hpd-smoke="fc-bid-high" role="alert">

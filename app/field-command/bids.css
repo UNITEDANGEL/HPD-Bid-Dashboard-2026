@@ -597,3 +597,10 @@
 /* The panel's Map button scrolls away with its bar (it sat on top of the tabs when the list was scrolled). */
 .fc-bids-tomap { position: static !important; margin: -42px 8px 6px auto !important; }
 .fc-bid-prefilled { margin: 4px 0 6px; color: #fde68a; font: 700 13.5px/1.4 system-ui; }
+
+/* Recommended price next to the price box (the owner chooses). */
+.fc-bid-reco { display: grid; grid-template-columns: 1fr auto; gap: 6px 8px; align-items: center; margin: 6px 0; padding: 8px 10px; border-radius: 12px; background: #1c1917; border: 1px solid #f59e0b88; color: #fef3c7; font: 600 14.5px/1.35 system-ui; }
+.fc-bid-reco b { color: #fde047; font-size: 16px; }
+.fc-bid-reco button { min-height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: #16a34a; color: #fff; font: 800 14px system-ui; }
+.fc-bid-reco button:active { transform: scale(0.96); }
+.fc-bid-reco small { grid-column: 1 / -1; color: #d6d3d1; font: 600 12.5px system-ui; }
