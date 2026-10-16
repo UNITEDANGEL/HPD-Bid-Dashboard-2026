@@ -131,7 +131,9 @@ jobs:
               git push origin main && break
               [ "$attempt" = 5 ] && exit 1
               sleep $((attempt * 5))
-              git pull --rebase -X theirs origin main
+              # --autostash: other generated files left unstaged used to stop the pull ("cannot pull with rebase:
+              # You have unstaged changes"), and the whole fetch was lost (5 of 30 runs on 10/15).
+              git pull --rebase --autostash -X theirs origin main || { git rebase --abort 2>/dev/null; git stash pop 2>/dev/null; true; }
             done
           fi
 

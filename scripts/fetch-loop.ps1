@@ -7,7 +7,8 @@ $ErrorActionPreference = "Continue"
 $me = "HPD-fetch-loop"
 $mutex = New-Object System.Threading.Mutex($false, "Global\$me")
 if (-not $mutex.WaitOne(0)) { exit 0 }
-$script = "D:\dev\HPD-Bid-Dashboard-2026\scripts\fetch-now.ps1"
+# The project folder this script is in (moved from D: to C: on 2026-10-16 when D: kept failing).
+$script = Join-Path $PSScriptRoot "fetch-now.ps1"
 while ($true) {
   if (Test-Path $script) {
     & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script *>> (Join-Path $env:LOCALAPPDATA "hpd\task-output.log")

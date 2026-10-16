@@ -27,7 +27,7 @@ try {
 # Bid faxes: confirm from HumbleFax's emails on this PC (only reads Gmail while you're bidding).
 $ErrorActionPreference = "Continue"
 try {
-  Push-Location "D:\dev\HPD-Bid-Dashboard-2026"
+  Push-Location (Split-Path $PSScriptRoot -Parent)
   $out = python scripts/check_bid_faxes.py --days 3 2>&1 | Select-String -Pattern "^Bid faxes|^  E[QR]" | ForEach-Object { $_.Line }
   Pop-Location
   if ($out) { Log ("faxes: " + ($out -join " | ")) }
