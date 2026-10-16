@@ -102,7 +102,11 @@ try {
   await tap("map: layers", '[aria-label="Toggle map style"]'); await tap("map: layers back", '[aria-label="Toggle map style"]');
   for (const chip of await page.locator(".fc-quick-chips button").all()) { if (await chip.isVisible().catch(() => false)) { checked.buttons += 1; await chip.click().catch(() => {}); await page.waitForTimeout(250); } }
   await scanText("map chips");
-  for (const pill of ['[data-hpd-smoke="fc-second-try"] button', '[data-hpd-smoke="fc-close-out"] button', '[data-hpd-smoke="fc-data-check"] button']) {
+  // Close out / 2nd try: round buttons that open a list sheet; "needs a check" is still a pill.
+  for (const [btn, sheet] of [['[data-hpd-smoke="fc-second-try"]', '[data-hpd-smoke="fc-second-try-sheet"]'], ['[data-hpd-smoke="fc-close-out"]', '[data-hpd-smoke="fc-close-out-sheet"]']]) {
+    if (await page.locator(btn).first().count()) { await tap(`map button ${btn}`, btn); await checkLinks(`list ${sheet}`); await tap(`list close ${sheet}`, `${sheet} header button[aria-label="Close"]`, 300); }
+  }
+  for (const pill of ['[data-hpd-smoke="fc-data-check"] button']) {
     if (await page.locator(pill).first().count()) { await tap(`map pill ${pill}`, pill); await checkLinks(`map pill ${pill}`); await tap(`map pill close ${pill}`, pill, 300); }
   }
   const menuButton = page.locator('[aria-label="Show map controls"], [aria-label*="menu" i]').first();

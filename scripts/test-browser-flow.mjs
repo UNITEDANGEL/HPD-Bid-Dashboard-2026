@@ -14,7 +14,14 @@ const BUTTONS = {
   notices: { tap: '[data-hpd-smoke="fc-notices-open"]', open: '[data-hpd-smoke="fc-notices-sheet"]', close: '[data-hpd-smoke="fc-notices-sheet"] header button[aria-label="Close"]' },
   follow: { tap: '[data-hpd-smoke="fc-follow-open"]', open: '[data-hpd-smoke="fc-follow-sheet"]', close: '[data-hpd-smoke="fc-follow-sheet"] header button' },
   bids: { tap: '[data-hpd-smoke="fc-bids-open"]', open: '[data-hpd-smoke="fc-bids-list"]' },
+  closeout: { tap: '[data-hpd-smoke="fc-close-out"]', open: '[data-hpd-smoke="fc-close-out-sheet"]', close: '[data-hpd-smoke="fc-close-out-sheet"] header button' },
+  secondtry: { tap: '[data-hpd-smoke="fc-second-try"]', open: '[data-hpd-smoke="fc-second-try-sheet"]', close: '[data-hpd-smoke="fc-second-try-sheet"] header button' },
 };
+// 3 jobs with a visit result saved (ready to close out) and 2 waiting for the 2nd try (one due), on this phone.
+const jobsFile = await (await fetch(`${baseUrl}/data/COA_Fetcher_2026.json`)).json();
+const seedOmos = jobsFile.filter((j) => j.OMO && !j.PackageApprovedAt).slice(40, 45).map((j) => j.OMO);
+const daysAgo = (d) => new Date(Date.now() - d * 86400000).toISOString();
+const seed = Object.fromEntries(seedOmos.map((o, i) => [o, i < 3 ? { OMO: o, FieldOutcome: "WORK_COMPLETED", WorkflowStatus: "WORK_COMPLETED" } : { OMO: o, FieldOutcome: "NO_ACCESS_1_WAITING_72H", NoAccessFirstAttemptAt: daysAgo(i === 3 ? 4 : 1) }]));
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 const report = [];
 try {
@@ -24,6 +31,7 @@ try {
     await routePrivate(context);
     await context.route(/hpd-status-worker\.[^/]+\.workers\.dev/, (r) => r.fulfill({ json: { ok: true, overrides: {}, accepted: [] } }));
     await context.route(/geosearch\.planninglabs\.nyc|data\.cityofnewyork\.us|router\.project-osrm|routing\.openstreetmap/, (r) => r.fulfill({ status: 503, body: "" }));
+    await context.addInitScript((s) => { if (!localStorage.getItem("hpd-job-workflow-overrides-v2")) localStorage.setItem("hpd-job-workflow-overrides-v2", JSON.stringify(s)); }, seed);
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
@@ -73,6 +81,24 @@ try {
         await backToMap();
       }
     }
+    // The two round buttons: counts, and the lists show the jobs.
+    await backToMap();
+    assert.equal(await page.locator('[data-hpd-smoke="fc-close-out-count"]').innerText(), "3");
+    assert.equal(await page.locator('[data-hpd-smoke="fc-second-try-count"]').innerText(), "2");
+    assert.equal(await page.locator(".fc-map-hints .fc-close-out, .fc-map-hints .fc-second-try").count(), 0, "no more bars across the map");
+    await page.locator(BUTTONS.closeout.tap).click();
+    assert.equal(await page.locator('[data-hpd-smoke="fc-close-out-sheet"] .fc-close-out-row').count(), 3);
+    assert.equal(await page.locator('[data-hpd-smoke="fc-close-out-package"]').count(), 3, "Package link on each");
+    await page.locator(BUTTONS.closeout.close).click();
+    await page.locator(BUTTONS.secondtry.tap).click();
+    assert.match(await page.locator('[data-hpd-smoke="fc-second-try-sheet"] header').innerText(), /2 2nd tries · 1 due now/);
+    // A job from the list opens its card (and the list closes).
+    await page.locator('[data-hpd-smoke="fc-second-try-sheet"] li button').first().click();
+    await page.locator("#fc-job-card").waitFor({ timeout: 8000 });
+    assert.equal(await isOpen("secondtry"), false);
+    assert.equal(await page.locator(".fc-work-fabs").count(), 0, "the round buttons hide behind a job card");
+    await page.goto(`${baseUrl}/map/?view=all&map=1`, { waitUntil: "load" });
+    await page.waitForFunction(() => document.querySelectorAll(".fc-pin, .leaflet-marker-icon").length > 50, null, { timeout: 120000 });
     // Notices: close the list (map still shows the notice jobs), tap Notices again -> the list opens.
     await backToMap();
     await page.locator(BUTTONS.notices.tap).click();
@@ -99,7 +125,7 @@ try {
     report.push(`${where}: ${pairs} button pairs (${direct} tapped directly, the rest via Close)`);
     await context.close();
   }
-  console.log(`PASS flow: every map button opens its screen alone, a second tap closes it, from every other screen it switches cleanly; Notices always opens the list, Show all jobs brings the jobs back; ${report.join("; ")}`);
+  console.log(`PASS flow: every map button opens its screen alone, a second tap closes it, from every other screen it switches cleanly; Close out (3) and 2nd try (2, 1 due) are round buttons whose lists open jobs; Notices always opens the list, Show all jobs brings the jobs back; ${report.join("; ")}`);
 } finally {
   await browser.close();
 }

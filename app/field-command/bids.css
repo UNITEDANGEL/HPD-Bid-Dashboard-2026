@@ -69,7 +69,7 @@
 .fc-bid-done a, .fc-bid-done button { min-height: 40px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 10px; border: 0; background: #16a34a; color: #fff; font: 800 14px system-ui; text-decoration: none; }
 
 /* While bids show: the job pills, Today's route and the current-job bar step aside. */
-.fc-app.fc-bids-mode :is(.fc-data-check, .fc-today-route, .fc-current-job, .fc-version-tag, .fc-search-row, .fc-borough-bar, .fc-quick-filters) { display: none !important; }
+.fc-app.fc-bids-mode :is(.fc-data-check, .fc-work-fabs, .fc-today-route, .fc-current-job, .fc-version-tag, .fc-search-row, .fc-borough-bar, .fc-quick-filters) { display: none !important; }
 .fc-map-fab.is-active { background: #f97316 !important; color: #fff !important; }
 
 /* Save price -> review -> send, fax status, tabs, My bids. */

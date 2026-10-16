@@ -221,6 +221,11 @@ Done 16 Oct (same day):
   price when every line has a rate; Stats -> Your rates (Remove). Kept on the phone (lib/my-rates.ts,
   scripts/test-browser-my-price.mjs).
 - Still to do: sync rates and minimums between phone and computer; stair treads / risers counted by step.
+- **Close out / 2nd try as buttons (owner, 16 Oct)**: the "N jobs ready to close out" and "N 2nd tries" bars
+  across the map are now two round buttons bottom left (count badges; 2nd try red when one is due); each
+  opens its list full screen (job -> its card, Package ->). Part of the one-screen-at-a-time flow.
+- **Test all (16 Oct)**: 60 unit tests + 21 browser tests pass, including the whole-app sweep
+  (test-browser-all-buttons: 17 pages, 75 links, 64 buttons, no missing-data text), now run on every deploy.
 
 ## Done 16 Oct 2026: your price vs the app's best price
 - Finding (1,547 of your faxed bids that HPD awarded, Nov 2025 - Oct 2026): your prices were a median 16%

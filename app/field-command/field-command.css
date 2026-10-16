@@ -2595,3 +2595,22 @@ html:has(.fc-app), body:has(.fc-app) { height: 100dvh; min-height: 0; overflow: 
 .fc-notice-meta span { color: #94a3b8; font: 600 12px system-ui; }
 .fc-notice-body { margin: 0 0 8px; white-space: pre-wrap; font: 600 13.5px/1.45 system-ui; color: #e2e8f0; }
 .fc-follow-paper.is-notice { display: block; width: 100%; margin-top: 6px; min-height: 40px; border: 0; border-radius: 10px; background: #7c3aed; color: #fff; font: 800 13.5px system-ui; text-align: center; }
+
+/* Ready to close out / 2nd tries: two round buttons bottom left, above "Today's route" (they were bars
+   across the map). Same look as the map buttons; tap opens the list full screen. */
+.fc-work-fabs { position: absolute; z-index: 1560; left: calc(12px + env(safe-area-inset-left)); bottom: calc(max(24px, env(safe-area-inset-bottom)) + 58px); display: flex; gap: 10px; pointer-events: none; }
+.fc-work-fab { --fab: #059669; pointer-events: auto; position: relative; width: 62px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0; border: 0; background: transparent; color: #fff; }
+.fc-work-fab.is-secondtry { --fab: #B45309; }
+.fc-work-fab > svg { width: 46px; height: 46px; padding: 11px; box-sizing: border-box; border-radius: 50%; background: var(--fab); color: #fff; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28); transition: transform 0.14s ease-out; }
+.fc-work-fab[aria-pressed="true"] > svg { border-color: #facc15; box-shadow: 0 0 0 3px #facc15, 0 2px 8px rgba(0, 0, 0, 0.28); }
+.fc-work-fab:active > svg { transform: scale(1.2); }
+.fc-work-fab .fc-fab-label { padding: 0 5px; border-radius: 6px; background: rgba(255, 255, 255, 0.92); color: #1f2937; font: 800 11px/16px system-ui, sans-serif; white-space: nowrap; }
+.fc-work-fab .fc-follow-badge { position: absolute; top: -4px; right: 0; border: 1.5px solid #fff; }
+.fc-work-list li.is-due b { color: #fca5a5; }
+.fc-app.fc-has-job .fc-work-fabs { display: none; }
+@media (orientation: landscape) and (max-height: 540px) and (pointer: coarse) {
+  .fc-work-fabs { bottom: calc(max(24px, env(safe-area-inset-bottom)) + 54px); }
+  .fc-work-fab > svg { width: 42px; height: 42px; padding: 10px; }
+}
+.fc-work-fab .fc-follow-badge { background: #1f2937; }
+.fc-work-fab .fc-follow-badge.is-rejected { background: #dc2626; }

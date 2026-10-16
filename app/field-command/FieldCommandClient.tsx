@@ -581,6 +581,22 @@ function NoticesIcon() {
   );
 }
 
+function CloseOutIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 3h7l5 5v13H7z" /><path d="M14 3v5h5" /><path d="M10 14l2 2 4-4" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /><path d="M12 15v2" />
+    </svg>
+  );
+}
+
 function FollowIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -1436,6 +1452,8 @@ export default function FieldCommandClient() {
     if (keep !== "agenda") setAgendaOpen(false);
     if (keep !== "follow") setFollowOpen(false);
     if (keep !== "summary") setSummaryOpen(false);
+    if (keep !== "closeout") setCloseOutOpen(false);
+    if (keep !== "secondtry") setSecondTryOpen(false);
     if (keep !== "route") setRouteCloseRequest((n) => n + 1);
     setSelectedJob(null);
     setFiltersOpen(false);
@@ -2657,6 +2675,21 @@ export default function FieldCommandClient() {
       <div className="fc-map-wrap">
         <div ref={mapNode} className={`fc-map-node ${darkTiles ? "is-dark" : ""}`} />
         {/* onTouchStart lets iPhone Safari show the pressed (zoomed) state with its callout before the tap lands. */}
+        {/* Jobs ready to close out and 2nd tries: two round buttons (bottom left) instead of bars across the map. */}
+        {(closeOutJobs.length || secondTryJobs.length) && !selectedJob ? (
+          <div className="fc-work-fabs" onTouchStart={() => undefined}>
+            {closeOutJobs.length ? (
+              <button type="button" className="fc-work-fab is-closeout" data-hpd-smoke="fc-close-out" aria-label="Ready to close out" aria-pressed={closeOutOpen} onClick={() => { if (closeOutOpen) { setCloseOutOpen(false); return; } closeScreens("closeout"); setCloseOutOpen(true); }}>
+                <CloseOutIcon /><span className="fc-fab-label">Close out</span><span className="fc-follow-badge" data-hpd-smoke="fc-close-out-count">{closeOutJobs.length}</span>
+              </button>
+            ) : null}
+            {secondTryJobs.length ? (
+              <button type="button" className="fc-work-fab is-secondtry" data-hpd-smoke="fc-second-try" aria-label="2nd tries" aria-pressed={secondTryOpen} onClick={() => { if (secondTryOpen) { setSecondTryOpen(false); return; } closeScreens("secondtry"); setSecondTryOpen(true); }}>
+                <LockIcon /><span className="fc-fab-label">2nd try</span><span className={`fc-follow-badge${secondTryJobs.some((row) => row.second.due) ? " is-rejected" : ""}`} data-hpd-smoke="fc-second-try-count">{secondTryJobs.length}</span>
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         <div className="fc-map-controls" onTouchStart={() => undefined}>
           <button
             type="button"
@@ -2747,49 +2780,6 @@ export default function FieldCommandClient() {
               </div>
             );
           })() : null}
-          {secondTryJobs.length && !selectedJob ? (
-            <div className="fc-data-check fc-second-try" data-hpd-smoke="fc-second-try">
-              <button type="button" className={`fc-map-hint ${secondTryJobs.some((row) => row.second.due) ? "fc-map-hint-warn" : ""}`} aria-expanded={secondTryOpen} onClick={() => { setSecondTryOpen((open) => !open); setCloseOutOpen(false); setDataCheckOpen(false); }}>
-                🔒 {secondTryJobs.length} 2nd tr{secondTryJobs.length === 1 ? "y" : "ies"}{secondTryJobs.some((row) => row.second.due) ? ` · ${secondTryJobs.filter((row) => row.second.due).length} due` : ""} {secondTryOpen ? "▴" : "▾"}
-              </button>
-              {secondTryOpen ? (
-                <ul className="fc-data-check-list">
-                  {secondTryJobs.map(({ job, second }) => (
-                    <li key={jobId(job)}>
-                      <button type="button" onClick={() => { setSecondTryOpen(false); openIssueJob(job); }}>
-                        <b>{jobId(job)}</b> <span>{jobAddress(job)}</span>
-                        <small>{second.due ? "Due now" : `From ${second.dueLabel}`} · 1st try {second.firstLabel}</small>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-          ) : null}
-          {closeOutJobs.length && !selectedJob ? (
-            <div className="fc-data-check fc-close-out" data-hpd-smoke="fc-close-out">
-              <button type="button" className="fc-map-hint" aria-expanded={closeOutOpen} onClick={() => { setCloseOutOpen((open) => !open); setDataCheckOpen(false); }}>
-                📋 {closeOutJobs.length} job{closeOutJobs.length === 1 ? "" : "s"} ready to close out {closeOutOpen ? "▴" : "▾"}
-              </button>
-              {closeOutOpen ? (
-                <ul className="fc-data-check-list">
-                  {closeOutJobs.map((job) => {
-                    const outcome = value(job, ["FieldOutcome", "fieldOutcome"]);
-                    return (
-                      <li key={jobId(job)} className="fc-close-out-row">
-                        <button type="button" onClick={() => openIssueJob(job)}>
-                          <b>{jobId(job)}</b> <span>{jobAddress(job)}</span>
-                          <small>{FIELD_OUTCOMES[outcome]}{isTestJob(jobId(job)) ? " · TEST" : ""}</small>
-                        </button>
-                        <a className="fc-close-out-go" data-hpd-smoke="fc-close-out-package" href={paperworkGenerateHref(jobId(job), outcome)} onClick={packageLinkClick(jobId(job), paperworkGenerateHref(jobId(job), outcome))}>Package →</a>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : null}
-            </div>
-          ) : null}
-
           {dataIssues.length && !selectedJob ? (
             <div className="fc-data-check" data-hpd-smoke="fc-data-check">
               <button type="button" className="fc-map-hint fc-map-hint-warn" aria-expanded={dataCheckOpen} onClick={() => { setDataCheckOpen((open) => !open); setCloseOutOpen(false); }}>
@@ -3442,6 +3432,52 @@ export default function FieldCommandClient() {
         history={bidHistory}
         onClose={() => setBidsOpen(false)}
       />
+      {closeOutOpen ? (
+        <div className="fc-package-sheet fc-summary-sheet fc-work-sheet" role="dialog" aria-label="Ready to close out" data-hpd-smoke="fc-close-out-sheet">
+          <header>
+            <button type="button" aria-label="Close" onClick={() => setCloseOutOpen(false)}>Close</button>
+            <strong>📋 {closeOutJobs.length} job{closeOutJobs.length === 1 ? "" : "s"} ready to close out</strong>
+          </header>
+          <div className="fc-summary-body">
+            <p className="fc-follow-note">Visit result saved, package not approved yet. Tap a job to open it, or Package to make the paperwork.</p>
+            <ul className="fc-data-check-list fc-work-list">
+              {closeOutJobs.map((job) => {
+                const outcome = value(job, ["FieldOutcome", "fieldOutcome"]);
+                return (
+                  <li key={jobId(job)} className="fc-close-out-row">
+                    <button type="button" onClick={() => { setCloseOutOpen(false); openIssueJob(job); }}>
+                      <b>{jobId(job)}</b> <span>{jobAddress(job)}</span>
+                      <small>{FIELD_OUTCOMES[outcome]}{isTestJob(jobId(job)) ? " · TEST" : ""}</small>
+                    </button>
+                    <a className="fc-close-out-go" data-hpd-smoke="fc-close-out-package" href={paperworkGenerateHref(jobId(job), outcome)} onClick={packageLinkClick(jobId(job), paperworkGenerateHref(jobId(job), outcome))}>Package →</a>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      ) : null}
+      {secondTryOpen ? (
+        <div className="fc-package-sheet fc-summary-sheet fc-work-sheet" role="dialog" aria-label="2nd tries" data-hpd-smoke="fc-second-try-sheet">
+          <header>
+            <button type="button" aria-label="Close" onClick={() => setSecondTryOpen(false)}>Close</button>
+            <strong>🔒 {secondTryJobs.length} 2nd tr{secondTryJobs.length === 1 ? "y" : "ies"}{secondTryJobs.some((row) => row.second.due) ? ` · ${secondTryJobs.filter((row) => row.second.due).length} due now` : ""}</strong>
+          </header>
+          <div className="fc-summary-body">
+            <p className="fc-follow-note">No access on the 1st try: the 2nd try is allowed 3 days later.</p>
+            <ul className="fc-data-check-list fc-work-list">
+              {secondTryJobs.map(({ job, second }) => (
+                <li key={jobId(job)} className={second.due ? "is-due" : ""}>
+                  <button type="button" onClick={() => { setSecondTryOpen(false); openIssueJob(job); }}>
+                    <b>{jobId(job)}</b> <span>{jobAddress(job)}</span>
+                    <small>{second.due ? "Due now" : `From ${second.dueLabel}`} · 1st try {second.firstLabel}</small>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
       {noticeView ? (
         <div className="fc-package-sheet fc-summary-sheet fc-notice-viewer" role="dialog" aria-label={`HPD's notice for ${noticeView}`} data-hpd-smoke="fc-notice-viewer">
           <header>
