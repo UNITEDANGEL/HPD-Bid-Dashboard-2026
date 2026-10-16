@@ -31,4 +31,9 @@ const { urgency, earlyDeadline } = await loadLib("bid-checklist");
 assert.equal(urgency(120, false), ""); assert.equal(urgency(45, false), "send-now"); assert.equal(urgency(10, false), "too-late");
 assert.equal(urgency(30, true), ""); assert.equal(urgency(-5, false), "");
 assert.equal(earlyDeadline("10:00 AM"), true); assert.equal(earlyDeadline("11:00 AM"), false); assert.equal(earlyDeadline("1:30 PM"), false);
-console.log("PASS bid checklist: today + tomorrow, state, best price, to-do soonest first, past due counted, re-invitation is a new round, send-now / too-late warnings, early deadlines");
+// No bid: out of the to-do and the counts; a no-bid that was sent after all counts as sent.
+const nb = bidChecklist(bids, records, today, tomorrow, 9 * 60, now, () => null, new Set(), (b) => b.omo === "B" || b.omo === "C");
+assert.equal(nb.rows.find((r) => r.omo === "B").state, "no-bid");
+assert.equal(nb.total, c.total - 2); assert.equal(nb.noBid, 2); assert.ok(!nb.todo.some((r) => r.state === "no-bid"));
+assert.ok(nb.rows.filter((r) => r.state === "no-bid").every((r) => nb.rows.indexOf(r) >= nb.todo.length), "no-bids listed after the to-do");
+console.log("PASS bid checklist: today + tomorrow, state, best price, to-do soonest first, past due counted, re-invitation is a new round, no bid out of the counts, send-now / too-late warnings, early deadlines");

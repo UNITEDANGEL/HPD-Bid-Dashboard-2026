@@ -542,3 +542,15 @@
 .fc-bids-tomap { position: sticky; top: 7px; align-self: flex-end; margin: -41px 8px 7px 0; z-index: 3; min-height: 34px; padding: 0 10px; border: 1px solid #fdba7466; border-radius: 9px; background: #431407; color: #fff7ed; font: 800 12.5px system-ui; }
 .fc-bids-list.is-collapsed .fc-bids-tomap { display: none; }
 .fc-app.fc-bids-mode .fc-bids-days button.is-active small { display: inline; }
+
+/* No bid. */
+.fc-nobid-open { display: inline-flex; align-items: center; min-height: 40px; margin: 6px 0; padding: 0 14px; border-radius: 10px; border: 1px solid #a8a29e; background: #292524; color: #e7e5e4; font: 800 13.5px system-ui; }
+.fc-nobid { display: grid; gap: 6px; margin: 6px 0; padding: 10px 12px; border-radius: 12px; background: #292524; border: 1px solid #a8a29e; color: #f5f5f4; font: 600 13.5px/1.35 system-ui; }
+.fc-nobid.is-set { grid-template-columns: 1fr auto; align-items: center; background: #44403c; }
+.fc-nobid.is-set small { grid-column: 1; color: #d6d3d1; }
+.fc-nobid.is-set button { grid-column: 2; grid-row: 1 / span 2; }
+.fc-nobid-reasons { display: flex; flex-wrap: wrap; gap: 6px; }
+.fc-nobid button { min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #d6d3d1; background: #1c1917; color: #fff; font: 700 13px system-ui; }
+.fc-nobid-cancel { justify-self: start; background: transparent !important; border-color: transparent !important; color: #d6d3d1 !important; }
+.fc-bid-chip.is-nobid { background: #57534e; color: #f5f5f4; }
+.fc-bid-pin.is-nobid { filter: grayscale(1) opacity(0.7); }

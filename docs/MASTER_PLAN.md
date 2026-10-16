@@ -225,7 +225,9 @@ Done 16 Oct (same day):
   across the map are now two round buttons bottom left (count badges; 2nd try red when one is due); each
   opens its list full screen (job -> its card, Package ->). Part of the one-screen-at-a-time flow.
 ## Owner's requests 16 Oct 2026 (evening)
-1. **No bid**: mark an invitation "No bid" (with a reason) so the checklist stops asking.
+1. **No bid**: mark an invitation "No bid" (with a reason) so the checklist stops asking. (Done: 🚫 No bid on
+   every invitation with quick reasons, Undo; row chip, grey pin, out of the checklist / session counts; synced
+   as NOBID-<OMO>, never a fax record (lib/no-bid.ts, test-browser-no-bid).)
 2. **Read my email daily and keep HPD conversations**: every email thread with HPD staff (work orders,
    correction requests, AEP e.g. D. Gafur, the vendor tracker), kept whole (their messages and my replies),
    per job, separate from rejection notices; show which ones wait on my answer.

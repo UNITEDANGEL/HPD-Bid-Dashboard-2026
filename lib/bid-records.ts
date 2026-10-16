@@ -60,9 +60,10 @@ export function readSession(): BiddingSession | null {
 
 // Bids due today and where each stands: what the session panel and the alerts show.
 export type TodayRow = { omo: string; address: string; bidDue: string; bidDueTime?: string; minutesLeft: number; state: "not-priced" | "saved" | "pending" | "confirmed" | "failed" };
-export function todaySummary(bids: { omo: string; address: string; bidDue: string; bidDueTime?: string }[], records: Record<string, BidRecord>, today: string, minutesNow: number, now = new Date()) {
+export function todaySummary(bids: { omo: string; address: string; bidDue: string; bidDueTime?: string }[], records: Record<string, BidRecord>, today: string, minutesNow: number, now = new Date(), noBid: (bid: { omo: string; bidDue: string }) => boolean = () => false) {
   const minutes = (t?: string) => { const m = /^(\d{1,2}):(\d{2})\s*([AP])M$/i.exec(t || ""); return m ? ((Number(m[1]) % 12) + (m[3].toUpperCase() === "P" ? 12 : 0)) * 60 + Number(m[2]) : 1440; };
-  const rows: TodayRow[] = bids.filter((b) => b.bidDue === today).map((b) => {
+  // Invitations you decided not to bid aren't due from you (unless you sent one after all).
+  const rows: TodayRow[] = bids.filter((b) => b.bidDue === today && !(noBid(b) && !(records[b.omo] && records[b.omo].status !== "saved"))).map((b) => {
     const rec = records[b.omo];
     const fax = rec ? faxState(rec, now) : "saved";
     const state: TodayRow["state"] = !rec ? "not-priced" : fax === "saved" ? "saved" : fax === "confirmed" ? "confirmed" : fax === "failed" ? "failed" : "pending";

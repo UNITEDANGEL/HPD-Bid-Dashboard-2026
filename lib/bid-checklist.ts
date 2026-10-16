@@ -4,7 +4,7 @@
 
 import { currentRecord, faxState, type BidRecord } from "./bid-records";
 
-export type ChecklistState = "not-priced" | "saved" | "pending" | "confirmed" | "failed" | "past";
+export type ChecklistState = "not-priced" | "saved" | "pending" | "confirmed" | "failed" | "past" | "no-bid";
 export type ChecklistRow = {
   omo: string; address: string; borough: string; day: "today" | "tomorrow"; bidDueTime: string;
   minutesLeft: number; state: ChecklistState; best: number | null; chance: number | null; easy: boolean;
@@ -21,6 +21,7 @@ export function bidChecklist(
   today: string, tomorrow: string, minutesNow: number, now: Date,
   priceFor: (omo: string) => { best: number; chance: number } | null = () => null,
   easy: Set<string> = new Set(),
+  noBid: (bid: { omo: string; bidDue: string }) => boolean = () => false,
 ) {
   const rows: ChecklistRow[] = bids
     .filter((b) => b.bidDue === today || b.bidDue === tomorrow)
@@ -32,16 +33,19 @@ export function bidChecklist(
       const fax = rec ? faxState(rec, now) : "";
       let state: ChecklistState = !rec ? "not-priced" : fax === "saved" ? "saved" : fax === "confirmed" ? "confirmed" : fax === "failed" ? "failed" : "pending";
       if ((state === "not-priced" || state === "saved" || state === "failed") && minutesLeft <= 0) state = "past";
+      // You decided not to bid this one (and didn't send it after all): out of the to-do and the counts.
+      if (state !== "pending" && state !== "confirmed" && noBid(b)) state = "no-bid";
       const p = priceFor(b.omo);
       return { omo: b.omo, address: b.address, borough: b.borough || "", day, bidDueTime: b.bidDueTime || "", minutesLeft, state, best: p ? p.best : null, chance: p ? p.chance : null, easy: easy.has(b.omo) };
     })
     // Still to do first (soonest due first), then the ones already sent.
-    .sort((a, b) => Number(isDone(a)) - Number(isDone(b)) || a.minutesLeft - b.minutesLeft || a.omo.localeCompare(b.omo));
-  const todo = rows.filter((r) => !isDone(r) && r.state !== "past");
+    .sort((a, b) => Number(isDone(a) || a.state === "no-bid") - Number(isDone(b) || b.state === "no-bid") || a.minutesLeft - b.minutesLeft || a.omo.localeCompare(b.omo));
+  const todo = rows.filter((r) => !isDone(r) && r.state !== "past" && r.state !== "no-bid");
   return {
     rows, todo,
     sent: rows.filter(isDone).length,
-    total: rows.filter((r) => r.state !== "past").length,
+    total: rows.filter((r) => r.state !== "past" && r.state !== "no-bid").length,
+    noBid: rows.filter((r) => r.state === "no-bid").length,
     todayLeft: todo.filter((r) => r.day === "today").length,
     missed: rows.filter((r) => r.state === "past").length,
   };

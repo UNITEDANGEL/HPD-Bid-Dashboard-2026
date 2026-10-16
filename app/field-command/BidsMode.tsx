@@ -19,6 +19,7 @@ import { getPages } from "../../lib/page-cache";
 import { bestWithFloor, floorKind, readFloors, saveFloor, type Floors } from "../../lib/cost-floor";
 import { jobSummary, lineText, unitOf } from "../../lib/job-summary";
 import { myPrice, readRates, saveRate, unitWord, type Rates } from "../../lib/my-rates";
+import { isNoBid, mergeServerNoBids, NO_BID_REASONS, readNoBids, saveNoBid, type NoBid } from "../../lib/no-bid";
 import { buildingHistory } from "../../lib/building-bids";
 import { bidChecklist, earlyDeadline, timeLeft, urgency } from "../../lib/bid-checklist";
 import { itbPdfUrl, loadPrivate, withPrivate } from "../../lib/private-data";
@@ -100,6 +101,11 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const [rates, setRates] = useState<Rates>({});
   const [rateEdit, setRateEdit] = useState<Record<string, string>>({});
   useEffect(() => { setRates(readRates()); }, []);
+  // No bid (lib/no-bid): decided not to bid this invitation, with a reason.
+  const [noBids, setNoBids] = useState<Record<string, NoBid>>({});
+  const [noBidAsk, setNoBidAsk] = useState(false);
+  useEffect(() => { setNoBids(readNoBids()); }, []);
+  const noBidOf = (b: { omo: string; bidDue: string }) => isNoBid(noBids, b);
   const [bidsReadAt, setBidsReadAt] = useState("");
   // Invitation PDFs the reader couldn't read (no OMO # or bid due date): shown, never dropped silently.
   const [unread, setUnread] = useState<{ file: string; omo?: string; why: string }[]>([]);
@@ -198,6 +204,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
           const data = r.ok ? await r.json() : null;
           if (data?.overrides) {
             setRecords((local) => mergeServerBidsAndKeep(local, data.overrides));
+            setNoBids((local) => mergeServerNoBids(local, data.overrides));
             const remote = data.overrides[SESSION_KEY] as BiddingSession | undefined;
             if (remote?.startedAt) setSession((mine) => (!mine || String(remote.endedAt || remote.startedAt) > String(mine.endedAt || mine.startedAt) ? remote : mine));
             break;
@@ -297,7 +304,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const alertOmos = useMemo(() => {
     const day = NY_DAY.format(new Date(clock));
     const hm = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(clock)).split(":").map(Number);
-    const t = todaySummary(bids || [], records, day, hm[0] * 60 + hm[1], new Date(clock));
+    const t = todaySummary(bids || [], records, day, hm[0] * 60 + hm[1], new Date(clock), (b) => !!noBidOf(b));
     return new Set(t.notSent.filter((r) => r.minutesLeft <= 180).map((r) => r.omo));
   }, [bids, records, clock]);
   const alertKey = [...alertOmos].sort().join();
@@ -324,9 +331,10 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
         const faxFailed = tone2 === "failed";
         const alertPin = alertOmos.has(bid.omo);
         const easyPin = !sent && !currentRecord(bid, records) && easyOmos.has(bid.omo);
+        const noBidPin = !sent && !pendingFax && !!noBidOf(bid);
         return L.marker([bid.lat, bid.lng], {
           pane: "fc-bids", title: `${bid.omo} · ${bid.address} · ${dueLabel(bid)}${easyPin ? " · Easy win" : ""}`,
-          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${sent ? " is-sent" : ""}${pendingFax ? " is-pending" : ""}${faxFailed ? " is-fax-failed" : ""}${alertPin ? " is-alert" : ""}${easyPin ? " is-easy" : ""}`, html: `<b>${sent ? "✓" : pendingFax ? "⏳" : faxFailed || alertPin ? "!" : dueLabel(bid).split(" ")[0]}</b>${easyPin ? "<i>$</i>" : ""}`, iconSize: [34, 34], iconAnchor: [17, 17] }),
+          icon: L.divIcon({ className: `fc-bid-pin is-${tone}${noBidPin ? " is-nobid" : ""}${sent ? " is-sent" : ""}${pendingFax ? " is-pending" : ""}${faxFailed ? " is-fax-failed" : ""}${alertPin ? " is-alert" : ""}${easyPin ? " is-easy" : ""}`, html: `<b>${noBidPin ? "🚫" : sent ? "✓" : pendingFax ? "⏳" : faxFailed || alertPin ? "!" : dueLabel(bid).split(" ")[0]}</b>${easyPin ? "<i>$</i>" : ""}`, iconSize: [34, 34], iconAnchor: [17, 17] }),
           zIndexOffset: 1000 - TONE_ORDER[tone] * 100,
         }).on("click", () => openBid(bid));
       });
@@ -340,7 +348,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
       map.fitBounds(layerRef.current.getBounds(), { paddingTopLeft: [24, Math.min(top, Math.max(20, area.height - 200))], paddingBottomRight: [90, room > 120 ? 90 : 30], maxZoom: 14 });
     });
     return () => { cancelled = true; };
-  }, [open, bids, map, records, easyOmos, alertKey, shownBids]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, bids, map, records, easyOmos, alertKey, shownBids, noBids]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => { layerRef.current?.remove(); map?.getContainer?.()?.classList.remove("is-bids"); }, [map]);
 
   // HumbleFax emails a confirmation (or a failure) a few minutes after each fax: check Gmail for every
@@ -401,7 +409,13 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const scope = useMemo(() => readScope(selected?.description || ""), [selected]);
   const summary = useMemo(() => jobSummary(selected?.description || ""), [selected]);
   const myCalc = useMemo(() => myPrice(summary, rates), [summary, rates]);
-  useEffect(() => { setRateEdit({}); }, [selected?.omo]);
+  useEffect(() => { setRateEdit({}); setNoBidAsk(false); }, [selected?.omo]);
+  const markNoBid = async (reason: string | null) => {
+    if (!selected) return;
+    const nb: NoBid = { omo: selected.omo, bidDue: selected.bidDue, reason: reason || "", at: new Date().toISOString(), ...(reason === null ? { undone: true } : {}) };
+    setNoBids(await saveNoBid(nb, HPD_STATUS_WORKER_URL));
+    setNoBidAsk(false);
+  };
   const easy = useMemo(() => (selected && stats ? easyWin(selected.description, stats.workPrices) : null), [selected, stats]);
   const descriptions = useMemo(() => new Map<string, string>([...marketJobs.map((j) => [j.omo, j.description] as [string, string]), ...(bids || []).map((b) => [b.omo, b.description] as [string, string])]), [marketJobs, bids]);
   const learned = useMemo(() => myPrices(Object.values(records), (omo) => descriptions.get(omo)), [records, descriptions]);
@@ -559,7 +573,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
   const state = record ? faxState(record) : "saved";
   const reviewedSaved = filled && record && filled.omo === record.omo && filled.price === record.price && filled.previous === revisedFrom(record) ? filled : null;
   const nyNow = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(clock)).split(":").map(Number);
-  const todayInfo = todaySummary(list, records, today, nyNow[0] * 60 + nyNow[1], new Date(clock));
+  const todayInfo = todaySummary(list, records, today, nyNow[0] * 60 + nyNow[1], new Date(clock), (b) => !!noBidOf(b));
   // Morning checklist: every invitation due today or tomorrow, its state and the best price (lib/bid-checklist.ts).
   const tomorrowDay = NY_DAY.format(new Date(clock + 86400000));
   // Open a bid from the checklist; not priced yet: start from the best price (not your last price for this kind of work).
@@ -598,7 +612,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
     if (!h) return null;
     const b = bestWithFloor(h, floors[floorKind((bids || []).find((x) => x.omo === omo)?.description || "")]);
     return { best: b.price, chance: b.chance };
-  }, easyOmos);
+  }, easyOmos, (b) => !!noBidOf(b));
   const sessionOn = !!session?.active && session.day === today;
   const leftText = (m: number) => (m <= 0 ? "past due" : m < 60 ? `${m} min left` : `${Math.floor(m / 60)}h ${m % 60}m left`);
   const step1Done = !!record && draftValue === record.price;
@@ -677,6 +691,25 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
               <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.address}, ${selected.borough || ""} NY`)}`} target="_blank" rel="noopener noreferrer">📍 Map &amp; photos</a>
             </div>
             <p className={`fc-bid-due is-${dueWhen(selected).tone}`} data-hpd-smoke="fc-bid-due">⏰ Bid due {dueLabel(selected)} · {dueWhen(selected).text}</p>
+            {(() => {
+              const nb = noBidOf(selected);
+              const sentAlready = !!record && record.status !== "saved";
+              if (nb) return (
+                <div className="fc-nobid is-set" data-hpd-smoke="fc-nobid-set">
+                  <b>🚫 No bid{nb.reason ? `: ${nb.reason}` : ""}</b>
+                  <small>Marked {when(nb.at)}. The checklist won&apos;t ask for it.</small>
+                  <button type="button" data-hpd-smoke="fc-nobid-undo" onClick={() => void markNoBid(null)}>Undo</button>
+                </div>
+              );
+              if (sentAlready) return null;
+              return noBidAsk ? (
+                <div className="fc-nobid" data-hpd-smoke="fc-nobid-ask">
+                  <b>🚫 Not bidding this one? Why:</b>
+                  <div className="fc-nobid-reasons">{NO_BID_REASONS.map((r) => <button key={r} type="button" data-hpd-smoke="fc-nobid-reason" onClick={() => void markNoBid(r)}>{r}</button>)}</div>
+                  <button type="button" className="fc-nobid-cancel" onClick={() => setNoBidAsk(false)}>Cancel</button>
+                </div>
+              ) : <button type="button" className="fc-nobid-open" data-hpd-smoke="fc-nobid" onClick={() => setNoBidAsk(true)}>🚫 No bid</button>;
+            })()}
             <div className="fc-job-sum" data-hpd-smoke="fc-job-sum">
               <b>📋 The job</b>
               <ul>{summary.lines.length ? summary.lines.map((l) => <li key={l.key} className={`is-${l.key}`}>{lineText(l)}</li>) : <li>General repair (see HPD&apos;s text below)</li>}</ul>
@@ -1029,17 +1062,17 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 <div className="fc-cl-rows" role="list">
                   {checklist.rows.map((r) => {
                     const bid = (bids || []).find((b) => b.omo === r.omo);
-                    const icon = { "not-priced": "○", saved: "💾", pending: "⏳", confirmed: "✓", failed: "!", past: "✕" }[r.state];
-                    const stateText = { "not-priced": "no price yet", saved: "price saved, not sent", pending: "fax going through", confirmed: "sent and confirmed", failed: "fax failed: resend", past: "past due, no bid" }[r.state];
+                    const icon = { "not-priced": "○", saved: "💾", pending: "⏳", confirmed: "✓", failed: "!", past: "✕", "no-bid": "🚫" }[r.state];
+                    const stateText = { "not-priced": "no price yet", saved: "price saved, not sent", pending: "fax going through", confirmed: "sent and confirmed", failed: "fax failed: resend", past: "past due, no bid", "no-bid": `no bid${noBids[r.omo]?.reason ? `: ${noBids[r.omo].reason}` : ""}` }[r.state];
                     return (
-                      <div key={r.omo} role="listitem" className={`fc-cl-row is-${r.state}${urgency(r.minutesLeft, r.state === "pending" || r.state === "confirmed") ? ` is-${urgency(r.minutesLeft, r.state === "pending" || r.state === "confirmed")}` : ""}`} data-hpd-smoke="fc-checklist-row" data-omo={r.omo}>
+                      <div key={r.omo} role="listitem" className={`fc-cl-row is-${r.state}${urgency(r.minutesLeft, r.state === "pending" || r.state === "confirmed" || r.state === "no-bid") ? ` is-${urgency(r.minutesLeft, r.state === "pending" || r.state === "confirmed" || r.state === "no-bid")}` : ""}`} data-hpd-smoke="fc-checklist-row" data-omo={r.omo}>
                         <span className="fc-cl-icon" aria-hidden="true">{icon}</span>
                         <span className="fc-cl-main">
                           <b>{r.omo}{r.easy ? <em> · easy win</em> : null}</b>
                           <small>{r.address}{r.borough ? ` · ${r.borough}` : ""}</small>
                           <small>{r.day === "today" ? "Today" : "Tomorrow"} {r.bidDueTime}{earlyDeadline(r.bidDueTime) ? <em className="fc-cl-early"> early deadline</em> : null} · {timeLeft(r.minutesLeft)} · {stateText}</small>
                           {(() => {
-                            const u = urgency(r.minutesLeft, r.state === "pending" || r.state === "confirmed");
+                            const u = urgency(r.minutesLeft, r.state === "pending" || r.state === "confirmed" || r.state === "no-bid");
                             return u === "send-now" ? <small className="fc-cl-urgent" data-hpd-smoke="fc-cl-urgent">⚠️ Send now: a fax can take up to 25 min and HPD&apos;s line is busy before the deadline.</small>
                               : u === "too-late" ? <small className="fc-cl-urgent is-late" data-hpd-smoke="fc-cl-urgent">⛔ It may arrive too late: send it now and call HPD to say it&apos;s coming.</small> : null;
                           })()}
@@ -1088,7 +1121,7 @@ export default function BidsMode({ open, map, history, onClose }: { open: boolea
                 return (
                   <li key={bid.omo}>
                     <button type="button" onClick={() => openBid(bid)}>
-                      <span className="fc-bid-row"><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}{again ? <span className="fc-bid-chip is-again" data-hpd-smoke="fc-bid-again-chip">🔁 bid before · {money(again.price)}</span> : null}{ew ? <span className="fc-bid-chip is-easy" data-hpd-smoke="fc-bid-easy-chip">Easy win · ~{money(ew.suggested)}</span> : null}</span>
+                      <span className="fc-bid-row"><b>{bid.omo}</b> <span className={`fc-bid-chip is-${due.tone}`}>{dueLabel(bid)}</span>{b ? <span className={`fc-bid-chip is-${b.tone}`} data-hpd-smoke="fc-bid-badge">{b.text}</span> : null}{noBidOf(bid) && !b ? <span className="fc-bid-chip is-nobid" data-hpd-smoke="fc-bid-nobid-chip">🚫 No bid</span> : null}{again ? <span className="fc-bid-chip is-again" data-hpd-smoke="fc-bid-again-chip">🔁 bid before · {money(again.price)}</span> : null}{ew ? <span className="fc-bid-chip is-easy" data-hpd-smoke="fc-bid-easy-chip">Easy win · ~{money(ew.suggested)}</span> : null}</span>
                       {!currentRecord(bid, records) && !ew && rowHelp.get(bid.omo) ? (() => { const h = rowHelp.get(bid.omo)!; const best = bestWithFloor(h, floors[floorKind(bid.description)]); return <span className={`fc-bid-predict is-${h.confidence}`} data-hpd-smoke="fc-bid-predict">💰 Best ~{money(best.price)} (wins ~{Math.round(best.chance * 100)}%) · middle {money(h.middle)}{h.confidence === "low" ? " · rough guide" : ""}</span>; })() : null}
                       {(() => { const sm = rowSummary.get(bid.omo); if (!sm?.lines.length) return null; const mp = myPrice(sm, rates); return <span className="fc-bid-sum" data-hpd-smoke="fc-bid-sum">📋 {sm.lines.map(lineText).join(" + ")}{mp.complete ? <b data-hpd-smoke="fc-bid-row-mine"> · 🧮 My price {money(mp.total)}</b> : null}</span>; })()}
                       <span>{bid.address}{bid.borough ? ` · ${bid.borough}` : ""}</span>
